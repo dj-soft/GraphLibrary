@@ -3816,7 +3816,9 @@ namespace TestDevExpress.Forms
 
             // _CreateOneButton("Dialog [ OK ] / AutoCenter", new Rectangle(x, y, w, h), _MsgBoxPanel, _MsgShowDialogOKAutoCenterClick); y += (h + ys);
             _CreateOneButton("Show Exception", new Rectangle(x, y, w, h), _MsgBoxPanel, _MsgShowDialogException); y += (h + ys);
-            
+
+            _CreateOneButton("Show Extended Error", new Rectangle(x, y, w, h), _MsgBoxPanel, _MsgShowDialogExtendedError); y += (h + ys);
+
             _CreateOneButton("Dialog Yes/No", new Rectangle(x, y, w, h), _MsgBoxPanel, _MsgShowDialogYesNoClick); y += (h + ys);
             _CreateOneButton("Dialog Yes/No / Right", new Rectangle(x, y, w, h), _MsgBoxPanel, _MsgShowDialogYesNoRightClick); y += (h + ys);
             _CreateOneButton("Dialog Abort/Retry/Ignore", new Rectangle(x, y, w, h), _MsgBoxPanel, _MsgShowDialogAbortRetryIgnoreClick); y += (h + ys);
@@ -3919,6 +3921,19 @@ namespace TestDevExpress.Forms
                 NWC.DialogArgs dialogArgs = NWC.DialogArgs.CreateForException(exc);
                 DialogForm(dialogArgs);
             }
+        }
+        private void _MsgShowDialogExtendedError(object sender, EventArgs args)
+        {
+            NWC.DialogArgs dialogArgs = new NWC.DialogArgs();
+            dialogArgs.Title = "Helios Nephrite";
+            dialogArgs.SystemIcon = NWC.DialogSystemIcon.Warning;
+            dialogArgs.PrepareButtons(DialogResult.OK);
+            dialogArgs.MessageText = "Server nereaguje. Zkuste to znovu nebo kontaktujte správce.";
+            dialogArgs.MessageTextContainsHtml = true;
+            dialogArgs.AltMessageText = @"Nepodařilo se přihlásit k serveru na adrese <b>«c:\inetpub\wwwroot\noris46\noris\bin\noris.dll»</b> jako uživatel <b>«daj»</b> k databázovému profilu <b>«local2017.NV46_source»</b>.
+Aplikační server neodpověděl v časovém limitu 130 sekund. Opakujte pokus o přihlášení, nebo kontaktujte správce systému.";
+            dialogArgs.AltMessageTextContainsHtml = true;
+            DialogForm(dialogArgs);
         }
         private void _DoExceptionGui()
         {
