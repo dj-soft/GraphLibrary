@@ -54,6 +54,7 @@ namespace DjSoft.Tools.ProgramLauncher
             // 
             // _ToolStrip
             // 
+            this._ToolStrip.BackColor = System.Drawing.SystemColors.AppWorkspace;
             this._ToolStrip.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
             this._ToolStrip.ImageScalingSize = new System.Drawing.Size(48, 48);
             this._ToolStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -76,6 +77,7 @@ namespace DjSoft.Tools.ProgramLauncher
             // 
             // _StatusStrip
             // 
+            this._StatusStrip.BackColor = System.Drawing.SystemColors.AppWorkspace;
             this._StatusStrip.ImageScalingSize = new System.Drawing.Size(24, 24);
             this._StatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this._StatusVersionLabel});

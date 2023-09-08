@@ -15,6 +15,15 @@ namespace DjSoft.Tools.ProgramLauncher
         public MainForm()
         {
             InitializeComponent();
+            InitializePanels();
         }
+        private void InitializePanels()
+        {
+            _AppPanel = new Components.EditablePanel();
+            _AppPanel.Bounds = new Rectangle(24, 24, 240, 180);
+            _AppPanel.Dock = DockStyle.Fill;
+            this._MainContainer.Panel2.Controls.Add(_AppPanel);
+        }
+        private DjSoft.Tools.ProgramLauncher.Components.EditablePanel _AppPanel;
     }
 }

@@ -46,6 +46,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Components\Application.cs" />
+    <Compile Include="Components\BufferedGraphics.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Components\EditablePanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
