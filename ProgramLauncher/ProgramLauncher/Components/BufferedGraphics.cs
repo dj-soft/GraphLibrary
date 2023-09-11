@@ -18,7 +18,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     /// </summary>
     public class BufferedControl : ToolTipControl, IDisposable
     {
-        #region KONSTRUKTOR a DISPOSE
+        #region Konstruktor a Dispose
         public BufferedControl()
         {
             this._MainGraphBufferInit();
@@ -48,7 +48,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             }
         }
         #endregion
-        #region KONSTRUKCE A ZAJIŠTĚNÍ ŘÍZENÍ BufferedGraphic : obecně přenosný mechanismus i do jiných tříd
+        #region Řízení práce s BufferedGraphic (obecně přenosný mechanismus i do jiných tříd)
         #region PRIVÁTNÍ ŘÍDÍCÍ MECHANISMUS (MAIN BUFFER, BACKUP BUFFER)
         #region MAIN GRAFIKA
         /// <summary>
@@ -81,8 +81,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             // Graphics object that matches the pixel format of the form.
             MainBuffGraphics = MainBuffGraphContent.Allocate(this.CreateGraphics(), _CurrentGraphicsRectangle);
 
-            this.Resize += new EventHandler(Dbl_Resize);
-            this.Paint += new PaintEventHandler(Dbl_Paint);
+            this.Resize += new EventHandler(_Resize);
+            this.Paint += new PaintEventHandler(_Paint);
             this.SetStyle(ControlStyles.AllPaintingInWmPaint |
                 ControlStyles.UserPaint |
                 ControlStyles.SupportsTransparentBackColor |
@@ -209,7 +209,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Dbl_Paint(object sender, PaintEventArgs e)
+        private void _Paint(object sender, PaintEventArgs e)
         {
             // Okno chce vykreslit svoji grafiku - okamžitě je vylijeme do okna z našeho bufferu:
             MainBuffGraphics.Render(e.Graphics);
@@ -219,10 +219,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Dbl_Resize(object sender, EventArgs e)
+        private void _Resize(object sender, EventArgs e)
         {
+            _AcceptControlSize();
+
             // Re-create the graphics buffer for a new window size.
-            MainBuffGraphContent.MaximumBuffer = _MaximumBufferSize; ;
+            MainBuffGraphContent.MaximumBuffer = _MaximumBufferSize;
             if (MainBuffGraphics != null)
             {
                 MainBuffGraphics.Dispose();
@@ -485,15 +487,50 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         }
         #endregion
         #endregion
-        #region ScrollBars
+        #region ScrollBars, Virtuální souřadnice
         /// <summary>
         /// Potřebná velikost obsahu. 
         /// Výchozí je null = control zobrazuje to, co je vidět, a nikdy nepoužívá Scrollbary.
         /// Lze setovat hodnotu = velikost zobrazených dat, pak se aktivuje virtuální režim se zobrazením výřezu.
+        /// Při změně hodnoty se nenuluje souřadnice počátku <see cref="CurrentWindow"/>, změna velikosti obsahu jej tedy nutně nemusí přesunout na počátek.
         /// </summary>
-        public Size? ContentSize { get { return __ContentSize; } set { __ContentSize = value; _RefreshContentArea(); } } private Size? __ContentSize;
+        public Size? ContentSize 
+        { 
+            get { return __ContentSize; } 
+            set 
+            {
+                __IsInVirtualMode = (value.HasValue && value.Value.Width > 0 && value.Value.Height > 0);
+                __ContentSize = (__IsInVirtualMode ? value : null);
+                _RefreshContentArea();
+            } 
+        }
+        private Size? __ContentSize;
+        public Rectangle CurrentWindow { get { return this.ClientArea; } set { } }
+        private Point? __CurrentWindowBegin;
+        private Size __CurrentWindowSize;
+        /// <summary>
+        /// Obsahuje true, pokud objekt reprezentuje virtuální prostor = má nastavenou velikost obsahu <see cref="__ContentSize"/> (kladné rozměry).
+        /// V tom případě se v procesu Resize v metodě <see cref="_AcceptControlSize"/> 
+        /// </summary>
+        private bool __IsInVirtualMode;
+        private void _RefreshContentArea()
+        {
+            if (__IsInVirtualMode)
+            { }
+            else
+            {
+
+            }
+        }
+        private void _AcceptControlSize()
+        {
+            Size windowSize = this.ClientSize;
+
+
+            __CurrentWindowSize = windowSize;
+        }
         #endregion
-        #region PODPORA KRESLENÍ - KONVERZE BAREV, BORDER, DRAW STRING, ATD
+        #region Podpora kreslení - konverze barev, kreslení Borderu, Stringu, atd
         #region COLOR SHIFT
         /// <summary>
         /// Posune danou barvu o daný posun. Odstín ponechává, posouvá světlost.

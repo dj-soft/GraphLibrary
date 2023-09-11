@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using DjSoft.Tools.ProgramLauncher.Data;
 
 namespace DjSoft.Tools.ProgramLauncher.Components
 {
@@ -14,6 +15,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.UserMouse | ControlStyles.UserPaint, true);
             __MousePoints = new List<Point>();
+            DataItems = new List<BaseData>();
         }
         protected override void OnPaintToBuffer(object sender, PaintEventArgs e)
         {
@@ -46,5 +48,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             this.Draw();
         }
         private List<Point> __MousePoints;
+
+        public List<BaseData> DataItems { get; set; }
     }
 }

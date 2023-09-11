@@ -46,13 +46,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Components\Application.cs" />
+    <Compile Include="Data\Application.cs" />
     <Compile Include="Components\BufferedGraphics.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Data\Data.cs" />
     <Compile Include="Components\EditablePanel.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Data\XmlPersist.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -19,11 +19,15 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         private void InitializePanels()
         {
-            _AppPanel = new Components.EditablePanel();
-            _AppPanel.Bounds = new Rectangle(24, 24, 240, 180);
-            _AppPanel.Dock = DockStyle.Fill;
-            this._MainContainer.Panel2.Controls.Add(_AppPanel);
+            _AppGroupPanel = new Components.EditablePanel();
+            _AppGroupPanel.Dock = DockStyle.Fill;
+            this._MainContainer.Panel1.Controls.Add(_AppGroupPanel);
+
+            _ApplicationsPanel = new Components.EditablePanel();
+            _ApplicationsPanel.Dock = DockStyle.Fill;
+            this._MainContainer.Panel2.Controls.Add(_ApplicationsPanel);
         }
-        private DjSoft.Tools.ProgramLauncher.Components.EditablePanel _AppPanel;
+        private DjSoft.Tools.ProgramLauncher.Components.EditablePanel _AppGroupPanel;
+        private DjSoft.Tools.ProgramLauncher.Components.EditablePanel _ApplicationsPanel;
     }
 }
