@@ -556,35 +556,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             {
                 Owner = owner;
                 Axis = axis;
+                ScrollbarSize = _GetValue(() => System.Windows.Forms.SystemInformation.HorizontalScrollBarHeight, () => System.Windows.Forms.SystemInformation.VerticalScrollBarWidth);
             }
             public BufferedControl Owner { get; private set; }
             public Axis Axis { get; private set; }
-            public int? ContentSize { get { return _GetValue(Owner.__ContentSize?.Width, Owner.__ContentSize?.Height); } }
-            public int ClientSize { get { return _GetValue(Owner.ClientSize.Width, Owner.ClientSize.Height); } }
-            /// <summary>
-            /// V tomto směru bude zobrazen Scrollbar? Setuje <see cref="Owner"/> !
-            /// </summary>
-            public bool UseScrollbar { get; set; }
-            public int CurrentScrollbarSize
-            {
-                get
-                {
-                    if (!UseScrollbar) return 0;
-                    return _GetValue(System.Windows.Forms.SystemInformation.scrol)
-                }
-            }
-            public int ScrollbarSize
-            {
-
-            }
-
-            /// <summary>
-            /// Scrollbar v opačném směru je použit? 
-            /// Tedy v ose X se získá hodnota <see cref="UseScrollbar"/> z osy Y
-            /// </summary>
-            private bool _OtherScrollbarUsed { get { return _GetValue(Owner.__DimensionY.UseScrollbar, Owner.__DimensionX.UseScrollbar); } }
-            private int _OtherScrollbarSize { get { return (_OtherScrollbarUsed ? _GetValue(Owner.__DimensionY.ScrollbarSize, Owner.__DimensionX.ScrollbarSize) : 0);
-                        ; if () } }
+            public int? ContentSize { get { return _GetValue(() => Owner.__ContentSize?.Width, () => Owner.__ContentSize?.Height); } }
+            public int ClientSize { get { return _GetValue(() => Owner.ClientSize.Width, () => Owner.ClientSize.Height); } }
             /// <summary>
             /// V tomto směru by měl být Scrollbar? Detekuje se z rozměrů a z přítomnosti a velikosti Scrollbaru v opačném směru přes <see cref="Owner"/>
             /// </summary>
@@ -598,14 +575,32 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     return contentSize.Value > clientSize;
                 }
             }
+            /// <summary>
+            /// V tomto směru bude zobrazen Scrollbar? Setuje <see cref="Owner"/> jako výsledek výpočtů!
+            /// </summary>
+            public bool UseScrollbar { get; set; }
 
+            public int CurrentScrollbarSize { get { return (UseScrollbar ? ScrollbarSize : 0); } }
+            /// <summary>
+            /// Velikost zdejšího Scrollbaru, pokud bude zobrazen.
+            /// Pro dimenzi X (vodorovná, řeší X a Width) je zde Výška vodorovného Scrollbaru.
+            /// Pro dimenzi Y (svislá, řeší Y a Height) je zde Šířka svislého Scrollbaru.
+            /// </summary>
+            public int ScrollbarSize { get; private set; }
 
-            private T _GetValue<T>(T valueX, T valueY)
+            /// <summary>
+            /// Scrollbar v opačném směru je použit? 
+            /// Tedy v ose X se získá hodnota <see cref="UseScrollbar"/> z osy Y
+            /// </summary>
+            private bool _OtherScrollbarUsed { get { return _GetValue(() => Owner.__DimensionY.UseScrollbar, () => Owner.__DimensionX.UseScrollbar); } }
+            private int _OtherScrollbarSize { get { return (_OtherScrollbarUsed ? _GetValue(() => Owner.__DimensionY.ScrollbarSize, () => Owner.__DimensionX.ScrollbarSize) : 0); } }
+
+            private T _GetValue<T>(Func<T> funcValueX, Func<T> funcValueY)
             {
                 switch(Axis)
                 {
-                    case Axis.X: return valueX;
-                    case Axis.Y: return valueY;
+                    case Axis.X: return funcValueX();
+                    case Axis.Y: return funcValueY();
                 }
                 return default(T);
             }
