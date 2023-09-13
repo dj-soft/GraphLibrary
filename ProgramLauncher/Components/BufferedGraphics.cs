@@ -488,6 +488,19 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #endregion
         #endregion
         #region ScrollBars, Virtuální souřadnice
+        /*   Algoritmy
+         - Základem je naplnění ContentSize = velikost potřebného prostoru k zobrazení = suma velikosti dat + rezerva vpravo a dole
+             Pokud není naplněno, pak control pracuje v jednoduchém režimu, a nic z dalšího se neřeší!
+         - Proti tomu stojí reálná velikost controlu = ClientSize = do tohoto prostoru vykreslujeme obsah dat
+         - Pokud ContentSize <= ClientSize, pak nepoužijeme ScrollBary a hodnota __CurrentWindowBegin = {0,0} = zobrazujeme nativně = bez posouvání obsahu
+         - Pokud ContentSize >= ClientSize v jednom směru, pak zobrazíme patřičný Scrollbar, ten odebere část prostoru z ClientSize a přepočteme i druhý směr
+         - 
+
+
+
+
+
+        */
         /// <summary>
         /// Potřebná velikost obsahu. 
         /// Výchozí je null = control zobrazuje to, co je vidět, a nikdy nepoužívá Scrollbary.
@@ -515,12 +528,17 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         private bool __IsInVirtualMode;
         private void _RefreshContentArea()
         {
-            if (__IsInVirtualMode)
-            { }
-            else
-            {
+            if (!__IsInVirtualMode) return;
 
-            }
+            if (__DimensionX is null) __DimensionX = new VirtualDimension(this, Axis.X);
+            if (__DimensionY is null) __DimensionY = new VirtualDimension(this, Axis.Y);
+
+            __DimensionY.UseScrollbar = false;                            // Z této hodnoty bude vycházet __DimensionX.NeedScrollbar
+            __DimensionX.UseScrollbar = __DimensionX.NeedScrollbar;       // Osa X (Width) si určí jen svoji potřebu Scrollbaru, bez přítomnosti Scrollbaru Y
+            __DimensionY.UseScrollbar = __DimensionY.NeedScrollbar;       // Osa Y (Height) si určí ken svoji potřebu Scrollbaru, už se zohledněním Scrollbaru X
+            if (__DimensionY.UseScrollbar && !__DimensionX.UseScrollbar)  // Pokud osa Y má Scrollbar a osa X jej dosud nemá, pak se zohledněním existence Scrollbaru Y (=zmenšení prostoru) si jej nyní může taky chtít použít...
+                __DimensionX.UseScrollbar = __DimensionX.NeedScrollbar;   // Osa X (Width) si určí potřebu Scrollbaru X, se zohledněním přítomnosti Scrollbaru Y
+
         }
         private void _AcceptControlSize()
         {
@@ -529,6 +547,71 @@ namespace DjSoft.Tools.ProgramLauncher.Components
 
             __CurrentWindowSize = windowSize;
         }
+
+        private VirtualDimension __DimensionX;
+        private VirtualDimension __DimensionY;
+        private class VirtualDimension
+        {
+            public VirtualDimension(BufferedControl owner, Axis axis)
+            {
+                Owner = owner;
+                Axis = axis;
+            }
+            public BufferedControl Owner { get; private set; }
+            public Axis Axis { get; private set; }
+            public int? ContentSize { get { return _GetValue(Owner.__ContentSize?.Width, Owner.__ContentSize?.Height); } }
+            public int ClientSize { get { return _GetValue(Owner.ClientSize.Width, Owner.ClientSize.Height); } }
+            /// <summary>
+            /// V tomto směru bude zobrazen Scrollbar? Setuje <see cref="Owner"/> !
+            /// </summary>
+            public bool UseScrollbar { get; set; }
+            public int CurrentScrollbarSize
+            {
+                get
+                {
+                    if (!UseScrollbar) return 0;
+                    return _GetValue(System.Windows.Forms.SystemInformation.scrol)
+                }
+            }
+            public int ScrollbarSize
+            {
+
+            }
+
+            /// <summary>
+            /// Scrollbar v opačném směru je použit? 
+            /// Tedy v ose X se získá hodnota <see cref="UseScrollbar"/> z osy Y
+            /// </summary>
+            private bool _OtherScrollbarUsed { get { return _GetValue(Owner.__DimensionY.UseScrollbar, Owner.__DimensionX.UseScrollbar); } }
+            private int _OtherScrollbarSize { get { return (_OtherScrollbarUsed ? _GetValue(Owner.__DimensionY.ScrollbarSize, Owner.__DimensionX.ScrollbarSize) : 0);
+                        ; if () } }
+            /// <summary>
+            /// V tomto směru by měl být Scrollbar? Detekuje se z rozměrů a z přítomnosti a velikosti Scrollbaru v opačném směru přes <see cref="Owner"/>
+            /// </summary>
+            public bool NeedScrollbar
+            {
+                get
+                {
+                    int? contentSize = this.ContentSize;
+                    if (contentSize.HasValue) return false;
+                    int clientSize = this.ClientSize - this._OtherScrollbarSize;
+                    return contentSize.Value > clientSize;
+                }
+            }
+
+
+            private T _GetValue<T>(T valueX, T valueY)
+            {
+                switch(Axis)
+                {
+                    case Axis.X: return valueX;
+                    case Axis.Y: return valueY;
+                }
+                return default(T);
+            }
+
+        }
+        private enum Axis { X, Y }
         #endregion
         #region Podpora kreslení - konverze barev, kreslení Borderu, Stringu, atd
         #region COLOR SHIFT
