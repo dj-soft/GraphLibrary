@@ -31,12 +31,24 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             {
                 e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-                var lastPoint = __MousePoints[0];
-                for (int i = 1; i < lstCount; i++)
+                int alpha = 0;
+                Color color = Color.FromArgb(alpha, Color.BlueViolet);
+                using (Pen pen = new Pen(color))
                 {
-                    var currPoint = __MousePoints[i];
-                    e.Graphics.DrawLine(Pens.BlueViolet, lastPoint, currPoint);
-                    lastPoint = currPoint;
+                    var lastPoint = __MousePoints[0];
+                    for (int i = 1; i < lstCount; i++)
+                    {
+                        var currPoint = __MousePoints[i];
+
+                        if (alpha < 255)
+                        {
+                            alpha++;
+                            pen.Color = Color.FromArgb(alpha, Color.BlueViolet);
+                        }
+
+                        e.Graphics.DrawLine(pen, lastPoint, currPoint);
+                        lastPoint = currPoint;
+                    }
                 }
             }
         }
