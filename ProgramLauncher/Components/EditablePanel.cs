@@ -15,7 +15,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.UserMouse | ControlStyles.UserPaint, true);
             __MousePoints = new List<Point>();
-            DataItems = new List<BaseData>();
+            __Items = new ChildItems<EditablePanel, DataItemBase>(this);
         }
         protected override void OnPaintToBuffer(object sender, PaintEventArgs e)
         {
@@ -30,6 +30,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             if (lstCount > 0)
             {
                 e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                e.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBilinear;
 
                 int alpha = 0;
                 Color color = Color.FromArgb(alpha, Color.BlueViolet);
@@ -72,7 +73,13 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             this.Draw();
         }
         private List<Point> __MousePoints;
+        private ChildItems<EditablePanel, DataItemBase> __Items;
+        public IList<DataItemBase> DataItems { get { return __Items; } }
 
-        public List<BaseData> DataItems { get; set; }
+        /// <summary>
+        /// Definice layoutu pro prvky v tomto panelu. Jeden panel má jeden layout.
+        /// </summary>
+        public DataLayout DataLayout { get { return __DataLayout; } set { __DataLayout = value; } }
+        private DataLayout __DataLayout;
     }
 }
