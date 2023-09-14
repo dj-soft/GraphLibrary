@@ -42,8 +42,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         }
         private void _PaintDataItems(PaintEventArgs e)
         {
-            foreach (var dataItem in DataItems)
-                dataItem.Paint(e);
+            var mouseState = MouseState.CreateCurrent(this);
+            using (PaintDataEventArgs pdea = new PaintDataEventArgs(e, mouseState, this))
+            {
+                foreach (var dataItem in DataItems)
+                    dataItem.Paint(pdea);
+            }
         }
         protected override void OnMouseMove(MouseEventArgs e)
         {

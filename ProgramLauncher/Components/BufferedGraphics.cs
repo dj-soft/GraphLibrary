@@ -16,7 +16,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     /// Potomci této třídy implementují vykreslování svého obsahu tím, že přepíšou metodu OnPaintToBuffer(), a v této metodě zajisté své vykreslení.
     /// Pro spuštění překreslení svého obsahu volají Draw() (namísto Invalidate()).
     /// </summary>
-    public class BufferedControl : ToolTipControl, IDisposable
+    public class BufferedControl : ToolTipControl, IVirtualContainer, IDisposable
     {
         #region Konstruktor a Dispose
         public BufferedControl()
@@ -936,6 +936,33 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #endregion
         #endregion
     }
+    /// <summary>
+    /// Stav myši
+    /// </summary>
+    public class MouseState
+    {
+        public static MouseState CreateCurrent(Control control)
+        {
+            Point locationAbsolute = Control.MousePosition;
+            MouseButtons buttons = Control.MouseButtons;
+            Point locationNative = control.PointToClient(locationAbsolute);
+            return new MouseState(locationNative, locationAbsolute, buttons);
+        }
+        public MouseState(Point locationNative, Point locationAbsolute, MouseButtons buttons)
+        {
+            __LocationNative = locationNative;
+            __LocationAbsolute = locationAbsolute;
+            __Buttons = buttons;
+        }
+        private Point __LocationNative;
+        private Point __LocationAbsolute;
+        private MouseButtons __Buttons;
+        public Point LocationNative { get { return __LocationNative; } }
+        public Point LocationAbsolute { get { return __LocationAbsolute; } }
+        public MouseButtons Buttons { get { return __Buttons; } }
+    }
+    public interface IVirtualContainer
+    { }
 
     public class ToolTipControl : Control 
     {
