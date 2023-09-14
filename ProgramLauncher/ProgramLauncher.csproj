@@ -98,5 +98,14 @@
   <ItemGroup>
     <None Include="Pics\48px\edit-6-48.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\48px\applications-graphics-2-48.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\48px\applications-graphics-5-48.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\48px\system-settings-2-48.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

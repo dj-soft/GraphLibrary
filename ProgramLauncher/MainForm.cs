@@ -21,6 +21,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             _AppGroupPanel = new Components.EditablePanel();
             _AppGroupPanel.Dock = DockStyle.Fill;
+            _AppGroupPanel.ContentSize = new Size(32, 600);
             this._MainContainer.Panel1.Controls.Add(_AppGroupPanel);
 
             _ApplicationsPanel = new Components.EditablePanel();

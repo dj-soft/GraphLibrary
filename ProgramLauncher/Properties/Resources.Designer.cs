@@ -63,6 +63,26 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap applications_graphics_2_48 {
+            get {
+                object obj = ResourceManager.GetObject("applications_graphics_2_48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap applications_graphics_5_48 {
+            get {
+                object obj = ResourceManager.GetObject("applications_graphics_5_48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap edit_6_32 {
             get {
                 object obj = ResourceManager.GetObject("edit-6-32", resourceCulture);
@@ -86,6 +106,16 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         internal static System.Drawing.Bitmap system_settings {
             get {
                 object obj = ResourceManager.GetObject("system-settings", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap system_settings_2_48 {
+            get {
+                object obj = ResourceManager.GetObject("system_settings_2_48", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

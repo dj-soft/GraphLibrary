@@ -421,15 +421,19 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         private void _InitVirtualDimensions()
         {
-            if (__DimensionX is null) __DimensionX = new VirtualDimension(this, Axis.X);
-            if (__DimensionY is null) __DimensionY = new VirtualDimension(this, Axis.Y);
+            __DimensionX = new VirtualDimension(this, Axis.X);
+            
             __ScrollBarX = new System.Windows.Forms.HScrollBar() { Visible = false };
+            __ScrollBarX.ValueChanged += __DimensionX.ScrollBarValueChanged;
             this.Controls.Add(__ScrollBarX);
+
+            __DimensionY = new VirtualDimension(this, Axis.Y);
+
             __ScrollBarY = new System.Windows.Forms.VScrollBar() { Visible = false };
+            __ScrollBarY.ValueChanged += __DimensionY.ScrollBarValueChanged;
             this.Controls.Add(__ScrollBarY);
-
-
         }
+
         /// <summary>
         /// Fyzický Scrollbar vodorovný pro posun na ose X
         /// </summary>
@@ -486,6 +490,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             Size windowSize = this.ClientSize;
 
             _DetectScrollbars();
+            _ShowScrollBars();
 
             __CurrentWindowSize = windowSize;
         }
@@ -505,7 +510,19 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     __DimensionX.UseScrollbar = __DimensionX.NeedScrollbar;    // Osa X (Width) si určí potřebu Scrollbaru X, se zohledněním přítomnosti Scrollbaru Y
             }
         }
-
+        private void _ShowScrollBars()
+        {
+            if (__IsInVirtualMode)
+            {
+                __DimensionX.ShowScrollBar();
+                __DimensionY.ShowScrollBar();
+            }
+            else
+            {
+                __ScrollBarX.Visible = false;
+                __ScrollBarY.Visible = false;
+            }
+        }
         /// <summary>
         /// Třída pro řešení virtuální / nativní souřadnice v jedné ose (Velikost obsahu / reálný prostor) + Scrollbar pro tuto osu
         /// </summary>
@@ -538,6 +555,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             /// </summary>
             private int __ScrollbarSize;
             /// <summary>
+            /// Hodnota SmallChange na ScrollBaru
+            /// </summary>
+            private int __ScrollbarSmallChange;
+            /// <summary>
             /// Vrátí hodnotu pro osu X nebo Y podle <see cref="__Axis"/>.
             /// Hodnotu čte pomocí dodané funkce.
             /// <para/>
@@ -566,8 +587,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 get
                 {
                     int? contentSize = this._ContentSize;
-                    if (contentSize.HasValue) return false;
+                    if (!contentSize.HasValue) return false;
                     int clientSize = this._ClientSize - this._OtherScrollbarSize;
+                    if (clientSize <= (__ScrollbarSize + 10)) return false;
                     return contentSize.Value > clientSize;
                 }
             }
@@ -584,6 +606,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             public void ReloadScrollbarSize()
             {
                 __ScrollbarSize = _GetValue(() => System.Windows.Forms.SystemInformation.HorizontalScrollBarHeight, () => System.Windows.Forms.SystemInformation.VerticalScrollBarWidth);
+                __ScrollbarSmallChange = System.Windows.Forms.SystemInformation.MouseWheelScrollLines;
             }
             /// <summary>
             /// Velikost datového obsahu = virtuální velikost
@@ -594,6 +617,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             /// </summary>
             private int _ClientSize { get { return _GetValue(() => __Owner.ClientSize.Width, () => __Owner.ClientSize.Height); } }
             /// <summary>
+            /// Velikost viditelného datového prostoru, zmenšená o druhý (párový) Scrollbar = zde jsou zobrazena data
+            /// </summary>
+            private int _DataSize { get { return _GetValue(() => __Owner.ClientSize.Width - __Owner.__DimensionY._CurrentScrollbarSize, () => __Owner.ClientSize.Height - __Owner.__DimensionX._CurrentScrollbarSize); } }
+            /// <summary>
             /// Aktuální velikost zdejšího Scrollbar, se zohledněním <see cref="UseScrollbar"/> (pokud se nepoužívá, je zde 0)
             /// </summary>
             private int _CurrentScrollbarSize { get { return (UseScrollbar ? __ScrollbarSize : 0); } }
@@ -602,8 +629,113 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             /// </summary>
             private int _OtherScrollbarSize { get { return _GetValue(() => __Owner.__DimensionY._CurrentScrollbarSize, () => __Owner.__DimensionX._CurrentScrollbarSize); } }
             #endregion
+            #region Aktivace a Eventhandler Scrollbaru, jeho Value = počátek virtuálního prostoru
+            /// <summary>
+            /// Zobrazí Scrollbar na správném místě a se správnými hodnotami
+            /// </summary>
+            public void ShowScrollBar()
+            {
+                var scrollBar = _ScrollBar;
+                if (scrollBar is null) return;
+                if (!UseScrollbar)
+                {   // Nezobrazovat:
+                    if (scrollBar.Visible) scrollBar.Visible = false;
+                    return;
+                }
+
+                try
+                {
+                    __SuppressScrollBarValueChange = true;
+
+                    scrollBar.Bounds = _GetScrollbarBounds();
+
+                    _GetScrollbarValues(out int minimum, out int maximum, out int value, out int largeChange, out int smallChange);
+                    scrollBar.Minimum = minimum;
+                    scrollBar.Maximum = maximum;           // Reprezentuje celý virtuální prostor = ContentSize
+                    scrollBar.Value = value;               // Na této hodnotě je první zobrazený pixel z virtuální oblasti; Value má rozsah od Minimum do (Maximum - LargeChange + 1)
+                    scrollBar.LargeChange = largeChange;   // Odpovídá viditelné oblasti = ClientSize, typicky je cca 90% = provede posun o "celou stránku" = při kliknutí na prostor nad / pod Thumbem
+                    scrollBar.SmallChange = smallChange;   // Odpovídá scrollování myší nebo kliknutí na horní/dolní button, typicky 5% viditelné oblasti
+                }
+                finally
+                {
+                    __SuppressScrollBarValueChange = false;
+                }
+
+                if (!scrollBar.Visible) scrollBar.Visible = true;
+            }
+            /// <summary>
+            /// Handler události, kdy patřičný ScrollBar zaregistroval pohyb / změnu hodnoty
+            /// </summary>
+            /// <param name="sender"></param>
+            /// <param name="e"></param>
+            public void ScrollBarValueChanged(object sender, EventArgs e)
+            {
+                if (__SuppressScrollBarValueChange) return;
+
+
+            }
+
+
+            /// <summary>
+            /// Control Scrollbar pro tuto osu
+            /// </summary>
+            private ScrollBar _ScrollBar { get { return _GetValue<ScrollBar>(() => __Owner.__ScrollBarX, () => __Owner.__ScrollBarY); } }
+            /// <summary>
+            /// Vrátí fyzické souřadnice pro control Scrollbar
+            /// </summary>
+            /// <returns></returns>
+            private Rectangle _GetScrollbarBounds()
+            {
+                var clientSize = this.__Owner.ClientSize;
+                int x, y, w, h;
+                switch (this.__Axis)
+                {
+                    case Axis.X:
+                        w = clientSize.Width - _OtherScrollbarSize;
+                        h = __ScrollbarSize;
+                        x = 0;
+                        y = clientSize.Height - h;
+                        return new Rectangle(x, y, w, h);
+                    case Axis.Y:
+                        h = clientSize.Height - _OtherScrollbarSize;
+                        w = __ScrollbarSize;
+                        y = 0;
+                        x = clientSize.Width - w;
+                        return new Rectangle(x, y, w, h);
+                }
+                return Rectangle.Empty;
+            }
+
+            private void _GetScrollbarValues(out int minimum, out int maximum, out int value, out int largeChange, out int smallChange)
+            {
+                var dataSize = _DataSize;
+
+                minimum = 0;
+                maximum = _ContentSize ?? dataSize;
+                value = 0;
+                largeChange = dataSize;
+                smallChange = __ScrollbarSmallChange;
+            }
+            /// <summary>
+            /// Aktuálně je potlačený event <see cref="ScrollBarValueChanged"/> = změny provádíme z kódu a nechceme se v nich zacyklit
+            /// </summary>
+            private bool __SuppressScrollBarValueChange;
+            #endregion
         }
-        private enum Axis { X, Y }
+        /// <summary>
+        /// Orientace osy a Scrollbaru
+        /// </summary>
+        private enum Axis 
+        {
+            /// <summary>
+            /// X: vodorovný scrollbar, je dole
+            /// </summary>
+            X,
+            /// <summary>
+            /// Y: svislý scrollbar, je vpravo
+            /// </summary>
+            Y
+        }
         #endregion
         #region Řízení kreslení - vyvolávací metoda + virtual výkonná metoda
         /// <summary>
@@ -936,11 +1068,17 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #endregion
         #endregion
     }
+    #region class MouseState : stav myši
     /// <summary>
     /// Stav myši
     /// </summary>
     public class MouseState
     {
+        /// <summary>
+        /// Vrátí aktuální stav myši pro daný Control
+        /// </summary>
+        /// <param name="control"></param>
+        /// <returns></returns>
         public static MouseState CreateCurrent(Control control)
         {
             Point locationAbsolute = Control.MousePosition;
@@ -948,6 +1086,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             Point locationNative = control.PointToClient(locationAbsolute);
             return new MouseState(locationNative, locationAbsolute, buttons);
         }
+        /// <summary>
+        /// Vrátí stav myši pro dané hodnoty
+        /// </summary>
+        /// <param name="locationNative">Souřadnice myši v koordinátech controlu (nativní prostor)</param>
+        /// <param name="locationAbsolute"></param>
+        /// <param name="buttons"></param>
         public MouseState(Point locationNative, Point locationAbsolute, MouseButtons buttons)
         {
             __LocationNative = locationNative;
@@ -957,13 +1101,25 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         private Point __LocationNative;
         private Point __LocationAbsolute;
         private MouseButtons __Buttons;
+        /// <summary>
+        /// Souřadnice myši v koordinátech controlu (nativní prostor)
+        /// </summary>
         public Point LocationNative { get { return __LocationNative; } }
+        /// <summary>
+        /// Souřadnice myši v koordinátech absolutních (Screen)
+        /// </summary>
         public Point LocationAbsolute { get { return __LocationAbsolute; } }
+        /// <summary>
+        /// Stav buttonů myši
+        /// </summary>
         public MouseButtons Buttons { get { return __Buttons; } }
     }
+    #endregion
+    #region interface IVirtualContainer
     public interface IVirtualContainer
     { }
-
+    #endregion
+    #region class ToolTipControl
     public class ToolTipControl : Control 
     {
         #region Podpora inicializace tooltipu - až poté, kdy je control umístěn na formuláři!
@@ -1011,4 +1167,5 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         protected bool ToolTipInitialized = false;
         #endregion
     }
+    #endregion
 }
