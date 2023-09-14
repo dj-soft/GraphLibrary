@@ -20,14 +20,17 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         protected override void OnPaintToBuffer(object sender, PaintEventArgs e)
         {
             e.Graphics.Clear(Color.AliceBlue);
-            // e.Graphics.FillRectangle(Brushes.AliceBlue, new RectangleF(5, 5, 120, 80));
+            _PaintMousePoints(e);
+            _PaintDataItems(e);
 
+        }
+        private void _PaintMousePoints(PaintEventArgs e)
+        {
             int lstCount = __MousePoints.Count;
-
             if (lstCount > 0)
             {
                 e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                
+
                 var lastPoint = __MousePoints[0];
                 for (int i = 1; i < lstCount; i++)
                 {
@@ -36,6 +39,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     lastPoint = currPoint;
                 }
             }
+        }
+        private void _PaintDataItems(PaintEventArgs e)
+        {
+            foreach (var dataItem in DataItems)
+                dataItem.Paint(e);
         }
         protected override void OnMouseMove(MouseEventArgs e)
         {

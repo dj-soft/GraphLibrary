@@ -9,20 +9,20 @@ using System.Drawing;
 
 namespace DjSoft.Tools.ProgramLauncher.Data
 {
-    public class ApplicationData : BaseData
-    {
-    }
     public class GroupData : BaseData
     {
 
 
     }
-    public class BaseData
+    public class ApplicationData : BaseData
     {
-        public string ImageName { get; set; }
-        public byte[] ImageContent { get; set; }
-        public Color BackColor { get; set; }
-        public Color ForeColor { get; set; }
+    }
+    public abstract class BaseData
+    {
+        public virtual string ImageName { get; set; }
+        public virtual byte[] ImageContent { get; set; }
+        public virtual Color BackColor { get; set; }
+        public virtual Color ForeColor { get; set; }
         /// <summary>
         /// Vnější velikost objektu.
         /// Tyto velikosti jednotlivých objektů na sebe těsně navazují.

@@ -21,8 +21,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #region Konstruktor a Dispose
         public BufferedControl()
         {
-            this._MainGraphBufferInit();
-            this._BackupGraphBufferInit();
+            this._InitGraphics();
         }
         void IDisposable.Dispose()
         {
@@ -48,9 +47,15 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             }
         }
         #endregion
-        #region Řízení práce s BufferedGraphic (obecně přenosný mechanismus i do jiných tříd)
-        #region PRIVÁTNÍ ŘÍDÍCÍ MECHANISMUS (MAIN BUFFER, BACKUP BUFFER)
-        #region MAIN GRAFIKA
+        #region Řízení práce s BufferedGraphic (obecně přenosný mechanismus i do jiných tříd) a Virtuální souřadnice + Scrollbary
+        private void _InitGraphics()
+        {
+            this._InitVirtualDimensions();
+            this._MainGraphBufferInit();
+            this._BackupGraphBufferInit();
+        }
+        #region Privátní řídící mechanismus - Main buffer, Backup buffer
+        #region Main grafika
         /// <summary>
         /// Obsah bufferované grafiky, pro rychlejší překreslování a udržení obrazu v paměti i mimo plochu Controlu
         /// </summary>
@@ -81,8 +86,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             // Graphics object that matches the pixel format of the form.
             MainBuffGraphics = MainBuffGraphContent.Allocate(this.CreateGraphics(), _CurrentGraphicsRectangle);
 
-            this.Resize += new EventHandler(_Resize);
-            this.Paint += new PaintEventHandler(_Paint);
+            this.Resize += new EventHandler(_ResizeGraphics);
+            this.Paint += new PaintEventHandler(_PaintGraphics);
             this.SetStyle(ControlStyles.AllPaintingInWmPaint |
                 ControlStyles.UserPaint |
                 ControlStyles.SupportsTransparentBackColor |
@@ -209,7 +214,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _Paint(object sender, PaintEventArgs e)
+        private void _PaintGraphics(object sender, PaintEventArgs e)
         {
             // Okno chce vykreslit svoji grafiku - okamžitě je vylijeme do okna z našeho bufferu:
             MainBuffGraphics.Render(e.Graphics);
@@ -219,7 +224,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _Resize(object sender, EventArgs e)
+        private void _ResizeGraphics(object sender, EventArgs e)
         {
             _AcceptControlSize();
 
@@ -335,7 +340,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         }
         #endregion
         #endregion
-        #region PROPERTY
+        #region Public property
         /// <summary>
         /// Pokud chceme využít bufferovaného vykreslování této třídy bez toho, abychom ji dědili (použijeme nativní třídu),
         /// pak je nutno vykreslování umístit do tohoto eventu.
@@ -398,7 +403,209 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Padding BorderWidth { get { return this._GetBorderWidth(); } }
         #endregion
-        #region ŘÍZENÍ KRESLENÍ - (vyvolávací metoda + virtual výkonná metoda)
+        #region ScrollBars, Virtuální souřadnice
+        /*   Algoritmy
+         - Základem je naplnění ContentSize = velikost potřebného prostoru k zobrazení = suma velikosti dat + rezerva vpravo a dole
+             Pokud není naplněno, pak control pracuje v jednoduchém režimu, a nic z dalšího se neřeší!
+         - Proti tomu stojí reálná velikost controlu = ClientSize = do tohoto prostoru vykreslujeme obsah dat
+         - Pokud ContentSize <= ClientSize, pak nepoužijeme ScrollBary a hodnota __CurrentWindowBegin = {0,0} = zobrazujeme nativně = bez posouvání obsahu
+         - Pokud ContentSize >= ClientSize v jednom směru, pak zobrazíme patřičný Scrollbar, ten odebere část prostoru z ClientSize a přepočteme i druhý směr
+         - 
+
+
+
+        */
+
+        /// <summary>
+        /// Inicializuje data pro Virtuální souřadnice
+        /// </summary>
+        private void _InitVirtualDimensions()
+        {
+            if (__DimensionX is null) __DimensionX = new VirtualDimension(this, Axis.X);
+            if (__DimensionY is null) __DimensionY = new VirtualDimension(this, Axis.Y);
+            __ScrollBarX = new System.Windows.Forms.HScrollBar() { Visible = false };
+            this.Controls.Add(__ScrollBarX);
+            __ScrollBarY = new System.Windows.Forms.VScrollBar() { Visible = false };
+            this.Controls.Add(__ScrollBarY);
+
+
+        }
+        /// <summary>
+        /// Fyzický Scrollbar vodorovný pro posun na ose X
+        /// </summary>
+        private System.Windows.Forms.HScrollBar __ScrollBarX;
+        /// <summary>
+        /// Fyzický Scrollbar svislý pro posun na ose Y
+        /// </summary>
+        private System.Windows.Forms.VScrollBar __ScrollBarY;
+        /// <summary>
+        /// Virtuální souřadnice ve směru osy X (Width)
+        /// </summary>
+        private VirtualDimension __DimensionX;
+        /// <summary>
+        /// Virtuální souřadnice ve směru osy Y (Height)
+        /// </summary>
+        private VirtualDimension __DimensionY;
+        /// <summary>
+        /// Velikost virtuálního obsahu = na něj se dimenzují Scrollbary. Null = nemáme virtuální souřadnice.
+        /// </summary>
+        private Size? __ContentSize;
+        /// <summary>
+        /// Obsahuje true, pokud objekt reprezentuje virtuální prostor = má nastavenou velikost obsahu <see cref="__ContentSize"/> (kladné rozměry).
+        /// V tom případě se v procesu Resize v metodě <see cref="_AcceptControlSize"/> 
+        /// </summary>
+        private bool __IsInVirtualMode;
+
+        /// <summary>
+        /// Potřebná velikost obsahu. 
+        /// Výchozí je null = control zobrazuje to, co je vidět, a nikdy nepoužívá Scrollbary.
+        /// Lze setovat hodnotu = velikost zobrazených dat, pak se aktivuje virtuální režim se zobrazením výřezu.
+        /// Při změně hodnoty se nenuluje souřadnice počátku <see cref="CurrentWindow"/>, změna velikosti obsahu jej tedy nutně nemusí přesunout na počátek.
+        /// </summary>
+        public Size? ContentSize { get { return __ContentSize; } set { _SetContentSize(value); } }
+
+        public Rectangle CurrentWindow { get { return this.ClientArea; } set { } }
+        private Point? __CurrentWindowBegin;
+        private Size __CurrentWindowSize;
+        private void _SetContentSize(Size? contentSize)
+        {
+            __IsInVirtualMode = (contentSize.HasValue && contentSize.Value.Width > 0 && contentSize.Value.Height > 0);
+            __ContentSize = (__IsInVirtualMode ? contentSize : null);
+            _RefreshContentArea();
+        }
+        private void _RefreshContentArea()
+        {
+            _DetectScrollbars();
+
+            if (!__IsInVirtualMode) return;
+
+
+        }
+        private void _AcceptControlSize()
+        {
+            Size windowSize = this.ClientSize;
+
+            _DetectScrollbars();
+
+            __CurrentWindowSize = windowSize;
+        }
+        /// <summary>
+        /// Detekuje potřebu zobrazení Scrollbarů. Volá se jak po změně <see cref="ContentSize"/>, tak po Resize controlu.
+        /// </summary>
+        private void _DetectScrollbars()
+        {
+            __DimensionX.UseScrollbar = false;
+            __DimensionY.UseScrollbar = false;                                 // Z této hodnoty bude vycházet __DimensionX.NeedScrollbar
+
+            if (__IsInVirtualMode)
+            {
+                __DimensionX.UseScrollbar = __DimensionX.NeedScrollbar;        // Osa X (Width) si určí jen svoji potřebu Scrollbaru, bez přítomnosti Scrollbaru Y
+                __DimensionY.UseScrollbar = __DimensionY.NeedScrollbar;        // Osa Y (Height) si určí ken svoji potřebu Scrollbaru, už se zohledněním Scrollbaru X
+                if (__DimensionY.UseScrollbar && !__DimensionX.UseScrollbar)   // Pokud osa Y má Scrollbar a osa X jej dosud nemá, pak se zohledněním existence Scrollbaru Y (=zmenšení prostoru) si jej nyní může taky chtít použít...
+                    __DimensionX.UseScrollbar = __DimensionX.NeedScrollbar;    // Osa X (Width) si určí potřebu Scrollbaru X, se zohledněním přítomnosti Scrollbaru Y
+            }
+        }
+
+        /// <summary>
+        /// Třída pro řešení virtuální / nativní souřadnice v jedné ose (Velikost obsahu / reálný prostor) + Scrollbar pro tuto osu
+        /// </summary>
+        private class VirtualDimension
+        {
+            #region Konstruktor a privátní fieldy a základní metody
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="owner"></param>
+            /// <param name="axis"></param>
+            public VirtualDimension(BufferedControl owner, Axis axis)
+            {
+                __Owner = owner;
+                __Axis = axis;
+                ReloadScrollbarSize();
+            }
+            /// <summary>
+            /// Vlastník
+            /// </summary>
+            private BufferedControl __Owner;
+            /// <summary>
+            /// Směr osy
+            /// </summary>
+            private Axis __Axis;
+            /// <summary>
+            /// Velikost zdejšího Scrollbaru, pokud bude zobrazen.
+            /// Pro dimenzi X (vodorovná, řeší X a Width) je zde Výška vodorovného Scrollbaru.
+            /// Pro dimenzi Y (svislá, řeší Y a Height) je zde Šířka svislého Scrollbaru.
+            /// </summary>
+            private int __ScrollbarSize;
+            /// <summary>
+            /// Vrátí hodnotu pro osu X nebo Y podle <see cref="__Axis"/>.
+            /// Hodnotu čte pomocí dodané funkce.
+            /// <para/>
+            /// Myslím že je to optimálnější, než když bych očekával dva parametry obsahující prostá hotová data - protože při volání zdejší metody bych je nejprve musel oba vyhodnotit (náročnost), a pak bych jeden zahodil.
+            /// </summary>
+            /// <typeparam name="T"></typeparam>
+            /// <param name="funcValueX"></param>
+            /// <param name="funcValueY"></param>
+            /// <returns></returns>
+            private T _GetValue<T>(Func<T> funcValueX, Func<T> funcValueY)
+            {
+                switch (__Axis)
+                {
+                    case Axis.X: return funcValueX();
+                    case Axis.Y: return funcValueY();
+                }
+                return default(T);
+            }
+            #endregion
+            #region Používání a velikost Scrollbaru
+            /// <summary>
+            /// V tomto směru by měl být zobrazen Scrollbar? Detekuje se z rozměrů (virtuální a nativní) a z přítomnosti a velikosti Scrollbaru v opačném směru
+            /// </summary>
+            public bool NeedScrollbar
+            {
+                get
+                {
+                    int? contentSize = this._ContentSize;
+                    if (contentSize.HasValue) return false;
+                    int clientSize = this._ClientSize - this._OtherScrollbarSize;
+                    return contentSize.Value > clientSize;
+                }
+            }
+            /// <summary>
+            /// V tomto směru bude zobrazen Scrollbar? 
+            /// Setuje <see cref="__Owner"/> jako výsledek výpočtů!
+            /// Owner k tomu používá hodnotu <see cref="NeedScrollbar"/> z této dimenze, ale musí zohlednit křížovou potřebu Scrollbaru.
+            /// Slovně: pokud osa X těsně nepotřebuje Scrollbar, ale osa Y jej potřebuje, tak zmenší vizuální prostor na ose X a poté i osa X potřebuje svůj Scrollbar - proto, že dostupný prostor na ose X zmenšil Scrollbar Y.
+            /// </summary>
+            public bool UseScrollbar { get; set; }
+            /// <summary>
+            /// Znovu načte velikost Scrollbar - je vhodné volat po změně DPI atd...
+            /// </summary>
+            public void ReloadScrollbarSize()
+            {
+                __ScrollbarSize = _GetValue(() => System.Windows.Forms.SystemInformation.HorizontalScrollBarHeight, () => System.Windows.Forms.SystemInformation.VerticalScrollBarWidth);
+            }
+            /// <summary>
+            /// Velikost datového obsahu = virtuální velikost
+            /// </summary>
+            private int? _ContentSize { get { return _GetValue(() => __Owner.__ContentSize?.Width, () => __Owner.__ContentSize?.Height); } }
+            /// <summary>
+            /// Velikost viditelného prostoru, celková (tj. fyzický Control = obsah + případný scrollbar)
+            /// </summary>
+            private int _ClientSize { get { return _GetValue(() => __Owner.ClientSize.Width, () => __Owner.ClientSize.Height); } }
+            /// <summary>
+            /// Aktuální velikost zdejšího Scrollbar, se zohledněním <see cref="UseScrollbar"/> (pokud se nepoužívá, je zde 0)
+            /// </summary>
+            private int _CurrentScrollbarSize { get { return (UseScrollbar ? __ScrollbarSize : 0); } }
+            /// <summary>
+            /// Aktuální velikost Scrollbar z opačné osy, se zohledněním jejího <see cref="UseScrollbar"/> (pokud se nepoužívá, je zde 0)
+            /// </summary>
+            private int _OtherScrollbarSize { get { return _GetValue(() => __Owner.__DimensionY._CurrentScrollbarSize, () => __Owner.__DimensionX._CurrentScrollbarSize); } }
+            #endregion
+        }
+        private enum Axis { X, Y }
+        #endregion
+        #region Řízení kreslení - vyvolávací metoda + virtual výkonná metoda
         /// <summary>
         /// Potlačení kreslení při provádění rozsáhlejších změn. Po ukončení je třeba nastavit na false !
         /// Default = false = kreslení není potlačeno.
@@ -486,127 +693,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             this._Draw(drawRectangle);
         }
         #endregion
-        #endregion
-        #region ScrollBars, Virtuální souřadnice
-        /*   Algoritmy
-         - Základem je naplnění ContentSize = velikost potřebného prostoru k zobrazení = suma velikosti dat + rezerva vpravo a dole
-             Pokud není naplněno, pak control pracuje v jednoduchém režimu, a nic z dalšího se neřeší!
-         - Proti tomu stojí reálná velikost controlu = ClientSize = do tohoto prostoru vykreslujeme obsah dat
-         - Pokud ContentSize <= ClientSize, pak nepoužijeme ScrollBary a hodnota __CurrentWindowBegin = {0,0} = zobrazujeme nativně = bez posouvání obsahu
-         - Pokud ContentSize >= ClientSize v jednom směru, pak zobrazíme patřičný Scrollbar, ten odebere část prostoru z ClientSize a přepočteme i druhý směr
-         - 
-
-
-
-
-
-        */
-        /// <summary>
-        /// Potřebná velikost obsahu. 
-        /// Výchozí je null = control zobrazuje to, co je vidět, a nikdy nepoužívá Scrollbary.
-        /// Lze setovat hodnotu = velikost zobrazených dat, pak se aktivuje virtuální režim se zobrazením výřezu.
-        /// Při změně hodnoty se nenuluje souřadnice počátku <see cref="CurrentWindow"/>, změna velikosti obsahu jej tedy nutně nemusí přesunout na počátek.
-        /// </summary>
-        public Size? ContentSize 
-        { 
-            get { return __ContentSize; } 
-            set 
-            {
-                __IsInVirtualMode = (value.HasValue && value.Value.Width > 0 && value.Value.Height > 0);
-                __ContentSize = (__IsInVirtualMode ? value : null);
-                _RefreshContentArea();
-            } 
-        }
-        private Size? __ContentSize;
-        public Rectangle CurrentWindow { get { return this.ClientArea; } set { } }
-        private Point? __CurrentWindowBegin;
-        private Size __CurrentWindowSize;
-        /// <summary>
-        /// Obsahuje true, pokud objekt reprezentuje virtuální prostor = má nastavenou velikost obsahu <see cref="__ContentSize"/> (kladné rozměry).
-        /// V tom případě se v procesu Resize v metodě <see cref="_AcceptControlSize"/> 
-        /// </summary>
-        private bool __IsInVirtualMode;
-        private void _RefreshContentArea()
-        {
-            if (!__IsInVirtualMode) return;
-
-            if (__DimensionX is null) __DimensionX = new VirtualDimension(this, Axis.X);
-            if (__DimensionY is null) __DimensionY = new VirtualDimension(this, Axis.Y);
-
-            __DimensionY.UseScrollbar = false;                            // Z této hodnoty bude vycházet __DimensionX.NeedScrollbar
-            __DimensionX.UseScrollbar = __DimensionX.NeedScrollbar;       // Osa X (Width) si určí jen svoji potřebu Scrollbaru, bez přítomnosti Scrollbaru Y
-            __DimensionY.UseScrollbar = __DimensionY.NeedScrollbar;       // Osa Y (Height) si určí ken svoji potřebu Scrollbaru, už se zohledněním Scrollbaru X
-            if (__DimensionY.UseScrollbar && !__DimensionX.UseScrollbar)  // Pokud osa Y má Scrollbar a osa X jej dosud nemá, pak se zohledněním existence Scrollbaru Y (=zmenšení prostoru) si jej nyní může taky chtít použít...
-                __DimensionX.UseScrollbar = __DimensionX.NeedScrollbar;   // Osa X (Width) si určí potřebu Scrollbaru X, se zohledněním přítomnosti Scrollbaru Y
-
-        }
-        private void _AcceptControlSize()
-        {
-            Size windowSize = this.ClientSize;
-
-
-            __CurrentWindowSize = windowSize;
-        }
-
-        private VirtualDimension __DimensionX;
-        private VirtualDimension __DimensionY;
-        private class VirtualDimension
-        {
-            public VirtualDimension(BufferedControl owner, Axis axis)
-            {
-                Owner = owner;
-                Axis = axis;
-                ScrollbarSize = _GetValue(() => System.Windows.Forms.SystemInformation.HorizontalScrollBarHeight, () => System.Windows.Forms.SystemInformation.VerticalScrollBarWidth);
-            }
-            public BufferedControl Owner { get; private set; }
-            public Axis Axis { get; private set; }
-            public int? ContentSize { get { return _GetValue(() => Owner.__ContentSize?.Width, () => Owner.__ContentSize?.Height); } }
-            public int ClientSize { get { return _GetValue(() => Owner.ClientSize.Width, () => Owner.ClientSize.Height); } }
-            /// <summary>
-            /// V tomto směru by měl být Scrollbar? Detekuje se z rozměrů a z přítomnosti a velikosti Scrollbaru v opačném směru přes <see cref="Owner"/>
-            /// </summary>
-            public bool NeedScrollbar
-            {
-                get
-                {
-                    int? contentSize = this.ContentSize;
-                    if (contentSize.HasValue) return false;
-                    int clientSize = this.ClientSize - this._OtherScrollbarSize;
-                    return contentSize.Value > clientSize;
-                }
-            }
-            /// <summary>
-            /// V tomto směru bude zobrazen Scrollbar? Setuje <see cref="Owner"/> jako výsledek výpočtů!
-            /// </summary>
-            public bool UseScrollbar { get; set; }
-
-            public int CurrentScrollbarSize { get { return (UseScrollbar ? ScrollbarSize : 0); } }
-            /// <summary>
-            /// Velikost zdejšího Scrollbaru, pokud bude zobrazen.
-            /// Pro dimenzi X (vodorovná, řeší X a Width) je zde Výška vodorovného Scrollbaru.
-            /// Pro dimenzi Y (svislá, řeší Y a Height) je zde Šířka svislého Scrollbaru.
-            /// </summary>
-            public int ScrollbarSize { get; private set; }
-
-            /// <summary>
-            /// Scrollbar v opačném směru je použit? 
-            /// Tedy v ose X se získá hodnota <see cref="UseScrollbar"/> z osy Y
-            /// </summary>
-            private bool _OtherScrollbarUsed { get { return _GetValue(() => Owner.__DimensionY.UseScrollbar, () => Owner.__DimensionX.UseScrollbar); } }
-            private int _OtherScrollbarSize { get { return (_OtherScrollbarUsed ? _GetValue(() => Owner.__DimensionY.ScrollbarSize, () => Owner.__DimensionX.ScrollbarSize) : 0); } }
-
-            private T _GetValue<T>(Func<T> funcValueX, Func<T> funcValueY)
-            {
-                switch(Axis)
-                {
-                    case Axis.X: return funcValueX();
-                    case Axis.Y: return funcValueY();
-                }
-                return default(T);
-            }
-
-        }
-        private enum Axis { X, Y }
         #endregion
         #region Podpora kreslení - konverze barev, kreslení Borderu, Stringu, atd
         #region COLOR SHIFT
