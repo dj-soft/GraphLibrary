@@ -50,10 +50,12 @@
     <Compile Include="Components\BufferedGraphics.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Data\Arrays.cs" />
     <Compile Include="Data\Data.cs" />
-    <Compile Include="Components\EditablePanel.cs">
+    <Compile Include="Components\InteractiveGraphicsControl.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Data\Extensions.cs" />
     <Compile Include="Data\XmlPersist.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>

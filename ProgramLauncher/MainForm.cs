@@ -19,32 +19,34 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         private void InitializePanels()
         {
-            _AppGroupPanel = new Components.EditablePanel();
+            _AppGroupPanel = new Components.InteractiveGraphicsControl();
             _AppGroupPanel.Dock = DockStyle.Fill;
             _AppGroupPanel.ContentSize = new Size(32, 600);
             this._MainContainer.Panel1.Controls.Add(_AppGroupPanel);
 
-            _ApplicationsPanel = new Components.EditablePanel();
+            _ApplicationsPanel = new Components.InteractiveGraphicsControl();
             _ApplicationsPanel.Dock = DockStyle.Fill;
-            _ApplicationsPanel.DataItems.Add(CreateAppDataItem(48, 24));
-            _ApplicationsPanel.DataItems.Add(CreateAppDataItem(192, 24));
-            _ApplicationsPanel.DataItems.Add(CreateAppDataItem(336, 24));
-            _ApplicationsPanel.DataItems.Add(CreateAppDataItem(48, 80));
-            _ApplicationsPanel.DataItems.Add(CreateAppDataItem(192, 80));
-            _ApplicationsPanel.DataItems.Add(CreateAppDataItem(48, 136));
+
+            _ApplicationsPanel.DataLayout = Data.DataLayout.SetMediumBrick;
+
+            _ApplicationsPanel.DataItems.Add(CreateAppDataItem(0, 0, "Windows"));
+            _ApplicationsPanel.DataItems.Add(CreateAppDataItem(1, 0, "Hotline"));
+            _ApplicationsPanel.DataItems.Add(CreateAppDataItem(2, 0, "Sirius"));
+            _ApplicationsPanel.DataItems.Add(CreateAppDataItem(0, 1, "Notebook"));
+            _ApplicationsPanel.DataItems.Add(CreateAppDataItem(1, 1, "Music"));
+            _ApplicationsPanel.DataItems.Add(CreateAppDataItem(2, 3, "Nastavení"));
 
             this._MainContainer.Panel2.Controls.Add(_ApplicationsPanel);
         }
-        private DjSoft.Tools.ProgramLauncher.Components.EditablePanel _AppGroupPanel;
-        private DjSoft.Tools.ProgramLauncher.Components.EditablePanel _ApplicationsPanel;
+        private DjSoft.Tools.ProgramLauncher.Components.InteractiveGraphicsControl _AppGroupPanel;
+        private DjSoft.Tools.ProgramLauncher.Components.InteractiveGraphicsControl _ApplicationsPanel;
 
-        private Data.BaseData CreateAppDataItem(int x, int y)
+        private Data.DataItemBase CreateAppDataItem(int x, int y, string mainTitle)
         {
-            Data.ApplicationData data = new Data.ApplicationData()
+            Data.DataItemApplication data = new Data.DataItemApplication()
             {
-                BackColor = Color.LightBlue,
-                VirtualLocation = new Point(x, y),
-                Size = new Size(128, 48)
+                Adress = new Point(x, y),
+                MainTitle = mainTitle
             };
             return data;
         }
