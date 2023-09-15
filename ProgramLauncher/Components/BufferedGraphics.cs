@@ -11,15 +11,15 @@ using System.Runtime.InteropServices;
 namespace DjSoft.Tools.ProgramLauncher.Components
 {
     /// <summary>
-    /// Potomek třídy System.Windows.Forms.Control, který v sobě implementuje doublebuffer pro grafiku.
+    /// Potomek třídy <see cref="Control"/>, který v sobě implementuje doublebuffer pro grafiku.
     /// Potomci této třídy nemusí zajišťovat bufferování grafiky.
     /// Potomci této třídy implementují vykreslování svého obsahu tím, že přepíšou metodu OnPaintToBuffer(), a v této metodě zajisté své vykreslení.
     /// Pro spuštění překreslení svého obsahu volají Draw() (namísto Invalidate()).
     /// </summary>
-    public class BufferedControl : ToolTipControl, IVirtualContainer, IDisposable
+    public class GraphicsControl : ToolTipControl, IVirtualContainer, IDisposable
     {
         #region Konstruktor a Dispose
-        public BufferedControl()
+        public GraphicsControl()
         {
             this._InitGraphics();
         }
@@ -50,6 +50,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #region Řízení práce s BufferedGraphic (obecně přenosný mechanismus i do jiných tříd) a Virtuální souřadnice + Scrollbary
         private void _InitGraphics()
         {
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.UserMouse | ControlStyles.UserPaint, true);
+
             this._InitVirtualDimensions();
             this._MainGraphBufferInit();
             this._BackupGraphBufferInit();
@@ -190,7 +192,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         protected void BackupGraphicLoad(Graphics target)
         {
             if (!BackupGraphicIsReady)
-                Application.ShowError("Byl proveden pokus o použití záložní grafiky za stavu, kdy to není přípustné.");
+                App.ShowError("Byl proveden pokus o použití záložní grafiky za stavu, kdy to není přípustné.");
             BackupBuffGraphics.Render(target);
         }
         /// <summary>
@@ -534,7 +536,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             /// </summary>
             /// <param name="owner"></param>
             /// <param name="axis"></param>
-            public VirtualDimension(BufferedControl owner, Axis axis)
+            public VirtualDimension(GraphicsControl owner, Axis axis)
             {
                 __Owner = owner;
                 __Axis = axis;
@@ -543,7 +545,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             /// <summary>
             /// Vlastník
             /// </summary>
-            private BufferedControl __Owner;
+            private GraphicsControl __Owner;
             /// <summary>
             /// Směr osy
             /// </summary>
@@ -605,8 +607,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             /// </summary>
             public void ReloadScrollbarSize()
             {
-                __ScrollbarSize = _GetValue(() => System.Windows.Forms.SystemInformation.HorizontalScrollBarHeight, () => System.Windows.Forms.SystemInformation.VerticalScrollBarWidth);
-                __ScrollbarSmallChange = System.Windows.Forms.SystemInformation.MouseWheelScrollLines;
+                __ScrollbarSize = _GetValue(() => SystemInformation.HorizontalScrollBarHeight, () => SystemInformation.VerticalScrollBarWidth);
+                __ScrollbarSmallChange = (int)(((float)SystemInformation.MouseWheelScrollLines) * App.GetSystemFont(App.FontType.DefaultFont).GetHeight());
             }
             /// <summary>
             /// Velikost datového obsahu = virtuální velikost
@@ -674,7 +676,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
 
 
             }
-
 
             /// <summary>
             /// Control Scrollbar pro tuto osu
