@@ -423,6 +423,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         */
 
         /// <summary>
+        /// Povoluje se práce se Scrollbary, pokud bude zadána velikost obsahu <see cref="ContentSize"/>. Default = true.
+        /// </summary>
+        public bool ScrollbarsEnabled { get { return __ScrollbarsEnabled; } set { __ScrollbarsEnabled = value; _RefreshContentArea(); Draw(); } }
+        private bool __ScrollbarsEnabled;
+
+        /// <summary>
         /// Souřadnice počátku viditelného prostoru = souřadnice bodu ve virtuálním prostoru (prostordatového obsahu), který je zobrazen na vizuálním pixelu 0/0
         /// </summary>
         public Point VirtualBegin
@@ -442,12 +448,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
 
         public Point GetVirtualPoint(Point controlPoint)
         {
-            if (!__IsInVirtualMode) return controlPoint;
+            if (!_IsInVirtualMode) return controlPoint;
             return controlPoint.GetShiftedPoint(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
         }
         public Point GetControlPoint(Point virtualPoint)
         {
-            if (!__IsInVirtualMode) return virtualPoint;
+            if (!_IsInVirtualMode) return virtualPoint;
             return virtualPoint.GetShiftedPoint(-__DimensionX.VirtualBegin, -__DimensionY.VirtualBegin);
         }
         /// <summary>
@@ -456,6 +462,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         private void _InitVirtualDimensions()
         {
             this.MouseWheel += _MouseWheel;
+
+            __ScrollbarsEnabled = true;
 
             __DimensionX = new VirtualDimension(this, Axis.X);
             __DimensionX.VirtualBeginChanged += __Dimension_VirtualBeginChanged;
@@ -479,7 +487,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <exception cref="NotImplementedException"></exception>
         private void _MouseWheel(object sender, MouseEventArgs e)
         {
-            if (__IsInVirtualMode && __DimensionY.UseScrollbar)
+            if (_IsInVirtualMode && __DimensionY.UseScrollbar)
                 __ScrollBarY.DoMouseWheel(e);
         }
         /// <summary>
@@ -524,10 +532,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         private Size? __ContentSize;
         /// <summary>
-        /// Obsahuje true, pokud objekt reprezentuje virtuální prostor = má nastavenou velikost obsahu <see cref="__ContentSize"/> (kladné rozměry).
-        /// V tom případě se v procesu Resize v metodě <see cref="_AcceptControlSize"/> 
+        /// Obsahuje true, pokud objekt obsahuje platnou hodnotu <see cref="ContentSize"/> a mohl by být ve virtuálním modu.
         /// </summary>
-        private bool __IsInVirtualMode;
+        private bool __HasContentSize;
+        /// <summary>
+        /// Obsahuje true, pokud objekt reprezentuje virtuální prostor = má nastavenou velikost obsahu <see cref="ContentSize"/> (kladné rozměry)
+        /// a má povoleno používat Scrollbary <see cref="ScrollbarsEnabled"/>.
+        /// </summary>
+        private bool _IsInVirtualMode { get { return (__HasContentSize && __ScrollbarsEnabled); } }
 
         /// <summary>
         /// Potřebná velikost obsahu. 
@@ -542,15 +554,15 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         private Size __CurrentWindowSize;
         private void _SetContentSize(Size? contentSize)
         {
-            __IsInVirtualMode = (contentSize.HasValue && contentSize.Value.Width > 0 && contentSize.Value.Height > 0);
-            __ContentSize = (__IsInVirtualMode ? contentSize : null);
+            __HasContentSize = (contentSize.HasValue && contentSize.Value.Width > 0 && contentSize.Value.Height > 0);
+            __ContentSize = (__HasContentSize ? contentSize : null);
             _RefreshContentArea();
         }
         private void _RefreshContentArea()
         {
             _DetectScrollbars();
 
-            if (!__IsInVirtualMode) return;
+            if (!_IsInVirtualMode) return;
 
 
         }
@@ -571,7 +583,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             __DimensionX.UseScrollbar = false;
             __DimensionY.UseScrollbar = false;                                 // Z této hodnoty bude vycházet __DimensionX.NeedScrollbar
 
-            if (__IsInVirtualMode)
+            if (_IsInVirtualMode)
             {
                 __DimensionX.UseScrollbar = __DimensionX.NeedScrollbar;        // Osa X (Width) si určí jen svoji potřebu Scrollbaru, bez přítomnosti Scrollbaru Y
                 __DimensionY.UseScrollbar = __DimensionY.NeedScrollbar;        // Osa Y (Height) si určí ken svoji potřebu Scrollbaru, už se zohledněním Scrollbaru X
@@ -579,9 +591,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     __DimensionX.UseScrollbar = __DimensionX.NeedScrollbar;    // Osa X (Width) si určí potřebu Scrollbaru X, se zohledněním přítomnosti Scrollbaru Y
             }
         }
+        /// <summary>
+        /// Zajistí zobrazení Scrollbarů podle stavu a podle potřeby
+        /// </summary>
         private void _ShowScrollBars()
         {
-            if (__IsInVirtualMode)
+            if (_IsInVirtualMode)
             {
                 __DimensionX.ShowScrollBar();
                 __DimensionY.ShowScrollBar();
@@ -687,7 +702,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             /// Obsahuje true, pokud objekt reprezentuje virtuální prostor = má nastavenou velikost obsahu <see cref="__ContentSize"/> (kladné rozměry).
             /// V tom případě se v procesu Resize v metodě <see cref="_AcceptControlSize"/> 
             /// </summary>
-            private bool _IsInVirtualMode { get { return __Owner.__IsInVirtualMode; } }
+            private bool _IsInVirtualMode { get { return __Owner._IsInVirtualMode; } }
             /// <summary>
             /// Velikost datového obsahu = virtuální velikost
             /// </summary>

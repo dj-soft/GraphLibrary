@@ -288,6 +288,28 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 DataLayout dataLayout = new DataLayout()
                 {
                     Name = "Menší cihla",
+                    CellSize = new Size(160, 48),
+                    ContentBounds = new Rectangle(2, 2, 156, 44),
+                    BorderBounds = new Rectangle(4, 4, 40, 40),
+                    MouseHighlightSize = new Size(40, 24),
+                    BorderRound = 4,
+                    BorderWidth = 1f,
+                    ImageBounds = new Rectangle(8, 8, 24, 24),
+                    MainTitleBounds = new Rectangle(46, 14, 95, 20),
+                };
+                return dataLayout;
+            }
+        }
+        /// <summary>
+        /// Střední obdélník
+        /// </summary>
+        public static DataLayout SetMidiBrick
+        {
+            get
+            {
+                DataLayout dataLayout = new DataLayout()
+                {
+                    Name = "Menší cihla",
                     CellSize = new Size(160, 64),
                     ContentBounds = new Rectangle(2, 2, 156, 60),
                     BorderBounds = new Rectangle(4, 4, 56, 56),

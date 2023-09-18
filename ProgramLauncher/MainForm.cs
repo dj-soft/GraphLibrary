@@ -22,18 +22,6 @@ namespace DjSoft.Tools.ProgramLauncher
             InitializeStatusBar();
         }
 
-
-        private Data.DataItemBase CreateAppDataItem(int x, int y, string mainTitle, string imageName)
-        {
-            Data.DataItemApplication data = new Data.DataItemApplication()
-            {
-                Adress = new Point(x, y),
-                MainTitle = mainTitle,
-                ImageName = imageName
-            };
-            return data;
-        }
-
         #region ToolBar
         private void InitializeToolBar()
         {
@@ -57,7 +45,6 @@ namespace DjSoft.Tools.ProgramLauncher
 
         private System.Windows.Forms.ToolStripButton _ToolEditButton;
         #endregion
-
         #region GroupPanel
         private void InitializeGroupPanel()
         {
@@ -65,22 +52,33 @@ namespace DjSoft.Tools.ProgramLauncher
             __GroupsPanel.Dock = DockStyle.Fill;
 
             __GroupsPanel.DataLayout = Data.DataLayout.SetSmallBrick;
-            __GroupsPanel.DataItems.Add(CreateAppDataItem(0, 0, "PROJEKTY", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\camera-2.png"));
-            __GroupsPanel.DataItems.Add(CreateAppDataItem(0, 1, "DOKUMENTY", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\camera-2.png"));
-            __GroupsPanel.DataItems.Add(CreateAppDataItem(0, 2, "KLIENTI", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\camera-2.png"));
-            __GroupsPanel.DataItems.Add(CreateAppDataItem(0, 3, "RDP", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\camera-2.png"));
-            __GroupsPanel.DataItems.Add(CreateAppDataItem(0, 4, "GRAFIKA", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\camera-2.png"));
-            __GroupsPanel.DataItems.Add(CreateAppDataItem(0, 5, "WIKI", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\camera-2.png"));
-            __GroupsPanel.DataItems.Add(CreateAppDataItem(0, 6, "DEV EXPRESS", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\camera-2.png"));
-            __GroupsPanel.DataItems.Add(CreateAppDataItem(0, 7, "WIN HELP", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\camera-2.png"));
-            __GroupsPanel.DataItems.Add(CreateAppDataItem(0, 8, "LITERATURA", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\camera-2.png"));
-            __GroupsPanel.DataItems.Add(CreateAppDataItem(0, 9, "privátní", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\camera-2.png"));
-            __GroupsPanel.DataItems.Add(CreateAppDataItem(0, 10, "tajné", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\camera-2.png"));
+            __GroupsPanel.DataItems.Add(CreateGroupDataItem(0, 0, "PROJEKTY", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-blue.png"));
+            __GroupsPanel.DataItems.Add(CreateGroupDataItem(0, 1, "DOKUMENTY", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
+            __GroupsPanel.DataItems.Add(CreateGroupDataItem(0, 2, "KLIENTI", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
+            __GroupsPanel.DataItems.Add(CreateGroupDataItem(0, 3, "RDP", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
+            __GroupsPanel.DataItems.Add(CreateGroupDataItem(0, 4, "GRAFIKA", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
+            __GroupsPanel.DataItems.Add(CreateGroupDataItem(0, 5, "WIKI", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
+            __GroupsPanel.DataItems.Add(CreateGroupDataItem(0, 6, "DEV EXPRESS", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
+            __GroupsPanel.DataItems.Add(CreateGroupDataItem(0, 7, "WIN HELP", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
+            __GroupsPanel.DataItems.Add(CreateGroupDataItem(0, 8, "LITERATURA", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
+            __GroupsPanel.DataItems.Add(CreateGroupDataItem(0, 9, "privátní", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-red.png"));
+            __GroupsPanel.DataItems.Add(CreateGroupDataItem(0, 10, "tajné", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
             __GroupsPanel.DataItems[2].IsActive = true;
 
             __GroupsPanel.ContentSizeChanged += _AppGroupPanel_ContentSizeChanged;
             this._MainContainer.Panel1.Controls.Add(__GroupsPanel);
         }
+        private Data.DataItemBase CreateGroupDataItem(int x, int y, string mainTitle, string imageName)
+        {
+            Data.DataItemGroup data = new Data.DataItemGroup()
+            {
+                Adress = new Point(x, y),
+                MainTitle = mainTitle,
+                ImageName = imageName
+            };
+            return data;
+        }
+
         /// <summary>
         /// Akce volaná při události "Změna velikosti ContentSize" v panelu "Group"
         /// </summary>
@@ -101,12 +99,10 @@ namespace DjSoft.Tools.ProgramLauncher
             set { int width = value + __GroupsPanel.VerticalScrollBarWidth + 2; this._MainContainer.SplitterDistance = (width < 50 ? 50 : width); }
         }
         private DjSoft.Tools.ProgramLauncher.Components.InteractiveGraphicsControl __GroupsPanel;
-
         #endregion
         #region ApplicationPanel
         private void InitializeApplicationPanel()
         {
-
             __ApplicationsPanel = new Components.InteractiveGraphicsControl();
             __ApplicationsPanel.Dock = DockStyle.Fill;
             __ApplicationsPanel.DataLayout = Data.DataLayout.SetMediumBrick;
@@ -121,6 +117,16 @@ namespace DjSoft.Tools.ProgramLauncher
             __ApplicationsPanel.DataItemMouseLeave += _ApplicationsPanel_DataItemMouseLeave;
 
             this._MainContainer.Panel2.Controls.Add(__ApplicationsPanel);
+        }
+        private Data.DataItemBase CreateAppDataItem(int x, int y, string mainTitle, string imageName)
+        {
+            Data.DataItemApplication data = new Data.DataItemApplication()
+            {
+                Adress = new Point(x, y),
+                MainTitle = mainTitle,
+                ImageName = imageName
+            };
+            return data;
         }
 
 
@@ -140,7 +146,6 @@ namespace DjSoft.Tools.ProgramLauncher
 
         private DjSoft.Tools.ProgramLauncher.Components.InteractiveGraphicsControl __ApplicationsPanel;
         #endregion
-
         #region StatusBar
         private void InitializeStatusBar()
         {
