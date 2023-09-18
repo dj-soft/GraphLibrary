@@ -25,6 +25,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public Point Adress { get; set; }
 
         public virtual string MainTitle { get; set; }
+
+        /// <summary>
+        /// Příznak že prvek je aktivní. Pak používá pro své vlastní pozadí barvu <see cref="ColorSet.ActiveColor"/>
+        /// </summary>
+        public virtual bool IsActive { get; set; }
         public virtual string ImageName { get; set; }
         public virtual byte[] ImageContent { get; set; }
 
@@ -37,16 +42,24 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Obsahuje true když je umístěn na Parentu
         /// </summary>
         protected bool HasParent { get { return __Parent != null; } }
-        /// <summary>
-        /// Definice layoutu, převzatá z Parenta. Parent je <see cref="InteractiveGraphicsControl"/>, ten má svůj daný layout.
-        /// </summary>
-        protected virtual DataLayout DataLayout { get { return __Parent?.DataLayout; } }
         InteractiveGraphicsControl IChildOfParent<InteractiveGraphicsControl>.Parent { get { return __Parent; } set { __Parent = value; } }
         private InteractiveGraphicsControl __Parent;
         #endregion
         #region Údaje získané z Layoutu
         /// <summary>
-        /// Souřadnice ve virtuálním prostoru
+        /// Definice layoutu: buď je lokální (specifická), anebo převzatá z Parenta. 
+        /// Parent je <see cref="InteractiveGraphicsControl"/>, ten má svůj daný layout.
+        /// <para/>
+        /// Definici lze setovat, pak má přednost před definicí z Parenta. Lze setovat null.
+        /// </summary>
+        protected virtual DataLayout DataLayout 
+        {
+            get { return __DataLayout ?? __Parent?.DataLayout; } 
+            set { __DataLayout = value; }
+        }
+        private DataLayout __DataLayout;
+        /// <summary>
+        /// Souřadnice počátku prvku ve virtuálním prostoru
         /// </summary>
         public virtual Point VirtualLocation 
         {
@@ -58,6 +71,32 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             }
         }
         /// <summary>
+        /// Souřadnice celého prvku ve virtuálním prostoru (tj. velikost odpovídá <see cref="DataLayout.CellSize"/>
+        /// </summary>
+        public virtual Rectangle VirtualBounds
+        {
+            get
+            {
+                var adress = this.Adress;
+                var size = this.DataLayout.CellSize;
+                return new Rectangle(new Point(adress.X * size.Width, adress.Y * size.Height), size);
+            }
+        }
+        /// <summary>
+        /// Souřadnice vnitřního aktivního prostoru tohoto prvku ve virtuálním prostoru (tj. velikost odpovídá <see cref="DataLayout.CellSize"/>
+        /// </summary>
+        public virtual Rectangle VirtualContentBounds
+        {
+            get
+            {
+                var dataLayout = this.DataLayout;
+                var location = this.VirtualLocation;
+                var virtualContentBounds = dataLayout.ContentBounds.GetShiftedRectangle(location);
+                return virtualContentBounds;
+            }
+
+        }
+        /// <summary>
         /// Vnější velikost objektu.
         /// Tyto velikosti jednotlivých objektů na sebe těsně navazují.
         /// Objekt by do této velikosti měl zahrnout i mezery (okraje) mezi sousedními objekty.
@@ -67,9 +106,23 @@ namespace DjSoft.Tools.ProgramLauncher.Data
 
         #endregion
         #region Interaktivita
-
+        /// <summary>
+        /// Vrátí true, pokud tento prvek má svoji virtuální aktivní plochu na daném virtuálním bodu.
+        /// Virtuální = v souřadném systému datových prvků, nikoli pixely vizuálního controlu. Mezi tím existuje posunutí dané Scrollbary.
+        /// </summary>
+        /// <param name="virtualPoint"></param>
+        /// <returns></returns>
+        public bool IsActiveOnVirtualPoint(Point virtualPoint)
+        {
+            var virtualContentBounds = this.VirtualContentBounds;
+            return virtualContentBounds.Contains(virtualPoint);
+        }
         #endregion
         #region Kreslení
+        /// <summary>
+        /// Interaktivní stav. Nastavuje Control, prvek na něj jen reaguje.
+        /// </summary>
+        public virtual InteractiveState InteractiveState { get; set; }
         /// <summary>
         /// Zajistí vykreslení prvku
         /// </summary>
@@ -79,24 +132,33 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             if (!HasParent) return;
 
             var dataLayout = this.DataLayout;
-            var location = this.VirtualLocation;
-            var activeBounds = dataLayout.ContentBounds.GetShiftedRectangle(location);
-
-            var mousePoint = e.MouseState.LocationNative;
-            bool hasMouse = activeBounds.Contains(mousePoint);
-            InteractiveState state = (!hasMouse ? InteractiveState.Enabled : (e.MouseState.Buttons == MouseButtons.None ? InteractiveState.MouseOn : InteractiveState.MouseDown));
+            var paletteSet = App.CurrentPalette;
+            var virtualLocation = this.VirtualLocation;
+            var clientLocation = this.Parent.GetControlPoint(virtualLocation);
+            var activeBounds = dataLayout.ContentBounds.GetShiftedRectangle(clientLocation);
 
             e.Graphics.SetClip(activeBounds);
 
-            Color color;
+            InteractiveState interactiveState = this.InteractiveState;
 
-            // Podkreslení celé buňky v myšoaktivním stavu:
-            if ((state == InteractiveState.MouseOn || state == InteractiveState.MouseDown) && dataLayout.ContentColor != null)
+            // Pozadí aktivní buňky:
+            if (this.IsActive)
             {
-                e.Graphics.FountainFill(activeBounds, dataLayout.ContentColor.GetColor(state));
+                var color = paletteSet.ActiveContentColor.ActiveColor;
+                if (color.HasValue)
+                    e.Graphics.FillRectangle(activeBounds, color.Value);
             }
 
-            var borderBounds = dataLayout.BorderBounds.GetShiftedRectangle(location);
+            // Podkreslení celé buňky v myšoaktivním stavu:
+            if ((interactiveState == InteractiveState.MouseOn || interactiveState == InteractiveState.MouseDown) && paletteSet.ActiveContentColor != null)
+            {
+                var color = paletteSet.ActiveContentColor.GetColor(interactiveState);
+                if (color.HasValue)
+                    e.Graphics.FountainFill(activeBounds, color.Value);
+            }
+
+            // Rámeček a pozadí typu Border:
+            var borderBounds = dataLayout.BorderBounds.GetShiftedRectangle(clientLocation);
             if (borderBounds.HasContent())
             {
                 using (var borderPath = borderBounds.GetRoundedRectanglePath(dataLayout.BorderRound))
@@ -104,27 +166,32 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
                     // Výplň dáme pod border:
-                    color = dataLayout.ButtonBackColors.GetColor(state);
-                    e.Graphics.FountainFill(borderPath, color, state);
+                    var color = paletteSet.ButtonBackColors.GetColor(interactiveState);
+                    if (color.HasValue)
+                        e.Graphics.FountainFill(borderPath, color.Value, interactiveState);
 
                     // Linka Border:
                     if (dataLayout.BorderWidth > 0f)
-                        e.Graphics.DrawPath(App.GetPen(dataLayout.BorderLineColors, state, dataLayout.BorderWidth), borderPath);
+                    {
+                        var pen = App.GetPen(paletteSet.BorderLineColors, interactiveState, dataLayout.BorderWidth);
+                        if (pen != null) e.Graphics.DrawPath(pen, borderPath);
+                    }
                 }
             }
 
             // Zvýraznit pozici myši:
-            if (hasMouse && dataLayout.MouseHighlightSize.HasContent())
+            if (interactiveState == InteractiveState.MouseOn && dataLayout.MouseHighlightSize.HasContent() && paletteSet.ButtonBackColors.MouseHighlightColor.HasValue)
             {
                 using (GraphicsPath mousePath = new GraphicsPath())
                 {
+                    var mousePoint = e.MouseState.LocationControl;
                     var mouseBounds = mousePoint.GetRectangleFromCenter(dataLayout.MouseHighlightSize);
                     new Rectangle(mousePoint.X - 24, mousePoint.Y - 16, 48, 32);
                     mousePath.AddEllipse(mouseBounds);
                     using (System.Drawing.Drawing2D.PathGradientBrush pgb = new PathGradientBrush(mousePath))       // points
                     {
                         pgb.CenterPoint = mousePoint;
-                        pgb.CenterColor = dataLayout.ButtonBackColors.MouseHighlightColor;
+                        pgb.CenterColor = paletteSet.ButtonBackColors.MouseHighlightColor.Value;
                         pgb.SurroundColors = new Color[] { Color.Transparent, Color.Transparent, Color.Transparent, Color.Transparent };
                         e.Graphics.FillPath(pgb, mousePath);
                     }
@@ -132,21 +199,20 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             }
 
             // Vykreslit Image:
-            var image = DjSoft.Tools.ProgramLauncher.Properties.Resources.system_settings_2_48;
+            var image = App.GetImage(this.ImageName, this.ImageContent);
             if (dataLayout.ImageBounds.HasContent() && image != null)
             {
                 e.Graphics.ResetClip();
                 e.Graphics.SmoothingMode = SmoothingMode.None;
-                var imageBounds = dataLayout.ImageBounds.GetShiftedRectangle(location);
+                var imageBounds = dataLayout.ImageBounds.GetShiftedRectangle(clientLocation);
                 e.Graphics.DrawImage(image, imageBounds);
             }
 
             // Vypsat text:
             if (dataLayout.MainTitleBounds.HasContent() && !String.IsNullOrEmpty(this.MainTitle))
             {
-                var mainTitleBounds = dataLayout.MainTitleBounds.GetShiftedRectangle(location);
-                e.Graphics.DrawText(this.MainTitle, mainTitleBounds, dataLayout.MainTitleAppearance);
-
+                var mainTitleBounds = dataLayout.MainTitleBounds.GetShiftedRectangle(clientLocation);
+                e.Graphics.DrawText(this.MainTitle, mainTitleBounds, dataLayout.MainTitleAppearance, interactiveState);
             }
 
             e.Graphics.ResetClip();
@@ -155,9 +221,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
        
     }
 
-    #region class DataLayout
+    #region class DataLayout = Layout prvku: rozmístění, velikost, styl písma
     /// <summary>
-    /// Definice vzhledu
+    /// Layout prvku: rozmístění, velikost, styl písma
     /// </summary>
     public class DataLayout
     {
@@ -166,10 +232,6 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Jméno stylu
         /// </summary>
         public string Name { get; set; }
-        /// <summary>
-        /// Barva statického pozadí pod všemi prvky = celé okno
-        /// </summary>
-        public Color WorkspaceColor { get; set; }
         /// <summary>
         /// Velikost celé buňky
         /// </summary>
@@ -181,10 +243,6 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// V tomto prostoru se stínuje pozice myši barvou <see cref="ButtonBackColors"/> : <see cref="ColorSet.MouseHighlightColor"/>.
         /// </summary>
         public Rectangle ContentBounds { get; set; }
-        /// <summary>
-        /// Barvy aktivního prostoru. Nepoužívá se pro stav Enabled a Disabled, pouze MouseOn a MouseDown.
-        /// </summary>
-        public ColorSet ContentColor { get; set; }
         /// <summary>
         /// Souřadnice prostoru s okrajem a vykresleným pozadím.
         /// V tomto prostoru je použita barva <see cref="BorderLineColors"/> a <see cref="ButtonBackColors"/>, 
@@ -202,14 +260,6 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public float BorderWidth { get; set; }
         /// <summary>
-        /// Sada barev pro čáru Border, kreslí se když <see cref="BorderWidth"/> je kladné
-        /// </summary>
-        public ColorSet BorderLineColors { get; set; }
-        /// <summary>
-        /// Sada barev pro pozadí pod buttonem, ohraničený prostorem Border
-        /// </summary>
-        public ColorSet ButtonBackColors { get; set; }
-        /// <summary>
         /// Souřadnice prostoru pro ikonu
         /// </summary>
         public Rectangle ImageBounds { get; set; }
@@ -225,23 +275,38 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Vzhled hlavního textu
         /// </summary>
-        public TextAppearance MainTitleAppearance { get; set; }
+        public TextAppearance MainTitleAppearance { get { return __MainTitleAppearance ?? App.CurrentPalette.MainTitleAppearance; } set { __MainTitleAppearance = value; } } private TextAppearance __MainTitleAppearance;
         #endregion
         #region Statické konstruktory konkrétních stylů
         /// <summary>
-        /// STředně velký obdélník
+        /// Menší obdélník
+        /// </summary>
+        public static DataLayout SetSmallBrick
+        {
+            get
+            {
+                DataLayout dataLayout = new DataLayout()
+                {
+                    Name = "Menší cihla",
+                    CellSize = new Size(160, 64),
+                    ContentBounds = new Rectangle(2, 2, 156, 60),
+                    BorderBounds = new Rectangle(4, 4, 56, 56),
+                    MouseHighlightSize = new Size(40, 24),
+                    BorderRound = 4,
+                    BorderWidth = 1f,
+                    ImageBounds = new Rectangle(8, 8, 48, 48),
+                    MainTitleBounds = new Rectangle(62, 24, 95, 20),
+                };
+                return dataLayout;
+            }
+        }
+        /// <summary>
+        /// Středně velký obdélník
         /// </summary>
         public static DataLayout SetMediumBrick
         {
             get
             {
-                int a0 = 40;
-                int a1 = 80;
-                int a2 = 120;
-                int a3 = 160;
-                int a4 = 220;
-                int b1 = 180;
-                int b2 = 200;
                 DataLayout dataLayout = new DataLayout()
                 {
                     Name = "Střední cihla",
@@ -252,149 +317,12 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     BorderRound = 6,
                     BorderWidth = 1f,
                     ImageBounds = new Rectangle(22, 22, 48, 48),
-                    WorkspaceColor = Color.FromArgb(64, 68, 72),
-
-                    ContentColor = new ColorSet(
-                        Color.Empty,
-                        Color.Empty,
-                        Color.FromArgb(a0, 200, 200, 230),
-                        Color.FromArgb(a0, 180, 180, 210),
-                        Color.Empty),
-                    BorderLineColors = new ColorSet(
-                        Color.FromArgb(a1, b1, b1, b1),
-                        Color.FromArgb(a1, b1, b1, b1),
-                        Color.FromArgb(a1, b2, b2, b2),
-                        Color.FromArgb(a1, b2, b2, b2),
-                        Color.FromArgb(a1, b2, b2, b2)),
-                    ButtonBackColors = new ColorSet(
-                        Color.FromArgb(a1, 216, 216, 216),
-                        Color.FromArgb(a1, 120, 120, 120),
-                        Color.FromArgb(a2, 200, 200, 230),
-                        Color.FromArgb(a2, 180, 180, 210),
-                        Color.FromArgb(a3, 180, 180, 240)),
-
                     MainTitleBounds = new Rectangle(82, 18, 95, 20),
-                    MainTitleAppearance = new TextAppearance()
-                    {
-                        FontType = FontType.CaptionFont,
-                        SizeRatio = 1.2f,
-                        TextColors = new ColorSet(Color.Black)
-                    }
                 };
                 return dataLayout;
             }
         }
         #endregion
-    }
-    #endregion
-    #region class ColorSet
-    /// <summary>
-    /// Definice barev pro jednu oblast, liší se interaktivitou
-    /// </summary>
-    public class ColorSet
-    {
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        public ColorSet() { }
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="allColors"></param>
-        /// <param name="enabledColor"></param>
-        /// <param name="disabledColor"></param>
-        /// <param name="mouseOnColor"></param>
-        /// <param name="mouseDownColor"></param>
-        /// <param name="mouseHighlightColor"></param>
-        public ColorSet(Color allColors, Color? enabledColor = null, Color? disabledColor = null, Color? mouseOnColor = null, Color? mouseDownColor = null, Color? mouseHighlightColor = null)
-        {
-            this.EnabledColor = enabledColor ?? allColors;
-            this.DisabledColor = disabledColor ?? allColors;
-            this.MouseOnColor = mouseOnColor ?? allColors;
-            this.MouseDownColor = mouseDownColor ?? allColors;
-            this.MouseHighlightColor = mouseHighlightColor ?? allColors;
-        }
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="enabledColor"></param>
-        /// <param name="disabledColor"></param>
-        /// <param name="mouseOnColor"></param>
-        /// <param name="mouseDownColor"></param>
-        /// <param name="mouseHighlightColor"></param>
-        public ColorSet(Color enabledColor, Color disabledColor, Color mouseOnColor, Color mouseDownColor, Color mouseHighlightColor)
-        {
-            this.EnabledColor = enabledColor;
-            this.DisabledColor = disabledColor;
-            this.MouseOnColor = mouseOnColor;
-            this.MouseDownColor = mouseDownColor;
-            this.MouseHighlightColor = mouseHighlightColor;
-        }
-        /// <summary>
-        /// Barva ve stavu Enabled = bez myši, ale dostupné
-        /// </summary>
-        public Color EnabledColor { get; set; }
-        /// <summary>
-        /// Barva ve stavu Disabled = nedostupné
-        /// </summary>
-        public Color DisabledColor { get; set; }
-        /// <summary>
-        /// Barva ve stavu MouseOn = myš je na prvku
-        /// </summary>
-        public Color MouseOnColor { get; set; }
-        /// <summary>
-        /// Barva ve stavu MouseDown
-        /// </summary>
-        public Color MouseDownColor { get; set; }
-        /// <summary>
-        /// Barva zvýraznění prostoru myši
-        /// </summary>
-        public Color MouseHighlightColor { get; set; }
-        /// <summary>
-        /// Vrátí barvu pro daný stav
-        /// </summary>
-        /// <param name="state"></param>
-        /// <returns></returns>
-        public Color GetColor(InteractiveState state)
-        {
-            switch (state)
-            {
-                case InteractiveState.Enabled: return this.EnabledColor;
-                case InteractiveState.Disabled: return this.DisabledColor;
-                case InteractiveState.MouseOn: return this.MouseOnColor;
-                case InteractiveState.MouseDown: return this.MouseDownColor;
-            }
-            return this.EnabledColor;
-        }
-    }
-    #endregion
-    #region class TextAppearance
-    /// <summary>
-    /// Vzhled textu - font, styl, velikost
-    /// </summary>
-    public class TextAppearance
-    {
-        /// <summary>
-        /// Typ systémového fontu
-        /// </summary>
-        public FontType? FontType { get; set; }
-        /// <summary>
-        /// Explicitně daná velikost, není optimální ji defiovat explicitně
-        /// </summary>
-        public float? EmSize { get; set; }
-        /// <summary>
-        /// Poměr velikosti aktuálního fontu ku fontu defaultnímu daného typu
-        /// </summary>
-        public float? SizeRatio { get; set; }
-        /// <summary>
-        /// Styl fontu; default = dle systémového fontu
-        /// </summary>
-        public FontStyle? FontStyle { get; set; }
-        public ContentAlignment? TextAlignment { get; set; }
-        /// <summary>
-        /// Barvy písma
-        /// </summary>
-        public ColorSet TextColors { get; set; }
     }
     #endregion
     #region Enumy
@@ -403,7 +331,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
     /// </summary>
     public enum InteractiveState
     {
-        None = 0,
+        Default = 0,
         Disabled,
         Enabled,
         MouseOn,

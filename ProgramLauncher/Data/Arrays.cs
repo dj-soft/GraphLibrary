@@ -85,7 +85,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 item.Parent = null;
         }
         #endregion
-        #region Přidané funkce
+        #region Přidané funkce a události
         /// <summary>
         /// Přidá dodané prvky
         /// </summary>
@@ -94,6 +94,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             _SetParents(items);
             __List.AddRange(items);
+            _RunCollectionChanged();
         }
         /// <summary>
         /// Přidá dodané prvky
@@ -103,6 +104,35 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             _SetParents(items);
             __List.AddRange(items);
+            _RunCollectionChanged();
+        }
+        /// <summary>
+        /// Odebere všechny položky vyhovující dané podmínce
+        /// </summary>
+        /// <param name="predicate"></param>
+        public void RemoveAll(Predicate<TItem> predicate)
+        {
+            this.__List.RemoveAll(predicate);
+            _RunCollectionChanged();
+        }
+        /// <summary>
+        /// Obecná událost volaná poté, kdy se přidal nebo odebral prvek kolekce (Add/Remove).
+        /// Při změn na více prvcích (<see cref="AddRange(IEnumerable{TItem})"/>, <see cref="RemoveAll(Predicate{TItem})"/>) je volána po dokončení změn.
+        /// </summary>
+        public event EventHandler CollectionChanged;
+        /// <summary>
+        /// Metoda volaná poté, kdy se přidal nebo odebral prvek kolekce (Add/Remove).
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnCollectionChanged(EventArgs e) { }
+        /// <summary>
+        /// Zavolá metody <see cref="OnCollectionChanged(EventArgs)"/> a event <see cref="CollectionChanged"/>.
+        /// </summary>
+        private void _RunCollectionChanged()
+        {
+            var args = EventArgs.Empty;
+            OnCollectionChanged(args);
+            CollectionChanged?.Invoke(this, args);
         }
         #endregion
         #region Interfaces IList, IEnumerable
@@ -128,14 +158,17 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             _SetParent(item);
             __List.Add(item);
+            _RunCollectionChanged();
         }
         /// <summary>
         /// Smaže celou kolekci
         /// </summary>
         public void Clear()
         {
+            int count = __List.Count;
             __List.ForEach(i => _RemoveParent(i));
             __List.Clear();
+            if (count > 0) _RunCollectionChanged();
         }
         /// <summary>
         /// Obsahuje daný prvek?
@@ -173,6 +206,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             _SetParent(item);
             __List.Insert(index, item);
+            _RunCollectionChanged();
         }
         /// <summary>
         /// Odebere daný prvek
@@ -183,7 +217,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             bool isRemoved = __List.Remove(item);
             if (isRemoved)
+            {
                 _RemoveParent(item);
+                _RunCollectionChanged();
+            }
             return isRemoved;
         }
         /// <summary>
@@ -195,6 +232,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             var item = __List[index];
             __List.RemoveAt(index);
             _RemoveParent(item);
+            _RunCollectionChanged();
         }
         /// <summary>
         /// Vrátí enumerátor
@@ -214,9 +252,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         }
         #endregion
     }
-
+    /// <summary>
+    /// Předpis pro typ, který eviduje Parenta své instance
+    /// </summary>
+    /// <typeparam name="TParent"></typeparam>
     public interface IChildOfParent<TParent>
     {
+        /// <summary>
+        /// Parent instance
+        /// </summary>
         TParent Parent { get; set; }
     }
 }

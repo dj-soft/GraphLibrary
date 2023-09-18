@@ -62,6 +62,27 @@ namespace DjSoft.Tools.ProgramLauncher
             return gp;
         }
         /// <summary>
+        /// Vrátí new instanci <see cref="Point"/>, která vychází z this a je posunutá o danou pozici
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="offset"></param>
+        /// <returns></returns>
+        public static Point GetShiftedPoint(this Point bounds, Point offset)
+        {
+            return new Point(bounds.X + offset.X, bounds.Y + offset.Y);
+        }
+        /// <summary>
+        /// Vrátí new instanci <see cref="Point"/>, která vychází z this a je posunutá o danou pozici
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="offsetX"></param>
+        /// <param name="offsetY"></param>
+        /// <returns></returns>
+        public static Point GetShiftedPoint(this Point bounds, int offsetX, int offsetY)
+        {
+            return new Point(bounds.X + offsetX, bounds.Y + offsetY);
+        }
+        /// <summary>
         /// Vrátí new instanci <see cref="Rectangle"/>, která vychází z this a je posunutá o danou pozici
         /// </summary>
         /// <param name="bounds"></param>
@@ -82,7 +103,6 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             return new Rectangle(bounds.X + offsetX, bounds.Y + offsetY, bounds.Width, bounds.Height);
         }
-
         /// <summary>
         /// Vrátí new instanci <see cref="Rectangle"/>, která má daný střed a velikost
         /// </summary>
@@ -175,12 +195,12 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="bounds"></param>
         /// <param name="color"></param>
         /// <param name="interactiveState"></param>
-        public static void FountainFill(this Graphics graphics, Rectangle bounds, Color color, InteractiveState interactiveState = InteractiveState.None)
+        public static void FountainFill(this Graphics graphics, Rectangle bounds, Color color, InteractiveState interactiveState = InteractiveState.Default)
         {
             _GetFountainFillDirection(interactiveState, out float morph, out FountainDirection direction);
             FountainFill(graphics, bounds, color, morph, direction);
         }
-        public static void FountainFill(this Graphics graphics, GraphicsPath path, Color color, InteractiveState interactiveState = InteractiveState.None)
+        public static void FountainFill(this Graphics graphics, GraphicsPath path, Color color, InteractiveState interactiveState = InteractiveState.Default)
         {
             _GetFountainFillDirection(interactiveState, out float morph, out FountainDirection direction);
             FountainFill(graphics, path, color, morph, direction);
@@ -272,18 +292,30 @@ namespace DjSoft.Tools.ProgramLauncher
             ToRight,
             ToLeft
         }
-        
-        public static void DrawText(this Graphics graphics, string text, RectangleF bounds, TextAppearance textAppearance, InteractiveState interactiveState = InteractiveState.None)
+
+        /// <summary>
+        /// Do aktuální grafiky vyplní daný prostor danou barvou
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        public static void FillRectangle(this Graphics graphics, RectangleF bounds, Color color)
         {
-            var font = App.GetFont(textAppearance);
+            graphics.FillRectangle(App.GetBrush(color), bounds);
+        }
+        public static void DrawText(this Graphics graphics, string text, RectangleF bounds, TextAppearance textAppearance, InteractiveState interactiveState = InteractiveState.Default)
+        {
             var brush = App.GetBrush(textAppearance.TextColors, interactiveState);
+            if (brush is null) return;
+            var font = App.GetFont(textAppearance, interactiveState);
             graphics.SetForText();
             graphics.DrawString(text, font, brush, bounds);
         }
         public static void DrawText(this Graphics graphics, string text, RectangleF bounds, Color color, FontType? fontType = null, float? emSize = null, FontStyle? fontStyle = null)
         {
-            var font = App.GetFont(fontType, emSize, fontStyle);
             var brush = App.GetBrush(color);
+            if (brush is null) return;
+            var font = App.GetFont(fontType, emSize, fontStyle);
             graphics.SetForText();
             graphics.DrawString(text, font, brush, bounds);
         }
@@ -687,6 +719,20 @@ namespace DjSoft.Tools.ProgramLauncher
             {
                 foreach (var item in items)
                     action(item);
+            }
+        }
+        #endregion
+        #region Drobnosti
+        /// <summary>
+        /// Pokud je dodán objekt, provede na něm <see cref="IDisposable.Dispose()"/>. Chyby neřeší, topí je.
+        /// </summary>
+        /// <param name="disposable"></param>
+        public static void TryDispose(this IDisposable disposable)
+        {
+            if (disposable != null)
+            {
+                try { disposable.Dispose(); }
+                catch { }
             }
         }
         #endregion

@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 
 namespace DjSoft.Tools.ProgramLauncher.Components
 {
@@ -19,6 +20,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     public class GraphicsControl : ToolTipControl, IVirtualContainer, IDisposable
     {
         #region Konstruktor a Dispose
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public GraphicsControl()
         {
             this._InitGraphics();
@@ -128,7 +132,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             }
         }
         #endregion
-        #region ZÁLOŽNÍ GRAFIKA
+        #region Záložní grafika
         /// <summary>
         /// Záloha dat grafiky.
         /// Umožní uložit obraz grafiky do této zálohy (metodou BackupGraphicStore()) 
@@ -419,31 +423,94 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         */
 
         /// <summary>
+        /// Souřadnice počátku viditelného prostoru = souřadnice bodu ve virtuálním prostoru (prostordatového obsahu), který je zobrazen na vizuálním pixelu 0/0
+        /// </summary>
+        public Point VirtualBegin
+        {
+            get
+            {
+                var vx = __DimensionX.VirtualBegin;
+                var vy = __DimensionY.VirtualBegin;
+                return new Point(vx, vy);
+            }
+            set
+            {
+                __DimensionX.VirtualBegin = value.X;
+                __DimensionY.VirtualBegin = value.Y;
+            }
+        }
+
+        public Point GetVirtualPoint(Point controlPoint)
+        {
+            if (!__IsInVirtualMode) return controlPoint;
+            return controlPoint.GetShiftedPoint(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
+        }
+        public Point GetControlPoint(Point virtualPoint)
+        {
+            if (!__IsInVirtualMode) return virtualPoint;
+            return virtualPoint.GetShiftedPoint(-__DimensionX.VirtualBegin, -__DimensionY.VirtualBegin);
+        }
+        /// <summary>
         /// Inicializuje data pro Virtuální souřadnice
         /// </summary>
         private void _InitVirtualDimensions()
         {
+            this.MouseWheel += _MouseWheel;
+
             __DimensionX = new VirtualDimension(this, Axis.X);
-            
-            __ScrollBarX = new System.Windows.Forms.HScrollBar() { Visible = false };
+            __DimensionX.VirtualBeginChanged += __Dimension_VirtualBeginChanged;
+
+            __ScrollBarX = new ScrollBarX() { Visible = false };
             __ScrollBarX.ValueChanged += __DimensionX.ScrollBarValueChanged;
             this.Controls.Add(__ScrollBarX);
 
             __DimensionY = new VirtualDimension(this, Axis.Y);
+            __DimensionY.VirtualBeginChanged += __Dimension_VirtualBeginChanged;
 
-            __ScrollBarY = new System.Windows.Forms.VScrollBar() { Visible = false };
+            __ScrollBarY = new ScrollBarY() { Visible = false };
             __ScrollBarY.ValueChanged += __DimensionY.ScrollBarValueChanged;
             this.Controls.Add(__ScrollBarY);
         }
+        /// <summary>
+        /// Nativní událost MouseWheel na controlu - přeneseme ji do Scrollbaru Y, pokud to lze
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _MouseWheel(object sender, MouseEventArgs e)
+        {
+            if (__IsInVirtualMode && __DimensionY.UseScrollbar)
+                __ScrollBarY.DoMouseWheel(e);
+        }
+        /// <summary>
+        /// Po změně virtuálního počátku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void __Dimension_VirtualBeginChanged(object sender, EventArgs e)
+        {
+            this.Draw();
+        }
+
+        /// <summary>
+        /// Velikost zdejšího Scrollbaru, pokud bude zobrazen. Zde je tedy kladné číslo, i když scrollbar aktuálně není zobrazen.
+        /// Pro dimenzi Y (svislá, řeší Y a Height) je zde Šířka svislého Scrollbaru.
+        /// </summary>
+        public int VerticalScrollBarWidth { get { return __DimensionY.ScrollbarSize; } }
+        /// <summary>
+        /// Velikost zdejšího Scrollbaru, pokud bude zobrazen. Zde je tedy kladné číslo, i když scrollbar aktuálně není zobrazen.
+        /// Pro dimenzi X (vodorovná, řeší X a Width) je zde Výška vodorovného Scrollbaru.
+        /// </summary>
+        public int HorizontalScrollBarHeight { get { return __DimensionX.ScrollbarSize; } }
 
         /// <summary>
         /// Fyzický Scrollbar vodorovný pro posun na ose X
         /// </summary>
-        private System.Windows.Forms.HScrollBar __ScrollBarX;
+        private ScrollBarX __ScrollBarX;
         /// <summary>
         /// Fyzický Scrollbar svislý pro posun na ose Y
         /// </summary>
-        private System.Windows.Forms.VScrollBar __ScrollBarY;
+        private ScrollBarY __ScrollBarY;
         /// <summary>
         /// Virtuální souřadnice ve směru osy X (Width)
         /// </summary>
@@ -468,7 +535,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Lze setovat hodnotu = velikost zobrazených dat, pak se aktivuje virtuální režim se zobrazením výřezu.
         /// Při změně hodnoty se nenuluje souřadnice počátku <see cref="CurrentWindow"/>, změna velikosti obsahu jej tedy nutně nemusí přesunout na počátek.
         /// </summary>
-        public Size? ContentSize { get { return __ContentSize; } set { _SetContentSize(value); } }
+        public virtual Size? ContentSize { get { return __ContentSize; } set { _SetContentSize(value); } }
 
         public Rectangle CurrentWindow { get { return this.ClientArea; } set { } }
         private Point? __CurrentWindowBegin;
@@ -611,6 +678,17 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 __ScrollbarSmallChange = (int)(((float)SystemInformation.MouseWheelScrollLines) * App.GetSystemFont(App.FontType.DefaultFont).GetHeight());
             }
             /// <summary>
+            /// Velikost zdejšího Scrollbaru, pokud bude zobrazen. Zde je tedy kladné číslo, i když scrollbar aktuálně není zobrazen.
+            /// Pro dimenzi X (vodorovná, řeší X a Width) je zde Výška vodorovného Scrollbaru.
+            /// Pro dimenzi Y (svislá, řeší Y a Height) je zde Šířka svislého Scrollbaru.
+            /// </summary>
+            public int ScrollbarSize { get { return __ScrollbarSize; } }
+            /// <summary>
+            /// Obsahuje true, pokud objekt reprezentuje virtuální prostor = má nastavenou velikost obsahu <see cref="__ContentSize"/> (kladné rozměry).
+            /// V tom případě se v procesu Resize v metodě <see cref="_AcceptControlSize"/> 
+            /// </summary>
+            private bool _IsInVirtualMode { get { return __Owner.__IsInVirtualMode; } }
+            /// <summary>
             /// Velikost datového obsahu = virtuální velikost
             /// </summary>
             private int? _ContentSize { get { return _GetValue(() => __Owner.__ContentSize?.Width, () => __Owner.__ContentSize?.Height); } }
@@ -631,7 +709,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             /// </summary>
             private int _OtherScrollbarSize { get { return _GetValue(() => __Owner.__DimensionY._CurrentScrollbarSize, () => __Owner.__DimensionX._CurrentScrollbarSize); } }
             #endregion
-            #region Aktivace a Eventhandler Scrollbaru, jeho Value = počátek virtuálního prostoru
+            #region Aktivace a Eventhandler Scrollbaru, jeho VirtualBegin = počátek virtuálního prostoru
             /// <summary>
             /// Zobrazí Scrollbar na správném místě a se správnými hodnotami
             /// </summary>
@@ -673,10 +751,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             public void ScrollBarValueChanged(object sender, EventArgs e)
             {
                 if (__SuppressScrollBarValueChange) return;
+                if (!_IsInVirtualMode) return;
 
-
+                _SetVirtualBegin(_ScrollBar.Value);
             }
-
             /// <summary>
             /// Control Scrollbar pro tuto osu
             /// </summary>
@@ -706,14 +784,21 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 }
                 return Rectangle.Empty;
             }
-
+            /// <summary>
+            /// Určí a vrátí hodnoty pro fyzický Scrollbar
+            /// </summary>
+            /// <param name="minimum"></param>
+            /// <param name="maximum"></param>
+            /// <param name="value"></param>
+            /// <param name="largeChange"></param>
+            /// <param name="smallChange"></param>
             private void _GetScrollbarValues(out int minimum, out int maximum, out int value, out int largeChange, out int smallChange)
             {
                 var dataSize = _DataSize;
 
                 minimum = 0;
                 maximum = _ContentSize ?? dataSize;
-                value = 0;
+                value = VirtualBegin;
                 largeChange = dataSize;
                 smallChange = __ScrollbarSmallChange;
             }
@@ -721,6 +806,83 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             /// Aktuálně je potlačený event <see cref="ScrollBarValueChanged"/> = změny provádíme z kódu a nechceme se v nich zacyklit
             /// </summary>
             private bool __SuppressScrollBarValueChange;
+            /// <summary>
+            /// Hodnota Virtuálního počátku.
+            /// Vyjadřuje souřadnici Virtuálního prostoru, která je zobrazena na viditelném pixelu 0 = první viditelný pixel virtuálního prostoru.
+            /// <para/>
+            /// Pokud je například <see cref="VirtualBegin"/> = 50; pak to značí, že ScrollBar mírně odroloval od začátku, a prvních 50 pixelů virtuálního (tj. celkového) obsahu je skryto vlevo/nahoře.
+            /// </summary>
+            public int VirtualBegin
+            {
+                get { return _GetVirtualBegin(); }
+                set { _SetVirtualBegin(value); }
+            }
+            /// <summary>
+            /// Událost volaná po jakékoli změně počátku virtuálního prostoru
+            /// </summary>
+            public event EventHandler VirtualBeginChanged;
+            /// <summary>
+            /// Metoda volaná po jakékoli změně počátku virtuálního prostoru
+            /// </summary>
+            /// <param name="args"></param>
+            protected virtual void OnVirtualBeginChanged(EventArgs args) { }
+            /// <summary>
+            /// Vyvolá metodu <see cref="OnVirtualBeginChanged(EventArgs)"/> a event <see cref="VirtualBeginChanged"/>
+            /// </summary>
+            private void _RunVirtualBeginChanged()
+            {
+                EventArgs args = EventArgs.Empty;
+                OnVirtualBeginChanged(args);
+                VirtualBeginChanged?.Invoke(this, args);
+            }
+
+            /// <summary>
+            /// Vrátí validní hodnotu počátku virtuálního prostoru
+            /// </summary>
+            /// <returns></returns>
+            private int _GetVirtualBegin()
+            {
+                if (!UseScrollbar) return 0;
+
+                int virtualBegin = _GetValidVirtualBegin(__VirtualBegin);
+                if (virtualBegin != __VirtualBegin) __VirtualBegin = virtualBegin;
+                return virtualBegin;
+            }
+            /// <summary>
+            /// Uloží danou hodnotu po validaci jako hodnotu počátku virtuálního prostoru
+            /// </summary>
+            /// <param name="virtualBegin"></param>
+            private void _SetVirtualBegin(int virtualBegin)
+            {
+                if (!_IsInVirtualMode) return;
+                if (!UseScrollbar) return;
+
+                var validVirtualBegin = _GetValidVirtualBegin(virtualBegin);
+                if (validVirtualBegin != __VirtualBegin)
+                {
+                    __VirtualBegin = validVirtualBegin;
+                    _RunVirtualBeginChanged();
+                }
+            }
+            /// <summary>
+            /// Vrátí hodnotu <paramref name="virtualBegin"/> zarovnanou do platných mezí tak, aby nebyla záporná a aby nepřesáhla konec
+            /// </summary>
+            /// <param name="virtualBegin"></param>
+            /// <returns></returns>
+            private int _GetValidVirtualBegin(int virtualBegin)
+            {
+                int clientSize = _ClientSize;
+                int virtualEnd = virtualBegin + clientSize + 1;
+                int? contentSize = _ContentSize;
+                if (contentSize.HasValue && virtualEnd > contentSize.Value)
+                {
+                    virtualEnd = contentSize.Value;
+                    virtualBegin = virtualEnd - clientSize;
+                }
+                if (virtualBegin < 0) virtualBegin = 0;
+                return virtualBegin;
+            }
+            private int __VirtualBegin;
             #endregion
         }
         /// <summary>
@@ -1082,30 +1244,42 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <returns></returns>
         public static MouseState CreateCurrent(Control control)
         {
+            DateTime time = DateTime.Now;
             Point locationAbsolute = Control.MousePosition;
             MouseButtons buttons = Control.MouseButtons;
             Point locationNative = control.PointToClient(locationAbsolute);
-            return new MouseState(locationNative, locationAbsolute, buttons);
+            bool isOnControl = control.ClientRectangle.Contains(locationNative);
+            return new MouseState(time, locationNative, locationAbsolute, buttons, isOnControl);
         }
         /// <summary>
         /// Vrátí stav myši pro dané hodnoty
         /// </summary>
+        /// <param name="time"></param>
         /// <param name="locationNative">Souřadnice myši v koordinátech controlu (nativní prostor)</param>
         /// <param name="locationAbsolute"></param>
         /// <param name="buttons"></param>
-        public MouseState(Point locationNative, Point locationAbsolute, MouseButtons buttons)
+        /// <param name="isOnControl"></param>
+        public MouseState(DateTime time, Point locationNative, Point locationAbsolute, MouseButtons buttons, bool isOnControl)
         {
+            __Time = time;
             __LocationNative = locationNative;
             __LocationAbsolute = locationAbsolute;
             __Buttons = buttons;
+            __IsOnControl = isOnControl;
         }
+        private DateTime __Time;
         private Point __LocationNative;
         private Point __LocationAbsolute;
         private MouseButtons __Buttons;
+        private bool __IsOnControl;
+        /// <summary>
+        /// Čas akce myši; důležité pro případný doubleclick
+        /// </summary>
+        public DateTime Time { get { return __Time; } }
         /// <summary>
         /// Souřadnice myši v koordinátech controlu (nativní prostor)
         /// </summary>
-        public Point LocationNative { get { return __LocationNative; } }
+        public Point LocationControl { get { return __LocationNative; } }
         /// <summary>
         /// Souřadnice myši v koordinátech absolutních (Screen)
         /// </summary>
@@ -1114,6 +1288,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Stav buttonů myši
         /// </summary>
         public MouseButtons Buttons { get { return __Buttons; } }
+        /// <summary>
+        /// Ukazatel myši se nachází nad controlem?
+        /// </summary>
+        public bool IsOnControl { get { return __IsOnControl; } }
     }
     #endregion
     #region interface IVirtualContainer
@@ -1167,6 +1345,36 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         protected bool ToolTipInitialized = false;
         #endregion
+    }
+    #endregion
+    #region ScrollBars
+    /// <summary>
+    /// Vodorovný ScrollBar
+    /// </summary>
+    public class ScrollBarX : HScrollBar
+    {
+        /// <summary>
+        /// Zajistí provedení akce MouseWheel
+        /// </summary>
+        /// <param name="e"></param>
+        public void DoMouseWheel(MouseEventArgs e)
+        {
+            this.OnMouseWheel(e);
+        }
+    }
+    /// <summary>
+    /// Svislý ScrollBar
+    /// </summary>
+    public class ScrollBarY : VScrollBar
+    {
+        /// <summary>
+        /// Zajistí provedení akce MouseWheel
+        /// </summary>
+        /// <param name="e"></param>
+        public void DoMouseWheel(MouseEventArgs e)
+        {
+            this.OnMouseWheel(e);
+        }
     }
     #endregion
 }

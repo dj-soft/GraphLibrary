@@ -57,6 +57,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             _InitGraphics();
             _InitFonts();
+            _InitImages();
             // Co přidáš sem, přidej i do _Exit() !!!
         }
         #endregion
@@ -81,6 +82,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             _DisposeGraphics();
             _DisposeFonts();
+            _DisposeImages();
         }
         private string[] __Arguments;
         #endregion
@@ -88,66 +90,83 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <summary>
         /// Vrátí připravené fungující pero správně namočené do inkoustu dané barvy, šířka pera 1.
         /// Nesmí se Disposovat, jde o obecně používané půjčovací pero.
+        /// <para/>
+        /// Pozor, může vrátit null, pokud <paramref name="color"/> je null
         /// </summary>
         /// <param name="color"></param>
         /// <returns></returns>
-        public static Pen GetPen(Color color)
+        public static Pen GetPen(Color? color)
         {
+            if (!color.HasValue) return null;
             var pen = Current.__Pen;
-            pen.Color = color;
+            pen.Color = color.Value;
             pen.Width = 1f;
             return pen;
         }
         /// <summary>
         /// Vrátí připravené fungující pero dané šířky a správně namočené do inkoustu dané barvy.
         /// Nesmí se Disposovat, jde o obecně používané půjčovací pero.
+        /// <para/>
+        /// Pozor, může vrátit null, pokud <paramref name="color"/> je null
         /// </summary>
         /// <param name="color"></param>
         /// <returns></returns>
-        public static Pen GetPen(Color color, float width)
+        public static Pen GetPen(Color? color, float width)
         {
+            if (!color.HasValue) return null;
             var pen = Current.__Pen;
-            pen.Color = color;
+            pen.Color = color.Value;
             pen.Width = width;
             return pen;
         }
         /// <summary>
         /// Vrátí připravený fungující štětec namočený do plechovky dané barvy.
         /// Nesmí se Disposovat, jde o obecně používaný půjčovací štětec.
+        /// <para/>
+        /// Pozor, může vrátit null, pokud <paramref name="colorSet"/> je null nebo vrátí null pro daný stav = pak se nemá nic kreslit.
         /// </summary>
         /// <param name="colorSet"></param>
         /// <param name="interactiveState"></param>
         /// <returns></returns>
-        public static Pen GetPen(ColorSet colorSet, InteractiveState interactiveState = InteractiveState.None, float? width = null)
+        public static Pen GetPen(ColorSet colorSet, InteractiveState interactiveState = InteractiveState.Default, float? width = null)
         {
+            var color = colorSet?.GetColor(interactiveState);
+            if (color == null) return null;
             var pen = Current.__Pen;
-            pen.Color = colorSet.GetColor(interactiveState);
+            pen.Color = color.Value;
             pen.Width = width ?? 1f;
             return pen;
         }
         /// <summary>
         /// Vrátí připravený fungující štětec namočený do plechovky dané barvy.
         /// Nesmí se Disposovat, jde o obecně používaný půjčovací štětec.
+        /// <para/>
+        /// Pozor, může vrátit null, pokud <paramref name="color"/> je null
         /// </summary>
         /// <param name="color"></param>
         /// <returns></returns>
-        public static Brush GetBrush(Color color)
+        public static Brush GetBrush(Color? color)
         {
+            if (!color.HasValue) return null;
             var brush = Current.__Brush;
-            brush.Color = color;
+            brush.Color = color.Value;
             return brush;
         }
         /// <summary>
         /// Vrátí připravený fungující štětec namočený do plechovky dané barvy.
         /// Nesmí se Disposovat, jde o obecně používaný půjčovací štětec.
+        /// <para/>
+        /// Pozor, může vrátit null, pokud <paramref name="colorSet"/> je null nebo vrátí null pro daný stav = pak se nemá nic kreslit.
         /// </summary>
         /// <param name="colorSet"></param>
         /// <param name="interactiveState"></param>
         /// <returns></returns>
-        public static Brush GetBrush(ColorSet colorSet, InteractiveState interactiveState = InteractiveState.None)
+        public static Brush GetBrush(ColorSet colorSet, InteractiveState interactiveState = InteractiveState.Default)
         {
+            var color = colorSet?.GetColor(interactiveState);
+            if (color == null) return null;
             var brush = Current.__Brush;
-            brush.Color = colorSet.GetColor(interactiveState);
+            brush.Color = color.Value;
             return brush;
         }
         /// <summary>
@@ -163,10 +182,10 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private void _DisposeGraphics()
         {
-            __Pen?.Dispose();
+            __Pen.TryDispose();
             __Pen = null;
 
-            __Brush?.Dispose();
+            __Brush.TryDispose();
             __Brush = null;
         }
         private Pen __Pen;
@@ -186,16 +205,21 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         /// <summary>
         /// Najde a vrátí Font pro dané požadavky. Vrácený Font se nesmí Dispose, protože je opakovaně používán!
+        /// Pokud je dodán parametr <paramref name="interactiveState"/>, vyhledá i odpovídající variantu stylu.
         /// </summary>
         /// <param name="textAppearance"></param>
+        /// <param name="interactiveState"></param>
         /// <returns></returns>
-        public static Font GetFont(TextAppearance textAppearance)
+        public static Font GetFont(TextAppearance textAppearance, InteractiveState interactiveState = InteractiveState.Default)
         {
             FontType fontType = textAppearance.FontType ?? FontType.DefaultFont;
-            float emSize = textAppearance.EmSize ?? GetSystemFont(fontType).Size;
-            if (textAppearance.SizeRatio.HasValue) emSize = emSize * textAppearance.SizeRatio.Value;
+            float emSize = textAppearance.TextStyles[interactiveState].EmSize ?? textAppearance.TextStyles[InteractiveState.Default].EmSize ?? GetSystemFont(fontType).Size;
+            var sizeRatio = textAppearance.TextStyles[interactiveState].SizeRatio ?? textAppearance.TextStyles[InteractiveState.Default].SizeRatio;
+            var fontStyle = textAppearance.TextStyles[interactiveState].FontStyle ?? textAppearance.TextStyles[InteractiveState.Default].FontStyle;
 
-            return Current._GetFont(fontType, emSize, textAppearance.FontStyle);
+            if (sizeRatio.HasValue) emSize = emSize * sizeRatio.Value;
+
+            return Current._GetFont(fontType, emSize, fontStyle);
         }
         /// <summary>
         /// Najde nebo vytvoří a vrátí požadovaný font
@@ -281,10 +305,127 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private void _DisposeFonts()
         {
-            __Fonts.Values.ForEachExec(f => f?.Dispose());
+            __Fonts.Values.ForEachExec(f => f.TryDispose());
             __Fonts = null;
         }
         private Dictionary<string, Font> __Fonts;
+        #endregion
+        #region ImageLibrary
+        /// <summary>
+        /// Najde a vrátí Image načtený z dodaného souboru.
+        /// Image se nesmí měnit ani Disposovat, používá se opakovaně.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public static Image GetImage(string fileName)
+        {
+            return Current._GetImage(fileName, null);
+        }
+        /// <summary>
+        /// Najde a vrátí Image načtený z dodaného obsahu.
+        /// Image se nesmí měnit ani Disposovat, používá se opakovaně.
+        /// <para/>
+        /// Dodaný <paramref name="imageName"/> nesmí být prázdný - používá se jako jednoznačný klíč pro Image, pod ním je uložen v interní paměti aplikace!
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        public static Image GetImage(string imageName, byte[] content)
+        {
+            return Current._GetImage(imageName, content);
+        }
+        /// <summary>
+        /// Najde / vytvoří a vrátí Image z dané definice.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        private Image _GetImage(string fileName, byte[] content)
+        {
+            if (String.IsNullOrEmpty(fileName)) return null;
+            string type = (content is null ? "File" : "Data");
+            string key = _GetImageKey(type, fileName);
+            if (!__Images.TryGetValue(key, out Image image))
+            {
+                try
+                {
+                    if (content != null)
+                    {   // Z obsahu:
+                        using (var stream = new System.IO.MemoryStream(content))
+                            image = Image.FromStream(stream);
+                    }
+                    else if (System.IO.File.Exists(fileName))
+                    {   // Ze souboru:
+                        image = Image.FromFile(fileName);
+                    }
+                }
+                catch (Exception) { image = null; }
+                __Images.Add(key, image);
+            }
+            return image;
+        }
+        /// <summary>
+        /// Vrátí klíč pro Image
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        private string _GetImageKey(string type, string name)
+        {
+            name = name.Trim().ToLower().Replace("\\", "/");
+            return $"{type}>{name}";
+        }
+        /// <summary>
+        /// Inicializace Images
+        /// </summary>
+        private void _InitImages()
+        {
+            __Images = new Dictionary<string, Image>();
+        }
+        /// <summary>
+        /// Dispose Images
+        /// </summary>
+        private void _DisposeImages()
+        {
+            __Images.Values.ForEachExec(f => f.TryDispose());
+            __Images = null;
+        }
+        private Dictionary<string, Image> __Images;
+        #endregion
+        #region Skin
+        /// <summary>
+        /// Aktuální skin = barevná paleta; lze změnit, po změně dojde eventu <see cref="CurrentPaletteChanged"/>
+        /// </summary>
+        public static AppearanceSet CurrentPalette
+        {
+            get { return Current._CurrentPalette; }
+            set { Current._CurrentPalette = value; }
+        }
+        private AppearanceSet _CurrentPalette
+        {
+            get 
+            {
+                if (__CurrentPalette is null)
+                    __CurrentPalette = AppearanceSet.Default;
+                return __CurrentPalette;
+            }
+            set 
+            {
+                if (value is null) return;
+                bool isChange = (__CurrentPalette is null || !Object.ReferenceEquals(value, __CurrentPalette));
+                __CurrentPalette = value;
+                if (isChange) __CurrentPaletteChanged?.Invoke(null, EventArgs.Empty);
+            }
+        }
+        private AppearanceSet __CurrentPalette;
+        /// <summary>
+        /// Událost volaná po změně skinu
+        /// </summary>
+        public static event EventHandler CurrentPaletteChanged { add { Current.__CurrentPaletteChanged += value; } remove { Current.__CurrentPaletteChanged -= value; } }
+        /// <summary>
+        /// Událost volaná po změně skinu
+        /// </summary>
+        private event EventHandler __CurrentPaletteChanged;
         #endregion
 
 
