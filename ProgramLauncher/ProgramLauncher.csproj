@@ -56,6 +56,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Data\Extensions.cs" />
+    <Compile Include="Data\Skins.cs" />
     <Compile Include="Data\XmlPersist.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
@@ -108,6 +109,24 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Pics\48px\system-settings-2-48.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\16px\bullet-black-16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\16px\bullet-blue-16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\16px\bullet-green-16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\16px\bullet-pink-16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\16px\bullet-purple-16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\16px\bullet-yellow-16.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
