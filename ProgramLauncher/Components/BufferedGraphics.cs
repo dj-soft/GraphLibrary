@@ -456,6 +456,19 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             if (!_IsInVirtualMode) return virtualPoint;
             return virtualPoint.GetShiftedPoint(-__DimensionX.VirtualBegin, -__DimensionY.VirtualBegin);
         }
+        public Rectangle GetVirtualBounds(Rectangle controlBounds)
+        {
+            if (!_IsInVirtualMode) return controlBounds;
+            return controlBounds.GetShiftedRectangle(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
+        }
+        public Rectangle GetControlBounds(Rectangle virtualBounds)
+        {
+            if (!_IsInVirtualMode) return virtualBounds;
+            return virtualBounds.GetShiftedRectangle(-__DimensionX.VirtualBegin, -__DimensionY.VirtualBegin);
+        }
+
+
+        
         /// <summary>
         /// Inicializuje data pro Virtuální souřadnice
         /// </summary>

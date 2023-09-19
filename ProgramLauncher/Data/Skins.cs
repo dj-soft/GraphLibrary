@@ -21,6 +21,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public Color WorkspaceColor { get { return __WorkspaceColor; } set { if (!__IsReadOnly) __WorkspaceColor = value; } } private Color __WorkspaceColor;
         /// <summary>
+        /// Barvy pozadí celé buňky. Pokud obsahuje null, nekreslí se.
+        /// </summary>
+        public ColorSet CellBackColor { get { return __CellBackColor; } set { if (!__IsReadOnly) __CellBackColor = value; } } private ColorSet __CellBackColor;
+        /// <summary>
         /// Barvy aktivního prostoru. Nepoužívá se pro stav Enabled a Disabled, pouze MouseOn a MouseDown.
         /// </summary>
         public ColorSet ActiveContentColor { get { return __ActiveContentColor; } set { if (!__IsReadOnly) __ActiveContentColor = value; } } private ColorSet __ActiveContentColor;
@@ -183,7 +187,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 if (__DarkBlue is null)
                 {
                     var paletteSet = new AppearanceSet();
-                    paletteSet.__WorkspaceColor = Color.FromArgb(64, 68, 72);
+                    paletteSet.__WorkspaceColor = Color.FromArgb(16, 22, 40);
 
                     int a0 = 40;
                     int a1 = 80;
@@ -462,7 +466,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             {
                 var textColors = __TextColors;
                 if (textColors is null)
-                    textColors = App.CurrentPalette.GetColorSet(this.TextColorType);
+                    textColors = App.CurrentAppearance.GetColorSet(this.TextColorType);
                 return textColors;
             }
             set

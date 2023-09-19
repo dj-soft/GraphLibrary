@@ -23,7 +23,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             __DataItems = new ChildItems<InteractiveGraphicsControl, DataItemBase>(this);
             __DataItems.CollectionChanged += __DataItems_CollectionChanged;
             _InitInteractivity();
-            App.CurrentPaletteChanged += _CurrentPaletteChanged;
+            App.CurrentAppearanceChanged += _CurrentPaletteChanged;
         }
         /// <summary>
         /// Dispose
@@ -31,7 +31,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
-            App.CurrentPaletteChanged -= _CurrentPaletteChanged;
+            App.CurrentAppearanceChanged -= _CurrentPaletteChanged;
             base.Dispose(disposing);
         }
         /// <summary>
@@ -95,7 +95,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     dataItem.Paint(pdea);
             }
         }
-        public override Color BackColor { get { return App.CurrentPalette.WorkspaceColor; } set { } }
+        public override Color BackColor { get { return App.CurrentAppearance.WorkspaceColor; } set { } }
         #endregion
         #region Interaktivita
         #region Interaktivita nativní = eventy controlu

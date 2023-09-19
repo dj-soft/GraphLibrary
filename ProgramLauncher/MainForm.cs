@@ -25,7 +25,7 @@ namespace DjSoft.Tools.ProgramLauncher
         #region ToolBar
         private void InitializeToolBar()
         {
-            App.CurrentPalette = AppearanceSet.DarkBlue;
+            App.CurrentAppearance = AppearanceSet.DarkBlue;
 
             this._ToolEditButton = new ToolStripButton() { DisplayStyle = ToolStripItemDisplayStyle.Image, Image = Properties.Resources.edit_6_48, Size = new Size(52, 52), ToolTipText = "Upravit" };
             this._ToolEditButton.Click += _ToolEditButton_Click;
@@ -109,22 +109,26 @@ namespace DjSoft.Tools.ProgramLauncher
             __ApplicationsPanel.DataItems.Add(CreateAppDataItem(0, 0, "Windows", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\wine.png"));
             __ApplicationsPanel.DataItems.Add(CreateAppDataItem(1, 0, "Hotline", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\accessories-clock-3.png "));
             __ApplicationsPanel.DataItems.Add(CreateAppDataItem(2, 0, "Sirius", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\gmail-notify.png"));
-            __ApplicationsPanel.DataItems.Add(CreateAppDataItem(0, 1, "Notebook", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\gtk-gnutella-3.png"));
-            __ApplicationsPanel.DataItems.Add(CreateAppDataItem(1, 1, "Music", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\flsudoku.png"));
+            __ApplicationsPanel.DataItems.Add(CreateAppDataItem(0, 1, "Skupina klientů", null, Data.DataLayout.SetTitle));
+            __ApplicationsPanel.DataItems.Add(CreateAppDataItem(0, 2, "Notebook", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\gtk-gnutella-3.png"));
+            __ApplicationsPanel.DataItems.Add(CreateAppDataItem(1, 2, "Music", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\flsudoku.png"));
             __ApplicationsPanel.DataItems.Add(CreateAppDataItem(2, 3, "Nastavení", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\abiword.png"));
+
+
             __ApplicationsPanel.DataItemClick += _ApplicationsPanel_DataItemClick;
             __ApplicationsPanel.DataItemMouseEnter += _ApplicationsPanel_DataItemMouseEnter;
             __ApplicationsPanel.DataItemMouseLeave += _ApplicationsPanel_DataItemMouseLeave;
 
             this._MainContainer.Panel2.Controls.Add(__ApplicationsPanel);
         }
-        private Data.DataItemBase CreateAppDataItem(int x, int y, string mainTitle, string imageName)
+        private Data.DataItemBase CreateAppDataItem(int x, int y, string mainTitle, string imageName, Data.DataLayout dataLayout = null)
         {
             Data.DataItemApplication data = new Data.DataItemApplication()
             {
                 Adress = new Point(x, y),
                 MainTitle = mainTitle,
-                ImageName = imageName
+                ImageName = imageName,
+                DataLayout = dataLayout
             };
             return data;
         }

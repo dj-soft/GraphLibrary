@@ -392,40 +392,40 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         private Dictionary<string, Image> __Images;
         #endregion
-        #region Skin
+        #region Vzhled
         /// <summary>
-        /// Aktuální skin = barevná paleta; lze změnit, po změně dojde eventu <see cref="CurrentPaletteChanged"/>
+        /// Aktuální vzhled (skin = barevná paleta); lze změnit, po změně dojde eventu <see cref="CurrentAppearanceChanged"/>
         /// </summary>
-        public static AppearanceSet CurrentPalette
+        public static AppearanceSet CurrentAppearance
         {
-            get { return Current._CurrentPalette; }
-            set { Current._CurrentPalette = value; }
+            get { return Current._CurrentAppearance; }
+            set { Current._CurrentAppearance = value; }
         }
-        private AppearanceSet _CurrentPalette
+        private AppearanceSet _CurrentAppearance
         {
             get 
             {
-                if (__CurrentPalette is null)
-                    __CurrentPalette = AppearanceSet.Default;
-                return __CurrentPalette;
+                if (__CurrentAppearance is null)
+                    __CurrentAppearance = AppearanceSet.Default;
+                return __CurrentAppearance;
             }
             set 
             {
                 if (value is null) return;
-                bool isChange = (__CurrentPalette is null || !Object.ReferenceEquals(value, __CurrentPalette));
-                __CurrentPalette = value;
-                if (isChange) __CurrentPaletteChanged?.Invoke(null, EventArgs.Empty);
+                bool isChange = (__CurrentAppearance is null || !Object.ReferenceEquals(value, __CurrentAppearance));
+                __CurrentAppearance = value;
+                if (isChange) __CurrentAppearanceChanged?.Invoke(null, EventArgs.Empty);
             }
         }
-        private AppearanceSet __CurrentPalette;
+        private AppearanceSet __CurrentAppearance;
         /// <summary>
         /// Událost volaná po změně skinu
         /// </summary>
-        public static event EventHandler CurrentPaletteChanged { add { Current.__CurrentPaletteChanged += value; } remove { Current.__CurrentPaletteChanged -= value; } }
+        public static event EventHandler CurrentAppearanceChanged { add { Current.__CurrentAppearanceChanged += value; } remove { Current.__CurrentAppearanceChanged -= value; } }
         /// <summary>
         /// Událost volaná po změně skinu
         /// </summary>
-        private event EventHandler __CurrentPaletteChanged;
+        private event EventHandler __CurrentAppearanceChanged;
         #endregion
 
 
