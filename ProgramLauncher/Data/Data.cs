@@ -122,8 +122,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             int adressYTop = rows.Keys.Max();
             int virtualY = 0;
             int virtualRight = 0;
+            int virtualBottom = 0;
             for (int adressY = 0; adressY <= adressYTop; adressY++)
-            {   // Řádky se zápornou souřadnicí neřeším (budou null).
+            {   // Řádky se zápornou souřadnicí Y neřeším (budou null).
                 // Takto vyřeším i čísla řádků (adressY), na kterých není žádný prvek = jim započítám prázdný prostor na ose Y !!!
                 int rowHeight = 0;
                 if (rows.TryGetValue(adressY, out var row))
@@ -147,40 +148,81 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 }
                 virtualY += rowHeight;
             }
+            virtualBottom = virtualY;                                                    // Aktuálně nalezená souřadnice virtualY určuje dolní souřadnici celého obsahu
 
             // V druhé fázi zpracuji řádky Spring, s ohledem na dosud získanou šířku virtualRight:
             if (springRows.Count > 0)
             {
-                throw new NotImplementedException("To jsem ještě nedodělal - přepočet šířky pro řádky obsahující sloupce typu SpringWidth...");
+                foreach (var springRow in springRows)
+                {   // Z uložených dat obnovím pozici Y (proměnná virtualY se sdílí do metody), a pošlu řádek typu Spring i s jeho výškou ke zpracování:
+                    virtualY = springRow.Item1;
+                    int rowHeight = springRow.Item2;
+                    recalculateVirtualBoundsRow(springRow.Item3, springRow.Item2);
+                }
             }
 
-            return new Size(virtualRight, virtualY);
+            return new Size(virtualRight, virtualBottom);
 
-            // Vyřeší souřadnici X v prvcích jednoho řádku:
+
+            // Vyřeší souřadnici X ve všech prvcích jednoho řádku:
             void recalculateVirtualBoundsRow(DataItemBase[] recalcRow, int height)
             {
-                var columns = recalcRow.CreateDictionaryArray(i => i.Adress.X);          // Klíčem je pozice X.
-                int virtualX = 0;
+                var columns = recalcRow.CreateDictionaryArray(i => i.Adress.X);          // Klíčem je pozice X. Value je pole prvků DataItemBase[] na stejné adrese X.
                 int adressXTop = columns.Keys.Max();
+
+                // Pokud existují sloupce, kde jsou prvky typu Spring (jejich Width je záporná), tak nejprve určím jejich šířku - proto, abych pak mohl plynule přidělit šířku a pozici X všem sloupcům:
+                int fixedWidth = 0;                                                      // Sumární šířka sloupců s konkrétní šířkou
+                int springWidth = 0;                                                     // Sumární šířka sloupců s spring šířkou (jejich záporné hodnoty mohou vyjadřovat % váhu, s jakou se podělí o disponibilní prostor)
+                Dictionary<int, int> columnWidths = new Dictionary<int, int>();
                 for (int adressX = 0; adressX <= adressXTop; adressX++)
-                {   // Sloupce se zápornou souřadnicí neřeším (budou null).
+                {
+                    int cellWidth = getCellWidth(columns, adressX, out var _);           // Pokud výstupem je kladné číslo, pak máme přinejmenším jeden prvek s kladnou šířkou; pokud je jich víc, pak je vrácena Max šířka
+                    if (cellWidth >= 0) fixedWidth += cellWidth;
+                    else springWidth += cellWidth;
+                }
+
+                // Určím disponibilní šířku pro Spring sloupce na jednotku jejich šířky:
+                decimal springWithRatio = (springWidth >= 0 ? 0m : ((decimal)(virtualRight - fixedWidth)) / (decimal)springWidth);
+
+                // Nyní do všech prvků všech sloupců vepíšu jejich šířku a tedy kompletní VirtualBounds:
+                int virtualX = 0;
+                for (int adressX = 0; adressX <= adressXTop; adressX++)
+                {   // Sloupce se zápornou souřadnicí X neřeším (budou null).
                     // Takto vyřeším i čísla sloupců (adressX), na kterých není žádný prvek = jim započítám prázdný defaultní prostor na ose X !!!
-                    int cellWidth = 0;
-                    if (columns.TryGetValue(adressX, out var column))
-                    {   // Na tomto sloupci jsou prvky:
-                        cellWidth = column.Select(i => i.CellSize.Width).Max();          // Max šířka ze všech prvků v daném sloupci (v jednom řádku => prvky jsou na sobě na ose Z a řídí se jejich Visible)
+                    int cellWidth = getCellWidth(columns, adressX, out var column);      // Pokud výstupem je kladné číslo, pak máme přinejmenším jeden prvek s kladnou šířkou; pokud je jich víc, pak je vrácena Max šířka
+                    if (column != null)
+                    {
+                        if (cellWidth < 0)
+                        {   // Sloupec je typu Spring: vypočteme jeho aktuální reálnou šířku:
+                            cellWidth = (int)(Math.Round((springWithRatio * (decimal)cellWidth), 0));
+                            if (cellWidth < 24) cellWidth = 24;
+                        }
+                        // Nyní víme vše potřebné a do všech prvků této buňky vložíme jejich VirtualBounds:
                         var virtualBounds = new Rectangle(virtualX, virtualY, cellWidth, height);
                         foreach (var item in column)
                             item.VirtualBounds = virtualBounds;
-                    }
-                    else
-                    {   // Na sloupci (adressX) není ani jeden prvek: započítám prázdnou šířku:
-                        if (size.HasValue)
-                            cellWidth = size.Value.Width;
+
                     }
                     virtualX += cellWidth;
                 }
                 if (virtualRight < virtualX) virtualRight = virtualX;                   // Souřadnice X za posledním přítomným sloupcem je Right celého obsahu, střádáme její Max
+            }
+
+            // Určí a vrátí šířku dané buňky (ze všech v ní přítomných prvků); kladná = Fixed  |  záporná = Spring.
+            // Pro pozice (columnIndex) na které nejsou žádné buňky vrací šířku z DataLayout = size.Value.Width
+            int getCellWidth(Dictionary<int, DataItemBase[]> cells, int columnIndex, out DataItemBase[] cell)
+            {
+                if (cells.TryGetValue(columnIndex, out cell))
+                {   // Na tomto sloupci (=buňka) jsou přítomny nějaké prvky:
+                    int cellFixedWidth = cell.Select(i => i.CellSize.Width).Max();      // Max šířka ze všech prvků: nejvyšší kladná určuje Fixní šířku
+                    int cellSpringWidth = cell.Select(i => i.CellSize.Width).Min();     // Min šířka ze všech prvků: nejmenší záporná určuje Spring šířku
+                    return ((cellFixedWidth > 0) ? cellFixedWidth : cellSpringWidth);   // Kladná šířka = Fixed má přednost před zápornou = Spring (jde o souběh více prvků v jedné buňce) = kladná šířka Fixed se vloží i do VirtualBounds sousední buňky Spring
+                }
+                else if (size.HasValue)
+                {   // Na sloupci (adressX) není ani jeden prvek: započítám prázdnou šířku:
+                    return size.Value.Width;
+                }
+                return 0;
             }
         }
         #endregion
