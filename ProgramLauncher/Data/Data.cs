@@ -295,7 +295,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             InteractiveState interactiveState = this.InteractiveState;
 
             // Celé pozadí buňky (buňka může mít explicitně danou barvu pozadí):
-            color = this.CellBackColor.GetColor(interactiveState);
+            color = this.CellBackColor?.GetColor(interactiveState);
             if (color.HasValue)
                 e.Graphics.FillRectangle(clientBounds, color.Value);
 

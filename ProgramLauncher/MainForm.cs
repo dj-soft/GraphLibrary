@@ -64,6 +64,7 @@ namespace DjSoft.Tools.ProgramLauncher
             __GroupsPanel.DataItems.Add(CreateGroupDataItem(0, 9, "privátní", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-red.png"));
             __GroupsPanel.DataItems.Add(CreateGroupDataItem(0, 10, "tajné", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
             __GroupsPanel.DataItems[2].IsActive = true;
+            __GroupsPanel.DataItems[4].CellBackColor = new ColorSet(Color.DarkViolet);
 
             __GroupsPanel.ContentSizeChanged += _AppGroupPanel_ContentSizeChanged;
             this._MainContainer.Panel1.Controls.Add(__GroupsPanel);
