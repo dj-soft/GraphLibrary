@@ -272,10 +272,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Souřadnice prostoru pro hlavní text
         /// </summary>
         public Rectangle MainTitleBounds { get; set; }
+        public AppearanceTextPartType? MainTitleAppearanceType { get; set; }
         /// <summary>
         /// Vzhled hlavního textu
         /// </summary>
-        public TextAppearance MainTitleAppearance { get { return __MainTitleAppearance ?? App.CurrentPalette.MainTitleAppearance; } set { __MainTitleAppearance = value; } } private TextAppearance __MainTitleAppearance;
+        public TextAppearance MainTitleAppearance 
+        { 
+            get { return __MainTitleAppearance ?? App.CurrentPalette.GetTextAppearance(MainTitleAppearanceType ?? AppearanceTextPartType.MainTitle); } 
+            set { __MainTitleAppearance = value; } } 
+        private TextAppearance __MainTitleAppearance;
         #endregion
         #region Statické konstruktory konkrétních stylů
         /// <summary>
@@ -296,6 +301,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     BorderWidth = 1f,
                     ImageBounds = new Rectangle(8, 8, 24, 24),
                     MainTitleBounds = new Rectangle(46, 14, 95, 20),
+                    MainTitleAppearanceType = AppearanceTextPartType.MainTitle
                 };
                 return dataLayout;
             }
@@ -318,6 +324,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     BorderWidth = 1f,
                     ImageBounds = new Rectangle(8, 8, 48, 48),
                     MainTitleBounds = new Rectangle(62, 24, 95, 20),
+                    MainTitleAppearanceType = AppearanceTextPartType.SubTitle
                 };
                 return dataLayout;
             }
@@ -340,6 +347,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     BorderWidth = 1f,
                     ImageBounds = new Rectangle(22, 22, 48, 48),
                     MainTitleBounds = new Rectangle(82, 18, 95, 20),
+                    MainTitleAppearanceType = AppearanceTextPartType.MainTitle
                 };
                 return dataLayout;
             }
