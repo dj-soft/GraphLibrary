@@ -22,7 +22,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Pozice prvku v matici X/Y
         /// </summary>
-        public Point Adress { get; set; }
+        public Point Adress { get { return __Adress; } set { __Adress = value; ResetParentLayout(); } } private Point __Adress;
+        /// <summary>
+        /// Prvek je viditelný?
+        /// </summary>
+        public bool Visible { get { return !__InVisible; } set { __InVisible = !value; } } private bool __InVisible;             // Nemám rád inicializaci proměnných v jejich deklaraci, a nemám tady ani konstruktor. Tak nechám defaultně Invisible = false a používám Visible = Not Invisible.
 
         public virtual string MainTitle { get; set; }
 
@@ -42,6 +46,13 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Obsahuje true když je umístěn na Parentu
         /// </summary>
         protected bool HasParent { get { return __Parent != null; } }
+        /// <summary>
+        /// Zruší platnost layoutu jednotlivých prvků přítomných v Parentu
+        /// </summary>
+        protected virtual void ResetParentLayout()
+        {
+            Parent?.ResetItemLayout();
+        }
         InteractiveGraphicsControl IChildOfParent<InteractiveGraphicsControl>.Parent { get { return __Parent; } set { __Parent = value; } }
         private InteractiveGraphicsControl __Parent;
         #endregion
@@ -50,60 +61,128 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Definice layoutu: buď je lokální (specifická), anebo převzatá z Parenta. 
         /// Parent je <see cref="InteractiveGraphicsControl"/>, ten má svůj daný layout.
         /// <para/>
-        /// Definici lze setovat, pak má přednost před definicí z Parenta. Lze setovat null.
+        /// Definici lze setovat, pak má přednost před definicí z Parenta. Lze setovat null, tím se vrátíme k defaultní z Parenta.
         /// </summary>
-        protected virtual DataLayout DataLayout 
-        {
-            get { return __DataLayout ?? __Parent?.DataLayout; } 
-            set { __DataLayout = value; }
-        }
-        private DataLayout __DataLayout;
+        protected virtual DataLayout DataLayout { get { return __DataLayout ?? __Parent?.DataLayout; } set { __DataLayout = value; ResetParentLayout(); } } private DataLayout __DataLayout;
         /// <summary>
-        /// Souřadnice počátku prvku ve virtuálním prostoru
+        /// Souřadnice celého prvku ve virtuálním prostoru (tj. velikost odpovídá <see cref="DataItemBase.CellSize"/>.
+        /// Pokud prvek nemá správnou adresu <see cref="Adress"/> (záporné hodnoty), pak má <see cref="VirtualBounds"/> = null! Pak nebude ani interaktivní.
+        /// Pokud prvek má adresu OK, pak má <see cref="VirtualBounds"/> přidělenou i když jeho <see cref="Visible"/> by bylo false.
         /// </summary>
-        public virtual Point VirtualLocation 
-        {
-            get
-            {
-                var adress = this.Adress;
-                var size = this.DataLayout.CellSize;
-                return new Point(adress.X * size.Width, adress.Y * size.Height);
-            }
-        }
+        public virtual Rectangle? VirtualBounds { get { return __VirtualBounds; } protected set { __VirtualBounds = value; } } private Rectangle? __VirtualBounds;
         /// <summary>
-        /// Souřadnice celého prvku ve virtuálním prostoru (tj. velikost odpovídá <see cref="DataLayout.CellSize"/>
-        /// </summary>
-        public virtual Rectangle VirtualBounds
-        {
-            get
-            {
-                var adress = this.Adress;
-                var size = this.DataLayout.CellSize;
-                return new Rectangle(new Point(adress.X * size.Width, adress.Y * size.Height), size);
-            }
-        }
-        /// <summary>
-        /// Souřadnice vnitřního aktivního prostoru tohoto prvku ve virtuálním prostoru (tj. velikost odpovídá <see cref="DataLayout.CellSize"/>
-        /// </summary>
-        public virtual Rectangle VirtualContentBounds
-        {
-            get
-            {
-                var dataLayout = this.DataLayout;
-                var location = this.VirtualLocation;
-                var virtualContentBounds = dataLayout.ContentBounds.GetShiftedRectangle(location);
-                return virtualContentBounds;
-            }
-
-        }
-        /// <summary>
-        /// Vnější velikost objektu.
+        /// Vnější velikost objektu. Je dáno Layoutem <see cref="DataLayout"/>.
         /// Tyto velikosti jednotlivých objektů na sebe těsně navazují.
         /// Objekt by do této velikosti měl zahrnout i mezery (okraje) mezi sousedními objekty.
         /// Pokud konkrétní potomek neřeší výšku nebo šířku, může v dané hodnotě nechat 0.
         /// </summary>
-        public virtual Size Size { get { return this.DataLayout.CellSize; } }
+        public Size CellSize { get { return this.DataLayout.CellSize; } }
+        /// <summary>
+        /// Souřadnice vnitřního aktivního prostoru tohoto prvku ve virtuálním prostoru (tj. velikost odpovídá <see cref="DataLayout.CellSize"/>.
+        /// Pokud prvek nemá správnou adresu <see cref="Adress"/> (záporné hodnoty), pak má <see cref="VirtualBounds"/> = null! Pak nebude ani interaktivní.
+        /// Pokud prvek má adresu OK, pak má <see cref="VirtualBounds"/> přidělenou i když jeho <see cref="Visible"/> by bylo false.
+        /// </summary>
+        public virtual Rectangle? VirtualContentBounds
+        {
+            get
+            {
+                Rectangle? virtualContentBounds = null;
+                var virtualBounds = this.VirtualBounds;
+                if (virtualBounds.HasValue)
+                {
+                    var dataLayout = this.DataLayout;
+                    virtualContentBounds = dataLayout.ContentBounds.GetShiftedRectangle(virtualBounds.Value.Location);
+                }
+                return virtualContentBounds;
+            }
+        }
+        #endregion
+        #region Přepočet layoutu sady prvků
+        /// <summary>
+        /// Metoda vypočítá layout všech prvků v dodané kolekci = určí jejich <see cref="DataItemBase.VirtualBounds"/> a vrátí sumární velikost obsazeného prostoru.
+        /// Ta pak slouží jako <see cref="InteractiveGraphicsControl.ContentSize"/>.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="dataLayout"></param>
+        /// <returns></returns>
+        public static Size RecalculateVirtualBounds(IEnumerable<DataItemBase> items, DataLayout dataLayout)
+        {
+            if (items.IsEmpty()) return Size.Empty;
+            items.ForEachExec(i => i.VirtualBounds = null);                              // Resetujeme všechny
+            var size = dataLayout?.CellSize;
 
+            var rows = items.CreateDictionaryArray(i => i.Adress.Y);                     // Dictionary, kde Key = Adress.Y ... tedy index řádku, a Value = pole prvků DataItemBase, které se na tomto řádku nacházejí.
+
+            // Sem budu dávat řádky, které mají v některém svém prvku šířku CellSize = -1 => jde o prvky, které mají mít šířku přes celý řádek, a my musíme nejprve určit šířku celého Content z ostatních řádků:
+            //  Jde o List obsahující Tuple, kde Item1 = pozice Y celého řádku, a Item2 = výška celého řádku, a Item3 = pole prvků DataItemBase v tomto řádku (na stejné pozici Adress.Y).
+            var springRows = new List<Tuple<int, int, DataItemBase[]>>();
+
+            // V první fázi zpracuji souřadnice řádků, které mají všechny exaktní šířku buňky (CellSize.Width >= 0),
+            //  a ostatní řádky (obsahující buňky se zápornou šířkou) si odložím do springRows do druhé fáze:
+            int adressYTop = rows.Keys.Max();
+            int virtualY = 0;
+            int virtualRight = 0;
+            for (int adressY = 0; adressY <= adressYTop; adressY++)
+            {   // Řádky se zápornou souřadnicí neřeším (budou null).
+                // Takto vyřeším i čísla řádků (adressY), na kterých není žádný prvek = jim započítám prázdný prostor na ose Y !!!
+                int rowHeight = 0;
+                if (rows.TryGetValue(adressY, out var row))
+                {   // Na tomto řádku jsou prvky:
+                    rowHeight = row.Max(r => r.CellSize.Height);                         // Nejvyšší buňka určuje výšku celého řádku
+
+                    bool hasSpring = row.Any(i => i.CellSize.Width < 0);
+                    if (!hasSpring)
+                    {   // Všechny prvky mají určenou šířku => zpracujeme je:
+                        recalculateVirtualBoundsRow(row, rowHeight);
+                    }
+                    else
+                    {   // Pokud tento řádek má nějaký prvek se zápornou šířkou prvku (=Spring), pak jej nezpracujeme nyní ale ve druhé fázi:
+                        springRows.Add(new Tuple<int, int, DataItemBase[]>(virtualY, rowHeight, row));
+                    }
+                }
+                else
+                {   // Na řádku (adressY) není ani jeden prvek: započítám prázdnou výšku:
+                    if (size.HasValue)
+                        rowHeight = size.Value.Height;
+                }
+                virtualY += rowHeight;
+            }
+
+            // V druhé fázi zpracuji řádky Spring, s ohledem na dosud získanou šířku virtualRight:
+            if (springRows.Count > 0)
+            {
+                throw new NotImplementedException("To jsem ještě nedodělal - přepočet šířky pro řádky obsahující sloupce typu SpringWidth...");
+            }
+
+            return new Size(virtualRight, virtualY);
+
+            // Vyřeší souřadnici X v prvcích jednoho řádku:
+            void recalculateVirtualBoundsRow(DataItemBase[] recalcRow, int height)
+            {
+                var columns = recalcRow.CreateDictionaryArray(i => i.Adress.X);          // Klíčem je pozice X.
+                int virtualX = 0;
+                int adressXTop = columns.Keys.Max();
+                for (int adressX = 0; adressX <= adressXTop; adressX++)
+                {   // Sloupce se zápornou souřadnicí neřeším (budou null).
+                    // Takto vyřeším i čísla sloupců (adressX), na kterých není žádný prvek = jim započítám prázdný defaultní prostor na ose X !!!
+                    int cellWidth = 0;
+                    if (columns.TryGetValue(adressX, out var column))
+                    {   // Na tomto sloupci jsou prvky:
+                        cellWidth = column.Select(i => i.CellSize.Width).Max();          // Max šířka ze všech prvků v daném sloupci (v jednom řádku => prvky jsou na sobě na ose Z a řídí se jejich Visible)
+                        var virtualBounds = new Rectangle(virtualX, virtualY, cellWidth, height);
+                        foreach (var item in column)
+                            item.VirtualBounds = virtualBounds;
+                    }
+                    else
+                    {   // Na sloupci (adressX) není ani jeden prvek: započítám prázdnou šířku:
+                        if (size.HasValue)
+                            cellWidth = size.Value.Width;
+                    }
+                    virtualX += cellWidth;
+                }
+                if (virtualRight < virtualX) virtualRight = virtualX;                   // Souřadnice X za posledním přítomným sloupcem je Right celého obsahu, střádáme její Max
+            }
+        }
         #endregion
         #region Interaktivita
         /// <summary>
@@ -115,7 +194,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public bool IsActiveOnVirtualPoint(Point virtualPoint)
         {
             var virtualContentBounds = this.VirtualContentBounds;
-            return virtualContentBounds.Contains(virtualPoint);
+            return virtualContentBounds.HasValue && virtualContentBounds.Value.Contains(virtualPoint);
         }
         #endregion
         #region Kreslení
@@ -129,12 +208,14 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <param name="e"></param>
         public virtual void Paint(PaintDataEventArgs e)
         {
-            if (!HasParent) return;
+            if (!HasParent || !Visible) return;
+
+            var virtualBounds = this.VirtualBounds;
+            if (!virtualBounds.HasValue) return;
 
             var dataLayout = this.DataLayout;
             var paletteSet = App.CurrentPalette;
-            var virtualLocation = this.VirtualLocation;
-            var clientLocation = this.Parent.GetControlPoint(virtualLocation);
+            var clientLocation = this.Parent.GetControlPoint(virtualBounds.Value.Location);
             var activeBounds = dataLayout.ContentBounds.GetShiftedRectangle(clientLocation);
 
             e.Graphics.SetClip(activeBounds);
@@ -218,9 +299,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             e.Graphics.ResetClip();
         }
         #endregion
-       
     }
-
     #region class DataLayout = Layout prvku: rozmístění, velikost, styl písma
     /// <summary>
     /// Layout prvku: rozmístění, velikost, styl písma

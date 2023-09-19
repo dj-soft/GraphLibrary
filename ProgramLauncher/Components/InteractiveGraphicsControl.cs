@@ -443,8 +443,15 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Definice layoutu pro prvky v tomto panelu. Jeden panel má jeden layout.
         /// </summary>
-        public DataLayout DataLayout { get { return __DataLayout; } set { _InvalidateContentSize(); __DataLayout = value; } }
+        public DataLayout DataLayout { get { return __DataLayout; } set { _ResetItemLayout(); __DataLayout = value; } }
         private DataLayout __DataLayout;
+        /// <summary>
+        /// Zruší platnost layoutu jednotlivých prvků přítomných v <see cref="DataItems"/>
+        /// </summary>
+        public virtual void ResetItemLayout()
+        {
+            _ResetItemLayout();
+        }
         /// <summary>
         /// Událost volaná po změně kolekce <see cref="DataItems"/>. Zajistí invalidaci příznaku platnosti <see cref="ContentAlignment"/>.
         /// </summary>
@@ -453,14 +460,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <exception cref="NotImplementedException"></exception>
         private void __DataItems_CollectionChanged(object sender, EventArgs e)
         {
-            _InvalidateContentSize();
+            _ResetItemLayout();
         }
         /// <summary>
         /// Metoda zneplatní příznak platné hodnoty <see cref="ContentSize"/> (volá se po přidání / odebrání prvku a po změně layoutu).
         /// Jen nastaví <see cref="__IsContentSizeValid"/> = false. Následně se musí vyhodnotit tato hodnota, viz <see cref="_CheckContentSize()"/>.
         /// To se má volat před kreslením v metodách <see cref="Draw"/> na začátku.
         /// </summary>
-        private void _InvalidateContentSize()
+        private void _ResetItemLayout()
         {
             __IsContentSizeValid = false;
         }
@@ -472,7 +479,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             if (!__IsContentSizeValid)
             {
                 var lastContentSize = base.ContentSize;              // base property neprovádí _CheckContentSize()
-                var currentContentSize = _GetCurrentContentSize();
+                var currentContentSize = DataItemBase.RecalculateVirtualBounds(this.__DataItems, this.DataLayout);
                 bool isContentSizeChanged = (currentContentSize != lastContentSize);
                 __IsContentSizeValid = true;
                 if (isContentSizeChanged)                            // Setování a event jen po reálné změně hodnoty
@@ -481,22 +488,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     this._RunContentSizeChanged();
                 }
             }
-        }
-        /// <summary>
-        /// Metoda vrátí aktuální velikost obsahu = součet velikostí prvků <see cref="DataItems"/> a jejich <see cref="DataItemBase.VirtualBounds"/>
-        /// </summary>
-        /// <returns></returns>
-        private Size? _GetCurrentContentSize()
-        {
-            int r = 0;
-            int b = 0;
-            foreach (var dataItem in this.__DataItems)
-            {
-                var virtualBounds = dataItem.VirtualBounds;
-                if (r < virtualBounds.Right) r = virtualBounds.Right;
-                if (b < virtualBounds.Bottom) b = virtualBounds.Bottom;
-            }
-            return new Size(r, b);
         }
         /// <summary>
         /// Příznak, že aktuální hodnota <see cref="ContentSize"/> je platná z hlediska přítomných prvků a jejich layoutu

@@ -708,7 +708,7 @@ namespace DjSoft.Tools.ProgramLauncher
         #endregion
         #region IEnumerable
         /// <summary>
-        /// Pro každýá prvek this kolekce provede danou akci. I pro null prvky.
+        /// Pro každý prvek this kolekce provede danou akci. I pro null prvky.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
@@ -720,6 +720,150 @@ namespace DjSoft.Tools.ProgramLauncher
                 foreach (var item in items)
                     action(item);
             }
+        }
+        /// <summary>
+        /// Vrátí true, pokud this kolekce je null anebo neobsahuje žádný prvek.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static bool IsEmpty<T>(this IEnumerable<T> items)
+        {
+            if (items is null) return true;
+            return !(items.Any());
+        }
+        /// <summary>
+        /// Z this kolekce vytvoří Dictionary s klíčem vybraným z prvku pomocí dodaného <paramref name="keySelector"/>.
+        /// Pokud bude <paramref name="ignoreDuplicity"/> = true, pak případné duplicitní prvky budou ignorovány.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="keySelector"></param>
+        /// <param name="ignoreDuplicity"></param>
+        /// <returns></returns>
+        public static Dictionary<TKey, TValue> CreateDictionary<TKey, TValue>(this IEnumerable<TValue> items, Func<TValue, TKey> keySelector, bool ignoreDuplicity = false)
+        {
+            if (keySelector is null) throw new ArgumentNullException($"CreateDictionary() error: 'keySelector' can not be null.");
+            if (items is null) return null;
+            var result = new Dictionary<TKey, TValue>();
+            foreach (var item in items)
+            {
+                var key = keySelector(item);
+                if (result.ContainsKey(key))
+                {
+                    if (!ignoreDuplicity)
+                        throw new ArgumentException($"CreateDictionary() error: key '{key}' is duplicate, and 'ignoreDuplicity' is not enabled.");
+                }
+                else
+                {
+                    result.Add(key, item);
+                }
+            }
+            return result;
+        }
+        /// <summary>
+        /// Z this kolekce vytvoří Dictionary s klíčem vybraným z prvku pomocí dodaného <paramref name="keySelector"/> a hodnotou získanou pomocí <paramref name="valueSelector"/>.
+        /// Pokud bude <paramref name="ignoreDuplicity"/> = true, pak případné duplicitní prvky budou ignorovány.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="keySelector"></param>
+        /// <param name="valueSelector"></param>
+        /// <param name="ignoreDuplicity"></param>
+        /// <returns></returns>
+        public static Dictionary<TKey, TValue> CreateDictionary<TKey, TValue, TItems>(this IEnumerable<TItems> items, Func<TItems, TKey> keySelector, Func<TItems, TValue> valueSelector, bool ignoreDuplicity = false)
+        {
+            if (keySelector is null) throw new ArgumentNullException($"CreateDictionary() error: 'keySelector' can not be null.");
+            if (valueSelector is null) throw new ArgumentNullException($"CreateDictionary() error: 'valueSelector' can not be null.");
+            if (items is null) return null;
+            var result = new Dictionary<TKey, TValue>();
+            foreach (var item in items)
+            {
+                var key = keySelector(item);
+                if (result.ContainsKey(key))
+                {
+                    if (!ignoreDuplicity)
+                        throw new ArgumentException($"CreateDictionary() error: key '{key}' is duplicate, and 'ignoreDuplicity' is not enabled.");
+                }
+                else
+                {
+                    result.Add(key, valueSelector(item));
+                }
+            }
+            return result;
+        }
+        /// <summary>
+        /// Z this kolekce vytvoří Dictionary s klíčem vybraným z prvku pomocí dodaného <paramref name="keySelector"/>.
+        /// Value ve výstupní Dictionary je pole (Array) prvků, které jsou přítomny ve vstupní kolekci a mají shodný klíč. Tato varianta tedy nemusí řešit duplicitu.
+        /// Pole má vždy nejméně jeden prvek.
+        /// <para/>
+        /// Metodu tedy lze použít jako alternativu k Grupování kolekce.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="keySelector"></param>
+        /// <param name="ignoreDuplicity"></param>
+        /// <returns></returns>
+        public static Dictionary<TKey, TValue[]> CreateDictionaryArray<TKey, TValue>(this IEnumerable<TValue> items, Func<TValue, TKey> keySelector)
+        {
+            if (keySelector is null) throw new ArgumentNullException($"CreateDictionaryArray() error: 'keySelector' can not be null.");
+            if (items is null) return null;
+
+            // Pracovní Dictionary, má jako Value prvek typu List (nikoliv Array):
+            var dictionary = new Dictionary<TKey, List<TValue>>();
+            foreach (var item in items)
+            {
+                var key = keySelector(item);
+                if (!dictionary.TryGetValue(key, out var list))
+                {
+                    list = new List<TValue>();
+                    dictionary.Add(key, list);
+                }
+                list.Add(item);
+            }
+
+            // Výstupní Dictionary, kde Value převedu z List na Array:
+            var result = dictionary.CreateDictionary(kvp => kvp.Key, kvp => kvp.Value.ToArray());
+            return result;
+        }
+        /// <summary>
+        /// Z this kolekce vytvoří Dictionary s klíčem vybraným z prvku pomocí dodaného <paramref name="keySelector"/> a hodnotou získanou pomocí <paramref name="valueSelector"/>.
+        /// Value ve výstupní Dictionary je pole (Array) prvků, které jsou přítomny ve vstupní kolekci a mají shodný klíč. Tato varianta tedy nemusí řešit duplicitu.
+        /// Pole má vždy nejméně jeden prvek.
+        /// <para/>
+        /// Metodu tedy lze použít jako alternativu k Grupování kolekce.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="keySelector"></param>
+        /// <param name="ignoreDuplicity"></param>
+        /// <returns></returns>
+        public static Dictionary<TKey, TValue[]> CreateDictionaryArray<TKey, TValue, TItems>(this IEnumerable<TItems> items, Func<TItems, TKey> keySelector, Func<TItems, TValue> valueSelector)
+        {
+            if (keySelector is null) throw new ArgumentNullException($"CreateDictionaryArray() error: 'keySelector' can not be null.");
+            if (valueSelector is null) throw new ArgumentNullException($"CreateDictionaryArray() error: 'valueSelector' can not be null.");
+            if (items is null) return null;
+
+            // Pracovní Dictionary, má jako Value prvek typu List (nikoliv Array):
+            var dictionary = new Dictionary<TKey, List<TValue>>();
+            foreach (var item in items)
+            {
+                var key = keySelector(item);
+                if (!dictionary.TryGetValue(key, out var list))
+                {
+                    list = new List<TValue>();
+                    dictionary.Add(key, list);
+                }
+                list.Add(valueSelector(item));
+            }
+
+            // Výstupní Dictionary, kde Value převedu z List na Array:
+            var result = dictionary.CreateDictionary(kvp => kvp.Key, kvp => kvp.Value.ToArray());
+            return result;
         }
         #endregion
         #region Drobnosti
