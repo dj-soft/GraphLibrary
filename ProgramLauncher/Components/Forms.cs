@@ -206,9 +206,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
 
                     if (dDesktopBounds.HasContent() && dNormalBounds.HasContent())
                     {
+                        // Zarovnat do prostoru existujících monitorů:
                         dDesktopBounds = dDesktopBounds.AlignToNearestMonitor(false, dWindowsState == FormWindowState.Maximized);
                         dNormalBounds = dNormalBounds.AlignToNearestMonitor();
 
+                        // Hodnoty po korekci si uložíme a na konci použijeme:
                         windowsState = dWindowsState;
                         normalBounds = dNormalBounds;
 

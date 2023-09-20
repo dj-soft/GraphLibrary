@@ -31,7 +31,6 @@ namespace DjSoft.Tools.ProgramLauncher
 
             var file = App.Settings.FileName;
             App.Settings.AppearanceName = "Default";
-            var formBounds = App.Settings.MainFormBounds;
             App.Settings.SaveNow();
 
             var keys = Monitors.CurrentMonitorsKey;
@@ -48,17 +47,51 @@ namespace DjSoft.Tools.ProgramLauncher
         #region ToolBar
         private void InitializeToolBar()
         {
-            App.CurrentAppearance = AppearanceSet.DarkBlue;
+            App.CurrentAppearance = AppearanceInfo.GetItem("DarkBlue");
 
             this._ToolEditButton = new ToolStripButton() { DisplayStyle = ToolStripItemDisplayStyle.Image, Image = Properties.Resources.edit_6_48, Size = new Size(52, 52), ToolTipText = "Upravit" };
             this._ToolEditButton.Click += _ToolEditButton_Click;
             this._ToolStrip.Items.Add(this._ToolEditButton);
 
-            var palette = new ToolStripDropDownButton() { DisplayStyle = ToolStripItemDisplayStyle.Image, Image = Properties.Resources.applications_graphics_2_48, Size = new Size(52, 52) };
-            palette.DropDownItems.Add(new ToolStripButton() { DisplayStyle = ToolStripItemDisplayStyle.ImageAndText, TextImageRelation = TextImageRelation.ImageBeforeText, Text = "Default", AutoSize = true, Image = Properties.Resources.bullet_green_16, ImageScaling = ToolStripItemImageScaling.None });
-            palette.DropDownItems.Add(new ToolStripButton() { DisplayStyle = ToolStripItemDisplayStyle.ImageAndText, TextImageRelation = TextImageRelation.ImageBeforeText, Text = "DarkBlue", AutoSize = true , Image = Properties.Resources.bullet_pink_16, ImageScaling = ToolStripItemImageScaling.None });
-            this._ToolStrip.Items.Add(palette);
+            this._ToolAppearanceButton = new ToolStripButton() { DisplayStyle = ToolStripItemDisplayStyle.Image, Image = Properties.Resources.applications_graphics_2_48, Size = new Size(52, 52) };
+            this._ToolAppearanceButton.Click += _ToolAppearanceButton_Click;
+            this._ToolStrip.Items.Add(this._ToolAppearanceButton);
 
+        }
+
+        private void _ToolAppearanceButton_Click(object sender, EventArgs e)
+        {
+            var tsb = _ToolAppearanceButton.Bounds;
+            var ldp = new Point(tsb.Left, tsb.Bottom + 0);
+            var csb = _ToolStrip.PointToScreen(ldp);
+            ToolStripDropDownMenu menu = new ToolStripDropDownMenu();
+
+            string currentName = App.CurrentAppearance.Name;
+            foreach (var appearance in AppearanceInfo.Collection)
+            {
+                bool isCurrent = (appearance.Name == currentName);
+                Image image = appearance.ImageSmall;
+                var item = new ToolStripMenuItem(appearance.Name, image) { Tag = appearance };
+                if (isCurrent)
+                    item.Font = App.GetFont(item.Font, null, FontStyle.Bold);
+                menu.Items.Add(item);
+            }
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add("Další vzhled");
+
+            menu.DropShadowEnabled = true;
+            menu.RenderMode = ToolStripRenderMode.Professional;
+            menu.ShowCheckMargin = false;
+            menu.ShowImageMargin = true;
+            menu.ItemClicked += Menu_ItemClicked;
+            menu.Show(csb);
+
+        }
+
+        private void Menu_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            if (e.ClickedItem?.Tag is AppearanceInfo appearanceInfo)
+                App.CurrentAppearance = appearanceInfo;
         }
 
         private void _ToolEditButton_Click(object sender, EventArgs e)
@@ -67,6 +100,7 @@ namespace DjSoft.Tools.ProgramLauncher
         }
 
         private System.Windows.Forms.ToolStripButton _ToolEditButton;
+        private System.Windows.Forms.ToolStripButton _ToolAppearanceButton;
         #endregion
         #region GroupPanel
         private void InitializeGroupPanel()

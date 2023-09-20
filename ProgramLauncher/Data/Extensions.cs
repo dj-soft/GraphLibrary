@@ -311,6 +311,14 @@ namespace DjSoft.Tools.ProgramLauncher
             _DetectRelation(bounds, target, out int? distance, out Rectangle? _);
             return distance;
         }
+        /// <summary>
+        /// Metoda vrátí společný prostor, který mají prostor this a <paramref name="target"/>.
+        /// Pokud nemají společný prostor, vrátí null.
+        /// Společný prostor nemají ani tehdy, když konec (např. Right) jednoho prostoru je roven počátku druhého (Left).
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="target"></param>
+        /// <returns></returns>
         public static Rectangle? GetCommonBounds(this Rectangle bounds, Rectangle target)
         {
             _DetectRelation(bounds, target, out int? _, out Rectangle? commonBounds);
@@ -1097,6 +1105,22 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="value"></param>
         public static void StoreValue<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue value)
         {
+            if (dictionary.ContainsKey(key))
+                dictionary[key] = value;
+            else
+                dictionary.Add(key, value);
+        }
+        /// <summary>
+        /// Přidá nebo přepíše danou hodnotu do this Dictionary pod klíč, který z hodnoty určí daný <paramref name="keySelector"/>.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="dictionary"></param>
+        /// <param name="value"></param>
+        /// <param name="keySelector"></param>
+        public static void StoreValue<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TValue value, Func<TValue, TKey> keySelector)
+        {
+            var key = keySelector(value);
             if (dictionary.ContainsKey(key))
                 dictionary[key] = value;
             else

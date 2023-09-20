@@ -262,6 +262,39 @@ namespace DjSoft.Tools.ProgramLauncher
             return Current._GetFont(fontType, emSize, fontStyle);
         }
         /// <summary>
+        /// Najde a vrátí Font pro dané požadavky. Vrácený Font se nesmí Dispose, protože je opakovaně používán!
+        /// </summary>
+        /// <param name="original">Originální font</param>
+        /// <param name="sizeRatio">Poměrná změna velikosti</param>
+        /// <param name="fontStyle">Explicitní styl fontu, null = bezez změny</param>
+        /// <returns></returns>
+        public static Font GetFont(Font original, float? sizeRatio, FontStyle? fontStyle = null)
+        {
+            string familyName = original.FontFamily.Name;
+            float emSize = original.Size;
+            if (sizeRatio.HasValue) emSize = emSize * sizeRatio.Value;
+            if (!fontStyle.HasValue) fontStyle = original.Style;
+
+            return Current._GetFont(familyName, emSize, fontStyle.Value);
+        }
+        /// <summary>
+        /// Najde a vrátí Font pro dané požadavky. Vrácený Font se nesmí Dispose, protože je opakovaně používán!
+        /// </summary>
+        /// <param name="familyName"></param>
+        /// <param name="emSize"></param>
+        /// <param name="fontStyle"></param>
+        /// <returns></returns>
+        public Font _GetFont(string familyName, float emSize, FontStyle fontStyle)
+        {
+            string key = _GetFontKey(familyName, emSize, fontStyle);
+            if (!__Fonts.TryGetValue(key, out var font))
+            {
+                font = new Font(familyName, emSize, fontStyle);
+                __Fonts.Add(key, font);
+            }
+            return font;
+        }
+        /// <summary>
         /// Najde nebo vytvoří a vrátí požadovaný font
         /// </summary>
         /// <param name="fontType"></param>
@@ -298,6 +331,23 @@ namespace DjSoft.Tools.ProgramLauncher
                 (fontStyle.HasFlag(FontStyle.Underline) ? "U" : "") +
                 (fontStyle.HasFlag(FontStyle.Strikeout) ? "S" : "");
             return $"T.{fontType}.{size}.{style}";
+        }
+        /// <summary>
+        /// Vrátí string klíč pro danou definici fontu. Pod klíčem bude font uložen do <see cref="__Fonts"/>.
+        /// </summary>
+        /// <param name="familyName"></param>
+        /// <param name="emSize"></param>
+        /// <param name="fontStyle"></param>
+        /// <returns></returns>
+        private static string _GetFontKey(string familyName, float emSize, FontStyle fontStyle)
+        {
+            int size = (int)Math.Round(5f * emSize, 0);
+            string style = "S" +
+                (fontStyle.HasFlag(FontStyle.Bold) ? "B" : "") +
+                (fontStyle.HasFlag(FontStyle.Italic) ? "I" : "") +
+                (fontStyle.HasFlag(FontStyle.Underline) ? "U" : "") +
+                (fontStyle.HasFlag(FontStyle.Strikeout) ? "S" : "");
+            return $"N.{familyName}.{size}.{style}";
         }
         /// <summary>
         /// Vrátí systémový font, např. <see cref="SystemFonts.DefaultFont"/> pro daný typ <paramref name="fontType"/>
@@ -436,17 +486,17 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <summary>
         /// Aktuální vzhled (skin = barevná paleta); lze změnit, po změně dojde eventu <see cref="CurrentAppearanceChanged"/>
         /// </summary>
-        public static AppearanceSet CurrentAppearance
+        public static AppearanceInfo CurrentAppearance
         {
             get { return Current._CurrentAppearance; }
             set { Current._CurrentAppearance = value; }
         }
-        private AppearanceSet _CurrentAppearance
+        private AppearanceInfo _CurrentAppearance
         {
             get 
             {
                 if (__CurrentAppearance is null)
-                    __CurrentAppearance = AppearanceSet.Default;
+                    __CurrentAppearance = AppearanceInfo.Default;
                 return __CurrentAppearance;
             }
             set 
@@ -457,7 +507,7 @@ namespace DjSoft.Tools.ProgramLauncher
                 if (isChange) __CurrentAppearanceChanged?.Invoke(null, EventArgs.Empty);
             }
         }
-        private AppearanceSet __CurrentAppearance;
+        private AppearanceInfo __CurrentAppearance;
         /// <summary>
         /// Událost volaná po změně skinu
         /// </summary>

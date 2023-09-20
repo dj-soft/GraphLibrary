@@ -136,6 +136,78 @@
   <data name="system_settings_2_48" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pics\48px\system-settings-2-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="btn_01_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-01-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_02_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-02-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_03_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-03-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_04_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-04-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_05_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-05-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_06_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-06-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_07_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-07-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_08_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-08-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_09_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-09-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_10_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-10-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_11_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-11-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_12_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-12-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_13_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-13-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_14_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-14-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_15_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-15-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_16_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-16-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_17_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-17-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_18_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-18-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_19_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-19-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_20_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-20-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_21_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-21-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_22_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-22-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_23_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-23-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_24_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-24-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="bullet_black_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pics\16px\bullet-black-16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -153,5 +225,20 @@
   </data>
   <data name="bullet_yellow_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pics\16px\bullet-yellow-16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_g0_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-g0-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_g1_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-g1-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_g2_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-g2-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_g3_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-g3-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="btn_g4_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\btn-g4-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

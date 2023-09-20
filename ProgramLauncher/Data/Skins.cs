@@ -9,13 +9,21 @@ using static DjSoft.Tools.ProgramLauncher.App;
 
 namespace DjSoft.Tools.ProgramLauncher.Data
 {
-    #region class AppearanceSet
+    #region class AppearanceInfo
     /// <summary>
-    /// Sada definující jeden druh vzhledu ("skin")
+    /// Sada definující jeden druh vzhledu (jeden "skin")
     /// </summary>
-    public class AppearanceSet
+    public partial class AppearanceInfo
     {
         #region Public properties
+        /// <summary>
+        /// Jméno sady
+        /// </summary>
+        public string Name { get { return __Name; } set { if (!__IsReadOnly) __Name = value; } } private string __Name;
+        /// <summary>
+        /// Ikona do menu, malá
+        /// </summary>
+        public Image ImageSmall { get { return __ImageSmall; } set { if (!__IsReadOnly) __ImageSmall = value; } } private Image __ImageSmall;
         /// <summary>
         /// Barva statického pozadí pod všemi prvky = celé okno
         /// </summary>
@@ -65,6 +73,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Data jsou ReadOnly?
         /// </summary>
         public bool IsReadOnly { get { return __IsReadOnly; } } private bool __IsReadOnly;
+        /// <summary>
+        /// Pořadí v nabídce
+        /// </summary>
+        private int SortOrder { get { return __SortOrder; } } private int __SortOrder;
         #endregion
         #region Dynamické získání ColorSet a TextAppearance podle PaletteColorPartType a AppearanceTextPartType
         /// <summary>
@@ -99,163 +111,210 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         #endregion
         #region Statické konstruktory konkrétních stylů
         /// <summary>
-        /// Defaultní barevné schema
+        /// Kolekce všech standardních i přidaných definic
         /// </summary>
-        public static AppearanceSet Default
-        {
-            get
-            {
-                if (__Default is null)
-                {
-                    var paletteSet = new AppearanceSet();
-                    paletteSet.__WorkspaceColor = Color.FromArgb(64, 68, 72);
-
-                    int a0 = 40;
-                    int a1 = 80;
-                    int a2 = 120;
-                    int a3 = 160;
-
-                    int b1 = 180;
-                    int b2 = 200;
-
-                    paletteSet.__ActiveContentColor = new ColorSet(true, null,
-                        activeColor: Color.FromArgb(255, 240, 240, 190),
-                        mouseOnColor: Color.FromArgb(a0, 200, 200, 230),
-                        mouseDownColor: Color.FromArgb(a0, 180, 180, 210));
-                    paletteSet.__BorderLineColors = new ColorSet(true,
-                        Color.FromArgb(a1, b1, b1, b1),
-                        Color.FromArgb(a1, b1, b1, b1),
-                        Color.FromArgb(a1, b1, b1, b1),
-                        Color.FromArgb(a1, b2, b2, b2),
-                        Color.FromArgb(a1, b2, b2, b2),
-                        Color.FromArgb(a1, b2, b2, b2));
-                    paletteSet.__ButtonBackColors = new ColorSet(true,
-                        Color.FromArgb(a1, 120, 120, 120),
-                        Color.FromArgb(a1, 216, 216, 216),
-                        Color.FromArgb(a1, 216, 216, 216),
-                        Color.FromArgb(a2, 200, 200, 230),
-                        Color.FromArgb(a2, 180, 180, 210),
-                        Color.FromArgb(a3, 180, 180, 240));
-                    paletteSet.__MainTitleColors = new ColorSet(true, Color.Black);
-                    paletteSet.__SubTitleColors = new ColorSet(true, Color.Black);
-                    paletteSet.__TextStandardColors = new ColorSet(true, Color.Black);
-
-                    paletteSet.__MainTitleAppearance = new TextAppearance(true,
-                        FontType.CaptionFont,
-                        ContentAlignment.MiddleLeft,
-                        AppearanceColorPartType.MainTitleColors,
-                        null,
-                        new TextInteractiveStyle(true, InteractiveState.Default, null, 1.2f, null),
-                        new TextInteractiveStyle(true, InteractiveState.MouseOn, null, 1.3f, null),
-                        new TextInteractiveStyle(true, InteractiveState.MouseDown, null, 1.3f, FontStyle.Bold)
-                        );
-
-                    paletteSet.__SubTitleAppearance = new TextAppearance(true,
-                        FontType.CaptionFont,
-                        ContentAlignment.MiddleLeft,
-                        AppearanceColorPartType.MainTitleColors,
-                        null,
-                        new TextInteractiveStyle(true, InteractiveState.Default, null, 1.1f, null),
-                        new TextInteractiveStyle(true, InteractiveState.MouseOn, null, 1.2f, null),
-                        new TextInteractiveStyle(true, InteractiveState.MouseDown, null, 1.2f, FontStyle.Bold)
-                        );
-
-                    paletteSet.__StandardTextAppearance = new TextAppearance(true,
-                        FontType.CaptionFont,
-                        ContentAlignment.MiddleLeft,
-                        AppearanceColorPartType.MainTitleColors,
-                        null,
-                        new TextInteractiveStyle(true, InteractiveState.Default, null, 1.0f, null),
-                        new TextInteractiveStyle(true, InteractiveState.MouseOn, null, 1.1f, null),
-                        new TextInteractiveStyle(true, InteractiveState.MouseDown, null, 1.1f, FontStyle.Bold)
-                        );
-
-                    paletteSet.__IsReadOnly = true;
-                    __Default = paletteSet;
-                }
-                return __Default;
-            }
-        }
-        private static AppearanceSet __Default;
+        public static AppearanceInfo[] Collection { get { return _Collection.Values.ToArray(); } }
+        public static AppearanceInfo Default { get { return GetItem(_DefaultName); } }
+        private const string _DefaultName = "Default";
         /// <summary>
-        /// Tmavomodrý svět
+        /// Vrátí prvek daného jména
         /// </summary>
-        public static AppearanceSet DarkBlue
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public static AppearanceInfo GetItem(string name) { return (_Collection.TryGetValue(name, out var item) ? item : null); }
+        /// <summary>
+        /// Vrátí true, pokud existuje prvek daného jména
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public static bool Contains(string name) { return _Collection.ContainsKey(name); }
+        /// <summary>
+        /// List všech standardních i přidaných definic, autoinicializační, metodou <see cref="_CreateAllAppearances()"/>
+        /// </summary>
+        private static Dictionary<string, AppearanceInfo> _Collection
         {
             get
             {
-                if (__DarkBlue is null)
-                {
-                    var paletteSet = new AppearanceSet();
-                    paletteSet.__WorkspaceColor = Color.FromArgb(16, 22, 40);
-
-                    int a0 = 40;
-                    int a1 = 80;
-                    int a2 = 120;
-                    int a3 = 160;
-
-                    int b1 = 16;
-                    int b2 = 32;
-
-                    paletteSet.__ActiveContentColor = new ColorSet(true, null,
-                        activeColor: Color.FromArgb(255, 48, 48, 96),
-                        mouseOnColor: Color.FromArgb(a0, 32, 32, 48),
-                        mouseDownColor: Color.FromArgb(a0, 40, 40, 64));
-                    paletteSet.__BorderLineColors = new ColorSet(true,
-                        Color.FromArgb(a1, b1, b1, b1),
-                        Color.FromArgb(a1, b1, b1, b1),
-                        Color.FromArgb(a1, b1, b1, b1),
-                        Color.FromArgb(a1, b2, b2, b2),
-                        Color.FromArgb(a1, b2, b2, b2),
-                        Color.FromArgb(a1, b2, b2, b2));
-                    paletteSet.__ButtonBackColors = new ColorSet(true,
-                        Color.FromArgb(a1, 24, 24, 24),
-                        Color.FromArgb(a1, 0, 0, 32),
-                        Color.FromArgb(a1, 48, 48, 96),
-                        Color.FromArgb(a2, 32, 32, 64),
-                        Color.FromArgb(a2, 40, 40, 72),
-                        Color.FromArgb(a3, 40, 40, 96));
-                    paletteSet.__MainTitleColors = new ColorSet(true, Color.White);
-                    paletteSet.__SubTitleColors = new ColorSet(true, Color.White);
-                    paletteSet.__TextStandardColors = new ColorSet(true, Color.White);
-
-                    paletteSet.__MainTitleAppearance = new TextAppearance(true,
-                        FontType.CaptionFont,
-                        ContentAlignment.MiddleLeft,
-                        AppearanceColorPartType.MainTitleColors,
-                        null,
-                        new TextInteractiveStyle(true, InteractiveState.Default, null, 1.2f, null),
-                        new TextInteractiveStyle(true, InteractiveState.MouseOn, null, 1.3f, null),
-                        new TextInteractiveStyle(true, InteractiveState.MouseDown, null, 1.3f, FontStyle.Bold)
-                        );
-
-                    paletteSet.__SubTitleAppearance = new TextAppearance(true,
-                        FontType.CaptionFont,
-                        ContentAlignment.MiddleLeft,
-                        AppearanceColorPartType.MainTitleColors,
-                        null,
-                        new TextInteractiveStyle(true, InteractiveState.Default, null, 1.1f, null),
-                        new TextInteractiveStyle(true, InteractiveState.MouseOn, null, 1.2f, null),
-                        new TextInteractiveStyle(true, InteractiveState.MouseDown, null, 1.2f, FontStyle.Bold)
-                        );
-
-                    paletteSet.__StandardTextAppearance = new TextAppearance(true,
-                        FontType.CaptionFont,
-                        ContentAlignment.MiddleLeft,
-                        AppearanceColorPartType.MainTitleColors,
-                        null,
-                        new TextInteractiveStyle(true, InteractiveState.Default, null, 1.0f, null),
-                        new TextInteractiveStyle(true, InteractiveState.MouseOn, null, 1.1f, null),
-                        new TextInteractiveStyle(true, InteractiveState.MouseDown, null, 1.1f, FontStyle.Bold)
-                        );
-
-                    paletteSet.__IsReadOnly = true;
-                    __DarkBlue = paletteSet;
-                }
-                return __DarkBlue;
+                if (__Collection is null)
+                    __Collection = _CreateAllAppearances();
+                return __Collection;
             }
         }
-        private static AppearanceSet __DarkBlue;
+        /// <summary>
+        /// Dictionary všech standardních i přidaných definic, proměnná
+        /// </summary>
+        private static Dictionary<string, AppearanceInfo> __Collection;
+        /// <summary>
+        /// Vytvoří a vrátí List všech standardních i přidaných definic
+        /// </summary>
+        /// <returns></returns>
+        private static Dictionary<string, AppearanceInfo> _CreateAllAppearances()
+        {
+            List<AppearanceInfo> list = new List<AppearanceInfo>();
+            var methods = typeof(AppearanceInfo).GetMethods(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.NonPublic);
+            foreach (var method in methods) 
+            {
+                if (!method.IsSpecialName && method.ReturnType == typeof(AppearanceInfo) && method.GetParameters().Length == 0)
+                {
+                    if (method.Invoke(null, new object[] {}) is AppearanceInfo info)
+                        list.Add(info);
+                }
+            }
+            list.Sort((a, b) => a.SortOrder.CompareTo(b.SortOrder));
+            var collection = list.CreateDictionary(i => i.Name, true);
+            return collection;
+        }
+        /// <summary>
+        /// Vytvoří new instanci palety "Default"
+        /// </summary>
+        /// <returns></returns>
+        private static AppearanceInfo _CreateDefault()
+        {
+            var paletteSet = new AppearanceInfo();
+            paletteSet.__Name = _DefaultName;
+            paletteSet.__ImageSmall = Properties.Resources.btn_g2_20;
+            paletteSet.__SortOrder = 100;
+            paletteSet.__WorkspaceColor = Color.FromArgb(64, 68, 72);
+
+            int a0 = 40;
+            int a1 = 80;
+            int a2 = 120;
+            int a3 = 160;
+
+            int b1 = 180;
+            int b2 = 200;
+
+            paletteSet.__ActiveContentColor = new ColorSet(true, null,
+                activeColor: Color.FromArgb(255, 240, 240, 190),
+                mouseOnColor: Color.FromArgb(a0, 200, 200, 230),
+                mouseDownColor: Color.FromArgb(a0, 180, 180, 210));
+            paletteSet.__BorderLineColors = new ColorSet(true,
+                Color.FromArgb(a1, b1, b1, b1),
+                Color.FromArgb(a1, b1, b1, b1),
+                Color.FromArgb(a1, b1, b1, b1),
+                Color.FromArgb(a1, b2, b2, b2),
+                Color.FromArgb(a1, b2, b2, b2),
+                Color.FromArgb(a1, b2, b2, b2));
+            paletteSet.__ButtonBackColors = new ColorSet(true,
+                Color.FromArgb(a1, 120, 120, 120),
+                Color.FromArgb(a1, 216, 216, 216),
+                Color.FromArgb(a1, 216, 216, 216),
+                Color.FromArgb(a2, 200, 200, 230),
+                Color.FromArgb(a2, 180, 180, 210),
+                Color.FromArgb(a3, 180, 180, 240));
+            paletteSet.__MainTitleColors = new ColorSet(true, Color.Black);
+            paletteSet.__SubTitleColors = new ColorSet(true, Color.Black);
+            paletteSet.__TextStandardColors = new ColorSet(true, Color.Black);
+
+            paletteSet.__MainTitleAppearance = new TextAppearance(true,
+                FontType.CaptionFont,
+                ContentAlignment.MiddleLeft,
+                AppearanceColorPartType.MainTitleColors,
+                null,
+                new TextInteractiveStyle(true, InteractiveState.Default, null, 1.2f, null),
+                new TextInteractiveStyle(true, InteractiveState.MouseOn, null, 1.3f, null),
+                new TextInteractiveStyle(true, InteractiveState.MouseDown, null, 1.3f, FontStyle.Bold)
+                );
+
+            paletteSet.__SubTitleAppearance = new TextAppearance(true,
+                FontType.CaptionFont,
+                ContentAlignment.MiddleLeft,
+                AppearanceColorPartType.MainTitleColors,
+                null,
+                new TextInteractiveStyle(true, InteractiveState.Default, null, 1.1f, null),
+                new TextInteractiveStyle(true, InteractiveState.MouseOn, null, 1.2f, null),
+                new TextInteractiveStyle(true, InteractiveState.MouseDown, null, 1.2f, FontStyle.Bold)
+                );
+
+            paletteSet.__StandardTextAppearance = new TextAppearance(true,
+                FontType.CaptionFont,
+                ContentAlignment.MiddleLeft,
+                AppearanceColorPartType.MainTitleColors,
+                null,
+                new TextInteractiveStyle(true, InteractiveState.Default, null, 1.0f, null),
+                new TextInteractiveStyle(true, InteractiveState.MouseOn, null, 1.1f, null),
+                new TextInteractiveStyle(true, InteractiveState.MouseDown, null, 1.1f, FontStyle.Bold)
+                );
+
+            paletteSet.__IsReadOnly = true;
+
+            return paletteSet;
+        }
+        /// <summary>
+        /// Vytvoří new instanci palety "DarkBlue"
+        /// </summary>
+        /// <returns></returns>
+        private static AppearanceInfo _CreateDarkBlue()
+        {
+            var paletteSet = new AppearanceInfo();
+            paletteSet.__Name = "DarkBlue";
+            paletteSet.__ImageSmall = Properties.Resources.btn_09_20;
+            paletteSet.__SortOrder = 500;
+            paletteSet.__WorkspaceColor = Color.FromArgb(16, 22, 40);
+
+            int a0 = 40;
+            int a1 = 80;
+            int a2 = 120;
+            int a3 = 160;
+
+            int b1 = 16;
+            int b2 = 32;
+
+            paletteSet.__ActiveContentColor = new ColorSet(true, null,
+                activeColor: Color.FromArgb(255, 48, 48, 96),
+                mouseOnColor: Color.FromArgb(a0, 32, 32, 48),
+                mouseDownColor: Color.FromArgb(a0, 40, 40, 64));
+            paletteSet.__BorderLineColors = new ColorSet(true,
+                Color.FromArgb(a1, b1, b1, b1),
+                Color.FromArgb(a1, b1, b1, b1),
+                Color.FromArgb(a1, b1, b1, b1),
+                Color.FromArgb(a1, b2, b2, b2),
+                Color.FromArgb(a1, b2, b2, b2),
+                Color.FromArgb(a1, b2, b2, b2));
+            paletteSet.__ButtonBackColors = new ColorSet(true,
+                Color.FromArgb(a1, 24, 24, 24),
+                Color.FromArgb(a1, 0, 0, 32),
+                Color.FromArgb(a1, 48, 48, 96),
+                Color.FromArgb(a2, 32, 32, 64),
+                Color.FromArgb(a2, 40, 40, 72),
+                Color.FromArgb(a3, 40, 40, 96));
+            paletteSet.__MainTitleColors = new ColorSet(true, Color.White);
+            paletteSet.__SubTitleColors = new ColorSet(true, Color.White);
+            paletteSet.__TextStandardColors = new ColorSet(true, Color.White);
+
+            paletteSet.__MainTitleAppearance = new TextAppearance(true,
+                FontType.CaptionFont,
+                ContentAlignment.MiddleLeft,
+                AppearanceColorPartType.MainTitleColors,
+                null,
+                new TextInteractiveStyle(true, InteractiveState.Default, null, 1.2f, null),
+                new TextInteractiveStyle(true, InteractiveState.MouseOn, null, 1.3f, null),
+                new TextInteractiveStyle(true, InteractiveState.MouseDown, null, 1.3f, FontStyle.Bold)
+                );
+
+            paletteSet.__SubTitleAppearance = new TextAppearance(true,
+                FontType.CaptionFont,
+                ContentAlignment.MiddleLeft,
+                AppearanceColorPartType.MainTitleColors,
+                null,
+                new TextInteractiveStyle(true, InteractiveState.Default, null, 1.1f, null),
+                new TextInteractiveStyle(true, InteractiveState.MouseOn, null, 1.2f, null),
+                new TextInteractiveStyle(true, InteractiveState.MouseDown, null, 1.2f, FontStyle.Bold)
+                );
+
+            paletteSet.__StandardTextAppearance = new TextAppearance(true,
+                FontType.CaptionFont,
+                ContentAlignment.MiddleLeft,
+                AppearanceColorPartType.MainTitleColors,
+                null,
+                new TextInteractiveStyle(true, InteractiveState.Default, null, 1.0f, null),
+                new TextInteractiveStyle(true, InteractiveState.MouseOn, null, 1.1f, null),
+                new TextInteractiveStyle(true, InteractiveState.MouseDown, null, 1.1f, FontStyle.Bold)
+                );
+
+            paletteSet.__IsReadOnly = true;
+            return paletteSet;
+        }
         #endregion
     }
     /// <summary>

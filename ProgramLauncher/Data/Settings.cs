@@ -11,10 +11,11 @@ namespace DjSoft.Tools.ProgramLauncher
     /// <summary>
     /// Obsahuje kompletní nastavení aplikace.
     /// <para/>
-    /// Třída je partial, je tedy možné do ní přidávat další části i v rámci jiných souborů.
     /// Třída sama zajišťuje načítání ze svého souboru, a ukládání svých dat do něj při ukončení aplikace (deserializace + serializace).<br/>
+    /// Dále zajišťuje možnost volat po změně obsahu metodu <see cref="SetChanged"/>, čímž bude zajištěno <u>AutoSave</u> po zadaném delay: <see cref="AutoSaveDelay"/>.
     /// <para/>
-    /// Rozšířující moduly mohou zavolat metodu <see cref="SaveNow"/> kdykoliv chtějí = po provedení výraznější změny.<br/>
+    /// Třída je partial, je tedy možné do ní přidávat další části i v rámci jiných souborů.
+    /// Rozšířující moduly mohou zavolat metodu <see cref="SaveDelayed(TimeSpan?)"/> anebo <see cref="SaveNow"/> kdykoliv chtějí = po provedení výraznější změny.<br/>
     /// Rozšířující moduly si mohou zaevidovat handlery <see cref="AfterCreate"/> a <see cref="AfterLoad"/> pro konsolidaci a přípravu svých dat po načtení, 
     /// anebo <see cref="BeforeSave"/> pro konsolidaci dat před uložením.
     /// <para/>
@@ -116,15 +117,11 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         public event EventHandler BeforeSave;
         #endregion
-        #region Základní data
-        public string AppearanceName { get; set; }
-        public Rectangle MainFormBounds { get; set; }
-
-        #endregion
         #region Save
         /// <summary>
         /// Uloží data konfigurace do patřičného souboru. 
-        /// Uloží je až po nějakém čase, lze tak volat tuto metodu stokrát za sekundu a soubor se fyzicky uloží jen danou dobu po posledním volání.
+        /// Uloží je až po nějakém čase (zadaný v parametru anebo <see cref="SaveDelay"/>).
+        /// Lze tak volat tuto metodu i stokrát za sekundu, a soubor se fyzicky uloží jen jedenkrát, a to danou dobu po posledním volání této metody.
         /// </summary>
         /// <param name="delay"></param>
         public void SaveDelayed(TimeSpan? delay = null)
@@ -211,5 +208,11 @@ namespace DjSoft.Tools.ProgramLauncher
             catch { }
         }
         #endregion
+        #region Základní data konfigurace
+        public string AppearanceName { get; set; }
+        
+
+        #endregion
+
     }
 }
