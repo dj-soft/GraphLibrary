@@ -40,16 +40,17 @@ namespace DjSoft.Tools.ProgramLauncher
         /// anebo pokud nemá průnik se žádným monitorem, pak má k němu nejbližší vzdálenost.
         /// </summary>
         /// <param name="bounds"></param>
+        /// <param name="acceptWholeBounds">Brát do úvahy: true = celé souřadnice monitoru (včetně systémvé oblasti) / false = default = jen pracovní oblast, kam se běžně zobrazují aplikace </param>
         /// <returns></returns>
-        public static Rectangle GetNearestMonitorBounds(Rectangle bounds)
+        public static Rectangle GetNearestMonitorBounds(Rectangle bounds, bool acceptWholeBounds = false)
         {
             // Zkratka pro záporný bounds:
             if (bounds.Width < 0 || bounds.Height < 0)
-                return System.Windows.Forms.Screen.PrimaryScreen.Bounds;
+                return getBounds(System.Windows.Forms.Screen.PrimaryScreen);
 
             // Zkratka pro jediný monitor:
             var screens = System.Windows.Forms.Screen.AllScreens;
-            if (screens.Length == 1) return System.Windows.Forms.Screen.PrimaryScreen.Bounds;
+            if (screens.Length == 1) return getBounds(System.Windows.Forms.Screen.PrimaryScreen);
 
             // Máme tedy více monitorů; najděme mezi nimi ten nejvhodnější:
             int? maximalCommonPixels = null;               // Dosud největší společná plocha (pixely čtverečné)
@@ -59,7 +60,7 @@ namespace DjSoft.Tools.ProgramLauncher
 
             foreach (var screen in screens)
             {
-                var monitorBounds = screen.Bounds;
+                var monitorBounds = getBounds(screen);     // Prostor monitoru
                 monitorBounds.DetectRelation(bounds, out var distance, out var commonBounds);
 
                 if (commonBounds.HasValue)
@@ -83,8 +84,14 @@ namespace DjSoft.Tools.ProgramLauncher
 
             if (maximalCommonMonitorBounds.HasValue) return maximalCommonMonitorBounds.Value;
             if (nearestMonitorBounds.HasValue) return nearestMonitorBounds.Value;
-            return System.Windows.Forms.Screen.PrimaryScreen.Bounds;
+            return getBounds(System.Windows.Forms.Screen.PrimaryScreen);
+
+
+            // Vrátí prostor Bounds / WorkingArea z daného monitoru, podle acceptWholeBounds:
+            Rectangle getBounds(System.Windows.Forms.Screen screen)
+            {
+                return (acceptWholeBounds ? screen.Bounds : screen.WorkingArea);
+            }
         }
     }
-
 }

@@ -209,7 +209,81 @@ namespace DjSoft.Tools.ProgramLauncher
             int b = (int)Math.Ceiling(bounds.Bottom);
             return Rectangle.FromLTRB(l, t, r, b);
         }
+        /// <summary>
+        /// Metoda najde nejbližší monitor k dané souřadnici, a danou souřadnici zarovná do souřadnic tohoto monitoru
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="canShrink"></param>
+        /// <param name="isMaximizedBounds"></param>
+        /// <returns></returns>
+        public static Rectangle AlignToNearestMonitor(this Rectangle bounds, bool canShrink = false, bool isMaximizedBounds = false)
+        {
+            Rectangle testBounds = bounds;
+            // true = budeme nejprve souřadnice bounds zmenšovat, protože vstupní bounds jsou Maximized, a ty přesahují o 8px hranice monitoru na všechny 4 strany!!!
+            bool isShrinked = (isMaximizedBounds && bounds.Width >= 30 && bounds.Height >= 30);
+            if (isShrinked) testBounds = testBounds.Enlarge(-12);
+            var monitorBounds = Monitors.GetNearestMonitorBounds(testBounds);
+            var alignedBounds = AlignToBounds(testBounds, monitorBounds, canShrink);
+            // Pokud jsme vstupní bounds zmenšili, tak nyní je zpátky zvětšíme (aby byly opět Maximized):
+            if (isShrinked) alignedBounds = alignedBounds.Enlarge(12);
+            return alignedBounds;
+        }
+        /// <summary>
+        /// Metoda zajistí zarovnání aktuálních souřadnic (this) do daných vnějších souřadnic.
+        /// Nejprve souřadnici <paramref name="bounds"/> přesune do vnitřní části <paramref name="outerBounds"/> tak, aby se nezměnila velikost <paramref name="bounds"/>.
+        /// Pak pokud bude <paramref name="canShrink"/> = true, pak souřadnice může i v případě potřeby zmenšit (Width, Height) tak, aby nepřesahovaly ven.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="outerBounds"></param>
+        /// <param name="canShrink"></param>
+        /// <returns></returns>
+        public static Rectangle AlignToBounds(this Rectangle bounds, Rectangle outerBounds, bool canShrink = false)
+        {
+            // Souřadnice, s nimiž budu pohybovat:
+            int left = bounds.Left;
+            int top = bounds.Top;
+            int right = bounds.Right;
+            int bottom = bounds.Bottom;
+            int width = right - left;
+            int height = bottom - top;
 
+            // Odsuneme zprava doleva, a zdola nahoru:
+            if (right > outerBounds.Right)
+            {
+                right = outerBounds.Right;
+                left = right - width;
+            }
+            if (bottom > outerBounds.Bottom)
+            {
+                bottom = outerBounds.Bottom;
+                top = bottom - height;
+            }
+
+            // Odsuneme zleva doprava, a shora dolů:
+            if (left < outerBounds.Left)
+            {
+                left = outerBounds.Left;
+                right = left + width;
+            }
+            if (top < outerBounds.Top)
+            {
+                top = outerBounds.Top;
+                bottom = top + height;
+            }
+
+            // Pokud můžu zmenšovat, tak až nakonec:
+            if (canShrink)
+            {
+                if (right > outerBounds.Right)
+                    width = outerBounds.Right - left;
+
+                if (bottom > outerBounds.Bottom)
+                    height = outerBounds.Bottom - top;
+            }
+
+            // Hotovo:
+            return new Rectangle(left, top, width, height);
+        }
         /// <summary>
         /// Metoda určí vzájemný vztah dvou Rectangle:
         /// Pokud nemají společný prostor, pak určí jejich nejmenší vzdálenost do out <paramref name="distance"/>;
@@ -1012,6 +1086,21 @@ namespace DjSoft.Tools.ProgramLauncher
             // Výstupní Dictionary, kde Value převedu z List na Array:
             var result = dictionary.CreateDictionary(kvp => kvp.Key, kvp => kvp.Value.ToArray());
             return result;
+        }
+        /// <summary>
+        /// Přidá nebo přepíše danou hodnotu do this Dictionary pod daný klíč.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="dictionary"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        public static void StoreValue<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue value)
+        {
+            if (dictionary.ContainsKey(key))
+                dictionary[key] = value;
+            else
+                dictionary.Add(key, value);
         }
         #endregion
         #region Drobnosti

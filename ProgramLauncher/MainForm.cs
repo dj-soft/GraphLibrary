@@ -1,4 +1,5 @@
-﻿using DjSoft.Tools.ProgramLauncher.Data;
+﻿using DjSoft.Tools.ProgramLauncher.Components;
+using DjSoft.Tools.ProgramLauncher.Data;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -11,13 +12,14 @@ using System.Windows.Forms;
 
 namespace DjSoft.Tools.ProgramLauncher
 {
-    public partial class MainForm : Form
+    public partial class MainForm : BaseForm
     {
         public MainForm()
         {
             InitializeComponent();
+            this.SettingsName = "MainForm";
+            App.Settings.AutoSaveDelay = TimeSpan.FromMilliseconds(800);
             Tests();
-            LoadSettings();
             InitializeToolBar();
             InitializeGroupPanel();
             InitializeApplicationPanel();
@@ -25,10 +27,12 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         private void Tests()
         {
+            this.Bounds = new Rectangle(20, 300, 900, 600);
+
             var file = App.Settings.FileName;
             App.Settings.AppearanceName = "Default";
             var formBounds = App.Settings.MainFormBounds;
-            App.Settings.Save();
+            App.Settings.SaveNow();
 
             var keys = Monitors.CurrentMonitorsKey;
             var myBounds = new Rectangle(10, 10, 780, 380);
@@ -41,38 +45,6 @@ namespace DjSoft.Tools.ProgramLauncher
             var monb1 = Monitors.GetNearestMonitorBounds(this.Bounds);
             var monb2 = Monitors.GetNearestMonitorBounds(new Rectangle(-20, -20, 60, 1800));
         }
-        private void LoadSettings()
-        {
-            var monitorsKey = Monitors.CurrentMonitorsKey;
-            // App.Settings.GetFormBounds(monitorsKey, "MainForm");
-        }
-        protected override void OnShown(EventArgs e)
-        {
-            if (!__IsAfterShow)
-            {
-
-                __IsAfterShow = true;
-            }
-            base.OnShown(e);
-        }
-        protected override void OnSizeChanged(EventArgs e)
-        {
-            base.OnSizeChanged(e);
-            this._OnBoundsChanged();
-        }
-        protected override void OnLocationChanged(EventArgs e)
-        {
-            base.OnLocationChanged(e);
-            this._OnBoundsChanged();
-        }
-        private void _OnBoundsChanged()
-        {
-            if (!__IsAfterShow) return;
-
-            var bounds = this.Bounds;
-            var state = this.WindowState;
-        }
-        private bool __IsAfterShow;
         #region ToolBar
         private void InitializeToolBar()
         {

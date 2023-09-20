@@ -114,7 +114,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private void _DisposeSettings()
         {
-            __Settings?.Save();
+            __Settings?.SaveNow();
             __Settings = null;
         }
         internal const string Company = "DjSoft";

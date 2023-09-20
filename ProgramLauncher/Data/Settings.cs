@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DjSoft.Tools.ProgramLauncher.Data;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -13,7 +14,7 @@ namespace DjSoft.Tools.ProgramLauncher
     /// Třída je partial, je tedy možné do ní přidávat další části i v rámci jiných souborů.
     /// Třída sama zajišťuje načítání ze svého souboru, a ukládání svých dat do něj při ukončení aplikace (deserializace + serializace).<br/>
     /// <para/>
-    /// Rozšířující moduly mohou zavolat metodu <see cref="Save"/> kdykoliv chtějí = po provedení výraznější změny.<br/>
+    /// Rozšířující moduly mohou zavolat metodu <see cref="SaveNow"/> kdykoliv chtějí = po provedení výraznější změny.<br/>
     /// Rozšířující moduly si mohou zaevidovat handlery <see cref="AfterCreate"/> a <see cref="AfterLoad"/> pro konsolidaci a přípravu svých dat po načtení, 
     /// anebo <see cref="BeforeSave"/> pro konsolidaci dat před uložením.
     /// <para/>
@@ -43,7 +44,7 @@ namespace DjSoft.Tools.ProgramLauncher
 
             var blankSettings = new Settings();
             blankSettings._RunAfterCreate(fileName);
-            blankSettings.Save();
+            blankSettings.SaveNow();
             return blankSettings;
         }
         /// <summary>
@@ -122,34 +123,92 @@ namespace DjSoft.Tools.ProgramLauncher
         #endregion
         #region Save
         /// <summary>
-        /// Uloží data konfigurace do jejího souboru.
+        /// Uloží data konfigurace do patřičného souboru. 
+        /// Uloží je až po nějakém čase, lze tak volat tuto metodu stokrát za sekundu a soubor se fyzicky uloží jen danou dobu po posledním volání.
         /// </summary>
-        public void Save()
+        /// <param name="delay"></param>
+        public void SaveDelayed(TimeSpan? delay = null)
         {
-            try { _Save(); }
-            catch { }
+            int milisecs = (int)(delay?.TotalMilliseconds ?? SaveDelay.TotalMilliseconds);
+            if (milisecs <= 50) milisecs = 50;
+            __SaveDelayedGuid = WatchTimer.CallMeAfter(_Save, milisecs, id: __SaveDelayedGuid);
         }
-        private void _Save()
+        private Guid? __SaveDelayedGuid;
+        /// <summary>
+        /// Interval, po kterém proběhne ukládání do souboru po posledním volání metody <see cref="SaveDelayed"/>.
+        /// Výchozí hodnota je 0.700 sekundy. Minimální hodnota je 0.100 sekundy.
+        /// </summary>
+        [PersistingEnabled(false)]
+        public TimeSpan SaveDelay 
+        { 
+            get { return (__SaveDelay ?? TimeSpan.FromMilliseconds(700d)); } 
+            set { __SaveDelay = (value.TotalMilliseconds > 100d ? (TimeSpan?)value : (TimeSpan?)null); }
+        }
+        private TimeSpan? __SaveDelay;
+        /// <summary>
+        /// Interval, po kterém proběhne ukládání do souboru po nastavení hodnoty <see cref="IsChanged"/> = true.
+        /// Výchozí hodnota je 7.000 sekund. Minimální hodnota je 0.100 sekundy.
+        /// </summary>
+        [PersistingEnabled(false)]
+        public TimeSpan AutoSaveDelay
         {
-            _RunBeforeSave();
+            get { return (__AutoSaveDelay ?? TimeSpan.FromMilliseconds(7000d)); }
+            set { __AutoSaveDelay = (value.TotalMilliseconds > 100d ? (TimeSpan?)value : (TimeSpan?)null); }
+        }
+        private TimeSpan? __AutoSaveDelay;
+        /// <summary>
+        /// Obsahuje true, pokud data jsou změněna
+        /// </summary>
+        [PersistingEnabled(false)]
+        public bool IsChanged { get { return __IsChanged; } }
+        private bool __IsChanged;
+        /// <summary>
+        /// Nastaví příznak <see cref="IsChanged"/> = true a zahájí odpočet času do provedení AutoSave
+        /// </summary>
+        protected void SetChanged()
+        {
+            __IsChanged = true;
 
-            string fileName = __FileName;
-            if (String.IsNullOrEmpty(fileName)) return;
-            string path = System.IO.Path.GetDirectoryName(fileName);
-            if (String.IsNullOrEmpty(path)) return;
-
-            if (!System.IO.Directory.Exists(path))
-                System.IO.Directory.CreateDirectory(path);
-
-            var persistArgs = new Data.PersistArgs() 
+            int milisecs = (int)AutoSaveDelay.TotalMilliseconds;
+            __AutoSaveDelayedGuid = WatchTimer.CallMeAfter(_Save, milisecs, id: __AutoSaveDelayedGuid);
+        }
+        private Guid? __AutoSaveDelayedGuid;
+        /// <summary>
+        /// Uloží data konfigurace do patřičného souboru. Uloží je ihned.
+        /// </summary>
+        public void SaveNow()
+        {
+            _Save();
+        }
+        /// <summary>
+        /// Provede uložení dat do souboru, vlastní výkonná metoda.
+        /// </summary>
+        private void _Save()
+        { 
+            try
             {
-                XmlFile = fileName,
-                CompressMode = Data.XmlCompressMode.None,
-                DataHeapEnabled = false,
-                UseDotNetFwSerializer = false,
-                WriterSettings = new System.Xml.XmlWriterSettings() { Indent = true, IndentChars = "  ", NewLineChars = "\r\n", NewLineHandling = System.Xml.NewLineHandling.Entitize, NewLineOnAttributes = false }
-            };
-            Data.Persist.Serialize(this, persistArgs);
+                WatchTimer.Remove(__SaveDelayedGuid);
+                __SaveDelayedGuid = null;
+                WatchTimer.Remove(__AutoSaveDelayedGuid);
+                __AutoSaveDelayedGuid = null;
+
+                _RunBeforeSave();
+
+                string fileName = __FileName;
+                if (String.IsNullOrEmpty(fileName)) return;
+                string path = System.IO.Path.GetDirectoryName(fileName);
+                if (String.IsNullOrEmpty(path)) return;
+
+                if (!System.IO.Directory.Exists(path))
+                    System.IO.Directory.CreateDirectory(path);
+
+                var persistArgs = Data.PersistArgs.Default;
+                persistArgs.XmlFile = fileName;
+                Data.Persist.Serialize(this, persistArgs);
+
+                __IsChanged = false;
+            }
+            catch { }
         }
         #endregion
     }
