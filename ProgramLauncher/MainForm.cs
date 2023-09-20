@@ -16,12 +16,63 @@ namespace DjSoft.Tools.ProgramLauncher
         public MainForm()
         {
             InitializeComponent();
+            Tests();
+            LoadSettings();
             InitializeToolBar();
             InitializeGroupPanel();
             InitializeApplicationPanel();
             InitializeStatusBar();
         }
+        private void Tests()
+        {
+            var file = App.Settings.FileName;
+            App.Settings.AppearanceName = "Default";
+            var formBounds = App.Settings.MainFormBounds;
+            App.Settings.Save();
 
+            var keys = Monitors.CurrentMonitorsKey;
+            var myBounds = new Rectangle(10, 10, 780, 380);
+            myBounds.DetectRelation(new Rectangle(1200, 50, 600, 120), out var dist1, out var boun1);
+            myBounds.DetectRelation(new Rectangle(1200, 500, 600, 120), out var dist2, out var boun2);
+            myBounds.DetectRelation(new Rectangle(700, 300, 200, 200), out var dist3, out var boun3);
+            myBounds.DetectRelation(new Rectangle(300, 100, 50, 50), out var dist4, out var boun4);
+            myBounds.DetectRelation(new Rectangle(-10, -10, 50, 50), out var dist5, out var boun5);
+
+            var monb1 = Monitors.GetNearestMonitorBounds(this.Bounds);
+            var monb2 = Monitors.GetNearestMonitorBounds(new Rectangle(-20, -20, 60, 1800));
+        }
+        private void LoadSettings()
+        {
+            var monitorsKey = Monitors.CurrentMonitorsKey;
+            // App.Settings.GetFormBounds(monitorsKey, "MainForm");
+        }
+        protected override void OnShown(EventArgs e)
+        {
+            if (!__IsAfterShow)
+            {
+
+                __IsAfterShow = true;
+            }
+            base.OnShown(e);
+        }
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
+            this._OnBoundsChanged();
+        }
+        protected override void OnLocationChanged(EventArgs e)
+        {
+            base.OnLocationChanged(e);
+            this._OnBoundsChanged();
+        }
+        private void _OnBoundsChanged()
+        {
+            if (!__IsAfterShow) return;
+
+            var bounds = this.Bounds;
+            var state = this.WindowState;
+        }
+        private bool __IsAfterShow;
         #region ToolBar
         private void InitializeToolBar()
         {

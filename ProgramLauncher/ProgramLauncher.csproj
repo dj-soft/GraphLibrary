@@ -56,6 +56,8 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Data\Extensions.cs" />
+    <Compile Include="Data\Monitors.cs" />
+    <Compile Include="Data\Settings.cs" />
     <Compile Include="Data\Skins.cs" />
     <Compile Include="Data\XmlPersist.cs" />
     <Compile Include="MainForm.cs">

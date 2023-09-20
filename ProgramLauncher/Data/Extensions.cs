@@ -13,7 +13,7 @@ namespace DjSoft.Tools.ProgramLauncher
 {
     public static class Extensions
     {
-        #region Kreslící support
+        #region Rectangle
         /// <summary>
         /// Vrátí new instanci <see cref="Rectangle"/>, která vychází z this a je zmenšená (dovnitř) na každé straně o dané pixely
         /// </summary>
@@ -143,6 +143,29 @@ namespace DjSoft.Tools.ProgramLauncher
             return (size.Width > 0 && size.Height > 0);
         }
         /// <summary>
+        /// Vrátí počet pixelů daného prostoru. Pokud bude některý rozměr záporný, může se vrátit 0 podle <paramref name="negativeAsZero"/>.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="negativeAsZero"></param>
+        /// <returns></returns>
+        public static int GetPixelsCount(this Rectangle bounds, bool negativeAsZero = false)
+        {
+            return GetPixelsCount(bounds.Size, negativeAsZero);
+        }
+        /// <summary>
+        /// Vrátí počet pixelů daného prostoru. Pokud bude některý rozměr záporný, může se vrátit 0 podle <paramref name="negativeAsZero"/>.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="negativeAsZero"></param>
+        /// <returns></returns>
+        public static int GetPixelsCount(this Size size, bool negativeAsZero = false)
+        {
+            int w = size.Width;
+            int h = size.Height;
+            if ((w < 0 || h < 0) && negativeAsZero) return 0;
+            return w * h;
+        }
+        /// <summary>
         /// Vytvoří a vrátí nový Rectangle, jehož velikost je do všech stran zvětšená o daný počet pixelů.
         /// Záporné číslo velikost zmenší.
         /// Například this Rectangle {50, 10, 30, 20} .Enlarge(1) vrátí hodnotu: {49, 9, 32, 22}.
@@ -185,6 +208,117 @@ namespace DjSoft.Tools.ProgramLauncher
             int r = (int)Math.Ceiling(bounds.Right);
             int b = (int)Math.Ceiling(bounds.Bottom);
             return Rectangle.FromLTRB(l, t, r, b);
+        }
+
+        /// <summary>
+        /// Metoda určí vzájemný vztah dvou Rectangle:
+        /// Pokud nemají společný prostor, pak určí jejich nejmenší vzdálenost do out <paramref name="distance"/>;
+        /// Pokud mají společný prostor, pak určí jeho souřadnice do out <paramref name="commonBounds"/>.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="target"></param>
+        /// <param name="distance"></param>
+        /// <param name="commonBounds"></param>
+        /// <returns></returns>
+        public static void DetectRelation(this Rectangle bounds, Rectangle target, out int? distance, out Rectangle? commonBounds)
+        {
+            _DetectRelation(bounds, target, out distance, out commonBounds);
+        }
+        /// <summary>
+        /// Metoda vrátí nejmenší vzdálenost mezi dvěma prostory.
+        /// Pokud prostory na sebe navazují, vrací 0.
+        /// Pokud se prostory překrývají, vrací null: pak je možno použít metodu <see cref="GetCommonBounds(Rectangle, Rectangle)"/>.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        public static int? GetDistanceTo(this Rectangle bounds, Rectangle target)
+        {
+            _DetectRelation(bounds, target, out int? distance, out Rectangle? _);
+            return distance;
+        }
+        public static Rectangle? GetCommonBounds(this Rectangle bounds, Rectangle target)
+        {
+            _DetectRelation(bounds, target, out int? _, out Rectangle? commonBounds);
+            return commonBounds;
+        }
+        /// <summary>
+        /// Metoda určí vzájemný vztah dvou Rectangle:
+        /// Pokud nemají společný prostor, pak určí jejich nejmenší vzdálenost;
+        /// Pokud mají společný prostor, pak určí jeho souřadnice.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        private static void _DetectRelation(Rectangle bounds, Rectangle target, out int? distance, out Rectangle? commonBounds)
+        {
+            distance = null;
+            commonBounds = null;
+
+            // Záporné velikosti nebudeme řešit:
+            if (bounds.Width < 0 || bounds.Height < 0 || target.Width < 0 || target.Height < 0) return;
+
+            // Zjistíme, zda target leží v ose X na pozici Před (včetně dotyk vlevo) nebo Přes nebo Za (včetně dotyk vpravo):
+            var posX = getPosition(bounds.Left, bounds.Right, target.Left, target.Right, out int? distX, out int? innerLeft, out int? innerRight);
+            var posY = getPosition(bounds.Top, bounds.Bottom, target.Top, target.Bottom, out int? distY, out int? innerTop, out int? innerBottom);
+            var pos = posX + posY;
+
+            // Nyní mám určenou vzájemnou pozici v obou směrech (X i Y), vyřešíme tedy matici 3x3:
+            switch (pos)
+            {
+                case "BB":             // X: Before;  Y: Before  =>  Vlevo nahoře
+                case "BA":             // X: Before;  Y: After   =>  Vlevo dole
+                case "AB":             // X: After;   Y: Before  =>  Vpravo nahoře
+                case "AA":             // X: After;   Y: After   =>  Vpravo dole
+                    distance = getHypotenuse(distX.Value, distY.Value);
+                    break;
+                case "BO":             // X: Before;  Y: Over    =>  Nalevo
+                case "AO":             // X: After;   Y: Over    =>  Napravo
+                    distance = distX.Value;
+                    break;
+                case "OB":             // X: Over;    Y: Before  =>  Nad
+                case "OA":             // X: Over;    Y: After   =>  Pod
+                    distance = distY.Value;
+                    break;
+                case "OO":             // X: Over;    Y: Over    =>  Přes
+                    commonBounds = Rectangle.FromLTRB(innerLeft.Value, innerTop.Value, innerRight.Value, innerBottom.Value);
+                    break;
+            }
+
+            // Určí pozici dvou intervalů,
+            //  a pokud bude Before či After, pak určí vzdálenost Dist (kladná nebo nula);
+            //  pokud bude Over pak určí pozici innerBegin (větší Begin) a innerEnd (menší End)
+            string getPosition(int boundsBegin, int boundsEnd, int targetBegin, int targetEnd, out int? dist, out int? innerBegin, out int? innerEnd)
+            {
+                
+                if (targetEnd <= boundsBegin) 
+                { 
+                    dist = boundsBegin - targetEnd; 
+                    innerBegin = null; 
+                    innerEnd = null; 
+                    return "B";                  // Before
+                }
+
+                if (targetBegin >= boundsEnd) 
+                {
+                    dist = targetBegin - boundsEnd; 
+                    innerBegin = null; 
+                    innerEnd = null; 
+                    return "A";                  // After
+                }
+
+                dist = null;
+                innerBegin = (boundsBegin > targetBegin ? boundsBegin : targetBegin);
+                innerEnd = (boundsEnd < targetEnd ? boundsEnd : targetEnd);
+                return "O";                      // Over
+            }
+
+            // Vrátí délku přepony nad dvěma odvěsnami v pravoúhlém trojúhelníku
+            int getHypotenuse(int pendantA, int pendantB)
+            {
+                double hypotenuse = Math.Sqrt(pendantA * pendantA + pendantB * pendantB);
+                return (int)Math.Round(hypotenuse, 0);
+            }
         }
         #endregion
         #region Graphics - FountainFill, Draw
@@ -286,13 +420,27 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         public enum FountainDirection
         {
+            /// <summary>
+            /// Bez přechodového efektu = SolidBrush
+            /// </summary>
             None,
+            /// <summary>
+            /// Zeshora dolů: nahoře je Color1, dole je Color2
+            /// </summary>
             ToDown,
+            /// <summary>
+            /// Zdola nahoru: dole je Color1, nahoře je Color2
+            /// </summary>
             ToUp,
+            /// <summary>
+            /// Zleva doprava: vlevo je Color1, vpravo je Color2
+            /// </summary>
             ToRight,
+            /// <summary>
+            /// Zprava doleva: vpravo je Color1, vlevo je Color2
+            /// </summary>
             ToLeft
         }
-
         /// <summary>
         /// Do aktuální grafiky vyplní daný prostor danou barvou
         /// </summary>

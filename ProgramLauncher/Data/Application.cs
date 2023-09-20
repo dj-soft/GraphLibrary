@@ -80,11 +80,51 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         private void _Exit()
         {
+            _DisposeSettings();
             _DisposeGraphics();
             _DisposeFonts();
             _DisposeImages();
         }
         private string[] __Arguments;
+        #endregion
+        #region Settings
+        #region Přístup na Settings
+        /// <summary>
+        /// Konfigurace aplikace
+        /// </summary>
+        public static Settings Settings { get { return Current._Settings; } }
+        /// <summary>
+        /// Instance Konfigurace aplikace, OnDemand
+        /// </summary>
+        private Settings _Settings
+        {
+            get
+            {
+                if (__Settings is null)
+                    __Settings = Settings.Create();
+                return __Settings;
+            }
+        }
+        /// <summary>
+        /// Proměnná pro Konfigurace aplikace
+        /// </summary>
+        private Settings __Settings;
+        /// <summary>
+        /// Ukončení Konfigurace aplikace = její Save
+        /// </summary>
+        private void _DisposeSettings()
+        {
+            __Settings?.Save();
+            __Settings = null;
+        }
+        internal const string Company = "DjSoft";
+        internal const string ProductName = "ProgramLauncher";
+        internal static string ProductTitle { get { return "Nabídka aplikací"; } }
+        #endregion
+        #region Využívání Settings pro práci s jeho daty pomocí App
+        #endregion
+        #endregion
+        #region Monitory, zarovnání souřadnic do monitoru, ukládání souřadnic oken
         #endregion
         #region Grafické prvky
         /// <summary>
@@ -431,4 +471,5 @@ namespace DjSoft.Tools.ProgramLauncher
 
         public static void ShowError(string error) { }
     }
+   
 }
