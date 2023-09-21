@@ -29,6 +29,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public Color WorkspaceColor { get { return __WorkspaceColor; } set { if (!__IsReadOnly) __WorkspaceColor = value; } } private Color __WorkspaceColor;
         /// <summary>
+        /// Barva statického pozadí pod ToolStripy (Toolbar, Statusbar)
+        /// </summary>
+        public Color ToolStripColor { get { return __ToolStripColor; } set { if (!__IsReadOnly) __ToolStripColor = value; } } private Color __ToolStripColor;
+        /// <summary>
         /// Barvy pozadí celé buňky. Pokud obsahuje null, nekreslí se.
         /// </summary>
         public ColorSet CellBackColor { get { return __CellBackColor; } set { if (!__IsReadOnly) __CellBackColor = value; } } private ColorSet __CellBackColor;
@@ -121,7 +125,13 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        public static AppearanceInfo GetItem(string name) { return (_Collection.TryGetValue(name, out var item) ? item : null); }
+        public static AppearanceInfo GetItem(string name, bool useDefault = false)
+        {
+            var collection = _Collection;
+            if (!String.IsNullOrEmpty(name) && collection.TryGetValue(name, out var item)) return item;
+            if (useDefault) return collection[_DefaultName];
+            return null;
+        }
         /// <summary>
         /// Vrátí true, pokud existuje prvek daného jména
         /// </summary>
@@ -175,6 +185,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             paletteSet.__ImageSmall = Properties.Resources.btn_g2_20;
             paletteSet.__SortOrder = 100;
             paletteSet.__WorkspaceColor = Color.FromArgb(64, 68, 72);
+            paletteSet.__ToolStripColor = Color.FromArgb(82, 86, 90);
 
             int a0 = 40;
             int a1 = 80;
@@ -184,7 +195,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             int b1 = 180;
             int b2 = 200;
 
-            paletteSet.__ActiveContentColor = new ColorSet(true, null,
+            paletteSet.__ActiveContentColor = ColorSet.CreateAllColors(true, null,
                 activeColor: Color.FromArgb(255, 240, 240, 190),
                 mouseOnColor: Color.FromArgb(a0, 200, 200, 230),
                 mouseDownColor: Color.FromArgb(a0, 180, 180, 210));
@@ -202,9 +213,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 Color.FromArgb(a2, 200, 200, 230),
                 Color.FromArgb(a2, 180, 180, 210),
                 Color.FromArgb(a3, 180, 180, 240));
-            paletteSet.__MainTitleColors = new ColorSet(true, Color.Black);
-            paletteSet.__SubTitleColors = new ColorSet(true, Color.Black);
-            paletteSet.__TextStandardColors = new ColorSet(true, Color.Black);
+            paletteSet.__MainTitleColors = ColorSet.CreateAllColors(true, Color.Black);
+            paletteSet.__SubTitleColors = ColorSet.CreateAllColors(true, Color.Black);
+            paletteSet.__TextStandardColors = ColorSet.CreateAllColors(true, Color.Black);
 
             paletteSet.__MainTitleAppearance = new TextAppearance(true,
                 FontType.CaptionFont,
@@ -251,6 +262,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             paletteSet.__ImageSmall = Properties.Resources.btn_09_20;
             paletteSet.__SortOrder = 500;
             paletteSet.__WorkspaceColor = Color.FromArgb(16, 22, 40);
+            paletteSet.__ToolStripColor = Color.FromArgb(24, 28, 56);
 
             int a0 = 40;
             int a1 = 80;
@@ -260,7 +272,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             int b1 = 16;
             int b2 = 32;
 
-            paletteSet.__ActiveContentColor = new ColorSet(true, null,
+            paletteSet.__ActiveContentColor = ColorSet.CreateAllColors(true, null,
                 activeColor: Color.FromArgb(255, 48, 48, 96),
                 mouseOnColor: Color.FromArgb(a0, 32, 32, 48),
                 mouseDownColor: Color.FromArgb(a0, 40, 40, 64));
@@ -278,9 +290,85 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 Color.FromArgb(a2, 32, 32, 64),
                 Color.FromArgb(a2, 40, 40, 72),
                 Color.FromArgb(a3, 40, 40, 96));
-            paletteSet.__MainTitleColors = new ColorSet(true, Color.White);
-            paletteSet.__SubTitleColors = new ColorSet(true, Color.White);
-            paletteSet.__TextStandardColors = new ColorSet(true, Color.White);
+            paletteSet.__MainTitleColors = ColorSet.CreateAllColors(true, Color.White);
+            paletteSet.__SubTitleColors = ColorSet.CreateAllColors(true, Color.White);
+            paletteSet.__TextStandardColors = ColorSet.CreateAllColors(true, Color.White);
+
+            paletteSet.__MainTitleAppearance = new TextAppearance(true,
+                FontType.CaptionFont,
+                ContentAlignment.MiddleLeft,
+                AppearanceColorPartType.MainTitleColors,
+                null,
+                new TextInteractiveStyle(true, Components.InteractiveState.Default, null, 1.2f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseOn, null, 1.3f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseDown, null, 1.3f, FontStyle.Bold)
+                );
+
+            paletteSet.__SubTitleAppearance = new TextAppearance(true,
+                FontType.CaptionFont,
+                ContentAlignment.MiddleLeft,
+                AppearanceColorPartType.MainTitleColors,
+                null,
+                new TextInteractiveStyle(true, Components.InteractiveState.Default, null, 1.1f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseOn, null, 1.2f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseDown, null, 1.2f, FontStyle.Bold)
+                );
+
+            paletteSet.__StandardTextAppearance = new TextAppearance(true,
+                FontType.CaptionFont,
+                ContentAlignment.MiddleLeft,
+                AppearanceColorPartType.MainTitleColors,
+                null,
+                new TextInteractiveStyle(true, Components.InteractiveState.Default, null, 1.0f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseOn, null, 1.1f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseDown, null, 1.1f, FontStyle.Bold)
+                );
+
+            paletteSet.__IsReadOnly = true;
+            return paletteSet;
+        }
+        /// <summary>
+        /// Vytvoří new instanci palety "LightBlue"
+        /// </summary>
+        /// <returns></returns>
+        private static AppearanceInfo _CreateLightBlue()
+        {
+            var paletteSet = new AppearanceInfo();
+            paletteSet.__Name = "LightBlue";
+            paletteSet.__ImageSmall = Properties.Resources.btn_05_20;
+            paletteSet.__SortOrder = 500;
+            paletteSet.__WorkspaceColor = Color.FromArgb(215, 220, 234);
+            paletteSet.__ToolStripColor = Color.FromArgb(197, 206, 232);
+
+            int a0 = 40;
+            int a1 = 80;
+            int a2 = 120;
+            int a3 = 160;
+
+            int b1 = 16;
+            int b2 = 32;
+
+            paletteSet.__ActiveContentColor = ColorSet.CreateAllColors(true, null,
+                activeColor: Color.FromArgb(255, 48, 48, 96),
+                mouseOnColor: Color.FromArgb(a0, 32, 32, 48),
+                mouseDownColor: Color.FromArgb(a0, 40, 40, 64));
+            paletteSet.__BorderLineColors = new ColorSet(true,
+                Color.FromArgb(a1, b1, b1, b1),
+                Color.FromArgb(a1, b1, b1, b1),
+                Color.FromArgb(a1, b1, b1, b1),
+                Color.FromArgb(a1, b2, b2, b2),
+                Color.FromArgb(a1, b2, b2, b2),
+                Color.FromArgb(a1, b2, b2, b2));
+            paletteSet.__ButtonBackColors = new ColorSet(true,
+                Color.FromArgb(a1, 24, 24, 24),
+                Color.FromArgb(a1, 0, 0, 32),
+                Color.FromArgb(a1, 176, 191, 232),
+                Color.FromArgb(a2, 162, 180, 232),
+                Color.FromArgb(a2, 148, 170, 232),
+                Color.FromArgb(a3, 120, 150, 232));
+            paletteSet.__MainTitleColors = ColorSet.CreateAllColors(true, Color.Black);
+            paletteSet.__SubTitleColors = ColorSet.CreateAllColors(true, Color.Black);
+            paletteSet.__TextStandardColors = ColorSet.CreateAllColors(true, Color.Black);
 
             paletteSet.__MainTitleAppearance = new TextAppearance(true,
                 FontType.CaptionFont,
@@ -352,22 +440,37 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public ColorSet() { }
         /// <summary>
-        /// Konstruktor
+        /// Vytvoří a vrátí <see cref="ColorSet"/>, kdy lze zadat jen jednu barvu, která se aplikuje do všech hodnot (pro všechny interaktivní stavy),
+        /// anebo lze zadat základní barvu a volitelně přepsat jen některé konkrétní stavy.
         /// </summary>
         /// <param name="allColors"></param>
         /// <param name="disabledColor"></param>
         /// <param name="enabledColor"></param>
+        /// <param name="activeColor"></param>
         /// <param name="mouseOnColor"></param>
         /// <param name="mouseDownColor"></param>
         /// <param name="mouseHighlightColor"></param>
-        public ColorSet(Color? allColors, Color? disabledColor = null, Color? enabledColor = null, Color? activeColor = null, Color? mouseOnColor = null, Color? mouseDownColor = null, Color? mouseHighlightColor = null)
+        /// <returns></returns>
+        public static ColorSet CreateAllColors(Color? allColors, Color? disabledColor = null, Color? enabledColor = null, Color? activeColor = null, Color? mouseOnColor = null, Color? mouseDownColor = null, Color? mouseHighlightColor = null)
         {
-            this.__DisabledColor = disabledColor ?? allColors;
-            this.__EnabledColor = enabledColor ?? allColors;
-            this.__ActiveColor = activeColor ?? allColors;
-            this.__MouseOnColor = mouseOnColor ?? allColors;
-            this.__MouseDownColor = mouseDownColor ?? allColors;
-            this.__MouseHighlightColor = mouseHighlightColor ?? allColors;
+            return new ColorSet(disabledColor ?? allColors, enabledColor ?? allColors, activeColor ?? allColors, mouseOnColor ?? allColors, mouseDownColor ?? allColors, mouseHighlightColor ?? allColors);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí <see cref="ColorSet"/>, kdy lze zadat jen jednu barvu, která se aplikuje do všech hodnot (pro všechny interaktivní stavy),
+        /// anebo lze zadat základní barvu a volitelně přepsat jen některé konkrétní stavy.
+        /// </summary>
+        /// <param name="isReadOnly"></param>
+        /// <param name="allColors"></param>
+        /// <param name="disabledColor"></param>
+        /// <param name="enabledColor"></param>
+        /// <param name="activeColor"></param>
+        /// <param name="mouseOnColor"></param>
+        /// <param name="mouseDownColor"></param>
+        /// <param name="mouseHighlightColor"></param>
+        /// <returns></returns>
+        public static ColorSet CreateAllColors(bool isReadOnly, Color? allColors, Color? disabledColor = null, Color? enabledColor = null, Color? activeColor = null, Color? mouseOnColor = null, Color? mouseDownColor = null, Color? mouseHighlightColor = null)
+        {
+            return new ColorSet(isReadOnly, disabledColor ?? allColors, enabledColor ?? allColors, activeColor ?? allColors, mouseOnColor ?? allColors, mouseDownColor ?? allColors, mouseHighlightColor ?? allColors);
         }
         /// <summary>
         /// Konstruktor
@@ -381,29 +484,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             this.__DisabledColor = disabledColor;
             this.__EnabledColor = enabledColor;
-            this.__ActiveColor = activeColor;
+            this.__DownColor = activeColor;
             this.__MouseOnColor = mouseOnColor;
             this.__MouseDownColor = mouseDownColor;
             this.__MouseHighlightColor = mouseHighlightColor;
-        }
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="allColors"></param>
-        /// <param name="enabledColor"></param>
-        /// <param name="disabledColor"></param>
-        /// <param name="mouseOnColor"></param>
-        /// <param name="mouseDownColor"></param>
-        /// <param name="mouseHighlightColor"></param>
-        public ColorSet(bool isReadOnly, Color? allColors, Color? disabledColor = null, Color? enabledColor = null, Color? activeColor = null, Color? mouseOnColor = null, Color? mouseDownColor = null, Color? mouseHighlightColor = null)
-        {
-            this.__DisabledColor = disabledColor ?? allColors;
-            this.__EnabledColor = enabledColor ?? allColors;
-            this.__ActiveColor = activeColor ?? allColors;
-            this.__MouseOnColor = mouseOnColor ?? allColors;
-            this.__MouseDownColor = mouseDownColor ?? allColors;
-            this.__MouseHighlightColor = mouseHighlightColor ?? allColors;
-            this.__IsReadOnly = isReadOnly;
         }
         /// <summary>
         /// Konstruktor
@@ -417,7 +501,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             this.__DisabledColor = disabledColor;
             this.__EnabledColor = enabledColor;
-            this.__ActiveColor = activeColor;
+            this.__DownColor = activeColor;
             this.__MouseOnColor = mouseOnColor;
             this.__MouseDownColor = mouseDownColor;
             this.__MouseHighlightColor = mouseHighlightColor;
@@ -432,9 +516,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public Color? EnabledColor { get { return __EnabledColor; } set { if (!__IsReadOnly) __EnabledColor = value; } } private Color? __EnabledColor;
         /// <summary>
-        /// Barva ve stavu Active = aktivní, je dáno stavem konkrétního prvku
+        /// Barva ve stavu <see cref="Components.InteractiveItem.Down"/> = trvale stisknutá (jako plošný CheckBox), je dáno stavem konkrétního prvku.
         /// </summary>
-        public Color? ActiveColor { get { return __ActiveColor; } set { if (!__IsReadOnly) __ActiveColor = value; } } private Color? __ActiveColor;
+        public Color? DownColor { get { return __DownColor; } set { if (!__IsReadOnly) __DownColor = value; } } private Color? __DownColor;
         /// <summary>
         /// Barva ve stavu MouseOn = myš je na prvku
         /// </summary>

@@ -95,7 +95,17 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     dataItem.Paint(pdea);
             }
         }
-        public override Color BackColor { get { return App.CurrentAppearance.WorkspaceColor; } set { } }
+        /// <summary>
+        /// Reálná barva pozadí, nelze setovat.
+        /// Buď je zde barva explicitní <see cref="BackColorUser"/>, anebo barva z aktuální palety <see cref="App.CurrentAppearance"/>.
+        /// </summary>
+        public override Color BackColor { get { return App.CurrentAppearance.WorkspaceColor.Morph(BackColorUser); } set { } }
+        /// <summary>
+        /// Explicitní barva pozadí.
+        /// Zadaná bůže používat Alfa kanál (= průhlednost), pak pod touto barvou bude prosvítat barva pozadí dle palety.
+        /// Lze zadat null = žádná extra barva, čistě barva dle palety.
+        /// </summary>
+        public Color? BackColorUser { get { return __BackColorUser; } set { __BackColorUser = value; this.Draw(); } } private Color? __BackColorUser;
         #endregion
         #region Interaktivita
         #region Interaktivita nativní = eventy controlu
@@ -250,7 +260,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="currentItem"></param>
         private void _MouseItemClick(MouseState mouseState, InteractiveItem currentItem)
         {
-            _RunDataItemClick(new DataItemEventArgs(currentItem));
+            _RunInteractiveItemClick(new InteractiveItemEventArgs(currentItem));
 
             currentItem.InteractiveState = InteractiveState.Enabled;
         }
@@ -308,14 +318,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             {   // Ze žádného prvku na nový prvek:
                 currentMouseItem.InteractiveState = currentState;
                 __CurrentMouseItem = currentMouseItem;
-                _RunDataItemMouseEnter(new DataItemEventArgs(currentMouseItem));
+                _RunInteractiveItemMouseEnter(new InteractiveItemEventArgs(currentMouseItem));
                 return true;
             }
 
             if (lastExists && !currentExists)
             {   // Z dosavadního prvku na žádný prvek:
                 lastMouseItem.InteractiveState = InteractiveState.Enabled;
-                _RunDataItemMouseLeave(new DataItemEventArgs(lastMouseItem));
+                _RunInteractiveItemMouseLeave(new InteractiveItemEventArgs(lastMouseItem));
                 __CurrentMouseItem = null;
                 return true;
             }
@@ -335,11 +345,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
 
             // Změna prvku z dosavadního na nový:
             lastMouseItem.InteractiveState = InteractiveState.Enabled;
-            _RunDataItemMouseLeave(new DataItemEventArgs(lastMouseItem));
+            _RunInteractiveItemMouseLeave(new InteractiveItemEventArgs(lastMouseItem));
 
             currentMouseItem.InteractiveState = currentState;
             __CurrentMouseItem = currentMouseItem;
-            _RunDataItemMouseEnter(new DataItemEventArgs(currentMouseItem));
+            _RunInteractiveItemMouseEnter(new InteractiveItemEventArgs(currentMouseItem));
 
             return true;
         }
@@ -440,6 +450,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Prvky k zobrazení a interaktivní práci
         /// </summary>
         public IList<InteractiveItem> DataItems { get { return __DataItems; } }
+        public void AddItems(IEnumerable<InteractiveItem> items)
+        {
+            __DataItems.AddRange(items);
+        }
         /// <summary>
         /// Definice layoutu pro prvky v tomto panelu. Jeden panel má jeden layout.
         /// </summary>
@@ -519,48 +533,52 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             ContentSizeChanged?.Invoke(this, args);
         }
 
-        public event EventHandler<DataItemEventArgs> DataItemMouseEnter;
-        protected virtual void OnDataItemMouseEnter(DataItemEventArgs args) { }
-        private void _RunDataItemMouseEnter(DataItemEventArgs args)
+        public event EventHandler<InteractiveItemEventArgs> InteractiveItemMouseEnter;
+        protected virtual void OnInteractiveItemMouseEnter(InteractiveItemEventArgs args) { }
+        private void _RunInteractiveItemMouseEnter(InteractiveItemEventArgs args)
         {
-            OnDataItemMouseEnter(args);
-            DataItemMouseEnter?.Invoke(this, args);
+            OnInteractiveItemMouseEnter(args);
+            InteractiveItemMouseEnter?.Invoke(this, args);
         }
 
-        public event EventHandler<DataItemEventArgs> DataItemMouseLeave;
-        protected virtual void OnDataItemMouseLeave(DataItemEventArgs args) { }
-        private void _RunDataItemMouseLeave(DataItemEventArgs args)
+        public event EventHandler<InteractiveItemEventArgs> InteractiveItemMouseLeave;
+        protected virtual void OnInteractiveItemMouseLeave(InteractiveItemEventArgs args) { }
+        private void _RunInteractiveItemMouseLeave(InteractiveItemEventArgs args)
         {
-            OnDataItemMouseLeave(args);
-            DataItemMouseLeave?.Invoke(this, args);
+            OnInteractiveItemMouseLeave(args);
+            InteractiveItemMouseLeave?.Invoke(this, args);
         }
 
-        public event EventHandler<DataItemEventArgs> DataItemClick;
-        protected virtual void OnDataItemClick(DataItemEventArgs args) { }
-        private void _RunDataItemClick(DataItemEventArgs args)
+        public event EventHandler<InteractiveItemEventArgs> InteractiveItemClick;
+        protected virtual void OnInteractiveItemClick(InteractiveItemEventArgs args) { }
+        private void _RunInteractiveItemClick(InteractiveItemEventArgs args)
         {
-            OnDataItemClick(args);
-            DataItemClick?.Invoke(this, args);
+            OnInteractiveItemClick(args);
+            InteractiveItemClick?.Invoke(this, args);
         }
         #endregion
     }
 
     /// <summary>
-    /// Data pro události s <see cref="InteractiveItem"/>
+    /// Data pro události s prvek <see cref="InteractiveItem"/>
     /// </summary>
-    public class DataItemEventArgs : EventArgs
+    public class InteractiveItemEventArgs : EventArgs
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="dataItem"></param>
-        public DataItemEventArgs(InteractiveItem dataItem)
+        /// <param name="item"></param>
+        public InteractiveItemEventArgs(InteractiveItem item)
         {
-            this.DataItem = dataItem;
+            this.Item = item;
+        }
+        public override string ToString()
+        {
+            return $"Item: {Item}";
         }
         /// <summary>
         /// Prvek
         /// </summary>
-        public InteractiveItem DataItem { get; private set; }
+        public InteractiveItem Item { get; private set; }
     }
 }

@@ -484,7 +484,9 @@ namespace DjSoft.Tools.ProgramLauncher
         #endregion
         #region Vzhled
         /// <summary>
-        /// Aktuální vzhled (skin = barevná paleta); lze změnit, po změně dojde eventu <see cref="CurrentAppearanceChanged"/>
+        /// Aktuální vzhled (skin = barevná paleta); lze změnit, po změně dojde eventu <see cref="CurrentAppearanceChanged"/>.
+        /// Pozor, tato property není propojena s <see cref="Settings.AppearanceName"/>, toto propojení musí zajistit aplikace.
+        /// Důvodem je vhodné načasování zaháčkování a provedení eventu po změně / inicializaci.
         /// </summary>
         public static AppearanceInfo CurrentAppearance
         {

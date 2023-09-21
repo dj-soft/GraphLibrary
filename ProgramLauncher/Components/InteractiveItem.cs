@@ -15,6 +15,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     /// </summary>
     public class InteractiveItem : IChildOfParent<InteractiveGraphicsControl>
     {
+        public InteractiveItem()
+        {
+            __Visible = true;
+            __Enabled = true;
+            __Interactive = true;
+        }
         #region Public zobrazovaná data
         /// <summary>
         /// Vizualizace
@@ -22,7 +28,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <returns></returns>
         public override string ToString()
         {
-            return $"{this.DataLayout?.Name} {this.MainTitle}";
+            return $"{this.MainTitle};  Adress: [{this.Adress.X},{this.Adress.Y}]; Layout: '{this.DataLayout?.Name}'";
         }
         /// <summary>
         /// Pozice prvku v matici X/Y
@@ -31,21 +37,42 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Prvek je viditelný?
         /// </summary>
-        public virtual bool Visible { get { return !__InVisible; } set { __InVisible = !value; } } private bool __InVisible;             // Nemám rád inicializaci proměnných v jejich deklaraci, a nemám tady ani konstruktor. Tak nechám defaultně Invisible = false a používám Visible = Not Invisible.
+        public virtual bool Visible { get { return __Visible; } set { __Visible = value; } } private bool __Visible;
+        /// <summary>
+        /// Prvek je Enabled (false = Disabled)?
+        /// </summary>
+        public virtual bool Enabled { get { return __Enabled; } set { __Enabled = value; } } private bool __Enabled;
+        /// <summary>
+        /// Prvek je interaktivní?
+        /// </summary>
+        public virtual bool Interactive { get { return __Interactive; } set { __Interactive = value; } } private bool __Interactive;
         /// <summary>
         /// Barvy pozadí celé buňky. Pokud obsahuje null, nekreslí se.
         /// </summary>
         public virtual ColorSet CellBackColor { get { return __CellBackColor ?? App.CurrentAppearance.CellBackColor; } set { __CellBackColor = value; } } private ColorSet __CellBackColor;
-
-        public virtual string MainTitle { get; set; }
+        /// <summary>
+        /// Main titulek
+        /// </summary>
+        public virtual string MainTitle { get { return __MainTitle; } set { __MainTitle = value; } } private string __MainTitle;
+        /// <summary>
+        /// Popisek
+        /// </summary>
+        public virtual string Description { get { return __Description; } set { __Description = value; } } private string __Description;
+        /// <summary>
+        /// Příznak že prvek je aktivní. Pak používá pro své vlastní pozadí barvu <see cref="ColorSet.DownColor"/>
+        /// </summary>
+        public virtual bool Down { get { return __Down; } set { __Down = value; } } private bool __Down;
+        public virtual string ImageName { get { return __ImageName; } set { __ImageName = value; } } private string __ImageName;
+        public virtual byte[] ImageContent { get { return __ImageContent; } set { __ImageContent = value; } } private byte[] __ImageContent;
 
         /// <summary>
-        /// Příznak že prvek je aktivní. Pak používá pro své vlastní pozadí barvu <see cref="ColorSet.ActiveColor"/>
+        /// Prostor pro definiční data tohoto prvku
         /// </summary>
-        public virtual bool IsActive { get; set; }
-        public virtual string ImageName { get; set; }
-        public virtual byte[] ImageContent { get; set; }
-
+        public object UserData { get; set; }
+        /// <summary>
+        /// Prostor pro dočasné poznámky o tomto prvku
+        /// </summary>
+        public object Tag { get; set; }
         #endregion
         #region Vztah na Parenta = EditablePanel, a z něj navázané údaje
         /// <summary>
@@ -290,6 +317,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             var clientBounds = this.Parent.GetControlBounds(virtualBounds.Value);
             var clientLocation = clientBounds.Location;
             var activeBounds = dataLayout.ContentBounds.GetShiftedRectangle(clientLocation);
+            var workspaceColor = App.CurrentAppearance.WorkspaceColor;
+
             Color? color;
             e.Graphics.SetClip(activeBounds);
 
@@ -298,14 +327,17 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             // Celé pozadí buňky (buňka může mít explicitně danou barvu pozadí):
             color = this.CellBackColor?.GetColor(interactiveState);
             if (color.HasValue)
-                e.Graphics.FillRectangle(clientBounds, color.Value);
-
+            {   // Barva buňky se smíchá s barvou WorkspaceColor a vykreslí se celé její pozadí,
+                // a tato barva se pak stává základnou pro Morphování a kreslení všech dalších barev v různých oblastech:
+                workspaceColor = workspaceColor.Morph(color.Value);
+                e.Graphics.FillRectangle(clientBounds, workspaceColor);
+            }
             // Pozadí aktivní části buňky:
-            if (this.IsActive)
+            if (this.Down)
             {
-                color = paletteSet.ActiveContentColor.ActiveColor;
+                color = paletteSet.ActiveContentColor.DownColor;
                 if (color.HasValue)
-                    e.Graphics.FillRectangle(activeBounds, color.Value);
+                    e.Graphics.FillRectangle(activeBounds, workspaceColor.Morph(color.Value));
             }
 
             // Podkreslení celé buňky v myšoaktivním stavu:
@@ -313,7 +345,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             {
                 color = paletteSet.ActiveContentColor.GetColor(interactiveState);
                 if (color.HasValue)
-                    e.Graphics.FountainFill(activeBounds, color.Value);
+                    e.Graphics.FountainFill(activeBounds, workspaceColor.Morph(color.Value));
             }
 
             // Rámeček a pozadí typu Border:
@@ -327,7 +359,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     // Výplň dáme pod border:
                     color = paletteSet.ButtonBackColors.GetColor(interactiveState);
                     if (color.HasValue)
-                        e.Graphics.FountainFill(borderPath, color.Value, interactiveState);
+                        e.Graphics.FountainFill(borderPath, workspaceColor.Morph(color.Value), interactiveState);
 
                     // Linka Border:
                     if (dataLayout.BorderWidth > 0f)
@@ -350,7 +382,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     using (System.Drawing.Drawing2D.PathGradientBrush pgb = new PathGradientBrush(mousePath))       // points
                     {
                         pgb.CenterPoint = mousePoint;
-                        pgb.CenterColor = paletteSet.ButtonBackColors.MouseHighlightColor.Value;
+                        pgb.CenterColor = workspaceColor.Morph(paletteSet.ButtonBackColors.MouseHighlightColor);
                         pgb.SurroundColors = new Color[] { Color.Transparent, Color.Transparent, Color.Transparent, Color.Transparent };
                         e.Graphics.FillPath(pgb, mousePath);
                     }
@@ -388,7 +420,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Jméno stylu
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get { return __Name; } set { if (!__IsReadOnly) __Name = value; } } private string __Name;
         /// <summary>
         /// Velikost celé buňky.
         /// Základ pro tvorbu layoutu = poskládání jednotlivých prvků do matice v controlu. Používá se společně s adresou buňky <see cref="InteractiveItem.Adress"/>.
@@ -399,14 +431,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <para/>
         /// Nelze odvozovat šířku celého řádku od vizuálního controlu, vždy jen od fixních prvků.
         /// </summary>
-        public Size CellSize { get; set; }
+        public Size CellSize { get { return __CellSize; } set { if (!__IsReadOnly) __CellSize = value; } } private Size __CellSize;
         /// <summary>
         /// Souřadnice aktivního prostoru pro data: v tomto prostoru je obsah myšo-aktivní.
         /// Vnější prostor okolo těchto souřadnic je prázdný a neaktivní, odděluje od sebe sousední buňky.
         /// <para/>
         /// V tomto prostoru se stínuje pozice myši barvou <see cref="ButtonBackColors"/> : <see cref="ColorSet.MouseHighlightColor"/>.
         /// </summary>
-        public Rectangle ContentBounds { get; set; }
+        public Rectangle ContentBounds { get { return __ContentBounds; } set { if (!__IsReadOnly) __ContentBounds = value; } } private Rectangle __ContentBounds;
         /// <summary>
         /// Souřadnice prostoru s okrajem a vykresleným pozadím.
         /// V tomto prostoru je použita barva <see cref="BorderLineColors"/> a <see cref="ButtonBackColors"/>, 
@@ -414,40 +446,49 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <para/>
         /// Texty mohou být i mimo tento prostor.
         /// </summary>
-        public Rectangle BorderBounds { get; set; }
+        public Rectangle BorderBounds { get { return __BorderBounds; } set { if (!__IsReadOnly) __BorderBounds = value; } } private Rectangle __BorderBounds;
         /// <summary>
         /// Zaoblení Borderu, 0 = ostře hranatý
         /// </summary>
-        public int BorderRound { get; set; }
+        public int BorderRound { get { return __BorderRound; } set { if (!__IsReadOnly) __BorderRound = value; } } private int __BorderRound;
         /// <summary>
         /// Šířka linky Borderu, 0 = nekreslí se
         /// </summary>
-        public float BorderWidth { get; set; }
+        public float BorderWidth { get { return __BorderWidth; } set { if (!__IsReadOnly) __BorderWidth = value; } } private float __BorderWidth;
         /// <summary>
         /// Souřadnice prostoru pro ikonu
         /// </summary>
-        public Rectangle ImageBounds { get; set; }
+        public Rectangle ImageBounds { get { return __ImageBounds; } set { if (!__IsReadOnly) __ImageBounds = value; } } private Rectangle __ImageBounds;
         /// <summary>
         /// Velikost prostoru stínování myši, lze zakázat zadáním prázdného prostoru
         /// </summary>
-        public Size MouseHighlightSize { get; set; }
-
+        public Size MouseHighlightSize { get { return __MouseHighlightSize; } set { if (!__IsReadOnly) __MouseHighlightSize = value; } } private Size __MouseHighlightSize;
+        /// <summary>
+        /// Data jsou ReadOnly?
+        /// </summary>
+        public bool IsReadOnly { get { return __IsReadOnly; } } private bool __IsReadOnly;
         /// <summary>
         /// Souřadnice prostoru pro hlavní text
         /// </summary>
-        public Rectangle MainTitleBounds { get; set; }
-        public AppearanceTextPartType? MainTitleAppearanceType { get; set; }
+        public Rectangle MainTitleBounds { get { return __MainTitleBounds; } set { if (!__IsReadOnly) __MainTitleBounds = value; } } private Rectangle __MainTitleBounds;
+        /// <summary>
+        /// Typ vzhledu hlavního titulku
+        /// </summary>
+        public AppearanceTextPartType? MainTitleAppearanceType { get { return __MainTitleAppearanceType; } set { if (!__IsReadOnly) __MainTitleAppearanceType = value; } } private AppearanceTextPartType? __MainTitleAppearanceType;
         /// <summary>
         /// Vzhled hlavního textu
         /// </summary>
         public TextAppearance MainTitleAppearance
         {
             get { return __MainTitleAppearance ?? App.CurrentAppearance.GetTextAppearance(MainTitleAppearanceType ?? AppearanceTextPartType.MainTitle); }
-            set { __MainTitleAppearance = value; }
+            set { if (!__IsReadOnly) __MainTitleAppearance = value; }
         }
         private TextAppearance __MainTitleAppearance;
         #endregion
         #region Statické konstruktory konkrétních stylů
+
+
+
         /// <summary>
         /// Menší obdélník
         /// </summary>

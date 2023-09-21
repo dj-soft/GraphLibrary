@@ -701,14 +701,10 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="other">Cílová barva</param>
         /// <param name="morph">Poměr morph (0=vrátí this, 1=vrátí other, hodnota může být záporná i větší než 1f)</param>
         /// <returns></returns>
-        public static Color Morph(this Color root, Color other, float morph)
+        public static Color Morph(this Color root, Color? other, float morph)
         {
-            if (morph == 0f) return root;
-            float a = root.A;
-            float r = GetMorph(root.R, other.R, morph);
-            float g = GetMorph(root.G, other.G, morph);
-            float b = GetMorph(root.B, other.B, morph);
-            return GetColor(a, r, g, b);
+            if (!other.HasValue || morph == 0f) return root;
+            return _Morph(root, other.Value, morph);
         }
         /// <summary>
         /// Vrací barvu, která je výsledkem interpolace mezi barvou this a barvou other, 
@@ -724,14 +720,29 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="root">Výchozí barva</param>
         /// <param name="other">Cílová barva</param>
         /// <returns></returns>
-        public static Color Morph(this Color root, Color other)
+        public static Color Morph(this Color root, Color? other)
         {
-            if (other.A == 0) return root;
-            float morph = ((float)other.A) / 255f;
+            if (!other.HasValue || other.Value.A == 0) return root;
+            float morph = ((float)other.Value.A) / 255f;
+            return _Morph(root, other.Value, morph);
+        }
+        /// <summary>
+        /// Vrátí barvu Morph mezi <paramref name="root"/> a <paramref name="other"/> v poměru <paramref name="morph"/> (0 až 1).
+        /// Pro hodnoty 0 a menší vrátí <paramref name="root"/>, pro hodnoty 1 a vyšší vrátí <paramref name="other"/>.
+        /// Mezilehlé hodnoty <paramref name="morph"/> lineárně interpoluje.
+        /// </summary>
+        /// <param name="root"></param>
+        /// <param name="other"></param>
+        /// <param name="morph"></param>
+        /// <returns></returns>
+        private static Color _Morph(Color root, Color other, float morph)
+        {
+            if (morph <= 0f) return root;
+            if (morph >= 1f) return other;
             float a = root.A;
-            float r = GetMorph(root.R, other.R, morph);
-            float g = GetMorph(root.G, other.G, morph);
-            float b = GetMorph(root.B, other.B, morph);
+            float r = _GetMorph(root.R, other.R, morph);
+            float g = _GetMorph(root.G, other.G, morph);
+            float b = _GetMorph(root.B, other.B, morph);
             return GetColor(a, r, g, b);
         }
         /// <summary>
@@ -741,7 +752,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="other">Cílová složka</param>
         /// <param name="morph">Poměr morph (0=vrátí this, 1=vrátí other, hodnota může být záporná i větší než 1f)</param>
         /// <returns></returns>
-        private static float GetMorph(float root, float other, float morph)
+        private static float _GetMorph(float root, float other, float morph)
         {
             float dist = other - root;
             return root + morph * dist;

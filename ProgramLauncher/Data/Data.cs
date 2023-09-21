@@ -13,43 +13,269 @@ using System.Security.Policy;
 
 namespace DjSoft.Tools.ProgramLauncher.Data
 {
-    public class GroupData
+    #region class PageData : Jedna stránka s daty, je zobrazena Tabem v levém bloku, popisuje celý obsah v pravé velké části
+    /// <summary>
+    /// Jedna stránka s daty, je zobrazena Tabem v levém bloku, popisuje celý obsah v pravé velké části
+    /// </summary>
+    public class PageData : BaseData
     {
-        public string Title { get; set; }
+        public PageData()
+        {
+            Groups = new List<GroupData>();
+        }
+        public override string ToString()
+        {
+            return this.Title;
+        }
+
+        public List<GroupData> Groups { get; private set; }
+
+        #region Tvorba výchozích dat - namísto prázdných
+        /// <summary>
+        /// Zajistí, že v daném seznamu bude alespoň jeden prvek, a že první prvek nebude prázdný.
+        /// </summary>
+        /// <param name="programPages"></param>
+        internal static void CheckNotVoid(List<PageData> programPages)
+        {
+            if (programPages.Count == 0)
+                programPages.Add(PageData.CreateInitialPageData());
+            GroupData.CheckNotVoid(programPages[0].Groups);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí defaultní prvek
+        /// </summary>
+        /// <returns></returns>
+        public static PageData CreateInitialPageData()
+        {
+            PageData pageData = new PageData();
+            pageData.Title = "Výchozí";
+            pageData.ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\";
+            return pageData;
+        }
+        #endregion
+    }
+    #endregion
+    #region class GroupData : Jedna skupina dat, je zobrazena v pravé velké části, a je reprezentována vodorovným titulkem přes celou šířku, obsahuje sadu aplikací
+    /// <summary>
+    /// Jedna skupina dat, je zobrazena v pravé velké části, a je reprezentována vodorovným titulkem přes celou šířku, obsahuje sadu aplikací
+    /// </summary>
+    public class GroupData : BaseData
+    {
+        public GroupData()
+        {
+            Applications = new List<ApplicationData>();
+        }
+
+        public List<ApplicationData> Applications { get; private set; }
+
+        #region Tvorba výchozích dat - namísto prázdných
+        /// <summary>
+        /// Zajistí, že v daném seznamu bude alespoň jeden prvek, a že první prvek nebude prázdný.
+        /// </summary>
+        /// <param name="programGroups"></param>
+        internal static void CheckNotVoid(List<GroupData> programGroups)
+        {
+            if (programGroups.Count == 0)
+                programGroups.Add(GroupData.CreateInitialGroupData());
+            ApplicationData.CheckNotVoid(programGroups[0].Applications);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí defaultní prvek
+        /// </summary>
+        /// <returns></returns>
+        public static GroupData CreateInitialGroupData()
+        {
+            GroupData groupData = new GroupData();
+            groupData.Title = "Základní skupina v nabídce";
+            return groupData;
+        }
+        #endregion
+    }
+    #endregion
+    #region class ApplicationData : Jeden prvek nabídky, konkrétní aplikace = spustitelný cíl
+    /// <summary>
+    /// Jeden prvek nabídky, konkrétní aplikace = spustitelný cíl
+    /// </summary>
+    public class ApplicationData : BaseData
+    {
+      
+        public string ExecutableFileName { get; set; }
+        public string ExecutableWorkingDirectory { get; set; }
+        public string ExecutableArguments { get; set; }
+        public bool ExecuteInAdminMode { get; set; }
+        public bool OpenMaximized { get; set; }
+
+        #region Tvorba výchozích dat - namísto prázdných
+        /// <summary>
+        /// Zajistí, že v daném seznamu bude alespoň nějaký výchozí prvek.
+        /// </summary>
+        /// <param name="programApplications"></param>
+        internal static void CheckNotVoid(List<ApplicationData> programApplications)
+        {
+            if (programApplications.Count == 0)
+                programApplications.AddRange(ApplicationData.CreateInitialApplicationsData());
+        }
+        /// <summary>
+        /// Vytvoří a vrátí sadu defaultních prvků
+        /// </summary>
+        /// <returns></returns>
+        internal static IEnumerable<ApplicationData> CreateInitialApplicationsData()
+        {
+            var list = new List<ApplicationData>();
+
+            list.Add(new ApplicationData() 
+            {
+                Title = "Windows",
+                Description = "Průzkumník",
+                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\wine.png",
+                Adress = new Point(0, 0),
+                ExecutableFileName = @"c:\Windows\explorer.exe"
+            });
+
+            list.Add(new ApplicationData() 
+            {
+                Title = "Wordpad",
+                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\abiword.png",
+                Adress = new Point(1, 0),
+                ExecutableFileName = @"c:\Windows\write.exe"
+            });
+            
+            list.Add(new ApplicationData() 
+            { 
+                Title = "MS DOS user",
+                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\evilvte.png",
+                ExecuteInAdminMode = false,
+                Adress = new Point(0, 1),
+                ExecutableFileName = @"c:\Windows\System32\cmd.exe"
+            });
+
+            list.Add(new ApplicationData()
+            {
+                Title = "MS DOS Admin",
+                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\evilvte.png",
+                ExecuteInAdminMode = true,
+                Adress = new Point(0, 2),
+                ExecutableFileName = @"c:\Windows\System32\cmd.exe"
+            });
+
+            list.Add(new ApplicationData() 
+            {
+                Title = "Libre Office",
+                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\distributions-solaris.png",
+                Adress = new Point(1, 1),
+                ExecutableFileName = @"c:\Program Files (x86)\OpenOffice 4\program\soffice.exe"
+            });
+
+            list.Add(new ApplicationData()
+            {
+                Title = "Dokument",
+                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\gpe-tetris.png",
+                Adress = new Point(2, 0),
+                ExecutableFileName = @"d:\Dokumenty\Vyděšený svišť.png"
+            });
+
+            return list;
+        }
+        #endregion
+        #region Spouštění aplikace
+        public void RunApplication()
+        {
+            System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo()
+            {
+                FileName = ExecutableFileName,
+                Arguments = ExecutableArguments,
+                WindowStyle = (OpenMaximized ? System.Diagnostics.ProcessWindowStyle.Maximized : System.Diagnostics.ProcessWindowStyle.Normal),
+                UseShellExecute = true
+            };
+
+            if (ExecuteInAdminMode) psi.Verb = "runas";
+
+            System.Diagnostics.Process process = new System.Diagnostics.Process();
+            process.StartInfo = psi;
+            process.Start();
+        }
+        #endregion
+    }
+    #endregion
+    #region class BaseData : Bázová třída pro data, účastní se zobrazování (obsahuje dostatečná data pro zobrazení)
+    /// <summary>
+    /// Bázová třída pro data, účastní se zobrazování (obsahuje dostatečná data pro zobrazení)
+    /// </summary>
+    public class BaseData
+    {
+        /// <summary>
+        /// Hlavní titulek
+        /// </summary>
+        public virtual string Title { get; set; }
+        /// <summary>
+        /// Podtitulek
+        /// </summary>
+        public virtual string Description { get; set; }
+        /// <summary>
+        /// Obsah Tooltipu
+        /// </summary>
+        public virtual string ToolTip { get; set; }
+        /// <summary>
+        /// Jméno obrázku
+        /// </summary>
+        public virtual string ImageFileName { get; set; }
+        /// <summary>
+        /// Adresa prvku v controlu
+        /// </summary>
+        public virtual Point Adress { get; set; }
+        /// <summary>
+        /// Barva pozadí, smí obsahovat Alpha kanál, smí být null
+        /// </summary>
         public Color? BackColor { get; set; }
 
-        public List<ApplicationData> Applications { get; set; }
+
+        internal InteractiveItem CreateInteractiveItem()
+        {
+            var item = new InteractiveDataItem(this);
+            return item;
+        }
 
     }
-    public class ApplicationData
+    public class InteractiveDataItem : InteractiveItem
     {
-        public string Title { get; set; }
-        public string Description { get; set; }
-
+        public InteractiveDataItem(BaseData data)
+        {
+            __Data = data;
+            __CellBackColor = ColorSet.CreateAllColors(data.BackColor);
+            UserData = data;
+        }
+        private BaseData __Data;
+        public override string MainTitle { get { return __Data.Title; } set { __Data.Title = value; } }
+        public override string Description { get { return __Data.Description; } set { __Data.Description = value; } }
+        public override Point Adress { get { return __Data.Adress; } set { __Data.Adress = value; } }
+        public override string ImageName { get { return __Data.ImageFileName; } set { __Data.ImageFileName = value; } }
+        public override ColorSet CellBackColor { get { return __CellBackColor; } set { __CellBackColor = value; } } private ColorSet __CellBackColor;
     }
-
+    #endregion
 }
 
 namespace DjSoft.Tools.ProgramLauncher
 {
     partial class Settings
     {
-        #region Část Settings, která ukládá a načítá vlastní data o grupách a aplikacích
-
-        [PersistingEnabled(false)]
-        public List<GroupData> ProgramGroups { get { return _ProgramGroupsGet(); } }
-        private List<GroupData> _ProgramGroupsGet()
-        {
-            if (_ProgramGroups == null)
-                _ProgramGroups = new List<GroupData>();
-            return _ProgramGroups;
-        }
-
+        #region Část Settings, která ukládá a načítá vlastní data o stránkách, grupách a aplikacích = ProgramPages
         /// <summary>
-        /// Dictionary obsahující data s pozicemi formulářů
+        /// Jednotlivé stránky. Jedna každá stránka je zobrazena jako Tab v levém bloku, a popisuje celý obsah (grupy a v nich aplikace) v pravé velké části.
+        /// Seznam stránek má vždy alespoň jednu stránku, obsahující jednu grupu a výchozí aplikace.
+        /// </summary>
+        [PersistingEnabled(false)]
+        public List<PageData> ProgramPages { get { return _ProgramPagesGet(); } }
+        private List<PageData> _ProgramPagesGet()
+        {
+            if (_ProgramPages == null) _ProgramPages = new List<PageData>();
+            PageData.CheckNotVoid(_ProgramPages);
+            return _ProgramPages;
+        }
+        /// <summary>
+        /// Dictionary obsahující data jednotlivých stránek (uvnitř nich jsou grupy a v grupách aplikace)
         /// </summary>
         [PropertyName("program_groups")]
-        private List<GroupData> _ProgramGroups { get; set; }
+        private List<PageData> _ProgramPages { get; set; }
         /*
         /// <summary>
         /// Uloží dodanou pozici formuláře do Settings pro aktuální / obecnou konfiguraci monitorů.<br/>
