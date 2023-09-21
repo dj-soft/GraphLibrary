@@ -411,12 +411,12 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="bounds"></param>
         /// <param name="color"></param>
         /// <param name="interactiveState"></param>
-        public static void FountainFill(this Graphics graphics, Rectangle bounds, Color color, InteractiveState interactiveState = InteractiveState.Default)
+        public static void FountainFill(this Graphics graphics, Rectangle bounds, Color color, Components.InteractiveState interactiveState = Components.InteractiveState.Default)
         {
             _GetFountainFillDirection(interactiveState, out float morph, out FountainDirection direction);
             FountainFill(graphics, bounds, color, morph, direction);
         }
-        public static void FountainFill(this Graphics graphics, GraphicsPath path, Color color, InteractiveState interactiveState = InteractiveState.Default)
+        public static void FountainFill(this Graphics graphics, GraphicsPath path, Color color, Components.InteractiveState interactiveState = Components.InteractiveState.Default)
         {
             _GetFountainFillDirection(interactiveState, out float morph, out FountainDirection direction);
             FountainFill(graphics, path, color, morph, direction);
@@ -440,15 +440,15 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="interactiveState"></param>
         /// <param name="morph"></param>
         /// <param name="direction"></param>
-        private static void _GetFountainFillDirection(InteractiveState interactiveState, out float morph, out FountainDirection direction)
+        private static void _GetFountainFillDirection(Components.InteractiveState interactiveState, out float morph, out FountainDirection direction)
         {
             switch (interactiveState)
             {
-                case InteractiveState.MouseOn:
+                case Components.InteractiveState.MouseOn:
                     morph = 0.10f;
                     direction = FountainDirection.ToDown;
                     return;
-                case InteractiveState.MouseDown:
+                case Components.InteractiveState.MouseDown:
                     morph = -0.20f;
                     direction = FountainDirection.ToDown;
                     return;
@@ -533,7 +533,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             graphics.FillRectangle(App.GetBrush(color), bounds);
         }
-        public static void DrawText(this Graphics graphics, string text, RectangleF bounds, TextAppearance textAppearance, InteractiveState interactiveState = InteractiveState.Default)
+        public static void DrawText(this Graphics graphics, string text, RectangleF bounds, TextAppearance textAppearance, Components.InteractiveState interactiveState = Components.InteractiveState.Default)
         {
             var brush = App.GetBrush(textAppearance.TextColors, interactiveState);
             if (brush is null) return;

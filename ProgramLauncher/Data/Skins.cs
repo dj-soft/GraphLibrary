@@ -211,9 +211,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 ContentAlignment.MiddleLeft,
                 AppearanceColorPartType.MainTitleColors,
                 null,
-                new TextInteractiveStyle(true, InteractiveState.Default, null, 1.2f, null),
-                new TextInteractiveStyle(true, InteractiveState.MouseOn, null, 1.3f, null),
-                new TextInteractiveStyle(true, InteractiveState.MouseDown, null, 1.3f, FontStyle.Bold)
+                new TextInteractiveStyle(true, Components.InteractiveState.Default, null, 1.2f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseOn, null, 1.3f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseDown, null, 1.3f, FontStyle.Bold)
                 );
 
             paletteSet.__SubTitleAppearance = new TextAppearance(true,
@@ -221,9 +221,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 ContentAlignment.MiddleLeft,
                 AppearanceColorPartType.MainTitleColors,
                 null,
-                new TextInteractiveStyle(true, InteractiveState.Default, null, 1.1f, null),
-                new TextInteractiveStyle(true, InteractiveState.MouseOn, null, 1.2f, null),
-                new TextInteractiveStyle(true, InteractiveState.MouseDown, null, 1.2f, FontStyle.Bold)
+                new TextInteractiveStyle(true, Components.InteractiveState.Default, null, 1.1f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseOn, null, 1.2f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseDown, null, 1.2f, FontStyle.Bold)
                 );
 
             paletteSet.__StandardTextAppearance = new TextAppearance(true,
@@ -231,9 +231,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 ContentAlignment.MiddleLeft,
                 AppearanceColorPartType.MainTitleColors,
                 null,
-                new TextInteractiveStyle(true, InteractiveState.Default, null, 1.0f, null),
-                new TextInteractiveStyle(true, InteractiveState.MouseOn, null, 1.1f, null),
-                new TextInteractiveStyle(true, InteractiveState.MouseDown, null, 1.1f, FontStyle.Bold)
+                new TextInteractiveStyle(true, Components.InteractiveState.Default, null, 1.0f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseOn, null, 1.1f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseDown, null, 1.1f, FontStyle.Bold)
                 );
 
             paletteSet.__IsReadOnly = true;
@@ -287,9 +287,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 ContentAlignment.MiddleLeft,
                 AppearanceColorPartType.MainTitleColors,
                 null,
-                new TextInteractiveStyle(true, InteractiveState.Default, null, 1.2f, null),
-                new TextInteractiveStyle(true, InteractiveState.MouseOn, null, 1.3f, null),
-                new TextInteractiveStyle(true, InteractiveState.MouseDown, null, 1.3f, FontStyle.Bold)
+                new TextInteractiveStyle(true, Components.InteractiveState.Default, null, 1.2f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseOn, null, 1.3f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseDown, null, 1.3f, FontStyle.Bold)
                 );
 
             paletteSet.__SubTitleAppearance = new TextAppearance(true,
@@ -297,9 +297,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 ContentAlignment.MiddleLeft,
                 AppearanceColorPartType.MainTitleColors,
                 null,
-                new TextInteractiveStyle(true, InteractiveState.Default, null, 1.1f, null),
-                new TextInteractiveStyle(true, InteractiveState.MouseOn, null, 1.2f, null),
-                new TextInteractiveStyle(true, InteractiveState.MouseDown, null, 1.2f, FontStyle.Bold)
+                new TextInteractiveStyle(true, Components.InteractiveState.Default, null, 1.1f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseOn, null, 1.2f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseDown, null, 1.2f, FontStyle.Bold)
                 );
 
             paletteSet.__StandardTextAppearance = new TextAppearance(true,
@@ -307,9 +307,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 ContentAlignment.MiddleLeft,
                 AppearanceColorPartType.MainTitleColors,
                 null,
-                new TextInteractiveStyle(true, InteractiveState.Default, null, 1.0f, null),
-                new TextInteractiveStyle(true, InteractiveState.MouseOn, null, 1.1f, null),
-                new TextInteractiveStyle(true, InteractiveState.MouseDown, null, 1.1f, FontStyle.Bold)
+                new TextInteractiveStyle(true, Components.InteractiveState.Default, null, 1.0f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseOn, null, 1.1f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseDown, null, 1.1f, FontStyle.Bold)
                 );
 
             paletteSet.__IsReadOnly = true;
@@ -456,14 +456,14 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         /// <param name="state"></param>
         /// <returns></returns>
-        public Color? GetColor(InteractiveState state)
+        public Color? GetColor(Components.InteractiveState state)
         {
             switch (state)
             {
-                case InteractiveState.Enabled: return this.EnabledColor;
-                case InteractiveState.Disabled: return this.DisabledColor;
-                case InteractiveState.MouseOn: return this.MouseOnColor;
-                case InteractiveState.MouseDown: return this.MouseDownColor;
+                case Components.InteractiveState.Enabled: return this.EnabledColor;
+                case Components.InteractiveState.Disabled: return this.DisabledColor;
+                case Components.InteractiveState.MouseOn: return this.MouseOnColor;
+                case Components.InteractiveState.MouseDown: return this.MouseDownColor;
             }
             return this.EnabledColor;
         }
@@ -499,15 +499,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Explicitně daná velikost, není ale nijak optimální definovat ji takto explicitně. 
         /// Lepší je definovat <see cref="SizeRatio"/>.
         /// </summary>
-        public float? EmSize { get { return TextStyles[InteractiveState.Default].EmSize; } set { if (!__IsReadOnly) TextStyles[InteractiveState.Default].EmSize = value; } }
+        public float? EmSize { get { return TextStyles[Components.InteractiveState.Default].EmSize; } set { if (!__IsReadOnly) TextStyles[Components.InteractiveState.Default].EmSize = value; } }
         /// <summary>
         /// Poměr velikosti aktuálního fontu ku fontu defaultnímu daného typu
         /// </summary>
-        public float? SizeRatio { get { return TextStyles[InteractiveState.Default].SizeRatio; } set { if (!__IsReadOnly) TextStyles[InteractiveState.Default].SizeRatio = value; } }
+        public float? SizeRatio { get { return TextStyles[Components.InteractiveState.Default].SizeRatio; } set { if (!__IsReadOnly) TextStyles[Components.InteractiveState.Default].SizeRatio = value; } }
         /// <summary>
         /// Styl fontu; default = dle systémového fontu
         /// </summary>
-        public FontStyle? FontStyle { get { return TextStyles[InteractiveState.Default].FontStyle; } set { if (!__IsReadOnly) TextStyles[InteractiveState.Default].FontStyle = value; } }
+        public FontStyle? FontStyle { get { return TextStyles[Components.InteractiveState.Default].FontStyle; } set { if (!__IsReadOnly) TextStyles[Components.InteractiveState.Default].FontStyle = value; } }
         /// <summary>
         /// Umístění textu v jeho prostoru
         /// </summary>
@@ -583,7 +583,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         /// <param name="state"></param>
         /// <returns></returns>
-        public TextInteractiveStyle this[InteractiveState state]
+        public TextInteractiveStyle this[Components.InteractiveState state]
         {
             get
             {
@@ -606,15 +606,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Dictionary obsahující styly
         /// </summary>
-        private Dictionary<InteractiveState, TextInteractiveStyle> _Styles
+        private Dictionary<Components.InteractiveState, TextInteractiveStyle> _Styles
         {
             get
             {
-                if (__Styles is null) __Styles = new Dictionary<InteractiveState, TextInteractiveStyle>();
+                if (__Styles is null) __Styles = new Dictionary<Components.InteractiveState, TextInteractiveStyle>();
                 return __Styles;
             }
         }
-        private Dictionary<InteractiveState, TextInteractiveStyle> __Styles;
+        private Dictionary<Components.InteractiveState, TextInteractiveStyle> __Styles;
         /// <summary>
         /// Data jsou ReadOnly?
         /// </summary>
@@ -632,7 +632,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Konstruktor pro naplněnou instanci
         /// </summary>
-        public TextInteractiveStyle(bool isReadOnly, InteractiveState interactiveState, float? emSize, float? sizeRatio, FontStyle? fontStyle)
+        public TextInteractiveStyle(bool isReadOnly, Components.InteractiveState interactiveState, float? emSize, float? sizeRatio, FontStyle? fontStyle)
         {
             __InteractiveState = interactiveState;
             __EmSize = emSize;
@@ -643,7 +643,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Pro tento stav je instance vytvořena
         /// </summary>
-        public InteractiveState InteractiveState { get { return __InteractiveState; } set { if (!__IsReadOnly) __InteractiveState = value; } } private InteractiveState __InteractiveState;
+        public Components.InteractiveState InteractiveState { get { return __InteractiveState; } set { if (!__IsReadOnly) __InteractiveState = value; } } private Components.InteractiveState __InteractiveState;
         /// <summary>
         /// Explicitně daná velikost, není ale nijak optimální definovat ji takto explicitně. 
         /// Lepší je definovat <see cref="SizeRatio"/>.
@@ -668,7 +668,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             get
             {
                 if (__Empty is null)
-                    __Empty = new TextInteractiveStyle(true, InteractiveState.Default, null, null, null);
+                    __Empty = new TextInteractiveStyle(true, Components.InteractiveState.Default, null, null, null);
                 return __Empty;
             }
         }

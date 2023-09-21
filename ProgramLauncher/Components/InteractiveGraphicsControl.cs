@@ -20,7 +20,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         public InteractiveGraphicsControl()
         {
-            __DataItems = new ChildItems<InteractiveGraphicsControl, DataItemBase>(this);
+            __DataItems = new ChildItems<InteractiveGraphicsControl, InteractiveItem>(this);
             __DataItems.CollectionChanged += __DataItems_CollectionChanged;
             _InitInteractivity();
             App.CurrentAppearanceChanged += _CurrentPaletteChanged;
@@ -46,7 +46,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Interaktivní data = jednotlivé prvky
         /// </summary>
-        private ChildItems<InteractiveGraphicsControl, DataItemBase> __DataItems;
+        private ChildItems<InteractiveGraphicsControl, InteractiveItem> __DataItems;
         #endregion
         #region Kreslení
         /// <summary>
@@ -200,7 +200,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="mouseState"></param>
         /// <param name="mouseItem"></param>
         /// <param name="isOnControl"></param>
-        private void _MouseMoveNone(MouseState mouseState, DataItemBase mouseItem, bool isOnControl)
+        private void _MouseMoveNone(MouseState mouseState, InteractiveItem mouseItem, bool isOnControl)
         {
             bool isChange = _MouseMoveCurrentExchange(mouseState, mouseItem, InteractiveState.MouseOn, isOnControl);
             bool useMouseTrack = true;
@@ -248,7 +248,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         /// <param name="mouseState"></param>
         /// <param name="currentItem"></param>
-        private void _MouseItemClick(MouseState mouseState, DataItemBase currentItem)
+        private void _MouseItemClick(MouseState mouseState, InteractiveItem currentItem)
         {
             _RunDataItemClick(new DataItemEventArgs(currentItem));
 
@@ -267,7 +267,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         /// <param name="mouseState"></param>
         /// <returns></returns>
-        private DataItemBase _GetMouseItem(MouseState mouseState)
+        private InteractiveItem _GetMouseItem(MouseState mouseState)
         {
             Point virtualPoint = this.GetVirtualPoint(mouseState.LocationControl);
             var items = __DataItems;
@@ -282,7 +282,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Vyřeší výměnu prvku pod myší (dosavadní prvek je v instanční proměnné <see cref="__CurrentMouseItem"/>,
         /// nový je v parametru <paramref name="currentMouseItem"/>).
-        /// Řeší detekci změny, vložení správného interaktivního stavu do <see cref="DataItemBase.InteractiveState"/>, 
+        /// Řeší detekci změny, vložení správného interaktivního stavu do <see cref="InteractiveItem.InteractiveState"/>, 
         /// uložení nového do <see cref="__CurrentMouseItem"/>
         /// a vrací true když jde o změnu.
         /// </summary>
@@ -291,14 +291,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="currentState"></param>
         /// <param name="isOnControl"></param>
         /// <returns></returns>
-        private bool _MouseMoveCurrentExchange(MouseState mouseState, DataItemBase currentMouseItem, InteractiveState currentState, bool isOnControl)
+        private bool _MouseMoveCurrentExchange(MouseState mouseState, InteractiveItem currentMouseItem, InteractiveState currentState, bool isOnControl)
         {
             // Pozice myši nad controlem:
             bool lastOnControl = __MouseIsOnControl;
             bool changedOnControl = (isOnControl != lastOnControl);
             __MouseIsOnControl = isOnControl;
 
-            DataItemBase lastMouseItem = __CurrentMouseItem;
+            InteractiveItem lastMouseItem = __CurrentMouseItem;
             bool lastExists = (lastMouseItem != null);
             bool currentExists = (currentMouseItem != null);
 
@@ -358,16 +358,16 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Aktuální prvek pod myší, s ním se pracuje
         /// </summary>
-        private DataItemBase __CurrentMouseItem;
+        private InteractiveItem __CurrentMouseItem;
         /// <summary>
         /// Aktuálně přemísťovaný prvek
         /// </summary>
-        private DataItemBase __CurrentDraggedItem;
+        private InteractiveItem __CurrentDraggedItem;
         /// <summary>
         /// Myš se nachází nad Controlem
         /// </summary>
         private bool __MouseIsOnControl;
-        private DataItemBase __LastMouseItem;
+        private InteractiveItem __LastMouseItem;
         #endregion
         #endregion
 
@@ -439,7 +439,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Prvky k zobrazení a interaktivní práci
         /// </summary>
-        public IList<DataItemBase> DataItems { get { return __DataItems; } }
+        public IList<InteractiveItem> DataItems { get { return __DataItems; } }
         /// <summary>
         /// Definice layoutu pro prvky v tomto panelu. Jeden panel má jeden layout.
         /// </summary>
@@ -479,7 +479,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             if (!__IsContentSizeValid)
             {
                 var lastContentSize = base.ContentSize;              // base property neprovádí _CheckContentSize()
-                var currentContentSize = DataItemBase.RecalculateVirtualBounds(this.__DataItems, this.DataLayout);
+                var currentContentSize = InteractiveItem.RecalculateVirtualBounds(this.__DataItems, this.DataLayout);
                 bool isContentSizeChanged = (currentContentSize != lastContentSize);
                 __IsContentSizeValid = true;
                 if (isContentSizeChanged)                            // Setování a event jen po reálné změně hodnoty
@@ -546,7 +546,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     }
 
     /// <summary>
-    /// Data pro události s <see cref="DataItemBase"/>
+    /// Data pro události s <see cref="InteractiveItem"/>
     /// </summary>
     public class DataItemEventArgs : EventArgs
     {
@@ -554,13 +554,13 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Konstruktor
         /// </summary>
         /// <param name="dataItem"></param>
-        public DataItemEventArgs(DataItemBase dataItem)
+        public DataItemEventArgs(InteractiveItem dataItem)
         {
             this.DataItem = dataItem;
         }
         /// <summary>
         /// Prvek
         /// </summary>
-        public DataItemBase DataItem { get; private set; }
+        public InteractiveItem DataItem { get; private set; }
     }
 }
