@@ -108,7 +108,8 @@ namespace DjSoft.Tools.ProgramLauncher
             __GroupsPanel = new Components.InteractiveGraphicsControl();
             __GroupsPanel.Dock = DockStyle.Fill;
 
-            __GroupsPanel.DataLayout = Data.DataLayout.SetSmallBrick;
+            var groups = App.Settings.ProgramGroups;
+            __GroupsPanel.DataLayout = Components.DataLayout.SetSmallBrick;
             __GroupsPanel.DataItems.Add(CreateGroupDataItem(0, 0, "PROJEKTY", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-blue.png"));
             __GroupsPanel.DataItems.Add(CreateGroupDataItem(0, 1, "DOKUMENTY", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
             __GroupsPanel.DataItems.Add(CreateGroupDataItem(0, 2, "KLIENTI", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
@@ -126,9 +127,9 @@ namespace DjSoft.Tools.ProgramLauncher
             __GroupsPanel.ContentSizeChanged += _AppGroupPanel_ContentSizeChanged;
             this._MainContainer.Panel1.Controls.Add(__GroupsPanel);
         }
-        private Data.DataItemBase CreateGroupDataItem(int x, int y, string mainTitle, string imageName)
+        private InteractiveItem CreateGroupDataItem(int x, int y, string mainTitle, string imageName)
         {
-            Data.DataItemGroup data = new Data.DataItemGroup()
+            InteractiveItem data = new InteractiveItem()
             {
                 Adress = new Point(x, y),
                 MainTitle = mainTitle,
@@ -163,11 +164,11 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             __ApplicationsPanel = new Components.InteractiveGraphicsControl();
             __ApplicationsPanel.Dock = DockStyle.Fill;
-            __ApplicationsPanel.DataLayout = Data.DataLayout.SetMediumBrick;
+            __ApplicationsPanel.DataLayout = DataLayout.SetMediumBrick;
             __ApplicationsPanel.DataItems.Add(CreateAppDataItem(0, 0, "Windows", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\wine.png"));
             __ApplicationsPanel.DataItems.Add(CreateAppDataItem(1, 0, "Hotline", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\accessories-clock-3.png "));
             __ApplicationsPanel.DataItems.Add(CreateAppDataItem(2, 0, "Sirius", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\gmail-notify.png"));
-            __ApplicationsPanel.DataItems.Add(CreateAppDataItem(0, 1, "Skupina klientů", null, Data.DataLayout.SetTitle));
+            __ApplicationsPanel.DataItems.Add(CreateAppDataItem(0, 1, "Skupina klientů", null, DataLayout.SetTitle));
             __ApplicationsPanel.DataItems.Add(CreateAppDataItem(0, 2, "Notebook", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\gtk-gnutella-3.png"));
             __ApplicationsPanel.DataItems.Add(CreateAppDataItem(1, 2, "Music", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\flsudoku.png"));
             __ApplicationsPanel.DataItems.Add(CreateAppDataItem(2, 3, "Nastavení", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\abiword.png"));
@@ -179,9 +180,9 @@ namespace DjSoft.Tools.ProgramLauncher
 
             this._MainContainer.Panel2.Controls.Add(__ApplicationsPanel);
         }
-        private Data.DataItemBase CreateAppDataItem(int x, int y, string mainTitle, string imageName, Data.DataLayout dataLayout = null)
+        private InteractiveItem CreateAppDataItem(int x, int y, string mainTitle, string imageName, DataLayout dataLayout = null)
         {
-            Data.DataItemApplication data = new Data.DataItemApplication()
+            InteractiveItem data = new InteractiveItem()
             {
                 Adress = new Point(x, y),
                 MainTitle = mainTitle,

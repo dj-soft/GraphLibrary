@@ -10,8 +10,12 @@ using System.Windows.Forms;
 
 namespace DjSoft.Tools.ProgramLauncher.Components
 {
+    /// <summary>
+    /// Třída reprezentující jeden vizuální prvek v rámci interaktivního controlu <see cref="InteractiveGraphicsControl"/>
+    /// </summary>
     public class InteractiveItem : IChildOfParent<InteractiveGraphicsControl>
     {
+        #region Public zobrazovaná data
         /// <summary>
         /// Vizualizace
         /// </summary>
@@ -23,18 +27,15 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Pozice prvku v matici X/Y
         /// </summary>
-        public Point Adress { get { return __Adress; } set { __Adress = value; ResetParentLayout(); } }
-        private Point __Adress;
+        public virtual Point Adress { get { return __Adress; } set { __Adress = value; ResetParentLayout(); } } private Point __Adress;
         /// <summary>
         /// Prvek je viditelný?
         /// </summary>
-        public bool Visible { get { return !__InVisible; } set { __InVisible = !value; } }
-        private bool __InVisible;             // Nemám rád inicializaci proměnných v jejich deklaraci, a nemám tady ani konstruktor. Tak nechám defaultně Invisible = false a používám Visible = Not Invisible.
+        public virtual bool Visible { get { return !__InVisible; } set { __InVisible = !value; } } private bool __InVisible;             // Nemám rád inicializaci proměnných v jejich deklaraci, a nemám tady ani konstruktor. Tak nechám defaultně Invisible = false a používám Visible = Not Invisible.
         /// <summary>
         /// Barvy pozadí celé buňky. Pokud obsahuje null, nekreslí se.
         /// </summary>
-        public ColorSet CellBackColor { get { return __CellBackColor ?? App.CurrentAppearance.CellBackColor; } set { __CellBackColor = value; } }
-        private ColorSet __CellBackColor;
+        public virtual ColorSet CellBackColor { get { return __CellBackColor ?? App.CurrentAppearance.CellBackColor; } set { __CellBackColor = value; } } private ColorSet __CellBackColor;
 
         public virtual string MainTitle { get; set; }
 
@@ -45,6 +46,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         public virtual string ImageName { get; set; }
         public virtual byte[] ImageContent { get; set; }
 
+        #endregion
         #region Vztah na Parenta = EditablePanel, a z něj navázané údaje
         /// <summary>
         /// Odkaz na Parenta
