@@ -104,6 +104,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string ExecutableArguments { get; set; }
         public bool ExecuteInAdminMode { get; set; }
         public bool OpenMaximized { get; set; }
+        public bool OnlyOneInstance { get; set; }
 
         #region Tvorba výchozích dat - namísto prázdných
         /// <summary>
@@ -178,7 +179,23 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         }
         #endregion
         #region Spouštění aplikace
+        /// <summary>
+        /// Spustí / aktivuje daný proces
+        /// </summary>
         public void RunApplication()
+        {
+            OnlyOneInstance = true;
+            if (OnlyOneInstance && _TryActivateProcess()) return;
+            _RunNewProcess();
+        }
+        private bool _TryActivateProcess()
+        {
+            var  allProcesses = System.Diagnostics.Process.GetProcesses();
+            var myProcesses = allProcesses.Where(p => p.MainModule.FileName == ExecutableFileName).ToArray();
+
+            return false;
+        }
+        private void _RunNewProcess()
         {
             System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo()
             {
