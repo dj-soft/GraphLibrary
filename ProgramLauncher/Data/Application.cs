@@ -61,11 +61,18 @@ namespace DjSoft.Tools.ProgramLauncher
             // Co přidáš sem, přidej i do _Exit() !!!
         }
         #endregion
-        #region Řízený start a konec aplikace
+        #region Řízený start a konec aplikace, Argumenty
+        /// <summary>
+        /// Zahájení běhu aplikace, předání parametrů
+        /// </summary>
+        /// <param name="arguments"></param>
         public static void Start(string[] arguments)
         {
             Current._Start(arguments);
         }
+        /// <summary>
+        /// Ukončení běhu aplikace
+        /// </summary>
         public static void Exit()
         {
             if (__Current != null)
@@ -76,7 +83,7 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         private void _Start(string[] arguments)
         {
-            __Arguments = arguments;
+            __Arguments = arguments ?? new string[0];
         }
         private void _Exit()
         {
@@ -84,8 +91,50 @@ namespace DjSoft.Tools.ProgramLauncher
             _DisposeGraphics();
             _DisposeFonts();
             _DisposeImages();
+            __MainForm = null;
         }
-        private string[] __Arguments;
+        /// <summary>
+        /// Argumenty předané při startu.
+        /// Operační systém je rozdělil v místě mezery.
+        /// Pokud byl přítomen parametr s uvozovkami, pak jsou odstraněny a zde je obsah bez uvozovek.
+        /// <para/>
+        /// Pokud byla aplikace spuštěna s příkazovým řádkem: 'Aplikace.exe reset maximized config="c:\data.cfg" ', 
+        /// pak zde jsou tři argumenty jako tři stringy: { reset , maximized , config=c:\data.cfg }         (kde string  config=c:\data.cfg  je třetí argument)
+        /// <para/>
+        /// Pokud byla aplikace spuštěna s příkazovým řádkem: 'Aplikace.exe reset maximized config = "c:\data aplikací.cfg" '    (mezery okolo rovnítka),
+        /// pak zde je pět argumentů: { reset , maximized , config , = , c:\data aplikací.cfg }           (kde čárka odděluje jednotlivé stringy, a celý string  c:\data aplikací.cfg  je pátý argument)
+        /// </summary>
+        public static string[] Arguments { get { return Current.__Arguments.ToArray(); } } private string[] __Arguments;
+        /// <summary>
+        /// Vrátí true, pokud argumenty předané při startu aplikace obsahují daný text
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="caseSensitive"></param>
+        /// <returns></returns>
+        public static bool HasArgument(string text, bool caseSensitive = false)
+        {
+            if (String.IsNullOrEmpty(text)) return false;
+            var arguments = Arguments;
+            if (arguments.Length == 0) return false;
+            StringComparison comparison = (caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
+            return arguments.Any(a => String.Equals(a, text, comparison));
+        }
+        /// <summary>
+        /// Zkusí najít argument, který začíná daným textem.
+        /// </summary>
+        /// <param name="textBegin"></param>
+        /// <param name="foundArgument"></param>
+        /// <param name="caseSensitive"></param>
+        /// <returns></returns>
+        public static bool TryGetArgument(string textBegin, out string foundArgument, bool caseSensitive = false)
+        {
+            foundArgument = null;
+            if (String.IsNullOrEmpty(textBegin)) return false;
+            var arguments = Arguments;
+            if (arguments.Length == 0) return false;
+            StringComparison comparison = (caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
+            return arguments.TryFindFirst(a => a.StartsWith(textBegin, comparison), out foundArgument);
+        }
         #endregion
         #region Settings
         #region Přístup na Settings
@@ -125,6 +174,40 @@ namespace DjSoft.Tools.ProgramLauncher
         #endregion
         #endregion
         #region Monitory, zarovnání souřadnic do monitoru, ukládání souřadnic oken
+        #endregion
+        #region Menu
+
+        public static bool TrySelectFromMenu(IEnumerable<IMenuItem> menuItems, out IMenuItem selectedItem, Point? pointOnScreen)
+        {
+
+            ToolStripDropDownMenu menu = new ToolStripDropDownMenu();
+
+            string currentName = App.CurrentAppearance.Name;
+            foreach (var appearance in AppearanceInfo.Collection)
+            {
+                bool isCurrent = (appearance.Name == currentName);
+                Image image = appearance.ImageSmall;
+                var item = new ToolStripMenuItem(appearance.Name, image) { Tag = appearance };
+                if (isCurrent)
+                    item.Font = App.GetFont(item.Font, null, FontStyle.Bold);
+                menu.Items.Add(item);
+            }
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add("Další vzhled");
+
+            menu.DropShadowEnabled = true;
+            menu.RenderMode = ToolStripRenderMode.Professional;
+            menu.ShowCheckMargin = false;
+            menu.ShowImageMargin = true;
+            menu.ItemClicked += menuItemClicked;
+            menu.Show(pointOnScreen.Value);
+
+
+            void menuItemClicked(object sender, ToolStripItemClickedEventArgs e)
+            { }
+
+
+        }
         #endregion
         #region Grafické prvky
         /// <summary>
@@ -519,9 +602,41 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private event EventHandler __CurrentAppearanceChanged;
         #endregion
-
-
-        public static void ShowError(string error) { }
+        #region MainForm a Messages
+        /// <summary>
+        /// Main okno aplikace. Slouží jako Owner pro Dialog okna a další Child okna.
+        /// </summary>
+        public static Form MainForm { get { return Current.__MainForm; } set { Current.__MainForm = value; } } private Form __MainForm;
+        /// <summary>
+        /// Zobrazí standardní Message. Zadáním ikony lze definovat titulek okna.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="icon"></param>
+        /// <param name="title"></param>
+        public static void ShowMessage(string text, MessageBoxIcon icon = MessageBoxIcon.Information, string title = null)
+        {
+            if (title is null) title = _GetMessageBoxTitle(icon);
+            System.Windows.Forms.MessageBox.Show(MainForm, text, title, MessageBoxButtons.OK, icon);
+        }
+        /// <summary>
+        /// Vrátí defaultní titulek MessageBox okna podle dané ikony.
+        /// Pro ikonu typu <see cref="MessageBoxIcon.Question"/> přihlédne k parametru <paramref name="isQuestion"/>.
+        /// </summary>
+        /// <param name="icon"></param>
+        /// <param name="isQuestion"></param>
+        /// <returns></returns>
+        private static string _GetMessageBoxTitle(MessageBoxIcon icon, bool isQuestion = false)
+        {
+            switch (icon)
+            {
+                case MessageBoxIcon.None: return "Poznámka";
+                case MessageBoxIcon.Stop: return "Chyba";
+                case MessageBoxIcon.Question: return (isQuestion ? "Dotaz" : "Podivné");
+                case MessageBoxIcon.Exclamation: return "Varování";
+                case MessageBoxIcon.Asterisk: return "Informace";
+            }
+            return "Zpráva";
+        }
+        #endregion
     }
-   
 }

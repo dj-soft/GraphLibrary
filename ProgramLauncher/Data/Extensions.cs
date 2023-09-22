@@ -974,6 +974,33 @@ namespace DjSoft.Tools.ProgramLauncher
             return !(items.Any());
         }
         /// <summary>
+        /// Metoda najde a vrátí první prvek dané kolekce, který vyhovuje danému filtru. Vrací true = nalezeno.
+        /// Pokud kolekce je prázdná, vrací false.
+        /// Pokud filtr je null a kolekce není prázdná, pak vrátí první prvek.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="filter"></param>
+        /// <param name="found"></param>
+        /// <returns></returns>
+        public static bool TryFindFirst<T>(this IEnumerable<T> items, Predicate<T> filter, out T found)
+        {
+            if (!items.IsEmpty())
+            {
+                if (filter is null) { found = items.First(); return true; }
+                foreach (var item in items)
+                {
+                    if (filter(item))
+                    {
+                        found = item;
+                        return true;
+                    }
+                }
+            }
+            found = default;
+            return false;
+        }
+        /// <summary>
         /// Z this kolekce vytvoří Dictionary s klíčem vybraným z prvku pomocí dodaného <paramref name="keySelector"/>.
         /// Pokud bude <paramref name="ignoreDuplicity"/> = true, pak případné duplicitní prvky budou ignorovány.
         /// </summary>
@@ -1153,4 +1180,23 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         #endregion
     }
+
+    #region Interface
+
+
+    public class DataMenuItem : IMenuItem
+    {
+        public string Text { get; set; }
+        public string ToolTip { get; set; }
+        public Image Icon { get; set; }
+        public object UserData { get; set; }
+    }
+    public interface IMenuItem
+    {
+        string Text { get; }
+        string ToolTip { get; }
+        Image Icon { get; }
+        object UserData { get; set; }
+    }
+    #endregion
 }

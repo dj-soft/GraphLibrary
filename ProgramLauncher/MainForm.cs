@@ -24,25 +24,7 @@ namespace DjSoft.Tools.ProgramLauncher
             InitializeApplicationPanel();
             InitializeStatusBar();
         }
-        private void Tests()
-        {
-            this.Bounds = new Rectangle(20, 300, 900, 600);
-
-            var file = App.Settings.FileName;
-            App.Settings.AppearanceName = "Default";
-            App.Settings.SaveNow();
-
-            var keys = Monitors.CurrentMonitorsKey;
-            var myBounds = new Rectangle(10, 10, 780, 380);
-            myBounds.DetectRelation(new Rectangle(1200, 50, 600, 120), out var dist1, out var boun1);
-            myBounds.DetectRelation(new Rectangle(1200, 500, 600, 120), out var dist2, out var boun2);
-            myBounds.DetectRelation(new Rectangle(700, 300, 200, 200), out var dist3, out var boun3);
-            myBounds.DetectRelation(new Rectangle(300, 100, 50, 50), out var dist4, out var boun4);
-            myBounds.DetectRelation(new Rectangle(-10, -10, 50, 50), out var dist5, out var boun5);
-
-            var monb1 = Monitors.GetNearestMonitorBounds(this.Bounds);
-            var monb2 = Monitors.GetNearestMonitorBounds(new Rectangle(-20, -20, 60, 1800));
-        }
+        private void Tests() { }
 
         #region Appearance
         /// <summary>
@@ -50,6 +32,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private void InitializeAppearance()
         {
+            App.MainForm = this;
             this.SettingsName = "MainForm";                                    // Zajistí ukládání a restore pozice tohoto okna
             App.Settings.AutoSaveDelay = TimeSpan.FromMilliseconds(5000);      // Změny Settings se uloží do 5 sekund od poslední změny (tedy i změny v posunu okna)
 
@@ -75,30 +58,16 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private void _ShowAppearanceMenu()
         {
-            var tsb = _ToolAppearanceButton.Bounds;
-            var ldp = new Point(tsb.Left, tsb.Bottom + 0);
-            var csb = _ToolStrip.PointToScreen(ldp);
-            ToolStripDropDownMenu menu = new ToolStripDropDownMenu();
+            var buttonBounds = _ToolAppearanceButton.Bounds;
+            var leftBottom = new Point(buttonBounds.Left, buttonBounds.Bottom + 0);
+            var menuPoint = _ToolStrip.PointToScreen(leftBottom);
 
-            string currentName = App.CurrentAppearance.Name;
-            foreach (var appearance in AppearanceInfo.Collection)
+
+            if (App.TrySelectFromMenu(null, out var selected, menuPoint))
             {
-                bool isCurrent = (appearance.Name == currentName);
-                Image image = appearance.ImageSmall;
-                var item = new ToolStripMenuItem(appearance.Name, image) { Tag = appearance };
-                if (isCurrent)
-                    item.Font = App.GetFont(item.Font, null, FontStyle.Bold);
-                menu.Items.Add(item);
+            
+            
             }
-            menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Další vzhled");
-
-            menu.DropShadowEnabled = true;
-            menu.RenderMode = ToolStripRenderMode.Professional;
-            menu.ShowCheckMargin = false;
-            menu.ShowImageMargin = true;
-            menu.ItemClicked += _AppearanceMenuItemClicked;
-            menu.Show(csb);
         }
         /// <summary>
         /// Obsluha výběru vzhledu v menu v Toolbaru.

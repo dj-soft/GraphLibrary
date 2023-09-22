@@ -129,6 +129,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 Title = "Windows",
                 Description = "Průzkumník",
                 ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\wine.png",
+                OpenMaximized = true,
                 Adress = new Point(0, 0),
                 ExecutableFileName = @"c:\Windows\explorer.exe"
             });
@@ -146,6 +147,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 Title = "MS DOS user",
                 ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\evilvte.png",
                 ExecuteInAdminMode = false,
+                OpenMaximized = true,
                 Adress = new Point(0, 1),
                 ExecutableFileName = @"c:\Windows\System32\cmd.exe"
             });
@@ -164,6 +166,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 Title = "Libre Office",
                 ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\distributions-solaris.png",
                 Adress = new Point(1, 1),
+                OnlyOneInstance = true,
                 ExecutableFileName = @"c:\Program Files (x86)\OpenOffice 4\program\soffice.exe"
             });
 
@@ -184,13 +187,19 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public void RunApplication()
         {
-            OnlyOneInstance = true;
-            if (OnlyOneInstance && _TryActivateProcess()) return;
-            _RunNewProcess();
+            try
+            {
+                if (OnlyOneInstance && _TryActivateProcess()) return;
+                _RunNewProcess();
+            }
+            catch (Exception exc)
+            {
+                App.ShowMessage(exc.Message, MessageBoxIcon.Error);
+            }
         }
         private bool _TryActivateProcess()
         {
-            var  allProcesses = System.Diagnostics.Process.GetProcesses();
+            var allProcesses = System.Diagnostics.Process.GetProcesses();
             var myProcesses = allProcesses.Where(p => p.MainModule.FileName == ExecutableFileName).ToArray();
 
             return false;

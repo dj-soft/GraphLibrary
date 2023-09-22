@@ -196,7 +196,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         protected void BackupGraphicLoad(Graphics target)
         {
             if (!BackupGraphicIsReady)
-                App.ShowError("Byl proveden pokus o použití záložní grafiky za stavu, kdy to není přípustné.");
+                App.ShowMessage("Byl proveden pokus o použití záložní grafiky za stavu, kdy to není přípustné.", MessageBoxIcon.Error);
             BackupBuffGraphics.Render(target);
         }
         /// <summary>

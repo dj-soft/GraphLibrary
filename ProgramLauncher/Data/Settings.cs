@@ -31,15 +31,25 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <returns></returns>
         public static Settings Create()
         {
+            bool isReset = App.HasArgument("reset");
             string fileName = _GetFileName();
-            if (System.IO.File.Exists(fileName))
+            bool isFile = System.IO.File.Exists(fileName);
+            if (isFile)
             {
-                var persistArgs = new Data.PersistArgs() { XmlFile = fileName };
-                var result = DjSoft.Tools.ProgramLauncher.Data.Persist.Deserialize(persistArgs);
-                if (result is Settings settings)
+                if (isReset)
                 {
-                    settings._RunAfterLoad(fileName);
-                    return settings;
+                    App.ShowMessage($"Aplikace je spuštěna s parametrem 'reset', konfigurace z předešlého běhu je ignorována.", System.Windows.Forms.MessageBoxIcon.Warning);
+                }
+                else
+                {   // Máme soubor a není Reset => načteme jej:
+                    var persistArgs = new Data.PersistArgs() { XmlFile = fileName };
+                    var result = DjSoft.Tools.ProgramLauncher.Data.Persist.Deserialize(persistArgs);
+                    if (result is Settings settings)
+                    {
+                        settings._RunAfterLoad(fileName);
+                        return settings;
+                    }
+                    App.ShowMessage($"Konfigurační soubor {fileName} je poškozen a nelze z něj načíst data programu.", System.Windows.Forms.MessageBoxIcon.Warning);
                 }
             }
 
