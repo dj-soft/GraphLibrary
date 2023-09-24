@@ -241,4 +241,58 @@
   <data name="btn_g4_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pics\20px\btn-g4-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="amp_01_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\20px\amp-01-20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="delete_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\delete-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_new_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\document-new-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_preview_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\document-preview-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_properties_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\document-properties-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\edit-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_copy_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\edit-copy-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_cut_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\edit-cut-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_paste_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\edit-paste-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_remove_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\edit-remove-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_select_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\edit-select-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_select_all_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\edit-select-all-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_left_4_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\format-justify-left-4-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_home_4_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\go-home-4-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\help-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_hint_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\help-hint-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media_playback_start_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\media-playback-start-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media_seek_forward_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\media-seek-forward-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>

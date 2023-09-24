@@ -501,11 +501,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     Name = "Menší cihla",
                     CellSize = new Size(160, 48),
                     ContentBounds = new Rectangle(2, 2, 156, 44),
-                    BorderBounds = new Rectangle(4, 4, 40, 40),
+                    BorderBounds = new Rectangle(6, 6, 36, 36),
                     MouseHighlightSize = new Size(40, 24),
                     BorderRound = 4,
                     BorderWidth = 1f,
-                    ImageBounds = new Rectangle(8, 8, 24, 24),
+                    ImageBounds = new Rectangle(12, 12, 24, 24),
                     MainTitleBounds = new Rectangle(46, 14, 95, 20),
                     MainTitleAppearanceType = AppearanceTextPartType.MainTitle
                 };

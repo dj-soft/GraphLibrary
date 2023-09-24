@@ -260,7 +260,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="currentItem"></param>
         private void _MouseItemClick(MouseState mouseState, InteractiveItem currentItem)
         {
-            _RunInteractiveItemClick(new InteractiveItemEventArgs(currentItem));
+            // Click se volá v době MouseUp, ale v procesu Click nás zajímá mj. tlačítka myši v době MouseDown,
+            //  proto do eventu posílám objekt __CurrentMouseDownState (stav myši v době MouseDown) a nikoli currentItem (ten už má Buttons = None):
+            _RunInteractiveItemClick(new InteractiveItemEventArgs(currentItem, __CurrentMouseDownState));
 
             currentItem.InteractiveState = InteractiveState.Enabled;
         }
@@ -318,14 +320,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             {   // Ze žádného prvku na nový prvek:
                 currentMouseItem.InteractiveState = currentState;
                 __CurrentMouseItem = currentMouseItem;
-                _RunInteractiveItemMouseEnter(new InteractiveItemEventArgs(currentMouseItem));
+                _RunInteractiveItemMouseEnter(new InteractiveItemEventArgs(currentMouseItem, mouseState));
                 return true;
             }
 
             if (lastExists && !currentExists)
             {   // Z dosavadního prvku na žádný prvek:
                 lastMouseItem.InteractiveState = InteractiveState.Enabled;
-                _RunInteractiveItemMouseLeave(new InteractiveItemEventArgs(lastMouseItem));
+                _RunInteractiveItemMouseLeave(new InteractiveItemEventArgs(lastMouseItem, mouseState));
                 __CurrentMouseItem = null;
                 return true;
             }
@@ -345,11 +347,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
 
             // Změna prvku z dosavadního na nový:
             lastMouseItem.InteractiveState = InteractiveState.Enabled;
-            _RunInteractiveItemMouseLeave(new InteractiveItemEventArgs(lastMouseItem));
+            _RunInteractiveItemMouseLeave(new InteractiveItemEventArgs(lastMouseItem, mouseState));
 
             currentMouseItem.InteractiveState = currentState;
             __CurrentMouseItem = currentMouseItem;
-            _RunInteractiveItemMouseEnter(new InteractiveItemEventArgs(currentMouseItem));
+            _RunInteractiveItemMouseEnter(new InteractiveItemEventArgs(currentMouseItem, mouseState));
 
             return true;
         }
@@ -568,9 +570,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Konstruktor
         /// </summary>
         /// <param name="item"></param>
-        public InteractiveItemEventArgs(InteractiveItem item)
+        public InteractiveItemEventArgs(InteractiveItem item, MouseState mouseState)
         {
             this.Item = item;
+            this.MouseState = mouseState;
         }
         public override string ToString()
         {
@@ -580,5 +583,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Prvek
         /// </summary>
         public InteractiveItem Item { get; private set; }
+        /// <summary>
+        /// Stav myši
+        /// </summary>
+        public MouseState MouseState { get; private set; }
     }
 }

@@ -13,7 +13,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
     /// <summary>
     /// Sada definující jeden druh vzhledu (jeden "skin")
     /// </summary>
-    public partial class AppearanceInfo
+    public partial class AppearanceInfo : IMenuItem
     {
         #region Public properties
         /// <summary>
@@ -403,6 +403,14 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             paletteSet.__IsReadOnly = true;
             return paletteSet;
         }
+        #endregion
+        #region Implementace IMenuItem
+        string IMenuItem.Text { get { return this.Name; } }
+        string IMenuItem.ToolTip { get { return null; } }
+        MenuItemType IMenuItem.ItemType { get { return MenuItemType.Button; } }
+        Image IMenuItem.Image { get { return this.ImageSmall; } }
+        FontStyle? IMenuItem.FontStyle { get { return (Object.ReferenceEquals(this, App.CurrentAppearance) ? (FontStyle?)FontStyle.Bold : (FontStyle?)null); } }
+        object IMenuItem.UserData { get; set; }
         #endregion
     }
     /// <summary>

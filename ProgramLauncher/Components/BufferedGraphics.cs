@@ -1295,6 +1295,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             __Buttons = buttons;
             __IsOnControl = isOnControl;
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Buttons: {__Buttons}; LocationNative: {__LocationNative}";
+        }
         private DateTime __Time;
         private Point __LocationNative;
         private Point __LocationAbsolute;

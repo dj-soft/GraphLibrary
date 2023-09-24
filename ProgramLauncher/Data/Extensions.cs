@@ -1183,20 +1183,49 @@ namespace DjSoft.Tools.ProgramLauncher
 
     #region Interface
 
-
+    /// <summary>
+    /// Základní implementace interface <see cref="IMenuItem"/>
+    /// </summary>
     public class DataMenuItem : IMenuItem
     {
-        public string Text { get; set; }
-        public string ToolTip { get; set; }
-        public Image Icon { get; set; }
-        public object UserData { get; set; }
+        public  DataMenuItem()
+        {
+            ItemType = MenuItemType.Button;
+
+        }
+        /// <summary>
+        /// Vytvoří a vrátí prvek typu Separátor
+        /// </summary>
+        /// <returns></returns>
+        public static DataMenuItem CreateSeparator() { return new DataMenuItem() { ItemType = MenuItemType.Separator }; }
+        /// <summary>
+        /// Vytvoří a vrátí prvek typu Separátor
+        /// </summary>
+        /// <returns></returns>
+        public static DataMenuItem CreateHeader(string text) { return new DataMenuItem() { ItemType = MenuItemType.Header, Text = text}; }
+
+        public virtual string Text { get; set; }
+        public virtual string ToolTip { get; set; }
+        public virtual MenuItemType ItemType { get; set; }
+        public virtual Image Image { get; set; }
+        public virtual FontStyle? FontStyle { get; set; }
+        public virtual object UserData { get; set; }
     }
     public interface IMenuItem
     {
         string Text { get; }
         string ToolTip { get; }
-        Image Icon { get; }
+        MenuItemType ItemType { get; }
+        Image Image { get; }
+        FontStyle? FontStyle { get; }
         object UserData { get; set; }
+    }
+    public enum MenuItemType
+    {
+        Default = 0,
+        Header,
+        Button,
+        Separator
     }
     #endregion
 }

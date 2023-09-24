@@ -222,5 +222,59 @@
   <ItemGroup>
     <None Include="Pics\20px\btn-g4-20.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\20px\amp-01-20.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\22px\delete-22.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\22px\edit-3-22.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\22px\edit-copy-3-22.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\22px\edit-cut-3-22.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\22px\edit-paste-3-22.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\22px\edit-remove-3-22.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\22px\edit-select-all-3-22.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\22px\format-justify-left-4-22.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\22px\help-3-22.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\22px\media-playback-start-3-22.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\22px\media-seek-forward-3-22.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\22px\document-new-3-22.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\22px\document-preview-22.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\22px\document-properties-22.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\22px\edit-select-22.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\22px\go-home-4-22.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\22px\help-hint-22.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

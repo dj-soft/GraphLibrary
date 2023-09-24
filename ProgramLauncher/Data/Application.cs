@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Drawing.Drawing2D;
 using System.Drawing;
 using System.Windows.Forms;
-using static DjSoft.Tools.ProgramLauncher.App;
 using DjSoft.Tools.ProgramLauncher.Data;
 
 namespace DjSoft.Tools.ProgramLauncher
@@ -177,36 +175,63 @@ namespace DjSoft.Tools.ProgramLauncher
         #endregion
         #region Menu
 
-        public static bool TrySelectFromMenu(IEnumerable<IMenuItem> menuItems, out IMenuItem selectedItem, Point? pointOnScreen)
+        public static void SelectFromMenu(IEnumerable<IMenuItem> menuItems, Action<IMenuItem> onSelectItem, Point? pointOnScreen)
         {
-
             ToolStripDropDownMenu menu = new ToolStripDropDownMenu();
-
-            string currentName = App.CurrentAppearance.Name;
-            foreach (var appearance in AppearanceInfo.Collection)
-            {
-                bool isCurrent = (appearance.Name == currentName);
-                Image image = appearance.ImageSmall;
-                var item = new ToolStripMenuItem(appearance.Name, image) { Tag = appearance };
-                if (isCurrent)
-                    item.Font = App.GetFont(item.Font, null, FontStyle.Bold);
-                menu.Items.Add(item);
-            }
-            menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Další vzhled");
+            foreach (var menuItem in menuItems)
+                menu.Items.Add(_CreateToolStripItem(menuItem, onSelectItem));
 
             menu.DropShadowEnabled = true;
             menu.RenderMode = ToolStripRenderMode.Professional;
             menu.ShowCheckMargin = false;
             menu.ShowImageMargin = true;
-            menu.ItemClicked += menuItemClicked;
+            menu.ItemClicked += _OnMenuItemClicked;
             menu.Show(pointOnScreen.Value);
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí <see cref="ToolStripMenuItem"/> z dané datové položky
+        /// </summary>
+        /// <param name="menuItem"></param>
+        /// <returns></returns>
+        private static ToolStripItem _CreateToolStripItem(IMenuItem menuItem, Action<IMenuItem> onSelectItem)
+        {
+            ToolStripItem item;
+            switch (menuItem.ItemType)
+            {
+                case MenuItemType.Separator:
+                    var separatorItem = new ToolStripSeparator();
+                    item = separatorItem;
+                    break;
+                case MenuItemType.Header:
+                    var headerItem = new ToolStripLabel(menuItem.Text, menuItem.Image);
+                    var headerItemx = new ToolStripButton(menuItem.Text, menuItem.Image);
+                    item = headerItem;
+                    break;
+                case MenuItemType.Button:
+                case MenuItemType.Default:
+                default:
+                    var buttonItem = new ToolStripMenuItem(menuItem.Text, menuItem.Image) { Tag = new Tuple<IMenuItem, Action<IMenuItem>>(menuItem, onSelectItem) };
+                    item = buttonItem;
+                    break;
+            }
+            item.Tag = new Tuple<IMenuItem, Action<IMenuItem>>(menuItem, onSelectItem);
+            item.ToolTipText = menuItem.ToolTip;
 
+            var fontStyle = menuItem.FontStyle;
+            if (fontStyle.HasValue)
+                item.Font = App.GetFont(item.Font, null, fontStyle.Value);
 
-            void menuItemClicked(object sender, ToolStripItemClickedEventArgs e)
-            { }
-
-
+            return item;
+        }
+        /// <summary>
+        /// Provede se po kliknutí na prvek menu. Najde data o prvku i cílovou metodu, a vyvolá ji.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private static void _OnMenuItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            if (e.ClickedItem.Tag is Tuple<IMenuItem, Action<IMenuItem>> selectedInfo && selectedInfo.Item2 != null)
+                selectedInfo.Item2(selectedInfo.Item1);
         }
         #endregion
         #region Grafické prvky
@@ -602,11 +627,45 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private event EventHandler __CurrentAppearanceChanged;
         #endregion
-        #region MainForm a Messages
+        #region MainForm a StatusBar a StatusImage
         /// <summary>
         /// Main okno aplikace. Slouží jako Owner pro Dialog okna a další Child okna.
         /// </summary>
-        public static Form MainForm { get { return Current.__MainForm; } set { Current.__MainForm = value; } } private Form __MainForm;
+        public static MainForm MainForm { get { return Current.__MainForm; } set { Current.__MainForm = value; } } private MainForm __MainForm;
+        /// <summary>
+        /// Vrátí image daného typu do PopupMenu nebo do StatusBar
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static Image GetStatusImage(ImageKindType value)
+        {
+            switch (value)
+            {
+                case ImageKindType.None: return null;
+                case ImageKindType.Other: return null;
+                case ImageKindType.Delete: return Properties.Resources.delete_22;
+                case ImageKindType.DocumentNew: return Properties.Resources.document_new_3_22;
+                case ImageKindType.DocumentPreview: return Properties.Resources.document_preview_22;
+                case ImageKindType.DocumentProperties: return Properties.Resources.document_properties_22;
+                case ImageKindType.DocumentEdit: return Properties.Resources.edit_3_22;
+                case ImageKindType.EditCopy: return Properties.Resources.edit_copy_3_22;
+                case ImageKindType.EditCut: return Properties.Resources.edit_cut_3_22;
+                case ImageKindType.EditPaste: return Properties.Resources.edit_paste_3_22;
+                case ImageKindType.EditRemove: return Properties.Resources.edit_remove_3_22;
+                case ImageKindType.EditSelect: return Properties.Resources.edit_select_22;
+                case ImageKindType.EditRows: return Properties.Resources.edit_select_all_3_22;
+                case ImageKindType.FormatJustify: return Properties.Resources.format_justify_left_4_22;
+                case ImageKindType.Home: return Properties.Resources.go_home_4_22;
+                case ImageKindType.Help: return Properties.Resources.help_3_22;
+                case ImageKindType.Hint: return Properties.Resources.help_hint_22;
+                case ImageKindType.MediaPlay: return Properties.Resources.media_playback_start_3_22;
+                case ImageKindType.MediaForward: return Properties.Resources.media_seek_forward_3_22;
+            }
+            return null;
+        }
+        #endregion
+        #region Messages
         /// <summary>
         /// Zobrazí standardní Message. Zadáním ikony lze definovat titulek okna.
         /// </summary>
@@ -638,5 +697,55 @@ namespace DjSoft.Tools.ProgramLauncher
             return "Zpráva";
         }
         #endregion
+    }
+
+    /// <summary>
+    /// Třída obsahující logická data reprezentovaná ve Status labelu
+    /// </summary>
+    public class StatusInfo
+    {
+        public StatusInfo(ToolStripStatusLabel statusLabel)
+        {
+            __StatusLabel = statusLabel;
+        }
+        private ToolStripStatusLabel __StatusLabel;
+        private ImageKindType __ImageKind;
+        /// <summary>
+        /// Text ve Statusbaru
+        /// </summary>
+        public string Text { get { return __StatusLabel.Text; } set { __StatusLabel.Text = value; } }
+        /// <summary>
+        /// Typ obrázku ve Statusbaru
+        /// </summary>
+        public ImageKindType ImageKind { get { return __ImageKind; } set { __ImageKind = value; __StatusLabel.Image = App.GetStatusImage(value); } }
+        /// <summary>
+        /// Fyzický obrázek ve Statusbaru
+        /// </summary>
+        public Image Image { get { return __StatusLabel.Image; } set { __ImageKind = (value is null ? ImageKindType.None : ImageKindType.Other); __StatusLabel.Image = value; } }
+    }
+    /// <summary>
+    /// Typ ikony
+    /// </summary>
+    public enum ImageKindType
+    {
+        None,
+        Other,
+        Delete,
+        DocumentNew,
+        DocumentPreview,
+        DocumentProperties,
+        DocumentEdit,
+        EditCopy,
+        EditCut,
+        EditPaste,
+        EditRemove,
+        EditSelect,
+        EditRows,
+        FormatJustify,
+        Home,
+        Help,
+        Hint,
+        MediaPlay,
+        MediaForward
     }
 }

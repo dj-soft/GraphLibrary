@@ -2,14 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using System.Drawing;
 using DjSoft.Tools.ProgramLauncher.Components;
-using static DjSoft.Tools.ProgramLauncher.App;
 using DjSoft.Tools.ProgramLauncher.Data;
-using System.Security.Policy;
 
 namespace DjSoft.Tools.ProgramLauncher.Data
 {
@@ -98,7 +95,14 @@ namespace DjSoft.Tools.ProgramLauncher.Data
     /// </summary>
     public class ApplicationData : BaseData
     {
-      
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Title: {Title}; Executable: {ExecutableFileName}";
+        }
         public string ExecutableFileName { get; set; }
         public string ExecutableWorkingDirectory { get; set; }
         public string ExecutableArguments { get; set; }
@@ -189,12 +193,19 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             try
             {
-                if (OnlyOneInstance && _TryActivateProcess()) return;
+                //   if (OnlyOneInstance && _TryActivateProcess()) return;
+                App.MainForm.StatusLabelApplicationRunText = this.Title;
+                App.MainForm.StatusLabelApplicationRunImage = ImageKindType.MediaForward;
                 _RunNewProcess();
             }
             catch (Exception exc)
             {
                 App.ShowMessage(exc.Message, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                App.MainForm.StatusLabelApplicationRunText = null;
+                App.MainForm.StatusLabelApplicationRunImage = null;
             }
         }
         private bool _TryActivateProcess()
@@ -220,6 +231,20 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             process.StartInfo = psi;
             process.Start();
         }
+
+        internal void RunContextMenu(MouseState mouseState)
+        {
+            var menuItems = new List<IMenuItem>();
+            menuItems.Add(new DataMenuItem() { Text = "Spustit", Image = Properties.Resources.media_playback_start_3_22 });
+            menuItems.Add(new DataMenuItem() { Text = "Spustit jako správce", Image = Properties.Resources.media_seek_forward_3_22 });
+            menuItems.Add(new DataMenuItem() { Text = "Odstranit", Image = Properties.Resources.delete_22 });
+            menuItems.Add(new DataMenuItem() { Text = "Upravit", Image = Properties.Resources.edit_3_22 });
+
+            App.SelectFromMenu(menuItems, doContextMenu, mouseState.LocationAbsolute);
+
+            void doContextMenu(IMenuItem menuItem)
+            { }
+        }
         #endregion
     }
     #endregion
@@ -229,6 +254,14 @@ namespace DjSoft.Tools.ProgramLauncher.Data
     /// </summary>
     public class BaseData
     {
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Title: {Title}";
+        }
         /// <summary>
         /// Hlavní titulek
         /// </summary>
