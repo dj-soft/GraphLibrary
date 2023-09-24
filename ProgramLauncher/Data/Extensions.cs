@@ -1191,7 +1191,14 @@ namespace DjSoft.Tools.ProgramLauncher
         public  DataMenuItem()
         {
             ItemType = MenuItemType.Button;
-
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"{ItemType}: {Text}";
         }
         /// <summary>
         /// Vytvoří a vrátí prvek typu Separátor

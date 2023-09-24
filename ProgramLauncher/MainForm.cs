@@ -21,7 +21,7 @@ namespace DjSoft.Tools.ProgramLauncher
             InitializeComponent();
             Tests();
             InitializeToolBar();
-            InitializeGroupPanel();
+            InitializePagesPanel();
             InitializeApplicationPanel();
             InitializeStatusBar();
             InitializeAppearance();
@@ -130,29 +130,14 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <summary>
         /// Inicializace datového panelu Grupy (TabHeader vlevo)
         /// </summary>
-        private void InitializeGroupPanel()
+        private void InitializePagesPanel()
         {
-            __PagePanel = new Components.InteractiveGraphicsControl();
-            __PagePanel.Dock = DockStyle.Fill;
-            __PagePanel.DataLayout = Components.DataLayout.SetSmallBrick;
-
-            /*
-            var pages = App.Settings.ProgramPages;
-            __PagePanel.DataItems.Add(CreatePageDataItem(0, 0, "PROJEKTY", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-blue.png"));
-            __PagePanel.DataItems.Add(CreatePageDataItem(0, 1, "DOKUMENTY", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
-            __PagePanel.DataItems.Add(CreatePageDataItem(0, 2, "KLIENTI", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
-            __PagePanel.DataItems.Add(CreatePageDataItem(0, 3, "RDP", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
-            __PagePanel.DataItems.Add(CreatePageDataItem(0, 4, "GRAFIKA", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
-            __PagePanel.DataItems.Add(CreatePageDataItem(0, 5, "WIKI", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
-            __PagePanel.DataItems.Add(CreatePageDataItem(0, 6, "DEV EXPRESS", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
-            __PagePanel.DataItems.Add(CreatePageDataItem(0, 7, "WIN HELP", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
-            __PagePanel.DataItems.Add(CreatePageDataItem(0, 8, "LITERATURA", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
-            __PagePanel.DataItems.Add(CreatePageDataItem(0, 9, "privátní", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-red.png"));
-            __PagePanel.DataItems.Add(CreatePageDataItem(0, 10, "tajné", @"c:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\folder-yellow.png"));
-            */
-            __PagePanel.ContentSizeChanged += _AppGroupPanel_ContentSizeChanged;
-            __PagePanel.InteractiveItemClick += _PageItemClick;
-            this._MainContainer.Panel1.Controls.Add(__PagePanel);
+            __PagesPanel = new Components.InteractiveGraphicsControl();
+            __PagesPanel.Dock = DockStyle.Fill;
+            __PagesPanel.DataLayout = Components.DataLayout.SetSmallBrick;
+            __PagesPanel.ContentSizeChanged += _AppGroupPanel_ContentSizeChanged;
+            __PagesPanel.InteractiveItemClick += _PageItemClick;
+            this._MainContainer.Panel1.Controls.Add(__PagesPanel);
         }
         /// <summary>
         /// Znovu načte stránky z datového objektu do záložek v levé části.
@@ -171,8 +156,8 @@ namespace DjSoft.Tools.ProgramLauncher
                 }
             }
 
-            __PagePanel.DataItems.Clear();
-            __PagePanel.AddItems(items);
+            __PagesPanel.DataItems.Clear();
+            __PagesPanel.AddItems(items);
 
             bool groupsForceVisible = true;
             _GroupPanelVisible = (groupsForceVisible || items.Count > 1);
@@ -187,19 +172,6 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Data aktuálně zobrazené stránky
         /// </summary>
         private PageData _ActivePageData { get { return __ActivePageData; } set { __ActivePageData = value; ReloadApplications(); } } private PageData __ActivePageData;
-
-
-        private InteractiveItem CreatePageDataItem(int x, int y, string mainTitle, string imageName)
-        {
-            InteractiveItem data = new InteractiveItem()
-            {
-                Adress = new Point(x, y),
-                MainTitle = mainTitle,
-                ImageName = imageName
-            };
-            return data;
-        }
-
         /// <summary>
         /// Akce volaná při události "Změna velikosti ContentSize" v panelu "Group".
         /// Nastaví odpovídající šířku celého bočního panelu tak, aby byla vidět celá šířka bez vodorovného scrollbaru, to by bylo obtěžující.
@@ -208,29 +180,32 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="e"></param>
         private void _AppGroupPanel_ContentSizeChanged(object sender, EventArgs e)
         {
-            var groupContentSize = __PagePanel.ContentSize;
+            var groupContentSize = __PagesPanel.ContentSize;
             if (groupContentSize.HasValue && groupContentSize.Value.Width != _GroupPanelWidth)
                 _GroupPanelWidth = groupContentSize.Value.Width;
         }
+        /// <summary>
+        /// Uživatel kliknul na TabHeader od Page: aktivujeme její obsah
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _PageItemClick(object sender, Components.InteractiveItemEventArgs e)
         {
-            var pageData = e.Item.UserData as Data.PageData;
-            var backColor = pageData?.BackColor ?? e.Item.CellBackColor?.EnabledColor;
-            this.__ApplicationsPanel.BackColorUser = backColor;
+            _ActivePageData = e.Item.UserData as Data.PageData;
         }
         /// <summary>
         /// Panel 1 (grupy) je viditelný?
         /// </summary>
         private bool _GroupPanelVisible { get{ return !this._MainContainer.Panel1Collapsed; } set { this._MainContainer.Panel1Collapsed = !value; } }
         /// <summary>
-        /// Šířka disponibilního prostoru v panelu skupin <see cref="__PagePanel"/>
+        /// Šířka disponibilního prostoru v panelu skupin <see cref="__PagesPanel"/>
         /// </summary>
         private int _GroupPanelWidth
         {
-            get { return this._MainContainer.SplitterDistance - __PagePanel.VerticalScrollBarWidth - 2; }
-            set { int width = value + __PagePanel.VerticalScrollBarWidth + 2; this._MainContainer.SplitterDistance = (width < 50 ? 50 : width); }
+            get { return this._MainContainer.SplitterDistance - __PagesPanel.VerticalScrollBarWidth - 2; }
+            set { int width = value + __PagesPanel.VerticalScrollBarWidth + 2; this._MainContainer.SplitterDistance = (width < 50 ? 50 : width); }
         }
-        private DjSoft.Tools.ProgramLauncher.Components.InteractiveGraphicsControl __PagePanel;
+        private DjSoft.Tools.ProgramLauncher.Components.InteractiveGraphicsControl __PagesPanel;
         #endregion
         #region ApplicationPanel
         /// <summary>
@@ -256,19 +231,16 @@ namespace DjSoft.Tools.ProgramLauncher
 
             PageData pageData = getPageData();
             if (pageData != null)
-            {
-                foreach (var group in pageData.Groups)
-                {
-                    items.Add(group.CreateInteractiveItem());
-                    foreach (var appl in group.Applications)
-                        items.Add(appl.CreateInteractiveItem());
-                }
-            }
+                pageData.CreateInteractiveItems(items);
 
             __ApplicationsPanel.DataItems.Clear();
             __ApplicationsPanel.AddItems(items);
 
-            // Vrátí aktivní stránku s daty
+            // Grupa má možnost definovat barvu BackColor pro svoje tlačítko a pro celou stránku s aplikacemi:
+            this.__ApplicationsPanel.BackColorUser = pageData?.BackColor;       // Pokud stránka není určena, pak jako BackColorUser bude null = default
+
+
+            // Vrátí požadovanou nebo aktivní stránku s daty
             PageData getPageData()
             {
                 if (activePageData != null) return activePageData;
@@ -280,18 +252,6 @@ namespace DjSoft.Tools.ProgramLauncher
                 if (pages != null && pages.Count > 0) return pages[0];
                 return null;
             }
-        }
-
-        private InteractiveItem CreateAppDataItem(int x, int y, string mainTitle, string imageName, DataLayout dataLayout = null)
-        {
-            InteractiveItem data = new InteractiveItem()
-            {
-                Adress = new Point(x, y),
-                MainTitle = mainTitle,
-                ImageName = imageName,
-                DataLayout = dataLayout
-            };
-            return data;
         }
 
 

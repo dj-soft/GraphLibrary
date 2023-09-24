@@ -26,6 +26,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         }
 
         public List<GroupData> Groups { get; private set; }
+        public void CreateInteractiveItems(List<InteractiveItem> interactiveItems)
+        {
+            foreach (var group in this.Groups)
+            {
+                interactiveItems.Add(group.CreateInteractiveItem());
+                foreach (var appl in group.Applications)
+                    interactiveItems.Add(appl.CreateInteractiveItem());
+            }
+        }
 
         #region Tvorba výchozích dat - namísto prázdných
         /// <summary>
