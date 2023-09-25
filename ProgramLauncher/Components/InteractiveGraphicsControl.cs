@@ -48,65 +48,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         private ChildItems<InteractiveGraphicsControl, InteractiveItem> __DataItems;
         #endregion
-        #region Kreslení
-        /// <summary>
-        /// Tato metoda zajistí nové vykreslení objektu. Používá se namísto Invalidate() !!!
-        /// Důvodem je to, že Invalidate() znovu vykreslí obsah bufferu - ale ten obsahuje "stará" data.
-        /// Vyvolá událost PaintToBuffer() a pak přenese vykreslený obsah z bufferu do vizuálního controlu.
-        /// </summary>
-        public override void Draw()
-        {
-            this._CheckContentSize();
-            base.Draw();
-        }
-        /// <summary>
-        /// Tato metoda zajistí nové vykreslení objektu. Používá se namísto Invalidate() !!!
-        /// Důvodem je to, že Invalidate() znovu vykreslí obsah bufferu - ale ten obsahuje "stará" data.
-        /// Vyvolá událost PaintToBuffer() a pak přenese vykreslený obsah z bufferu do vizuálního controlu.
-        /// </summary>
-        /// <param name="drawRectangle">
-        /// Informace pro kreslící program o rozsahu překreslování.
-        /// Nemusí nutně jít o grafický prostor, toto je pouze informace předáváná z parametru metody Draw() do handleru PaintToBuffer().
-        /// V servisní třídě se nikdy nepoužije ve významu grafického prostoru.
-        /// </param>
-        public override void Draw(Rectangle drawRectangle)
-        {
-            this._CheckContentSize();
-            base.Draw(drawRectangle);
-        }
-        /// <summary>
-        /// Systémové kreslení
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        protected override void OnPaintToBuffer(object sender, PaintEventArgs e)
-        {
-            e.Graphics.Clear(this.BackColor);
-            _PaintMousePoints(e);
-            _PaintDataItems(e);
-
-        }
-        private void _PaintDataItems(PaintEventArgs e)
-        {
-            var mouseState = MouseState.CreateCurrent(this);
-            using (PaintDataEventArgs pdea = new PaintDataEventArgs(e, mouseState, this))
-            {
-                foreach (var dataItem in DataItems)
-                    dataItem.Paint(pdea);
-            }
-        }
-        /// <summary>
-        /// Reálná barva pozadí, nelze setovat.
-        /// Buď je zde barva explicitní <see cref="BackColorUser"/>, anebo barva z aktuální palety <see cref="App.CurrentAppearance"/>.
-        /// </summary>
-        public override Color BackColor { get { return App.CurrentAppearance.WorkspaceColor.Morph(BackColorUser); } set { } }
-        /// <summary>
-        /// Explicitní barva pozadí.
-        /// Zadaná bůže používat Alfa kanál (= průhlednost), pak pod touto barvou bude prosvítat barva pozadí dle palety.
-        /// Lze zadat null = žádná extra barva, čistě barva dle palety.
-        /// </summary>
-        public Color? BackColorUser { get { return __BackColorUser; } set { __BackColorUser = value; this.Draw(); } } private Color? __BackColorUser;
-        #endregion
         #region Interaktivita
         #region Interaktivita nativní = eventy controlu
         /// <summary>
@@ -119,6 +60,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             this.MouseDown += _MouseDown;
             this.MouseUp += _MouseUp;
             this.MouseLeave += _MouseLeave;
+
+            this._MouseDragReset();
         }
         /// <summary>
         /// Nativní event MouseEnter
@@ -158,7 +101,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         private void _MouseUp(object sender, MouseEventArgs e)
         {
             var mouseState = MouseState.CreateCurrent(this);
-            if (__CurrentDraggedItem != null)
+            if (__CurrentMouseDragState == MouseDragProcessState.Dragging)
                 _MouseDragEnd(mouseState);
             else
                 _MouseUp(mouseState);
@@ -190,10 +133,15 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 _MouseMoveNone(mouseState);
             }
             else if (lastNone && !currNone)
-            {   // Dříve bez tlačítka, nyní s tlačítkem (minuli jsme NouseDown):
+            {   // Dříve bez tlačítka, nyní s tlačítkem (minuli jsme MouseDown):
                 _MouseDown(mouseState);
                 _MouseDragMove(mouseState);
             }
+            else if (!currNone)
+            {   // Nyní s tlačítkem
+                _MouseDragMove(mouseState);
+            }
+
         }
         /// <summary>
         /// Pohyb myši bez stisknutého tlačítka
@@ -227,6 +175,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             _MouseMoveCurrentExchange(mouseState, mouseItem, InteractiveState.MouseDown, true);
             __CurrentMouseDownState = mouseState;
             __CurrentMouseButtons = mouseState.Buttons;
+            _MouseDragDown(mouseState, mouseItem);
+
             this.Draw();
         }
         /// <summary>
@@ -235,7 +185,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="mouseState"></param>
         private void _MouseUp(MouseState mouseState)
         {
-            // Řešení kliknutí nebo doubleclicku nebo MouseDragEnd:
+            // Odlišení kliknutí nebo doubleclicku (zde ale nejsme v režimu DragAndDrop, to si řeší _MouseUp => _MouseDragEnd):
             var currentItem = __CurrentMouseItem;
             if (currentItem != null)
                 _MouseItemClick(mouseState, currentItem);
@@ -244,6 +194,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             __PreviousMouseDownState = __CurrentMouseDownState;      // Aktuální stav myši odzálohuji do Previous, kvůli případnému doubleclicku
             __CurrentMouseDownState = null;                          // Aktuálně nemáme myš Down
             __CurrentMouseButtons = MouseButtons.None;               // Ani žádný button
+
+            // Ukončení Mouse DragAndDrop, které ani nezačalo (proto jsme tady):
+            _MouseDragReset();
 
             // Znovu najdeme prvek pod myší:
             var mouseItem = _GetMouseItem(mouseState);
@@ -266,14 +219,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
 
             currentItem.InteractiveState = InteractiveState.Enabled;
         }
-        /// <summary>
-        /// Pohyb myši když je stisknuté tlačítko = řeší začátek a průběh MouseDrag
-        /// </summary>
-        /// <param name="mouseState"></param>
-        private void _MouseDragMove(MouseState mouseState)
-        { }
-        private void _MouseDragEnd(MouseState mouseState)
-        { }
         /// <summary>
         /// Najde nejvyšší aktivní prvek pro danou pozici myši
         /// </summary>
@@ -372,15 +317,168 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         private InteractiveItem __CurrentMouseItem;
         /// <summary>
-        /// Aktuálně přemísťovaný prvek
-        /// </summary>
-        private InteractiveItem __CurrentDraggedItem;
-        /// <summary>
         /// Myš se nachází nad Controlem
         /// </summary>
         private bool __MouseIsOnControl;
         private InteractiveItem __LastMouseItem;
         #endregion
+        #region Interaktivní proces DragAndDrop
+        /// <summary>
+        /// Volá se v okamžiku MouseDown a slouží k uložení dat pro případné budoucí zahájení procesu Mouse DragAndDrop
+        /// </summary>
+        /// <param name="mouseState"></param>
+        private void _MouseDragDown(MouseState mouseState, InteractiveItem mouseItem)
+        {
+            __CurrentMouseDragState = MouseDragProcessState.BeginZone;
+            __DragVirtualBeginPoint = mouseState;
+            __DragVirtualBeginZone = mouseState.LocationControl.GetRectangleFromCenter(6, 6);
+            __DragVirtualCurrentPoint = mouseState;
+            __MouseDragCurrentDataItem = mouseItem;
+        }
+        /// <summary>
+        /// Pohyb myši když je stisknuté tlačítko = řeší začátek a průběh DragAndDrop
+        /// </summary>
+        /// <param name="mouseState"></param>
+        private void _MouseDragMove(MouseState mouseState)
+        {
+            if (__CurrentMouseDragState == MouseDragProcessState.BeginZone)
+            {   // Jsme v procesu čekání na výraznější pohyb myši = odtrhnutí od bodu MouseDown:
+                if (!__DragVirtualBeginZone.HasValue || !__DragVirtualBeginZone.Value.Contains(mouseState.LocationControl))
+                {
+                    __CurrentMouseDragState = MouseDragProcessState.Dragging;
+                    __DragVirtualBeginZone = null;
+                    this.Cursor = Cursors.SizeAll;
+                }
+            }
+            if (__CurrentMouseDragState == MouseDragProcessState.Dragging)
+            {   // Probíhá DragAndDrop: najdeme cílový prvek:
+                __DragVirtualCurrentPoint = mouseState;
+                __MouseDragTargetDataItem = _GetMouseItem(mouseState);
+                this.Draw();
+            }
+        }
+        /// <summary>
+        /// Volá se při události MouseUp při stavu <see cref="__CurrentMouseDragState"/> == <see cref="MouseDragProcessState.Dragging"/>,
+        /// tedy když reálně probíhá Mouse DragAndDrop.
+        /// </summary>
+        /// <param name="mouseState"></param>
+        private void _MouseDragEnd(MouseState mouseState)
+        {
+
+
+            _MouseDragReset();
+        }
+        /// <summary>
+        /// Resetuje veškeré příznaky procesu DragAndDrop
+        /// </summary>
+        private void _MouseDragReset()
+        {
+            __CurrentMouseDragState = MouseDragProcessState.None;
+            __DragVirtualBeginPoint = null;
+            __DragVirtualBeginZone = null;
+            __DragVirtualCurrentPoint = null;
+            __MouseDragCurrentDataItem = null;
+            this.Cursor = Cursors.Default;
+            this.Draw();
+        }
+        private MouseDragProcessState __CurrentMouseDragState;
+        private MouseState __DragVirtualBeginPoint;
+        private Rectangle? __DragVirtualBeginZone;
+        private MouseState __DragVirtualCurrentPoint;
+        /// <summary>
+        /// Aktuálně přemísťovaný prvek
+        /// </summary>
+        private InteractiveItem __CurrentDraggedItem;
+        /// <summary>
+        /// Prvek, který byl pod myší když začal proces DragAndDrop a je tedy přesouván na jinou pozici
+        /// </summary>
+        private InteractiveItem __MouseDragCurrentDataItem;
+        /// <summary>
+        /// Prvek, který je nyní pod myší při přesouvání v procesu DragAndDrop, je tedy cílovým prvkem. Nikdy nejde o <see cref="__MouseDragCurrentDataItem"/>.
+        /// </summary>
+        private InteractiveItem __MouseDragTargetDataItem;
+        /// <summary>
+        /// Fyzický stav procesu DragAndDrop
+        /// </summary>
+        private enum MouseDragProcessState
+        {
+            None,
+            BeginZone,
+            Dragging
+        }
+        #endregion
+        #endregion
+        #region Kreslení
+        /// <summary>
+        /// Tato metoda zajistí nové vykreslení objektu. Používá se namísto Invalidate() !!!
+        /// Důvodem je to, že Invalidate() znovu vykreslí obsah bufferu - ale ten obsahuje "stará" data.
+        /// Vyvolá událost PaintToBuffer() a pak přenese vykreslený obsah z bufferu do vizuálního controlu.
+        /// </summary>
+        public override void Draw()
+        {
+            this._CheckContentSize();
+            base.Draw();
+        }
+        /// <summary>
+        /// Tato metoda zajistí nové vykreslení objektu. Používá se namísto Invalidate() !!!
+        /// Důvodem je to, že Invalidate() znovu vykreslí obsah bufferu - ale ten obsahuje "stará" data.
+        /// Vyvolá událost PaintToBuffer() a pak přenese vykreslený obsah z bufferu do vizuálního controlu.
+        /// </summary>
+        /// <param name="drawRectangle">
+        /// Informace pro kreslící program o rozsahu překreslování.
+        /// Nemusí nutně jít o grafický prostor, toto je pouze informace předáváná z parametru metody Draw() do handleru PaintToBuffer().
+        /// V servisní třídě se nikdy nepoužije ve významu grafického prostoru.
+        /// </param>
+        public override void Draw(Rectangle drawRectangle)
+        {
+            this._CheckContentSize();
+            base.Draw(drawRectangle);
+        }
+        /// <summary>
+        /// Systémové kreslení
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        protected override void OnPaintToBuffer(object sender, PaintEventArgs e)
+        {
+            e.Graphics.Clear(this.BackColor);
+            _PaintMousePoints(e);
+            _PaintAllDataItems(e);
+        }
+        /// <summary>
+        /// Vykreslí všechny interaktivní prvky v základní vrstvě
+        /// </summary>
+        /// <param name="e"></param>
+        private void _PaintAllDataItems(PaintEventArgs e)
+        {
+            var mouseState = MouseState.CreateCurrent(this);
+            using (PaintDataEventArgs pdea = new PaintDataEventArgs(e, mouseState, this))
+            {
+                foreach (var dataItem in DataItems)
+                {
+                    dataItem.Paint(pdea);
+                }
+                if (this.__MouseDragCurrentDataItem != null && __CurrentMouseDragState == MouseDragProcessState.Dragging)
+                {
+                    var dragShift = new Point(__DragVirtualCurrentPoint.LocationControl.X - this.__DragVirtualBeginPoint.LocationControl.X, __DragVirtualCurrentPoint.LocationControl.Y - this.__DragVirtualBeginPoint.LocationControl.Y);
+                    pdea.MouseDragState = MouseDragState.MouseDragActiveCurrent;
+                    pdea.MouseDragCurrentBounds = this.__MouseDragCurrentDataItem.VirtualBounds.Value.GetShiftedRectangle(dragShift);
+                    this.__MouseDragCurrentDataItem.Paint(pdea);
+                }
+            }
+        }
+        /// <summary>
+        /// Reálná barva pozadí, nelze setovat.
+        /// Buď je zde barva explicitní <see cref="BackColorUser"/>, anebo barva z aktuální palety <see cref="App.CurrentAppearance"/>.
+        /// </summary>
+        public override Color BackColor { get { return App.CurrentAppearance.WorkspaceColor.Morph(BackColorUser); } set { } }
+        /// <summary>
+        /// Explicitní barva pozadí.
+        /// Zadaná bůže používat Alfa kanál (= průhlednost), pak pod touto barvou bude prosvítat barva pozadí dle palety.
+        /// Lze zadat null = žádná extra barva, čistě barva dle palety.
+        /// </summary>
+        public Color? BackColorUser { get { return __BackColorUser; } set { __BackColorUser = value; this.Draw(); } }
+        private Color? __BackColorUser;
         #endregion
 
 

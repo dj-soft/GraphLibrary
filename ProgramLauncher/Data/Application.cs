@@ -243,11 +243,11 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         /// <param name="color"></param>
         /// <returns></returns>
-        public static Pen GetPen(Color? color)
+        public static Pen GetPen(Color? color, float? alpha = null)
         {
             if (!color.HasValue) return null;
             var pen = Current.__Pen;
-            pen.Color = color.Value;
+            pen.Color = color.Value.GetAlpha(alpha);
             pen.Width = 1f;
             return pen;
         }
@@ -259,11 +259,11 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         /// <param name="color"></param>
         /// <returns></returns>
-        public static Pen GetPen(Color? color, float width)
+        public static Pen GetPen(Color? color, float width, float? alpha = null)
         {
             if (!color.HasValue) return null;
             var pen = Current.__Pen;
-            pen.Color = color.Value;
+            pen.Color = color.Value.GetAlpha(alpha);
             pen.Width = width;
             return pen;
         }
@@ -276,12 +276,12 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="colorSet"></param>
         /// <param name="interactiveState"></param>
         /// <returns></returns>
-        public static Pen GetPen(ColorSet colorSet, Components.InteractiveState interactiveState = Components.InteractiveState.Default, float? width = null)
+        public static Pen GetPen(ColorSet colorSet, Components.InteractiveState interactiveState = Components.InteractiveState.Default, float? width = null, float? alpha = null)
         {
             var color = colorSet?.GetColor(interactiveState);
             if (color == null) return null;
             var pen = Current.__Pen;
-            pen.Color = color.Value;
+            pen.Color = color.Value.GetAlpha(alpha);
             pen.Width = width ?? 1f;
             return pen;
         }
@@ -293,11 +293,11 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         /// <param name="color"></param>
         /// <returns></returns>
-        public static Brush GetBrush(Color? color)
+        public static Brush GetBrush(Color? color, float? alpha = null)
         {
             if (!color.HasValue) return null;
             var brush = Current.__Brush;
-            brush.Color = color.Value;
+            brush.Color = color.Value.GetAlpha(alpha);
             return brush;
         }
         /// <summary>
@@ -309,12 +309,12 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="colorSet"></param>
         /// <param name="interactiveState"></param>
         /// <returns></returns>
-        public static Brush GetBrush(ColorSet colorSet, Components.InteractiveState interactiveState = Components.InteractiveState.Default)
+        public static Brush GetBrush(ColorSet colorSet, Components.InteractiveState interactiveState = Components.InteractiveState.Default, float? alpha = null)
         {
             var color = colorSet?.GetColor(interactiveState);
             if (color == null) return null;
             var brush = Current.__Brush;
-            brush.Color = color.Value;
+            brush.Color = color.Value.GetAlpha(alpha);
             return brush;
         }
         /// <summary>

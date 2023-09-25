@@ -62,9 +62,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Příznak že prvek je aktivní. Pak používá pro své vlastní pozadí barvu <see cref="ColorSet.DownColor"/>
         /// </summary>
         public virtual bool Down { get { return __Down; } set { __Down = value; } } private bool __Down;
+        /// <summary>
+        /// Jméno obrázku
+        /// </summary>
         public virtual string ImageName { get { return __ImageName; } set { __ImageName = value; } } private string __ImageName;
+        /// <summary>
+        /// Data obrázku
+        /// </summary>
         public virtual byte[] ImageContent { get { return __ImageContent; } set { __ImageContent = value; } } private byte[] __ImageContent;
-
         /// <summary>
         /// Prostor pro definiční data tohoto prvku
         /// </summary>
@@ -309,8 +314,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             if (!HasParent || !Visible) return;
 
-            var virtualBounds = this.VirtualBounds;
+            bool paintGhost = (e.MouseDragState == MouseDragState.MouseDragActiveCurrent);       // true = kreslíme "ducha" = prvek, který je přesouván, má určitou průhlednost / nebo jen rámeček?
+            var virtualBounds = (paintGhost ? e.MouseDragCurrentBounds : this.VirtualBounds);
             if (!virtualBounds.HasValue) return;
+            float? alpha = (paintGhost ? (float?)0.40f : (float?)null);
 
             var dataLayout = this.DataLayout;
             var paletteSet = App.CurrentAppearance;
@@ -320,7 +327,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             var workspaceColor = App.CurrentAppearance.WorkspaceColor;
 
             Color? color;
-            e.Graphics.SetClip(activeBounds);
+            e.Graphics.SetClip(clientBounds);
 
             InteractiveState interactiveState = this.InteractiveState;
 
@@ -330,14 +337,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             {   // Barva buňky se smíchá s barvou WorkspaceColor a vykreslí se celé její pozadí,
                 // a tato barva se pak stává základnou pro Morphování a kreslení všech dalších barev v různých oblastech:
                 workspaceColor = workspaceColor.Morph(color.Value);
-                e.Graphics.FillRectangle(clientBounds, workspaceColor);
+                e.Graphics.FillRectangle(clientBounds, workspaceColor, alpha);
             }
             // Pozadí aktivní části buňky:
             if (this.Down)
             {
                 color = paletteSet.ActiveContentColor.DownColor;
                 if (color.HasValue)
-                    e.Graphics.FillRectangle(activeBounds, workspaceColor.Morph(color.Value));
+                    e.Graphics.FillRectangle(activeBounds, workspaceColor.Morph(color.Value), alpha);
             }
 
             // Podkreslení celé buňky v myšoaktivním stavu:
@@ -345,7 +352,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             {
                 color = paletteSet.ActiveContentColor.GetColor(interactiveState);
                 if (color.HasValue)
-                    e.Graphics.FountainFill(activeBounds, workspaceColor.Morph(color.Value));
+                    e.Graphics.FountainFill(activeBounds, workspaceColor.Morph(color.Value), Components.InteractiveState.Default, alpha);
             }
 
             // Rámeček a pozadí typu Border:
@@ -359,12 +366,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     // Výplň dáme pod border:
                     color = paletteSet.ButtonBackColors.GetColor(interactiveState);
                     if (color.HasValue)
-                        e.Graphics.FountainFill(borderPath, workspaceColor.Morph(color.Value), interactiveState);
+                        e.Graphics.FountainFill(borderPath, workspaceColor.Morph(color.Value), interactiveState, alpha);
 
                     // Linka Border:
                     if (dataLayout.BorderWidth > 0f)
                     {
-                        var pen = App.GetPen(paletteSet.BorderLineColors, interactiveState, dataLayout.BorderWidth);
+                        var pen = App.GetPen(paletteSet.BorderLineColors, interactiveState, dataLayout.BorderWidth, alpha);
                         if (pen != null) e.Graphics.DrawPath(pen, borderPath);
                     }
                 }
@@ -382,7 +389,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     using (System.Drawing.Drawing2D.PathGradientBrush pgb = new PathGradientBrush(mousePath))       // points
                     {
                         pgb.CenterPoint = mousePoint;
-                        pgb.CenterColor = workspaceColor.Morph(paletteSet.ButtonBackColors.MouseHighlightColor);
+                        pgb.CenterColor = workspaceColor.Morph(paletteSet.ButtonBackColors.MouseHighlightColor).GetAlpha(alpha);
                         pgb.SurroundColors = new Color[] { Color.Transparent, Color.Transparent, Color.Transparent, Color.Transparent };
                         e.Graphics.FillPath(pgb, mousePath);
                     }
@@ -396,14 +403,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 e.Graphics.ResetClip();
                 e.Graphics.SmoothingMode = SmoothingMode.None;
                 var imageBounds = dataLayout.ImageBounds.GetShiftedRectangle(clientLocation);
-                e.Graphics.DrawImage(image, imageBounds);
+                e.Graphics.DrawImage(image, imageBounds, alpha);
             }
 
             // Vypsat text:
             if (dataLayout.MainTitleBounds.HasContent() && !String.IsNullOrEmpty(this.MainTitle))
             {
                 var mainTitleBounds = dataLayout.MainTitleBounds.GetShiftedRectangle(clientLocation);
-                e.Graphics.DrawText(this.MainTitle, mainTitleBounds, dataLayout.MainTitleAppearance, interactiveState);
+                e.Graphics.DrawText(this.MainTitle, mainTitleBounds, dataLayout.MainTitleAppearance, interactiveState, alpha);
             }
 
             e.Graphics.ResetClip();
@@ -614,6 +621,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         }
         private WeakReference<Graphics> __Graphics;
         private Rectangle __ClipRectangle;
+        private Rectangle? __MouseDragCurrentBounds;
+        private MouseDragState __MouseDragState;
         private Components.MouseState __MouseState;
         private Components.IVirtualContainer __VirtualContainer;
         void IDisposable.Dispose()
@@ -631,6 +640,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         public Rectangle ClipRectangle { get { return __ClipRectangle; } }
         /// <summary>
+        /// Souřadnice aktivního prvku, kam by byl přesunut v procesu Mouse DragAndDrop, když <see cref="MouseDragState"/> je <see cref="MouseDragState.MouseDragActiveCurrent"/>
+        /// </summary>
+        public Rectangle? MouseDragCurrentBounds { get { return __MouseDragCurrentBounds; } set { __MouseDragCurrentBounds = value; } }
+        /// <summary>
+        /// Stav procesu Mouse DragAndDrop pro aktuální vykreslovaný prvek
+        /// </summary>
+        public MouseDragState MouseDragState { get { return __MouseDragState; } set { __MouseDragState = value; } }
+        /// <summary>
         /// Pozice a stav myši
         /// </summary>
         public Components.MouseState MouseState { get { return __MouseState; } }
@@ -638,6 +655,31 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Virtuální kontejner, do kterého je kresleno
         /// </summary>
         public Components.IVirtualContainer VirtualContainer { get { return __VirtualContainer; } }
+    }
+    /// <summary>
+    /// Stav procesu Mouse DragAndDrop
+    /// </summary>
+    public enum MouseDragState
+    {
+        /// <summary>
+        /// Nejedná se o Mouse DragAndDrop
+        /// </summary>
+        None,
+        /// <summary>
+        /// Aktuální vykreslovaný prvek je "pod" myší v procesu Mouse DragAndDrop = jde o běžný prvek, který není přesouván, ale leží na místě, kde se nachází myš v tomto procesu
+        /// </summary>
+        MouseDragTarget,
+        /// <summary>
+        /// Aktuální vykreslovaný prvek je ten, který se přesouvá v procesu Mouse DragAndDrop.
+        /// V tomto stavu se má vykreslit ve své původní pozici (Source).
+        /// </summary>
+        MouseDragActiveOriginal,
+        /// <summary>
+        /// Aktuální vykreslovaný prvek je ten, který se přesouvá v procesu Mouse DragAndDrop.
+        /// V tomto stavu se má vykreslit ve své cílové pozici, kde je zrovna umístěn při přetažení myší.
+        /// Pak se má pro kreslení použít souřadnice <see cref="PaintDataEventArgs.MouseDragCurrentBounds"/>
+        /// </summary>
+        MouseDragActiveCurrent
     }
     #endregion
 }

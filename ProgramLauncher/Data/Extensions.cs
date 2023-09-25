@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using static DjSoft.Tools.ProgramLauncher.App;
+using System.Drawing.Imaging;
 
 namespace DjSoft.Tools.ProgramLauncher
 {
@@ -411,26 +412,26 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="bounds"></param>
         /// <param name="color"></param>
         /// <param name="interactiveState"></param>
-        public static void FountainFill(this Graphics graphics, Rectangle bounds, Color color, Components.InteractiveState interactiveState = Components.InteractiveState.Default)
+        public static void FountainFill(this Graphics graphics, Rectangle bounds, Color color, Components.InteractiveState interactiveState = Components.InteractiveState.Default, float? alpha = null)
         {
             _GetFountainFillDirection(interactiveState, out float morph, out FountainDirection direction);
-            FountainFill(graphics, bounds, color, morph, direction);
+            FountainFill(graphics, bounds, color, morph, direction, alpha);
         }
-        public static void FountainFill(this Graphics graphics, GraphicsPath path, Color color, Components.InteractiveState interactiveState = Components.InteractiveState.Default)
+        public static void FountainFill(this Graphics graphics, GraphicsPath path, Color color, Components.InteractiveState interactiveState = Components.InteractiveState.Default, float? alpha = null)
         {
             _GetFountainFillDirection(interactiveState, out float morph, out FountainDirection direction);
-            FountainFill(graphics, path, color, morph, direction);
+            FountainFill(graphics, path, color, morph, direction, alpha);
         }
-        public static void FountainFill(this Graphics graphics, Rectangle bounds, Color color, float morph, FountainDirection direction)
+        public static void FountainFill(this Graphics graphics, Rectangle bounds, Color color, float morph, FountainDirection direction, float? alpha = null)
         {
-            _GetFountainFillColors(color, morph, out Color colorBegin, out Color colorEnd);
+            _GetFountainFillColors(color, morph, out Color colorBegin, out Color colorEnd, alpha);
             using (var brush = CreateLinearGradientBrush(bounds, colorBegin, colorEnd, direction))
                 graphics.FillRectangle(brush, bounds);
         }
-        public static void FountainFill(this Graphics graphics, GraphicsPath path, Color color, float morph, FountainDirection direction)
+        public static void FountainFill(this Graphics graphics, GraphicsPath path, Color color, float morph, FountainDirection direction, float? alpha = null)
         {
             Rectangle bounds = path.GetBounds().GetOuterBounds();
-            _GetFountainFillColors(color, morph, out Color colorBegin, out Color colorEnd);
+            _GetFountainFillColors(color, morph, out Color colorBegin, out Color colorEnd, alpha);
             using (var brush = CreateLinearGradientBrush(bounds, colorBegin, colorEnd, direction))
                 graphics.FillPath(brush, path);
         }
@@ -464,10 +465,10 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="morph"></param>
         /// <param name="colorBegin"></param>
         /// <param name="colorEnd"></param>
-        private static void _GetFountainFillColors(Color color, float morph, out Color colorBegin, out Color colorEnd)
+        private static void _GetFountainFillColors(Color color, float morph, out Color colorBegin, out Color colorEnd, float? alpha = null)
         {
-            colorBegin = color.ChangeColor(morph);
-            colorEnd = color.ChangeColor(-morph);
+            colorBegin = color.ChangeColor(morph).GetAlpha(alpha);
+            colorEnd = color.ChangeColor(-morph).GetAlpha(alpha);
         }
         /// <summary>
         /// Vytvoří a vrátí new instanci <see cref="LinearGradientBrush"/> pro daný prostor, barvu počátku a konce a daný směr orientace.
@@ -529,21 +530,22 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
         /// <param name="color"></param>
-        public static void FillRectangle(this Graphics graphics, RectangleF bounds, Color color)
+        /// <param name="alpha"></param>
+        public static void FillRectangle(this Graphics graphics, RectangleF bounds, Color color, float? alpha = null)
         {
-            graphics.FillRectangle(App.GetBrush(color), bounds);
+            graphics.FillRectangle(App.GetBrush(color, alpha), bounds);
         }
-        public static void DrawText(this Graphics graphics, string text, RectangleF bounds, TextAppearance textAppearance, Components.InteractiveState interactiveState = Components.InteractiveState.Default)
+        public static void DrawText(this Graphics graphics, string text, RectangleF bounds, TextAppearance textAppearance, Components.InteractiveState interactiveState = Components.InteractiveState.Default, float? alpha = null)
         {
-            var brush = App.GetBrush(textAppearance.TextColors, interactiveState);
+            var brush = App.GetBrush(textAppearance.TextColors, interactiveState, alpha);
             if (brush is null) return;
             var font = App.GetFont(textAppearance, interactiveState);
             graphics.SetForText();
             graphics.DrawString(text, font, brush, bounds);
         }
-        public static void DrawText(this Graphics graphics, string text, RectangleF bounds, Color color, FontType? fontType = null, float? emSize = null, FontStyle? fontStyle = null)
+        public static void DrawText(this Graphics graphics, string text, RectangleF bounds, Color color, FontType? fontType = null, float? emSize = null, FontStyle? fontStyle = null, float? alpha = null)
         {
-            var brush = App.GetBrush(color);
+            var brush = App.GetBrush(color.GetAlpha(alpha));
             if (brush is null) return;
             var font = App.GetFont(fontType, emSize, fontStyle);
             graphics.SetForText();
@@ -553,6 +555,35 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
             graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        }
+
+        public static void DrawImage(this Graphics graphics, Image image, RectangleF bounds, float? alpha = null)
+        {
+            if (image is null) return;
+            if (alpha.HasValue && alpha.Value <= 0f) return;
+            if (alpha.HasValue && alpha.Value < 1f) _DrawImageAlpha(graphics, image, bounds, alpha.Value);
+            else graphics.DrawImage(image, bounds);
+        }
+        private static void _DrawImageAlpha(Graphics graphics, Image image, RectangleF bounds, float alpha)
+        {
+            // Initialize the color matrix.
+            // Note the value 0.8 in row 4, column 4.
+            float[][] matrixItems =
+            {
+                new float[] {1, 0, 0, 0, 0},
+                new float[] {0, 1, 0, 0, 0},
+                new float[] {0, 0, 1, 0, 0},
+                new float[] {0, 0, 0, alpha, 0},
+                new float[] {0, 0, 0, 0, 1}
+            };
+            ColorMatrix colorMatrix = new ColorMatrix(matrixItems);
+
+            // Create an ImageAttributes object and set its color matrix.
+            ImageAttributes imageAtt = new ImageAttributes();
+            imageAtt.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+
+            // Now draw the semitransparent bitmap image.
+            graphics.DrawImage(image, Rectangle.Round(bounds), 0f, 0f, image.Width, image.Height, GraphicsUnit.Pixel, imageAtt);
         }
         #endregion
         #region Color - Shift, Change, Morph, Contrast ...
@@ -853,6 +884,19 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         #endregion
         #region Color: Opacity
+        /// <summary>
+        /// Vrátí danou barvu this, do které aplikuje danou průhlednost (nad rámec vlastní průhlednosti barvy).
+        /// </summary>
+        /// <param name="root"></param>
+        /// <param name="alpha">Alfa kanál: 0=zcela průhledná, 1=původní barva beze změny, null = beze změny</param>
+        /// <returns></returns>
+        public static Color GetAlpha(this Color root, float? alpha)
+        {
+            if (!alpha.HasValue || alpha.Value >= 1f) return root;             // Beze změny
+            if (alpha.Value < 0f) alpha = 0f;
+            int a = (int)(Math.Round((float)root.A * alpha.Value, 0));         // Smíchám kanál A s hodnotou alpha, obě hodnoty mají význam 0=průhledné sklo ... max (255 nebo 1.0f) = zcela plná barva
+            return Color.FromArgb(a, root.R, root.G, root.B);
+        }
         /// <summary>
         /// Do dané barvy (this) vloží danou hodnotu Alpha (parametr opacity), výsledek vrátí.
         /// </summary>

@@ -255,6 +255,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
 
             App.SelectFromMenu(menuItems, doContextMenu, mouseState.LocationAbsolute);
 
+            // Provede vybranou akci z kontextového menu
             void doContextMenu(IMenuItem menuItem)
             {
                 if (menuItem.UserData is string code)
@@ -269,7 +270,6 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                             break;
                     }
                 }
-
             }
         }
         #endregion
@@ -314,7 +314,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public Color? BackColor { get; set; }
 
-
+        /// <summary>
+        /// Vytvoří a vrátí new instanci interaktivního prvku <see cref="InteractiveDataItem"/> = potomek základního prvku <see cref="InteractiveItem"/>
+        /// </summary>
+        /// <returns></returns>
         internal InteractiveItem CreateInteractiveItem()
         {
             var item = new InteractiveDataItem(this);
