@@ -205,7 +205,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 //   if (OnlyOneInstance && _TryActivateProcess()) return;
                 App.MainForm.StatusLabelApplicationRunText = this.Title;
                 App.MainForm.StatusLabelApplicationRunImage = ImageKindType.MediaForward;
-                _RunNewProcess();
+                _RunNewProcess(null);
             }
             catch (Exception exc)
             {
@@ -224,7 +224,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
 
             return false;
         }
-        private void _RunNewProcess()
+        private void _RunNewProcess(bool? executeInAdminMode)
         {
             System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo()
             {
@@ -234,25 +234,43 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 UseShellExecute = true
             };
 
-            if (ExecuteInAdminMode) psi.Verb = "runas";
+            bool adminMode = executeInAdminMode ?? ExecuteInAdminMode;
+            if (adminMode) psi.Verb = "runas";
 
             System.Diagnostics.Process process = new System.Diagnostics.Process();
             process.StartInfo = psi;
             process.Start();
         }
-
+        /// <summary>
+        /// Nabídne kontextové menu pro danou aplikaci
+        /// </summary>
+        /// <param name="mouseState"></param>
         internal void RunContextMenu(MouseState mouseState)
         {
             var menuItems = new List<IMenuItem>();
-            menuItems.Add(new DataMenuItem() { Text = "Spustit", Image = Properties.Resources.media_playback_start_3_22 });
-            menuItems.Add(new DataMenuItem() { Text = "Spustit jako správce", Image = Properties.Resources.media_seek_forward_3_22 });
-            menuItems.Add(new DataMenuItem() { Text = "Odstranit", Image = Properties.Resources.delete_22 });
-            menuItems.Add(new DataMenuItem() { Text = "Upravit", Image = Properties.Resources.edit_3_22 });
+            menuItems.Add(new DataMenuItem() { Text = "Spustit", Image = Properties.Resources.media_playback_start_3_22, UserData = "Run" });
+            menuItems.Add(new DataMenuItem() { Text = "Spustit jako správce", Image = Properties.Resources.media_seek_forward_3_22, UserData = "RunAs" });
+            menuItems.Add(new DataMenuItem() { Text = "Odstranit", Image = Properties.Resources.delete_22, UserData = "Delete" });
+            menuItems.Add(new DataMenuItem() { Text = "Upravit", Image = Properties.Resources.edit_3_22, UserData = "Edit" });
 
             App.SelectFromMenu(menuItems, doContextMenu, mouseState.LocationAbsolute);
 
             void doContextMenu(IMenuItem menuItem)
-            { }
+            {
+                if (menuItem.UserData is string code)
+                {
+                    switch (code)
+                    {
+                        case "Run":
+                            _RunNewProcess(false);
+                            break;
+                        case "RunAs":
+                            _RunNewProcess(true);
+                            break;
+                    }
+                }
+
+            }
         }
         #endregion
     }
