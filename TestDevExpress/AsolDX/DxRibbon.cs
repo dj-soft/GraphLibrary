@@ -31,6 +31,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxRibbonControl()
         {
+            InitBarManagers();
             InitSystemProperties();
             InitData();
             InitEvents();
@@ -125,7 +126,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
             ApplicationButtonText = DxComponent.Localize(MsgCode.RibbonAppHomeText);
-            ToolTipController = DxComponent.DefaultToolTipController;
+            ToolTipController = DxComponent.DefaultRibbonToolTipController;
 
             Margin = new System.Windows.Forms.Padding(2);
             MdiMergeStyle = DefaultMdiMergeStyleForms;
@@ -185,6 +186,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ShowTextInQAT = DefaultShowTextInQAT;
             ShowToolbarCustomizeItem = true;
             Toolbar.ShowCustomizeItem = false;
+            ShowItemCaptionsInCaptionBar = true;
 
             if (forDesktop)
             {   // pro Desktop
@@ -1687,15 +1689,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _TitleBarAddItems(IEnumerable<IRibbonItem> items, bool clear = false)
         {
             if (clear) _TitleBarClearItems();
-            if (items is null) return;
 
-            var mode = DxRibbonCreateContentMode.CreateAllSubItems;
-            int count = 0;
-            foreach (var iRibbonItem in items)
+            // this._AddCaptionTest();
+
+            if (items != null)
             {
-                var item = this.GetItem(iRibbonItem, null, 0, mode, ref count);
-                this.CaptionBarItemLinks.Add(item);
+                foreach (var item in items)
+                {
+                    var barItem = CreateItem(item);
+                    if (barItem != null)
+                    {
+                        _TitleBarSetManagerToItem(barItem);
+                        var barLink = this.CaptionBarItemLinks.Add(barItem, item.ItemIsFirstInGroup);
+                    }
+                }
             }
+
+            // this._AddCaptionTest();
         }
         private void _TitleBarRemoveItems(IEnumerable<IRibbonItem> items)
         {
@@ -1720,6 +1730,20 @@ namespace Noris.Clients.Win.Components.AsolDX
                     this.Items.Remove(item);
             }
         }
+        /// <summary>
+        /// Explicitně vloží Managera do předaného prvku, který bude umístěn do CaptionBaru (TitleBar).
+        /// Tam se má vkládat manager trochu odlišně než do běžných prvků
+        /// </summary>
+        /// <param name="titleBarItem"></param>
+        private void _TitleBarSetManagerToItem(BarItem titleBarItem)
+        {
+            titleBarItem.Manager = this.BarManagerInt;
+        }
+        /// <summary>
+        /// Jméno ikony, která se použije jako defaultní pro Caption menu = tlačítka v titulkovém řádku.
+        /// Ikona musí být viditelná ve všech skinech.
+        /// </summary>
+        internal static string CaptionMenuDefaultIcon { get { return "images/setup/properties_16x16.png"; } }
         #endregion
         #region StatusBarItems
         /// <summary>
@@ -2103,11 +2127,35 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Následující algoritmus NENÍ POMALÝ: smazání 700 Itemů trvá 11 milisekund.
             // Pokud by Clear náhodou smazal i nějaké další systémové prvky, je nutno je určit = určit jejich FullType a přidat jej do metody _IsSystemItem() !
 
+            int count = this.Items.Count;
+
+            // Poznámka 8.9.2023: Ribbon si po smazání prvků ze stránek dobře čistí Items, takže zdejší (dolní) metoda je nepotřebná.
+            //    Můžeme provést test, zda najdu nějaký this.Items, který nikam nepatří (nemá BarItemLink):
+            for (int i = count - 1; i >= 0; i--)
+            {
+                var item = this.Items[i];
+                bool isUsed = false;
+                var links = item.Links;
+                foreach (BarItemLink link in links)
+                {
+                    isUsed = link.IsLinkInMenu || link.IsPageGroupContentToolbarButtonLink || link.LinkedObject != null || link.OwnerPageGroup != null || link.Bar != null || link.IsGalleryToolbarItemLink;
+                    if (isUsed) break;
+                }
+
+                if (!isUsed)
+                {
+                    this.Items.RemoveAt(i);
+                    removeItemsCount++;
+                }
+            }
+
+
+            /*
+            // Komplexní smazání - není nutné, Ribbon se čistí dobře:
             var qatItems = _QATDirectAllItemKeys;
             var captionItems = this.CaptionBarItemLinks?.Where(l => !String.IsNullOrEmpty(l.Item.Name)).CreateDictionary(l => l.Item.Name, true);
             var statusBarItems = this.StatusBar?.ItemLinks.Where(l => !String.IsNullOrEmpty(l.Item.Name)).CreateDictionary(l => l.Item.Name, true);
 
-            int count = this.Items.Count;
             for (int i = count - 1; i >= 0; i--)
             {
                 var item = this.Items[i];
@@ -2135,6 +2183,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.Items.RemoveAt(i);
                 removeItemsCount++;
             }
+            */
         }
         /// <summary>
         /// Vrátí true, pokud daný objekt (pochází z kolekce RibbonControl.Items) je takového typu, že se má považovat za systémový = nesmazatelný z Items
@@ -2401,7 +2450,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     {
                         AddQATUserListToRibbon();
                     }
-                }, true);
+                }, true, true);
             }
 
             if (!removeLazyInfo && lazyGroup != null)
@@ -2693,7 +2742,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static void RefreshIRibbonItem(IRibbonItem iRibbonItem, bool force = false, bool refreshInSite = false)
         {
             if (iRibbonItem == null) return;
-            var barItem = iRibbonItem.RibbonItem?.Target;
+            var barItem = iRibbonItem.RibbonItem;
             if (barItem is null) return;
 
             // Musíme najít instanci toho Ribbonu, který je majitelem daného prvku (který jej vytvořil), a nikoli tu, která jej právě nyní zobrazuje (případ mergovaného Ribbonu):
@@ -3533,7 +3582,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
                 case RibbonItemType.CheckBoxToggle:
                     count++;
-                    DxBarCheckBoxToggle toggleSwitch = new DxBarCheckBoxToggle(this.BarManager, iRibbonItem.Text);
+                    DxBarCheckBoxToggle toggleSwitch = new DxBarCheckBoxToggle(this.BarManagerInt, iRibbonItem.Text);
                     this.Items.Add(toggleSwitch);
                     barItem = toggleSwitch;
                     break;
@@ -3597,6 +3646,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     barItem = editItem;
                     break;
                 case RibbonItemType.Button:
+                case RibbonItemType.Header:
                 default:
                     count++;
                     DevExpress.XtraBars.BarButtonItem button = Items.CreateButton(iRibbonItem.Text);
@@ -3726,7 +3776,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Náhradní ikonky (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
             string imageCaption = DxComponent.GetCaptionForRibbonImage(iRibbonItem, level);
-            DxComponent.ApplyImage(barItem.ImageOptions, iRibbonItem.ImageName, iRibbonItem.Image, sizeType, caption: imageCaption, prepareDisabledImage: iRibbonItem.PrepareDisabledImage);
+            DxComponent.ApplyImage(barItem.ImageOptions, iRibbonItem.ImageName, iRibbonItem.Image, sizeType, caption: imageCaption, prepareDisabledImage: iRibbonItem.PrepareDisabledImage, imageListMode: iRibbonItem.ImageListMode);
         }
         /// <summary>
         /// Připraví do prvku Ribbonu obrázek (ikonu) podle aktuálního stavu a dodané definice, pro button typu CheckButton nebo CheckBox
@@ -3762,7 +3812,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 imageName = null;
                 image = null;
             }
-            DxComponent.ApplyImage(barButton.ImageOptions, imageName, iRibbonItem.Image, sizeType, caption: imageCaption, prepareDisabledImage: iRibbonItem.PrepareDisabledImage);
+            DxComponent.ApplyImage(barButton.ImageOptions, imageName, iRibbonItem.Image, sizeType, caption: imageCaption, prepareDisabledImage: iRibbonItem.PrepareDisabledImage, imageListMode: iRibbonItem.ImageListMode);
         }
         /// <summary>
         /// Vrátí první neprázdný obrázek
@@ -3889,6 +3939,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case RibbonItemType.SkinPaletteGallery: return null;
                 case RibbonItemType.ComboListBox: return RibbonItemType.ComboListBox;
                 case RibbonItemType.RepositoryEditor: return RibbonItemType.RepositoryEditor;
+                case RibbonItemType.Header: return RibbonItemType.Header;
                 case RibbonItemType.Button:
                 default:
                     return RibbonItemType.Button;
@@ -3923,6 +3974,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case RibbonItemType.SkinPaletteGallery: return null;
                 case RibbonItemType.ComboListBox: return RibbonItemType.Menu;
                 case RibbonItemType.RepositoryEditor: return RibbonItemType.RepositoryEditor;
+                case RibbonItemType.Header: return RibbonItemType.Header;
                 case RibbonItemType.Button:
                 default:
                     return RibbonItemType.Button;
@@ -3960,7 +4012,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         protected DevExpress.XtraBars.PopupMenu CreatePopupMenu(IRibbonItem parentItem, int level, DxRibbonGroup dxGroup, IEnumerable<IRibbonItem> subItems, bool reallyCreate, ref int count)
         {
-            DevExpress.XtraBars.PopupMenu dxPopupMenu = new DevExpress.XtraBars.PopupMenu(BarManager);
+            DevExpress.XtraBars.PopupMenu dxPopupMenu = new DevExpress.XtraBars.PopupMenu(BarManagerInt);
 
             bool hasSubItems = (subItems != null);
             bool isLazyLoad = (parentItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || parentItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce);
@@ -4189,7 +4241,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="popupLocation"></param>
         private void _PopupMenu_OpenMenu(PopupControl openMenuPopupMenu, Point popupLocation)
         {
-            openMenuPopupMenu.ShowPopup(this.BarManager, popupLocation);
+            openMenuPopupMenu.ShowPopup(this.BarManagerInt, popupLocation);
         }
         /// <summary>
         /// Vrátí souřadnici pro zobrazení Popup menu
@@ -4550,7 +4602,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private DevExpress.XtraBars.RibbonGalleryBarItem CreateGalleryItem(IRibbonItem iRibbonItem, int level, DxRibbonGroup dxGroup)
         {
-            var galleryBarItem = new DevExpress.XtraBars.RibbonGalleryBarItem(this.BarManager);
+            var galleryBarItem = new DevExpress.XtraBars.RibbonGalleryBarItem(this.BarManagerInt);
             galleryBarItem.Gallery.Images = DxComponent.GetBitmapImageList(RibbonGalleryImageSize);
             galleryBarItem.Gallery.HoverImages = DxComponent.GetBitmapImageList(RibbonLargeImageSize);
             galleryBarItem.Gallery.AllowHoverImages = true;
@@ -4745,32 +4797,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             int styles = (int)ribbonStyle;
             return (DevExpress.XtraBars.Ribbon.RibbonItemStyles)styles;
         }
-        /// <summary>
-        /// BarManager
-        /// </summary>
-        public DevExpress.XtraBars.Ribbon.RibbonBarManager BarManager
-        {
-            get
-            {
-                if (_BarManager is null)
-                {
-                    DevExpress.XtraBars.Ribbon.RibbonBarManager rbm = new DevExpress.XtraBars.Ribbon.RibbonBarManager(this);
-                    rbm.AllowMoveBarOnToolbar = true;
-                    rbm.AllowQuickCustomization = true;
-                    rbm.AllowShowToolbarsPopup = true;
-                    rbm.PopupMenuAlignment = PopupMenuAlignment.Left;
-                    rbm.PopupShowMode = PopupShowMode.Classic;
-                    rbm.ShowScreenTipsInMenus = true;
-                    rbm.ShowScreenTipsInToolbars = true;
-                    rbm.ShowShortcutInScreenTips = true;
-                    rbm.ToolTipAnchor = DevExpress.XtraBars.ToolTipAnchor.BarItemLink;
-                    rbm.UseAltKeyForMenu = true;
-                    _BarManager = rbm;
-                }
-                return _BarManager;
-            }
-        }
-        private DevExpress.XtraBars.Ribbon.RibbonBarManager _BarManager;
         /// <summary>
         /// Zajistí vytvoření instance <see cref="BarItemTagInfo"/> do daného prvku do jeho Tagu.
         /// Stávající Tag může být null, nebo může obsahovat instanci <see cref="LazySubItemsInfo"/> (ta bude převzata) anebo již může obsahovat instanci <see cref="BarItemTagInfo"/>.
@@ -4974,6 +5000,39 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public int? CurrentMergeLevel { get; set; }
         }
+        /// <summary>
+        /// Připraví BarManager
+        /// </summary>
+        private void InitBarManagers()
+        {
+            _InitializeBarManager(this.Manager);
+        }
+        /// <summary>
+        /// Nastaví standardní vlastnosti do <paramref name="barManager"/>
+        /// </summary>
+        /// <param name="barManager"></param>
+        private static void _InitializeBarManager(RibbonBarManager barManager)
+        {
+            barManager.AllowMoveBarOnToolbar = true;
+            barManager.AllowQuickCustomization = true;
+            barManager.AllowShowToolbarsPopup = true;
+            barManager.PopupMenuAlignment = PopupMenuAlignment.Left;
+            barManager.PopupShowMode = PopupShowMode.Classic;
+            barManager.ShowScreenTipsInMenus = true;
+            barManager.ShowScreenTipsInToolbars = true;
+            barManager.ShowShortcutInScreenTips = true;
+            barManager.ToolTipAnchor = DevExpress.XtraBars.ToolTipAnchor.Cursor;
+
+            barManager.UseAltKeyForMenu = true;
+        }
+        /// <summary>
+        /// BarManager interní, vestavěný v Ribbonu, pro běžné použití
+        /// </summary>
+        public override RibbonBarManager Manager { get { return base.Manager; } }
+        /// <summary>
+        /// BarManager interní, vestavěný v Ribbonu, pro běžné použití
+        /// </summary>
+        public RibbonBarManager BarManagerInt { get { return base.Manager; } }
         #endregion
         #region Podpora pro QAT - Quick Access Toolbar
         /*     Jak to tady funguje?
@@ -6749,7 +6808,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             iRibbonItem.Checked = isChecked;
             if (setDownState)
             {
-                if (barButton is null) barButton = iRibbonItem.RibbonItem?.Target as BarButtonItem;
+                if (barButton is null) barButton = iRibbonItem.RibbonItem as BarButtonItem;
                 if (barButton != null)
                 {
                     barButton.Down = isChecked;                      // Nativní eventu DownChanged nehlídáme, tak mi nevadí že proběhne.
@@ -6758,7 +6817,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             if (setChecked)
             {
-                if (checkButton is null) checkButton = iRibbonItem.RibbonItem?.Target as BarCheckItem;
+                if (checkButton is null) checkButton = iRibbonItem.RibbonItem as BarCheckItem;
                 if (checkButton != null)
                 {
                     checkButton.Checked = isChecked;                 // Nativní eventu CheckedChanged nehlídáme, tak mi nevadí že proběhne.
@@ -7081,10 +7140,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxRibbonControl TopRibbonControl { get { return ((this.MergedIntoParentDxRibbon != null) ? (this.MergedIntoParentDxRibbon.TopRibbonControl) : this); } }
         /// <summary>
         /// Aktuálně používaný BarManager = z TopRibbonu.
-        /// Tedy: pokud this není Merged, pak zde je zdejší <see cref="BarManager"/>.
-        /// Pokud this je Merged, pak zde je <see cref="BarManager"/> z <see cref="TopRibbonControl"/>.
+        /// Tedy: pokud this není Merged, pak zde je zdejší <see cref="BarManagerInt"/>.
+        /// Pokud this je Merged, pak zde je <see cref="BarManagerInt"/> z <see cref="TopRibbonControl"/>.
         /// </summary>
-        public BarManager CurrentBarManager { get { return TopRibbonControl.BarManager; } }
+        public BarManager CurrentBarManager { get { return TopRibbonControl.BarManagerInt; } }
         /// <summary>
         /// Úroveň mergování this Ribbonu nahoru.
         /// Pokud this Ribbon není nikam mergován, je zde 0.
@@ -7361,7 +7420,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Tato metoda MUSÍ být volaná výhradně z GUI threadu
         /// </summary>
-        private void _UnMergeModifyMergeCurrentRibbon(Action action, bool mergeBack)
+        private void _UnMergeModifyMergeCurrentRibbon(Action action, bool mergeBack, bool skipCheckLazy = false)
         {
             var startTime = DxComponent.LogTimeCurrent;
 
@@ -7425,6 +7484,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (LogActive) DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: UnMerge + Action + Merge; Total Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
 
+
+            // Aktivuje original page a volitelně prověří Lazy obsah stránky
             void activateOriginPage(bool doActivate)
             {
                 var topRibbonSelectedPage2 = topRibbon.SelectedPageFullId;
@@ -7433,7 +7494,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (isChanged && doActivate)
                     topRibbon.SelectedPageFullId = topRibbonSelectedPage1;
 
-                if (isChanged && topRibbon.CheckLazyContentEnabled)
+                // Pokud mám řešit CheckLazyContent, a jen po změně stránky: CheckLazyContent()
+                //   Pokud by NEBYLA změna stránky, pak se zacyklíme v Refreshi po donačtení obsahu stránky typicky Workflow = ta má režim LoadOnDemand stále...
+                if (!skipCheckLazy && isChanged && topRibbon.CheckLazyContentEnabled)
                     topRibbon.CheckLazyContent(topRibbon.SelectedPage, false);
             }
         }
@@ -8439,6 +8502,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 lazyLoadInfo = new DxRibbonLazyLoadInfo(OwnerDxRibbon, this, pageData);
                 this.Groups.Add(lazyLoadInfo.Group);
+                lazyLoadInfo.Group.Visible = false;        // Vložení grupy do this.Groups nastavuje Group.Visible = true, to ale nechceme (je to dáno chováním AutoHide pro prázdné grupy / 
+                lazyLoadInfo.Group.GroupVisible = false;
                 LazyLoadInfo = lazyLoadInfo;
             }
             return lazyLoadInfo;
@@ -8822,6 +8887,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 Name = LazyLoadGroupId,
                 Visible = false,
+                GroupVisible = false,
                 CaptionButtonVisible = DefaultBoolean.False
             };
             this.BarItem = OwnerRibbon.Items.CreateButton(LazyLoadButtonText);
@@ -8895,6 +8961,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             lazyDxPages = new List<DxRibbonPage>();
             AddLazyDxPages(page.Groups, isCalledFromReFill, lazyDxPages);
             AddLazyDxPages(page.MergedGroups, isCalledFromReFill, lazyDxPages);
+            AddLazyDxPages(page, isCalledFromReFill, lazyDxPages);
 
             return (lazyDxPages.Count > 0);
         }
@@ -8903,6 +8970,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// v nich vyhledá BarItemy, jejichž Tag obsahuje instanci <see cref="DxRibbonPage"/>, a kde tato stránka má aktivní LazyContent.
         /// Tyto nalezené stránky přidává do listu <paramref name="lazyDxPages"/>.
         /// Metoda průběžně odebírá zmíněné Linky na Buttony, a odebírá i prázdné grupy.
+        /// <para/>
+        /// Účel: pokud na vstupu volající metody <see cref="TryGetLazyDxPages(RibbonPage, bool, out List{DxRibbonPage})"/> je stránka Ribbonu z okna Desktop (=Main okno aplikace), 
+        /// tak v tomto Ribbonu jsou mergovány i Child Ribbony, které teprve obsahují stránky v režimu Lazy.
+        /// Stránka sama je tedy typicky typu DevExpress, a v ní jsou Grupy a jejich prvky mergované z Child Ribbonů.
+        /// Lazy stránka (v Child Ribbonu) obsahuje grupu s ID = <see cref="LazyLoadGroupId"/> (statická konstanta), a v této grupě je prvek obsahující ve svém Tagu referenci na zdrojovou stránku Child Ribbonu typu DxRibbonPage.
+        /// Jedině touto cestou se může domergovat odkaz za zdrojopvou stránku z Childu do Desktopu.
+        /// Touto cestou tedy najdeme a určíme zdrojovou Lazy stránku a dáme ji do výstupu.
+        /// <para/>
+        /// Poznámka: Jedna stránka v Desktopu může teoreticky obsahovat více mergovaných Childů (hierarchicky) a tedy více zdrojových Lazy stránek, proto tady pracujeme ForEach in groups a výsledky strádáme do Listu.
         /// </summary>
         /// <param name="pageGroups"></param>
         /// <param name="isCalledFromReFill">Odkud je akce volaná: false při uživatelské aktivaci stránky, true při jejím naplnění daty z aplikačního kódu</param>
@@ -8934,6 +9010,19 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 if (lazyGroup.ItemLinks.Count == 0)
                     pageGroups.Remove(lazyGroup);
+            }
+        }
+        /// <summary>
+        /// Pokud pole <paramref name="lazyDxPages"/> neobsahuje danou stránku <paramref name="page"/>, a tato stránka je typu <see cref="DxRibbonPage"/> a má Lazy content, pak je do výsledného pole přidána.
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="isCalledFromReFill"></param>
+        /// <param name="lazyDxPages"></param>
+        private static void AddLazyDxPages(DevExpress.XtraBars.Ribbon.RibbonPage page, bool isCalledFromReFill, List<DxRibbonPage> lazyDxPages)
+        {
+            if (page is DxRibbonPage dxRibbonPage && dxRibbonPage.HasActiveLazyContent && !lazyDxPages.Contains(dxRibbonPage))
+            {
+                lazyDxPages.Add(dxRibbonPage);
             }
         }
         /// <summary>
@@ -10743,11 +10832,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Šířka prvku v pixelech
         /// </summary>
-        public virtual int? Width { get; set; }
+        public override int? Width { get; set; }
         /// <summary>
         /// Typ okraje
         /// </summary>
-        public virtual DxBorderStyle BorderStyle { get; set; }
+        public override DxBorderStyle BorderStyle { get; set; }
         /// <summary>
         /// SubButtony zobrazené vedle prvku (podporuje je zatím jen typ <see cref="RibbonItemType.ComboListBox"/>).
         /// Typicky tlačítko "+", třitečky, Clear, Search, Delete, a libovolné další.<br/>
@@ -10762,7 +10851,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud uživatel chce přidat DropDown button a poté i další svoje Buttony, pak na začátek stringu vloží definici <u><c>"DropDown"</c></u> (netřeba definovat Image); a pak za středníkem dává svoje buttony.<br/>
         /// Pokud uživatel naplní definici a nebude v ní DropDown, pak prostě nebude zobrazen!
         /// </summary>
-        public virtual string SubButtons { get; set; }
+        public override string SubButtons { get; set; }
     }
     /// <summary>
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd) nebo jako prvek ListBoxu nebo ComboBoxu
@@ -10892,10 +10981,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (itemA.ItemPaintStyle != itemB.ItemPaintStyle) return false;
             if (itemA.ItemType != itemB.ItemType) return false;
             if (itemA.RibbonStyle != itemB.RibbonStyle) return false;
+            if (itemA.ButtonGroupColumnCount != itemB.ButtonGroupColumnCount) return false;
             if (itemA.Shortcut != itemB.Shortcut) return false;
             if (itemA.Visible != itemB.Visible) return false;
             if (itemA.VisibleInSearchMenu != itemB.VisibleInSearchMenu) return false;
             if (itemA.PrepareDisabledImage != itemB.PrepareDisabledImage) return false;
+            if (itemA.ImageListMode != itemB.ImageListMode) return false;
             if (itemA.Size != itemB.Size) return false;
             if (itemA.BackColor != itemB.BackColor) return false;
             if (itemA.TextColor != itemB.TextColor) return false;
@@ -10949,6 +11040,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual RibbonItemStyles RibbonStyle { get; set; }
         /// <summary>
+        /// Počet sloupců (=počet ikon vedle sebe) v bloku "Rychlá volba", definovaný <see cref="ItemType"/> == <see cref="RibbonItemType.ButtonGroup"/>.
+        /// Pokud je definována grupa, ale není dán počet buttonů, pak je vytvořena jako běžné SubMenu.
+        /// </summary>
+        public virtual int? ButtonGroupColumnCount { get; set; }
+        /// <summary>
         /// Požadavek na přípravu ikony typu 'Disabled' i pro ten prvek Ribbonu, který má aktuálně hodnotu Enabled = true;
         /// <para/>
         /// Důvod: pokud budeme řídit přímo hodnotu BarItem.Enabled až po vytvoření BarItem, pak si tento BarItem sám řídí, který Image zobrazuje: zda standardní, nebo Disabled.
@@ -10956,6 +11052,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// V Nephrite může zůstat false, protože Nephrite mění hodnotu Enabled pomocí refreshe celého prvku, a po změně Enabled se vygeneruje správný Image automaticky.
         /// </summary>
         public virtual bool PrepareDisabledImage { get; set; }
+        /// <summary>
+        /// Režim práce s ImageList a Image
+        /// </summary>
+        public virtual DxImageListMode? ImageListMode { get; set; }
         /// <summary>
         /// Cílová velikost; využije se jen u některých prvků
         /// </summary>
@@ -10973,20 +11073,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual string StyleName { get; set; }
         /// <summary>
-        /// Vytvořit ikonu pro prvek z písmen textu prvku? (=Náhradní ikona, typicky se používá pro tlačítka Vztahy).
-        /// <para/>
-        /// Hodnota se použije jen tehdy, kdyý ImageName je prázdné (=když není definována ikona).
-        /// Default = null: pro prvky základní úrovně ano (viditelná tlačítka v Ribbonu), pro SubItems = prvky v menu ne;<br/>
-        /// true: vytvořit ikonu z písmenek i pro SubMenu<br/>
-        /// false: nevytvářet ikonu ani pro základní úroveň
-        /// </summary>
-        public virtual bool? CreateImageFromCaption { get; set; }
-
-        /// <summary>
         /// Zarovnání prvku; uplatní se u StatusBaru
         /// </summary>
         public virtual BarItemAlignment? Alignment { get; set; }
-
         /// <summary>
         /// Zobrazit v Search menu?
         /// </summary>
@@ -11040,7 +11129,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Sem bude umístěn fyzický BarItem po jeho vytvoření.
         /// </summary>
         [XS.PersistingEnabled(false)]
-        public virtual WeakTarget<BarItem> RibbonItem { get; set; }
+        public virtual BarItem RibbonItem
+        {
+            get { var weakItem = __GuiItem; if (weakItem != null && weakItem.IsAlive && weakItem.Target is BarItem barItem) return barItem; return null; }
+            set { __GuiItem = null; if (value != null) __GuiItem = new WeakReference(value); }
+        }
+        /// <summary>
+        /// Sem bude umístěno Popup menu po jeho vytvoření.
+        /// </summary>
+        [XS.PersistingEnabled(false)]
+        public virtual PopupMenu PopupMenu
+        {
+            get { var weakItem = __GuiItem; if (weakItem != null && weakItem.IsAlive && weakItem.Target is PopupMenu popupMenu) return popupMenu; return null; }
+            set { __GuiItem = null; if (value != null) __GuiItem = new WeakReference(value); }
+        }
         /// <summary>
         /// Zkusí získat a vrátit fyzický GUI prvek z tohoto datového prvku.
         /// </summary>
@@ -11048,15 +11150,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public bool TryGetRibbonItem(out BarItem ribbonItem)
         {
-            var weakItem = RibbonItem;
-            if (weakItem != null && weakItem.IsAlive)
-            {
-                ribbonItem = weakItem.Target;
-                return (ribbonItem != null);
-            }
-            ribbonItem = null;
-            return false;
+            ribbonItem = RibbonItem;
+            return (ribbonItem != null);
         }
+        private WeakReference __GuiItem;
         /// <summary>
         /// Metoda zajistí aktualizaci vizuálního buttonu <see cref="RibbonItem"/> z dat, která jsou aktuálně přítomna v this instanci.
         /// Je vhodné volat tehdy, když podle this definice už byl vytvořen prvek v reálném Ribbonu, a my jsme v definici provedli nějaké změny a přejeme si je promítnout do vizuálního prvku.
@@ -11322,6 +11419,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         RibbonItemStyles RibbonStyle { get; }
         /// <summary>
+        /// Počet sloupců (=počet ikon vedle sebe) v bloku "Rychlá volba", definovaný <see cref="ItemType"/> == <see cref="RibbonItemType.ButtonGroup"/>.
+        /// Pokud je definována grupa, ale není dán počet buttonů, pak je vytvořena jako běžné SubMenu.
+        /// </summary>
+        int? ButtonGroupColumnCount { get; }
+        /// <summary>
         /// Požadavek na přípravu ikony typu 'Disabled' i pro ten prvek Ribbonu, který má aktuálně hodnotu Enabled = true;
         /// <para/>
         /// Důvod: pokud budeme řídit přímo hodnotu BarItem.Enabled až po vytvoření BarItem, pak si tento BarItem sám řídí, který Image zobrazuje: zda standardní, nebo Disabled.
@@ -11329,6 +11431,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// V Nephrite může zůstat false, protože Nephrite mění hodnotu Enabled pomocí refreshe celého prvku, a po změně Enabled se vygeneruje správný Image automaticky.
         /// </summary>
         bool PrepareDisabledImage { get; }
+        /// <summary>
+        /// Režim práce s ImageList a Image
+        /// </summary>
+        DxImageListMode? ImageListMode { get; }
         /// <summary>
         /// Cílová velikost; využije se jen u některých prvků
         /// </summary>
@@ -11345,15 +11451,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Kalíšek s barvami
         /// </summary>
         string StyleName { get; }
-        /// <summary>
-        /// Vytvořit ikonu pro prvek z písmen textu prvku? (=Náhradní ikona, typicky se používá pro tlačítka Vztahy).
-        /// <para/>
-        /// Hodnota se použije jen tehdy, kdyý ImageName je prázdné (=když není definována ikona).
-        /// Default = null: pro prvky základní úrovně ano (viditelná tlačítka v Ribbonu), pro SubItems = prvky v menu ne;<br/>
-        /// true: vytvořit ikonu z písmenek i pro SubMenu<br/>
-        /// false: nevytvářet ikonu ani pro základní úroveň
-        /// </summary>
-        bool? CreateImageFromCaption { get; }
         /// <summary>
         /// Zarovnání prvku; uplatní se u StatusBaru
         /// </summary>
@@ -11383,7 +11480,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Sem bude umístěn fyzický BarItem po jeho vytvoření.
         /// </summary>
-        WeakTarget<BarItem> RibbonItem { get; set; }
+        BarItem RibbonItem { get; set; }
+        /// <summary>
+        /// Sem bude umístěno Popup menu po jeho vytvoření.
+        /// </summary>
+        PopupMenu PopupMenu { get; set; }
     }
     /// <summary>
     /// Rozšířená data pro typ prvku Ribbonu <see cref="RibbonItemType.RepositoryEditor"/>,
@@ -11735,7 +11836,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         CheckButtonPassive,
         /// <summary>
-        /// Skupina tlačítek ???
+        /// Skupina tlačítek, definovaná v Popup menu = více tlačítek vedle sebe bez popisku (bez textu), jako Rychlá volba.
+        /// Počet tlačítek vedle sebe = <see cref="IRibbonItem.ButtonGroupColumnCount"/>.
+        /// Velikost jednotlivých tlačítek je dána zdejší hodnotou <see cref="IRibbonItem.RibbonStyle"/> (Large / Small).
         /// </summary>
         ButtonGroup,
         /// <summary>
@@ -11800,7 +11903,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Speciální prvek s Repository editorem (TrackBar, TextBox, a další).
         /// Prvek musí mít naplněnou instanci <see cref="IRibbonItem.RepositoryEditorInfo"/>
         /// </summary>
-        RepositoryEditor
+        RepositoryEditor,
+        /// <summary>
+        /// Záhlaví (titulek) = výraznější než běžný řádek. Používá se pro Popup menu.
+        /// </summary>
+        Header
     }
     /// <summary>
     /// Zarovnání prvku v Ribbonu / StatusBaru

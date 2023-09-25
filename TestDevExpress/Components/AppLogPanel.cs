@@ -390,7 +390,7 @@ namespace TestDevExpress.Components
             iRibbonItem.Checked = isChecked;
             if (setDownState)
             {
-                if (barButton is null) barButton = iRibbonItem.RibbonItem?.Target as BarButtonItem;
+                if (barButton is null) barButton = iRibbonItem.RibbonItem as BarButtonItem;
                 if (barButton != null)
                 {
                     barButton.Down = isChecked;                      // Nativní eventu DownChanged nehlídáme, tak mi nevadí že proběhne.
@@ -399,7 +399,7 @@ namespace TestDevExpress.Components
             }
             if (setChecked)
             {
-                if (checkButton is null) checkButton = iRibbonItem.RibbonItem?.Target as BarCheckItem;
+                if (checkButton is null) checkButton = iRibbonItem.RibbonItem as BarCheckItem;
                 if (checkButton != null)
                 {
                     checkButton.Checked = isChecked;                 // Nativní eventu CheckedChanged nehlídáme, tak mi nevadí že proběhne.

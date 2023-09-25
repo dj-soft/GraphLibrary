@@ -694,6 +694,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _DefaultBarManager = new DevExpress.XtraBars.BarManager();
             _DefaultToolTipController = CreateNewToolTipController();
+            _DefaultRibbonToolTipController = CreateNewToolTipController(ToolTipAnchor.Cursor, ToolTipLocation.BottomRight);
         }
         /// <summary>
         /// Vrátí styl labelu podle požadovaného typu
@@ -885,6 +886,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public static DxToolTipController DefaultToolTipController { get { return Instance._DefaultToolTipController; } }
         /// <summary>
+        /// Defaultní ToolTipController pro Ribbony
+        /// </summary>
+        public static DxToolTipController DefaultRibbonToolTipController { get { return Instance._DefaultRibbonToolTipController; } }
+        /// <summary>
         /// Vytvoří a vrátí new instanci ToolTipController, standardně deklarovanou
         /// </summary>
         /// <param name="toolTipAnchor">Ukotvení ToolTipu se odvozuje od ...</param>
@@ -948,6 +953,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private int _DefaultButtonYSpace;
         private DevExpress.XtraBars.BarManager _DefaultBarManager;
         private DxToolTipController _DefaultToolTipController;
+        private DxToolTipController _DefaultRibbonToolTipController;
+
         #region Rozmístění prvků typu ControlItemLayoutInfo do daného vnitřního prostoru
         /// <summary>
         /// Určí rozmístění prvků typu ControlItemLayoutInfo do daného vnitřního prostoru.
@@ -1285,6 +1292,187 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="targetDpi"></param>
         /// <returns></returns>
         private static decimal _ZoomDpiToGui(decimal value, decimal zoomDpi, decimal targetDpi) { return (value * zoomDpi * targetDpi); }
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static int ZoomToDesign(int value) { decimal zoom = Instance.__Zoom; return _ZoomToDesign(value, zoom); }
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota (96DPI, 100%)</param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
+        /// <returns></returns>
+        internal static int ZoomToDesign(int value, int targetDpi) { decimal zoomDpi = Instance.__ZoomDpi; return _ZoomDpiToDesign(value, zoomDpi, targetDpi); }
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
+        /// <returns></returns>
+        internal static float ZoomToDesign(float value, int targetDpi) { decimal zoomDpi = Instance.__ZoomDpi; return _ZoomDpiToDesign(value, zoomDpi, targetDpi); }
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static int? ZoomToDesign(int? value) { if (value.HasValue) { decimal zoom = Instance.__Zoom; return _ZoomToDesign(value.Value, zoom); } return null; }
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota (96DPI, 100%)</param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
+        /// <returns></returns>
+        internal static int? ZoomToDesign(int? value, int targetDpi) { if (value.HasValue) { decimal zoomDpi = Instance.__ZoomDpi; return _ZoomDpiToDesign(value.Value, zoomDpi, targetDpi); } return null; }
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
+        /// <returns></returns>
+        internal static float? ZoomToDesign(float? value, int targetDpi) { if (value.HasValue) { decimal zoomDpi = Instance.__ZoomDpi; return _ZoomDpiToDesign(value.Value, zoomDpi, targetDpi); } return null; }
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota (96DPI, 100%)</param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
+        /// <returns></returns>
+        internal static Int32Range ZoomToDesign(Int32Range value, int targetDpi) { if (value == null) return null; decimal zoomDpi = Instance.__ZoomDpi; return new Int32Range(_ZoomDpiToDesign(value.Begin, zoomDpi, targetDpi), _ZoomDpiToDesign(value.End, zoomDpi, targetDpi)); }
+
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static Point ZoomToDesign(Point value) { decimal zoom = Instance.__Zoom; return new Point(_ZoomToDesign(value.X, zoom), _ZoomToDesign(value.Y, zoom)); }
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static Point? ZoomToDesign(Point? value) { if (!value.HasValue) return null; decimal zoom = Instance.__Zoom; var v = value.Value; return new Point(_ZoomToDesign(v.X, zoom), _ZoomToDesign(v.Y, zoom)); }
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota (96DPI, 100%)</param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
+        /// <returns></returns>
+        internal static Point ZoomToDesign(Point value, int targetDpi) { decimal zoomDpi = Instance.__ZoomDpi; return new Point(_ZoomDpiToDesign(value.X, zoomDpi, targetDpi), _ZoomDpiToDesign(value.Y, zoomDpi, targetDpi)); }
+
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static Size ZoomToDesign(Size value) { decimal zoom = Instance.__Zoom; return new Size(_ZoomToDesign(value.Width, zoom), _ZoomToDesign(value.Height, zoom)); }
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static Size? ZoomToDesign(Size? value) { if (!value.HasValue) return null; decimal zoom = Instance.__Zoom; var v = value.Value; return new Size(_ZoomToDesign(v.Width, zoom), _ZoomToDesign(v.Height, zoom)); }
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota (96DPI, 100%)</param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
+        /// <returns></returns>
+        internal static Size ZoomToDesign(Size value, int targetDpi) { decimal zoomDpi = Instance.__ZoomDpi; return new Size(_ZoomDpiToDesign(value.Width, zoomDpi, targetDpi), _ZoomDpiToDesign(value.Height, zoomDpi, targetDpi)); }
+
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty.
+        /// <para/>
+        /// Rectangle je vytvářen z přepočtených souřadnic (Left, Top, Right, Bottom), 
+        /// tím je zaručeno, že pravý a dolní okraj výsledných Rectangle bude zarovnán stejně jako v Designu, 
+        /// tedy že nebude "rozházený" vlivem zaokrouhlení, kdy se může stát, že (Round(X,0) + Round(Width,0)) != Round(Right,0) !!!
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static Rectangle ZoomToDesign(Rectangle value) { decimal zoom = Instance.__Zoom; return Rectangle.FromLTRB(_ZoomToDesign(value.Left, zoom), _ZoomToDesign(value.Top, zoom), _ZoomToDesign(value.Right, zoom), _ZoomToDesign(value.Bottom, zoom)); }
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty.
+        /// <para/>
+        /// Rectangle je vytvářen z přepočtených souřadnic (Left, Top, Right, Bottom), 
+        /// tím je zaručeno, že pravý a dolní okraj výsledných Rectangle bude zarovnán stejně jako v Designu, 
+        /// tedy že nebude "rozházený" vlivem zaokrouhlení, kdy se může stát, že (Round(X,0) + Round(Width,0)) != Round(Right,0) !!!
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static Rectangle? ZoomToDesign(Rectangle? value) { if (!value.HasValue) return null; decimal zoom = Instance.__Zoom; var v = value.Value; return Rectangle.FromLTRB(_ZoomToDesign(v.Left, zoom), _ZoomToDesign(v.Top, zoom), _ZoomToDesign(v.Right, zoom), _ZoomToDesign(v.Bottom, zoom)); }
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty.
+        /// <para/>
+        /// Rectangle je vytvářen z přepočtených souřadnic (Left, Top, Right, Bottom), 
+        /// tím je zaručeno, že pravý a dolní okraj výsledných Rectangle bude zarovnán stejně jako v Designu, 
+        /// tedy že nebude "rozházený" vlivem zaokrouhlení, kdy se může stát, že (Round(X,0) + Round(Width,0)) != Round(Right,0) !!!
+        /// </summary>
+        /// <param name="value">Designová hodnota (96DPI, 100%)</param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
+        /// <returns></returns>
+        internal static Rectangle ZoomToDesign(Rectangle value, int targetDpi) { decimal zoomDpi = Instance.__ZoomDpi; return Rectangle.FromLTRB(_ZoomDpiToDesign(value.Left, zoomDpi, targetDpi), _ZoomDpiToDesign(value.Top, zoomDpi, targetDpi), _ZoomDpiToDesign(value.Right, zoomDpi, targetDpi), _ZoomDpiToDesign(value.Bottom, zoomDpi, targetDpi)); }
+
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static Padding ZoomToDesign(Padding value) { decimal zoom = Instance.__Zoom; return new Padding(_ZoomToDesign(value.Left, zoom), _ZoomToDesign(value.Top, zoom), _ZoomToDesign(value.Right, zoom), _ZoomToDesign(value.Bottom, zoom)); }
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static Padding? ZoomToDesign(Padding? value) { if (!value.HasValue) return null; decimal zoom = Instance.__Zoom; var v = value.Value; return new Padding(_ZoomToDesign(v.Left, zoom), _ZoomToDesign(v.Top, zoom), _ZoomToDesign(v.Right, zoom), _ZoomToDesign(v.Bottom, zoom)); }
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle aktuálního Zoomu do designové hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota (96DPI, 100%)</param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
+        /// <returns></returns>
+        internal static Padding ZoomToDesign(Padding value, int targetDpi) { decimal zoomDpi = Instance.__ZoomDpi; return new Padding(_ZoomDpiToDesign(value.Left, zoomDpi, targetDpi), _ZoomDpiToDesign(value.Top, zoomDpi, targetDpi), _ZoomDpiToDesign(value.Right, zoomDpi, targetDpi), _ZoomDpiToDesign(value.Bottom, zoomDpi, targetDpi)); }
+
+        /// <summary>
+        /// Vrátí daný font přepočtený dle aktuálního Zoomu do designové hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota (96DPI, 100%)</param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
+        /// <returns></returns>
+        internal static Font ZoomToDesign(Font value, int targetDpi)
+        {
+            var instance = Instance;
+            decimal zoomDpi = instance.__ZoomDpi;
+            float emSize = _ZoomDpiToDesign(value.Size, Instance.__ZoomDpi, targetDpi);
+            return instance._GetFont(null, value.FontFamily, null, emSize, value.Style);
+        }
+
+        //-----
+
+        private static int _ZoomToDesign(int value, decimal zoom) { return (int)Math.Round((decimal)value / zoom, 0); }
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle daného (Zoom / DesignDpi) a dané TargetDpi do designové hodnoty
+        /// </summary>
+        /// <param name="value">Vizuální hodnota</param>
+        /// <param name="zoomDpi"></param>
+        /// <param name="targetDpi"></param>
+        /// <returns></returns>
+        private static int _ZoomDpiToDesign(int value, decimal zoomDpi, decimal targetDpi) { return (int)Math.Round((decimal)value / zoomDpi / targetDpi, 0); }
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle daného (Zoom / DesignDpi) a dané TargetDpi do designové hodnoty
+        /// </summary>
+        /// <param name="value">Vizuální hodnota</param>
+        /// <param name="zoomDpi"></param>
+        /// <param name="targetDpi"></param>
+        /// <returns></returns>
+        private static float _ZoomDpiToDesign(float value, decimal zoomDpi, decimal targetDpi) { return (float)((decimal)value / zoomDpi / targetDpi); }
+        /// <summary>
+        /// Vrátí danou vizuální hodnotu přepočtenou dle daného (Zoom / DesignDpi) a dané TargetDpi do designové hodnoty
+        /// </summary>
+        /// <param name="value">Vizuální hodnota</param>
+        /// <param name="zoomDpi"></param>
+        /// <param name="targetDpi"></param>
+        /// <returns></returns>
+        private static decimal _ZoomDpiToDesign(decimal value, decimal zoomDpi, decimal targetDpi) { return (value / zoomDpi / targetDpi); }
         /// <summary>
         /// Aktuální hodnota Zoomu. Defaultní hodnota = 1.00, což odpovídá 100%.
         /// </summary>
@@ -3170,29 +3358,56 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Tvorba prvků Toolbaru (=Ribbonu), static, bez Ribbonu
         /// <summary>
-        /// Vytvoří pole BarItemů
+        /// Vytvoří pole BarItemů.
+        /// Pokud určitý prvek má mít SubItems, pak jsou do něj vytvořeny. A to rekurzivně.
+        /// Pokud některý takový prvek je LazyLoad (tzn. nemá připravené položky), pak je vytvořené SubMenu s eventem Popup (volá se v okamžiku rozbalení tohoto OnDemand submenu): <paramref name="onDemandMenuPopup"/>.
         /// </summary>
         /// <param name="ribbonItems"></param>
+        /// <param name="barManager"></param>
+        /// <param name="onDemandMenuPopup"></param>
+        /// <param name="barLinks"></param>
         /// <returns></returns>
-        public static DevExpress.XtraBars.BarItem[] CreateBarItems(IEnumerable<IRibbonItem> ribbonItems)
+        public static DevExpress.XtraBars.BarItem[] CreateBarItems(IEnumerable<IRibbonItem> ribbonItems, DevExpress.XtraBars.BarManager barManager = null, Action<IRibbonItem> onDemandMenuPopup = null, DevExpress.XtraBars.BarItemLinkCollection barLinks = null)
         {
-            if (ribbonItems is null) return null;
-            List<DevExpress.XtraBars.BarItem> barItems = new List<DevExpress.XtraBars.BarItem>();
-            foreach (var ribbonItem in ribbonItems)
-            {
-                var barItem = _CreateBarItem(ribbonItem, 0);
-                if (barItem != null) barItems.Add(barItem);
-            }
-            return barItems.ToArray();
+            return _CreateBarItems(ribbonItems, barManager, onDemandMenuPopup, 0, barLinks);
         }
         /// <summary>
-        /// Vytvoří prvek BarItem
+        /// Vytvoří prvek BarItem podle zadání.
+        /// Hodnota <paramref name="level"/> slouží k detailnímu nastavení při aplikování vlastností, 0 = přímo viditelný prvek (Button v Ribonu, první úroveň samostatného Popup).
+        /// <para/>
+        /// Ttao metoda nevytváří SubItems pro prvky, které je mají mít (Menu, dropDowm, atd). To musí zajistit volající metoda.
         /// </summary>
         /// <param name="ribbonItem"></param>
+        /// <param name="barManager"></param>
+        /// <param name="level"></param>
         /// <returns></returns>
-        public static DevExpress.XtraBars.BarItem CreateBarItem(IRibbonItem ribbonItem)
+        public static DevExpress.XtraBars.BarItem CreateBarItem(IRibbonItem ribbonItem, DevExpress.XtraBars.BarManager barManager = null, int level = 0)
         {
-            return _CreateBarItem(ribbonItem, 0);
+            return _CreateBarItem(ribbonItem, barManager, level);
+        }
+        /// <summary>
+        /// Naplní veškeré patřičné hodnoty do BarItemu { Caption, Visible, Tagy, Tooltip;  Styl písma;  Velikost, barvy, alignment;  Image;  HotKeys }
+        /// </summary>
+        /// <param name="barItem"></param>
+        /// <param name="ribbonItem"></param>
+        /// <param name="level"></param>
+        internal static void FillBarItemFrom(DevExpress.XtraBars.BarItem barItem, IRibbonItem ribbonItem, int level = 0)
+        {
+            // Systémové prvky Ribbonu nebudu modifikovat:
+            bool isSystemItem = (ribbonItem.ItemType == RibbonItemType.SkinSetDropDown || ribbonItem.ItemType == RibbonItemType.SkinPaletteDropDown || ribbonItem.ItemType == RibbonItemType.SkinPaletteGallery);
+            if (isSystemItem)
+            {
+                _FillBarItemSystem(ribbonItem, barItem, level);          // Style
+            }
+            else
+            {
+                _FillBarItemCommon(ribbonItem, barItem, level);          // Caption, Visible, Tagy, Tooltip
+                _FillBarItemFontStyle(ribbonItem, barItem, level);       // Styl písma
+                _FillBarItemSizeColors(ribbonItem, barItem, level);      // Velikost, barvy, alignment
+                _FillBarItemImage(ribbonItem, barItem, level);           // Image můžu řešit až po vložení velikosti, protože Image se řídí i podle velikosti prvku 
+                _FillBarItemHotKey(ribbonItem, barItem, level);          // HotKeys
+                _FillBarItemReload(ribbonItem, barItem, level);          // Speciální itemy mají svůj Reload (ComboBox)
+            }
         }
         /// <summary>
         /// Připraví do prvku Ribbonu obrázek (ikonu) podle aktuálního stavu a dodané definice, pro button typu CheckButton nebo CheckBox
@@ -3221,44 +3436,345 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!String.IsNullOrEmpty(menuItem.ShortcutText))
                 barItem.ShortcutKeyDisplayString = menuItem.ShortcutText;
         }
+        /// <summary>
+        /// Vytvoří pole BarItemů.
+        /// Pokud určitý prvek má mít SubItems, pak jsou do něj vytvořeny. A to rekurzivně.
+        /// Pokud některý takový prvek je LazyLoad (tzn. nemá připravené položky), pak je vytvořené SubMenu s eventem Popup (volá se v okamžiku rozbalení tohoto OnDemand submenu): <paramref name="onDemandMenuPopup"/>.
+        /// </summary>
+        /// <param name="ribbonItems"></param>
+        /// <param name="barManager"></param>
+        /// <param name="onDemandMenuPopup"></param>
+        /// <param name="level"></param>
+        /// <param name="barLinks"></param>
+        /// <returns></returns>
+        private static DevExpress.XtraBars.BarItem[] _CreateBarItems(IEnumerable<IRibbonItem> ribbonItems, DevExpress.XtraBars.BarManager barManager, Action<IRibbonItem> onDemandMenuPopup, int level, DevExpress.XtraBars.BarItemLinkCollection barLinks)
+        {
+            if (ribbonItems is null) return null;
+            List<DevExpress.XtraBars.BarItem> barItems = new List<DevExpress.XtraBars.BarItem>();
+            bool prevHeader = false;                       // Předchozí prvek byl Header (po Headeru se nenastavuje BeginGroup, to vypadá blbě)
+            bool isHeader = false;                         // Až vytvořím prvek v metodě _CreateBarItem(), pak zde bude příznak toho, že jde o BarHeaderItem
+            bool isOpenGroup = false;
+            foreach (var ribbonItem in ribbonItems)
+            {
+                var barItem = _CreateBarItem(ribbonItem, barManager, level, ref isHeader);
+                if (barItem != null)
+                {
+                    // Pokud poslední prvek byla inlinovaná grupa, a nynější prvek není záhlaví (Header), tak musím vložit implicitní záhlaví - aby nepokračovala grupa (MultiColumn):
+                    prepareVoidHeader();
 
-        private static DevExpress.XtraBars.BarItem _CreateBarItem(IRibbonItem ribbonItem, int level)
+                    // Přidat konkrétní prvek:
+                    addItem(ribbonItem, barItem);
+
+                    // SubMenu klasické (vnořené):
+                    if (_IsBarItemSubItems(ribbonItem))
+                        _FillBarSubItems(barItem, ribbonItem, barManager, onDemandMenuPopup, level);
+
+                    // Inlinované SubPoložky ("Rychlá volba") = grupa prvků následujících za tímto záhlavím:
+                    else if (_IsBarItemGroupItems(ribbonItem))
+                    {
+                        foreach (var subRibbonItem in ribbonItem.SubItems)
+                        {
+                            var barSubItem = _CreateBarItem(subRibbonItem, barManager, level, ref isHeader);
+                            if (_IsBarItemSubItems(subRibbonItem))
+                                _FillBarSubItems(barSubItem, subRibbonItem, barManager, onDemandMenuPopup, level);
+                            addItem(subRibbonItem, barSubItem);
+                        }
+                        isOpenGroup = true;
+                    }
+                }
+            }
+            return barItems.ToArray();
+
+
+            // Do pole prvků (barItems) přidá Header bez textu, tím ukončí právě otevřenou grupu MultiColumn - pokud je toho zapotřebí
+            void prepareVoidHeader()
+            {
+                if (isHeader) isOpenGroup = false;                   // Pokud nynější prvek je reálný Header, pak nyní nemáme otevřenou grupu a nebude ani potřeba ji zavírat.
+                if (!(isOpenGroup && !isHeader)) return;             // Pokud NENÍ (zůstala nám otevřená grupa, a aktuální prvek NENÍ záhlaví => to bychom museli přidat prázdné záhlaví pro oddělení grupy od dalších řádků mimo grupu) => není co řešit.
+
+                // Do aktuálního soupisu přidám nový defaultní Header (bez MultiColumn, bez textu), a tím zajistím, že následující prvky budou zobrazeny jako běžné řádky:
+                var rTitle = new DataRibbonItem() { ItemType = RibbonItemType.Header, RibbonStyle = RibbonItemStyles.SmallWithText };
+                var bTitle = _CreateBarItem(rTitle, barManager, level, ref isHeader);
+                addItem(rTitle, bTitle);
+
+                // A tím je inlinovaná grupa uzavřena:
+                isOpenGroup = false;
+            }
+
+            // Přidá další prvek do výstupní kolekce barItems i do Linků v barLinks
+            void addItem(IRibbonItem rItem, DevExpress.XtraBars.BarItem bItem)
+            {
+                barItems.Add(bItem);
+                if (barLinks != null)
+                {
+                    var bLink = barLinks.Add(bItem);
+                    if (rItem.ItemIsFirstInGroup && !prevHeader && !isHeader) bLink.BeginGroup = true;   // Separátor se dělá takhle!
+                }
+                prevHeader = isHeader;
+            }
+        }
+        /// <summary>
+        /// Metoda do daného prvku <paramref name="barItem"/> vloží SubMenu z prvků dané definice menu <paramref name="menuRibbonItem"/>.
+        /// Pokud prvek je OnDemand, pak zajistí vytvoření odpovídajícího menu do odpovídajícího eventu.
+        /// </summary>
+        /// <param name="barItem"></param>
+        /// <param name="menuRibbonItem"></param>
+        /// <param name="barManager"></param>
+        /// <param name="onDemandMenuPopup"></param>
+        /// <param name="level"></param>
+        private static void _FillBarSubItems(DevExpress.XtraBars.BarItem barItem, IRibbonItem menuRibbonItem, DevExpress.XtraBars.BarManager barManager, Action<IRibbonItem> onDemandMenuPopup, int level)
+        {
+            if (barItem is DevExpress.XtraBars.BarSubItem barSubItem)
+            {
+                bool isOnDemand = (menuRibbonItem.SubItemsContentMode != RibbonContentMode.Static);
+                if (isOnDemand)
+                {   // OnDemand definované menu:
+                    //  barSubItem.GetItemData += BarSubItem_GetItemData;             // Event je vyvolán okamžitě při vykreslení řádku obsahujícího Menu
+                    barSubItem.Popup += _OnBarSubItem_OnDemand_Popup;             // Event je volán předtím, než se začne kreslit SubMenu, před PaintMenuBar
+                    //  barSubItem.PaintMenuBar += BarSubItem_PaintMenuBar;           // Event je vyvolán v okamžiku, kdy komponenta začíná vykreslovat Child popup = SubItems tohoto menu
+
+                    barSubItem.Tag = new DataRibbonItemLazy(menuRibbonItem, menuRibbonItem.SubItemsContentMode, onDemandMenuPopup);
+                }
+
+                // Pokud máme položky menu, tak je vložíme (i kdyby to bylo OnDemand menu):
+                var subItems = menuRibbonItem.SubItems;
+                if (subItems != null && subItems.Any())
+                    _CreateBarItems(subItems, barManager, onDemandMenuPopup, level + 1, barSubItem.ItemLinks);
+            }
+        }
+
+        // sada neúspěšných pokusů, jak zobrazit SubMenu až poté, kdy dostaneme platná data...:
+        /*
+          Možná by šlo:
+             neřešit event Popup, 
+             ale odchytit PaintMenuBar 
+             a v něm zajistit vyžádání dat ze serveru : dataLazy.OnDemandMenuPopupAction?.Invoke(dataLazy.MenuRibbonItem);
+             a hned poté nastavit e.Handled = true = potlačit vykreslení Popup
+          Ale muselo by se zajistit reálné vykreslení po dodání dat
+             a to i v režimu RibbonContentMode.OnDemandLoadEveryTime:
+          Aktuálně nemám čas to zkoumat a testovat.
+
+        */
+
+        //private static void BarSubItem_PaintMenuBar(object sender, DevExpress.XtraBars.BarCustomDrawEventArgs e)
+        //{
+        //    if (sender is DevExpress.XtraBars.BarSubItem barSubItem && barSubItem.Tag is DataRibbonItemLazy dataLazy)
+        //    {
+        //        bool isOnDemand = (dataLazy.MenuRibbonItem.SubItemsContentMode != RibbonContentMode.Static);
+        //        if (isOnDemand)
+        //        {
+        //            if (!dataLazy.IsActionCalled)
+        //                e.Handled = true;
+        //        }
+        //    }
+        //}
+
+        //private static void BarSubItem_GetItemData(object sender, EventArgs e)
+        //{
+
+        //}
+
+        /// <summary>
+        /// Uživatel rozbaluje Submenu (BarSubItem), které má příznak <see cref="IRibbonItem.SubItemsContentMode"/> jiný než Static 
+        /// (tedy <see cref="RibbonContentMode.OnDemandLoadOnce"/> nebo <see cref="RibbonContentMode.OnDemandLoadEveryTime"/>).
+        /// Zdejší handler zajistí vyvolání akce, kterou předal volající jako "onDemandMenuPopup", a akci předá právě ten datový prvek SubMenu, který deklaruje toto OnDemand menu.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private static void _OnBarSubItem_OnDemand_Popup(object sender, EventArgs e)
+        {
+            if (sender is DevExpress.XtraBars.BarSubItem barSubItem && barSubItem.Tag is DataRibbonItemLazy dataLazy)
+            {
+                switch (dataLazy.ContentMode)
+                {
+                    case RibbonContentMode.OnDemandLoadOnce:
+                        if (!dataLazy.IsActionCalled)
+                        {
+                            dataLazy.IsActionCalled = true;
+                            dataLazy.OnDemandMenuPopupAction?.Invoke(dataLazy.MenuRibbonItem);
+                        }
+                        break;
+                    case RibbonContentMode.OnDemandLoadEveryTime:
+                        dataLazy.IsActionCalled = true;
+                        dataLazy.OnDemandMenuPopupAction?.Invoke(dataLazy.MenuRibbonItem);
+                        break;
+                }
+            }
+        }
+        /// <summary>
+        /// Data připravená pro OnDemand submenu
+        /// </summary>
+        private class DataRibbonItemLazy
+        {
+            public DataRibbonItemLazy(IRibbonItem menuRibbonItem, RibbonContentMode contentMode, Action<IRibbonItem> onDemandMenuPopup)
+            {
+                MenuRibbonItem = menuRibbonItem;
+                ContentMode = contentMode;
+                OnDemandMenuPopupAction = onDemandMenuPopup;
+                IsActionCalled = false;
+            }
+            public IRibbonItem MenuRibbonItem { get; private set; }
+            internal RibbonContentMode ContentMode { get; private set; }
+            public Action<IRibbonItem> OnDemandMenuPopupAction { get; private set; }
+            public bool IsActionCalled { get; set; }
+        }
+        /// <summary>
+        /// Vrátí true, pokud dodaný prvek reprezentuje hlavičku od SubMenu, 
+        /// a je tedy třeba do BarItemu tohoto prvku vložit SubItemy...
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <returns></returns>
+        private static bool _IsBarItemSubItems(IRibbonItem ribbonItem)
+        {
+            var itemType = ribbonItem.ItemType;
+            return (itemType == RibbonItemType.ComboListBox || itemType == RibbonItemType.InRibbonGallery || itemType == RibbonItemType.Menu || itemType == RibbonItemType.PopupMenuDropDown);
+        }
+        /// <summary>
+        /// Vrátí true, pokud dodaný prvek reprezentuje hlavičku od Inlinované grupy prvků (Rychlá volba), 
+        /// a je tedy třeba přímo za daný BarItem tohoto prvku vložit jeho SubItemy jako následující prvky...
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <returns></returns>
+        private static bool _IsBarItemGroupItems(IRibbonItem ribbonItem)
+        {
+            var itemType = ribbonItem.ItemType;
+            return (itemType == RibbonItemType.ButtonGroup);
+        }
+        /// <summary>
+        /// Vytvoří BarItem a naplní jeho vlastnosti. Neřeší SubItems.
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="barManager"></param>
+        /// <param name="level"></param>
+        /// <returns></returns>
+        private static DevExpress.XtraBars.BarItem _CreateBarItem(IRibbonItem ribbonItem, DevExpress.XtraBars.BarManager barManager, int level)
+        {
+            bool isHeader = false;
+            return _CreateBarItem(ribbonItem, barManager, level, ref isHeader);
+        }
+        /// <summary>
+        /// Vytvoří BarItem a naplní jeho vlastnosti. Neřeší SubItems.
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="barManager"></param>
+        /// <param name="level"></param>
+        /// <param name="isHeader"></param>
+        /// <returns></returns>
+        private static DevExpress.XtraBars.BarItem _CreateBarItem(IRibbonItem ribbonItem, DevExpress.XtraBars.BarManager barManager, int level, ref bool isHeader)
         {
             if (ribbonItem is null) return null;
+            DevExpress.XtraBars.BarItem barItem = null;
+            isHeader = false;
             switch (ribbonItem.ItemType)
             {
+                case RibbonItemType.Static:
+                case RibbonItemType.Label:
+                    var barStaticButton = new DevExpress.XtraBars.BarStaticItem();
+                    barItem = barStaticButton;
+                    break;
                 case RibbonItemType.Button:
-                    return _CreateBarItemButton(ribbonItem, level);
+                    var barButton = new DevExpress.XtraBars.BarButtonItem();
+                    barItem = barButton;
+                    break;
                 case RibbonItemType.CheckButton:
                 case RibbonItemType.CheckButtonPassive:
-                    return _CreateBarItemCheckButton(ribbonItem, level);
+                    var barCheckButton = new DevExpress.XtraBars.BarButtonItem();
+                    barCheckButton.ButtonStyle = DevExpress.XtraBars.BarButtonStyle.Check;
+                    barCheckButton.Down = (ribbonItem.Checked.HasValue && ribbonItem.Checked.Value);
+                    barItem = barCheckButton;
+                    break;
                 case RibbonItemType.CheckBoxStandard:
                 case RibbonItemType.CheckBoxPasive:
-                    return _CreateBarItemCheckBoxStandard(ribbonItem, level);
-            }
-            return null;
-        }
-        private static DevExpress.XtraBars.BarItem _CreateBarItemButton(IRibbonItem ribbonItem, int level)
-        {
-            var barButton = new DevExpress.XtraBars.BarButtonItem();
-            _FillBarItemProperties(ribbonItem, barButton, level);
-            return barButton;
-        }
-        private static DevExpress.XtraBars.BarItem _CreateBarItemCheckButton(IRibbonItem ribbonItem, int level)
-        {
-            var barButton = new DevExpress.XtraBars.BarButtonItem();
-            _FillBarItemProperties(ribbonItem, barButton, level);
-            barButton.ButtonStyle = DevExpress.XtraBars.BarButtonStyle.Check;
-            barButton.Down = (ribbonItem.Checked.HasValue && ribbonItem.Checked.Value);
-            return barButton;
-        }
-        private static DevExpress.XtraBars.BarItem _CreateBarItemCheckBoxStandard(IRibbonItem ribbonItem, int level)
-        {
-            var barButton = new DevExpress.XtraBars.BarButtonItem();
-            _FillBarItemProperties(ribbonItem, barButton, level);
-            return barButton;
-        }
+                    var barBoxButton = new DevExpress.XtraBars.BarButtonItem();        // CheckBox z něj udělá až metoda _FillBarItemProperties
+                    barItem = barBoxButton;
+                    break;
+                case RibbonItemType.ButtonGroup:
+                    var buttonGroup = _CreateBarItemButtonGroup(ribbonItem, barManager, level);
+                    barItem = buttonGroup;
+                    isHeader = true;
+                    break;
+                case RibbonItemType.Menu:
+                case RibbonItemType.PopupMenuDropDown:
+                    var barSubItem = new DevExpress.XtraBars.BarSubItem();
+                    barItem = barSubItem;
+                    break;
+                case RibbonItemType.SkinSetDropDown:
+                    var barSkin = new DevExpress.XtraBars.SkinDropDownButtonItem();
+                    barItem = barSkin;
+                    break;
+                case RibbonItemType.SkinPaletteDropDown:
+                case RibbonItemType.SkinPaletteGallery:
+                    var barPalette = new DevExpress.XtraBars.SkinPaletteDropDownButtonItem();
+                    barItem = barPalette;
+                    break;
+                case RibbonItemType.Header:
+                    var barHeader = _CreateBarItemHeader(ribbonItem, barManager, level);
+                    barHeader.MultiColumn = DefaultBoolean.False;
+                    barItem = barHeader;
+                    isHeader = true;
+                    break;
+                default:
+                    barItem = new DevExpress.XtraBars.BarButtonItem();
+                    break;
 
+            }
+            if (barManager != null) barItem.Manager = barManager;
+            _FillBarItemProperties(ribbonItem, barItem, level);
+            return barItem;
+        }
+        /// <summary>
+        /// Vytvoří záhlaví obecné a nastaví jeho vlastnosti
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="barManager"></param>
+        /// <param name="level"></param>
+        /// <returns></returns>
+        private static DevExpress.XtraBars.BarHeaderItem _CreateBarItemHeader(IRibbonItem ribbonItem, DevExpress.XtraBars.BarManager barManager, int level)
+        {
+            var barHeader = new DevExpress.XtraBars.BarHeaderItem();
+            barHeader.MultiColumn = DefaultBoolean.False;
+
+            barHeader.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText;
+            barHeader.PaintStyle = DevExpress.XtraBars.BarItemPaintStyle.CaptionInMenu;
+            barHeader.ContentHorizontalAlignment = DevExpress.XtraBars.BarItemContentAlignment.Near;
+            barHeader.ImageToTextAlignment = DevExpress.XtraBars.BarItemImageToTextAlignment.BeforeText;
+
+            return barHeader;
+        }
+        /// <summary>
+        /// Vytvoří záhlaví pro ButtonGroup a nastaví jeho vlastnosti
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="barManager"></param>
+        /// <param name="level"></param>
+        /// <returns></returns>
+        private static DevExpress.XtraBars.BarHeaderItem _CreateBarItemButtonGroup(IRibbonItem ribbonItem, DevExpress.XtraBars.BarManager barManager, int level)
+        {
+            bool useLargeImages = (ribbonItem.RibbonStyle.HasFlag(RibbonItemStyles.Large) || !(ribbonItem.RibbonStyle.HasFlag(RibbonItemStyles.SmallWithText) || ribbonItem.RibbonStyle.HasFlag(RibbonItemStyles.SmallWithoutText)));
+            var buttonGroup = new DevExpress.XtraBars.BarHeaderItem();
+            buttonGroup.MultiColumn = DefaultBoolean.True;
+            buttonGroup.OptionsMultiColumn.ColumnCount = ribbonItem.ButtonGroupColumnCount ?? 7;
+            buttonGroup.OptionsMultiColumn.ImageHorizontalAlignment = DevExpress.Utils.Drawing.ItemHorizontalAlignment.Left;
+            buttonGroup.OptionsMultiColumn.ImageVerticalAlignment = DevExpress.Utils.Drawing.ItemVerticalAlignment.Top;
+            buttonGroup.OptionsMultiColumn.LargeImages = (useLargeImages ? DefaultBoolean.True : DefaultBoolean.False);
+            buttonGroup.OptionsMultiColumn.UseMaxItemWidth = DevExpress.Utils.DefaultBoolean.False;
+
+            buttonGroup.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText;
+            // buttonGroup.RibbonStyle = (useLargeImages ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large : DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText);
+            buttonGroup.PaintStyle = DevExpress.XtraBars.BarItemPaintStyle.CaptionInMenu;
+            buttonGroup.ContentHorizontalAlignment = DevExpress.XtraBars.BarItemContentAlignment.Near;
+            buttonGroup.ImageToTextAlignment = DevExpress.XtraBars.BarItemImageToTextAlignment.BeforeText;
+
+            return buttonGroup;
+        }
+        /// <summary>
+        /// Z datového prvku <paramref name="ribbonItem"/> opíše veškeré hodnoty do vizuálního prvku <paramref name="barItem"/>. 
+        /// Prováže je pomocí Tagu a RibbonItem.
+        /// Hodnota <paramref name="level"/> slouží k detailnímu nastavení při aplikování vlastností, 0 = přímo viditelný prvek (Button v Ribonu, první úroveň samostatného Popup)
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="barItem"></param>
+        /// <param name="level"></param>
         private static void _FillBarItemProperties(IRibbonItem ribbonItem, DevExpress.XtraBars.BarItem barItem, int level)
         {
             FillBarItemFrom(barItem, ribbonItem, level);
@@ -3266,30 +3782,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Vzájemné provázání:
             barItem.Tag = ribbonItem;            // Vizuální prvek zná data
             ribbonItem.RibbonItem = barItem;     // Datový prvek má Weakreferenci na vizuál
-        }
-        /// <summary>
-        /// Naplní veškeré patřičné hodnoty do BarItemu { Caption, Visible, Tagy, Tooltip;  Styl písma;  Velikost, barvy, alignment;  Image;  HotKeys }
-        /// </summary>
-        /// <param name="barItem"></param>
-        /// <param name="ribbonItem"></param>
-        /// <param name="level"></param>
-        internal static void FillBarItemFrom(DevExpress.XtraBars.BarItem barItem, IRibbonItem ribbonItem, int level = 0)
-        {
-            // Systémové prvky Ribbonu nebudu modifikovat:
-            bool isSystemItem = (ribbonItem.ItemType == RibbonItemType.SkinSetDropDown || ribbonItem.ItemType == RibbonItemType.SkinPaletteDropDown || ribbonItem.ItemType == RibbonItemType.SkinPaletteGallery);
-            if (isSystemItem)
-            {
-                _FillBarItemSystem(ribbonItem, barItem, level);          // Style
-            }
-            else
-            {
-                _FillBarItemCommon(ribbonItem, barItem, level);          // Caption, Visible, Tagy, Tooltip
-                _FillBarItemFontStyle(ribbonItem, barItem, level);       // Styl písma
-                _FillBarItemSizeColors(ribbonItem, barItem, level);      // Velikost, barvy, alignment
-                _FillBarItemImage(ribbonItem, barItem, level);           // Image můžu řešit až po vložení velikosti, protože Image se řídí i podle velikosti prvku 
-                _FillBarItemHotKey(ribbonItem, barItem, level);          // HotKeys
-                _FillBarItemReload(ribbonItem, barItem, level);          // Speciální itemy mají svůj Reload (ComboBox)
-            }
         }
         /// <summary>
         /// Nastaví základní běžné hodnoty do do daného prvku = systémový prvek, jen některé věci
@@ -3318,7 +3810,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             barItem.VisibleInSearchMenu = ribbonItem.VisibleInSearchMenu;
             barItem.SearchTags = ribbonItem.SearchTags;
             barItem.PaintStyle = DxRibbonControl.ConvertPaintStyle(ribbonItem, level);
-            barItem.RibbonStyle = (ribbonItem.RibbonStyle == RibbonItemStyles.Default ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.All : DxRibbonControl.Convert(ribbonItem.RibbonStyle));
+
+            // Header má styl jinak:
+            bool isHeader = (ribbonItem.ItemType == RibbonItemType.Header || ribbonItem.ItemType == RibbonItemType.ButtonGroup);
+            barItem.RibbonStyle = isHeader ? 
+                    DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText : 
+                    (ribbonItem.RibbonStyle == RibbonItemStyles.Default ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.All : DxRibbonControl.Convert(ribbonItem.RibbonStyle));
 
             barItem.SuperTip = DxComponent.CreateDxSuperTip(ribbonItem);
         }
@@ -3353,7 +3850,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 barItem.Size = ribbonItem.Size.Value;
             }
 
-            // Barvy:
+            // Barvy: pokud na vstupu je null (=barva není určena), i pak je třeba zajistit její promítnutí do prvku! 
+            // Proč? Jde třeba o Refresh, který má vrátit barvu prvku z výrazné (explicitně dané) do neutrální (jen namísto NULL vložím Empty)!
             Color? backColor = null;
             Color? textColor = null;
             if (ribbonItem.BackColor.HasValue || ribbonItem.TextColor.HasValue)
@@ -3368,25 +3866,19 @@ namespace Noris.Clients.Win.Components.AsolDX
                 textColor = style?.LabelColor;
             }
 
-            // Pokud jsme určili nějakou barvu, aplikuji jí do prvku:
-            if (backColor.HasValue || textColor.HasValue)
-            {
-                var appearance = ((level == 0) ? barItem.ItemAppearance : barItem.ItemInMenuAppearance);
-                if (backColor.HasValue)
-                {
-                    appearance.Normal.BackColor = backColor.Value;
-                    appearance.Hovered.BackColor = backColor.Value;
-                    appearance.Pressed.BackColor = backColor.Value;
-                    appearance.Disabled.BackColor = backColor.Value;
-                }
-                if (textColor.HasValue)
-                {
-                    appearance.Normal.ForeColor = textColor.Value;
-                    appearance.Hovered.ForeColor = textColor.Value;
-                    appearance.Pressed.ForeColor = textColor.Value;
-                    appearance.Disabled.ForeColor = textColor.Value;
-                }
-            }
+            // Barvu vepíšu vždy (pro Refresh, viz nahoře):
+            var appearance = ((level == 0) ? barItem.ItemAppearance : barItem.ItemInMenuAppearance);
+            Color backCol = backColor ?? Color.Empty;
+            if (appearance.Normal.BackColor != backCol) appearance.Normal.BackColor = backCol;
+            if (appearance.Hovered.BackColor != backCol) appearance.Hovered.BackColor = backCol;
+            if (appearance.Pressed.BackColor != backCol) appearance.Pressed.BackColor = backCol;
+            if (appearance.Disabled.BackColor != backCol) appearance.Disabled.BackColor = backCol;
+
+            Color textCol = textColor ?? Color.Empty;
+            if (appearance.Normal.ForeColor != textCol) appearance.Normal.ForeColor = textCol;
+            if (appearance.Hovered.ForeColor != textCol) appearance.Hovered.ForeColor = textCol;
+            if (appearance.Pressed.ForeColor != textCol) appearance.Pressed.ForeColor = textCol;
+            if (appearance.Disabled.ForeColor != textCol) appearance.Disabled.ForeColor = textCol;
 
             // Zarovnání dle požadavku:
             if (ribbonItem.Alignment.HasValue)
@@ -3429,7 +3921,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Náhradní ikonka (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
             string imageCaption = GetCaptionForRibbonImage(ribbonItem, level);
-            DxComponent.ApplyImage(barItem.ImageOptions, ribbonItem.ImageName, ribbonItem.Image, sizeType, caption: imageCaption, prepareDisabledImage: ribbonItem.PrepareDisabledImage);
+            DxComponent.ApplyImage(barItem.ImageOptions, ribbonItem.ImageName, ribbonItem.Image, sizeType, caption: imageCaption, prepareDisabledImage: ribbonItem.PrepareDisabledImage, imageListMode: ribbonItem.ImageListMode);
 
             // Pokud nemám Image ani imageCaption, pak je třeba upravit PaintStyle tak, aby BarStatic prvek nezobrazoval přeškrtnutý Image:
             barItem.PaintStyle = DxRibbonControl.ConvertPaintStyle(ribbonItem, out bool hasImage, level);
@@ -3470,7 +3962,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 imageName = null;
                 image = null;
             }
-            DxComponent.ApplyImage(barButton.ImageOptions, imageName, ribbonItem.Image, sizeType, caption: imageCaption, prepareDisabledImage: ribbonItem.PrepareDisabledImage);
+            DxComponent.ApplyImage(barButton.ImageOptions, imageName, ribbonItem.Image, sizeType, caption: imageCaption, prepareDisabledImage: ribbonItem.PrepareDisabledImage, imageListMode: ribbonItem.ImageListMode);
 
             // Pokud nemám Image ani imageCaption, pak je třeba upravit PaintStyle tak, aby BarStatic prvek nezobrazoval přeškrtnutý Image:
             barButton.PaintStyle = DxRibbonControl.ConvertPaintStyle(ribbonItem, level);
@@ -3488,11 +3980,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             //  Hodnota level se předává v procesu prvotní tvorby, pak Root prvek má level == 0;
             //  Pokud hodnota level není předána, pak jsme volání z obsluhy kliknutí na prvek, a tam se spolehneme na hodnotu IRibbonItem.ParentItem.
             bool isRootItem = (level.HasValue ? (level.Value == 0) : (ribbonItem.ParentItem is null));
-            var mode = ribbonItem.ImageFromCaption;
-
+            var mode = ribbonItem.ImageFromCaptionMode;
             bool enableImageFromCaption =
-                    (ribbonItem.CreateImageFromCaption.HasValue ? ribbonItem.CreateImageFromCaption.Value :
-                    (mode == ImageFromCaptionType.OnlyForRootMenuLevel ? isRootItem : (mode == ImageFromCaptionType.Enabled)));
+                    (mode == ImageFromCaptionType.Disabled ? false :
+                    (mode == ImageFromCaptionType.OnlyForRootMenuLevel ? isRootItem :
+                    (mode == ImageFromCaptionType.Enabled ? true : false)));
             string imageCaption = (enableImageFromCaption ? ribbonItem.Text : null);
             return imageCaption;
         }
@@ -10140,6 +10632,24 @@ White
         /// Obrázek ponechat v původní velikosti, umístit v levém horním rohu a opakovat jako dlaždice po celé ploše
         /// </summary>
         Tile
+    }
+    /// <summary>
+    /// Režim práce s Image a ImageList
+    /// </summary>
+    public enum DxImageListMode
+    {
+        /// <summary>
+        /// Defaultní = podle možností (používat ImageList, definovat obě velikosti)
+        /// </summary>
+        Default = 0,
+        /// <summary>
+        /// Používat ImageList, ale vkládat jen požadovanou velikost
+        /// </summary>
+        UseOnlyOneSize,
+        /// <summary>
+        /// Nepoužívat ImageList, ale vkládat přímo Image /ImageSvg do objektu
+        /// </summary>
+        UseDirectImage
     }
     #endregion
     #region class Convertor : Knihovna statických konverzních metod mezi simple typy a stringem

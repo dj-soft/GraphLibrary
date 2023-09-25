@@ -417,7 +417,7 @@ namespace TestDevExpress.Forms
         string ITextItem.ImageName { get { return null; } }
         string ITextItem.ImageNameUnChecked { get { return null; } }
         string ITextItem.ImageNameChecked { get { return null; } }
-        ImageFromCaptionType ITextItem.ImageFromCaption { get { return ImageFromCaptionType.Disabled; } }
+        ImageFromCaptionType ITextItem.ImageFromCaptionMode { get { return ImageFromCaptionType.Disabled; } }
         BarItemPaintStyle ITextItem.ItemPaintStyle { get { return BarItemPaintStyle.CaptionGlyph; } }
         object ITextItem.Tag { get { return null; } }
         string IToolTipItem.ToolTipTitle { get { return Text; } }

@@ -2777,6 +2777,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.MouseLeave += _MouseLeave;
         }
         /// <summary>
+        /// Po změně vazby na Binding
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnBindingContextChanged(EventArgs e)
+        {   // DAJ 21.09.2023:
+            // Tato metoda se volá mj. z třídy Control, když se provede Remove tohoto controlu z jeho Parenta.
+            // Base metoda provolává tuto metodu do instancí svých Childs controlů.
+            // Tak dojde (mimo jiné) až do DevExpress DxGrid, kde způsobí resetování stavu gridu => změnu Selected a Focused Row.
+            // My v Nephrite nepoužíváme DataBinding ze formuláře do jednotlivých Child controlů.
+            // Nic nebudeme provádět ani volat base metodu => necháme DxGrid._OnFocusedRowChanged na pokoji!
+        }
+        /// <summary>
         /// Uvolnění zdrojů
         /// </summary>
         /// <param name="disposing"></param>

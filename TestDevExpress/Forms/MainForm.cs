@@ -641,17 +641,18 @@ namespace TestDevExpress.Forms
             if (item != null)
             {
                 var funcRibbonForm = _RibbonPages[0].Groups[1].Items.FirstOrDefault(i => i.ItemId == "RibbonForm");
-                if (funcRibbonForm?.RibbonItem != null && funcRibbonForm.RibbonItem.IsAlive && funcRibbonForm.RibbonItem.Target != null)
+                var ribbonItem = funcRibbonForm?.RibbonItem;
+                if (ribbonItem != null)
                 {
-                    funcRibbonForm.RibbonItem.Target.ImageOptions.SvgImage = item.CreateSvgImage(DxComponent.GetImagePalette(DxComponent.IsDarkTheme, false));
-                    if (caption != null) funcRibbonForm.RibbonItem.Target.Caption = caption;
+                    ribbonItem.ImageOptions.SvgImage = item.CreateSvgImage(DxComponent.GetImagePalette(DxComponent.IsDarkTheme, false));
+                    if (caption != null) ribbonItem.Caption = caption;
                 }
             }
         }
         #region Pozice okna
         /// <summary>
         /// Zde formulář umožňuje potomkovi, aby odněkud načetl pozici a stav okna pro obnovení uložené pozice při otevírání okna, a zde ji vrátil.
-        /// Pro uložení pozice okna po interaktivní změně je určena metoda <see cref="DxRibbonForm.OnFormPositionSave(string, bool)"/>.
+        /// Pro uložení pozice okna po interaktivní změně je určena metoda "DxRibbonForm.OnFormPositionSave(string, bool)".
         /// <para/>
         /// Tato virtual metoda je volaná z konstruktoru - proto nemá smysl, aby existoval párový eventhandler - není kdy ho zaregistrovat (a po provedení konstruktoru je pozdě).
         /// </summary>
@@ -664,7 +665,7 @@ namespace TestDevExpress.Forms
         /// Zde formulář oznamuje potomkovi, že změnil svoji velikost a pozici, a potomek si ji může uložit do své konfigurace. Současně se potomkovi sděluje parametrem <paramref name="isFinal"/>,
         /// zda určená pozice je průběžná (při jakékoli změně za života formuláře), anebo již finální (při ukončování formuláře).
         /// </summary>
-        /// <param name="position">Pozice okna, tak jak ji následně očekává metoda <see cref="DxRibbonForm.OnFormPositionLoad"/></param>
+        /// <param name="position">Pozice okna, tak jak ji následně očekává metoda "DxRibbonForm.OnFormPositionLoad"</param>
         /// <param name="isFinal">Pozice je finální? false = při každé změně / true = při zavírání formuláře</param>
         protected override void OnFormPositionSave(string position, bool isFinal)
         {
@@ -802,13 +803,16 @@ namespace TestDevExpress.Forms
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
 
             DataRibbonPage page = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.Default);
+            page.MergeOrder = 10;
             AddFunctionsGroup(page);
             pages.Add(page);
 
             page = CreateRibbonSamplePage();
+            page.MergeOrder = 20;
             if (page != null) pages.Add(page);
 
             page = CreateRibbonSvgImagesPage();
+            page.MergeOrder = 30;
             if (page != null) pages.Add(page);
 
             this.DxRibbon.Clear();
@@ -1473,7 +1477,7 @@ namespace TestDevExpress.Forms
         private void ClickRibbonSvgGetSet(IMenuItem item, bool enableSet)
         {
             bool isCtrl = (Control.ModifierKeys == Keys.Control);
-            var barItem = (item as IRibbonItem)?.RibbonItem?.Target;
+            var barItem = (item as IRibbonItem)?.RibbonItem;
             if (barItem is null) return;
 
             ActivatePage(8, true);
@@ -1687,7 +1691,7 @@ namespace TestDevExpress.Forms
             if (String.IsNullOrEmpty(svgImageName0) || String.IsNullOrEmpty(svgImageName1)) return;
 
             DataRibbonItem resultItem = _SvgCombineRibbonGroup.Items[4] as DataRibbonItem;
-            var barItem = resultItem.RibbonItem?.Target;
+            var barItem = resultItem.RibbonItem;
             if (barItem is null) return;
 
             if (svgCombine == 1 || svgCombine == 2 || svgCombine == 4 || svgCombine == 16 || svgCombine == 32 || svgCombine == 64 || svgCombine == 256 || svgCombine == 512 || svgCombine == 1024)
@@ -5509,7 +5513,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             comboItem = new DataRibbonComboItem() { ItemType = RibbonItemType.ComboListBox };
             comboItem.RibbonStyle = RibbonItemStyles.SmallWithText;
             comboItem.Text = "";
-            comboItem.ImageFromCaption = ImageFromCaptionType.Disabled;
+            comboItem.ImageFromCaptionMode = ImageFromCaptionType.Disabled;
             comboItem.ImageName = "devav/print/summary.svg";
             comboItem.ToolTipTitle = "ComboBox";
             comboItem.ToolTipText = "Měl by nabízet sadu prvků";
@@ -5530,7 +5534,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             comboItem = new DataRibbonComboItem() { ItemType = RibbonItemType.ComboListBox };
             comboItem.RibbonStyle = RibbonItemStyles.SmallWithText;
             comboItem.Text = "";
-            comboItem.ImageFromCaption = ImageFromCaptionType.Disabled;
+            comboItem.ImageFromCaptionMode = ImageFromCaptionType.Disabled;
             comboItem.ImageName = "devav/actions/filter.svg";
             comboItem.ToolTipTitle = "ComboBox";
             comboItem.ToolTipText = "Měl by nabízet sadu prvků";
@@ -5551,7 +5555,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             comboItem = new DataRibbonComboItem() { ItemType = RibbonItemType.ComboListBox };
             comboItem.RibbonStyle = RibbonItemStyles.SmallWithText;
             comboItem.Text = "";
-            comboItem.ImageFromCaption = ImageFromCaptionType.Disabled;
+            comboItem.ImageFromCaptionMode = ImageFromCaptionType.Disabled;
             comboItem.ImageName = "svgimages/dashboards/chartstackedline.svg";
             comboItem.ToolTipTitle = "ComboBox";
             comboItem.ToolTipText = "Měl by nabízet sadu prvků";

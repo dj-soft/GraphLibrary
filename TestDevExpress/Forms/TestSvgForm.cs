@@ -170,7 +170,7 @@ namespace TestDevExpress.Forms
         {
             if (e.Item.ParentGroup.GroupId == "DEVEXPRESS" || e.Item.ParentGroup.GroupId == "ASOL")
             {   // 
-                var barItem = e.Item.RibbonItem.Target;
+                var barItem = e.Item.RibbonItem;
                 if (barItem != null)
                     SetEnabled(barItem, !barItem.Enabled);
                 PrepareAnyEnabled(e.Item);
@@ -192,7 +192,7 @@ namespace TestDevExpress.Forms
             int enabledCount = 0;
             foreach (var i in group.Items)
             {
-                barItem = i.RibbonItem.Target;
+                barItem = i.RibbonItem;
                 if (barItem != null && barItem.Enabled)
                     enabledCount++;
             }
@@ -202,7 +202,7 @@ namespace TestDevExpress.Forms
             foreach (var i in group.Items)
             {
                 if (i.ItemId == item.ItemId) continue;          // Vstupní prvek přeskočím
-                barItem = i.RibbonItem.Target;
+                barItem = i.RibbonItem;
                 if (barItem != null)
                 {
                     SetEnabled(barItem, true);
@@ -212,7 +212,7 @@ namespace TestDevExpress.Forms
             if (enabledCount > 0) return;
 
             // Nic nezbývá jiného než dát Enabled na vstupní prvek:
-            barItem = item.RibbonItem.Target;
+            barItem = item.RibbonItem;
             if (barItem != null)
             {
                 SetEnabled(barItem, true);

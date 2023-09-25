@@ -25,6 +25,7 @@ namespace TestDevExpress.Forms
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
 
             DataRibbonPage homePage = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.All);
+            homePage.PageOrder = 10;
             pages.Add(homePage);
 
             var start = DateTime.Now;

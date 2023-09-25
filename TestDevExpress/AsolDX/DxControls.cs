@@ -8551,7 +8551,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._ItemId = null;
             this.Visible = true;
             this.Enabled = true;
-            this.ImageFromCaption = ImageFromCaptionType.OnlyForRootMenuLevel;
+            this.ImageFromCaptionMode = ImageFromCaptionType.OnlyForRootMenuLevel;
         }
         /// <summary>
         /// Metoda vytvoří new instanci třídy <see cref="DataMenuItem"/>, které bude obsahovat data z dodané <see cref="IMenuItem"/>.
@@ -8584,7 +8584,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ImageName = source.ImageName;
             ImageNameUnChecked = source.ImageNameUnChecked;
             ImageNameChecked = source.ImageNameChecked;
-            ImageFromCaption = source.ImageFromCaption;
+            ImageFromCaptionMode = source.ImageFromCaptionMode;
             ItemPaintStyle = source.ItemPaintStyle;
             ToolTipIcon = source.ToolTipIcon;
             ToolTipTitle = source.ToolTipTitle;
@@ -8686,7 +8686,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Povoluje se vytvoření obrázku podle textu? Používá se v Nephrite pro ikony například vztahů...
         /// </summary>
-        public virtual ImageFromCaptionType ImageFromCaption { get; set; }
+        public virtual ImageFromCaptionType ImageFromCaptionMode { get; set; }
         /// <summary>
         /// Styl zobrazení
         /// </summary>
@@ -8791,7 +8791,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Povoluje se vytvoření obrázku podle textu? Používá se v Nephrite pro ikony například vztahů...
         /// </summary>
-        ImageFromCaptionType ImageFromCaption { get; }
+        ImageFromCaptionType ImageFromCaptionMode { get; }
         /// <summary>
         /// Styl zobrazení
         /// </summary>

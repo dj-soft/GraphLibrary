@@ -1123,7 +1123,7 @@ namespace TestDevExpress.Forms
 
             if (iRibbonItem.ItemType == RibbonItemType.Menu) return;
 
-            var ribbonButton = iRibbonItem.RibbonItem?.Target as DevExpress.XtraBars.BarButtonItem;
+            var ribbonButton = iRibbonItem.RibbonItem as DevExpress.XtraBars.BarButtonItem;
             if (ribbonButton != null && false)
             {
                 ribbonButton.ButtonStyle = DevExpress.XtraBars.BarButtonStyle.Check;

@@ -107,7 +107,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public ResourceImageSizeType ButtonsSize { get { return _ButtonsSize; } set { _ButtonsSize = value; DoLayout(); } }
         #endregion
-        #region DxListBoxControl (přímý přístup na jeho prvky)
+        #region DxListBoxControlu (přímý přístup na jeho prvky)
         /// <summary>
         /// Pokud obsahuje true, pak List smí obsahovat duplicitní klíče (defaultní hodnota je true).
         /// Pokud je false, pak vložení dalšího záznamu s klíčem, který už v Listu je, bude ignorováno.

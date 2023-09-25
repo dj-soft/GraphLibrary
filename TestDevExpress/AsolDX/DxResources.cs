@@ -628,8 +628,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="exactName"></param>
         /// <param name="disabled">Převést barvy na Disabled variantu (pokud má hodnotu true)</param>
         /// <param name="prepareDisabledImage">Požadavek na přípravu ikony typu 'Disabled' i pro ten prvek Ribbonu, který má aktuálně hodnotu Enabled = true;</param>
-        public static void ApplyImage(ImageOptions imageOptions, string imageName = null, Image image = null, ResourceImageSizeType? sizeType = null, Size? imageSize = null, bool smallButton = false, string caption = null, bool exactName = false, bool? disabled = null, bool prepareDisabledImage = false)
-        { Instance._ApplyImage(imageOptions, new ResourceArgs(imageName, exactName, sizeType, imageSize, null, caption, null, disabled, image, smallButton, false, prepareDisabledImage)); }
+        /// <param name="imageListMode">Režim práce s ImageList a Image</param>
+        public static void ApplyImage(ImageOptions imageOptions, string imageName = null, Image image = null, ResourceImageSizeType? sizeType = null, Size? imageSize = null, bool smallButton = false, string caption = null, bool exactName = false, bool? disabled = null, bool prepareDisabledImage = false, DxImageListMode? imageListMode = null)
+        { Instance._ApplyImage(imageOptions, new ResourceArgs(imageName, exactName, sizeType, imageSize, null, caption, null, disabled, image, smallButton, false, prepareDisabledImage, imageListMode)); }
         /// <summary>
         /// ApplyImage - do cílového objektu vepíše obrázek podle toho, jak je zadán a kam má být vepsán
         /// </summary>
@@ -809,6 +810,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args"></param>
         private void _ApplyImageApplicationSvg(ImageOptions imageOptions, DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceArgs args)
         {
+            var imageListMode = args.ImageListMode ?? DxImageListMode.Default;
             if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barOptions)
             {   // Máme prostor pro dvě velikosti obrázku najednou:
                 // barOptions.Reset();
@@ -819,21 +821,45 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (barOptions.Images is SvgImageCollection)
                 {   // Máme připravenou podporu pro vektorový index, můžeme tam dát dvě velikosti:
                     //  (Máme pochopitelně za to, že barOptions.Images obsahuje kolekci velikostí Small, a barOptions.LargeImages velikost Large)
-                    int smallIndex = _GetVectorImageIndex(resourceItems, args.CloneForSize(ResourceImageSizeType.Small));
-                    int largeIndex = _GetVectorImageIndex(resourceItems, args.CloneForSize(ResourceImageSizeType.Large));
-                    if (smallIndex >= 0 && largeIndex >= 0)
-                    {   // Máme indexy pro obě velikosti?
-                        if (barOptions.SvgImage != null) barOptions.SvgImage = null;
-                        // Radši ne, jinde dochází k chybě, pokud SvgImage je null :    barOptions.SvgImageSize = Size.Empty;
-                        if (barOptions.ImageIndex != smallIndex) barOptions.ImageIndex = smallIndex;
-                        if (barOptions.LargeImageIndex != largeIndex) barOptions.LargeImageIndex = largeIndex;
-                        hasIndexes = true;
+                    if (imageListMode == DxImageListMode.Default)
+                    {   // ... a skutečně můžeme vložit dvě velikosti (není to zakázané):
+                        int smallIndex = _GetVectorImageIndex(resourceItems, args.CloneForSize(ResourceImageSizeType.Small));
+                        int largeIndex = _GetVectorImageIndex(resourceItems, args.CloneForSize(ResourceImageSizeType.Large));
+                        if (smallIndex >= 0 && largeIndex >= 0)
+                        {   // Máme indexy pro obě velikosti?
+                            if (barOptions.SvgImage != null) barOptions.SvgImage = null;
+                            // Radši ne, jinde dochází k chybě, pokud SvgImage je null :    barOptions.SvgImageSize = Size.Empty;
+                            if (barOptions.ImageIndex != smallIndex) barOptions.ImageIndex = smallIndex;
+                            if (barOptions.LargeImageIndex != largeIndex) barOptions.LargeImageIndex = largeIndex;
+                            hasIndexes = true;
 
-                        if (args.PrepareDisabledImage || _NeedDisabledImage(args.Disabled, barOptions.Item))
-                        {
-                            var argsDis = args.CloneForDisabled(true);
-                            barOptions.DisabledImageIndex = _GetVectorImageIndex(resourceItems, argsDis.CloneForSize(ResourceImageSizeType.Small)); ;
-                            barOptions.DisabledLargeImageIndex = _GetVectorImageIndex(resourceItems, argsDis.CloneForSize(ResourceImageSizeType.Large));
+                            if (args.PrepareDisabledImage || _NeedDisabledImage(args.Disabled, barOptions.Item))
+                            {
+                                var argsDis = args.CloneForDisabled(true);
+                                barOptions.DisabledImageIndex = _GetVectorImageIndex(resourceItems, argsDis.CloneForSize(ResourceImageSizeType.Small)); ;
+                                barOptions.DisabledLargeImageIndex = _GetVectorImageIndex(resourceItems, argsDis.CloneForSize(ResourceImageSizeType.Large));
+                            }
+                        }
+                    }
+                    else if (imageListMode == DxImageListMode.UseOnlyOneSize)
+                    {   // Jen jednu požadovanou velikost (pak je vhodné, aby byla zadaná v args.SizeType), akceptujeme jen Large a Small:
+                        var sizeType = (args.SizeType.HasValue && args.SizeType.Value == ResourceImageSizeType.Large ? ResourceImageSizeType.Large : ResourceImageSizeType.Small);
+                        int smallIndex = (sizeType == ResourceImageSizeType.Small ? _GetVectorImageIndex(resourceItems, args.CloneForSize(ResourceImageSizeType.Small)) : -1);
+                        int largeIndex = (sizeType == ResourceImageSizeType.Large ? _GetVectorImageIndex(resourceItems, args.CloneForSize(ResourceImageSizeType.Large)) : -1);
+                        if (smallIndex >= 0 || largeIndex >= 0)
+                        {   // Máme index pro jednu požadovanou velikost?
+                            if (barOptions.SvgImage != null) barOptions.SvgImage = null;
+                            // Radši ne, jinde dochází k chybě, pokud SvgImage je null :    barOptions.SvgImageSize = Size.Empty;
+                            if (barOptions.ImageIndex != smallIndex) barOptions.ImageIndex = smallIndex;
+                            if (barOptions.LargeImageIndex != largeIndex) barOptions.LargeImageIndex = largeIndex;
+                            hasIndexes = true;
+
+                            if (args.PrepareDisabledImage || _NeedDisabledImage(args.Disabled, barOptions.Item))
+                            {
+                                var argsDis = args.CloneForDisabled(true);
+                                barOptions.DisabledImageIndex = (sizeType == ResourceImageSizeType.Small ? _GetVectorImageIndex(resourceItems, argsDis.CloneForSize(ResourceImageSizeType.Small)) : -1);
+                                barOptions.DisabledLargeImageIndex = (sizeType == ResourceImageSizeType.Large ? _GetVectorImageIndex(resourceItems, argsDis.CloneForSize(ResourceImageSizeType.Large)) : -1);
+                            }
                         }
                     }
                 }
@@ -848,7 +874,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (iciOptions.Image != null) iciOptions.Image = null;
                 // Můžeme využívat Index?
-                if (iciOptions.Images is SvgImageCollection svgCollection)
+                if (iciOptions.Images is SvgImageCollection svgCollection && (imageListMode == DxImageListMode.Default || imageListMode == DxImageListMode.UseOnlyOneSize))
                 {   // Máme připravenou podporu pro vektorový index, můžeme tam dát index prvku - ale právě v té velikosti, která je použita v svgCollection,
                     //  protože právě v té kolekci se bude pro zadaný index hledat reálná ikona!
                     var sizeType = DxSvgImageCollection.GetSizeType(svgCollection);
@@ -896,6 +922,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args"></param>
         private void _ApplyImageApplicationBmp(ImageOptions imageOptions, DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceArgs args)
         {
+            var imageListMode = args.ImageListMode ?? DxImageListMode.Default;
             // Poznámka k parametru disabled: Zde řeším ikony typu Bitmap, jejich konverzi do Disabled stavu není třeba provádět zde,
             //   to si pro Bitmapy zajistí grafika DevExpress!
             imageOptions.Reset();
@@ -908,26 +935,50 @@ namespace Noris.Clients.Win.Components.AsolDX
                 bool hasIndexes = false;
                 if (barOptions.Images is ImageList)
                 {   // Máme připravenou podporu pro bitmapový index, můžeme tam dát dvě velikosti:
-                    int smallIndex = _GetBitmapImageIndex(resourceItems, args.CloneForSize(ResourceImageSizeType.Small));
-                    int largeIndex = _GetBitmapImageIndex(resourceItems, args.CloneForSize(ResourceImageSizeType.Large));
-                    if (smallIndex >= 0 && largeIndex >= 0)
-                    {   // Máme indexy pro obě velikosti?
-                        if (barOptions.SvgImage != null) barOptions.SvgImage = null;
-                        // Radši ne, jinde dochází k chybě, pokud SvgImage je null :    barOptions.SvgImageSize = Size.Empty;
-                        if (barOptions.ImageIndex != smallIndex) barOptions.ImageIndex = smallIndex;
-                        if (barOptions.LargeImageIndex != largeIndex) barOptions.LargeImageIndex = largeIndex;
-                        hasIndexes = true;
+                    if (imageListMode == DxImageListMode.Default)
+                    {   // ... a skutečně můžeme vložit dvě velikosti (není to zakázané):
+                        int smallIndex = _GetBitmapImageIndex(resourceItems, args.CloneForSize(ResourceImageSizeType.Small));
+                        int largeIndex = _GetBitmapImageIndex(resourceItems, args.CloneForSize(ResourceImageSizeType.Large));
+                        if (smallIndex >= 0 && largeIndex >= 0)
+                        {   // Máme indexy pro obě velikosti?
+                            if (barOptions.SvgImage != null) barOptions.SvgImage = null;
+                            // Radši ne, jinde dochází k chybě, pokud SvgImage je null :    barOptions.SvgImageSize = Size.Empty;
+                            if (barOptions.ImageIndex != smallIndex) barOptions.ImageIndex = smallIndex;
+                            if (barOptions.LargeImageIndex != largeIndex) barOptions.LargeImageIndex = largeIndex;
+                            hasIndexes = true;
+                        }
+                    }
+                    else if (imageListMode == DxImageListMode.UseOnlyOneSize)
+                    {   // Jen jednu požadovanou velikost (pak je vhodné, aby byla zadaná v args.SizeType), akceptujeme jen Large a Small:
+                        var sizeType = (args.SizeType.HasValue && args.SizeType.Value == ResourceImageSizeType.Large ? ResourceImageSizeType.Large : ResourceImageSizeType.Small);
+                        int smallIndex = (sizeType == ResourceImageSizeType.Small ? _GetBitmapImageIndex(resourceItems, args.CloneForSize(ResourceImageSizeType.Small)) : -1);
+                        int largeIndex = (sizeType == ResourceImageSizeType.Large ? _GetBitmapImageIndex(resourceItems, args.CloneForSize(ResourceImageSizeType.Large)) : -1);
+                        if (smallIndex >= 0 || largeIndex >= 0)
+                        {   // Máme index pro jednu požadovanou velikost?
+                            if (barOptions.SvgImage != null) barOptions.SvgImage = null;
+                            // Radši ne, jinde dochází k chybě, pokud SvgImage je null :    barOptions.SvgImageSize = Size.Empty;
+                            if (barOptions.ImageIndex != smallIndex) barOptions.ImageIndex = smallIndex;
+                            if (barOptions.LargeImageIndex != largeIndex) barOptions.LargeImageIndex = largeIndex;
+                            hasIndexes = true;
+                        }
                     }
                 }
                 if (!hasIndexes)
                 {   // Nemám ImageList pro bitmapy (tedy ImageList je zjevně null nebo vektorový), pak do prvku můžu dát jen fyzický obrázek:
-                    barOptions.Image = _GetBitmapImage(resourceItems, args.CloneForSize(ResourceImageSizeType.Small));
-                    barOptions.LargeImage = _GetBitmapImage(resourceItems, args.CloneForSize(ResourceImageSizeType.Large));
+                    if (imageListMode == DxImageListMode.Default)
+                    {   // Defaultní chování = vložím obě velikosti bitmapy, prvek si vybere vhodnou velikost sám:
+                        barOptions.Image = _GetBitmapImage(resourceItems, args.CloneForSize(ResourceImageSizeType.Small));
+                        barOptions.LargeImage = _GetBitmapImage(resourceItems, args.CloneForSize(ResourceImageSizeType.Large));
+                    }
+                    else
+                    {   // Explicitní chování (jen jedna velikost, nebo přímo Image) = vložíme bitmapu jen do Image, a to požadovanou velikost:
+                        barOptions.Image = _GetBitmapImage(resourceItems, args);
+                    }
                 }
             }
             else if (imageOptions is DevExpress.Utils.ImageCollectionImageOptions iciOptions)
             {   // Může využívat Index:
-                if (iciOptions.Images is ImageList)
+                if (iciOptions.Images is ImageList && (imageListMode == DxImageListMode.Default || imageListMode == DxImageListMode.UseOnlyOneSize))
                 {   // Máme připravenou podporu pro bitmapový index, můžeme tam dát index prvku v požadované velikosti (defalt = velká):
                     try
                     {   // Tady dochází k chybě v DevExpress v situaci, kdy provádím Refresh obrázku. Nevím proč...
@@ -2649,10 +2700,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="smallButton"></param>
             /// <param name="forceToIcon">Povinně vkládat ikonu do <see cref="Form.Icon"/> i kdyby byl k dispozici objekt <see cref="XtraForm.IconOptions"/></param>
             /// <param name="prepareDisabledImage">Požadavek na přípravu ikony typu 'Disabled' i pro ten prvek Ribbonu, který má aktuálně hodnotu Enabled = true;</param>
+            /// <param name="imageListMode">Režim práce s ImageList a Image</param>
             public ResourceArgs(string imageName = null, bool exactName = false,
                     ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null, Size? imageSize = null,
                     string caption = null, bool? isPreferredVectorImage = null, bool? disabled = null,
-                    Image image = null, bool smallButton = false, bool forceToIcon = false, bool prepareDisabledImage = false)
+                    Image image = null, bool smallButton = false, bool forceToIcon = false, bool prepareDisabledImage = false, DxImageListMode? imageListMode = null)
             {
                 this.ImageName = imageName;
                 this.ExactName = exactName;
@@ -2666,6 +2718,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.SmallButton = smallButton;
                 this.ForceToIcon = forceToIcon;
                 this.PrepareDisabledImage = prepareDisabledImage;
+                this.ImageListMode = imageListMode;
             }
             /// <summary>
             /// Vrátí klon this, kde nuluje <see cref="Image"/> a <see cref="ImageName"/>, ponechá tedy jen <see cref="Caption"/>.
@@ -2757,6 +2810,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public bool PrepareDisabledImage { get; set; }
             /// <summary>
+            /// Režim práce s ImageList a Image
+            /// </summary>
+            public DxImageListMode? ImageListMode { get; set; }
+            /// <summary>
             /// Preference vektorů: true = vektory; false = bitmapy, null = podle konfigurace
             /// </summary>
             public bool? IsPreferredVectorImage { get; set; }
@@ -2774,7 +2831,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Toto je pouze knihovna = zdroj dat (a jejich vyhledávání), ale nikoli výkonný blok, tady se negenerují obrázky ani nic dalšího.
     /// <para/>
     /// Zastřešující algoritmy pro oba druhy zdrojů (aplikační i DevExpress) jsou v <see cref="DxComponent"/>, 
-    /// metody typicky <see cref="DxComponent.ApplyImage(ImageOptions, string, Image, ResourceImageSizeType?, Size?, bool, string, bool, bool?, bool)"/>.
+    /// metody typicky <see cref="DxComponent.ApplyImage(ImageOptions, string, Image, ResourceImageSizeType?, Size?, bool, string, bool, bool?, bool, bool)"/>.
     /// Aplikační kódy by tedy neměly komunikovat napřímo s touto třídou <see cref="DxApplicationResourceLibrary"/>, ale s <see cref="DxComponent"/>,
     /// aby měly k dispozici zdroje obou druhů.
     /// </summary>

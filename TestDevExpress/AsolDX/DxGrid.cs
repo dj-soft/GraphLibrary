@@ -14,6 +14,7 @@ using DevExpress.Utils;
 using DevExpress.Utils.Filtering.Internal;
 using DevExpress.XtraEditors.Repository;
 using DevExpress.XtraGrid;
+using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Registrator;
 using DevExpress.XtraGrid.Views.Base;
 using DevExpress.XtraGrid.Views.Grid;
@@ -293,6 +294,9 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxGridView : DevExpress.XtraGrid.Views.Grid.GridView
     {
+        #region constatns
+        const int maxColumnWidthNoTrimm = 25;
+        #endregion
         #region Properties and members
         /// <inheritdoc/>
         protected override string ViewName { get { return "DxGridView"; } }
@@ -310,8 +314,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool ColumnSortCoreEnabled { get; set; }
 
-        public int LastActiveRow { get; set; }
-        public int ActualActiveRow { get; set; }
+        public int LastActiveRow { get; private set; }
+        public int ActualActiveRow { get; private set; }
 
         /// <summary>CZ: Je aktivni nejaka bunka v radkovem filtru</summary>
         public bool IsFilterRowCellActive { get { return this.IsFilterRow(this.ActualActiveRow); } }
@@ -402,7 +406,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             OptionsMenu.ShowSummaryItemMode = DefaultBoolean.True;
             OptionsMenu.EnableFooterMenu = true;
             OptionsMenu.EnableGroupRowMenu = true;
-    
+
 
             //this.OptionsBehavior.AlignGroupSummaryInGroupRow = DefaultBoolean.True;
             _SetAlignGroupSummaryInGroupRow();
@@ -446,6 +450,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.CustomDrawFooterCell += _OnCustomDrawFooterCell;
 
             this.MouseUp += _OnMouseUp;
+            this.ColumnWidthChanged += _OnColumnWidthChanged;
+        }
+
+        private void _OnColumnWidthChanged(object sender, ColumnEventArgs e)
+        {
+            _SetColumnTextTrimming(e.Column);
+        }
+
+        private static void _SetColumnTextTrimming(GridColumn column)
+        {
+            if (column.Width < maxColumnWidthNoTrimm)
+            {
+                column.AppearanceCell.TextOptions.Trimming = Trimming.None;
+            }
+            else
+            {
+                column.AppearanceCell.TextOptions.Trimming = Trimming.Default;
+            }
         }
 
         private void _OnMouseUp(object sender, MouseEventArgs e)
@@ -550,7 +572,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
 
-        #region Select rows
+        #region Select rows and Current row
+        /// <summary>
+        /// Aktuální řádek s fokusem
+        /// </summary>
+        public int CurrentRowNumber { get => FocusedRowHandle; set { FocusedRowHandle = value; } }
+
         private bool _selectedAllRows;
         /// <summary>
         /// Selectování všech řádků
@@ -558,23 +585,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         public bool SelectedAllRows { get => _selectedAllRows; set { _SetSelectedAllRows(value); } }
         private void _SetSelectedAllRows(bool value)
         {
-            if (_selectedAllRows != value)
+            _selectedAllRows = value;
+            if (_selectedAllRows)
             {
-                _selectedAllRows = value;
-                if (_selectedAllRows)
+                SelectAll();
+                if (!AllRowsLoaded)
                 {
-                    SelectAll();
-                    if (!AllRowsLoaded)
-                    {
-                        RaiseSummaryRowForAllRows();
-                    }
+                    RaiseSummaryRowForAllRows();
                 }
-                else
-                {
-                    ClearSelection();
-                    //nulujeme summy, protože již nemáme všechny řádky selected
-                    _summaryRowData = null;
-                }
+            }
+            else
+            {
+                ClearSelection();
+                //nulujeme summy, protože již nemáme všechny řádky selected
+                _summaryRowData = null;
             }
         }
 
@@ -590,9 +614,25 @@ namespace Noris.Clients.Win.Components.AsolDX
             get { return this.MultiSelect ? _SelectedRowsCache : this.GetSelectedRows().ToList(); } //_SelectedRowsCache se plni správně jen v MultiSelect režimu.
             set
             {
-                foreach (int rowIndex in value)
+                if (value?.Count > 0)
                 {
-                    this.SelectRow(rowIndex);
+                    BeginSelection();
+                    try
+                    {
+                        ClearSelectionCore();
+                        foreach (int rowIndex in value)
+                        {
+                            this.SelectRow(rowIndex);
+                        }
+                    }
+                    finally
+                    {
+                        EndSelection();
+                    }
+                }
+                else
+                {
+                    ClearSelection();
                 }
             }
         }
@@ -628,6 +668,27 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
             base.SelectRange(startRowHandle, endRowHandle);
+        }
+        /// <inheritdoc/>
+        public override void SelectAll()
+        {
+            BeginSelection();
+            try
+            {
+                bool _oldSilent = _SilentMode;
+                if (RowCount > 0) _SilentMode = true; //Nechci posílát event o změně selctovaných řádků, pokud mám co selectovat, tak se pošle se změnou.
+                ClearSelectionCore();
+                _SilentMode = _oldSilent;
+                for (int i = 0; i < RowCount; i++)
+                {
+                    SelectRow(GetVisibleRowHandle(i));
+                }
+            }
+            finally
+            {
+                _selectedAllRows = true;
+                EndSelection();
+            }
         }
 
         #endregion
@@ -1642,7 +1703,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             gc.OptionsFilter.AutoFilterCondition = gridViewColumn.AutoFilterCondition;
 
             //šířka sloupce
-            if (gridViewColumn.Width > 0) gc.Width = gridViewColumn.Width;
+            if (gridViewColumn.Width > 0) gc.Width = DxComponent.ZoomToGui(gridViewColumn.Width);
             if (gridViewColumn.IsImageColumnType) gc.OptionsColumn.FixedWidth = true;   //důležité aby se obrázek vykreslil podle šířky sloupce
             gc.OptionsColumn.AllowSize = gridViewColumn.AllowSize;
             //změna pořadí sloupců
@@ -1662,7 +1723,14 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             gc.SortMode = ColumnSortMode.Custom;    //Custom sorting ->vyvolá se eventa CustomColumnSort kde mohu "vypnout" řazení
 
-            gc.FilterMode = ColumnFilterMode.DisplayText; //Tohle umožní dát do filtrovacího řádku jakýkoliv text a validovat / formátovat si ho budu sám v OnCustomRowFilter. J
+            if (gridViewColumn.IsNumberColumnType /*|| gridViewColumn.ColumnType == typeof(DateTime)*/) //DateTine zatím nechámn na DisplayText, protože jinak nejde zadat jenom rok, ale celé datum...
+            {
+                gc.FilterMode = ColumnFilterMode.Value;
+            }
+            else
+            {
+                gc.FilterMode = ColumnFilterMode.DisplayText; //Tohle umožní dát do filtrovacího řádku jakýkoliv text a validovat / formátovat si ho budu sám v OnCustomRowFilter. J
+            }
 
             var repositoryItem = _CreateRepositoryItem(gridViewColumn, false);
             if (repositoryItem != null)
@@ -1673,6 +1741,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             //nastaveni displayFormat
             _SetFormatInfo(gc.DisplayFormat, gridViewColumn);
+            //Zkracování nadpisu bez teček na konci pokud se nevejdou do šířky sloupce, stejně jako stary přehled. Default se přidávali 3 tečky (EllipsisCharacter).
+            gc.AppearanceHeader.TextOptions.Trimming = Trimming.Character;
+            _SetColumnTextTrimming(gc);
+
             return gc;
         }
 
@@ -1864,6 +1936,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         #region Public eventy a jejich volání
 
         /// <summary>
+        /// Tichý režim = bez eventů.
+        /// </summary>
+        private bool _SilentMode;
+
+        /// <summary>
         /// Kliklo se do gridu <see cref="DxDoubleClick"/>
         /// </summary>
         public event DxGridDoubleClickHandler DxDoubleClick;
@@ -1881,7 +1958,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         public event DxGridSelectionChangedHandler DxSelectionChanged;
         protected virtual void OnSelectionChanged(List<int> selectedRows)
         {
-            if (selectedRows.Count() != this.RowCount) SelectedAllRows = false; //schození přiznaku o vybraných všech řádcích
+            if (_SilentMode) return;
+
+            if (selectedRows.Count() != this.RowCount) _selectedAllRows = false; //schození přiznaku o vybraných všech řádcích
             if (DxSelectionChanged != null) DxSelectionChanged(this, new DxGridSelectionChangedChangedEventArgs(selectedRows, SelectedAllRows));
         }
 
@@ -1955,10 +2034,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="allowSort"></param>
         /// <param name="allowFilter"></param>
         /// <param name="width"></param>
-        /// <param name="fixedWidth"></param>
+        /// <param name="allowSize"></param>
         /// <param name="allowMove"></param>
         public GridViewColumnData(string fieldName, string caption, Type columnType, int visibleIndex,
-            bool visible = true, bool allowSort = true, bool allowFilter = true, int width = 30, bool fixedWidth = false, bool allowMove = true)
+            bool visible = true, bool allowSort = true, bool allowFilter = true, int width = 30, bool allowSize = true, bool allowMove = true)
         {
             FieldName = fieldName;
             Caption = caption;
@@ -1969,7 +2048,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             AllowFilter = allowFilter;
             CodeTable = new List<(string DisplayText, string Value, string ImageName)>();
             Width = width;
-            AllowSize = fixedWidth;
+            AllowSize = allowSize;
             AllowMove = allowMove;
             //todo přidat ostaní vlastnosti až jich bude více aby to to bylo slušně srovnané... zatím se nastavují mimo ctor.
         }

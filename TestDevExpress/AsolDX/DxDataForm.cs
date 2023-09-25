@@ -1909,7 +1909,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Odvození ikony podle textu
         /// </summary>
-        ImageFromCaptionType ITextItem.ImageFromCaption { get { return ImageFromCaptionType.Disabled; } }
+        ImageFromCaptionType ITextItem.ImageFromCaptionMode { get { return ImageFromCaptionType.Disabled; } }
         /// <summary>
         /// Styl zobrazení
         /// </summary>
