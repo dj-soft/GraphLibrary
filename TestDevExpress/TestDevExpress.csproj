@@ -2426,6 +2426,22 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="TestDevExpress.ico" />
+    <None Include="_Icons\Nephrite_15.ico" />
+    <None Include="_Icons\Nephrite_14.ico" />
+    <None Include="_Icons\Nephrite_13.ico" />
+    <None Include="_Icons\Nephrite_12.ico" />
+    <None Include="_Icons\Nephrite_11.ico" />
+    <None Include="_Icons\Nephrite_10.ico" />
+    <None Include="_Icons\Nephrite_9.ico" />
+    <None Include="_Icons\Nephrite_8.ico" />
+    <None Include="_Icons\Nephrite_7.ico" />
+    <None Include="_Icons\Nephrite_6.ico" />
+    <None Include="_Icons\Nephrite_5.ico" />
+    <None Include="_Icons\Nephrite_4.ico" />
+    <None Include="_Icons\Nephrite_3.ico" />
+    <None Include="_Icons\Nephrite_2.ico" />
+    <None Include="_Icons\Nephrite_1.ico" />
+    <None Include="_Icons\Nephrite_0.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -602,12 +602,9 @@ namespace Noris.Clients.Win.Components
         private void _MenuActionCopyChartImageToClipboardAsSvg()
         {
             var chart = _Chart;
-            using (var stream = new SIO.MemoryStream())
-            {
-                chart.ExportToSvg(stream);
-                var buffer = stream.ToArray();
-                string content = System.Text.Encoding.UTF8.GetString(buffer);
-            }
+            var stream = new SIO.MemoryStream();
+            chart.ExportToSvg(stream);
+            System.Windows.Forms.Clipboard.SetData("image/svg+xml", stream);
         }
         private void _MenuActionDelete()
         {

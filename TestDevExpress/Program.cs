@@ -29,6 +29,7 @@ namespace TestDevExpress
 
                 // Nastavíme Config skin a budeme sledovat změny aktivního skinu a ukládat jej do configu:
                 var styleListener = new SkinConfigStyle();
+                styleListener.ActivateConfigStyle();
 
                 string uhdPaint = DxComponent.Settings.GetRawValue("Components", "UhdPaintEnabled");
                 DxComponent.LogActive = true;         // I při spuštění v režimu Run, to kvůli TimeLogům
@@ -58,12 +59,20 @@ namespace TestDevExpress
             return null;
         }
 
+        /// <summary>
+        /// Listener změny skinu a jeho napojení na <see cref="DxComponent.Settings"/>
+        /// </summary>
         private class SkinConfigStyle : DxStyleToConfigListener
         {
             public override string SkinName
             { 
                 get { return DxComponent.Settings.GetRawValue("UserSettings", "UsedSkinName"); }
                 set { DxComponent.Settings.SetRawValue("UserSettings", "UsedSkinName", value); }
+            }
+            public override bool SkinCompact
+            {
+                get { return DxComponent.Settings.GetRawValue("UserSettings", "UsedSkinCompact", "N") == "A"; }
+                set { DxComponent.Settings.SetRawValue("UserSettings", "UsedSkinCompact", value ? "A" : "N"); }
             }
             public override string PaletteName
             {

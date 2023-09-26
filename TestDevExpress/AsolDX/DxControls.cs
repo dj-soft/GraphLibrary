@@ -6360,8 +6360,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             header.OptionsMultiColumn.ImageHorizontalAlignment = DevExpress.Utils.Drawing.ItemHorizontalAlignment.Left;
             header.OptionsMultiColumn.ImageVerticalAlignment = DevExpress.Utils.Drawing.ItemVerticalAlignment.Top;
             header.OptionsMultiColumn.LargeImages = (headerItem.UseLargeImages ? DefaultBoolean.True : DefaultBoolean.False);
-            // Remove 46.27   Dx 21.1.5    header.OptionsMultiColumn.ItemDisplayMode = DevExpress.Utils.Menu.MultiColumnItemDisplayMode.Default;
-            // Remove 46.27   Dx 21.1.5    header.OptionsMultiColumn.ItemDisplayMode = DevExpress.Utils.Menu.MultiColumnItemDisplayMode.Image;
+            header.OptionsMultiColumn.ItemDisplayMode = DevExpress.Utils.Menu.MultiColumnItemDisplayMode.Default;  // header.OptionsMultiColumn.ItemDisplayMode = DevExpress.Utils.Menu.MultiColumnItemDisplayMode.Image;
             header.OptionsMultiColumn.UseMaxItemWidth = DevExpress.Utils.DefaultBoolean.False;
             barItems.Add(header);
 

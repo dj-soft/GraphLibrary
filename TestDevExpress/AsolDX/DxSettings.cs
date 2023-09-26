@@ -24,8 +24,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="section"></param>
         /// <param name="key"></param>
+        /// <param name="defValue"></param>
         /// <returns></returns>
-        public string GetRawValue(string section, string key)
+        public string GetRawValue(string section, string key, string defValue = null)
         {
             if (section == null || key == null) return null;
             var values = _ValidValues;

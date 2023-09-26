@@ -620,7 +620,10 @@ namespace TestDevExpress.Forms
 
             this.Controls.Add(_Ribbon);
 
-            int x = 20;
+            int x = 00;
+            _ButtonContext = DxComponent.CreateDxSimpleButton(x, 160, 20, 52, _MainPanel, "...", _RunContext, toolTipTitle: "Menu", toolTipText: "Zobrazí kontextové menu");
+
+            x = 20;
             _ButtonClear = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, _MainPanel, "Clear", _RunClear, toolTipText: "Smaže obsah Ribbonu a nechá jej prázdný"); x += 160;
             _ButtonFill = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, _MainPanel, "Fill", _RunFill, toolTipText: "Smaže obsah Ribbonu a vepíše do něj větší množství stránek"); x += 160;
             _ButtonMenu = DxComponent.CreateDxDropDownButton(x, 160, 150, 52, _MainPanel, "Add 4", click: DropDownButtonClick, itemClick: DropDownItemClick, subItems: _GetDropDownItems(), toolTipText: "Přidá menší počet prvků. Další volby jsou v menu.");
@@ -682,6 +685,8 @@ namespace TestDevExpress.Forms
             if (!this.IsMerged && this.Ribbon.Bounds.Height > 32) _LastRibbonBottom = this.Ribbon.Bounds.Bottom;           // Udržuji souřadnici Y za stavu, kdy Ribbon je v panelu zobrazen
             int x = x0;
             int y = 0 /* _LastRibbonBottom */ + spaceY1;
+
+            _ButtonContext.Bounds = new System.Drawing.Rectangle(2, y, 20, heightButton1);
 
             _ButtonClear.Bounds = new System.Drawing.Rectangle(x, y, widthButton1, heightButton1); x += distanceX;
             _ButtonFill.Bounds = new System.Drawing.Rectangle(x, y, widthButton1, heightButton1); x += distanceX;
@@ -907,6 +912,7 @@ namespace TestDevExpress.Forms
         private DxSimpleButton _ButtonFill;
         private DxCheckButton _ButtonMerge;
         private DxCheckButton _ButtonUnMerge;
+        private DxSimpleButton _ButtonContext;
         private void _RunClear(object sender, EventArgs args) 
         {
             this._Ribbon.Clear();
@@ -1002,6 +1008,10 @@ namespace TestDevExpress.Forms
             {
                 DxComponent.ShowMessageWarning(exc.Message, "Chyba");
             }
+        }
+        private void _RunContext(object sender, EventArgs args)
+        {
+
         }
         private void _RunFill(object sender, EventArgs args)
         {

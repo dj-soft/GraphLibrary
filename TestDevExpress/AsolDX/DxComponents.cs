@@ -6395,7 +6395,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                _ReadSkinPalette(out var _, out string skinName, out bool isCompact, out string paletteName);
+                ReadCurrentSkinPalette(out var _, out string skinName, out bool isCompact, out string paletteName);
                 bool isCurrent = String.Equals(SkinName, skinName) && String.Equals(PaletteName, paletteName) && (IsCompact == isCompact);
                 if (!isCurrent)
                     SystemAdapter.TraceText(TraceLevel.Info, typeof(DxSkinColorSet), "IsCurrent", "Skin", "SkinChange detect", $"OldSkin: {SkinName}; NewSkin: {skinName}; OldPalette: {PaletteName}; NewPalette: {paletteName}; OldCompact: {IsCompact}; NewCompact: {isCompact}.");
@@ -6412,7 +6412,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                _ReadSkinPalette(out var _, out string skinName, out bool isCompact, out string paletteName);
+                ReadCurrentSkinPalette(out var _, out string skinName, out bool isCompact, out string paletteName);
                 return GetSkinNameCompact(skinName, isCompact);
             }
         }
@@ -6423,7 +6423,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                _ReadSkinPalette(out var _, out string skinName, out bool isCompact, out string paletteName);
+                ReadCurrentSkinPalette(out var _, out string skinName, out bool isCompact, out string paletteName);
                 return GetSkinNameCompactPalette(skinName, isCompact, paletteName);
             }
         }
@@ -6444,11 +6444,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Načte a vrátí aktuální jméno skinu a SVG palety
         /// </summary>
+        /// <param name="skinName"></param>
+        /// <param name="isCompact"></param>
+        /// <param name="paletteName"></param>
+        internal static void ReadCurrentSkinPalette(out string skinName, out bool isCompact, out string paletteName)
+        {
+            ReadCurrentSkinPalette(out var _, out skinName, out isCompact, out paletteName);
+        }
+        /// <summary>
+        /// Načte a vrátí aktuální jméno skinu a SVG palety
+        /// </summary>
         /// <param name="skin"></param>
         /// <param name="skinName"></param>
         /// <param name="isCompact"></param>
         /// <param name="paletteName"></param>
-        private static void _ReadSkinPalette(out DevExpress.Skins.Skin skin, out string skinName, out bool isCompact, out string paletteName)
+        internal static void ReadCurrentSkinPalette(out DevExpress.Skins.Skin skin, out string skinName, out bool isCompact, out string paletteName)
         {
             skin = null;
             skinName = null;
@@ -6459,13 +6469,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var ulaf = DevExpress.LookAndFeel.UserLookAndFeel.Default;
                 skin = DevExpress.Skins.CommonSkins.GetSkin(ulaf);
                 skinName = (ulaf.ActiveSkinName ?? "").Trim();
-                // Remove 46.27   Dx 21.1.5    isCompact = ulaf.CompactUIModeForced;
+                isCompact = ulaf.CompactUIModeForced;
                 paletteName = (ulaf.ActiveSvgPaletteName ?? "").Trim();
             }
             catch (Exception exc)
             {
                 SystemAdapter.TraceText(TraceLevel.SysError, typeof(DxSkinColorSet), "ReadSkinPalette", "Skin", "Exception", $"Type: {exc.GetType().FullName}; Message: {exc.Message}.");
             }
+        }
+        /// <summary>
+        /// Vytvoří, naplní a vrátí instanci obsahující data aktuálního skinu a palety
+        /// </summary>
+        /// <returns></returns>
+        internal static DxSkinColorSet Current
+        {
+            get { return CreateCurrent(); }
         }
         /// <summary>
         /// Vytvoří, naplní a vrátí instanci obsahující data aktuálního skinu a palety
@@ -6493,7 +6511,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private static DxSkinColorSet _CreateCurrent()
         {
-            _ReadSkinPalette(out var skin, out var skinName, out bool isCompact, out var paletteName);
+            ReadCurrentSkinPalette(out var skin, out var skinName, out bool isCompact, out var paletteName);
             DxSkinColorSet colorSet = new DxSkinColorSet(skin, skinName, isCompact, paletteName);
 
             // Zajistíme spuštění všech metod, které mají atribut Initializer:
@@ -6560,24 +6578,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static Dictionary<string, Color> GetColorsDictionary(DevExpress.Skins.SkinColors skinColors)
         {
             Dictionary<string, Color> dictionary = new Dictionary<string, Color>();
-
-            try
-            {
-                var pp = skinColors.GetType().GetProperty("CustomProperties", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
-                var names = pp.GetValue(skinColors) as System.Collections.Hashtable;
-                foreach (var key in names.Keys)
-                {
-                    string name = key as string;
-                    Color color = (Color)names[key];
-                    if (key != null && !dictionary.ContainsKey(name))
-                        dictionary.Add(name, color);
-                }
-            }
-            catch { }
-
-            // 46.27 test    deaktivováno         
-
-            /*
             var properties = skinColors.GetProperties();
             foreach (System.Collections.DictionaryEntry property in properties)
             {
@@ -6589,7 +6589,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                         dictionary.Add(key, color);
                 }
             }
-            */
             return dictionary;
         }
         /// <summary>
@@ -9826,6 +9825,7 @@ White
             __IsInitialized = false;
             __IsSupressEvent = false;
             __LastSkinName = null;
+            __LastSkinCompact = null;
             __LastPaletteName = null;
 
             if (withInitialize)
@@ -9846,6 +9846,11 @@ White
         /// </summary>
         private string __LastSkinName;
         /// <summary>
+        /// Posledně uložený / načtený příznak Compact skinu, pro detekci reálné změny v GUI.
+        /// GUI občas pošle událost <see cref="IListenerStyleChanged.StyleChanged()"/> i když k reálné změně nedochází.
+        /// </summary>
+        private bool? __LastSkinCompact;
+        /// <summary>
         /// Posledně uložený / načtený název palety, pro detekci reálné změny v GUI.
         /// GUI občas pošle událost <see cref="IListenerStyleChanged.StyleChanged()"/> i když k reálné změně nedochází.
         /// </summary>
@@ -9855,53 +9860,72 @@ White
         /// Jméno Skinu.
         /// Potomek má v metodě 'get' přečíst hodnotu ze své konfigurace a vrátit ji, a v metodě 'set' má předanou hodnotu do své konfigurace vepsat.
         /// <para/>
-        /// Setování hodnoty nezmění GUI. Změnu GUI provede metoda <see cref="ActivateConfigStyle"/>, která si načítá hodnoty <see cref="SkinName"/> a <see cref="PaletteName"/>.
+        /// Setování hodnoty nezmění GUI. Změnu GUI provede metoda <see cref="ActivateConfigStyle"/>, která si načítá hodnoty <see cref="SkinName"/>, <see cref="SkinCompact"/> a <see cref="PaletteName"/>.
         /// </summary>
         public abstract string SkinName { get; set; }
+        /// <summary>
+        /// Příznak kompaktního Skinu.
+        /// Potomek má v metodě 'get' přečíst hodnotu ze své konfigurace a vrátit ji, a v metodě 'set' má předanou hodnotu do své konfigurace vepsat.
+        /// <para/>
+        /// Setování hodnoty nezmění GUI. Změnu GUI provede metoda <see cref="ActivateConfigStyle"/>, která si načítá hodnoty <see cref="SkinName"/>, <see cref="SkinCompact"/> a <see cref="PaletteName"/>.
+        /// </summary>
+        public abstract bool SkinCompact { get; set; }
         /// <summary>
         /// Jméno palety.
         /// Potomek má v metodě 'get' přečíst hodnotu ze své konfigurace a vrátit ji, a v metodě 'set' má předanou hodnotu do své konfigurace vepsat.
         /// <para/>
-        /// Setování hodnoty nezmění GUI. Změnu GUI provede metoda <see cref="ActivateConfigStyle"/>, která si načítá hodnoty <see cref="SkinName"/> a <see cref="PaletteName"/>.
+        /// Setování hodnoty nezmění GUI. Změnu GUI provede metoda <see cref="ActivateConfigStyle"/>, která si načítá hodnoty <see cref="SkinName"/>, <see cref="SkinCompact"/> a <see cref="PaletteName"/>.
         /// </summary>
         public abstract string PaletteName { get; set; }
         /// <summary>
-        /// Aktivuje v GUI rozhraní skin daný <see cref="SkinName"/> a <see cref="PaletteName"/>.
+        /// Aktivuje v GUI rozhraní skin daný <see cref="SkinName"/>, <see cref="SkinCompact"/> a <see cref="PaletteName"/>.
         /// </summary>
         public void ActivateConfigStyle()
         {
             __IsInitialized = true;
 
             string skinName = SkinName;
+            bool skinCompact = SkinCompact;
             string paletteName = PaletteName;
-            _ActivateStyle(skinName, paletteName, false);
+            _ActivateStyle(skinName, skinCompact, paletteName, false);
             __LastSkinName = skinName;
+            __LastSkinCompact = skinCompact;
             __LastPaletteName = paletteName;
         }
         /// <summary>
         /// Aktivuje v GUI rozhraní explicitně daný Skin.
-        /// Uloží jej i do konfigurace (do properties <see cref="SkinName"/> a <see cref="PaletteName"/>), jako by jej vybral uživatel.
+        /// Uloží jej i do konfigurace (do properties <see cref="SkinName"/>, <see cref="SkinCompact"/> a <see cref="PaletteName"/>), jako by jej vybral uživatel.
         /// </summary>
         /// <param name="skinName"></param>
+        /// <param name="skinCompact"></param>
         /// <param name="paletteName"></param>
-        public void ActivateStyle(string skinName, string paletteName)
+        public void ActivateStyle(string skinName, bool skinCompact, string paletteName)
         {
-            _ActivateStyle(skinName, paletteName, true);
+            _ActivateStyle(skinName, skinCompact, paletteName, true);
         }
         /// <summary>
         /// Aktivuje v GUI rozhraní explicitně daný Skin.
-        /// Podle hodnoty <paramref name="storeToConfig"/> jej uloží i do konfigurace (do properties <see cref="SkinName"/> a <see cref="PaletteName"/>), jako by jej vybral uživatel.
+        /// Podle hodnoty <paramref name="storeToConfig"/> jej uloží i do konfigurace (do properties <see cref="SkinName"/>, <see cref="SkinCompact"/> a <see cref="PaletteName"/>), jako by jej vybral uživatel.
         /// </summary>
         /// <param name="skinName"></param>
+        /// <param name="skinCompact"></param>
         /// <param name="paletteName"></param>
         /// <param name="storeToConfig"></param>
-        private void _ActivateStyle(string skinName, string paletteName, bool storeToConfig)
+        private void _ActivateStyle(string skinName, bool skinCompact, string paletteName, bool storeToConfig)
         {
             bool isActivated = false;
             try
             {
                 __IsSupressEvent = true;
 
+                if (!String.IsNullOrEmpty(skinName))
+                {   // https://docs.devexpress.com/WindowsForms/2399/build-an-application/skins?utm_source=SupportCenter&utm_medium=website&utm_campaign=docs-feedback&utm_content=T1093158#how-to-re-apply-the-last-active-skin-when-an-application-restarts
+                    DevExpress.LookAndFeel.UserLookAndFeel.ForceCompactUIMode(skinCompact, false);
+                    if (String.IsNullOrEmpty(paletteName)) paletteName = "DefaultSkinPalette";
+                    DevExpress.LookAndFeel.UserLookAndFeel.Default.SetSkinStyle(skinName, paletteName);
+                }
+
+                /*
                 DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = skinName;
                 if (!String.IsNullOrEmpty(paletteName))
                 {   // https://supportcenter.devexpress.com/ticket/details/t827424/save-and-restore-svg-palette-name
@@ -9913,6 +9937,7 @@ White
                             skin.SvgPalettes[DevExpress.Skins.Skin.DefaultSkinPaletteName].SetCustomPalette(palette);
                     }
                 }
+                */
 
                 isActivated = true;
             }
@@ -9923,18 +9948,21 @@ White
             }
 
             if (storeToConfig && isActivated)
-                _StoreToConfig(skinName, paletteName);
+                _StoreToConfig(skinName, skinCompact, paletteName);
         }
         /// <summary>
         /// Uloží jméno skinu a palety do konfigurace = do <see cref="SkinName"/> a <see cref="PaletteName"/>.
         /// </summary>
         /// <param name="skinName"></param>
+        /// <param name="skinCompact"></param>
         /// <param name="paletteName"></param>
-        private void _StoreToConfig(string skinName, string paletteName)
+        private void _StoreToConfig(string skinName, bool skinCompact, string paletteName)
         {
             SkinName = skinName;
+            SkinCompact = skinCompact;
             PaletteName = paletteName;
             __LastSkinName = skinName;
+            __LastSkinCompact = skinCompact;
             __LastPaletteName = paletteName;
         }
         /// <summary>
@@ -9944,10 +9972,9 @@ White
         {
             if (__IsInitialized && !__IsSupressEvent)
             {
-                string skinName = DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName;
-                string paletteName = DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveSvgPaletteName;
-                if (!String.Equals(skinName, __LastSkinName) || !String.Equals(paletteName, __LastPaletteName))
-                    _StoreToConfig(skinName, paletteName);
+                DxSkinColorSet.ReadCurrentSkinPalette(out string skinName, out bool isCompact, out string paletteName);
+                if (!String.Equals(skinName, __LastSkinName) || (((bool?)isCompact) != __LastSkinCompact) || !String.Equals(paletteName, __LastPaletteName))
+                    _StoreToConfig(skinName, isCompact, paletteName);
             }
         }
     }
