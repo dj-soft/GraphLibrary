@@ -175,10 +175,20 @@ namespace DjSoft.Tools.ProgramLauncher
         #endregion
         #region Monitory, zarovnání souřadnic do monitoru, ukládání souřadnic oken
         #endregion
-        #region Menu
-
+        #region Popup Menu
+        /// <summary>
+        /// Z dodaných prvků vytvoří kontextové Popup menu, zobrazí jej na dané souřadnici (nebo na aktuální souřadnici myši) a nabídne uživateli.
+        /// Až si uživatel vybere (asynchronní), pak předá řízení do dané metody <paramref name="onSelectItem"/> a předá do ní vybranou položku menu.
+        /// Volající si pak sám provede odpovídající akci. 
+        /// Může k tomu využít prostor <see cref="IMenuItem.UserData"/> v prvku menu, kde si uchová kontext pro tuto akci.
+        /// </summary>
+        /// <param name="menuItems"></param>
+        /// <param name="onSelectItem"></param>
+        /// <param name="pointOnScreen"></param>
         public static void SelectFromMenu(IEnumerable<IMenuItem> menuItems, Action<IMenuItem> onSelectItem, Point? pointOnScreen)
         {
+            if (!pointOnScreen.HasValue) pointOnScreen = Control.MousePosition;
+
             ToolStripDropDownMenu menu = new ToolStripDropDownMenu();
             foreach (var menuItem in menuItems)
                 menu.Items.Add(_CreateToolStripItem(menuItem, onSelectItem));
@@ -632,17 +642,16 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         private Dictionary<string, Image> __Images;
         #endregion
-        #region Vzhled
+        #region Vzhled a Layout
         /// <summary>
         /// Aktuální vzhled (skin = barevná paleta); lze změnit, po změně dojde eventu <see cref="CurrentAppearanceChanged"/>.
         /// Pozor, tato property není propojena s <see cref="Settings.AppearanceName"/>, toto propojení musí zajistit aplikace.
         /// Důvodem je vhodné načasování zaháčkování a provedení eventu po změně / inicializaci.
         /// </summary>
-        public static AppearanceInfo CurrentAppearance
-        {
-            get { return Current._CurrentAppearance; }
-            set { Current._CurrentAppearance = value; }
-        }
+        public static AppearanceInfo CurrentAppearance { get { return Current._CurrentAppearance; } set { Current._CurrentAppearance = value; } }
+        /// <summary>
+        /// Aktuální vzhled (skin = barevná paleta); řeší autoinicializaci i hlídání změny a vyvolání eventu
+        /// </summary>
         private AppearanceInfo _CurrentAppearance
         {
             get 
@@ -659,6 +668,9 @@ namespace DjSoft.Tools.ProgramLauncher
                 if (isChange) __CurrentAppearanceChanged?.Invoke(null, EventArgs.Empty);
             }
         }
+        /// <summary>
+        /// Aktuální vzhled (skin = barevná paleta), proměnná
+        /// </summary>
         private AppearanceInfo __CurrentAppearance;
         /// <summary>
         /// Událost volaná po změně skinu
@@ -668,6 +680,45 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Událost volaná po změně skinu
         /// </summary>
         private event EventHandler __CurrentAppearanceChanged;
+
+
+        /// <summary>
+        /// Aktuální sada definující layout; lze změnit, po změně dojde eventu <see cref="CurrentLayoutSetChanged"/>.
+        /// Pozor, tato property není propojena s <see cref="Settings.LayoutSetName"/>, toto propojení musí zajistit aplikace.
+        /// Důvodem je vhodné načasování zaháčkování a provedení eventu po změně / inicializaci.
+        /// </summary>
+        public static ItemLayoutSet CurrentLayoutSet { get { return Current._CurrentLayoutSet; } set { Current._CurrentLayoutSet = value; } }
+        /// <summary>
+        /// Aktuální sada definující layout; řeší autoinicializaci i hlídání změny a vyvolání eventu
+        /// </summary>
+        private ItemLayoutSet _CurrentLayoutSet
+        {
+            get
+            {
+                if (__CurrentLayoutSet is null)
+                    __CurrentLayoutSet = ItemLayoutSet.Default;
+                return __CurrentLayoutSet;
+            }
+            set
+            {
+                if (value is null) return;
+                bool isChange = (__CurrentLayoutSet is null || !Object.ReferenceEquals(value, __CurrentLayoutSet));
+                __CurrentLayoutSet = value;
+                if (isChange) __CurrentLayoutSetChanged?.Invoke(null, EventArgs.Empty);
+            }
+        }
+        /// <summary>
+        /// Aktuální sada definující layout, proměnná
+        /// </summary>
+        private ItemLayoutSet __CurrentLayoutSet;
+        /// <summary>
+        /// Událost volaná po změně skinu
+        /// </summary>
+        public static event EventHandler CurrentLayoutSetChanged { add { Current.__CurrentLayoutSetChanged += value; } remove { Current.__CurrentLayoutSetChanged -= value; } }
+        /// <summary>
+        /// Událost volaná po změně skinu
+        /// </summary>
+        private event EventHandler __CurrentLayoutSetChanged;
         #endregion
         #region MainForm a StatusBar a StatusImage
         /// <summary>
@@ -757,16 +808,27 @@ namespace DjSoft.Tools.ProgramLauncher
         #endregion
     }
 
+    #region Podpůrné třídy (StatusInfo) a enumy
     /// <summary>
-    /// Třída obsahující logická data reprezentovaná ve Status labelu
+    /// Třída obsahující logická data reprezentovaná v jednom prvku Status labelu
     /// </summary>
     public class StatusInfo
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="statusLabel"></param>
         public StatusInfo(ToolStripStatusLabel statusLabel)
         {
             __StatusLabel = statusLabel;
         }
+        /// <summary>
+        /// Instance controlu <see cref="ToolStripStatusLabel"/>
+        /// </summary>
         private ToolStripStatusLabel __StatusLabel;
+        /// <summary>
+        /// Typ obrázku
+        /// </summary>
         private ImageKindType __ImageKind;
         /// <summary>
         /// Text ve Statusbaru
@@ -806,6 +868,10 @@ namespace DjSoft.Tools.ProgramLauncher
         MediaPlay,
         MediaForward
     }
+    /// <summary>
+    /// Typ kurzoru. 
+    /// Fyzický kurzor pro konkrétní typ vrátí <see cref="App.GetCursor(CursorTypes)"/>.
+    /// </summary>
     public enum CursorTypes
     {
         Default,
@@ -837,5 +903,5 @@ namespace DjSoft.Tools.ProgramLauncher
         PanWest,
         No
     }
-
+    #endregion
 }

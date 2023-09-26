@@ -220,7 +220,7 @@ namespace DjSoft.Tools.ProgramLauncher
         #endregion
         #region Základní data konfigurace
         public string AppearanceName { get; set; }
-        
+        public string LayoutSetName { get; set; }
 
         #endregion
 

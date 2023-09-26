@@ -24,6 +24,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             return this.Title;
         }
+        public override DataLayoutKind? LayoutKind { get { return DataLayoutKind.Pages; } set { } }
         /// <summary>
         /// Počet evidovaných aplikací
         /// </summary>
@@ -31,11 +32,21 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public List<GroupData> Groups { get; private set; }
         public void CreateInteractiveItems(List<InteractiveItem> interactiveItems)
         {
+            int y = 0;
             foreach (var group in this.Groups)
             {
+                group.OffsetAdress = new Point(0, y);
                 interactiveItems.Add(group.CreateInteractiveItem());
+                y = group.Adress.Y + 1;
+
+                int applMaxY = 0;
                 foreach (var appl in group.Applications)
+                {
+                    appl.OffsetAdress = new Point(0, y);
                     interactiveItems.Add(appl.CreateInteractiveItem());
+                    int applB = appl.Adress.Y + 1;
+                    if (applMaxY < applB) applMaxY = applB;
+                }
             }
         }
         #region Kontextové menu
@@ -113,7 +124,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         }
 
         public List<ApplicationData> Applications { get; private set; }
-
+        public override DataLayoutKind? LayoutKind { get { return DataLayoutKind.Groups; } set { } }
         #region Tvorba výchozích dat - namísto prázdných
         /// <summary>
         /// Zajistí, že v daném seznamu bude alespoň jeden prvek, a že první prvek nebude prázdný.
@@ -158,7 +169,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public bool ExecuteInAdminMode { get; set; }
         public bool OpenMaximized { get; set; }
         public bool OnlyOneInstance { get; set; }
-
+        public override DataLayoutKind? LayoutKind { get { return DataLayoutKind.Applications; } set { } }
         #region Spouštění aplikace
         /// <summary>
         /// Spustí / aktivuje daný proces
@@ -254,7 +265,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 Description = "Průzkumník",
                 ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\wine.png",
                 OpenMaximized = true,
-                Adress = new Point(0, 0),
+                RelativeAdress = new Point(0, 0),
                 ExecutableFileName = @"c:\Windows\explorer.exe"
             });
 
@@ -262,7 +273,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             {
                 Title = "Wordpad",
                 ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\abiword.png",
-                Adress = new Point(1, 0),
+                RelativeAdress = new Point(1, 0),
                 ExecutableFileName = @"c:\Windows\write.exe"
             });
 
@@ -272,7 +283,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\evilvte.png",
                 ExecuteInAdminMode = false,
                 OpenMaximized = true,
-                Adress = new Point(0, 1),
+                RelativeAdress = new Point(0, 1),
                 ExecutableFileName = @"c:\Windows\System32\cmd.exe"
             });
 
@@ -281,7 +292,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 Title = "MS DOS Admin",
                 ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\evilvte.png",
                 ExecuteInAdminMode = true,
-                Adress = new Point(0, 2),
+                RelativeAdress = new Point(0, 2),
                 ExecutableFileName = @"c:\Windows\System32\cmd.exe"
             });
 
@@ -289,7 +300,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             {
                 Title = "Libre Office",
                 ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\distributions-solaris.png",
-                Adress = new Point(1, 1),
+                RelativeAdress = new Point(1, 1),
                 OnlyOneInstance = true,
                 ExecutableFileName = @"c:\Program Files (x86)\OpenOffice 4\program\soffice.exe"
             });
@@ -298,7 +309,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             {
                 Title = "Dokument",
                 ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\gpe-tetris.png",
-                Adress = new Point(2, 0),
+                RelativeAdress = new Point(2, 0),
                 ExecutableFileName = @"d:\Dokumenty\Vyděšený svišť.png"
             });
 
@@ -338,9 +349,25 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public virtual string ImageFileName { get; set; }
         /// <summary>
-        /// Adresa prvku v controlu
+        /// Druh layoutu, podle něhož se tento prvek kreslí.
+        /// Konkrétní layout je získán z <see cref="InteractiveGraphicsControl.GetLayout(DataLayoutKind)"/>, kam se předává zdejší <see cref="LayoutKind"/>.
+        /// Pokud je null, přebírá se z hostitelského panelu <see cref="InteractiveGraphicsControl.DefaultLayoutKind"/>.
         /// </summary>
-        public virtual Point Adress { get; set; }
+        public virtual DataLayoutKind? LayoutKind { get; set; }
+        /// <summary>
+        /// Adresa prvku v controlu (Page a Group) nebo v relativně grupě (Aplikace).
+        /// Posun relativní adresy je v <see cref="OffsetAdress"/>.
+        /// </summary>
+        public virtual Point RelativeAdress { get; set; }
+        /// <summary>
+        /// Posun adresy prvku <see cref="RelativeAdress"/> vůči počátku prostoru. 
+        /// Typicky se plní jen do aplikace a do grupy, řeší postupný posun souřadnice Y.
+        /// </summary>
+        public virtual Point? OffsetAdress { get; set; }
+        /// <summary>
+        /// Absolutní pozice prvku, určená z <see cref="RelativeAdress"/> + <see cref="OffsetAdress"/>.
+        /// </summary>
+        public virtual Point Adress { get { return RelativeAdress.GetShiftedPoint(OffsetAdress); } set { RelativeAdress = value.GetShiftedPoint(OffsetAdress, true); } }
         /// <summary>
         /// Barva pozadí, smí obsahovat Alpha kanál, smí být null
         /// </summary>
@@ -366,11 +393,13 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             UserData = data;
         }
         private BaseData __Data;
+        private ColorSet __CellBackColor;
         public override string MainTitle { get { return __Data.Title; } set { __Data.Title = value; } }
         public override string Description { get { return __Data.Description; } set { __Data.Description = value; } }
         public override Point Adress { get { return __Data.Adress; } set { __Data.Adress = value; } }
         public override string ImageName { get { return __Data.ImageFileName; } set { __Data.ImageFileName = value; } }
-        public override ColorSet CellBackColor { get { return __CellBackColor; } set { __CellBackColor = value; } } private ColorSet __CellBackColor;
+        public override ColorSet CellBackColor { get { return __CellBackColor; } set { __CellBackColor = value; } }
+        public override DataLayoutKind? LayoutKind { get { return __Data.LayoutKind; } set { __Data.LayoutKind = value; } }
     }
     #endregion
 }

@@ -25,6 +25,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public Image ImageSmall { get { return __ImageSmall; } set { if (!__IsReadOnly) __ImageSmall = value; } } private Image __ImageSmall;
         /// <summary>
+        /// Pořadí v nabídce
+        /// </summary>
+        private int SortOrder { get { return __SortOrder; } } private int __SortOrder;
+        /// <summary>
         /// Barva statického pozadí pod všemi prvky = celé okno
         /// </summary>
         public Color WorkspaceColor { get { return __WorkspaceColor; } set { if (!__IsReadOnly) __WorkspaceColor = value; } } private Color __WorkspaceColor;
@@ -77,10 +81,6 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Data jsou ReadOnly?
         /// </summary>
         public bool IsReadOnly { get { return __IsReadOnly; } } private bool __IsReadOnly;
-        /// <summary>
-        /// Pořadí v nabídce
-        /// </summary>
-        private int SortOrder { get { return __SortOrder; } } private int __SortOrder;
         #endregion
         #region Dynamické získání ColorSet a TextAppearance podle PaletteColorPartType a AppearanceTextPartType
         /// <summary>
@@ -366,6 +366,82 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 Color.FromArgb(a2, 162, 180, 232),
                 Color.FromArgb(a2, 148, 170, 232),
                 Color.FromArgb(a3, 120, 150, 232));
+            paletteSet.__MainTitleColors = ColorSet.CreateAllColors(true, Color.Black);
+            paletteSet.__SubTitleColors = ColorSet.CreateAllColors(true, Color.Black);
+            paletteSet.__TextStandardColors = ColorSet.CreateAllColors(true, Color.Black);
+
+            paletteSet.__MainTitleAppearance = new TextAppearance(true,
+                FontType.CaptionFont,
+                ContentAlignment.MiddleLeft,
+                AppearanceColorPartType.MainTitleColors,
+                null,
+                new TextInteractiveStyle(true, Components.InteractiveState.Default, null, 1.2f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseOn, null, 1.3f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseDown, null, 1.3f, FontStyle.Bold)
+                );
+
+            paletteSet.__SubTitleAppearance = new TextAppearance(true,
+                FontType.CaptionFont,
+                ContentAlignment.MiddleLeft,
+                AppearanceColorPartType.MainTitleColors,
+                null,
+                new TextInteractiveStyle(true, Components.InteractiveState.Default, null, 1.1f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseOn, null, 1.2f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseDown, null, 1.2f, FontStyle.Bold)
+                );
+
+            paletteSet.__StandardTextAppearance = new TextAppearance(true,
+                FontType.CaptionFont,
+                ContentAlignment.MiddleLeft,
+                AppearanceColorPartType.MainTitleColors,
+                null,
+                new TextInteractiveStyle(true, Components.InteractiveState.Default, null, 1.0f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseOn, null, 1.1f, null),
+                new TextInteractiveStyle(true, Components.InteractiveState.MouseDown, null, 1.1f, FontStyle.Bold)
+                );
+
+            paletteSet.__IsReadOnly = true;
+            return paletteSet;
+        }
+        /// <summary>
+        /// Vytvoří new instanci palety "LightBlue"
+        /// </summary>
+        /// <returns></returns>
+        private static AppearanceInfo _CreateLightGreen()
+        {
+            var paletteSet = new AppearanceInfo();
+            paletteSet.__Name = "LightGreen";
+            paletteSet.__ImageSmall = Properties.Resources.btn_22_20;
+            paletteSet.__SortOrder = 600;
+            paletteSet.__WorkspaceColor = Color.FromArgb(206, 255, 206);
+            paletteSet.__ToolStripColor = Color.FromArgb(181, 224, 181);
+
+            int a0 = 40;
+            int a1 = 80;
+            int a2 = 120;
+            int a3 = 160;
+
+            int b1 = 16;
+            int b2 = 32;
+
+            paletteSet.__ActiveContentColor = ColorSet.CreateAllColors(true, null,
+                activeColor: Color.FromArgb(255, 48, 48, 96),
+                mouseOnColor: Color.FromArgb(a0, 32, 48, 32),
+                mouseDownColor: Color.FromArgb(a0, 40, 64, 40));
+            paletteSet.__BorderLineColors = new ColorSet(true,
+                Color.FromArgb(a1, b1, b1, b1),
+                Color.FromArgb(a1, b1, b1, b1),
+                Color.FromArgb(a1, b1, b1, b1),
+                Color.FromArgb(a1, b2, b2, b2),
+                Color.FromArgb(a1, b2, b2, b2),
+                Color.FromArgb(a1, b2, b2, b2));
+            paletteSet.__ButtonBackColors = new ColorSet(true,
+                Color.FromArgb(a1, 24, 24, 24),
+                Color.FromArgb(a1, 0, 0, 32),
+                Color.FromArgb(a1, 176, 232, 191),
+                Color.FromArgb(a2, 162, 232, 180),
+                Color.FromArgb(a2, 148, 232, 170),
+                Color.FromArgb(a3, 120, 232, 150));
             paletteSet.__MainTitleColors = ColorSet.CreateAllColors(true, Color.Black);
             paletteSet.__SubTitleColors = ColorSet.CreateAllColors(true, Color.Black);
             paletteSet.__TextStandardColors = ColorSet.CreateAllColors(true, Color.Black);

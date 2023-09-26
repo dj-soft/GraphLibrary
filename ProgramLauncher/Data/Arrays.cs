@@ -8,6 +8,12 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 
 namespace DjSoft.Tools.ProgramLauncher.Data
 {
+    /// <summary>
+    /// Třída reprezentující List, jehož jednotlivé prvky (Childs) mají vztah na svého Parenta.
+    /// Tento soupis <see cref="ChildItems{TParent, TItem}"/> uvedený vztah aktivně udržuje.
+    /// </summary>
+    /// <typeparam name="TParent"></typeparam>
+    /// <typeparam name="TItem"></typeparam>
     public class ChildItems<TParent, TItem> : IList<TItem>, IEnumerable<TItem>
         where TParent : class
         where TItem : class, IChildOfParent<TParent> 
@@ -112,8 +118,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <param name="predicate"></param>
         public void RemoveAll(Predicate<TItem> predicate)
         {
-            this.__List.RemoveAll(predicate);
-            _RunCollectionChanged();
+            int count = 0;
+            this.__List.RemoveAll(predicate, i => { _RemoveParent(i); count++; });
+            if (count > 0)
+                _RunCollectionChanged();
         }
         /// <summary>
         /// Obecná událost volaná poté, kdy se přidal nebo odebral prvek kolekce (Add/Remove).

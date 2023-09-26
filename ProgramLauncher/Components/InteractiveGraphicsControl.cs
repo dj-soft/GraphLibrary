@@ -23,15 +23,18 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             __DataItems = new ChildItems<InteractiveGraphicsControl, InteractiveItem>(this);
             __DataItems.CollectionChanged += __DataItems_CollectionChanged;
             _InitInteractivity();
-            App.CurrentAppearanceChanged += _CurrentPaletteChanged;
+            App.CurrentAppearanceChanged += _CurrentAppearanceChanged;
+            App.CurrentLayoutSetChanged += _CurrentLayoutSetChanged;
         }
+
         /// <summary>
         /// Dispose
         /// </summary>
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
-            App.CurrentAppearanceChanged -= _CurrentPaletteChanged;
+            App.CurrentLayoutSetChanged -= _CurrentLayoutSetChanged;
+            App.CurrentAppearanceChanged -= _CurrentAppearanceChanged;
             base.Dispose(disposing);
         }
         /// <summary>
@@ -39,8 +42,18 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _CurrentPaletteChanged(object sender, EventArgs e)
+        private void _CurrentAppearanceChanged(object sender, EventArgs e)
         {
+            this.Draw();
+        }
+        /// <summary>
+        /// Po změně layoutu provedu překreslení
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _CurrentLayoutSetChanged(object sender, EventArgs e)
+        {
+            _ResetItemLayout();
             this.Draw();
         }
         /// <summary>
@@ -258,6 +271,19 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             return null;
         }
         /// <summary>
+        /// Najde cílovou buňku pro danou souřadnici myši. Tato buňka může být určena i pro pozici, kde není žádný interaktivní prvek.
+        /// </summary>
+        /// <param name="mouseState"></param>
+        /// <returns></returns>
+        private InteractiveMap.Cell _GetMouseCell(MouseState mouseState)
+        {
+            var interactiveMap = __InteractiveMap;
+            if (interactiveMap is null) return null;
+
+            Point virtualPoint = this.GetVirtualPoint(mouseState.LocationControl);
+            return interactiveMap.GetCellAtPoint(virtualPoint);
+        }
+        /// <summary>
         /// Vyřeší výměnu prvku pod myší (dosavadní prvek je v instanční proměnné <see cref="__CurrentMouseItem"/>,
         /// nový je v parametru <paramref name="currentMouseItem"/>).
         /// Řeší detekci změny, vložení správného interaktivního stavu do <see cref="InteractiveItem.InteractiveState"/>, 
@@ -400,8 +426,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="mouseState"></param>
         private void _MouseDragEnd(MouseState mouseState)
         {
+            var targetCell = _GetMouseCell(mouseState);
 
-            
+
             _MouseDragReset();
         }
         /// <summary>
@@ -534,8 +561,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         public CursorTypes CursorTypeMouseFrame { get { return __CursorTypeMouseFrame; } set { __CursorTypeMouseFrame = value; } } private CursorTypes __CursorTypeMouseFrame;
         #endregion
 
-
-
         #region Hrátky - myší ocásek
         private bool MousePointsActive = false;
         protected override void OnMouseMove(MouseEventArgs e)
@@ -598,7 +623,24 @@ namespace DjSoft.Tools.ProgramLauncher.Components
 
         #endregion
 
-        #region Public prvky - soupis aktivních prvků, definice layoutu, eventy
+        #region Layout prvků
+        /// <summary>
+        /// Druh výchozího layoutu pro prvky v tomto panelu. Jeden panel má jeden základní layout, konkrétní prvek může definovat svůj vlastní layout.
+        /// </summary>
+        public DataLayoutKind DefaultLayoutKind { get { return __DefaultLayoutKind; } set { __DefaultLayoutKind = value; _ResetItemLayout(); } } private DataLayoutKind __DefaultLayoutKind;
+        /// <summary>
+        /// Výchozí layoutu pro prvky v tomto panelu. Jeden panel má jeden základní layout, konkrétní prvek může definovat svůj vlastní layout.
+        /// </summary>
+        public ItemLayoutInfo DefaultLayout { get { return GetLayout(); } }
+        /// <summary>
+        /// Metoda vrátí konkrétní layout daného druhu, z právě aktuální sady <see cref="App.CurrentLayoutSet"/>.
+        /// Pokud na vstupu bude <paramref name="layoutKind"/> = null, pak se vyhledá základní layout dle <see cref="DefaultLayoutKind"/>.
+        /// </summary>
+        /// <param name="layoutKind"></param>
+        /// <returns></returns>
+        public ItemLayoutInfo GetLayout(DataLayoutKind? layoutKind = null) { return App.CurrentLayoutSet.GetLayout(layoutKind ?? DefaultLayoutKind); }
+        #endregion
+        #region Public prvky - soupis aktivních prvků, eventy
         /// <summary>
         /// Prvky k zobrazení a interaktivní práci
         /// </summary>
@@ -607,11 +649,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             __DataItems.AddRange(items);
         }
-        /// <summary>
-        /// Definice layoutu pro prvky v tomto panelu. Jeden panel má jeden layout.
-        /// </summary>
-        public DataLayout DataLayout { get { return __DataLayout; } set { _ResetItemLayout(); __DataLayout = value; } }
-        private DataLayout __DataLayout;
         /// <summary>
         /// Zruší platnost layoutu jednotlivých prvků přítomných v <see cref="DataItems"/>
         /// </summary>
@@ -645,13 +682,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             if (!__IsContentSizeValid)
             {
-                var lastContentSize = base.ContentSize;              // base property neprovádí _CheckContentSize()
-                var currentContentSize = InteractiveItem.RecalculateVirtualBounds(this.__DataItems, this.DataLayout);
+                var lastContentSize = base.ContentSize;              // base property neprovádí _CheckContentSize() = zdejší metodu!!! Jinak bychom se zacyklili.
+                __InteractiveMap = InteractiveItem.RecalculateVirtualBounds(this.__DataItems, this.DefaultLayout);
+                var currentContentSize = __InteractiveMap.ContentSize;
                 bool isContentSizeChanged = (currentContentSize != lastContentSize);
                 __IsContentSizeValid = true;
                 if (isContentSizeChanged)                            // Setování a event jen po reálné změně hodnoty
                 {
-                    this.ContentSize = currentContentSize;
+                    this.ContentSize = currentContentSize;           // Setování this volá base, ale nemá žádnou další logiku.
                     this._RunContentSizeChanged();
                 }
             }
@@ -660,6 +698,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Příznak, že aktuální hodnota <see cref="ContentSize"/> je platná z hlediska přítomných prvků a jejich layoutu
         /// </summary>
         private bool __IsContentSizeValid;
+        /// <summary>
+        /// Mapa obsahující logické buňky, virtuální adresy a prvky v těchto buňkách.
+        /// </summary>
+        private InteractiveMap __InteractiveMap;
         /// <summary>
         /// Potřebná velikost obsahu. 
         /// Výchozí je null = control zobrazuje to, co je vidět, a nikdy nepoužívá Scrollbary.

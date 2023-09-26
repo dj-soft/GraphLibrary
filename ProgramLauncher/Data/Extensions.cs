@@ -14,7 +14,7 @@ namespace DjSoft.Tools.ProgramLauncher
 {
     public static class Extensions
     {
-        #region Rectangle
+        #region Rectangle a Point
         /// <summary>
         /// Vrátí new instanci <see cref="Rectangle"/>, která vychází z this a je zmenšená (dovnitř) na každé straně o dané pixely
         /// </summary>
@@ -63,14 +63,18 @@ namespace DjSoft.Tools.ProgramLauncher
             return gp;
         }
         /// <summary>
-        /// Vrátí new instanci <see cref="Point"/>, která vychází z this a je posunutá o danou pozici
+        /// Vrátí new instanci <see cref="Point"/>, která vychází z this a je posunutá o danou pozici <paramref name="offset"/>.
+        /// Pokud <paramref name="offset"/> je null, vrací přímo vstupní hodnotu.
+        /// Lze specifikovat <paramref name="negative"/> = true, pak bude posun záporný.
         /// </summary>
-        /// <param name="bounds"></param>
+        /// <param name="point"></param>
         /// <param name="offset"></param>
         /// <returns></returns>
-        public static Point GetShiftedPoint(this Point bounds, Point offset)
+        public static Point GetShiftedPoint(this Point point, Point? offset, bool negative = false)
         {
-            return new Point(bounds.X + offset.X, bounds.Y + offset.Y);
+            if (!offset.HasValue) return point;
+            if (!negative) return new Point(point.X + offset.Value.X, point.Y + offset.Value.Y);
+            return new Point(point.X - offset.Value.X, point.Y - offset.Value.Y);
         }
         /// <summary>
         /// Vrátí new instanci <see cref="Point"/>, která vychází z this a je posunutá o danou pozici
@@ -84,14 +88,18 @@ namespace DjSoft.Tools.ProgramLauncher
             return new Point(bounds.X + offsetX, bounds.Y + offsetY);
         }
         /// <summary>
-        /// Vrátí new instanci <see cref="Rectangle"/>, která vychází z this a je posunutá o danou pozici
+        /// Vrátí new instanci <see cref="Rectangle"/>, která vychází z this a je posunutá o danou pozici <paramref name="offset"/>.
+        /// Pokud <paramref name="offset"/> je null, vrací přímo vstupní hodnotu.
+        /// Lze specifikovat <paramref name="negative"/> = true, pak bude posun záporný.
         /// </summary>
         /// <param name="bounds"></param>
         /// <param name="offset"></param>
         /// <returns></returns>
-        public static Rectangle GetShiftedRectangle(this Rectangle bounds, Point offset)
+        public static Rectangle GetShiftedRectangle(this Rectangle bounds, Point? offset, bool negative = false)
         {
-            return new Rectangle(bounds.X + offset.X, bounds.Y + offset.Y, bounds.Width, bounds.Height);
+            if (!offset.HasValue) return bounds;
+            if (!negative) return new Rectangle(bounds.X + offset.Value.X, bounds.Y + offset.Value.Y, bounds.Width, bounds.Height);
+            return new Rectangle(bounds.X - offset.Value.X, bounds.Y - offset.Value.Y, bounds.Width, bounds.Height);
         }
         /// <summary>
         /// Vrátí new instanci <see cref="Rectangle"/>, která vychází z this a je posunutá o danou pozici
@@ -1232,6 +1240,43 @@ namespace DjSoft.Tools.ProgramLauncher
                 dictionary[key] = value;
             else
                 dictionary.Add(key, value);
+        }
+        /// <summary>
+        /// Metoda zajistí smazání prvků vyhovujících dodanému filtru <paramref name="predicate"/>, a tyto odstraňované prvky odešle do dané akce <paramref name="actionOnRemoved"/>.
+        /// Akce může zajistit např. uvolnění vztahů odebíraného prvku na další objekty.
+        /// <para/>
+        /// Pokud <paramref name="list"/> je null, nedělá se nic.
+        /// Pokud <paramref name="predicate"/> je null, pak se smažou všechny prvky.
+        /// Pokud <paramref name="actionOnRemoved"/> je null, smažou se patřičné prvky a nic se nevolá.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="list"></param>
+        /// <param name="predicate"></param>
+        /// <param name="actionOnRemoved"></param>
+        public static void RemoveAll<T>(this List<T> list, Predicate<T> predicate, Action<T> actionOnRemoved)
+        {
+            if (list is null || list.Count == 0) return;
+            bool hasPredicate = (predicate != null);
+            bool hasActionOnRemoved = (actionOnRemoved != null);
+
+            if (!hasPredicate)
+            {   // Bez filtru jde prostě o Clear s provedením požadované akce pro každý prvek:
+                if (hasActionOnRemoved)
+                {
+                    foreach (var item in list)
+                        actionOnRemoved(item);
+                }
+                list.Clear();
+            }
+            else
+            {   // Budeme filtrovat:
+                list.RemoveAll(item =>
+                {   // Filtr 'predicate' neposílám přímo, ale provedu i něco navíc:
+                    bool toRemove = predicate(item);
+                    if (toRemove) actionOnRemoved(item);   // Pokud se prvek bude odebírat, tak zavolám akci...
+                    return toRemove;
+                });
+            }
         }
         #endregion
         #region Drobnosti

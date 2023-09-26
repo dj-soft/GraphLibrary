@@ -211,7 +211,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             }
         }
         #endregion
-        #region EVENTY, ŘÍZENÍ METOD NA POTOMKOVI
+        #region Eventy, řízení metod na potomkovi
         /// <summary>
         /// Fyzický Paint.
         /// Probíhá kdykoliv, když potřebuje okno překreslit.

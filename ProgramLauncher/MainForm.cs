@@ -42,13 +42,15 @@ namespace DjSoft.Tools.ProgramLauncher
 
             App.CurrentAppearanceChanged += CurrentAppearanceChanged;          // Po změně vzhledu v App.CurrentAppearance proběhne tento event-handler
 
-            string appearanceName = App.Settings.AppearanceName;
-            App.CurrentAppearance = AppearanceInfo.GetItem(appearanceName, true);        // Aktivuje posledně aktivní, anebo defaultní vzhled
+            App.CurrentAppearance = AppearanceInfo.GetItem(App.Settings.AppearanceName, true);     // Aktivuje posledně aktivní, anebo defaultní vzhled
+            App.CurrentLayoutSet = ItemLayoutSet.GetItem(App.Settings.LayoutSetName, true);
 
             this.StatusLabelVersion.Text = "DjSoft";
         }
         /// <summary>
         /// Obsluha události po změně vzhledu z <see cref="App.CurrentAppearanceChanged"/>.
+        /// Tato metoda zajistí promítnutí barev do ToolStrip a do StatusStrip. Nikoli do datových panelů.
+        /// <para/>
         /// Tato metoda neukládá nastavenou hodnotu do Settings <see cref="Settings.AppearanceName"/>.
         /// </summary>
         /// <param name="sender"></param>
@@ -131,7 +133,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             __PagesPanel = new Components.InteractiveGraphicsControl();
             __PagesPanel.Dock = DockStyle.Fill;
-            __PagesPanel.DataLayout = Components.DataLayout.SetSmallBrick;
+            __PagesPanel.DefaultLayoutKind = DataLayoutKind.Pages;
             __PagesPanel.ContentSizeChanged += _AppPagesPanel_ContentSizeChanged;
             __PagesPanel.InteractiveItemClick += _PageItemClick;
             this._MainContainer.Panel1.Controls.Add(__PagesPanel);
@@ -220,7 +222,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             __ApplicationsPanel = new Components.InteractiveGraphicsControl();
             __ApplicationsPanel.Dock = DockStyle.Fill;
-            __ApplicationsPanel.DataLayout = DataLayout.SetMediumBrick;
+            __ApplicationsPanel.DefaultLayoutKind = DataLayoutKind.Applications;
             __ApplicationsPanel.InteractiveAreaClick += _ApplicationAreaClick;
             __ApplicationsPanel.InteractiveItemClick += _ApplicationItemClick;
             __ApplicationsPanel.InteractiveItemMouseEnter += _ApplicationItemMouseEnter;
