@@ -403,6 +403,31 @@ namespace DjSoft.Tools.ProgramLauncher
                 return (int)Math.Round(hypotenuse, 0);
             }
         }
+        /// <summary>
+        /// Vrátí daný bod v this prostoru
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        public static Point GetPoint(this Rectangle bounds, RectanglePointPosition position)
+        { 
+            switch (position)
+            {
+                case RectanglePointPosition.TopLeft: return new Point(bounds.Left, bounds.Top);
+                case RectanglePointPosition.TopCenter: return new Point(center(bounds.X, bounds.Width), bounds.Top);
+                case RectanglePointPosition.TopRight: return new Point(bounds.Right, bounds.Top);
+                case RectanglePointPosition.CenterLeft: return new Point(bounds.Left, center(bounds.Y, bounds.Height));
+                case RectanglePointPosition.Center: return new Point(center(bounds.X, bounds.Width), center(bounds.Y, bounds.Height));
+                case RectanglePointPosition.CenterRight: return new Point(bounds.Right, center(bounds.Y, bounds.Height));
+                case RectanglePointPosition.BottomLeft: return new Point(bounds.Left, bounds.Bottom);
+                case RectanglePointPosition.BottomCenter: return new Point(center(bounds.X, bounds.Width), bounds.Bottom);
+                case RectanglePointPosition.BottomRight: return new Point(bounds.Right, bounds.Bottom);
+            }
+            throw new ArgumentException($"Rectangle.GetCenter() error: argument 'position' is invalid: {position}");
+
+            int center(int begin, int size) { return begin + (size / 2); }
+        }
         #endregion
         #region Graphics - FountainFill, Draw
         /// <summary>
@@ -1225,8 +1250,7 @@ namespace DjSoft.Tools.ProgramLauncher
         #endregion
     }
 
-    #region Interface
-
+    #region Interface IMenuItem, jeho implementace
     /// <summary>
     /// Základní implementace interface <see cref="IMenuItem"/>
     /// </summary>
@@ -1235,6 +1259,7 @@ namespace DjSoft.Tools.ProgramLauncher
         public  DataMenuItem()
         {
             ItemType = MenuItemType.Button;
+            Enabled = true;
         }
         /// <summary>
         /// Vizualizace
@@ -1259,24 +1284,49 @@ namespace DjSoft.Tools.ProgramLauncher
         public virtual string ToolTip { get; set; }
         public virtual MenuItemType ItemType { get; set; }
         public virtual Image Image { get; set; }
+        public virtual bool Enabled { get; set; }
         public virtual FontStyle? FontStyle { get; set; }
         public virtual object UserData { get; set; }
     }
+    /// <summary>
+    /// Předpis pro prvky, které mohou být nabízeny v menu
+    /// </summary>
     public interface IMenuItem
     {
         string Text { get; }
         string ToolTip { get; }
         MenuItemType ItemType { get; }
         Image Image { get; }
+        bool Enabled { get; }
         FontStyle? FontStyle { get; }
         object UserData { get; set; }
     }
+    /// <summary>
+    /// Typ prvku v menu
+    /// </summary>
     public enum MenuItemType
     {
         Default = 0,
         Header,
         Button,
         Separator
+    }
+    #endregion
+    #region Enumy
+    /// <summary>
+    /// Pozice bodu v Rectangle
+    /// </summary>
+    public enum RectanglePointPosition
+    {
+        TopLeft,
+        TopCenter,
+        TopRight,
+        CenterLeft,
+        Center,
+        CenterRight,
+        BottomLeft,
+        BottomCenter,
+        BottomRight
     }
     #endregion
 }

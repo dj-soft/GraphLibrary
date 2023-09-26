@@ -46,7 +46,6 @@ namespace DjSoft.Tools.ProgramLauncher
             App.CurrentAppearance = AppearanceInfo.GetItem(appearanceName, true);        // Aktivuje posledně aktivní, anebo defaultní vzhled
 
             this.StatusLabelVersion.Text = "DjSoft";
-            this.StatusLabelData.Text = "Hromada dat";
         }
         /// <summary>
         /// Obsluha události po změně vzhledu z <see cref="App.CurrentAppearanceChanged"/>.
@@ -69,9 +68,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private void _ShowAppearanceMenu()
         {
-            var buttonBounds = _ToolAppearanceButton.Bounds;
-            var leftBottom = new Point(buttonBounds.Left, buttonBounds.Bottom + 0);
-            var menuPoint = _ToolStrip.PointToScreen(leftBottom);
+            var menuPoint = _ToolStrip.PointToScreen(_ToolAppearanceButton.Bounds.GetPoint(RectanglePointPosition.BottomLeft));
 
             List<IMenuItem> items = new List<IMenuItem>();
             items.Add(DataMenuItem.CreateHeader("VZHLED"));
@@ -126,7 +123,7 @@ namespace DjSoft.Tools.ProgramLauncher
         private System.Windows.Forms.ToolStripButton _ToolEditButton;
         private System.Windows.Forms.ToolStripButton _ToolAppearanceButton;
         #endregion
-        #region GroupPanel
+        #region PagesPanel
         /// <summary>
         /// Inicializace datového panelu Grupy (TabHeader vlevo)
         /// </summary>
@@ -135,7 +132,7 @@ namespace DjSoft.Tools.ProgramLauncher
             __PagesPanel = new Components.InteractiveGraphicsControl();
             __PagesPanel.Dock = DockStyle.Fill;
             __PagesPanel.DataLayout = Components.DataLayout.SetSmallBrick;
-            __PagesPanel.ContentSizeChanged += _AppGroupPanel_ContentSizeChanged;
+            __PagesPanel.ContentSizeChanged += _AppPagesPanel_ContentSizeChanged;
             __PagesPanel.InteractiveItemClick += _PageItemClick;
             this._MainContainer.Panel1.Controls.Add(__PagesPanel);
         }
@@ -147,20 +144,28 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             var items = new List<InteractiveItem>();
 
+            int pageCount = 0;
+            int appCount = 0;
             var pages = _Pages;
             if (pages != null)
             {
                 foreach (var page in pages)
                 {
                     items.Add(page.CreateInteractiveItem());
+                    pageCount++;
+                    appCount += page.ApplicationsCount;
                 }
             }
 
             __PagesPanel.DataItems.Clear();
             __PagesPanel.AddItems(items);
 
+            string pageText = App.GetCountText(pageCount, "bez stránek", " stránka", " stránky", " stránek");
+            string appText = App.GetCountText(appCount, "bez aplikací", " aplikace", " aplikace", " aplikací");
+            this.StatusLabelData.Text = $"{pageText}; {appText}";
+
             bool groupsForceVisible = true;
-            _GroupPanelVisible = (groupsForceVisible || items.Count > 1);
+            _PagesPanelVisible = (groupsForceVisible || items.Count > 1);
 
             ReloadApplications(activePageData, activePageIndex);
         }
@@ -178,11 +183,11 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _AppGroupPanel_ContentSizeChanged(object sender, EventArgs e)
+        private void _AppPagesPanel_ContentSizeChanged(object sender, EventArgs e)
         {
             var groupContentSize = __PagesPanel.ContentSize;
-            if (groupContentSize.HasValue && groupContentSize.Value.Width != _GroupPanelWidth)
-                _GroupPanelWidth = groupContentSize.Value.Width;
+            if (groupContentSize.HasValue && groupContentSize.Value.Width != _PagesPanelWidth)
+                _PagesPanelWidth = groupContentSize.Value.Width;
         }
         /// <summary>
         /// Uživatel kliknul na TabHeader od Page: aktivujeme její obsah
@@ -194,13 +199,13 @@ namespace DjSoft.Tools.ProgramLauncher
             _ActivePageData = e.Item.UserData as Data.PageData;
         }
         /// <summary>
-        /// Panel 1 (grupy) je viditelný?
+        /// Panel 1 (zobrazuje Pages) je viditelný?
         /// </summary>
-        private bool _GroupPanelVisible { get{ return !this._MainContainer.Panel1Collapsed; } set { this._MainContainer.Panel1Collapsed = !value; } }
+        private bool _PagesPanelVisible { get{ return !this._MainContainer.Panel1Collapsed; } set { this._MainContainer.Panel1Collapsed = !value; } }
         /// <summary>
         /// Šířka disponibilního prostoru v panelu skupin <see cref="__PagesPanel"/>
         /// </summary>
-        private int _GroupPanelWidth
+        private int _PagesPanelWidth
         {
             get { return this._MainContainer.SplitterDistance - __PagesPanel.VerticalScrollBarWidth - 2; }
             set { int width = value + __PagesPanel.VerticalScrollBarWidth + 2; this._MainContainer.SplitterDistance = (width < 50 ? 50 : width); }
@@ -216,6 +221,7 @@ namespace DjSoft.Tools.ProgramLauncher
             __ApplicationsPanel = new Components.InteractiveGraphicsControl();
             __ApplicationsPanel.Dock = DockStyle.Fill;
             __ApplicationsPanel.DataLayout = DataLayout.SetMediumBrick;
+            __ApplicationsPanel.InteractiveAreaClick += _ApplicationAreaClick;
             __ApplicationsPanel.InteractiveItemClick += _ApplicationItemClick;
             __ApplicationsPanel.InteractiveItemMouseEnter += _ApplicationItemMouseEnter;
             __ApplicationsPanel.InteractiveItemMouseLeave += _ApplicationItemMouseLeave;
@@ -232,13 +238,13 @@ namespace DjSoft.Tools.ProgramLauncher
             PageData pageData = getPageData();
             if (pageData != null)
                 pageData.CreateInteractiveItems(items);
+            __ActivePageData = pageData;
 
             __ApplicationsPanel.DataItems.Clear();
             __ApplicationsPanel.AddItems(items);
 
             // Grupa má možnost definovat barvu BackColor pro svoje tlačítko a pro celou stránku s aplikacemi:
             this.__ApplicationsPanel.BackColorUser = pageData?.BackColor;       // Pokud stránka není určena, pak jako BackColorUser bude null = default
-
 
             // Vrátí požadovanou nebo aktivní stránku s daty
             PageData getPageData()
@@ -253,33 +259,59 @@ namespace DjSoft.Tools.ProgramLauncher
                 return null;
             }
         }
-
-
+        /// <summary>
+        /// Myš vstoupila na prvek Aplikace: navazuje změna ve statusBaru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _ApplicationItemMouseEnter(object sender, Components.InteractiveItemEventArgs e)
         {
-            this.Cursor = Cursors.Hand;
             this.StatusLabelApplicationMouseText = e.Item.MainTitle;
             this.StatusLabelApplicationMouseImage = ImageKindType.DocumentProperties;
         }
-
+        /// <summary>
+        /// Kliknutí myši (levá, pravá) na prvek Aplikace
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _ApplicationItemClick(object sender, Components.InteractiveItemEventArgs e)
         {
-            if (e.Item.UserData is Data.ApplicationData applInfo)
+            var applInfo = e.Item.UserData as Data.ApplicationData;
+            if (e.MouseState.Buttons == MouseButtons.Left)
             {
-                if (e.MouseState.Buttons == MouseButtons.Left)
+                if (applInfo != null)
                     applInfo.RunApplication();
-                else
-                    applInfo.RunContextMenu(e.MouseState);
+            }
+            else if (e.MouseState.Buttons == MouseButtons.Right)
+            {
+                this._ActivePageData?.RunContextMenu(e.MouseState, applInfo);
             }
         }
-
+        /// <summary>
+        /// Kliknutí myši (levá, pravá) na prázdnou plochu mimo prvek Aplikace
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ApplicationAreaClick(object sender, Components.InteractiveItemEventArgs e)
+        {
+            if (e.MouseState.Buttons == MouseButtons.Right)
+            {
+                this._ActivePageData?.RunContextMenu(e.MouseState, null);
+            }
+        }
+        /// <summary>
+        /// Myš opustila prvek Aplikace: navazuje změna ve statusBaru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _ApplicationItemMouseLeave(object sender, Components.InteractiveItemEventArgs e)
         {
             this.StatusLabelApplicationMouseText = null;
             this.StatusLabelApplicationMouseImage = null;
-            this.Cursor = Cursors.Default;
         }
-
+        /// <summary>
+        /// Instance interaktivního panelu pro Aplikace
+        /// </summary>
         private DjSoft.Tools.ProgramLauncher.Components.InteractiveGraphicsControl __ApplicationsPanel;
         #endregion
         #region StatusBar

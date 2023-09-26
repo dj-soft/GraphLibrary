@@ -20,6 +20,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             __Visible = true;
             __Enabled = true;
             __Interactive = true;
+            __MouseDragActiveCurrentAlpha = 0.45f;
         }
         #region Public zobrazovaná data
         /// <summary>
@@ -314,10 +315,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             if (!HasParent || !Visible) return;
 
-            bool paintGhost = (e.MouseDragState == MouseDragState.MouseDragActiveCurrent);       // true = kreslíme "ducha" = prvek, který je přesouván, má určitou průhlednost / nebo jen rámeček?
-            var virtualBounds = (paintGhost ? e.MouseDragCurrentBounds : this.VirtualBounds);
+            bool paintGhost = (e.MouseDragState == MouseDragState.MouseDragActiveCurrent);       // true => kreslíme "ducha" = prvek, který je přesouván, má určitou průhlednost / nebo jen rámeček?
+            var virtualBounds = (paintGhost ? e.MouseDragCurrentBounds : this.VirtualBounds);    // Kreslení "ducha" je na jiné souřadnici, než na místě prvku samotného
             if (!virtualBounds.HasValue) return;
-            float? alpha = (paintGhost ? (float?)0.40f : (float?)null);
+            float? alpha = (paintGhost ? (float?)MouseDragActiveCurrentAlpha : (float?)null);
 
             var dataLayout = this.DataLayout;
             var paletteSet = App.CurrentAppearance;
@@ -415,6 +416,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
 
             e.Graphics.ResetClip();
         }
+        /// <summary>
+        /// Hodnota průhlednosti pro kreslení přesouvaného prvku v režimu Mouse DragAndDrop.
+        /// 0 = neviditelný / 1 = plně viditelný. Defaultní = 0.45
+        /// </summary>
+        public float MouseDragActiveCurrentAlpha { get { return __MouseDragActiveCurrentAlpha; } set { __MouseDragActiveCurrentAlpha = (value < 0f ? 0f : (value > 1f ? 1f : value)); } } private float __MouseDragActiveCurrentAlpha;
         #endregion
     }
     #region class DataLayout = Layout prvku: rozmístění, velikost, styl písma

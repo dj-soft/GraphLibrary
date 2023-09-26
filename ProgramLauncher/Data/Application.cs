@@ -6,6 +6,8 @@ using System.Drawing.Drawing2D;
 using System.Drawing;
 using System.Windows.Forms;
 using DjSoft.Tools.ProgramLauncher.Data;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolTip;
 
 namespace DjSoft.Tools.ProgramLauncher
 {
@@ -204,13 +206,13 @@ namespace DjSoft.Tools.ProgramLauncher
                     break;
                 case MenuItemType.Header:
                     var headerItem = new ToolStripLabel(menuItem.Text, menuItem.Image);
-                    var headerItemx = new ToolStripButton(menuItem.Text, menuItem.Image);
                     item = headerItem;
                     break;
                 case MenuItemType.Button:
                 case MenuItemType.Default:
                 default:
                     var buttonItem = new ToolStripMenuItem(menuItem.Text, menuItem.Image) { Tag = new Tuple<IMenuItem, Action<IMenuItem>>(menuItem, onSelectItem) };
+                    buttonItem.Enabled = menuItem.Enabled;
                     item = buttonItem;
                     break;
             }
@@ -338,6 +340,46 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         private Pen __Pen;
         private SolidBrush __Brush;
+        /// <summary>
+        /// Vrátí kurzor daného typu
+        /// </summary>
+        /// <param name="cursorTypes"></param>
+        /// <returns></returns>
+        public static Cursor GetCursor(CursorTypes cursorTypes)
+        {
+            switch (cursorTypes)
+            {
+                case CursorTypes.Default: return Cursors.Default;
+                case CursorTypes.Hand: return Cursors.Hand;
+                case CursorTypes.Arrow: return Cursors.Arrow;
+                case CursorTypes.Cross: return Cursors.Cross;
+                case CursorTypes.IBeam: return Cursors.IBeam;
+                case CursorTypes.Help: return Cursors.Help;
+                case CursorTypes.AppStarting: return Cursors.AppStarting;
+                case CursorTypes.UpArrow: return Cursors.UpArrow;
+                case CursorTypes.WaitCursor: return Cursors.WaitCursor;
+                case CursorTypes.HSplit: return Cursors.HSplit;
+                case CursorTypes.VSplit: return Cursors.VSplit;
+                case CursorTypes.NoMove2D: return Cursors.NoMove2D;
+                case CursorTypes.NoMoveHoriz: return Cursors.NoMoveHoriz;
+                case CursorTypes.NoMoveVert: return Cursors.NoMoveVert;
+                case CursorTypes.SizeAll: return Cursors.SizeAll;
+                case CursorTypes.SizeNESW: return Cursors.SizeNESW;
+                case CursorTypes.SizeNS: return Cursors.SizeNS;
+                case CursorTypes.SizeNWSE: return Cursors.SizeNWSE;
+                case CursorTypes.SizeWE: return Cursors.SizeWE;
+                case CursorTypes.PanEast: return Cursors.PanEast;
+                case CursorTypes.PanNE: return Cursors.PanNE;
+                case CursorTypes.PanNorth: return Cursors.PanNorth;
+                case CursorTypes.PanNW: return Cursors.PanNW;
+                case CursorTypes.PanSE: return Cursors.PanSE;
+                case CursorTypes.PanSouth: return Cursors.PanSouth;
+                case CursorTypes.PanSW: return Cursors.PanSW;
+                case CursorTypes.PanWest: return Cursors.PanWest;
+                case CursorTypes.No: return Cursors.No;
+            }
+            return Cursors.Default;
+        }
         #endregion
         #region FontLibrary
         /// <summary>
@@ -665,7 +707,7 @@ namespace DjSoft.Tools.ProgramLauncher
             return null;
         }
         #endregion
-        #region Messages
+        #region Messages a texty
         /// <summary>
         /// Zobrazí standardní Message. Zadáním ikony lze definovat titulek okna.
         /// </summary>
@@ -695,6 +737,22 @@ namespace DjSoft.Tools.ProgramLauncher
                 case MessageBoxIcon.Asterisk: return "Informace";
             }
             return "Zpráva";
+        }
+        /// <summary>
+        /// Vrátí text odpovídající počtu
+        /// </summary>
+        /// <param name="count"></param>
+        /// <param name="textZero"></param>
+        /// <param name="textOne"></param>
+        /// <param name="textSmall"></param>
+        /// <param name="textMany"></param>
+        /// <returns></returns>
+        public static string GetCountText(int count, string textZero, string textOne, string textSmall, string textMany)
+        {
+            if (count <= 0) return textZero;
+            if (count == 1) return count.ToString() + textOne;
+            if (count <= 4) return count.ToString() + textSmall;
+            return count.ToString() + textMany;
         }
         #endregion
     }
@@ -748,4 +806,36 @@ namespace DjSoft.Tools.ProgramLauncher
         MediaPlay,
         MediaForward
     }
+    public enum CursorTypes
+    {
+        Default,
+        Hand,
+        Arrow,
+        Cross,
+        IBeam,
+        Help,
+        AppStarting,
+        UpArrow,
+        WaitCursor,
+        HSplit,
+        VSplit,
+        NoMove2D,
+        NoMoveHoriz,
+        NoMoveVert,
+        SizeAll,
+        SizeNESW,
+        SizeNS,
+        SizeNWSE,
+        SizeWE,
+        PanEast,
+        PanNE,
+        PanNorth,
+        PanNW,
+        PanSE,
+        PanSouth,
+        PanSW,
+        PanWest,
+        No
+    }
+
 }

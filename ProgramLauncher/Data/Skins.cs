@@ -409,6 +409,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         string IMenuItem.ToolTip { get { return null; } }
         MenuItemType IMenuItem.ItemType { get { return MenuItemType.Button; } }
         Image IMenuItem.Image { get { return this.ImageSmall; } }
+        bool IMenuItem.Enabled { get { return true; } }
         FontStyle? IMenuItem.FontStyle { get { return (Object.ReferenceEquals(this, App.CurrentAppearance) ? (FontStyle?)FontStyle.Bold : (FontStyle?)null); } }
         object IMenuItem.UserData { get; set; }
         #endregion

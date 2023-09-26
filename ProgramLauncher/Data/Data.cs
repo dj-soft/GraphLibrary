@@ -24,7 +24,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             return this.Title;
         }
-
+        /// <summary>
+        /// Počet evidovaných aplikací
+        /// </summary>
+        public int ApplicationsCount { get { return this.Groups.Sum(g => g.Applications.Count); } }
         public List<GroupData> Groups { get; private set; }
         public void CreateInteractiveItems(List<InteractiveItem> interactiveItems)
         {
@@ -35,7 +38,44 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     interactiveItems.Add(appl.CreateInteractiveItem());
             }
         }
+        #region Kontextové menu
+        /// <summary>
+        /// Nabídne kontextové menu pro danou aplikaci
+        /// </summary>
+        /// <param name="mouseState"></param>
+        /// <param name="applicationData"></param>
+        internal void RunContextMenu(MouseState mouseState, ApplicationData applicationData)
+        {
+            bool hasItem = (applicationData != null);
+            var menuItems = new List<IMenuItem>();
+            menuItems.Add(new DataMenuItem() { Text = "Spustit", Image = Properties.Resources.media_playback_start_3_22, UserData = "Run", Enabled = hasItem });
+            menuItems.Add(new DataMenuItem() { Text = "Spustit jako správce", Image = Properties.Resources.media_seek_forward_3_22, UserData = "RunAs", Enabled = hasItem });
+            menuItems.Add(new DataMenuItem() { Text = "Odstranit", Image = Properties.Resources.delete_22, UserData = "Delete", Enabled = hasItem });
+            menuItems.Add(new DataMenuItem() { Text = "Upravit", Image = Properties.Resources.edit_3_22, UserData = "Edit", Enabled = hasItem });
+            menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Separator });
+            menuItems.Add(new DataMenuItem() { Text = "Nový zástupce", Image = Properties.Resources.document_new_3_22, UserData = "NewApp" });
+            menuItems.Add(new DataMenuItem() { Text = "Nová skupina", Image = Properties.Resources.edit_remove_3_22, UserData = "NewGroup" });
 
+            App.SelectFromMenu(menuItems, doContextMenu, mouseState.LocationAbsolute);
+
+            // Provede vybranou akci z kontextového menu
+            void doContextMenu(IMenuItem menuItem)
+            {
+                if (menuItem.UserData is string code)
+                {
+                    switch (code)
+                    {
+                        case "Run":
+                            applicationData.RunNewProcess(false);
+                            break;
+                        case "RunAs":
+                            applicationData.RunNewProcess(true);
+                            break;
+                    }
+                }
+            }
+        }
+        #endregion
         #region Tvorba výchozích dat - namísto prázdných
         /// <summary>
         /// Zajistí, že v daném seznamu bude alespoň jeden prvek, a že první prvek nebude prázdný.
@@ -55,7 +95,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             PageData pageData = new PageData();
             pageData.Title = "Výchozí";
-            pageData.ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\";
+            pageData.ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\klickety.png";
             return pageData;
         }
         #endregion
@@ -119,81 +159,6 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public bool OpenMaximized { get; set; }
         public bool OnlyOneInstance { get; set; }
 
-        #region Tvorba výchozích dat - namísto prázdných
-        /// <summary>
-        /// Zajistí, že v daném seznamu bude alespoň nějaký výchozí prvek.
-        /// </summary>
-        /// <param name="programApplications"></param>
-        internal static void CheckNotVoid(List<ApplicationData> programApplications)
-        {
-            if (programApplications.Count == 0)
-                programApplications.AddRange(ApplicationData.CreateInitialApplicationsData());
-        }
-        /// <summary>
-        /// Vytvoří a vrátí sadu defaultních prvků
-        /// </summary>
-        /// <returns></returns>
-        internal static IEnumerable<ApplicationData> CreateInitialApplicationsData()
-        {
-            var list = new List<ApplicationData>();
-
-            list.Add(new ApplicationData() 
-            {
-                Title = "Windows",
-                Description = "Průzkumník",
-                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\wine.png",
-                OpenMaximized = true,
-                Adress = new Point(0, 0),
-                ExecutableFileName = @"c:\Windows\explorer.exe"
-            });
-
-            list.Add(new ApplicationData() 
-            {
-                Title = "Wordpad",
-                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\abiword.png",
-                Adress = new Point(1, 0),
-                ExecutableFileName = @"c:\Windows\write.exe"
-            });
-            
-            list.Add(new ApplicationData() 
-            { 
-                Title = "MS DOS user",
-                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\evilvte.png",
-                ExecuteInAdminMode = false,
-                OpenMaximized = true,
-                Adress = new Point(0, 1),
-                ExecutableFileName = @"c:\Windows\System32\cmd.exe"
-            });
-
-            list.Add(new ApplicationData()
-            {
-                Title = "MS DOS Admin",
-                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\evilvte.png",
-                ExecuteInAdminMode = true,
-                Adress = new Point(0, 2),
-                ExecutableFileName = @"c:\Windows\System32\cmd.exe"
-            });
-
-            list.Add(new ApplicationData() 
-            {
-                Title = "Libre Office",
-                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\distributions-solaris.png",
-                Adress = new Point(1, 1),
-                OnlyOneInstance = true,
-                ExecutableFileName = @"c:\Program Files (x86)\OpenOffice 4\program\soffice.exe"
-            });
-
-            list.Add(new ApplicationData()
-            {
-                Title = "Dokument",
-                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\gpe-tetris.png",
-                Adress = new Point(2, 0),
-                ExecutableFileName = @"d:\Dokumenty\Vyděšený svišť.png"
-            });
-
-            return list;
-        }
-        #endregion
         #region Spouštění aplikace
         /// <summary>
         /// Spustí / aktivuje daný proces
@@ -206,6 +171,29 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 App.MainForm.StatusLabelApplicationRunText = this.Title;
                 App.MainForm.StatusLabelApplicationRunImage = ImageKindType.MediaForward;
                 _RunNewProcess(null);
+            }
+            catch (Exception exc)
+            {
+                App.ShowMessage(exc.Message, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                App.MainForm.StatusLabelApplicationRunText = null;
+                App.MainForm.StatusLabelApplicationRunImage = null;
+            }
+        }
+        /// <summary>
+        /// Spustí new proces, volitelně lze specifikovat Admin mode
+        /// </summary>
+        /// <param name="executeInAdminMode"></param>
+        public void RunNewProcess(bool? executeInAdminMode = null)
+        {
+            try
+            {
+                //   if (OnlyOneInstance && _TryActivateProcess()) return;
+                App.MainForm.StatusLabelApplicationRunText = this.Title;
+                App.MainForm.StatusLabelApplicationRunImage = ImageKindType.MediaForward;
+                _RunNewProcess(executeInAdminMode);
             }
             catch (Exception exc)
             {
@@ -241,36 +229,80 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             process.StartInfo = psi;
             process.Start();
         }
+        #endregion
+        #region Tvorba výchozích dat - namísto prázdných
         /// <summary>
-        /// Nabídne kontextové menu pro danou aplikaci
+        /// Zajistí, že v daném seznamu bude alespoň nějaký výchozí prvek.
         /// </summary>
-        /// <param name="mouseState"></param>
-        internal void RunContextMenu(MouseState mouseState)
+        /// <param name="programApplications"></param>
+        internal static void CheckNotVoid(List<ApplicationData> programApplications)
         {
-            var menuItems = new List<IMenuItem>();
-            menuItems.Add(new DataMenuItem() { Text = "Spustit", Image = Properties.Resources.media_playback_start_3_22, UserData = "Run" });
-            menuItems.Add(new DataMenuItem() { Text = "Spustit jako správce", Image = Properties.Resources.media_seek_forward_3_22, UserData = "RunAs" });
-            menuItems.Add(new DataMenuItem() { Text = "Odstranit", Image = Properties.Resources.delete_22, UserData = "Delete" });
-            menuItems.Add(new DataMenuItem() { Text = "Upravit", Image = Properties.Resources.edit_3_22, UserData = "Edit" });
+            if (programApplications.Count == 0)
+                programApplications.AddRange(ApplicationData.CreateInitialApplicationsData());
+        }
+        /// <summary>
+        /// Vytvoří a vrátí sadu defaultních prvků
+        /// </summary>
+        /// <returns></returns>
+        internal static IEnumerable<ApplicationData> CreateInitialApplicationsData()
+        {
+            var list = new List<ApplicationData>();
 
-            App.SelectFromMenu(menuItems, doContextMenu, mouseState.LocationAbsolute);
-
-            // Provede vybranou akci z kontextového menu
-            void doContextMenu(IMenuItem menuItem)
+            list.Add(new ApplicationData()
             {
-                if (menuItem.UserData is string code)
-                {
-                    switch (code)
-                    {
-                        case "Run":
-                            _RunNewProcess(false);
-                            break;
-                        case "RunAs":
-                            _RunNewProcess(true);
-                            break;
-                    }
-                }
-            }
+                Title = "Windows",
+                Description = "Průzkumník",
+                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\wine.png",
+                OpenMaximized = true,
+                Adress = new Point(0, 0),
+                ExecutableFileName = @"c:\Windows\explorer.exe"
+            });
+
+            list.Add(new ApplicationData()
+            {
+                Title = "Wordpad",
+                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\abiword.png",
+                Adress = new Point(1, 0),
+                ExecutableFileName = @"c:\Windows\write.exe"
+            });
+
+            list.Add(new ApplicationData()
+            {
+                Title = "MS DOS user",
+                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\evilvte.png",
+                ExecuteInAdminMode = false,
+                OpenMaximized = true,
+                Adress = new Point(0, 1),
+                ExecutableFileName = @"c:\Windows\System32\cmd.exe"
+            });
+
+            list.Add(new ApplicationData()
+            {
+                Title = "MS DOS Admin",
+                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\evilvte.png",
+                ExecuteInAdminMode = true,
+                Adress = new Point(0, 2),
+                ExecutableFileName = @"c:\Windows\System32\cmd.exe"
+            });
+
+            list.Add(new ApplicationData()
+            {
+                Title = "Libre Office",
+                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\distributions-solaris.png",
+                Adress = new Point(1, 1),
+                OnlyOneInstance = true,
+                ExecutableFileName = @"c:\Program Files (x86)\OpenOffice 4\program\soffice.exe"
+            });
+
+            list.Add(new ApplicationData()
+            {
+                Title = "Dokument",
+                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\gpe-tetris.png",
+                Adress = new Point(2, 0),
+                ExecutableFileName = @"d:\Dokumenty\Vyděšený svišť.png"
+            });
+
+            return list;
         }
         #endregion
     }
@@ -312,19 +344,19 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Barva pozadí, smí obsahovat Alpha kanál, smí být null
         /// </summary>
-        public Color? BackColor { get; set; }
-
+        public virtual Color? BackColor { get; set; }
         /// <summary>
         /// Vytvoří a vrátí new instanci interaktivního prvku <see cref="InteractiveDataItem"/> = potomek základního prvku <see cref="InteractiveItem"/>
         /// </summary>
         /// <returns></returns>
-        internal InteractiveItem CreateInteractiveItem()
+        public virtual InteractiveItem CreateInteractiveItem()
         {
-            var item = new InteractiveDataItem(this);
-            return item;
+            return new InteractiveDataItem(this);
         }
-
     }
+    /// <summary>
+    /// Potomek vizuálního = interaktivního prvku vytvořený nad daty <see cref="BaseData"/>.
+    /// </summary>
     public class InteractiveDataItem : InteractiveItem
     {
         public InteractiveDataItem(BaseData data)
