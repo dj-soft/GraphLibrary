@@ -586,8 +586,9 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         public static void SetForText(this Graphics graphics)
         {
-            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
-            graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;             // UHD: OK
+            graphics.SmoothingMode = SmoothingMode.AntiAlias;                                                // UHD: OK
+            graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
         }
 
         public static void DrawImage(this Graphics graphics, Image image, RectangleF bounds, float? alpha = null)

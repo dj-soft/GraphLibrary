@@ -381,8 +381,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             return new InteractiveDataItem(this);
         }
     }
+    #endregion
+    #region class InteractiveDataItem : Potomek vizuálního (= interaktivního) prvku, vytvořený nad daty "BaseData"
     /// <summary>
-    /// Potomek vizuálního = interaktivního prvku vytvořený nad daty <see cref="BaseData"/>.
+    /// Potomek vizuálního (= interaktivního) prvku, vytvořený nad daty <see cref="BaseData"/>.
     /// </summary>
     public class InteractiveDataItem : InteractiveItem
     {

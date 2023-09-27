@@ -64,6 +64,18 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public int? Height { get; set; }
         /// <summary>
+        /// Textem vyjádřený obsah this prvku
+        /// </summary>
+        public string Text { get { return $"Left: {Left}, Width: {Width}, Right: {Right}, Top: {Top}, Height: {Height}, Bottom: {Bottom}"; } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return Text;
+        }
+        /// <summary>
         /// Metoda vrátí konkrétní souřadnice v daném prostoru parenta.
         /// Při tom jsou akceptovány plovoucí souřadnice.
         /// </summary>
@@ -71,6 +83,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <returns></returns>
         public Rectangle GetBounds(Rectangle parentBounds)
         {
+            if (!IsValid)
+                throw new InvalidOperationException($"Neplatně zadané souřadnice v {nameof(RectangleExt)}: {Text}");
+
             var rectangleExt = this;
             getBound(Left, Width, Right, parentBounds.Left, parentBounds.Right, out int x, out int w);
             getBound(Top, Height, Bottom, parentBounds.Top, parentBounds.Bottom, out int y, out int h);
@@ -107,6 +122,45 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 else
                 {   // Nesprávné zadání:
                     throw new InvalidOperationException($"Chyba v datech {nameof(RectangleExt)}: {rectangleExt.ToString()}");
+                }
+            }
+        }
+        /// <summary>
+        /// Obsahuje true, pokud this prostor je korektně zadaný, a může mít kladný vnitřní prostor
+        /// </summary>
+        public bool IsValid
+        {
+            get
+            {
+                return isValid(Left, Width, Right) && isValid(Top, Height, Bottom);
+
+                // Je zadaná sada hodnot platná?
+                bool isValid(int? begin, int? size, int? end)
+                {
+                    bool hasB = begin.HasValue;
+                    bool hasS = size.HasValue;
+                    bool hasE = end.HasValue;
+
+                    return ((hasB && hasS && !hasE)                  // Mám Begin a Size a nemám End     => standardně jako Rectangle
+                         || (hasB && !hasS && hasE)                  // Mám Begin a End a nemám Size     => mám pružnou šířku
+                         || (!hasB && hasS && hasE)                  // Mám Size a End a nemám Begin     => jsem umístěn od konce
+                         || (!hasB && hasS && !hasE));               // Mám Size a nemám Begin ani End   => jsem umístěn Center
+                }
+            }
+        }
+        /// <summary>
+        /// Obsahuje true, pokud this prostor je korektně zadaný, a může mít kladný vnitřní prostor
+        /// </summary>
+        public bool HasContent
+        {
+            get
+            {
+                return IsValid && hasSize(Width) && hasSize(Height);
+
+                // Je daná hodnota kladná nebo null ? (pro Null předpokládáme, že se dopočítá kladné číslo z Parent rozměru)
+                bool hasSize(int? size)
+                {
+                    return (!size.HasValue || (size.HasValue && size.Value > 0));
                 }
             }
         }

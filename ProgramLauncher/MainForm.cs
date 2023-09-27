@@ -73,9 +73,11 @@ namespace DjSoft.Tools.ProgramLauncher
             var menuPoint = _ToolStrip.PointToScreen(_ToolAppearanceButton.Bounds.GetPoint(RectanglePointPosition.BottomLeft));
 
             List<IMenuItem> items = new List<IMenuItem>();
-            items.Add(DataMenuItem.CreateHeader("VZHLED"));
-            items.Add(DataMenuItem.CreateSeparator());
+            items.Add(DataMenuItem.CreateHeader("BAREVNÁ PALETA"));
             items.AddRange(AppearanceInfo.Collection);
+            items.Add(DataMenuItem.CreateSeparator());
+            items.Add(DataMenuItem.CreateHeader("VELIKOST"));
+            items.AddRange(ItemLayoutSet.Collection);
 
             App.SelectFromMenu(items, onAppearanceMenuSelect, menuPoint);
 
@@ -86,6 +88,11 @@ namespace DjSoft.Tools.ProgramLauncher
                 {
                     App.CurrentAppearance = appearanceInfo;
                     App.Settings.AppearanceName = appearanceInfo.Name;
+                }
+                else if (selectedItem is ItemLayoutSet itemLayoutSet)
+                {
+                    App.CurrentLayoutSet = itemLayoutSet;
+                    App.Settings.LayoutSetName = itemLayoutSet.Name;
                 }
             }
         }

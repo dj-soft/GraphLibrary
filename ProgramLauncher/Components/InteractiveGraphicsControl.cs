@@ -73,6 +73,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             this.MouseDown += _MouseDown;
             this.MouseUp += _MouseUp;
             this.MouseLeave += _MouseLeave;
+            this.KeyDown += _KeyDown;
 
             this._MouseDragReset();
 
@@ -118,10 +119,21 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         private void _MouseUp(object sender, MouseEventArgs e)
         {
             var mouseState = MouseState.CreateCurrent(this);
-            if (__CurrentMouseDragState == MouseDragProcessState.MouseDragItem)
-                _MouseDragEnd(mouseState);
-            else
-                _MouseUp(mouseState);
+            switch (__CurrentMouseDragState)
+            {
+                case MouseDragProcessState.MouseDragItem:
+                    _MouseDragEnd(mouseState);
+                    break;
+                case MouseDragProcessState.MouseFrameArea:
+                    _MouseFrameEnd(mouseState);
+                    break;
+                case MouseDragProcessState.Cancelled:
+                    _MouseDragReset();
+                    break;
+                default:
+                    _MouseClickUp(mouseState);
+                    break;
+            }
             _MouseUpEnd(mouseState);
         }
         /// <summary>
@@ -133,6 +145,16 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             var mouseState = MouseState.CreateCurrent(this);
             _MouseMoveNone(mouseState, null, false);
+        }
+        /// <summary>
+        /// Nativní event KeyDown
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _KeyDown(object sender, KeyEventArgs e)
+        {
+            if (__CurrentMouseDragState == MouseDragProcessState.MouseDragItem || __CurrentMouseDragState == MouseDragProcessState.MouseFrameArea)
+                _MouseDragKeyDown(e);
         }
         #endregion
         #region Interaktivita logicky řízená
@@ -159,7 +181,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             {   // Nyní s tlačítkem
                 _MouseDragMove(mouseState);
             }
-
         }
         /// <summary>
         /// Pohyb myši bez stisknutého tlačítka
@@ -198,10 +219,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             this.Draw();
         }
         /// <summary>
-        /// Uvolnění tlačítka myši, nikoli v režimu MouseDrag = provádí se MouseClick, pokud máme nalezený Item
+        /// Uvolnění tlačítka myši, nikoli v režimu MouseDrag = provádí se MouseClick, pokud máme nalezený Item nebo na ploše Area
         /// </summary>
         /// <param name="mouseState"></param>
-        private void _MouseUp(MouseState mouseState)
+        private void _MouseClickUp(MouseState mouseState)
         {
             // Odlišení kliknutí nebo doubleclicku (zde ale nejsme v režimu DragAndDrop, to si řeší _MouseUp => _MouseDragEnd):
             var currentItem = __CurrentMouseItem;
@@ -247,6 +268,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
 
             currentItem.InteractiveState = InteractiveState.Enabled;
         }
+        /// <summary>
+        /// Dokončení myšokliku = uvolnění tlačítka myši, když nebyl proces Drag, a pod myší není žádný prvek.
+        /// Zde se detekuje Click/DoubleClick.
+        /// </summary>
+        /// <param name="mouseState"></param>
         private void _MouseAreaClick(MouseState mouseState)
         {
             // Click se volá v době MouseUp, ale v procesu Click nás zajímá mj. tlačítka myši v době MouseDown,
@@ -367,7 +393,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Myš se nachází nad Controlem
         /// </summary>
         private bool __MouseIsOnControl;
-        private InteractiveItem __LastMouseItem;
         #endregion
         #region Interaktivní proces DragAndDrop
         /// <summary>
@@ -406,27 +431,55 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     __PreviousMouseDownState = null;               // Toto je podklad pro DoubleClick, a ten po Drag neplatí
                 }
             }
-
-            if (__CurrentMouseDragState == MouseDragProcessState.MouseDragItem)
-            {   // Probíhá DragAndDrop: najdeme cílový prvek:
-                __DragVirtualCurrentPoint = mouseState;
-                __MouseDragTargetDataItem = _GetMouseItem(mouseState);
-                this.Draw();
+            // Předchozí blok mohl nastavit aktuální režim __CurrentMouseDragState, proto až nyní následuje switch:
+            switch (__CurrentMouseDragState)
+            {
+                case MouseDragProcessState.MouseDragItem:
+                    // Probíhá DragAndDrop: najdeme cílový prvek:
+                    __DragVirtualCurrentPoint = mouseState;
+                    __MouseDragTargetDataItem = _GetMouseItem(mouseState);
+                    this.Draw();
+                    break;
+                case MouseDragProcessState.MouseFrameArea:
+                    // Probíhá MouseFrame: zapíšeme cílový bod a vykreslíme:
+                    __DragVirtualCurrentPoint = mouseState;
+                    this.Draw();
+                    break;
             }
-            if (__CurrentMouseDragState == MouseDragProcessState.MouseFrameArea)
-            {   // Probíhá MouseFrame: zapíšeme cílový bod a vykreslíme:
-                __DragVirtualCurrentPoint = mouseState;
+        }
+        /// <summary>
+        /// Volá se při KeyDown za stavu <see cref="__CurrentMouseDragState"/> == <see cref="MouseDragProcessState.MouseDragItem"/> nebo <see cref="MouseDragProcessState.MouseFrameArea"/>.
+        /// Pokud je stisknut Escape, pak rušíme Drag = nastavíme <see cref="__CurrentMouseDragState"/> == <see cref="MouseDragProcessState.Cancelled"/> a vyvoláme Draw.
+        /// </summary>
+        /// <param name="e"></param>
+        private void _MouseDragKeyDown(KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Escape)
+            {
+                __CurrentMouseDragState = MouseDragProcessState.Cancelled;
+                this.CursorType = CursorTypes.Default;
                 this.Draw();
             }
         }
         /// <summary>
         /// Volá se při události MouseUp při stavu <see cref="__CurrentMouseDragState"/> == <see cref="MouseDragProcessState.MouseDragItem"/>,
-        /// tedy když reálně probíhá Mouse DragAndDrop.
+        /// tedy když reálně probíhá Mouse DragAndDrop a nyní je dokončováno = Drop.
         /// </summary>
         /// <param name="mouseState"></param>
         private void _MouseDragEnd(MouseState mouseState)
         {
             var targetCell = _GetMouseCell(mouseState);
+
+
+            _MouseDragReset();
+        }
+        /// <summary>
+        /// Volá se při události MouseUp při stavu <see cref="__CurrentMouseDragState"/> == <see cref="MouseDragProcessState.MouseFrameArea"/>,
+        /// tedy když reálně probíhá Mouse Frame a nyní je dokončováno = FrameSelect.
+        /// </summary>
+        /// <param name="mouseState"></param>
+        private void _MouseFrameEnd(MouseState mouseState)
+        {
 
 
             _MouseDragReset();
@@ -469,7 +522,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             None,
             BeginZone,
             MouseDragItem,
-            MouseFrameArea
+            MouseFrameArea,
+            Cancelled
         }
         #endregion
         #endregion

@@ -66,6 +66,12 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public ColorSet StandardTextColors { get { return __TextStandardColors; } set { if (!__IsReadOnly) __TextStandardColors = value; } } private ColorSet __TextStandardColors;
 
         /// <summary>
+        /// Hodnota průhlednosti pro kreslení přesouvaného prvku v režimu Mouse DragAndDrop.
+        /// 0 = neviditelný / 1 = plně viditelný. Defaultní = 0.45
+        /// </summary>
+        public float MouseDragActiveCurrentAlpha { get { return __MouseDragActiveCurrentAlpha; } set { if (!__IsReadOnly) __MouseDragActiveCurrentAlpha = (value < 0f ? 0f : (value > 1f ? 1f : value)); } } private float __MouseDragActiveCurrentAlpha;
+
+        /// <summary>
         /// Vzhled velkého titulku
         /// </summary>
         public TextAppearance MainTitleAppearance { get { return __MainTitleAppearance; } set { if (!__IsReadOnly) __MainTitleAppearance = value; } } private TextAppearance __MainTitleAppearance;
@@ -79,8 +85,17 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public TextAppearance StandardTextAppearance { get { return __StandardTextAppearance; } set { if (!__IsReadOnly) __StandardTextAppearance = value; } } private TextAppearance __StandardTextAppearance;
         /// <summary>
         /// Data jsou ReadOnly?
+        /// Lze setovat pouze tehdy, když dosavadní hodnota je false.
+        /// Tzn.: lze vytvořit new instanci, následně naplnit její hodnoty a na závěr ji nastavit <see cref="IsReadOnly"/> = true. Poté již nelze setovat nic dalšího, bude ignorováno.
         /// </summary>
-        public bool IsReadOnly { get { return __IsReadOnly; } } private bool __IsReadOnly;
+        public bool IsReadOnly { get { return __IsReadOnly; } set { __IsReadOnly |= value; } } private bool __IsReadOnly;
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public AppearanceInfo()
+        {
+            __MouseDragActiveCurrentAlpha = 0.45f;
+        }
         #endregion
         #region Dynamické získání ColorSet a TextAppearance podle PaletteColorPartType a AppearanceTextPartType
         /// <summary>
