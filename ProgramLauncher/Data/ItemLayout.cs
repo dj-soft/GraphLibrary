@@ -131,9 +131,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             layoutSet.__Name = _DefaultName;
             layoutSet.__ImageSmall = Properties.Resources.btn_g2_20;
             layoutSet.__SortOrder = 100;
-            layoutSet.__LayoutPage = ItemLayoutInfo.SetSmallBrick;
+            layoutSet.__LayoutPage = ItemLayoutInfo.PageSmallSet;
             layoutSet.__LayoutGroup = ItemLayoutInfo.SetGroupTitleMiddle;
-            layoutSet.__LayoutApplication = ItemLayoutInfo.SetMediumBrick;
+            layoutSet.__LayoutApplication = ItemLayoutInfo.SetMidiBrick;
             layoutSet.__IsReadOnly = true;
 
             return layoutSet;
@@ -148,9 +148,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             layoutSet.__Name = "Small";
             layoutSet.__ImageSmall = Properties.Resources.btn_09_20;
             layoutSet.__SortOrder = 500;
-            layoutSet.__LayoutPage = ItemLayoutInfo.SetSmallBrick;
+            layoutSet.__LayoutPage = ItemLayoutInfo.PageSmallSet;
             layoutSet.__LayoutGroup = ItemLayoutInfo.SetGroupTitleMiddle;
-            layoutSet.__LayoutApplication = ItemLayoutInfo.SetMediumBrick;
+            layoutSet.__LayoutApplication = ItemLayoutInfo.SetMidiBrick;
             layoutSet.__IsReadOnly = true;
             return layoutSet;
         }
@@ -164,7 +164,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             layoutSet.__Name = "Medium";
             layoutSet.__ImageSmall = Properties.Resources.btn_05_20;
             layoutSet.__SortOrder = 600;
-            layoutSet.__LayoutPage = ItemLayoutInfo.SetSmallBrick;
+            layoutSet.__LayoutPage = ItemLayoutInfo.PageSmallSet;
             layoutSet.__LayoutGroup = ItemLayoutInfo.SetGroupTitleMiddle;
             layoutSet.__LayoutApplication = ItemLayoutInfo.SetMediumBrick;
             layoutSet.__IsReadOnly = true;
@@ -180,7 +180,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             layoutSet.__Name = "Big";
             layoutSet.__ImageSmall = Properties.Resources.btn_22_20;
             layoutSet.__SortOrder = 700;
-            layoutSet.__LayoutPage = ItemLayoutInfo.SetSmallBrick;
+            layoutSet.__LayoutPage = ItemLayoutInfo.PageSmallSet;
             layoutSet.__LayoutGroup = ItemLayoutInfo.SetGroupTitleMiddle;
             layoutSet.__LayoutApplication = ItemLayoutInfo.SetMediumBrick;
             layoutSet.__IsReadOnly = true;
@@ -275,7 +275,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Menší obdélník
         /// </summary>
-        public static ItemLayoutInfo SetSmallBrick
+        public static ItemLayoutInfo PageSmallSet
         {
             get
             {
