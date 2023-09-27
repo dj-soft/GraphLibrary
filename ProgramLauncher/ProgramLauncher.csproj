@@ -59,6 +59,7 @@
     <Compile Include="Components\InteractiveGraphicsControl.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Data\Drawing.cs" />
     <Compile Include="Data\Extensions.cs" />
     <Compile Include="Data\ItemLayout.cs" />
     <Compile Include="Data\Monitors.cs" />

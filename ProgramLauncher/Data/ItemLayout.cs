@@ -225,8 +225,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <para/>
         /// V tomto prostoru se stínuje pozice myši barvou <see cref="ButtonBackColors"/> : <see cref="ColorSet.MouseHighlightColor"/>.
         /// </summary>
-        public Rectangle ContentBounds { get { return __ContentBounds; } set { if (!__IsReadOnly) __ContentBounds = value; } }
-        private Rectangle __ContentBounds;
+        public RectangleExt ContentBounds { get { return __ContentBounds; } set { if (!__IsReadOnly) __ContentBounds = value; } }
+        private RectangleExt __ContentBounds;
         /// <summary>
         /// Souřadnice prostoru s okrajem a vykresleným pozadím.
         /// V tomto prostoru je použita barva <see cref="BorderLineColors"/> a <see cref="ButtonBackColors"/>, 
@@ -234,8 +234,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <para/>
         /// Texty mohou být i mimo tento prostor.
         /// </summary>
-        public Rectangle BorderBounds { get { return __BorderBounds; } set { if (!__IsReadOnly) __BorderBounds = value; } }
-        private Rectangle __BorderBounds;
+        public RectangleExt BorderBounds { get { return __BorderBounds; } set { if (!__IsReadOnly) __BorderBounds = value; } }
+        private RectangleExt __BorderBounds;
         /// <summary>
         /// Zaoblení Borderu, 0 = ostře hranatý
         /// </summary>
@@ -249,8 +249,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Souřadnice prostoru pro ikonu
         /// </summary>
-        public Rectangle ImageBounds { get { return __ImageBounds; } set { if (!__IsReadOnly) __ImageBounds = value; } }
-        private Rectangle __ImageBounds;
+        public RectangleExt ImageBounds { get { return __ImageBounds; } set { if (!__IsReadOnly) __ImageBounds = value; } }
+        private RectangleExt __ImageBounds;
         /// <summary>
         /// Velikost prostoru stínování myši, lze zakázat zadáním prázdného prostoru
         /// </summary>
@@ -264,8 +264,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Souřadnice prostoru pro hlavní text
         /// </summary>
-        public Rectangle MainTitleBounds { get { return __MainTitleBounds; } set { if (!__IsReadOnly) __MainTitleBounds = value; } }
-        private Rectangle __MainTitleBounds;
+        public RectangleExt MainTitleBounds { get { return __MainTitleBounds; } set { if (!__IsReadOnly) __MainTitleBounds = value; } }
+        private RectangleExt __MainTitleBounds;
         /// <summary>
         /// Typ vzhledu hlavního titulku
         /// </summary>
@@ -293,13 +293,13 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 {
                     Name = "Menší cihla",
                     CellSize = new Size(160, 48),
-                    ContentBounds = new Rectangle(2, 2, 156, 44),
-                    BorderBounds = new Rectangle(6, 6, 36, 36),
+                    ContentBounds = new RectangleExt(2, null, 2, 2, null, 2),
+                    BorderBounds = new RectangleExt(6, 36, null, 6, 36, null),
                     MouseHighlightSize = new Size(40, 24),
                     BorderRound = 4,
                     BorderWidth = 1f,
-                    ImageBounds = new Rectangle(12, 12, 24, 24),
-                    MainTitleBounds = new Rectangle(46, 14, 95, 20),
+                    ImageBounds = new RectangleExt(12, 24, null, 12, 24, null),
+                    MainTitleBounds = new RectangleExt(46, null, 8, 10, 20, null),
                     MainTitleAppearanceType = AppearanceTextPartType.MainTitle
                 };
                 return dataLayout;
@@ -316,13 +316,13 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 {
                     Name = "Menší cihla",
                     CellSize = new Size(160, 64),
-                    ContentBounds = new Rectangle(2, 2, 156, 60),
-                    BorderBounds = new Rectangle(4, 4, 56, 56),
+                    ContentBounds = new RectangleExt(2, null, 2, 2, null, 2),
+                    BorderBounds = new RectangleExt(4, 56, null, 4, 56, null),
                     MouseHighlightSize = new Size(40, 24),
                     BorderRound = 4,
                     BorderWidth = 1f,
-                    ImageBounds = new Rectangle(8, 8, 48, 48),
-                    MainTitleBounds = new Rectangle(62, 24, 95, 20),
+                    ImageBounds = new RectangleExt(8, 48, null, 8, 48, null),
+                    MainTitleBounds = new RectangleExt(62, null, 6, 22, 20, null),
                     MainTitleAppearanceType = AppearanceTextPartType.SubTitle
                 };
                 return dataLayout;

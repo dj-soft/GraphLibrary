@@ -9,10 +9,24 @@ namespace DjSoft.Tools.ProgramLauncher.Data
 {
     /// <summary>
     /// Souřadnice.
-    /// Po zadání hodnot lze získat konkrétní souřadnice metodou 
+    /// <para/>
+    /// V jednom každém směru (X, Y) může mít zadánu jednu až dvě souřadnice tak, aby bylo možno získat reálnou souřadnici v parent prostoru:
+    /// Například: Left a Width, nebo Left a Right, nebo Width a Right, nebo jen Width. Tím se řeší různé ukotvení.
+    /// <para/>
+    /// Po zadání hodnot lze získat konkrétní souřadnice metodou <see cref="GetBounds"/>
     /// </summary>
     public struct RectangleExt
     {
+        public RectangleExt(int? left, int? width, int? right, int? top, int? height, int? bottom)
+        {
+            Left = left;
+            Width = width;
+            Right = right;
+
+            Top = top;
+            Height = height;
+            Bottom = bottom;
+        }
         /// <summary>
         /// Souřadnice Left, zadaná. 
         /// Pokud má hodnotu, je prvek vázaný k levé hraně.
@@ -57,11 +71,44 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <returns></returns>
         public Rectangle GetBounds(Rectangle parentBounds)
         {
+            var rectangleExt = this;
+            getBound(Left, Width, Right, parentBounds.Left, parentBounds.Right, out int x, out int w);
+            getBound(Top, Height, Bottom, parentBounds.Top, parentBounds.Bottom, out int y, out int h);
+            return new Rectangle(x, y, w, h);
 
+            void getBound(int? defB, int? defS, int? defE, int parentB, int parentE, out int begin, out int size)
+            {
+                bool hasB = defB.HasValue;
+                bool hasS = defS.HasValue;
+                bool hasE = defE.HasValue;
 
-
-
-
+                if (hasB && hasS && !hasE)
+                {   // Mám Begin a Size a nemám End     => standardně jako Rectangle:
+                    begin = parentB + defB.Value;
+                    size = defS.Value;
+                }
+                else if (hasB && !hasS && hasE)
+                {   // Mám Begin a End a nemám Size     => mám pružnou šířku:
+                    begin = parentB + defB.Value;
+                    size = parentE - defE.Value - begin;
+                }
+                else if (!hasB && hasS && hasE)
+                {   // Mám Size a End a nemám Begin     => jsem umístěn od konce:
+                    int end = parentE - defE.Value;
+                    size = defS.Value;
+                    begin = end - size;
+                }
+                else if (!hasB && hasS && !hasE)
+                {   // Mám Size a nemám Begin ani End   => jsem umístěn Center:
+                    int center = parentB + ((parentE - parentB) / 2);
+                    size = defS.Value;
+                    begin = center - (size / 2);
+                }
+                else
+                {   // Nesprávné zadání:
+                    throw new InvalidOperationException($"Chyba v datech {nameof(RectangleExt)}: {rectangleExt.ToString()}");
+                }
+            }
         }
     }
 }
