@@ -178,7 +178,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <summary>
         /// Nastaví příznak <see cref="IsChanged"/> = true a zahájí odpočet času do provedení AutoSave
         /// </summary>
-        protected void SetChanged()
+        public void SetChanged()
         {
             __IsChanged = true;
 
@@ -227,6 +227,7 @@ namespace DjSoft.Tools.ProgramLauncher
         #region Základní data konfigurace
         public string AppearanceName { get; set; }
         public string LayoutSetName { get; set; }
+        public bool NotifyBaloonAccepted { get; set; }
 
         #endregion
 

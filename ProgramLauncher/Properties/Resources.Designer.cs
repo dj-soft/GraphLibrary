@@ -463,6 +463,16 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap dialog_clean_22 {
+            get {
+                object obj = ResourceManager.GetObject("dialog_clean_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap document_new_3_22 {
             get {
                 object obj = ResourceManager.GetObject("document_new_3_22", resourceCulture);

@@ -19,6 +19,7 @@ namespace DjSoft.Tools.ProgramLauncher
         public MainForm()
         {
             InitializeComponent();
+            InitializeMainForm();
             Tests();
             InitializeToolBar();
             InitializePagesPanel();
@@ -30,6 +31,10 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         private void Tests() { }
         #region Okno
+        private void InitializeMainForm()
+        {
+            this.Icon = Properties.Resources.klickety_2_64;
+        }
         protected override void OnClosing(CancelEventArgs e)
         {
             bool enableExit = App.ApplicationIsClosing || Control.ModifierKeys == Keys.Control;        // CTRL povolí Exit

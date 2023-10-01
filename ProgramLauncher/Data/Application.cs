@@ -251,9 +251,12 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             if (_TrayNotifyMenu is null)
             {
+                bool notifyBaloonAccepted = App.Settings.NotifyBaloonAccepted;
                 var menuItems = new IMenuItem[]
                 { 
-                    new DataMenuItem() { Text = "Aktivuj aplikaci", Image = Properties.Resources.klickety_2_22, UserData = 1 }, 
+                    new DataMenuItem() { Text = "Aktivuj aplikaci", Image = Properties.Resources.klickety_2_22, UserData = 1 },
+                    new DataMenuItem() { Text = "Pochopil jsem informaci", Image = (notifyBaloonAccepted ? Properties.Resources.dialog_clean_22 : null), UserData = 2 },
+                    new DataMenuItem() { ItemType = MenuItemType.Separator },
                     new DataMenuItem() { Text = "Zavři aplikaci", Image = Properties.Resources.application_exit_5_22, UserData = 0 } 
                 };
                 _TrayNotifyMenu = CreateContextMenuStrip(menuItems, _TrayNotifyMenuClick);
@@ -302,11 +305,15 @@ namespace DjSoft.Tools.ProgramLauncher
             {
                 switch (value)
                 {
+                    case 0:           // close
+                        _TrayNotifyIconCloseApplicateion();
+                        break;
                     case 1:           // activate
                         _TrayNotifyIconActivateMainForm();
                         break;
-                    case 0:           // close
-                        _TrayNotifyIconCloseApplicateion();
+                    case 2:           // Akceptován baloon tip
+                        App.Settings.NotifyBaloonAccepted = !App.Settings.NotifyBaloonAccepted;
+                        App.Settings.SetChanged();
                         break;
                 }
             }
