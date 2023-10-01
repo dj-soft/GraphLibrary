@@ -29,7 +29,25 @@ namespace DjSoft.Tools.ProgramLauncher
             ReloadPages();
         }
         private void Tests() { }
+        #region Okno
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            bool enableExit = App.ApplicationIsClosing || Control.ModifierKeys == Keys.Control;        // CTRL povolí Exit
+            if (enableExit)
+            {   
+                base.OnClosing(e);
+                return;
+            }
 
+            App.ActivateTrayNotifyIcon();
+            e.Cancel = true;
+
+            if (App.IsDebugMode)
+                this.WindowState = FormWindowState.Minimized;
+            else
+                this.Visible = false;
+        }
+        #endregion
         #region Appearance
         /// <summary>
         /// Inicializace vzhledu a Settings a ukládání a tak

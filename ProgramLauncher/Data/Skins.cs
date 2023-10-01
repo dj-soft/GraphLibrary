@@ -88,7 +88,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Lze setovat pouze tehdy, když dosavadní hodnota je false.
         /// Tzn.: lze vytvořit new instanci, následně naplnit její hodnoty a na závěr ji nastavit <see cref="IsReadOnly"/> = true. Poté již nelze setovat nic dalšího, bude ignorováno.
         /// </summary>
-        public bool IsReadOnly { get { return __IsReadOnly; } set { __IsReadOnly |= value; } } private bool __IsReadOnly;
+        public bool IsReadOnly { get { return __IsReadOnly; } set { if (!__IsReadOnly) __IsReadOnly = value; } } private bool __IsReadOnly;
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -634,7 +634,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Data jsou ReadOnly?
         /// </summary>
-        public bool IsReadOnly { get { return __IsReadOnly; } } private bool __IsReadOnly;
+        public bool IsReadOnly { get { return __IsReadOnly; } set { if (!__IsReadOnly) __IsReadOnly = value; } } private bool __IsReadOnly;
         /// <summary>
         /// Vrátí barvu pro daný stav
         /// </summary>
@@ -722,7 +722,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Data jsou ReadOnly?
         /// </summary>
-        public bool IsReadOnly { get { return __IsReadOnly; } } private bool __IsReadOnly;
+        public bool IsReadOnly { get { return __IsReadOnly; } set { if (!__IsReadOnly) __IsReadOnly = value; } } private bool __IsReadOnly;
         /// <summary>
         /// Styl textu pro daný interaktivní stav (použij indexer s indexem type <see cref="InteractiveState"/>).
         /// Na výstupu není nikdy null - každý stav má svůj styl.
@@ -802,7 +802,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Data jsou ReadOnly?
         /// </summary>
-        public bool IsReadOnly { get { return __IsReadOnly; } } private bool __IsReadOnly;
+        public bool IsReadOnly { get { return __IsReadOnly; } set { if (!__IsReadOnly) __IsReadOnly = value; } } private bool __IsReadOnly;
     }
     /// <summary>
     /// Modifikátor stylu písma pro kokrétní interaktivní stav
@@ -843,7 +843,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Data jsou ReadOnly?
         /// </summary>
-        public bool IsReadOnly { get { return __IsReadOnly; } } private bool __IsReadOnly;
+        public bool IsReadOnly { get { return __IsReadOnly; } set { if (!__IsReadOnly) __IsReadOnly = value; } } private bool __IsReadOnly;
         /// <summary>
         /// Obsahuje prázdnou ReadOnly instanci
         /// </summary>

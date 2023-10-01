@@ -73,6 +73,16 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap application_exit_5_22 {
+            get {
+                object obj = ResourceManager.GetObject("application_exit_5_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap applications_graphics_2_48 {
             get {
                 object obj = ResourceManager.GetObject("applications_graphics_2_48", resourceCulture);
@@ -607,6 +617,26 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
             get {
                 object obj = ResourceManager.GetObject("help_hint_22", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap klickety_2_22 {
+            get {
+                object obj = ResourceManager.GetObject("klickety_2_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon klickety_2_64 {
+            get {
+                object obj = ResourceManager.GetObject("klickety_2_64", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
             }
         }
         

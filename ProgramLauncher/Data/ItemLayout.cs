@@ -42,9 +42,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Data jsou ReadOnly?
         /// </summary>
-        public bool IsReadOnly { get { return __IsReadOnly; } } private bool __IsReadOnly;
+        public bool IsReadOnly { get { return __IsReadOnly; } set { if (!__IsReadOnly) __IsReadOnly = value; } } private bool __IsReadOnly;
         /// <summary>
-        /// Metoda vrátí konkrétní layout daného druhu, z této sady.
+        /// Metoda vrátí konkrétní layout daného druhu z této aktuální sady.
         /// </summary>
         /// <param name="layoutKind"></param>
         /// <returns></returns>
@@ -60,11 +60,14 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         }
 
         #endregion
-        #region Statické konstruktory konkrétních stylů
+        #region Statické konstruktory konkrétních stylů, jejich kolekce a Default
         /// <summary>
         /// Kolekce všech standardních i přidaných definic
         /// </summary>
         public static ItemLayoutSet[] Collection { get { return _Collection.Values.ToArray(); } }
+        /// <summary>
+        /// Defaultní výchozí vzhled
+        /// </summary>
         public static ItemLayoutSet Default { get { return GetItem(_DefaultName); } }
         private const string _DefaultName = "Default";
         /// <summary>
@@ -131,11 +134,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             layoutSet.__Name = _DefaultName;
             layoutSet.__ImageSmall = Properties.Resources.btn_g2_20;
             layoutSet.__SortOrder = 100;
-            layoutSet.__LayoutPage = ItemLayoutInfo.PageSmallSet;
+            layoutSet.__LayoutPage = ItemLayoutInfo.LayoutPageMedium;
             layoutSet.__LayoutGroup = ItemLayoutInfo.SetGroupTitleMiddle;
             layoutSet.__LayoutApplication = ItemLayoutInfo.SetMidiBrick;
             layoutSet.__IsReadOnly = true;
-
             return layoutSet;
         }
         /// <summary>
@@ -148,7 +150,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             layoutSet.__Name = "Small";
             layoutSet.__ImageSmall = Properties.Resources.btn_09_20;
             layoutSet.__SortOrder = 500;
-            layoutSet.__LayoutPage = ItemLayoutInfo.PageSmallSet;
+            layoutSet.__LayoutPage = ItemLayoutInfo.LayoutPageSmall;
             layoutSet.__LayoutGroup = ItemLayoutInfo.SetGroupTitleMiddle;
             layoutSet.__LayoutApplication = ItemLayoutInfo.SetMidiBrick;
             layoutSet.__IsReadOnly = true;
@@ -164,7 +166,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             layoutSet.__Name = "Medium";
             layoutSet.__ImageSmall = Properties.Resources.btn_05_20;
             layoutSet.__SortOrder = 600;
-            layoutSet.__LayoutPage = ItemLayoutInfo.PageSmallSet;
+            layoutSet.__LayoutPage = ItemLayoutInfo.LayoutPageMedium;
             layoutSet.__LayoutGroup = ItemLayoutInfo.SetGroupTitleMiddle;
             layoutSet.__LayoutApplication = ItemLayoutInfo.SetMediumBrick;
             layoutSet.__IsReadOnly = true;
@@ -180,7 +182,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             layoutSet.__Name = "Big";
             layoutSet.__ImageSmall = Properties.Resources.btn_22_20;
             layoutSet.__SortOrder = 700;
-            layoutSet.__LayoutPage = ItemLayoutInfo.PageSmallSet;
+            layoutSet.__LayoutPage = ItemLayoutInfo.LayoutPageLarge;
             layoutSet.__LayoutGroup = ItemLayoutInfo.SetGroupTitleMiddle;
             layoutSet.__LayoutApplication = ItemLayoutInfo.SetMediumBrick;
             layoutSet.__IsReadOnly = true;
@@ -204,7 +206,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
     {
         #region Public properties
         /// <summary>
-        /// Jméno stylu
+        /// Jméno layoutu
         /// </summary>
         public string Name { get { return __Name; } set { if (!__IsReadOnly) __Name = value; } } private string __Name;
         /// <summary>
@@ -252,7 +254,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Data jsou ReadOnly?
         /// </summary>
-        public bool IsReadOnly { get { return __IsReadOnly; } } private bool __IsReadOnly;
+        public bool IsReadOnly { get { return __IsReadOnly; } set { if (!__IsReadOnly) __IsReadOnly = value; } } private bool __IsReadOnly;
         /// <summary>
         /// Souřadnice prostoru pro hlavní text
         /// </summary>
@@ -273,28 +275,78 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         #endregion
         #region Statické konstruktory konkrétních stylů
         /// <summary>
-        /// Menší obdélník
+        /// Záhlaví stránky - menší
         /// </summary>
-        public static ItemLayoutInfo PageSmallSet
+        public static ItemLayoutInfo LayoutPageSmall
         {
             get
             {
                 ItemLayoutInfo dataLayout = new ItemLayoutInfo()
                 {
-                    Name = "Menší cihla",
-                    CellSize = new Size(160, 48),
+                    Name = "Stránka malá",
+                    CellSize = new Size(160, 40),
                     ContentBounds = new RectangleExt(2, null, 2, 2, null, 2),
-                    BorderBounds = new RectangleExt(6, 36, null, 6, 36, null),
+                    BorderBounds = new RectangleExt(4, 32, null, 4, 32, null),
+                    MouseHighlightSize = new Size(30, 20),
+                    BorderRound = 3,
+                    BorderWidth = 1f,
+                    ImageBounds = new RectangleExt(8, 24, null, 8, 24, null),
+                    MainTitleBounds = new RectangleExt(40, null, 6, 10, 20, null),
+                    MainTitleAppearanceType = AppearanceTextPartType.MainTitle,
+                    IsReadOnly = true
+                };
+                return dataLayout;
+            }
+        }
+        /// <summary>
+        /// Záhlaví stránky - střední
+        /// </summary>
+        public static ItemLayoutInfo LayoutPageMedium
+        {
+            get
+            {
+                ItemLayoutInfo dataLayout = new ItemLayoutInfo()
+                {
+                    Name = "Stránka malá",
+                    CellSize = new Size(180, 48),
+                    ContentBounds = new RectangleExt(2, null, 2, 2, null, 2),
+                    BorderBounds = new RectangleExt(8, 32, null, 8, 32, null),
                     MouseHighlightSize = new Size(40, 24),
                     BorderRound = 4,
                     BorderWidth = 1f,
                     ImageBounds = new RectangleExt(12, 24, null, 12, 24, null),
                     MainTitleBounds = new RectangleExt(46, null, 8, 10, 20, null),
-                    MainTitleAppearanceType = AppearanceTextPartType.MainTitle
+                    MainTitleAppearanceType = AppearanceTextPartType.MainTitle,
+                    IsReadOnly = true
                 };
                 return dataLayout;
             }
         }
+        /// <summary>
+        /// Záhlaví stránky - velký
+        /// </summary>
+        public static ItemLayoutInfo LayoutPageLarge
+        {
+            get
+            {
+                ItemLayoutInfo dataLayout = new ItemLayoutInfo()
+                {
+                    Name = "Stránka malá",
+                    CellSize = new Size(200, 60),
+                    ContentBounds = new RectangleExt(3, null, 3, 3, null, 3),
+                    BorderBounds = new RectangleExt(10, 40, null, 10, 40, null),
+                    MouseHighlightSize = new Size(44, 26),
+                    BorderRound = 5,
+                    BorderWidth = 1f,
+                    ImageBounds = new RectangleExt(12, 36, null, 12, 36, null),
+                    MainTitleBounds = new RectangleExt(56, null, 8, 10, 20, null),
+                    MainTitleAppearanceType = AppearanceTextPartType.MainTitle,
+                    IsReadOnly = true
+                };
+                return dataLayout;
+            }
+        }
+
         /// <summary>
         /// Střední obdélník
         /// </summary>
@@ -313,7 +365,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     BorderWidth = 1f,
                     ImageBounds = new RectangleExt(8, 48, null, 8, 48, null),
                     MainTitleBounds = new RectangleExt(62, null, 6, 22, 20, null),
-                    MainTitleAppearanceType = AppearanceTextPartType.SubTitle
+                    MainTitleAppearanceType = AppearanceTextPartType.SubTitle,
+                    IsReadOnly = true
                 };
                 return dataLayout;
             }
@@ -336,7 +389,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     BorderWidth = 1f,
                     ImageBounds = new RectangleExt(22, 48, null, 22, 48, null),
                     MainTitleBounds = new RectangleExt(82, null, 8, 22, 22, null),
-                    MainTitleAppearanceType = AppearanceTextPartType.MainTitle
+                    MainTitleAppearanceType = AppearanceTextPartType.MainTitle,
+                    IsReadOnly = true
                 };
                 return dataLayout;
             }
@@ -354,7 +408,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     CellSize = new Size(-1, 24),
                     ContentBounds = new RectangleExt(0, null, 0, 0, 24, null),
                     MainTitleBounds = new RectangleExt(12, null, 12, 2, null, 2),
-                    MainTitleAppearanceType = AppearanceTextPartType.MainTitle
+                    MainTitleAppearanceType = AppearanceTextPartType.MainTitle,
+                    IsReadOnly = true
                 };
                 return dataLayout;
             }

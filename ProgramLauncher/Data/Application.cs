@@ -6,8 +6,8 @@ using System.Drawing.Drawing2D;
 using System.Drawing;
 using System.Windows.Forms;
 using DjSoft.Tools.ProgramLauncher.Data;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolTip;
+using System.Diagnostics;
+using System.Management;
 
 namespace DjSoft.Tools.ProgramLauncher
 {
@@ -91,6 +91,7 @@ namespace DjSoft.Tools.ProgramLauncher
             _DisposeGraphics();
             _DisposeFonts();
             _DisposeImages();
+            _DisposeTrayNotifyIcon();
             __MainForm = null;
         }
         /// <summary>
@@ -135,6 +136,222 @@ namespace DjSoft.Tools.ProgramLauncher
             StringComparison comparison = (caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
             return arguments.TryFindFirst(a => a.StartsWith(textBegin, comparison), out foundArgument);
         }
+        #endregion
+        #region Vyhledání Windows procesu, Tray ikona
+        /// <summary>
+        /// Metoda vyhledá a vrátí systémový process pro daný spustitelný soubor
+        /// </summary>
+        /// <param name="applicationName"></param>
+        /// <param name="arguments"></param>
+        /// <param name="processId"></param>
+        /// <returns></returns>
+        public static Process SearchForProcess(string applicationName, string arguments = null, int? processId = null)
+        {
+            Process process = null;
+            if (String.IsNullOrEmpty(applicationName)) return process;
+
+            var processes = Process.GetProcesses();
+            string name = System.IO.Path.GetFileName(applicationName);
+            var prefiltered = processes.Where(p => isPrefilter(p)).ToArray();
+            var startTime = (prefiltered.Length == 0 ? null : (DateTime?)prefiltered[0].StartTime);
+
+            if (processId.HasValue)
+            {
+                process = processes.FirstOrDefault(p => p.Id == processId.Value);
+                if (process != null) return process;
+            }
+
+            foreach (var proc in processes)
+            {
+                try
+                {
+                    if (proc.MainWindowHandle != IntPtr.Zero)
+                    {
+                        var mainModuleFile = proc.MainModule?.FileName;
+                        if (String.Equals(mainModuleFile, applicationName, StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            var args = getArgumentsOfProcess(proc.Id);
+                            if (String.Equals(arguments ?? "", args ?? "", StringComparison.InvariantCultureIgnoreCase))      // Konverze null => "" pro obě hodnoty
+                            {
+                                process = proc;
+                                break;
+                            }
+                        }
+                    }
+                }
+                catch (Exception) { /* Tento proces to nebude. */ }
+            }
+            return process;
+
+
+            // Vrátí true, pokud daný proces 
+            bool isPrefilter(Process filtProc)
+            {
+                try
+                {
+                    return filtProc != null && filtProc.MainWindowHandle != IntPtr.Zero && String.Equals(System.IO.Path.GetFileName(filtProc.MainModule.FileName), name, StringComparison.InvariantCultureIgnoreCase);
+                }
+                catch { }
+                return false;
+            }
+
+            // Pro daný proces najde a vrátí argumenty z jeho CommandLine
+            string getArgumentsOfProcess(int procId)
+            {
+                string wmiQuery = $"select CommandLine from Win32_Process where ProcessId={procId}";
+                string cmdArguments = "";
+                using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(wmiQuery))
+                using (ManagementObjectCollection retObjectCollection = searcher.Get())
+                {
+                    foreach (ManagementObject retObject in retObjectCollection)
+                    {   // Jednotlivé řádky = jednotlivé procesy:
+                        var commandLine = retObject["CommandLine"];       // commandLine například:   "C:\WINDOWS\system32\NOTEPAD.EXE" D:\Windows\Složka\a další\Text.txt
+                        cmdArguments = getArgumentsOfCommandLine(commandLine as String);
+                        break;
+                        // Když bych dal dotaz:                           $"select * from Win32_Process where ProcessId={procId}"
+                        // Pak můžu číst všechny informace o procesu:     foreach (var item in retObject.Properties) { }
+                    }
+                }
+                return cmdArguments;
+            }
+
+            // Z celého textu CommandLine vrátí část odpovídající argumentům
+            string getArgumentsOfCommandLine(string cmdLine)
+            {
+                string args = null;
+                if (String.IsNullOrEmpty(cmdLine)) return args;
+                cmdLine = cmdLine.Trim();
+                if (cmdLine.Length <= 1) return args;
+
+                int index = ((cmdLine[0] == '"') ?
+                    cmdLine.IndexOf("\"", 1) :              // Pokud začínáme uvozovkou, pak najdeme tu druhou ... "C:\WINDOWS\system32\NOTEPAD.EXE" D:\Windows\Složka\a další\Text.txt
+                    cmdLine.IndexOf(" ", 1));               // Pokud NEzačínáme uvozovkou, pak najdeme mezeru  ...  C:\WINDOWS\system32\NOTEPAD.EXE D:\Windows\Složka\a další\Text.txt
+                if (index < 0 || index >= (cmdLine.Length - 1)) return args;
+
+                return cmdLine.Substring(index + 1).TrimStart();
+            }
+        }
+        /// <summary>
+        /// Metoda zajistí aktivaci hlavního okna daného procesu
+        /// </summary>
+        /// <param name="process"></param>
+        public static void ActivateWindowsProcess(Process process)
+        {
+            if (process != null && process.MainWindowHandle != IntPtr.Zero)
+                WinApi.SetWindowToForeground(process.MainWindowHandle, true);
+        }
+        public static bool ApplicationIsClosing { get { return Current._ApplicationIsClosing; } set { Current._ApplicationIsClosing = value; } }
+        private bool _ApplicationIsClosing;
+        /// <summary>
+        /// Obsahuje true v VisualStudio Debugger režimu, false při běžném Run mode
+        /// </summary>
+        public static bool IsDebugMode { get { return System.Diagnostics.Debugger.IsAttached; } }
+        public static void ActivateTrayNotifyIcon() { Current._ActivateTrayNotifyIcon(); }
+        private void _ActivateTrayNotifyIcon()
+        {
+            if (_TrayNotifyMenu is null)
+            {
+                var menuItems = new IMenuItem[]
+                { 
+                    new DataMenuItem() { Text = "Aktivuj aplikaci", Image = Properties.Resources.klickety_2_22, UserData = 1 }, 
+                    new DataMenuItem() { Text = "Zavři aplikaci", Image = Properties.Resources.application_exit_5_22, UserData = 0 } 
+                };
+                _TrayNotifyMenu = CreateContextMenuStrip(menuItems, _TrayNotifyMenuClick);
+            }
+
+            if (_TrayNotifyIcon is null)
+            {
+                _TrayNotifyIcon = new NotifyIcon()
+                {
+                    Icon = Properties.Resources.klickety_2_64,
+                    Text = "Program Launcher",
+                    BalloonTipIcon = ToolTipIcon.Info,
+                    BalloonTipTitle = "Ukončení aplikace",
+                    BalloonTipText = "Aplikace je jen schovaná.\r\nPro reálné vypnutí ji zavřete křížkem spolu s klávesou CTRL!",
+                    ContextMenuStrip = _TrayNotifyMenu
+                };
+                _TrayNotifyIcon.MouseClick += _TrayNotifyIcon_MouseClick;
+            }
+            _TrayNotifyIcon.Visible = true;
+
+            TimeSpan repeatTime = (App.IsDebugMode ? TimeSpan.FromSeconds(15d) : TimeSpan.FromMinutes(30d));
+            _ShowBaloonTrayNotifyIcon(repeatTime, TimeSpan.FromSeconds(6));
+        }
+        /// <summary>
+        /// Metoda zobrazí BaloonTip pro Tray ikonu.
+        /// Nezobrazí ji, pokud byla zobrazena nedávno (v době <paramref name="repeatTime"/>).
+        /// Zobrazí ji na daný časový interval <paramref name="baloonTime"/>.
+        /// Zapamatuje si čas, kdy je zobrazena, aby příště bylo možno určit čas <paramref name="repeatTime"/>.
+        /// </summary>
+        /// <param name="repeatTime"></param>
+        /// <param name="baloonTime"></param>
+        private void _ShowBaloonTrayNotifyIcon(TimeSpan? repeatTime, TimeSpan baloonTime)
+        {
+            var now = DateTime.Now;
+
+            // Pokud je dán čas 'repeatTime' (=čas opakování informace), a informace už byla zobrazena (naposledy v čase _TrayNotifyIconLastBaloonTime),
+            // a aktuální čas 'now' je menší než čas poslední informace plus 'repeatTime', pak baloon nezobrazím:
+            if (repeatTime.HasValue && _TrayNotifyIconLastBaloonTime.HasValue && now < _TrayNotifyIconLastBaloonTime.Value.Add(repeatTime.Value)) return;
+
+            _TrayNotifyIconLastBaloonTime = now;
+            _TrayNotifyIcon.ShowBalloonTip((int)baloonTime.TotalMilliseconds);
+        }
+        private void _TrayNotifyMenuClick(IMenuItem menuItem)
+        {
+            if (menuItem.UserData is int value)
+            {
+                switch (value)
+                {
+                    case 1:           // activate
+                        _TrayNotifyIconActivateMainForm();
+                        break;
+                    case 0:           // close
+                        _TrayNotifyIconCloseApplicateion();
+                        break;
+                }
+            }
+        }
+        private void _TrayNotifyIcon_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                _TrayNotifyIconActivateMainForm();
+            }
+            else
+            {
+                
+            }
+        }
+        private void _TrayNotifyIconActivateMainForm()
+        {
+            this.__MainForm.Activate(true);
+            _TrayNotifyIcon.Visible = false;
+        }
+        private void _TrayNotifyIconCloseApplicateion()
+        {
+            this._ApplicationIsClosing = true;
+            this.__MainForm.Close();
+        }
+        /// <summary>
+        /// Provede úklid TrayNotifyIcon
+        /// </summary>
+        private void _DisposeTrayNotifyIcon()
+        {
+            if (_TrayNotifyIcon != null)
+            {
+                _TrayNotifyIcon.Visible = false;
+                _TrayNotifyIcon.Dispose();
+                _TrayNotifyIcon = null;
+            }
+            if (_TrayNotifyMenu != null)
+            {
+                _TrayNotifyMenu.Dispose();
+                _TrayNotifyMenu = null;
+            }
+        }
+        private ContextMenuStrip _TrayNotifyMenu;
+        private NotifyIcon _TrayNotifyIcon;
+        private DateTime? _TrayNotifyIconLastBaloonTime;
         #endregion
         #region Settings
         #region Přístup na Settings
@@ -189,16 +406,50 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             if (!pointOnScreen.HasValue) pointOnScreen = Control.MousePosition;
 
-            ToolStripDropDownMenu menu = new ToolStripDropDownMenu();
-            foreach (var menuItem in menuItems)
-                menu.Items.Add(_CreateToolStripItem(menuItem, onSelectItem));
+            ToolStripDropDownMenu menu = CreateToolStripDropDownMenu(menuItems, onSelectItem);
+            menu.Show(pointOnScreen.Value);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí <see cref="ToolStripDropDownMenu"/> pro dané prvky a cílovou akci
+        /// </summary>
+        /// <param name="menuItems"></param>
+        /// <param name="onSelectItem"></param>
+        /// <returns></returns>
+        public static ToolStripDropDownMenu CreateToolStripDropDownMenu(IEnumerable<IMenuItem> menuItems, Action<IMenuItem> onSelectItem)
+        {
+            var menu = new ToolStripDropDownMenu();
 
             menu.DropShadowEnabled = true;
             menu.RenderMode = ToolStripRenderMode.Professional;
             menu.ShowCheckMargin = false;
             menu.ShowImageMargin = true;
             menu.ItemClicked += _OnMenuItemClicked;
-            menu.Show(pointOnScreen.Value);
+
+            foreach (var menuItem in menuItems)
+                menu.Items.Add(_CreateToolStripItem(menuItem, onSelectItem));
+
+            return menu;
+        }
+        /// <summary>
+        /// Vytvoří a vrátí <see cref="ContextMenuStrip"/> pro dané prvky a cílovou akci
+        /// </summary>
+        /// <param name="menuItems"></param>
+        /// <param name="onSelectItem"></param>
+        /// <returns></returns>
+        public static ContextMenuStrip CreateContextMenuStrip(IEnumerable<IMenuItem> menuItems, Action<IMenuItem> onSelectItem)
+        {
+            var menu = new ContextMenuStrip();
+
+            menu.DropShadowEnabled = true;
+            menu.RenderMode = ToolStripRenderMode.Professional;
+            menu.ShowCheckMargin = false;
+            menu.ShowImageMargin = true;
+            menu.ItemClicked += _OnMenuItemClicked;
+
+            foreach (var menuItem in menuItems)
+                menu.Items.Add(_CreateToolStripItem(menuItem, onSelectItem));
+
+            return menu;
         }
         /// <summary>
         /// Vygeneruje a vrátí <see cref="ToolStripMenuItem"/> z dané datové položky

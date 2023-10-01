@@ -42,14 +42,20 @@ namespace DjSoft.Tools.ProgramLauncher
                 }
                 else
                 {   // Máme soubor a není Reset => načteme jej:
-                    var persistArgs = new Data.PersistArgs() { XmlFile = fileName };
-                    var result = DjSoft.Tools.ProgramLauncher.Data.Persist.Deserialize(persistArgs);
-                    if (result is Settings settings)
+                    var persistArgs = new PersistArgs() { XmlFile = fileName };
+                    try
                     {
-                        settings._RunAfterLoad(fileName);
-                        return settings;
+                        var result = Persist.Deserialize(persistArgs);
+                        if (result is Settings settings)
+                        {
+                            settings._RunAfterLoad(fileName);
+                            return settings;
+                        }
                     }
-                    App.ShowMessage($"Konfigurační soubor {fileName} je poškozen a nelze z něj načíst data programu.", System.Windows.Forms.MessageBoxIcon.Warning);
+                    catch (Exception ex)
+                    {
+                        App.ShowMessage($"Konfigurační soubor {fileName} je poškozen a nelze z něj načíst data programu.\r\n{ex.Message}", System.Windows.Forms.MessageBoxIcon.Warning);
+                    }
                 }
             }
 
@@ -79,7 +85,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <returns></returns>
         private static string _GetFileName()
         {
-            var dataPath = System.Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.Create);  // C:\Users\{userName}\AppData\Local
+            var dataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.Create);  // C:\Users\{userName}\AppData\Local
             var settingPath = System.IO.Path.Combine(dataPath, App.Company, App.ProductName);
             return System.IO.Path.Combine(settingPath, File);
         }

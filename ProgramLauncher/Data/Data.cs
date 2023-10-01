@@ -7,6 +7,9 @@ using System.Windows.Forms;
 using System.Drawing;
 using DjSoft.Tools.ProgramLauncher.Components;
 using DjSoft.Tools.ProgramLauncher.Data;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System.Management;
 
 namespace DjSoft.Tools.ProgramLauncher.Data
 {
@@ -163,12 +166,20 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             return $"Title: {Title}; Executable: {ExecutableFileName}";
         }
+        [PropertyName("File")]
         public string ExecutableFileName { get; set; }
+        [PropertyName("WorkingDirectory")]
         public string ExecutableWorkingDirectory { get; set; }
+        [PropertyName("Arguments")]
         public string ExecutableArguments { get; set; }
+        [PropertyName("AdminMode")]
         public bool ExecuteInAdminMode { get; set; }
+        [PropertyName("Maximized")]
         public bool OpenMaximized { get; set; }
+        [PropertyName("OneInstance")]
         public bool OnlyOneInstance { get; set; }
+
+        [PersistingEnabled(false)]
         public override DataLayoutKind? LayoutKind { get { return DataLayoutKind.Applications; } set { } }
         #region Spouštění aplikace
         /// <summary>
@@ -178,10 +189,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             try
             {
-                //   if (OnlyOneInstance && _TryActivateProcess()) return;
                 App.MainForm.StatusLabelApplicationRunText = this.Title;
                 App.MainForm.StatusLabelApplicationRunImage = ImageKindType.MediaForward;
-                _RunNewProcess(null);
+                if (!_TryActivateProcess())
+                    _RunNewProcess(null);
             }
             catch (Exception exc)
             {
@@ -216,19 +227,131 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 App.MainForm.StatusLabelApplicationRunImage = null;
             }
         }
+        /// <summary>
+        /// Pokusí se najít a aktivovat zdejší proces, pokud this má nastaveno <see cref="OnlyOneInstance"/> = spustit jen jednu instanci.
+        /// Primárně se proces hledá v <see cref="_LastProcess"/>, anebo podle <see cref="__LastProcessId"/>.
+        /// Tedy pokud byl spuštěn this instancí programu, pak ji najde pokud běží.
+        /// <para/>
+        /// Pokud ale cílová aplikace byla spuštěna někým jiným, pak ji zkusí najít podle shody jména aplikace a argumentů.
+        /// </summary>
+        /// <returns></returns>
         private bool _TryActivateProcess()
         {
-            var allProcesses = System.Diagnostics.Process.GetProcesses();
-            var myProcesses = allProcesses.Where(p => p.MainModule.FileName == ExecutableFileName).ToArray();
+            bool result = false;
+            if (!OnlyOneInstance) return false;
 
-            return false;
+            Process myProcess = null;
+            Process[] allProcesses = null;
+            try
+            {
+                bool hasLastProcess = false;
+                if (this._LastProcess != null)             // Tady už je zajištěno, že můj proces žije
+                {
+                    myProcess = this._LastProcess;
+                    hasLastProcess = true;
+                }
+
+                if (myProcess is null)
+                {
+                    myProcess = App.SearchForProcess(_CurrentFileName, _CurrentArguments, __LastProcessId);
+                }
+
+                if (myProcess != null && !myProcess.HasExited && myProcess.MainWindowHandle != IntPtr.Zero)
+                {
+                    if (!hasLastProcess)
+                        _StoreRunningProcess(myProcess);
+                    App.ActivateWindowsProcess(myProcess);
+                    result = true;
+                }
+            }
+            catch (Exception exc)
+            { }
+            return result;
+
+
+            // Zkusí najít a vrátit existující proces z pole allProcesses, který odpovídá zdejší aplikaci (jméno aplikace + argumenty)
+            Process searchForMyProcess()
+            {
+                Process found = null;
+
+                string currentFileName = _CurrentFileName;
+                string currentArguments = _CurrentArguments;
+                foreach (var process in allProcesses)
+                {
+                    try
+                    {
+                        if (process.MainWindowHandle != IntPtr.Zero)
+                        {
+                            var mainModuleFile = process.MainModule?.FileName;
+                            if (mainModuleFile.IndexOf("wordpad", StringComparison.InvariantCultureIgnoreCase) >= 0)
+                            { }
+                            if (mainModuleFile.IndexOf("write", StringComparison.InvariantCultureIgnoreCase) >= 0)
+                            { }
+                            if (mainModuleFile.IndexOf("notepad", StringComparison.InvariantCultureIgnoreCase) >= 0)
+                            { }
+                            if (String.Equals(mainModuleFile, currentFileName, StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                var arguments = getArgumentsOfProcess(process.Id);
+                                if (String.Equals(currentArguments ?? "", arguments ?? "", StringComparison.InvariantCultureIgnoreCase))      // Konverze null => "" pro obě hodnoty
+                                {
+                                    found = process;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception exc)
+                    {
+
+                    }
+                }
+                return found;
+            }
+
+            // Pro daný proces najde a vrátí argumenty z jeho CommandLine
+            string getArgumentsOfProcess(int processId)
+            {
+                string wmiQuery = $"select CommandLine from Win32_Process where ProcessId={processId}";     
+                string cmdArguments = "";
+                using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(wmiQuery))
+                using (ManagementObjectCollection retObjectCollection = searcher.Get())
+                {
+                    foreach (ManagementObject retObject in retObjectCollection)
+                    {   // Jednotlivé řádky = jednotlivé procesy:
+                        var commandLine = retObject["CommandLine"];       // commandLine například:   "C:\WINDOWS\system32\NOTEPAD.EXE" D:\Windows\Složka\a další\Text.txt
+                        cmdArguments = getArgumentsOfCommandLine(commandLine as String);
+                        break;
+                        // Když bych dal dotaz:                           $"select * from Win32_Process where ProcessId={processId}"
+                        // Pak můžu číst všechny informace o procesu:     foreach (var item in retObject.Properties) { }
+                    }
+                }
+                return cmdArguments;
+            }
+
+            // Z celého textu CommandLine vrátí část odpovídající argumentům
+            string getArgumentsOfCommandLine(string cmdLine)
+            {
+                string args = null;
+                if (String.IsNullOrEmpty(cmdLine)) return args;
+                cmdLine = cmdLine.Trim();
+                if (cmdLine.Length <= 1) return args;
+                
+                int index = ((cmdLine[0] == '"') ? 
+                    cmdLine.IndexOf("\"", 1) :              // Pokud začínáme uvozovkou, pak najdeme tu druhou ... "C:\WINDOWS\system32\NOTEPAD.EXE" D:\Windows\Složka\a další\Text.txt
+                    cmdLine.IndexOf(" ", 1));               // Pokud NEzačínáme uvozovkou, pak najdeme mezeru  ...  C:\WINDOWS\system32\NOTEPAD.EXE D:\Windows\Složka\a další\Text.txt
+                if (index < 0 || index >= (cmdLine.Length - 1)) return args;
+
+                return cmdLine.Substring(index + 1).TrimStart();
+            }
         }
+
         private void _RunNewProcess(bool? executeInAdminMode)
         {
             System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo()
             {
-                FileName = ExecutableFileName,
-                Arguments = ExecutableArguments,
+                FileName = _CurrentFileName,
+                WorkingDirectory = _CurrentWorkingDirectory,
+                Arguments = _CurrentArguments,
                 WindowStyle = (OpenMaximized ? System.Diagnostics.ProcessWindowStyle.Maximized : System.Diagnostics.ProcessWindowStyle.Normal),
                 UseShellExecute = true
             };
@@ -236,10 +359,88 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             bool adminMode = executeInAdminMode ?? ExecuteInAdminMode;
             if (adminMode) psi.Verb = "runas";
 
-            System.Diagnostics.Process process = new System.Diagnostics.Process();
+            Process process = new System.Diagnostics.Process();
             process.StartInfo = psi;
             process.Start();
+            _StoreRunningProcess(process);
         }
+        /// <summary>
+        /// Uloží do this instance informace o daném procesu, který odpovídá zdejší definici.
+        /// </summary>
+        /// <param name="process"></param>
+        private void _StoreRunningProcess(Process process)
+        {
+            __LastProcessId = process.Id;
+            __LastProcess = process;
+        }
+        /// <summary>
+        /// Uloží do this instance informace o daném procesu, který odpovídá zdejší definici.
+        /// </summary>
+        /// <param name="process"></param>
+        private void _ResetRunningProcess(Process process)
+        {
+            __LastProcessId = null;
+            __LastProcess = null;
+        }
+        /// <summary>
+        /// Jméno spouštěného souboru, kde jsou jména proměnných jako %WINDIR% nahrazena aktuálními hodnotami
+        /// </summary>
+        [PersistingEnabled(false)]
+        private string _CurrentFileName { get { return _GetCurrentName(ExecutableFileName); } }
+        /// <summary>
+        /// Jméno provozního adresáře, kde jsou jména proměnných jako %WINDIR% nahrazena aktuálními hodnotami
+        /// </summary>
+        [PersistingEnabled(false)]
+        private string _CurrentWorkingDirectory { get { return _GetCurrentName(ExecutableWorkingDirectory); } }
+        /// <summary>
+        /// Text argumentů, kde jsou jména proměnných jako %WINDIR% nahrazena aktuálními hodnotami
+        /// </summary>
+        [PersistingEnabled(false)]
+        private string _CurrentArguments { get { return _GetCurrentName(ExecutableArguments); } }
+        /// <summary>
+        /// Jméno ikony, kde jsou jména proměnných jako %WINDIR% nahrazena aktuálními hodnotami
+        /// </summary>
+        [PersistingEnabled(false)]
+        private string _CurrentImageFileName { get { return _GetCurrentName(ImageFileName); } }
+        /// <summary>
+        /// Vrátí zadaný string, kde jsou jména proměnných jako %WINDIR% nahrazena aktuálními hodnotami
+        /// </summary>
+        /// <param name="file"></param>
+        /// <returns></returns>
+        private string _GetCurrentName(string file)
+        {
+            if (String.IsNullOrEmpty(file)) return "";
+            if (!file.Contains("%")) return file;
+
+            string full = System.Environment.ExpandEnvironmentVariables(file);
+            return full;
+        }
+
+        private int? __LastProcessId;
+        [PersistingEnabled(false)]
+        private Process _LastProcess
+        {
+            get 
+            {
+                if (__LastProcess != null)
+                {
+                    try
+                    {
+                        if (__LastProcess.HasExited)
+                            __LastProcess = null;
+                        else if (__LastProcess.MainWindowHandle == IntPtr.Zero)
+                            __LastProcess = null;
+                    }
+                    catch
+                    {
+                        __LastProcess = null;
+                    }
+                }
+                return __LastProcess;
+            }
+            set { __LastProcess = value; }
+        }
+        private Process __LastProcess;
         #endregion
         #region Tvorba výchozích dat - namísto prázdných
         /// <summary>
@@ -313,6 +514,39 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 ExecutableFileName = @"d:\Dokumenty\Vyděšený svišť.png"
             });
 
+            list.Add(new ApplicationData()
+            {
+                Title = "Poznámkový blok",
+                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\abiword.png",
+                OnlyOneInstance = true,
+                RelativeAdress = new Point(2, 2),
+                ExecutableFileName = @"%windir%\system32\notepad.exe"
+            });
+
+            list.Add(new ApplicationData()
+            {
+                Title = "Remote Notebook",
+                ExecutableFileName = @"%windir%\system32\mstsc.exe",
+                ExecutableArguments = @"D:\Windows\Složka\Asseco\David NB.rdp",
+                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\firefox_alt.png",
+                OnlyOneInstance = true,
+                RelativeAdress = new Point(0, 3),
+            });
+
+            list.Add(new ApplicationData()
+            {
+                Title = "Remote Desktop",
+                ExecutableFileName = @"%windir%\system32\mstsc.exe",
+                ExecutableArguments = @"D:\Windows\Složka\Asseco\David ASOL.rdp",
+                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\firefox_alt.png",
+                OnlyOneInstance = true,
+                RelativeAdress = new Point(1, 3),
+            });
+
+
+
+
+            // %windir%\system32\notepad.exe
             return list;
         }
         #endregion
@@ -402,6 +636,93 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public override string ImageName { get { return __Data.ImageFileName; } set { __Data.ImageFileName = value; } }
         public override ColorSet CellBackColor { get { return __CellBackColor; } set { __CellBackColor = value; } }
         public override DataLayoutKind? LayoutKind { get { return __Data.LayoutKind; } set { __Data.LayoutKind = value; } }
+    }
+    #endregion
+    #region class WinApi : metody WinApi pro práci s okny cizích procesů
+    /// <summary>
+    /// WinApi : metody WinApi pro práci s okny cizích procesů
+    /// </summary>
+    public class WinApi
+    {
+        /// <summary>
+        /// Metoda přesune do popředí dané okno = typicky hlavní okno aplikace.
+        /// Parametrem <paramref name="restoreFromMinimized"/> lze vyžádat akci, kdy Minimalizované okno je změněno na Normalizované.
+        /// </summary>
+        /// <param name="windowHandle"></param>
+        /// <param name="restoreFromMinimized"></param>
+        public static void SetWindowToForeground(IntPtr windowHandle, bool restoreFromMinimized = false)
+        {
+            SetForegroundWindow(windowHandle);
+            if (restoreFromMinimized)
+            {
+                var windowState = _GetWindowPlacement(windowHandle);
+                if (windowState.showCmd == ShowWindowCommands.Minimized)
+                {
+                    windowState.showCmd = ShowWindowCommands.Normal;
+                    SetWindowState(windowHandle, windowState);
+                }
+            }
+
+        }
+
+        public static void SetWindowState(IntPtr windowHandle, ShowWindowCommands state, Rectangle normalPosition)
+        {
+            WINDOWPLACEMENT placement = new WINDOWPLACEMENT();
+            placement.length = Marshal.SizeOf(typeof(WINDOWPLACEMENT));
+            placement.flags = 0;
+            placement.showCmd = state;
+            placement.rcNormalPosition = normalPosition;
+            SetWindowPlacement(windowHandle, ref placement);
+        }
+        public static void SetWindowState(IntPtr windowHandle, WINDOWPLACEMENT placement)
+        {
+            SetWindowPlacement(windowHandle, ref placement);
+        }
+
+        public static void SetPlacement(IntPtr windowHandle, WINDOWPLACEMENT placement)
+        {
+            if (placement.length == 0)
+                return;
+
+            placement.length = Marshal.SizeOf(typeof(WINDOWPLACEMENT));
+            placement.flags = 0;
+            SetWindowPlacement(windowHandle, ref placement);
+        }
+
+        private static WINDOWPLACEMENT _GetWindowPlacement(IntPtr hwnd)
+        {
+            WINDOWPLACEMENT placement = new WINDOWPLACEMENT();
+            placement.length = Marshal.SizeOf(placement);
+            GetWindowPlacement(hwnd, ref placement);
+            return placement;
+        }
+
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GetWindowPlacement(IntPtr hWnd, ref WINDOWPLACEMENT lpwndpl);
+        [DllImport("user32.dll")]
+        private static extern bool SetWindowPlacement(IntPtr hWnd, [In] ref WINDOWPLACEMENT lpwndpl);
+
+        [Serializable]
+        [StructLayout(LayoutKind.Sequential)]
+        public struct WINDOWPLACEMENT
+        {
+            public int length;
+            public int flags;
+            public ShowWindowCommands showCmd;
+            public System.Drawing.Point ptMinPosition;
+            public System.Drawing.Point ptMaxPosition;
+            public System.Drawing.Rectangle rcNormalPosition;
+        }
+        public enum ShowWindowCommands : int
+        {
+            Hide = 0,
+            Normal = 1,
+            Minimized = 2,
+            Maximized = 3,
+        }
     }
     #endregion
 }

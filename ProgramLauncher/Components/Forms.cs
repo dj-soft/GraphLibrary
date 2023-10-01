@@ -24,7 +24,18 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Název formuláře v Settings, pokud chce ukládat a načítat svoji pozici do Settings.
         /// </summary>
         public virtual string SettingsName { get; set; }
-
+        /// <summary>
+        /// Aktivuje this okno, volitelně zvětší ze stavu Minimized do stavu předchozího
+        /// </summary>
+        /// <param name="withWindowState"></param>
+        public void Activate(bool withWindowState)
+        {
+            if (withWindowState && this.WindowState == FormWindowState.Minimized)
+                this.WindowState = __PrevWindowStateSize ?? FormWindowState.Normal;
+            if (!this.Visible)
+                this.Visible = true;
+            this.Activate();
+        }
         #region Sledování, ukládání a restore pozice
         private void _PositionInit()
         {
