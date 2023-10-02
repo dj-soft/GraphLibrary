@@ -196,6 +196,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         Image IMenuItem.Image { get { return ImageSmall; } }
         bool IMenuItem.Enabled { get { return true; } }
         FontStyle? IMenuItem.FontStyle { get { return (Object.ReferenceEquals(this, App.CurrentLayoutSet) ? (FontStyle?)FontStyle.Bold : (FontStyle?)null); } }
+        object IMenuItem.ToolItem { get; set; }
         object IMenuItem.UserData { get; set; }
         #endregion
     }

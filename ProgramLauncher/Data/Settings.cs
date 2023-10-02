@@ -227,7 +227,7 @@ namespace DjSoft.Tools.ProgramLauncher
         #region Základní data konfigurace
         public string AppearanceName { get; set; }
         public string LayoutSetName { get; set; }
-        public bool NotifyBaloonAccepted { get; set; }
+        public bool TrayInfoIsAccepted { get; set; }
 
         #endregion
 

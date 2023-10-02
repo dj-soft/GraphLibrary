@@ -84,6 +84,8 @@ namespace DjSoft.Tools.ProgramLauncher
         private void _Start(string[] arguments)
         {
             __Arguments = arguments ?? new string[0];
+            __ApplicationFile = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+            __ApplicationPath = System.IO.Path.GetDirectoryName(__ApplicationFile);
         }
         private void _Exit()
         {
@@ -106,6 +108,14 @@ namespace DjSoft.Tools.ProgramLauncher
         /// pak zde je pět argumentů: { reset , maximized , config , = , c:\data aplikací.cfg }           (kde čárka odděluje jednotlivé stringy, a celý string  c:\data aplikací.cfg  je pátý argument)
         /// </summary>
         public static string[] Arguments { get { return Current.__Arguments.ToArray(); } } private string[] __Arguments;
+        /// <summary>
+        /// Plné jméno this aplikace
+        /// </summary>
+        public static string ApplicationFile { get { return Current.__ApplicationFile; } } private string __ApplicationFile;
+        /// <summary>
+        /// Adresář this aplikace
+        /// </summary>
+        public static string ApplicationPath { get { return Current.__ApplicationPath; } } private string __ApplicationPath;
         /// <summary>
         /// Vrátí true, pokud argumenty předané při startu aplikace obsahují daný text
         /// </summary>
@@ -240,24 +250,35 @@ namespace DjSoft.Tools.ProgramLauncher
             if (process != null && process.MainWindowHandle != IntPtr.Zero)
                 WinApi.SetWindowToForeground(process.MainWindowHandle, true);
         }
-        public static bool ApplicationIsClosing { get { return Current._ApplicationIsClosing; } set { Current._ApplicationIsClosing = value; } }
-        private bool _ApplicationIsClosing;
+        /// <summary>
+        /// Bylo požádáno o zavření aplikace, hlavní okno aplikace se tomu nebude bránit
+        /// </summary>
+        public static bool ApplicationIsClosing { get { return Current.__ApplicationIsClosing; } set { Current.__ApplicationIsClosing = value; } }
+        /// <summary>
+        /// Bylo požádáno o zavření aplikace, hlavní okno aplikace se tomu nebude bránit
+        /// </summary>
+        private bool __ApplicationIsClosing;
         /// <summary>
         /// Obsahuje true v VisualStudio Debugger režimu, false při běžném Run mode
         /// </summary>
         public static bool IsDebugMode { get { return System.Diagnostics.Debugger.IsAttached; } }
+        /// <summary>
+        /// Aktivuje ikonu aplikace v TrayNotification liště. Podle situace i zobrazí BaloonTip s informací o chování aplikace.
+        /// Používá se ve chvíli, kdy Main okno aplikace je "zavíráno" a bude skryté, ale nikoli ukončené.
+        /// </summary>
         public static void ActivateTrayNotifyIcon() { Current._ActivateTrayNotifyIcon(); }
         private void _ActivateTrayNotifyIcon()
         {
             if (_TrayNotifyMenu is null)
             {
-                bool notifyBaloonAccepted = App.Settings.NotifyBaloonAccepted;
+                //qqq
+                bool trayInfoIsAccepted = App.Settings.TrayInfoIsAccepted;
                 var menuItems = new IMenuItem[]
                 { 
-                    new DataMenuItem() { Text = "Aktivuj aplikaci", Image = Properties.Resources.klickety_2_22, UserData = 1 },
-                    new DataMenuItem() { Text = "Pochopil jsem informaci", Image = (notifyBaloonAccepted ? Properties.Resources.dialog_clean_22 : null), UserData = 2 },
+                    new DataMenuItem() { Text = "Aktivuj aplikaci", Image = Properties.Resources.klickety_2_22, ToolTip = "Aktivuje okno aplikace", UserData = TrayIconMenuAction.ShowApplication },
+                    new DataMenuItem() { Text = "Pochopil jsem informaci", Image = (trayInfoIsAccepted ? Properties.Resources.dialog_clean_22 : null), UserData = TrayIconMenuAction.AcceptTrayInfo },
                     new DataMenuItem() { ItemType = MenuItemType.Separator },
-                    new DataMenuItem() { Text = "Zavři aplikaci", Image = Properties.Resources.application_exit_5_22, UserData = 0 } 
+                    new DataMenuItem() { Text = App.Messages.ApplicationExitText, Image = Properties.Resources.application_exit_5_22, ToolTip = App.Messages.ApplicationExitToolTip, UserData = TrayIconMenuAction.ExitApplication } 
                 };
                 _TrayNotifyMenu = CreateContextMenuStrip(menuItems, _TrayNotifyMenuClick);
             }
@@ -290,34 +311,21 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="baloonTime"></param>
         private void _ShowBaloonTrayNotifyIcon(TimeSpan? repeatTime, TimeSpan baloonTime)
         {
-            var now = DateTime.Now;
+            if (App.Settings.TrayInfoIsAccepted) return;             // Uživatel v kontextovém menu v TrayIcon zaškrtnul, že chápe skrývání aplikace.
 
             // Pokud je dán čas 'repeatTime' (=čas opakování informace), a informace už byla zobrazena (naposledy v čase _TrayNotifyIconLastBaloonTime),
             // a aktuální čas 'now' je menší než čas poslední informace plus 'repeatTime', pak baloon nezobrazím:
+            var now = DateTime.Now;
             if (repeatTime.HasValue && _TrayNotifyIconLastBaloonTime.HasValue && now < _TrayNotifyIconLastBaloonTime.Value.Add(repeatTime.Value)) return;
 
             _TrayNotifyIconLastBaloonTime = now;
             _TrayNotifyIcon.ShowBalloonTip((int)baloonTime.TotalMilliseconds);
         }
-        private void _TrayNotifyMenuClick(IMenuItem menuItem)
-        {
-            if (menuItem.UserData is int value)
-            {
-                switch (value)
-                {
-                    case 0:           // close
-                        _TrayNotifyIconCloseApplicateion();
-                        break;
-                    case 1:           // activate
-                        _TrayNotifyIconActivateMainForm();
-                        break;
-                    case 2:           // Akceptován baloon tip
-                        App.Settings.NotifyBaloonAccepted = !App.Settings.NotifyBaloonAccepted;
-                        App.Settings.SetChanged();
-                        break;
-                }
-            }
-        }
+        /// <summary>
+        /// Kliknutí na TrayNotification ikonu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _TrayNotifyIcon_MouseClick(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
@@ -326,17 +334,58 @@ namespace DjSoft.Tools.ProgramLauncher
             }
             else
             {
-                
+
             }
         }
+        /// <summary>
+        /// Výběr z kontextového menu na TrayNotification ikoně
+        /// </summary>
+        /// <param name="menuItem"></param>
+        private void _TrayNotifyMenuClick(IMenuItem menuItem)
+        {
+            if (menuItem.UserData is TrayIconMenuAction action)
+            {
+                switch (action)
+                {
+                    case TrayIconMenuAction.ShowApplication:
+                        _TrayNotifyIconActivateMainForm();
+                        break;
+                    case TrayIconMenuAction.AcceptTrayInfo:
+                        _TrayNotifyIconAcceptTrayInfo(menuItem);
+                        break;
+                    case TrayIconMenuAction.ExitApplication:
+                        _TrayNotifyIconCloseApplication();
+                        break;
+                }
+            }
+        }
+        /// <summary>
+        /// Výběr z kontextového menu na TrayNotification ikoně: aktivovat formulář
+        /// </summary>
         private void _TrayNotifyIconActivateMainForm()
         {
             this.__MainForm.Activate(true);
             _TrayNotifyIcon.Visible = false;
         }
-        private void _TrayNotifyIconCloseApplicateion()
+        /// <summary>
+        /// Výběr z kontextového menu na TrayNotification ikoně: akceptovat info o tray ikoně a aplikaci
+        /// </summary>
+        /// <param name="menuItem"></param>
+        private void _TrayNotifyIconAcceptTrayInfo(IMenuItem menuItem)
         {
-            this._ApplicationIsClosing = true;
+            bool trayInfoIsAccepted = !App.Settings.TrayInfoIsAccepted;                  // Akceptujeme TrayInfo = nový stav bude opačný než dosavadní
+            (menuItem as DataMenuItem).Image = (trayInfoIsAccepted ? Properties.Resources.dialog_clean_22 : null);
+            App.RefreshMenuItem(menuItem);
+
+            App.Settings.TrayInfoIsAccepted = trayInfoIsAccepted;
+            App.Settings.SetChanged();
+        }
+        /// <summary>
+        /// Výběr z kontextového menu na TrayNotification ikoně: Zavřít aplikaci
+        /// </summary>
+        private void _TrayNotifyIconCloseApplication()
+        {
+            this.__ApplicationIsClosing = true;
             this.__MainForm.Close();
         }
         /// <summary>
@@ -356,8 +405,21 @@ namespace DjSoft.Tools.ProgramLauncher
                 _TrayNotifyMenu = null;
             }
         }
+        /// <summary>
+        /// Jednotlivé akce na TrayNotification ikoně
+        /// </summary>
+        private enum TrayIconMenuAction { ShowApplication, AcceptTrayInfo, ExitApplication }
+        /// <summary>
+        /// Kontextové menu na TrayNotification ikoně
+        /// </summary>
         private ContextMenuStrip _TrayNotifyMenu;
+        /// <summary>
+        /// TrayNotification ikona
+        /// </summary>
         private NotifyIcon _TrayNotifyIcon;
+        /// <summary>
+        /// Čas posledního zobrazení BaloonTipu na TrayNotification ikoně
+        /// </summary>
         private DateTime? _TrayNotifyIconLastBaloonTime;
         #endregion
         #region Settings
@@ -396,6 +458,22 @@ namespace DjSoft.Tools.ProgramLauncher
         #endregion
         #region Využívání Settings pro práci s jeho daty pomocí App
         #endregion
+        #endregion
+        #region Messages
+        /// <summary>
+        /// Veškeré textové výstupy systému (lokalizace)
+        /// </summary>
+        public static MessagesTexts Messages { get { return Current._Messages; } }
+        private MessagesTexts _Messages
+        {
+            get
+            {
+                if (__Messages is null)
+                    __Messages = MessagesTexts.CreateDefault();
+                return __Messages;
+            }
+        }
+        private MessagesTexts __Messages;
         #endregion
         #region Monitory, zarovnání souřadnic do monitoru, ukládání souřadnic oken
         #endregion
@@ -459,39 +537,79 @@ namespace DjSoft.Tools.ProgramLauncher
             return menu;
         }
         /// <summary>
+        /// Provede refresh prvku menu
+        /// </summary>
+        /// <param name="menuItem"></param>
+        public static void RefreshMenuItem(IMenuItem menuItem)
+        {
+            if (menuItem is null || menuItem.ToolItem is null) return;
+            ToolStripItem toolItem = null;
+            switch (menuItem.ItemType)
+            {
+                case MenuItemType.Separator:
+                    break;
+                case MenuItemType.Header:
+                    if (menuItem.ToolItem is ToolStripLabel headerItem)
+                        toolItem = headerItem;
+                    break;
+                case MenuItemType.Button:
+                default:
+                    if (menuItem.ToolItem is ToolStripMenuItem buttonItem)
+                    {
+                        buttonItem.Enabled = menuItem.Enabled;
+                        buttonItem.DisplayStyle = ToolStripItemDisplayStyle.ImageAndText;
+                        buttonItem.ToolTipText = menuItem.ToolTip;
+                        toolItem = buttonItem;
+                    }
+                    break;
+            }
+
+            if (toolItem != null)
+            {
+                toolItem.Text = menuItem.Text;
+                toolItem.Image = menuItem.Image;
+                var fontStyle = menuItem.FontStyle;
+                if (fontStyle.HasValue)
+                    toolItem.Font = App.GetFont(toolItem.Font, null, fontStyle.Value);
+            }
+        }
+        /// <summary>
         /// Vygeneruje a vrátí <see cref="ToolStripMenuItem"/> z dané datové položky
         /// </summary>
         /// <param name="menuItem"></param>
         /// <returns></returns>
         private static ToolStripItem _CreateToolStripItem(IMenuItem menuItem, Action<IMenuItem> onSelectItem)
         {
-            ToolStripItem item;
+            ToolStripItem toolItem;
             switch (menuItem.ItemType)
             {
                 case MenuItemType.Separator:
                     var separatorItem = new ToolStripSeparator();
-                    item = separatorItem;
+                    toolItem = separatorItem;
                     break;
                 case MenuItemType.Header:
                     var headerItem = new ToolStripLabel(menuItem.Text, menuItem.Image);
-                    item = headerItem;
+                    toolItem = headerItem;
                     break;
                 case MenuItemType.Button:
                 case MenuItemType.Default:
                 default:
                     var buttonItem = new ToolStripMenuItem(menuItem.Text, menuItem.Image) { Tag = new Tuple<IMenuItem, Action<IMenuItem>>(menuItem, onSelectItem) };
                     buttonItem.Enabled = menuItem.Enabled;
-                    item = buttonItem;
+                    buttonItem.DisplayStyle = ToolStripItemDisplayStyle.ImageAndText;
+                    buttonItem.ToolTipText = menuItem.ToolTip;
+                    toolItem = buttonItem;
                     break;
             }
-            item.Tag = new Tuple<IMenuItem, Action<IMenuItem>>(menuItem, onSelectItem);
-            item.ToolTipText = menuItem.ToolTip;
+            toolItem.Tag = new Tuple<IMenuItem, Action<IMenuItem>>(menuItem, onSelectItem);
+            toolItem.ToolTipText = menuItem.ToolTip;
 
             var fontStyle = menuItem.FontStyle;
             if (fontStyle.HasValue)
-                item.Font = App.GetFont(item.Font, null, fontStyle.Value);
+                toolItem.Font = App.GetFont(toolItem.Font, null, fontStyle.Value);
 
-            return item;
+            menuItem.ToolItem = toolItem;
+            return toolItem;
         }
         /// <summary>
         /// Provede se po kliknutí na prvek menu. Najde data o prvku i cílovou metodu, a vyvolá ji.

@@ -1332,6 +1332,7 @@ namespace DjSoft.Tools.ProgramLauncher
         public virtual Image Image { get; set; }
         public virtual bool Enabled { get; set; }
         public virtual FontStyle? FontStyle { get; set; }
+        public virtual object ToolItem { get; set; }
         public virtual object UserData { get; set; }
     }
     /// <summary>
@@ -1345,6 +1346,15 @@ namespace DjSoft.Tools.ProgramLauncher
         Image Image { get; }
         bool Enabled { get; }
         FontStyle? FontStyle { get; }
+        /// <summary>
+        /// Vizuální objekt menu (typicky <see cref="ToolStripItem"/>), uložený sem po jeho vytvoření.
+        /// Aplikace se o tuto hodnotu nemá starat.
+        /// Slouží k provedení Refreshe v metodě <see cref="App.RefreshMenuItem(IMenuItem)"/>
+        /// </summary>
+        object ToolItem { get; set; }
+        /// <summary>
+        /// Libovolná data uživatele, systém se o ně nestará. Aplikace si zde ukládá význam prvku - aby mohla správně reagovat na kliknutí.
+        /// </summary>
         object UserData { get; set; }
     }
     /// <summary>

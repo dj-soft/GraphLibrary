@@ -35,12 +35,13 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             this.Icon = Properties.Resources.klickety_2_64;
         }
-        protected override void OnClosing(CancelEventArgs e)
+        protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            bool enableExit = App.ApplicationIsClosing || Control.ModifierKeys == Keys.Control;        // CTRL povolí Exit
+            // Kdy se povoluje velký Exit:
+            bool enableExit = App.ApplicationIsClosing || Control.ModifierKeys == Keys.Control || e.CloseReason == CloseReason.ApplicationExitCall;
             if (enableExit)
             {   
-                base.OnClosing(e);
+                base.OnFormClosing(e);
                 return;
             }
 
