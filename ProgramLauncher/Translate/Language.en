@@ -1,0 +1,24 @@
+// Překlady aplikace ProgramLauncher do jazyka EN
+
+#Language EN
+#Name English
+#IconName Flag-United-Kingdom-24.png
+#ParentLanguage CZ
+
+ToolStripButtonAppearanceToolTip Change appearance (color palette, size, language)
+ToolStripButtonEditToolTip Modify content
+StatusStripPageCountText no pages×page×page×pages
+StatusStripApplicationText no apps×app×app×apps
+AppearanceMenuHeaderColorPalette COLOR PALETTE
+AppearanceMenuHeaderLayoutStyle LAYOUT SIZE
+AppearanceMenuHeaderLanguage LANGUAGE
+TrayIconText Program Launcher
+TrayIconBalloonToolTip Terminating the application
+TrayIconBalloonText The application is only hidden.××To actually turn it off, close it with a cross together with the CTRL key!××Or use the context menu on this icon.
+TrayIconShowApplicationText Activate the application
+TrayIconShowApplicationToolTip Activates the application window. The app is not turned off, it's just hidden.
+TrayIconAcceptTrayInfoText I understood the information
+TrayIconAcceptTrayInfoToolTip The application does not end with normal closing, it only hides.××Whenever the application is hidden, the information lights up.××If I no longer want to display this information, I check this option.
+TrayIconApplicationExitText Close application
+TrayIconApplicationExitToolTip Terminates this application.××Starting such applications that are marked 'Open only one window' may not work properly after opening it next time.
+

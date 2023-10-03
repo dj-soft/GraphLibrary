@@ -1,0 +1,24 @@
+// Překlady aplikace ProgramLauncher do jazyka CZ
+
+#Language CZ
+#Name Česky
+#IconName Flag-Czech-Republic-24.png
+#ParentLanguage
+
+ToolStripButtonAppearanceToolTip Změnit vzhled (barevná paleta, velikost, jazyk)
+ToolStripButtonEditToolTip Upravit obsah
+StatusStripPageCountText bez stránek×stránka×stránky×stránek
+StatusStripApplicationText bez aplikací×aplikace×aplikace×aplikací
+AppearanceMenuHeaderColorPalette BAREVNÁ PALETA
+AppearanceMenuHeaderLayoutStyle VELIKOST
+AppearanceMenuHeaderLanguage JAZYK
+TrayIconText Program Launcher
+TrayIconBalloonToolTip Ukončení aplikace
+TrayIconBalloonText Aplikace je jen schovaná.××Pro reálné vypnutí ji zavřete křížkem spolu s klávesou CTRL!××Anebo použijte kontextové menu na této ikoně.
+TrayIconShowApplicationText Aktivuj aplikaci
+TrayIconShowApplicationToolTip Aktivuje okno aplikace. Aplikace není vypnutá, je jen skrytá.
+TrayIconAcceptTrayInfoText Pochopil jsem informaci
+TrayIconAcceptTrayInfoToolTip Aplikace se běžným zavřením neukončuje, pouze se skryje.××Při každém skrytí aplikace se rozsvítí informace.××Pokud již tuto informaci nechci zobrazovat, zaškrtnu tuto volbu.
+TrayIconApplicationExitText Ukončit aplikaci
+TrayIconApplicationExitToolTip Ukončí tuto aplikaci.××Po jejím příštím otevření nemusí správně fungovat spouštění takových aplikací,××které jsou označené 'Otevřít jen jedno okno'.
+

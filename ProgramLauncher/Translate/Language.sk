@@ -1,0 +1,24 @@
+// Překlady aplikace ProgramLauncher do jazyka SK
+
+#Language SK
+#Name Slovensky
+#IconName Flag-Slovakia-24.png
+#ParentLanguage CZ
+
+ToolStripButtonAppearanceToolTip Zmeniť vzhľad (farebná paleta, veľkosť, jazyk)
+ToolStripButtonEditToolTip Upraviť obsah
+StatusStripPageCountText bez stránok×stránka×stránky×stránok
+StatusStripApplicationText bez aplikácií×aplikácie×aplikácie×aplikácií
+AppearanceMenuHeaderColorPalette FAREBNÁ PALETA
+AppearanceMenuHeaderLayoutStyle VEĽKOSŤ
+AppearanceMenuHeaderLanguage JAZYK
+TrayIconText Program Launcher
+TrayIconBalloonToolTip Ukončenie aplikácie
+TrayIconBalloonText Aplikácia je len schovaná.××Pre reálne vypnutie ju zatvorte krížikom spolu s klávesom CTRL!××alebo použite kontextové menu na tejto ikone.
+TrayIconShowApplicationText Aktivuj aplikáciu
+TrayIconShowApplicationToolTip Aktivuje okno aplikácie. Aplikácia nie je vypnutá, je len skrytá.
+TrayIconAcceptTrayInfoText Pochopil som informáciu
+TrayIconAcceptTrayInfoToolTip Aplikácia sa bežným zatvorením neukončuje, iba sa skryje.××Pri každom skrytí aplikácie sa rozsvietia informácia.××Ak už túto informáciu nechcem zobrazovať, zaškrtnem túto voľbu.
+TrayIconApplicationExitText Ukončiť aplikáciu
+TrayIconApplicationExitToolTip Ukončí túto aplikáciu.××Po jej ďalšom otvorení nemusí správne fungovať spúšťanie takých aplikácií,××ktoré sú označené 'Otvoriť len jedno okno'.
+
