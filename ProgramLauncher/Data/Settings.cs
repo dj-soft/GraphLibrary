@@ -225,9 +225,10 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         #endregion
         #region Základní data konfigurace
-        public string AppearanceName { get; set; }
-        public string LayoutSetName { get; set; }
-        public bool TrayInfoIsAccepted { get; set; }
+        public string AppearanceName { get { return __AppearanceName; } set { __AppearanceName = value; SetChanged(); } } private string __AppearanceName;
+        public string LayoutSetName { get { return __LayoutSetName; } set { __LayoutSetName = value; SetChanged(); } } private string __LayoutSetName;
+        public string LanguageCode { get { return __LanguageCode; } set { __LanguageCode = value; SetChanged(); } } private string __LanguageCode;
+        public bool TrayInfoIsAccepted { get { return __TrayInfoIsAccepted; } set { __TrayInfoIsAccepted = value; SetChanged(); } } private bool __TrayInfoIsAccepted;
 
         #endregion
 

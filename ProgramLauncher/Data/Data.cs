@@ -158,14 +158,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
     /// </summary>
     public class ApplicationData : BaseData
     {
-        /// <summary>
-        /// Vizualizace
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            return $"Title: {Title}; Executable: {ExecutableFileName}";
-        }
+        #region Data o aplikaci
         [PropertyName("File")]
         public string ExecutableFileName { get; set; }
         [PropertyName("WorkingDirectory")]
@@ -178,9 +171,17 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public bool OpenMaximized { get; set; }
         [PropertyName("OneInstance")]
         public bool OnlyOneInstance { get; set; }
-
         [PersistingEnabled(false)]
         public override DataLayoutKind? LayoutKind { get { return DataLayoutKind.Applications; } set { } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Title: {Title}; Executable: {ExecutableFileName}";
+        }
+        #endregion
         #region Spouštění aplikace
         /// <summary>
         /// Spustí / aktivuje daný proces
@@ -241,7 +242,6 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             if (!OnlyOneInstance) return false;
 
             Process myProcess = null;
-            Process[] allProcesses = null;
             try
             {
                 bool hasLastProcess = false;
@@ -267,84 +267,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             catch (Exception exc)
             { }
             return result;
-
-
-            // Zkusí najít a vrátit existující proces z pole allProcesses, který odpovídá zdejší aplikaci (jméno aplikace + argumenty)
-            Process searchForMyProcess()
-            {
-                Process found = null;
-
-                string currentFileName = _CurrentFileName;
-                string currentArguments = _CurrentArguments;
-                foreach (var process in allProcesses)
-                {
-                    try
-                    {
-                        if (process.MainWindowHandle != IntPtr.Zero)
-                        {
-                            var mainModuleFile = process.MainModule?.FileName;
-                            if (mainModuleFile.IndexOf("wordpad", StringComparison.InvariantCultureIgnoreCase) >= 0)
-                            { }
-                            if (mainModuleFile.IndexOf("write", StringComparison.InvariantCultureIgnoreCase) >= 0)
-                            { }
-                            if (mainModuleFile.IndexOf("notepad", StringComparison.InvariantCultureIgnoreCase) >= 0)
-                            { }
-                            if (String.Equals(mainModuleFile, currentFileName, StringComparison.InvariantCultureIgnoreCase))
-                            {
-                                var arguments = getArgumentsOfProcess(process.Id);
-                                if (String.Equals(currentArguments ?? "", arguments ?? "", StringComparison.InvariantCultureIgnoreCase))      // Konverze null => "" pro obě hodnoty
-                                {
-                                    found = process;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception exc)
-                    {
-
-                    }
-                }
-                return found;
-            }
-
-            // Pro daný proces najde a vrátí argumenty z jeho CommandLine
-            string getArgumentsOfProcess(int processId)
-            {
-                string wmiQuery = $"select CommandLine from Win32_Process where ProcessId={processId}";     
-                string cmdArguments = "";
-                using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(wmiQuery))
-                using (ManagementObjectCollection retObjectCollection = searcher.Get())
-                {
-                    foreach (ManagementObject retObject in retObjectCollection)
-                    {   // Jednotlivé řádky = jednotlivé procesy:
-                        var commandLine = retObject["CommandLine"];       // commandLine například:   "C:\WINDOWS\system32\NOTEPAD.EXE" D:\Windows\Složka\a další\Text.txt
-                        cmdArguments = getArgumentsOfCommandLine(commandLine as String);
-                        break;
-                        // Když bych dal dotaz:                           $"select * from Win32_Process where ProcessId={processId}"
-                        // Pak můžu číst všechny informace o procesu:     foreach (var item in retObject.Properties) { }
-                    }
-                }
-                return cmdArguments;
-            }
-
-            // Z celého textu CommandLine vrátí část odpovídající argumentům
-            string getArgumentsOfCommandLine(string cmdLine)
-            {
-                string args = null;
-                if (String.IsNullOrEmpty(cmdLine)) return args;
-                cmdLine = cmdLine.Trim();
-                if (cmdLine.Length <= 1) return args;
-                
-                int index = ((cmdLine[0] == '"') ? 
-                    cmdLine.IndexOf("\"", 1) :              // Pokud začínáme uvozovkou, pak najdeme tu druhou ... "C:\WINDOWS\system32\NOTEPAD.EXE" D:\Windows\Složka\a další\Text.txt
-                    cmdLine.IndexOf(" ", 1));               // Pokud NEzačínáme uvozovkou, pak najdeme mezeru  ...  C:\WINDOWS\system32\NOTEPAD.EXE D:\Windows\Složka\a další\Text.txt
-                if (index < 0 || index >= (cmdLine.Length - 1)) return args;
-
-                return cmdLine.Substring(index + 1).TrimStart();
-            }
         }
-
+        /// <summary>
+        /// SPustí nový proces pro zdejší aplikaci
+        /// </summary>
+        /// <param name="executeInAdminMode"></param>
         private void _RunNewProcess(bool? executeInAdminMode)
         {
             System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo()
@@ -415,8 +342,13 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             string full = System.Environment.ExpandEnvironmentVariables(file);
             return full;
         }
-
+        /// <summary>
+        /// Poslední známé ID procesu
+        /// </summary>
         private int? __LastProcessId;
+        /// <summary>
+        /// Uložená data o procesu, když jsme jej sami spustili anebo detekovali spuštěný
+        /// </summary>
         [PersistingEnabled(false)]
         private Process _LastProcess
         {
@@ -440,6 +372,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             }
             set { __LastProcess = value; }
         }
+        /// <summary>
+        /// Uložená data o procesu, když jsme jej sami spustili anebo detekovali spuštěný
+        /// </summary>
         private Process __LastProcess;
         #endregion
         #region Tvorba výchozích dat - namísto prázdných

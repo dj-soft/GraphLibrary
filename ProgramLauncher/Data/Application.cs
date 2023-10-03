@@ -8,6 +8,8 @@ using System.Windows.Forms;
 using DjSoft.Tools.ProgramLauncher.Data;
 using System.Diagnostics;
 using System.Management;
+using System.Threading;
+using System.Runtime.InteropServices;
 
 namespace DjSoft.Tools.ProgramLauncher
 {
@@ -66,9 +68,9 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Zahájení běhu aplikace, předání parametrů
         /// </summary>
         /// <param name="arguments"></param>
-        public static void Start(string[] arguments)
+        public static void Start(string[] arguments, Mutex appMutex = null)
         {
-            Current._Start(arguments);
+            Current._Start(arguments, appMutex);
         }
         /// <summary>
         /// Ukončení běhu aplikace
@@ -81,11 +83,12 @@ namespace DjSoft.Tools.ProgramLauncher
                 __Current = null;
             }
         }
-        private void _Start(string[] arguments)
+        private void _Start(string[] arguments, Mutex appMutex)
         {
             __Arguments = arguments ?? new string[0];
             __ApplicationFile = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
             __ApplicationPath = System.IO.Path.GetDirectoryName(__ApplicationFile);
+            __AppMutex = appMutex;
         }
         private void _Exit()
         {
@@ -94,6 +97,7 @@ namespace DjSoft.Tools.ProgramLauncher
             _DisposeFonts();
             _DisposeImages();
             _DisposeTrayNotifyIcon();
+            _DisposeAppMutex();
             __MainForm = null;
         }
         /// <summary>
@@ -107,15 +111,18 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Pokud byla aplikace spuštěna s příkazovým řádkem: 'Aplikace.exe reset maximized config = "c:\data aplikací.cfg" '    (mezery okolo rovnítka),
         /// pak zde je pět argumentů: { reset , maximized , config , = , c:\data aplikací.cfg }           (kde čárka odděluje jednotlivé stringy, a celý string  c:\data aplikací.cfg  je pátý argument)
         /// </summary>
-        public static string[] Arguments { get { return Current.__Arguments.ToArray(); } } private string[] __Arguments;
+        public static string[] Arguments { get { return Current.__Arguments.ToArray(); } }
+        private string[] __Arguments;
         /// <summary>
         /// Plné jméno this aplikace
         /// </summary>
-        public static string ApplicationFile { get { return Current.__ApplicationFile; } } private string __ApplicationFile;
+        public static string ApplicationFile { get { return Current.__ApplicationFile; } }
+        private string __ApplicationFile;
         /// <summary>
         /// Adresář this aplikace
         /// </summary>
-        public static string ApplicationPath { get { return Current.__ApplicationPath; } } private string __ApplicationPath;
+        public static string ApplicationPath { get { return Current.__ApplicationPath; } }
+        private string __ApplicationPath;
         /// <summary>
         /// Vrátí true, pokud argumenty předané při startu aplikace obsahují daný text
         /// </summary>
@@ -147,15 +154,36 @@ namespace DjSoft.Tools.ProgramLauncher
             return arguments.TryFindFirst(a => a.StartsWith(textBegin, comparison), out foundArgument);
         }
         #endregion
+        #region SigletonProcess
+        /// <summary>
+        /// Korektně uvolní Mutex
+        /// </summary>
+        private void _DisposeAppMutex()
+        {
+            var mutex = __AppMutex;
+            if (mutex != null)
+            {
+                mutex.ReleaseMutex();
+                mutex.TryDispose();
+                __AppMutex = null;
+            }
+        }
+        /// <summary>
+        /// Uložený Mutex - jen v případě, kdy this process je první
+        /// </summary>
+        private Mutex __AppMutex;
+        #endregion
         #region Vyhledání Windows procesu, Tray ikona
         /// <summary>
         /// Metoda vyhledá a vrátí systémový process pro daný spustitelný soubor
         /// </summary>
         /// <param name="applicationName"></param>
-        /// <param name="arguments"></param>
-        /// <param name="processId"></param>
+        /// <param name="arguments">Argumenty procesu. NULL = ignorují se, prázdný string = musí být shodný.</param>
+        /// <param name="processId">Vyhledat primárně proces daného ID. Pokud je nalezen, netestuje se shoda <paramref name="applicationName"/> ani <paramref name="arguments"/>. Parametr <paramref name="includeNoWindowProcess"/> je i zde akceptován.</param>
+        /// <param name="includeNoWindowProcess">Akceptovat i procesy, jejichž <see cref="Process.MainWindowHandle"/> je Zero</param>
+        /// <param name="filter">Přidaný filtr na procesy, null = veškeré vhodné</param>
         /// <returns></returns>
-        public static Process SearchForProcess(string applicationName, string arguments = null, int? processId = null)
+        public static Process SearchForProcess(string applicationName, string arguments = null, int? processId = null, bool includeNoWindowProcess = false, Func<Process, bool> filter = null)
         {
             Process process = null;
             if (String.IsNullOrEmpty(applicationName)) return process;
@@ -163,29 +191,33 @@ namespace DjSoft.Tools.ProgramLauncher
             var processes = Process.GetProcesses();
             string name = System.IO.Path.GetFileName(applicationName);
             var prefiltered = processes.Where(p => isPrefilter(p)).ToArray();
+            if (prefiltered.Length == 0) return null;
+
             var startTime = (prefiltered.Length == 0 ? null : (DateTime?)prefiltered[0].StartTime);
 
             if (processId.HasValue)
             {
-                process = processes.FirstOrDefault(p => p.Id == processId.Value);
+                process = prefiltered.FirstOrDefault(p => p.Id == processId.Value);
                 if (process != null) return process;
             }
 
-            foreach (var proc in processes)
+            foreach (var proc in prefiltered)
             {
                 try
                 {
-                    if (proc.MainWindowHandle != IntPtr.Zero)
-                    {
-                        var mainModuleFile = proc.MainModule?.FileName;
-                        if (String.Equals(mainModuleFile, applicationName, StringComparison.InvariantCultureIgnoreCase))
-                        {
+                    var mainModuleFile = proc.MainModule?.FileName;
+                    if (String.Equals(mainModuleFile, applicationName, StringComparison.InvariantCultureIgnoreCase))
+                    {   // Je to shodná aplikace:
+                        bool accept = true;
+                        if (arguments != null)
+                        {   // Pokud zadané argumenty nejsou NULL, musí se shodovat s těmi nalezenými:
                             var args = getArgumentsOfProcess(proc.Id);
-                            if (String.Equals(arguments ?? "", args ?? "", StringComparison.InvariantCultureIgnoreCase))      // Konverze null => "" pro obě hodnoty
-                            {
-                                process = proc;
-                                break;
-                            }
+                            accept = String.Equals(arguments ?? "", args ?? "", StringComparison.InvariantCultureIgnoreCase);      // Konverze null => "" pro obě hodnoty
+                        }
+                        if (accept)
+                        {
+                            process = proc;
+                            break;
                         }
                     }
                 }
@@ -199,7 +231,11 @@ namespace DjSoft.Tools.ProgramLauncher
             {
                 try
                 {
-                    return filtProc != null && filtProc.MainWindowHandle != IntPtr.Zero && String.Equals(System.IO.Path.GetFileName(filtProc.MainModule.FileName), name, StringComparison.InvariantCultureIgnoreCase);
+                    if (filtProc is null || filtProc.HasExited) return false;
+                    if (!String.Equals(System.IO.Path.GetFileName(filtProc.MainModule.FileName), name, StringComparison.InvariantCultureIgnoreCase)) return false;
+                    if (!includeNoWindowProcess && filtProc.MainWindowHandle == IntPtr.Zero) return false;
+                    if (filter != null && !filter(filtProc)) return false;
+                    return true;
                 }
                 catch { }
                 return false;
@@ -245,10 +281,14 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Metoda zajistí aktivaci hlavního okna daného procesu
         /// </summary>
         /// <param name="process"></param>
-        public static void ActivateWindowsProcess(Process process)
+        public static bool ActivateWindowsProcess(Process process)
         {
             if (process != null && process.MainWindowHandle != IntPtr.Zero)
+            {
                 WinApi.SetWindowToForeground(process.MainWindowHandle, true);
+                return true;
+            }
+            return false;
         }
         /// <summary>
         /// Bylo požádáno o zavření aplikace, hlavní okno aplikace se tomu nebude bránit
@@ -267,39 +307,113 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Používá se ve chvíli, kdy Main okno aplikace je "zavíráno" a bude skryté, ale nikoli ukončené.
         /// </summary>
         public static void ActivateTrayNotifyIcon() { Current._ActivateTrayNotifyIcon(); }
+        /// <summary>
+        /// Skryje ikonu aplikace v TrayNotification liště, pokud tam je viditelná.
+        /// </summary>
+        public static void HideTrayNotifyIcon() { Current._HideTrayNotifyIcon(); }
+        /// <summary>
+        /// Aktivuje ikonu aplikace v TrayNotification liště. Podle situace i zobrazí BaloonTip s informací o chování aplikace.
+        /// Používá se ve chvíli, kdy Main okno aplikace je "zavíráno" a bude skryté, ale nikoli ukončené.
+        /// </summary>
         private void _ActivateTrayNotifyIcon()
         {
-            if (_TrayNotifyMenu is null)
+            if (__TrayNotifyMenu is null)
             {
-                //qqq
                 bool trayInfoIsAccepted = App.Settings.TrayInfoIsAccepted;
-                var menuItems = new IMenuItem[]
-                { 
-                    new DataMenuItem() { Text = "Aktivuj aplikaci", Image = Properties.Resources.klickety_2_22, ToolTip = "Aktivuje okno aplikace", UserData = TrayIconMenuAction.ShowApplication },
-                    new DataMenuItem() { Text = "Pochopil jsem informaci", Image = (trayInfoIsAccepted ? Properties.Resources.dialog_clean_22 : null), UserData = TrayIconMenuAction.AcceptTrayInfo },
+                __TrayNotifyMenuItems = new DataMenuItem[]
+                {
+                    new DataMenuItem() { Image = Properties.Resources.klickety_2_22, UserData = TrayIconMenuAction.ShowApplication },
+                    new DataMenuItem() { Image = (trayInfoIsAccepted ? Properties.Resources.dialog_clean_22 : null), UserData = TrayIconMenuAction.AcceptTrayInfo },
                     new DataMenuItem() { ItemType = MenuItemType.Separator },
-                    new DataMenuItem() { Text = App.Messages.ApplicationExitText, Image = Properties.Resources.application_exit_5_22, ToolTip = App.Messages.ApplicationExitToolTip, UserData = TrayIconMenuAction.ExitApplication } 
+                    new DataMenuItem() { Image = Properties.Resources.application_exit_5_22, ToolTip = App.Messages.TrayIconApplicationExitToolTip, UserData = TrayIconMenuAction.ExitApplication }
                 };
-                _TrayNotifyMenu = CreateContextMenuStrip(menuItems, _TrayNotifyMenuClick);
+                _LocalizeTrayNotifyMenu();
+                __TrayNotifyMenu = CreateContextMenuStrip(__TrayNotifyMenuItems, _TrayNotifyMenuClick);
+                __CurrentLanguageChanged -= _CurrentLanguageChanged_TrayIcon;
+                __CurrentLanguageChanged += _CurrentLanguageChanged_TrayIcon;
             }
 
-            if (_TrayNotifyIcon is null)
+            if (__TrayNotifyIcon is null)
             {
-                _TrayNotifyIcon = new NotifyIcon()
+                __TrayNotifyIcon = new NotifyIcon()
                 {
                     Icon = Properties.Resources.klickety_2_64,
-                    Text = "Program Launcher",
                     BalloonTipIcon = ToolTipIcon.Info,
-                    BalloonTipTitle = "Ukončení aplikace",
-                    BalloonTipText = "Aplikace je jen schovaná.\r\nPro reálné vypnutí ji zavřete křížkem spolu s klávesou CTRL!",
-                    ContextMenuStrip = _TrayNotifyMenu
+                    ContextMenuStrip = __TrayNotifyMenu
                 };
-                _TrayNotifyIcon.MouseClick += _TrayNotifyIcon_MouseClick;
+                _LocalizeTrayNotifyIcon();
+                __TrayNotifyIcon.MouseClick += _TrayNotifyIcon_MouseClick;
             }
-            _TrayNotifyIcon.Visible = true;
+            __TrayNotifyIcon.Visible = true;
 
             TimeSpan repeatTime = (App.IsDebugMode ? TimeSpan.FromSeconds(15d) : TimeSpan.FromMinutes(30d));
             _ShowBaloonTrayNotifyIcon(repeatTime, TimeSpan.FromSeconds(6));
+        }
+        /// <summary>
+        /// Skryje ikonu aplikace v TrayNotification liště, pokud tam je viditelná.
+        /// </summary>
+        private void _HideTrayNotifyIcon()
+        {
+            if (__TrayNotifyIcon != null)
+                __TrayNotifyIcon.Visible = false;
+        }
+        /// <summary>
+        /// Po změně jazyka provedeme překlad prvků menu TrayNotifyIcon
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _CurrentLanguageChanged_TrayIcon(object sender, EventArgs e)
+        {
+            _LocalizeTrayNotifyMenu();
+            _LocalizeTrayNotifyIcon();
+        }
+        /// <summary>
+        /// Lokalizuje položky menu <see cref="__TrayNotifyMenuItems"/>
+        /// </summary>
+        private void _LocalizeTrayNotifyMenu()
+        {
+            var menuItems = __TrayNotifyMenuItems;
+            if (menuItems != null)
+            {
+                foreach (var menuItem in menuItems)
+                {
+                    if (menuItem.UserData is TrayIconMenuAction action)
+                    {
+                        switch (action)
+                        {
+                            case TrayIconMenuAction.ShowApplication:
+                                menuItem.Text = App.Messages.TrayIconShowApplicationText;
+                                menuItem.ToolTip = App.Messages.TrayIconShowApplicationToolTip;
+                                break;
+                            case TrayIconMenuAction.AcceptTrayInfo:
+                                menuItem.Text = App.Messages.TrayIconAcceptTrayInfoText;
+                                menuItem.ToolTip = App.Messages.TrayIconAcceptTrayInfoToolTip;
+                                break;
+                            case TrayIconMenuAction.ExitApplication:
+                                menuItem.Text = App.Messages.TrayIconApplicationExitText;
+                                menuItem.ToolTip = App.Messages.TrayIconApplicationExitToolTip;
+                                break;
+                        }
+                        App.RefreshMenuItem(menuItem);
+                    }
+                }
+            }
+
+
+        }
+        /// <summary>
+        /// Lokalizuje položky menu <see cref="__TrayNotifyMenuItems"/>
+        /// </summary>
+        private void _LocalizeTrayNotifyIcon()
+        {
+            var trayIcon = __TrayNotifyIcon;
+            if (trayIcon != null)
+            {
+                trayIcon.Text = App.Messages.TrayIconText;
+                trayIcon.BalloonTipText = App.Messages.TrayIconBalloonText; 
+                trayIcon.BalloonTipTitle = App.Messages.TrayIconBalloonToolTip;
+            }
         }
         /// <summary>
         /// Metoda zobrazí BaloonTip pro Tray ikonu.
@@ -316,10 +430,10 @@ namespace DjSoft.Tools.ProgramLauncher
             // Pokud je dán čas 'repeatTime' (=čas opakování informace), a informace už byla zobrazena (naposledy v čase _TrayNotifyIconLastBaloonTime),
             // a aktuální čas 'now' je menší než čas poslední informace plus 'repeatTime', pak baloon nezobrazím:
             var now = DateTime.Now;
-            if (repeatTime.HasValue && _TrayNotifyIconLastBaloonTime.HasValue && now < _TrayNotifyIconLastBaloonTime.Value.Add(repeatTime.Value)) return;
+            if (repeatTime.HasValue && __TrayNotifyIconLastBaloonTime.HasValue && now < __TrayNotifyIconLastBaloonTime.Value.Add(repeatTime.Value)) return;
 
-            _TrayNotifyIconLastBaloonTime = now;
-            _TrayNotifyIcon.ShowBalloonTip((int)baloonTime.TotalMilliseconds);
+            __TrayNotifyIconLastBaloonTime = now;
+            __TrayNotifyIcon.ShowBalloonTip((int)baloonTime.TotalMilliseconds);
         }
         /// <summary>
         /// Kliknutí na TrayNotification ikonu
@@ -365,7 +479,7 @@ namespace DjSoft.Tools.ProgramLauncher
         private void _TrayNotifyIconActivateMainForm()
         {
             this.__MainForm.Activate(true);
-            _TrayNotifyIcon.Visible = false;
+            __TrayNotifyIcon.Visible = false;
         }
         /// <summary>
         /// Výběr z kontextového menu na TrayNotification ikoně: akceptovat info o tray ikoně a aplikaci
@@ -378,7 +492,6 @@ namespace DjSoft.Tools.ProgramLauncher
             App.RefreshMenuItem(menuItem);
 
             App.Settings.TrayInfoIsAccepted = trayInfoIsAccepted;
-            App.Settings.SetChanged();
         }
         /// <summary>
         /// Výběr z kontextového menu na TrayNotification ikoně: Zavřít aplikaci
@@ -393,34 +506,35 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private void _DisposeTrayNotifyIcon()
         {
-            if (_TrayNotifyIcon != null)
+            if (__TrayNotifyIcon != null)
             {
-                _TrayNotifyIcon.Visible = false;
-                _TrayNotifyIcon.Dispose();
-                _TrayNotifyIcon = null;
+                __TrayNotifyIcon.Visible = false;
+                __TrayNotifyIcon.Dispose();
+                __TrayNotifyIcon = null;
             }
-            if (_TrayNotifyMenu != null)
+            if (__TrayNotifyMenu != null)
             {
-                _TrayNotifyMenu.Dispose();
-                _TrayNotifyMenu = null;
+                __TrayNotifyMenu.Dispose();
+                __TrayNotifyMenu = null;
             }
         }
         /// <summary>
         /// Jednotlivé akce na TrayNotification ikoně
         /// </summary>
         private enum TrayIconMenuAction { ShowApplication, AcceptTrayInfo, ExitApplication }
+        private DataMenuItem[] __TrayNotifyMenuItems;
         /// <summary>
         /// Kontextové menu na TrayNotification ikoně
         /// </summary>
-        private ContextMenuStrip _TrayNotifyMenu;
+        private ContextMenuStrip __TrayNotifyMenu;
         /// <summary>
         /// TrayNotification ikona
         /// </summary>
-        private NotifyIcon _TrayNotifyIcon;
+        private NotifyIcon __TrayNotifyIcon;
         /// <summary>
         /// Čas posledního zobrazení BaloonTipu na TrayNotification ikoně
         /// </summary>
-        private DateTime? _TrayNotifyIconLastBaloonTime;
+        private DateTime? __TrayNotifyIconLastBaloonTime;
         #endregion
         #region Settings
         #region Přístup na Settings
@@ -459,21 +573,63 @@ namespace DjSoft.Tools.ProgramLauncher
         #region Využívání Settings pro práci s jeho daty pomocí App
         #endregion
         #endregion
-        #region Messages
+        #region Messages a Language
         /// <summary>
         /// Veškeré textové výstupy systému (lokalizace)
         /// </summary>
-        public static MessagesTexts Messages { get { return Current._Messages; } }
-        private MessagesTexts _Messages
+        public static LanguageSet Messages { get { return Current._Messages; } }
+        private LanguageSet _Messages
         {
             get
             {
                 if (__Messages is null)
-                    __Messages = MessagesTexts.CreateDefault();
+                    __Messages = LanguageSet.CreateDefault();
                 return __Messages;
             }
         }
-        private MessagesTexts __Messages;
+        private LanguageSet __Messages;
+
+        /// <summary>
+        /// Pole všech přítomných jazyků
+        /// </summary>
+        public static Language[] Languages { get { return LanguageSet.Collection; } }
+        /// <summary>
+        /// Aktuální sada definující layout; lze změnit, po změně dojde eventu <see cref="CurrentLayoutSetChanged"/>.
+        /// Pozor, tato property není propojena s <see cref="Settings.LayoutSetName"/>, toto propojení musí zajistit aplikace.
+        /// Důvodem je vhodné načasování zaháčkování a provedení eventu po změně / inicializaci.
+        /// </summary>
+        public static Language CurrentLanguage { get { return Current._CurrentLanguage; } set { Current._CurrentLanguage = value; } }
+        /// <summary>
+        /// Aktuální jazyk aplikace; řeší autoinicializaci i hlídání změny a vyvolání eventu
+        /// </summary>
+        private Language _CurrentLanguage
+        {
+            get
+            {
+                if (__CurrentLanguage is null)
+                    __CurrentLanguage = _Messages.Default;
+                return __CurrentLanguage;
+            }
+            set
+            {
+                if (value is null) return;
+                bool isChange = (__CurrentLanguage is null || !Object.ReferenceEquals(value, __CurrentLanguage));
+                __CurrentLanguage = value;
+                if (isChange) __CurrentLanguageChanged?.Invoke(null, EventArgs.Empty);
+            }
+        }
+        /// <summary>
+        /// Aktuální jazyk aplikace, proměnná
+        /// </summary>
+        private Language __CurrentLanguage;
+        /// <summary>
+        /// Událost volaná po změně aktuálního jazyka
+        /// </summary>
+        public static event EventHandler CurrentLanguageChanged { add { Current.__CurrentLanguageChanged += value; } remove { Current.__CurrentLanguageChanged -= value; } }
+        /// <summary>
+        /// Událost volaná po změně aktuálního jazyka
+        /// </summary>
+        private event EventHandler __CurrentLanguageChanged;
         #endregion
         #region Monitory, zarovnání souřadnic do monitoru, ukládání souřadnic oken
         #endregion
@@ -509,6 +665,7 @@ namespace DjSoft.Tools.ProgramLauncher
             menu.ShowCheckMargin = false;
             menu.ShowImageMargin = true;
             menu.ItemClicked += _OnMenuItemClicked;
+            menu.ImageScalingSize = new Size(20, 20);
 
             foreach (var menuItem in menuItems)
                 menu.Items.Add(_CreateToolStripItem(menuItem, onSelectItem));
@@ -1030,13 +1187,13 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private AppearanceInfo _CurrentAppearance
         {
-            get 
+            get
             {
                 if (__CurrentAppearance is null)
                     __CurrentAppearance = AppearanceInfo.Default;
                 return __CurrentAppearance;
             }
-            set 
+            set
             {
                 if (value is null) return;
                 bool isChange = (__CurrentAppearance is null || !Object.ReferenceEquals(value, __CurrentAppearance));
@@ -1056,7 +1213,6 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Událost volaná po změně skinu
         /// </summary>
         private event EventHandler __CurrentAppearanceChanged;
-
 
         /// <summary>
         /// Aktuální sada definující layout; lze změnit, po změně dojde eventu <see cref="CurrentLayoutSetChanged"/>.
@@ -1100,7 +1256,8 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <summary>
         /// Main okno aplikace. Slouží jako Owner pro Dialog okna a další Child okna.
         /// </summary>
-        public static MainForm MainForm { get { return Current.__MainForm; } set { Current.__MainForm = value; } } private MainForm __MainForm;
+        public static MainForm MainForm { get { return Current.__MainForm; } set { Current.__MainForm = value; } }
+        private MainForm __MainForm;
         /// <summary>
         /// Vrátí image daného typu do PopupMenu nebo do StatusBar
         /// </summary>
@@ -1169,6 +1326,19 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Vrátí text odpovídající počtu
         /// </summary>
         /// <param name="count"></param>
+        /// <param name="textAll">Texty pro všechny počty, oddělené znakem ×</param>
+        /// <returns></returns>
+        public static string GetCountText(int count, string textAll)
+        {
+            if (String.IsNullOrEmpty(textAll)) return "";
+            var texts = textAll.Split('×');
+            if (texts.Length < 4) return "";
+            return GetCountText(count, texts[0], texts[1], texts[2], texts[3]);
+        }
+        /// <summary>
+        /// Vrátí text odpovídající počtu
+        /// </summary>
+        /// <param name="count"></param>
         /// <param name="textZero"></param>
         /// <param name="textOne"></param>
         /// <param name="textSmall"></param>
@@ -1177,9 +1347,9 @@ namespace DjSoft.Tools.ProgramLauncher
         public static string GetCountText(int count, string textZero, string textOne, string textSmall, string textMany)
         {
             if (count <= 0) return textZero;
-            if (count == 1) return count.ToString() + textOne;
-            if (count <= 4) return count.ToString() + textSmall;
-            return count.ToString() + textMany;
+            if (count == 1) return count.ToString() + " " + textOne;
+            if (count <= 4) return count.ToString() + " " + textSmall;
+            return count.ToString() + " " + textMany;
         }
         #endregion
     }
@@ -1218,6 +1388,79 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Fyzický obrázek ve Statusbaru
         /// </summary>
         public Image Image { get { return __StatusLabel.Image; } set { __ImageKind = (value is null ? ImageKindType.None : ImageKindType.Other); __StatusLabel.Image = value; } }
+    }
+
+    /// <summary>
+    /// Třída zajišťující služby pro SingleProcess
+    /// </summary>
+    public static class SingleProcess
+    {
+        /// <summary>
+        /// hwnd reprezentující cílové okno = Broadcast (pro všechna okna)
+        /// </summary>
+        public static IntPtr HWND_BROADCAST { get { return new IntPtr(0xffff); } }
+        /// <summary>
+        /// Výsledek v message <see cref="WM_SHOWME"/>, když jej detekuje a zpracuje konkrétní okno aplikace
+        /// </summary>
+        public const int RESULT_VALID = 0x1ae0;
+        /// <summary>
+        /// Jméno mutexu
+        /// </summary>
+        public const string MutexName = "Applications.DjSoft.ProgramLauncher.Mutex";
+        /// <summary>
+        /// Jméno Message ShowMessage
+        /// </summary>
+        public const string ShowMeWmMessageName = "Applications.DjSoft.ProgramLauncher.ShowMessage";
+        /// <summary>
+        /// Int obsahující systémové (Windows) číslo zprávy 
+        /// </summary>
+        public static int WM_SHOWME
+        {
+            get
+            {
+                if (!__WM_ShowMe.HasValue)
+                    __WM_ShowMe = RegisterWindowMessage(ShowMeWmMessageName);
+                return __WM_ShowMe.Value;
+            }
+        }
+        private static int? __WM_ShowMe = null;
+        /// <summary>
+        /// Zajistí odeslání zdejší specifické zprávy <see cref="ShowMeWmMessageName"/> do všech oken všech procesů.
+        /// Cílové okno musí řešit svoji metodu <see cref="Control.WndProc(ref Message)"/>, 
+        /// a v jejím těle má testovat příchozí zprávu pomocí zdejší metody <see cref="IsShowMeWmMessage(Message)"/>.
+        /// </summary>
+        /// <param name="hWnd"></param>
+        public static void SendShowMeWmMessage(IntPtr? hWnd = null)
+        {
+            IntPtr targetWnd = hWnd ?? HWND_BROADCAST;
+            PostMessage(targetWnd, WM_SHOWME, IntPtr.Zero, IntPtr.Zero);
+            // var result = SendMessage(targetWnd, WM_SHOWME, IntPtr.Zero, IntPtr.Zero);
+        }
+        /// <summary>
+        /// Metoda vrátí true, pokud přijatá Message je zpráva typu ShowMe a aktuální okno se má na jejím základě reaktivovat.
+        /// </summary>
+        /// <param name="m"></param>
+        /// <returns></returns>
+        public static bool IsShowMeWmMessage(ref System.Windows.Forms.Message m, Form form = null)
+        {
+            if (m.Msg != WM_SHOWME) return false;
+
+            if (form != null)
+            {
+                form.Show();
+                if (form.WindowState == FormWindowState.Minimized) form.WindowState = FormWindowState.Normal;
+                form.Activate();
+            }
+
+            return true;
+        }
+        [DllImport("user32")]
+        private static extern bool PostMessage(IntPtr hwnd, int msg, IntPtr wparam, IntPtr lparam);
+        [DllImport("user32")]
+        private static extern string SendMessage(IntPtr hwnd, int msg, IntPtr wparam, IntPtr lparam);
+        [DllImport("user32")]
+        private static extern int RegisterWindowMessage(string message);
+
     }
     /// <summary>
     /// Typ ikony
