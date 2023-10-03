@@ -35,6 +35,27 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             this.Icon = Properties.Resources.klickety_2_64;
         }
+        protected override void WndProc(ref Message m)
+        {
+            if (SingleProcess.IsShowMeWmMessage(ref m))
+            {
+                ReActivateForm();
+                m.Result = new IntPtr(SingleProcess.RESULT_VALID);
+            }
+            else
+            {
+                base.WndProc(ref m);
+            }
+        }
+        /// <summary>
+        /// Reaktivace formuláře
+        /// </summary>
+        protected override void ReActivateForm()
+        {
+            App.HideTrayNotifyIcon();
+            base.ReActivateForm();
+            if (!this.ShowInTaskbar) this.ShowInTaskbar = true;
+        }
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             // Kdy se povoluje velký Exit:
@@ -48,10 +69,15 @@ namespace DjSoft.Tools.ProgramLauncher
             App.ActivateTrayNotifyIcon();
             e.Cancel = true;
 
-            if (App.IsDebugMode)
-                this.WindowState = FormWindowState.Minimized;
-            else
-                this.Visible = false;
+            // Schováme aplikaci, ale nebudu jí dávat Visible = false:
+            this.WindowState = FormWindowState.Minimized;
+            this.ShowInTaskbar = false;
+
+
+            //if (App.IsDebugMode)
+            //    this.WindowState = FormWindowState.Minimized;
+            //else
+            //    this.Visible = false;
         }
         #endregion
         #region Appearance
@@ -65,9 +91,11 @@ namespace DjSoft.Tools.ProgramLauncher
             App.Settings.AutoSaveDelay = TimeSpan.FromMilliseconds(5000);      // Změny Settings se uloží do 5 sekund od poslední změny (tedy i změny v posunu okna)
 
             App.CurrentAppearanceChanged += CurrentAppearanceChanged;          // Po změně vzhledu v App.CurrentAppearance proběhne tento event-handler
+            App.CurrentLanguageChanged += CurrentLanguageChanged;
 
             App.CurrentAppearance = AppearanceInfo.GetItem(App.Settings.AppearanceName, true);     // Aktivuje posledně aktivní, anebo defaultní vzhled
             App.CurrentLayoutSet = ItemLayoutSet.GetItem(App.Settings.LayoutSetName, true);
+            App.CurrentLanguage = LanguageSet.GetItem(App.Settings.LanguageCode, true);
 
             this.StatusLabelVersion.Text = "DjSoft";
         }
@@ -90,6 +118,18 @@ namespace DjSoft.Tools.ProgramLauncher
             this._StatusCurrentItemLabel.ForeColor = textColor;
         }
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void CurrentLanguageChanged(object sender, EventArgs e)
+        {
+            RefreshToolbarTexts();
+            RefreshPagesApplicationCount();
+        }
+
+        /// <summary>
         /// Vytvoří a zobrazí menu s výběrem vzhledu.
         /// </summary>
         private void _ShowAppearanceMenu()
@@ -97,11 +137,14 @@ namespace DjSoft.Tools.ProgramLauncher
             var menuPoint = _ToolStrip.PointToScreen(_ToolAppearanceButton.Bounds.GetPoint(RectanglePointPosition.BottomLeft));
 
             List<IMenuItem> items = new List<IMenuItem>();
-            items.Add(DataMenuItem.CreateHeader("BAREVNÁ PALETA"));
+            items.Add(DataMenuItem.CreateHeader(App.Messages.AppearanceMenuHeaderColorPalette));
             items.AddRange(AppearanceInfo.Collection);
             items.Add(DataMenuItem.CreateSeparator());
-            items.Add(DataMenuItem.CreateHeader("VELIKOST"));
+            items.Add(DataMenuItem.CreateHeader(App.Messages.AppearanceMenuHeaderLayoutStyle));
             items.AddRange(ItemLayoutSet.Collection);
+            items.Add(DataMenuItem.CreateSeparator());
+            items.Add(DataMenuItem.CreateHeader(App.Messages.AppearanceMenuHeaderLanguage));
+            items.AddRange(LanguageSet.Collection);
 
             App.SelectFromMenu(items, onAppearanceMenuSelect, menuPoint);
 
@@ -118,6 +161,11 @@ namespace DjSoft.Tools.ProgramLauncher
                     App.CurrentLayoutSet = itemLayoutSet;
                     App.Settings.LayoutSetName = itemLayoutSet.Name;
                 }
+                else if (selectedItem is Language language)
+                {
+                    App.CurrentLanguage = language;
+                    App.Settings.LanguageCode = language.Code;
+                }
             }
         }
         #endregion
@@ -127,13 +175,23 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private void InitializeToolBar()
         {
-            this._ToolAppearanceButton = new ToolStripButton() { DisplayStyle = ToolStripItemDisplayStyle.Image, Image = Properties.Resources.applications_graphics_2_48, Size = new Size(52, 52) };
-            this._ToolAppearanceButton.Click += _ToolAppearanceButton_Click;
-            this._ToolStrip.Items.Add(this._ToolAppearanceButton);
+            this._ToolAppearanceButton = addButton(Properties.Resources.applications_graphics_2_48, _ToolAppearanceButton_Click);
+            this._ToolEditButton = addButton(Properties.Resources.edit_6_48, _ToolEditButton_Click);
 
-            this._ToolEditButton = new ToolStripButton() { DisplayStyle = ToolStripItemDisplayStyle.Image, Image = Properties.Resources.edit_6_48, Size = new Size(52, 52), ToolTipText = "Upravit" };
-            this._ToolEditButton.Click += _ToolEditButton_Click;
-            this._ToolStrip.Items.Add(this._ToolEditButton);
+            RefreshToolbarTexts();
+
+            ToolStripButton addButton(Image image, EventHandler onClick)
+            {
+                var button = new ToolStripButton() { DisplayStyle = ToolStripItemDisplayStyle.Image, Image = image, Size = new Size(52, 52), AutoToolTip = true };
+                button.Click += onClick;
+                this._ToolStrip.Items.Add(button);
+                return button;
+            }
+        }
+        private void RefreshToolbarTexts()
+        {
+            this._ToolAppearanceButton.ToolTipText = App.Messages.ToolStripButtonAppearanceToolTip;
+            this._ToolEditButton.ToolTipText = App.Messages.ToolStripButtonEditToolTip;
         }
         /// <summary>
         /// Po kliknutí na tlačítko Toolbaru: Vzhled
@@ -193,14 +251,34 @@ namespace DjSoft.Tools.ProgramLauncher
             __PagesPanel.DataItems.Clear();
             __PagesPanel.AddItems(items);
 
-            string pageText = App.GetCountText(pageCount, "bez stránek", " stránka", " stránky", " stránek");
-            string appText = App.GetCountText(appCount, "bez aplikací", " aplikace", " aplikace", " aplikací");
-            this.StatusLabelData.Text = $"{pageText}; {appText}";
 
             bool groupsForceVisible = true;
             _PagesPanelVisible = (groupsForceVisible || items.Count > 1);
 
             ReloadApplications(activePageData, activePageIndex);
+
+            RefreshPagesApplicationCount(pageCount, appCount);
+        }
+        private void RefreshPagesApplicationCount()
+        {
+            int pageCount = 0;
+            int appCount = 0;
+            var pages = _Pages;
+            if (pages != null)
+            {
+                foreach (var page in pages)
+                {
+                    pageCount++;
+                    appCount += page.ApplicationsCount;
+                }
+            }
+            RefreshPagesApplicationCount(pageCount, appCount);
+        }
+        private void RefreshPagesApplicationCount(int pageCount, int appCount)
+        {
+            string pageText = App.GetCountText(pageCount, App.Messages.StatusStripPageCountText);
+            string appText = App.GetCountText(appCount, App.Messages.StatusStripApplicationText);
+            this.StatusLabelData.Text = $"{pageText}; {appText}";
         }
         /// <summary>
         /// Seznam stránek s nabídkami = záložky v levé části, je uložen v <see cref="Settings.ProgramPages"/>

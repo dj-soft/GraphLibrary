@@ -28,13 +28,28 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Aktivuje this okno, volitelně zvětší ze stavu Minimized do stavu předchozího
         /// </summary>
         /// <param name="withWindowState"></param>
-        public void Activate(bool withWindowState)
+        public virtual void Activate(bool withWindowState)
         {
-            if (withWindowState && this.WindowState == FormWindowState.Minimized)
-                this.WindowState = __PrevWindowStateSize ?? FormWindowState.Normal;
-            if (!this.Visible)
-                this.Visible = true;
+            ReActivateForm();
             this.Activate();
+        }
+        /// <summary>
+        /// Běžná aktivace formu zajistí jeho reaktivaci
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnActivated(EventArgs e)
+        {
+            ReActivateForm();
+            base.OnActivated(e);
+        }
+        /// <summary>
+        /// Reaktivace formuláře
+        /// </summary>
+        protected virtual void ReActivateForm()
+        {
+            if (this.WindowState == FormWindowState.Minimized)
+                this.WindowState = __PrevWindowStateSize ?? FormWindowState.Normal;
+            if (!this.Visible) this.Visible = true;
         }
         #region Sledování, ukládání a restore pozice
         private void _PositionInit()
