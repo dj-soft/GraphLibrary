@@ -164,9 +164,13 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         protected NamedPipeServerStream __ServerPipeStream;
         public string PipeName { get; protected set; }
 
-        public ServerPipe(string pipeName, Action<BasicPipe> asyncReaderStart)
+        public ServerPipe(string pipeName, Action<BasicPipe> asyncReaderStart = null)
         {
-            this.AsyncReaderStart = asyncReaderStart;
+            if (asyncReaderStart != null)
+                this.AsyncReaderStart = asyncReaderStart;
+            else
+                this.AsyncReaderStart = new Action<BasicPipe>(p => StartStringReaderAsync());
+
             PipeName = pipeName;
 
             __ServerPipeStream = new NamedPipeServerStream(
@@ -191,41 +195,60 @@ namespace DjSoft.Tools.ProgramLauncher.Data
     #region ClientPipe
     public class ClientPipe : BasicPipe
     {
-        protected NamedPipeClientStream clientPipeStream;
+        protected NamedPipeClientStream __ClientPipeStream;
 
-        public ClientPipe(string serverName, string pipeName, Action<BasicPipe> asyncReaderStart)
+        public ClientPipe(string pipeName, Action<BasicPipe> asyncReaderStart = null)
+            : this(".", pipeName, asyncReaderStart)
+        { }
+        public ClientPipe(string serverName, string pipeName, Action<BasicPipe> asyncReaderStart = null)
         {
-            this.AsyncReaderStart = asyncReaderStart;
-            clientPipeStream = new NamedPipeClientStream(serverName, pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
-            PipeStream = clientPipeStream;
+            if (asyncReaderStart != null)
+                this.AsyncReaderStart = asyncReaderStart;
+            else
+                this.AsyncReaderStart = new Action<BasicPipe>(p => StartStringReaderAsync());
+
+            __ClientPipeStream = new NamedPipeClientStream(serverName, pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+            PipeStream = __ClientPipeStream;
         }
 
         public void Connect()
         {
-            clientPipeStream.Connect();
+            __ClientPipeStream.Connect();
             AsyncReaderStart(this);
         }
     }
     #endregion
     #region BasicPipe 
-    public abstract class BasicPipe
+    public abstract class BasicPipe : IDisposable
     {
         public event EventHandler<PipeEventArgs> DataReceived;
         public event EventHandler<EventArgs> PipeClosed;
 
-        protected PipeStream PipeStream;
-        protected Action<BasicPipe> AsyncReaderStart;
 
         public BasicPipe()
         {
         }
-
+        /// <summary>
+        /// Dispose vyvolá <see cref="Close"/>
+        /// </summary>
+        public void Dispose()
+        {
+            this.Close();
+        }
+        /// <summary>
+        /// Uzavře kanál
+        /// </summary>
         public void Close()
         {
-            PipeStream.WaitForPipeDrain();
-            PipeStream.Close();
-            PipeStream.Dispose();
-            PipeStream = null;
+            try
+            {
+                if (PipeStream.IsConnected)
+                    PipeStream.WaitForPipeDrain();
+                PipeStream.Close();
+                PipeStream.Dispose();
+                PipeStream = null;
+            }
+            catch { }
         }
 
         /// <summary>
@@ -303,6 +326,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 }
             });
         }
+
+        protected PipeStream PipeStream;
+        protected Action<BasicPipe> AsyncReaderStart;
     }
     #endregion
     #region PipeEventArgs 

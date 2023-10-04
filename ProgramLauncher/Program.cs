@@ -57,6 +57,7 @@ namespace DjSoft.Tools.ProgramLauncher
         private static void _ActivateSingleProcess()
         {
             if (_TryActivateProcessMainWindow()) return;
+            if (_TryActivateProcessViaIpcPipe()) return;
 
             SingleProcess.SendShowMeWmMessage();
         }
@@ -76,6 +77,49 @@ namespace DjSoft.Tools.ProgramLauncher
 
             bool isActivated = App.ActivateWindowsProcess(myProcess);
             return isActivated;
+        }
+        /// <summary>
+        /// Metoda se pokusí aktivovat Single proces pomocí IPC Pipe
+        /// </summary>
+        /// <returns></returns>
+        private static bool _TryActivateProcessViaIpcPipe()
+        {
+            bool singletonActivated = false;
+            using (var clientPipe = App.CreateClientIpcPipe())
+            {   // Using zajistí Dispose => Close...
+                clientPipe.DataReceived += dataReceived;
+                clientPipe.Connect();
+                clientPipe.StartStringReaderAsync();
+                // Pošleme prostřednictvíjm IPC Pipe tuto zprávu.
+                // Zpráva skrz operační systém doputuje do procesu, který registruje ServerPipe = náš SingletonProces.
+                // Přijde tedy do metody App.__ServerPipe_DataReceived, tam se zpráva detekuje a provede,
+                // a měli bychom dostat odpověď "Okno jsem aktivoval" do lokální metody dataReceived()...
+                clientPipe.WriteString(SingleProcess.IpcPipeShowMainFormRequest);
+
+                // Počkáme půl sekundy na odpověď:
+                System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+                long ticks = System.Diagnostics.Stopwatch.Frequency / 2L;         // Frequency je počet Ticků za 1 sekundu. Dělím 2 a mám počet Ticků za půl sekundy.
+                sw.Start();
+                while (true)
+                {
+                    if (singletonActivated) break;
+                    System.Threading.Thread.Sleep(50);
+                    if (sw.ElapsedTicks > ticks) break;
+                }
+            }
+            return true;
+
+            void dataReceived(object sender, Data.PipeEventArgs e)
+            {
+                string message = e.String;
+                if (message == null) return;
+                switch (message)
+                {
+                    case SingleProcess.IpcPipeResponseOK:
+                        singletonActivated = true;
+                        break;
+                }
+            }
         }
     }
 }

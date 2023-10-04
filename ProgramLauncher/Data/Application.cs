@@ -65,9 +65,14 @@ namespace DjSoft.Tools.ProgramLauncher
         #endregion
         #region Řízený start a konec aplikace, Argumenty
         /// <summary>
-        /// Zahájení běhu aplikace, předání parametrů
+        /// Zahájení běhu aplikace, předání parametrů.
+        /// <para/>
+        /// Pokud this aplikace bude sloužit jako Singleton (=jediný proces v rámci Windows), pak je třeba předat aktivní Mutex <paramref name="appMutex"/>.
+        /// Aplikace si jej uloží a drží, na konci běhu v metodě <see cref="Exit"/> jej uvolní.
+        /// V tom případě si tato aplikace vytvoří ServerPipe, skrze kterou pak je ochotna komunikovat s případnými SlavePipe, viz metody ....
         /// </summary>
         /// <param name="arguments"></param>
+        /// <param name="appMutex"></param>
         public static void Start(string[] arguments, Mutex appMutex = null)
         {
             Current._Start(arguments, appMutex);
@@ -83,13 +88,23 @@ namespace DjSoft.Tools.ProgramLauncher
                 __Current = null;
             }
         }
+        /// <summary>
+        /// Zahájení běhu aplikace, předání parametrů, uložení Mutexu a tvorba ServerPipe
+        /// </summary>
+        /// <param name="arguments"></param>
+        /// <param name="appMutex"></param>
         private void _Start(string[] arguments, Mutex appMutex)
         {
             __Arguments = arguments ?? new string[0];
             __ApplicationFile = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
             __ApplicationPath = System.IO.Path.GetDirectoryName(__ApplicationFile);
             __AppMutex = appMutex;
+            if (appMutex != null)
+                _CreateServerPipe();
         }
+        /// <summary>
+        /// Ukončení běhu aplikace
+        /// </summary>
         private void _Exit()
         {
             _DisposeSettings();
@@ -154,9 +169,43 @@ namespace DjSoft.Tools.ProgramLauncher
             return arguments.TryFindFirst(a => a.StartsWith(textBegin, comparison), out foundArgument);
         }
         #endregion
-        #region SigletonProcess
+        #region SigletonProcess: Mutex a ServerPipe, a static služby ClientPipe (mimo aplikační)
         /// <summary>
-        /// Korektně uvolní Mutex
+        /// Vytvoří a uloží si instanci <see cref="__ServerPipe"/>
+        /// </summary>
+        private void _CreateServerPipe()
+        {
+            __ServerPipe = new ServerPipe(SingleProcess.IpcPipeName);
+            __ServerPipe.Connected += __ServerPipe_Connected;
+            __ServerPipe.DataReceived += __ServerPipe_DataReceived;
+        }
+        /// <summary>
+        /// K <see cref="__ServerPipe"/> se někdo připojil
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void __ServerPipe_Connected(object sender, EventArgs e)
+        {
+        }
+        /// <summary>
+        /// Do <see cref="__ServerPipe"/> někdo poslal data
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void __ServerPipe_DataReceived(object sender, PipeEventArgs e)
+        {
+            string message = e.String;
+            if (String.IsNullOrEmpty(message)) return;
+            switch (message)
+            {
+                case SingleProcess.IpcPipeShowMainFormRequest:
+                    _TrayNotifyIconActivateMainForm();
+                    __ServerPipe.WriteString(SingleProcess.IpcPipeResponseOK);
+                    break;
+            }
+        }
+        /// <summary>
+        /// Korektně uvolní Mutex a ServerPipe
         /// </summary>
         private void _DisposeAppMutex()
         {
@@ -167,11 +216,31 @@ namespace DjSoft.Tools.ProgramLauncher
                 mutex.TryDispose();
                 __AppMutex = null;
             }
+
+            var serverPipe = __ServerPipe;
+            if (serverPipe != null)
+            {
+                serverPipe.Close();
+                __ServerPipe = null;
+            }
         }
         /// <summary>
         /// Uložený Mutex - jen v případě, kdy this process je první
         /// </summary>
         private Mutex __AppMutex;
+        /// <summary>
+        /// IPC komunikační Pipe typu Server, existuje jen v rámci Server Singletonu, s podporou Mutexu <see cref="__AppMutex"/>
+        /// </summary>
+        private ServerPipe __ServerPipe;
+        /// <summary>
+        /// Metoda vrátí <see cref="ClientPipe"/> s korektním jménem, ale bez volání <see cref="ClientPipe.Connect()"/>.
+        /// </summary>
+        /// <returns></returns>
+        public static ClientPipe CreateClientIpcPipe()
+        {
+            var clientPipe = new ClientPipe(SingleProcess.IpcPipeName);
+            return clientPipe;
+        }
         #endregion
         #region Vyhledání Windows procesu, Tray ikona
         /// <summary>
@@ -1411,6 +1480,18 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Jméno Message ShowMessage
         /// </summary>
         public const string ShowMeWmMessageName = "Applications.DjSoft.ProgramLauncher.ShowMessage";
+        /// <summary>
+        /// Jméno IPC Pipe
+        /// </summary>
+        public const string IpcPipeName = "Applications.DjSoft.ProgramLauncher.IpcPipe";
+        /// <summary>
+        /// Text zprávy IPC Pipe pro aktivaci okna Singleton aplikace
+        /// </summary>
+        public const string IpcPipeShowMainFormRequest = "Applications.DjSoft.ProgramLauncher.ShowMainForm";
+        /// <summary>
+        /// Text odpovědi IPC Pipe potvrzující aktivaci okna Singleton aplikace
+        /// </summary>
+        public const string IpcPipeResponseOK = "Applications.DjSoft.ProgramLauncher.OK";
         /// <summary>
         /// Int obsahující systémové (Windows) číslo zprávy 
         /// </summary>
