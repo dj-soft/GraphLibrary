@@ -30,6 +30,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
 
         private ServerPipe __ServerPipe;
         private ClientPipe __ClientPipe;
+
+        public void Dispose()
+        {
+
+        }
     }
 
 
