@@ -20,12 +20,12 @@ namespace DjSoft.Tools.ProgramLauncher.Data
 
         private void __ServerPipe_Connected(object sender, EventArgs e)
         {
-            throw new NotImplementedException();
+            
         }
 
         private void __ServerPipe_DataReceived(object sender, PipeEventArgs e)
         {
-            throw new NotImplementedException();
+            
         }
 
         private ServerPipe __ServerPipe;
@@ -33,7 +33,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
 
         public void Dispose()
         {
-
+            __ClientPipe?.Close();
+            __ClientPipe = null;
+            __ServerPipe?.Close();
+            __ServerPipe = null;
         }
     }
 
@@ -172,7 +175,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 PipeTransmissionMode.Message,
                 PipeOptions.Asynchronous);
 
-            pipeStream = __ServerPipeStream;
+            PipeStream = __ServerPipeStream;
             __ServerPipeStream.BeginWaitForConnection(new AsyncCallback(PipeConnected), null);
         }
 
@@ -193,7 +196,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             this.AsyncReaderStart = asyncReaderStart;
             clientPipeStream = new NamedPipeClientStream(serverName, pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
-            pipeStream = clientPipeStream;
+            PipeStream = clientPipeStream;
         }
 
         public void Connect()
@@ -209,7 +212,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public event EventHandler<PipeEventArgs> DataReceived;
         public event EventHandler<EventArgs> PipeClosed;
 
-        protected PipeStream pipeStream;
+        protected PipeStream PipeStream;
         protected Action<BasicPipe> AsyncReaderStart;
 
         public BasicPipe()
@@ -218,10 +221,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
 
         public void Close()
         {
-            pipeStream.WaitForPipeDrain();
-            pipeStream.Close();
-            pipeStream.Dispose();
-            pipeStream = null;
+            PipeStream.WaitForPipeDrain();
+            PipeStream.Close();
+            PipeStream.Dispose();
+            PipeStream = null;
         }
 
         /// <summary>
@@ -248,7 +251,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
 
         public void Flush()
         {
-            pipeStream.Flush();
+            PipeStream.Flush();
         }
 
         public Task WriteString(string str)
@@ -261,7 +264,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             var blength = BitConverter.GetBytes(bytes.Length);
             var bfull = blength.Concat(bytes).ToArray();
 
-            return pipeStream.WriteAsync(bfull, 0, bfull.Length);
+            return PipeStream.WriteAsync(bfull, 0, bfull.Length);
         }
 
         protected void StartByteReaderAsync(Action<byte[]> packetReceived)
@@ -269,7 +272,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             int intSize = sizeof(int);
             byte[] bDataLength = new byte[intSize];
 
-            pipeStream.ReadAsync(bDataLength, 0, intSize).ContinueWith(t =>
+            PipeStream.ReadAsync(bDataLength, 0, intSize).ContinueWith(t =>
             {
                 int len = t.Result;
 
@@ -282,7 +285,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     int dataLength = BitConverter.ToInt32(bDataLength, 0);
                     byte[] data = new byte[dataLength];
 
-                    pipeStream.ReadAsync(data, 0, dataLength).ContinueWith(t2 =>
+                    PipeStream.ReadAsync(data, 0, dataLength).ContinueWith(t2 =>
                     {
                         len = t2.Result;
 
