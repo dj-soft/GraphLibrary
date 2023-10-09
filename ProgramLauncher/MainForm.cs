@@ -176,6 +176,7 @@ namespace DjSoft.Tools.ProgramLauncher
         private void InitializeToolBar()
         {
             this._ToolAppearanceButton = addButton(Properties.Resources.applications_graphics_2_48, _ToolAppearanceButton_Click);
+            this._ToolPreferenceButton = addButton(Properties.Resources.system_settings_2_48, _ToolPreferenceButton_Click);
             this._ToolEditButton = addButton(Properties.Resources.edit_6_48, _ToolEditButton_Click);
 
             RefreshToolbarTexts();
@@ -188,9 +189,13 @@ namespace DjSoft.Tools.ProgramLauncher
                 return button;
             }
         }
+        /// <summary>
+        /// Aktualizuje texty na prvcích Toolbaru 
+        /// </summary>
         private void RefreshToolbarTexts()
         {
             this._ToolAppearanceButton.ToolTipText = App.Messages.ToolStripButtonAppearanceToolTip;
+            this._ToolPreferenceButton.ToolTipText = App.Messages.ToolStripButtonPreferenceToolTip;
             this._ToolEditButton.ToolTipText = App.Messages.ToolStripButtonEditToolTip;
         }
         /// <summary>
@@ -203,6 +208,13 @@ namespace DjSoft.Tools.ProgramLauncher
             _ShowAppearanceMenu();
         }
         /// <summary>
+        /// Po kliknutí na tlačítko Toolbaru: Preference
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ToolPreferenceButton_Click(object sender, EventArgs e)
+        { }
+        /// <summary>
         /// Po kliknutí na tlačítko Toolbaru: Edit
         /// </summary>
         /// <param name="sender"></param>
@@ -211,8 +223,9 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             
         }
-        private System.Windows.Forms.ToolStripButton _ToolEditButton;
         private System.Windows.Forms.ToolStripButton _ToolAppearanceButton;
+        private System.Windows.Forms.ToolStripButton _ToolPreferenceButton;
+        private System.Windows.Forms.ToolStripButton _ToolEditButton;
         #endregion
         #region PagesPanel
         /// <summary>

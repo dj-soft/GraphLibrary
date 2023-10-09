@@ -62,8 +62,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             bool hasItem = (applicationData != null);
             var menuItems = new List<IMenuItem>();
-            menuItems.Add(new DataMenuItem() { Text = "Spustit", Image = Properties.Resources.media_playback_start_3_22, UserData = "Run", Enabled = hasItem });
-            menuItems.Add(new DataMenuItem() { Text = "Spustit jako správce", Image = Properties.Resources.media_seek_forward_3_22, UserData = "RunAs", Enabled = hasItem });
+            menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunText, ToolTip = App.Messages.AppContextMenuRunToolTip, Image = Properties.Resources.media_playback_start_3_22, UserData = "Run", Enabled = hasItem });
+            menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunAsText, ToolTip = App.Messages.AppContextMenuRunAsToolTip, Image = Properties.Resources.media_seek_forward_3_22, UserData = "RunAs", Enabled = hasItem });
             menuItems.Add(new DataMenuItem() { Text = "Odstranit", Image = Properties.Resources.delete_22, UserData = "Delete", Enabled = hasItem });
             menuItems.Add(new DataMenuItem() { Text = "Upravit", Image = Properties.Resources.edit_3_22, UserData = "Edit", Enabled = hasItem });
             menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Separator });

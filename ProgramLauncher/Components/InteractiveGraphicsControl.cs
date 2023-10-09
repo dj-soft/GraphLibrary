@@ -417,7 +417,13 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             {   // Jsme v procesu čekání na výraznější pohyb myši = odtrhnutí od bodu MouseDown:
                 if (!__DragVirtualBeginZone.HasValue || !__DragVirtualBeginZone.Value.Contains(mouseState.LocationControl))
                 {   // Začíná Drag:
-                    if (__MouseDragCurrentDataItem != null)
+                    if (!EnabledDrag)
+                    {   // Drag není povolen => rovnou přejdeme do stavu Cancelled:
+                        _MouseMoveCurrentExchange(mouseState, null, InteractiveState.Enabled, true);
+                        __CurrentMouseDragState = MouseDragProcessState.Cancelled;
+                        this.Draw();
+                    }
+                    else if (__MouseDragCurrentDataItem != null)
                     {   // Pokud pod myší je prvek, a pokud se nechá Dragovat:
                         __CurrentMouseDragState = MouseDragProcessState.MouseDragItem;
                         this.CursorType = this.CursorTypeMouseDrag;
@@ -454,7 +460,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="e"></param>
         private void _MouseDragKeyDown(KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Escape)
+            if (e.KeyCode == Keys.Escape && 
+                (__CurrentMouseDragState == MouseDragProcessState.BeginZone || 
+                 __CurrentMouseDragState == MouseDragProcessState.MouseDragItem ||
+                 __CurrentMouseDragState == MouseDragProcessState.MouseFrameArea))
             {
                 __CurrentMouseDragState = MouseDragProcessState.Cancelled;
                 this.CursorType = CursorTypes.Default;
@@ -468,8 +477,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="mouseState"></param>
         private void _MouseDragEnd(MouseState mouseState)
         {
-            var targetCell = _GetMouseCell(mouseState);
+            if (EnabledDrag)
+            {
+                var targetCell = _GetMouseCell(mouseState);
 
+            }
 
             _MouseDragReset();
         }
@@ -480,7 +492,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="mouseState"></param>
         private void _MouseFrameEnd(MouseState mouseState)
         {
+            if (EnabledDrag)
+            {
 
+            }
 
             _MouseDragReset();
         }
@@ -781,6 +796,15 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             OnContentSizeChanged(args);
             ContentSizeChanged?.Invoke(this, args);
         }
+
+        /// <summary>
+        /// Je povoleno provádět ClickItem
+        /// </summary>
+        public bool EnabledClick { get; set; }
+        /// <summary>
+        /// Je povoleno provádět DragAndDrop
+        /// </summary>
+        public bool EnabledDrag { get; set; }
 
         public event EventHandler<InteractiveItemEventArgs> InteractiveAreaClick;
         protected virtual void OnInteractiveAreaClick(InteractiveItemEventArgs args) { }

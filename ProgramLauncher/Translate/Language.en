@@ -6,12 +6,19 @@
 #ParentLanguage CZ
 
 ToolStripButtonAppearanceToolTip Change appearance (color palette, size, language)
+ToolStripButtonPreferenceToolTip Set application behavior
 ToolStripButtonEditToolTip Modify content
 StatusStripPageCountText no pages×page×page×pages
 StatusStripApplicationText no apps×app×app×apps
 AppearanceMenuHeaderColorPalette COLOR PALETTE
 AppearanceMenuHeaderLayoutStyle LAYOUT SIZE
 AppearanceMenuHeaderLanguage LANGUAGE
+
+AppContextMenuRunText Start
+AppContextMenuRunToolTip Starts this application
+AppContextMenuRunAsText Run as administrator
+AppContextMenuRunAsToolTip Runs this application with Administrator privileges
+
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Terminating the application
 TrayIconBalloonText The application is only hidden.××To actually turn it off, close it with a cross together with the CTRL key!××Or use the context menu on this icon.

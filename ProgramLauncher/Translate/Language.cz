@@ -6,12 +6,19 @@
 #ParentLanguage
 
 ToolStripButtonAppearanceToolTip Změnit vzhled (barevná paleta, velikost, jazyk)
+ToolStripButtonPreferenceToolTip Nastavit chování aplikace
 ToolStripButtonEditToolTip Upravit obsah
 StatusStripPageCountText bez stránek×stránka×stránky×stránek
 StatusStripApplicationText bez aplikací×aplikace×aplikace×aplikací
 AppearanceMenuHeaderColorPalette BAREVNÁ PALETA
 AppearanceMenuHeaderLayoutStyle VELIKOST
 AppearanceMenuHeaderLanguage JAZYK
+
+AppContextMenuRunText Spustit
+AppContextMenuRunToolTip Spustí tuto aplikaci
+AppContextMenuRunAsText Spustit jako správce
+AppContextMenuRunAsToolTip Spustí tuto aplikaci s oprávněním Správce
+
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Ukončení aplikace
 TrayIconBalloonText Aplikace je jen schovaná.××Pro reálné vypnutí ji zavřete křížkem spolu s klávesou CTRL!××Anebo použijte kontextové menu na této ikoně.

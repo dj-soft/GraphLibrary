@@ -114,12 +114,19 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         #region Konkrétní texty
 
         public string ToolStripButtonAppearanceToolTip { get { return _GetText("Změnit vzhled (barevná paleta, velikost, jazyk)"); } }
+        public string ToolStripButtonPreferenceToolTip { get { return _GetText("Nastavit chování aplikace"); } }
         public string ToolStripButtonEditToolTip { get { return _GetText("Upravit obsah"); } }
         public string StatusStripPageCountText { get { return _GetText("bez stránek×stránka×stránky×stránek"); } }
         public string StatusStripApplicationText { get { return _GetText("bez aplikací×aplikace×aplikace×aplikací"); } }
         public string AppearanceMenuHeaderColorPalette { get { return _GetText("BAREVNÁ PALETA"); } }
         public string AppearanceMenuHeaderLayoutStyle { get { return _GetText("VELIKOST"); } }
         public string AppearanceMenuHeaderLanguage { get { return _GetText("JAZYK"); } }
+
+        public string AppContextMenuRunText { get { return _GetText("Spustit"); } }
+        public string AppContextMenuRunToolTip { get { return _GetText("Spustí tuto aplikaci"); } }
+        public string AppContextMenuRunAsText { get { return _GetText("Spustit jako správce"); } }
+        public string AppContextMenuRunAsToolTip { get { return _GetText("Spustí tuto aplikaci s oprávněním Správce"); } }
+
         public string TrayIconText { get { return _GetText("Program Launcher"); } }
         public string TrayIconBalloonToolTip { get { return _GetText("Ukončení aplikace"); } }
         public string TrayIconBalloonText { get { return _GetText("Aplikace je jen schovaná.××Pro reálné vypnutí ji zavřete křížkem spolu s klávesou CTRL!××Anebo použijte kontextové menu na této ikoně."); } }

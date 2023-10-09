@@ -299,4 +299,7 @@
     <None Include="Pics\22px\dialog-clean-22.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy $(ProjectDir)\Translate\*.* $(TargetDir)\*.*</PostBuildEvent>
+  </PropertyGroup>
 </Project>
