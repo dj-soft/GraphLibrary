@@ -107,6 +107,7 @@
     <None Include="Translate\Language.cz" />
     <None Include="Translate\Language.en" />
     <None Include="Translate\Language.sk" />
+    <None Include="Translate\Language.gr" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -299,6 +300,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="klickety-2-64.ico" />
+    <None Include="Pics\48px\system-run-6-48.png" />
+    <None Include="Pics\48px\system-run-3-48.png" />
+    <None Include="Pics\48px\system-settings-48.png" />
     <None Include="Pics\22px\dialog-clean-22.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

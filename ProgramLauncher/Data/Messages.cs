@@ -13,7 +13,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
     /// <summary>
     /// Překladový systém
     /// </summary>
-    public class LanguageSet
+    public partial class LanguageSet
     {
         #region Tvorba, načtení, příprava lokalizace
         /// <summary>
@@ -30,12 +30,17 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         private LanguageSet()
         {
             __Languages = Language.LoadMessageFiles();
+
+            var languages = __Languages.Values.Where(l => !l.IsDefault).ToList();
+            languages.Sort(Language.CompareByOrder);
+            __Collection = languages.ToArray();
+
             __Default = __Languages[DefaultCode];
         }
         /// <summary>
-        /// Kolekce všech přítomných jazyků
+        /// Kolekce všech přítomných jazyků, správně setříděná pro použití v nabídce jazyků
         /// </summary>
-        public static Language[] Collection { get { return App.Messages.Languages; } }
+        public static Language[] Collection { get { return App.Messages.__Collection; } }
         /// <summary>
         /// Vrátí prvek daného jména
         /// </summary>
@@ -58,10 +63,6 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             return null;
         }
         /// <summary>
-        /// Pole všech přítomných jazyků, kromě Default = ty načtené ze souborů
-        /// </summary>
-        private Language[] Languages { get { return __Languages.Values.Where(l => !l.IsDefault).ToArray(); } }
-        /// <summary>
         /// Výchozí jazyk = defaultní. 
         /// Aplikace může jazyk změnit. Viz <see cref="App.CurrentLanguage"/>.
         /// </summary>
@@ -71,10 +72,12 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public const string DefaultCode = "";
         /// <summary>
-        /// Vrátí překlad daného textu do aktuálního jazyka, 
+        /// Vrátí překlad daného textu do aktuálního jazyka.
+        /// První parametr obsahuje defaultní text hlášky.
+        /// Druhý (neviditelný) parametr přináší jméno property, která má konkrétní text získat: toto jméno property slouží jako klíč pro text do překladového souboru.
         /// </summary>
-        /// <param name="defaultText"></param>
-        /// <param name="code"></param>
+        /// <param name="defaultText">Defaultní text hlášky. Bude vrácen, pokud není zvolen exaktní jazyk, anebo v tomto aktuálním jazyku není k dispozici překlad.</param>
+        /// <param name="code">Název property = název klíče do překladového souboru</param>
         /// <returns></returns>
         private string _GetText(string defaultText, [CallerMemberName] string code = null)
         {
@@ -109,10 +112,17 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 return (txt != null && txt.Contains("××") ? txt.Replace("××", "\r\n") : txt);
             }
         }
+        /// <summary>
+        /// Dictionary s jazyky. Klíč = kód jazyka. Obsahuje i Default prvek.
+        /// </summary>
         private Dictionary<string, Language> __Languages;
+        /// <summary>
+        /// Setříděné pole jazyků, kromě Default = tedy jazyky načtené z konkrétních souborů
+        /// </summary>
+        private Language[] __Collection;
         #endregion
-        #region Konkrétní texty
-
+        #region Konkrétní texty - jednotlivé property a jejich defaultní text (umožňuje běh bez jazykových souborů)
+        // Neměnit jméno property - vede to k nutnosti změnit toto jméno v překladových souborech!
         public string ToolStripButtonAppearanceToolTip { get { return _GetText("Změnit vzhled (barevná paleta, velikost, jazyk)"); } }
         public string ToolStripButtonPreferenceToolTip { get { return _GetText("Nastavit chování aplikace"); } }
         public string ToolStripButtonEditToolTip { get { return _GetText("Upravit obsah"); } }
@@ -121,7 +131,6 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string AppearanceMenuHeaderColorPalette { get { return _GetText("BAREVNÁ PALETA"); } }
         public string AppearanceMenuHeaderLayoutStyle { get { return _GetText("VELIKOST"); } }
         public string AppearanceMenuHeaderLanguage { get { return _GetText("JAZYK"); } }
-
         public string AppContextMenuRunText { get { return _GetText("Spustit"); } }
         public string AppContextMenuRunToolTip { get { return _GetText("Spustí tuto aplikaci"); } }
         public string AppContextMenuRunAsText { get { return _GetText("Spustit jako správce"); } }
@@ -132,9 +141,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string AppContextMenuEditToolTip { get { return _GetText("Otevře okno a umožní změnit popis, cílovou aplikaci a chování této položky"); } }
         public string AppContextMenuNewApplicationText { get { return _GetText("Nová aplikace"); } }
         public string AppContextMenuNewApplicationToolTip { get { return _GetText("Přidá novou aplikaci: otevře okno a umožní změnit popis, cílovou aplikaci a chování této položky"); } }
-        public string AppContextMenuNewGroupText { get { return _GetText("Přidá novou skupinu"); } }
+        public string AppContextMenuNewGroupText { get { return _GetText("Nová skupina"); } }
         public string AppContextMenuNewGroupToolTip { get { return _GetText("Přidá novou skupinu aplikací, do ní pak bude možno přidávat aplikace"); } }
-
         public string TrayIconText { get { return _GetText("Program Launcher"); } }
         public string TrayIconBalloonToolTip { get { return _GetText("Ukončení aplikace"); } }
         public string TrayIconBalloonText { get { return _GetText("Aplikace je jen schovaná.××Pro reálné vypnutí ji zavřete křížkem spolu s klávesou CTRL!××Anebo použijte kontextové menu na této ikoně."); } }
@@ -153,7 +161,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
     /// </summary>
     public class Language : IMenuItem
     {
-        #region Načítání dat ze souborů, tvorba defaultního
+        #region Načítání dat ze souborů
         /// <summary>
         /// Načte a vrátí sadu překladových objektů pro nalezené jazyky.
         /// První z nich s klíčem "" je Default.
@@ -174,6 +182,20 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             }
 
             return messageSets;
+        }
+        /// <summary>
+        /// Porovná dvě instance <see cref="Language"/> podle jejich <see cref="Order"/> (plus <see cref="Code"/>).
+        /// Prvek, jehož <see cref="Order"/> není zadané, bude na konci.
+        /// Prvky se shodným <see cref="Order"/> budouv pořadí jejich <see cref="Code"/>.
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static int CompareByOrder(Language a, Language b)
+        {
+            string aOrder = $"{(a?.Order ?? "§§§§")}#{a.Code}";
+            string bOrder = $"{(b?.Order ?? "§§§§")}#{b.Code}";
+            return String.CompareOrdinal(aOrder, bOrder);
         }
         /// <summary>
         /// Vytvoří a vrátí defaultní set = neobsahuje žádné kódy, výstupem pak bude defaultní překlad daný kódem.
@@ -250,6 +272,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 case "#IconName":
                     __IconName = value; 
                     break;
+                case "#Order":
+                    __Order = value;
+                    break;
                 case "#ParentLanguage":
                     __ParentLanguage = value; 
                     break;
@@ -266,6 +291,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             #Language CZ                               ... Povinný. Kód tohoto jazyka, reference. Pokud není uveden, soubor nebude zpracován.
             #Name Čeština                              ... Povinný. Název tohoto jazyka v jazyce samotném
             #IconName FlagCzech.png                    ... Povinný. Jméno souboru s ikonou vlajky, PNG, 22x22 px
+            #Order 20                                  ... Nepovinný. Pořadí tohoto jazyka v nabídce jazyků.
             #ParentLanguage CZ                         ... Nepovinný. Označuje jazyk, ze kterého se čerpají zde nepřítomné hlášky (tedy zdejší soubor obsahuje jen několik odlišností oproti Parent)
             ApplicationExitText Close application      ... překlad klíčového kódu do zdejšího jazyka
             MessageTip Konec××Hláška××s odřádkováním   ... znaky ×× reprezentují CrLf. Hláška musí být uvedena na jednom řádku i kdyby byl dlouhý 4000 znaků.
@@ -280,6 +306,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         private string __Code;
         private string __Name;
         private string __IconName;
+        private string __Order;
         private string __ParentLanguage;
         private Dictionary<string, string> __Codes;
         /// <summary>
@@ -324,6 +351,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Jméno souboru s ikonou, výchozí adresář je vedle souboru s jazykem <see cref="FileName"/>
         /// </summary>
         public string IconName { get { return __IconName; } }
+        /// <summary>
+        /// Pořadí souboru v nabídce = v kolekci <see cref="LanguageSet.Collection"/>. 
+        /// Nejde o číslo ale o string.
+        /// </summary>
+        public string Order { get { return __Order; } }
         /// <summary>
         /// Parent jazyk, kde se hledají texty v tomto jazyce neuvedené
         /// </summary>

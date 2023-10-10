@@ -176,7 +176,7 @@ namespace DjSoft.Tools.ProgramLauncher
         private void InitializeToolBar()
         {
             this._ToolAppearanceButton = addButton(Properties.Resources.applications_graphics_2_48, _ToolAppearanceButton_Click);
-            this._ToolPreferenceButton = addButton(Properties.Resources.system_settings_2_48, _ToolPreferenceButton_Click);
+            this._ToolPreferenceButton = addButton(Properties.Resources.system_run_6_48, _ToolPreferenceButton_Click);
             this._ToolEditButton = addButton(Properties.Resources.edit_6_48, _ToolEditButton_Click);
 
             RefreshToolbarTexts();

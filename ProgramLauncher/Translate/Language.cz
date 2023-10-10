@@ -3,6 +3,7 @@
 #Language CZ
 #Name Česky
 #IconName Flag-Czech-Republic-24.png
+#Order 10
 #ParentLanguage
 
 ToolStripButtonAppearanceToolTip Změnit vzhled (barevná paleta, velikost, jazyk)
@@ -13,12 +14,18 @@ StatusStripApplicationText bez aplikací×aplikace×aplikace×aplikací
 AppearanceMenuHeaderColorPalette BAREVNÁ PALETA
 AppearanceMenuHeaderLayoutStyle VELIKOST
 AppearanceMenuHeaderLanguage JAZYK
-
 AppContextMenuRunText Spustit
 AppContextMenuRunToolTip Spustí tuto aplikaci
 AppContextMenuRunAsText Spustit jako správce
 AppContextMenuRunAsToolTip Spustí tuto aplikaci s oprávněním Správce
-
+AppContextMenuRemoveText Odstranit
+AppContextMenuRemoveToolTip Odstranit tuto aplikaci z nabídky
+AppContextMenuEditText Upravit
+AppContextMenuEditToolTip Otevře okno a umožní změnit popis, cílovou aplikaci a chování této položky
+AppContextMenuNewApplicationText Nová aplikace
+AppContextMenuNewApplicationToolTip Přidá novou aplikaci: otevře okno a umožní změnit popis, cílovou aplikaci a chování této položky
+AppContextMenuNewGroupText Nová skupina
+AppContextMenuNewGroupToolTip Přidá novou skupinu aplikací, do ní pak bude možno přidávat aplikace
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Ukončení aplikace
 TrayIconBalloonText Aplikace je jen schovaná.××Pro reálné vypnutí ji zavřete křížkem spolu s klávesou CTRL!××Anebo použijte kontextové menu na této ikoně.

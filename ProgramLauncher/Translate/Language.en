@@ -3,6 +3,7 @@
 #Language EN
 #Name English
 #IconName Flag-United-Kingdom-24.png
+#Order 20
 #ParentLanguage CZ
 
 ToolStripButtonAppearanceToolTip Change appearance (color palette, size, language)
@@ -13,12 +14,18 @@ StatusStripApplicationText no apps×app×app×apps
 AppearanceMenuHeaderColorPalette COLOR PALETTE
 AppearanceMenuHeaderLayoutStyle LAYOUT SIZE
 AppearanceMenuHeaderLanguage LANGUAGE
-
 AppContextMenuRunText Start
 AppContextMenuRunToolTip Starts this application
 AppContextMenuRunAsText Run as administrator
 AppContextMenuRunAsToolTip Runs this application with Administrator privileges
-
+AppContextMenuRemoveText Remove
+AppContextMenuRemoveToolTip Remove this application from the menu
+AppContextMenuEditText Edit
+AppContextMenuEditToolTip Opens a window and allows you to change the description, target application and behavior of this item
+AppContextMenuNewApplicationText New application
+AppContextMenuNewApplicationToolTip Adds a new application: opens a window and allows you to change the description, target application and behavior of this item
+AppContextMenuNewGroupText New group
+AppContextMenuNewGroupToolTip It will add a new group of applications, then it will be possible to add applications to it
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Terminating the application
 TrayIconBalloonText The application is only hidden.××To actually turn it off, close it with a cross together with the CTRL key!××Or use the context menu on this icon.
