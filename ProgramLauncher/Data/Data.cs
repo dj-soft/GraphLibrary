@@ -58,17 +58,17 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         /// <param name="mouseState"></param>
         /// <param name="applicationData"></param>
-        internal void RunContextMenu(MouseState mouseState, ApplicationData applicationData)
+        internal void RunApplicationContextMenu(MouseState mouseState, ApplicationData applicationData)
         {
             bool hasItem = (applicationData != null);
             var menuItems = new List<IMenuItem>();
             menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunText, ToolTip = App.Messages.AppContextMenuRunToolTip, Image = Properties.Resources.media_playback_start_3_22, UserData = "Run", Enabled = hasItem });
             menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunAsText, ToolTip = App.Messages.AppContextMenuRunAsToolTip, Image = Properties.Resources.media_seek_forward_3_22, UserData = "RunAs", Enabled = hasItem });
-            menuItems.Add(new DataMenuItem() { Text = "Odstranit", Image = Properties.Resources.delete_22, UserData = "Delete", Enabled = hasItem });
-            menuItems.Add(new DataMenuItem() { Text = "Upravit", Image = Properties.Resources.edit_3_22, UserData = "Edit", Enabled = hasItem });
+            menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveToolTip, Image = Properties.Resources.delete_22, UserData = "Delete", Enabled = hasItem });
+            menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditToolTip, Image = Properties.Resources.edit_3_22, UserData = "Edit", Enabled = hasItem });
             menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Separator });
-            menuItems.Add(new DataMenuItem() { Text = "Nový zástupce", Image = Properties.Resources.document_new_3_22, UserData = "NewApp" });
-            menuItems.Add(new DataMenuItem() { Text = "Nová skupina", Image = Properties.Resources.edit_remove_3_22, UserData = "NewGroup" });
+            menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewApplicationText, ToolTip = App.Messages.AppContextMenuNewApplicationToolTip, Image = Properties.Resources.document_new_3_22, UserData = "NewApp" });
+            menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewGroupText, ToolTip = App.Messages.AppContextMenuNewGroupToolTip, Image = Properties.Resources.edit_remove_3_22, UserData = "NewGroup" });
 
             App.SelectFromMenu(menuItems, doContextMenu, mouseState.LocationAbsolute);
 

@@ -408,7 +408,7 @@ namespace DjSoft.Tools.ProgramLauncher
             }
             else if (e.MouseState.Buttons == MouseButtons.Right)
             {
-                this._ActivePageData?.RunContextMenu(e.MouseState, applInfo);
+                this._ActivePageData?.RunApplicationContextMenu(e.MouseState, applInfo);
             }
         }
         /// <summary>
@@ -420,7 +420,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             if (e.MouseState.Buttons == MouseButtons.Right)
             {
-                this._ActivePageData?.RunContextMenu(e.MouseState, null);
+                this._ActivePageData?.RunApplicationContextMenu(e.MouseState, null);
             }
         }
         /// <summary>
