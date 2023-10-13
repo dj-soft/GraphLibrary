@@ -103,6 +103,26 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap archive_insert_3_22 {
+            get {
+                object obj = ResourceManager.GetObject("archive_insert_3_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap archive_remove_22 {
+            get {
+                object obj = ResourceManager.GetObject("archive_remove_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap btn_01_20 {
             get {
                 object obj = ResourceManager.GetObject("btn_01_20", resourceCulture);
@@ -513,6 +533,26 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap edit_4_22 {
+            get {
+                object obj = ResourceManager.GetObject("edit_4_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap edit_6_22 {
+            get {
+                object obj = ResourceManager.GetObject("edit_6_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap edit_6_32 {
             get {
                 object obj = ResourceManager.GetObject("edit-6-32", resourceCulture);
@@ -546,6 +586,16 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         internal static System.Drawing.Bitmap edit_cut_3_22 {
             get {
                 object obj = ResourceManager.GetObject("edit_cut_3_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap edit_delete_6_22 {
+            get {
+                object obj = ResourceManager.GetObject("edit_delete_6_22", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -633,6 +683,16 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap insert_horizontal_rule_22 {
+            get {
+                object obj = ResourceManager.GetObject("insert_horizontal_rule_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap klickety_2_22 {
             get {
                 object obj = ResourceManager.GetObject("klickety_2_22", resourceCulture);
@@ -653,6 +713,26 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap list_add_3_22 {
+            get {
+                object obj = ResourceManager.GetObject("list_add_3_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap list_remove_3_22 {
+            get {
+                object obj = ResourceManager.GetObject("list_remove_3_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap media_playback_start_3_22 {
             get {
                 object obj = ResourceManager.GetObject("media_playback_start_3_22", resourceCulture);
@@ -666,6 +746,16 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         internal static System.Drawing.Bitmap media_seek_forward_3_22 {
             get {
                 object obj = ResourceManager.GetObject("media_seek_forward_3_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap process_stop_6_22 {
+            get {
+                object obj = ResourceManager.GetObject("process_stop_6_22", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

@@ -19,9 +19,9 @@ AppContextMenuRunToolTip Starts this application
 AppContextMenuRunAsText Run as administrator
 AppContextMenuRunAsToolTip Runs this application with Administrator privileges
 AppContextMenuRemoveText Remove
-AppContextMenuRemoveToolTip Remove this application from the menu
+AppContextMenuRemoveApplicationToolTip Remove this application from the menu
 AppContextMenuEditText Edit
-AppContextMenuEditToolTip Opens a window and allows you to change the description, target application and behavior of this item
+AppContextMenuEditApplicationToolTip Opens a window and allows you to change the description, target application and behavior of this item
 AppContextMenuNewApplicationText New application
 AppContextMenuNewApplicationToolTip Adds a new application: opens a window and allows you to change the description, target application and behavior of this item
 AppContextMenuNewGroupText New group

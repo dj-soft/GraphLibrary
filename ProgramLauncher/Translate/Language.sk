@@ -19,9 +19,9 @@ AppContextMenuRunToolTip Spustí túto aplikáciu
 AppContextMenuRunAsText Spustiť ako správca
 AppContextMenuRunAsToolTip Spustí túto aplikáciu s oprávnením Správcu
 AppContextMenuRemoveText Odstrániť
-AppContextMenuRemoveToolTip Odstrániť túto aplikáciu z ponuky
+AppContextMenuRemoveApplicationToolTip Odstrániť túto aplikáciu z ponuky
 AppContextMenuEditText Upraviť
-AppContextMenuEditToolTip Otvorí okno a umožní zmeniť popis, cieľovú aplikáciu a správanie tejto položky
+AppContextMenuEditApplicationToolTip Otvorí okno a umožní zmeniť popis, cieľovú aplikáciu a správanie tejto položky
 AppContextMenuNewApplicationText Nová aplikácia
 AppContextMenuNewApplicationToolTip Pridá novú aplikáciu: otvorí okno a umožní zmeniť popis, cieľovú aplikáciu a správanie tejto položky
 AppContextMenuNewGroupText Nová skupina

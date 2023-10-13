@@ -237,6 +237,7 @@ namespace DjSoft.Tools.ProgramLauncher
             __PagesPanel.Dock = DockStyle.Fill;
             __PagesPanel.DefaultLayoutKind = DataLayoutKind.Pages;
             __PagesPanel.ContentSizeChanged += _AppPagesPanel_ContentSizeChanged;
+            __PagesPanel.InteractiveAreaClick += _PageAreaClick;
             __PagesPanel.InteractiveItemClick += _PageItemClick;
             this._MainContainer.Panel1.Controls.Add(__PagesPanel);
         }
@@ -314,13 +315,34 @@ namespace DjSoft.Tools.ProgramLauncher
                 _PagesPanelWidth = groupContentSize.Value.Width;
         }
         /// <summary>
+        /// Kliknutí myši (levá, pravá) na prázdnou plochu mimo prvek Page
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _PageAreaClick(object sender, Components.InteractiveItemEventArgs e)
+        {
+            if (e.MouseState.Buttons == MouseButtons.Right)
+            {
+                PageData.RunPageContextMenu(e.MouseState, null, _Pages);
+            }
+        }
+        /// <summary>
         /// Uživatel kliknul na TabHeader od Page: aktivujeme její obsah
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void _PageItemClick(object sender, Components.InteractiveItemEventArgs e)
         {
-            _ActivePageData = e.Item.UserData as Data.PageData;
+            var pageData = e.Item.UserData as Data.PageData;
+            if (e.MouseState.Buttons == MouseButtons.Left)
+            {
+                if (pageData != null)
+                    _ActivePageData = pageData;
+            }
+            else if (e.MouseState.Buttons == MouseButtons.Right)
+            {   // Pravá myš: neaktivuje vybranou stránku, ale otevře pro ní menu:
+                PageData.RunPageContextMenu(e.MouseState, pageData, _Pages);
+            }
         }
         /// <summary>
         /// Panel 1 (zobrazuje Pages) je viditelný?
@@ -394,24 +416,6 @@ namespace DjSoft.Tools.ProgramLauncher
             this.StatusLabelApplicationMouseImage = ImageKindType.DocumentProperties;
         }
         /// <summary>
-        /// Kliknutí myši (levá, pravá) na prvek Aplikace
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ApplicationItemClick(object sender, Components.InteractiveItemEventArgs e)
-        {
-            var applInfo = e.Item.UserData as Data.ApplicationData;
-            if (e.MouseState.Buttons == MouseButtons.Left)
-            {
-                if (applInfo != null)
-                    applInfo.RunApplication();
-            }
-            else if (e.MouseState.Buttons == MouseButtons.Right)
-            {
-                this._ActivePageData?.RunApplicationContextMenu(e.MouseState, applInfo);
-            }
-        }
-        /// <summary>
         /// Kliknutí myši (levá, pravá) na prázdnou plochu mimo prvek Aplikace
         /// </summary>
         /// <param name="sender"></param>
@@ -420,7 +424,26 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             if (e.MouseState.Buttons == MouseButtons.Right)
             {
-                this._ActivePageData?.RunApplicationContextMenu(e.MouseState, null);
+                this._ActivePageData?.RunApplicationContextMenu(e.MouseState, null, _ActivePageData);
+            }
+        }
+        /// <summary>
+        /// Kliknutí myši (levá, pravá) na prvek Aplikace
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ApplicationItemClick(object sender, Components.InteractiveItemEventArgs e)
+        {
+            if (e.MouseState.Buttons == MouseButtons.Left)
+            {
+                var applInfo = e.Item.UserData as Data.ApplicationData;
+                if (applInfo != null)
+                    applInfo.RunApplication();
+            }
+            else if (e.MouseState.Buttons == MouseButtons.Right)
+            {
+                var dataInfo = e.Item.UserData as Data.BaseData;
+                this._ActivePageData?.RunApplicationContextMenu(e.MouseState, dataInfo, _ActivePageData);
             }
         }
         /// <summary>

@@ -19,9 +19,9 @@ AppContextMenuRunToolTip Ξεκινά αυτήν την εφαρμογή
 AppContextMenuRunAsText Εκτελέστε ως διαχειριστής
 AppContextMenuRunAsToolTip Εκτελεί αυτήν την εφαρμογή με δικαιώματα διαχειριστή
 AppContextMenuRemoveText Αφαιρώ
-AppContextMenuRemoveToolTip Καταργήστε αυτήν την εφαρμογή από το μενού
+AppContextMenuRemoveApplicationToolTip Καταργήστε αυτήν την εφαρμογή από το μενού
 AppContextMenuEditText Επεξεργασία
-AppContextMenuEditToolTip Ανοίγει ένα παράθυρο και σας επιτρέπει να αλλάξετε την περιγραφή, την εφαρμογή στόχευσης και τη συμπεριφορά αυτού του στοιχείου
+AppContextMenuEditApplicationToolTip Ανοίγει ένα παράθυρο και σας επιτρέπει να αλλάξετε την περιγραφή, την εφαρμογή στόχευσης και τη συμπεριφορά αυτού του στοιχείου
 AppContextMenuNewApplicationText Νέα εφαρμογή
 AppContextMenuNewApplicationToolTip Προσθέτει μια νέα εφαρμογή: ανοίγει ένα παράθυρο και σας επιτρέπει να αλλάξετε την περιγραφή, την εφαρμογή στόχο και τη συμπεριφορά αυτού του στοιχείου
 AppContextMenuNewGroupText Νέα ομάδα

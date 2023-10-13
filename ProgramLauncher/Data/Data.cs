@@ -10,6 +10,7 @@ using DjSoft.Tools.ProgramLauncher.Data;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Management;
+using System.Drawing.Text;
 
 namespace DjSoft.Tools.ProgramLauncher.Data
 {
@@ -52,42 +53,133 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 }
             }
         }
-        #region Kontextové menu
+        #region Kontextové menu pro správu stránek = přidání / editace / odebrání celé stránky
         /// <summary>
-        /// Nabídne kontextové menu pro danou aplikaci
+        /// Nabídne kontextové menu pro správu stránek (přidání / editace / odebrání celé stránky)
         /// </summary>
         /// <param name="mouseState"></param>
-        /// <param name="applicationData"></param>
-        internal void RunApplicationContextMenu(MouseState mouseState, ApplicationData applicationData)
+        /// <param name="dataInfo"></param>
+        /// <param name="pages"></param>
+        internal static void RunPageContextMenu(MouseState mouseState, BaseData dataInfo, List<PageData> pages)
         {
-            bool hasItem = (applicationData != null);
             var menuItems = new List<IMenuItem>();
-            menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunText, ToolTip = App.Messages.AppContextMenuRunToolTip, Image = Properties.Resources.media_playback_start_3_22, UserData = "Run", Enabled = hasItem });
-            menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunAsText, ToolTip = App.Messages.AppContextMenuRunAsToolTip, Image = Properties.Resources.media_seek_forward_3_22, UserData = "RunAs", Enabled = hasItem });
-            menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveToolTip, Image = Properties.Resources.delete_22, UserData = "Delete", Enabled = hasItem });
-            menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditToolTip, Image = Properties.Resources.edit_3_22, UserData = "Edit", Enabled = hasItem });
-            menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Separator });
-            menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewApplicationText, ToolTip = App.Messages.AppContextMenuNewApplicationToolTip, Image = Properties.Resources.document_new_3_22, UserData = "NewApp" });
-            menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewGroupText, ToolTip = App.Messages.AppContextMenuNewGroupToolTip, Image = Properties.Resources.edit_remove_3_22, UserData = "NewGroup" });
 
-            App.SelectFromMenu(menuItems, doContextMenu, mouseState.LocationAbsolute);
-
-            // Provede vybranou akci z kontextového menu
-            void doContextMenu(IMenuItem menuItem)
+            bool hasPage = (dataInfo is PageData pageData);
+            if (hasPage)
             {
-                if (menuItem.UserData is string code)
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.delete_22, UserData = new ContextMenuUserData(ContextMenuActionType.DeletePage, dataInfo, null, pages) });
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.EditPage, dataInfo, null, pages) });
+            }
+            if (!hasPage)
+            {
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewApplicationText, ToolTip = App.Messages.AppContextMenuNewApplicationToolTip, Image = Properties.Resources.document_new_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.NewGroup, null, null, pages) });
+            }
+
+            App.SelectFromMenu(menuItems, _RunContextMenuAction, mouseState.LocationAbsolute);
+        }
+        #endregion
+        #region Kontextové menu uvnitř stránky = správa skupin a aplikací
+        /// <summary>
+        /// Nabídne kontextové menu pro danou aplikaci / grupu
+        /// </summary>
+        /// <param name="mouseState"></param>
+        /// <param name="dataInfo"></param>
+        /// <param name="pageData"></param>
+        internal void RunApplicationContextMenu(MouseState mouseState, BaseData dataInfo, PageData pageData)
+        {
+            var menuItems = new List<IMenuItem>();
+
+            bool hasApplication = (dataInfo is ApplicationData applicationData);
+            if (hasApplication)
+            {
+                // menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Separator });
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunText, ToolTip = App.Messages.AppContextMenuRunToolTip, Image = Properties.Resources.media_playback_start_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.RunApplication, dataInfo, pageData, null) });
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunAsText, ToolTip = App.Messages.AppContextMenuRunAsToolTip, Image = Properties.Resources.media_seek_forward_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.RunApplicationAsAdmin, dataInfo, pageData, null) });
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.delete_22, UserData = new ContextMenuUserData(ContextMenuActionType.DeleteApplication, dataInfo, pageData, null) });
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.EditApplication, dataInfo, pageData, null) });
+            }
+
+            bool hasGroup = (dataInfo is GroupData groupData);
+            if (hasGroup)
+            {
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.delete_22, UserData = new ContextMenuUserData(ContextMenuActionType.DeleteGroup, dataInfo, pageData, null) });
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.EditGroup, dataInfo, pageData, null) });
+            }
+            if (!hasApplication && !hasGroup)
+            {
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewApplicationText, ToolTip = App.Messages.AppContextMenuNewApplicationToolTip, Image = Properties.Resources.document_new_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.NewApplication, null, pageData, null) });
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewGroupText, ToolTip = App.Messages.AppContextMenuNewGroupToolTip, Image = Properties.Resources.edit_remove_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.NewGroup, null, pageData, null) });
+            }
+
+            App.SelectFromMenu(menuItems, _RunContextMenuAction, mouseState.LocationAbsolute);
+        }
+        // Provede vybranou akci z kontextového menu
+        private static void _RunContextMenuAction(IMenuItem menuItem)
+        {
+            if (menuItem.UserData is ContextMenuUserData contextData)
+            {
+                switch (contextData.Action)
                 {
-                    switch (code)
-                    {
-                        case "Run":
-                            applicationData.RunNewProcess(false);
-                            break;
-                        case "RunAs":
-                            applicationData.RunNewProcess(true);
-                            break;
-                    }
+                    case ContextMenuActionType.RunApplication:
+                        (contextData.Data as ApplicationData).RunNewProcess(false);
+                        break;
+                    case ContextMenuActionType.RunApplicationAsAdmin:
+                        (contextData.Data as ApplicationData).RunNewProcess(true);
+                        break;
                 }
             }
+        }
+        /// <summary>
+        /// Balíček s daty pro akce kontextového menu
+        /// </summary>
+        private class ContextMenuUserData
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="action"></param>
+            /// <param name="data"></param>
+            public ContextMenuUserData(ContextMenuActionType action, BaseData data, PageData pageData, List<PageData> pages)
+            {
+                Action = action;
+                Data = data;
+                PageData = pageData;
+                Pages = pages;
+            }
+            /// <summary>
+            /// Druh akce
+            /// </summary>
+            public ContextMenuActionType Action { get; private set; }
+            /// <summary>
+            /// Prvek
+            /// </summary>
+            public BaseData Data { get; private set; }
+            /// <summary>
+            /// Stránka na které se akce provádí
+            /// </summary>
+            public PageData PageData { get; private set; }
+            /// <summary>
+            /// Kompletní soupis stránek
+            /// </summary>
+            public List<PageData> Pages { get; private set; }
+        }
+        /// <summary>
+        /// Akce v kontextovém menu
+        /// </summary>
+        private enum ContextMenuActionType
+        {
+            None,
+            NewPage,
+            EditPage,
+            DeletePage,
+            NewGroup,
+            EditGroup,
+            DeleteGroup,
+            NewApplication,
+            EditApplication,
+            DeleteApplication,
+            RunApplication,
+            RunApplicationAsAdmin
         }
         #endregion
         #region Tvorba výchozích dat - namísto prázdných

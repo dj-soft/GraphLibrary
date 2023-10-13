@@ -136,9 +136,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string AppContextMenuRunAsText { get { return _GetText("Spustit jako správce"); } }
         public string AppContextMenuRunAsToolTip { get { return _GetText("Spustí tuto aplikaci s oprávněním Správce"); } }
         public string AppContextMenuRemoveText { get { return _GetText("Odstranit"); } }
-        public string AppContextMenuRemoveToolTip { get { return _GetText("Odstranit tuto aplikaci z nabídky"); } }
+        public string AppContextMenuRemoveApplicationToolTip { get { return _GetText("Odstranit tuto aplikaci z nabídky"); } }
         public string AppContextMenuEditText { get { return _GetText("Upravit"); } }
-        public string AppContextMenuEditToolTip { get { return _GetText("Otevře okno a umožní změnit popis, cílovou aplikaci a chování této položky"); } }
+        public string AppContextMenuEditApplicationToolTip { get { return _GetText("Otevře okno a umožní změnit popis, cílovou aplikaci a chování této položky"); } }
         public string AppContextMenuNewApplicationText { get { return _GetText("Nová aplikace"); } }
         public string AppContextMenuNewApplicationToolTip { get { return _GetText("Přidá novou aplikaci: otevře okno a umožní změnit popis, cílovou aplikaci a chování této položky"); } }
         public string AppContextMenuNewGroupText { get { return _GetText("Nová skupina"); } }

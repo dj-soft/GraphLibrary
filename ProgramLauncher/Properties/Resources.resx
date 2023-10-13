@@ -316,4 +316,31 @@
   <data name="system_settings_48" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pics\48px\system-settings-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="archive_insert_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\archive-insert-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="archive_remove_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\archive-remove-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_4_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\edit-4-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_6_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\edit-6-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_delete_6_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\edit-delete-6-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="insert_horizontal_rule_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\insert-horizontal-rule-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="list_add_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\list-add-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="list_remove_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\list-remove-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="process_stop_6_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\process-stop-6-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>
