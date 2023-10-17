@@ -364,6 +364,21 @@
   <data name="dialog_ok_apply_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pics\22px\dialog-ok-apply-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="go_down_2_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\go-down-2-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_down_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\go-down-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_down_4_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\go-down-4-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_down_5_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\go-down-5-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_home_2_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\go-home-2-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="go_next_2_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pics\22px\go-next-2-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -372,6 +387,33 @@
   </data>
   <data name="go_next_4_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pics\22px\go-next-4-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_next_5_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\go-next-5-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_previous_2_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\go-previous-2-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_previous_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\go-previous-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_previous_4_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\go-previous-4-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_previous_5_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\go-previous-5-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_up_2_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\go-up-2-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_up_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\go-up-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_up_4_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\go-up-4-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_up_5_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\go-up-5-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="process_stop_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pics\22px\process-stop-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -384,5 +426,53 @@
   </data>
   <data name="view_refresh_4_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pics\22px\view-refresh-4-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_declare_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\dialog-declare-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_error_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\dialog-error-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_error_2_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\dialog-error-2-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_error_4_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\dialog-error-4-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_error_7_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\dialog-error-7-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_important_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\dialog-important-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_important_2_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\dialog-important-2-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_ok_apply_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\dialog-ok-apply-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media_floppy_2_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\media-floppy-2-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media_floppy_3_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\media-floppy-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media_floppy_3_5_mount_2_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\media-floppy-3.5_mount-2-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media_playback_start_3_221" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\media-playback-start-3-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media_playlist_repeat_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\media-playlist-repeat-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media_playlist_repeat_2_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\media-playlist-repeat-2-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="user_busy_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\user-busy-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="user_busy_2_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\user-busy-2-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

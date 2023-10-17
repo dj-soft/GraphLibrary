@@ -300,6 +300,35 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="klickety-2-64.ico" />
+    <None Include="Pics\22px\user-busy-22.png" />
+    <None Include="Pics\22px\user-busy-2-22.png" />
+    <None Include="Pics\22px\media-playlist-repeat-22.png" />
+    <None Include="Pics\22px\media-playlist-repeat-2-22.png" />
+    <None Include="Pics\22px\media-floppy-3-22.png" />
+    <None Include="Pics\22px\media-floppy-3.5_mount-2-22.png" />
+    <None Include="Pics\22px\media-floppy-2-22.png" />
+    <None Include="Pics\22px\dialog-ok-apply-22.png" />
+    <None Include="Pics\22px\dialog-important-22.png" />
+    <None Include="Pics\22px\dialog-important-2-22.png" />
+    <None Include="Pics\22px\dialog-error-22.png" />
+    <None Include="Pics\22px\dialog-error-7-22.png" />
+    <None Include="Pics\22px\dialog-error-4-22.png" />
+    <None Include="Pics\22px\dialog-error-2-22.png" />
+    <None Include="Pics\22px\dialog-declare-22.png" />
+    <None Include="Pics\22px\go-up-5-22.png" />
+    <None Include="Pics\22px\go-up-4-22.png" />
+    <None Include="Pics\22px\go-up-3-22.png" />
+    <None Include="Pics\22px\go-up-2-22.png" />
+    <None Include="Pics\22px\go-previous-5-22.png" />
+    <None Include="Pics\22px\go-previous-4-22.png" />
+    <None Include="Pics\22px\go-previous-3-22.png" />
+    <None Include="Pics\22px\go-previous-2-22.png" />
+    <None Include="Pics\22px\go-next-5-22.png" />
+    <None Include="Pics\22px\go-home-2-22.png" />
+    <None Include="Pics\22px\go-down-5-22.png" />
+    <None Include="Pics\22px\go-down-4-22.png" />
+    <None Include="Pics\22px\go-down-3-22.png" />
+    <None Include="Pics\22px\go-down-2-22.png" />
     <None Include="Pics\22px\go-next-4-22.png" />
     <None Include="Pics\22px\go-next-3-22.png" />
     <None Include="Pics\22px\go-next-2-22.png" />

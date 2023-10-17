@@ -29,12 +29,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             this.DataPanel.BackColor = SystemColors.ControlDark;
             this.Controls.Add(this.DataPanel);
 
-            this.DialogButtonPanel = new DialogButtonPanel() { Buttons = new DialogResult[] { DialogResult.OK, DialogResult.Cancel } };
+            this.DialogButtonPanel = new DialogButtonPanel() { Buttons = new DialogButtonType[] { DialogButtonType.Ok, DialogButtonType.Cancel, DialogButtonType.Save } };
             this.DialogButtonPanel.BackColor = SystemColors.Window;
             this.Controls.Add(this.DialogButtonPanel);
 
-            this.AcceptButton = this.DialogButtonPanel[DialogResult.OK];
-            this.CancelButton = this.DialogButtonPanel[DialogResult.Cancel];
+            this.AcceptButton = this.DialogButtonPanel[DialogButtonType.Ok];
+            this.CancelButton = this.DialogButtonPanel[DialogButtonType.Cancel];
 
             this.Size = new Size(650, 320);
             this.ClientSizeChanged += _ClientSizeChanged;
@@ -86,9 +86,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         public DialogButtonPanel DialogButtonPanel { get; private set; }
     }
     #endregion
-    #region class DialogButtonPanel : Panel s obecnými tlačítky typu DialogResult
+    #region class DialogButtonPanel : Panel s obecnými tlačítky typu DialogButtonType
     /// <summary>
-    /// <see cref="DialogButtonPanel"/> : Panel s obecnými tlačítky typu DialogResult
+    /// <see cref="DialogButtonPanel"/> : Panel s obecnými tlačítky typu DialogButtonType
     /// </summary>
     public class DialogButtonPanel : DPanel
     {
@@ -153,7 +153,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// VLoží buttony pro dané typy resultů
         /// </summary>
         /// <param name="buttonTypes"></param>
-        private void _SetButtons(DialogResult[] buttonTypes)
+        private void _SetButtons(DialogButtonType[] buttonTypes)
         {
             var oldButtons = __DButtons;
             if (oldButtons != null)
@@ -168,29 +168,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             __ButtonTypes = buttonTypes;
 
             List<DButton> newButtons = new List<DButton>();
+            var buttonSize = __ButtonsSize;
             foreach (var buttonType in buttonTypes)
-                newButtons.Add(_CreateDButton(buttonType));
+                newButtons.Add(DButton.Create(this, buttonType, buttonSize, _ButtonClick));
+
             __DButtons = newButtons.ToArray();
-        }
-        /// <summary>
-        /// Vytvoří a vrátí button pro daný typ
-        /// </summary>
-        /// <param name="buttonType"></param>
-        /// <returns></returns>
-        private DButton _CreateDButton(DialogResult buttonType)
-        {
-            switch (buttonType)
-            {
-                case DialogResult.Cancel: return DButton.Create(this, "Cancel", Properties.Resources.dialog_cancel_3_22, __ButtonsSize, buttonType, _ButtonClick);
-                case DialogResult.Abort: return DButton.Create(this, "Abort", Properties.Resources.process_stop_6_22, __ButtonsSize, buttonType, _ButtonClick);
-                case DialogResult.Retry: return DButton.Create(this, "Retry", Properties.Resources.view_refresh_4_22, __ButtonsSize, buttonType, _ButtonClick);
-                case DialogResult.Ignore: return DButton.Create(this, "Ignore", Properties.Resources.go_next_4_22, __ButtonsSize, buttonType, _ButtonClick);
-                case DialogResult.Yes: return DButton.Create(this, "Yes", Properties.Resources.dialog_ok_4_22, __ButtonsSize, buttonType, _ButtonClick);
-                case DialogResult.No: return DButton.Create(this, "No", Properties.Resources.dialog_no_3_22, __ButtonsSize, buttonType, _ButtonClick);
-                case DialogResult.OK:
-                default:
-                    return DButton.Create(this, "OK", Properties.Resources.dialog_clean_22, __ButtonsSize, buttonType, _ButtonClick);
-            }
         }
         /// <summary>
         /// Fyzické Buttony
@@ -203,18 +185,15 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="args"></param>
         private void _ButtonClick(object sender, EventArgs args)
         {
-            if (sender is Control control && control.Tag is DialogResult buttonType)
+            if (sender is Control control && control.Tag is DialogButtonType buttonType)
                 _RunClickResult(buttonType);
         }
         /// <summary>
         /// Po kliknutí na button ...
         /// </summary>
         /// <param name="dialogResult"></param>
-        private void _RunClickResult(DialogResult dialogResult)
+        private void _RunClickResult(DialogButtonType dialogResult)
         {
-            var form = this.FindForm();
-            if (form != null) form.DialogResult = dialogResult;
-
             EventDialogResultArgs args = new EventDialogResultArgs(dialogResult);
             OnClickResult(args);
             ClickResult?.Invoke(this, args);
@@ -330,19 +309,19 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Přítomné buttony v odpovídajícím pořadí
         /// </summary>
-        public DialogResult[] Buttons { get { return __ButtonTypes; } set { _SetButtons(value); } } private DialogResult[] __ButtonTypes;
+        public DialogButtonType[] Buttons { get { return __ButtonTypes; } set { _SetButtons(value); } } private DialogButtonType[] __ButtonTypes;
         /// <summary>
         /// Vrátí fyzický button daného typu, anebo null.
         /// Typy přítomných buttonů lze setovat do <see cref="Buttons"/>.
         /// </summary>
         /// <param name="buttonType"></param>
         /// <returns></returns>
-        public DButton this[DialogResult buttonType]
+        public DButton this[DialogButtonType buttonType]
         {
             get
             {
                 if (__DButtons is null) return null;
-                return __DButtons.FirstOrDefault(b => b.Tag is DialogResult result && result == buttonType);
+                return __DButtons.FirstOrDefault(b => b.Tag is DialogButtonType result && result == buttonType);
             }
         }
         /// <summary>
@@ -375,40 +354,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         public event EventHandler PanelBoundsChanged;
         #endregion
-    }
-    /// <summary>
-    /// Umístění panelu a jeho obsahu
-    /// </summary>
-    public enum PanelContentAlignment
-    {
-        None,
-        TopSideLeft,
-        TopSideCenter,
-        TopSideRight,
-        RightSideTop,
-        RightSideMiddle,
-        RightSideBottom,
-        BottomSideRight,
-        BottomSideCenter,
-        BottomSideLeft,
-        LeftSideBottom,
-        LeftSideMiddle,
-        LeftSideTop
-    }
-    public enum PanelSide
-    {
-        None,
-        TopSide,
-        RightSide,
-        BottomSide,
-        LeftSide
-    }
-    public enum ContentPosition
-    {
-        None,
-        OnBegin,
-        OnCenter,
-        OnEnd
     }
     #endregion
     #region class BaseForm : Bázový formulář
@@ -721,6 +666,44 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vytvoří a vrátí button pro daný typ
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="buttonType"></param>
+        /// <param name="size"></param>
+        /// <param name="click"></param>
+        /// <returns></returns>
+        public static DButton Create(Control parent, DialogButtonType buttonType, Size size, EventHandler click = null)
+        {
+            switch (buttonType)
+            {
+                case DialogButtonType.Cancel: return DButton.Create(parent, "Cancel", Properties.Resources.dialog_cancel_3_22, size, buttonType, click);
+                case DialogButtonType.Abort: return DButton.Create(parent, "Abort", Properties.Resources.process_stop_6_22, size, buttonType, click);
+                case DialogButtonType.Retry: return DButton.Create(parent, "Retry", Properties.Resources.view_refresh_4_22, size, buttonType, click);
+                case DialogButtonType.Ignore: return DButton.Create(parent, "Ignore", Properties.Resources.go_next_4_22, size, buttonType, click);
+                case DialogButtonType.Yes: return DButton.Create(parent, "Yes", Properties.Resources.dialog_ok_4_22, size, buttonType, click);
+                case DialogButtonType.No: return DButton.Create(parent, "No", Properties.Resources.dialog_no_3_22, size, buttonType, click);
+                case DialogButtonType.Help: return DButton.Create(parent, "Help", Properties.Resources.help_3_22, size, buttonType, click);
+                case DialogButtonType.Next: return DButton.Create(parent, "Next", Properties.Resources.go_next_3_22, size, buttonType, click);
+                case DialogButtonType.Prev: return DButton.Create(parent, "Prev", Properties.Resources.go_previous_3_22, size, buttonType, click);
+                case DialogButtonType.Apply: return DButton.Create(parent, "Apply", Properties.Resources.dialog_ok_apply_22, size, buttonType, click);
+                case DialogButtonType.Save: return DButton.Create(parent, "Save", Properties.Resources.media_floppy_3_5_mount_2_22, size, buttonType, click);
+                case DialogButtonType.Ok:
+                default:
+                    return DButton.Create(parent, "OK", Properties.Resources.dialog_clean_22, size, buttonType, click);
+            }
+        }
+        /// <summary>
+        /// Vytvoří a vrátí button pro daná data
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="text"></param>
+        /// <param name="image"></param>
+        /// <param name="size"></param>
+        /// <param name="tag"></param>
+        /// <param name="click"></param>
+        /// <returns></returns>
         public static DButton Create(Control parent, string text, Image image, Size size, object tag = null, EventHandler click = null)
         {
             DButton button = new DButton()
@@ -796,16 +779,70 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     /// </summary>
     public class EventDialogResultArgs : EventArgs 
     {
-        public EventDialogResultArgs(DialogResult dialogResult) 
+        public EventDialogResultArgs(DialogButtonType dialogResult) 
         {
-            this.DialogResult = dialogResult;
+            this.DialogButtonType = dialogResult;
         }
         /// <summary>
         /// Výsledek dialogu
         /// </summary>
-        public DialogResult DialogResult { get; }
+        public DialogButtonType DialogButtonType { get; }
     }
-    
+    #endregion
+    #region Enumy
+    /// <summary>
+    /// Typ buttonu v dialogu.
+    /// </summary>
+    public enum DialogButtonType
+    {
+        None,
+        Ok,
+        Apply,
+        Save,
+        Cancel,
+        Yes,
+        No,
+        Abort,
+        Retry,
+        Ignore,
+        Prev,
+        Next,
+        Help
+    }
+    /// <summary>
+    /// Umístění panelu a jeho obsahu
+    /// </summary>
+    public enum PanelContentAlignment
+    {
+        None,
+        TopSideLeft,
+        TopSideCenter,
+        TopSideRight,
+        RightSideTop,
+        RightSideMiddle,
+        RightSideBottom,
+        BottomSideRight,
+        BottomSideCenter,
+        BottomSideLeft,
+        LeftSideBottom,
+        LeftSideMiddle,
+        LeftSideTop
+    }
+    public enum PanelSide
+    {
+        None,
+        TopSide,
+        RightSide,
+        BottomSide,
+        LeftSide
+    }
+    public enum ContentPosition
+    {
+        None,
+        OnBegin,
+        OnCenter,
+        OnEnd
+    }
     #endregion
     #region Servis pro potomky a ostatní
     public class ControlSupport
