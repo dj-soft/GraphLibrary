@@ -13,7 +13,11 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 namespace DjSoft.Tools.ProgramLauncher.Components
 {
     #region class DialogForm : Formulář s prostorem pro data a s tlačítky OK / Cancel
-
+    /// <summary>
+    /// <see cref="DialogForm"/> : Formulář s prostorem pro data a s tlačítky OK / Cancel nebo jakýmikoli dalšími.<br/>
+    /// Volající kód vloží svůj datový panel do <see cref="DataPanel"/> a nastaví v něm Dock = Fill.
+    /// Dále pak ošetří event <see cref="DialogButtonClick"/>.
+    /// </summary>
     public class DialogForm : BaseForm
     {
         public DialogForm()
@@ -29,19 +33,31 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             this.DataPanel.BackColor = SystemColors.ControlDark;
             this.Controls.Add(this.DataPanel);
 
-            this.DialogButtonPanel = new DialogButtonPanel() { Buttons = new DialogButtonType[] { DialogButtonType.Ok, DialogButtonType.Cancel, DialogButtonType.Save } };
+            this.DialogButtonPanel = new DialogButtonPanel() { Buttons = new DialogButtonType[] { DialogButtonType.Ok, DialogButtonType.Cancel } };
+            this.DialogButtonPanel.DialogButtonClick += _PanelDialogButtonClick;
             this.DialogButtonPanel.BackColor = SystemColors.Window;
             this.Controls.Add(this.DialogButtonPanel);
-
-            this.AcceptButton = this.DialogButtonPanel[DialogButtonType.Ok];
-            this.CancelButton = this.DialogButtonPanel[DialogButtonType.Cancel];
 
             this.Size = new Size(650, 320);
             this.ClientSizeChanged += _ClientSizeChanged;
 
             this.LayoutContent();
         }
-
+        /// <summary>
+        /// Po kliknutí na tlačítko v panleu <see cref="DialogButtonPanel"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _PanelDialogButtonClick(object sender, DialogButtonEventArgs args)
+        {
+            _RunDialogButtonClick(args.DialogButtonType);
+        }
+        /// <summary>
+        /// Po změně prostoru ve formuláři
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _ClientSizeChanged(object sender, EventArgs e)
         {
             this.DialogButtonPanel.LayoutContent();
@@ -84,6 +100,25 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Panel obsahující tlačítka
         /// </summary>
         public DialogButtonPanel DialogButtonPanel { get; private set; }
+        /// <summary>
+        /// Po kliknutí na button ...
+        /// </summary>
+        /// <param name="dialogResult"></param>
+        private void _RunDialogButtonClick(DialogButtonType dialogResult)
+        {
+            DialogButtonEventArgs args = new DialogButtonEventArgs(dialogResult);
+            OnDialogButtonClick(args);
+            DialogButtonClick?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Metoda volaná po kliknutí na tlačítko
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnDialogButtonClick(DialogButtonEventArgs args) { }
+        /// <summary>
+        /// Událost po kliknutí na tlačítko
+        /// </summary>
+        public event DialogButtonEventHandler DialogButtonClick;
     }
     #endregion
     #region class DialogButtonPanel : Panel s obecnými tlačítky typu DialogButtonType
@@ -186,23 +221,23 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         private void _ButtonClick(object sender, EventArgs args)
         {
             if (sender is Control control && control.Tag is DialogButtonType buttonType)
-                _RunClickResult(buttonType);
+                _RunDialogButtonClick(buttonType);
         }
         /// <summary>
         /// Po kliknutí na button ...
         /// </summary>
         /// <param name="dialogResult"></param>
-        private void _RunClickResult(DialogButtonType dialogResult)
+        private void _RunDialogButtonClick(DialogButtonType dialogResult)
         {
-            EventDialogResultArgs args = new EventDialogResultArgs(dialogResult);
-            OnClickResult(args);
-            ClickResult?.Invoke(this, args);
+            DialogButtonEventArgs args = new DialogButtonEventArgs(dialogResult);
+            OnDialogButtonClick(args);
+            DialogButtonClick?.Invoke(this, args);
         }
         /// <summary>
         /// Metoda volaná po kliknutí na tlačítko
         /// </summary>
         /// <param name="args"></param>
-        protected virtual void OnClickResult(EventDialogResultArgs args) { }
+        protected virtual void OnDialogButtonClick(DialogButtonEventArgs args) { }
         #endregion
         #region Layout
         /// <summary>
@@ -348,7 +383,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Událost po kliknutí na tlačítko
         /// </summary>
-        public event EventDialogResultHandler ClickResult;
+        public event DialogButtonEventHandler DialogButtonClick;
         /// <summary>
         /// Event po změně souřadnic panelu v rámci Parenta
         /// </summary>
@@ -773,13 +808,13 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="args"></param>
-    public delegate void EventDialogResultHandler(object sender, EventDialogResultArgs args);
+    public delegate void DialogButtonEventHandler(object sender, DialogButtonEventArgs args);
     /// <summary>
-    /// Argument pro událost typu <see cref="EventDialogResultHandler"/>
+    /// Argument pro událost typu <see cref="DialogButtonEventHandler"/>
     /// </summary>
-    public class EventDialogResultArgs : EventArgs 
+    public class DialogButtonEventArgs : EventArgs 
     {
-        public EventDialogResultArgs(DialogButtonType dialogResult) 
+        public DialogButtonEventArgs(DialogButtonType dialogResult) 
         {
             this.DialogButtonType = dialogResult;
         }
