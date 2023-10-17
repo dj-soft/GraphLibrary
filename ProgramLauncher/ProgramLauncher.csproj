@@ -300,6 +300,19 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="klickety-2-64.ico" />
+    <None Include="Pics\22px\go-next-4-22.png" />
+    <None Include="Pics\22px\go-next-3-22.png" />
+    <None Include="Pics\22px\go-next-2-22.png" />
+    <None Include="Pics\22px\view-refresh-4-22.png" />
+    <None Include="Pics\22px\view-refresh-3-22.png" />
+    <None Include="Pics\22px\process-stop-4-22.png" />
+    <None Include="Pics\22px\process-stop-3-22.png" />
+    <None Include="Pics\22px\dialog-ok-apply-3-22.png" />
+    <None Include="Pics\22px\dialog-ok-4-22.png" />
+    <None Include="Pics\22px\dialog-ok-3-22.png" />
+    <None Include="Pics\22px\dialog-no-3-22.png" />
+    <None Include="Pics\22px\dialog-cancel-4-22.png" />
+    <None Include="Pics\22px\dialog-cancel-3-22.png" />
     <None Include="Pics\22px\document-new-6-22.png" />
     <None Include="Pics\22px\process-stop-6-22.png" />
     <None Include="Pics\22px\list-remove-3-22.png" />

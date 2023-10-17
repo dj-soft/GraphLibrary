@@ -33,7 +33,7 @@ namespace DjSoft.Tools.ProgramLauncher
         #region Okno
         private void InitializeMainForm()
         {
-            this.Icon = Properties.Resources.klickety_2_64;
+            
         }
         protected override void WndProc(ref Message m)
         {

@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using System.IO;
 using static DjSoft.Tools.ProgramLauncher.App;
 using System.Drawing.Imaging;
+using System.Windows.Forms;
+using DjSoft.Tools.ProgramLauncher.Components;
 
 namespace DjSoft.Tools.ProgramLauncher
 {
@@ -1025,6 +1027,69 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         #endregion
         #endregion
+        #region Control
+        /// <summary>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato metoda <see cref="IsVisibleInternal(Control)"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <returns></returns>
+        public static bool IsVisibleInternal(this Control control)
+        {
+            if (control is null) return false;
+            var getState = control.GetType().GetMethod("GetState", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod | System.Reflection.BindingFlags.NonPublic);
+            if (getState is null) return false;
+            object visible = getState.Invoke(control, new object[] { (int)0x02  /*STATE_VISIBLE*/  });
+            return (visible is bool ? (bool)visible : false);
+        }
+        public static bool IsOnLeftSide(this PanelContentAlignment alignemnt) { return (IsAnyFrom(alignemnt, PanelContentAlignment.LeftSideTop, PanelContentAlignment.LeftSideMiddle, PanelContentAlignment.LeftSideBottom)); }
+        public static bool IsOnTopSide(this PanelContentAlignment alignemnt) { return (IsAnyFrom(alignemnt, PanelContentAlignment.TopSideLeft, PanelContentAlignment.TopSideCenter, PanelContentAlignment.TopSideRight)); }
+        public static bool IsOnRightSide(this PanelContentAlignment alignemnt) { return (IsAnyFrom(alignemnt, PanelContentAlignment.RightSideTop, PanelContentAlignment.RightSideMiddle, PanelContentAlignment.RightSideBottom)); }
+        public static bool IsOnBottomSide(this PanelContentAlignment alignemnt) { return (IsAnyFrom(alignemnt, PanelContentAlignment.BottomSideLeft, PanelContentAlignment.BottomSideCenter, PanelContentAlignment.BottomSideRight)); }
+        public static bool IsContentOnBegin(this PanelContentAlignment alignemnt) { return (IsAnyFrom(alignemnt, PanelContentAlignment.LeftSideTop, PanelContentAlignment.TopSideLeft, PanelContentAlignment.RightSideTop, PanelContentAlignment.BottomSideLeft)); }
+        public static bool IsContentOnCenter(this PanelContentAlignment alignemnt) { return (IsAnyFrom(alignemnt, PanelContentAlignment.LeftSideMiddle, PanelContentAlignment.TopSideCenter, PanelContentAlignment.RightSideMiddle, PanelContentAlignment.BottomSideCenter)); }
+        public static bool IsContentOnEnd(this PanelContentAlignment alignemnt) { return (IsAnyFrom(alignemnt, PanelContentAlignment.LeftSideBottom, PanelContentAlignment.TopSideRight, PanelContentAlignment.RightSideBottom, PanelContentAlignment.BottomSideRight)); }
+        public static PanelSide PanelSide(this PanelContentAlignment alignemnt) 
+        {
+            switch (alignemnt)
+            {
+                case PanelContentAlignment.TopSideLeft: return Components.PanelSide.TopSide;
+                case PanelContentAlignment.TopSideCenter: return Components.PanelSide.TopSide;
+                case PanelContentAlignment.TopSideRight: return Components.PanelSide.TopSide;
+                case PanelContentAlignment.RightSideTop: return Components.PanelSide.RightSide;
+                case PanelContentAlignment.RightSideMiddle: return Components.PanelSide.RightSide;
+                case PanelContentAlignment.RightSideBottom: return Components.PanelSide.RightSide;
+                case PanelContentAlignment.BottomSideRight: return Components.PanelSide.BottomSide;
+                case PanelContentAlignment.BottomSideCenter: return Components.PanelSide.BottomSide;
+                case PanelContentAlignment.BottomSideLeft: return Components.PanelSide.BottomSide;
+                case PanelContentAlignment.LeftSideBottom: return Components.PanelSide.LeftSide;
+                case PanelContentAlignment.LeftSideMiddle: return Components.PanelSide.LeftSide;
+                case PanelContentAlignment.LeftSideTop: return Components.PanelSide.LeftSide;
+            }
+            return Components.PanelSide.None;
+        }
+        public static ContentPosition ContentPosition(this PanelContentAlignment alignemnt)
+        {
+            switch (alignemnt)
+            {
+                case PanelContentAlignment.TopSideLeft: return Components.ContentPosition.OnBegin;
+                case PanelContentAlignment.TopSideCenter: return Components.ContentPosition.OnCenter;
+                case PanelContentAlignment.TopSideRight: return Components.ContentPosition.OnEnd;
+                case PanelContentAlignment.RightSideTop: return Components.ContentPosition.OnBegin;
+                case PanelContentAlignment.RightSideMiddle: return Components.ContentPosition.OnCenter;
+                case PanelContentAlignment.RightSideBottom: return Components.ContentPosition.OnEnd;
+                case PanelContentAlignment.BottomSideRight: return Components.ContentPosition.OnEnd;
+                case PanelContentAlignment.BottomSideCenter: return Components.ContentPosition.OnCenter;
+                case PanelContentAlignment.BottomSideLeft: return Components.ContentPosition.OnBegin;
+                case PanelContentAlignment.LeftSideBottom: return Components.ContentPosition.OnEnd;
+                case PanelContentAlignment.LeftSideMiddle: return Components.ContentPosition.OnCenter;
+                case PanelContentAlignment.LeftSideTop: return Components.ContentPosition.OnBegin;
+            }
+            return Components.ContentPosition.None;
+        }
+        #endregion
         #region IEnumerable
         /// <summary>
         /// Pro každý prvek this kolekce provede danou akci. I pro null prvky.
@@ -1281,6 +1346,17 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         #endregion
         #region Drobnosti
+        /// <summary>
+        /// Vrátí true, pokud this hodnota je rovna některé ze zadaných
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="testValue"></param>
+        /// <param name="values"></param>
+        /// <returns></returns>
+        public static bool IsAnyFrom<T>(this T testValue, params T[] values) where T : IComparable
+        {
+            return values.Any(v => testValue.CompareTo(v) == 0);
+        }
         /// <summary>
         /// Pokud je dodán objekt, provede na něm <see cref="IDisposable.Dispose()"/>. Chyby neřeší, topí je.
         /// </summary>

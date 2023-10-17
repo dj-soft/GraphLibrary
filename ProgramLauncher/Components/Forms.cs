@@ -8,10 +8,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 
 namespace DjSoft.Tools.ProgramLauncher.Components
 {
-    #region class DialogForm : Formulř s prostorem pro data a s tlačítky OK / Cancel
+    #region class DialogForm : Formulář s prostorem pro data a s tlačítky OK / Cancel
 
     public class DialogForm : BaseForm
     {
@@ -19,113 +20,395 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             this.InitializeForm();
         }
+        /// <summary>
+        /// Inicializuje form a jeho obsah
+        /// </summary>
         protected virtual void InitializeForm()
         {
-            this.OkCancelPanel = new OkCancelPanel();
-            this.OkCancelPanel.BackColor = SystemColors.Window;
+            this.DataPanel = new DPanel();
+            this.DataPanel.BackColor = SystemColors.ControlDark;
+            this.Controls.Add(this.DataPanel);
 
-            this.Controls.Add(this.OkCancelPanel);
-            this.AcceptButton = this.OkCancelPanel.AcceptButton;
-            this.CancelButton = this.OkCancelPanel.CancelButton;
+            this.DialogButtonPanel = new DialogButtonPanel() { Buttons = new DialogResult[] { DialogResult.OK, DialogResult.Cancel } };
+            this.DialogButtonPanel.BackColor = SystemColors.Window;
+            this.Controls.Add(this.DialogButtonPanel);
+
+            this.AcceptButton = this.DialogButtonPanel[DialogResult.OK];
+            this.CancelButton = this.DialogButtonPanel[DialogResult.Cancel];
 
             this.Size = new Size(650, 320);
+            this.ClientSizeChanged += _ClientSizeChanged;
+
+            this.LayoutContent();
         }
-        public OkCancelPanel OkCancelPanel { get; private set; }
+
+        private void _ClientSizeChanged(object sender, EventArgs e)
+        {
+            this.DialogButtonPanel.LayoutContent();
+            this.LayoutContent();
+        }
+        /// <summary>
+        /// Umístí svůj datový panel do disponibilního prostoru
+        /// </summary>
+        private void LayoutContent()
+        {
+            var clientSize = this.ClientSize;
+            var buttonBound = this.DialogButtonPanel.Bounds;
+            var dataBounds = this.DataPanel.Bounds;
+            var side = this.DialogButtonPanel.PanelContentAlignment.PanelSide();
+            switch (side)
+            {
+                case PanelSide.TopSide:
+                    dataBounds = new Rectangle(0, buttonBound.Bottom, clientSize.Width, clientSize.Height - buttonBound.Bottom);
+                    break;
+                case PanelSide.RightSide:
+                    dataBounds = new Rectangle(0, 0, buttonBound.Left, clientSize.Height);
+                    break;
+                case PanelSide.BottomSide:
+                    dataBounds = new Rectangle(0, 0, clientSize.Width, buttonBound.Top);
+                    break;
+                case PanelSide.LeftSide:
+                    dataBounds = new Rectangle(buttonBound.Right, 0, clientSize.Width - buttonBound.Right, clientSize.Height);
+                    break;
+                default:
+                    dataBounds = new Rectangle(0, 0, clientSize.Width, clientSize.Height);
+                    break;
+            }
+            this.DataPanel.Bounds = dataBounds;
+        }
+        /// <summary>
+        /// Panel, do něhož se umísťuje datový obsah, typicky jako plně dokovaný Panel
+        /// </summary>
+        public DPanel DataPanel { get; private set; }
+        /// <summary>
+        /// Panel obsahující tlačítka
+        /// </summary>
+        public DialogButtonPanel DialogButtonPanel { get; private set; }
     }
     #endregion
-    #region class OkCancelPanel : Panel s tlačítky OK / Cancel
+    #region class DialogButtonPanel : Panel s obecnými tlačítky typu DialogResult
     /// <summary>
-    /// <see cref="OkCancelPanel"/> : Panel s tlačítky OK / Cancel
+    /// <see cref="DialogButtonPanel"/> : Panel s obecnými tlačítky typu DialogResult
     /// </summary>
-    public class OkCancelPanel : Panel
+    public class DialogButtonPanel : DPanel
     {
-        public OkCancelPanel()
+        #region Konstruktor a protected sféra
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DialogButtonPanel()
         {
             this.InitializePanel();
         }
+        /// <summary>
+        /// Evidovaný Parent
+        /// </summary>
         private Control __Parent;
+        /// <summary>
+        /// Inicializuje panel a jeho obsah
+        /// </summary>
         protected virtual void InitializePanel()
         {
             this.__ButtonsSize = ControlSupport.StandardButtonSize;
-            this.__PanelAlignment = ContentAlignment.BottomCenter;
-            this.__ButtonsAlignment = ContentAlignment.BottomLeft;
+            this.__PanelContentAlignment = ControlSupport.StandardButtonPosition;
             this.__ButtonsSpacing = ControlSupport.StandardButtonSpacing;
             this.__ContentPadding = ControlSupport.StandardContentPadding;
+            this.__ParentClientSize = Size.Empty;
+            this.__PanelBounds = Rectangle.Empty;
 
-            this.AcceptButton = ControlSupport.CreateButton(this, "OK", Properties.Resources.dialog_clean_22, __ButtonsSize);
-            this.CancelButton = ControlSupport.CreateButton(this, "Storno", Properties.Resources.process_stop_6_22, __ButtonsSize);
+            this.BorderStyle = BorderStyle.None;
 
             this.ParentChanged += _ParentChanged;
         }
+        /// <summary>
+        /// Po změně parenta zajistím správné umístění panelu a jeho controlů a navázání eventu 'ClientSizeChanged'
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private void _ParentChanged(object sender, EventArgs args)
         {
             if (this.__Parent != null)
                 this.__Parent.ClientSizeChanged -= __Parent_ClientSizeChanged;
 
             this.__Parent = this.Parent;
+            this.__ParentClientSize = Size.Empty;
 
-            LayoutContent();
+            LayoutContent(true);
 
             if (this.__Parent != null)
                 this.__Parent.ClientSizeChanged += __Parent_ClientSizeChanged;
         }
-
+        /// <summary>
+        /// Po změně prostoru uvnitř parenta přepočítám vnitřní layout
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void __Parent_ClientSizeChanged(object sender, EventArgs e)
         {
             this.LayoutContent();
         }
+        #endregion
+        #region Buttony
         /// <summary>
-        /// Button OK
+        /// VLoží buttony pro dané typy resultů
         /// </summary>
-        public virtual Button AcceptButton { get; private set; }
-        /// <summary>
-        /// Button Cancel
-        /// </summary>
-        public virtual Button CancelButton { get; private set; }
-        /// <summary>
-        /// Vrátí pole controlů, které mají být zarovnány do this panelu v tomto pořadí.
-        /// </summary>
-        protected virtual Control[] AlignedControls { get { return new Control[] { AcceptButton, CancelButton }; } }
-        /// <summary>
-        /// Zarovnání panelu v rámci Parenta
-        /// </summary>
-        public ContentAlignment PanelAlignment { get { return __PanelAlignment; } set { __PanelAlignment = value; LayoutContent(); } } private ContentAlignment __PanelAlignment;
-        /// <summary>
-        /// Zarovnání buttonů v rámci this panelu
-        /// </summary>
-        public ContentAlignment ButtonsAlignment { get { return __ButtonsAlignment; } set { __ButtonsAlignment = value; LayoutContent(); } } private ContentAlignment __ButtonsAlignment;
-        /// <summary>
-        /// Velikost buttonů
-        /// </summary>
-        public Size ButtonsSize { get { return __ButtonsSize; } set { __ButtonsSize = value; LayoutContent(); } } private Size __ButtonsSize;
-        /// <summary>
-        /// Mezery mezi buttony
-        /// </summary>
-        public Size ButtonsSpacing { get { return __ButtonsSpacing; } set { __ButtonsSpacing = value; LayoutContent(); } } private Size __ButtonsSpacing;
-        /// <summary>
-        /// Mezery mezi buttony
-        /// </summary>
-        public Padding ContentPadding { get { return __ContentPadding; } set { __ContentPadding = value; LayoutContent(); } } private Padding __ContentPadding;
+        /// <param name="buttonTypes"></param>
+        private void _SetButtons(DialogResult[] buttonTypes)
+        {
+            var oldButtons = __DButtons;
+            if (oldButtons != null)
+            {
+                foreach (var oldButton in oldButtons)
+                {
+                    this.Controls.Remove(oldButton);
+                    oldButton.Dispose();
+                }
+                __DButtons = null;
+            }
+            __ButtonTypes = buttonTypes;
 
+            List<DButton> newButtons = new List<DButton>();
+            foreach (var buttonType in buttonTypes)
+                newButtons.Add(_CreateDButton(buttonType));
+            __DButtons = newButtons.ToArray();
+        }
         /// <summary>
-        /// Umístí this panel v rámci svého Parenta, a poté umístí svoje Buttony v rámci this panelu
+        /// Vytvoří a vrátí button pro daný typ
         /// </summary>
-        protected virtual void LayoutContent()
+        /// <param name="buttonType"></param>
+        /// <returns></returns>
+        private DButton _CreateDButton(DialogResult buttonType)
+        {
+            switch (buttonType)
+            {
+                case DialogResult.Cancel: return DButton.Create(this, "Cancel", Properties.Resources.dialog_cancel_3_22, __ButtonsSize, buttonType, _ButtonClick);
+                case DialogResult.Abort: return DButton.Create(this, "Abort", Properties.Resources.process_stop_6_22, __ButtonsSize, buttonType, _ButtonClick);
+                case DialogResult.Retry: return DButton.Create(this, "Retry", Properties.Resources.view_refresh_4_22, __ButtonsSize, buttonType, _ButtonClick);
+                case DialogResult.Ignore: return DButton.Create(this, "Ignore", Properties.Resources.go_next_4_22, __ButtonsSize, buttonType, _ButtonClick);
+                case DialogResult.Yes: return DButton.Create(this, "Yes", Properties.Resources.dialog_ok_4_22, __ButtonsSize, buttonType, _ButtonClick);
+                case DialogResult.No: return DButton.Create(this, "No", Properties.Resources.dialog_no_3_22, __ButtonsSize, buttonType, _ButtonClick);
+                case DialogResult.OK:
+                default:
+                    return DButton.Create(this, "OK", Properties.Resources.dialog_clean_22, __ButtonsSize, buttonType, _ButtonClick);
+            }
+        }
+        /// <summary>
+        /// Fyzické Buttony
+        /// </summary>
+        private DButton[] __DButtons;
+        /// <summary>
+        /// Po kliknutí na button
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _ButtonClick(object sender, EventArgs args)
+        {
+            if (sender is Control control && control.Tag is DialogResult buttonType)
+                _RunClickResult(buttonType);
+        }
+        /// <summary>
+        /// Po kliknutí na button ...
+        /// </summary>
+        /// <param name="dialogResult"></param>
+        private void _RunClickResult(DialogResult dialogResult)
+        {
+            var form = this.FindForm();
+            if (form != null) form.DialogResult = dialogResult;
+
+            EventDialogResultArgs args = new EventDialogResultArgs(dialogResult);
+            OnClickResult(args);
+            ClickResult?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Metoda volaná po kliknutí na tlačítko
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnClickResult(EventDialogResultArgs args) { }
+        #endregion
+        #region Layout
+        /// <summary>
+        /// Umístí this panel v rámci svého Parenta, a poté umístí svoje Buttony v rámci this panelu. 
+        /// Vlastní akci provede jen při <paramref name="force"/> = true nebo po změně prostoru v parentu.
+        /// </summary>
+        private void _LayoutContent(bool force)
         {
             var parent = this.__Parent;
             if (parent is null) return;
 
             var parentSize = parent.ClientSize;
-
-            var controls = this.AlignedControls;
-            if (controls is null || controls.Length == 0) return;
-
-
-
-            this.Bounds = new Rectangle(6, 30, 450, 40);
-            this.AcceptButton.Location = new Point(20, 3);
-            this.CancelButton.Location = new Point(220, 3);
+            if (force || this.__ParentClientSize.IsEmpty || this.__ParentClientSize != parentSize)
+                _RunLayoutContent();
         }
+        /// <summary>
+        /// Umístí this panel v rámci svého Parenta, a poté umístí svoje Buttony v rámci this panelu. 
+        /// </summary>
+        private void _RunLayoutContent()
+        {
+            var parentSize = this.__Parent.ClientSize;
+            this.__ParentClientSize = parentSize;
+
+            var buttons = this.__DButtons;
+            int buttonsCount = buttons?.Length ?? 0;
+            if (buttonsCount == 0)
+            {
+                this.Visible = false;
+                return;
+            }
+
+            // Umístění panelu a buttonů určíme na základě zdejších hodnot:
+            var alignment = this.PanelContentAlignment;
+            var buttonSize = this.ButtonsSize;
+            var spacing = this.ButtonsSpacing;
+            var padding = this.ContentPadding;
+            var side = alignment.PanelSide();
+            bool isControlsVertical = (side == PanelSide.LeftSide || side == PanelSide.RightSide);
+
+            // Velikost obsahu = velikost controlů + mezery mezi nimi:
+            int contentWidth = (isControlsVertical ? buttonSize.Width : (buttonsCount * buttonSize.Width) + ((buttonsCount - 1) * spacing.Width));
+            int contentHeight = (isControlsVertical ? (buttonsCount * buttonSize.Height) + ((buttonsCount - 1) * spacing.Height) : buttonSize.Height);
+
+            // Umístit celý panel: podle velikosti obsahu a zarovnání panelu v parentu:
+            var panelWidth = (isControlsVertical ? contentWidth + padding.Horizontal : parentSize.Width);
+            var panelHeight = (isControlsVertical ? parentSize.Height : contentHeight + padding.Vertical);
+            var panelLeft = (side == PanelSide.RightSide ? parentSize.Width - panelWidth : 0);
+            var panelTop = (side == PanelSide.BottomSide ? parentSize.Height - panelHeight : 0);
+            var panelBounds = new Rectangle(panelLeft, panelTop, panelWidth, panelHeight);
+            this.Bounds = panelBounds;
+
+            // Umístit controly:
+            var position = alignment.ContentPosition();
+            //  Hodnota 'ratio' vyjadřuje umístění obsahu: "na začátku" (0.0) / "uprostřed" (0.5) / "na konci" (1.0) v odpovídající ose:
+            decimal ratio = (position == ContentPosition.OnBegin) ? 0m :
+                            (position == ContentPosition.OnCenter) ? 0.5m :
+                            (position == ContentPosition.OnEnd) ? 1.0m : 0.5m;
+
+            int distance = (int)(Math.Round((ratio * (decimal)(isControlsVertical ? (parentSize.Height - padding.Vertical - contentHeight) : (parentSize.Width - padding.Horizontal - contentWidth))), 0));
+            int buttonLeft = isControlsVertical ? padding.Left : padding.Top + distance;
+            int buttonTop = isControlsVertical ? padding.Left + distance : padding.Top;
+            foreach (var control in buttons)
+            {
+                control.Bounds = new Rectangle(buttonLeft, buttonTop, buttonSize.Width, buttonSize.Height);
+                if (isControlsVertical)
+                    buttonTop += buttonSize.Height + spacing.Height;
+                else
+                    buttonLeft += buttonSize.Width + spacing.Width;
+            }
+
+            // Viditelnost celého panelu:
+            if (!this.Visible) this.Visible = true;
+
+            // Změna Bounds?
+            bool isBoundsChanged = (panelBounds != this.__PanelBounds);
+            this.__PanelBounds = panelBounds;
+            if (isBoundsChanged) this.RunPanelBoundsChanged();
+        }
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnPanelBoundsChanged(EventArgs)"/> a event <see cref="PanelBoundsChanged"/>
+        /// </summary>
+        protected void RunPanelBoundsChanged()
+        {
+            EventArgs args = EventArgs.Empty;
+            OnPanelBoundsChanged(args);
+            PanelBoundsChanged?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Metoda volaná po změně souřadnic panelu v rámci Parenta
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnPanelBoundsChanged(EventArgs args)
+        { }
+        /// <summary>
+        /// Naposledy akceptovaná velikost Parenta
+        /// </summary>
+        private Size __ParentClientSize;
+        /// <summary>
+        /// Naposledy použité souřadnice panelu
+        /// </summary>
+        private Rectangle __PanelBounds;
+        #endregion
+        #region Public data a eventy
+        /// <summary>
+        /// Přítomné buttony v odpovídajícím pořadí
+        /// </summary>
+        public DialogResult[] Buttons { get { return __ButtonTypes; } set { _SetButtons(value); } } private DialogResult[] __ButtonTypes;
+        /// <summary>
+        /// Vrátí fyzický button daného typu, anebo null.
+        /// Typy přítomných buttonů lze setovat do <see cref="Buttons"/>.
+        /// </summary>
+        /// <param name="buttonType"></param>
+        /// <returns></returns>
+        public DButton this[DialogResult buttonType]
+        {
+            get
+            {
+                if (__DButtons is null) return null;
+                return __DButtons.FirstOrDefault(b => b.Tag is DialogResult result && result == buttonType);
+            }
+        }
+        /// <summary>
+        /// Zarovnání panelu v rámci Parenta a umístění obsahu v něm
+        /// </summary>
+        public PanelContentAlignment PanelContentAlignment { get { return __PanelContentAlignment; } set { __PanelContentAlignment = value; LayoutContent(true); } } private PanelContentAlignment __PanelContentAlignment;
+        /// <summary>
+        /// Velikost buttonů
+        /// </summary>
+        public Size ButtonsSize { get { return __ButtonsSize; } set { __ButtonsSize = value; LayoutContent(true); } } private Size __ButtonsSize;
+        /// <summary>
+        /// Mezery mezi buttony
+        /// </summary>
+        public Size ButtonsSpacing { get { return __ButtonsSpacing; } set { __ButtonsSpacing = value; LayoutContent(true); } } private Size __ButtonsSpacing;
+        /// <summary>
+        /// Mezery mezi buttony
+        /// </summary>
+        public Padding ContentPadding { get { return __ContentPadding; } set { __ContentPadding = value; LayoutContent(true); } } private Padding __ContentPadding;
+        /// <summary>
+        /// Umístí this panel v rámci svého Parenta, a poté umístí svoje Buttony v rámci this panelu. 
+        /// Vlastní akci provede jen při <paramref name="force"/> = true nebo po změně prostoru v parentu.
+        /// </summary>
+        public virtual void LayoutContent(bool force = false) { _LayoutContent(force); }
+        /// <summary>
+        /// Událost po kliknutí na tlačítko
+        /// </summary>
+        public event EventDialogResultHandler ClickResult;
+        /// <summary>
+        /// Event po změně souřadnic panelu v rámci Parenta
+        /// </summary>
+        public event EventHandler PanelBoundsChanged;
+        #endregion
+    }
+    /// <summary>
+    /// Umístění panelu a jeho obsahu
+    /// </summary>
+    public enum PanelContentAlignment
+    {
+        None,
+        TopSideLeft,
+        TopSideCenter,
+        TopSideRight,
+        RightSideTop,
+        RightSideMiddle,
+        RightSideBottom,
+        BottomSideRight,
+        BottomSideCenter,
+        BottomSideLeft,
+        LeftSideBottom,
+        LeftSideMiddle,
+        LeftSideTop
+    }
+    public enum PanelSide
+    {
+        None,
+        TopSide,
+        RightSide,
+        BottomSide,
+        LeftSide
+    }
+    public enum ContentPosition
+    {
+        None,
+        OnBegin,
+        OnCenter,
+        OnEnd
     }
     #endregion
     #region class BaseForm : Bázový formulář
@@ -137,7 +420,15 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #region Konstruktor a aktivace/deaktivace
         public BaseForm()
         {
+            this._FormInit();
             this._PositionInit();
+        }
+        /// <summary>
+        /// Základní inicializace vlastnéstí formuláře
+        /// </summary>
+        private void _FormInit()
+        {
+            this.Icon = ControlSupport.StandardFormIcon;
         }
         /// <summary>
         /// Název formuláře v Settings, pokud chce ukládat a načítat svoji pozici do Settings.
@@ -415,16 +706,29 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #endregion
     }
     #endregion
-    #region Servis pro potomky a ostatní
-    public class ControlSupport
+    #region Bázové controly
+    /// <summary>
+    /// Button
+    /// </summary>
+    public class DButton : Button, IControlExtended
     {
-        public static Button CreateButton(Control parent, string text, Image image, Size size)
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
+        public static DButton Create(Control parent, string text, Image image, Size size, object tag = null, EventHandler click = null)
         {
-            Button button = new Button()
+            DButton button = new DButton()
             {
                 Text = text,
                 Image = image,
-                Size = size
+                Size = size,
+                Tag = tag
             };
 
             bool hasText = (!String.IsNullOrEmpty(text));
@@ -446,11 +750,86 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 button.TextImageRelation = TextImageRelation.Overlay;
             }
 
+            if (click != null) button.Click += click;
+
             parent.Controls.Add(button);
             return button;
         }
-        public static Size StandardButtonSize { get { return new Size(120, 38); } }
+
+    }
+    /// <summary>
+    /// Panel
+    /// </summary>
+    public class DPanel : Panel, IControlExtended
+    {
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
+    }
+
+    public interface IControlExtended
+    {
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        bool VisibleInternal { get; set; }
+    }
+    /// <summary>
+    /// Událost, která přináší výsledek dialogu
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="args"></param>
+    public delegate void EventDialogResultHandler(object sender, EventDialogResultArgs args);
+    /// <summary>
+    /// Argument pro událost typu <see cref="EventDialogResultHandler"/>
+    /// </summary>
+    public class EventDialogResultArgs : EventArgs 
+    {
+        public EventDialogResultArgs(DialogResult dialogResult) 
+        {
+            this.DialogResult = dialogResult;
+        }
+        /// <summary>
+        /// Výsledek dialogu
+        /// </summary>
+        public DialogResult DialogResult { get; }
+    }
+    
+    #endregion
+    #region Servis pro potomky a ostatní
+    public class ControlSupport
+    {
+        public static DButton CreateDButton(Control parent, string text, Image image, Size size, EventHandler click = null) { return DButton.Create(parent, text, image, size, click); }
+        /// <summary>
+        /// Standardní ikona formulářů
+        /// </summary>
+        public static Icon StandardFormIcon { get { return Properties.Resources.klickety_2_64; } }
+        /// <summary>
+        /// Standardní umístění panelu a buttonů
+        /// </summary>
+        public static PanelContentAlignment StandardButtonPosition { get { return PanelContentAlignment.BottomSideLeft; } }
+        /// <summary>
+        /// Standardní velikost buttonu
+        /// </summary>
+        public static Size StandardButtonSize { get { return new Size(120, 32); } }
+        /// <summary>
+        /// Standardní odstupy buttonů
+        /// </summary>
         public static Size StandardButtonSpacing { get { return new Size(12, 6); } }
+        /// <summary>
+        /// Standardní okraje uvnitř panelu
+        /// </summary>
         public static Padding StandardContentPadding { get { return new Padding(6); } }
     }
     #endregion
