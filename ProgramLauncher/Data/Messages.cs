@@ -121,6 +121,38 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         private Language[] __Collection;
         #endregion
+        #region Formátování parametrů
+        public string Format(string message, params object[] parameters)
+        {
+            if (String.IsNullOrEmpty(message)) return "";
+            int length = parameters?.Length ?? 0;
+            if (length == 0) return message;
+
+            string result = message;
+            for (int i = 0; i < length; i++)
+                replaceOne(i, parameters[i]);
+
+            return result;
+
+            void replaceOne(int number, object value)
+            {
+                string pattern1 = "%" + number;
+                if (result.Contains(pattern1))
+                    result = result.Replace(pattern1, ToUser(value));
+
+                string pattern2 = "{" + number + "}";
+                if (result.Contains(pattern2))
+                    result = result.Replace(pattern2, ToUser(value));
+            }
+        }
+        public static string ToUser(object value)
+        {
+            if (value is null) return "";
+            if (value is string s) return s;
+
+            return value.ToString();
+        }
+        #endregion
         #region Konkrétní texty - jednotlivé property a jejich defaultní text (umožňuje běh bez jazykových souborů)
         // Neměnit jméno property - vede to k nutnosti změnit toto jméno v překladových souborech!
         public string ToolStripButtonAppearanceToolTip { get { return _GetText("Změnit vzhled (barevná paleta, velikost, jazyk)"); } }
@@ -131,6 +163,16 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string AppearanceMenuHeaderColorPalette { get { return _GetText("BAREVNÁ PALETA"); } }
         public string AppearanceMenuHeaderLayoutStyle { get { return _GetText("VELIKOST"); } }
         public string AppearanceMenuHeaderLanguage { get { return _GetText("JAZYK"); } }
+
+        public string AppContextMenuTitlePages { get { return _GetText("Stránky"); } }
+        public string AppContextMenuTitlePage { get { return _GetText("Stránka '%0'"); } }
+        public string AppContextMenuNewPageText { get { return _GetText("Nová stránka"); } }
+        public string AppContextMenuNewPageToolTip { get { return _GetText("Přidá novou stránku: otevře okno a umožní změnit popis, barvu a chování"); } }
+
+        public string AppContextMenuTitleApplications { get { return _GetText("Stránka aplikací"); } }
+        public string AppContextMenuTitleGroup { get { return _GetText("Skupina '%0'"); } }
+        public string AppContextMenuTitleApplication { get { return _GetText("Aplikace '%0'"); } }
+
         public string AppContextMenuRunText { get { return _GetText("Spustit"); } }
         public string AppContextMenuRunToolTip { get { return _GetText("Spustí tuto aplikaci"); } }
         public string AppContextMenuRunAsText { get { return _GetText("Spustit jako správce"); } }

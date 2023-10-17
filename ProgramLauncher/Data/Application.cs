@@ -737,7 +737,7 @@ namespace DjSoft.Tools.ProgramLauncher
             menu.ImageScalingSize = new Size(20, 20);
 
             foreach (var menuItem in menuItems)
-                menu.Items.Add(_CreateToolStripItem(menuItem, onSelectItem));
+                _AddToolStripItemTo(menu.Items, menuItem, onSelectItem);
 
             return menu;
         }
@@ -758,7 +758,7 @@ namespace DjSoft.Tools.ProgramLauncher
             menu.ItemClicked += _OnMenuItemClicked;
 
             foreach (var menuItem in menuItems)
-                menu.Items.Add(_CreateToolStripItem(menuItem, onSelectItem));
+                _AddToolStripItemTo(menu.Items, menuItem, onSelectItem);
 
             return menu;
         }
@@ -804,9 +804,22 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         /// <param name="menuItem"></param>
         /// <returns></returns>
+        private static void _AddToolStripItemTo(ToolStripItemCollection toolItems, IMenuItem menuItem, Action<IMenuItem> onSelectItem)
+        {
+            toolItems.Add(_CreateToolStripItem(menuItem, onSelectItem));
+            if (menuItem.ItemType == MenuItemType.Header)
+                toolItems.Add(new ToolStripSeparator());
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí <see cref="ToolStripMenuItem"/> z dané datové položky
+        /// </summary>
+        /// <param name="menuItem"></param>
+        /// <returns></returns>
         private static ToolStripItem _CreateToolStripItem(IMenuItem menuItem, Action<IMenuItem> onSelectItem)
         {
             ToolStripItem toolItem;
+
+            var fontStyle = menuItem.FontStyle;
             switch (menuItem.ItemType)
             {
                 case MenuItemType.Separator:
@@ -815,6 +828,7 @@ namespace DjSoft.Tools.ProgramLauncher
                     break;
                 case MenuItemType.Header:
                     var headerItem = new ToolStripLabel(menuItem.Text, menuItem.Image);
+                    if (!fontStyle.HasValue) fontStyle = FontStyle.Bold;       // Implicitní styl fontu pro Header
                     toolItem = headerItem;
                     break;
                 case MenuItemType.Button:
@@ -830,7 +844,6 @@ namespace DjSoft.Tools.ProgramLauncher
             toolItem.Tag = new Tuple<IMenuItem, Action<IMenuItem>>(menuItem, onSelectItem);
             toolItem.ToolTipText = menuItem.ToolTip;
 
-            var fontStyle = menuItem.FontStyle;
             if (fontStyle.HasValue)
                 toolItem.Font = App.GetFont(toolItem.Font, null, fontStyle.Value);
 

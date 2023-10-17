@@ -59,7 +59,7 @@ namespace DjSoft.Tools.ProgramLauncher
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             // Kdy se povoluje velký Exit:
-            bool enableExit = App.ApplicationIsClosing || Control.ModifierKeys == Keys.Control || e.CloseReason == CloseReason.ApplicationExitCall;
+            bool enableExit = App.ApplicationIsClosing || Control.ModifierKeys == Keys.Control || e.CloseReason == CloseReason.ApplicationExitCall || App.HasArgument("QX");
             if (enableExit)
             {   
                 base.OnFormClosing(e);

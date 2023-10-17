@@ -11,11 +11,130 @@ using System.Windows.Forms;
 
 namespace DjSoft.Tools.ProgramLauncher.Components
 {
+    #region class DialogForm : Formulř s prostorem pro data a s tlačítky OK / Cancel
+
+    public class DialogForm : BaseForm
+    {
+        public DialogForm()
+        {
+            this.InitializeForm();
+        }
+        protected virtual void InitializeForm()
+        {
+            this.OkCancelPanel = new OkCancelPanel();
+            this.OkCancelPanel.BackColor = SystemColors.Window;
+
+            this.Controls.Add(this.OkCancelPanel);
+            this.AcceptButton = this.OkCancelPanel.AcceptButton;
+            this.CancelButton = this.OkCancelPanel.CancelButton;
+
+            this.Size = new Size(650, 320);
+        }
+        public OkCancelPanel OkCancelPanel { get; private set; }
+    }
+    #endregion
+    #region class OkCancelPanel : Panel s tlačítky OK / Cancel
+    /// <summary>
+    /// <see cref="OkCancelPanel"/> : Panel s tlačítky OK / Cancel
+    /// </summary>
+    public class OkCancelPanel : Panel
+    {
+        public OkCancelPanel()
+        {
+            this.InitializePanel();
+        }
+        private Control __Parent;
+        protected virtual void InitializePanel()
+        {
+            this.__ButtonsSize = ControlSupport.StandardButtonSize;
+            this.__PanelAlignment = ContentAlignment.BottomCenter;
+            this.__ButtonsAlignment = ContentAlignment.BottomLeft;
+            this.__ButtonsSpacing = ControlSupport.StandardButtonSpacing;
+            this.__ContentPadding = ControlSupport.StandardContentPadding;
+
+            this.AcceptButton = ControlSupport.CreateButton(this, "OK", Properties.Resources.dialog_clean_22, __ButtonsSize);
+            this.CancelButton = ControlSupport.CreateButton(this, "Storno", Properties.Resources.process_stop_6_22, __ButtonsSize);
+
+            this.ParentChanged += _ParentChanged;
+        }
+        private void _ParentChanged(object sender, EventArgs args)
+        {
+            if (this.__Parent != null)
+                this.__Parent.ClientSizeChanged -= __Parent_ClientSizeChanged;
+
+            this.__Parent = this.Parent;
+
+            LayoutContent();
+
+            if (this.__Parent != null)
+                this.__Parent.ClientSizeChanged += __Parent_ClientSizeChanged;
+        }
+
+        private void __Parent_ClientSizeChanged(object sender, EventArgs e)
+        {
+            this.LayoutContent();
+        }
+        /// <summary>
+        /// Button OK
+        /// </summary>
+        public virtual Button AcceptButton { get; private set; }
+        /// <summary>
+        /// Button Cancel
+        /// </summary>
+        public virtual Button CancelButton { get; private set; }
+        /// <summary>
+        /// Vrátí pole controlů, které mají být zarovnány do this panelu v tomto pořadí.
+        /// </summary>
+        protected virtual Control[] AlignedControls { get { return new Control[] { AcceptButton, CancelButton }; } }
+        /// <summary>
+        /// Zarovnání panelu v rámci Parenta
+        /// </summary>
+        public ContentAlignment PanelAlignment { get { return __PanelAlignment; } set { __PanelAlignment = value; LayoutContent(); } } private ContentAlignment __PanelAlignment;
+        /// <summary>
+        /// Zarovnání buttonů v rámci this panelu
+        /// </summary>
+        public ContentAlignment ButtonsAlignment { get { return __ButtonsAlignment; } set { __ButtonsAlignment = value; LayoutContent(); } } private ContentAlignment __ButtonsAlignment;
+        /// <summary>
+        /// Velikost buttonů
+        /// </summary>
+        public Size ButtonsSize { get { return __ButtonsSize; } set { __ButtonsSize = value; LayoutContent(); } } private Size __ButtonsSize;
+        /// <summary>
+        /// Mezery mezi buttony
+        /// </summary>
+        public Size ButtonsSpacing { get { return __ButtonsSpacing; } set { __ButtonsSpacing = value; LayoutContent(); } } private Size __ButtonsSpacing;
+        /// <summary>
+        /// Mezery mezi buttony
+        /// </summary>
+        public Padding ContentPadding { get { return __ContentPadding; } set { __ContentPadding = value; LayoutContent(); } } private Padding __ContentPadding;
+
+        /// <summary>
+        /// Umístí this panel v rámci svého Parenta, a poté umístí svoje Buttony v rámci this panelu
+        /// </summary>
+        protected virtual void LayoutContent()
+        {
+            var parent = this.__Parent;
+            if (parent is null) return;
+
+            var parentSize = parent.ClientSize;
+
+            var controls = this.AlignedControls;
+            if (controls is null || controls.Length == 0) return;
+
+
+
+            this.Bounds = new Rectangle(6, 30, 450, 40);
+            this.AcceptButton.Location = new Point(20, 3);
+            this.CancelButton.Location = new Point(220, 3);
+        }
+    }
+    #endregion
+    #region class BaseForm : Bázový formulář
     /// <summary>
     /// Bázový formulář
     /// </summary>
     public class BaseForm : Form
     {
+        #region Konstruktor a aktivace/deaktivace
         public BaseForm()
         {
             this._PositionInit();
@@ -51,6 +170,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 this.WindowState = __PrevWindowStateSize ?? FormWindowState.Normal;
             if (!this.Visible) this.Visible = true;
         }
+        #endregion
         #region Sledování, ukládání a restore pozice
         private void _PositionInit()
         {
@@ -294,6 +414,46 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         public Rectangle NormalBounds { get { return __NormalBounds ?? this.RestoreBounds; } protected set { __NormalBounds = value; } } private Rectangle? __NormalBounds;
         #endregion
     }
+    #endregion
+    #region Servis pro potomky a ostatní
+    public class ControlSupport
+    {
+        public static Button CreateButton(Control parent, string text, Image image, Size size)
+        {
+            Button button = new Button()
+            {
+                Text = text,
+                Image = image,
+                Size = size
+            };
+
+            bool hasText = (!String.IsNullOrEmpty(text));
+            bool hasImage = (image != null);
+            if (hasText && hasImage)
+            {
+                button.ImageAlign = ContentAlignment.MiddleCenter;
+                button.TextAlign = ContentAlignment.MiddleRight;
+                button.TextImageRelation = TextImageRelation.ImageBeforeText;
+            }
+            else if (hasText)
+            {
+                button.TextAlign = ContentAlignment.MiddleCenter;
+                button.TextImageRelation = TextImageRelation.Overlay;
+            }
+            else if (hasImage)
+            {
+                button.ImageAlign = ContentAlignment.MiddleCenter;
+                button.TextImageRelation = TextImageRelation.Overlay;
+            }
+
+            parent.Controls.Add(button);
+            return button;
+        }
+        public static Size StandardButtonSize { get { return new Size(120, 38); } }
+        public static Size StandardButtonSpacing { get { return new Size(12, 6); } }
+        public static Padding StandardContentPadding { get { return new Padding(6); } }
+    }
+    #endregion
 }
 
 namespace DjSoft.Tools.ProgramLauncher

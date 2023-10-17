@@ -300,6 +300,16 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="klickety-2-64.ico" />
+    <None Include="Pics\22px\document-new-6-22.png" />
+    <None Include="Pics\22px\process-stop-6-22.png" />
+    <None Include="Pics\22px\list-remove-3-22.png" />
+    <None Include="Pics\22px\list-add-3-22.png" />
+    <None Include="Pics\22px\insert-horizontal-rule-22.png" />
+    <None Include="Pics\22px\edit-delete-6-22.png" />
+    <None Include="Pics\22px\edit-6-22.png" />
+    <None Include="Pics\22px\edit-4-22.png" />
+    <None Include="Pics\22px\archive-remove-22.png" />
+    <None Include="Pics\22px\archive-insert-3-22.png" />
     <None Include="Pics\48px\system-run-6-48.png" />
     <None Include="Pics\48px\system-run-3-48.png" />
     <None Include="Pics\48px\system-settings-48.png" />
