@@ -69,13 +69,13 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             if (hasPage)
             {
                 menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.Format(App.Messages.AppContextMenuTitlePage, pageData.Title) });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuUserData(ContextMenuActionType.EditPage, dataInfo, null, pages) });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuUserData(ContextMenuActionType.DeletePage, dataInfo, null, pages) });
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuUserData(ContextMenuActionType.EditPage, mouseState, dataInfo, null, pages) });
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuUserData(ContextMenuActionType.DeletePage, mouseState, dataInfo, null, pages) });
             }
             if (!hasPage)
             {
                 menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.AppContextMenuTitlePages });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewPageText, ToolTip = App.Messages.AppContextMenuNewPageToolTip, Image = Properties.Resources.document_new_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.NewGroup, null, null, pages) });
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewPageText, ToolTip = App.Messages.AppContextMenuNewPageToolTip, Image = Properties.Resources.document_new_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.NewGroup, mouseState, null, null, pages) });
             }
 
             App.SelectFromMenu(menuItems, _RunContextMenuAction, mouseState.LocationAbsolute);
@@ -98,10 +98,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             {
                 // menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Separator });
                 menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.Format(App.Messages.AppContextMenuTitleApplication, applicationData.Title) });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunText, ToolTip = App.Messages.AppContextMenuRunToolTip, Image = Properties.Resources.media_playback_start_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.RunApplication, dataInfo, pageData, null) });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunAsText, ToolTip = App.Messages.AppContextMenuRunAsToolTip, Image = Properties.Resources.media_seek_forward_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.RunApplicationAsAdmin, dataInfo, pageData, null) });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuUserData(ContextMenuActionType.EditApplication, dataInfo, pageData, null) });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuUserData(ContextMenuActionType.DeleteApplication, dataInfo, pageData, null) });
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunText, ToolTip = App.Messages.AppContextMenuRunToolTip, Image = Properties.Resources.media_playback_start_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.RunApplication, mouseState, dataInfo, pageData, null) });
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunAsText, ToolTip = App.Messages.AppContextMenuRunAsToolTip, Image = Properties.Resources.media_seek_forward_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.RunApplicationAsAdmin, mouseState, dataInfo, pageData, null) });
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuUserData(ContextMenuActionType.EditApplication, mouseState, dataInfo, pageData, null) });
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuUserData(ContextMenuActionType.DeleteApplication, mouseState, dataInfo, pageData, null) });
             }
 
             var groupData = dataInfo as GroupData;
@@ -109,14 +109,14 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             if (hasGroup)
             {
                 menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.Format(App.Messages.AppContextMenuTitleGroup, groupData.Title) });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuUserData(ContextMenuActionType.EditGroup, dataInfo, pageData, null) });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuUserData(ContextMenuActionType.DeleteGroup, dataInfo, pageData, null) });
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuUserData(ContextMenuActionType.EditGroup, mouseState, dataInfo, pageData, null) });
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuUserData(ContextMenuActionType.DeleteGroup, mouseState, dataInfo, pageData, null) });
             }
             if (!hasApplication && !hasGroup)
             {
                 menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.AppContextMenuTitleApplications });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewApplicationText, ToolTip = App.Messages.AppContextMenuNewApplicationToolTip, Image = Properties.Resources.archive_insert_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.NewApplication, null, pageData, null) });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewGroupText, ToolTip = App.Messages.AppContextMenuNewGroupToolTip, Image = Properties.Resources.insert_horizontal_rule_22, UserData = new ContextMenuUserData(ContextMenuActionType.NewGroup, null, pageData, null) });
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewApplicationText, ToolTip = App.Messages.AppContextMenuNewApplicationToolTip, Image = Properties.Resources.archive_insert_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.NewApplication, mouseState, null, pageData, null) });
+                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewGroupText, ToolTip = App.Messages.AppContextMenuNewGroupToolTip, Image = Properties.Resources.insert_horizontal_rule_22, UserData = new ContextMenuUserData(ContextMenuActionType.NewGroup, mouseState, null, pageData, null) });
             }
 
             App.SelectFromMenu(menuItems, _RunContextMenuAction, mouseState.LocationAbsolute);
@@ -138,10 +138,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                         (contextData.Data as ApplicationData).RunNewProcess(true);
                         break;
                     case ContextMenuActionType.EditApplication:
-                        using (var form = new DialogForm())
-                        {
-                            form.ShowDialog();
-                        }
+                        (contextData.Data as ApplicationData).EditData(contextData.MouseState.LocationAbsolute);
                         break;
                 }
             }
@@ -156,9 +153,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             /// </summary>
             /// <param name="action"></param>
             /// <param name="data"></param>
-            public ContextMenuUserData(ContextMenuActionType action, BaseData data, PageData pageData, List<PageData> pages)
+            public ContextMenuUserData(ContextMenuActionType action, MouseState mouseState, BaseData data, PageData pageData, List<PageData> pages)
             {
                 Action = action;
+                MouseState = mouseState;
                 Data = data;
                 PageData = pageData;
                 Pages = pages;
@@ -167,6 +165,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             /// Druh akce
             /// </summary>
             public ContextMenuActionType Action { get; private set; }
+            /// <summary>
+            /// Stav myši
+            /// </summary>
+            public MouseState MouseState { get; private set; }
             /// <summary>
             /// Prvek
             /// </summary>
@@ -594,6 +596,30 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             return list;
         }
         #endregion
+        #region Podpora pro editaci v DataForm
+        protected override Control CreateEditPanel()
+        {
+            var panel = new DataControlPanel();
+            int y = 20;
+            int s = 38;
+            int w = 380;
+            panel.AddCell(ControlType.TextBox, "Titulek", nameof(Title), 0, y, w); y += s;
+            panel.AddCell(ControlType.TextBox, "Popisek", nameof(Description), 0, y, w); y += s;
+            panel.AddCell(ControlType.FileBox, "Obrázek", nameof(ImageFileName), 0, y, w); y += s;
+            panel.AddCell(ControlType.FileBox, "Aplikace", nameof(ExecutableFileName), 0, y, w); y += s;
+            panel.AddCell(ControlType.TextBox, "Argumenty", nameof(ExecutableArguments), 0, y, w); y += s;
+            panel.AddCell(ControlType.CheckBox, "Admin mode", nameof(ExecuteInAdminMode), 0, y, 200); y += s;
+
+            panel.OptimalSize = new Size(w + 50, y + 12);
+
+            panel.Buttons = new DialogButtonType[] { DialogButtonType.Ok, DialogButtonType.Cancel };
+            panel.BackColor = Color.AntiqueWhite;
+
+            panel.DataObject = this;
+            return panel;
+        }
+
+        #endregion
     }
     #endregion
     #region class BaseData : Bázová třída pro data, účastní se zobrazování (obsahuje dostatečná data pro zobrazení)
@@ -602,14 +628,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
     /// </summary>
     public class BaseData
     {
-        /// <summary>
-        /// Vizualizace
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            return $"Title: {Title}";
-        }
+        #region Základní společná data
         /// <summary>
         /// Hlavní titulek
         /// </summary>
@@ -651,6 +670,16 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public virtual Color? BackColor { get; set; }
         /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Title: {Title}";
+        }
+        #endregion
+        #region Podpora pro interaktivní vykreslení
+        /// <summary>
         /// Vytvoří a vrátí new instanci interaktivního prvku <see cref="InteractiveDataItem"/> = potomek základního prvku <see cref="InteractiveItem"/>
         /// </summary>
         /// <returns></returns>
@@ -658,6 +687,26 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             return new InteractiveDataItem(this);
         }
+        #endregion
+        #region Podpora pro editaci v DataForm
+        public virtual void EditData(Point startPoint)
+        {
+            using (var form = new DialogForm())
+            {
+                form.DataControl = this.CreateEditPanel();
+                form.Text = this.Title;
+                form.StartPosition = FormStartPosition.Manual;
+                form.Location = startPoint;
+                form.ShowDialog(App.MainForm);
+            }
+        }
+        protected virtual Control CreateEditPanel()
+        {
+            var panel = new DataControlPanel();
+            panel.Buttons = new DialogButtonType[] { DialogButtonType.Ok };
+            return panel;
+        }
+        #endregion
     }
     #endregion
     #region class InteractiveDataItem : Potomek vizuálního (= interaktivního) prvku, vytvořený nad daty "BaseData"

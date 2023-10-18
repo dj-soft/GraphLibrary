@@ -51,10 +51,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Components\Controls.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Components\Forms.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Components\InteractiveItem.cs" />
+    <Compile Include="Components\WatchTimer.cs" />
     <Compile Include="Data\Application.cs" />
     <Compile Include="Components\BufferedGraphics.cs">
       <SubType>Component</SubType>
@@ -300,6 +304,19 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="klickety-2-64.ico" />
+    <None Include="Pics\16px\zoom-4-16.png" />
+    <None Include="Pics\16px\zoom-3-16.png" />
+    <None Include="Pics\16px\view-refresh-16.png" />
+    <None Include="Pics\16px\view-calendar-month-3-16.png" />
+    <None Include="Pics\16px\view-calendar-day-16.png" />
+    <None Include="Pics\16px\view-calendar-16.png" />
+    <None Include="Pics\16px\page-edit-16.png" />
+    <None Include="Pics\16px\magnifier-16.png" />
+    <None Include="Pics\16px\link-16.png" />
+    <None Include="Pics\16px\folder-open-4-16.png" />
+    <None Include="Pics\16px\folder-16.png" />
+    <None Include="Pics\22px\folder-open-3-22.png" />
+    <None Include="Pics\22px\folder-22.png" />
     <None Include="Pics\22px\user-busy-22.png" />
     <None Include="Pics\22px\user-busy-2-22.png" />
     <None Include="Pics\22px\media-playlist-repeat-22.png" />

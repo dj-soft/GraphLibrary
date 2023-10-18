@@ -95,6 +95,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="appMutex"></param>
         private void _Start(string[] arguments, Mutex appMutex)
         {
+            _ApplicationState = ApplicationState.Starting;
             __Arguments = arguments ?? new string[0];
             __ApplicationFile = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
             __ApplicationPath = System.IO.Path.GetDirectoryName(__ApplicationFile);
@@ -113,7 +114,7 @@ namespace DjSoft.Tools.ProgramLauncher
             _DisposeImages();
             _DisposeTrayNotifyIcon();
             _DisposeAppMutex();
-            __MainForm = null;
+            _MainForm = null;
         }
         /// <summary>
         /// Argumenty předané při startu.
@@ -1338,8 +1339,112 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <summary>
         /// Main okno aplikace. Slouží jako Owner pro Dialog okna a další Child okna.
         /// </summary>
-        public static MainForm MainForm { get { return Current.__MainForm; } set { Current.__MainForm = value; } }
+        public static MainForm MainForm { get { return Current._MainForm; } set { Current._MainForm = value; } }
+        /// <summary>
+        /// Main okno aplikace, aktivní instanční property.
+        /// Změna okna mění stav aplikace <see cref="_ApplicationState"/>.
+        /// </summary>
+        private MainForm _MainForm
+        { 
+            get { return __MainForm; }
+            set 
+            {
+                var oldForm = __MainForm;
+                if (oldForm != null)
+                {
+                    oldForm.FirstShown -= _MainFormFirstShown;
+                    oldForm.FormClosed -= _MainFormClosed;
+                }
+                __MainForm = null;
+
+                var newForm = value;
+                if (newForm != null)
+                {
+                    newForm.FirstShown += _MainFormFirstShown;
+                    newForm.FormClosed += _MainFormClosed;
+                }
+                __MainForm = newForm;
+
+                // Stav aplikace:
+                if (newForm != null)
+                {   // Podle stavu okna:
+                    bool formIsShown = newForm.IsShown;
+                    _ApplicationState = (!formIsShown ? ApplicationState.Starting : ApplicationState.Running);
+                }
+                else
+                {   // Když někdo nasetuje MainForm = null, pak je konec:
+                    _ApplicationState = ApplicationState.Exited;
+                }
+            }
+        }
         private MainForm __MainForm;
+        /// <summary>
+        /// Stav aplikace
+        /// </summary>
+        public static ApplicationState ApplicationState { get { return Current._ApplicationState; } }
+        /// <summary>
+        /// Stav aplikace, aktivní instanční property
+        /// </summary>
+        private ApplicationState _ApplicationState 
+        {
+            get { return __ApplicationState; }
+            set
+            {
+                if (value != __ApplicationState)
+                {
+                    __ApplicationState = value;
+                    __ApplicationStateChanged?.Invoke(null, EventArgs.Empty);
+                }
+            }
+        }
+        /// <summary>
+        /// Stav aplikace, proměnná
+        /// </summary>
+        private ApplicationState __ApplicationState;
+        /// <summary>
+        /// Událost po změně stavu aplikace. Sender předávaný do handleru je null.
+        /// </summary>
+        public static event EventHandler ApplicationStateChanged { add { Current.__ApplicationStateChanged += value; } remove { Current.__ApplicationStateChanged -= value; } }
+        private event EventHandler __ApplicationStateChanged;
+        /// <summary>
+        /// Poté, kdy MainForm provede FirstShown, nastavíme Stav aplikace = Running
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MainFormFirstShown(object sender, EventArgs e)
+        {
+            _ApplicationState = ApplicationState.Running;
+        }
+        /// <summary>
+        /// Poté, kdy MainForm provede Closed, nastavíme Stav aplikace = Exited
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MainFormClosed(object sender, FormClosedEventArgs e)
+        {
+            _ApplicationState = ApplicationState.Exited;
+        }
+        /// <summary>
+        /// Spustí danou metodu v GUI vlákně, které garantuje <see cref="MainForm"/>.
+        /// Pokud <see cref="MainForm"/> není dán anebo není invokování třeba, spustí metodu rovnou.
+        /// </summary>
+        /// <param name="action"></param>
+        public static void RunInGuiThread(Action action) { Current._RunInGuiThread(action); }
+        /// <summary>
+        /// Spustí danou metodu v GUI vlákně, které garantuje <see cref="MainForm"/>.
+        /// Pokud <see cref="MainForm"/> není dán anebo není invokování třeba, spustí metodu rovnou.
+        /// </summary>
+        /// <param name="action"></param>
+        private void _RunInGuiThread(Action action)
+        {
+            if (action is null) return;
+            var mainForm = _MainForm;
+            if (mainForm != null && mainForm.IsHandleCreated && mainForm.InvokeRequired)
+                mainForm.Invoke(action);
+            else
+                action();
+        }
+
         /// <summary>
         /// Vrátí image daného typu do PopupMenu nebo do StatusBar
         /// </summary>
@@ -1615,6 +1720,17 @@ namespace DjSoft.Tools.ProgramLauncher
         PanSW,
         PanWest,
         No
+    }
+    /// <summary>
+    /// Stav aplikace
+    /// </summary>
+    public enum ApplicationState
+    {
+        None,
+        Starting,
+        Running,
+        Closing,
+        Exited
     }
     #endregion
 }

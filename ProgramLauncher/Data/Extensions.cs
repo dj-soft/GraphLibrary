@@ -1044,51 +1044,6 @@ namespace DjSoft.Tools.ProgramLauncher
             object visible = getState.Invoke(control, new object[] { (int)0x02  /*STATE_VISIBLE*/  });
             return (visible is bool ? (bool)visible : false);
         }
-        public static bool IsOnLeftSide(this PanelContentAlignment alignemnt) { return (IsAnyFrom(alignemnt, PanelContentAlignment.LeftSideTop, PanelContentAlignment.LeftSideMiddle, PanelContentAlignment.LeftSideBottom)); }
-        public static bool IsOnTopSide(this PanelContentAlignment alignemnt) { return (IsAnyFrom(alignemnt, PanelContentAlignment.TopSideLeft, PanelContentAlignment.TopSideCenter, PanelContentAlignment.TopSideRight)); }
-        public static bool IsOnRightSide(this PanelContentAlignment alignemnt) { return (IsAnyFrom(alignemnt, PanelContentAlignment.RightSideTop, PanelContentAlignment.RightSideMiddle, PanelContentAlignment.RightSideBottom)); }
-        public static bool IsOnBottomSide(this PanelContentAlignment alignemnt) { return (IsAnyFrom(alignemnt, PanelContentAlignment.BottomSideLeft, PanelContentAlignment.BottomSideCenter, PanelContentAlignment.BottomSideRight)); }
-        public static bool IsContentOnBegin(this PanelContentAlignment alignemnt) { return (IsAnyFrom(alignemnt, PanelContentAlignment.LeftSideTop, PanelContentAlignment.TopSideLeft, PanelContentAlignment.RightSideTop, PanelContentAlignment.BottomSideLeft)); }
-        public static bool IsContentOnCenter(this PanelContentAlignment alignemnt) { return (IsAnyFrom(alignemnt, PanelContentAlignment.LeftSideMiddle, PanelContentAlignment.TopSideCenter, PanelContentAlignment.RightSideMiddle, PanelContentAlignment.BottomSideCenter)); }
-        public static bool IsContentOnEnd(this PanelContentAlignment alignemnt) { return (IsAnyFrom(alignemnt, PanelContentAlignment.LeftSideBottom, PanelContentAlignment.TopSideRight, PanelContentAlignment.RightSideBottom, PanelContentAlignment.BottomSideRight)); }
-        public static PanelSide PanelSide(this PanelContentAlignment alignemnt) 
-        {
-            switch (alignemnt)
-            {
-                case PanelContentAlignment.TopSideLeft: return Components.PanelSide.TopSide;
-                case PanelContentAlignment.TopSideCenter: return Components.PanelSide.TopSide;
-                case PanelContentAlignment.TopSideRight: return Components.PanelSide.TopSide;
-                case PanelContentAlignment.RightSideTop: return Components.PanelSide.RightSide;
-                case PanelContentAlignment.RightSideMiddle: return Components.PanelSide.RightSide;
-                case PanelContentAlignment.RightSideBottom: return Components.PanelSide.RightSide;
-                case PanelContentAlignment.BottomSideRight: return Components.PanelSide.BottomSide;
-                case PanelContentAlignment.BottomSideCenter: return Components.PanelSide.BottomSide;
-                case PanelContentAlignment.BottomSideLeft: return Components.PanelSide.BottomSide;
-                case PanelContentAlignment.LeftSideBottom: return Components.PanelSide.LeftSide;
-                case PanelContentAlignment.LeftSideMiddle: return Components.PanelSide.LeftSide;
-                case PanelContentAlignment.LeftSideTop: return Components.PanelSide.LeftSide;
-            }
-            return Components.PanelSide.None;
-        }
-        public static ContentPosition ContentPosition(this PanelContentAlignment alignemnt)
-        {
-            switch (alignemnt)
-            {
-                case PanelContentAlignment.TopSideLeft: return Components.ContentPosition.OnBegin;
-                case PanelContentAlignment.TopSideCenter: return Components.ContentPosition.OnCenter;
-                case PanelContentAlignment.TopSideRight: return Components.ContentPosition.OnEnd;
-                case PanelContentAlignment.RightSideTop: return Components.ContentPosition.OnBegin;
-                case PanelContentAlignment.RightSideMiddle: return Components.ContentPosition.OnCenter;
-                case PanelContentAlignment.RightSideBottom: return Components.ContentPosition.OnEnd;
-                case PanelContentAlignment.BottomSideRight: return Components.ContentPosition.OnEnd;
-                case PanelContentAlignment.BottomSideCenter: return Components.ContentPosition.OnCenter;
-                case PanelContentAlignment.BottomSideLeft: return Components.ContentPosition.OnBegin;
-                case PanelContentAlignment.LeftSideBottom: return Components.ContentPosition.OnEnd;
-                case PanelContentAlignment.LeftSideMiddle: return Components.ContentPosition.OnCenter;
-                case PanelContentAlignment.LeftSideTop: return Components.ContentPosition.OnBegin;
-            }
-            return Components.ContentPosition.None;
-        }
         #endregion
         #region IEnumerable
         /// <summary>
