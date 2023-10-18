@@ -285,175 +285,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #endregion
     }
     #endregion
-    #region DataControlPanel : Panel určený pro zobrazení sady dat
-    /// <summary>
-    /// <see cref="DataControlPanel"/> : Panel určený pro zobrazení sady dat
-    /// </summary>
-    public class DataControlPanel : DPanel, IDataControl
-    {
-        #region Konstrukce
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        public DataControlPanel()
-        {
-            this.InitializePanel();
-        }
-        /// <summary>
-        /// Inicializuje panel a jeho obsah
-        /// </summary>
-        protected virtual void InitializePanel()
-        {
-            this.__ContentPadding = ControlSupport.StandardContentPadding;
-            this.__Cells = new Dictionary<string, CellInfo>();
-            this.BorderStyle = BorderStyle.None;
-            this.Buttons = new DialogButtonType[] { DialogButtonType.Ok };
-            this.AcceptButtonType = DialogButtonType.Ok;
-            this.CancelButtonType = DialogButtonType.Cancel;
-        }
-        /// <summary>
-        /// Mezery mezi buttony
-        /// </summary>
-        public Padding ContentPadding { get { return __ContentPadding; } set { __ContentPadding = value; LayoutContent(true); } } private Padding __ContentPadding;
-        /// <summary>
-        /// Optimální velikost
-        /// </summary>
-        public virtual Size? OptimalSize { get; set; }
-        /// <summary>
-        /// Přítomné buttony v odpovídajícím pořadí
-        /// </summary>
-        public virtual DialogButtonType[] Buttons { get; set; }
-        public virtual DialogButtonType AcceptButtonType { get; set; }
-        public virtual DialogButtonType CancelButtonType { get; set; }
-
-        /// <summary>
-        /// Po kliknutí na některý button
-        /// </summary>
-        /// <param name="args"></param>
-        public virtual void DialogButtonClicked(DialogButtonEventArgs args)
-        {
-            switch (args.DialogButtonType)
-            {
-                case DialogButtonType.Ok:
-                    DataStore();
-                    this.CloseForm(DialogResult.OK);
-                    break;
-                case DialogButtonType.Apply:
-                    DataStore();
-                    break;
-                case DialogButtonType.Cancel:
-                    this.CloseForm(DialogResult.Cancel);
-                    break;
-            }
-        }
-        protected void CloseForm(DialogResult dialogResult)
-        {
-            var form = this.FindForm();
-            if (form != null)
-            {
-                form.DialogResult = dialogResult;
-                form.Close();
-            }
-        }
-        #endregion
-        #region Vkládání prvků AddCell(), buňky Cells, třída CellInfo
-
-        public void AddCell(ControlType controlType, string label, string propertyName, int left, int top, int width)
-        {
-            CellInfo cell = new CellInfo(propertyName, controlType);
-
-            if (!String.IsNullOrEmpty(label) && (!(controlType == ControlType.Label || controlType == ControlType.CheckBox)))
-            {
-                cell.LabelControl = ControlSupport.CreateControl(ControlType.Label, label, this);
-                cell.LabelBounds = new Rectangle(left + 2, top - 15, width - 8, 15);
-                LayoutContentOne(cell.LabelControl, cell.LabelBounds.Value);
-            }
-
-            if (controlType != ControlType.None)
-            {
-                string text = (controlType == ControlType.Label || controlType == ControlType.CheckBox) ? label : "";
-                cell.InputControl = ControlSupport.CreateControl(controlType, text, this);
-                cell.InputBounds = new Rectangle(left, top, width, cell.InputControl?.Height ?? 20);
-                LayoutContentOne(cell.InputControl, cell.InputBounds.Value);
-            }
-
-            __Cells.Add(propertyName, cell);
-        }
-        /// <summary>
-        /// Buňky
-        /// </summary>
-        private Dictionary<string, CellInfo> __Cells;
-        /// <summary>
-        /// Jedna buňka s daty
-        /// </summary>
-        private class CellInfo
-        {
-            public CellInfo(string propertyName, ControlType inputType)
-            {
-                PropertyName = propertyName;
-                InputType = inputType;
-            }
-            public string PropertyName { get; private set; }
-            public ControlType InputType { get; private set; }
-            public Rectangle? LabelBounds { get; set; }
-            public Rectangle? InputBounds { get; set; }
-            public Control LabelControl { get; set; }
-            public Control InputControl { get; set; }
-        }
-        #endregion
-        #region Fyzické umístění controlů v panelu podle buněk a padding
-        protected virtual void LayoutContent(bool force)
-        {
-
-        }
-        protected virtual void LayoutContentOne(Control control, Rectangle bounds)
-        {
-            var padding = this.ContentPadding;
-            if (control != null)
-                control.Bounds = new Rectangle(bounds.X + padding.Left, bounds.Y + padding.Top, bounds.Width, bounds.Height);
-        }
-        #endregion
-        #region Datový objekt, načtení a uložení dat
-
-        public object DataObject { get { return __DataObject; } set { __DataObject = value; this.DataShow(); } }
-        private object __DataObject;
-        /// <summary>
-        /// Převezme data z properties z objektu <see cref="DataObject"/> a vloží je do vizuálních controlů.
-        /// </summary>
-        protected virtual void DataShow()
-        {
-            var dataObject = __DataObject;
-            var properties = (dataObject != null ? dataObject.GetType().GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public) : null);
-            foreach (var cell in __Cells.Values)
-            {
-                if (cell.InputControl is null) continue;
-
-                object value = null;
-                if (properties != null)
-                {
-                    var property = properties.FirstOrDefault(p => p.Name == cell.PropertyName);
-                    if (property != null && property.GetGetMethod() != null)
-                        value = property.GetValue(dataObject);
-                }
-
-                cell.InputControl.Text = value?.ToString();
-            }
-        }
-        /// <summary>
-        /// Získá data z vizuálních controlů a uloží je do properties do objektu <see cref="DataObject"/>
-        /// </summary>
-        protected virtual void DataStore()
-        { }
-        #endregion
-    }
-    #endregion
     #region Bázové controly - DLabel, DTextBox, DFileBox, DButton, DCheckBox, DPanel
     #region DLabel
     /// <summary>
     /// Label
     /// </summary>
-    public class DLabel : Label, IControlExtended
+    public class DLabel : Label, IControlExtended, IValueStorage
     {
+        #region Konstruktor a IControlExtended
         public DLabel()
         {
             this.AutoSize = true;
@@ -467,14 +306,154 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
+        #endregion
+        #region IValueStorage
+        /// <summary>
+        /// Přístup na hodnotu
+        /// </summary>
+        object IValueStorage.Value { get { return this.Text; } set { this.Text = Conversion.ToString(value); } }
+        #endregion
+    }
+    #endregion
+    #region DMemoBox
+    /// <summary>
+    /// DMemoBox
+    /// </summary>
+    public class DMemoBox : TextBox, IControlExtended, IValueStorage
+    {
+        #region Konstruktor a IControlExtended
+        public DMemoBox()
+        {
+            this.Multiline = true;
+            this._ActivityMonitorInit();
+        }
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vytvoří a vrátí button pro daná data
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="text"></param>
+        /// <param name="size"></param>
+        /// <param name="tag"></param>
+        /// <param name="click"></param>
+        /// <returns></returns>
+        public static DMemoBox Create(Control parent, string text, Size size, object tag = null)
+        {
+            DMemoBox memoBox = new DMemoBox()
+            {
+                Text = text,
+                Size = size,
+                Tag = tag
+            };
+
+            if (parent != null) parent.Controls.Add(memoBox);
+            return memoBox;
+        }
+        #endregion
+        #region IValueStorage
+        /// <summary>
+        /// Přístup na hodnotu
+        /// </summary>
+        object IValueStorage.Value { get { return this.Text; } set { this.Text = Conversion.ToString(value); } }
+        #endregion
+        #region ActivityMonitor
+        /// <summary>
+        /// Inicializace
+        /// </summary>
+        private void _ActivityMonitorInit()
+        {
+            this.MouseEnter += _MouseEnter;
+            this.MouseLeave += _MouseLeave;
+            this.Enter += _FocusEnter;
+            this.Leave += _FocusLeave;
+        }
+        /// <summary>
+        /// Vstup focusu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _FocusEnter(object sender, EventArgs e)
+        {
+            bool isChange = (__HasFocus != true);
+            __HasFocus = true;
+            if (isChange) _RunActivityChange();
+        }
+        /// <summary>
+        /// Odchod focusu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _FocusLeave(object sender, EventArgs e)
+        {
+            bool isChange = (__HasFocus != false);
+            __HasFocus = false;
+            if (isChange) _RunActivityChange();
+        }
+        /// <summary>
+        /// Vstup myši
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MouseEnter(object sender, EventArgs e)
+        {
+            bool isChange = (__HasMouse != true);
+            __HasMouse = true;
+            if (isChange) _RunActivityChange();
+        }
+        /// <summary>
+        /// Odchod myši
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MouseLeave(object sender, EventArgs e)
+        {
+            bool isChange = (__HasMouse != false);
+            __HasMouse = false;
+            if (isChange) _RunActivityChange();
+        }
+        /// <summary>
+        /// Vyvolá událost o změně aktivity
+        /// </summary>
+        private void _RunActivityChange()
+        {
+            OnActivityChange();
+            ActivityChange?.Invoke(this, EventArgs.Empty);
+        }
+        protected virtual void OnActivityChange() { }
+        /// <summary>
+        /// Event volaný po změně aktivity <see cref="HasFocus"/> nebo <see cref="HasMouse"/>
+        /// </summary>
+        public event EventHandler ActivityChange;
+        /// <summary>
+        /// Prvek má focus
+        /// </summary>
+        public bool HasFocus { get { return __HasFocus; } } private bool __HasFocus;
+        /// <summary>
+        /// Prvek má myš
+        /// </summary>
+        public bool HasMouse { get { return __HasMouse; } } private bool __HasMouse;
+        /// <summary>
+        /// Prvek je aktivní, tedy má focus nebo myš
+        /// </summary>
+        public bool IsActive { get { return __HasFocus || __HasMouse; } }
+        #endregion
     }
     #endregion
     #region DTextBox
     /// <summary>
     /// TextBox
     /// </summary>
-    public class DTextBox : TextBox, IControlExtended
+    public class DTextBox : TextBox, IControlExtended, IValueStorage
     {
+        #region Konstruktor a IControlExtended
         public DTextBox()
         {
             this._ActivityMonitorInit();
@@ -506,9 +485,16 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 Tag = tag
             };
 
-            parent.Controls.Add(textBox);
+            if (parent != null) parent.Controls.Add(textBox);
             return textBox;
         }
+        #endregion
+        #region IValueStorage
+        /// <summary>
+        /// Přístup na hodnotu
+        /// </summary>
+        object IValueStorage.Value { get { return this.Text; } set { this.Text = Conversion.ToString(value); } }
+        #endregion
         #region ActivityMonitor
         /// <summary>
         /// Inicializace
@@ -596,9 +582,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     #endregion
     #region DFileBox
     /// <summary>
-    /// TextBox
+    /// DFileBox
     /// </summary>
-    public class DFileBox : DTextButtonBox, IControlExtended
+    public class DFileBox : DTextButtonBox, IControlExtended, IValueStorage
     {
         #region Soubor, kliknutí na button
         /// <summary>
@@ -632,11 +618,17 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             }
         }
         #endregion
+        #region IValueStorage
+        /// <summary>
+        /// Přístup na hodnotu
+        /// </summary>
+        object IValueStorage.Value { get { return this.FileName; } set { this.FileName = Conversion.ToString(value); } }
+        #endregion
     }
     #endregion
     #region DTextButtonBox
     /// <summary>
-    /// TextBox + Button (pro FileBox, DateBox atd)
+    /// DTextButtonBox: TextBox + Button (pro FileBox, DateBox atd)
     /// </summary>
     public class DTextButtonBox : DPanel, IControlExtended
     {
@@ -769,6 +761,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     /// </summary>
     public class DButton : Button, IControlExtended
     {
+        #region Konstruktor a IControlExtended
         public DButton()
         {
             _ActivityMonitorInit();
@@ -782,6 +775,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
+        #endregion
         #region Static tvorba
         /// <summary>
         /// Vytvoří a vrátí button pro daný typ
@@ -852,7 +846,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
 
             if (click != null) button.Click += click;
 
-            parent.Controls.Add(button);
+            if (parent != null) parent.Controls.Add(button);
             return button;
         }
         #endregion
@@ -945,8 +939,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     /// <summary>
     /// CheckBox
     /// </summary>
-    public class DCheckBox : CheckBox, IControlExtended
+    public class DCheckBox : CheckBox, IControlExtended, IValueStorage
     {
+        #region Konstruktor a IControlExtended
         public DCheckBox()
         {
         }
@@ -959,6 +954,13 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
+        #endregion
+        #region IValueStorage
+        /// <summary>
+        /// Přístup na hodnotu
+        /// </summary>
+        object IValueStorage.Value { get { return this.Checked; } set { this.Checked = Conversion.ToBoolean(value); } }
+        #endregion
     }
     #endregion
     #region DPanel
@@ -1083,24 +1085,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         bool VisibleInternal { get; set; }
     }
-    public interface IDataControl
-    {
-        /// <summary>
-        /// Optimální velikost
-        /// </summary>
-        Size? OptimalSize { get; }
-        /// <summary>
-        /// Přítomné buttony v odpovídajícím pořadí
-        /// </summary>
-        DialogButtonType[] Buttons { get; }
-        DialogButtonType AcceptButtonType { get; }
-        DialogButtonType CancelButtonType { get; }
-        /// <summary>
-        /// Po kliknutí na některý button
-        /// </summary>
-        /// <param name="args"></param>
-        void DialogButtonClicked(DialogButtonEventArgs args);
-    }
     /// <summary>
     /// Událost, která přináší výsledek dialogu
     /// </summary>
@@ -1185,8 +1169,13 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     #region Servis pro potomky a ostatní
     public class ControlSupport
     {
-        public static DButton CreateDButton(Control parent, string text, Image image, Size size, EventHandler click = null) { return DButton.Create(parent, text, image, size, click); }
-
+        /// <summary>
+        /// Vytvoří control daného typu a přidá jej do parent controlu
+        /// </summary>
+        /// <param name="controlType"></param>
+        /// <param name="text"></param>
+        /// <param name="parent"></param>
+        /// <returns></returns>
         public static Control CreateControl(ControlType controlType, string text = null, Control parent = null)
         {
             Control control = null;
@@ -1203,12 +1192,15 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     control = button;
                     break;
                 case ControlType.TextBox:
-                case ControlType.MemoBox:
                 case ControlType.DateBox:
                 case ControlType.IntegerBox:
                 case ControlType.DecimalBox:
                     var textBox = new DTextBox() { Text = text };
                     control = textBox;
+                    break;
+                case ControlType.MemoBox:
+                    var memoBox = new DMemoBox() { Text = text };
+                    control = memoBox;
                     break;
                 case ControlType.FileBox:
                     var fileBox = new DFileBox() { Text = text };
@@ -1218,7 +1210,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     var checkBox = new DCheckBox() { Text = text };
                     control = checkBox;
                     break;
-
             }
             if (control != null && parent != null) parent.Controls.Add(control);
             return control;

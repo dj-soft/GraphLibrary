@@ -74,6 +74,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             this.DialogButtonPanel.LayoutContent();
             this.LayoutContent();
         }
+        /// <summary>
+        /// Aplikuje optimální velikost formuláře podle velikosti <see cref="DataControl"/>
+        /// </summary>
         private void ApplyOptimalBounds()
         {
             var formBounds = this.Bounds;
@@ -81,13 +84,13 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             var dataControl = this.DataControl;
             if (dataControl != null && dataControl is IDataControl iDataControl)
             {
-                var optimalSize = iDataControl.OptimalSize;
-                if (optimalSize.HasValue)
+                var dataSize = iDataControl.OptimalSize ?? iDataControl.ContentSize;
+                if (dataSize.HasValue)
                 {
                     var currentSize = dataControl.Size;
                     int diffWidth = formBounds.Width - currentSize.Width;
                     int diffHeight = formBounds.Height  - currentSize.Height;
-                    newFormBounds = new Rectangle(this.Location, new Size(optimalSize.Value.Width + diffWidth, optimalSize.Value.Height + diffHeight));
+                    newFormBounds = new Rectangle(this.Location, new Size(dataSize.Value.Width + diffWidth, dataSize.Value.Height + diffHeight));
                 }
             }
             if (newFormBounds.HasValue && newFormBounds.Value != formBounds)

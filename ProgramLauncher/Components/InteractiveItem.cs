@@ -81,7 +81,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         public object Tag { get; set; }
         #endregion
-        #region Vztah na Parenta = EditablePanel, a z něj navázané údaje
+        #region Vztah na Parenta = InteractiveGraphicsControl, a z něj navázané údaje
+        /// <summary>
+        /// Zajistí znovuvykreslení vizuálního controlu
+        /// </summary>
+        public void Refresh()
+        {
+            Parent?.Draw();
+        }
         /// <summary>
         /// Odkaz na Parenta
         /// </summary>

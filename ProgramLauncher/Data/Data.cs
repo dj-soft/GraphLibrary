@@ -597,21 +597,36 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         }
         #endregion
         #region Podpora pro editaci v DataForm
-        protected override Control CreateEditPanel()
+        /// <summary>
+        /// Vytvoří a vrátí Edit panel pro this aplikaci
+        /// </summary>
+        /// <returns></returns>
+        protected override DataControlPanel CreateEditPanel()
         {
             var panel = new DataControlPanel();
-            int y = 20;
+            int x1 = 0;
+            int x2 = 230;
+            int y0 = 20;
             int s1 = 22;
             int s2 = 38;
-            int w1 = 450;
-            panel.AddCell(ControlType.TextBox, "Titulek", nameof(Title), 0, y, w1); y += s2;
-            panel.AddCell(ControlType.TextBox, "Popisek", nameof(Description), 0, y, w1); y += s2;
-            panel.AddCell(ControlType.FileBox, "Obrázek", nameof(ImageFileName), 0, y, w1); y += s2;
-            panel.AddCell(ControlType.FileBox, "Aplikace", nameof(ExecutableFileName), 0, y, w1); y += s2;
-            panel.AddCell(ControlType.TextBox, "Argumenty", nameof(ExecutableArguments), 0, y, w1); y += s1;
-            panel.AddCell(ControlType.CheckBox, "Admin mode", nameof(ExecuteInAdminMode), 0, y, 200); y += s1;
+            int w1 = 220;
+            int w2 = 320;
+            int w3 = 550;
 
-            panel.OptimalSize = new Size(w1 + 50, y + 12);
+            int y = y0;
+            panel.AddCell(ControlType.TextBox, "Titulek", nameof(Title), x1, y, w1); y += s2;
+            panel.AddCell(ControlType.TextBox, "Popisek", nameof(Description), x1, y, w1); y += s2;
+            panel.AddCell(ControlType.MemoBox, "Nápověda", nameof(ToolTip), x2, y0, w2, 58);
+            panel.AddCell(ControlType.FileBox, "Aplikace", nameof(ExecutableFileName), x1, y, w3); y += s2;
+            panel.AddCell(ControlType.TextBox, "Argumenty", nameof(ExecutableArguments), x1, y, w3); y += s2;
+            panel.AddCell(ControlType.FileBox, "Obrázek", nameof(ImageFileName), x1, y, w3); y += s1;
+
+            int x = x1 + 4;
+            int w4 = 160;
+            int dx = 170;
+            panel.AddCell(ControlType.CheckBox, "Admin mode", nameof(ExecuteInAdminMode), x, y, w4); x += dx;
+            panel.AddCell(ControlType.CheckBox, "Single Instance", nameof(OnlyOneInstance), x, y, w4); x += dx;
+            panel.AddCell(ControlType.CheckBox, "Maximized", nameof(OpenMaximized), x, y, w4); y += s1;
 
             panel.Buttons = new DialogButtonType[] { DialogButtonType.Ok, DialogButtonType.Cancel };
             panel.BackColor = Color.AntiqueWhite;
@@ -619,7 +634,6 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             panel.DataObject = this;
             return panel;
         }
-
         #endregion
     }
     #endregion
@@ -679,31 +693,53 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             return $"Title: {Title}";
         }
         #endregion
-        #region Podpora pro interaktivní vykreslení
+        #region Podpora pro interaktivní kreslení a práci - tvorba instance třídy InteractiveItem
         /// <summary>
         /// Vytvoří a vrátí new instanci interaktivního prvku <see cref="InteractiveDataItem"/> = potomek základního prvku <see cref="InteractiveItem"/>
         /// </summary>
         /// <returns></returns>
         public virtual InteractiveItem CreateInteractiveItem()
         {
-            return new InteractiveDataItem(this);
+            this.InteractiveItem = new InteractiveDataItem(this);
+            return this.InteractiveItem;
+        }
+        /// <summary>
+        /// Interaktivní prvek, naposledy vytvořený a vrácený z metody <see cref="CreateInteractiveItem()"/>
+        /// </summary>
+        [PersistingEnabled(false)]
+        protected InteractiveItem InteractiveItem { get; set; }
+        /// <summary>
+        /// Zajistí znovuvykreslení interaktvního prvku
+        /// </summary>
+        public void RefreshInteractiveItem()
+        {
+            InteractiveItem?.Refresh();
         }
         #endregion
-        #region Podpora pro editaci v DataForm
-        public virtual void EditData(Point startPoint)
+        #region Podpora pro standardní WinForm editaci obsahu pomocí okna DialogForm a datového panelu DataControlPanel
+        public virtual bool EditData(Point? startPoint = null)
         {
+            bool result = false;
             using (var form = new DialogForm())
             {
                 form.DataControl = this.CreateEditPanel();
                 form.Text = this.Title;
                 form.StartPosition = FormStartPosition.Manual;
-                form.Location = startPoint;
+                form.Location = startPoint ?? Control.MousePosition;
                 form.ShowDialog(App.MainForm);
+                result = (form.DialogResult == DialogResult.OK);
             }
+            this.RefreshInteractiveItem();
+            return result;
         }
-        protected virtual Control CreateEditPanel()
+        /// <summary>
+        /// Metoda vytvoří a vrátí panel <see cref="DataControlPanel"/> obsahující jednotlivé controly tohoto atového objektu
+        /// </summary>
+        /// <returns></returns>
+        protected virtual DataControlPanel CreateEditPanel()
         {
             var panel = new DataControlPanel();
+            panel.CancelButtonType = DialogButtonType.Ok;
             panel.Buttons = new DialogButtonType[] { DialogButtonType.Ok };
             return panel;
         }
