@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DjSoft.Tools.ProgramLauncher.Data;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -290,6 +291,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     /// </summary>
     public class DataControlPanel : DPanel, IDataControl
     {
+        #region Konstrukce
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -306,13 +308,13 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             this.__Cells = new Dictionary<string, CellInfo>();
             this.BorderStyle = BorderStyle.None;
             this.Buttons = new DialogButtonType[] { DialogButtonType.Ok };
+            this.AcceptButtonType = DialogButtonType.Ok;
+            this.CancelButtonType = DialogButtonType.Cancel;
         }
         /// <summary>
         /// Mezery mezi buttony
         /// </summary>
-        public Padding ContentPadding { get { return __ContentPadding; } set { __ContentPadding = value; LayoutContent(true); } }
-        private Padding __ContentPadding;
-
+        public Padding ContentPadding { get { return __ContentPadding; } set { __ContentPadding = value; LayoutContent(true); } } private Padding __ContentPadding;
         /// <summary>
         /// Optimální velikost
         /// </summary>
@@ -321,12 +323,39 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Přítomné buttony v odpovídajícím pořadí
         /// </summary>
         public virtual DialogButtonType[] Buttons { get; set; }
+        public virtual DialogButtonType AcceptButtonType { get; set; }
+        public virtual DialogButtonType CancelButtonType { get; set; }
+
         /// <summary>
         /// Po kliknutí na některý button
         /// </summary>
         /// <param name="args"></param>
-        public virtual void DialogButtonClicked(DialogButtonEventArgs args) { }
-
+        public virtual void DialogButtonClicked(DialogButtonEventArgs args)
+        {
+            switch (args.DialogButtonType)
+            {
+                case DialogButtonType.Ok:
+                    DataStore();
+                    this.CloseForm(DialogResult.OK);
+                    break;
+                case DialogButtonType.Apply:
+                    DataStore();
+                    break;
+                case DialogButtonType.Cancel:
+                    this.CloseForm(DialogResult.Cancel);
+                    break;
+            }
+        }
+        protected void CloseForm(DialogResult dialogResult)
+        {
+            var form = this.FindForm();
+            if (form != null)
+            {
+                form.DialogResult = dialogResult;
+                form.Close();
+            }
+        }
+        #endregion
         #region Vkládání prvků AddCell(), buňky Cells, třída CellInfo
 
         public void AddCell(ControlType controlType, string label, string propertyName, int left, int top, int width)
@@ -336,7 +365,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             if (!String.IsNullOrEmpty(label) && (!(controlType == ControlType.Label || controlType == ControlType.CheckBox)))
             {
                 cell.LabelControl = ControlSupport.CreateControl(ControlType.Label, label, this);
-                cell.LabelBounds = new Rectangle(left + 6, top - 16, width - 8, 15);
+                cell.LabelBounds = new Rectangle(left + 2, top - 15, width - 8, 15);
                 LayoutContentOne(cell.LabelControl, cell.LabelBounds.Value);
             }
 
@@ -388,7 +417,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
 
         public object DataObject { get { return __DataObject; } set { __DataObject = value; this.DataShow(); } }
         private object __DataObject;
-        public void DataShow()
+        /// <summary>
+        /// Převezme data z properties z objektu <see cref="DataObject"/> a vloží je do vizuálních controlů.
+        /// </summary>
+        protected virtual void DataShow()
         {
             var dataObject = __DataObject;
             var properties = (dataObject != null ? dataObject.GetType().GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public) : null);
@@ -407,7 +439,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 cell.InputControl.Text = value?.ToString();
             }
         }
-
+        /// <summary>
+        /// Získá data z vizuálních controlů a uloží je do properties do objektu <see cref="DataObject"/>
+        /// </summary>
+        protected virtual void DataStore()
+        { }
         #endregion
     }
     #endregion
@@ -575,13 +611,20 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         }
         protected override void OnButtonClick()
         {
+            string fileName = ApplicationData.GetCurrentFilePath(this.FileName);
+            string path = (!String.IsNullOrEmpty(fileName) ? System.IO.Path.GetDirectoryName(fileName) : "");
+            string name = (!String.IsNullOrEmpty(fileName) ? System.IO.Path.GetFileName(fileName) : "");
             using (var dialog = new System.Windows.Forms.OpenFileDialog())
             {
                 dialog.Multiselect = false;
                 dialog.AutoUpgradeEnabled = true;
                 dialog.CheckFileExists = true;
                 dialog.CheckPathExists = true;
-                dialog.FileName = this.FileName;
+                dialog.InitialDirectory = path;
+                dialog.FileName = name;
+                dialog.ValidateNames = true;
+                dialog.RestoreDirectory = false;
+
                 dialog.Title = "Vyber soubor";
                 var result = dialog.ShowDialog();
                 if (result == DialogResult.OK)
@@ -1050,6 +1093,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Přítomné buttony v odpovídajícím pořadí
         /// </summary>
         DialogButtonType[] Buttons { get; }
+        DialogButtonType AcceptButtonType { get; }
+        DialogButtonType CancelButtonType { get; }
         /// <summary>
         /// Po kliknutí na některý button
         /// </summary>

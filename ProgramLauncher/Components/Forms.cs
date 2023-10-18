@@ -155,7 +155,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 __DataControl = newControl;
 
                 if (newControl is IDataControl iDataControl)
+                {
                     this.Buttons = iDataControl.Buttons;
+                    this.AcceptButton = this.DialogButtonPanel[iDataControl.AcceptButtonType];
+                    this.CancelButton = this.DialogButtonPanel[iDataControl.CancelButtonType];
+                }
             }
         }
         /// <summary>

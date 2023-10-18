@@ -424,28 +424,28 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Jméno spouštěného souboru, kde jsou jména proměnných jako %WINDIR% nahrazena aktuálními hodnotami
         /// </summary>
         [PersistingEnabled(false)]
-        private string _CurrentFileName { get { return _GetCurrentName(ExecutableFileName); } }
+        private string _CurrentFileName { get { return GetCurrentFilePath(ExecutableFileName); } }
         /// <summary>
         /// Jméno provozního adresáře, kde jsou jména proměnných jako %WINDIR% nahrazena aktuálními hodnotami
         /// </summary>
         [PersistingEnabled(false)]
-        private string _CurrentWorkingDirectory { get { return _GetCurrentName(ExecutableWorkingDirectory); } }
+        private string _CurrentWorkingDirectory { get { return GetCurrentFilePath(ExecutableWorkingDirectory); } }
         /// <summary>
         /// Text argumentů, kde jsou jména proměnných jako %WINDIR% nahrazena aktuálními hodnotami
         /// </summary>
         [PersistingEnabled(false)]
-        private string _CurrentArguments { get { return _GetCurrentName(ExecutableArguments); } }
+        private string _CurrentArguments { get { return GetCurrentFilePath(ExecutableArguments); } }
         /// <summary>
         /// Jméno ikony, kde jsou jména proměnných jako %WINDIR% nahrazena aktuálními hodnotami
         /// </summary>
         [PersistingEnabled(false)]
-        private string _CurrentImageFileName { get { return _GetCurrentName(ImageFileName); } }
+        private string _CurrentImageFileName { get { return GetCurrentFilePath(ImageFileName); } }
         /// <summary>
         /// Vrátí zadaný string, kde jsou jména proměnných jako %WINDIR% nahrazena aktuálními hodnotami
         /// </summary>
         /// <param name="file"></param>
         /// <returns></returns>
-        private string _GetCurrentName(string file)
+        public static string GetCurrentFilePath(string file)
         {
             if (String.IsNullOrEmpty(file)) return "";
             if (!file.Contains("%")) return file;
@@ -601,16 +601,17 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             var panel = new DataControlPanel();
             int y = 20;
-            int s = 38;
-            int w = 380;
-            panel.AddCell(ControlType.TextBox, "Titulek", nameof(Title), 0, y, w); y += s;
-            panel.AddCell(ControlType.TextBox, "Popisek", nameof(Description), 0, y, w); y += s;
-            panel.AddCell(ControlType.FileBox, "Obrázek", nameof(ImageFileName), 0, y, w); y += s;
-            panel.AddCell(ControlType.FileBox, "Aplikace", nameof(ExecutableFileName), 0, y, w); y += s;
-            panel.AddCell(ControlType.TextBox, "Argumenty", nameof(ExecutableArguments), 0, y, w); y += s;
-            panel.AddCell(ControlType.CheckBox, "Admin mode", nameof(ExecuteInAdminMode), 0, y, 200); y += s;
+            int s1 = 22;
+            int s2 = 38;
+            int w1 = 450;
+            panel.AddCell(ControlType.TextBox, "Titulek", nameof(Title), 0, y, w1); y += s2;
+            panel.AddCell(ControlType.TextBox, "Popisek", nameof(Description), 0, y, w1); y += s2;
+            panel.AddCell(ControlType.FileBox, "Obrázek", nameof(ImageFileName), 0, y, w1); y += s2;
+            panel.AddCell(ControlType.FileBox, "Aplikace", nameof(ExecutableFileName), 0, y, w1); y += s2;
+            panel.AddCell(ControlType.TextBox, "Argumenty", nameof(ExecutableArguments), 0, y, w1); y += s1;
+            panel.AddCell(ControlType.CheckBox, "Admin mode", nameof(ExecuteInAdminMode), 0, y, 200); y += s1;
 
-            panel.OptimalSize = new Size(w + 50, y + 12);
+            panel.OptimalSize = new Size(w1 + 50, y + 12);
 
             panel.Buttons = new DialogButtonType[] { DialogButtonType.Ok, DialogButtonType.Cancel };
             panel.BackColor = Color.AntiqueWhite;
