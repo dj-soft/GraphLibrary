@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
+using System.Security.Policy;
 
 namespace DjSoft.Tools.ProgramLauncher.Components
 {
@@ -1270,13 +1271,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         /// <param name="control"></param>
         /// <returns></returns>
-        public static MouseState CreateCurrent(Control control)
+        public static MouseState CreateCurrent(Control control, bool? isLeave = null)
         {
             DateTime time = DateTime.Now;
             Point locationAbsolute = Control.MousePosition;
             MouseButtons buttons = Control.MouseButtons;
             Point locationNative = control.PointToClient(locationAbsolute);
-            bool isOnControl = control.ClientRectangle.Contains(locationNative);
+            // Pokud isLeave je true, pak jsme volání z MouseLeave a jsme tedy mimo Control:
+            bool isOnControl = (isLeave.HasValue && isLeave.Value ? false : control.ClientRectangle.Contains(locationNative));
             return new MouseState(time, locationNative, locationAbsolute, buttons, isOnControl);
         }
         /// <summary>
@@ -1308,6 +1310,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         private Point __LocationAbsolute;
         private MouseButtons __Buttons;
         private bool __IsOnControl;
+        private InteractiveItem __InteractiveItem;
+        private InteractiveMap.Cell __InteractiveCell;
         /// <summary>
         /// Čas akce myši; důležité pro případný doubleclick
         /// </summary>
@@ -1328,6 +1332,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Ukazatel myši se nachází nad controlem?
         /// </summary>
         public bool IsOnControl { get { return __IsOnControl; } }
+        /// <summary>
+        /// Prvek na pozici myši
+        /// </summary>
+        public InteractiveItem InteractiveItem { get { return __InteractiveItem; } set { __InteractiveItem = value; } }
+        /// <summary>
+        /// Buňka na pozici myši
+        /// </summary>
+        public InteractiveMap.Cell InteractiveCell { get { return __InteractiveCell; } set { __InteractiveCell = value; } }
     }
     #endregion
     #region interface IVirtualContainer

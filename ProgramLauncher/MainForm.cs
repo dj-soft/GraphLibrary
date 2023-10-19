@@ -265,12 +265,9 @@ namespace DjSoft.Tools.ProgramLauncher
             __PagesPanel.DataItems.Clear();
             __PagesPanel.AddItems(items);
 
-
             bool groupsForceVisible = true;
             _PagesPanelVisible = (groupsForceVisible || items.Count > 1);
-
             ReloadApplications(activePageData, activePageIndex);
-
             RefreshPagesApplicationCount(pageCount, appCount);
         }
         private void RefreshPagesApplicationCount()
@@ -295,9 +292,13 @@ namespace DjSoft.Tools.ProgramLauncher
             this.StatusLabelData.Text = $"{pageText}; {appText}";
         }
         /// <summary>
+        /// Kompletní sada se stránkami
+        /// </summary>
+        private PageSetData _PageSet { get { return App.Settings.PageSet; } }
+        /// <summary>
         /// Seznam stránek s nabídkami = záložky v levé části, je uložen v <see cref="Settings.ProgramPages"/>
         /// </summary>
-        private List<PageData> _Pages { get { return App.Settings.ProgramPages; } }
+        private IList<PageData> _Pages { get { return _PageSet.Pages; } }
         /// <summary>
         /// Data aktuálně zobrazené stránky
         /// </summary>
@@ -323,7 +324,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             if (e.MouseState.Buttons == MouseButtons.Right)
             {
-                PageData.RunPageContextMenu(e.MouseState, null, _Pages);
+                this._PageSet.RunContextMenu(e.MouseState, this._PageSet, null);
             }
         }
         /// <summary>
@@ -341,7 +342,7 @@ namespace DjSoft.Tools.ProgramLauncher
             }
             else if (e.MouseState.Buttons == MouseButtons.Right)
             {   // Pravá myš: neaktivuje vybranou stránku, ale otevře pro ní menu:
-                PageData.RunPageContextMenu(e.MouseState, pageData, _Pages);
+                this._PageSet.RunContextMenu(e.MouseState, this._PageSet, pageData);
             }
         }
         /// <summary>
@@ -424,7 +425,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             if (e.MouseState.Buttons == MouseButtons.Right)
             {
-                this._ActivePageData?.RunApplicationContextMenu(e.MouseState, null, _ActivePageData);
+                this._PageSet.RunContextMenu(e.MouseState, this._ActivePageData, null);
             }
         }
         /// <summary>
@@ -443,7 +444,7 @@ namespace DjSoft.Tools.ProgramLauncher
             else if (e.MouseState.Buttons == MouseButtons.Right)
             {
                 var dataInfo = e.Item.UserData as Data.BaseData;
-                this._ActivePageData?.RunApplicationContextMenu(e.MouseState, dataInfo, _ActivePageData);
+                this._PageSet.RunContextMenu(e.MouseState, this._ActivePageData, dataInfo);
             }
         }
         /// <summary>

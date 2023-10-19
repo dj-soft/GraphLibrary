@@ -88,7 +88,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="e"></param>
         private void _MouseEnter(object sender, EventArgs e)
         {
-            var mouseState = MouseState.CreateCurrent(this);
+            var mouseState = _CreateMouseState();
             _MouseMove(mouseState);
         }
         /// <summary>
@@ -98,7 +98,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="e"></param>
         private void _MouseMove(object sender, MouseEventArgs e)
         {
-            var mouseState = MouseState.CreateCurrent(this);
+            var mouseState = _CreateMouseState();
             _MouseMove(mouseState);
         }
         /// <summary>
@@ -108,7 +108,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="e"></param>
         private void _MouseDown(object sender, MouseEventArgs e)
         {
-            var mouseState = MouseState.CreateCurrent(this);
+            var mouseState = _CreateMouseState();
             _MouseDown(mouseState);
         }
         /// <summary>
@@ -118,7 +118,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="e"></param>
         private void _MouseUp(object sender, MouseEventArgs e)
         {
-            var mouseState = MouseState.CreateCurrent(this);
+            var mouseState = _CreateMouseState();
             switch (__CurrentMouseDragState)
             {
                 case MouseDragProcessState.MouseDragItem:
@@ -143,8 +143,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="e"></param>
         private void _MouseLeave(object sender, EventArgs e)
         {
-            var mouseState = MouseState.CreateCurrent(this);
-            _MouseMoveNone(mouseState, null, false);
+            var mouseState = _CreateMouseState(true);
+            _MouseMoveNone(mouseState, false);
         }
         /// <summary>
         /// Nativní event KeyDown
@@ -155,6 +155,62 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             if (__CurrentMouseDragState == MouseDragProcessState.MouseDragItem || __CurrentMouseDragState == MouseDragProcessState.MouseFrameArea)
                 _MouseDragKeyDown(e);
+        }
+        #endregion
+        #region Získání informace o pozici myši, o prvku pod myší a o adrese pod myší
+        /// <summary>
+        /// Vytvoří a korektně naplní objekt <see cref="MouseState"/> a vrátí jej
+        /// </summary>
+        /// <returns></returns>
+        private MouseState _CreateMouseState(bool? isLeave = null)
+        {
+            var mouseState = MouseState.CreateCurrent(this);
+            _RefreshMouseState(mouseState);
+            return mouseState;
+        }
+        /// <summary>
+        /// Znovu najde a naplní do daného objektu <see cref="MouseState"/> nynější 
+        /// interaktivní prvek <see cref="MouseState.InteractiveItem"/> a pozici Cell <see cref="MouseState.InteractiveCell"/>
+        /// podle aktuální pozice myši v prvku uložené.
+        /// </summary>
+        /// <returns></returns>
+        private void _RefreshMouseState(MouseState mouseState)
+        {
+            if (mouseState.IsOnControl)
+            {
+                mouseState.InteractiveItem = _GetMouseItem(mouseState);
+                mouseState.InteractiveCell = _GetMouseCell(mouseState);
+            }
+        }
+        /// <summary>
+        /// Najde nejvyšší aktivní prvek pro danou pozici myši
+        /// </summary>
+        /// <param name="mouseState"></param>
+        /// <returns></returns>
+        private InteractiveItem _GetMouseItem(MouseState mouseState)
+        {
+            Point virtualPoint = this.GetVirtualPoint(mouseState.LocationControl);
+            var items = __DataItems;
+            int count = items.Count;
+            for (int i = count - 1; i >= 0; i--)
+            {
+                if (items[i].IsActiveOnVirtualPoint(virtualPoint))
+                    return items[i];
+            }
+            return null;
+        }
+        /// <summary>
+        /// Najde cílovou buňku pro danou souřadnici myši. Tato buňka může být určena i pro pozici, kde není žádný interaktivní prvek.
+        /// </summary>
+        /// <param name="mouseState"></param>
+        /// <returns></returns>
+        private InteractiveMap.Cell _GetMouseCell(MouseState mouseState)
+        {
+            var interactiveMap = __InteractiveMap;
+            if (interactiveMap is null) return null;
+
+            Point virtualPoint = this.GetVirtualPoint(mouseState.LocationControl);
+            return interactiveMap.GetCellAtPoint(virtualPoint);
         }
         #endregion
         #region Interaktivita logicky řízená
@@ -188,18 +244,16 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="mouseState"></param>
         private void _MouseMoveNone(MouseState mouseState)
         {
-            var mouseItem = _GetMouseItem(mouseState);
-            _MouseMoveNone(mouseState, mouseItem, true);
+            _MouseMoveNone(mouseState, true);
         }
         /// <summary>
         /// Pohyb myši bez stisknutého tlačítka
         /// </summary>
         /// <param name="mouseState"></param>
-        /// <param name="mouseItem"></param>
         /// <param name="isOnControl"></param>
-        private void _MouseMoveNone(MouseState mouseState, InteractiveItem mouseItem, bool isOnControl)
+        private void _MouseMoveNone(MouseState mouseState, bool isOnControl)
         {
-            bool isChange = _MouseMoveCurrentExchange(mouseState, mouseItem, InteractiveState.MouseOn, isOnControl);
+            bool isChange = _MouseMoveCurrentExchange(mouseState, mouseState.InteractiveItem, InteractiveState.MouseOn, isOnControl);
             bool useMouseTrack = true;
             if (useMouseTrack || isChange)
                 this.Draw();
@@ -210,11 +264,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="mouseState"></param>
         private void _MouseDown(MouseState mouseState)
         {
-            var mouseItem = _GetMouseItem(mouseState);
-            _MouseMoveCurrentExchange(mouseState, mouseItem, InteractiveState.MouseDown, true);
+            _MouseMoveCurrentExchange(mouseState, mouseState.InteractiveItem, InteractiveState.MouseDown, true);
             __CurrentMouseDownState = mouseState;
             __CurrentMouseButtons = mouseState.Buttons;
-            _MouseDragDown(mouseState, mouseItem);
+            _MouseDragDown(mouseState, mouseState.InteractiveItem);
 
             this.Draw();
         }
@@ -248,8 +301,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             __CurrentMouseButtons = MouseButtons.None;               // Ani žádný button
 
             // Znovu najdeme prvek pod myší:
-            var mouseItem = _GetMouseItem(mouseState);
-            _MouseMoveCurrentExchange(mouseState, mouseItem, InteractiveState.MouseOn, mouseState.IsOnControl);
+            _RefreshMouseState(mouseState);
+            _MouseMoveCurrentExchange(mouseState, mouseState.InteractiveItem, InteractiveState.MouseOn, mouseState.IsOnControl);
 
             // Vykreslíme:
             this.Draw();
@@ -278,36 +331,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             // Click se volá v době MouseUp, ale v procesu Click nás zajímá mj. tlačítka myši v době MouseDown,
             //  proto do eventu posílám objekt __CurrentMouseDownState (stav myši v době MouseDown) a nikoli currentItem (ten už má Buttons = None):
             _RunInteractiveAreaClick(new InteractiveItemEventArgs(null, __CurrentMouseDownState));
-        }
-        /// <summary>
-        /// Najde nejvyšší aktivní prvek pro danou pozici myši
-        /// </summary>
-        /// <param name="mouseState"></param>
-        /// <returns></returns>
-        private InteractiveItem _GetMouseItem(MouseState mouseState)
-        {
-            Point virtualPoint = this.GetVirtualPoint(mouseState.LocationControl);
-            var items = __DataItems;
-            int count = items.Count;
-            for (int i = count - 1; i >= 0; i--)
-            {
-                if (items[i].IsActiveOnVirtualPoint(virtualPoint))
-                    return items[i];
-            }
-            return null;
-        }
-        /// <summary>
-        /// Najde cílovou buňku pro danou souřadnici myši. Tato buňka může být určena i pro pozici, kde není žádný interaktivní prvek.
-        /// </summary>
-        /// <param name="mouseState"></param>
-        /// <returns></returns>
-        private InteractiveMap.Cell _GetMouseCell(MouseState mouseState)
-        {
-            var interactiveMap = __InteractiveMap;
-            if (interactiveMap is null) return null;
-
-            Point virtualPoint = this.GetVirtualPoint(mouseState.LocationControl);
-            return interactiveMap.GetCellAtPoint(virtualPoint);
         }
         /// <summary>
         /// Vyřeší výměnu prvku pod myší (dosavadní prvek je v instanční proměnné <see cref="__CurrentMouseItem"/>,
@@ -479,7 +502,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             if (EnabledDrag)
             {
-                var targetCell = _GetMouseCell(mouseState);
 
             }
 
@@ -585,7 +607,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="e"></param>
         private void _PaintAllDataItems(PaintEventArgs e)
         {
-            var mouseState = MouseState.CreateCurrent(this);
+            var mouseState = _CreateMouseState();
             using (PaintDataEventArgs pdea = new PaintDataEventArgs(e, mouseState, this))
             {
                 foreach (var dataItem in DataItems)

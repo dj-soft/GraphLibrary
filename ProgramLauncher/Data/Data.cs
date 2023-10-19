@@ -11,29 +11,287 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Management;
 using System.Drawing.Text;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace DjSoft.Tools.ProgramLauncher.Data
 {
+    #region class PageSetData : Kompletní set všech stránek
+    /// <summary>
+    /// PageSetData : Kompletní set všech stránek
+    /// </summary>
+    public class PageSetData : BaseData
+    {
+        #region Public data a základní tvorba
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public PageSetData()
+        {
+            __Pages = new ChildItems<PageSetData, PageData>(this);
+        }
+        /// <summary>
+        /// Sada stránek v tomto setu
+        /// </summary>
+        [PersistingEnabled(false)]
+        public ChildItems<PageSetData, PageData> Pages { get { CheckNotVoid(); return __Pages; } } private ChildItems<PageSetData, PageData> __Pages;
+        /// <summary>
+        /// Druh layoutu, z něhož se čerpá.
+        /// </summary>
+        [PersistingEnabled(false)]
+        public override DataLayoutKind? LayoutKind { get { return DataLayoutKind.None; } set { } }
+        #endregion
+        #region Podpora de/serializace
+        /// <summary>
+        /// Metoda je volána před zahájením procesu Serializace = data budou uložena do nějakého Configu.
+        /// </summary>
+        protected override void OnPersistSerializeStart()
+        {
+            // Před uložením dat do Configu naplním pole _Pages daty z ChildListu Pages,
+            _Pages = Pages.ToArray();
+            // ... a po dokončení serializace v metodě OnPersistSerializeDone() pole _Pages zahodíme!
+        }
+        /// <summary>
+        /// Metoda je volána po ukončení procesu Serializace = data byla uložena do nějakého Configu.
+        /// </summary>
+        protected override void OnPersistSerializeDone()
+        {
+            _Pages = null;
+        }
+        /// <summary>
+        /// Metoda je volána po ukončení procesu Deserializace = data byla načtena z nějakého Configu.
+        /// Potomek může reagovat = provést nějaké dopočty a finalizaci...
+        /// </summary>
+        protected override void OnPersistDeserializeDone()
+        {
+            // Po ukončení deserializace jsou data načtena v poli _Pages: převezmeme je a dáme do ChildListu Pages a pole zrušíme:
+            this.__Pages.Clear();
+            if (this._Pages != null) this.__Pages.AddRange(this._Pages);
+            this._Pages = null;
+        }
+        /// <summary>
+        /// Slouží výhradně pro persistenci
+        /// </summary>
+        [PropertyName("Pages")]
+        private PageData[] _Pages { get; set; }
+        #endregion
+        #region Kontextové menu
+        /// <summary>
+        /// Nabídne kontextové menu pro danou oblast a daný prvek v této oblasti.
+        /// </summary>
+        /// <param name="mouseState"></param>
+        /// <param name="areaData">Zde je předán buď celý <see cref="PageSetData"/> pro kontextové menu typu Stránky, anebo jedna konkrétní stránka <see cref="PageData"/> pokud je menu aktivní pro ni</param>
+        /// <param name="itemData">Prvek, na který bylo klimnuto, nebo null = do prostoru mimo prvky</param>
+        public void RunContextMenu(MouseState mouseState, BaseData areaData, BaseData itemData)
+        {
+            // Sestavím kontextové menu podle situace:
+            var menuItems = new List<IMenuItem>();
+
+            if (areaData is PageSetData pageSetData)
+            {   // Kliknutí na seznamu stránek
+                if (itemData is PageData pageItem)
+                {   // Kliknutí seznamu stránek, na konkrétní stránce:
+                    menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.Format(App.Messages.AppContextMenuTitlePage, pageItem.Title) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuUserData(DataItemActionType.EditPage, mouseState, this, areaData, itemData) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuUserData(DataItemActionType.DeletePage, mouseState, this, areaData, itemData) });
+                }
+                else
+                {   // Kliknutí seznamu stránek, mimo konkrétní stránku:
+                    menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.AppContextMenuTitlePages });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewPageText, ToolTip = App.Messages.AppContextMenuNewPageToolTip, Image = Properties.Resources.document_new_3_22, UserData = new ContextMenuUserData(DataItemActionType.NewGroup, mouseState, this, areaData, itemData) });
+                }
+            }
+
+            else if (areaData is PageData pageArea)
+            {   // Kliknutí na obsahu stránky (grupy, aplikace):
+                if (itemData is GroupData groupData)
+                {   // Na titulku grupy:
+                    menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.Format(App.Messages.AppContextMenuTitleGroup, groupData.Title) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuUserData(DataItemActionType.EditGroup, mouseState, this, areaData, itemData) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuUserData(DataItemActionType.DeleteGroup, mouseState, this, areaData, itemData) });
+                }
+                else if (itemData is ApplicationData applicationData)
+                {   // Na konkrétní aplikaci:
+                    menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.Format(App.Messages.AppContextMenuTitleApplication, applicationData.Title) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunText, ToolTip = App.Messages.AppContextMenuRunToolTip, Image = Properties.Resources.media_playback_start_3_22, UserData = new ContextMenuUserData(DataItemActionType.RunApplication, mouseState, this, areaData, itemData) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunAsText, ToolTip = App.Messages.AppContextMenuRunAsToolTip, Image = Properties.Resources.media_seek_forward_3_22, UserData = new ContextMenuUserData(DataItemActionType.RunApplicationAsAdmin, mouseState, this, areaData, itemData) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuUserData(DataItemActionType.EditApplication, mouseState, this, areaData, itemData) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuUserData(DataItemActionType.DeleteApplication, mouseState, this, areaData, itemData) });
+                }
+                else
+                {   // Ve volné ploše:
+                    menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.AppContextMenuTitleApplications });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewApplicationText, ToolTip = App.Messages.AppContextMenuNewApplicationToolTip, Image = Properties.Resources.archive_insert_3_22, UserData = new ContextMenuUserData(DataItemActionType.NewApplication, mouseState, this, areaData, itemData) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewGroupText, ToolTip = App.Messages.AppContextMenuNewGroupToolTip, Image = Properties.Resources.insert_horizontal_rule_22, UserData = new ContextMenuUserData(DataItemActionType.NewGroup, mouseState, this, areaData, itemData) });
+                }
+            }
+            App.SelectFromMenu(menuItems, _RunContextMenuAction, mouseState.LocationAbsolute);
+        }
+        /// <summary>
+        /// Provede vybranou akci z kontextového menu
+        /// </summary>
+        /// <param name="menuItem"></param>
+        private static void _RunContextMenuAction(IMenuItem menuItem)
+        {
+            if (menuItem.UserData is ContextMenuUserData contextData)
+            {
+                switch (contextData.Action)
+                {
+                    case DataItemActionType.RunApplication:
+                        (contextData.ItemData as ApplicationData).RunNewProcess(false);
+                        break;
+                    case DataItemActionType.RunApplicationAsAdmin:
+                        (contextData.ItemData as ApplicationData).RunNewProcess(true);
+                        break;
+                    case DataItemActionType.EditApplication:
+                        (contextData.ItemData as ApplicationData).EditData(contextData.MouseState.LocationAbsolute);
+                        break;
+                }
+            }
+        }
+        /// <summary>
+        /// Balíček s daty pro akce kontextového menu
+        /// </summary>
+        private class ContextMenuUserData
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="action"></param>
+            /// <param name="data"></param>
+            public ContextMenuUserData(DataItemActionType action, MouseState mouseState, PageSetData pageSetData, BaseData areaData, BaseData itemData)
+            {
+                Action = action;
+                MouseState = mouseState;
+                PageSetData = pageSetData;
+                AreaData = areaData;
+                ItemData = itemData;
+            }
+            /// <summary>
+            /// Druh akce
+            /// </summary>
+            public DataItemActionType Action { get; private set; }
+            /// <summary>
+            /// Stav myši
+            /// </summary>
+            public MouseState MouseState { get; private set; }
+            /// <summary>
+            /// Set stránek
+            /// </summary>
+            public PageSetData PageSetData { get; private set; }
+            /// <summary>
+            /// Prvek reprezentující prostor
+            /// </summary>
+            public BaseData AreaData { get; private set; }
+            /// <summary>
+            /// Prvek reprezentující konkrétní prvek
+            /// </summary>
+            public BaseData ItemData { get; private set; }
+        }
+        #endregion
+        #region Tvorba výchozích dat - namísto prázdných
+        /// <summary>
+        /// Zajistí, že v daném seznamu bude alespoň jeden prvek, a že první prvek nebude prázdný.
+        /// </summary>
+        /// <param name="programGroups"></param>
+        public void CheckNotVoid()
+        {
+            if (__Pages is null) __Pages = new ChildItems<PageSetData, PageData>(this);
+            if (__Pages.Count > 0 ) return;
+
+            __Pages.AddRange(CreateInitialData().Pages);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí defaultní prvek
+        /// </summary>
+        /// <returns></returns>
+        public static PageSetData CreateInitialData()
+        {
+            PageSetData pageSet = new PageSetData();
+
+            var page0 = new PageData() { Title = "Hobby" };
+            pageSet.__Pages.Add(page0);                             // Musím používat field __Pages, protože použitím property Pages bych se zacyklil...
+
+            var group00 = new GroupData() { Title = "Aplikace Windows", RelativeAdress = new Point(0, 0) };
+            page0.Groups.Add(group00);
+            group00.Applications.Add(getApp("Windows", "Průzkumník", "wine", @"c:\Windows\explorer.exe", "", 0, 0));
+            group00.Applications.Add(getApp("Wordpad", "Jednoduchý text", "abiword", @"c:\Windows\write.exe", "", 1, 0));
+            group00.Applications.Add(getApp("MS DOS user", "Příkazový řádek", "evilvte", @"c:\Windows\System32\cmd.exe", "", 0, 1));
+            group00.Applications.Add(getApp("MS DOS admin", "Příkazový řádek v režimu Admin", "evilvte", @"c:\Windows\System32\cmd.exe", "", 0, 2, executeInAdminMode: true));
+            group00.Applications.Add(getApp("Libre Office", "Lepší text", "distributions-solaris", @"c:\Program Files (x86)\OpenOffice 4\program\soffice.exe", "", 1, 1));
+            group00.Applications.Add(getApp("Obrázek Svišť", "Vyděšený svišť", "gpe-tetris", @"d:\Dokumenty\Vyděšený svišť.png", "", 2, 0));
+            group00.Applications.Add(getApp("Poznámkový blok", "Základní text", "abiword", @"%windir%\system32\notepad.exe", "", 2, 2, onlyOneInstance: true));
+            group00.Applications.Add(getApp("RDP NTB", "Vzdálená plocha na Notebook", "firefox_alt", @"%windir%\system32\mstsc.exe", @"D:\Windows\Složka\Asseco\David NB.rdp", 0, 3));
+            group00.Applications.Add(getApp("RDP PC", "Vzdálená plocha na Desktop", "firefox_alt", @"%windir%\system32\mstsc.exe", @"D:\Windows\Složka\Asseco\David ASOL.rdp", 1, 3));
+
+            var group01 = new GroupData() { Title = "Aplikace David", RelativeAdress = new Point(0, 0) };
+            page0.Groups.Add(group01);
+            group00.Applications.Add(getApp("SD Cards", "Tester SD cards", "wine", @"C:\DavidPrac\VsProjects\SDCardTester\SDCardTester\bin\Debug\Djs.SDCardTester.exe", "", 0, 0));
+            group00.Applications.Add(getApp("Stopky", "Hodinky", "wine", @"C:\CSharp\Stopky\Stopky\bin\Debug\Stopky.exe", "", 1, 0));
+            group00.Applications.Add(getApp("Vypínač", "Vypne PC", "wine", @"C:\DavidPrac\VsProjects\WinShutDown\Exe\Djs.WinShutDown.exe", "", 2, 0));
+
+
+            return pageSet;
+
+            ApplicationData getApp(string title, string description, string imageSampleName, string exeFile, string arguments, int x, int y, bool openMaximized = false, bool onlyOneInstance = false, bool executeInAdminMode = false)
+            {
+                var app = new ApplicationData()
+                {
+                    Title = title,
+                    Description = description,
+                    ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\wine" + imageSampleName + ".png",
+                    ExecutableFileName = exeFile,
+                    ExecutableArguments = arguments,
+                    RelativeAdress = new Point(x, y),
+                    OpenMaximized = openMaximized,
+                    OnlyOneInstance = onlyOneInstance,
+                    ExecuteInAdminMode = executeInAdminMode
+                };
+                return app;
+            }
+        }
+        #endregion
+    }
+    #endregion
     #region class PageData : Jedna stránka s daty, je zobrazena Tabem v levém bloku, popisuje celý obsah v pravé velké části
     /// <summary>
     /// Jedna stránka s daty, je zobrazena Tabem v levém bloku, popisuje celý obsah v pravé velké části
     /// </summary>
-    public class PageData : BaseData
+    public class PageData : BaseData, IChildOfParent<PageSetData>
     {
+        #region Public data a základní tvorba
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public PageData()
         {
-            Groups = new List<GroupData>();
+            __Groups = new ChildItems<PageData, GroupData>(this);
         }
-        public override string ToString()
+        /// <summary>
+        /// Sada skupin v této stránce
+        /// </summary>
+        [PersistingEnabled(false)]
+        public ChildItems<PageData, GroupData> Groups { get { CheckNotVoid(); return __Groups; } } private ChildItems<PageData, GroupData> __Groups;
+        /// <summary>
+        /// Kontrola platnosti dat v seznamu <see cref="__Groups"/>
+        /// </summary>
+        protected void CheckNotVoid()
         {
-            return this.Title;
+            if (__Groups is null) __Groups = new ChildItems<PageData, GroupData>(this);
         }
+        /// <summary>
+        /// Druh layoutu, z něhož se čerpá.
+        /// </summary>
+        [PersistingEnabled(false)]
         public override DataLayoutKind? LayoutKind { get { return DataLayoutKind.Pages; } set { } }
+        /// <summary>
+        /// Můj parent
+        /// </summary>
+        PageSetData IChildOfParent<PageSetData>.Parent { get { return __Parent; } set { __Parent = value; } } private PageSetData __Parent;
         /// <summary>
         /// Počet evidovaných aplikací
         /// </summary>
+        [PersistingEnabled(false)]
         public int ApplicationsCount { get { return this.Groups.Sum(g => g.Applications.Count); } }
-        public List<GroupData> Groups { get; private set; }
         public void CreateInteractiveItems(List<InteractiveItem> interactiveItems)
         {
             int y = 0;
@@ -53,187 +311,40 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 }
             }
         }
+        #endregion
+        #region Podpora de/serializace
+        /// <summary>
+        /// Metoda je volána před zahájením procesu Serializace = data budou uložena do nějakého Configu.
+        /// </summary>
+        protected override void OnPersistSerializeStart()
+        {
+            // Před uložením dat do Configu naplním pole _Groups daty z ChildListu Groups,
+            _Groups = Groups.ToArray();
+            // ... a po dokončení serializace v metodě OnPersistSerializeDone() pole _Groups zahodíme!
+        }
+        /// <summary>
+        /// Metoda je volána po ukončení procesu Serializace = data byla uložena do nějakého Configu.
+        /// </summary>
+        protected override void OnPersistSerializeDone()
+        {
+            _Groups = null;
+        }
         /// <summary>
         /// Metoda je volána po ukončení procesu Deserializace = data byla načtena z nějakého Configu.
         /// Potomek může reagovat = provést nějaké dopočty a finalizaci...
         /// </summary>
         protected override void OnPersistDeserializeDone()
         {
-            if (this.Groups is null) this.Groups = new List<GroupData>();
-
-            foreach (var group in this.Groups)
-                ((IChildOfParent<BaseData>)group).Parent = this;
-        }
-        #region Kontextové menu pro správu stránek = přidání / editace / odebrání celé stránky
-        /// <summary>
-        /// Nabídne kontextové menu pro správu stránek (přidání / editace / odebrání celé stránky)
-        /// </summary>
-        /// <param name="mouseState"></param>
-        /// <param name="dataInfo"></param>
-        /// <param name="pages"></param>
-        internal static void RunPageContextMenu(MouseState mouseState, BaseData dataInfo, List<PageData> pages)
-        {
-            var menuItems = new List<IMenuItem>();
-
-            var pageData = dataInfo as PageData;
-            bool hasPage = (pageData  != null);
-            if (hasPage)
-            {
-                menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.Format(App.Messages.AppContextMenuTitlePage, pageData.Title) });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuUserData(ContextMenuActionType.EditPage, mouseState, dataInfo, null, pages) });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuUserData(ContextMenuActionType.DeletePage, mouseState, dataInfo, null, pages) });
-            }
-            if (!hasPage)
-            {
-                menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.AppContextMenuTitlePages });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewPageText, ToolTip = App.Messages.AppContextMenuNewPageToolTip, Image = Properties.Resources.document_new_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.NewGroup, mouseState, null, null, pages) });
-            }
-
-            App.SelectFromMenu(menuItems, _RunContextMenuAction, mouseState.LocationAbsolute);
-        }
-        #endregion
-        #region Kontextové menu uvnitř stránky = správa skupin a aplikací
-        /// <summary>
-        /// Nabídne kontextové menu pro danou aplikaci / grupu
-        /// </summary>
-        /// <param name="mouseState"></param>
-        /// <param name="dataInfo"></param>
-        /// <param name="pageData"></param>
-        internal void RunApplicationContextMenu(MouseState mouseState, BaseData dataInfo, PageData pageData)
-        {
-            var menuItems = new List<IMenuItem>();
-
-            var applicationData = dataInfo as ApplicationData;
-            bool hasApplication = (applicationData != null);
-            if (hasApplication)
-            {
-                // menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Separator });
-                menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.Format(App.Messages.AppContextMenuTitleApplication, applicationData.Title) });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunText, ToolTip = App.Messages.AppContextMenuRunToolTip, Image = Properties.Resources.media_playback_start_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.RunApplication, mouseState, dataInfo, pageData, null) });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunAsText, ToolTip = App.Messages.AppContextMenuRunAsToolTip, Image = Properties.Resources.media_seek_forward_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.RunApplicationAsAdmin, mouseState, dataInfo, pageData, null) });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuUserData(ContextMenuActionType.EditApplication, mouseState, dataInfo, pageData, null) });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuUserData(ContextMenuActionType.DeleteApplication, mouseState, dataInfo, pageData, null) });
-            }
-
-            var groupData = dataInfo as GroupData;
-            bool hasGroup = (groupData != null);
-            if (hasGroup)
-            {
-                menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.Format(App.Messages.AppContextMenuTitleGroup, groupData.Title) });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuUserData(ContextMenuActionType.EditGroup, mouseState, dataInfo, pageData, null) });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuUserData(ContextMenuActionType.DeleteGroup, mouseState, dataInfo, pageData, null) });
-            }
-            if (!hasApplication && !hasGroup)
-            {
-                menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.AppContextMenuTitleApplications });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewApplicationText, ToolTip = App.Messages.AppContextMenuNewApplicationToolTip, Image = Properties.Resources.archive_insert_3_22, UserData = new ContextMenuUserData(ContextMenuActionType.NewApplication, mouseState, null, pageData, null) });
-                menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewGroupText, ToolTip = App.Messages.AppContextMenuNewGroupToolTip, Image = Properties.Resources.insert_horizontal_rule_22, UserData = new ContextMenuUserData(ContextMenuActionType.NewGroup, mouseState, null, pageData, null) });
-            }
-
-            App.SelectFromMenu(menuItems, _RunContextMenuAction, mouseState.LocationAbsolute);
+            // Po ukončení deserializace jsou data načtena v poli _Pages: převezmeme je a dáme do ChildListu Pages a pole zrušíme:
+            this.__Groups.Clear();
+            if (this._Groups != null) this.__Groups.AddRange(this._Groups);
+            this._Groups = null;
         }
         /// <summary>
-        /// Provede vybranou akci z kontextového menu
+        /// Slouží výhradně pro persistenci
         /// </summary>
-        /// <param name="menuItem"></param>
-        private static void _RunContextMenuAction(IMenuItem menuItem)
-        {
-            if (menuItem.UserData is ContextMenuUserData contextData)
-            {
-                switch (contextData.Action)
-                {
-                    case ContextMenuActionType.RunApplication:
-                        (contextData.Data as ApplicationData).RunNewProcess(false);
-                        break;
-                    case ContextMenuActionType.RunApplicationAsAdmin:
-                        (contextData.Data as ApplicationData).RunNewProcess(true);
-                        break;
-                    case ContextMenuActionType.EditApplication:
-                        (contextData.Data as ApplicationData).EditData(contextData.MouseState.LocationAbsolute);
-                        break;
-                }
-            }
-        }
-        /// <summary>
-        /// Balíček s daty pro akce kontextového menu
-        /// </summary>
-        private class ContextMenuUserData
-        {
-            /// <summary>
-            /// Konstruktor
-            /// </summary>
-            /// <param name="action"></param>
-            /// <param name="data"></param>
-            public ContextMenuUserData(ContextMenuActionType action, MouseState mouseState, BaseData data, PageData pageData, List<PageData> pages)
-            {
-                Action = action;
-                MouseState = mouseState;
-                Data = data;
-                PageData = pageData;
-                Pages = pages;
-            }
-            /// <summary>
-            /// Druh akce
-            /// </summary>
-            public ContextMenuActionType Action { get; private set; }
-            /// <summary>
-            /// Stav myši
-            /// </summary>
-            public MouseState MouseState { get; private set; }
-            /// <summary>
-            /// Prvek
-            /// </summary>
-            public BaseData Data { get; private set; }
-            /// <summary>
-            /// Stránka na které se akce provádí
-            /// </summary>
-            public PageData PageData { get; private set; }
-            /// <summary>
-            /// Kompletní soupis stránek
-            /// </summary>
-            public List<PageData> Pages { get; private set; }
-        }
-        /// <summary>
-        /// Akce v kontextovém menu
-        /// </summary>
-        private enum ContextMenuActionType
-        {
-            None,
-            NewPage,
-            EditPage,
-            DeletePage,
-            NewGroup,
-            EditGroup,
-            DeleteGroup,
-            NewApplication,
-            EditApplication,
-            DeleteApplication,
-            RunApplication,
-            RunApplicationAsAdmin
-        }
-        #endregion
-        #region Tvorba výchozích dat - namísto prázdných
-        /// <summary>
-        /// Zajistí, že v daném seznamu bude alespoň jeden prvek, a že první prvek nebude prázdný.
-        /// </summary>
-        /// <param name="programPages"></param>
-        internal static void CheckNotVoid(List<PageData> programPages)
-        {
-            if (programPages.Count == 0)
-                programPages.Add(PageData.CreateInitialPageData());
-            GroupData.CheckNotVoid(programPages[0].Groups);
-        }
-        /// <summary>
-        /// Vytvoří a vrátí defaultní prvek
-        /// </summary>
-        /// <returns></returns>
-        public static PageData CreateInitialPageData()
-        {
-            PageData pageData = new PageData();
-            pageData.Title = "Výchozí";
-            pageData.ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\klickety.png";
-            return pageData;
-        }
+        [PropertyName("Groups")]
+        private GroupData[] _Groups { get; set; }
         #endregion
     }
     #endregion
@@ -241,47 +352,70 @@ namespace DjSoft.Tools.ProgramLauncher.Data
     /// <summary>
     /// Jedna skupina dat, je zobrazena v pravé velké části, a je reprezentována vodorovným titulkem přes celou šířku, obsahuje sadu aplikací
     /// </summary>
-    public class GroupData : BaseData
+    public class GroupData : BaseData, IChildOfParent<PageData>
     {
+        #region Public data a základní tvorba
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public GroupData()
         {
-            Applications = new List<ApplicationData>();
+            __Applications = new ChildItems<GroupData, ApplicationData>(this);
         }
-
-        public List<ApplicationData> Applications { get; private set; }
+        /// <summary>
+        /// Seznam aplikací v této grupě
+        /// </summary>
+        [PersistingEnabled(false)]
+        public ChildItems<GroupData, ApplicationData> Applications { get { CheckNotVoid(); return __Applications; } } private ChildItems<GroupData, ApplicationData> __Applications;
+        /// <summary>
+        /// Kontrola platnosti dat v seznamu <see cref="__Groups"/>
+        /// </summary>
+        protected void CheckNotVoid()
+        {
+            if (__Applications is null) __Applications = new ChildItems<GroupData, ApplicationData>(this);
+        }
+        /// <summary>
+        /// Druh layoutu, z něhož se čerpá.
+        /// </summary>
         public override DataLayoutKind? LayoutKind { get { return DataLayoutKind.Groups; } set { } }
+        /// <summary>
+        /// Můj parent
+        /// </summary>
+        PageData IChildOfParent<PageData>.Parent { get { return __Parent; } set { __Parent = value; } } private PageData __Parent;
+        #endregion
+        #region Podpora de/serializace
+        /// <summary>
+        /// Metoda je volána před zahájením procesu Serializace = data budou uložena do nějakého Configu.
+        /// </summary>
+        protected override void OnPersistSerializeStart()
+        {
+            // Před uložením dat do Configu naplním pole _Groups daty z ChildListu Groups,
+            _Applications = Applications.ToArray();
+            // ... a po dokončení serializace v metodě OnPersistSerializeDone() pole _Groups zahodíme!
+        }
+        /// <summary>
+        /// Metoda je volána po ukončení procesu Serializace = data byla uložena do nějakého Configu.
+        /// </summary>
+        protected override void OnPersistSerializeDone()
+        {
+            _Applications = null;
+        }
         /// <summary>
         /// Metoda je volána po ukončení procesu Deserializace = data byla načtena z nějakého Configu.
         /// Potomek může reagovat = provést nějaké dopočty a finalizaci...
         /// </summary>
-        protected override void OnPersistDeserializeDone() 
+        protected override void OnPersistDeserializeDone()
         {
-            if (this.Applications is null) this.Applications = new List<ApplicationData>();
-
-            foreach (var application in this.Applications)
-                ((IChildOfParent<BaseData>)application).Parent = this;
-        }
-        #region Tvorba výchozích dat - namísto prázdných
-        /// <summary>
-        /// Zajistí, že v daném seznamu bude alespoň jeden prvek, a že první prvek nebude prázdný.
-        /// </summary>
-        /// <param name="programGroups"></param>
-        internal static void CheckNotVoid(List<GroupData> programGroups)
-        {
-            if (programGroups.Count == 0)
-                programGroups.Add(GroupData.CreateInitialGroupData());
-            ApplicationData.CheckNotVoid(programGroups[0].Applications);
+            // Po ukončení deserializace jsou data načtena v poli _Pages: převezmeme je a dáme do ChildListu Pages a pole zrušíme:
+            this.__Applications.Clear();
+            if (this._Applications != null) this.__Applications.AddRange(this._Applications);
+            this._Applications = null;
         }
         /// <summary>
-        /// Vytvoří a vrátí defaultní prvek
+        /// Slouží výhradně pro persistenci
         /// </summary>
-        /// <returns></returns>
-        public static GroupData CreateInitialGroupData()
-        {
-            GroupData groupData = new GroupData();
-            groupData.Title = "Základní skupina v nabídce";
-            return groupData;
-        }
+        [PropertyName("Applications")]
+        private ApplicationData[] _Applications { get; set; }
         #endregion
     }
     #endregion
@@ -289,8 +423,46 @@ namespace DjSoft.Tools.ProgramLauncher.Data
     /// <summary>
     /// Jeden prvek nabídky, konkrétní aplikace = spustitelný cíl
     /// </summary>
-    public class ApplicationData : BaseData
+    public class ApplicationData : BaseData, IChildOfParent<GroupData>
     {
+        #region Public data a základní tvorba
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public ApplicationData()
+        { }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"{this.GetType().Name}: '{Title}'; Executable: '{ExecutableFileName}'";
+        }
+        /// <summary>
+        /// Druh layoutu, z něhož se čerpá.
+        /// </summary>
+        public override DataLayoutKind? LayoutKind { get { return DataLayoutKind.Applications; } set { } }
+        /// <summary>
+        /// Můj parent
+        /// </summary>
+        GroupData IChildOfParent<GroupData>.Parent { get { return __Parent; } set { __Parent = value; } } private GroupData __Parent;
+        #endregion
+        #region Podpora de/serializace
+        /// <summary>
+        /// Metoda je volána před zahájením procesu Serializace = data budou uložena do nějakého Configu.
+        /// </summary>
+        protected override void OnPersistSerializeStart() { }
+        /// <summary>
+        /// Metoda je volána po ukončení procesu Serializace = data byla uložena do nějakého Configu.
+        /// </summary>
+        protected override void OnPersistSerializeDone() { }
+        /// <summary>
+        /// Metoda je volána po ukončení procesu Deserializace = data byla načtena z nějakého Configu.
+        /// Potomek může reagovat = provést nějaké dopočty a finalizaci...
+        /// </summary>
+        protected override void OnPersistDeserializeDone() { }
+        #endregion
         #region Data o aplikaci
         [PropertyName("File")]
         public string ExecutableFileName { get; set; }
@@ -304,16 +476,6 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public bool OpenMaximized { get; set; }
         [PropertyName("OneInstance")]
         public bool OnlyOneInstance { get; set; }
-        [PersistingEnabled(false)]
-        public override DataLayoutKind? LayoutKind { get { return DataLayoutKind.Applications; } set { } }
-        /// <summary>
-        /// Vizualizace
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            return $"Title: {Title}; Executable: {ExecutableFileName}";
-        }
         #endregion
         #region Spouštění aplikace
         /// <summary>
@@ -510,114 +672,6 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         private Process __LastProcess;
         #endregion
-        #region Tvorba výchozích dat - namísto prázdných
-        /// <summary>
-        /// Zajistí, že v daném seznamu bude alespoň nějaký výchozí prvek.
-        /// </summary>
-        /// <param name="programApplications"></param>
-        internal static void CheckNotVoid(List<ApplicationData> programApplications)
-        {
-            if (programApplications.Count == 0)
-                programApplications.AddRange(ApplicationData.CreateInitialApplicationsData());
-        }
-        /// <summary>
-        /// Vytvoří a vrátí sadu defaultních prvků
-        /// </summary>
-        /// <returns></returns>
-        internal static IEnumerable<ApplicationData> CreateInitialApplicationsData()
-        {
-            var list = new List<ApplicationData>();
-
-            list.Add(new ApplicationData()
-            {
-                Title = "Windows",
-                Description = "Průzkumník",
-                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\wine.png",
-                OpenMaximized = true,
-                RelativeAdress = new Point(0, 0),
-                ExecutableFileName = @"c:\Windows\explorer.exe"
-            });
-
-            list.Add(new ApplicationData()
-            {
-                Title = "Wordpad",
-                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\abiword.png",
-                RelativeAdress = new Point(1, 0),
-                ExecutableFileName = @"c:\Windows\write.exe"
-            });
-
-            list.Add(new ApplicationData()
-            {
-                Title = "MS DOS user",
-                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\evilvte.png",
-                ExecuteInAdminMode = false,
-                OpenMaximized = true,
-                RelativeAdress = new Point(0, 1),
-                ExecutableFileName = @"c:\Windows\System32\cmd.exe"
-            });
-
-            list.Add(new ApplicationData()
-            {
-                Title = "MS DOS Admin",
-                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\evilvte.png",
-                ExecuteInAdminMode = true,
-                RelativeAdress = new Point(0, 2),
-                ExecutableFileName = @"c:\Windows\System32\cmd.exe"
-            });
-
-            list.Add(new ApplicationData()
-            {
-                Title = "Libre Office",
-                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\distributions-solaris.png",
-                RelativeAdress = new Point(1, 1),
-                OnlyOneInstance = true,
-                ExecutableFileName = @"c:\Program Files (x86)\OpenOffice 4\program\soffice.exe"
-            });
-
-            list.Add(new ApplicationData()
-            {
-                Title = "Dokument",
-                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\gpe-tetris.png",
-                RelativeAdress = new Point(2, 0),
-                ExecutableFileName = @"d:\Dokumenty\Vyděšený svišť.png"
-            });
-
-            list.Add(new ApplicationData()
-            {
-                Title = "Poznámkový blok",
-                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\abiword.png",
-                OnlyOneInstance = true,
-                RelativeAdress = new Point(2, 2),
-                ExecutableFileName = @"%windir%\system32\notepad.exe"
-            });
-
-            list.Add(new ApplicationData()
-            {
-                Title = "Remote Notebook",
-                ExecutableFileName = @"%windir%\system32\mstsc.exe",
-                ExecutableArguments = @"D:\Windows\Složka\Asseco\David NB.rdp",
-                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\firefox_alt.png",
-                OnlyOneInstance = true,
-                RelativeAdress = new Point(0, 3),
-            });
-
-            list.Add(new ApplicationData()
-            {
-                Title = "Remote Desktop",
-                ExecutableFileName = @"%windir%\system32\mstsc.exe",
-                ExecutableArguments = @"D:\Windows\Složka\Asseco\David ASOL.rdp",
-                ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\firefox_alt.png",
-                OnlyOneInstance = true,
-                RelativeAdress = new Point(1, 3),
-            });
-
-
-
-
-            // %windir%\system32\notepad.exe
-            return list;
-        }
-        #endregion
         #region Podpora pro editaci v DataForm
         /// <summary>
         /// Vytvoří a vrátí Edit panel pro this aplikaci
@@ -663,7 +717,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
     /// <summary>
     /// Bázová třída pro data, účastní se zobrazování (obsahuje dostatečná data pro zobrazení)
     /// </summary>
-    public class BaseData : IXmlPersistNotify, IChildOfParent<BaseData>
+    public class BaseData : IXmlPersistNotify
     {
         #region Základní společná data
         /// <summary>
@@ -712,7 +766,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Title: {Title}";
+            return $"{this.GetType().Name}: '{Title}'";
         }
         #endregion
         #region Podpora pro interaktivní kreslení a práci - tvorba instance třídy InteractiveItem
@@ -731,18 +785,14 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         [PersistingEnabled(false)]
         protected InteractiveItem InteractiveItem { get; set; }
         /// <summary>
-        /// Parent objekt, hodnotu sem vkládá parent po deserializaci a při tvorbě interaktivních prvků.
-        /// </summary>
-        [PersistingEnabled(false)]
-        protected BaseData ParentData { get; set; }
-        BaseData IChildOfParent<BaseData>.Parent { get { return this.ParentData; } set { this.ParentData = value; } }
-        /// <summary>
         /// Zajistí znovuvykreslení interaktvního prvku
         /// </summary>
         public void RefreshInteractiveItem()
         {
             InteractiveItem?.Refresh();
         }
+        #endregion
+        #region Podpora pro serializaci
         /// <summary>
         /// Stav v procesu persistování (Load/Save)
         /// </summary>
@@ -754,16 +804,34 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             {
                 var oldValue = __XmlPersistState;
                 var newValue = value;
+                if (oldValue != XmlPersistState.LoadBegin && newValue == XmlPersistState.LoadBegin) this.OnPersistDeserializeStart();
                 if (oldValue != XmlPersistState.LoadDone && newValue == XmlPersistState.LoadDone) this.OnPersistDeserializeDone();
+                if (oldValue != XmlPersistState.SaveBegin && newValue == XmlPersistState.SaveBegin) this.OnPersistSerializeStart();
+                if (oldValue != XmlPersistState.SaveDone && newValue == XmlPersistState.SaveDone) this.OnPersistSerializeDone();
                 __XmlPersistState = newValue;
             }
         }
         private XmlPersistState __XmlPersistState;
         /// <summary>
+        /// Metoda je volána před zahájením procesu Deserializace = data budou načtena z nějakého Configu.
+        /// Potomek může reagovat = provést nějaké přípravy...
+        /// </summary>
+        protected virtual void OnPersistDeserializeStart() { }
+        /// <summary>
         /// Metoda je volána po ukončení procesu Deserializace = data byla načtena z nějakého Configu.
         /// Potomek může reagovat = provést nějaké dopočty a finalizaci...
         /// </summary>
         protected virtual void OnPersistDeserializeDone() { }
+        /// <summary>
+        /// Metoda je volána před zahájením procesu Serializace = data budou uložena do nějakého Configu.
+        /// Potomek může reagovat = provést nějaké přípravy dat...
+        /// </summary>
+        protected virtual void OnPersistSerializeStart() { }
+        /// <summary>
+        /// Metoda je volána po ukončení procesu Serializace = data byla uložena do nějakého Configu.
+        /// Potomek může reagovat = zrušit přípravy provedené před Serializací...
+        /// </summary>
+        protected virtual void OnPersistSerializeDone() { }
         #endregion
         #region Podpora pro standardní WinForm editaci obsahu pomocí okna DialogForm a datového panelu DataControlPanel
         public virtual bool EditData(Point? startPoint = null)
@@ -794,6 +862,30 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         }
         #endregion
     }
+    /// <summary>
+    /// Akce v kontextovém menu
+    /// </summary>
+    public enum DataItemActionType
+    {
+        None,
+        NewPage,
+        MovePage,
+        EditPage,
+        CopyPage,
+        DeletePage,
+        NewGroup,
+        MoveGroup,
+        EditGroup,
+        CopyGroup,
+        DeleteGroup,
+        NewApplication,
+        MoveApplication,
+        EditApplication,
+        CopyApplication,
+        DeleteApplication,
+        RunApplication,
+        RunApplicationAsAdmin
+    }
     #endregion
     #region class InteractiveDataItem : Potomek vizuálního (= interaktivního) prvku, vytvořený nad daty "BaseData"
     /// <summary>
@@ -814,6 +906,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public override Point Adress { get { return __Data.Adress; } set { __Data.Adress = value; } }
         public override string ImageName { get { return __Data.ImageFileName; } set { __Data.ImageFileName = value; } }
         public override ColorSet CellBackColor { get { return __CellBackColor; } set { __CellBackColor = value; } }
+        /// <summary>
+        /// Druh layoutu, z něhož se čerpá.
+        /// </summary>
         public override DataLayoutKind? LayoutKind { get { return __Data.LayoutKind; } set { __Data.LayoutKind = value; } }
     }
     #endregion
@@ -912,99 +1007,26 @@ namespace DjSoft.Tools.ProgramLauncher
     {
         #region Část Settings, která ukládá a načítá vlastní data o stránkách, grupách a aplikacích = ProgramPages
         /// <summary>
-        /// Jednotlivé stránky. Jedna každá stránka je zobrazena jako Tab v levém bloku, a popisuje celý obsah (grupy a v nich aplikace) v pravé velké části.
+        /// Sada všech stránek.
         /// Seznam stránek má vždy alespoň jednu stránku, obsahující jednu grupu a výchozí aplikace.
         /// </summary>
         [PersistingEnabled(false)]
-        public List<PageData> ProgramPages { get { return _ProgramPagesGet(); } }
-        private List<PageData> _ProgramPagesGet()
+        public PageSetData PageSet { get { return _GetPageSet(); } }
+        /// <summary>
+        /// Vrátí data sady stránek. Zajistí jejich případnou tvorbu a naplnění.
+        /// </summary>
+        /// <returns></returns>
+        private PageSetData _GetPageSet()
         {
-            if (_ProgramPages == null) _ProgramPages = new List<PageData>();
-            PageData.CheckNotVoid(_ProgramPages);
-            return _ProgramPages;
+            if (_PageSet == null) _PageSet = new PageSetData();
+            _PageSet.CheckNotVoid();
+            return _PageSet;
         }
         /// <summary>
         /// Dictionary obsahující data jednotlivých stránek (uvnitř nich jsou grupy a v grupách aplikace)
         /// </summary>
-        [PropertyName("program_groups")]
-        private List<PageData> _ProgramPages { get; set; }
-        /*
-        /// <summary>
-        /// Uloží dodanou pozici formuláře do Settings pro aktuální / obecnou konfiguraci monitorů.<br/>
-        /// Dodanou pozici <paramref name="positionData"/> uloží pod daným jménem <paramref name="settingsName"/>, 
-        /// a dále pod jménem rozšířeným o kód aktuálně přítomných monitorů <see cref="Monitors.CurrentMonitorsKey"/>.
-        /// <para/>
-        /// Důvodem je to, že při pozdějším načítání se primárně načte pozice okna pro aktuálně platnou sestavu přítomných monitorů <see cref="Monitors.CurrentMonitorsKey"/>.
-        /// Pak bude okno restorováno do posledně známé pozice na konkrétním monitoru.<br/>
-        /// Pokud pozice daného okna <paramref name="settingsName"/> pro aktuální konfiguraci monitorů nebude nalezena,
-        /// pak se vyhledá pozice posledně známá bez ohledu na konfiguraci monitoru. Viz <see cref="FormPositionLoad(string)"/>.
-        /// </summary>
-        /// <param name="settingsName"></param>
-        /// <param name="positionData"></param>
-        public void FormPositionSave(string settingsName, string positionData)
-        {
-            if (String.IsNullOrEmpty(settingsName)) return;
-
-            var positions = _FormPositionsGetDictionary();
-            string key;
-
-            key = _FormPositionGetKey(settingsName, false);
-            positions.StoreValue(key, positionData);
-
-            key = _FormPositionGetKey(settingsName, true);
-            positions.StoreValue(key, positionData);
-
-            this.SetChanged();
-        }
-        /// <summary>
-        /// Zkusí najít pozici pro formulář daného jména a aktuální / nebo obecnou konfiguraci monitorů.
-        /// Může vrátit null když nenajde uloženou pozici.<br/>
-        /// Metoda neřeší obsah vracených dat a tedy ani správnost souřadnic, jde čistě o string který si řeší volající.<br/>
-        /// Zdejší metoda jen reaguje na aktuální konfiguraci monitorů.
-        /// </summary>
-        /// <param name="settingsName"></param>
-        /// <returns></returns>
-        public string FormPositionLoad(string settingsName)
-        {
-            if (String.IsNullOrEmpty(settingsName)) return null;
-
-            var positions = _FormPositionsGetDictionary();
-            string key;
-
-            key = _FormPositionGetKey(settingsName, true);
-            if (positions.TryGetValue(key, out var positionData1)) return positionData1;
-
-            key = _FormPositionGetKey(settingsName, false);
-            if (positions.TryGetValue(key, out var positionData2)) return positionData2;
-
-            return null;
-        }
-        /// <summary>
-        /// Vrátí klíč pro pozici formuláře
-        /// </summary>
-        /// <param name="settingsName"></param>
-        /// <param name="withMonitorsKey"></param>
-        /// <returns></returns>
-        private static string _FormPositionGetKey(string settingsName, bool withMonitorsKey)
-        {
-            return settingsName + (withMonitorsKey ? " at " + Monitors.CurrentMonitorsKey : "");
-        }
-        /// <summary>
-        /// Vrátí dictionary obsahující data s pozicemi formulářů
-        /// </summary>
-        /// <returns></returns>
-        private Dictionary<string, string> _FormPositionsGetDictionary()
-        {
-            if (_FormPositions is null)
-                _FormPositions = new Dictionary<string, string>();
-            return _FormPositions;
-        }
-        /// <summary>
-        /// Dictionary obsahující data s pozicemi formulářů
-        /// </summary>
-        [PropertyName("form_positions")]
-        private Dictionary<string, string> _FormPositions { get; set; }
-        */
+        [PropertyName("program_set")]
+        private PageSetData _PageSet { get; set; }
         #endregion
     }
 }
