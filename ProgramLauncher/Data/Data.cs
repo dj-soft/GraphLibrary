@@ -53,6 +53,17 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 }
             }
         }
+        /// <summary>
+        /// Metoda je volána po ukončení procesu Deserializace = data byla načtena z nějakého Configu.
+        /// Potomek může reagovat = provést nějaké dopočty a finalizaci...
+        /// </summary>
+        protected override void OnPersistDeserializeDone()
+        {
+            if (this.Groups is null) this.Groups = new List<GroupData>();
+
+            foreach (var group in this.Groups)
+                ((IChildOfParent<BaseData>)group).Parent = this;
+        }
         #region Kontextové menu pro správu stránek = přidání / editace / odebrání celé stránky
         /// <summary>
         /// Nabídne kontextové menu pro správu stránek (přidání / editace / odebrání celé stránky)
@@ -239,6 +250,17 @@ namespace DjSoft.Tools.ProgramLauncher.Data
 
         public List<ApplicationData> Applications { get; private set; }
         public override DataLayoutKind? LayoutKind { get { return DataLayoutKind.Groups; } set { } }
+        /// <summary>
+        /// Metoda je volána po ukončení procesu Deserializace = data byla načtena z nějakého Configu.
+        /// Potomek může reagovat = provést nějaké dopočty a finalizaci...
+        /// </summary>
+        protected override void OnPersistDeserializeDone() 
+        {
+            if (this.Applications is null) this.Applications = new List<ApplicationData>();
+
+            foreach (var application in this.Applications)
+                ((IChildOfParent<BaseData>)application).Parent = this;
+        }
         #region Tvorba výchozích dat - namísto prázdných
         /// <summary>
         /// Zajistí, že v daném seznamu bude alespoň jeden prvek, a že první prvek nebude prázdný.
@@ -641,7 +663,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
     /// <summary>
     /// Bázová třída pro data, účastní se zobrazování (obsahuje dostatečná data pro zobrazení)
     /// </summary>
-    public class BaseData
+    public class BaseData : IXmlPersistNotify, IChildOfParent<BaseData>
     {
         #region Základní společná data
         /// <summary>
@@ -709,12 +731,39 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         [PersistingEnabled(false)]
         protected InteractiveItem InteractiveItem { get; set; }
         /// <summary>
+        /// Parent objekt, hodnotu sem vkládá parent po deserializaci a při tvorbě interaktivních prvků.
+        /// </summary>
+        [PersistingEnabled(false)]
+        protected BaseData ParentData { get; set; }
+        BaseData IChildOfParent<BaseData>.Parent { get { return this.ParentData; } set { this.ParentData = value; } }
+        /// <summary>
         /// Zajistí znovuvykreslení interaktvního prvku
         /// </summary>
         public void RefreshInteractiveItem()
         {
             InteractiveItem?.Refresh();
         }
+        /// <summary>
+        /// Stav v procesu persistování (Load/Save)
+        /// </summary>
+        [PersistingEnabled(false)]
+        XmlPersistState IXmlPersistNotify.XmlPersistState 
+        {
+            get { return __XmlPersistState; }
+            set
+            {
+                var oldValue = __XmlPersistState;
+                var newValue = value;
+                if (oldValue != XmlPersistState.LoadDone && newValue == XmlPersistState.LoadDone) this.OnPersistDeserializeDone();
+                __XmlPersistState = newValue;
+            }
+        }
+        private XmlPersistState __XmlPersistState;
+        /// <summary>
+        /// Metoda je volána po ukončení procesu Deserializace = data byla načtena z nějakého Configu.
+        /// Potomek může reagovat = provést nějaké dopočty a finalizaci...
+        /// </summary>
+        protected virtual void OnPersistDeserializeDone() { }
         #endregion
         #region Podpora pro standardní WinForm editaci obsahu pomocí okna DialogForm a datového panelu DataControlPanel
         public virtual bool EditData(Point? startPoint = null)
