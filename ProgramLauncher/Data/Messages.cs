@@ -180,11 +180,21 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string AppContextMenuRemoveText { get { return _GetText("Odstranit"); } }
         public string AppContextMenuRemoveApplicationToolTip { get { return _GetText("Odstranit tuto aplikaci z nabídky"); } }
         public string AppContextMenuEditText { get { return _GetText("Upravit"); } }
+        public string AppContextMenuCopyText { get { return _GetText("Zkopírovat"); } }
         public string AppContextMenuEditApplicationToolTip { get { return _GetText("Otevře okno a umožní změnit popis, cílovou aplikaci a chování této položky"); } }
         public string AppContextMenuNewApplicationText { get { return _GetText("Nová aplikace"); } }
+        public string AppContextMenuCopyPageToolTip { get { return _GetText("Zkopírovat tuto stránku včetně celého obsahu"); } }
+        public string AppContextMenuCopyGroupToolTip { get { return _GetText("Zkopírovat tuto skupinu aplikací včetně celého obsahu"); } }
+        public string AppContextMenuCopyApplicationToolTip { get { return _GetText("Zkopírovat tuto aplikaci do nové ikony"); } }
         public string AppContextMenuNewApplicationToolTip { get { return _GetText("Přidá novou aplikaci: otevře okno a umožní změnit popis, cílovou aplikaci a chování této položky"); } }
         public string AppContextMenuNewGroupText { get { return _GetText("Nová skupina"); } }
         public string AppContextMenuNewGroupToolTip { get { return _GetText("Přidá novou skupinu aplikací, do ní pak bude možno přidávat aplikace"); } }
+
+        public string EditFormTitleNewPage { get { return _GetText("Nová stránka"); } }
+        public string EditFormTitleNewGroup { get { return _GetText("Nová skupina aplikací"); } }
+        public string EditFormTitleNewApplication { get { return _GetText("Nová aplikace"); } }
+        public string EditFormTitleClone { get { return _GetText("Kopie: %0"); } }
+
         public string TrayIconText { get { return _GetText("Program Launcher"); } }
         public string TrayIconBalloonToolTip { get { return _GetText("Ukončení aplikace"); } }
         public string TrayIconBalloonText { get { return _GetText("Aplikace je jen schovaná.××Pro reálné vypnutí ji zavřete křížkem spolu s klávesou CTRL!××Anebo použijte kontextové menu na této ikoně."); } }

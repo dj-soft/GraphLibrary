@@ -36,7 +36,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             this.__PanelContentAlignment = ControlSupport.StandardButtonPosition;
             this.__ButtonsSpacing = ControlSupport.StandardButtonSpacing;
             this.__ContentPadding = ControlSupport.StandardContentPadding;
-            this.__ParentClientSize = Size.Empty;
+            this.__LastParentContentBounds = Rectangle.Empty;
             this.__PanelBounds = Rectangle.Empty;
 
             this.BorderStyle = BorderStyle.None;
@@ -54,7 +54,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 this.__Parent.ClientSizeChanged -= __Parent_ClientSizeChanged;
 
             this.__Parent = this.Parent;
-            this.__ParentClientSize = Size.Empty;
+            this.__LastParentContentBounds = Rectangle.Empty;
 
             LayoutContent(true);
 
@@ -135,20 +135,18 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         private void _LayoutContent(bool force)
         {
-            var parent = this.__Parent;
-            if (parent is null) return;
+            var contentBounds = this.CurrentParentContentBounds;
+            if (!contentBounds.HasValue || !contentBounds.Value.HasContent()) return;
 
-            var parentSize = parent.ClientSize;
-            if (force || this.__ParentClientSize.IsEmpty || this.__ParentClientSize != parentSize)
-                _RunLayoutContent();
+            if (force || this.__LastParentContentBounds.IsEmpty || this.__LastParentContentBounds != contentBounds.Value)
+                _RunLayoutContent(contentBounds.Value);
         }
         /// <summary>
         /// Umístí this panel v rámci svého Parenta, a poté umístí svoje Buttony v rámci this panelu. 
         /// </summary>
-        private void _RunLayoutContent()
+        private void _RunLayoutContent(Rectangle contentBounds)
         {
-            var parentSize = this.__Parent.ClientSize;
-            this.__ParentClientSize = parentSize;
+            this.__LastParentContentBounds = contentBounds;
 
             var buttons = this.__DButtons;
             int buttonsCount = buttons?.Length ?? 0;
@@ -171,10 +169,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             int contentHeight = (isControlsVertical ? (buttonsCount * buttonSize.Height) + ((buttonsCount - 1) * spacing.Height) : buttonSize.Height);
 
             // Umístit celý panel: podle velikosti obsahu a zarovnání panelu v parentu:
-            var panelWidth = (isControlsVertical ? contentWidth + padding.Horizontal : parentSize.Width);
-            var panelHeight = (isControlsVertical ? parentSize.Height : contentHeight + padding.Vertical);
-            var panelLeft = (side == PanelContentAlignmentPart.RightSide ? parentSize.Width - panelWidth : 0);
-            var panelTop = (side == PanelContentAlignmentPart.BottomSide ? parentSize.Height - panelHeight : 0);
+            var panelWidth = (isControlsVertical ? contentWidth + padding.Horizontal : contentBounds.Width);
+            var panelHeight = (isControlsVertical ? contentBounds.Height : contentHeight + padding.Vertical);
+            var panelLeft = (side == PanelContentAlignmentPart.RightSide ? contentBounds.Right - panelWidth : contentBounds.Left);
+            var panelTop = (side == PanelContentAlignmentPart.BottomSide ? contentBounds.Bottom - panelHeight : contentBounds.Top);
             var panelBounds = new Rectangle(panelLeft, panelTop, panelWidth, panelHeight);
             this.Bounds = panelBounds;
 
@@ -185,9 +183,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                             (position == PanelContentAlignmentPart.CenterContent) ? 0.5m :
                             (position == PanelContentAlignmentPart.EndContent) ? 1.0m : 0.5m;
 
-            int distance = (int)(Math.Round((ratio * (decimal)(isControlsVertical ? (parentSize.Height - padding.Vertical - contentHeight) : (parentSize.Width - padding.Horizontal - contentWidth))), 0));
-            int buttonLeft = isControlsVertical ? padding.Left : padding.Left + distance;
-            int buttonTop = isControlsVertical ? padding.Top + distance : padding.Top;
+            int distance = (int)(Math.Round((ratio * (decimal)(isControlsVertical ? (contentBounds.Height - padding.Vertical - contentHeight) : (contentBounds.Width - padding.Horizontal - contentWidth))), 0));
+            int buttonLeft = contentBounds.Left + (isControlsVertical ? padding.Left : padding.Left + distance);
+            int buttonTop = contentBounds.Top + (isControlsVertical ? padding.Top + distance : padding.Top);
             foreach (var control in buttons)
             {
                 control.Bounds = new Rectangle(buttonLeft, buttonTop, buttonSize.Width, buttonSize.Height);
@@ -206,6 +204,21 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             if (isBoundsChanged) this.RunPanelBoundsChanged();
         }
         /// <summary>
+        /// Souřadnice prostoru pro klientský obsah v rámci Parenta. Pokud je null, není znám Parent.
+        /// Pokud Parent implementuje <see cref="IContentBounds"/>, pak je zde <see cref="IContentBounds.ContentBounds"/>,
+        /// jinak je zde <see cref="Control.ClientRectangle"/>.
+        /// </summary>
+        private Rectangle? CurrentParentContentBounds
+        {
+            get
+            {
+                var parent = this.__Parent;
+                if (parent is null) return null;
+                if (parent is IContentBounds iContentBounds) return iContentBounds.ContentBounds;
+                return parent.ClientRectangle;
+            }
+        }
+        /// <summary>
         /// Vyvolá metodu <see cref="OnPanelBoundsChanged(EventArgs)"/> a event <see cref="PanelBoundsChanged"/>
         /// </summary>
         protected void RunPanelBoundsChanged()
@@ -218,12 +231,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Metoda volaná po změně souřadnic panelu v rámci Parenta
         /// </summary>
         /// <param name="args"></param>
-        protected virtual void OnPanelBoundsChanged(EventArgs args)
-        { }
+        protected virtual void OnPanelBoundsChanged(EventArgs args) { }
         /// <summary>
         /// Naposledy akceptovaná velikost Parenta
         /// </summary>
-        private Size __ParentClientSize;
+        private Rectangle __LastParentContentBounds;
         /// <summary>
         /// Naposledy použité souřadnice panelu
         /// </summary>
@@ -1071,6 +1083,84 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #endregion
     }
     #endregion
+    #region DSplitContainer
+    /// <summary>
+    /// DSplitContainer
+    /// </summary>
+    public class DSplitContainer : SplitContainer
+    {
+        #region Konstruktor a IControlExtended
+        public DSplitContainer()
+        {
+            Dock = DockStyle.Fill;
+            FixedPanel = FixedPanel.Panel1;
+        }
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
+        #endregion
+    }
+    #endregion
+    #region DToolStrip
+    /// <summary>
+    /// DToolStrip
+    /// </summary>
+    public class DToolStrip : ToolStrip
+    {
+        #region Konstruktor a IControlExtended
+        public DToolStrip()
+        {
+            Dock = DockStyle.Top;
+            BackColor = SystemColors.AppWorkspace;
+            GripStyle = ToolStripGripStyle.Hidden;
+            ImageScalingSize = new Size(48, 48);
+            RenderMode = ToolStripRenderMode.System;
+            Size = new Size(800, 55);
+        }
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
+        #endregion
+    }
+    #endregion
+    #region DStatusStrip
+    /// <summary>
+    /// DStatusStrip
+    /// </summary>
+    public class DStatusStrip : StatusStrip
+    {
+        #region Konstruktor a IControlExtended
+        public DStatusStrip()
+        {
+            Dock = DockStyle.Bottom;
+            BackColor = SystemColors.AppWorkspace;
+            ImageScalingSize = new Size(24, 24);
+            Size = new Size(800, 22);
+        }
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
+        #endregion
+    }
+    #endregion
     #endregion
     #region Interface a delegates
     public interface IControlExtended
@@ -1084,6 +1174,13 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         bool VisibleInternal { get; set; }
+    }
+    public interface IContentBounds
+    {
+        /// <summary>
+        /// Obsahuje souřadnice, do kterých smí být umístěn obsah.
+        /// </summary>
+        Rectangle ContentBounds { get; }
     }
     /// <summary>
     /// Událost, která přináší výsledek dialogu

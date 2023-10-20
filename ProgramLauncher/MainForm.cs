@@ -16,11 +16,10 @@ namespace DjSoft.Tools.ProgramLauncher
 {
     public partial class MainForm : BaseForm
     {
+        #region Konstruktor a život okna
         public MainForm()
         {
-            InitializeComponent();
             InitializeMainForm();
-            Tests();
             InitializeToolBar();
             InitializePagesPanel();
             InitializeApplicationPanel();
@@ -29,11 +28,50 @@ namespace DjSoft.Tools.ProgramLauncher
 
             ReloadPages();
         }
-        private void Tests() { }
-        #region Okno
         private void InitializeMainForm()
         {
-            
+            App.UndoRedo.Add("A");
+            App.UndoRedo.Add("B");
+            App.UndoRedo.Add("C");
+            App.UndoRedo.Add("D");
+
+            var ud = App.UndoRedo.Undo();
+            var uc = App.UndoRedo.Undo();
+            App.UndoRedo.Add("E");
+            App.UndoRedo.Add("F");
+            var uf = App.UndoRedo.Undo();
+            var ue = App.UndoRedo.Undo();
+            var ub = App.UndoRedo.Undo();
+            var re = App.UndoRedo.Redo();
+            var rf = App.UndoRedo.Redo();
+            var qe = App.UndoRedo.Undo();
+
+            int tabIndex = 0;
+            this._MainContainer = new DSplitContainer() { IsSplitterFixed = true, SplitterDistance = 150, SplitterWidth = 1, TabIndex = ++tabIndex };
+            this._ToolStrip = new DToolStrip() { TabIndex = ++tabIndex };
+            this._StatusStrip = new DStatusStrip() { TabIndex = ++tabIndex };
+
+            ((System.ComponentModel.ISupportInitialize)(this._MainContainer)).BeginInit();
+            this._MainContainer.SuspendLayout();
+            this._ToolStrip.SuspendLayout();
+            this._StatusStrip.SuspendLayout();
+            this.SuspendLayout();
+
+            this.AutoScaleDimensions = new SizeF(6F, 13F);
+            this.AutoScaleMode = AutoScaleMode.Font;
+            this.Controls.Add(this._MainContainer);
+            this.Controls.Add(this._StatusStrip);
+            this.Controls.Add(this._ToolStrip);
+            this.Name = "MainForm";
+
+            ((System.ComponentModel.ISupportInitialize)(this._MainContainer)).EndInit();
+            this._MainContainer.ResumeLayout(false);
+            this._ToolStrip.ResumeLayout(false);
+            this._ToolStrip.PerformLayout();
+            this._StatusStrip.ResumeLayout(false);
+            this._StatusStrip.PerformLayout();
+            this.ResumeLayout(false);
+            this.PerformLayout();
         }
         protected override void WndProc(ref Message m)
         {
@@ -79,6 +117,25 @@ namespace DjSoft.Tools.ProgramLauncher
             //else
             //    this.Visible = false;
         }
+        private DSplitContainer _MainContainer;
+        private DToolStrip _ToolStrip;
+        private DStatusStrip _StatusStrip;
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
         #endregion
         #region Appearance
         /// <summary>
@@ -116,6 +173,9 @@ namespace DjSoft.Tools.ProgramLauncher
             this._StatusVersionLabel.ForeColor = textColor;
             this._StatusDataLabel.ForeColor = textColor;
             this._StatusCurrentItemLabel.ForeColor = textColor;
+
+            this.RefreshPagesPanel();
+            this.RefreshApplicationsPanel();
         }
         /// <summary>
         /// 
@@ -240,6 +300,10 @@ namespace DjSoft.Tools.ProgramLauncher
             __PagesPanel.InteractiveItemClick += _PageItemClick;
             this._MainContainer.Panel1.Controls.Add(__PagesPanel);
         }
+        private void RefreshPagesPanel()
+        {
+            
+        }
         /// <summary>
         /// Znovu načte stránky z datového objektu do záložek v levé části.
         /// Součástí je i reload aplikací z aktivní stránky.
@@ -284,7 +348,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             if (e.MouseState.Buttons == MouseButtons.Right)
             {
-                this._PageSet.RunContextMenu(e.MouseState, this._PageSet, null);
+                this._PageSet.ShowContextMenu(e.MouseState, this.__PagesPanel, this._PageSet, null);
             }
         }
         /// <summary>
@@ -302,7 +366,7 @@ namespace DjSoft.Tools.ProgramLauncher
             }
             else if (e.MouseState.Buttons == MouseButtons.Right)
             {   // Pravá myš: neaktivuje vybranou stránku, ale otevře pro ní menu:
-                this._PageSet.RunContextMenu(e.MouseState, this._PageSet, pageData);
+                this._PageSet.ShowContextMenu(e.MouseState, this.__PagesPanel, this._PageSet, pageData);
             }
         }
         /// <summary>
@@ -333,6 +397,10 @@ namespace DjSoft.Tools.ProgramLauncher
             __ApplicationsPanel.InteractiveItemMouseEnter += _ApplicationItemMouseEnter;
             __ApplicationsPanel.InteractiveItemMouseLeave += _ApplicationItemMouseLeave;
             this._MainContainer.Panel2.Controls.Add(__ApplicationsPanel);
+        }
+        private void RefreshApplicationsPanel()
+        {
+
         }
         /// <summary>
         /// Načte aplikace z aktivní stránky a vepíše je do panelu s nabídkou aplikací
@@ -378,7 +446,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             if (e.MouseState.Buttons == MouseButtons.Right)
             {
-                this._PageSet.RunContextMenu(e.MouseState, this._ActivePageData, null);
+                this._PageSet.ShowContextMenu(e.MouseState, this.__ApplicationsPanel, this._ActivePageData, null);
             }
         }
         /// <summary>
@@ -397,7 +465,7 @@ namespace DjSoft.Tools.ProgramLauncher
             else if (e.MouseState.Buttons == MouseButtons.Right)
             {
                 var dataInfo = e.Item.UserData as Data.BaseData;
-                this._PageSet.RunContextMenu(e.MouseState, this._ActivePageData, dataInfo);
+                this._PageSet.ShowContextMenu(e.MouseState, this.__ApplicationsPanel, this._ActivePageData, dataInfo);
             }
         }
         /// <summary>
@@ -471,10 +539,8 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private void RefreshStatusBarLabelData()
         {
-            int pagesCount = _PageSet.PagesCount;
-            int applicationsCount = _PageSet.ApplicationsCount;
-            string pageText = App.GetCountText(pagesCount, App.Messages.StatusStripPageCountText);
-            string appText = App.GetCountText(applicationsCount, App.Messages.StatusStripApplicationText);
+            string pageText = App.GetCountText(_PageSet.PagesCount, App.Messages.StatusStripPageCountText);
+            string appText = App.GetCountText(_PageSet.ApplicationsCount, App.Messages.StatusStripApplicationText);
             this.StatusLabelData.Text = $"{pageText}; {appText}";
         }
         /// <summary>
@@ -513,7 +579,6 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Data ve Statusbaru pro údaje Aplikace
         /// </summary>
         public StatusInfo StatusLabelApplication { get { return __StatusLabelApplication; } } private StatusInfo __StatusLabelApplication;
-
         /// <summary>
         /// Status bar item - první text, popisuje this program
         /// </summary>

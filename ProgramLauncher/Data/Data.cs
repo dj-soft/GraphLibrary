@@ -13,6 +13,7 @@ using System.Management;
 using System.Drawing.Text;
 using static System.Net.Mime.MediaTypeNames;
 using System.Security.Policy;
+using System.Runtime.CompilerServices;
 
 namespace DjSoft.Tools.ProgramLauncher.Data
 {
@@ -29,6 +30,30 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public PageSetData()
         {
             __Pages = new ChildItems<PageSetData, PageData>(this);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí klon this instance z pohledu uživatelských dat.
+        /// Z hlediska dočasných dat uložených navíc je to new instance.
+        /// </summary>
+        /// <returns></returns>
+        public PageSetData Clone()
+        {
+            PageSetData clone = new PageSetData();
+            this.FillClone(clone);
+            return clone;
+        }
+        /// <summary>
+        /// Do dodaného objektu <paramref name="clone"/> opíše svoje hodnoty, které jsou permanentní.
+        /// </summary>
+        /// <param name="clone"></param>
+        protected override void FillClone(BaseData clone)
+        {
+            base.FillClone(clone);
+            if (clone is PageSetData pageSetData)
+            {
+                pageSetData.__Pages.Clear();
+                pageSetData.__Pages.AddRange(this.Pages.Select(p => p.Clone()));
+            }
         }
         /// <summary>
         /// Sada stránek v tomto setu
@@ -96,30 +121,33 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         [PropertyName("Pages")]
         private PageData[] _Pages { get; set; }
         #endregion
-        #region Kontextové menu
+        #region Kontextové menu - tvorba, aktivace, zpracování akce z položky
         /// <summary>
         /// Nabídne kontextové menu pro danou oblast a daný prvek v této oblasti.
         /// </summary>
         /// <param name="mouseState"></param>
         /// <param name="areaData">Zde je předán buď celý <see cref="PageSetData"/> pro kontextové menu typu Stránky, anebo jedna konkrétní stránka <see cref="PageData"/> pokud je menu aktivní pro ni</param>
         /// <param name="itemData">Prvek, na který bylo klimnuto, nebo null = do prostoru mimo prvky</param>
-        public void RunContextMenu(MouseState mouseState, BaseData areaData, BaseData itemData)
+        public void ShowContextMenu(MouseState mouseState, InteractiveGraphicsControl panel, BaseData areaData, BaseData itemData)
         {
             // Sestavím kontextové menu podle situace:
             var menuItems = new List<IMenuItem>();
+
+            ContextActionInfo actionInfo = new ContextActionInfo(mouseState, panel, this, areaData, itemData);
 
             if (areaData is PageSetData pageSetData)
             {   // Kliknutí na seznamu stránek
                 if (itemData is PageData pageItem)
                 {   // Na konkrétní stránce:
                     menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.Format(App.Messages.AppContextMenuTitlePage, pageItem.Title) });
-                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuUserData(DataItemActionType.EditPage, mouseState, this, areaData, itemData) });
-                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuUserData(DataItemActionType.DeletePage, mouseState, this, areaData, itemData) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuItemInfo(DataItemActionType.EditPage, actionInfo) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuCopyText, ToolTip = App.Messages.AppContextMenuCopyPageToolTip, Image = Properties.Resources.edit_copy_4_22, UserData = new ContextMenuItemInfo(DataItemActionType.CopyPage, actionInfo) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuItemInfo(DataItemActionType.DeletePage, actionInfo) });
                 }
                 else
                 {   // Mimo konkrétní stránku:
                     menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.AppContextMenuTitlePages });
-                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewPageText, ToolTip = App.Messages.AppContextMenuNewPageToolTip, Image = Properties.Resources.document_new_3_22, UserData = new ContextMenuUserData(DataItemActionType.NewPage, mouseState, this, areaData, itemData) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewPageText, ToolTip = App.Messages.AppContextMenuNewPageToolTip, Image = Properties.Resources.document_new_3_22, UserData = new ContextMenuItemInfo(DataItemActionType.NewPage, actionInfo) });
                 }
             }
 
@@ -128,24 +156,27 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 if (itemData is GroupData groupData)
                 {   // Na titulku grupy:
                     menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.Format(App.Messages.AppContextMenuTitleGroup, groupData.Title) });
-                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuUserData(DataItemActionType.EditGroup, mouseState, this, areaData, itemData) });
-                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuUserData(DataItemActionType.DeleteGroup, mouseState, this, areaData, itemData) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuItemInfo(DataItemActionType.EditGroup, actionInfo) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuCopyText, ToolTip = App.Messages.AppContextMenuCopyGroupToolTip, Image = Properties.Resources.edit_copy_4_22, UserData = new ContextMenuItemInfo(DataItemActionType.CopyGroup, actionInfo) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuItemInfo(DataItemActionType.DeleteGroup, actionInfo) });
                 }
                 else if (itemData is ApplicationData applicationData)
                 {   // Na konkrétní aplikaci:
                     menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.Format(App.Messages.AppContextMenuTitleApplication, applicationData.Title) });
-                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunText, ToolTip = App.Messages.AppContextMenuRunToolTip, Image = Properties.Resources.media_playback_start_3_22, UserData = new ContextMenuUserData(DataItemActionType.RunApplication, mouseState, this, areaData, itemData) });
-                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunAsText, ToolTip = App.Messages.AppContextMenuRunAsToolTip, Image = Properties.Resources.media_seek_forward_3_22, UserData = new ContextMenuUserData(DataItemActionType.RunApplicationAsAdmin, mouseState, this, areaData, itemData) });
-                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuUserData(DataItemActionType.EditApplication, mouseState, this, areaData, itemData) });
-                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuUserData(DataItemActionType.DeleteApplication, mouseState, this, areaData, itemData) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunText, ToolTip = App.Messages.AppContextMenuRunToolTip, Image = Properties.Resources.media_playback_start_3_22, UserData = new ContextMenuItemInfo(DataItemActionType.RunApplication, actionInfo) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunAsText, ToolTip = App.Messages.AppContextMenuRunAsToolTip, Image = Properties.Resources.media_seek_forward_3_22, UserData = new ContextMenuItemInfo(DataItemActionType.RunApplicationAsAdmin, actionInfo) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuItemInfo(DataItemActionType.EditApplication, actionInfo) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuCopyText, ToolTip = App.Messages.AppContextMenuCopyApplicationToolTip, Image = Properties.Resources.edit_copy_4_22, UserData = new ContextMenuItemInfo(DataItemActionType.CopyApplication, actionInfo) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuItemInfo(DataItemActionType.DeleteApplication, actionInfo) });
                 }
                 else
                 {   // Ve volné ploše:
                     menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.AppContextMenuTitleApplications });
-                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewApplicationText, ToolTip = App.Messages.AppContextMenuNewApplicationToolTip, Image = Properties.Resources.archive_insert_3_22, UserData = new ContextMenuUserData(DataItemActionType.NewApplication, mouseState, this, areaData, itemData) });
-                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewGroupText, ToolTip = App.Messages.AppContextMenuNewGroupToolTip, Image = Properties.Resources.insert_horizontal_rule_22, UserData = new ContextMenuUserData(DataItemActionType.NewGroup, mouseState, this, areaData, itemData) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewApplicationText, ToolTip = App.Messages.AppContextMenuNewApplicationToolTip, Image = Properties.Resources.archive_insert_3_22, UserData = new ContextMenuItemInfo(DataItemActionType.NewApplication, actionInfo) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewGroupText, ToolTip = App.Messages.AppContextMenuNewGroupToolTip, Image = Properties.Resources.insert_horizontal_rule_22, UserData = new ContextMenuItemInfo(DataItemActionType.NewGroup, actionInfo) });
                 }
             }
+
             App.SelectFromMenu(menuItems, _RunContextMenuAction, mouseState.LocationAbsolute);
         }
         /// <summary>
@@ -154,88 +185,109 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <param name="menuItem"></param>
         private static void _RunContextMenuAction(IMenuItem menuItem)
         {
-            if (menuItem.UserData is ContextMenuUserData contextData)
-            {
-                switch (contextData.Action)
-                {
-                    case DataItemActionType.NewPage:
-                        break;
-                    case DataItemActionType.MovePage:
-                        break;
-                    case DataItemActionType.EditPage:
-                        break;
-                    case DataItemActionType.CopyPage: 
-                        break;
-                    case DataItemActionType.DeletePage:
-                        break;
-                    case DataItemActionType.NewGroup: 
-                        break;
-                    case DataItemActionType.MoveGroup:
-                        break;
-                    case DataItemActionType.EditGroup:
-                        break;
-                    case DataItemActionType.CopyGroup: 
-                        break;
-                    case DataItemActionType.DeleteGroup: 
-                        break;
-                    case DataItemActionType.NewApplication:
-                        break;
-                    case DataItemActionType.MoveApplication: 
-                        break;
-                    case DataItemActionType.EditApplication:
-                        (contextData.ItemData as ApplicationData).EditData(contextData.MouseState.LocationAbsolute);
-                        break;
-                    case DataItemActionType.CopyApplication: 
-                        break;
-                    case DataItemActionType.DeleteApplication: 
-                        break;
-                    case DataItemActionType.RunApplication:
-                        (contextData.ItemData as ApplicationData).RunNewProcess(false);
-                        break;
-                    case DataItemActionType.RunApplicationAsAdmin:
-                        (contextData.ItemData as ApplicationData).RunNewProcess(true);
-                        break;
-                }
-            }
+            if (menuItem.UserData is ContextMenuItemInfo itemInfo)
+                RunContextMenuAction(itemInfo.ActionType, itemInfo.ActionInfo);
         }
         /// <summary>
-        /// Balíček s daty pro akce kontextového menu
+        /// Balíček s daty pro akce konkrétní položky kontextového menu
         /// </summary>
-        private class ContextMenuUserData
+        private class ContextMenuItemInfo
         {
-            /// <summary>
-            /// Konstruktor
-            /// </summary>
-            /// <param name="action"></param>
-            /// <param name="data"></param>
-            public ContextMenuUserData(DataItemActionType action, MouseState mouseState, PageSetData pageSetData, BaseData areaData, BaseData itemData)
+            public ContextMenuItemInfo(DataItemActionType actionType, ContextActionInfo actionInfo)
             {
-                Action = action;
-                MouseState = mouseState;
-                PageSetData = pageSetData;
-                AreaData = areaData;
-                ItemData = itemData;
+                this.ActionType = actionType;
+                this.ActionInfo = actionInfo;
             }
             /// <summary>
             /// Druh akce
             /// </summary>
-            public DataItemActionType Action { get; private set; }
+            public DataItemActionType ActionType { get; private set; }
             /// <summary>
-            /// Stav myši. Obsahuje i prvek, nad kterým se akce děje, i buňku mapy.
+            /// Kompletní data o prvku a controlu
             /// </summary>
-            public MouseState MouseState { get; private set; }
-            /// <summary>
-            /// Set stránek, kompletní instance
-            /// </summary>
-            public PageSetData PageSetData { get; private set; }
-            /// <summary>
-            /// Prvek reprezentující prostor, v němž se akce provádí (jeho Child prvky se mění)
-            /// </summary>
-            public BaseData AreaData { get; private set; }
-            /// <summary>
-            /// Prvek reprezentující konkrétní prvek, jehož se akce týká. Může být null.
-            /// </summary>
-            public BaseData ItemData { get; private set; }
+            public ContextActionInfo ActionInfo { get; private set; }
+        }
+        /// <summary>
+        /// Provede vybranou akci z kontextového menu
+        /// </summary>
+        /// <param name="menuItem"></param>
+        public static void RunContextMenuAction(DataItemActionType actionType, ContextActionInfo actionInfo)
+        {
+            switch (actionType)
+            {
+                case DataItemActionType.MovePage:
+                    break;
+                case DataItemActionType.NewPage:
+                case DataItemActionType.EditPage:
+                case DataItemActionType.CopyPage:
+                case DataItemActionType.DeletePage:
+                    PageSetData.RunEditAction(actionType, actionInfo);
+                    break;
+                case DataItemActionType.MoveGroup:
+                    break;
+                case DataItemActionType.NewGroup:
+                case DataItemActionType.EditGroup:
+                case DataItemActionType.CopyGroup:
+                case DataItemActionType.DeleteGroup:
+                    PageData.RunEditAction(actionType, actionInfo);
+                    break;
+                case DataItemActionType.MoveApplication:
+                    break;
+                case DataItemActionType.NewApplication:
+                case DataItemActionType.EditApplication:
+                case DataItemActionType.CopyApplication:
+                case DataItemActionType.DeleteApplication:
+                    GroupData.RunEditAction(actionType, actionInfo);
+                    break;
+                case DataItemActionType.RunApplication:
+                case DataItemActionType.RunApplicationAsAdmin:
+                    ApplicationData.RunEditAction(actionType, actionInfo);
+                    break;
+            }
+        }
+        #endregion
+        #region Provedení editační akce pro některý z mých Child prvků
+        /// <summary>
+        /// Provede vybranou akci pro svoje stránky
+        /// </summary>
+        /// <param name="menuItem"></param>
+        public static void RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
+        {
+            var pageData = (actionInfo.ItemData as PageData);
+            bool hasPageData = pageData != null;
+            bool isAppend = false;
+            bool isUpdated = false;
+            switch (actionType)
+            {
+                case DataItemActionType.NewPage:
+                    pageData = new PageData();
+                    isAppend = pageData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.EditFormTitleNewPage);
+                    break;
+                case DataItemActionType.EditPage:
+                    if (hasPageData)
+                        isUpdated = pageData.EditData(actionInfo.MouseState.LocationAbsolute);
+                    break;
+                case DataItemActionType.CopyPage:
+                    pageData = pageData.Clone();
+                    isAppend = pageData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleClone, pageData.Title));
+                    break;
+                case DataItemActionType.DeletePage:
+
+                    break;
+            }
+
+            var pageSetData = actionInfo.PageSetData;
+            if (isAppend)
+            {
+                int y = (pageSetData.Pages.Count == 0 ? 0 : pageSetData.Pages.Max(p => p.Adress.Y) + 1);
+                pageData.Adress = new Point(0, y);
+                pageSetData.Pages.Add(pageData);
+                isUpdated = true;
+            }
+            if (isUpdated)
+            {
+                App.Settings.SetChanged();
+            }
         }
         #endregion
         #region Tvorba výchozích dat - namísto prázdných
@@ -321,6 +373,30 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             __Groups = new ChildItems<PageData, GroupData>(this);
         }
         /// <summary>
+        /// Vytvoří a vrátí klon this instance z pohledu uživatelských dat.
+        /// Z hlediska dočasných dat uložených navíc je to new instance.
+        /// </summary>
+        /// <returns></returns>
+        public PageData Clone()
+        {
+            PageData clone = new PageData();
+            this.FillClone(clone);
+            return clone;
+        }
+        /// <summary>
+        /// Do dodaného objektu <paramref name="clone"/> opíše svoje hodnoty, které jsou permanentní.
+        /// </summary>
+        /// <param name="clone"></param>
+        protected override void FillClone(BaseData clone)
+        {
+            base.FillClone(clone);
+            if (clone is PageData pageData)
+            {
+                pageData.__Groups.Clear();
+                pageData.__Groups.AddRange(this.Groups.Select(g => g.Clone()));
+            }
+        }
+        /// <summary>
         /// Sada skupin v této stránce
         /// </summary>
         [PersistingEnabled(false)]
@@ -378,6 +454,56 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             return interactiveItems;
         }
         #endregion
+        #region Provedení editační akce pro některý z mých Child prvků
+        /// <summary>
+        /// Provede vybranou akci pro svoje grupy
+        /// </summary>
+        /// <param name="menuItem"></param>
+        public static void RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
+        {
+            var pageData = actionInfo.AreaData as PageData;
+            bool hasPageData = pageData != null;
+            if (!hasPageData) return;
+
+            PageSetData pageSetClone = actionInfo.PageSetData.Clone();
+
+            var groupData = (actionInfo.ItemData as GroupData);
+            bool hasGroupData = groupData != null;
+            bool isAppend = false;
+            bool isUpdated = false;
+            switch (actionType)
+            {
+                case DataItemActionType.NewGroup:
+                    groupData = new GroupData();
+                    isAppend = groupData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.EditFormTitleNewGroup);
+                    break;
+                case DataItemActionType.EditGroup:
+                    if (hasGroupData)
+                        isUpdated = groupData.EditData(actionInfo.MouseState.LocationAbsolute);
+                    break;
+                case DataItemActionType.CopyGroup:
+                    groupData = groupData.Clone();
+                    isAppend = groupData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleClone, groupData.Title));
+                    break;
+                case DataItemActionType.DeleteGroup:
+                    isUpdated = pageData.Groups.Remove(groupData);
+                    break;
+            }
+
+            if (isAppend)
+            {
+                int y = 0;
+                groupData.Adress = new Point(0, y);
+                pageData.Groups.Add(groupData);
+                isUpdated = true;
+            }
+            if (isUpdated)
+            {
+                App.Settings.SetChanged();
+                App.UndoRedo.Add(pageSetClone);
+            }
+        }
+        #endregion
         #region Podpora de/serializace
         /// <summary>
         /// Metoda je volána před zahájením procesu Serializace = data budou uložena do nějakého Configu.
@@ -429,6 +555,30 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             __Applications = new ChildItems<GroupData, ApplicationData>(this);
         }
         /// <summary>
+        /// Vytvoří a vrátí klon this instance z pohledu uživatelských dat.
+        /// Z hlediska dočasných dat uložených navíc je to new instance.
+        /// </summary>
+        /// <returns></returns>
+        public GroupData Clone()
+        {
+            GroupData clone = new GroupData();
+            this.FillClone(clone);
+            return clone;
+        }
+        /// <summary>
+        /// Do dodaného objektu <paramref name="clone"/> opíše svoje hodnoty, které jsou permanentní.
+        /// </summary>
+        /// <param name="clone"></param>
+        protected override void FillClone(BaseData clone)
+        {
+            base.FillClone(clone);
+            if (clone is GroupData groupData)
+            {
+                groupData.__Applications.Clear();
+                groupData.__Applications.AddRange(this.Applications.Select(a => a.Clone()));
+            }
+        }
+        /// <summary>
         /// Seznam aplikací v této grupě
         /// </summary>
         [PersistingEnabled(false)]
@@ -453,6 +603,35 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Můj parent
         /// </summary>
         PageData IChildOfParent<PageData>.Parent { get { return __Parent; } set { __Parent = value; } } private PageData __Parent;
+        #endregion
+        #region Provedení editační akce pro některý z mých Child prvků
+        /// <summary>
+        /// Provede vybranou akci pro svoje stránky
+        /// </summary>
+        /// <param name="menuItem"></param>
+        public static void RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
+        {
+            var applicationData = (actionInfo.ItemData as ApplicationData);
+            bool hasApplicationData = applicationData != null;
+            bool isUpdated = false;
+            switch (actionType)
+            {
+                case DataItemActionType.NewApplication:
+                    applicationData = new ApplicationData();
+                    isUpdated = applicationData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.EditFormTitleNewApplication);
+                    break;
+                case DataItemActionType.EditApplication:
+                    if (hasApplicationData)
+                        isUpdated = applicationData.EditData(actionInfo.MouseState.LocationAbsolute);
+                    break;
+                case DataItemActionType.CopyApplication:
+                    applicationData = applicationData.Clone();
+                    isUpdated = applicationData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleClone, applicationData.Title));
+                    break;
+                case DataItemActionType.DeleteApplication:
+                    break;
+            }
+        }
         #endregion
         #region Podpora de/serializace
         /// <summary>
@@ -503,6 +682,34 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public ApplicationData()
         { }
         /// <summary>
+        /// Vytvoří a vrátí klon this instance z pohledu uživatelských dat.
+        /// Z hlediska dočasných dat uložených navíc je to new instance.
+        /// </summary>
+        /// <returns></returns>
+        public ApplicationData Clone()
+        {
+            ApplicationData clone = new ApplicationData();
+            this.FillClone(clone);
+            return clone;
+        }
+        /// <summary>
+        /// Do dodaného objektu <paramref name="clone"/> opíše svoje hodnoty, které jsou permanentní.
+        /// </summary>
+        /// <param name="clone"></param>
+        protected override void FillClone(BaseData clone)
+        {
+            base.FillClone(clone);
+            if (clone is  ApplicationData applicationData)
+            {
+                applicationData.ExecutableFileName = this.ExecutableFileName;
+                applicationData.ExecutableWorkingDirectory = this.ExecutableWorkingDirectory;
+                applicationData.ExecutableArguments = this.ExecutableArguments;
+                applicationData.ExecuteInAdminMode = this.ExecuteInAdminMode;
+                applicationData.OpenMaximized = this.OpenMaximized;
+                applicationData.OnlyOneInstance = this.OnlyOneInstance;
+            }
+        }
+        /// <summary>
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
@@ -547,6 +754,28 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public bool OpenMaximized { get; set; }
         [PropertyName("OneInstance")]
         public bool OnlyOneInstance { get; set; }
+        #endregion
+        #region Provedení editační akce pro některý z mých Child prvků
+        /// <summary>
+        /// Provede vybranou akci pro svoje stránky
+        /// </summary>
+        /// <param name="menuItem"></param>
+        public static void RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
+        {
+            var applicationData = (actionInfo.ItemData as ApplicationData);
+            bool hasApplicationData = applicationData != null;
+            switch (actionType)
+            {
+                case DataItemActionType.RunApplication:
+                    if (hasApplicationData)
+                        applicationData.RunNewProcess(false);
+                    break;
+                case DataItemActionType.RunApplicationAsAdmin:
+                    if (hasApplicationData)
+                        applicationData.RunNewProcess(true);
+                    break;
+            }
+        }
         #endregion
         #region Spouštění aplikace
         /// <summary>
@@ -630,7 +859,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     result = true;
                 }
             }
-            catch (Exception exc)
+            catch (Exception)
             { }
             return result;
         }
@@ -819,18 +1048,20 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public virtual Point RelativeAdress { get; set; }
         /// <summary>
+        /// Barva pozadí, smí obsahovat Alpha kanál, smí být null
+        /// </summary>
+        public virtual Color? BackColor { get; set; }
+        /// <summary>
         /// Posun adresy prvku <see cref="RelativeAdress"/> vůči počátku prostoru. 
         /// Typicky se plní jen do aplikace a do grupy, řeší postupný posun souřadnice Y.
         /// </summary>
+        [PersistingEnabled(false)]
         public virtual Point? OffsetAdress { get; set; }
         /// <summary>
         /// Absolutní pozice prvku, určená z <see cref="RelativeAdress"/> + <see cref="OffsetAdress"/>.
         /// </summary>
+        [PersistingEnabled(false)]
         public virtual Point Adress { get { return RelativeAdress.GetShiftedPoint(OffsetAdress); } set { RelativeAdress = value.GetShiftedPoint(OffsetAdress, true); } }
-        /// <summary>
-        /// Barva pozadí, smí obsahovat Alpha kanál, smí být null
-        /// </summary>
-        public virtual Color? BackColor { get; set; }
         /// <summary>
         /// Vizualizace
         /// </summary>
@@ -838,6 +1069,20 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public override string ToString()
         {
             return $"{this.GetType().Name}: '{Title}'";
+        }
+        /// <summary>
+        /// Do dodaného objektu <paramref name="clone"/> opíše svoje hodnoty, které jsou permanentní.
+        /// </summary>
+        /// <param name="clone"></param>
+        protected virtual void FillClone(BaseData clone)
+        {
+            clone.Title = this.Title;
+            clone.Description = this.Description;
+            clone.ToolTip = this.ToolTip;
+            clone.ImageFileName = this.ImageFileName;
+            clone.LayoutKind = this.LayoutKind;
+            clone.RelativeAdress = this.RelativeAdress;
+            clone.BackColor = this.BackColor;
         }
         #endregion
         #region Podpora pro interaktivní kreslení a práci - tvorba instance třídy InteractiveItem
@@ -916,14 +1161,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Po ukončení editace v okně refreshuje odpovídající panel a vrátí true pokud editace má být uložena.
         /// </summary>
         /// <param name="startPoint"></param>
+        /// <param name="formTitle"></param>
         /// <returns></returns>
-        public virtual bool EditData(Point? startPoint = null)
+        public virtual bool EditData(Point? startPoint = null, string formTitle = null)
         {
             bool result = false;
             using (var form = new DialogForm())
             {
                 form.DataControl = this.CreateEditPanel();
-                form.Text = this.Title;
+                form.Text = formTitle ?? this.Title;
                 form.StartPosition = FormStartPosition.Manual;
                 form.Location = startPoint ?? Control.MousePosition;
                 form.ShowDialog(App.MainForm);
@@ -939,11 +1185,67 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         protected virtual DataControlPanel CreateEditPanel()
         {
             var panel = new DataControlPanel();
-            panel.CancelButtonType = DialogButtonType.Ok;
-            panel.Buttons = new DialogButtonType[] { DialogButtonType.Ok };
+            int x1 = 0;
+            int x2 = 230;
+            int y0 = 20;
+            int s1 = 22;
+            int s2 = 38;
+            int w1 = 220;
+            int w2 = 320;
+            int w3 = 550;
+
+            int y = y0;
+            panel.AddCell(ControlType.TextBox, "Titulek", nameof(Title), x1, y, w1); y += s2;
+            panel.AddCell(ControlType.TextBox, "Popisek", nameof(Description), x1, y, w1); y += s2;
+            panel.AddCell(ControlType.MemoBox, "Nápověda", nameof(ToolTip), x2, y0, w2, 58);
+            panel.AddCell(ControlType.FileBox, "Obrázek", nameof(ImageFileName), x1, y, w3); y += s1;
+
+            panel.Buttons = new DialogButtonType[] { DialogButtonType.Ok, DialogButtonType.Cancel };
+            panel.BackColor = Color.AntiqueWhite;
+
+            panel.DataObject = this;
             return panel;
         }
         #endregion
+    }
+    /// <summary>
+    /// Balíček s daty pro akce kontextového menu
+    /// </summary>
+    public class ContextActionInfo
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="data"></param>
+        public ContextActionInfo(MouseState mouseState, InteractiveGraphicsControl panel, PageSetData pageSetData, BaseData areaData, BaseData itemData)
+        {
+            MouseState = mouseState;
+            Panel = panel;
+            PageSetData = pageSetData;
+            AreaData = areaData;
+            ItemData = itemData;
+        }
+        /// <summary>
+        /// Stav myši. Obsahuje i prvek, nad kterým se akce děje, i buňku mapy.
+        /// </summary>
+        public MouseState MouseState { get; private set; }
+        /// <summary>
+        /// Vizuální panel
+        /// </summary>
+        public InteractiveGraphicsControl Panel { get; private set; }
+        /// <summary>
+        /// Set stránek, kompletní instance
+        /// </summary>
+        public PageSetData PageSetData { get; private set; }
+        /// <summary>
+        /// Prvek reprezentující prostor, v němž se akce provádí (jeho Child prvky se mění)
+        /// </summary>
+        public BaseData AreaData { get; private set; }
+        /// <summary>
+        /// Prvek reprezentující konkrétní prvek, jehož se akce týká. Může být null.
+        /// </summary>
+        public BaseData ItemData { get; private set; }
     }
     /// <summary>
     /// Akce v kontextovém menu

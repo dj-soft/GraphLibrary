@@ -112,6 +112,7 @@ namespace DjSoft.Tools.ProgramLauncher
             _DisposeGraphics();
             _DisposeFonts();
             _DisposeImages();
+            _DisposeUndoRedo();
             _DisposeTrayNotifyIcon();
             _DisposeAppMutex();
             _MainForm = null;
@@ -658,6 +659,9 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Veškeré textové výstupy systému (lokalizace)
         /// </summary>
         public static LanguageSet Messages { get { return Current._Messages; } }
+        /// <summary>
+        /// Lokalizace, property
+        /// </summary>
         private LanguageSet _Messages
         {
             get
@@ -667,8 +671,10 @@ namespace DjSoft.Tools.ProgramLauncher
                 return __Messages;
             }
         }
+        /// <summary>
+        /// Lokalizace, field
+        /// </summary>
         private LanguageSet __Messages;
-
         /// <summary>
         /// Pole všech přítomných jazyků
         /// </summary>
@@ -710,6 +716,67 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Událost volaná po změně aktuálního jazyka
         /// </summary>
         private event EventHandler __CurrentLanguageChanged;
+        #endregion
+        #region MessageBox a texty
+        /// <summary>
+        /// Zobrazí standardní Message. Zadáním ikony lze definovat titulek okna.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="icon"></param>
+        /// <param name="title"></param>
+        public static void ShowMessage(string text, MessageBoxIcon icon = MessageBoxIcon.Information, string title = null)
+        {
+            if (title is null) title = _GetMessageBoxTitle(icon);
+            System.Windows.Forms.MessageBox.Show(MainForm, text, title, MessageBoxButtons.OK, icon);
+        }
+        /// <summary>
+        /// Vrátí defaultní titulek MessageBox okna podle dané ikony.
+        /// Pro ikonu typu <see cref="MessageBoxIcon.Question"/> přihlédne k parametru <paramref name="isQuestion"/>.
+        /// </summary>
+        /// <param name="icon"></param>
+        /// <param name="isQuestion"></param>
+        /// <returns></returns>
+        private static string _GetMessageBoxTitle(MessageBoxIcon icon, bool isQuestion = false)
+        {
+            switch (icon)
+            {
+                case MessageBoxIcon.None: return "Poznámka";
+                case MessageBoxIcon.Stop: return "Chyba";
+                case MessageBoxIcon.Question: return (isQuestion ? "Dotaz" : "Podivné");
+                case MessageBoxIcon.Exclamation: return "Varování";
+                case MessageBoxIcon.Asterisk: return "Informace";
+            }
+            return "Zpráva";
+        }
+        /// <summary>
+        /// Vrátí text odpovídající počtu
+        /// </summary>
+        /// <param name="count"></param>
+        /// <param name="textAll">Texty pro všechny počty, oddělené znakem ×</param>
+        /// <returns></returns>
+        public static string GetCountText(int count, string textAll)
+        {
+            if (String.IsNullOrEmpty(textAll)) return "";
+            var texts = textAll.Split('×');
+            if (texts.Length < 4) return "";
+            return GetCountText(count, texts[0], texts[1], texts[2], texts[3]);
+        }
+        /// <summary>
+        /// Vrátí text odpovídající počtu
+        /// </summary>
+        /// <param name="count"></param>
+        /// <param name="textZero"></param>
+        /// <param name="textOne"></param>
+        /// <param name="textSmall"></param>
+        /// <param name="textMany"></param>
+        /// <returns></returns>
+        public static string GetCountText(int count, string textZero, string textOne, string textSmall, string textMany)
+        {
+            if (count <= 0) return textZero;
+            if (count == 1) return count.ToString() + " " + textOne;
+            if (count <= 4) return count.ToString() + " " + textSmall;
+            return count.ToString() + " " + textMany;
+        }
         #endregion
         #region Monitory, zarovnání souřadnic do monitoru, ukládání souřadnic oken
         #endregion
@@ -1488,67 +1555,33 @@ namespace DjSoft.Tools.ProgramLauncher
             return null;
         }
         #endregion
-        #region Messages a texty
+        #region UndoRedo
         /// <summary>
-        /// Zobrazí standardní Message. Zadáním ikony lze definovat titulek okna.
+        /// UndoRedo container
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="icon"></param>
-        /// <param name="title"></param>
-        public static void ShowMessage(string text, MessageBoxIcon icon = MessageBoxIcon.Information, string title = null)
-        {
-            if (title is null) title = _GetMessageBoxTitle(icon);
-            System.Windows.Forms.MessageBox.Show(MainForm, text, title, MessageBoxButtons.OK, icon);
-        }
+        public static UndoRedo UndoRedo { get { return Current._UndoRedo; } }
         /// <summary>
-        /// Vrátí defaultní titulek MessageBox okna podle dané ikony.
-        /// Pro ikonu typu <see cref="MessageBoxIcon.Question"/> přihlédne k parametru <paramref name="isQuestion"/>.
+        /// UndoRedo property
         /// </summary>
-        /// <param name="icon"></param>
-        /// <param name="isQuestion"></param>
-        /// <returns></returns>
-        private static string _GetMessageBoxTitle(MessageBoxIcon icon, bool isQuestion = false)
+        private UndoRedo _UndoRedo { get { if (__UndoRedo is null) __UndoRedo = new UndoRedo(); return __UndoRedo; } }
+        /// <summary>
+        /// UndoRedo  field
+        /// </summary>
+        private UndoRedo __UndoRedo;
+        /// <summary>
+        /// Ukončí život UndoRedo
+        /// </summary>
+        private void _DisposeUndoRedo()
         {
-            switch (icon)
+            if (__UndoRedo != null)
             {
-                case MessageBoxIcon.None: return "Poznámka";
-                case MessageBoxIcon.Stop: return "Chyba";
-                case MessageBoxIcon.Question: return (isQuestion ? "Dotaz" : "Podivné");
-                case MessageBoxIcon.Exclamation: return "Varování";
-                case MessageBoxIcon.Asterisk: return "Informace";
+                __UndoRedo.Dispose();
+                __UndoRedo = null;
             }
-            return "Zpráva";
         }
-        /// <summary>
-        /// Vrátí text odpovídající počtu
-        /// </summary>
-        /// <param name="count"></param>
-        /// <param name="textAll">Texty pro všechny počty, oddělené znakem ×</param>
-        /// <returns></returns>
-        public static string GetCountText(int count, string textAll)
-        {
-            if (String.IsNullOrEmpty(textAll)) return "";
-            var texts = textAll.Split('×');
-            if (texts.Length < 4) return "";
-            return GetCountText(count, texts[0], texts[1], texts[2], texts[3]);
-        }
-        /// <summary>
-        /// Vrátí text odpovídající počtu
-        /// </summary>
-        /// <param name="count"></param>
-        /// <param name="textZero"></param>
-        /// <param name="textOne"></param>
-        /// <param name="textSmall"></param>
-        /// <param name="textMany"></param>
-        /// <returns></returns>
-        public static string GetCountText(int count, string textZero, string textOne, string textSmall, string textMany)
-        {
-            if (count <= 0) return textZero;
-            if (count == 1) return count.ToString() + " " + textOne;
-            if (count <= 4) return count.ToString() + " " + textSmall;
-            return count.ToString() + " " + textMany;
-        }
+
         #endregion
+
     }
 
     #region Podpůrné třídy (StatusInfo) a enumy

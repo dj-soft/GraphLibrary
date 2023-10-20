@@ -733,6 +733,16 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap edit_copy_4_22 {
+            get {
+                object obj = ResourceManager.GetObject("edit_copy_4_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap edit_cut_3_22 {
             get {
                 object obj = ResourceManager.GetObject("edit_cut_3_22", resourceCulture);

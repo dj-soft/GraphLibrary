@@ -426,7 +426,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Povoluje se práce se Scrollbary, pokud bude zadána velikost obsahu <see cref="ContentSize"/>. Default = true.
         /// </summary>
-        public bool ScrollbarsEnabled { get { return __ScrollbarsEnabled; } set { __ScrollbarsEnabled = value; _RefreshContentArea(); Draw(); } }
+        public bool ScrollbarsEnabled { get { return __ScrollbarsEnabled; } set { __ScrollbarsEnabled = value; _RefreshScrollBars(); Draw(); } }
         private bool __ScrollbarsEnabled;
 
         /// <summary>
@@ -562,32 +562,34 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Při změně hodnoty se nenuluje souřadnice počátku <see cref="CurrentWindow"/>, změna velikosti obsahu jej tedy nutně nemusí přesunout na počátek.
         /// </summary>
         public virtual Size? ContentSize { get { return __ContentSize; } set { _SetContentSize(value); } }
-
+        /// <summary>
+        /// Aktuální velikost vidielného okna
+        /// </summary>
         public Rectangle CurrentWindow { get { return this.ClientArea; } set { } }
-        private Point? __CurrentWindowBegin;
-        private Size __CurrentWindowSize;
+        /// <summary>
+        /// Nastaví dodanou velikost obsahu a zajistí přepočty ScrollBarů podle této velikosti a aktuálního rozměru
+        /// </summary>
+        /// <param name="contentSize"></param>
         private void _SetContentSize(Size? contentSize)
         {
             __HasContentSize = (contentSize.HasValue && contentSize.Value.Width > 0 && contentSize.Value.Height > 0);
             __ContentSize = (__HasContentSize ? contentSize : null);
-            _RefreshContentArea();
+            _RefreshScrollBars();
         }
-        private void _RefreshContentArea()
-        {
-            _DetectScrollbars();
-
-            if (!_IsInVirtualMode) return;
-
-
-        }
+        /// <summary>
+        /// Akceptuje aktuální fyzickou velikost Controlu a zařídí podle ní platnost Scrollbarů
+        /// </summary>
         private void _AcceptControlSize()
         {
-            Size windowSize = this.ClientSize;
-
+            _RefreshScrollBars();
+        }
+        /// <summary>
+        /// Zajistí přepočty potebnosti a hodnot ScrollBarů podle aktuální velikosti a aktuálního rozměru a zajistí jejich zobrazení / skrytí
+        /// </summary>
+        private void _RefreshScrollBars()
+        {
             _DetectScrollbars();
             _ShowScrollBars();
-
-            __CurrentWindowSize = windowSize;
         }
         /// <summary>
         /// Detekuje potřebu zobrazení Scrollbarů. Volá se jak po změně <see cref="ContentSize"/>, tak po Resize controlu.
@@ -595,7 +597,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         private void _DetectScrollbars()
         {
             __DimensionX.UseScrollbar = false;
-            __DimensionY.UseScrollbar = false;                                 // Z této hodnoty bude vycházet __DimensionX.NeedScrollbar
+            __DimensionY.UseScrollbar = false;                                 // Z této hodnoty bude vycházet __DimensionX pro určené své hodnoty .NeedScrollbar
 
             if (_IsInVirtualMode)
             {

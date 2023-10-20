@@ -80,6 +80,7 @@
     <Compile Include="Data\ProcessPipes.cs" />
     <Compile Include="Data\Settings.cs" />
     <Compile Include="Data\Skins.cs" />
+    <Compile Include="Data\UndoRedo.cs" />
     <Compile Include="Data\WatchTimer.cs" />
     <Compile Include="Data\XmlPersist.cs" />
     <Compile Include="MainForm.cs">
@@ -308,6 +309,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="klickety-2-64.ico" />
+    <None Include="Pics\22px\edit-copy-4-22.png" />
     <None Include="Pics\16px\zoom-4-16.png" />
     <None Include="Pics\16px\zoom-3-16.png" />
     <None Include="Pics\16px\view-refresh-16.png" />

@@ -18,8 +18,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     /// Volající kód vloží svůj datový panel do <see cref="DataPanelHost"/> a nastaví v něm Dock = Fill.
     /// Dále pak ošetří event <see cref="DialogButtonClick"/>.
     /// </summary>
-    public class DialogForm : BaseForm
+    public class DialogForm : BaseForm, IContentBounds
     {
+        #region Konstruktor a privátní život
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DialogForm()
         {
             this.InitializeForm();
@@ -29,16 +33,21 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         protected virtual void InitializeForm()
         {
-            this.DataPanelHost = new DPanel();
-            this.DataPanelHost.BackColor = SystemColors.ControlDark;
-            this.DataPanelHost.TabIndex = 0;
-            this.Controls.Add(this.DataPanelHost);
+            this.__DataPanelHost = new DPanel();
+            this.__DataPanelHost.BackColor = SystemColors.ControlDark;
+            this.__DataPanelHost.TabIndex = 0;
 
-            this.DialogButtonPanel = new DialogButtonPanel() { Buttons = new DialogButtonType[] { DialogButtonType.Ok, DialogButtonType.Cancel } };
-            this.DialogButtonPanel.DialogButtonClick += _PanelDialogButtonClick;
-            this.DialogButtonPanel.BackColor = SystemColors.Window;
-            this.DialogButtonPanel.TabIndex = 1;
-            this.Controls.Add(this.DialogButtonPanel);
+            this.__DialogButtonPanel = new DialogButtonPanel() { Buttons = new DialogButtonType[] { DialogButtonType.Ok, DialogButtonType.Cancel } };
+            this.__DialogButtonPanel.DialogButtonClick += _PanelDialogButtonClick;
+            this.__DialogButtonPanel.BackColor = SystemColors.Window;
+            this.__DialogButtonPanel.TabIndex = 1;
+
+            this.__StatusStrip = new DStatusStrip();
+            this.__StatusStrip.TabIndex = 2;
+
+            this.Controls.Add(this.__DataPanelHost);
+            this.Controls.Add(this.__DialogButtonPanel);
+            this.Controls.Add(this.__StatusStrip);
 
             this.Size = new Size(650, 320);
             this.MaximizeBox = false;
@@ -49,7 +58,16 @@ namespace DjSoft.Tools.ProgramLauncher.Components
 
             this.LayoutContent();
         }
+        private DPanel __DataPanelHost;
+        private Control __DataControl;
+        private DialogButtonPanel __DialogButtonPanel;
+        private DStatusStrip __StatusStrip;
 
+        /// <summary>
+        /// První zobrazení formuláře: pokusíme se aplikovat optimální velikost DataPanelu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _FirstShown(object sender, EventArgs e)
         {
             ApplyOptimalBounds();
@@ -101,40 +119,44 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         private void LayoutContent()
         {
-            var clientSize = this.ClientSize;
+            var contentBounds = this.ContentBounds;
             var buttonBound = this.DialogButtonPanel.Bounds;
             var dataBounds = this.DataPanelHost.Bounds;
             var side = ((PanelContentAlignmentPart)this.DialogButtonPanel.PanelContentAlignment) & PanelContentAlignmentPart.MaskSides;
             switch (side)
             {
                 case PanelContentAlignmentPart.TopSide:
-                    dataBounds = new Rectangle(0, buttonBound.Bottom, clientSize.Width, clientSize.Height - buttonBound.Bottom);
+                    dataBounds = new Rectangle(contentBounds.Left, buttonBound.Bottom, contentBounds.Width, contentBounds.Height - buttonBound.Bottom);
                     break;
                 case PanelContentAlignmentPart.RightSide:
-                    dataBounds = new Rectangle(0, 0, buttonBound.Left, clientSize.Height);
+                    dataBounds = new Rectangle(contentBounds.Left, contentBounds.Top, buttonBound.Left, contentBounds.Height);
                     break;
                 case PanelContentAlignmentPart.BottomSide:
-                    dataBounds = new Rectangle(0, 0, clientSize.Width, buttonBound.Top);
+                    dataBounds = new Rectangle(contentBounds.Left, contentBounds.Top, contentBounds.Width, buttonBound.Top);
                     break;
                 case PanelContentAlignmentPart.LeftSide:
-                    dataBounds = new Rectangle(buttonBound.Right, 0, clientSize.Width - buttonBound.Right, clientSize.Height);
+                    dataBounds = new Rectangle(buttonBound.Right, contentBounds.Top, contentBounds.Width - buttonBound.Right, contentBounds.Height);
                     break;
                 default:
-                    dataBounds = new Rectangle(0, 0, clientSize.Width, clientSize.Height);
+                    dataBounds = new Rectangle(contentBounds.Left, contentBounds.Top, contentBounds.Width, contentBounds.Height);
                     break;
             }
             this.DataPanelHost.Bounds = dataBounds;
         }
         /// <summary>
-        /// Panel, do něhož (tj. do jeho Controls) se umísťuje datový obsah, typicky jako plně dokovaný Panel.
-        /// Jednodušší je setovat datový obsah do property <see cref="DataControl"/>.
+        /// Obsahuje prostor, v němž se může nacházet užitečný obsah okna.
+        /// Jde o <see cref="Control.ClientSize"/>, z níž je nahoře odečten ToolStrip a dole StatusStrip.
         /// </summary>
-        public DPanel DataPanelHost { get; private set; }
-        /// <summary>
-        /// Do této property lze vložit instanci Controlu, který reprezentuje vlastní data formuláře.
-        /// Setováním je tento Control vložen do <see cref="DataPanelHost"/> a zadokován.
-        /// </summary>
-        public Control DataControl { get { return __DataControl; } set { _SetDataControl(value); } } private Control __DataControl;
+        public Rectangle ContentBounds
+        {
+            get
+            {
+                var clientSize = this.ClientSize;
+                int topHeight = 0;                  // ToolStrip
+                int bottomHeight = (this.__StatusStrip != null && this.__StatusStrip.VisibleInternal ? this.__StatusStrip.Height : 0);
+                return new Rectangle(0, topHeight, clientSize.Width, clientSize.Height - (topHeight + bottomHeight));
+            }
+        }
         /// <summary>
         /// Setuje uživatelský datový control do zdejšího okna
         /// </summary>
@@ -166,15 +188,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             }
         }
         /// <summary>
-        /// Panel obsahující tlačítka
-        /// </summary>
-        public DialogButtonPanel DialogButtonPanel { get; private set; }
-        /// <summary>
-        /// Přítomné buttony v odpovídajícím pořadí
-        /// </summary>
-        public DialogButtonType[] Buttons { get { return DialogButtonPanel.Buttons; } set { DialogButtonPanel.Buttons = value; } }
-
-        /// <summary>
         /// Po kliknutí na button ...
         /// </summary>
         /// <param name="dialogResult"></param>
@@ -193,10 +206,32 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         /// <param name="args"></param>
         protected virtual void OnDialogButtonClick(DialogButtonEventArgs args) { }
+        #endregion
+        #region Public rozhraní
+        /// <summary>
+        /// Panel, do něhož (tj. do jeho Controls) se umísťuje datový obsah, typicky jako plně dokovaný Panel.
+        /// Jednodušší je setovat datový obsah do property <see cref="DataControl"/>.
+        /// </summary>
+        public DPanel DataPanelHost { get { return __DataPanelHost; } }
+        /// <summary>
+        /// Do této property lze vložit instanci Controlu, který reprezentuje vlastní data formuláře.
+        /// Setováním je tento Control vložen do <see cref="DataPanelHost"/> a zadokován.
+        /// </summary>
+        public Control DataControl { get { return __DataControl; } set { _SetDataControl(value); } }
+        /// <summary>
+        /// Panel obsahující tlačítka
+        /// </summary>
+        public DialogButtonPanel DialogButtonPanel { get { return __DialogButtonPanel; } }
+        /// <summary>
+        /// Přítomné buttony v odpovídajícím pořadí
+        /// </summary>
+        public DialogButtonType[] Buttons { get { return DialogButtonPanel.Buttons; } set { DialogButtonPanel.Buttons = value; } }
+
         /// <summary>
         /// Událost po kliknutí na tlačítko
         /// </summary>
         public event DialogButtonEventHandler DialogButtonClick;
+        #endregion
     }
     #endregion
     #region class BaseForm : Bázový formulář
