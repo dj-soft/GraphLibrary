@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.Management;
 using System.Drawing.Text;
 using static System.Net.Mime.MediaTypeNames;
+using System.Security.Policy;
 
 namespace DjSoft.Tools.ProgramLauncher.Data
 {
@@ -39,6 +40,27 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         [PersistingEnabled(false)]
         public override DataLayoutKind? LayoutKind { get { return DataLayoutKind.None; } set { } }
+        /// <summary>
+        /// Počet stránek v tomto setu
+        /// </summary>
+        [PersistingEnabled(false)]
+        public int PagesCount { get { return Pages.Count; } }
+        /// <summary>
+        /// Počet aplikací v tomto setu
+        /// </summary>
+        [PersistingEnabled(false)]
+        public int ApplicationsCount { get { return Pages.Sum(p => p.ApplicationsCount); } }
+        /// <summary>
+        /// Vytvoří a vrátí pole svých Child prvků.
+        /// </summary>
+        /// <returns></returns>
+        public override List<InteractiveItem> CreateInteractiveItems()
+        {
+            List<InteractiveItem> interactiveItems = new List<InteractiveItem>();
+            foreach (var page in this.Pages)
+                interactiveItems.Add(page.CreateInteractiveItem());
+            return interactiveItems;
+        }
         #endregion
         #region Podpora de/serializace
         /// <summary>
@@ -89,15 +111,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             if (areaData is PageSetData pageSetData)
             {   // Kliknutí na seznamu stránek
                 if (itemData is PageData pageItem)
-                {   // Kliknutí seznamu stránek, na konkrétní stránce:
+                {   // Na konkrétní stránce:
                     menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.Format(App.Messages.AppContextMenuTitlePage, pageItem.Title) });
                     menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuUserData(DataItemActionType.EditPage, mouseState, this, areaData, itemData) });
                     menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuUserData(DataItemActionType.DeletePage, mouseState, this, areaData, itemData) });
                 }
                 else
-                {   // Kliknutí seznamu stránek, mimo konkrétní stránku:
+                {   // Mimo konkrétní stránku:
                     menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.AppContextMenuTitlePages });
-                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewPageText, ToolTip = App.Messages.AppContextMenuNewPageToolTip, Image = Properties.Resources.document_new_3_22, UserData = new ContextMenuUserData(DataItemActionType.NewGroup, mouseState, this, areaData, itemData) });
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewPageText, ToolTip = App.Messages.AppContextMenuNewPageToolTip, Image = Properties.Resources.document_new_3_22, UserData = new ContextMenuUserData(DataItemActionType.NewPage, mouseState, this, areaData, itemData) });
                 }
             }
 
@@ -136,14 +158,42 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             {
                 switch (contextData.Action)
                 {
+                    case DataItemActionType.NewPage:
+                        break;
+                    case DataItemActionType.MovePage:
+                        break;
+                    case DataItemActionType.EditPage:
+                        break;
+                    case DataItemActionType.CopyPage: 
+                        break;
+                    case DataItemActionType.DeletePage:
+                        break;
+                    case DataItemActionType.NewGroup: 
+                        break;
+                    case DataItemActionType.MoveGroup:
+                        break;
+                    case DataItemActionType.EditGroup:
+                        break;
+                    case DataItemActionType.CopyGroup: 
+                        break;
+                    case DataItemActionType.DeleteGroup: 
+                        break;
+                    case DataItemActionType.NewApplication:
+                        break;
+                    case DataItemActionType.MoveApplication: 
+                        break;
+                    case DataItemActionType.EditApplication:
+                        (contextData.ItemData as ApplicationData).EditData(contextData.MouseState.LocationAbsolute);
+                        break;
+                    case DataItemActionType.CopyApplication: 
+                        break;
+                    case DataItemActionType.DeleteApplication: 
+                        break;
                     case DataItemActionType.RunApplication:
                         (contextData.ItemData as ApplicationData).RunNewProcess(false);
                         break;
                     case DataItemActionType.RunApplicationAsAdmin:
                         (contextData.ItemData as ApplicationData).RunNewProcess(true);
-                        break;
-                    case DataItemActionType.EditApplication:
-                        (contextData.ItemData as ApplicationData).EditData(contextData.MouseState.LocationAbsolute);
                         break;
                 }
             }
@@ -171,19 +221,19 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             /// </summary>
             public DataItemActionType Action { get; private set; }
             /// <summary>
-            /// Stav myši
+            /// Stav myši. Obsahuje i prvek, nad kterým se akce děje, i buňku mapy.
             /// </summary>
             public MouseState MouseState { get; private set; }
             /// <summary>
-            /// Set stránek
+            /// Set stránek, kompletní instance
             /// </summary>
             public PageSetData PageSetData { get; private set; }
             /// <summary>
-            /// Prvek reprezentující prostor
+            /// Prvek reprezentující prostor, v němž se akce provádí (jeho Child prvky se mění)
             /// </summary>
             public BaseData AreaData { get; private set; }
             /// <summary>
-            /// Prvek reprezentující konkrétní prvek
+            /// Prvek reprezentující konkrétní prvek, jehož se akce týká. Může být null.
             /// </summary>
             public BaseData ItemData { get; private set; }
         }
@@ -208,10 +258,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             PageSetData pageSet = new PageSetData();
 
-            var page0 = new PageData() { Title = "Hobby" };
+            var page0 = new PageData() { Title = "Hobby", RelativeAdress = new Point(0, 0), ImageFileName = getImage("button-green") };
             pageSet.__Pages.Add(page0);                             // Musím používat field __Pages, protože použitím property Pages bych se zacyklil...
 
-            var group00 = new GroupData() { Title = "Aplikace Windows", RelativeAdress = new Point(0, 0) };
+            var group00 = new GroupData() { Title = "Aplikace Windows", RelativeAdress = new Point(0, 0), ImageFileName = getImage("rectagle_purple") };
             page0.Groups.Add(group00);
             group00.Applications.Add(getApp("Windows", "Průzkumník", "wine", @"c:\Windows\explorer.exe", "", 0, 0));
             group00.Applications.Add(getApp("Wordpad", "Jednoduchý text", "abiword", @"c:\Windows\write.exe", "", 1, 0));
@@ -223,12 +273,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             group00.Applications.Add(getApp("RDP NTB", "Vzdálená plocha na Notebook", "firefox_alt", @"%windir%\system32\mstsc.exe", @"D:\Windows\Složka\Asseco\David NB.rdp", 0, 3));
             group00.Applications.Add(getApp("RDP PC", "Vzdálená plocha na Desktop", "firefox_alt", @"%windir%\system32\mstsc.exe", @"D:\Windows\Složka\Asseco\David ASOL.rdp", 1, 3));
 
-            var group01 = new GroupData() { Title = "Aplikace David", RelativeAdress = new Point(0, 0) };
+            var group01 = new GroupData() { Title = "Aplikace David", RelativeAdress = new Point(0, 0), ImageFileName = getImage("rectagle_blue") };
             page0.Groups.Add(group01);
-            group00.Applications.Add(getApp("SD Cards", "Tester SD cards", "wine", @"C:\DavidPrac\VsProjects\SDCardTester\SDCardTester\bin\Debug\Djs.SDCardTester.exe", "", 0, 0));
-            group00.Applications.Add(getApp("Stopky", "Hodinky", "wine", @"C:\CSharp\Stopky\Stopky\bin\Debug\Stopky.exe", "", 1, 0));
-            group00.Applications.Add(getApp("Vypínač", "Vypne PC", "wine", @"C:\DavidPrac\VsProjects\WinShutDown\Exe\Djs.WinShutDown.exe", "", 2, 0));
-
+            group01.Applications.Add(getApp("SD Cards", "Tester SD cards", "wine", @"C:\DavidPrac\VsProjects\SDCardTester\SDCardTester\bin\Debug\Djs.SDCardTester.exe", "", 0, 0));
+            group01.Applications.Add(getApp("Stopky", "Hodinky", "wine", @"C:\CSharp\Stopky\Stopky\bin\Debug\Stopky.exe", "", 1, 0));
+            group01.Applications.Add(getApp("Vypínač", "Vypne PC", "wine", @"C:\DavidPrac\VsProjects\WinShutDown\Exe\Djs.WinShutDown.exe", "", 2, 0));
 
             return pageSet;
 
@@ -238,7 +287,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 {
                     Title = title,
                     Description = description,
-                    ImageFileName = @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\wine" + imageSampleName + ".png",
+                    ImageFileName = getImage(imageSampleName),
                     ExecutableFileName = exeFile,
                     ExecutableArguments = arguments,
                     RelativeAdress = new Point(x, y),
@@ -247,6 +296,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     ExecuteInAdminMode = executeInAdminMode
                 };
                 return app;
+            }
+
+            string getImage(string name)
+            {
+                return @"C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\" + name + ".png";
             }
         }
         #endregion
@@ -288,12 +342,22 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         PageSetData IChildOfParent<PageSetData>.Parent { get { return __Parent; } set { __Parent = value; } } private PageSetData __Parent;
         /// <summary>
-        /// Počet evidovaných aplikací
+        /// Počet skupin v této stránce
         /// </summary>
         [PersistingEnabled(false)]
-        public int ApplicationsCount { get { return this.Groups.Sum(g => g.Applications.Count); } }
-        public void CreateInteractiveItems(List<InteractiveItem> interactiveItems)
+        public int GroupsCount { get { return Groups.Count; } }
+        /// <summary>
+        /// Počet aplikací v této stránce
+        /// </summary>
+        [PersistingEnabled(false)]
+        public int ApplicationsCount { get { return Groups.Sum(g => g.ApplicationsCount); } }
+        /// <summary>
+        /// Vytvoří a vrátí pole svých Child prvků.
+        /// </summary>
+        /// <returns></returns>
+        public override List<InteractiveItem> CreateInteractiveItems()
         {
+            List<InteractiveItem> interactiveItems = new List<InteractiveItem>();
             int y = 0;
             foreach (var group in this.Groups)
             {
@@ -301,15 +365,17 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 interactiveItems.Add(group.CreateInteractiveItem());
                 y = group.Adress.Y + 1;
 
-                int applMaxY = 0;
+                int maxBottom = 0;
                 foreach (var appl in group.Applications)
                 {
                     appl.OffsetAdress = new Point(0, y);
                     interactiveItems.Add(appl.CreateInteractiveItem());
-                    int applB = appl.Adress.Y + 1;
-                    if (applMaxY < applB) applMaxY = applB;
+                    int appBottom = appl.Adress.Y + 1;
+                    if (maxBottom < appBottom) maxBottom = appBottom;
                 }
+                y = maxBottom;
             }
+            return interactiveItems;
         }
         #endregion
         #region Podpora de/serializace
@@ -378,6 +444,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Druh layoutu, z něhož se čerpá.
         /// </summary>
         public override DataLayoutKind? LayoutKind { get { return DataLayoutKind.Groups; } set { } }
+        /// <summary>
+        /// Počet aplikací v této grupě
+        /// </summary>
+        [PersistingEnabled(false)]
+        public int ApplicationsCount { get { return Applications.Count; } }
         /// <summary>
         /// Můj parent
         /// </summary>
@@ -771,6 +842,12 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         #endregion
         #region Podpora pro interaktivní kreslení a práci - tvorba instance třídy InteractiveItem
         /// <summary>
+        /// Vytvoří a vrátí pole svých Child prvků.
+        /// Některé třídy vrací null, když nemají potomky.
+        /// </summary>
+        /// <returns></returns>
+        public virtual List<InteractiveItem> CreateInteractiveItems() { return null; }
+        /// <summary>
         /// Vytvoří a vrátí new instanci interaktivního prvku <see cref="InteractiveDataItem"/> = potomek základního prvku <see cref="InteractiveItem"/>
         /// </summary>
         /// <returns></returns>
@@ -834,6 +911,12 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         protected virtual void OnPersistSerializeDone() { }
         #endregion
         #region Podpora pro standardní WinForm editaci obsahu pomocí okna DialogForm a datového panelu DataControlPanel
+        /// <summary>
+        /// Metoda vytvoří okno <see cref="DialogForm"/>, vloží do něj data aktuálního prvku vytvořená v metodě <see cref="CreateEditPanel"/> a okno otevře.
+        /// Po ukončení editace v okně refreshuje odpovídající panel a vrátí true pokud editace má být uložena.
+        /// </summary>
+        /// <param name="startPoint"></param>
+        /// <returns></returns>
         public virtual bool EditData(Point? startPoint = null)
         {
             bool result = false;

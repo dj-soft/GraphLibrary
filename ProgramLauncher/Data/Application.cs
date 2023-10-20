@@ -140,34 +140,44 @@ namespace DjSoft.Tools.ProgramLauncher
         public static string ApplicationPath { get { return Current.__ApplicationPath; } }
         private string __ApplicationPath;
         /// <summary>
-        /// Vrátí true, pokud argumenty předané při startu aplikace obsahují daný text
+        /// Zkusí najít argument s daným textem. Vrací true = nalezeno.
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="caseSensitive"></param>
+        /// <param name="text">Hledaný text</param>
+        /// <param name="caseSensitive">Má se hledat CaseSensitive? Tedy pokud je true, pak "Abc" != "abc"</param>
+        /// <param name="exactText">Má se hledat celý text? Tedy pokud je true, pak při hledání "ABC" najdu jen argume "ABC", ale nenajdu argument "ABC=12345"</param>
         /// <returns></returns>
-        public static bool HasArgument(string text, bool caseSensitive = false)
+        public static bool HasArgument(string text, bool caseSensitive = false, bool exactText = false)
         {
-            if (String.IsNullOrEmpty(text)) return false;
-            var arguments = Arguments;
-            if (arguments.Length == 0) return false;
-            StringComparison comparison = (caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
-            return arguments.Any(a => String.Equals(a, text, comparison));
+            return Current._TryGetArgument(text, out var _, caseSensitive, exactText);
         }
         /// <summary>
-        /// Zkusí najít argument, který začíná daným textem.
+        /// Zkusí najít argument s daným textem. Vrací true = nalezeno
         /// </summary>
-        /// <param name="textBegin"></param>
-        /// <param name="foundArgument"></param>
-        /// <param name="caseSensitive"></param>
+        /// <param name="text">Hledaný text</param>
+        /// <param name="foundArgument">Out nalezený text argumentu</param>
+        /// <param name="caseSensitive">Má se hledat CaseSensitive? Tedy pokud je true, pak "Abc" != "abc"</param>
+        /// <param name="exactText">Má se hledat celý text? Tedy pokud je true, pak při hledání "ABC" najdu jen argume "ABC", ale nenajdu argument "ABC=12345"</param>
         /// <returns></returns>
-        public static bool TryGetArgument(string textBegin, out string foundArgument, bool caseSensitive = false)
+        public static bool TryGetArgument(string text, out string foundArgument, bool caseSensitive = false, bool exactText = false)
+        {
+            return Current._TryGetArgument(text, out foundArgument, caseSensitive, exactText);
+        }
+        /// <summary>
+        /// Zkusí najít argument s daným textem. Vrací true = nalezeno
+        /// </summary>
+        /// <param name="text">Hledaný text</param>
+        /// <param name="foundArgument">Out nalezený text argumentu</param>
+        /// <param name="caseSensitive">Má se hledat CaseSensitive? Tedy pokud je true, pak "Abc" != "abc"</param>
+        /// <param name="exactText">Má se hledat celý text? Tedy pokud je true, pak při hledání "ABC" najdu jen argume "ABC", ale nenajdu argument "ABC=12345"</param>
+        /// <returns></returns>
+        private bool _TryGetArgument(string text, out string foundArgument, bool caseSensitive, bool exactText)
         {
             foundArgument = null;
-            if (String.IsNullOrEmpty(textBegin)) return false;
-            var arguments = Arguments;
+            if (String.IsNullOrEmpty(text)) return false;
+            var arguments = __Arguments;
             if (arguments.Length == 0) return false;
             StringComparison comparison = (caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
-            return arguments.TryFindFirst(a => a.StartsWith(textBegin, comparison), out foundArgument);
+            return arguments.TryFindFirst(a => (exactText ? String.Equals(a, text, comparison) : a.StartsWith(text, comparison)), out foundArgument);
         }
         #endregion
         #region SigletonProcess: Mutex a ServerPipe, a static služby ClientPipe (mimo aplikační)

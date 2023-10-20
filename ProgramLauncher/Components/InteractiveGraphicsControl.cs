@@ -733,9 +733,18 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #endregion
         #region Public prvky - soupis aktivních prvků, eventy
         /// <summary>
-        /// Prvky k zobrazení a interaktivní práci
+        /// Prvky k zobrazení a interaktivní práci.
+        /// Lze setovat, tím se dosavadní prvky zahodí a vloží se prvky z dodaného pole (ale instance dodaného pole se sem neukládá).
         /// </summary>
-        public IList<InteractiveItem> DataItems { get { return __DataItems; } }
+        public IList<InteractiveItem> DataItems { 
+            get { return __DataItems; } 
+            set 
+            {
+                __DataItems.Clear();
+                if (value != null)
+                    __DataItems.AddRange(value);
+            } 
+        }
         public void AddItems(IEnumerable<InteractiveItem> items)
         {
             __DataItems.AddRange(items);

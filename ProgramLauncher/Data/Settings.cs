@@ -31,7 +31,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <returns></returns>
         public static Settings Create()
         {
-            bool isReset = App.HasArgument("reset");
+            bool isReset = App.HasArgument("reset", false, true);
             string fileName = _GetFileName();
             bool isFile = System.IO.File.Exists(fileName);
             if (isFile)

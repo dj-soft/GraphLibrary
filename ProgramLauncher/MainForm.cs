@@ -126,9 +126,8 @@ namespace DjSoft.Tools.ProgramLauncher
         private void CurrentLanguageChanged(object sender, EventArgs e)
         {
             RefreshToolbarTexts();
-            RefreshPagesApplicationCount();
+            RefreshStatusBarTexts();
         }
-
         /// <summary>
         /// Vytvoří a zobrazí menu s výběrem vzhledu.
         /// </summary>
@@ -247,49 +246,10 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private void ReloadPages(PageData activePageData = null, int? activePageIndex = null)
         {
-            var items = new List<InteractiveItem>();
-
-            int pageCount = 0;
-            int appCount = 0;
-            var pages = _Pages;
-            if (pages != null)
-            {
-                foreach (var page in pages)
-                {
-                    items.Add(page.CreateInteractiveItem());
-                    pageCount++;
-                    appCount += page.ApplicationsCount;
-                }
-            }
-
-            __PagesPanel.DataItems.Clear();
-            __PagesPanel.AddItems(items);
-
-            bool groupsForceVisible = true;
-            _PagesPanelVisible = (groupsForceVisible || items.Count > 1);
+            __PagesPanel.DataItems = _PageSet.CreateInteractiveItems();
+            _PagesPanelVisible = true || __PagesPanel.DataItems.Count > 1;
             ReloadApplications(activePageData, activePageIndex);
-            RefreshPagesApplicationCount(pageCount, appCount);
-        }
-        private void RefreshPagesApplicationCount()
-        {
-            int pageCount = 0;
-            int appCount = 0;
-            var pages = _Pages;
-            if (pages != null)
-            {
-                foreach (var page in pages)
-                {
-                    pageCount++;
-                    appCount += page.ApplicationsCount;
-                }
-            }
-            RefreshPagesApplicationCount(pageCount, appCount);
-        }
-        private void RefreshPagesApplicationCount(int pageCount, int appCount)
-        {
-            string pageText = App.GetCountText(pageCount, App.Messages.StatusStripPageCountText);
-            string appText = App.GetCountText(appCount, App.Messages.StatusStripApplicationText);
-            this.StatusLabelData.Text = $"{pageText}; {appText}";
+            RefreshStatusBarTexts();
         }
         /// <summary>
         /// Kompletní sada se stránkami
@@ -380,18 +340,11 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="pageData"></param>
         private void ReloadApplications(PageData activePageData = null, int? activePageIndex = null)
         {
-            var items = new List<InteractiveItem>();
-
-            PageData pageData = getPageData();
-            if (pageData != null)
-                pageData.CreateInteractiveItems(items);
-            __ActivePageData = pageData;
-
-            __ApplicationsPanel.DataItems.Clear();
-            __ApplicationsPanel.AddItems(items);
+            __ActivePageData = getPageData();
+            __ApplicationsPanel.DataItems = __ActivePageData?.CreateInteractiveItems();
 
             // Grupa má možnost definovat barvu BackColor pro svoje tlačítko a pro celou stránku s aplikacemi:
-            this.__ApplicationsPanel.BackColorUser = pageData?.BackColor;       // Pokud stránka není určena, pak jako BackColorUser bude null = default
+            this.__ApplicationsPanel.BackColorUser = __ActivePageData?.BackColor;       // Pokud stránka není určena, pak jako BackColorUser bude null = default
 
             // Vrátí požadovanou nebo aktivní stránku s daty
             PageData getPageData()
@@ -505,6 +458,24 @@ namespace DjSoft.Tools.ProgramLauncher
                 };
                 return label;
             }
+        }
+        /// <summary>
+        /// Aktualizuje texty do StatusBaru
+        /// </summary>
+        public void RefreshStatusBarTexts()
+        {
+            RefreshStatusBarLabelData();
+        }
+        /// <summary>
+        /// Refreshuje obsah <see cref="StatusLabelData"/> = počet stránek a počet aplikací, v aktuálním jazyce.
+        /// </summary>
+        private void RefreshStatusBarLabelData()
+        {
+            int pagesCount = _PageSet.PagesCount;
+            int applicationsCount = _PageSet.ApplicationsCount;
+            string pageText = App.GetCountText(pagesCount, App.Messages.StatusStripPageCountText);
+            string appText = App.GetCountText(applicationsCount, App.Messages.StatusStripApplicationText);
+            this.StatusLabelData.Text = $"{pageText}; {appText}";
         }
         /// <summary>
         /// Text popisující aplikaci daný pozicí myši
