@@ -253,6 +253,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <param name="menuItem"></param>
         public static void RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
         {
+            var pageSetData = actionInfo.PageSetData;
+            PageSetData pageSetClone = actionInfo.PageSetData.Clone();
+
             var pageData = (actionInfo.ItemData as PageData);
             bool hasPageData = pageData != null;
             bool isAppend = false;
@@ -272,11 +275,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     isAppend = pageData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleClone, pageData.Title));
                     break;
                 case DataItemActionType.DeletePage:
-
+                    isUpdated = pageSetData.Pages.Remove(pageData);
                     break;
             }
 
-            var pageSetData = actionInfo.PageSetData;
             if (isAppend)
             {
                 int y = (pageSetData.Pages.Count == 0 ? 0 : pageSetData.Pages.Max(p => p.Adress.Y) + 1);
@@ -287,6 +289,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             if (isUpdated)
             {
                 App.Settings.SetChanged();
+                App.UndoRedo.Add(pageSetClone);
             }
         }
         #endregion
@@ -462,13 +465,13 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public static void RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
         {
             var pageData = actionInfo.AreaData as PageData;
-            bool hasPageData = pageData != null;
+            bool hasPageData = (pageData != null);
             if (!hasPageData) return;
 
             PageSetData pageSetClone = actionInfo.PageSetData.Clone();
 
             var groupData = (actionInfo.ItemData as GroupData);
-            bool hasGroupData = groupData != null;
+            bool hasGroupData = (groupData != null);
             bool isAppend = false;
             bool isUpdated = false;
             switch (actionType)
@@ -611,14 +614,21 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <param name="menuItem"></param>
         public static void RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
         {
+            var pageData = actionInfo.AreaData as PageData;
+            bool hasPageData = (pageData != null);
+            if (!hasPageData) return;
+
+            PageSetData pageSetClone = actionInfo.PageSetData.Clone();
+
             var applicationData = (actionInfo.ItemData as ApplicationData);
-            bool hasApplicationData = applicationData != null;
+            bool hasApplicationData = (applicationData != null);
+            bool isAppend = false;
             bool isUpdated = false;
             switch (actionType)
             {
                 case DataItemActionType.NewApplication:
                     applicationData = new ApplicationData();
-                    isUpdated = applicationData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.EditFormTitleNewApplication);
+                    isAppend = applicationData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.EditFormTitleNewApplication);
                     break;
                 case DataItemActionType.EditApplication:
                     if (hasApplicationData)
@@ -626,10 +636,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     break;
                 case DataItemActionType.CopyApplication:
                     applicationData = applicationData.Clone();
-                    isUpdated = applicationData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleClone, applicationData.Title));
+                    isAppend = applicationData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleClone, applicationData.Title));
                     break;
                 case DataItemActionType.DeleteApplication:
                     break;
+            }
+            if (isUpdated)
+            {
+                App.Settings.SetChanged();
+                App.UndoRedo.Add(pageSetClone);
             }
         }
         #endregion

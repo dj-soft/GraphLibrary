@@ -773,6 +773,26 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap edit_redo_3_48 {
+            get {
+                object obj = ResourceManager.GetObject("edit_redo_3_48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap edit_redo_4_48 {
+            get {
+                object obj = ResourceManager.GetObject("edit_redo_4_48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap edit_remove_3_22 {
             get {
                 object obj = ResourceManager.GetObject("edit_remove_3_22", resourceCulture);
@@ -796,6 +816,26 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         internal static System.Drawing.Bitmap edit_select_all_3_22 {
             get {
                 object obj = ResourceManager.GetObject("edit_select_all_3_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap edit_undo_3_48 {
+            get {
+                object obj = ResourceManager.GetObject("edit_undo_3_48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap edit_undo_4_48 {
+            get {
+                object obj = ResourceManager.GetObject("edit_undo_4_48", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

@@ -156,6 +156,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         #region Konkrétní texty - jednotlivé property a jejich defaultní text (umožňuje běh bez jazykových souborů)
         // Neměnit jméno property - vede to k nutnosti změnit toto jméno v překladových souborech!
         public string ToolStripButtonAppearanceToolTip { get { return _GetText("Změnit vzhled (barevná paleta, velikost, jazyk)"); } }
+        public string ToolStripButtonUndoToolTip { get { return _GetText("Vrátí zpět posledně provedenou změnu"); } }
+        public string ToolStripButtonRedoToolTip { get { return _GetText("Obnoví vpřed posledně vrácenou změnu"); } }
         public string ToolStripButtonPreferenceToolTip { get { return _GetText("Nastavit chování aplikace"); } }
         public string ToolStripButtonEditToolTip { get { return _GetText("Upravit obsah"); } }
         public string StatusStripPageCountText { get { return _GetText("bez stránek×stránka×stránky×stránek"); } }

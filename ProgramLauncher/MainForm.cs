@@ -30,22 +30,6 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         private void InitializeMainForm()
         {
-            App.UndoRedo.Add("A");
-            App.UndoRedo.Add("B");
-            App.UndoRedo.Add("C");
-            App.UndoRedo.Add("D");
-
-            var ud = App.UndoRedo.Undo();
-            var uc = App.UndoRedo.Undo();
-            App.UndoRedo.Add("E");
-            App.UndoRedo.Add("F");
-            var uf = App.UndoRedo.Undo();
-            var ue = App.UndoRedo.Undo();
-            var ub = App.UndoRedo.Undo();
-            var re = App.UndoRedo.Redo();
-            var rf = App.UndoRedo.Redo();
-            var qe = App.UndoRedo.Undo();
-
             int tabIndex = 0;
             this._MainContainer = new DSplitContainer() { IsSplitterFixed = true, SplitterDistance = 150, SplitterWidth = 1, TabIndex = ++tabIndex };
             this._ToolStrip = new DToolStrip() { TabIndex = ++tabIndex };
@@ -72,6 +56,27 @@ namespace DjSoft.Tools.ProgramLauncher
             this._StatusStrip.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
+        }
+        private void _TestUndoRedo()
+        {
+            App.UndoRedo.Add("A");
+            App.UndoRedo.Add("B");
+            App.UndoRedo.Add("C");
+            App.UndoRedo.Add("D");               // A B C D
+
+            var ud = App.UndoRedo.Undo();
+            var uc = App.UndoRedo.Undo();
+            App.UndoRedo.Add("E");               // A B E F
+            App.UndoRedo.Add("F");
+            var uf = App.UndoRedo.Undo();
+            var ue = App.UndoRedo.Undo();
+            var ub = App.UndoRedo.Undo();
+            var re = App.UndoRedo.Redo();
+            var rf = App.UndoRedo.Redo();
+            var qe = App.UndoRedo.Undo();
+            var qb = App.UndoRedo.Undo();
+            var qa = App.UndoRedo.Undo();
+            var qn = App.UndoRedo.Undo();        // null
         }
         protected override void WndProc(ref Message m)
         {
@@ -235,9 +240,13 @@ namespace DjSoft.Tools.ProgramLauncher
         private void InitializeToolBar()
         {
             this._ToolAppearanceButton = addButton(Properties.Resources.applications_graphics_2_48, _ToolAppearanceButton_Click);
+            this._ToolUndoButton = addButton(Properties.Resources.edit_undo_3_48, _ToolUndoButton_Click);
+            this._ToolRedoButton = addButton(Properties.Resources.edit_redo_3_48, _ToolRedoButton_Click);
             this._ToolPreferenceButton = addButton(Properties.Resources.system_run_6_48, _ToolPreferenceButton_Click);
             this._ToolEditButton = addButton(Properties.Resources.edit_6_48, _ToolEditButton_Click);
 
+            App.UndoRedo.CurrentStateChanged += _UndoRedoCurrentStateChanged;
+            RefreshToolbarUndoRedoState();
             RefreshToolbarTexts();
 
             ToolStripButton addButton(Image image, EventHandler onClick)
@@ -248,12 +257,25 @@ namespace DjSoft.Tools.ProgramLauncher
                 return button;
             }
         }
+
+        private void _UndoRedoCurrentStateChanged(object sender, EventArgs e)
+        {
+            RefreshToolbarUndoRedoState();
+        }
+        private void RefreshToolbarUndoRedoState()
+        {
+            var state = App.UndoRedo.CurrentState;
+            this._ToolUndoButton.Enabled = (state == UndoRedo.State.CanUndoRedo || state == UndoRedo.State.CanUndo);
+            this._ToolRedoButton.Enabled = (state == UndoRedo.State.CanUndoRedo || state == UndoRedo.State.CanRedo);
+        }
         /// <summary>
         /// Aktualizuje texty na prvcích Toolbaru 
         /// </summary>
         private void RefreshToolbarTexts()
         {
             this._ToolAppearanceButton.ToolTipText = App.Messages.ToolStripButtonAppearanceToolTip;
+            this._ToolUndoButton.ToolTipText = App.Messages.ToolStripButtonUndoToolTip;
+            this._ToolRedoButton.ToolTipText = App.Messages.ToolStripButtonRedoToolTip;
             this._ToolPreferenceButton.ToolTipText = App.Messages.ToolStripButtonPreferenceToolTip;
             this._ToolEditButton.ToolTipText = App.Messages.ToolStripButtonEditToolTip;
         }
@@ -266,6 +288,9 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             _ShowAppearanceMenu();
         }
+
+        private void _ToolUndoButton_Click(object sender, EventArgs e) { }
+        private void _ToolRedoButton_Click(object sender, EventArgs e) { }
         /// <summary>
         /// Po kliknutí na tlačítko Toolbaru: Preference
         /// </summary>
@@ -282,9 +307,11 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             
         }
-        private System.Windows.Forms.ToolStripButton _ToolAppearanceButton;
-        private System.Windows.Forms.ToolStripButton _ToolPreferenceButton;
-        private System.Windows.Forms.ToolStripButton _ToolEditButton;
+        private ToolStripButton _ToolAppearanceButton;
+        private ToolStripButton _ToolUndoButton;
+        private ToolStripButton _ToolRedoButton;
+        private ToolStripButton _ToolPreferenceButton;
+        private ToolStripButton _ToolEditButton;
         #endregion
         #region PagesPanel
         /// <summary>
