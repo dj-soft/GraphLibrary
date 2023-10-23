@@ -242,6 +242,7 @@ namespace DjSoft.Tools.ProgramLauncher
             this._ToolEditButton = addButton(Properties.Resources.edit_6_48, _ToolEditButton_Click);
 
             App.UndoRedo.CurrentStateChanged += _UndoRedoCurrentStateChanged;
+            App.UndoRedo.CatchCurrentRedoData += _UndoRedoCatchCurrentRedoData;
             RefreshToolbarUndoRedoState();
             RefreshToolbarTexts();
 
@@ -320,6 +321,16 @@ namespace DjSoft.Tools.ProgramLauncher
         private void _UndoRedoCurrentStateChanged(object sender, EventArgs e)
         {
             RefreshToolbarUndoRedoState();
+        }
+        /// <summary>
+        /// Container pro UndoRedo si zde vyžádá data pro uložení pro krok Redo
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _UndoRedoCatchCurrentRedoData(object sender, UndoRedo<PageSetData>.CatchCurrentRedoDataEventArgs e)
+        {
+            e.RedoData = App.Settings.PageSet.Clone();
         }
         /// <summary>
         /// Po kliknutí na tlačítko Toolbaru: UNDO

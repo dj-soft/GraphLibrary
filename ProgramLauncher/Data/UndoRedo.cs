@@ -367,6 +367,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             using (var undoRedo = new UndoRedo<string>())
             {
                 undoRedo.CatchCurrentRedoData += catchCurrentRedoData;
+
                 undoRedo.Add(d0);
                 var a1 = undoRedo.Undo();
                 var a2 = undoRedo.Redo();
@@ -387,26 +388,42 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         [TestMethod]
         public static void RunTest2()
         {
+            var da = "A";
+            var db = "B";
+            var dc = "C";
+            var dd = "D";
+            var de = "E";
+            var df = "F";
+            var dx = "X";
             using (var undoRedo = new UndoRedo<string>())
             {
-                undoRedo.Add("A");
-                undoRedo.Add("B");
-                undoRedo.Add("C");
-                undoRedo.Add("D");               // A B C D
+                undoRedo.CatchCurrentRedoData += catchCurrentRedoData;
 
-                var ud = undoRedo.Undo();
-                var uc = undoRedo.Undo();
-                undoRedo.Add("E");               // A B E F
-                undoRedo.Add("F");
-                var uf = undoRedo.Undo();
-                var ue = undoRedo.Undo();
-                var ub = undoRedo.Undo();
-                var re = undoRedo.Redo();
-                var rf = undoRedo.Redo();
-                var qe = undoRedo.Undo();
-                var qb = undoRedo.Undo();
-                var qa = undoRedo.Undo();
-                var qn = undoRedo.Undo();        // null
+                undoRedo.Add(da);
+                undoRedo.Add(db);
+                undoRedo.Add(dc);
+                undoRedo.Add(dd);                //          stav  A B C D
+
+                var u1d = undoRedo.Undo();       // D        stav  A B C D X
+                var u1c = undoRedo.Undo();       // C        stav  A B C D X
+                undoRedo.Add(de);                //          stav  A B E
+                undoRedo.Add(df);                //          stav  A B E F
+                var u2f = undoRedo.Undo();       // F        stav  A B E F X
+                var u2e = undoRedo.Undo();       // E        stav  A B E F X
+                var u2b = undoRedo.Undo();       // B        stav  A B E F X
+                var r3e = undoRedo.Redo();       // E        stav  A B E F X
+                var r3f = undoRedo.Redo();       // F        stav  A B E F X
+                var r3x = undoRedo.Redo();       // X        stav  A B E F X
+                var u4f = undoRedo.Undo();
+                var u4e = undoRedo.Undo();
+                var u4b = undoRedo.Undo();
+                var u4a = undoRedo.Undo();
+                var u4n = undoRedo.Undo();        // null
+            }
+
+            void catchCurrentRedoData(object sender, UndoRedo<string>.CatchCurrentRedoDataEventArgs e)
+            {
+                e.RedoData = dx;
             }
         }
         #endregion
