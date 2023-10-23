@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static DjSoft.Tools.ProgramLauncher.Settings;
 
 namespace DjSoft.Tools.ProgramLauncher
 {
@@ -56,27 +57,6 @@ namespace DjSoft.Tools.ProgramLauncher
             this._StatusStrip.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
-        }
-        private void _TestUndoRedo()
-        {
-            App.UndoRedo.Add("A");
-            App.UndoRedo.Add("B");
-            App.UndoRedo.Add("C");
-            App.UndoRedo.Add("D");               // A B C D
-
-            var ud = App.UndoRedo.Undo();
-            var uc = App.UndoRedo.Undo();
-            App.UndoRedo.Add("E");               // A B E F
-            App.UndoRedo.Add("F");
-            var uf = App.UndoRedo.Undo();
-            var ue = App.UndoRedo.Undo();
-            var ub = App.UndoRedo.Undo();
-            var re = App.UndoRedo.Redo();
-            var rf = App.UndoRedo.Redo();
-            var qe = App.UndoRedo.Undo();
-            var qb = App.UndoRedo.Undo();
-            var qa = App.UndoRedo.Undo();
-            var qn = App.UndoRedo.Undo();        // null
         }
         protected override void WndProc(ref Message m)
         {
@@ -154,12 +134,28 @@ namespace DjSoft.Tools.ProgramLauncher
 
             App.CurrentAppearanceChanged += CurrentAppearanceChanged;          // Po změně vzhledu v App.CurrentAppearance proběhne tento event-handler
             App.CurrentLanguageChanged += CurrentLanguageChanged;
+            App.Settings.Changed += _SettingsChanged;
 
             App.CurrentAppearance = AppearanceInfo.GetItem(App.Settings.AppearanceName, true);     // Aktivuje posledně aktivní, anebo defaultní vzhled
             App.CurrentLayoutSet = ItemLayoutSet.GetItem(App.Settings.LayoutSetName, true);
             App.CurrentLanguage = LanguageSet.GetItem(App.Settings.LanguageCode, true);
 
             this.StatusLabelVersion.Text = "DjSoft";
+        }
+        /// <summary>
+        /// Po změně dat v Settings
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _SettingsChanged(object sender, SettingChangedEventArgs args)
+        {
+            switch (args.ChangedProperty)
+            {
+                case "PageSet":
+                    this._SettingsChangedPageSet();
+                    break;
+            }
         }
         /// <summary>
         /// Obsluha události po změně vzhledu z <see cref="App.CurrentAppearanceChanged"/>.
@@ -257,17 +253,11 @@ namespace DjSoft.Tools.ProgramLauncher
                 return button;
             }
         }
-
-        private void _UndoRedoCurrentStateChanged(object sender, EventArgs e)
-        {
-            RefreshToolbarUndoRedoState();
-        }
-        private void RefreshToolbarUndoRedoState()
-        {
-            var state = App.UndoRedo.CurrentState;
-            this._ToolUndoButton.Enabled = (state == UndoRedo.State.CanUndoRedo || state == UndoRedo.State.CanUndo);
-            this._ToolRedoButton.Enabled = (state == UndoRedo.State.CanUndoRedo || state == UndoRedo.State.CanRedo);
-        }
+        /// <summary>
+        /// Po jakékoli změně stavu kontejneru UndoRedo
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         /// <summary>
         /// Aktualizuje texty na prvcích Toolbaru 
         /// </summary>
@@ -288,9 +278,6 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             _ShowAppearanceMenu();
         }
-
-        private void _ToolUndoButton_Click(object sender, EventArgs e) { }
-        private void _ToolRedoButton_Click(object sender, EventArgs e) { }
         /// <summary>
         /// Po kliknutí na tlačítko Toolbaru: Preference
         /// </summary>
@@ -312,6 +299,65 @@ namespace DjSoft.Tools.ProgramLauncher
         private ToolStripButton _ToolRedoButton;
         private ToolStripButton _ToolPreferenceButton;
         private ToolStripButton _ToolEditButton;
+        #endregion
+        #region Undo a Redo
+        /// <summary>
+        /// Událost volaná po změně hodnoty v Settings.PageSet.
+        /// Provedeme přenačtení obsahu stránek.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _SettingsChangedPageSet()
+        {
+            this.ReloadPages();
+        }
+        /// <summary>
+        /// Událost volaná po změně stavu UndoRedo containeru.
+        /// Aktualizujeme stav Enabled pro buttony Undo a Redo v Toolbaru.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _UndoRedoCurrentStateChanged(object sender, EventArgs e)
+        {
+            RefreshToolbarUndoRedoState();
+        }
+        /// <summary>
+        /// Po kliknutí na tlačítko Toolbaru: UNDO
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ToolUndoButton_Click(object sender, EventArgs e)
+        {
+            if (App.UndoRedo.CanUndo)
+            {
+                var pageSet = App.UndoRedo.Undo();
+                if (pageSet != null)
+                    App.Settings.PageSet = pageSet;        // Setování vyvolá event App.Settings.Changed, takže se dostaneme do zdejší metody ReloadPages()
+            }
+        }
+        /// <summary>
+        /// Po kliknutí na tlačítko Toolbaru: REDO
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ToolRedoButton_Click(object sender, EventArgs e)
+        {
+            if (App.UndoRedo.CanRedo)
+            {
+                var pageSet = App.UndoRedo.Redo();
+                if (pageSet != null)
+                    App.Settings.PageSet = pageSet;        // Setování vyvolá event App.Settings.Changed, takže se dostaneme do zdejší metody ReloadPages()
+            }
+        }
+        /// <summary>
+        /// Aktualizuje Enabled buttonu Undo a Redo podle stavu kontejneru
+        /// </summary>
+        private void RefreshToolbarUndoRedoState()
+        {
+            var state = App.UndoRedo.CurrentState;
+            this._ToolUndoButton.Enabled = (state == UndoRedoState.CanUndoRedo || state == UndoRedoState.CanUndo);
+            this._ToolRedoButton.Enabled = (state == UndoRedoState.CanUndoRedo || state == UndoRedoState.CanRedo);
+        }
         #endregion
         #region PagesPanel
         /// <summary>

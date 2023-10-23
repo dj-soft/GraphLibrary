@@ -11,7 +11,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
     /// následně pak zjišťovat, zda nějaký existuje a dovoluje provést Undo i reverzní Redo.
     /// Obsahuje event o změně stavu, na který typicky reaguje Toolbar.
     /// </summary>
-    public class UndoRedo : IDisposable
+    public class UndoRedo<TData> : IDisposable
     {
         #region Konstruktor a privátní život
         /// <summary>
@@ -21,8 +21,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             __Steps = new List<UndoRedoStep>();
             __PointerUndo = -1;
+            __PointerRedo = -1;
             __MaxStepsCount = 250;
-            __LastAction = LastAction.None;
         }
         /// <summary>
         /// Jednotlivé kroky UndoRedo
@@ -35,13 +35,19 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Po vložení prvního prvku <see cref="Add(object)"/> obsahuje 0, po vložení dalšího prvku obsahuje 1, atd.<br/>
         /// Při požadavku <see cref="Undo()"/> se vrátí prvek na tomto indexu a tento index se o 1 sníží.<br/>
         /// Při stavu indexu menším než 0 se hlásí stav <see cref="CanUndo"/> = false, v tomto stavu požadavek <see cref="Undo()"/> vrátí null.<br/>
-        /// Pokud hodnota indexu <see cref="__PointerUndo"/> ukazuje na prvek, za kterým je ještě nějaký další prvek, pak je možno provést <see cref="Redo()"/>, hlásí se <see cref="CanRedo"/> = true.<br/>
-        /// Požadavek <see cref="Redo()"/> posune ukazatel <see cref="__PointerUndo"/> o 1 nahoru a vrátí prvek z daného indexu.<br/>
-        /// Pokud je ukláádn nový stav metodou <see cref="Add(object)"/>, a za pointerem jsou další kroky v poli <see cref="__Steps"/>, pak tyto objekty jsou zahozeny.
+        /// Pokud je ukládán nový stav metodou <see cref="Add(object)"/>, a za pointerem <see cref="__PointerUndo"/> by byly nějaké další kroky v poli <see cref="__Steps"/>, pak tyto objekty jsou zahozeny, už nebude možno je obnovit metodou Redo.
         /// Nový prvek je uložen za prvek, na který nyní ukazuje <see cref="__PointerUndo"/>.<br/>
         /// Toto chování repezentuje "Několik kroků zpátky a potom krok dopředu jiným směrem".
         /// </summary>
         private int __PointerUndo;
+        /// <summary>
+        /// Pointer na pozici kroku, který bych vrátil v nejbližším požadavku Redo.
+        /// <para/>
+        /// Pro prázdný kontejner obsahuje -1, stejně tak po přidání prvku metodou <see cref="Add(object)"/> = není možno provést akci Redo.<br/>
+        /// Po provedení akce Undo je do tohoto ukazatele uložen index prvku, který by byl vrácen metodou Redo.
+        /// Po provedení akce Redo je index posunut o +1 na další prvek v řadě akcí Redo.
+        /// </summary>
+        private int __PointerRedo;
         /// <summary>
         /// Maximální počet uložených kroků. Při přidání dalšího kroku nad tento počet jsou odebrány nejstarší kroky (od indexu 0).
         /// </summary>
@@ -55,10 +61,6 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         private const int __MaxStepCountMaximum = 1000;
         /// <summary>
-        /// Posledně provedená akce. Slouží ke správné synchronizaci indexu při změně Undo = Redo.
-        /// </summary>
-        private LastAction __LastAction;
-        /// <summary>
         /// Dispose
         /// </summary>
         public void Dispose()
@@ -66,18 +68,18 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             __Steps.Clear();
             __Steps = null;
             __PointerUndo = -1;
-            __LastAction = LastAction.Dispose;
+            __PointerRedo = -1;
         }
         #endregion
         #region Public
         /// <summary>
         /// Může container provést akci Undo?
         /// </summary>
-        public bool CanUndo { get { return _CanUndo(_CurrentState); } }
+        public bool CanUndo { get { return _CanUndo; } }
         /// <summary>
         /// Může container provést akci Redo?
         /// </summary>
-        public bool CanRedo { get { return _CanRedo(_CurrentState); } }
+        public bool CanRedo { get { return _CanRedo; } }
         /// <summary>
         /// Nejvyšší počet uložených kroků v tomto kontejneru. Při vložení dalšího kroku metodou <see cref="Add(object)"/>, který by byl nad tento počet, se nejstarší krok zahodí.
         /// </summary>
@@ -86,13 +88,13 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Aktuální stav containeru = jakou akci může provést.
         /// Při změně se volá event <see cref="CurrentStateChanged"/>.
         /// </summary>
-        public State CurrentState { get { return _CurrentState; } }
+        public UndoRedoState CurrentState { get { return _CurrentState; } }
         public event EventHandler CurrentStateChanged;
         /// <summary>
         /// Vloží dodaný stav do containeru
         /// </summary>
         /// <param name="data"></param>
-        public void Add(object data)
+        public void Add(TData data)
         {
             var oldState = _CurrentState;
             _RemoveRedo();
@@ -104,7 +106,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Vrátí objekt uložený jako krok Zpět
         /// </summary>
         /// <param name="data"></param>
-        public object Undo()
+        public TData Undo()
         {
             var oldState = _CurrentState;
             var data = _Undo();
@@ -115,12 +117,39 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Vrátí objekt uložený jako krok Vpřed
         /// </summary>
         /// <param name="data"></param>
-        public object Redo()
+        public TData Redo()
         {
             var oldState = _CurrentState;
             var data = _Redo();
             _RunChanged(oldState);
             return data;
+        }
+        /// <summary>
+        /// Událost je volána při provádění prvního Undo kroku, kdy aplikace může mít k dispozici aktuální stav dat, který není uložen v UndoRedo containeru.
+        /// UndoRedo container si v této situaci data vyžádá a uloží do zásobníku jako "aktuální", a tím umožní po Undo provést Redo do aktuálního stavu dat.
+        /// Pokud aplikace tento event nepoužije, anebo v něm nenaplní property <see cref="CatchCurrentRedoDataEventArgs.RedoData"/>, pak po prvním Undo nebude možno provést Redo.
+        /// </summary>
+        public event EventHandler<CatchCurrentRedoDataEventArgs> CatchCurrentRedoData;
+        /// <summary>
+        /// Data pro event <see cref="CatchCurrentRedoData"/>
+        /// </summary>
+        public class CatchCurrentRedoDataEventArgs : EventArgs
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            public CatchCurrentRedoDataEventArgs() 
+            {
+                __HasRedoData = false;
+            }
+            /// <summary>
+            /// Data získaná z aktuálního dokumentu, určená pro nejbližší Redo krok
+            /// </summary>
+            public TData RedoData { get { return __RedoData; } set { __RedoData = value; __HasRedoData = true; } } private TData __RedoData;
+            /// <summary>
+            /// Obsahuje true poté, kdy do <see cref="RedoData"/> byl setován nějaký objekt.
+            /// </summary>
+            public bool HasRedoData { get { return __HasRedoData; } } private bool __HasRedoData;
         }
         #endregion
         #region Private
@@ -165,132 +194,126 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Vloží daný objekt jako nový Undo Step, a nastaví Pointer na tento prvek
         /// </summary>
         /// <param name="data"></param>
-        private void _AddStep(object data)
+        private void _AddStep(TData data)
         {
             UndoRedoStep step = new UndoRedoStep(data);
             __Steps.Add(step);
             __PointerUndo = __Steps.Count - 1;
-            __LastAction = LastAction.Add;
+            __PointerRedo = -1;
         }
         /// <summary>
         /// Vrátí objekt uložený jako krok Zpět
         /// </summary>
         /// <param name="data"></param>
-        private object _Undo()
+        private TData _Undo()
         {
-            int count = __Steps.Count;
-            if (count == 0) return null;
+            if (!_CanUndo) return default;
+
+            _AddCurrentDataAsNextRedo();
 
             int pointer = __PointerUndo;
-            if (__LastAction == LastAction.Redo) pointer--;          // Pokud jsem poslední akci měl Redo, pak ukazuji na prvek posledně vrácený, takže pro Undo se musím vrátit o 1 dolů
-            if (pointer < 0) return null;
-
-            if (pointer >= count) pointer = count - 1;
             var data = __Steps[pointer].Data;
+
             __PointerUndo = pointer - 1;
-            __LastAction = LastAction.Undo;
+            __PointerRedo = pointer + 1;
 
             return data;
+        }
+        /// <summary>
+        /// Speciální operace, která zajistí uložení aktuálního stavu dat jako nejbližší krok Redo pro první Undo v řadě.
+        /// Provádí se pouze tehdy, když je možno provést Undo, a přitom ukazatel <see cref="__PointerRedo"/> je záporný 
+        /// = jsme ve stavu, kdy byl vložen nějaký datový stav, a možná jsou aktuální data změněna.
+        /// Získání dat provede event , pokud je implmentován.
+        /// </summary>
+        private void _AddCurrentDataAsNextRedo()
+        {
+            // Za některé situace nebudeme event provádět:
+            if (!_CanUndo || __PointerRedo >= 0 || CatchCurrentRedoData is null) return;
+
+            CatchCurrentRedoDataEventArgs args = new CatchCurrentRedoDataEventArgs();
+            CatchCurrentRedoData(null, args);
+            if (!args.HasRedoData) return;
+
+            // Máme data z aplikace => přidám je na konec pole __Steps, ale nebudu měnit indexy:
+            __Steps.Add(new UndoRedoStep(args.RedoData));
         }
         /// <summary>
         /// Vrátí objekt uložený jako krok Vpřed
         /// </summary>
         /// <param name="data"></param>
-        private object _Redo()
+        private TData _Redo()
         {
-            int count = __Steps.Count;
-            if (count == 0) return null;
+            if (!_CanRedo) return default;
 
-            int pointer = __PointerUndo;
-            if (__LastAction == LastAction.Undo) pointer++;          // Pokud jsem poslední akci dal Undo, pak ukazuji na prvek před prvkem posledně vráceným, a obyčejná +1 mě vrátí na týž prvek, který jsem posledně vrátil...  Přidám tedy dvakrát +1 !
-            if (pointer >= (count - 1)) return null;
-
-            pointer++;
-            if (pointer < 0) pointer = 0;
+            int pointer = __PointerRedo;
             var data = __Steps[pointer].Data;
-            __PointerUndo = pointer;
-            __LastAction = LastAction.Redo;
+
+            __PointerUndo = pointer - 1;
+            __PointerRedo = pointer + 1;
 
             return data;
-        }
-        /// <summary>
-        /// Posledně prováděná akce
-        /// </summary>
-        private enum LastAction
-        {
-            None,
-            Add,
-            Undo,
-            Redo,
-            Dispose
         }
         /// <summary>
         /// Pokud daný starý stav se liší od aktuálního, pak zavolá eventhandler <see cref="CurrentStateChanged"/>
         /// </summary>
         /// <param name="oldState"></param>
-        private void _RunChanged(State oldState)
+        private void _RunChanged(UndoRedoState oldState)
         {
-            State newState = _CurrentState;
+            UndoRedoState newState = _CurrentState;
             if (newState != oldState)
                 CurrentStateChanged?.Invoke(null, EventArgs.Empty);
         }
         /// <summary>
         /// Aktuální stav kontejneru, právě nyní vypočtený
         /// </summary>
-        private State _CurrentState
+        private UndoRedoState _CurrentState
         {
             get
             {
-                if (__Steps is null || __Steps.Count == 0) return State.Empty;
-                int count = __Steps.Count;
-                int pointer = __PointerUndo;
-                bool canUndo = (pointer >= 0);             // Undo mohu provést, když Pointer ukazuje na konkrétní prvek (i když Pointer = 0, mohu vrátit prvek na indexu [0]
-                bool canRedo = (pointer < (count - 1));    // Redo mohu provést, když za prvkem na který ukazuje Pointer je ještě další prvek
-                return ((canUndo && canRedo) ? State.CanUndoRedo :
-                         canUndo ? State.CanUndo :
-                         canRedo ? State.CanRedo : State.Empty);
+                if (__Steps is null || __Steps.Count == 0) return UndoRedoState.Empty;
+                bool canUndo = _CanUndo;
+                bool canRedo = _CanRedo;
+                return ((canUndo && canRedo) ? UndoRedoState.CanUndoRedo :
+                         canUndo ? UndoRedoState.CanUndo :
+                         canRedo ? UndoRedoState.CanRedo : UndoRedoState.Empty);
             }
         }
         /// <summary>
-        /// Vrátí true, pokud za daného stavu lze provést Undo
+        /// Vrátí true, pokud aktuálně lze provést Undo
         /// </summary>
         /// <param name="state"></param>
         /// <returns></returns>
-        private bool _CanUndo(State state) { return (state == State.CanUndo || state == State.CanUndoRedo); }
-        /// <summary>
-        /// Vrátí true, pokud za daného stavu lze provést Redo
-        /// </summary>
-        /// <param name="state"></param>
-        /// <returns></returns>
-        private bool _CanRedo(State state) { return (state == State.CanRedo || state == State.CanUndoRedo); }
-        /// <summary>
-        /// Stav kontejneru
-        /// </summary>
-        public enum State
+        private bool _CanUndo
         {
-            /// <summary>
-            /// Kontejner je prázdný
-            /// </summary>
-            Empty,
-            /// <summary>
-            /// Mohu provést Undo
-            /// </summary>
-            CanUndo,
-            /// <summary>
-            /// Mohu provést Redo
-            /// </summary>
-            CanRedo,
-            /// <summary>
-            /// Mohu provést Undo i Redo
-            /// </summary>
-            CanUndoRedo
+            get
+            {
+                int count = __Steps.Count;
+                if (count == 0) return false;
+                int pointerUndo = __PointerUndo;
+                return (pointerUndo >= 0 && pointerUndo <= (count - 1));
+            }
+        }
+        /// <summary>
+        /// Vrátí true, pokud aktuálně lze provést Redo
+        /// </summary>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        private bool _CanRedo
+        {
+            get
+            {
+                int count = __Steps.Count;
+                if (count == 0) return false;
+                int pointerRedo = __PointerRedo;
+                return (pointerRedo >= 0 && pointerRedo <= (count - 1));
+            }
         }
         /// <summary>
         /// Jeden krok UndoRedo containeru
         /// </summary>
         private class UndoRedoStep
         {
-            public UndoRedoStep(object data)
+            public UndoRedoStep(TData data)
             {
                 __Data = data;
             }
@@ -298,9 +321,95 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             {
                 return this.Data?.ToString();
             }
-            public object Data { get { return __Data; } }
-            private object __Data;
+            public TData Data { get { return __Data; } }
+            private TData __Data;
         }
         #endregion
     }
+    #region Enumy a testy
+    /// <summary>
+    /// Stav kontejneru UndoRedo
+    /// </summary>
+    public enum UndoRedoState
+    {
+        /// <summary>
+        /// Kontejner je prázdný
+        /// </summary>
+        Empty,
+        /// <summary>
+        /// Mohu provést Undo
+        /// </summary>
+        CanUndo,
+        /// <summary>
+        /// Mohu provést Redo
+        /// </summary>
+        CanRedo,
+        /// <summary>
+        /// Mohu provést Undo i Redo
+        /// </summary>
+        CanUndoRedo
+    }
+    /// <summary>
+    /// Třída pro testování kontejneru UndoRedo
+    /// </summary>
+    [TestClass]
+    public class UndoRedoTest
+    {
+        #region Testy
+        /// <summary>
+        /// Provede testy
+        /// </summary>
+        [TestMethod]
+        public static void RunTest1()
+        {
+            string d0 = "A";
+            string d1 = "B";
+            using (var undoRedo = new UndoRedo<string>())
+            {
+                undoRedo.CatchCurrentRedoData += catchCurrentRedoData;
+                undoRedo.Add(d0);
+                var a1 = undoRedo.Undo();
+                var a2 = undoRedo.Redo();
+
+                if (a1 != d0) TestManager.AddError($"Undo != data: '{a1}' != {d0}");
+                if (a2 != d1) TestManager.AddError($"Redo != data: '{a1}' != {d0}");
+            }
+
+            void catchCurrentRedoData(object sender, UndoRedo<string>.CatchCurrentRedoDataEventArgs e)
+            {
+                e.RedoData = d1;
+            }
+        }
+
+        /// <summary>
+        /// Provede testy
+        /// </summary>
+        [TestMethod]
+        public static void RunTest2()
+        {
+            using (var undoRedo = new UndoRedo<string>())
+            {
+                undoRedo.Add("A");
+                undoRedo.Add("B");
+                undoRedo.Add("C");
+                undoRedo.Add("D");               // A B C D
+
+                var ud = undoRedo.Undo();
+                var uc = undoRedo.Undo();
+                undoRedo.Add("E");               // A B E F
+                undoRedo.Add("F");
+                var uf = undoRedo.Undo();
+                var ue = undoRedo.Undo();
+                var ub = undoRedo.Undo();
+                var re = undoRedo.Redo();
+                var rf = undoRedo.Redo();
+                var qe = undoRedo.Undo();
+                var qb = undoRedo.Undo();
+                var qa = undoRedo.Undo();
+                var qn = undoRedo.Undo();        // null
+            }
+        }
+        #endregion
+    }
+    #endregion
 }

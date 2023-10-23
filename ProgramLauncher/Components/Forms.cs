@@ -576,7 +576,7 @@ namespace DjSoft.Tools.ProgramLauncher
             key = _FormPositionGetKey(settingsName, true);
             positions.StoreValue(key, positionData);
 
-            this.SetChanged();
+            this.SetChanged("FormPositions");
         }
         /// <summary>
         /// Zkusí najít pozici pro formulář daného jména a aktuální / nebo obecnou konfiguraci monitorů.

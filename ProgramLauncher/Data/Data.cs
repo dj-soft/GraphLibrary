@@ -213,6 +213,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <param name="menuItem"></param>
         public static void RunContextMenuAction(DataItemActionType actionType, ContextActionInfo actionInfo)
         {
+            bool isEdited = false;
+            PageSetData pageSetClone = actionInfo.PageSetData.Clone();
+
             switch (actionType)
             {
                 case DataItemActionType.MovePage:
@@ -221,7 +224,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 case DataItemActionType.EditPage:
                 case DataItemActionType.CopyPage:
                 case DataItemActionType.DeletePage:
-                    PageSetData.RunEditAction(actionType, actionInfo);
+                    isEdited = PageSetData.RunEditAction(actionType, actionInfo);
                     break;
                 case DataItemActionType.MoveGroup:
                     break;
@@ -229,7 +232,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 case DataItemActionType.EditGroup:
                 case DataItemActionType.CopyGroup:
                 case DataItemActionType.DeleteGroup:
-                    PageData.RunEditAction(actionType, actionInfo);
+                    isEdited = PageData.RunEditAction(actionType, actionInfo);
                     break;
                 case DataItemActionType.MoveApplication:
                     break;
@@ -237,12 +240,18 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 case DataItemActionType.EditApplication:
                 case DataItemActionType.CopyApplication:
                 case DataItemActionType.DeleteApplication:
-                    GroupData.RunEditAction(actionType, actionInfo);
+                    isEdited = GroupData.RunEditAction(actionType, actionInfo);
                     break;
                 case DataItemActionType.RunApplication:
                 case DataItemActionType.RunApplicationAsAdmin:
-                    ApplicationData.RunEditAction(actionType, actionInfo);
+                    isEdited = ApplicationData.RunEditAction(actionType, actionInfo);
                     break;
+            }
+
+            if (isEdited)
+            {
+                App.Settings.SetChanged("PageSet");
+                App.UndoRedo.Add(pageSetClone);
             }
         }
         #endregion
@@ -251,10 +260,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Provede vybranou akci pro svoje stránky
         /// </summary>
         /// <param name="menuItem"></param>
-        public static void RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
+        public static bool RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
         {
             var pageSetData = actionInfo.PageSetData;
-            PageSetData pageSetClone = actionInfo.PageSetData.Clone();
 
             var pageData = (actionInfo.ItemData as PageData);
             bool hasPageData = pageData != null;
@@ -286,11 +294,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 pageSetData.Pages.Add(pageData);
                 isUpdated = true;
             }
-            if (isUpdated)
-            {
-                App.Settings.SetChanged();
-                App.UndoRedo.Add(pageSetClone);
-            }
+
+            return isUpdated;
         }
         #endregion
         #region Tvorba výchozích dat - namísto prázdných
@@ -462,13 +467,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Provede vybranou akci pro svoje grupy
         /// </summary>
         /// <param name="menuItem"></param>
-        public static void RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
+        public static bool RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
         {
             var pageData = actionInfo.AreaData as PageData;
             bool hasPageData = (pageData != null);
-            if (!hasPageData) return;
-
-            PageSetData pageSetClone = actionInfo.PageSetData.Clone();
+            if (!hasPageData) return false;
 
             var groupData = (actionInfo.ItemData as GroupData);
             bool hasGroupData = (groupData != null);
@@ -500,11 +503,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 pageData.Groups.Add(groupData);
                 isUpdated = true;
             }
-            if (isUpdated)
-            {
-                App.Settings.SetChanged();
-                App.UndoRedo.Add(pageSetClone);
-            }
+
+            return isUpdated;
         }
         #endregion
         #region Podpora de/serializace
@@ -612,13 +612,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Provede vybranou akci pro svoje stránky
         /// </summary>
         /// <param name="menuItem"></param>
-        public static void RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
+        public static bool RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
         {
             var pageData = actionInfo.AreaData as PageData;
             bool hasPageData = (pageData != null);
-            if (!hasPageData) return;
-
-            PageSetData pageSetClone = actionInfo.PageSetData.Clone();
+            if (!hasPageData) return false;
 
             var applicationData = (actionInfo.ItemData as ApplicationData);
             bool hasApplicationData = (applicationData != null);
@@ -641,11 +639,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 case DataItemActionType.DeleteApplication:
                     break;
             }
-            if (isUpdated)
-            {
-                App.Settings.SetChanged();
-                App.UndoRedo.Add(pageSetClone);
-            }
+
+            return isUpdated;
         }
         #endregion
         #region Podpora de/serializace
@@ -775,7 +770,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Provede vybranou akci pro svoje stránky
         /// </summary>
         /// <param name="menuItem"></param>
-        public static void RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
+        public static bool RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
         {
             var applicationData = (actionInfo.ItemData as ApplicationData);
             bool hasApplicationData = applicationData != null;
@@ -790,6 +785,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                         applicationData.RunNewProcess(true);
                     break;
             }
+
+            return false;
         }
         #endregion
         #region Spouštění aplikace
@@ -1409,9 +1406,12 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <summary>
         /// Sada všech stránek.
         /// Seznam stránek má vždy alespoň jednu stránku, obsahující jednu grupu a výchozí aplikace.
+        /// <para/>
+        /// Hodnotu lze setovat, to se provádí při kroku Undo/Redo.
+        /// Setování vyvolá event <see cref="Changed"/>, ale nezapisuje se do UndoRedo containeru.
         /// </summary>
         [PersistingEnabled(false)]
-        public PageSetData PageSet { get { return _GetPageSet(); } }
+        public PageSetData PageSet { get { return _GetPageSet(); } set { _PageSet = value; App.Settings.SetChanged("PageSet"); } }
         /// <summary>
         /// Vrátí data sady stránek. Zajistí jejich případnou tvorbu a naplnění.
         /// </summary>

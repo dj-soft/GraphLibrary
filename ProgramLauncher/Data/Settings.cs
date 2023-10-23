@@ -3,8 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Management;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace DjSoft.Tools.ProgramLauncher
 {
@@ -176,16 +178,20 @@ namespace DjSoft.Tools.ProgramLauncher
         public bool IsChanged { get { return __IsChanged; } }
         private bool __IsChanged;
         /// <summary>
-        /// Nastaví příznak <see cref="IsChanged"/> = true a zahájí odpočet času do provedení AutoSave
+        /// Nastaví příznak <see cref="IsChanged"/> = true a zahájí odpočet času do provedení AutoSave.
+        /// Vyvolá event <see cref="Changed"/>.
         /// </summary>
-        public void SetChanged()
+        public void SetChanged(string changedProperty)
         {
             __IsChanged = true;
+
+            _RunChanged(changedProperty);
 
             int milisecs = (int)AutoSaveDelay.TotalMilliseconds;
             __AutoSaveDelayedGuid = WatchTimer.CallMeAfter(_Save, milisecs, id: __AutoSaveDelayedGuid);
         }
         private Guid? __AutoSaveDelayedGuid;
+
         /// <summary>
         /// Uloží data konfigurace do patřičného souboru. Uloží je ihned.
         /// </summary>
@@ -225,12 +231,42 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         #endregion
         #region Základní data konfigurace
-        public string AppearanceName { get { return __AppearanceName; } set { __AppearanceName = value; SetChanged(); } } private string __AppearanceName;
-        public string LayoutSetName { get { return __LayoutSetName; } set { __LayoutSetName = value; SetChanged(); } } private string __LayoutSetName;
-        public string LanguageCode { get { return __LanguageCode; } set { __LanguageCode = value; SetChanged(); } } private string __LanguageCode;
-        public bool TrayInfoIsAccepted { get { return __TrayInfoIsAccepted; } set { __TrayInfoIsAccepted = value; SetChanged(); } } private bool __TrayInfoIsAccepted;
+        public string AppearanceName { get { return __AppearanceName; } set { __AppearanceName = value; SetChanged(nameof(AppearanceName)); } } private string __AppearanceName;
+        public string LayoutSetName { get { return __LayoutSetName; } set { __LayoutSetName = value; SetChanged(nameof(LayoutSetName)); } } private string __LayoutSetName;
+        public string LanguageCode { get { return __LanguageCode; } set { __LanguageCode = value; SetChanged(nameof(LanguageCode)); } } private string __LanguageCode;
+        public bool TrayInfoIsAccepted { get { return __TrayInfoIsAccepted; } set { __TrayInfoIsAccepted = value; SetChanged(nameof(TrayInfoIsAccepted)); } } private bool __TrayInfoIsAccepted;
 
+        /// <summary>
+        /// Vyvolá event <see cref="Changed"/>
+        /// </summary>
+        private void _RunChanged(string changedProperty)
+        {
+            SettingChangedEventArgs args = new SettingChangedEventArgs(changedProperty);
+            OnChanged(args);
+            Changed?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Po změně dat
+        /// </summary>
+        protected virtual void OnChanged(SettingChangedEventArgs args) { }
+        /// <summary>
+        /// Proběhne po změně dat
+        /// </summary>
+        public event EventHandler<SettingChangedEventArgs> Changed;
+        /// <summary>
+        /// Data pro handler události <see cref="Changed"/>
+        /// </summary>
+        public class SettingChangedEventArgs : EventArgs
+        {
+            public SettingChangedEventArgs(string changedProperty)
+            {
+                ChangedProperty = changedProperty;
+            }
+            /// <summary>
+            /// Property, jejích obsaz se změnil
+            /// </summary>
+            public string ChangedProperty { get; private set; }
+        }
         #endregion
-
     }
 }

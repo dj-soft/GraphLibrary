@@ -102,6 +102,9 @@ namespace DjSoft.Tools.ProgramLauncher
             __AppMutex = appMutex;
             if (appMutex != null)
                 _CreateServerPipe();
+
+            if (HasArgument("RunTests"))
+                TestManager.RunTests();
         }
         /// <summary>
         /// Ukončení běhu aplikace
@@ -1559,15 +1562,15 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <summary>
         /// UndoRedo container
         /// </summary>
-        public static UndoRedo UndoRedo { get { return Current._UndoRedo; } }
+        public static UndoRedo<PageSetData> UndoRedo { get { return Current._UndoRedo; } }
         /// <summary>
         /// UndoRedo property
         /// </summary>
-        private UndoRedo _UndoRedo { get { if (__UndoRedo is null) __UndoRedo = new UndoRedo(); return __UndoRedo; } }
+        private UndoRedo<PageSetData> _UndoRedo { get { if (__UndoRedo is null) __UndoRedo = new UndoRedo<PageSetData>(); return __UndoRedo; } }
         /// <summary>
         /// UndoRedo  field
         /// </summary>
-        private UndoRedo __UndoRedo;
+        private UndoRedo<PageSetData> __UndoRedo;
         /// <summary>
         /// Ukončí život UndoRedo
         /// </summary>
