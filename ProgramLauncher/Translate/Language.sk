@@ -1,4 +1,4 @@
-// Překlady aplikace ProgramLauncher do jazyka SK
+﻿// Překlady aplikace ProgramLauncher do jazyka SK
 
 #Language SK
 #Name Slovensky
@@ -6,14 +6,28 @@
 #Order 30
 #ParentLanguage CZ
 
+ErrorTitle *Došlo k chybě
+ResultInformationTitle *Výsledná informace
+ModifiedFiles *Byly modifikovány tyto soubory:
+NoModifiedFiles *Nebyly modifikovány žádné soubory.
 ToolStripButtonAppearanceToolTip Zmeniť vzhľad (farebná paleta, veľkosť, jazyk)
+ToolStripButtonUndoToolTip Vrátí zpět posledně provedenou změnu
+ToolStripButtonRedoToolTip Obnoví vpřed posledně vrácenou změnu
 ToolStripButtonPreferenceToolTip Nastaviť správanie aplikácie
 ToolStripButtonEditToolTip Upraviť obsah
+ToolStripButtonMessageSyncToolTip *Naplnit jazykové soubory aktuálním seznamem hlášek
 StatusStripPageCountText bez stránok×stránka×stránky×stránok
 StatusStripApplicationText bez aplikácií×aplikácie×aplikácie×aplikácií
 AppearanceMenuHeaderColorPalette FAREBNÁ PALETA
 AppearanceMenuHeaderLayoutStyle VEĽKOSŤ
 AppearanceMenuHeaderLanguage JAZYK
+AppContextMenuTitlePages Stránky
+AppContextMenuTitlePage Stránka '%0'
+AppContextMenuNewPageText Nová stránka
+AppContextMenuNewPageToolTip Přidá novou stránku: otevře okno a umožní změnit popis, barvu a chování
+AppContextMenuTitleApplications Stránka aplikací
+AppContextMenuTitleGroup Skupina '%0'
+AppContextMenuTitleApplication Aplikace '%0'
 AppContextMenuRunText Spustiť
 AppContextMenuRunToolTip Spustí túto aplikáciu
 AppContextMenuRunAsText Spustiť ako správca
@@ -21,11 +35,19 @@ AppContextMenuRunAsToolTip Spustí túto aplikáciu s oprávnením Správcu
 AppContextMenuRemoveText Odstrániť
 AppContextMenuRemoveApplicationToolTip Odstrániť túto aplikáciu z ponuky
 AppContextMenuEditText Upraviť
+AppContextMenuCopyText *Zkopírovat
 AppContextMenuEditApplicationToolTip Otvorí okno a umožní zmeniť popis, cieľovú aplikáciu a správanie tejto položky
 AppContextMenuNewApplicationText Nová aplikácia
+AppContextMenuCopyPageToolTip *Zkopírovat tuto stránku včetně celého obsahu
+AppContextMenuCopyGroupToolTip *Zkopírovat tuto skupinu aplikací včetně celého obsahu
+AppContextMenuCopyApplicationToolTip *Zkopírovat tuto aplikaci do nové ikony
 AppContextMenuNewApplicationToolTip Pridá novú aplikáciu: otvorí okno a umožní zmeniť popis, cieľovú aplikáciu a správanie tejto položky
 AppContextMenuNewGroupText Nová skupina
 AppContextMenuNewGroupToolTip Pridá novú skupinu aplikácií, do nej potom bude možné pridávať aplikácie
+EditFormTitleNewPage *Nová stránka
+EditFormTitleNewGroup *Nová skupina aplikací
+EditFormTitleNewApplication *Nová aplikace
+EditFormTitleClone *Kopie: %0
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Ukončenie aplikácie
 TrayIconBalloonText Aplikácia je len schovaná.××Pre reálne vypnutie ju zatvorte krížikom spolu s klávesom CTRL!××alebo použite kontextové menu na tejto ikone.
@@ -35,4 +57,3 @@ TrayIconAcceptTrayInfoText Pochopil som informáciu
 TrayIconAcceptTrayInfoToolTip Aplikácia sa bežným zatvorením neukončuje, iba sa skryje.××Pri každom skrytí aplikácie sa rozsvietia informácia.××Ak už túto informáciu nechcem zobrazovať, zaškrtnem túto voľbu.
 TrayIconApplicationExitText Ukončiť aplikáciu
 TrayIconApplicationExitToolTip Ukončí túto aplikáciu.××Po jej ďalšom otvorení nemusí správne fungovať spúšťanie takých aplikácií,××ktoré sú označené 'Otvoriť len jedno okno'.
-

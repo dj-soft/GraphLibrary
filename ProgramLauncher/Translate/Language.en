@@ -1,4 +1,4 @@
-// Překlady aplikace ProgramLauncher do jazyka EN.
+﻿// Překlady aplikace ProgramLauncher do jazyka EN.
 
 #Language EN
 #Name English
@@ -6,14 +6,28 @@
 #Order 20
 #ParentLanguage CZ
 
+ErrorTitle An error has occurred
+ResultInformationTitle Result information
+ModifiedFiles The following files were modified:
+NoModifiedFiles No files have been modified.
 ToolStripButtonAppearanceToolTip Change appearance (color palette, size, language)
+ToolStripButtonUndoToolTip Reverts the last change made
+ToolStripButtonRedoToolTip Rolls forward the last reverted change
 ToolStripButtonPreferenceToolTip Set application behavior
 ToolStripButtonEditToolTip Modify content
+ToolStripButtonMessageSyncToolTip Fill the language files with the current list of announcements
 StatusStripPageCountText no pages×page×page×pages
 StatusStripApplicationText no apps×app×app×apps
 AppearanceMenuHeaderColorPalette COLOR PALETTE
 AppearanceMenuHeaderLayoutStyle LAYOUT SIZE
 AppearanceMenuHeaderLanguage LANGUAGE
+AppContextMenuTitlePages Sites
+AppContextMenuTitlePage Page '%0'
+AppContextMenuNewPageText New page
+AppContextMenuNewPageToolTip Adds a new page: opens a window and allows you to change the description, color and behavior
+AppContextMenuTitleApplications Applications page
+AppContextMenuTitleGroup Group '%0'
+AppContextMenuTitleApplication Application '%0'
 AppContextMenuRunText Start
 AppContextMenuRunToolTip Starts this application
 AppContextMenuRunAsText Run as administrator
@@ -21,11 +35,19 @@ AppContextMenuRunAsToolTip Runs this application with Administrator privileges
 AppContextMenuRemoveText Remove
 AppContextMenuRemoveApplicationToolTip Remove this application from the menu
 AppContextMenuEditText Edit
+AppContextMenuCopyText Copy
 AppContextMenuEditApplicationToolTip Opens a window and allows you to change the description, target application and behavior of this item
 AppContextMenuNewApplicationText New application
+AppContextMenuCopyPageToolTip Copy this page including all content
+AppContextMenuCopyGroupToolTip Copy this application group including all content
+AppContextMenuCopyApplicationToolTip Copy this application to a new icon
 AppContextMenuNewApplicationToolTip Adds a new application: opens a window and allows you to change the description, target application and behavior of this item
 AppContextMenuNewGroupText New group
 AppContextMenuNewGroupToolTip It will add a new group of applications, then it will be possible to add applications to it
+EditFormTitleNewPage New page
+EditFormTitleNewGroup A new group of applications
+EditFormTitleNewApplication New application
+EditFormTitleClone Copy: %0
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Terminating the application
 TrayIconBalloonText The application is only hidden.××To actually turn it off, close it with a cross together with the CTRL key!××Or use the context menu on this icon.
@@ -35,4 +57,3 @@ TrayIconAcceptTrayInfoText I understood the information
 TrayIconAcceptTrayInfoToolTip The application does not end with normal closing, it only hides.××Whenever the application is hidden, the information lights up.××If I no longer want to display this information, I check this option.
 TrayIconApplicationExitText Close application
 TrayIconApplicationExitToolTip Terminates this application.××Starting such applications that are marked 'Open only one window' may not work properly after opening it next time.
-

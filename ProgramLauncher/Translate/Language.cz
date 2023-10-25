@@ -1,4 +1,4 @@
-// Překlady aplikace ProgramLauncher do jazyka CZ
+﻿// Překlady aplikace ProgramLauncher do jazyka CZ
 
 #Language CZ
 #Name Česky
@@ -6,14 +6,28 @@
 #Order 10
 #ParentLanguage
 
+ErrorTitle Došlo k chybě
+ResultInformationTitle Výsledná informace
+ModifiedFiles Byly modifikovány tyto soubory:
+NoModifiedFiles Nebyly modifikovány žádné soubory.
 ToolStripButtonAppearanceToolTip Změnit vzhled (barevná paleta, velikost, jazyk)
+ToolStripButtonUndoToolTip Vrátí zpět posledně provedenou změnu
+ToolStripButtonRedoToolTip Obnoví vpřed posledně vrácenou změnu
 ToolStripButtonPreferenceToolTip Nastavit chování aplikace
 ToolStripButtonEditToolTip Upravit obsah
+ToolStripButtonMessageSyncToolTip Naplnit jazykové soubory aktuálním seznamem hlášek
 StatusStripPageCountText bez stránek×stránka×stránky×stránek
 StatusStripApplicationText bez aplikací×aplikace×aplikace×aplikací
 AppearanceMenuHeaderColorPalette BAREVNÁ PALETA
 AppearanceMenuHeaderLayoutStyle VELIKOST
 AppearanceMenuHeaderLanguage JAZYK
+AppContextMenuTitlePages Stránky
+AppContextMenuTitlePage Stránka '%0'
+AppContextMenuNewPageText Nová stránka
+AppContextMenuNewPageToolTip Přidá novou stránku: otevře okno a umožní změnit popis, barvu a chování
+AppContextMenuTitleApplications Stránka aplikací
+AppContextMenuTitleGroup Skupina '%0'
+AppContextMenuTitleApplication Aplikace '%0'
 AppContextMenuRunText Spustit
 AppContextMenuRunToolTip Spustí tuto aplikaci
 AppContextMenuRunAsText Spustit jako správce
@@ -21,11 +35,19 @@ AppContextMenuRunAsToolTip Spustí tuto aplikaci s oprávněním Správce
 AppContextMenuRemoveText Odstranit
 AppContextMenuRemoveApplicationToolTip Odstranit tuto aplikaci z nabídky
 AppContextMenuEditText Upravit
+AppContextMenuCopyText Zkopírovat
 AppContextMenuEditApplicationToolTip Otevře okno a umožní změnit popis, cílovou aplikaci a chování této položky
 AppContextMenuNewApplicationText Nová aplikace
+AppContextMenuCopyPageToolTip Zkopírovat tuto stránku včetně celého obsahu
+AppContextMenuCopyGroupToolTip Zkopírovat tuto skupinu aplikací včetně celého obsahu
+AppContextMenuCopyApplicationToolTip Zkopírovat tuto aplikaci do nové ikony
 AppContextMenuNewApplicationToolTip Přidá novou aplikaci: otevře okno a umožní změnit popis, cílovou aplikaci a chování této položky
 AppContextMenuNewGroupText Nová skupina
 AppContextMenuNewGroupToolTip Přidá novou skupinu aplikací, do ní pak bude možno přidávat aplikace
+EditFormTitleNewPage Nová stránka
+EditFormTitleNewGroup Nová skupina aplikací
+EditFormTitleNewApplication Nová aplikace
+EditFormTitleClone Kopie: %0
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Ukončení aplikace
 TrayIconBalloonText Aplikace je jen schovaná.××Pro reálné vypnutí ji zavřete křížkem spolu s klávesou CTRL!××Anebo použijte kontextové menu na této ikoně.
@@ -35,4 +57,3 @@ TrayIconAcceptTrayInfoText Pochopil jsem informaci
 TrayIconAcceptTrayInfoToolTip Aplikace se běžným zavřením neukončuje, pouze se skryje.××Při každém skrytí aplikace se rozsvítí informace.××Pokud již tuto informaci nechci zobrazovat, zaškrtnu tuto volbu.
 TrayIconApplicationExitText Ukončit aplikaci
 TrayIconApplicationExitToolTip Ukončí tuto aplikaci.××Po jejím příštím otevření nemusí správně fungovat spouštění takových aplikací,××které jsou označené 'Otevřít jen jedno okno'.
-

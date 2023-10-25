@@ -823,6 +823,16 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap edit_text_frame_update_48 {
+            get {
+                object obj = ResourceManager.GetObject("edit_text_frame_update_48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap edit_undo_3_48 {
             get {
                 object obj = ResourceManager.GetObject("edit_undo_3_48", resourceCulture);

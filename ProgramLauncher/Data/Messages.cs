@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace DjSoft.Tools.ProgramLauncher.Data
 {
@@ -81,6 +82,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <returns></returns>
         private string _GetText(string defaultText, [CallerMemberName] string code = null)
         {
+            if (this.__ForceDefaultValues) return defaultText;
+
             var defaultLanguage = Default;
             string text;
             if (!String.IsNullOrEmpty(code))
@@ -113,6 +116,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             }
         }
         /// <summary>
+        /// Specifický požadavek na vrácení defaultního textu v metodě <see cref="_GetText(string, string)"/>.
+        /// Na true se nastavuje pouze v 
+        /// </summary>
+        private bool __ForceDefaultValues;
+        /// <summary>
         /// Dictionary s jazyky. Klíč = kód jazyka. Obsahuje i Default prvek.
         /// </summary>
         private Dictionary<string, Language> __Languages;
@@ -120,6 +128,49 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Setříděné pole jazyků, kromě Default = tedy jazyky načtené z konkrétních souborů
         /// </summary>
         private Language[] __Collection;
+        #endregion
+        #region Synchronizace hlášek
+        /// <summary>
+        /// Metoda najde všechny aktuální kódy hlášek, jejich standardní texty a aktualizuje je do všech přítomných jazykových souborů.
+        /// </summary>
+        public void SynchronizeLanguageFiles()
+        {
+            var standardCodes = _GetStandardCodes();
+            var languageFiles = __Languages.Values.Where(l => !l.IsDefault).ToArray();
+            var modifiedFiles = "";
+            foreach (var languageFile in languageFiles)
+            {
+                bool isModified = languageFile.SynchronizeLanguageFile(standardCodes);
+                if (isModified)
+                    modifiedFiles += ", " + System.IO.Path.GetFileName(languageFile.FileName);
+            }
+            if (modifiedFiles.Length > 0)
+                App.ShowMessage(App.Messages.ModifiedFiles + Environment.NewLine + modifiedFiles.Substring(2), MessageBoxIcon.Asterisk, App.Messages.ResultInformationTitle);
+            else
+                App.ShowMessage(App.Messages.NoModifiedFiles, MessageBoxIcon.Information, App.Messages.ResultInformationTitle);
+        }
+        /// <summary>
+        /// Metoda vrátí kolekci všech programových kódu a jejich defaultních textů
+        /// </summary>
+        /// <returns></returns>
+        private Dictionary<string, string> _GetStandardCodes()
+        {
+            var defaultCodes = new Dictionary<string, string>();
+
+            var properties = this.GetType()
+                .GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public)
+                .Where(p => p.PropertyType == typeof(string) && p.SetMethod is null)
+                .ToArray();
+            this.__ForceDefaultValues = true;
+            foreach (var property in properties)
+            {
+                var value = property.GetValue(this, null);
+                defaultCodes.Add(property.Name, value as string);
+            }
+            this.__ForceDefaultValues = false;
+
+            return defaultCodes;
+        }
         #endregion
         #region Formátování parametrů
         public string Format(string message, params object[] parameters)
@@ -155,13 +206,19 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         #endregion
         #region Konkrétní texty - jednotlivé property a jejich defaultní text (umožňuje běh bez jazykových souborů)
         // Neměnit jméno property - vede to k nutnosti změnit toto jméno v překladových souborech!
+        public string ErrorTitle { get { return _GetText("Došlo k chybě"); } }
+        public string ResultInformationTitle { get { return _GetText("Výsledná informace"); } }
+        public string ModifiedFiles { get { return _GetText("Byly modifikovány tyto soubory:"); } }
+        public string NoModifiedFiles { get { return _GetText("Nebyly modifikovány žádné soubory."); } }
         public string ToolStripButtonAppearanceToolTip { get { return _GetText("Změnit vzhled (barevná paleta, velikost, jazyk)"); } }
         public string ToolStripButtonUndoToolTip { get { return _GetText("Vrátí zpět posledně provedenou změnu"); } }
         public string ToolStripButtonRedoToolTip { get { return _GetText("Obnoví vpřed posledně vrácenou změnu"); } }
         public string ToolStripButtonPreferenceToolTip { get { return _GetText("Nastavit chování aplikace"); } }
         public string ToolStripButtonEditToolTip { get { return _GetText("Upravit obsah"); } }
+        public string ToolStripButtonMessageSyncToolTip { get { return _GetText("Naplnit jazykové soubory aktuálním seznamem hlášek"); } }
         public string StatusStripPageCountText { get { return _GetText("bez stránek×stránka×stránky×stránek"); } }
         public string StatusStripApplicationText { get { return _GetText("bez aplikací×aplikace×aplikace×aplikací"); } }
+
         public string AppearanceMenuHeaderColorPalette { get { return _GetText("BAREVNÁ PALETA"); } }
         public string AppearanceMenuHeaderLayoutStyle { get { return _GetText("VELIKOST"); } }
         public string AppearanceMenuHeaderLanguage { get { return _GetText("JAZYK"); } }
@@ -170,11 +227,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string AppContextMenuTitlePage { get { return _GetText("Stránka '%0'"); } }
         public string AppContextMenuNewPageText { get { return _GetText("Nová stránka"); } }
         public string AppContextMenuNewPageToolTip { get { return _GetText("Přidá novou stránku: otevře okno a umožní změnit popis, barvu a chování"); } }
-
         public string AppContextMenuTitleApplications { get { return _GetText("Stránka aplikací"); } }
         public string AppContextMenuTitleGroup { get { return _GetText("Skupina '%0'"); } }
         public string AppContextMenuTitleApplication { get { return _GetText("Aplikace '%0'"); } }
-
         public string AppContextMenuRunText { get { return _GetText("Spustit"); } }
         public string AppContextMenuRunToolTip { get { return _GetText("Spustí tuto aplikaci"); } }
         public string AppContextMenuRunAsText { get { return _GetText("Spustit jako správce"); } }
@@ -209,7 +264,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         #endregion
     }
 
-    #region class MessageSet : Sada překladů jednoho jazyka z jednoho souboru.
+    #region class Language : Sada překladů jednoho jazyka z jednoho souboru.
     /// <summary>
     /// Sada překladů jednoho jazyka z jednoho souboru.
     /// </summary>
@@ -306,30 +361,23 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <param name="line"></param>
         private void _ProcessLine(string line)
         {
-            if (String.IsNullOrEmpty(line)) return;
-            line = line.TrimStart();
-            if (line.StartsWith("//")) return;
-
-            int index = line.IndexOf(' ');
-            if (index < 0) return;
-
-            string code = line.Substring(0, index);
-            string value = line.Substring(++index).TrimStart();
-            switch (code)
+            var lineType = _ProcessLineParse(line, out string code, out string value);
+            if (lineType == LineType.Empty || lineType == LineType.Comment) return;
+            switch (lineType)
             {
-                case "#Language":
+                case LineType.KeyLanguage:
                     __Code = value; 
                     break;
-                case "#Name":
+                case LineType.KeyName:
                     __Name = value; 
                     break;
-                case "#IconName":
+                case LineType.KeyIconName:
                     __IconName = value; 
                     break;
-                case "#Order":
+                case LineType.KeyOrder:
                     __Order = value;
                     break;
-                case "#ParentLanguage":
+                case LineType.KeyParentLanguage:
                     __ParentLanguage = value; 
                     break;
                 default:
@@ -355,6 +403,57 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             */
 
         }
+        /// <summary>
+        /// Detekuje obsah daného řádku, a pokud jde o kód obsahující mezeru, pak jej oddělí do out parametrů
+        /// </summary>
+        /// <param name="line"></param>
+        /// <param name="code"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private static LineType _ProcessLineParse(string line, out string code, out string value)
+        {
+            code = null;
+            value = null;
+            if (String.IsNullOrEmpty(line)) return LineType.Empty;
+
+            line = line.TrimStart();
+            if (line.StartsWith("//")) return LineType.Comment;
+
+            int index = line.IndexOf(' ');
+            if (index < 0)
+            {
+                code = line;
+                return LineType.Code;
+            }
+
+            code = line.Substring(0, index);
+            value = line.Substring(++index).TrimStart();
+
+            switch (code)
+            {
+                case "#Language": return LineType.KeyLanguage;
+                case "#Name": return LineType.KeyName;
+                case "#IconName": return LineType.KeyIconName;
+                case "#Order": return LineType.KeyOrder;
+                case "#ParentLanguage": return LineType.KeyParentLanguage;
+            }
+            return LineType.CodeValue;
+        }
+        /// <summary>
+        /// Druh obsahu řádku
+        /// </summary>
+        private enum LineType 
+        {
+            Empty,
+            Comment,
+            KeyLanguage,
+            KeyName,
+            KeyIconName,
+            KeyOrder,
+            KeyParentLanguage,
+            Code,
+            CodeValue
+        }
         private bool __IsDefault;
         private string __FileName;
         private string __Code;
@@ -374,6 +473,85 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             string filePath = System.IO.Path.GetDirectoryName(FileName);
             string imageFile = System.IO.Path.Combine(filePath, imageName);
             return App.GetImage(imageFile);
+        }
+        #endregion
+        #region Synchronizace hlášek
+        /// <summary>
+        /// Metoda aktualizuje seznam hlášek v tomto souboru podle defaultních kódů
+        /// </summary>
+        public bool SynchronizeLanguageFile(Dictionary<string, string> standardCodes)
+        {
+            string fileName = __FileName;
+            _ReadHeaderLines(fileName, this.Code, standardCodes, out var headerLines, out var contentLines);
+            var resultLines = _CreateLanguageLines(headerLines, standardCodes, contentLines, out bool hasNewCodes);
+            if (hasNewCodes)
+                System.IO.File.WriteAllLines(fileName, resultLines, Encoding.UTF8);
+            return hasNewCodes;
+        }
+        /// <summary>
+        /// Načte zadaný soubor do out polí, případně vytvoří defaultní záhlaví pokud ousbor neexistuje
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="languageCode"></param>
+        /// <param name="standardCodes"></param>
+        /// <param name="headerLines"></param>
+        /// <param name="contentLines"></param>
+        private void _ReadHeaderLines(string fileName, string languageCode, Dictionary<string, string> standardCodes, out List<string> headerLines, out Dictionary<string, string> contentLines)
+        {
+            headerLines = new List<string>();
+            contentLines = new Dictionary<string, string>();
+            if (!String.IsNullOrEmpty(fileName) && System.IO.File.Exists(fileName))
+            {   // Máme soubor? Načteme jeho obsah:
+                var lines = System.IO.File.ReadAllLines(fileName);
+                foreach (var line in lines)
+                {
+                    var lineType = _ProcessLineParse(line, out string code, out string value);
+                    if (lineType == LineType.CodeValue)
+                    {   // Pokud na vstupu je řádek vypadající jako "code value" a má neprázdný code, a nalezený code je platný, a dosud nemáme jeho řádek uložen, tak si jej uložíme:
+                        if (!String.IsNullOrEmpty(code) && standardCodes.ContainsKey(code) && !contentLines.ContainsKey(code))
+                            contentLines.Add(code, line);
+                    }
+                    else if (contentLines.Count == 0)
+                    {   // Není to CodeValue, a zatím nemáme žádný CodeValue (=jsme v Headers řádcích), přidáme vstupní řádek jako Header:
+                        headerLines.Add(line);
+                    }
+                    // Tímto postupem vypustíme nevhodné řádky v pozicích uvnitř = mezi CodeValues:
+                }
+            }
+            else
+            {   // Nemáme soubor? Vytvoříme patřičné headerLines:
+                headerLines.Add($"// Překlady aplikace ProgramLauncher do jazyka {languageCode}");
+                headerLines.Add($"");
+                headerLines.Add($"#Language {languageCode}");
+                headerLines.Add($"#Name Název jazyka");
+                headerLines.Add($"#IconName Flag-{languageCode}-24.png");
+                headerLines.Add($"#Order 99");
+                headerLines.Add($"");
+            }
+        }
+        /// <summary>
+        /// Vytvoří výstupní pole řádků: nejprve dá všechny <paramref name="headerLines"/>, a poté projde standardní kódy z <paramref name="standardCodes"/>
+        /// a pokud najde odpovídající řádek v <paramref name="contentLines"/>, pak jej dá do výstupu (ve standardním pořadí), anebo do výstupu dá standardní kód i text.
+        /// </summary>
+        /// <param name="headerLines"></param>
+        /// <param name="standardCodes"></param>
+        /// <param name="contentLines"></param>
+        /// <returns></returns>
+        private string[] _CreateLanguageLines(List<string> headerLines, Dictionary<string, string> standardCodes, Dictionary<string, string> contentLines, out bool hasNewCodes)
+        {
+            hasNewCodes = false;
+            var resultLines = new List<string>();
+            resultLines.AddRange(headerLines);
+            foreach (var standardCode in standardCodes)
+            {
+                if (!contentLines.TryGetValue(standardCode.Key, out var contentLine))
+                {
+                    contentLine = standardCode.Key + " *" + standardCode.Value;
+                    hasNewCodes = true;
+                }
+                resultLines.Add(contentLine);
+            }
+            return resultLines.ToArray();
         }
         #endregion
         #region Public data a vyhledání textu překladu z tohoto jazyka

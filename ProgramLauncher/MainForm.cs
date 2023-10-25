@@ -237,6 +237,7 @@ namespace DjSoft.Tools.ProgramLauncher
             this._ToolRedoButton = addButton(Properties.Resources.edit_redo_3_48, _ToolRedoButton_Click);
             this._ToolPreferenceButton = addButton(Properties.Resources.system_run_6_48, _ToolPreferenceButton_Click);
             this._ToolEditButton = addButton(Properties.Resources.edit_6_48, _ToolEditButton_Click);
+            this._ToolMessageSyncButton = addButton(Properties.Resources.edit_text_frame_update_48, _ToolMessageSyncButton_Click);
 
             this._ToolPreferenceButton.Visible = false;
             this._ToolEditButton.Visible = false;
@@ -269,6 +270,7 @@ namespace DjSoft.Tools.ProgramLauncher
             this._ToolRedoButton.ToolTipText = App.Messages.ToolStripButtonRedoToolTip;
             this._ToolPreferenceButton.ToolTipText = App.Messages.ToolStripButtonPreferenceToolTip;
             this._ToolEditButton.ToolTipText = App.Messages.ToolStripButtonEditToolTip;
+            this._ToolMessageSyncButton.ToolTipText = App.Messages.ToolStripButtonMessageSyncToolTip;
         }
         /// <summary>
         /// Po kliknutí na tlačítko Toolbaru: Vzhled
@@ -291,11 +293,21 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void _ToolEditButton_Click(object sender, EventArgs e) { }
+        /// <summary>
+        /// Po kliknutí na tlačítko Toolbaru: MessageSync
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ToolMessageSyncButton_Click(object sender, EventArgs e) 
+        {
+            App.TryRun(App.Messages.SynchronizeLanguageFiles);
+        }
         private ToolStripButton _ToolAppearanceButton;
         private ToolStripButton _ToolUndoButton;
         private ToolStripButton _ToolRedoButton;
         private ToolStripButton _ToolPreferenceButton;
         private ToolStripButton _ToolEditButton;
+        private ToolStripButton _ToolMessageSyncButton;
         #endregion
         #region Undo a Redo
         /// <summary>

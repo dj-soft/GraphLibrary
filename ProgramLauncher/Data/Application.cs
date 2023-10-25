@@ -257,6 +257,13 @@ namespace DjSoft.Tools.ProgramLauncher
             return clientPipe;
         }
         #endregion
+        #region Obecné služby
+        public static void TryRun(Action action)
+        {
+            try { action(); }
+            catch (Exception exc) { ShowException(exc); }
+        }
+        #endregion
         #region Vyhledání Windows procesu, Tray ikona
         /// <summary>
         /// Metoda vyhledá a vrátí systémový process pro daný spustitelný soubor
@@ -731,6 +738,20 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             if (title is null) title = _GetMessageBoxTitle(icon);
             System.Windows.Forms.MessageBox.Show(MainForm, text, title, MessageBoxButtons.OK, icon);
+        }
+        /// <summary>
+        /// Zobrazí text chyby
+        /// </summary>
+        /// <param name="exc"></param>
+        public static void ShowException(Exception exc)
+        {
+            string text = "";
+            while (exc != null)
+            {
+                text += exc.Message + Environment.NewLine;
+                exc = exc.InnerException;
+            }
+            ShowMessage(text, MessageBoxIcon.Error, App.Messages.ErrorTitle);
         }
         /// <summary>
         /// Vrátí defaultní titulek MessageBox okna podle dané ikony.

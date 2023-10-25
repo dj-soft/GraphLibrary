@@ -313,6 +313,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="klickety-2-64.ico" />
+    <None Include="Pics\48px\edit-text-frame-update-48.png" />
     <None Include="Pics\48px\edit-undo-4-48.png" />
     <None Include="Pics\48px\edit-undo-3-48.png" />
     <None Include="Pics\48px\edit-redo-4-48.png" />
