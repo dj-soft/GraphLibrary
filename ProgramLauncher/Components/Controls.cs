@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -694,19 +695,30 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         private void _DoLayoutOnActivityChange()
         {
-            __LazyLayoutGuid = WatchTimer.CallMeAfter(_DoLayoutOnActivityChangeLazy, 30, true, __LazyLayoutGuid);
+            if (_LayoutActiveIsChanged)
+                __LazyLayoutGuid = WatchTimer.CallMeAfter(_DoLayoutOnActivityChangeLazy, 30, true, __LazyLayoutGuid);
         }
+        /// <summary>
+        /// Vyvolá přepočet layoutu <see cref="DoLayout(bool?)"/>, pokud aktuálně je jiný stav <see cref="IsAnyActive"/> než byl při posledním výpočtu
+        /// </summary>
         private void _DoLayoutOnActivityChangeLazy()
         {
-            bool isActive = IsAnyActive;
-            DoLayout(isActive);
+            if (_LayoutActiveIsChanged)
+                DoLayout(IsAnyActive);
         }
-
+        /// <summary>
+        /// Po změně velikosti upravím rozložení prvků uvnitř
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnClientSizeChanged(EventArgs e)
         {
             base.OnClientSizeChanged(e);
             this.DoLayout();
         }
+        /// <summary>
+        /// Umístím interní prvky do prostoru this panelu
+        /// </summary>
+        /// <param name="isActive"></param>
         protected void DoLayout(bool? isActive = null)
         {
             if (__LayoutPending) return;
@@ -733,7 +745,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             __TextBox.Bounds = new Rectangle(0, 0, textWidth, textHeight);
 
             if (isActive.HasValue)
+            {
                 __Button.Visible = isActive.Value;
+                __LayoutIsActive = isActive.Value;
+            }
 
             __LayoutPending = false;
         }
@@ -742,6 +757,22 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Což by mohlo být: Změna rozměru vnější = OnClientSizeChanged = DoLayout = Korekce výšky panelu (this.Height = panelTargetHeight) = OnClientSizeChanged = DoLayout !
         /// </summary>
         private bool __LayoutPending;
+        /// <summary>
+        /// Layout prvku je vytvořen pro aktivní stav <see cref="IsAnyActive"/> ?
+        /// </summary>
+        private bool __LayoutIsActive;
+        /// <summary>
+        /// Obsahuje true, pokud aktuální stav aktivity <see cref="IsAnyActive"/> je jiný, než pro jaký byl vytvořen layout prvku v metodě <see cref="DoLayout(bool?)"/>.
+        /// </summary>
+        private bool _LayoutActiveIsChanged
+        {
+            get
+            {
+                bool currentIsActive = IsAnyActive;
+                bool layoutIsActive = __LayoutIsActive;
+                return (currentIsActive != layoutIsActive);
+            }
+        }
         #endregion
         #region Pro potomka
         protected DTextBox TextBox { get { return __TextBox; } }
@@ -998,7 +1029,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
-        #region ActivityMonitor
+        #region ActivityMonitor, mírně upravený
         /// <summary>
         /// Inicializace
         /// </summary>
@@ -1038,8 +1069,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="e"></param>
         private void _MouseEnter(object sender, EventArgs e)
         {
-            bool isChange = (__HasMouse != true);
-            __HasMouse = true;
+            bool hasMouse = _IsMouseOnMyBounds();
+            bool isChange = (__HasMouse != hasMouse);
+            __HasMouse = hasMouse;
             if (isChange) _RunActivityChange();
         }
         /// <summary>
@@ -1049,9 +1081,19 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="e"></param>
         private void _MouseLeave(object sender, EventArgs e)
         {
-            bool isChange = (__HasMouse != false);
-            __HasMouse = false;
+            bool hasMouse = _IsMouseOnMyBounds();
+            bool isChange = (__HasMouse != hasMouse);
+            __HasMouse = hasMouse;
             if (isChange) _RunActivityChange();
+        }
+        /// <summary>
+        /// Vrátí true, pokud aktuální pozice myši <see cref="Control.MousePosition"/> se nachází uvnitř this panelu
+        /// </summary>
+        /// <returns></returns>
+        private bool _IsMouseOnMyBounds()
+        {
+            var mousePoint = this.PointToClient(MousePosition);
+            return this.ClientRectangle.Contains(mousePoint);
         }
         /// <summary>
         /// Vyvolá událost o změně aktivity

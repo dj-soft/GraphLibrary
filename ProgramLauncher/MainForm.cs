@@ -48,6 +48,7 @@ namespace DjSoft.Tools.ProgramLauncher
             this.Controls.Add(this._StatusStrip);
             this.Controls.Add(this._ToolStrip);
             this.Name = "MainForm";
+            this.Text = App.Messages.TrayIconText;
 
             ((System.ComponentModel.ISupportInitialize)(this._MainContainer)).EndInit();
             this._MainContainer.ResumeLayout(false);

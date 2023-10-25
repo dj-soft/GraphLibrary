@@ -48,6 +48,15 @@ EditFormTitleNewPage ΝΕΑ ΣΕΛΙΔΑ
 EditFormTitleNewGroup Μια νέα ομάδα εφαρμογών
 EditFormTitleNewApplication Νέα εφαρμογή
 EditFormTitleClone Αντίγραφο: %0
+EditDataTitleText Λεζάντα
+EditDataDescriptionText Επιγραφή
+EditDataToolTipText Βοήθεια
+EditDataImageFileNameText Εικόνα
+EditDataExecutableFileNameText Εφαρμογή
+EditDataExecutableArgumentsText Επιχειρήματα
+EditDataExecuteInAdminModeText Δικαιώματα διαχειριστή
+EditDataOnlyOneInstanceText Μόνο μια διαδικασία
+EditDataOpenMaximizedText Μεγιστοποιημένο παράθυρο
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Τερματισμός της αίτησης
 TrayIconBalloonText Η εφαρμογή είναι μόνο κρυφή.××Για να την απενεργοποιήσετε, κλείστε την με ένα σταυρό μαζί με το πλήκτρο CTRL!××Ή χρησιμοποιήστε το μενού περιβάλλοντος σε αυτό το εικονίδιο.

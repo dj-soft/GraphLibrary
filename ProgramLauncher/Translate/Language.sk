@@ -48,6 +48,15 @@ EditFormTitleNewPage *Nová stránka
 EditFormTitleNewGroup *Nová skupina aplikací
 EditFormTitleNewApplication *Nová aplikace
 EditFormTitleClone *Kopie: %0
+EditDataTitleText *Titulek
+EditDataDescriptionText *Popisek
+EditDataToolTipText *Nápověda
+EditDataImageFileNameText *Obrázek
+EditDataExecutableFileNameText *Aplikace
+EditDataExecutableArgumentsText *Argumenty
+EditDataExecuteInAdminModeText *Oprávnění Admin
+EditDataOnlyOneInstanceText *Jen jeden proces
+EditDataOpenMaximizedText *Maximalizované okno
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Ukončenie aplikácie
 TrayIconBalloonText Aplikácia je len schovaná.××Pre reálne vypnutie ju zatvorte krížikom spolu s klávesom CTRL!××alebo použite kontextové menu na tejto ikone.

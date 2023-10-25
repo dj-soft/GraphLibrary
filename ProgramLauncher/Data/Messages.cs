@@ -252,6 +252,16 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string EditFormTitleNewApplication { get { return _GetText("Nová aplikace"); } }
         public string EditFormTitleClone { get { return _GetText("Kopie: %0"); } }
 
+        public string EditDataTitleText { get { return _GetText("Titulek"); } }
+        public string EditDataDescriptionText { get { return _GetText("Popisek"); } }
+        public string EditDataToolTipText { get { return _GetText("Nápověda"); } }
+        public string EditDataImageFileNameText { get { return _GetText("Obrázek"); } }
+        public string EditDataExecutableFileNameText { get { return _GetText("Aplikace"); } }
+        public string EditDataExecutableArgumentsText { get { return _GetText("Argumenty"); } }
+        public string EditDataExecuteInAdminModeText { get { return _GetText("Oprávnění Admin"); } }
+        public string EditDataOnlyOneInstanceText { get { return _GetText("Jen jeden proces"); } }
+        public string EditDataOpenMaximizedText { get { return _GetText("Maximalizované okno"); } }
+
         public string TrayIconText { get { return _GetText("Program Launcher"); } }
         public string TrayIconBalloonToolTip { get { return _GetText("Ukončení aplikace"); } }
         public string TrayIconBalloonText { get { return _GetText("Aplikace je jen schovaná.××Pro reálné vypnutí ji zavřete křížkem spolu s klávesou CTRL!××Anebo použijte kontextové menu na této ikoně."); } }

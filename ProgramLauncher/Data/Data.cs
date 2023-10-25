@@ -1078,19 +1078,19 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             int w3 = 550;
 
             int y = y0;
-            panel.AddCell(ControlType.TextBox, "Titulek", nameof(Title), x1, y, w1); y += s2;
-            panel.AddCell(ControlType.TextBox, "Popisek", nameof(Description), x1, y, w1); y += s2;
-            panel.AddCell(ControlType.MemoBox, "Nápověda", nameof(ToolTip), x2, y0, w2, 58);
-            panel.AddCell(ControlType.FileBox, "Aplikace", nameof(ExecutableFileName), x1, y, w3); y += s2;
-            panel.AddCell(ControlType.TextBox, "Argumenty", nameof(ExecutableArguments), x1, y, w3); y += s2;
-            panel.AddCell(ControlType.FileBox, "Obrázek", nameof(ImageFileName), x1, y, w3); y += s1;
+            panel.AddCell(ControlType.TextBox, App.Messages.EditDataTitleText, nameof(Title), x1, y, w1); y += s2;
+            panel.AddCell(ControlType.TextBox, App.Messages.EditDataDescriptionText, nameof(Description), x1, y, w1); y += s2;
+            panel.AddCell(ControlType.MemoBox, App.Messages.EditDataToolTipText, nameof(ToolTip), x2, y0, w2, 58);
+            panel.AddCell(ControlType.FileBox, App.Messages.EditDataExecutableFileNameText, nameof(ExecutableFileName), x1, y, w3); y += s2;
+            panel.AddCell(ControlType.TextBox, App.Messages.EditDataExecutableArgumentsText, nameof(ExecutableArguments), x1, y, w3); y += s2;
+            panel.AddCell(ControlType.FileBox, App.Messages.EditDataImageFileNameText, nameof(ImageFileName), x1, y, w3); y += s1;
 
             int x = x1 + 4;
-            int w4 = 160;
-            int dx = 170;
-            panel.AddCell(ControlType.CheckBox, "Admin mode", nameof(ExecuteInAdminMode), x, y, w4); x += dx;
-            panel.AddCell(ControlType.CheckBox, "Single Instance", nameof(OnlyOneInstance), x, y, w4); x += dx;
-            panel.AddCell(ControlType.CheckBox, "Maximized", nameof(OpenMaximized), x, y, w4); y += s1;
+            int w4 = 175;
+            int dx = 180;
+            panel.AddCell(ControlType.CheckBox, App.Messages.EditDataExecuteInAdminModeText, nameof(ExecuteInAdminMode), x, y, w4); x += dx;
+            panel.AddCell(ControlType.CheckBox, App.Messages.EditDataOnlyOneInstanceText, nameof(OnlyOneInstance), x, y, w4); x += dx;
+            panel.AddCell(ControlType.CheckBox, App.Messages.EditDataOpenMaximizedText, nameof(OpenMaximized), x, y, w4); y += s1;
 
             panel.Buttons = new DialogButtonType[] { DialogButtonType.Ok, DialogButtonType.Cancel };
             panel.BackColor = Color.AntiqueWhite;
@@ -1360,10 +1360,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             int w3 = 550;
 
             int y = y0;
-            panel.AddCell(ControlType.TextBox, "Titulek", nameof(Title), x1, y, w1); y += s2;
-            panel.AddCell(ControlType.TextBox, "Popisek", nameof(Description), x1, y, w1); y += s2;
-            panel.AddCell(ControlType.MemoBox, "Nápověda", nameof(ToolTip), x2, y0, w2, 58);
-            panel.AddCell(ControlType.FileBox, "Obrázek", nameof(ImageFileName), x1, y, w3); y += s1;
+            panel.AddCell(ControlType.TextBox, App.Messages.EditDataTitleText, nameof(Title), x1, y, w1); y += s2;
+            panel.AddCell(ControlType.TextBox, App.Messages.EditDataDescriptionText, nameof(Description), x1, y, w1); y += s2;
+            panel.AddCell(ControlType.MemoBox, App.Messages.EditDataToolTipText, nameof(ToolTip), x2, y0, w2, 58);
+            panel.AddCell(ControlType.FileBox, App.Messages.EditDataImageFileNameText, nameof(ImageFileName), x1, y, w3); y += s1;
 
             panel.Buttons = new DialogButtonType[] { DialogButtonType.Ok, DialogButtonType.Cancel };
             panel.BackColor = Color.AntiqueWhite;
