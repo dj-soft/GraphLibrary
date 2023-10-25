@@ -174,9 +174,6 @@ namespace DjSoft.Tools.ProgramLauncher
             this._StatusVersionLabel.ForeColor = textColor;
             this._StatusDataLabel.ForeColor = textColor;
             this._StatusCurrentItemLabel.ForeColor = textColor;
-
-            this.RefreshPagesPanel();
-            this.RefreshApplicationsPanel();
         }
         /// <summary>
         /// 
@@ -241,6 +238,9 @@ namespace DjSoft.Tools.ProgramLauncher
             this._ToolPreferenceButton = addButton(Properties.Resources.system_run_6_48, _ToolPreferenceButton_Click);
             this._ToolEditButton = addButton(Properties.Resources.edit_6_48, _ToolEditButton_Click);
 
+            this._ToolPreferenceButton.Visible = false;
+            this._ToolEditButton.Visible = false;
+
             App.UndoRedo.CurrentStateChanged += _UndoRedoCurrentStateChanged;
             App.UndoRedo.CatchCurrentRedoData += _UndoRedoCatchCurrentRedoData;
             RefreshToolbarUndoRedoState();
@@ -284,17 +284,13 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _ToolPreferenceButton_Click(object sender, EventArgs e)
-        { }
+        private void _ToolPreferenceButton_Click(object sender, EventArgs e) { }
         /// <summary>
         /// Po kliknutí na tlačítko Toolbaru: Edit
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _ToolEditButton_Click(object sender, EventArgs e)
-        {
-            
-        }
+        private void _ToolEditButton_Click(object sender, EventArgs e) { }
         private ToolStripButton _ToolAppearanceButton;
         private ToolStripButton _ToolUndoButton;
         private ToolStripButton _ToolRedoButton;
@@ -310,7 +306,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="e"></param>
         private void _SettingsChangedPageSet()
         {
-            this.ReloadPages();
+            ReloadPages();
         }
         /// <summary>
         /// Událost volaná po změně stavu UndoRedo containeru.
@@ -323,16 +319,6 @@ namespace DjSoft.Tools.ProgramLauncher
             RefreshToolbarUndoRedoState();
         }
         /// <summary>
-        /// Container pro UndoRedo si zde vyžádá data pro uložení pro krok Redo
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        /// <exception cref="NotImplementedException"></exception>
-        private void _UndoRedoCatchCurrentRedoData(object sender, UndoRedo<PageSetData>.CatchCurrentRedoDataEventArgs e)
-        {
-            e.RedoData = App.Settings.PageSet.Clone();
-        }
-        /// <summary>
         /// Po kliknutí na tlačítko Toolbaru: UNDO
         /// </summary>
         /// <param name="sender"></param>
@@ -340,11 +326,7 @@ namespace DjSoft.Tools.ProgramLauncher
         private void _ToolUndoButton_Click(object sender, EventArgs e)
         {
             if (App.UndoRedo.CanUndo)
-            {
-                var pageSet = App.UndoRedo.Undo();
-                if (pageSet != null)
-                    App.Settings.PageSet = pageSet;        // Setování vyvolá event App.Settings.Changed, takže se dostaneme do zdejší metody ReloadPages()
-            }
+                _UndoRedoApplyPageSet(App.UndoRedo.Undo());
         }
         /// <summary>
         /// Po kliknutí na tlačítko Toolbaru: REDO
@@ -354,20 +336,43 @@ namespace DjSoft.Tools.ProgramLauncher
         private void _ToolRedoButton_Click(object sender, EventArgs e)
         {
             if (App.UndoRedo.CanRedo)
-            {
-                var pageSet = App.UndoRedo.Redo();
-                if (pageSet != null)
-                    App.Settings.PageSet = pageSet;        // Setování vyvolá event App.Settings.Changed, takže se dostaneme do zdejší metody ReloadPages()
-            }
+                _UndoRedoApplyPageSet(App.UndoRedo.Redo());
+        }
+        /// <summary>
+        /// Dostává data získaná z UndoRedo containeru a má je aplikovat do aktuálnho <see cref="Settings.PageSet"/>.
+        /// Aplikuje tam jejich klon, tak aby v UndoRedo containeru zůstal izolovaný stav.
+        /// </summary>
+        /// <param name="undoRedoData"></param>
+        private void _UndoRedoApplyPageSet(PageSetData undoRedoData)
+        {
+            if (undoRedoData != null)
+                App.Settings.PageSet = undoRedoData.Clone(true);     // Setování vyvolá event App.Settings.Changed, takže se dostaneme do zdejší metody ReloadPages()
+        }
+        /// <summary>
+        /// Container pro UndoRedo si zde vyžádá aktuální data ze systému, pro jejich uložení pro krok Redo.
+        /// Provádí se při prvním kroku Undo, když je možné, že aktuální data v systému (tedy nynější <see cref="Settings.PageSet"/>) obsahuje změny, 
+        /// které dosud nejsou uloženy v UndoRedo containeru, a právě prováděný krok Undo by je zahodil. 
+        /// A uživatel by po provedení aktuálního Undo mohl chtít zpětně provést Redo.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _UndoRedoCatchCurrentRedoData(object sender, UndoRedo<PageSetData>.CatchCurrentRedoDataEventArgs e)
+        {
+            e.RedoData = App.Settings.PageSet.Clone(true);           // true = generujeme klon se shodnými ID
         }
         /// <summary>
         /// Aktualizuje Enabled buttonu Undo a Redo podle stavu kontejneru
         /// </summary>
         private void RefreshToolbarUndoRedoState()
         {
-            var state = App.UndoRedo.CurrentState;
-            this._ToolUndoButton.Enabled = (state == UndoRedoState.CanUndoRedo || state == UndoRedoState.CanUndo);
-            this._ToolRedoButton.Enabled = (state == UndoRedoState.CanUndoRedo || state == UndoRedoState.CanRedo);
+            var canUndo = App.UndoRedo.CanUndo;
+            var canRedo = App.UndoRedo.CanRedo;
+            var canAny = (canUndo || canRedo);
+            this._ToolUndoButton.Enabled = canUndo;
+            this._ToolRedoButton.Enabled = canRedo;
+            this._ToolUndoButton.Visible = canAny;
+            this._ToolRedoButton.Visible = canAny;
         }
         #endregion
         #region PagesPanel
@@ -376,28 +381,48 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private void InitializePagesPanel()
         {
-            __PagesPanel = new Components.InteractiveGraphicsControl();
-            __PagesPanel.Dock = DockStyle.Fill;
-            __PagesPanel.DefaultLayoutKind = DataLayoutKind.Pages;
-            __PagesPanel.ContentSizeChanged += _AppPagesPanel_ContentSizeChanged;
-            __PagesPanel.InteractiveAreaClick += _PageAreaClick;
-            __PagesPanel.InteractiveItemClick += _PageItemClick;
-            this._MainContainer.Panel1.Controls.Add(__PagesPanel);
-        }
-        private void RefreshPagesPanel()
-        {
-            
+            var pagesPanel = new Components.InteractiveGraphicsControl();
+            pagesPanel.Dock = DockStyle.Fill;
+            pagesPanel.DefaultLayoutKind = DataLayoutKind.Pages;
+            pagesPanel.EnabledDrag = true;
+            pagesPanel.ContentSizeChanged += _AppPagesPanel_ContentSizeChanged;
+            pagesPanel.InteractiveAreaClick += _PageAreaClick;
+            pagesPanel.InteractiveItemClick += _PageItemClick;
+            this._MainContainer.Panel1.Controls.Add(pagesPanel);
+
+            __PagesPanel = pagesPanel;
         }
         /// <summary>
         /// Znovu načte stránky z datového objektu do záložek v levé části.
-        /// Součástí je i reload aplikací z aktivní stránky.
+        /// Poté reaktivuje dosavadní stránku <see cref="_ActivePageData"/>, anebo první stránku
+        /// Součástí je i znovunačtení aplikací z aktivní stránky = <see cref="ReloadApplications()"/>.
         /// </summary>
-        private void ReloadPages(PageData activePageData = null, int? activePageIndex = null)
+        private void ReloadPages()
         {
-            __PagesPanel.DataItems = _PageSet.CreateInteractiveItems();
-            _PagesPanelVisible = true || __PagesPanel.DataItems.Count > 1;
-            ReloadApplications(activePageData, activePageIndex);
+            _PagesPanel.DataItems = _PageSet.CreateInteractiveItems();         // InteractiveItems, jsou zobrazené v levém panelu a jsou myšoaktivní
+            _ActivePageData = searchActivePageData();
+            _PagesPanelVisible = true || _PagesPanel.DataItems.Count > 1;
             RefreshStatusBarTexts();
+
+
+            // Vrátí aktivní stránku s daty
+            PageData searchActivePageData()
+            {
+                var pages = this._Pages;
+
+                // Máme nyní aktivní stránku: pokud je to fyzicky stránka z aktuálního seznamu, pak ji akceptujeme:
+                var activePage = _ActivePageData;
+                if (activePage != null && pages.Any(p => Object.ReferenceEquals(p, activePage))) return activePage;
+
+                // Máme nyní aktivní stránku (ale ona není v aktuálním seznamu stránek): najdeme mezi aktuálními stránkami takovou, která má shodné Id:
+                if (activePage != null && pages.TryFindFirst(p => p.Id == activePage.Id, out var currentPage)) return currentPage;
+
+                // Máme alespoň první stránku?
+                if (pages.Count > 0) return pages[0];
+
+                // Nemáme nic:
+                return null;
+            }
         }
         /// <summary>
         /// Kompletní sada se stránkami
@@ -410,7 +435,18 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <summary>
         /// Data aktuálně zobrazené stránky
         /// </summary>
-        private PageData _ActivePageData { get { return __ActivePageData; } set { __ActivePageData = value; ReloadApplications(); } } private PageData __ActivePageData;
+        private PageData _ActivePageData 
+        {
+            get { return __ActivePageData; } 
+            set 
+            { 
+                __ActivePageData = value;
+                var pageItem = __ActivePageData?.InteractiveItem;
+                if (pageItem != null) _PagesPanel.SelectedItems = new InteractiveItem[] { pageItem };
+                ReloadApplications(); 
+            }
+        }
+        private PageData __ActivePageData;
         /// <summary>
         /// Akce volaná při události "Změna velikosti ContentSize" v panelu "Group".
         /// Nastaví odpovídající šířku celého bočního panelu tak, aby byla vidět celá šířka bez vodorovného scrollbaru, to by bylo obtěžující.
@@ -419,7 +455,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="e"></param>
         private void _AppPagesPanel_ContentSizeChanged(object sender, EventArgs e)
         {
-            var groupContentSize = __PagesPanel.ContentSize;
+            var groupContentSize = _PagesPanel.ContentSize;
             if (groupContentSize.HasValue && groupContentSize.Value.Width != _PagesPanelWidth)
                 _PagesPanelWidth = groupContentSize.Value.Width;
         }
@@ -432,7 +468,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             if (e.MouseState.Buttons == MouseButtons.Right)
             {
-                this._PageSet.ShowContextMenu(e.MouseState, this.__PagesPanel, this._PageSet, null);
+                this._PageSet.ShowContextMenu(e.MouseState, this._PagesPanel, this._PageSet, null);
             }
         }
         /// <summary>
@@ -450,7 +486,7 @@ namespace DjSoft.Tools.ProgramLauncher
             }
             else if (e.MouseState.Buttons == MouseButtons.Right)
             {   // Pravá myš: neaktivuje vybranou stránku, ale otevře pro ní menu:
-                this._PageSet.ShowContextMenu(e.MouseState, this.__PagesPanel, this._PageSet, pageData);
+                this._PageSet.ShowContextMenu(e.MouseState, this._PagesPanel, this._PageSet, pageData);
             }
         }
         /// <summary>
@@ -458,14 +494,18 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private bool _PagesPanelVisible { get{ return !this._MainContainer.Panel1Collapsed; } set { this._MainContainer.Panel1Collapsed = !value; } }
         /// <summary>
-        /// Šířka disponibilního prostoru v panelu skupin <see cref="__PagesPanel"/>
+        /// Šířka disponibilního prostoru v panelu skupin <see cref="_PagesPanel"/>
         /// </summary>
         private int _PagesPanelWidth
         {
-            get { return this._MainContainer.SplitterDistance - __PagesPanel.VerticalScrollBarWidth - 2; }
-            set { int width = value + __PagesPanel.VerticalScrollBarWidth + 2; this._MainContainer.SplitterDistance = (width < 50 ? 50 : width); }
+            get { return this._MainContainer.SplitterDistance - _PagesPanel.VerticalScrollBarWidth - 2; }
+            set { int width = value + _PagesPanel.VerticalScrollBarWidth + 2; this._MainContainer.SplitterDistance = (width < 50 ? 50 : width); }
         }
-        private DjSoft.Tools.ProgramLauncher.Components.InteractiveGraphicsControl __PagesPanel;
+        /// <summary>
+        /// Interaktovní panel zobrazující stránky (Pages)
+        /// </summary>
+        private InteractiveGraphicsControl _PagesPanel { get { return __PagesPanel; } }
+        private InteractiveGraphicsControl __PagesPanel;
         #endregion
         #region ApplicationPanel
         /// <summary>
@@ -473,43 +513,28 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private void InitializeApplicationPanel()
         {
-            __ApplicationsPanel = new Components.InteractiveGraphicsControl();
-            __ApplicationsPanel.Dock = DockStyle.Fill;
-            __ApplicationsPanel.DefaultLayoutKind = DataLayoutKind.Applications;
-            __ApplicationsPanel.InteractiveAreaClick += _ApplicationAreaClick;
-            __ApplicationsPanel.InteractiveItemClick += _ApplicationItemClick;
-            __ApplicationsPanel.InteractiveItemMouseEnter += _ApplicationItemMouseEnter;
-            __ApplicationsPanel.InteractiveItemMouseLeave += _ApplicationItemMouseLeave;
-            this._MainContainer.Panel2.Controls.Add(__ApplicationsPanel);
-        }
-        private void RefreshApplicationsPanel()
-        {
+            var applicationsPanel = new Components.InteractiveGraphicsControl();
+            applicationsPanel.Dock = DockStyle.Fill;
+            applicationsPanel.DefaultLayoutKind = DataLayoutKind.Applications;
+            applicationsPanel.EnabledDrag = true;
+            applicationsPanel.InteractiveAreaClick += _ApplicationAreaClick;
+            applicationsPanel.InteractiveItemClick += _ApplicationItemClick;
+            applicationsPanel.InteractiveItemMouseEnter += _ApplicationItemMouseEnter;
+            applicationsPanel.InteractiveItemMouseLeave += _ApplicationItemMouseLeave;
+            this._MainContainer.Panel2.Controls.Add(applicationsPanel);
 
+            __ApplicationsPanel = applicationsPanel;
         }
         /// <summary>
         /// Načte aplikace z aktivní stránky a vepíše je do panelu s nabídkou aplikací
         /// </summary>
         /// <param name="pageData"></param>
-        private void ReloadApplications(PageData activePageData = null, int? activePageIndex = null)
+        private void ReloadApplications()
         {
-            __ActivePageData = getPageData();
-            __ApplicationsPanel.DataItems = __ActivePageData?.CreateInteractiveItems();
+            _ApplicationsPanel.DataItems = _ActivePageData?.CreateInteractiveItems();
 
             // Grupa má možnost definovat barvu BackColor pro svoje tlačítko a pro celou stránku s aplikacemi:
-            this.__ApplicationsPanel.BackColorUser = __ActivePageData?.BackColor;       // Pokud stránka není určena, pak jako BackColorUser bude null = default
-
-            // Vrátí požadovanou nebo aktivní stránku s daty
-            PageData getPageData()
-            {
-                if (activePageData != null) return activePageData;
-
-                var pages = this._Pages;
-                if (activePageIndex.HasValue && pages != null && activePageIndex.Value >= 0 && activePageIndex.Value < pages.Count) return pages[activePageIndex.Value];
-                var p = _ActivePageData;
-                if (p != null) return p;
-                if (pages != null && pages.Count > 0) return pages[0];
-                return null;
-            }
+            this._ApplicationsPanel.BackColorUser = _ActivePageData?.BackColor;       // Pokud stránka není určena, pak jako BackColorUser bude null = default
         }
         /// <summary>
         /// Myš vstoupila na prvek Aplikace: navazuje změna ve statusBaru
@@ -530,7 +555,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             if (e.MouseState.Buttons == MouseButtons.Right)
             {
-                this._PageSet.ShowContextMenu(e.MouseState, this.__ApplicationsPanel, this._ActivePageData, null);
+                this._PageSet.ShowContextMenu(e.MouseState, this._ApplicationsPanel, this._ActivePageData, null);
             }
         }
         /// <summary>
@@ -549,7 +574,7 @@ namespace DjSoft.Tools.ProgramLauncher
             else if (e.MouseState.Buttons == MouseButtons.Right)
             {
                 var dataInfo = e.Item.UserData as Data.BaseData;
-                this._PageSet.ShowContextMenu(e.MouseState, this.__ApplicationsPanel, this._ActivePageData, dataInfo);
+                this._PageSet.ShowContextMenu(e.MouseState, this._ApplicationsPanel, this._ActivePageData, dataInfo);
             }
         }
         /// <summary>
@@ -565,7 +590,11 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <summary>
         /// Instance interaktivního panelu pro Aplikace
         /// </summary>
-        private DjSoft.Tools.ProgramLauncher.Components.InteractiveGraphicsControl __ApplicationsPanel;
+        private InteractiveGraphicsControl _ApplicationsPanel { get { return __ApplicationsPanel; } }
+        /// <summary>
+        /// Instance interaktivního panelu pro Aplikace
+        /// </summary>
+        private InteractiveGraphicsControl __ApplicationsPanel;
         #endregion
         #region StatusBar
         /// <summary>

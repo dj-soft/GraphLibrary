@@ -610,10 +610,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             var mouseState = _CreateMouseState();
             using (PaintDataEventArgs pdea = new PaintDataEventArgs(e, mouseState, this))
             {
-                foreach (var dataItem in DataItems)
+                var zOrders = DataItems.CreateDictionaryArray(i => i.ZOrder).ToList();             // Key = ZOrder, Value = pole prvků se shodným ZOrder
+                if (zOrders.Count > 1) zOrders.Sort((a, b) => a.Key.CompareTo(b.Key));             // Setřídím podle ZOrder ASC
+                foreach (var zOrder in zOrders)
                 {
-                    dataItem.Paint(pdea);
+                    foreach (var item in zOrder.Value)
+                        item.Paint(pdea);
                 }
+
                 if (this.__MouseDragCurrentDataItem != null && __CurrentMouseDragState == MouseDragProcessState.MouseDragItem)
                 {
                     var dragShift = new Point(__DragVirtualCurrentPoint.LocationControl.X - this.__DragVirtualBeginPoint.LocationControl.X, __DragVirtualCurrentPoint.LocationControl.Y - this.__DragVirtualBeginPoint.LocationControl.Y);
@@ -650,6 +654,37 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Typ kurzoru, který bude aktivován v procesu MouseFrame
         /// </summary>
         public CursorTypes CursorTypeMouseFrame { get { return __CursorTypeMouseFrame; } set { __CursorTypeMouseFrame = value; } } private CursorTypes __CursorTypeMouseFrame;
+        /// <summary>
+        /// Vrátí ZOrder daného prvku.
+        /// </summary>
+        /// <param name="item"></param>
+        public int GetZOrder(InteractiveItem item)
+        {
+            if (item is null) return 0;
+            if (GetIsSelected(item)) return 10;
+            switch (item.InteractiveState)
+            {
+                case InteractiveState.Disabled: return 0;
+                case InteractiveState.Enabled: return 1;
+                case InteractiveState.MouseOn: return 2;
+                case InteractiveState.MouseDown: return 3;
+            }
+            return 0;
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný prvek je Selected.
+        /// </summary>
+        /// <param name="item"></param>
+        public bool GetIsSelected(InteractiveItem item)
+        {
+            if (item is null) return false;
+            var selectedItems = this.SelectedItems;
+            return (selectedItems != null && selectedItems.Length > 0 && selectedItems.Any(i => Object.ReferenceEquals(i, item)));
+        }
+        /// <summary>
+        /// Pole prvků, které jsou aktuálně Selected. Kreslí se do horní vrstvy
+        /// </summary>
+        public InteractiveItem[] SelectedItems { get { return __SelectedItems; } set { __SelectedItems = value; this.Draw(); } } private InteractiveItem[] __SelectedItems;
         #endregion
 
         #region Hrátky - myší ocásek

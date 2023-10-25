@@ -27,32 +27,41 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public PageSetData()
+        public PageSetData() : this(NewIdMode.New) { }
+        /// <summary>
+        /// Konstruktor pro daný režim
+        /// </summary>
+        /// <param name="mode"></param>
+        protected PageSetData(NewIdMode mode)
         {
+            SetNewId(mode, ref __NewId, ref __NewUniqueId);
             __Pages = new ChildItems<PageSetData, PageData>(this);
         }
         /// <summary>
         /// Vytvoří a vrátí klon this instance z pohledu uživatelských dat.
         /// Z hlediska dočasných dat uložených navíc je to new instance.
         /// </summary>
+        /// <param name="asBackupClone">Požadavek true = klon má být zálohou aktuálního prvku (=shodné ID) / false = jde o uživatelskou kopii (nové ID)</param>
         /// <returns></returns>
-        public PageSetData Clone()
+        public PageSetData Clone(bool asBackupClone)
         {
-            PageSetData clone = new PageSetData();
-            this.FillClone(clone);
+            NewIdMode mode = (asBackupClone ? NewIdMode.Clone : NewIdMode.Copy);                             // asBackupClone: true = pro zálohování v UndoRedo
+            PageSetData clone = new PageSetData(mode);
+            this.FillClone(clone, mode);
             return clone;
         }
         /// <summary>
         /// Do dodaného objektu <paramref name="clone"/> opíše svoje hodnoty, které jsou permanentní.
         /// </summary>
-        /// <param name="clone"></param>
-        protected override void FillClone(BaseData clone)
+        /// <param name="clone">Cílový objekt, do kterého opisujeme data</param>
+        /// <param name="mode">Režim přidělení nového ID a UniqueID</param>
+        protected override void FillClone(BaseData clone, NewIdMode mode)
         {
-            base.FillClone(clone);
-            if (clone is PageSetData pageSetData)
+            base.FillClone(clone, mode);
+            if (clone is PageSetData pageSetClone)
             {
-                pageSetData.__Pages.Clear();
-                pageSetData.__Pages.AddRange(this.Pages.Select(p => p.Clone()));
+                pageSetClone.__Pages.Clear();
+                pageSetClone.__Pages.AddRange(this.Pages.Select(p => p.Clone(mode == NewIdMode.Clone)));      // Pokud mode = Clone, pak asBackupClone = true
             }
         }
         /// <summary>
@@ -86,6 +95,16 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 interactiveItems.Add(page.CreateInteractiveItem());
             return interactiveItems;
         }
+        /// <summary>
+        /// ID pro nově vytvářený prvek.
+        /// Klonovaný prvek nedostává nové ID, ale přebírá ID svého originálu.
+        /// </summary>
+        private static int __NewId = 0;
+        /// <summary>
+        /// Unikátní ID pro nově vytvářený prvek.
+        /// Při klonování se 
+        /// </summary>
+        private static int __NewUniqueId = 0;
         #endregion
         #region Podpora de/serializace
         /// <summary>
@@ -214,7 +233,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public static void RunContextMenuAction(DataItemActionType actionType, ContextActionInfo actionInfo)
         {
             bool isEdited = false;
-            PageSetData pageSetClone = actionInfo.PageSetData.Clone();
+            PageSetData pageSetClone = actionInfo.PageSetData.Clone(true);
 
             switch (actionType)
             {
@@ -279,7 +298,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                         isUpdated = pageData.EditData(actionInfo.MouseState.LocationAbsolute);
                     break;
                 case DataItemActionType.CopyPage:
-                    pageData = pageData.Clone();
+                    pageData = pageData.Clone(false);
                     isAppend = pageData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleClone, pageData.Title));
                     break;
                 case DataItemActionType.DeletePage:
@@ -376,32 +395,40 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public PageData()
+        public PageData() : this(NewIdMode.New) { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        protected PageData(NewIdMode mode)
         {
+            SetNewId(mode, ref __NewId, ref __NewUniqueId);
             __Groups = new ChildItems<PageData, GroupData>(this);
         }
         /// <summary>
         /// Vytvoří a vrátí klon this instance z pohledu uživatelských dat.
         /// Z hlediska dočasných dat uložených navíc je to new instance.
         /// </summary>
+        /// <param name="asBackupClone">Požadavek true = klon má být zálohou aktuálního prvku (=shodné ID) / false = jde o uživatelskou kopii (nové ID)</param>
         /// <returns></returns>
-        public PageData Clone()
+        public PageData Clone(bool asBackupClone)
         {
-            PageData clone = new PageData();
-            this.FillClone(clone);
+            NewIdMode mode = (asBackupClone ? NewIdMode.Clone : NewIdMode.Copy);                             // asBackupClone: true = pro zálohování v UndoRedo
+            PageData clone = new PageData(mode);
+            this.FillClone(clone, mode);
             return clone;
         }
         /// <summary>
         /// Do dodaného objektu <paramref name="clone"/> opíše svoje hodnoty, které jsou permanentní.
         /// </summary>
-        /// <param name="clone"></param>
-        protected override void FillClone(BaseData clone)
+        /// <param name="clone">Cílový objekt, do kterého opisujeme data</param>
+        /// <param name="mode">Režim přidělení nového ID a UniqueID</param>
+        protected override void FillClone(BaseData clone, NewIdMode mode)
         {
-            base.FillClone(clone);
-            if (clone is PageData pageData)
+            base.FillClone(clone, mode);
+            if (clone is PageData pageClone)
             {
-                pageData.__Groups.Clear();
-                pageData.__Groups.AddRange(this.Groups.Select(g => g.Clone()));
+                pageClone.__Groups.Clear();
+                pageClone.__Groups.AddRange(this.Groups.Select(g => g.Clone(mode == NewIdMode.Clone)));       // Pokud mode = Clone, pak asBackupClone = true
             }
         }
         /// <summary>
@@ -461,6 +488,16 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             }
             return interactiveItems;
         }
+        /// <summary>
+        /// ID pro nově vytvářený prvek.
+        /// Klonovaný prvek nedostává nové ID, ale přebírá ID svého originálu.
+        /// </summary>
+        private static int __NewId = 0;
+        /// <summary>
+        /// Unikátní ID pro nově vytvářený prvek.
+        /// Při klonování se 
+        /// </summary>
+        private static int __NewUniqueId = 0;
         #endregion
         #region Provedení editační akce pro některý z mých Child prvků
         /// <summary>
@@ -488,7 +525,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                         isUpdated = groupData.EditData(actionInfo.MouseState.LocationAbsolute);
                     break;
                 case DataItemActionType.CopyGroup:
-                    groupData = groupData.Clone();
+                    groupData = groupData.Clone(false);
                     isAppend = groupData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleClone, groupData.Title));
                     break;
                 case DataItemActionType.DeleteGroup:
@@ -553,32 +590,41 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GroupData()
+        public GroupData() : this(NewIdMode.New) { }
+        /// <summary>
+        /// Konstruktor pro daný režim
+        /// </summary>
+        /// <param name="mode"></param>
+        protected GroupData(NewIdMode mode)
         {
+            SetNewId(mode, ref __NewId, ref __NewUniqueId);
             __Applications = new ChildItems<GroupData, ApplicationData>(this);
         }
         /// <summary>
         /// Vytvoří a vrátí klon this instance z pohledu uživatelských dat.
         /// Z hlediska dočasných dat uložených navíc je to new instance.
         /// </summary>
+        /// <param name="asBackupClone">Požadavek true = klon má být zálohou aktuálního prvku (=shodné ID) / false = jde o uživatelskou kopii (nové ID)</param>
         /// <returns></returns>
-        public GroupData Clone()
+        public GroupData Clone(bool asBackupClone)
         {
-            GroupData clone = new GroupData();
-            this.FillClone(clone);
+            NewIdMode mode = (asBackupClone ? NewIdMode.Clone : NewIdMode.Copy);                             // asBackupClone: true = pro zálohování v UndoRedo
+            GroupData clone = new GroupData(mode);
+            this.FillClone(clone, mode);
             return clone;
         }
         /// <summary>
         /// Do dodaného objektu <paramref name="clone"/> opíše svoje hodnoty, které jsou permanentní.
         /// </summary>
-        /// <param name="clone"></param>
-        protected override void FillClone(BaseData clone)
+        /// <param name="clone">Cílový objekt, do kterého opisujeme data</param>
+        /// <param name="mode">Režim přidělení nového ID a UniqueID</param>
+        protected override void FillClone(BaseData clone, NewIdMode mode)
         {
-            base.FillClone(clone);
-            if (clone is GroupData groupData)
+            base.FillClone(clone, mode);
+            if (clone is GroupData groupClone)
             {
-                groupData.__Applications.Clear();
-                groupData.__Applications.AddRange(this.Applications.Select(a => a.Clone()));
+                groupClone.__Applications.Clear();
+                groupClone.__Applications.AddRange(this.Applications.Select(a => a.Clone(mode == NewIdMode.Clone)));      // Pokud mode = Clone, pak asBackupClone = true
             }
         }
         /// <summary>
@@ -606,6 +652,16 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Můj parent
         /// </summary>
         PageData IChildOfParent<PageData>.Parent { get { return __Parent; } set { __Parent = value; } } private PageData __Parent;
+        /// <summary>
+        /// ID pro nově vytvářený prvek.
+        /// Klonovaný prvek nedostává nové ID, ale přebírá ID svého originálu.
+        /// </summary>
+        private static int __NewId = 0;
+        /// <summary>
+        /// Unikátní ID pro nově vytvářený prvek.
+        /// Při klonování se 
+        /// </summary>
+        private static int __NewUniqueId = 0;
         #endregion
         #region Provedení editační akce pro některý z mých Child prvků
         /// <summary>
@@ -633,7 +689,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                         isUpdated = applicationData.EditData(actionInfo.MouseState.LocationAbsolute);
                     break;
                 case DataItemActionType.CopyApplication:
-                    applicationData = applicationData.Clone();
+                    applicationData = applicationData.Clone(false);
                     isAppend = applicationData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleClone, applicationData.Title));
                     break;
                 case DataItemActionType.DeleteApplication:
@@ -689,34 +745,44 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public ApplicationData()
-        { }
+        public ApplicationData() : this(NewIdMode.New) { }
+        /// <summary>
+        /// Konstruktor pro daný režim
+        /// </summary>
+        /// <param name="mode"></param>
+        protected ApplicationData(NewIdMode mode)
+        {
+            SetNewId(mode, ref __NewId, ref __NewUniqueId);
+        }
         /// <summary>
         /// Vytvoří a vrátí klon this instance z pohledu uživatelských dat.
         /// Z hlediska dočasných dat uložených navíc je to new instance.
         /// </summary>
+        /// <param name="asBackupClone">Požadavek true = klon má být zálohou aktuálního prvku (=shodné ID) / false = jde o uživatelskou kopii (nové ID)</param>
         /// <returns></returns>
-        public ApplicationData Clone()
+        public ApplicationData Clone(bool asBackupClone)
         {
-            ApplicationData clone = new ApplicationData();
-            this.FillClone(clone);
+            NewIdMode mode = (asBackupClone ? NewIdMode.Clone : NewIdMode.Copy);                             // asBackupClone: true = pro zálohování v UndoRedo
+            ApplicationData clone = new ApplicationData(mode);
+            this.FillClone(clone, mode);
             return clone;
         }
         /// <summary>
         /// Do dodaného objektu <paramref name="clone"/> opíše svoje hodnoty, které jsou permanentní.
         /// </summary>
-        /// <param name="clone"></param>
-        protected override void FillClone(BaseData clone)
+        /// <param name="clone">Cílový objekt, do kterého opisujeme data</param>
+        /// <param name="mode">Režim přidělení nového ID a UniqueID</param>
+        protected override void FillClone(BaseData clone, NewIdMode mode)
         {
-            base.FillClone(clone);
-            if (clone is  ApplicationData applicationData)
+            base.FillClone(clone, mode);
+            if (clone is  ApplicationData applicationClone)
             {
-                applicationData.ExecutableFileName = this.ExecutableFileName;
-                applicationData.ExecutableWorkingDirectory = this.ExecutableWorkingDirectory;
-                applicationData.ExecutableArguments = this.ExecutableArguments;
-                applicationData.ExecuteInAdminMode = this.ExecuteInAdminMode;
-                applicationData.OpenMaximized = this.OpenMaximized;
-                applicationData.OnlyOneInstance = this.OnlyOneInstance;
+                applicationClone.ExecutableFileName = this.ExecutableFileName;
+                applicationClone.ExecutableWorkingDirectory = this.ExecutableWorkingDirectory;
+                applicationClone.ExecutableArguments = this.ExecutableArguments;
+                applicationClone.ExecuteInAdminMode = this.ExecuteInAdminMode;
+                applicationClone.OpenMaximized = this.OpenMaximized;
+                applicationClone.OnlyOneInstance = this.OnlyOneInstance;
             }
         }
         /// <summary>
@@ -725,7 +791,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <returns></returns>
         public override string ToString()
         {
-            return $"{this.GetType().Name}: '{Title}'; Executable: '{ExecutableFileName}'";
+            return base.ToString() + $"; Executable: '{ExecutableFileName}'";
         }
         /// <summary>
         /// Druh layoutu, z něhož se čerpá.
@@ -735,6 +801,16 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Můj parent
         /// </summary>
         GroupData IChildOfParent<GroupData>.Parent { get { return __Parent; } set { __Parent = value; } } private GroupData __Parent;
+        /// <summary>
+        /// ID pro nově vytvářený prvek.
+        /// Klonovaný prvek nedostává nové ID, ale přebírá ID svého originálu.
+        /// </summary>
+        private static int __NewId = 0;
+        /// <summary>
+        /// Unikátní ID pro nově vytvářený prvek.
+        /// Při klonování se 
+        /// </summary>
+        private static int __NewUniqueId = 0;
         #endregion
         #region Podpora de/serializace
         /// <summary>
@@ -1080,13 +1156,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <returns></returns>
         public override string ToString()
         {
-            return $"{this.GetType().Name}: '{Title}'";
+            return $"{this.GetType().Name}: '{Title}' [Id:{Id}, UniqueId:{UniqueId}]";
         }
         /// <summary>
         /// Do dodaného objektu <paramref name="clone"/> opíše svoje hodnoty, které jsou permanentní.
+        /// Neopisuje hodnoty nad rámec toho, například v klonovaném objektu ponechává původní <see cref="InteractiveItem"/>, tedy nejspíš null (po konstruktoru).
         /// </summary>
-        /// <param name="clone"></param>
-        protected virtual void FillClone(BaseData clone)
+        /// <param name="clone">Cílový objekt, do kterého opisujeme data</param>
+        /// <param name="mode">Režim přidělení nového ID a UniqueID</param>
+        protected virtual void FillClone(BaseData clone, NewIdMode mode)
         {
             clone.Title = this.Title;
             clone.Description = this.Description;
@@ -1095,6 +1173,81 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             clone.LayoutKind = this.LayoutKind;
             clone.RelativeAdress = this.RelativeAdress;
             clone.BackColor = this.BackColor;
+
+            if (mode == NewIdMode.Clone)
+            {
+                clone.__Id = this.__Id;
+            }
+        }
+        #endregion
+        #region Id a UniqueId
+        /// <summary>
+        /// ID tohoto objektu. Pokud this objekt vznikl klonováním z jiného objektu, pak je zde uloženo ID zdroje klonu. Klonům se nepřiděluje nové ID.
+        /// Pokud objekt vzniká jako Kopie, pak má nové ID.
+        /// <para/>
+        /// <u>Rozdíl mezi Klonem a Kopií:</u><br/>
+        /// Klon se používá při zálohování stavu do UndoRedo containeru, a klonovaný objekt má charakter "Zálohy původního objektu". Ten má shodné ID jako zdroj.<br/>
+        /// Kopie se používá tehdy, když uživatel interaktivně vytváří nový prvek jako kopii nějakého prvku proto, aby v něm něco změnil. a používal oba objekty vedle sebe. Kopie má nové číslo ID.
+        /// </summary>
+        public int Id { get { return __Id; } }
+        /// <summary>
+        /// Unikátní ID objektu. Při klonování se vždy přidělí nové, tím je možno odlišit nový klon od původního objektu. Bez ohledu na druh klonování / kopírování (viz informace u <see cref="Id"/>).
+        /// </summary>
+        public int UniqueId { get { return __UniqueId; } }
+        /// <summary>
+        /// ID tohoto objektu. Pokud this objekt vznikl klonováním z jiného objektu, pak je zde uloženo ID zdroje klonu. Klonům se nepřiděluje nové ID.
+        /// Pokud objekt vzniká jako Kopie, pak má nové ID.
+        /// <para/>
+        /// <u>Rozdíl mezi Klonem a Kopií:</u><br/>
+        /// Klon se používá při zálohování stavu do UndoRedo containeru, a klonovaný objekt má charakter "Zálohy původního objektu". Ten má shodné ID jako zdroj.<br/>
+        /// Kopie se používá tehdy, když uživatel interaktivně vytváří nový prvek jako kopii nějakého prvku proto, aby v něm něco změnil. a používal oba objekty vedle sebe. Kopie má nové číslo ID.
+        /// </summary>
+        protected int __Id = 0;
+        /// <summary>
+        /// Unikátní ID objektu. Při klonování se vždy přidělí nové, tím je možno odlišit nový klon od původního objektu. Bez ohledu na druh klonování / kopírování (viz informace u <see cref="Id"/>).
+        /// </summary>
+        protected int __UniqueId = 0;
+        /// <summary>
+        /// Do this instance vloží nové ID podle daného režimu, s použitím hodnot ID v parametrech (statické fields v konkrétní třídě potomka)
+        /// </summary>
+        /// <param name="mode"></param>
+        /// <param name="id"></param>
+        /// <param name="uniqueId"></param>
+        protected void SetNewId(NewIdMode mode, ref int id, ref int uniqueId)
+        {
+            switch (mode)
+            {
+                case NewIdMode.New:
+                    this.__Id = ++id;
+                    this.__UniqueId = ++uniqueId;
+                    break;
+                case NewIdMode.Copy:
+                    this.__Id = ++id;
+                    this.__UniqueId = ++uniqueId;
+                    break;
+                case NewIdMode.Clone:
+                    // Hodnotu Id do nové instance (clone) opisuje metoda FillClone(BaseData clone, NewIdMode mode) pro (mode == NewIdMode.Clone) !
+                    this.__UniqueId = ++uniqueId;
+                    break;
+            }
+        }
+        /// <summary>
+        /// Režim přidělování ID
+        /// </summary>
+        protected enum NewIdMode
+        {
+            /// <summary>
+            /// Nový prvek: obě ID budou nově přidělená
+            /// </summary>
+            New,
+            /// <summary>
+            /// Kopie prvku: obě ID budou nově přidělená
+            /// </summary>
+            Copy,
+            /// <summary>
+            /// Záložní klon: ID bude shodné (podle něj najdeme zdrojový prvek), UniqueID bude nové, abycom poznali generaci klonu
+            /// </summary>
+            Clone
         }
         #endregion
         #region Podpora pro interaktivní kreslení a práci - tvorba instance třídy InteractiveItem
@@ -1117,7 +1270,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Interaktivní prvek, naposledy vytvořený a vrácený z metody <see cref="CreateInteractiveItem()"/>
         /// </summary>
         [PersistingEnabled(false)]
-        protected InteractiveItem InteractiveItem { get; set; }
+        public InteractiveItem InteractiveItem { get; protected set; }
         /// <summary>
         /// Zajistí znovuvykreslení interaktvního prvku
         /// </summary>
@@ -1293,19 +1446,14 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public InteractiveDataItem(BaseData data)
         {
             __Data = data;
-            __CellBackColor = ColorSet.CreateAllColors(data.BackColor);
             UserData = data;
         }
         private BaseData __Data;
-        private ColorSet __CellBackColor;
-        public override string MainTitle { get { return __Data.Title; } set { __Data.Title = value; } }
-        public override string Description { get { return __Data.Description; } set { __Data.Description = value; } }
-        public override Point Adress { get { return __Data.Adress; } set { __Data.Adress = value; } }
-        public override string ImageName { get { return __Data.ImageFileName; } set { __Data.ImageFileName = value; } }
-        public override ColorSet CellBackColor { get { return __CellBackColor; } set { __CellBackColor = value; } }
-        /// <summary>
-        /// Druh layoutu, z něhož se čerpá.
-        /// </summary>
+        public override string MainTitle { get { return __Data.Title; } set { } }
+        public override string Description { get { return __Data.Description; } set { } }
+        public override Point Adress { get { return __Data.Adress; } set { } }
+        public override string ImageName { get { return __Data.ImageFileName; } set { } }
+        public override Color? BackColor { get { return __Data.BackColor; } set { } }
         public override DataLayoutKind? LayoutKind { get { return __Data.LayoutKind; } set { __Data.LayoutKind = value; } }
     }
     #endregion

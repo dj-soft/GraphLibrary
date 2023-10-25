@@ -984,7 +984,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="colorSet"></param>
         /// <param name="interactiveState"></param>
         /// <returns></returns>
-        public static Pen GetPen(ColorSet colorSet, Components.InteractiveState interactiveState = Components.InteractiveState.Default, float? width = null, float? alpha = null)
+        public static Pen GetPen(ColorSet colorSet, Components.InteractiveState interactiveState = Components.InteractiveState.Enabled, float? width = null, float? alpha = null)
         {
             var color = colorSet?.GetColor(interactiveState);
             if (color == null) return null;
@@ -1017,7 +1017,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="colorSet"></param>
         /// <param name="interactiveState"></param>
         /// <returns></returns>
-        public static Brush GetBrush(ColorSet colorSet, Components.InteractiveState interactiveState = Components.InteractiveState.Default, float? alpha = null)
+        public static Brush GetBrush(ColorSet colorSet, Components.InteractiveState interactiveState = Components.InteractiveState.Enabled, float? alpha = null)
         {
             var color = colorSet?.GetColor(interactiveState);
             if (color == null) return null;
@@ -1106,12 +1106,12 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="textAppearance"></param>
         /// <param name="interactiveState"></param>
         /// <returns></returns>
-        public static Font GetFont(TextAppearance textAppearance, Components.InteractiveState interactiveState = Components.InteractiveState.Default)
+        public static Font GetFont(TextAppearance textAppearance, Components.InteractiveState interactiveState = Components.InteractiveState.Enabled)
         {
             FontType fontType = textAppearance.FontType ?? FontType.DefaultFont;
-            float emSize = textAppearance.TextStyles[interactiveState].EmSize ?? textAppearance.TextStyles[Components.InteractiveState.Default].EmSize ?? GetSystemFont(fontType).Size;
-            var sizeRatio = textAppearance.TextStyles[interactiveState].SizeRatio ?? textAppearance.TextStyles[Components.InteractiveState.Default].SizeRatio;
-            var fontStyle = textAppearance.TextStyles[interactiveState].FontStyle ?? textAppearance.TextStyles[Components.InteractiveState.Default].FontStyle;
+            float emSize = textAppearance.TextStyles[interactiveState].EmSize ?? textAppearance.TextStyles[Components.InteractiveState.Enabled].EmSize ?? GetSystemFont(fontType).Size;
+            var sizeRatio = textAppearance.TextStyles[interactiveState].SizeRatio ?? textAppearance.TextStyles[Components.InteractiveState.Enabled].SizeRatio;
+            var fontStyle = textAppearance.TextStyles[interactiveState].FontStyle ?? textAppearance.TextStyles[Components.InteractiveState.Enabled].FontStyle;
 
             if (sizeRatio.HasValue) emSize = emSize * sizeRatio.Value;
 

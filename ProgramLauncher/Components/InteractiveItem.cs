@@ -49,6 +49,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         public virtual bool Interactive { get { return __Interactive; } set { __Interactive = value; } } private bool __Interactive;
         /// <summary>
+        /// Statická podkladová barva pozadí, specifická pro tento prvek, teprve na ni se nanáší barva určená z <see cref="CellBackColor"/> (která je proměnná podle <see cref="InteractiveState"/>)
+        /// </summary>
+        public virtual Color? BackColor { get { return __BackColor; } set { __BackColor = value; } } private Color? __BackColor;
+        /// <summary>
         /// Barvy pozadí celé buňky. Pokud obsahuje null, nekreslí se.
         /// </summary>
         public virtual ColorSet CellBackColor { get { return __CellBackColor ?? App.CurrentAppearance.CellBackColor; } set { __CellBackColor = value; } } private ColorSet __CellBackColor;
@@ -61,9 +65,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         public virtual string Description { get { return __Description; } set { __Description = value; } } private string __Description;
         /// <summary>
-        /// Příznak že prvek je aktivní. Pak používá pro své vlastní pozadí barvu <see cref="ColorSet.DownColor"/>
+        /// Příznak že prvek je "zamáčknutý" (jakoby aktivovaný button). Pak používá pro své vlastní pozadí barvu <see cref="ColorSet.DownColor"/>
         /// </summary>
-        public virtual bool Down { get { return __Down; } set { __Down = value; } } private bool __Down;
+        public virtual bool IsDown { get { return __IsDown; } set { __IsDown = value; } } private bool __IsDown;
         /// <summary>
         /// Jméno obrázku
         /// </summary>
@@ -98,14 +102,21 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         protected bool HasParent { get { return __Parent != null; } }
         /// <summary>
+        /// ZOrder tohoto prvku. Určuje Parent na základě aktivity prvku.
+        /// </summary>
+        public int ZOrder { get { return (__Parent?.GetZOrder(this) ?? 0); } }
+        /// <summary>
+        /// Obsahuje true, pokud this prvek je vybrán v parentu v poli <see cref="InteractiveGraphicsControl.SelectedItems"/>.
+        /// </summary>
+        public bool IsSelected { get { return (__Parent?.GetIsSelected(this) ?? false); } }
+        /// <summary>
         /// Zruší platnost layoutu jednotlivých prvků přítomných v Parentu
         /// </summary>
         protected virtual void ResetParentLayout()
         {
             Parent?.ResetItemLayout();
         }
-        InteractiveGraphicsControl IChildOfParent<InteractiveGraphicsControl>.Parent { get { return __Parent; } set { __Parent = value; } }
-        private InteractiveGraphicsControl __Parent;
+        InteractiveGraphicsControl IChildOfParent<InteractiveGraphicsControl>.Parent { get { return __Parent; } set { __Parent = value; } } private InteractiveGraphicsControl __Parent;
         #endregion
         #region Údaje získané z Layoutu
         /// <summary>
@@ -172,9 +183,24 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #endregion
         #region Kreslení
         /// <summary>
-        /// Interaktivní stav. Nastavuje Control, prvek na něj jen reaguje.
+        /// Interaktivní stav.
+        /// Nastavuje Control, prvek na něj jen reaguje. V této hodnotě se neobjevuje příznak Selected.
         /// </summary>
         public virtual InteractiveState InteractiveState { get; set; }
+        /// <summary>
+        /// Platný interaktivní stav. Vychází z hodnoty <see cref="InteractiveState"/>, ale promítá do ní i <see cref="IsSelected"/>
+        /// </summary>
+        public virtual InteractiveState CurrentInteractiveState 
+        {
+            get
+            {
+                if (!this.Enabled) return InteractiveState.Disabled;
+                var state = this.InteractiveState;
+                if (this.IsSelected) state |= InteractiveState.AndSelected;
+                if (this.IsDown) state |= InteractiveState.AndDown;
+                return state;
+            }
+        }
         /// <summary>
         /// Zajistí vykreslení prvku
         /// </summary>
@@ -190,17 +216,21 @@ namespace DjSoft.Tools.ProgramLauncher.Components
 
             var dataLayout = this.DataLayout;
             var paletteSet = App.CurrentAppearance;
-            var clientBounds = this.Parent.GetControlBounds(virtualBounds.Value);                // Souřadnice v systému souřadnic nativního controlu, v nich je vykreslován obsah prvku = jednotlivé prostory dané DataLayoutem
+            var clientBounds = this.Parent.GetControlBounds(virtualBounds.Value);                  // Souřadnice v systému souřadnic nativního controlu, v nich je vykreslován obsah prvku = jednotlivé prostory dané DataLayoutem
             var activeBounds = dataLayout.ContentBounds.GetBounds(clientBounds);
             var workspaceColor = App.CurrentAppearance.WorkspaceColor;
 
             Color? color;
             e.Graphics.SetClip(clientBounds);
 
-            InteractiveState interactiveState = this.InteractiveState;
+            var currentInteractiveState = this.CurrentInteractiveState;                            // Kompletní stav, definuje všechny barvy
+            var interactiveState = (currentInteractiveState & InteractiveState.MaskBasicStates);   // Obsahuje jen základní stav daný 
+            var isSelected = IsSelected;
+            if (isSelected)
+            { }
 
             // Celé pozadí buňky (buňka může mít explicitně danou barvu pozadí):
-            color = this.CellBackColor?.GetColor(interactiveState);
+            color = this.BackColor.Morph(this.CellBackColor?.GetColor(currentInteractiveState));   // Statická barva pozadí + proměnná dle stavu
             if (color.HasValue)
             {   // Barva buňky se smíchá s barvou WorkspaceColor a vykreslí se celé její pozadí,
                 // a tato barva se pak stává základnou pro Morphování a kreslení všech dalších barev v různých oblastech:
@@ -208,7 +238,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 e.Graphics.FillRectangle(clientBounds, workspaceColor, alpha);
             }
             // Pozadí aktivní části buňky:
-            if (this.Down)
+            if (this.IsDown)
             {
                 color = paletteSet.ActiveContentColor.DownColor;
                 if (color.HasValue)
@@ -220,7 +250,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             {
                 color = paletteSet.ActiveContentColor.GetColor(interactiveState);
                 if (color.HasValue)
-                    e.Graphics.FountainFill(activeBounds, workspaceColor.Morph(color.Value), Components.InteractiveState.Default, alpha);
+                    e.Graphics.FountainFill(activeBounds, workspaceColor.Morph(color.Value), Components.InteractiveState.Enabled, alpha);
             }
 
             // Rámeček a pozadí typu Border:
@@ -300,13 +330,41 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     /// <summary>
     /// Stav prvku
     /// </summary>
+    [Flags]
     public enum InteractiveState
     {
-        Default = 0,
-        Disabled,
-        Enabled,
-        MouseOn,
-        MouseDown
+        /// <summary>
+        /// Enabled, ale nijak neaktivní
+        /// </summary>
+        Enabled = 0,
+        /// <summary>
+        /// Disabled
+        /// </summary>
+        Disabled = 1,
+        /// <summary>
+        /// S myší
+        /// </summary>
+        MouseOn = 3,
+        /// <summary>
+        /// Stisknuto
+        /// </summary>
+        MouseDown = 4,
+        /// <summary>
+        /// V procesu DragAndDrop
+        /// </summary>
+        Dragged = 5,
+        /// <summary>
+        /// Maska pro základní stavy <see cref="Disabled"/> | <see cref="Enabled"/> | <see cref="MouseOn"/> | <see cref="MouseDown"/> | <see cref="Dragged"/>.
+        /// </summary>
+        MaskBasicStates = 0x00FF,
+        /// <summary>
+        /// Přídavek Selected = přidává se k základnímu stavu
+        /// </summary>
+        AndSelected = 0x0100,
+        /// <summary>
+        /// Přídavek Down = přidává se k základnímu stavu
+        /// </summary>
+        AndDown = 0x0200
     }
     #endregion
     #region class PaintDataEventArgs

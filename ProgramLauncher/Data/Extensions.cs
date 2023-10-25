@@ -447,12 +447,12 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="bounds"></param>
         /// <param name="color"></param>
         /// <param name="interactiveState"></param>
-        public static void FountainFill(this Graphics graphics, Rectangle bounds, Color color, Components.InteractiveState interactiveState = Components.InteractiveState.Default, float? alpha = null)
+        public static void FountainFill(this Graphics graphics, Rectangle bounds, Color color, Components.InteractiveState interactiveState = Components.InteractiveState.Enabled, float? alpha = null)
         {
             _GetFountainFillDirection(interactiveState, out float morph, out FountainDirection direction);
             FountainFill(graphics, bounds, color, morph, direction, alpha);
         }
-        public static void FountainFill(this Graphics graphics, GraphicsPath path, Color color, Components.InteractiveState interactiveState = Components.InteractiveState.Default, float? alpha = null)
+        public static void FountainFill(this Graphics graphics, GraphicsPath path, Color color, Components.InteractiveState interactiveState = Components.InteractiveState.Enabled, float? alpha = null)
         {
             _GetFountainFillDirection(interactiveState, out float morph, out FountainDirection direction);
             FountainFill(graphics, path, color, morph, direction, alpha);
@@ -570,7 +570,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             graphics.FillRectangle(App.GetBrush(color, alpha), bounds);
         }
-        public static void DrawText(this Graphics graphics, string text, RectangleF bounds, TextAppearance textAppearance, Components.InteractiveState interactiveState = Components.InteractiveState.Default, float? alpha = null)
+        public static void DrawText(this Graphics graphics, string text, RectangleF bounds, TextAppearance textAppearance, Components.InteractiveState interactiveState = Components.InteractiveState.Enabled, float? alpha = null)
         {
             var brush = App.GetBrush(textAppearance.TextColors, interactiveState, alpha);
             if (brush is null) return;
@@ -792,6 +792,46 @@ namespace DjSoft.Tools.ProgramLauncher
             if (!other.HasValue || other.Value.A == 0) return root;
             float morph = ((float)other.Value.A) / 255f;
             return _Morph(root, other.Value, morph);
+        }
+        /// <summary>
+        /// Vrací barvu, která je výsledkem interpolace mezi barvou this a barvou other, 
+        /// přičemž od barvy this se liší poměrem morph.
+        /// Poměr (morph): 0=vrací se výchozí barva (this).
+        /// Poměr (morph): 1=vrací se barva cílová (other).
+        /// Poměr může být i větší než 1 (pak je výsledek ještě za cílovou barvou other),
+        /// anebo může být záporný (pak výsledkem je barva na opačné straně než je other).
+        /// Hodnota Alpha (=opacity = průhlednost) kanálu se přebírá z this barvy a Morphingem se nemění.
+        /// </summary>
+        /// <param name="root">Výchozí barva</param>
+        /// <param name="other">Cílová barva</param>
+        /// <param name="morph">Poměr morph (0=vrátí this, 1=vrátí other, hodnota může být záporná i větší než 1f)</param>
+        /// <returns></returns>
+        public static Color? Morph(this Color? root, Color? other, float morph)
+        {
+            if (!root.HasValue || morph >= 1f) return other;
+            if (!other.HasValue || morph <= 0f) return root;
+            return _Morph(root.Value, other.Value, morph);
+        }
+        /// <summary>
+        /// Vrací barvu, která je výsledkem interpolace mezi barvou this a barvou other, 
+        /// přičemž od barvy this se liší poměrem morph.
+        /// Poměr morph zde není zadán explicitně, ale je dán hodnotou Alpha kanálu v barvě other (kde 0 odpovídá morph = 0, a 255 odpovídá 1).
+        /// Jinými slovy, barva this se transformuje do barvy other natolik výrazně, jak výrazně je barva other viditelná (neprůhledná).
+        /// Nelze tedy provádět Morph na opačnou stranu (morph nebude nikdy záporné) ani s přesahem za cílovou barvu (morph nebude nikdy vyšší než 1).
+        /// Poměr (Alpha kanál barvy other): 0=vrací se výchozí barva (this).
+        /// Poměr (Alpha kanál barvy other): 255=vrací se barva cílová (other).
+        /// Poměr tedy nemůže být menší než 0 nebo větší než 1 (255).
+        /// Hodnota Alpha výsledné barvy (=opacity = průhlednost) se přebírá z Alpha kanálu this barvy, a tímto Morphingem se nijak nemění.
+        /// </summary>
+        /// <param name="root">Výchozí barva</param>
+        /// <param name="other">Cílová barva</param>
+        /// <returns></returns>
+        public static Color? Morph(this Color? root, Color? other)
+        {
+            if (!root.HasValue || other.Value.A >= 255) return other;
+            if (!other.HasValue || other.Value.A == 0) return root;
+            float morph = ((float)other.Value.A) / 255f;
+            return _Morph(root.Value, other.Value, morph);
         }
         /// <summary>
         /// Vrátí barvu Morph mezi <paramref name="root"/> a <paramref name="other"/> v poměru <paramref name="morph"/> (0 až 1).
