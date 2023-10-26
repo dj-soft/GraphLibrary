@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml.Schema;
 using DjSoft.Tools.ProgramLauncher.Data;
 
 namespace DjSoft.Tools.ProgramLauncher.Components
@@ -209,8 +210,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             var interactiveMap = __InteractiveMap;
             if (interactiveMap is null) return null;
 
-            Point virtualPoint = this.GetVirtualPoint(mouseState.LocationControl);
-            return interactiveMap.GetCellAtPoint(virtualPoint, true);
+            return interactiveMap.GetCellAtPoint(mouseState.LocationVirtual, true);
         }
         #endregion
         #region Interaktivita logicky řízená
@@ -844,6 +844,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 }
             }
 
+            currentMap.Sort();
             return currentMap;
 
 
@@ -1161,6 +1162,13 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             __VirtualBottom = 0;
         }
         /// <summary>
+        /// Setřídí obsazené buňky podle pozice (Y, X)
+        /// </summary>
+        public void Sort()
+        {
+            __Cells.Sort(Cell.CompareByAdress);
+        }
+        /// <summary>
         /// Najde a vrátí buňku na dané virtuální souřadnici. Může vráit null.
         /// </summary>
         /// <param name="virtualPoint">Souřadnice místa, jehož obsah (buňku) hledáme</param>
@@ -1171,7 +1179,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             // Nejdřív hledám existující buňku v našem prostoru:
             bool isInContentSize = (virtualPoint.X >= 0 && virtualPoint.X < __VirtualRight && virtualPoint.Y >= 0 && virtualPoint.Y < __VirtualBottom);
             if (isInContentSize)
-            {
+            {   // Tato větev pokrývá i "díry" uvnitř obsazeného prostoru = tedy buňky, ve kterých není žádný InteractiveItem:
                 var cell = __Cells.FirstOrDefault(c => c.VirtualBounds.Contains(virtualPoint));
                 if (cell != null) return cell;
             }
@@ -1179,15 +1187,85 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             // Pokud nemám hledat Void prostor, končíme:
             if (!includeVoidArea) return null;
 
+            // Tato část řeší výhradně určení adresy buňky v prostoru vpravo, dole a vpravo dole (protože doleva ani nahoru se nedá dostat = záporné souřadnice nejsou podporovány).
+
             // Najdu buňky v mém řádku (napravo + nalevo), a v mém sloupci (nahoru + dolů),
             //  pomohou mi možná určit jednu sadu souřadnic
             var myRowCells = __Cells.Where(c => c.VirtualBounds.Top <= virtualPoint.Y && c.VirtualBounds.Bottom > virtualPoint.Y).ToArray();
             var myColumnCells = __Cells.Where(c => c.VirtualBounds.Left <= virtualPoint.X && c.VirtualBounds.Right > virtualPoint.X).ToArray();
 
+            // Vpravo:
+            if (myRowCells.Length > 0 && myColumnCells.Length == 0)
+            {
+                var maxAdressX = (__Cells.Count > 0 ? __Cells.Select(c => c.Adress.X).Max() + 1: 0);
+                var cell = findCell(myRowCells, c => c.VirtualBounds.Top, c => c.VirtualBounds.Bottom, virtualPoint.Y);
+                var adressX = maxAdressX + findVoid(__VirtualRight, __StandardSize.Width, virtualPoint.X, out int virtLeft, out int virtRight);
+                return new Cell(new Point(cell.Adress.Y, adressX), Rectangle.FromLTRB(virtLeft, cell.VirtualBounds.Top, virtRight, cell.VirtualBounds.Bottom), null, true);
+            }
 
+            // Dole:
+            else if (myRowCells.Length == 0 && myColumnCells.Length > 0)
+            {
+                var maxAdressY = (__Cells.Count > 0 ? __Cells.Select(c => c.Adress.Y).Max() + 1 : 0);
+                var cell = findCell(myRowCells, c => c.VirtualBounds.Left, c => c.VirtualBounds.Right, virtualPoint.X);
+                var adressY = maxAdressY + findVoid(__VirtualBottom, __StandardSize.Height, virtualPoint.Y, out int virtTop, out int virtBottom);
+            }
+
+
+            // Vpravo dole:
+            else if (myRowCells.Length == 0 && myColumnCells.Length == 0)
+            {
+                
+            }
+
+            // Jiné možnosti by neměly nastat:
+            else 
+            {
+                return null;
+            }
 
 
             return null;
+
+
+            // Najde a vrátí nejvhodnější buňku z daného pole, která je nejmenší a nejblíže dané hodnotě
+            Cell findCell(Cell[] cells, Func<Cell, int> getBegin, Func<Cell, int> getEnd, int value)
+            {
+                Cell result = null;
+                int maxBegin = -1;
+                int minEnd = -1;
+                int optSize = -1;
+
+                foreach (var c in cells)
+                {
+                    var begin = getBegin(c);                         // Left nebo Top
+                    var end = getEnd(c);                             // Right nebo Bottom
+                    if (value >= begin && value < end)
+                    {   // Tato buňka odpovídá dané souřadnici:
+                        int size = end - begin;
+                        if (result is null || (maxBegin < 0 || minEnd < 0 || optSize < 0) || (begin > maxBegin || end < minEnd || size < optSize))
+                        {
+                            result = c;
+                            maxBegin = begin;
+                            minEnd = end;
+                            optSize = size;
+                        }
+                    }
+                }
+
+                return result;
+            }
+
+            // Určí adresu ve směru, kde již nejsou buňky (pozice X pro bod vpravo, nebo Y pro bod dole)
+            int findVoid(int end, int size, int value, out int voidBegin, out int voidEnd)
+            {
+                int dist = value - end;
+                int adress = (int)Math.Floor((float)dist / (float)size);
+                voidBegin = end + (adress * size);
+                voidEnd = voidBegin + size;
+                return adress;
+            }
+
         }
         /// <summary>
         /// Obsazené buňky a jejich data
@@ -1255,6 +1333,18 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             /// Buňka leží mimo dosavadní prostor buněk.
             /// </summary>
             public bool IsOutsideCell { get { return __IsOutsideCell; } } private bool __IsOutsideCell;
+            /// <summary>
+            /// Komparátor podle adresy (Y, X)
+            /// </summary>
+            /// <param name="a"></param>
+            /// <param name="b"></param>
+            /// <returns></returns>
+            public static int CompareByAdress(Cell a, Cell b)
+            {
+                int cmp = a.Adress.Y.CompareTo(b.Adress.Y);
+                if (cmp == 0) cmp = a.Adress.X.CompareTo(b.Adress.X);
+                return cmp;
+            }
         }
     }
     #endregion

@@ -660,8 +660,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             __TextBox = DTextBox.Create(this, "", new Size(200, 20));
             __TextBox.ActivityChange += _SubActivityChange;
+            __TextBox.DoubleClick += __TextBox_DoubleClick;
+            __TextBox.KeyDown += __TextBox_KeyDown;
 
             __Button = DButton.Create(this, "", Properties.Resources.zoom_3_16, new Size(20, 20), null, _ButtonClick);
+            __Button.TabStop = false;
             __Button.FlatStyle = FlatStyle.Flat;
             __Button.FlatAppearance.BorderSize = 0;
             __Button.Padding = new Padding(0);
@@ -673,13 +676,29 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             this.ActivityChange += _SubActivityChange;
             DoLayout(false);
         }
+
+        private void __TextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Control && e.KeyCode == Keys.Enter)
+            {
+                __TextBox.SelectAll();
+                _RunButtonClick();
+            }
+        }
+
+        private void __TextBox_DoubleClick(object sender, EventArgs e)
+        {
+            __TextBox.SelectAll();
+            _RunButtonClick();
+        }
+
         private void _SubActivityChange(object sender, EventArgs e)
         {
             _DoLayoutOnActivityChange();
         }
         private void _ButtonClick(object sender, EventArgs e)
         {
-            OnButtonClick();
+            _RunButtonClick();
             __TextBox.Focus();
         }
         /// <summary>
@@ -792,9 +811,21 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             this.Button.Image = Properties.Resources.zoom_3_16;
         }
         /// <summary>
+        /// Vyvolá akce po kliknutí na tlačítko
+        /// </summary>
+        private void _RunButtonClick()
+        {
+            OnButtonClick();
+            ButtonClick?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
         /// Po kliknutí na tlačítko
         /// </summary>
         protected virtual void OnButtonClick() { }
+        /// <summary>
+        /// Po kliknutí na tlačítko
+        /// </summary>
+        public event EventHandler ButtonClick;
         #endregion
     }
     #endregion

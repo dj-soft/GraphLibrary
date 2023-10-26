@@ -412,23 +412,19 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #endregion
         #region ScrollBars, Virtuální souřadnice
         /*   Algoritmy
+
          - Základem je naplnění ContentSize = velikost potřebného prostoru k zobrazení = suma velikosti dat + rezerva vpravo a dole
              Pokud není naplněno, pak control pracuje v jednoduchém režimu, a nic z dalšího se neřeší!
          - Proti tomu stojí reálná velikost controlu = ClientSize = do tohoto prostoru vykreslujeme obsah dat
          - Pokud ContentSize <= ClientSize, pak nepoužijeme ScrollBary a hodnota __CurrentWindowBegin = {0,0} = zobrazujeme nativně = bez posouvání obsahu
          - Pokud ContentSize >= ClientSize v jednom směru, pak zobrazíme patřičný Scrollbar, ten odebere část prostoru z ClientSize a přepočteme i druhý směr
-         - 
-
-
 
         */
 
         /// <summary>
         /// Povoluje se práce se Scrollbary, pokud bude zadána velikost obsahu <see cref="ContentSize"/>. Default = true.
         /// </summary>
-        public bool ScrollbarsEnabled { get { return __ScrollbarsEnabled; } set { __ScrollbarsEnabled = value; _RefreshScrollBars(); Draw(); } }
-        private bool __ScrollbarsEnabled;
-
+        public bool ScrollbarsEnabled { get { return __ScrollbarsEnabled; } set { __ScrollbarsEnabled = value; _RefreshScrollBars(); Draw(); } } private bool __ScrollbarsEnabled;
         /// <summary>
         /// Souřadnice počátku viditelného prostoru = souřadnice bodu ve virtuálním prostoru (prostordatového obsahu), který je zobrazen na vizuálním pixelu 0/0
         /// </summary>
@@ -446,30 +442,46 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 __DimensionY.VirtualBegin = value.Y;
             }
         }
-
+        /// <summary>
+        /// Přepočte souřadnici bodu v pixelových koordinátech na this controlu do souřadnice virtuálního bodu v datovém prostoru (aplikuje posun daný Scrollbary)
+        /// </summary>
+        /// <param name="controlPoint"></param>
+        /// <returns></returns>
         public Point GetVirtualPoint(Point controlPoint)
         {
             if (!_IsInVirtualMode) return controlPoint;
             return controlPoint.GetShiftedPoint(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
         }
+        /// <summary>
+        /// Přepočte souřadnici bodu v datovém prostoru do souřadnice v pixelových koordinátech na this controlu (aplikuje reverzní posun daný Scrollbary)
+        /// </summary>
+        /// <param name="virtualPoint"></param>
+        /// <returns></returns>
         public Point GetControlPoint(Point virtualPoint)
         {
             if (!_IsInVirtualMode) return virtualPoint;
             return virtualPoint.GetShiftedPoint(-__DimensionX.VirtualBegin, -__DimensionY.VirtualBegin);
         }
+        /// <summary>
+        /// Přepočte souřadnici prostoru v pixelových koordinátech na this controlu do souřadnice virtuálního prostoru v datovém prostoru (aplikuje posun daný Scrollbary)
+        /// </summary>
+        /// <param name="controlBounds"></param>
+        /// <returns></returns>
         public Rectangle GetVirtualBounds(Rectangle controlBounds)
         {
             if (!_IsInVirtualMode) return controlBounds;
             return controlBounds.GetShiftedRectangle(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
         }
+        /// <summary>
+        /// Přepočte souřadnici prostoru v datovém prostoru do souřadnice v pixelových koordinátech na this controlu (aplikuje reverzní posun daný Scrollbary)
+        /// </summary>
+        /// <param name="virtualBounds"></param>
+        /// <returns></returns>
         public Rectangle GetControlBounds(Rectangle virtualBounds)
         {
             if (!_IsInVirtualMode) return virtualBounds;
             return virtualBounds.GetShiftedRectangle(-__DimensionX.VirtualBegin, -__DimensionY.VirtualBegin);
         }
-
-
-        
         /// <summary>
         /// Inicializuje data pro Virtuální souřadnice
         /// </summary>
@@ -513,7 +525,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             this.Draw();
         }
-
         /// <summary>
         /// Velikost zdejšího Scrollbaru, pokud bude zobrazen. Zde je tedy kladné číslo, i když scrollbar aktuálně není zobrazen.
         /// Pro dimenzi Y (svislá, řeší Y a Height) je zde Šířka svislého Scrollbaru.
@@ -524,7 +535,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Pro dimenzi X (vodorovná, řeší X a Width) je zde Výška vodorovného Scrollbaru.
         /// </summary>
         public int HorizontalScrollBarHeight { get { return __DimensionX.ScrollbarSize; } }
-
         /// <summary>
         /// Fyzický Scrollbar vodorovný pro posun na ose X
         /// </summary>
@@ -554,7 +564,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// a má povoleno používat Scrollbary <see cref="ScrollbarsEnabled"/>.
         /// </summary>
         private bool _IsInVirtualMode { get { return (__HasContentSize && __ScrollbarsEnabled); } }
-
         /// <summary>
         /// Potřebná velikost obsahu. 
         /// Výchozí je null = control zobrazuje to, co je vidět, a nikdy nepoužívá Scrollbary.
@@ -1281,7 +1290,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             Point locationNative = control.PointToClient(locationAbsolute);
             // Pokud isLeave je true, pak jsme volání z MouseLeave a jsme tedy mimo Control:
             bool isOnControl = (isLeave.HasValue && isLeave.Value ? false : control.ClientRectangle.Contains(locationNative));
-            return new MouseState(time, locationNative, locationAbsolute, buttons, isOnControl);
+            Point locationVirtual = locationNative;
+            if (control is GraphicsControl virtualControl)
+                locationVirtual = virtualControl.GetVirtualPoint(locationNative);
+            return new MouseState(time, locationNative, locationVirtual, locationAbsolute, buttons, isOnControl);
         }
         /// <summary>
         /// Vrátí stav myši pro dané hodnoty
@@ -1291,10 +1303,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="locationAbsolute"></param>
         /// <param name="buttons"></param>
         /// <param name="isOnControl"></param>
-        public MouseState(DateTime time, Point locationNative, Point locationAbsolute, MouseButtons buttons, bool isOnControl)
+        public MouseState(DateTime time, Point locationNative, Point locationVirtual, Point locationAbsolute, MouseButtons buttons, bool isOnControl)
         {
             __Time = time;
             __LocationNative = locationNative;
+            __LocationVirtual = locationVirtual;
             __LocationAbsolute = locationAbsolute;
             __Buttons = buttons;
             __IsOnControl = isOnControl;
@@ -1309,6 +1322,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         }
         private DateTime __Time;
         private Point __LocationNative;
+        private Point __LocationVirtual;
         private Point __LocationAbsolute;
         private MouseButtons __Buttons;
         private bool __IsOnControl;
@@ -1322,6 +1336,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Souřadnice myši v koordinátech controlu (nativní prostor)
         /// </summary>
         public Point LocationControl { get { return __LocationNative; } }
+        /// <summary>
+        /// Souřadnice myši ve virtuálním prostoru  koordinátech controlu (nativní prostor)
+        /// </summary>
+        public Point LocationVirtual { get { return __LocationVirtual; } }
         /// <summary>
         /// Souřadnice myši v koordinátech absolutních (Screen)
         /// </summary>
