@@ -1291,22 +1291,22 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             // Pokud isLeave je true, pak jsme volání z MouseLeave a jsme tedy mimo Control:
             bool isOnControl = (isLeave.HasValue && isLeave.Value ? false : control.ClientRectangle.Contains(locationNative));
             Point locationVirtual = locationNative;
-            if (control is GraphicsControl virtualControl)
-                locationVirtual = virtualControl.GetVirtualPoint(locationNative);
+            if (control is GraphicsControl virtualControl) locationVirtual = virtualControl.GetVirtualPoint(locationNative);
             return new MouseState(time, locationNative, locationVirtual, locationAbsolute, buttons, isOnControl);
         }
         /// <summary>
         /// Vrátí stav myši pro dané hodnoty
         /// </summary>
         /// <param name="time"></param>
-        /// <param name="locationNative">Souřadnice myši v koordinátech controlu (nativní prostor)</param>
-        /// <param name="locationAbsolute"></param>
-        /// <param name="buttons"></param>
-        /// <param name="isOnControl"></param>
-        public MouseState(DateTime time, Point locationNative, Point locationVirtual, Point locationAbsolute, MouseButtons buttons, bool isOnControl)
+        /// <param name="LocationControl">Souřadnice myši v koordinátech controlu (nativní prostor)</param>
+        /// <param name="locationVirtual">Souřadnice myši v koordinátech virtuálního prostoru vrámci Controlu</param>
+        /// <param name="locationAbsolute">Souřadnice myši v absolutních koordinátech (<see cref="Control.MousePosition"/>)</param>
+        /// <param name="buttons">Stisknuté buttony</param>
+        /// <param name="isOnControl">true pokud myš se nachází fyzicky nad Controlem</param>
+        public MouseState(DateTime time, Point LocationControl, Point locationVirtual, Point locationAbsolute, MouseButtons buttons, bool isOnControl)
         {
             __Time = time;
-            __LocationNative = locationNative;
+            __LocationControl = LocationControl;
             __LocationVirtual = locationVirtual;
             __LocationAbsolute = locationAbsolute;
             __Buttons = buttons;
@@ -1318,10 +1318,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Buttons: {__Buttons}; LocationNative: {__LocationNative}";
+            return $"Buttons: {__Buttons}; LocationNative: {__LocationControl}";
         }
         private DateTime __Time;
-        private Point __LocationNative;
+        private Point __LocationControl;
         private Point __LocationVirtual;
         private Point __LocationAbsolute;
         private MouseButtons __Buttons;
@@ -1335,7 +1335,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Souřadnice myši v koordinátech controlu (nativní prostor)
         /// </summary>
-        public Point LocationControl { get { return __LocationNative; } }
+        public Point LocationControl { get { return __LocationControl; } }
         /// <summary>
         /// Souřadnice myši ve virtuálním prostoru  koordinátech controlu (nativní prostor)
         /// </summary>

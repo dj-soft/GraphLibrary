@@ -463,6 +463,18 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         [PersistingEnabled(false)]
         public int ApplicationsCount { get { return Groups.Sum(g => g.ApplicationsCount); } }
         /// <summary>
+        /// ID pro nově vytvářený prvek.
+        /// Klonovaný prvek nedostává nové ID, ale přebírá ID svého originálu.
+        /// </summary>
+        private static int __NewId = 0;
+        /// <summary>
+        /// Unikátní ID pro nově vytvářený prvek.
+        /// Při klonování se 
+        /// </summary>
+        private static int __NewUniqueId = 0;
+        #endregion
+        #region Tvorba interaktivních prvků pro tuto stránku - grupy a jejich aplikace, výpočet ofsetu adresy a tedy absolutní adresy
+        /// <summary>
         /// Vytvoří a vrátí pole svých Child prvků.
         /// </summary>
         /// <returns></returns>
@@ -489,15 +501,24 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             return interactiveItems;
         }
         /// <summary>
-        /// ID pro nově vytvářený prvek.
-        /// Klonovaný prvek nedostává nové ID, ale přebírá ID svého originálu.
+        /// Metoda najde a vrátí grupu
         /// </summary>
-        private static int __NewId = 0;
-        /// <summary>
-        /// Unikátní ID pro nově vytvářený prvek.
-        /// Při klonování se 
-        /// </summary>
-        private static int __NewUniqueId = 0;
+        /// <param name="actionInfo"></param>
+        /// <returns></returns>
+        public GroupData SearchForGroup(ContextActionInfo actionInfo, bool createNew)
+        {
+            GroupData groupData = null;
+            int adressY = actionInfo.MouseState.InteractiveCell.Adress.Y;
+
+            foreach (var group in this.Groups)
+            {
+                if (adressY < group.Adress.Y) break;
+                groupData = group;
+            }
+
+            return groupData;
+        }
+
         #endregion
         #region Provedení editační akce pro některý z mých Child prvků
         /// <summary>
@@ -694,6 +715,12 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     break;
                 case DataItemActionType.DeleteApplication:
                     break;
+            }
+
+            if (isAppend)
+            {
+                GroupData parentGroup = pageData.SearchForGroup(actionInfo, true);
+
             }
 
             return isUpdated;

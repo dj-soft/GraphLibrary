@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Schema;
 using DjSoft.Tools.ProgramLauncher.Data;
+using static DjSoft.Tools.ProgramLauncher.Components.InteractiveMap;
 
 namespace DjSoft.Tools.ProgramLauncher.Components
 {
@@ -1197,34 +1198,33 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             // Vpravo:
             if (myRowCells.Length > 0 && myColumnCells.Length == 0)
             {
-                var maxAdressX = (__Cells.Count > 0 ? __Cells.Select(c => c.Adress.X).Max() + 1: 0);
+                var firstX = getFirstAdressX();
                 var cell = findCell(myRowCells, c => c.VirtualBounds.Top, c => c.VirtualBounds.Bottom, virtualPoint.Y);
-                var adressX = maxAdressX + findVoid(__VirtualRight, __StandardSize.Width, virtualPoint.X, out int virtLeft, out int virtRight);
-                return new Cell(new Point(cell.Adress.Y, adressX), Rectangle.FromLTRB(virtLeft, cell.VirtualBounds.Top, virtRight, cell.VirtualBounds.Bottom), null, true);
+                var adressX = firstX + findVoid(__VirtualRight, __StandardSize.Width, virtualPoint.X, out int virtLeft, out int virtRight);
+                return new Cell(new Point(adressX, cell.Adress.Y), Rectangle.FromLTRB(virtLeft, cell.VirtualBounds.Top, virtRight, cell.VirtualBounds.Bottom), null, true);
             }
 
             // Dole:
             else if (myRowCells.Length == 0 && myColumnCells.Length > 0)
             {
-                var maxAdressY = (__Cells.Count > 0 ? __Cells.Select(c => c.Adress.Y).Max() + 1 : 0);
-                var cell = findCell(myRowCells, c => c.VirtualBounds.Left, c => c.VirtualBounds.Right, virtualPoint.X);
-                var adressY = maxAdressY + findVoid(__VirtualBottom, __StandardSize.Height, virtualPoint.Y, out int virtTop, out int virtBottom);
+                var firstY = getFirstAdressY();
+                var cell = findCell(myColumnCells, c => c.VirtualBounds.Left, c => c.VirtualBounds.Right, virtualPoint.X);
+                var adressY = firstY + findVoid(__VirtualBottom, __StandardSize.Height, virtualPoint.Y, out int virtTop, out int virtBottom);
+                return new Cell(new Point(cell.Adress.X, adressY), Rectangle.FromLTRB(cell.VirtualBounds.Left, virtTop, cell.VirtualBounds.Right, virtBottom), null, true);
             }
 
 
             // Vpravo dole:
             else if (myRowCells.Length == 0 && myColumnCells.Length == 0)
             {
-                
+                var firstX = getFirstAdressX();
+                var adressX = firstX + findVoid(__VirtualRight, __StandardSize.Width, virtualPoint.X, out int virtLeft, out int virtRight);
+                var firstY = getFirstAdressY();
+                var adressY = firstY + findVoid(__VirtualBottom, __StandardSize.Height, virtualPoint.Y, out int virtTop, out int virtBottom);
+                return new Cell(new Point(adressX, adressY), Rectangle.FromLTRB(virtLeft, virtTop, virtRight, virtBottom), null, true);
             }
 
             // Jiné možnosti by neměly nastat:
-            else 
-            {
-                return null;
-            }
-
-
             return null;
 
 
@@ -1266,6 +1266,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 return adress;
             }
 
+            // Vrátí první logickou adresu X vpravo za poslední existující buňkou
+            int getFirstAdressX() { return (__Cells.Count > 0 ? __Cells.Select(c => c.Adress.X).Max() + 1 : 0); }
+
+            // Vrátí první logickou adresu Y dole za poslední existující buňkou
+            int getFirstAdressY() { return (__Cells.Count > 0 ? __Cells.Select(c => c.Adress.Y).Max() + 1 : 0); }
         }
         /// <summary>
         /// Obsazené buňky a jejich data
