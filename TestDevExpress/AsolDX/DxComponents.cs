@@ -8011,7 +8011,11 @@ White
 
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Systém HELIOS")]
-        ApplicationName
+        ApplicationName,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Obsah buňky ze sloupce «%0» vložen do schránky.")]
+        CopyBrowseCell
+
 
         // Nové kódy přidej do Messages.xml v klientu!!!     Do AdapterTest.cs není nutno, tam se načítá hodnota atributu DefaultMessageText() !
     }

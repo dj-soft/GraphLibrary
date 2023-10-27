@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -399,14 +400,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             OptionsView.ShowFilterPanelMode = ShowFilterPanelMode.Default;  //panel se zobrazí pokud je filtr
             OptionsView.RowAutoHeight = true;   //globalní povolení automatické výšky řádky.
 
+            OptionsSelection.EnableAppearanceHotTrackedRow = DefaultBoolean.True;   //Hottrack podbarvení
+
             //---Groupování TEST
-            OptionsView.ShowGroupPanel = false;
-
-            OptionsMenu.ShowGroupSummaryEditorItem = true;
+            OptionsMenu.ShowGroupSummaryEditorItem = false;
             OptionsMenu.ShowSummaryItemMode = DefaultBoolean.True;
-            OptionsMenu.EnableFooterMenu = true;
-            OptionsMenu.EnableGroupRowMenu = true;
-
+            OptionsMenu.EnableFooterMenu = false;
+            OptionsMenu.EnableGroupRowMenu = false;
+            OptionsView.ShowGroupedColumns = true;  //nechá groupovaný sloupec viditelný (na místě kde byl před groupováním)
+            OptionsView.GroupFooterShowMode = GroupFooterShowMode.VisibleAlways;    //Sumy group jsou zobrazeny vždy
+            OptionsView.ShowGroupPanelColumnsAsSingleRow = true;    //zobrazení group tlačítek v jednom řádku
+            OptionsBehavior.AllowFixedGroups = DefaultBoolean.True;
+            Appearance.GroupFooter.FontStyleDelta = FontStyle.Bold;
+            Appearance.FooterPanel.FontStyleDelta = FontStyle.Bold;
 
             //this.OptionsBehavior.AlignGroupSummaryInGroupRow = DefaultBoolean.True;
             _SetAlignGroupSummaryInGroupRow();
@@ -448,6 +454,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             this.CustomSummaryCalculate += _OnCustomSummaryCalculate;
             this.CustomDrawFooterCell += _OnCustomDrawFooterCell;
+            this.CustomDrawGroupRowCell += _OnCustomDrawGroupRowCell;
 
             this.MouseUp += _OnMouseUp;
             this.ColumnWidthChanged += _OnColumnWidthChanged;
@@ -472,18 +479,25 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         private void _OnMouseUp(object sender, MouseEventArgs e)
         {
-            //nastavení clipboardu při alt left click. TODO NotifyToast??
-            if (e.Button == System.Windows.Forms.MouseButtons.Left && System.Windows.Forms.Control.ModifierKeys == System.Windows.Forms.Keys.Control) //LButton and ALT only
+            //nastavení clipboardu při alt left click.
+            if (e.Button == MouseButtons.Left && Control.ModifierKeys == Keys.Alt) //LButton and ALT only
             {
-                var doSetClipboardValue = false;
-                string valueString = string.Empty;
-                if (doSetClipboardValue)
+                DevExpress.Utils.DXMouseEventArgs ea = e as DevExpress.Utils.DXMouseEventArgs;
+                GridView view = sender as GridView;
+                GridHitInfo info = view.CalcHitInfo(ea.Location);
+                if (info.InRow && info.InRowCell)
                 {
+                    string valueString = string.Empty;
+                    var value = view.GetRowCellDisplayText(info.RowHandle, info.Column);
+                    if (value != null)
+                    {
+                        valueString = value.ToString();
+                    }
                     if (String.IsNullOrEmpty(valueString))
                         System.Windows.Forms.Clipboard.Clear();
                     else
                         System.Windows.Forms.Clipboard.SetText(valueString, System.Windows.Forms.TextDataFormat.UnicodeText);
-                    //Globals.NotifyToast(this, null, afMessage.GetMessage("CopyBrowseCell", columnName), System.Windows.Forms.ToolTipIcon.Info);
+                    // Globals.NotifyToast(GridControl, null, DxComponent.Localize(MsgCode.CopyBrowseCell, info.Column.Caption), System.Windows.Forms.ToolTipIcon.Info);
                     return;
                 }
             }
@@ -1603,6 +1617,214 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         #endregion
 
+        #region GroupSummmary
+
+        /// <summary>
+        /// Data pro group sumy
+        /// </summary>
+        internal DataView GroupSummaryDataView { get; set; }
+        /// <summary>
+        /// Režim zobrazení pouze group summary 
+        /// </summary>
+        public bool ShowOnlyGroupSummary { get; set; }
+
+        /// <summary>
+        /// Nastaví sbalení/rozbalení skupiny
+        /// </summary>
+        /// <param name="groupLevel"></param>
+        /// <param name="expanded"></param>
+        /// <param name="recursive"></param>
+        public void SetGroupExpanded(int groupLevel, bool expanded, bool recursive)
+        {
+            this.BeginUpdate();
+            //this.SuspendLayout();
+            try
+            {
+                var groupRowsByLevel = GetGroupRowsByLevel(this, groupLevel);
+                if (recursive)
+                {
+                    int groupLevelRecursive = groupLevel;
+                    while (groupRowsByLevel?.Count > 0)
+                    {
+                        foreach (var rowGroupHandle in groupRowsByLevel)
+                        {
+                            SetRowExpanded(rowGroupHandle, expanded);
+                        }
+                        groupLevelRecursive++;
+                        groupRowsByLevel = GetGroupRowsByLevel(this, groupLevelRecursive);
+                    }
+                }
+                else
+                {
+                    foreach (var rowGroupHandle in groupRowsByLevel)
+                    {
+                        SetRowExpanded(rowGroupHandle, expanded);
+                    }
+                }
+            }
+            finally
+            {
+                this.EndUpdate();
+            }
+
+        }
+        private void _OnCustomDrawGroupRowCell(object sender, RowGroupRowCellEventArgs e)
+        {
+            Console.WriteLine($"GroupRow.RowHandle: {e.GroupRow.RowHandle}");
+            if (GroupSummaryDataView != null)
+            {
+                //int rowHandleGropupSummaryTable = Math.Abs(e.RowHandle + 1);    //převod z minusových hodnot na hodnoty v tabulce ze serveru
+                //if (this.GroupSummaryDataView.Table.Rows.Count - 1 >= rowHandleGropupSummaryTable)
+                //{
+                //    DataRow groupDataRow = this.GroupSummaryDataView.Table.Rows[rowHandleGropupSummaryTable];
+                //    if (groupDataRow != null)
+                //    {
+                //        IGridViewColumn gv = GridViewColumns.FirstOrDefault(x => x.FieldName == e.SummaryItem.FieldName);
+                //        Type type = gv?.ColumnType;
+                //        string formatedValue = "";
+                //        var dtViewValue = groupDataRow[e.SummaryItem.FieldName];
+                //        if (!(dtViewValue is DBNull))
+                //        {
+                //            if (type == typeof(decimal))
+                //            {
+                //                decimal value = Convert.ToDecimal(dtViewValue);
+                //                formatedValue = value.ToString(gv?.FormatString);
+                //            }
+                //            else if (type == typeof(int) || type == typeof(Int32) || type == typeof(Int16))
+                //            {
+                //                int value = Convert.ToInt32(dtViewValue);
+                //                formatedValue = value.ToString(gv?.FormatString);
+                //            }
+                //            else if (type == typeof(string))
+                //            {
+                //                formatedValue = dtViewValue.ToString();
+                //            }
+                //        }
+                //        e.DisplayText = formatedValue;
+                //    }
+                //}
+                //else
+                //{
+                //    //nemám data ze serveru,dávám 3 tečky jako že nemám ještě data.
+                //    e.DisplayText = "...";
+                //}
+
+                int level = e.GroupRow.Level;
+                int groupRowHandle = e.GroupRow.RowHandle;
+
+                ////ziskej row parent
+                //int parentRowHandle = this.GetParentRowHandle(e.GroupRow.RowHandle);
+                //if (!IsGroupRow(groupRowHandle)) return;
+                ////ziskej pocet child
+                ////projdi prej vsechny child a zíkej rowHandle pro childy
+
+                List<int> rowsHandleInLevel = GetGroupRowsByLevel(this, level);
+                int indexInGroup = rowsHandleInLevel.IndexOf(groupRowHandle);
+
+                DataRow groupDataRow = GetGroupDataRowForLevelAndIndex(level, indexInGroup);
+                if (groupDataRow != null)
+                {
+                    IGridViewColumn gv = GridViewColumns.FirstOrDefault(x => x.FieldName == e.SummaryItem.FieldName);
+                    Type type = gv?.ColumnType;
+                    string formatedValue = "";
+                    var dtViewValue = groupDataRow[e.SummaryItem.FieldName];
+                    if (!(dtViewValue is DBNull))
+                    {
+                        if (type == typeof(decimal))
+                        {
+                            decimal value = Convert.ToDecimal(dtViewValue);
+                            formatedValue = value.ToString(gv?.FormatString);
+                        }
+                        else if (type == typeof(int) || type == typeof(Int32) || type == typeof(Int16))
+                        {
+                            int value = Convert.ToInt32(dtViewValue);
+                            formatedValue = value.ToString(gv?.FormatString);
+                        }
+                        else if (type == typeof(string))
+                        {
+                            formatedValue = dtViewValue.ToString();
+                        }
+                    }
+                    e.DisplayText = formatedValue;
+
+                }
+                else
+                {
+                    //nemám data ze serveru,dávám 3 tečky jako že nemám ještě data.
+                    e.DisplayText = "...";
+                }
+            }
+        }
+
+        public DataRow GetGroupDataRowByRowHandle(int rowHandle)
+        {
+            int level = GetRowLevel(rowHandle);
+
+            List<int> rowsHandleInLevel = GetGroupRowsByLevel(this, level);
+            int indexInGroup = rowsHandleInLevel.IndexOf(rowHandle);
+
+            DataRow result = null;
+            if (indexInGroup >= 0)
+            {
+                string podminka = $"_group_ = {level}";
+
+                // Použití metody RowFilter na DataView pro aplikaci podmínky
+                this.GroupSummaryDataView.RowFilter = podminka;
+
+                // Získání pole řádků, které splňují podmínku
+                DataRow[] dataRowsForLevel = this.GroupSummaryDataView.ToTable().Select();
+
+                if (indexInGroup >= 0 && indexInGroup < dataRowsForLevel.Length)
+                {
+                    result = dataRowsForLevel[indexInGroup];
+                }
+            }
+            return result;
+        }
+
+
+        private DataRow GetGroupDataRowForLevelAndIndex(int level, int indexInGroup)
+        {
+            DataRow result = null;
+            if (indexInGroup >= 0)
+            {
+                string podminka = $"_group_ = {level}";
+
+                // Použití metody RowFilter na DataView pro aplikaci podmínky
+                this.GroupSummaryDataView.RowFilter = podminka;
+
+                // Získání pole řádků, které splňují podmínku
+                DataRow[] dataRowsForLevel = this.GroupSummaryDataView.ToTable().Select();
+
+                if (indexInGroup >= 0 && indexInGroup < dataRowsForLevel.Length)
+                {
+                    result = dataRowsForLevel[indexInGroup];
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Vrátí rowHandles pro group řádků pro daný level.
+        /// </summary>
+        /// <param name="view"></param>
+        /// <param name="level"></param>
+        /// <returns>RowHandles</returns>
+        private List<int> GetGroupRowsByLevel(GridView view, int level)
+        {
+            List<int> list = new List<int>();
+            int rHandle = -1;
+            while (view.IsValidRowHandle(rHandle))
+            {
+                if (view.GetRowLevel(rHandle) == level)
+                {
+                    list.Add(rHandle);
+                }
+                rHandle--;
+            }
+            return list;
+        }
+        #endregion
         /// <summary>
         /// Nastavuje ikony v záhlaví sloupců
         /// </summary>
@@ -1645,6 +1867,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 int index = this.Columns.Add(CreateGridColumn(vc));
                 _InitColumnAfterAdd(index, vc);
                 _InitColumnSummaryRow(index, vc);
+                _InitColumnGroupSummaryRow(index, vc);
             }
             this.EndUpdate();
         }
@@ -1675,6 +1898,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                     DisplayFormat = "{0:" + gridViewColumn.FormatString + "}"
                 };
                 gc.Summary.Add(sumItem);
+            }
+        }
+
+        private void _InitColumnGroupSummaryRow(int columnIndex, IGridViewColumn gridViewColumn)
+        {
+            var gc = this.Columns[columnIndex];
+            if (gridViewColumn.IsNumberColumnType || gridViewColumn.IsStringColumnType)
+            {
+                DevExpress.XtraGrid.GridGroupSummaryItem sumItem = new DevExpress.XtraGrid.GridGroupSummaryItem()
+                {
+                    FieldName = gc.FieldName,
+                    SummaryType = gridViewColumn.IsNumberColumnType ? DevExpress.Data.SummaryItemType.Sum : DevExpress.Data.SummaryItemType.Count,  //TODO tady se podívej na type Custom...
+                    ShowInGroupColumnFooter = gc,
+                };
+                GroupSummary.Add(sumItem);
             }
         }
 
@@ -2624,6 +2862,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             return NumericTypes.Contains(Nullable.GetUnderlyingType(myType) ?? myType);
         }
+    }
+
+    public class GroupRowState
+    {
+        public int GroupRowHandle { get; set; }
+        public bool Expanded { get; set; }
     }
     #endregion
 }
