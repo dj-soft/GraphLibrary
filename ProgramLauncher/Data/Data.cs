@@ -501,24 +501,46 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             return interactiveItems;
         }
         /// <summary>
-        /// Metoda najde a vrátí grupu
+        /// Metoda najde a vrátí grupu, do které by měl patřit prostor uvedený v <paramref name="actionInfo"/>.
+        /// Současně určí relativní adresu buňky v rámci grupy, protože vstupní adresa v <paramref name="actionInfo"/> je adresou absolutní vzhledem k Page, 
+        /// ale pro případné umístění nového prvku <see cref="ApplicationData"/> je třeba mít adresu relativní v rámci grupy.
         /// </summary>
         /// <param name="actionInfo"></param>
+        /// <param name="createNew"></param>
+        /// <param name="relativeAdress"></param>
         /// <returns></returns>
-        public GroupData SearchForGroup(ContextActionInfo actionInfo, bool createNew)
+        public GroupData SearchForGroup(ContextActionInfo actionInfo, bool createNew, out Point? relativeAdress)
         {
             GroupData groupData = null;
-            int adressY = actionInfo.MouseState.InteractiveCell.Adress.Y;
+            var mouseAdress = actionInfo.MouseState.InteractiveCell.Adress;
+            int adressY = mouseAdress.Y;
 
             foreach (var group in this.Groups)
             {
-                if (adressY < group.Adress.Y) break;
+                // Pokud už mám grupu, a testovaná grupa má počátek Y (absolutní logická pozice, nikoli pixely) větší než zadaná hodnota,
+                // tak skončím hledání a akceptuji poslední nalezenou grupu:
+                if (groupData != null && group.Adress.Y > adressY) break;
                 groupData = group;
             }
 
+            // Pokud jsme grupu nenašli:
+            if (groupData is null)
+            {   // ... a pokud ji nemáme vytvářet => vrátím null a bez určení relativní adresy:
+                if (!createNew)
+                {
+                    relativeAdress = null;
+                    return null;
+                }
+                // Vytvořím new grupu:
+                groupData = new GroupData() { Title = App.Messages.EditDataNewDefaultGroupTitle };
+                relativeAdress = new Point(mouseAdress.X, 0);
+                return groupData;
+            }
+
+            // Mám grupu: určím relativní adresu:
+            relativeAdress = new Point(mouseAdress.X, 0);
             return groupData;
         }
-
         #endregion
         #region Provedení editační akce pro některý z mých Child prvků
         /// <summary>
@@ -719,8 +741,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
 
             if (isAppend)
             {
-                GroupData parentGroup = pageData.SearchForGroup(actionInfo, true);
-
+                GroupData parentGroup = pageData.SearchForGroup(actionInfo, true, out var relativeAdress);
+                parentGroup.Applications.Add(applicationData);
+                isUpdated = true;
             }
 
             return isUpdated;

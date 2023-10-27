@@ -131,21 +131,50 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         #endregion
         #region Synchronizace hlášek
         /// <summary>
+        /// Obsahuje true, pokud jsou všechny systémové hlášky přítomny ve všech Translate souborech.
+        /// Neřeší se tedy, zda jsou hlášky přeloženy, ale že v souborech je odpovídající položka (řádek) zadána.
+        /// </summary>
+        public bool IsTranslateComplete
+        {
+            get
+            {
+                if (!__IsTranslateComplete.HasValue) __IsTranslateComplete = _GetTranslateComplete();
+                return __IsTranslateComplete.Value;
+            }
+        }
+        private bool? __IsTranslateComplete;
+        /// <summary>
+        /// Vrátí true, pokud jsou všechny systémové hlášky přítomny ve všech Translate souborech.
+        /// Neřeší se tedy, zda jsou hlášky přeloženy, ale že v souborech je odpovídající položka (řádek) zadána.
+        /// </summary>
+        /// <returns></returns>
+        private bool _GetTranslateComplete()
+        {
+            var standardCodes = _GetStandardCodes();
+            foreach (var languageFile in __Collection)
+            {
+                if (!languageFile.IsTranslateComplete(standardCodes)) return false;
+            }
+            return true;
+        }
+        /// <summary>
         /// Metoda najde všechny aktuální kódy hlášek, jejich standardní texty a aktualizuje je do všech přítomných jazykových souborů.
         /// </summary>
         public void SynchronizeLanguageFiles()
         {
             var standardCodes = _GetStandardCodes();
-            var languageFiles = __Languages.Values.Where(l => !l.IsDefault).ToArray();
             var modifiedFiles = "";
-            foreach (var languageFile in languageFiles)
+            foreach (var languageFile in __Collection)
             {
                 bool isModified = languageFile.SynchronizeLanguageFile(standardCodes);
                 if (isModified)
                     modifiedFiles += ", " + System.IO.Path.GetFileName(languageFile.FileName);
             }
             if (modifiedFiles.Length > 0)
+            {
+                App.LanguagesReload();
                 App.ShowMessage(App.Messages.ModifiedFiles + Environment.NewLine + modifiedFiles.Substring(2), MessageBoxIcon.Asterisk, App.Messages.ResultInformationTitle);
+            }
             else
                 App.ShowMessage(App.Messages.NoModifiedFiles, MessageBoxIcon.Information, App.Messages.ResultInformationTitle);
         }
@@ -261,6 +290,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string EditDataExecuteInAdminModeText { get { return _GetText("Oprávnění Admin"); } }
         public string EditDataOnlyOneInstanceText { get { return _GetText("Jen jeden proces"); } }
         public string EditDataOpenMaximizedText { get { return _GetText("Maximalizované okno"); } }
+
+        public string EditDataNewDefaultGroupTitle { get { return _GetText("Nová skupina"); } }
 
         public string TrayIconText { get { return _GetText("Program Launcher"); } }
         public string TrayIconBalloonToolTip { get { return _GetText("Ukončení aplikace"); } }
@@ -486,6 +517,21 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         }
         #endregion
         #region Synchronizace hlášek
+        /// <summary>
+        /// Vrátí true, pokud jsou všechny systémové hlášky přítomny ve všech Translate souborech.
+        /// Neřeší se tedy, zda jsou hlášky přeloženy, ale že v souborech je odpovídající položka (řádek) zadána.
+        /// </summary>
+        /// <returns></returns>
+        public bool IsTranslateComplete(Dictionary<string, string> standardCodes)
+        {
+            // Nevadí mi, když this soubor má něco navíc. Proto neřeším nadbytečné kódy v __Codes.
+            // Ale musím v tomto souboru mít všechny kódy, které jsou uvedeny v dodaném slovníku standardCodes jako klíče:
+            foreach (var code in standardCodes.Keys)
+            {   // Jakmile v this.__Codes chybí byť i jen jediný kód z vnějšího seznamu standardCodes, pak vrátím false = nemám všechny hlášky.
+                if (!__Codes.ContainsKey(code)) return false;
+            }
+            return true;
+        }
         /// <summary>
         /// Metoda aktualizuje seznam hlášek v tomto souboru podle defaultních kódů
         /// </summary>

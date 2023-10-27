@@ -57,6 +57,7 @@ EditDataExecutableArgumentsText Argumenty
 EditDataExecuteInAdminModeText Oprávnění Admin
 EditDataOnlyOneInstanceText Jen jeden proces
 EditDataOpenMaximizedText Maximalizované okno
+EditDataNewDefaultGroupTitle Nová skupina
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Ukončení aplikace
 TrayIconBalloonText Aplikace je jen schovaná.××Pro reálné vypnutí ji zavřete křížkem spolu s klávesou CTRL!××Anebo použijte kontextové menu na této ikoně.

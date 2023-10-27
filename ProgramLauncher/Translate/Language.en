@@ -57,6 +57,7 @@ EditDataExecutableArgumentsText Arguments
 EditDataExecuteInAdminModeText Admin mode
 EditDataOnlyOneInstanceText Only single process
 EditDataOpenMaximizedText Maximized Window
+EditDataNewDefaultGroupTitle New group
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Terminating the application
 TrayIconBalloonText The application is only hidden.××To actually turn it off, close it with a cross together with the CTRL key!××Or use the context menu on this icon.

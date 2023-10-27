@@ -686,6 +686,19 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private LanguageSet __Messages;
         /// <summary>
+        /// Metoda zajistí reload všech překladů ze souborů do aplikace.
+        /// Používá se po provedení synchronizace hlášek z aplikace do souborů.
+        /// </summary>
+        public static void LanguagesReload() { Current._LanguagesReload(); }
+        /// <summary>
+        /// Metoda zajistí reload všech překladů ze souborů do aplikace.
+        /// Používá se po provedení synchronizace hlášek z aplikace do souborů.
+        /// </summary>
+        private void _LanguagesReload()
+        {
+            __Messages = LanguageSet.CreateDefault();
+        }
+        /// <summary>
         /// Pole všech přítomných jazyků
         /// </summary>
         public static Language[] Languages { get { return LanguageSet.Collection; } }

@@ -242,6 +242,7 @@ namespace DjSoft.Tools.ProgramLauncher
 
             this._ToolPreferenceButton.Visible = false;
             this._ToolEditButton.Visible = false;
+            this._ToolMessageSyncButton.Visible = !App.Messages.IsTranslateComplete;
 
             App.UndoRedo.CurrentStateChanged += _UndoRedoCurrentStateChanged;
             App.UndoRedo.CatchCurrentRedoData += _UndoRedoCatchCurrentRedoData;
@@ -302,6 +303,7 @@ namespace DjSoft.Tools.ProgramLauncher
         private void _ToolMessageSyncButton_Click(object sender, EventArgs e) 
         {
             App.TryRun(App.Messages.SynchronizeLanguageFiles);
+            this._ToolMessageSyncButton.Visible = !App.Messages.IsTranslateComplete;
         }
         private ToolStripButton _ToolAppearanceButton;
         private ToolStripButton _ToolUndoButton;
