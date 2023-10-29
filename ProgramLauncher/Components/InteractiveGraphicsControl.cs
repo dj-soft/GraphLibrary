@@ -166,7 +166,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         private MouseState _CreateMouseState(bool? isLeave = null)
         {
             var mouseState = MouseState.CreateCurrent(this);
-            _RefreshMouseState(mouseState);
+            _RefreshMouseState(mouseState, false);
             return mouseState;
         }
         /// <summary>
@@ -175,12 +175,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// podle aktuální pozice myši v prvku uložené.
         /// </summary>
         /// <returns></returns>
-        private void _RefreshMouseState(MouseState mouseState)
+        private void _RefreshMouseState(MouseState mouseState, bool searchCellForce)
         {
             if (mouseState.IsOnControl)
             {
                 mouseState.InteractiveItem = _GetMouseItem(mouseState);
-                if (mouseState.Buttons != MouseButtons.None)
+                if (mouseState.Buttons != MouseButtons.None || searchCellForce)
                     mouseState.InteractiveCell = _GetMouseCell(mouseState);
             }
         }
@@ -301,8 +301,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             __CurrentMouseDownState = null;                          // Aktuálně nemáme myš Down
             __CurrentMouseButtons = MouseButtons.None;               // Ani žádný button
 
-            // Znovu najdeme prvek pod myší:
-            _RefreshMouseState(mouseState);
+            // Znovu najdeme prvek pod myší, ale nehledáme Cell:
+            _RefreshMouseState(mouseState, false);
             _MouseMoveCurrentExchange(mouseState, mouseState.InteractiveItem, InteractiveState.MouseOn, mouseState.IsOnControl);
 
             // Vykreslíme:
@@ -426,7 +426,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         private void _MouseDragDown(MouseState mouseState, InteractiveItem mouseItem)
         {
             __CurrentMouseDragState = MouseDragProcessState.BeginZone;
-            __DragVirtualBeginPoint = mouseState;
+            __DragBeginMouseState = mouseState;
             __DragVirtualBeginZone = mouseState.LocationControl.GetRectangleFromCenter(6, 6);
             __DragVirtualCurrentPoint = mouseState;
             __MouseDragCurrentDataItem = mouseItem;
@@ -503,9 +503,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             if (EnabledDrag)
             {
-
+                // Znovu najdeme prvek pod aktuální pozicí myši, vyhledáme i Target Cell:
+                _RefreshMouseState(mouseState, true);
+                InteractiveDragItemEventArgs args = new InteractiveDragItemEventArgs(__MouseDragCurrentDataItem, __DragBeginMouseState, mouseState);
+                _RunInteractiveItemDragAndDropEnd(args);
             }
-
             _MouseDragReset();
         }
         /// <summary>
@@ -528,7 +530,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         private void _MouseDragReset()
         {
             __CurrentMouseDragState = MouseDragProcessState.None;
-            __DragVirtualBeginPoint = null;
+            __DragBeginMouseState = null;
             __DragVirtualBeginZone = null;
             __DragVirtualCurrentPoint = null;
             __MouseDragCurrentDataItem = null;
@@ -537,13 +539,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             this.Draw();
         }
         private MouseDragProcessState __CurrentMouseDragState;
-        private MouseState __DragVirtualBeginPoint;
+        /// <summary>
+        /// Kompletní stav myši v okamžiku, kdy byl zahájen proces DragAndDrop
+        /// </summary>
+        private MouseState __DragBeginMouseState;
         private Rectangle? __DragVirtualBeginZone;
         private MouseState __DragVirtualCurrentPoint;
-        /// <summary>
-        /// Aktuálně přemísťovaný prvek
-        /// </summary>
-        private InteractiveItem __CurrentDraggedItem;
         /// <summary>
         /// Prvek, který byl pod myší když začal proces DragAndDrop a je tedy přesouván na jinou pozici
         /// </summary>
@@ -621,7 +622,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
 
                 if (this.__MouseDragCurrentDataItem != null && __CurrentMouseDragState == MouseDragProcessState.MouseDragItem)
                 {
-                    var dragShift = new Point(__DragVirtualCurrentPoint.LocationControl.X - this.__DragVirtualBeginPoint.LocationControl.X, __DragVirtualCurrentPoint.LocationControl.Y - this.__DragVirtualBeginPoint.LocationControl.Y);
+                    var dragShift = new Point(__DragVirtualCurrentPoint.LocationControl.X - this.__DragBeginMouseState.LocationControl.X, __DragVirtualCurrentPoint.LocationControl.Y - this.__DragBeginMouseState.LocationControl.Y);
                     pdea.MouseDragState = MouseDragState.MouseDragActiveCurrent;
                     pdea.MouseDragCurrentBounds = this.__MouseDragCurrentDataItem.VirtualBounds.Value.GetShiftedRectangle(dragShift);
                     this.__MouseDragCurrentDataItem.Paint(pdea);
@@ -1086,6 +1087,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         public bool EnabledDrag { get; set; }
 
+        /// <summary>
+        /// Uživatel kliknul (levou nebo pravou myší) v prostoru Controlu, kde není žádný prvek.
+        /// </summary>
         public event EventHandler<InteractiveItemEventArgs> InteractiveAreaClick;
         protected virtual void OnInteractiveAreaClick(InteractiveItemEventArgs args) { }
         private void _RunInteractiveAreaClick(InteractiveItemEventArgs args)
@@ -1093,7 +1097,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             OnInteractiveAreaClick(args);
             InteractiveAreaClick?.Invoke(this, args);
         }
-
+        /// <summary>
+        /// Uživatel vstoupil myší do konkrétního prvku
+        /// </summary>
         public event EventHandler<InteractiveItemEventArgs> InteractiveItemMouseEnter;
         protected virtual void OnInteractiveItemMouseEnter(InteractiveItemEventArgs args) { }
         private void _RunInteractiveItemMouseEnter(InteractiveItemEventArgs args)
@@ -1102,7 +1108,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             OnInteractiveItemMouseEnter(args);
             InteractiveItemMouseEnter?.Invoke(this, args);
         }
-
+        /// <summary>
+        /// Uživatel odešel myší z konkrétního prvku
+        /// </summary>
         public event EventHandler<InteractiveItemEventArgs> InteractiveItemMouseLeave;
         protected virtual void OnInteractiveItemMouseLeave(InteractiveItemEventArgs args) { }
         private void _RunInteractiveItemMouseLeave(InteractiveItemEventArgs args)
@@ -1111,7 +1119,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             OnInteractiveItemMouseLeave(args);
             InteractiveItemMouseLeave?.Invoke(this, args);
         }
-
+        /// <summary>
+        /// Uživatel kliknul (levou nebo pravou myší) v prostoru Controlu, kde je konkrétní prvek.
+        /// </summary>
         public event EventHandler<InteractiveItemEventArgs> InteractiveItemClick;
         protected virtual void OnInteractiveItemClick(InteractiveItemEventArgs args) { }
         private void _RunInteractiveItemClick(InteractiveItemEventArgs args)
@@ -1119,6 +1129,17 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             OnInteractiveItemClick(args);
             InteractiveItemClick?.Invoke(this, args);
         }
+        /// <summary>
+        /// Uživatel provedl DragAndDrop proces, nyní právě ukončil proces.
+        /// </summary>
+        public event EventHandler<InteractiveDragItemEventArgs> InteractiveItemDragAndDropEnd;
+        protected virtual void OnInteractiveItemDragAndDropEnd(InteractiveDragItemEventArgs args) { }
+        private void _RunInteractiveItemDragAndDropEnd(InteractiveDragItemEventArgs args)
+        {
+            OnInteractiveItemDragAndDropEnd(args);
+            InteractiveItemDragAndDropEnd?.Invoke(this, args);
+        }
+        
         #endregion
     }
     #region class InteractiveMap = mapa interaktivních prvků ve Virtual souřadnicích
@@ -1355,7 +1376,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     #endregion
     #region Třídy argumentů
     /// <summary>
-    /// Data pro události s prvek <see cref="InteractiveItem"/>
+    /// Data pro interaktivní události s prvkem <see cref="InteractiveItem"/> a stavem myši <see cref="MouseState"/>
     /// </summary>
     public class InteractiveItemEventArgs : EventArgs
     {
@@ -1363,6 +1384,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Konstruktor
         /// </summary>
         /// <param name="item"></param>
+        /// <param name="mouseState"></param>
         public InteractiveItemEventArgs(InteractiveItem item, MouseState mouseState)
         {
             this.Item = item;
@@ -1384,6 +1406,44 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Stav myši
         /// </summary>
         public MouseState MouseState { get; private set; }
+    }
+    /// <summary>
+    /// Data pro interaktivní události DragAndDrop s prvkem <see cref="InteractiveItem"/> a stavem myši <see cref="BeginMouseState"/>
+    /// </summary>
+    public class InteractiveDragItemEventArgs : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="beginMouseState"></param>
+        /// <param name="endMouseState"></param>
+        public InteractiveDragItemEventArgs(InteractiveItem item, MouseState beginMouseState, MouseState endMouseState)
+        {
+            this.Item = item;
+            this.BeginMouseState = beginMouseState;
+            this.EndMouseState = endMouseState;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Item: {Item}";
+        }
+        /// <summary>
+        /// Prvek
+        /// </summary>
+        public InteractiveItem Item { get; private set; }
+        /// <summary>
+        /// Stav myši na počátku procesu DragAndDrop
+        /// </summary>
+        public MouseState BeginMouseState { get; private set; }
+        /// <summary>
+        /// Stav myši v procesu DragAndDrop (průběh nebo konec)
+        /// </summary>
+        public MouseState EndMouseState { get; private set; }
     }
     #endregion
 }

@@ -2,7 +2,7 @@
 
 #Language CZ
 #Name Česky
-#IconName Flag-Czech-Republic-24.png
+#IconName Flag-Czech-Republic-48.png
 #Order 10
 #ParentLanguage
 
@@ -46,6 +46,7 @@ AppContextMenuNewGroupText Nová skupina
 AppContextMenuNewGroupToolTip Přidá novou skupinu aplikací, do ní pak bude možno přidávat aplikace
 EditFormTitleNewPage Nová stránka
 EditFormTitleNewGroup Nová skupina aplikací
+EditDataNewDefaultGroupTitle Nová skupina
 EditFormTitleNewApplication Nová aplikace
 EditFormTitleClone Kopie: %0
 EditDataTitleText Titulek
@@ -57,7 +58,8 @@ EditDataExecutableArgumentsText Argumenty
 EditDataExecuteInAdminModeText Oprávnění Admin
 EditDataOnlyOneInstanceText Jen jeden proces
 EditDataOpenMaximizedText Maximalizované okno
-EditDataNewDefaultGroupTitle Nová skupina
+ExecutableFileIsNotSpecified Aplikaci nelze spustit, není zadán její soubor.
+ExecutableFileIsNotExists Aplikaci nelze spustit, její soubor neexistuje.
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Ukončení aplikace
 TrayIconBalloonText Aplikace je jen schovaná.××Pro reálné vypnutí ji zavřete křížkem spolu s klávesou CTRL!××Anebo použijte kontextové menu na této ikoně.

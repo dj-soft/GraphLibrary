@@ -14,7 +14,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
     /// </summary>
     /// <typeparam name="TParent"></typeparam>
     /// <typeparam name="TItem"></typeparam>
-    public class ChildItems<TParent, TItem> : IList<TItem>, IEnumerable<TItem>
+    public class ChildItems<TParent, TItem> : IList<TItem>, IEnumerable<TItem>, ISortableList<TItem>
         where TParent : class
         where TItem : class, IChildOfParent<TParent> 
     {
@@ -243,6 +243,16 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             _RunCollectionChanged();
         }
         /// <summary>
+        /// Setřídí pole podle <paramref name="comparison"/>
+        /// </summary>
+        /// <param name="comparison"></param>
+        public void Sort(Comparison<TItem> comparison) { __List.Sort(comparison); }
+        /// <summary>
+        /// Setřídí pole podle <paramref name="comparer"/>
+        /// </summary>
+        /// <param name="comparer"></param>
+        public void Sort(IComparer<TItem> comparer) { __List.Sort(comparer); }
+        /// <summary>
         /// Vrátí enumerátor
         /// </summary>
         /// <returns></returns>
@@ -270,5 +280,14 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Parent instance
         /// </summary>
         TParent Parent { get; set; }
+    }
+    /// <summary>
+    /// Předpis pro kolekci, která dokáže setřídit své prvky
+    /// </summary>
+    /// <typeparam name="TItem"></typeparam>
+    public interface ISortableList<TItem>
+    {
+        void Sort(IComparer<TItem> comparer);
+        void Sort(Comparison<TItem> comparison);
     }
 }

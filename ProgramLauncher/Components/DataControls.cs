@@ -140,6 +140,22 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             __Cells.Add(propertyName, cell);
         }
         /// <summary>
+        /// Vyhledá vstupní control pro danou property.
+        /// </summary>
+        /// <param name="propertyName"></param>
+        /// <param name="control"></param>
+        /// <returns></returns>
+        public bool TryGetControl(string propertyName, out Control control)
+        {
+            if (!String.IsNullOrEmpty(propertyName) && __Cells.TryGetValue(propertyName, out var cell))
+            {
+                control = cell.InputControl;
+                return true;
+            }
+            control = null;
+            return false;
+        }
+        /// <summary>
         /// Buňky
         /// </summary>
         private Dictionary<string, CellInfo> __Cells;
@@ -248,8 +264,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Datový objekt obsahující data
         /// </summary>
-        public object DataObject { get { return __DataObject; } set { __DataObject = value; this.DataShow(); } }
-        private object __DataObject;
+        public object DataObject { get { return __DataObject; } set { __DataObject = value; this.DataShow(); } } private object __DataObject;
         /// <summary>
         /// Převezme data z properties z objektu <see cref="DataObject"/> a vloží je do vizuálních controlů.
         /// </summary>

@@ -403,6 +403,8 @@ namespace DjSoft.Tools.ProgramLauncher
             pagesPanel.ContentSizeChanged += _AppPagesPanel_ContentSizeChanged;
             pagesPanel.InteractiveAreaClick += _PageAreaClick;
             pagesPanel.InteractiveItemClick += _PageItemClick;
+            pagesPanel.InteractiveItemDragAndDropEnd += _PageItemDragAndDrop;
+
             this._MainContainer.Panel1.Controls.Add(pagesPanel);
 
             __PagesPanel = pagesPanel;
@@ -448,7 +450,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private IList<PageData> _Pages { get { return _PageSet.Pages; } }
         /// <summary>
-        /// Data aktuálně zobrazené stránky
+        /// Data aktuálně zobrazené stránky. Setování konkrétní stránky ji zvýrazní a načte její obsah do prostoru aplikací (metoda <see cref="ReloadApplications()"/>).
         /// </summary>
         private PageData _ActivePageData 
         {
@@ -505,6 +507,19 @@ namespace DjSoft.Tools.ProgramLauncher
             }
         }
         /// <summary>
+        /// DragAndDrop dokončeno v prostoru Page
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _PageItemDragAndDrop(object sender, InteractiveDragItemEventArgs e)
+        {
+            if (e.EndMouseState.IsOnControl)
+            {
+                var dataInfo = e.Item.UserData as Data.BaseData;
+                this._PageSet.MoveItem(e.BeginMouseState, e.EndMouseState, this._PagesPanel, this._PageSet, dataInfo);
+            }
+        }
+        /// <summary>
         /// Panel 1 (zobrazuje Pages) je viditelný?
         /// </summary>
         private bool _PagesPanelVisible { get{ return !this._MainContainer.Panel1Collapsed; } set { this._MainContainer.Panel1Collapsed = !value; } }
@@ -532,10 +547,11 @@ namespace DjSoft.Tools.ProgramLauncher
             applicationsPanel.Dock = DockStyle.Fill;
             applicationsPanel.DefaultLayoutKind = DataLayoutKind.Applications;
             applicationsPanel.EnabledDrag = true;
-            applicationsPanel.InteractiveAreaClick += _ApplicationAreaClick;
-            applicationsPanel.InteractiveItemClick += _ApplicationItemClick;
             applicationsPanel.InteractiveItemMouseEnter += _ApplicationItemMouseEnter;
             applicationsPanel.InteractiveItemMouseLeave += _ApplicationItemMouseLeave;
+            applicationsPanel.InteractiveAreaClick += _ApplicationAreaClick;
+            applicationsPanel.InteractiveItemClick += _ApplicationItemClick;
+            applicationsPanel.InteractiveItemDragAndDropEnd += _ApplicationsItemDragAndDrop;
             this._MainContainer.Panel2.Controls.Add(applicationsPanel);
 
             __ApplicationsPanel = applicationsPanel;
@@ -584,12 +600,25 @@ namespace DjSoft.Tools.ProgramLauncher
             {
                 var applInfo = e.Item.UserData as Data.ApplicationData;
                 if (applInfo != null)
-                    applInfo.RunApplication();
+                    App.TryRun(applInfo.RunApplication);
             }
             else if (e.MouseState.Buttons == MouseButtons.Right)
             {
                 var dataInfo = e.Item.UserData as Data.BaseData;
                 this._PageSet.ShowContextMenu(e.MouseState, this._ApplicationsPanel, this._ActivePageData, dataInfo);
+            }
+        }
+        /// <summary>
+        /// DragAndDrop dokončeno v prostoru Aplikace
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ApplicationsItemDragAndDrop(object sender, InteractiveDragItemEventArgs e)
+        {
+            if (e.EndMouseState.IsOnControl)
+            {
+                var dataInfo = e.Item.UserData as Data.BaseData;
+                this._PageSet.MoveItem(e.BeginMouseState, e.EndMouseState, this._ApplicationsPanel, this._ActivePageData, dataInfo);
             }
         }
         /// <summary>

@@ -604,14 +604,31 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Obsahuje jméno souboru
         /// </summary>
         public string FileName { get { return TextValue; } set { TextValue = value; } }
+        /// <summary>
+        /// Defaultní cesta, která se otevře a nabídne v případě, kdy není zadán soubor, a uživatel klikne na button
+        /// </summary>
+        public string DefaultPath { get; set; }
+        /// <summary>
+        /// Konkrétní cesta, kterou uživatel vyhledal v dialogu <see cref="OpenFileDialog"/> a potvrdil OK.
+        /// Volající aplikace ji odsud může přečíst (defaultně je zde null) a případně uložit na příště, kdy ji předpřipraví do <see cref="DefaultPath"/>.
+        /// </summary>
+        public string UserSelectedPath { get; private set; }
+        /// <summary>
+        /// Inicializace buttonu = dáme obrázek
+        /// </summary>
         protected override void OnButtonInitialize()
         {
             this.Button.Image = Properties.Resources.folder_16;
         }
+        /// <summary>
+        /// Po kliknutí na button
+        /// </summary>
         protected override void OnButtonClick()
         {
             string fileName = ApplicationData.GetCurrentFilePath(this.FileName);
             string path = (!String.IsNullOrEmpty(fileName) ? System.IO.Path.GetDirectoryName(fileName) : "");
+            if (String.IsNullOrEmpty(path)) path = DefaultPath;
+            if (String.IsNullOrEmpty(path)) path = UserSelectedPath;
             string name = (!String.IsNullOrEmpty(fileName) ? System.IO.Path.GetFileName(fileName) : "");
             using (var dialog = new System.Windows.Forms.OpenFileDialog())
             {
@@ -627,7 +644,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 dialog.Title = "Vyber soubor";
                 var result = dialog.ShowDialog();
                 if (result == DialogResult.OK)
-                    this.FileName = dialog.FileName;
+                {
+                    string selectedFile = dialog.FileName;
+                    this.FileName = selectedFile;
+                    if (!String.IsNullOrEmpty(selectedFile))
+                        this.UserSelectedPath = System.IO.Path.GetDirectoryName(selectedFile);
+                }
             }
         }
         #endregion
@@ -659,9 +681,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         private void _InitializeControls()
         {
             __TextBox = DTextBox.Create(this, "", new Size(200, 20));
+            __TextBox.Validated += _TextBoxValidated;
             __TextBox.ActivityChange += _SubActivityChange;
-            __TextBox.DoubleClick += __TextBox_DoubleClick;
-            __TextBox.KeyDown += __TextBox_KeyDown;
+            __TextBox.DoubleClick += _TextBoxDoubleClick;
+            __TextBox.KeyDown += _TextBoxKeyDown;
 
             __Button = DButton.Create(this, "", Properties.Resources.zoom_3_16, new Size(20, 20), null, _ButtonClick);
             __Button.TabStop = false;
@@ -676,8 +699,22 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             this.ActivityChange += _SubActivityChange;
             DoLayout(false);
         }
-
-        private void __TextBox_KeyDown(object sender, KeyEventArgs e)
+        /// <summary>
+        /// Po vyhodnocení obsahu TextBoxu opíšeme text do <see cref="TextValue"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _TextBoxValidated(object sender, EventArgs e)
+        {
+            this.TextValue = __TextBox.Text;
+        }
+        /// <summary>
+        /// Po stisku klávesy: pokud je to Ctrl+Enter, jako by to byl ButtonClick
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _TextBoxKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Control && e.KeyCode == Keys.Enter)
             {
@@ -685,13 +722,21 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 _RunButtonClick();
             }
         }
-
-        private void __TextBox_DoubleClick(object sender, EventArgs e)
+        /// <summary>
+        /// Po DoubleClicku v TextBoxu: jako by to byl ButtonClick
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _TextBoxDoubleClick(object sender, EventArgs e)
         {
             __TextBox.SelectAll();
             _RunButtonClick();
         }
-
+        /// <summary>
+        /// Po změně aktivity aktualizujeme layout (MouseEnter nebo FocusEnter zobrazí Button, a naopak)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _SubActivityChange(object sender, EventArgs e)
         {
             _DoLayoutOnActivityChange();
@@ -803,9 +848,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Obsahuje textovou hodnotu, setování ji vloží i do controlu
         /// </summary>
-        protected string TextValue { get { return __TextValue; } set { __TextValue = value; __TextBox.Text = value; } }
-        private string __TextValue;
-
+        protected virtual string TextValue { get { return __TextValue; } set { __TextValue = value; __TextBox.Text = value; } } private string __TextValue;
+        /// <summary>
+        /// Umožní potomkovi inicializovat Button
+        /// </summary>
         protected virtual void OnButtonInitialize()
         {
             this.Button.Image = Properties.Resources.zoom_3_16;

@@ -1,0 +1,71 @@
+﻿// Překlady aplikace ProgramLauncher do jazyka DE
+
+#Language DE
+#Name Deutsch
+#IconName Flag-Germany-48.png
+#Order 90
+#ParentLanguage
+
+ErrorTitle Ein Fehler ist aufgetreten
+ResultInformationTitle Ergebnisinformationen
+ModifiedFiles Die folgenden Dateien wurden geändert:
+NoModifiedFiles Es wurden keine Dateien geändert.
+ToolStripButtonAppearanceToolTip Erscheinungsbild ändern (Farbpalette, Größe, Sprache)
+ToolStripButtonUndoToolTip Macht die zuletzt vorgenommene Änderung rückgängig
+ToolStripButtonRedoToolTip Rollt die letzte rückgängig gemachte Änderung fort
+ToolStripButtonPreferenceToolTip Legen Sie das Anwendungsverhalten fest
+ToolStripButtonEditToolTip Inhalte bearbeiten
+ToolStripButtonMessageSyncToolTip Füllen Sie die Sprachdateien mit der aktuellen Ankündigungsliste
+StatusStripPageCountText keine Seiten×Seite×Seite×Seiten
+StatusStripApplicationText keine Apps×App×App×Apps
+AppearanceMenuHeaderColorPalette FARBPALETTE
+AppearanceMenuHeaderLayoutStyle GRÖSSE
+AppearanceMenuHeaderLanguage SPRACHE
+AppContextMenuTitlePages Seites
+AppContextMenuTitlePage Seite '%0'
+AppContextMenuNewPageText Neue Seite
+AppContextMenuNewPageToolTip Fügt eine neue Seite hinzu: Öffnet ein Fenster und ermöglicht Ihnen das Ändern der Beschreibung, Farbe und des Verhaltens
+AppContextMenuTitleApplications Bewerbungsseite
+AppContextMenuTitleGroup Gruppe '%0'
+AppContextMenuTitleApplication Anwendung '%0'
+AppContextMenuRunText Start
+AppContextMenuRunToolTip Startet diese Anwendung
+AppContextMenuRunAsText Als Administrator ausführen
+AppContextMenuRunAsToolTip Führt diese Anwendung mit Administratorrechten aus
+AppContextMenuRemoveText Entfernen
+AppContextMenuRemoveApplicationToolTip Entfernen Sie diese Anwendung aus dem Menü
+AppContextMenuEditText Bearbeiten
+AppContextMenuCopyText Kopieren
+AppContextMenuEditApplicationToolTip Öffnet ein Fenster und ermöglicht Ihnen, die Beschreibung, Zielanwendung und das Verhalten dieses Elements zu ändern
+AppContextMenuNewApplicationText Neue Bewerbung
+AppContextMenuCopyPageToolTip Kopieren Sie diese Seite inklusive sämtlichem Inhalt
+AppContextMenuCopyGroupToolTip Kopieren Sie diese Anwendungsgruppe inklusive aller Inhalte
+AppContextMenuCopyApplicationToolTip Kopieren Sie diese Anwendung auf ein neues Symbol
+AppContextMenuNewApplicationToolTip Fügt eine neue Anwendung hinzu: Öffnet ein Fenster und ermöglicht Ihnen, die Beschreibung, Zielanwendung und das Verhalten dieses Elements zu ändern
+AppContextMenuNewGroupText Neue Gruppe
+AppContextMenuNewGroupToolTip Es wird eine neue Gruppe von Anwendungen hinzugefügt, dann ist es möglich, Anwendungen hinzuzufügen
+EditFormTitleNewPage Neue Seite
+EditFormTitleNewGroup Eine neue Gruppe von Anwendungen
+EditDataNewDefaultGroupTitle Neue Gruppe
+EditFormTitleNewApplication Neue Bewerbung
+EditFormTitleClone Kopieren: %0
+EditDataTitleText Untertitel
+EditDataDescriptionText Etikett
+EditDataToolTipText Helfen
+EditDataImageFileNameText Bild
+EditDataExecutableFileNameText Anwendung
+EditDataExecutableArgumentsText Argumente
+EditDataExecuteInAdminModeText Admin-Berechtigungen
+EditDataOnlyOneInstanceText Nur ein Prozess
+EditDataOpenMaximizedText Maximiertes Fenster
+ExecutableFileIsNotSpecified Die Anwendung kann nicht gestartet werden, ihre Datei ist nicht angegeben.
+ExecutableFileIsNotExists Die Anwendung kann nicht gestartet werden, ihre Datei existiert nicht.
+TrayIconText Program Launcher
+TrayIconBalloonToolTip Beenden der Bewerbung
+TrayIconBalloonText Die Anwendung ist nur ausgeblendet.××Um sie tatsächlich auszuschalten, schließen Sie sie mit einem Kreuz zusammen mit der STRG-Taste!××Oder nutzen Sie das Kontextmenü auf diesem Symbol.
+TrayIconShowApplicationText Aktivieren Sie die Anwendung
+TrayIconShowApplicationToolTip Aktiviert das Anwendungsfenster. Die App ist nicht ausgeschaltet, sie ist nur ausgeblendet.
+TrayIconAcceptTrayInfoText Ich habe die Informationen verstanden
+TrayIconAcceptTrayInfoToolTip Mit dem normalen Schließen wird die Anwendung nicht beendet, sondern nur ausgeblendet.××Immer wenn die Anwendung ausgeblendet wird, leuchten die Informationen auf.××Wenn ich diese Informationen nicht mehr anzeigen möchte, aktiviere ich diese Option.
+TrayIconApplicationExitText Beenden Sie die Anwendung
+TrayIconApplicationExitToolTip Beendet diese Anwendung.××Das Starten solcher Anwendungen, die mit „Nur ein Fenster öffnen“ gekennzeichnet sind, funktioniert beim nächsten Öffnen möglicherweise nicht ordnungsgemäß.

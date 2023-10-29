@@ -278,6 +278,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
 
         public string EditFormTitleNewPage { get { return _GetText("Nová stránka"); } }
         public string EditFormTitleNewGroup { get { return _GetText("Nová skupina aplikací"); } }
+        public string EditDataNewDefaultGroupTitle { get { return _GetText("Nová skupina"); } }
         public string EditFormTitleNewApplication { get { return _GetText("Nová aplikace"); } }
         public string EditFormTitleClone { get { return _GetText("Kopie: %0"); } }
 
@@ -290,8 +291,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string EditDataExecuteInAdminModeText { get { return _GetText("Oprávnění Admin"); } }
         public string EditDataOnlyOneInstanceText { get { return _GetText("Jen jeden proces"); } }
         public string EditDataOpenMaximizedText { get { return _GetText("Maximalizované okno"); } }
-
-        public string EditDataNewDefaultGroupTitle { get { return _GetText("Nová skupina"); } }
+        public string ExecutableFileIsNotSpecified { get { return _GetText("Aplikaci nelze spustit, není zadán její soubor."); } }
+        public string ExecutableFileIsNotExists { get { return _GetText("Aplikaci nelze spustit, její soubor neexistuje."); } }
 
         public string TrayIconText { get { return _GetText("Program Launcher"); } }
         public string TrayIconBalloonToolTip { get { return _GetText("Ukončení aplikace"); } }

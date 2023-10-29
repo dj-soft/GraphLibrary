@@ -2,7 +2,7 @@
 
 #Language EN
 #Name English
-#IconName Flag-United-Kingdom-24.png
+#IconName Flag-United-Kingdom-48.png
 #Order 20
 #ParentLanguage CZ
 
@@ -46,6 +46,7 @@ AppContextMenuNewGroupText New group
 AppContextMenuNewGroupToolTip It will add a new group of applications, then it will be possible to add applications to it
 EditFormTitleNewPage New page
 EditFormTitleNewGroup A new group of applications
+EditDataNewDefaultGroupTitle New group
 EditFormTitleNewApplication New application
 EditFormTitleClone Copy: %0
 EditDataTitleText Title
@@ -57,7 +58,8 @@ EditDataExecutableArgumentsText Arguments
 EditDataExecuteInAdminModeText Admin mode
 EditDataOnlyOneInstanceText Only single process
 EditDataOpenMaximizedText Maximized Window
-EditDataNewDefaultGroupTitle New group
+ExecutableFileIsNotSpecified The application cannot be started, its file is not specified.
+ExecutableFileIsNotExists The application cannot be started, its file does not exist.
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Terminating the application
 TrayIconBalloonText The application is only hidden.××To actually turn it off, close it with a cross together with the CTRL key!××Or use the context menu on this icon.

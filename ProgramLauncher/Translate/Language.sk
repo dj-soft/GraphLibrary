@@ -2,20 +2,20 @@
 
 #Language SK
 #Name Slovensky
-#IconName Flag-Slovakia-24.png
+#IconName Flag-Slovakia-48.png
 #Order 30
 #ParentLanguage CZ
 
-ErrorTitle *Došlo k chybě
-ResultInformationTitle *Výsledná informace
-ModifiedFiles *Byly modifikovány tyto soubory:
-NoModifiedFiles *Nebyly modifikovány žádné soubory.
+ErrorTitle Došlo k chybe
+ResultInformationTitle Výsledná informácia
+ModifiedFiles Boli modifikované tieto súbory:
+NoModifiedFiles Neboli modifikované žiadne súbory.
 ToolStripButtonAppearanceToolTip Zmeniť vzhľad (farebná paleta, veľkosť, jazyk)
 ToolStripButtonUndoToolTip Vrátí zpět posledně provedenou změnu
 ToolStripButtonRedoToolTip Obnoví vpřed posledně vrácenou změnu
 ToolStripButtonPreferenceToolTip Nastaviť správanie aplikácie
 ToolStripButtonEditToolTip Upraviť obsah
-ToolStripButtonMessageSyncToolTip *Naplnit jazykové soubory aktuálním seznamem hlášek
+ToolStripButtonMessageSyncToolTip 
 StatusStripPageCountText bez stránok×stránka×stránky×stránok
 StatusStripApplicationText bez aplikácií×aplikácie×aplikácie×aplikácií
 AppearanceMenuHeaderColorPalette FAREBNÁ PALETA
@@ -35,29 +35,31 @@ AppContextMenuRunAsToolTip Spustí túto aplikáciu s oprávnením Správcu
 AppContextMenuRemoveText Odstrániť
 AppContextMenuRemoveApplicationToolTip Odstrániť túto aplikáciu z ponuky
 AppContextMenuEditText Upraviť
-AppContextMenuCopyText *Zkopírovat
+AppContextMenuCopyText Skopírovať
 AppContextMenuEditApplicationToolTip Otvorí okno a umožní zmeniť popis, cieľovú aplikáciu a správanie tejto položky
 AppContextMenuNewApplicationText Nová aplikácia
-AppContextMenuCopyPageToolTip *Zkopírovat tuto stránku včetně celého obsahu
-AppContextMenuCopyGroupToolTip *Zkopírovat tuto skupinu aplikací včetně celého obsahu
-AppContextMenuCopyApplicationToolTip *Zkopírovat tuto aplikaci do nové ikony
+AppContextMenuCopyPageToolTip Skopírovať túto stránku vrátane celého obsahu
+AppContextMenuCopyGroupToolTip Skopírovať túto skupinu aplikácií vrátane celého obsahu
+AppContextMenuCopyApplicationToolTip Skopírovať túto aplikáciu do novej ikony
 AppContextMenuNewApplicationToolTip Pridá novú aplikáciu: otvorí okno a umožní zmeniť popis, cieľovú aplikáciu a správanie tejto položky
 AppContextMenuNewGroupText Nová skupina
 AppContextMenuNewGroupToolTip Pridá novú skupinu aplikácií, do nej potom bude možné pridávať aplikácie
-EditFormTitleNewPage *Nová stránka
-EditFormTitleNewGroup *Nová skupina aplikací
-EditFormTitleNewApplication *Nová aplikace
-EditFormTitleClone *Kopie: %0
-EditDataTitleText *Titulek
-EditDataDescriptionText *Popisek
-EditDataToolTipText *Nápověda
-EditDataImageFileNameText *Obrázek
-EditDataExecutableFileNameText *Aplikace
-EditDataExecutableArgumentsText *Argumenty
-EditDataExecuteInAdminModeText *Oprávnění Admin
-EditDataOnlyOneInstanceText *Jen jeden proces
-EditDataOpenMaximizedText *Maximalizované okno
-EditDataNewDefaultGroupTitle *Nová skupina
+EditFormTitleNewPage Nová stránka
+EditFormTitleNewGroup Nová skupina aplikácií
+EditDataNewDefaultGroupTitle Nová skupina
+EditFormTitleNewApplication Nová aplikácia
+EditFormTitleClone Kópia: %0
+EditDataTitleText Titulok
+EditDataDescriptionText Popisok
+EditDataToolTipText Nápoveda
+EditDataImageFileNameText Obrázok
+EditDataExecutableFileNameText Aplikácia
+EditDataExecutableArgumentsText Argumenty
+EditDataExecuteInAdminModeText Oprávnenie Admin
+EditDataOnlyOneInstanceText Len jeden proces
+EditDataOpenMaximizedText Maximalizované okno
+ExecutableFileIsNotSpecified Aplikáciu nemožno spustiť, nie je zadaný jej súbor.
+ExecutableFileIsNotExists Aplikáciu nemožno spustiť, jej súbor neexistuje.
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Ukončenie aplikácie
 TrayIconBalloonText Aplikácia je len schovaná.××Pre reálne vypnutie ju zatvorte krížikom spolu s klávesom CTRL!××alebo použite kontextové menu na tejto ikone.

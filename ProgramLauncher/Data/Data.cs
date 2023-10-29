@@ -91,8 +91,14 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public override List<InteractiveItem> CreateInteractiveItems()
         {
             List<InteractiveItem> interactiveItems = new List<InteractiveItem>();
-            foreach (var page in this.Pages)
+            int y = 0;
+            foreach (var page in this.Pages)                                   // Pořadí stránek v poli určuje vizuální pořadí v controlu
+            {
+                page.RelativeAdress = new Point(0, y);                         // Relativní pozice stránky;
+                page.OffsetAdress = new Point(0, 0);                           // Offset stránky je vždy 0
+                y = page.Adress.Y + 1;                                         // A od toho se odvodí počáteční adresa pro další stránku.
                 interactiveItems.Add(page.CreateInteractiveItem());
+            }
             return interactiveItems;
         }
         /// <summary>
@@ -232,9 +238,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <param name="menuItem"></param>
         public static void RunContextMenuAction(DataItemActionType actionType, ContextActionInfo actionInfo)
         {
-            bool isEdited = false;
+            // Kompletní data si odzálohuji ještě před tím, než se začnou provádět změny. Pak je možná dám do UndoRedo containeru:
             PageSetData pageSetClone = actionInfo.PageSetData.Clone(true);
 
+            bool isEdited = false;
             switch (actionType)
             {
                 case DataItemActionType.MovePage:
@@ -302,7 +309,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     isAppend = pageData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleClone, pageData.Title));
                     break;
                 case DataItemActionType.DeletePage:
-                    isUpdated = pageSetData.Pages.Remove(pageData);
+                    if (hasPageData)
+                    {
+                        PageSetData parentSet = pageData.ParentSet;
+                        isUpdated = parentSet.Pages.Remove(pageData);
+                    }
                     break;
             }
 
@@ -315,6 +326,55 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             }
 
             return isUpdated;
+        }
+        #endregion
+        #region Přesun prvku na jinou pozici
+        /// <summary>
+        /// Vstupní bod pro provedení akce Přesun prvku na jinou pozici
+        /// </summary>
+        /// <param name="beginMouseState"></param>
+        /// <param name="endMouseState"></param>
+        /// <param name="panel"></param>
+        /// <param name="areaData"></param>
+        /// <param name="itemData"></param>
+        public void MoveItem(MouseState beginMouseState, MouseState endMouseState, InteractiveGraphicsControl panel, BaseData areaData, BaseData itemData)
+        {
+            // Kompletní data si odzálohuji ještě před tím, než se začnou provádět změny. Pak je možná dám do UndoRedo containeru:
+            PageSetData pageSetClone = this.Clone(true);
+
+            bool isEdited = false;
+            if (areaData is PageSetData pageSetData && itemData is PageData pageItemData)
+                isEdited = pageSetData.MovePage(pageItemData, beginMouseState, endMouseState, panel);
+            else if (areaData is PageData pageAreaData)
+            {
+                if (itemData is GroupData groupItemData)
+                    isEdited = pageAreaData.MoveGroup(groupItemData, beginMouseState, endMouseState, panel);
+                else if (itemData is ApplicationData applicationItemData)
+                    isEdited = pageAreaData.MoveApplication(applicationItemData, beginMouseState, endMouseState, panel);
+            }
+
+            if (isEdited)
+            {
+                App.Settings.SetChanged("PageSet");
+                App.UndoRedo.Add(pageSetClone);
+            }
+        }
+        /// <summary>
+        /// Přesune stránku na nové místo
+        /// </summary>
+        /// <param name="pageData"></param>
+        /// <param name="beginMouseState"></param>
+        /// <param name="endMouseState"></param>
+        /// <param name="panel"></param>
+        public bool MovePage(PageData pageData, MouseState beginMouseState, MouseState endMouseState, InteractiveGraphicsControl panel)
+        {
+            // Pokud nevím, jakou Y adresu mám nastavit, tak nedělám nic:
+            if (endMouseState.InteractiveCell is null) return false;
+
+            int targetY = endMouseState.InteractiveCell.Adress.Y;
+            ReArrangeItems(this.Pages, pageData, targetY, (p, y) => p.RelativeAdress = new Point(0, y), 0, BaseData.CompareByRelativeAdressY);
+
+            return true;
         }
         #endregion
         #region Tvorba výchozích dat - namísto prázdných
@@ -449,6 +509,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         [PersistingEnabled(false)]
         public override DataLayoutKind? LayoutKind { get { return DataLayoutKind.Pages; } set { } }
         /// <summary>
+        /// Sada, do které tato stránka patří
+        /// </summary>
+        public PageSetData ParentSet { get { return __Parent; } }
+        /// <summary>
         /// Můj parent
         /// </summary>
         PageSetData IChildOfParent<PageSetData>.Parent { get { return __Parent; } set { __Parent = value; } } private PageSetData __Parent;
@@ -482,11 +546,12 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             List<InteractiveItem> interactiveItems = new List<InteractiveItem>();
             int y = 0;
-            foreach (var group in this.Groups)
+            foreach (var group in this.Groups)                                 // Pořadí grup v poli určuje vizuální pořadí v controlu
             {
-                group.OffsetAdress = new Point(0, y);
+                group.RelativeAdress = new Point(0, 0);                        // Grupa vždy začíná relativně na nule, 
+                group.OffsetAdress = new Point(0, y);                          // K tomu se přidá Offset
+                y = group.Adress.Y + 1;                                        // A od toho se odvodí počáteční offset pro aplikace.
                 interactiveItems.Add(group.CreateInteractiveItem());
-                y = group.Adress.Y + 1;
 
                 int maxBottom = 0;
                 foreach (var appl in group.Applications)
@@ -494,7 +559,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     appl.OffsetAdress = new Point(0, y);
                     interactiveItems.Add(appl.CreateInteractiveItem());
                     int appBottom = appl.Adress.Y + 1;
-                    if (maxBottom < appBottom) maxBottom = appBottom;
+                    if (maxBottom < appBottom) maxBottom = appBottom;          // Střádám si maxBottom = nejvyšší Bottom z aplikací dané grupy
                 }
                 y = maxBottom;
             }
@@ -538,7 +603,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             }
 
             // Mám grupu: určím relativní adresu:
-            relativeAdress = new Point(mouseAdress.X, 0);
+            int cellY = adressY - (groupData.Adress.Y + 1);
+            relativeAdress = new Point(mouseAdress.X, cellY);
             return groupData;
         }
         #endregion
@@ -572,7 +638,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     isAppend = groupData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleClone, groupData.Title));
                     break;
                 case DataItemActionType.DeleteGroup:
-                    isUpdated = pageData.Groups.Remove(groupData);
+                    if (hasGroupData)
+                    {
+                        PageData parentPage = groupData.ParentPage;
+                        isUpdated = parentPage.Groups.Remove(groupData);
+                    }
                     break;
             }
 
@@ -585,6 +655,18 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             }
 
             return isUpdated;
+        }
+        #endregion
+        #region Přesun prvku na jinou pozici
+        public bool MoveGroup(GroupData groupData, MouseState beginMouseState, MouseState endMouseState, InteractiveGraphicsControl panel)
+        {
+
+            return false;
+        }
+        public bool MoveApplication(ApplicationData applicationData, MouseState beginMouseState, MouseState endMouseState, InteractiveGraphicsControl panel)
+        {
+
+            return false;
         }
         #endregion
         #region Podpora de/serializace
@@ -692,6 +774,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         [PersistingEnabled(false)]
         public int ApplicationsCount { get { return Applications.Count; } }
         /// <summary>
+        /// Stránka, do které tato skupina patří
+        /// </summary>
+        public PageData ParentPage { get { return __Parent; } }
+        /// <summary>
         /// Můj parent
         /// </summary>
         PageData IChildOfParent<PageData>.Parent { get { return __Parent; } set { __Parent = value; } } private PageData __Parent;
@@ -736,12 +822,18 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     isAppend = applicationData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleClone, applicationData.Title));
                     break;
                 case DataItemActionType.DeleteApplication:
+                    if (hasApplicationData)
+                    {
+                        GroupData parentGroup = applicationData.ParentGroup;
+                        isUpdated = parentGroup.Applications.Remove(applicationData);
+                    }
                     break;
             }
 
             if (isAppend)
             {
                 GroupData parentGroup = pageData.SearchForGroup(actionInfo, true, out var relativeAdress);
+                applicationData.Adress = relativeAdress.Value;
                 parentGroup.Applications.Add(applicationData);
                 isUpdated = true;
             }
@@ -848,6 +940,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public override DataLayoutKind? LayoutKind { get { return DataLayoutKind.Applications; } set { } }
         /// <summary>
+        /// Grupa, do které tato aplikace patří
+        /// </summary>
+        public GroupData ParentGroup { get { return __Parent; } }
+        /// <summary>
         /// Můj parent
         /// </summary>
         GroupData IChildOfParent<GroupData>.Parent { get { return __Parent; } set { __Parent = value; } } private GroupData __Parent;
@@ -921,6 +1017,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public void RunApplication()
         {
+            if (!_IsValidToRun()) return;
+
             try
             {
                 App.MainForm.StatusLabelApplicationRunText = this.Title;
@@ -944,6 +1042,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <param name="executeInAdminMode"></param>
         public void RunNewProcess(bool? executeInAdminMode = null)
         {
+            if (!_IsValidToRun()) return;
+
             try
             {
                 //   if (OnlyOneInstance && _TryActivateProcess()) return;
@@ -960,6 +1060,27 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 App.MainForm.StatusLabelApplicationRunText = null;
                 App.MainForm.StatusLabelApplicationRunImage = null;
             }
+        }
+        /// <summary>
+        /// Metoda ověří, zda this aplikaci je možno spustit. Pokud ano, vrátí true. 
+        /// Pokud nelze aplikaci spustit, může oznámit chybu (pokud <paramref name="silent"/> je false), a vrátí false
+        /// </summary>
+        /// <param name="silent"></param>
+        /// <returns></returns>
+        private bool _IsValidToRun(bool silent = false)
+        {
+            var fileName = _CurrentFileName;
+            bool fileIsFilled = !String.IsNullOrEmpty(fileName);
+            bool fileExists = fileIsFilled && System.IO.File.Exists(fileName);
+            if (fileExists) return true;
+            if (!silent)
+            {
+                if (!fileIsFilled)
+                    App.ShowMessage(App.Messages.ExecutableFileIsNotSpecified, MessageBoxIcon.Error);
+                else if (!fileExists)
+                    App.ShowMessage(App.Messages.ExecutableFileIsNotExists, MessageBoxIcon.Error);
+            }
+            return false;
         }
         /// <summary>
         /// Pokusí se najít a aktivovat zdejší proces, pokud this má nastaveno <see cref="OnlyOneInstance"/> = spustit jen jednu instanci.
@@ -1142,11 +1263,31 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             panel.AddCell(ControlType.CheckBox, App.Messages.EditDataOnlyOneInstanceText, nameof(OnlyOneInstance), x, y, w4); x += dx;
             panel.AddCell(ControlType.CheckBox, App.Messages.EditDataOpenMaximizedText, nameof(OpenMaximized), x, y, w4); y += s1;
 
+            if (panel.TryGetControl(nameof(ImageFileName), out var imageFilePanel) && imageFilePanel is DFileBox dFileBox)
+                dFileBox.DefaultPath = App.Settings.DefaultImagePath;
+
             panel.Buttons = new DialogButtonType[] { DialogButtonType.Ok, DialogButtonType.Cancel };
             panel.BackColor = Color.AntiqueWhite;
 
             panel.DataObject = this;
             return panel;
+        }
+        /// <summary>
+        /// Metoda je volaná poté, uživatel editoval data v panelu a potvrdil je OK.
+        /// Metoda dostává tentýž panel <see cref="DataControlPanel"/>, který vytvořila metoda <see cref="BaseData.CreateEditPanel()"/>,
+        /// a může si z panelu přečíst data nad rámec standardních hodnot, která jsou do datového objektu vepsána standardně.
+        /// </summary>
+        /// <param name="panel"></param>
+        /// <returns></returns>
+        protected override void AcceptedEditPanel(DataControlPanel panel)
+        {
+            // Pokud uživatel vybral soubor s ikonou z nějakého adresáře pomocí buttonu, pak si tento adresář uložíme do Settings:
+            if (panel.TryGetControl(nameof(ImageFileName), out var imageFilePanel) && imageFilePanel is DFileBox dFileBox)
+            {
+                string userSelectedPath = dFileBox.UserSelectedPath;
+                if (!String.IsNullOrEmpty(userSelectedPath))
+                    App.Settings.DefaultImagePath = userSelectedPath;
+            }
         }
         #endregion
     }
@@ -1229,6 +1370,78 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 clone.__Id = this.__Id;
             }
         }
+        #endregion
+        #region Komparátory a Arranger
+        /// <summary>
+        /// Zajistí, že objekty v dodané kolekci budou mít vloženu postupně navyšovanou hodnotu do své pozice.
+        /// A že explicitně daný objekt <paramref name="targetItem"/> bude mít vloženou hodnotu explicitně požadovanou <paramref name="targetValue"/> (anebo poslední +1).
+        /// <para/>
+        /// Metoda obecně slouží k "zařazení" dodaného objektu <paramref name="targetItem"/> na určitou pozici, přičemž prvky v dodané kolekci <paramref name="items"/>
+        /// nacházející se před touto pozicí budou mít svoji pozici danou počínaje <paramref name="valueBegin"/> (nebo 0), dodaný prvek bude mít pozici dodanou 
+        /// a prvky následující budou mít pozici navazující.
+        /// <para/>
+        /// Tedy ještě jinými slovy: zadaný target prvek <paramref name="targetItem"/> bude umístěn na pozici do celé kolekce na danoé místo, okolní prvky budou na pozici před a za touto pozicí.
+        /// </summary>
+        /// <typeparam name="TItem"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="targetItem"></param>
+        /// <param name="targetValue"></param>
+        /// <param name="setValue">Metoda, která do daného prvku vepíše danou pozici. Metoda sama bude vědět, do které property se poice vepisuje a jakým způsobem. Typicky se z dodané pozice vytvoří Point do RelativeAdress.</param>
+        /// <param name="valueBegin"></param>
+        /// <param name="comparison"></param>
+        protected static void ReArrangeItems<TItem>(IEnumerable<TItem> items, TItem targetItem, int targetValue, Action<TItem, int> setValue, int valueBegin = 0, Comparison<TItem> comparison = null) where TItem : class
+        {
+            if (items is null) return;
+
+            bool targetExists = (targetItem != null);
+            bool targetFound = false;
+            int value = valueBegin;
+            foreach (var item in items)
+            {
+                if (Object.ReferenceEquals(item, targetItem)) continue;            // Cílový objekt (targetItem) řešíme jinak, v jeho původní pozici jej přeskakuji.
+                if (targetExists && value == targetValue)
+                {   // Na tuto pozici (targetValue) chci umístit cílový objekt 'targetItem':
+                    setValue(targetItem, value);                                   // Umístíme objekt na aktuální hodnotu, a poznamenáme si, že je OK:
+                    targetFound = true;
+                    value++;                                                       // Průběžný objekt 'item' bude až za target pozicí.
+                }
+                setValue(item, value);                                             // Průběžný objekt bude na průběžně navyšované pozici
+                value++;
+            }
+            if (targetExists && !targetFound)
+                setValue(targetItem, value);                                       // Umístíme cílový objekt (targetItem) za poslední průběžnou pozici
+
+            if (comparison != null)
+            {
+                if (items is List<TItem> list)
+                    list.Sort(comparison);
+                else if (items is ISortableList<TItem> iSortableList)
+                    iSortableList.Sort(comparison);
+            }
+        }
+        /// <summary>
+        /// Komparátor dle <see cref="RelativeAdress"/>.Y ASC
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static int CompareByRelativeAdressY(BaseData a, BaseData b) 
+        {
+            return a.RelativeAdress.Y.CompareTo(b.RelativeAdress.Y);
+        }
+        /// <summary>
+        /// Komparátor dle <see cref="RelativeAdress"/>.Y ASC, X ASC
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static int CompareByRelativeAdressYX(BaseData a, BaseData b)
+        {
+            int cmp = a.RelativeAdress.Y.CompareTo(b.RelativeAdress.Y);
+            if (cmp == 0) cmp = a.RelativeAdress.X.CompareTo(b.RelativeAdress.X);
+            return cmp;
+        }
+
         #endregion
         #region Id a UniqueId
         /// <summary>
@@ -1383,12 +1596,14 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             bool result = false;
             using (var form = new DialogForm())
             {
-                form.DataControl = this.CreateEditPanel();
+                var dataControlPanel = this.CreateEditPanel();
+                form.DataControl = dataControlPanel;
                 form.Text = formTitle ?? this.Title;
                 form.StartPosition = FormStartPosition.Manual;
                 form.Location = startPoint ?? Control.MousePosition;
                 form.ShowDialog(App.MainForm);
                 result = (form.DialogResult == DialogResult.OK);
+                if (result) this.AcceptedEditPanel(dataControlPanel);
             }
             this.RefreshInteractiveItem();
             return result;
@@ -1421,6 +1636,14 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             panel.DataObject = this;
             return panel;
         }
+        /// <summary>
+        /// Metoda je volaná poté, uživatel editoval data v panelu a potvrdil je OK.
+        /// Metoda dostává tentýž panel <see cref="DataControlPanel"/>, který vytvořila metoda <see cref="BaseData.CreateEditPanel()"/>,
+        /// a může si z panelu přečíst data nad rámec standardních hodnot, která jsou do datového objektu vepsána standardně.
+        /// </summary>
+        /// <param name="dataControl"></param>
+        /// <returns></returns>
+        protected virtual void AcceptedEditPanel(DataControlPanel dataControl) { }
         #endregion
     }
     /// <summary>
@@ -1600,7 +1823,7 @@ namespace DjSoft.Tools.ProgramLauncher
 {
     partial class Settings
     {
-        #region Část Settings, která ukládá a načítá vlastní data o stránkách, grupách a aplikacích = ProgramPages
+        #region Část Settings, která ukládá a načítá vlastní data o stránkách, grupách a aplikacích = ProgramPages; plus DefaultImagePath
         /// <summary>
         /// Sada všech stránek.
         /// Seznam stránek má vždy alespoň jednu stránku, obsahující jednu grupu a výchozí aplikace.
@@ -1625,6 +1848,10 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         [PropertyName("program_set")]
         private PageSetData _PageSet { get; set; }
+        /// <summary>
+        /// Defaultní (posledně použitý) adresář, kde uživatel aktivně vyhledal soubor s ikonou pomocí buttonu
+        /// </summary>
+        public string DefaultImagePath { get; set; }
         #endregion
     }
 }
