@@ -3172,7 +3172,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// Podkladový ScrollPanel <see cref="DxScrollableContent"/> dovoluje nastavit libovolné okraje kolem scrollovaného obsahu <see cref="DxScrollableContent.ContentVisualPadding"/>, 
     /// tyto okraje jsou využívány pro zobrazení "fixních" částí (vše okolo Rows) = ColumnHeader, RowFilter, SummaryRow, RowHeader.
     /// <para/>
-    /// Typicky Master Dataform (nazývaný v Greenu "FreeForm") má pouze jednu jedinou část <see cref="DxDataFormPart"/>, která nezobrazuje ani ColumnHeaders ani RowHeaders ani SummaryRow, a ani nenabízí rozdělovací Splittery.
+    /// Typicky Master Dataform (nazývaný v Greenu "FreeForm") má pouze jednu jedinou část <see cref="DxDataFormPart"/>, která nezobrazuje ani ColumnHeaders ani RowHeaders ani SummaryRow,
+    /// a ani nenabízí rozdělovací Splittery.
     /// DataForm používaný pro položky (nazývaný v Greenu "EditBrowse") toto rozčlenění umožňuje.
     /// </summary>
     internal class DxDataFormPart : DxScrollableContent
