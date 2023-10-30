@@ -6,24 +6,24 @@
 #Order 100
 #ParentLanguage
 
-ErrorTitle *Došlo k chybě
-ResultInformationTitle *Výsledná informace
-ModifiedFiles *Byly modifikovány tyto soubory:
-NoModifiedFiles *Nebyly modifikovány žádné soubory.
+ErrorTitle Hiba történt
+ResultInformationTitle Eredmény információ
+ModifiedFiles A következő fájlok módosultak:
+NoModifiedFiles Egyetlen fájl sem módosult.
 ToolStripButtonAppearanceToolTip Megjelenés módosítása (színpaletta, méret, nyelv)
 ToolStripButtonUndoToolTip Visszaállítja a legutóbbi módosítást
 ToolStripButtonRedoToolTip Előre görgeti az utolsó visszaállított változtatást
-ToolStripButtonPreferenceToolTip *Nastavit chování aplikace
-ToolStripButtonEditToolTip *Upravit obsah
-ToolStripButtonMessageSyncToolTip *Naplnit jazykové soubory aktuálním seznamem hlášek
+ToolStripButtonPreferenceToolTip Alkalmazás viselkedésének beállítása
+ToolStripButtonEditToolTip Szerkessze a tartalmat
+ToolStripButtonMessageSyncToolTip Töltse ki a nyelvi fájlokat az aktuális hirdetmények listájával
 StatusStripPageCountText nincs oldal×oldal×oldal×oldal
 StatusStripApplicationText nincsenek alkalmazások×alkalmazás×alkalmazás×alkalmazások
 AppearanceMenuHeaderColorPalette SZÍN PALETTA
 AppearanceMenuHeaderLayoutStyle MÉRET
 AppearanceMenuHeaderLanguage NYELV
-AppContextMenuTitlePages *Stránky
-AppContextMenuTitlePage *Stránka '%0'
-AppContextMenuNewPageText *Nová stránka
+AppContextMenuTitlePages Oldala
+AppContextMenuTitlePage '%0' oldal
+AppContextMenuNewPageText Új oldal
 AppContextMenuNewPageToolTip Új oldal hozzáadása: megnyit egy ablakot, és lehetővé teszi a leírás, a szín és a viselkedés módosítását
 AppContextMenuTitleApplications Alkalmazások oldal
 AppContextMenuTitleGroup '%0' csoport
@@ -50,14 +50,14 @@ EditDataNewDefaultGroupTitle Új csoport
 EditFormTitleNewApplication Új alkalmazás
 EditFormTitleClone Másolás: %0
 EditDataTitleText Felirat
-EditDataDescriptionText *Popisek
-EditDataToolTipText *Nápověda
-EditDataImageFileNameText *Obrázek
-EditDataExecutableFileNameText *Aplikace
-EditDataExecutableArgumentsText *Argumenty
-EditDataExecuteInAdminModeText *Oprávnění Admin
-EditDataOnlyOneInstanceText *Jen jeden proces
-EditDataOpenMaximizedText *Maximalizované okno
+EditDataDescriptionText Címke
+EditDataToolTipText Segítség
+EditDataImageFileNameText Kép
+EditDataExecutableFileNameText Alkalmazás
+EditDataExecutableArgumentsText Érvek
+EditDataExecuteInAdminModeText Rendszergazdai jogosultságok
+EditDataOnlyOneInstanceText Csak egy folyamat
+EditDataOpenMaximizedText Maximális ablak
 ExecutableFileIsNotSpecified Az alkalmazás nem indítható el, a fájlja nincs megadva.
 ExecutableFileIsNotExists Az alkalmazás nem indítható el, a fájlja nem létezik.
 DialogButtonOkText rendben
@@ -73,11 +73,11 @@ DialogButtonPrevText Vissza
 DialogButtonApplyText Alkalmaz
 DialogButtonSaveText Kikényszeríteni
 TrayIconText Program Launcher
-TrayIconBalloonToolTip *Ukončení aplikace
-TrayIconBalloonText *Aplikace je jen schovaná.××Pro reálné vypnutí ji zavřete křížkem spolu s klávesou CTRL!××Anebo použijte kontextové menu na této ikoně.
-TrayIconShowApplicationText *Aktivuj aplikaci
-TrayIconShowApplicationToolTip *Aktivuje okno aplikace. Aplikace není vypnutá, je jen skrytá.
-TrayIconAcceptTrayInfoText *Pochopil jsem informaci
-TrayIconAcceptTrayInfoToolTip *Aplikace se běžným zavřením neukončuje, pouze se skryje.××Při každém skrytí aplikace se rozsvítí informace.××Pokud již tuto informaci nechci zobrazovat, zaškrtnu tuto volbu.
-TrayIconApplicationExitText *Ukončit aplikaci
-TrayIconApplicationExitToolTip *Ukončí tuto aplikaci.××Po jejím příštím otevření nemusí správně fungovat spouštění takových aplikací,××které jsou označené 'Otevřít jen jedno okno'.
+TrayIconBalloonToolTip Az alkalmazás megszüntetése
+TrayIconBalloonText Az alkalmazás csak el van rejtve.××A tényleges kikapcsoláshoz zárja be egy kereszttel a CTRL billentyűvel együtt!××Vagy használja a helyi menüt ezen az ikonon.
+TrayIconShowApplicationText Aktiválja az alkalmazást
+TrayIconShowApplicationToolTip Aktiválja az alkalmazás ablakát. Az alkalmazás nincs kikapcsolva, csak el van rejtve.
+TrayIconAcceptTrayInfoText Megértettem az információt
+TrayIconAcceptTrayInfoToolTip Az alkalmazás nem ér véget a normál bezárással, csak elrejtőzik.××Amikor az alkalmazás el van rejtve, az információ világít.××Ha már nem szeretném megjeleníteni ezeket az információkat, bejelölöm ezt a lehetőséget.
+TrayIconApplicationExitText Lépjen ki az alkalmazásból
+TrayIconApplicationExitToolTip Leállítja ezt az alkalmazást.××Az „Csak egy ablak megnyitása” jelzésű alkalmazások elindítása előfordulhat, hogy a következő megnyitás után nem működik megfelelően.

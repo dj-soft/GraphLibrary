@@ -65,6 +65,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         public virtual string Description { get { return __Description; } set { __Description = value; } } private string __Description;
         /// <summary>
+        /// Text do ToolTipu
+        /// </summary>
+        public virtual string ToolTipText { get { return this.__ToolTipText; } set { this.__ToolTipText = value; } } private string __ToolTipText;
+        /// <summary>
         /// Příznak že prvek je "zamáčknutý" (jakoby aktivovaný button). Pak používá pro své vlastní pozadí barvu <see cref="ColorSet.DownColor"/>
         /// </summary>
         public virtual bool IsDown { get { return __IsDown; } set { __IsDown = value; } } private bool __IsDown;

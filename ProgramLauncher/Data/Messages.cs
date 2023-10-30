@@ -250,6 +250,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
 
         public string AppearanceMenuHeaderColorPalette { get { return _GetText("BAREVNÁ PALETA"); } }
         public string AppearanceMenuHeaderLayoutStyle { get { return _GetText("VELIKOST"); } }
+        public string AppearanceMenuHeaderToolTipType { get { return _GetText("TOOL TIP"); } }
         public string AppearanceMenuHeaderLanguage { get { return _GetText("JAZYK"); } }
 
         public string AppContextMenuTitlePages { get { return _GetText("Stránky"); } }

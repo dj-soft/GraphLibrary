@@ -15,9 +15,15 @@ using static DjSoft.Tools.ProgramLauncher.Settings;
 
 namespace DjSoft.Tools.ProgramLauncher
 {
+    /// <summary>
+    /// Main formulář
+    /// </summary>
     public partial class MainForm : BaseForm
     {
         #region Konstruktor a život okna
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public MainForm()
         {
             InitializeMainForm();
@@ -197,9 +203,15 @@ namespace DjSoft.Tools.ProgramLauncher
             List<IMenuItem> items = new List<IMenuItem>();
             items.Add(DataMenuItem.CreateHeader(App.Messages.AppearanceMenuHeaderColorPalette));
             items.AddRange(AppearanceInfo.Collection);
+
             items.Add(DataMenuItem.CreateSeparator());
             items.Add(DataMenuItem.CreateHeader(App.Messages.AppearanceMenuHeaderLayoutStyle));
             items.AddRange(ItemLayoutSet.Collection);
+
+            items.Add(DataMenuItem.CreateSeparator());
+            items.Add(DataMenuItem.CreateHeader(App.Messages.AppearanceMenuHeaderToolTipType));
+            items.AddRange(BaseForm.ToolTipMenuItems);
+
             items.Add(DataMenuItem.CreateSeparator());
             items.Add(DataMenuItem.CreateHeader(App.Messages.AppearanceMenuHeaderLanguage));
             items.AddRange(LanguageSet.Collection);
@@ -223,6 +235,10 @@ namespace DjSoft.Tools.ProgramLauncher
                 {
                     App.CurrentLanguage = language;
                     App.Settings.LanguageCode = language.Code;
+                }
+                else if (selectedItem.UserData is ToolTipType tipType)
+                {
+                    App.Settings.CurrentToolTip = tipType;
                 }
             }
         }
@@ -401,6 +417,8 @@ namespace DjSoft.Tools.ProgramLauncher
             pagesPanel.DefaultLayoutKind = DataLayoutKind.Pages;
             pagesPanel.EnabledDrag = true;
             pagesPanel.ContentSizeChanged += _AppPagesPanel_ContentSizeChanged;
+            pagesPanel.InteractiveItemMouseEnter += _PageItemMouseEnter;
+            pagesPanel.InteractiveItemMouseLeave += _PageItemMouseLeave;
             pagesPanel.InteractiveAreaClick += _PageAreaClick;
             pagesPanel.InteractiveItemClick += _PageItemClick;
             pagesPanel.InteractiveItemDragAndDropEnd += _PageItemDragAndDrop;
@@ -477,6 +495,15 @@ namespace DjSoft.Tools.ProgramLauncher
                 _PagesPanelWidth = groupContentSize.Value.Width;
         }
         /// <summary>
+        /// Myš vstoupila na prvek Page: navazuje změna v ToolTipu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _PageItemMouseEnter(object sender, InteractiveItemEventArgs e)
+        {
+            this.SetToolTip(__PagesPanel, e.Item.ToolTipText, e.Item.MainTitle);
+        }
+        /// <summary>
         /// Kliknutí myši (levá, pravá) na prázdnou plochu mimo prvek Page
         /// </summary>
         /// <param name="sender"></param>
@@ -518,6 +545,15 @@ namespace DjSoft.Tools.ProgramLauncher
                 var dataInfo = e.Item.UserData as Data.BaseData;
                 this._PageSet.MoveItem(e.BeginMouseState, e.EndMouseState, this._PagesPanel, this._PageSet, dataInfo);
             }
+        }
+        /// <summary>
+        /// Myš opustila prvek Page: navazuje změna v ToolTipu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _PageItemMouseLeave(object sender, InteractiveItemEventArgs e)
+        {
+            this.SetToolTip(__PagesPanel, null);
         }
         /// <summary>
         /// Panel 1 (zobrazuje Pages) je viditelný?
@@ -576,6 +612,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             this.StatusLabelApplicationMouseText = e.Item.MainTitle;
             this.StatusLabelApplicationMouseImage = ImageKindType.DocumentProperties;
+            this.SetToolTip(_ApplicationsPanel, e.Item.ToolTipText, e.Item.MainTitle);
         }
         /// <summary>
         /// Kliknutí myši (levá, pravá) na prázdnou plochu mimo prvek Aplikace
@@ -630,6 +667,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             this.StatusLabelApplicationMouseText = null;
             this.StatusLabelApplicationMouseImage = null;
+            this.SetToolTip(_ApplicationsPanel, null);
         }
         /// <summary>
         /// Instance interaktivního panelu pro Aplikace

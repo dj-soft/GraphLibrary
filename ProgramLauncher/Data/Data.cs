@@ -1201,6 +1201,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             var fileName = _CurrentFileName;
             bool fileIsFilled = !String.IsNullOrEmpty(fileName);
+            bool uriValid = System.Uri.TryCreate(fileName, UriKind.Absolute, out var uri);
             bool fileExists = fileIsFilled && System.IO.File.Exists(fileName);
             if (fileExists) return true;
             if (!silent)
@@ -1381,7 +1382,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             int y = y0;
             panel.AddCell(ControlType.TextBox, App.Messages.EditDataTitleText, nameof(Title), x1, y, w1); y += s2;
             panel.AddCell(ControlType.TextBox, App.Messages.EditDataDescriptionText, nameof(Description), x1, y, w1); y += s2;
-            panel.AddCell(ControlType.MemoBox, App.Messages.EditDataToolTipText, nameof(ToolTip), x2, y0, w2, 58);
+            panel.AddCell(ControlType.MemoBox, App.Messages.EditDataToolTipText, nameof(ToolTipText), x2, y0, w2, 58);
             panel.AddCell(ControlType.FileBox, App.Messages.EditDataExecutableFileNameText, nameof(ExecutableFileName), x1, y, w3); y += s2;
             panel.AddCell(ControlType.TextBox, App.Messages.EditDataExecutableArgumentsText, nameof(ExecutableArguments), x1, y, w3); y += s2;
             panel.AddCell(ControlType.FileBox, App.Messages.EditDataImageFileNameText, nameof(ImageFileName), x1, y, w3); y += s1;
@@ -1440,7 +1441,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Obsah Tooltipu
         /// </summary>
-        public virtual string ToolTip { get; set; }
+        public virtual string ToolTipText { get; set; }
         /// <summary>
         /// Jméno obrázku
         /// </summary>
@@ -1489,7 +1490,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             clone.Title = this.Title;
             clone.Description = this.Description;
-            clone.ToolTip = this.ToolTip;
+            clone.ToolTipText = this.ToolTipText;
             clone.ImageFileName = this.ImageFileName;
             clone.LayoutKind = this.LayoutKind;
             clone.RelativeAdress = this.RelativeAdress;
@@ -1767,7 +1768,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             int y = y0;
             panel.AddCell(ControlType.TextBox, App.Messages.EditDataTitleText, nameof(Title), x1, y, w1); y += s2;
             panel.AddCell(ControlType.TextBox, App.Messages.EditDataDescriptionText, nameof(Description), x1, y, w1); y += s2;
-            panel.AddCell(ControlType.MemoBox, App.Messages.EditDataToolTipText, nameof(ToolTip), x2, y0, w2, 58);
+            panel.AddCell(ControlType.MemoBox, App.Messages.EditDataToolTipText, nameof(ToolTipText), x2, y0, w2, 58);
             panel.AddCell(ControlType.FileBox, App.Messages.EditDataImageFileNameText, nameof(ImageFileName), x1, y, w3); y += s1;
 
             panel.Buttons = new DialogButtonType[] { DialogButtonType.Ok, DialogButtonType.Cancel };
@@ -1864,6 +1865,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         private BaseData __Data;
         public override string MainTitle { get { return __Data.Title; } set { } }
         public override string Description { get { return __Data.Description; } set { } }
+        public override string ToolTipText { get { return (!String.IsNullOrEmpty(__Data.ToolTipText) ? __Data.ToolTipText : __Data.Description); } set { } }
         public override Point Adress { get { return __Data.Adress; } set { } }
         public override string ImageName { get { return __Data.ImageFileName; } set { } }
         public override Color? BackColor { get { return __Data.BackColor; } set { } }

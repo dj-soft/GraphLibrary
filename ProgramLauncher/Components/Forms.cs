@@ -9,6 +9,7 @@ using System.Management.Instrumentation;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static DjSoft.Tools.ProgramLauncher.Settings;
 
 namespace DjSoft.Tools.ProgramLauncher.Components
 {
@@ -244,6 +245,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         public BaseForm()
         {
             this._FormInit();
+            this._ToolTipInit();
             this._PositionInit();
         }
         /// <summary>
@@ -252,6 +254,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         private void _FormInit()
         {
             this.Icon = ControlSupport.StandardFormIcon;
+
         }
         /// <summary>
         /// Název formuláře v Settings, pokud chce ukládat a načítat svoji pozici do Settings.
@@ -283,6 +286,108 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             if (this.WindowState == FormWindowState.Minimized)
                 this.WindowState = __PrevWindowStateSize ?? FormWindowState.Normal;
             if (!this.Visible) this.Visible = true;
+        }
+        #endregion
+        #region ToolTip
+        /// <summary>
+        /// Nastaví daný tooltip pro daný control
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public void SetToolTip(Control control, string text, string title = null)
+        {
+            if (!String.IsNullOrEmpty(title))
+                _ToolTip.ToolTipTitle = title;
+
+            _ToolTip.Active = false;
+            var toolTipType = App.Settings.CurrentToolTip;
+            if (toolTipType == Settings.ToolTipType.None) return;
+
+            if (String.IsNullOrEmpty(text))
+            {
+                _ToolTip.SetToolTip(control, null);
+            }
+            else
+            {
+                _ToolTip.SetToolTip(control, text);
+                _ToolTip.InitialDelay = getInitialDelay();
+                _ToolTip.ReshowDelay = getReshowDelay();
+                _ToolTip.AutoPopDelay = getPopDelay();
+                _ToolTip.ToolTipIcon = ToolTipIcon.Info;
+                _ToolTip.Active = true;
+            }
+
+            int getInitialDelay()
+            {
+                switch (toolTipType)
+                {
+                    case Settings.ToolTipType.Fast: return 350;
+                    case Settings.ToolTipType.Slow: return 1100;
+                }
+                return 700;
+            }
+            int getReshowDelay()
+            {
+                switch (toolTipType)
+                {
+                    case Settings.ToolTipType.Fast: return 250;
+                    case Settings.ToolTipType.Slow: return 900;
+                }
+                return 450;
+            }
+            int getPopDelay()
+            {
+                string totalText = $"{_ToolTip.ToolTipTitle}:{text}";
+                int charCount = totalText.Length;
+                switch (toolTipType)
+                {
+                    case Settings.ToolTipType.Fast: return 1200 + (charCount * 30);
+                    case Settings.ToolTipType.Slow: return 2500 + (charCount * 65);
+                }
+                return 1600 + (charCount * 40);
+            }
+        }
+        /// <summary>
+        /// Inicializace ToolTipu
+        /// </summary>
+        private void _ToolTipInit()
+        {
+            _ToolTip = new ToolTip();
+            _ToolTip.Active = true;
+            _ToolTip.InitialDelay = 700;
+            _ToolTip.IsBalloon = false;
+            _ToolTip.ShowAlways = false;
+            _ToolTip.UseAnimation = true;
+            _ToolTip.UseFading = true;
+        }
+        private ToolTip _ToolTip;
+        /// <summary>
+        /// Vrátí položky do menu, které definujá varianty ToolTipu
+        /// </summary>
+        public static IEnumerable<IMenuItem> ToolTipMenuItems
+        {
+            get
+            {
+                List<IMenuItem> menuItems = new List<IMenuItem>();
+                var toolTipType = App.Settings.CurrentToolTip;
+                menuItems.Add(createMenuItem("Žádný tooltip", ToolTipType.None));
+                menuItems.Add(createMenuItem("Standardní tooltip", ToolTipType.Default));
+                menuItems.Add(createMenuItem("Rychlý tooltip", ToolTipType.Fast));
+                menuItems.Add(createMenuItem("Pomalý tooltip", ToolTipType.Slow));
+                return menuItems;
+
+                IMenuItem createMenuItem(string text, ToolTipType tipType)
+                {
+                    var menuItem = new DataMenuItem()
+                    {
+                        Text = text,
+                        UserData = tipType,
+                        FontStyle = (toolTipType == tipType ? FontStyle.Bold : FontStyle.Regular)
+                    };
+                    return menuItem;
+                }
+            }
         }
         #endregion
         #region Sledování, ukládání a restore pozice
@@ -626,6 +731,21 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         [PropertyName("form_positions")]
         private Dictionary<string, string> _FormPositions { get; set; }
+        /// <summary>
+        /// Druh tooltipu
+        /// </summary>
+        [PropertyName("tooltips")]
+        public ToolTipType CurrentToolTip { get { return __CurrentToolTip; } set { __CurrentToolTip = value; SetChanged(nameof(CurrentToolTip)); } } private ToolTipType __CurrentToolTip;
+        /// <summary>
+        /// Druh zobrazení ToolTipu
+        /// </summary>
+        public enum ToolTipType
+        {
+            Default = 0,
+            None,
+            Fast,
+            Slow
+        }
         #endregion
     }
 }

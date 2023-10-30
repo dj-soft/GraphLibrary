@@ -60,18 +60,18 @@ EditDataOnlyOneInstanceText Μόνο μια διαδικασία
 EditDataOpenMaximizedText Μεγιστοποιημένο παράθυρο
 ExecutableFileIsNotSpecified Η εφαρμογή δεν μπορεί να ξεκινήσει, το αρχείο της δεν έχει καθοριστεί.
 ExecutableFileIsNotExists Η εφαρμογή δεν μπορεί να ξεκινήσει, το αρχείο της δεν υπάρχει.
-DialogButtonOkText *OK
-DialogButtonCancelText *Storno
-DialogButtonYesText *Ano
-DialogButtonNoText *Ne
-DialogButtonAbortText *Přerušit
-DialogButtonRetryText *Opakovat
-DialogButtonIgnoreText *Ignorovat
-DialogButtonHelpText *Nápověda
-DialogButtonNextText *Další
-DialogButtonPrevText *Zpět
-DialogButtonApplyText *Aplikovat
-DialogButtonSaveText *Uložit
+DialogButtonOkText Εντάξει
+DialogButtonCancelText Ακύρωση
+DialogButtonYesText Ναί
+DialogButtonNoText Οχι
+DialogButtonAbortText Διακοπή
+DialogButtonRetryText Επαναλαμβάνω
+DialogButtonIgnoreText 
+DialogButtonHelpText Βοήθεια
+DialogButtonNextText Επόμενο
+DialogButtonPrevText Πίσω
+DialogButtonApplyText Ισχύουν
+DialogButtonSaveText Επιβάλλω
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Τερματισμός της αίτησης
 TrayIconBalloonText Η εφαρμογή είναι μόνο κρυφή.××Για να την απενεργοποιήσετε, κλείστε την με ένα σταυρό μαζί με το πλήκτρο CTRL!××Ή χρησιμοποιήστε το μενού περιβάλλοντος σε αυτό το εικονίδιο.

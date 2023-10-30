@@ -60,18 +60,18 @@ EditDataOnlyOneInstanceText Nur ein Prozess
 EditDataOpenMaximizedText Maximiertes Fenster
 ExecutableFileIsNotSpecified Die Anwendung kann nicht gestartet werden, ihre Datei ist nicht angegeben.
 ExecutableFileIsNotExists Die Anwendung kann nicht gestartet werden, ihre Datei existiert nicht.
-DialogButtonOkText *OK
-DialogButtonCancelText *Storno
-DialogButtonYesText *Ano
-DialogButtonNoText *Ne
-DialogButtonAbortText *Přerušit
-DialogButtonRetryText *Opakovat
-DialogButtonIgnoreText *Ignorovat
-DialogButtonHelpText *Nápověda
-DialogButtonNextText *Další
-DialogButtonPrevText *Zpět
-DialogButtonApplyText *Aplikovat
-DialogButtonSaveText *Uložit
+DialogButtonOkText OK
+DialogButtonCancelText Stornierung
+DialogButtonYesText Ja
+DialogButtonNoText Nein
+DialogButtonAbortText Unterbrechen
+DialogButtonRetryText Wiederholen
+DialogButtonIgnoreText Ignorieren
+DialogButtonHelpText Helfen
+DialogButtonNextText Nächste
+DialogButtonPrevText Zurück
+DialogButtonApplyText Anwenden
+DialogButtonSaveText 
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Beenden der Bewerbung
 TrayIconBalloonText Die Anwendung ist nur ausgeblendet.××Um sie tatsächlich auszuschalten, schließen Sie sie mit einem Kreuz zusammen mit der STRG-Taste!××Oder nutzen Sie das Kontextmenü auf diesem Symbol.
