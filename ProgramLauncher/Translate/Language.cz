@@ -3,7 +3,7 @@
 #Language CZ
 #Name Česky
 #IconName Flag-Czech-Republic-48.png
-#Order 10
+#Order 005
 #ParentLanguage
 
 ErrorTitle Došlo k chybě
@@ -60,6 +60,18 @@ EditDataOnlyOneInstanceText Jen jeden proces
 EditDataOpenMaximizedText Maximalizované okno
 ExecutableFileIsNotSpecified Aplikaci nelze spustit, není zadán její soubor.
 ExecutableFileIsNotExists Aplikaci nelze spustit, její soubor neexistuje.
+DialogButtonOkText *OK
+DialogButtonCancelText *Storno
+DialogButtonYesText *Ano
+DialogButtonNoText *Ne
+DialogButtonAbortText *Přerušit
+DialogButtonRetryText *Opakovat
+DialogButtonIgnoreText *Ignorovat
+DialogButtonHelpText *Nápověda
+DialogButtonNextText *Další
+DialogButtonPrevText *Zpět
+DialogButtonApplyText *Aplikovat
+DialogButtonSaveText *Uložit
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Ukončení aplikace
 TrayIconBalloonText Aplikace je jen schovaná.××Pro reálné vypnutí ji zavřete křížkem spolu s klávesou CTRL!××Anebo použijte kontextové menu na této ikoně.

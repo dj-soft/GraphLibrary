@@ -1,0 +1,83 @@
+﻿// Překlady aplikace ProgramLauncher do jazyka HU
+
+#Language hu
+#Name Magyar
+#IconName Flag-Hungary-48.png
+#Order 100
+#ParentLanguage
+
+ErrorTitle *Došlo k chybě
+ResultInformationTitle *Výsledná informace
+ModifiedFiles *Byly modifikovány tyto soubory:
+NoModifiedFiles *Nebyly modifikovány žádné soubory.
+ToolStripButtonAppearanceToolTip Megjelenés módosítása (színpaletta, méret, nyelv)
+ToolStripButtonUndoToolTip Visszaállítja a legutóbbi módosítást
+ToolStripButtonRedoToolTip Előre görgeti az utolsó visszaállított változtatást
+ToolStripButtonPreferenceToolTip *Nastavit chování aplikace
+ToolStripButtonEditToolTip *Upravit obsah
+ToolStripButtonMessageSyncToolTip *Naplnit jazykové soubory aktuálním seznamem hlášek
+StatusStripPageCountText nincs oldal×oldal×oldal×oldal
+StatusStripApplicationText nincsenek alkalmazások×alkalmazás×alkalmazás×alkalmazások
+AppearanceMenuHeaderColorPalette SZÍN PALETTA
+AppearanceMenuHeaderLayoutStyle MÉRET
+AppearanceMenuHeaderLanguage NYELV
+AppContextMenuTitlePages *Stránky
+AppContextMenuTitlePage *Stránka '%0'
+AppContextMenuNewPageText *Nová stránka
+AppContextMenuNewPageToolTip Új oldal hozzáadása: megnyit egy ablakot, és lehetővé teszi a leírás, a szín és a viselkedés módosítását
+AppContextMenuTitleApplications Alkalmazások oldal
+AppContextMenuTitleGroup '%0' csoport
+AppContextMenuTitleApplication '%0' alkalmazás
+AppContextMenuRunText Rajt
+AppContextMenuRunToolTip Elindítja ezt az alkalmazást
+AppContextMenuRunAsText Futtatás rendszergazdaként
+AppContextMenuRunAsToolTip Rendszergazdai jogosultságokkal futtatja ezt az alkalmazást
+AppContextMenuRemoveText Távolítsa el
+AppContextMenuRemoveApplicationToolTip Távolítsa el ezt az alkalmazást a menüből
+AppContextMenuEditText Szerkesztés
+AppContextMenuCopyText Másolat
+AppContextMenuEditApplicationToolTip Megnyit egy ablakot, és lehetővé teszi az elem leírásának, célalkalmazásának és viselkedésének módosítását
+AppContextMenuNewApplicationText Új alkalmazás
+AppContextMenuCopyPageToolTip Másolja ezt az oldalt az összes tartalommal együtt
+AppContextMenuCopyGroupToolTip Másolja ezt az alkalmazáscsoportot az összes tartalommal együtt
+AppContextMenuCopyApplicationToolTip Másolja ezt az alkalmazást egy új ikonra
+AppContextMenuNewApplicationToolTip Új alkalmazás hozzáadása: megnyit egy ablakot, és lehetővé teszi az elem leírásának, célalkalmazásának és viselkedésének módosítását
+AppContextMenuNewGroupText Új csoport
+AppContextMenuNewGroupToolTip Új alkalmazáscsoportot ad hozzá, majd lehet majd hozzá alkalmazásokat hozzáadni
+EditFormTitleNewPage Új oldal
+EditFormTitleNewGroup Egy új alkalmazáscsoport
+EditDataNewDefaultGroupTitle Új csoport
+EditFormTitleNewApplication Új alkalmazás
+EditFormTitleClone Másolás: %0
+EditDataTitleText Felirat
+EditDataDescriptionText *Popisek
+EditDataToolTipText *Nápověda
+EditDataImageFileNameText *Obrázek
+EditDataExecutableFileNameText *Aplikace
+EditDataExecutableArgumentsText *Argumenty
+EditDataExecuteInAdminModeText *Oprávnění Admin
+EditDataOnlyOneInstanceText *Jen jeden proces
+EditDataOpenMaximizedText *Maximalizované okno
+ExecutableFileIsNotSpecified Az alkalmazás nem indítható el, a fájlja nincs megadva.
+ExecutableFileIsNotExists Az alkalmazás nem indítható el, a fájlja nem létezik.
+DialogButtonOkText rendben
+DialogButtonCancelText Törlés
+DialogButtonYesText Igen
+DialogButtonNoText Nem
+DialogButtonAbortText Megszakítás
+DialogButtonRetryText Ismétlés
+DialogButtonIgnoreText Figyelmen kívül hagyni
+DialogButtonHelpText Segítség
+DialogButtonNextText Következő
+DialogButtonPrevText Vissza
+DialogButtonApplyText Alkalmaz
+DialogButtonSaveText Kikényszeríteni
+TrayIconText Program Launcher
+TrayIconBalloonToolTip *Ukončení aplikace
+TrayIconBalloonText *Aplikace je jen schovaná.××Pro reálné vypnutí ji zavřete křížkem spolu s klávesou CTRL!××Anebo použijte kontextové menu na této ikoně.
+TrayIconShowApplicationText *Aktivuj aplikaci
+TrayIconShowApplicationToolTip *Aktivuje okno aplikace. Aplikace není vypnutá, je jen skrytá.
+TrayIconAcceptTrayInfoText *Pochopil jsem informaci
+TrayIconAcceptTrayInfoToolTip *Aplikace se běžným zavřením neukončuje, pouze se skryje.××Při každém skrytí aplikace se rozsvítí informace.××Pokud již tuto informaci nechci zobrazovat, zaškrtnu tuto volbu.
+TrayIconApplicationExitText *Ukončit aplikaci
+TrayIconApplicationExitToolTip *Ukončí tuto aplikaci.××Po jejím příštím otevření nemusí správně fungovat spouštění takových aplikací,××které jsou označené 'Otevřít jen jedno okno'.

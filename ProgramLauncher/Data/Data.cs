@@ -309,15 +309,14 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 case DataItemActionType.CopyPage:
                     pageData = pageData.Clone(false);
                     isAppend = pageData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleClone, pageData.Title));
-                    reArrangeTargetPage = pageData;                            // Tyto dva řádky zajistí, že kopie bude na původní pozici, a originál se odsune o +1 na Y ose...
-                    reArrangeTargetY = pageData.RelativeAdress.Y;              //  ... anebo tady dát +1?  Pak se kopie dostane hned za zdrojový prvek.
+                    reArrangeTargetPage = pageData;                            // Tento řádek zajistí, že kopie bude na původní pozici, a originál se odsune o +1 na Y ose...
                     break;
                 case DataItemActionType.DeletePage:
                     if (hasPageData)
                     {
                         PageSetData parentSet = pageData.ParentSet;
                         isUpdated = parentSet.Pages.Remove(pageData);
-                        pageSetData.ReArrangePages(null, -1);                  // Po odebrání prvku ostatní prvky srovnat, odebere se tak mezera po odebraném prvku
+                        pageSetData.ReArrangePages();                          // Po odebrání prvku ostatní prvky srovnat, odebere se tak mezera po odebraném prvku
                     }
                     break;
             }
@@ -325,7 +324,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             if (isAppend)
             {
                 pageSetData.Pages.Add(pageData);
-                pageSetData.ReArrangePages(reArrangeTargetPage, reArrangeTargetY);
+                pageSetData.ReArrangePages(reArrangeTargetPage);
                 isUpdated = true;
             }
 
@@ -374,8 +373,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             // Pokud nevím, jakou Y adresu mám nastavit, tak nedělám nic:
             if (endMouseState.InteractiveCell is null) return false;
+            pageData.RelativeAdress = new Point(0, endMouseState.InteractiveCell.Adress.Y);
 
-            ReArrangePages(pageData, endMouseState.InteractiveCell.Adress.Y);
+            ReArrangePages(pageData);
             return true;
         }
         /// <summary>
@@ -383,9 +383,19 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         /// <param name="targetPage"></param>
         /// <param name="targetY"></param>
-        public void ReArrangePages(PageData targetPage, int targetY)
+        public void ReArrangePages(PageData targetPage = null)
         {
-            ReArrangeItems(this.Pages, targetPage, targetY, (p, y) => p.RelativeAdress = new Point(0, y), 0, BaseData.CompareByRelativeAdressY);
+            bool targetExists = (targetPage != null);
+            int targetY = (targetExists ? targetPage.RelativeAdress.Y : 0);
+
+            ReArrangeItems(this.Pages, setAdress, 0, targetPage, targetY, BaseData.CompareByRelativeAdressY);
+
+
+            // Vepíše do daného prvku adresu RelativeAdress = (x,y)
+            void setAdress(PageData pgData, int y)
+            {
+                pgData.RelativeAdress = new Point(0, y);
+            }
         }
         #endregion
         #region Tvorba výchozích dat - namísto prázdných
@@ -587,15 +597,26 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <returns></returns>
         public GroupData SearchForGroup(ContextActionInfo actionInfo, bool createNew, out Point? relativeAdress)
         {
+            return SearchForGroup(actionInfo.MouseState.InteractiveCell.Adress, createNew, out relativeAdress);
+        }
+        /// <summary>
+        /// Metoda najde a vrátí grupu, do které by měl patřit prostor uvedený v <paramref name="actionInfo"/>.
+        /// Současně určí relativní adresu buňky v rámci grupy, protože vstupní adresa v <paramref name="actionInfo"/> je adresou absolutní vzhledem k Page, 
+        /// ale pro případné umístění nového prvku <see cref="ApplicationData"/> je třeba mít adresu relativní v rámci grupy.
+        /// </summary>
+        /// <param name="actionInfo"></param>
+        /// <param name="createNew"></param>
+        /// <param name="relativeAdress"></param>
+        /// <returns></returns>
+        public GroupData SearchForGroup(Point adress, bool createNew, out Point? relativeAdress)
+        {
             GroupData groupData = null;
-            var mouseAdress = actionInfo.MouseState.InteractiveCell.Adress;
-            int adressY = mouseAdress.Y;
-
+        
             foreach (var group in this.Groups)
             {
                 // Pokud už mám grupu, a testovaná grupa má počátek Y (absolutní logická pozice, nikoli pixely) větší než zadaná hodnota,
                 // tak skončím hledání a akceptuji poslední nalezenou grupu:
-                if (groupData != null && group.Adress.Y > adressY) break;
+                if (groupData != null && group.Adress.Y > adress.Y) break;
                 groupData = group;
             }
 
@@ -609,13 +630,14 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 }
                 // Vytvořím new grupu:
                 groupData = new GroupData() { Title = App.Messages.EditDataNewDefaultGroupTitle };
-                relativeAdress = new Point(mouseAdress.X, 0);
+                relativeAdress = new Point(adress.X, 0);
+                this.Groups.Add(groupData);
                 return groupData;
             }
 
             // Mám grupu: určím relativní adresu:
-            int cellY = adressY - (groupData.Adress.Y + 1);
-            relativeAdress = new Point(mouseAdress.X, cellY);
+            int cellY = adress.Y - (groupData.Adress.Y + 1);
+            relativeAdress = new Point(adress.X, cellY);
             return groupData;
         }
         #endregion
@@ -674,10 +696,64 @@ namespace DjSoft.Tools.ProgramLauncher.Data
 
             return false;
         }
+        /// <summary>
+        /// Přemístí daný prvek (<paramref name="applicationData"/>) z jeho dosavadní polohy <paramref name="beginMouseState"/> do cílové polohy <paramref name="endMouseState"/>.
+        /// Řeší přemístění uvnitř grupy i do jiné grupy.
+        /// Nelze přemístit na jinou stránku.
+        /// </summary>
+        /// <param name="applicationData"></param>
+        /// <param name="beginMouseState"></param>
+        /// <param name="endMouseState"></param>
+        /// <param name="panel"></param>
+        /// <returns></returns>
         public bool MoveApplication(ApplicationData applicationData, MouseState beginMouseState, MouseState endMouseState, InteractiveGraphicsControl panel)
         {
+            var beginGroup = applicationData?.ParentGroup;
+            if (beginGroup is null) return false;
 
-            return false;
+            var endGroup = SearchForGroup(endMouseState.InteractiveCell.Adress, false, out var endRelativeAdress);
+            if (endGroup is null) endGroup = beginGroup;
+
+            bool isBetweenGroup = !Object.ReferenceEquals(beginGroup, endGroup);
+            if (isBetweenGroup)
+            {
+                beginGroup.Applications.Remove(applicationData);
+                endGroup.Applications.AddWhenNotContains(applicationData);
+                beginGroup.ReArrangeApplications();
+            }
+
+            applicationData.RelativeAdress = getValidAdress(endRelativeAdress);
+            endGroup.ReArrangeApplications(applicationData);
+
+            return true;
+
+            Point getValidAdress(Point? adress)
+            {
+                int x = adress?.X ?? 0;
+                if (x < 0) x = 0;
+                int y = adress?.Y ?? 0;
+                if (y < 0) y = 0;
+                return new Point(x, y);
+            }
+        }
+        /// <summary>
+        /// Zajistí validní uspořádání skupin na ose Y. Umožní umístit stránku <paramref name="targetPage"/> na cílovou Y pozici <paramref name="targetY"/>.
+        /// </summary>
+        /// <param name="targetPage"></param>
+        /// <param name="targetY"></param>
+        public void ReArrangeGroups(GroupData targetGroup = null)
+        {
+            bool targetExists = (targetGroup != null);
+            int targetY = (targetExists ? targetGroup.RelativeAdress.Y : 0);
+
+            ReArrangeItems(this.Groups, setAdress, 0, targetGroup, targetY, BaseData.CompareByRelativeAdressY);
+
+
+            // Vepíše do daného prvku adresu RelativeAdress = (x,y)
+            void setAdress(GroupData grpData, int y)
+            {
+                grpData.RelativeAdress = new Point(0, y);
+            }
         }
         #endregion
         #region Podpora de/serializace
@@ -846,10 +922,53 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 GroupData parentGroup = pageData.SearchForGroup(actionInfo, true, out var relativeAdress);
                 applicationData.Adress = relativeAdress.Value;
                 parentGroup.Applications.Add(applicationData);
+                parentGroup.ReArrangeApplications(applicationData);
                 isUpdated = true;
             }
 
             return isUpdated;
+        }
+        /// <summary>
+        /// Zajistí validní uspořádání aplikací na ose X i Y.
+        /// </summary>
+        /// <param name="targetApplication"></param>
+        public void ReArrangeApplications(ApplicationData targetApplication = null)
+        {
+            bool targetExists = (targetApplication != null);
+            int targetX = (targetExists ? targetApplication.RelativeAdress.X : 0);
+            int targetY = (targetExists ? targetApplication.RelativeAdress.Y : 0);
+            var rows = this.Applications.CreateDictionaryArray(a => a.RelativeAdress.Y).ToList();
+            rows.Sort((a, b) => a.Key.CompareTo(b.Key));
+            int y = 0;
+            bool targetFound = false;
+            foreach (var row in rows)
+            {
+                int rowY = row.Key;
+                if (targetExists && rowY == targetY)
+                {   // Aktuálně zpracovávám řádek, který obsahuje prvek 'targetApplication' => tento řádek řeším specificky:
+                    ReArrangeItems(row.Value, setAdress, targetItem: targetApplication, targetValue: targetX);
+                    targetFound = true;
+                }
+                else
+                    // Běžný řádek: prostě očísluje souřadnici X od 0 do poslední:
+                    ReArrangeItems(row.Value, setAdress);
+
+                // Další row bude mít y +1:
+                y++;
+            }
+
+            if (targetExists && !targetFound)                                            // Pokud jsme target prvek nenašli, ačkoliv je zadán:
+                setAdress(targetApplication, 0);                                         // Umístíme cílový objekt (targetItem) na nový řádek, na pozici X = 0
+
+
+            // Setřídit aplikace musím explicitně:
+            this.Applications.Sort(BaseData.CompareByRelativeAdressYX);
+
+            // Vepíše do daného prvku adresu RelativeAdress = (x,y)
+            void setAdress(ApplicationData appData, int x)
+            {
+                appData.RelativeAdress = new Point(x, y);
+            }
         }
         #endregion
         #region Podpora de/serializace
@@ -1395,12 +1514,12 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         /// <typeparam name="TItem"></typeparam>
         /// <param name="items"></param>
-        /// <param name="targetItem">Cílový objekt, smí být null</param>
-        /// <param name="targetValue">Pozice cílového prvku. Pokud prvek <paramref name="targetItem"/> bude null, nepoužije se.</param>
         /// <param name="setValue">Metoda, která do daného prvku vepíše danou pozici. Metoda sama bude vědět, do které property se poice vepisuje a jakým způsobem. Typicky se z dodané pozice vytvoří Point do RelativeAdress.</param>
         /// <param name="valueBegin"></param>
+        /// <param name="targetItem">Cílový objekt, smí být null</param>
+        /// <param name="targetValue">Pozice cílového prvku. Pokud prvek <paramref name="targetItem"/> bude null, nepoužije se.</param>
         /// <param name="comparison"></param>
-        protected static void ReArrangeItems<TItem>(IEnumerable<TItem> items, TItem targetItem, int targetValue, Action<TItem, int> setValue, int valueBegin = 0, Comparison<TItem> comparison = null) where TItem : class
+        protected static void ReArrangeItems<TItem>(IEnumerable<TItem> items, Action<TItem, int> setValue, int valueBegin = 0, TItem targetItem = null, int targetValue = 0, Comparison<TItem> comparison = null) where TItem : class
         {
             if (items is null) return;
 
@@ -1419,7 +1538,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 setValue(item, value);                                                   // Průběžný objekt bude na průběžně navyšované pozici
                 value++;
             }
-            if (targetExists && !targetFound)
+            if (targetExists && !targetFound)                                            // Pokud jsme target prvek nenašli, ačkoliv je zadán:
                 setValue(targetItem, value);                                             // Umístíme cílový objekt (targetItem) za poslední průběžnou pozici
 
             if (comparison != null)
@@ -1429,6 +1548,16 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 else if (items is ISortableList<TItem> iSortableList)
                     iSortableList.Sort(comparison);
             }
+        }
+        /// <summary>
+        /// Komparátor dle <see cref="RelativeAdress"/>.X ASC
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static int CompareByRelativeAdressX(BaseData a, BaseData b)
+        {
+            return a.RelativeAdress.X.CompareTo(b.RelativeAdress.X);
         }
         /// <summary>
         /// Komparátor dle <see cref="RelativeAdress"/>.Y ASC

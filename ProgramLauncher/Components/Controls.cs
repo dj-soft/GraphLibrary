@@ -909,20 +909,20 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             switch (buttonType)
             {
-                case DialogButtonType.Cancel: return DButton.Create(parent, "Cancel", Properties.Resources.dialog_cancel_3_22, size, buttonType, click);
-                case DialogButtonType.Abort: return DButton.Create(parent, "Abort", Properties.Resources.process_stop_6_22, size, buttonType, click);
-                case DialogButtonType.Retry: return DButton.Create(parent, "Retry", Properties.Resources.view_refresh_4_22, size, buttonType, click);
-                case DialogButtonType.Ignore: return DButton.Create(parent, "Ignore", Properties.Resources.go_next_4_22, size, buttonType, click);
-                case DialogButtonType.Yes: return DButton.Create(parent, "Yes", Properties.Resources.dialog_ok_4_22, size, buttonType, click);
-                case DialogButtonType.No: return DButton.Create(parent, "No", Properties.Resources.dialog_no_3_22, size, buttonType, click);
-                case DialogButtonType.Help: return DButton.Create(parent, "Help", Properties.Resources.help_3_22, size, buttonType, click);
-                case DialogButtonType.Next: return DButton.Create(parent, "Next", Properties.Resources.go_next_3_22, size, buttonType, click);
-                case DialogButtonType.Prev: return DButton.Create(parent, "Prev", Properties.Resources.go_previous_3_22, size, buttonType, click);
-                case DialogButtonType.Apply: return DButton.Create(parent, "Apply", Properties.Resources.dialog_ok_apply_22, size, buttonType, click);
-                case DialogButtonType.Save: return DButton.Create(parent, "Save", Properties.Resources.media_floppy_3_5_mount_2_22, size, buttonType, click);
+                case DialogButtonType.Cancel: return DButton.Create(parent, App.Messages.DialogButtonCancelText, Properties.Resources.dialog_cancel_3_22, size, buttonType, click);
+                case DialogButtonType.Abort: return DButton.Create(parent, App.Messages.DialogButtonAbortText, Properties.Resources.process_stop_6_22, size, buttonType, click);
+                case DialogButtonType.Retry: return DButton.Create(parent, App.Messages.DialogButtonRetryText, Properties.Resources.view_refresh_4_22, size, buttonType, click);
+                case DialogButtonType.Ignore: return DButton.Create(parent, App.Messages.DialogButtonIgnoreText, Properties.Resources.go_next_4_22, size, buttonType, click);
+                case DialogButtonType.Yes: return DButton.Create(parent, App.Messages.DialogButtonYesText, Properties.Resources.dialog_ok_4_22, size, buttonType, click);
+                case DialogButtonType.No: return DButton.Create(parent, App.Messages.DialogButtonNoText, Properties.Resources.dialog_no_3_22, size, buttonType, click);
+                case DialogButtonType.Help: return DButton.Create(parent, App.Messages.DialogButtonHelpText, Properties.Resources.help_3_22, size, buttonType, click);
+                case DialogButtonType.Next: return DButton.Create(parent, App.Messages.DialogButtonNextText, Properties.Resources.go_next_3_22, size, buttonType, click);
+                case DialogButtonType.Prev: return DButton.Create(parent, App.Messages.DialogButtonPrevText, Properties.Resources.go_previous_3_22, size, buttonType, click);
+                case DialogButtonType.Apply: return DButton.Create(parent, App.Messages.DialogButtonApplyText, Properties.Resources.dialog_ok_apply_22, size, buttonType, click);
+                case DialogButtonType.Save: return DButton.Create(parent, App.Messages.DialogButtonSaveText, Properties.Resources.media_floppy_3_5_mount_2_22, size, buttonType, click);
                 case DialogButtonType.Ok:
                 default:
-                    return DButton.Create(parent, "OK", Properties.Resources.dialog_clean_22, size, buttonType, click);
+                    return DButton.Create(parent, App.Messages.DialogButtonOkText, Properties.Resources.dialog_clean_22, size, buttonType, click);
             }
         }
         /// <summary>

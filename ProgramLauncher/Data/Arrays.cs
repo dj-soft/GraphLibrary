@@ -188,6 +188,17 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             return __List.Contains(item);
         }
         /// <summary>
+        /// Přidá daný prvek do this kolekce, pokud tam dosud prvek není.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public bool AddWhenNotContains(TItem item)
+        {
+            if (Contains(item)) return false;
+            Add(item);
+            return true;
+        }
+        /// <summary>
         /// Kopíruje obsah do daného pole
         /// </summary>
         /// <param name="array"></param>

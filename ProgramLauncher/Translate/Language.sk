@@ -3,7 +3,7 @@
 #Language SK
 #Name Slovensky
 #IconName Flag-Slovakia-48.png
-#Order 30
+#Order 009
 #ParentLanguage CZ
 
 ErrorTitle Došlo k chybe
@@ -60,6 +60,18 @@ EditDataOnlyOneInstanceText Len jeden proces
 EditDataOpenMaximizedText Maximalizované okno
 ExecutableFileIsNotSpecified Aplikáciu nemožno spustiť, nie je zadaný jej súbor.
 ExecutableFileIsNotExists Aplikáciu nemožno spustiť, jej súbor neexistuje.
+DialogButtonOkText *OK
+DialogButtonCancelText *Storno
+DialogButtonYesText *Ano
+DialogButtonNoText *Ne
+DialogButtonAbortText *Přerušit
+DialogButtonRetryText *Opakovat
+DialogButtonIgnoreText *Ignorovat
+DialogButtonHelpText *Nápověda
+DialogButtonNextText *Další
+DialogButtonPrevText *Zpět
+DialogButtonApplyText *Aplikovat
+DialogButtonSaveText *Uložit
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Ukončenie aplikácie
 TrayIconBalloonText Aplikácia je len schovaná.××Pre reálne vypnutie ju zatvorte krížikom spolu s klávesom CTRL!××alebo použite kontextové menu na tejto ikone.

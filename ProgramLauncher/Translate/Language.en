@@ -3,7 +3,7 @@
 #Language EN
 #Name English
 #IconName Flag-United-Kingdom-48.png
-#Order 20
+#Order 015
 #ParentLanguage CZ
 
 ErrorTitle An error has occurred
@@ -60,6 +60,18 @@ EditDataOnlyOneInstanceText Only single process
 EditDataOpenMaximizedText Maximized Window
 ExecutableFileIsNotSpecified The application cannot be started, its file is not specified.
 ExecutableFileIsNotExists The application cannot be started, its file does not exist.
+DialogButtonOkText *OK
+DialogButtonCancelText *Storno
+DialogButtonYesText *Ano
+DialogButtonNoText *Ne
+DialogButtonAbortText *Přerušit
+DialogButtonRetryText *Opakovat
+DialogButtonIgnoreText *Ignorovat
+DialogButtonHelpText *Nápověda
+DialogButtonNextText *Další
+DialogButtonPrevText *Zpět
+DialogButtonApplyText *Aplikovat
+DialogButtonSaveText *Uložit
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Terminating the application
 TrayIconBalloonText The application is only hidden.××To actually turn it off, close it with a cross together with the CTRL key!××Or use the context menu on this icon.

@@ -118,6 +118,7 @@
     <None Include="Translate\Language.cz" />
     <None Include="Translate\Language.de" />
     <None Include="Translate\Language.en" />
+    <None Include="Translate\Language.hu" />
     <None Include="Translate\Language.sk" />
     <None Include="Translate\Language.gr" />
   </ItemGroup>

@@ -294,6 +294,19 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string ExecutableFileIsNotSpecified { get { return _GetText("Aplikaci nelze spustit, není zadán její soubor."); } }
         public string ExecutableFileIsNotExists { get { return _GetText("Aplikaci nelze spustit, její soubor neexistuje."); } }
 
+        public string DialogButtonOkText { get { return _GetText("OK"); } }
+        public string DialogButtonCancelText { get { return _GetText("Storno"); } }
+        public string DialogButtonYesText { get { return _GetText("Ano"); } }
+        public string DialogButtonNoText { get { return _GetText("Ne"); } }
+        public string DialogButtonAbortText { get { return _GetText("Přerušit"); } }
+        public string DialogButtonRetryText { get { return _GetText("Opakovat"); } }
+        public string DialogButtonIgnoreText { get { return _GetText("Ignorovat"); } }
+        public string DialogButtonHelpText { get { return _GetText("Nápověda"); } }
+        public string DialogButtonNextText { get { return _GetText("Další"); } }
+        public string DialogButtonPrevText { get { return _GetText("Zpět"); } }
+        public string DialogButtonApplyText { get { return _GetText("Aplikovat"); } }
+        public string DialogButtonSaveText { get { return _GetText("Uložit"); } }
+
         public string TrayIconText { get { return _GetText("Program Launcher"); } }
         public string TrayIconBalloonToolTip { get { return _GetText("Ukončení aplikace"); } }
         public string TrayIconBalloonText { get { return _GetText("Aplikace je jen schovaná.××Pro reálné vypnutí ji zavřete křížkem spolu s klávesou CTRL!××Anebo použijte kontextové menu na této ikoně."); } }
