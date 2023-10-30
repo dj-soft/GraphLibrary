@@ -1202,7 +1202,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             var fileName = _CurrentFileName;
             bool fileIsFilled = !String.IsNullOrEmpty(fileName);
             bool uriValid = System.Uri.TryCreate(fileName, UriKind.Absolute, out var uri);
-            bool fileExists = fileIsFilled && System.IO.File.Exists(fileName);
+            bool fileExists = fileIsFilled && uriValid && (!uri.IsFile || (uri.IsFile && System.IO.File.Exists(fileName)));
             if (fileExists) return true;
             if (!silent)
             {

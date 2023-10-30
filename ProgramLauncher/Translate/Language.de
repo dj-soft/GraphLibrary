@@ -20,6 +20,7 @@ StatusStripPageCountText keine Seiten×Seite×Seite×Seiten
 StatusStripApplicationText keine Apps×App×App×Apps
 AppearanceMenuHeaderColorPalette FARBPALETTE
 AppearanceMenuHeaderLayoutStyle GRÖSSE
+AppearanceMenuHeaderToolTipType *TOOL TIP
 AppearanceMenuHeaderLanguage SPRACHE
 AppContextMenuTitlePages Seites
 AppContextMenuTitlePage Seite '%0'
@@ -60,6 +61,10 @@ EditDataOnlyOneInstanceText Nur ein Prozess
 EditDataOpenMaximizedText Maximiertes Fenster
 ExecutableFileIsNotSpecified Die Anwendung kann nicht gestartet werden, ihre Datei ist nicht angegeben.
 ExecutableFileIsNotExists Die Anwendung kann nicht gestartet werden, ihre Datei existiert nicht.
+ToolTipTypeNoneText *Žádný tooltip
+ToolTipTypeDefaultText *Defaultní tooltip
+ToolTipTypeFastText *Rychlý tooltip
+ToolTipTypeSlowText *Pomalý tooltip
 DialogButtonOkText OK
 DialogButtonCancelText Stornierung
 DialogButtonYesText Ja

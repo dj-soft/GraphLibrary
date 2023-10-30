@@ -371,10 +371,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             {
                 List<IMenuItem> menuItems = new List<IMenuItem>();
                 var toolTipType = App.Settings.CurrentToolTip;
-                menuItems.Add(createMenuItem("Žádný tooltip", ToolTipType.None));
-                menuItems.Add(createMenuItem("Standardní tooltip", ToolTipType.Default));
-                menuItems.Add(createMenuItem("Rychlý tooltip", ToolTipType.Fast));
-                menuItems.Add(createMenuItem("Pomalý tooltip", ToolTipType.Slow));
+                menuItems.Add(createMenuItem(App.Messages.ToolTipTypeNoneText, ToolTipType.None));
+                menuItems.Add(createMenuItem(App.Messages.ToolTipTypeDefaultText, ToolTipType.Default));
+                menuItems.Add(createMenuItem(App.Messages.ToolTipTypeFastText, ToolTipType.Fast));
+                menuItems.Add(createMenuItem(App.Messages.ToolTipTypeSlowText, ToolTipType.Slow));
                 return menuItems;
 
                 IMenuItem createMenuItem(string text, ToolTipType tipType)

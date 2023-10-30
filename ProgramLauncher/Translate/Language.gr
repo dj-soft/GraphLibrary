@@ -20,6 +20,7 @@ StatusStripPageCountText χωρίς σελίδες×σελίδα×σελίδα×
 StatusStripApplicationText χωρίς εφαρμογές×app×app×εφαρμογές
 AppearanceMenuHeaderColorPalette ΧΡΩΜΑΤΙΚΗ ΠΑΛΕΤΑ
 AppearanceMenuHeaderLayoutStyle ΜΕΓΕΘΟΣ
+AppearanceMenuHeaderToolTipType *TOOL TIP
 AppearanceMenuHeaderLanguage ΓΛΩΣΣΑ
 AppContextMenuTitlePages Τοποθεσίες
 AppContextMenuTitlePage Σελίδα '%0'
@@ -60,6 +61,10 @@ EditDataOnlyOneInstanceText Μόνο μια διαδικασία
 EditDataOpenMaximizedText Μεγιστοποιημένο παράθυρο
 ExecutableFileIsNotSpecified Η εφαρμογή δεν μπορεί να ξεκινήσει, το αρχείο της δεν έχει καθοριστεί.
 ExecutableFileIsNotExists Η εφαρμογή δεν μπορεί να ξεκινήσει, το αρχείο της δεν υπάρχει.
+ToolTipTypeNoneText *Žádný tooltip
+ToolTipTypeDefaultText *Defaultní tooltip
+ToolTipTypeFastText *Rychlý tooltip
+ToolTipTypeSlowText *Pomalý tooltip
 DialogButtonOkText Εντάξει
 DialogButtonCancelText Ακύρωση
 DialogButtonYesText Ναί

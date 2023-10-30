@@ -20,6 +20,7 @@ StatusStripPageCountText nincs oldal×oldal×oldal×oldal
 StatusStripApplicationText nincsenek alkalmazások×alkalmazás×alkalmazás×alkalmazások
 AppearanceMenuHeaderColorPalette SZÍN PALETTA
 AppearanceMenuHeaderLayoutStyle MÉRET
+AppearanceMenuHeaderToolTipType *TOOL TIP
 AppearanceMenuHeaderLanguage NYELV
 AppContextMenuTitlePages Oldala
 AppContextMenuTitlePage '%0' oldal
@@ -60,6 +61,10 @@ EditDataOnlyOneInstanceText Csak egy folyamat
 EditDataOpenMaximizedText Maximális ablak
 ExecutableFileIsNotSpecified Az alkalmazás nem indítható el, a fájlja nincs megadva.
 ExecutableFileIsNotExists Az alkalmazás nem indítható el, a fájlja nem létezik.
+ToolTipTypeNoneText *Žádný tooltip
+ToolTipTypeDefaultText *Defaultní tooltip
+ToolTipTypeFastText *Rychlý tooltip
+ToolTipTypeSlowText *Pomalý tooltip
 DialogButtonOkText rendben
 DialogButtonCancelText Törlés
 DialogButtonYesText Igen

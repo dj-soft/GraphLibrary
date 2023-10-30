@@ -295,6 +295,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string ExecutableFileIsNotSpecified { get { return _GetText("Aplikaci nelze spustit, není zadán její soubor."); } }
         public string ExecutableFileIsNotExists { get { return _GetText("Aplikaci nelze spustit, její soubor neexistuje."); } }
 
+        public string ToolTipTypeNoneText { get { return _GetText("Žádný tooltip"); } }
+        public string ToolTipTypeDefaultText { get { return _GetText("Defaultní tooltip"); } }
+        public string ToolTipTypeFastText { get { return _GetText("Rychlý tooltip"); } }
+        public string ToolTipTypeSlowText { get { return _GetText("Pomalý tooltip"); } }
+
         public string DialogButtonOkText { get { return _GetText("OK"); } }
         public string DialogButtonCancelText { get { return _GetText("Storno"); } }
         public string DialogButtonYesText { get { return _GetText("Ano"); } }

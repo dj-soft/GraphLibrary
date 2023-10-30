@@ -20,6 +20,7 @@ StatusStripPageCountText bez stránek×stránka×stránky×stránek
 StatusStripApplicationText bez aplikací×aplikace×aplikace×aplikací
 AppearanceMenuHeaderColorPalette BAREVNÁ PALETA
 AppearanceMenuHeaderLayoutStyle VELIKOST
+AppearanceMenuHeaderToolTipType TOOL TIP
 AppearanceMenuHeaderLanguage JAZYK
 AppContextMenuTitlePages Stránky
 AppContextMenuTitlePage Stránka '%0'
@@ -60,6 +61,10 @@ EditDataOnlyOneInstanceText Jen jeden proces
 EditDataOpenMaximizedText Maximalizované okno
 ExecutableFileIsNotSpecified Aplikaci nelze spustit, není zadán její soubor.
 ExecutableFileIsNotExists Aplikaci nelze spustit, její soubor neexistuje.
+ToolTipTypeNoneText Žádný tooltip
+ToolTipTypeDefaultText Defaultní tooltip
+ToolTipTypeFastText Rychlý tooltip
+ToolTipTypeSlowText Pomalý tooltip
 DialogButtonOkText OK
 DialogButtonCancelText Storno
 DialogButtonYesText Ano
