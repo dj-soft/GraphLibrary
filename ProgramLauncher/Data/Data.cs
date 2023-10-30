@@ -294,6 +294,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             bool hasPageData = pageData != null;
             bool isAppend = false;
             bool isUpdated = false;
+            PageData reArrangeTargetPage = null;
+            int reArrangeTargetY = -1;
             switch (actionType)
             {
                 case DataItemActionType.NewPage:
@@ -307,21 +309,23 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 case DataItemActionType.CopyPage:
                     pageData = pageData.Clone(false);
                     isAppend = pageData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleClone, pageData.Title));
+                    reArrangeTargetPage = pageData;                            // Tyto dva řádky zajistí, že kopie bude na původní pozici, a originál se odsune o +1 na Y ose...
+                    reArrangeTargetY = pageData.RelativeAdress.Y;              //  ... anebo tady dát +1?  Pak se kopie dostane hned za zdrojový prvek.
                     break;
                 case DataItemActionType.DeletePage:
                     if (hasPageData)
                     {
                         PageSetData parentSet = pageData.ParentSet;
                         isUpdated = parentSet.Pages.Remove(pageData);
+                        pageSetData.ReArrangePages(null, -1);                  // Po odebrání prvku ostatní prvky srovnat, odebere se tak mezera po odebraném prvku
                     }
                     break;
             }
 
             if (isAppend)
             {
-                int y = (pageSetData.Pages.Count == 0 ? 0 : pageSetData.Pages.Max(p => p.Adress.Y) + 1);
-                pageData.Adress = new Point(0, y);
                 pageSetData.Pages.Add(pageData);
+                pageSetData.ReArrangePages(reArrangeTargetPage, reArrangeTargetY);
                 isUpdated = true;
             }
 
@@ -371,10 +375,17 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             // Pokud nevím, jakou Y adresu mám nastavit, tak nedělám nic:
             if (endMouseState.InteractiveCell is null) return false;
 
-            int targetY = endMouseState.InteractiveCell.Adress.Y;
-            ReArrangeItems(this.Pages, pageData, targetY, (p, y) => p.RelativeAdress = new Point(0, y), 0, BaseData.CompareByRelativeAdressY);
-
+            ReArrangePages(pageData, endMouseState.InteractiveCell.Adress.Y);
             return true;
+        }
+        /// <summary>
+        /// Zajistí validní uspořádání stránek na ose Y. Umožní umístit stránku <paramref name="targetPage"/> na cílovou Y pozici <paramref name="targetY"/>.
+        /// </summary>
+        /// <param name="targetPage"></param>
+        /// <param name="targetY"></param>
+        public void ReArrangePages(PageData targetPage, int targetY)
+        {
+            ReArrangeItems(this.Pages, targetPage, targetY, (p, y) => p.RelativeAdress = new Point(0, y), 0, BaseData.CompareByRelativeAdressY);
         }
         #endregion
         #region Tvorba výchozích dat - namísto prázdných
@@ -1384,8 +1395,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         /// <typeparam name="TItem"></typeparam>
         /// <param name="items"></param>
-        /// <param name="targetItem"></param>
-        /// <param name="targetValue"></param>
+        /// <param name="targetItem">Cílový objekt, smí být null</param>
+        /// <param name="targetValue">Pozice cílového prvku. Pokud prvek <paramref name="targetItem"/> bude null, nepoužije se.</param>
         /// <param name="setValue">Metoda, která do daného prvku vepíše danou pozici. Metoda sama bude vědět, do které property se poice vepisuje a jakým způsobem. Typicky se z dodané pozice vytvoří Point do RelativeAdress.</param>
         /// <param name="valueBegin"></param>
         /// <param name="comparison"></param>
@@ -1398,21 +1409,21 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             int value = valueBegin;
             foreach (var item in items)
             {
-                if (Object.ReferenceEquals(item, targetItem)) continue;            // Cílový objekt (targetItem) řešíme jinak, v jeho původní pozici jej přeskakuji.
+                if (targetExists && Object.ReferenceEquals(item, targetItem)) continue;  // Cílový objekt (targetItem) řešíme jinak, v jeho původní pozici jej přeskakuji.
                 if (targetExists && value == targetValue)
                 {   // Na tuto pozici (targetValue) chci umístit cílový objekt 'targetItem':
-                    setValue(targetItem, value);                                   // Umístíme objekt na aktuální hodnotu, a poznamenáme si, že je OK:
+                    setValue(targetItem, value);                                         // Umístíme cílový objekt na aktuální hodnotu, a poznamenáme si, že je OK:
                     targetFound = true;
-                    value++;                                                       // Průběžný objekt 'item' bude až za target pozicí.
+                    value++;                                                             // Průběžný objekt 'item' bude až za target pozicí.
                 }
-                setValue(item, value);                                             // Průběžný objekt bude na průběžně navyšované pozici
+                setValue(item, value);                                                   // Průběžný objekt bude na průběžně navyšované pozici
                 value++;
             }
             if (targetExists && !targetFound)
-                setValue(targetItem, value);                                       // Umístíme cílový objekt (targetItem) za poslední průběžnou pozici
+                setValue(targetItem, value);                                             // Umístíme cílový objekt (targetItem) za poslední průběžnou pozici
 
             if (comparison != null)
-            {
+            {   // Setřídíme, když je čím:
                 if (items is List<TItem> list)
                     list.Sort(comparison);
                 else if (items is ISortableList<TItem> iSortableList)
