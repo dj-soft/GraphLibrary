@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -1088,6 +1089,161 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #endregion
     }
     #endregion
+    #region DColorBox
+    /// <summary>
+    /// DColorBox
+    /// </summary>
+    public class DColorBox : GraphicsControl, IControlExtended, IValueStorage
+    {
+        public DColorBox()
+        {
+            _InitializeControls();
+        }
+        private void _InitializeControls()
+        {
+            this.Height = 20;
+            this.PrepareColorBlend();
+        }
+      
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
+        #region Soubor, kliknutí na button
+        /// <summary>
+        /// Obsahuje jméno souboru
+        /// </summary>
+        public Color? Color { get { return __Color; } set { __Color = value; } } private Color? __Color;
+
+        #endregion
+        #region Kreslení
+        protected override void OnPaintToBuffer(object sender, PaintEventArgs e)
+        {
+            base.OnPaintToBuffer(sender, e);
+            var size = this.ClientSize;
+            if (size.Height <= 2 || size.Width <= 16) return;
+
+            int x = 1;
+            int s = 4;
+            int w3 = (size.Width - 10) / 3;
+            int h = size.Height - 2;
+
+            Rectangle boundsHue = new Rectangle(x, 1, w3, h);
+            using (var brushHue = new LinearGradientBrush(new Point(x - 1, 1), new Point(x + w3 + 1, 1), System.Drawing.Color.Blue, System.Drawing.Color.Green))
+            {
+                brushHue.InterpolationColors = __ColorBlendHue;
+                e.Graphics.FillRectangle(brushHue, boundsHue);
+            }
+            x = x + w3 + s;
+
+            Rectangle boundsFull = new Rectangle(x, 1, w3, h);
+            using (var brushFull = new LinearGradientBrush(new Point(x - 1, 1), new Point(x + w3 + 1, 1), System.Drawing.Color.Blue, System.Drawing.Color.Green))
+            {
+                brushFull.InterpolationColors = __ColorBlendFull;
+                e.Graphics.FillRectangle(brushFull, boundsFull);
+            }
+            x = x + w3 + s;
+
+
+
+        }
+        #endregion
+        #region Míchání barev
+        private Rectangle __BoundsrHue;
+        private System.Drawing.Color __ColorHue;
+        private Rectangle __BoundsFull;
+        private System.Drawing.Color __ColorFull;
+        private void PrepareColorBlend()
+        {
+            PrepareColorBlendHue();
+            PrepareColorBlendFull();
+        }
+        private void PrepareColorBlendHue()
+        {
+            var colors = new Color[]
+            {
+                System.Drawing.Color.FromArgb(127,0,255),
+                System.Drawing.Color.FromArgb(191,0,255),
+                System.Drawing.Color.FromArgb(255,0,255),
+                System.Drawing.Color.FromArgb(255,0,191),
+                System.Drawing.Color.FromArgb(255,0,127),
+                System.Drawing.Color.FromArgb(255,0,63),
+                System.Drawing.Color.FromArgb(255,0,0),
+                System.Drawing.Color.FromArgb(255,63,0),
+                System.Drawing.Color.FromArgb(255,127,0),
+                System.Drawing.Color.FromArgb(255,191,0),
+                System.Drawing.Color.FromArgb(255,255,0),
+                System.Drawing.Color.FromArgb(191,255,0),
+                System.Drawing.Color.FromArgb(127,255,0),
+                System.Drawing.Color.FromArgb(63,255,0),
+                System.Drawing.Color.FromArgb(0,255,0),
+                System.Drawing.Color.FromArgb(0,255,63),
+                System.Drawing.Color.FromArgb(0,255,127),
+                System.Drawing.Color.FromArgb(0,255,191),
+                System.Drawing.Color.FromArgb(0,255,255),
+                System.Drawing.Color.FromArgb(0,191,255),
+                System.Drawing.Color.FromArgb(0,127,255),
+                System.Drawing.Color.FromArgb(0,63,255),
+                System.Drawing.Color.FromArgb(0,0,255),
+                System.Drawing.Color.FromArgb(63,0,255),
+                System.Drawing.Color.FromArgb(127,0,255)
+            };
+
+            int count = colors.Length;
+            float last = (float)(count - 1);
+            var positions = new float[count];
+            for (int i = 0; i < count; i++)
+            {
+                positions[i] = (float)i / last;
+            }
+
+            var colorBlend = new ColorBlend(11);
+            colorBlend.Colors = colors;
+            colorBlend.Positions = positions;
+
+            __ColorHue = colors[12];
+            __ColorBlendHue = colorBlend;
+        }
+        private void PrepareColorBlendFull()
+        {
+            var colors = new Color[]
+            {
+                System.Drawing.Color.FromArgb(255,255,255),
+                __ColorHue,
+                System.Drawing.Color.FromArgb(0,0,0)
+            };
+
+            int count = colors.Length;
+            float last = (float)(count - 1);
+            var positions = new float[count];
+            for (int i = 0; i < count; i++)
+            {
+                positions[i] = (float)i / last;
+            }
+
+            var colorBlend = new ColorBlend(11);
+            colorBlend.Colors = colors;
+            colorBlend.Positions = positions;
+
+            __ColorFull = colors[1];
+            __ColorBlendFull = colorBlend;
+        }
+        private ColorBlend __ColorBlendHue;
+        private ColorBlend __ColorBlendFull;
+        #endregion
+        #region IValueStorage
+        /// <summary>
+        /// Přístup na hodnotu
+        /// </summary>
+        object IValueStorage.Value { get { return this.Color; } set { this.Color = Conversion.ToColorN(value); } }
+        #endregion
+    }
+    #endregion
     #region DCheckBox
     /// <summary>
     /// CheckBox
@@ -1463,6 +1619,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     var fileBox = new DFileBox() { Text = text };
                     control = fileBox;
                     break;
+                case ControlType.ColorBox:
+                    var colorBox = new DColorBox() { Text = text };
+                    control = colorBox;
+                    break;
                 case ControlType.CheckBox:
                     var checkBox = new DCheckBox() { Text = text };
                     control = checkBox;
@@ -1505,6 +1665,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         ComboBox,
         FileBox,
         CheckBox,
+        ColorBox,
         Image
     }
     #endregion

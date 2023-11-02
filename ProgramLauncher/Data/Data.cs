@@ -1182,7 +1182,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         protected override void FillClone(BaseData clone, NewIdMode mode)
         {
             base.FillClone(clone, mode);
-            if (clone is  ApplicationData applicationClone)
+            if (clone is ApplicationData applicationClone)
             {
                 applicationClone.ExecutableFileName = this.ExecutableFileName;
                 applicationClone.ExecutableWorkingDirectory = this.ExecutableWorkingDirectory;
@@ -1242,7 +1242,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         [PropertyName("File")]
         public string ExecutableFileName { get; set; }
         [PropertyName("WorkingDirectory")]
-        public string ExecutableWorkingDirectory { get; set; }
+        public string ExecutableWorkingDirectory { get { return __ExecutableWorkingDirectory; } set { __ExecutableWorkingDirectory = ValidateExecutableFileName(value); } } private string __ExecutableWorkingDirectory;
         [PropertyName("Arguments")]
         public string ExecutableArguments { get; set; }
         [PropertyName("AdminMode")]
@@ -1251,6 +1251,22 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public bool OpenMaximized { get; set; }
         [PropertyName("OneInstance")]
         public bool OnlyOneInstance { get; set; }
+        /// <summary>
+        /// Metoda vrátí validní název spustitelného souboru = odstraní krajní uvozovky
+        /// </summary>
+        /// <param name="executableFileName"></param>
+        /// <returns></returns>
+        public static string ValidateExecutableFileName(string executableFileName)
+        {
+            if (String.IsNullOrEmpty(executableFileName)) return "";
+            executableFileName = executableFileName.Trim();
+            if (executableFileName.StartsWith("\"") && executableFileName.EndsWith("\"") && executableFileName.Where(c => c == '"').Count() == 2)
+            {   // Text začíná uvozovkou a končí uvozovkou a uvnitř není žádná jiná:
+                if (executableFileName.Length <= 2) return "";
+                return executableFileName.Substring(1, executableFileName.Length - 2).Trim();
+            }
+            return executableFileName;
+        }
         #endregion
         #region Provedení editační akce pro některý z mých Child prvků
         /// <summary>
@@ -1518,7 +1534,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             panel.AddCell(ControlType.TextBox, App.Messages.EditDataTitleText, nameof(Title), x1, y, w1); y += s2;
             panel.AddCell(ControlType.TextBox, App.Messages.EditDataDescriptionText, nameof(Description), x1, y, w1); y += s2;
             panel.AddCell(ControlType.MemoBox, App.Messages.EditDataToolTipText, nameof(ToolTipText), x2, y0, w2, 58);
-            panel.AddCell(ControlType.FileBox, App.Messages.EditDataExecutableFileNameText, nameof(ExecutableFileName), x1, y, w3); y += s2;
+            panel.AddCell(ControlType.FileBox, App.Messages.EditDataExecutableFileNameText, nameof(ExecutableFileName), x1, y, w3, validator: ValidateExecutableFileName); y += s2;
+            panel.AddCell(ControlType.FileBox, App.Messages.EditDataExecutableWorkingDirectory, nameof(ExecutableWorkingDirectory), x1, y, w3, validator: ValidateExecutableFileName); y += s2;
             panel.AddCell(ControlType.TextBox, App.Messages.EditDataExecutableArgumentsText, nameof(ExecutableArguments), x1, y, w3); y += s2;
             panel.AddCell(ControlType.FileBox, App.Messages.EditDataImageFileNameText, nameof(ImageFileName), x1, y, w3); y += s1;
 
@@ -1896,6 +1913,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             int y0 = 20;
             int s1 = 22;
             int s2 = 38;
+            int s3 = 58;
             int w1 = 220;
             int w2 = 320;
             int w3 = 550;
@@ -1903,8 +1921,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             int y = y0;
             panel.AddCell(ControlType.TextBox, App.Messages.EditDataTitleText, nameof(Title), x1, y, w1); y += s2;
             panel.AddCell(ControlType.TextBox, App.Messages.EditDataDescriptionText, nameof(Description), x1, y, w1); y += s2;
-            panel.AddCell(ControlType.MemoBox, App.Messages.EditDataToolTipText, nameof(ToolTipText), x2, y0, w2, 58);
-            panel.AddCell(ControlType.FileBox, App.Messages.EditDataImageFileNameText, nameof(ImageFileName), x1, y, w3); y += s1;
+            panel.AddCell(ControlType.MemoBox, App.Messages.EditDataToolTipText, nameof(ToolTipText), x2, y0, w2, s3);
+            panel.AddCell(ControlType.FileBox, App.Messages.EditDataImageFileNameText, nameof(ImageFileName), x1, y, w3); y += s2;
+            panel.AddCell(ControlType.ColorBox, App.Messages.EditDataBackColorText, nameof(BackColor), x1, y, w3); y += s1;
 
             panel.Buttons = new DialogButtonType[] { DialogButtonType.Ok, DialogButtonType.Cancel };
             panel.BackColor = Color.AntiqueWhite;

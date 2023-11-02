@@ -316,7 +316,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string EditDataDescriptionText { get { return _GetText("Popisek"); } }
         public string EditDataToolTipText { get { return _GetText("Nápověda"); } }
         public string EditDataImageFileNameText { get { return _GetText("Obrázek"); } }
+        public string EditDataBackColorText { get { return _GetText("Barva"); } }
         public string EditDataExecutableFileNameText { get { return _GetText("Aplikace"); } }
+        public string EditDataExecutableWorkingDirectory { get { return _GetText("Pracovní adresář"); } }
         public string EditDataExecutableArgumentsText { get { return _GetText("Argumenty"); } }
         public string EditDataExecuteInAdminModeText { get { return _GetText("Oprávnění Admin"); } }
         public string EditDataOnlyOneInstanceText { get { return _GetText("Jen jeden proces"); } }
@@ -333,6 +335,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string HelpInfoSettingsFile { get { return _GetText("Explicitně zadaný soubor s daty aplikace"); } }
         public string HelpInfoSingleApp { get { return _GetText("Umožnit pouze jedinou spuštěnou aplikaci"); } }
         public string HelpInfoReset { get { return _GetText("Vymaže veškerá data aplikace a začne od začátku"); } }
+        public string HelpInfoRunTests { get { return _GetText("Při startu aplikace provede sadu interních testů"); } }
         public string HelpInfoHelp { get { return _GetText("Zobrazení všech použitelných argumentů (=toto okno)"); } }
 
         public string DialogButtonOkText { get { return _GetText("OK"); } }

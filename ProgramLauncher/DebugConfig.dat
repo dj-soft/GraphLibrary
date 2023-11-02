@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<id-persistent Version="2.00">
+ <id-data>
+  <id-value id-value.Type="DjSoft.Tools.ProgramLauncher.Settings" tooltips="Fast" DefaultImagePath="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples" LayoutSetName="Small" TrayInfoIsAccepted="false">
+   <form_positions>
+    <id-pair id-key="MainForm" id-value="Normal # 260;260;760;580 # 260;260;760;580" />
+    <id-pair id-key="MainForm at [P:0;0;1920;1080]" id-value="Normal # 260;260;760;580 # 260;260;760;580" />
+   </form_positions>
+   <id-value id-value.Target="program_set" RelativeAdress="0;0">
+    <Pages id-array.Range="[0+2]">
+     <id-item id-item.Indices="[0]">
+      <id-value ImageFileName="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\button-green.png" RelativeAdress="0;0" Title="Hobby">
+       <Groups id-array.Range="[0+2]">
+        <id-item id-item.Indices="[0]">
+         <id-value ImageFileName="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\rectagle_purple.png" LayoutKind="Groups" RelativeAdress="0;0" Title="Aplikace Windows">
+          <Applications id-array.Range="[0+10]">
+           <id-item id-item.Indices="[0]">
+            <id-value Description="Průzkumník" Arguments="" File="c:\Windows\explorer.exe" AdminMode="false" ImageFileName="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\wine.png" LayoutKind="Applications" OneInstance="false" Maximized="false" RelativeAdress="0;0" Title="Windows" />
+           </id-item>
+           <id-item id-item.Indices="[1]">
+            <id-value Description="Jednoduchý text" Arguments="" File="c:\Windows\write.exe" AdminMode="false" ImageFileName="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\abiword.png" LayoutKind="Applications" OneInstance="false" Maximized="false" RelativeAdress="1;0" Title="Wordpad" />
+           </id-item>
+           <id-item id-item.Indices="[2]">
+            <id-value Description="Vyděšený svišť" Arguments="" File="d:\Dokumenty\Vyděšený svišť.png" AdminMode="false" ImageFileName="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\gpe-tetris.png" LayoutKind="Applications" OneInstance="false" Maximized="false" RelativeAdress="2;0" Title="Obrázek Svišť" />
+           </id-item>
+           <id-item id-item.Indices="[3]">
+            <id-value Description="Příkazový řádek" Arguments="" File="c:\Windows\System32\cmd.exe" AdminMode="false" ImageFileName="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\evilvte.png" LayoutKind="Applications" OneInstance="false" Maximized="false" RelativeAdress="0;1" Title="MS DOS user" />
+           </id-item>
+           <id-item id-item.Indices="[4]">
+            <id-value Description="Základní text" Arguments="" File="%windir%\system32\notepad.exe" AdminMode="false" ImageFileName="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\abiword.png" LayoutKind="Applications" OneInstance="true" Maximized="false" RelativeAdress="1;1" Title="Poznámkový blok" />
+           </id-item>
+           <id-item id-item.Indices="[5]">
+            <id-value Description="Lepší text" Arguments="" File="c:\Program Files (x86)\OpenOffice 4\program\soffice.exe" AdminMode="false" ImageFileName="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\distributions-solaris.png" LayoutKind="Applications" OneInstance="false" Maximized="false" RelativeAdress="2;1" Title="Libre Office" />
+           </id-item>
+           <id-item id-item.Indices="[6]">
+            <id-value Description="Příkazový řádek v režimu Admin" Arguments="" File="c:\Windows\System32\cmd.exe" AdminMode="true" ImageFileName="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\evilvte.png" LayoutKind="Applications" OneInstance="false" Maximized="false" RelativeAdress="0;2" Title="MS DOS admin" />
+           </id-item>
+           <id-item id-item.Indices="[7]">
+            <id-value Description="Vzdálená plocha na Notebook" Arguments="D:\Windows\Složka\Asseco\David NB.rdp" File="%windir%\system32\mstsc.exe" AdminMode="false" ImageFileName="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\firefox_alt.png" LayoutKind="Applications" OneInstance="false" Maximized="false" RelativeAdress="0;3" Title="RDP NTB" />
+           </id-item>
+           <id-item id-item.Indices="[8]">
+            <id-value Description="Vzdálená plocha na Desktop" Arguments="D:\Windows\Složka\Asseco\David ASOL.rdp" File="%windir%\system32\mstsc.exe" AdminMode="false" ImageFileName="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\firefox_alt.png" LayoutKind="Applications" OneInstance="false" Maximized="false" RelativeAdress="1;3" Title="RDP PC" />
+           </id-item>
+           <id-item id-item.Indices="[9]">
+            <id-value Description="" Arguments="" File="https://svethospodarstvi.cz/komentare/evropsky-automobilovy-prumysl-valcuje-cina-ve-skode-zrizuji-nebinarni-zachody/" AdminMode="false" ImageFileName="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\firefox_alt.png" LayoutKind="Applications" OneInstance="false" Maximized="false" RelativeAdress="2;3" Title="Článek" ToolTipText="" />
+           </id-item>
+          </Applications>
+         </id-value>
+        </id-item>
+        <id-item id-item.Indices="[1]">
+         <id-value ImageFileName="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\rectagle_blue.png" LayoutKind="Groups" RelativeAdress="0;0" Title="Aplikace David">
+          <Applications id-array.Range="[0+3]">
+           <id-item id-item.Indices="[0]">
+            <id-value Description="Tester SD cards" Arguments="" File="C:\DavidPrac\VsProjects\SDCardTester\SDCardTester\bin\Debug\Djs.SDCardTester.exe" AdminMode="false" ImageFileName="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\wine.png" LayoutKind="Applications" OneInstance="false" Maximized="false" RelativeAdress="0;0" Title="SD Cards" />
+           </id-item>
+           <id-item id-item.Indices="[1]">
+            <id-value Description="Vypne PC" Arguments="" File="C:\DavidPrac\VsProjects\WinShutDown\Exe\Djs.WinShutDown.exe" AdminMode="false" ImageFileName="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\wine.png" LayoutKind="Applications" OneInstance="false" Maximized="false" RelativeAdress="1;0" Title="Vypínač" />
+           </id-item>
+           <id-item id-item.Indices="[2]">
+            <id-value Description="Hodinky" Arguments="" File="C:\CSharp\Stopky\Stopky\bin\Debug\Stopky.exe" AdminMode="false" ImageFileName="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\wine.png" LayoutKind="Applications" OneInstance="false" Maximized="false" RelativeAdress="2;0" Title="Stopky" />
+           </id-item>
+          </Applications>
+         </id-value>
+        </id-item>
+       </Groups>
+      </id-value>
+     </id-item>
+     <id-item id-item.Indices="[1]">
+      <id-value Description="" ImageFileName="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples\circle_blue.png" RelativeAdress="0;1" Title="Visual Studio" ToolTipText="">
+       <Groups id-array.Range="[0+0]" />
+      </id-value>
+     </id-item>
+    </Pages>
+   </id-value>
+  </id-value>
+ </id-data>
+</id-persistent>

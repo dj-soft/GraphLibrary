@@ -117,10 +117,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="left"></param>
         /// <param name="top"></param>
         /// <param name="width"></param>
-        public void AddCell(ControlType controlType, string label, string propertyName, int left, int top, int width, int? height = null)
+        public void AddCell(ControlType controlType, string label, string propertyName, int left, int top, int width, int? height = null, Func<string, string> validator = null)
         {
             CellInfo cell = new CellInfo(propertyName, controlType);
-
+            cell.Validator = validator;
+            
             if (!String.IsNullOrEmpty(label) && (!(controlType == ControlType.Label || controlType == ControlType.CheckBox)))
             {
                 cell.LabelControl = ControlSupport.CreateControl(ControlType.Label, label, this);
@@ -132,6 +133,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             {
                 string text = (controlType == ControlType.Label || controlType == ControlType.CheckBox) ? label : "";
                 cell.InputControl = ControlSupport.CreateControl(controlType, text, this);
+                cell.InputControl.Validating += cell.InputControlValidating;
                 if (cell.InputControl != null && height.HasValue) cell.InputControl.Height = height.Value;
                 cell.InputBounds = new Rectangle(left, top, width, cell.InputControl?.Height ?? 20);
                 LayoutContentOne(cell.InputControl, cell.InputBounds.Value);
@@ -175,6 +177,22 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             public Rectangle? InputBounds { get; set; }
             public Control LabelControl { get; set; }
             public Control InputControl { get; set; }
+            public Func<string, string> Validator { get; set; }
+            /// <summary>
+            /// Vstupní control právě provádí validaci
+            /// </summary>
+            /// <param name="sender"></param>
+            /// <param name="e"></param>
+            /// <exception cref="NotImplementedException"></exception>
+            public void InputControlValidating(object sender, System.ComponentModel.CancelEventArgs e)
+            {
+                if (this.Validator != null)
+                {
+                    string inputText = InputControl.Text;
+                    string outputText = this.Validator(inputText);
+                    InputControl.Text = outputText;
+                }
+            }
             /// <summary>
             /// Dispose prvku
             /// </summary>

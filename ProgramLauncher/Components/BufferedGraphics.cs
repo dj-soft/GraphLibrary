@@ -13,404 +13,28 @@ using System.Security.Policy;
 namespace DjSoft.Tools.ProgramLauncher.Components
 {
     /// <summary>
-    /// Potomek třídy <see cref="Control"/>, který v sobě implementuje doublebuffer pro grafiku.
+    /// Potomek třídy <see cref="GraphicsControl"/>, který v sobě implementuje doublebuffer pro grafiku.
     /// Potomci této třídy nemusí zajišťovat bufferování grafiky.
     /// Potomci této třídy implementují vykreslování svého obsahu tím, že přepíšou metodu OnPaintToBuffer(), a v této metodě zajisté své vykreslení.
     /// Pro spuštění překreslení svého obsahu volají Draw() (namísto Invalidate()).
     /// </summary>
-    public class GraphicsControl : ToolTipControl, IVirtualContainer, IDisposable
+    public class GraphicsVirtualControl : GraphicsControl, IVirtualContainer, IDisposable
     {
         #region Konstruktor a Dispose
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GraphicsControl()
+        public GraphicsVirtualControl()
+            : base()
         {
-            this._InitGraphics();
         }
-        void IDisposable.Dispose()
+        protected override void OnInitVirtualDimensions()
         {
-            if (MainBuffGraphics != null)
-            {
-                MainBuffGraphics.Dispose();
-                MainBuffGraphics = null;
-            }
-            if (MainBuffGraphContent != null)
-            {
-                MainBuffGraphContent.Dispose();
-                MainBuffGraphContent = null;
-            }
-            if (BackupBuffGraphics != null)
-            {
-                BackupBuffGraphics.Dispose();
-                BackupBuffGraphics = null;
-            }
-            if (BackupBuffGraphContent != null)
-            {
-                BackupBuffGraphContent.Dispose();
-                BackupBuffGraphContent = null;
-            }
-        }
-        #endregion
-        #region Řízení práce s BufferedGraphic (obecně přenosný mechanismus i do jiných tříd) a Virtuální souřadnice + Scrollbary
-        private void _InitGraphics()
-        {
-            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.UserMouse | ControlStyles.UserPaint, true);
-
             this._InitVirtualDimensions();
-            this._MainGraphBufferInit();
-            this._BackupGraphBufferInit();
         }
-        #region Privátní řídící mechanismus - Main buffer, Backup buffer
-        #region Main grafika
-        /// <summary>
-        /// Obsah bufferované grafiky, pro rychlejší překreslování a udržení obrazu v paměti i mimo plochu Controlu
-        /// </summary>
-        protected BufferedGraphicsContext MainBuffGraphContent;
-        /// <summary>
-        /// Řídící objekt bufferované grafiky
-        /// </summary>
-        protected BufferedGraphics MainBuffGraphics;
-        /// <summary>
-        /// Tato metoda do objektu this nastaví parametry pro doublebuffer grafiky.
-        /// Tuto metodu voláme z konstruktoru objektu.
-        /// </summary>
-        private void _MainGraphBufferInit()
-        {
-            // Retrieves the BufferedGraphicsContext for the current application domain.
-            MainBuffGraphContent = BufferedGraphicsManager.Current;
-
-            // Sets the maximum size for the primary graphics buffer
-            // of the buffered graphics context for the application
-            // domain.  Any allocation requests for a buffer larger 
-            // than this will create a temporary buffered graphics 
-            // context to host the graphics buffer.
-            MainBuffGraphContent.MaximumBuffer = _MaximumBufferSize;
-
-            // Allocates a graphics buffer the size of this form
-            // using the pixel format of the Graphics created by 
-            // the Form.CreateGraphics() method, which returns a 
-            // Graphics object that matches the pixel format of the form.
-            MainBuffGraphics = MainBuffGraphContent.Allocate(this.CreateGraphics(), _CurrentGraphicsRectangle);
-
-            this.Resize += new EventHandler(_ResizeGraphics);
-            this.Paint += new PaintEventHandler(_PaintGraphics);
-            this.SetStyle(ControlStyles.AllPaintingInWmPaint |
-                ControlStyles.UserPaint |
-                ControlStyles.SupportsTransparentBackColor |
-                ControlStyles.OptimizedDoubleBuffer, true);
-
-            // Draw the first frame to the buffer.
-            // _Draw(Rectangle.Empty);       Nemůžeme, protože jsme v konstruktoru, 
-            // a Draw() nám vyvolá virtuální metodu OnPaintToBuffer(), tedy akci na třídě potomka, 
-            // čímž porušíme zásadu Nevolat z konstruktoru virtuální metody.
-            // Důsledek = třída potomka může mít v konstuktoru zajištěnou inicializaci proměnných pro Draw(), 
-            // ale ten se vyvolá z konstruktoru předka ještě před potřebnou inicializací.
-
-        }
-        /// <summary>
-        /// Vrací MaximumBufferSize pro BufferedGraphicsContext (=this.Size + 1)
-        /// </summary>
-        private Size _MaximumBufferSize
-        {
-            get
-            {
-                int w = (this.Width < 1 ? 1 : this.Width);
-                int h = (this.Height < 1 ? 1 : this.Height);
-                return new Size(w + 1, h + 1);
-            }
-        }
-        /// <summary>
-        /// Vrací Rectangle pro alokaci prostoru metodou BufferedGraphics.Allocate()
-        /// </summary>
-        private Rectangle _CurrentGraphicsRectangle
-        {
-            get
-            {
-                int w = (this.Width < 1 ? 1 : this.Width);
-                int h = (this.Height < 1 ? 1 : this.Height);
-                return new Rectangle(0, 0, w, h);
-            }
-        }
-        #endregion
-        #region Záložní grafika
-        /// <summary>
-        /// Záloha dat grafiky.
-        /// Umožní uložit obraz grafiky do této zálohy (metodou BackupGraphicStore()) 
-        /// anebo obsah zálohy načíst do pracovní grafiky (metodou BackupGraphicLoad()).
-        /// Připravenost grafiky před použitím metody BackupGraphicLoad() lze testovat čtením property BackupGraphicIsReady.
-        /// </summary>
-        private BufferedGraphicsContext BackupBuffGraphContent;
-        /// <summary>
-        /// Řídící objekt zálohy grafiky.
-        /// Umožní uložit obraz grafiky do této zálohy (metodou BackupGraphicStore()) 
-        /// anebo obsah zálohy načíst do pracovní grafiky (metodou BackupGraphicLoad()).
-        /// Připravenost grafiky před použitím metody BackupGraphicLoad() lze testovat čtením property BackupGraphicIsReady.
-        /// </summary>
-        private BufferedGraphics BackupBuffGraphics;
-        /// <summary>
-        /// Dimenze záložní grafiky. Musí odpovídat aktuálním dimenzím, jinak grafiku nelze použít.
-        /// </summary>
-        private Size BackupBuffSize;
-        /// <summary>
-        /// Iniciace dat záložní grafiky
-        /// </summary>
-        private void _BackupGraphBufferInit()
-        {
-            this.BackupBuffGraphContent = BufferedGraphicsManager.Current;
-            this.BackupBuffSize = Size.Empty;
-        }
-        /// <summary>
-        /// Uloží současný stav z hlavního grafického bufferu (do něhož se kreslí v metodě OnPaintToBuffer přes e.Graphics)
-        /// do záložního grafického bufferu.
-        /// Účel: současnou podobu grafiky si zazálohujeme jako "podklad", protože její vytvoření nás stálo mnoho úsilí.
-        /// Následně je možno tento "podklad" okamžitě natáhnout ze zálohy (metodou BackupGraphicLoad()), a "počmárat" ji něčím rychlým a dočasným,
-        /// pak vykreslit, a příště ji znovu vytáhnout ze zálohy a počmárat ji něčím jiným, s tím že náročný podklad se nemusí znovu vykreslovat.
-        /// </summary>
-        protected void BackupGraphicStore()
-        {
-            // 1. Je nutno alokovat prostor pro záložní grafiku (rozdíl Size) ?
-            Size currentSize = _MaximumBufferSize;
-            if (this.BackupBuffSize != currentSize)
-            {
-                BackupBuffGraphContent.MaximumBuffer = currentSize; ;
-                if (BackupBuffGraphics != null)
-                {
-                    BackupBuffGraphics.Dispose();
-                    BackupBuffGraphics = null;
-                }
-                BackupBuffGraphics = BackupBuffGraphContent.Allocate(this.CreateGraphics(), _CurrentGraphicsRectangle);
-                this.BackupBuffSize = currentSize;
-            }
-
-            // 2. Zazálohovat stav hlavní grafiky:
-            MainBuffGraphics.Render(BackupBuffGraphics.Graphics);
-        }
-        /// <summary>
-        /// Načte zálohu grafiky ze záložního grafického bufferu do hlavního (v němž se kreslí v metodě OnPaintToBuffer přes e.Graphics).
-        /// Pozor: před použitím je třeba ověřit, zda lze data načíst, ověřením že (BackupGraphicIsReady == true).
-        /// Použití: po některém dřívějším plném renderování grafiky lze výsledek zazálohovat (metodou BackupGraphicStore()).
-        /// Následně, když je třeba nad touto grafikou vykreslit např. letícího motýla, je vhodné tuto zálohu načíst touto metodou (BackupGraphicLoad(e.Graphics))
-        /// - tím se vrátíme do stavu po plném vyrenderování, a pak stačí nakreslit motýla, a je to hned.
-        /// </summary>
-        /// <param name="target">Cílová grafika, kam se má záloha přenést. Typicky v metodě OnPaintToBuffer() je to parametr e.Graphics.</param>
-        protected void BackupGraphicLoad(Graphics target)
-        {
-            if (!BackupGraphicIsReady)
-                App.ShowMessage("Byl proveden pokus o použití záložní grafiky za stavu, kdy to není přípustné.", MessageBoxIcon.Error);
-            BackupBuffGraphics.Render(target);
-        }
-        /// <summary>
-        /// Informace o tom, že (true) záložní grafika obsahuje použitelná data, a že je tedy přípustné použít metodu BackupGraphicLoad().
-        /// Pokud obsahuje false, pak záložní grafická data nejsou použitelná, a metoda BackupGraphicLoad() vyvolá chybu.
-        /// </summary>
-        protected bool BackupGraphicIsReady
-        {
-            get
-            {
-                return (MainBuffGraphics != null && this.BackupBuffSize == _MaximumBufferSize);
-            }
-        }
-        #endregion
-        #region Eventy, řízení metod na potomkovi
-        /// <summary>
-        /// Fyzický Paint.
-        /// Probíhá kdykoliv, když potřebuje okno překreslit.
-        /// Aplikační logiku k tomu nepotřebuje, obrázek pro vykreslení má připravený v bufferu. Jen jej přesune na obrazovku.
-        /// Aplikační logika kreslí v případě Resize (viz event Dbl_Resize) a v případě, kdy ona sama chce (když si vyvolá metodu Draw()).
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _PaintGraphics(object sender, PaintEventArgs e)
-        {
-            // Okno chce vykreslit svoji grafiku - okamžitě je vylijeme do okna z našeho bufferu:
-            MainBuffGraphics.Render(e.Graphics);
-        }
-        /// <summary>
-        /// Handler události OnResize: zajistí přípravu nového bufferu, vyvolání kreslení do bufferu, a zobrazení dat z bufferu
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ResizeGraphics(object sender, EventArgs e)
-        {
-            _AcceptControlSize();
-
-            // Re-create the graphics buffer for a new window size.
-            MainBuffGraphContent.MaximumBuffer = _MaximumBufferSize;
-            if (MainBuffGraphics != null)
-            {
-                MainBuffGraphics.Dispose();
-                MainBuffGraphics = null;
-            }
-            MainBuffGraphics = MainBuffGraphContent.Allocate(this.CreateGraphics(), _CurrentGraphicsRectangle);
-
-            ResizeAfter();
-        }
-        /// <summary>
-        /// Po změně Visible.
-        /// Při změně na true zajišťuje CheckToolTipInitialized() a Draw()
-        /// </summary>
-        /// <param name="e"></param>
-		protected override void OnVisibleChanged(EventArgs e)
-        {
-            base.OnVisibleChanged(e);
-            if (this.Visible)
-            {
-                this.Draw();
-            }
-        }
-        /// <summary>
-        /// Tuto metodu mají přepisovat potomkové, kteří chtějí reagovat na změnu velikosti.
-        /// Až si připraví objekty, mají zavolat base.ResizeAfter(), kde se zajistí vyvolání Draw() => event PaintToBuffer().
-        /// </summary>
-        protected virtual void ResizeAfter()
-        {
-            this._Draw(Rectangle.Empty);
-        }
-        /// <summary>
-        /// Interní spouštěč metody pro kreslení dat
-        /// </summary>
-        /// <param name="drawRectangle">
-        /// Informace pro kreslící program o rozsahu překreslování.
-        /// Nemusí nutně jít o grafický prostor, toto je pouze informace předáváná z parametru metody Draw() do handleru PaintToBuffer().
-        /// V servisní třídě se nikdy nepoužije ve významu grafického prostoru.
-        /// </param>
-        private void _Draw(Rectangle drawRectangle)
-        {
-            if (_SuppressDrawing) return;              // Potlačené kreslení.
-            if (!EnabledDrawing) return;               // Nevhodná situace pro kreslení
-            if (this.CurrentlyDrawing) return;         // Už kreslím, nemohu kreslit podruhé
-            lock (this.CurrentlyDrawingLock)           // Zamknu si a znovu otestuji hodnotu this.CurrentlyDrawing:
-            {
-                if (!this.CurrentlyDrawing)
-                {
-                    this.CurrentlyDrawing = true;
-                    if (this.Width > 0 && this.Height > 0 && this.Visible)
-                    {
-                        PaintEventArgs e = new PaintEventArgs(this.MainBuffGraphics.Graphics, drawRectangle);
-                        this.OnPaintToBuffer(this, e);
-                        if (this.PaintToBuffer != null) this.PaintToBuffer(this, e);          // Event
-                    }
-                    if (this.InvokeRequired)
-                        this.BeginInvoke(new Action(this.Refresh));
-                    else
-                        this.Refresh();
-                    this.CurrentlyDrawing = false;
-                }
-            }
-        }
-        /// <summary>
-        /// true když je důvod abych se vykresloval
-        /// </summary>
-        protected bool EnabledDrawing
-        {
-            get
-            {
-                if (IsInDesignMode) return true;       // V design modu se vykreslovat budu
-                if (FormExists) return true;           // Když mám form, tak se vykreslovat budu
-                return false;                          // Jinak se do vykreslování pouštět nemusíme.
-            }
-        }
-        /// <summary>
-        /// Příznak, že právě nyní probíhá kreslení.
-        /// Pokud probíhá, pak další požadavky na vykreslení (Invalidate(), Refresh(), Draw()) jsou ignorovány.
-        /// </summary>
-        protected bool CurrentlyDrawing { get; private set; }
-        /// <summary>
-        /// Zámek pro nerušené kreslení
-        /// </summary>
-        private object CurrentlyDrawingLock = new object();
-        /// <summary>
-        /// true, pokud již existuje Form
-        /// </summary>
-        protected bool FormExists
-        {
-            get
-            {
-                if (_FormExists) return true;
-                Form form = this.FindForm();
-                if (form == null) return false;
-                _FormExists = true;
-                return true;
-            }
-        }
-        private bool _FormExists = false;
-        /// <summary>
-        /// true, pokud jsem já nebo můj parent v design modu. Pak sice nemám žádný Form, ale přesto bych se měl vykreslovat.
-        /// </summary>
-        internal bool IsInDesignMode
-        {
-            get
-            {
-                return true;
-            }
-        }
-        #endregion
-        #endregion
-        #region Public property
-        /// <summary>
-        /// Pokud chceme využít bufferovaného vykreslování této třídy bez toho, abychom ji dědili (použijeme nativní třídu),
-        /// pak je nutno vykreslování umístit do tohoto eventu.
-        /// Pracuje se zde zcela stejně, jako v eventu Paint(), ale vizuální rozdíl je zcela zásadní:
-        /// Zatímco Paint() kreslí přímo do controlu, naživo, a pokaždé znovu,
-        /// pak tato metoda PaintToBuffer() kreslí do bufferu do paměti, a control si přebírá výsledek najednou, optimalizovaně.
-        /// </summary>
-        [Browsable(true)]
-        [Category("Paint")]
-        [Description("Zde musí být implementováno uživatelské vykreslování obsahu objektu do grafického bufferu. Pracuje se zde zcela stejně, jako v eventu Paint(), ale fyzicky se metoda volá jen v nutných případech.")]
-        public event PaintEventHandler PaintToBuffer;
-        /// <summary>
-        /// Barva pozadí prvku. Je využita pokud není nastaveno (BackgroundIsTransparent == true)
-        /// </summary>
-        [Category("Appearance")]
-        [Description("Barva pozadí prvku. Je využita pokud není nastaveno (BackgroundIsTransparent == true)")]
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-        public override Color BackColor
-        {
-            get { return base.BackColor; }
-            set { base.BackColor = value; Draw(); }
-        }
-        /// <summary>
-        /// Okraj controlu
-        /// </summary>
-        [Description("Styl okraje prvku")]
-        [Category("Appearance")]
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-        [DefaultValue(BorderStyle.None)]
-        public virtual BorderStyle BorderStyle
-        {
-            get { return _BorderStyle; }
-            set { _BorderStyle = value; Draw(); }
-        }
-        private BorderStyle _BorderStyle = BorderStyle.None;
-        /// <summary>
-        /// Vykreslované okraje controlu (strany borderu).
-        /// Umožní řešit navazování různých controlů do jednoho borderu.
-        /// </summary>
-        [Description("Vykreslované okraje controlu (strany borderu). Umožní řešit navazování různých controlů do jednoho borderu.")]
-        [Category("Appearance")]
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-        [DefaultValue(Border3DSide.All)]
-        public virtual Border3DSide BorderSides
-        {
-            get { return _BorderSides; }
-            set { _BorderSides = value; Draw(); }
-        }
-        private Border3DSide _BorderSides = Border3DSide.All;
-        /// <summary>
-        /// Prostor pro kreslení uvnitř tohoto prvku, s vynecháním aktuálního Borderu
-        /// </summary>
-        [Browsable(false)]
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public Rectangle ClientArea { get { return this._GetClientArea(); } }
-        /// <summary>
-        /// Šířka Borderu na jednotlivých okrajích prvku
-        /// </summary>
-        [Browsable(false)]
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public Padding BorderWidth { get { return this._GetBorderWidth(); } }
         #endregion
         #region ScrollBars, Virtuální souřadnice
+
         /*   Algoritmy
 
          - Základem je naplnění ContentSize = velikost potřebného prostoru k zobrazení = suma velikosti dat + rezerva vpravo a dole
@@ -422,9 +46,17 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         */
 
         /// <summary>
+        /// při změně velikosti
+        /// </summary>
+        protected override void OnAcceptControlSize()
+        {
+            this._AcceptControlSize();
+        }
+        /// <summary>
         /// Povoluje se práce se Scrollbary, pokud bude zadána velikost obsahu <see cref="ContentSize"/>. Default = true.
         /// </summary>
-        public bool ScrollbarsEnabled { get { return __ScrollbarsEnabled; } set { __ScrollbarsEnabled = value; _RefreshScrollBars(); Draw(); } } private bool __ScrollbarsEnabled;
+        public bool ScrollbarsEnabled { get { return __ScrollbarsEnabled; } set { __ScrollbarsEnabled = value; _RefreshScrollBars(); Draw(); } }
+        private bool __ScrollbarsEnabled;
         /// <summary>
         /// Souřadnice počátku viditelného prostoru = souřadnice bodu ve virtuálním prostoru (prostordatového obsahu), který je zobrazen na vizuálním pixelu 0/0
         /// </summary>
@@ -643,7 +275,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             /// </summary>
             /// <param name="owner"></param>
             /// <param name="axis"></param>
-            public VirtualDimension(GraphicsControl owner, Axis axis)
+            public VirtualDimension(GraphicsVirtualControl owner, Axis axis)
             {
                 __Owner = owner;
                 __Axis = axis;
@@ -652,7 +284,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             /// <summary>
             /// Vlastník
             /// </summary>
-            private GraphicsControl __Owner;
+            private GraphicsVirtualControl __Owner;
             /// <summary>
             /// Směr osy
             /// </summary>
@@ -928,7 +560,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Orientace osy a Scrollbaru
         /// </summary>
-        private enum Axis 
+        private enum Axis
         {
             /// <summary>
             /// X: vodorovný scrollbar, je dole
@@ -940,7 +572,111 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             Y
         }
         #endregion
-        #region Řízení kreslení - vyvolávací metoda + virtual výkonná metoda
+    }
+    /// <summary>
+    /// Potomek třídy <see cref="ToolTipControl"/>, který v sobě implementuje doublebuffer pro grafiku.
+    /// Potomci této třídy nemusí zajišťovat bufferování grafiky.
+    /// Potomci této třídy implementují vykreslování svého obsahu tím, že přepíšou metodu OnPaintToBuffer(), a v této metodě zajisté své vykreslení.
+    /// Pro spuštění překreslení svého obsahu volají Draw() (namísto Invalidate()).
+    /// </summary>
+    public class GraphicsControl : ToolTipControl, IDisposable
+    {
+        #region Konstruktor a Dispose
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GraphicsControl()
+        {
+            this._InitGraphics();
+        }
+        void IDisposable.Dispose()
+        {
+            if (MainBuffGraphics != null)
+            {
+                MainBuffGraphics.Dispose();
+                MainBuffGraphics = null;
+            }
+            if (MainBuffGraphContent != null)
+            {
+                MainBuffGraphContent.Dispose();
+                MainBuffGraphContent = null;
+            }
+            if (BackupBuffGraphics != null)
+            {
+                BackupBuffGraphics.Dispose();
+                BackupBuffGraphics = null;
+            }
+            if (BackupBuffGraphContent != null)
+            {
+                BackupBuffGraphContent.Dispose();
+                BackupBuffGraphContent = null;
+            }
+        }
+        #endregion
+        #region Public property a eventy
+        /// <summary>
+        /// Pokud chceme využít bufferovaného vykreslování této třídy bez toho, abychom ji dědili (použijeme nativní třídu),
+        /// pak je nutno vykreslování umístit do tohoto eventu.
+        /// Pracuje se zde zcela stejně, jako v eventu Paint(), ale vizuální rozdíl je zcela zásadní:
+        /// Zatímco Paint() kreslí přímo do controlu, naživo, a pokaždé znovu,
+        /// pak tato metoda PaintToBuffer() kreslí do bufferu do paměti, a control si přebírá výsledek najednou, optimalizovaně.
+        /// </summary>
+        [Browsable(true)]
+        [Category("Paint")]
+        [Description("Zde musí být implementováno uživatelské vykreslování obsahu objektu do grafického bufferu. Pracuje se zde zcela stejně, jako v eventu Paint(), ale fyzicky se metoda volá jen v nutných případech.")]
+        public event PaintEventHandler PaintToBuffer;
+        /// <summary>
+        /// Barva pozadí prvku. Je využita pokud není nastaveno (BackgroundIsTransparent == true)
+        /// </summary>
+        [Category("Appearance")]
+        [Description("Barva pozadí prvku. Je využita pokud není nastaveno (BackgroundIsTransparent == true)")]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+        public override Color BackColor
+        {
+            get { return base.BackColor; }
+            set { base.BackColor = value; Draw(); }
+        }
+        /// <summary>
+        /// Okraj controlu
+        /// </summary>
+        [Description("Styl okraje prvku")]
+        [Category("Appearance")]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+        [DefaultValue(BorderStyle.None)]
+        public virtual BorderStyle BorderStyle
+        {
+            get { return _BorderStyle; }
+            set { _BorderStyle = value; Draw(); }
+        }
+        private BorderStyle _BorderStyle = BorderStyle.None;
+        /// <summary>
+        /// Vykreslované okraje controlu (strany borderu).
+        /// Umožní řešit navazování různých controlů do jednoho borderu.
+        /// </summary>
+        [Description("Vykreslované okraje controlu (strany borderu). Umožní řešit navazování různých controlů do jednoho borderu.")]
+        [Category("Appearance")]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+        [DefaultValue(Border3DSide.All)]
+        public virtual Border3DSide BorderSides
+        {
+            get { return _BorderSides; }
+            set { _BorderSides = value; Draw(); }
+        }
+        private Border3DSide _BorderSides = Border3DSide.All;
+        /// <summary>
+        /// Prostor pro kreslení uvnitř tohoto prvku, s vynecháním aktuálního Borderu
+        /// </summary>
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public Rectangle ClientArea { get { return this._GetClientArea(); } }
+        /// <summary>
+        /// Šířka Borderu na jednotlivých okrajích prvku
+        /// </summary>
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public Padding BorderWidth { get { return this._GetBorderWidth(); } }
+        #endregion
+        #region Řízení kreslení - public vrstva: vyvolávací metoda + virtual výkonná metoda
         /// <summary>
         /// Potlačení kreslení při provádění rozsáhlejších změn. Po ukončení je třeba nastavit na false !
         /// Default = false = kreslení není potlačeno.
@@ -1027,6 +763,312 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             this._Draw(drawRectangle);
         }
+        #endregion
+        #region Řízení práce s BufferedGraphic (obecně přenosný mechanismus i do jiných tříd) a Virtuální souřadnice + Scrollbary
+        /// <summary>
+        /// Inicializace grafických objektů
+        /// </summary>
+        private void _InitGraphics()
+        {
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.UserMouse | ControlStyles.UserPaint, true);
+
+            this.OnInitVirtualDimensions();
+            this._MainGraphBufferInit();
+            this._BackupGraphBufferInit();
+        }
+        /// <summary>
+        /// Volá se v průběhu inicializace
+        /// </summary>
+        protected virtual void OnInitVirtualDimensions() { }
+        #region Privátní řídící mechanismus - Main buffer, Backup buffer
+        #region Main grafika
+        /// <summary>
+        /// Obsah bufferované grafiky, pro rychlejší překreslování a udržení obrazu v paměti i mimo plochu Controlu
+        /// </summary>
+        protected BufferedGraphicsContext MainBuffGraphContent;
+        /// <summary>
+        /// Řídící objekt bufferované grafiky
+        /// </summary>
+        protected BufferedGraphics MainBuffGraphics;
+        /// <summary>
+        /// Tato metoda do objektu this nastaví parametry pro doublebuffer grafiky.
+        /// Tuto metodu voláme z konstruktoru objektu.
+        /// </summary>
+        private void _MainGraphBufferInit()
+        {
+            // Retrieves the BufferedGraphicsContext for the current application domain.
+            MainBuffGraphContent = BufferedGraphicsManager.Current;
+
+            // Sets the maximum size for the primary graphics buffer
+            // of the buffered graphics context for the application
+            // domain.  Any allocation requests for a buffer larger 
+            // than this will create a temporary buffered graphics 
+            // context to host the graphics buffer.
+            MainBuffGraphContent.MaximumBuffer = _MaximumBufferSize;
+
+            // Allocates a graphics buffer the size of this form
+            // using the pixel format of the Graphics created by 
+            // the Form.CreateGraphics() method, which returns a 
+            // Graphics object that matches the pixel format of the form.
+            MainBuffGraphics = MainBuffGraphContent.Allocate(this.CreateGraphics(), _CurrentGraphicsRectangle);
+
+            this.Resize += new EventHandler(_ResizeGraphics);
+            this.Paint += new PaintEventHandler(_PaintGraphics);
+            this.SetStyle(ControlStyles.AllPaintingInWmPaint |
+                ControlStyles.UserPaint |
+                ControlStyles.SupportsTransparentBackColor |
+                ControlStyles.OptimizedDoubleBuffer, true);
+
+            // Draw the first frame to the buffer.
+            // _Draw(Rectangle.Empty);       Nemůžeme, protože jsme v konstruktoru, 
+            // a Draw() nám vyvolá virtuální metodu OnPaintToBuffer(), tedy akci na třídě potomka, 
+            // čímž porušíme zásadu Nevolat z konstruktoru virtuální metody.
+            // Důsledek = třída potomka může mít v konstuktoru zajištěnou inicializaci proměnných pro Draw(), 
+            // ale ten se vyvolá z konstruktoru předka ještě před potřebnou inicializací.
+
+        }
+        /// <summary>
+        /// Vrací MaximumBufferSize pro BufferedGraphicsContext (=this.Size + 1)
+        /// </summary>
+        private Size _MaximumBufferSize
+        {
+            get
+            {
+                int w = (this.Width < 1 ? 1 : this.Width);
+                int h = (this.Height < 1 ? 1 : this.Height);
+                return new Size(w + 1, h + 1);
+            }
+        }
+        /// <summary>
+        /// Vrací Rectangle pro alokaci prostoru metodou BufferedGraphics.Allocate()
+        /// </summary>
+        private Rectangle _CurrentGraphicsRectangle
+        {
+            get
+            {
+                int w = (this.Width < 1 ? 1 : this.Width);
+                int h = (this.Height < 1 ? 1 : this.Height);
+                return new Rectangle(0, 0, w, h);
+            }
+        }
+        #endregion
+        #region Záložní grafika
+        /// <summary>
+        /// Záloha dat grafiky.
+        /// Umožní uložit obraz grafiky do této zálohy (metodou BackupGraphicStore()) 
+        /// anebo obsah zálohy načíst do pracovní grafiky (metodou BackupGraphicLoad()).
+        /// Připravenost grafiky před použitím metody BackupGraphicLoad() lze testovat čtením property BackupGraphicIsReady.
+        /// </summary>
+        private BufferedGraphicsContext BackupBuffGraphContent;
+        /// <summary>
+        /// Řídící objekt zálohy grafiky.
+        /// Umožní uložit obraz grafiky do této zálohy (metodou BackupGraphicStore()) 
+        /// anebo obsah zálohy načíst do pracovní grafiky (metodou BackupGraphicLoad()).
+        /// Připravenost grafiky před použitím metody BackupGraphicLoad() lze testovat čtením property BackupGraphicIsReady.
+        /// </summary>
+        private BufferedGraphics BackupBuffGraphics;
+        /// <summary>
+        /// Dimenze záložní grafiky. Musí odpovídat aktuálním dimenzím, jinak grafiku nelze použít.
+        /// </summary>
+        private Size BackupBuffSize;
+        /// <summary>
+        /// Iniciace dat záložní grafiky
+        /// </summary>
+        private void _BackupGraphBufferInit()
+        {
+            this.BackupBuffGraphContent = BufferedGraphicsManager.Current;
+            this.BackupBuffSize = Size.Empty;
+        }
+        /// <summary>
+        /// Uloží současný stav z hlavního grafického bufferu (do něhož se kreslí v metodě OnPaintToBuffer přes e.Graphics)
+        /// do záložního grafického bufferu.
+        /// Účel: současnou podobu grafiky si zazálohujeme jako "podklad", protože její vytvoření nás stálo mnoho úsilí.
+        /// Následně je možno tento "podklad" okamžitě natáhnout ze zálohy (metodou BackupGraphicLoad()), a "počmárat" ji něčím rychlým a dočasným,
+        /// pak vykreslit, a příště ji znovu vytáhnout ze zálohy a počmárat ji něčím jiným, s tím že náročný podklad se nemusí znovu vykreslovat.
+        /// </summary>
+        protected void BackupGraphicStore()
+        {
+            // 1. Je nutno alokovat prostor pro záložní grafiku (rozdíl Size) ?
+            Size currentSize = _MaximumBufferSize;
+            if (this.BackupBuffSize != currentSize)
+            {
+                BackupBuffGraphContent.MaximumBuffer = currentSize; ;
+                if (BackupBuffGraphics != null)
+                {
+                    BackupBuffGraphics.Dispose();
+                    BackupBuffGraphics = null;
+                }
+                BackupBuffGraphics = BackupBuffGraphContent.Allocate(this.CreateGraphics(), _CurrentGraphicsRectangle);
+                this.BackupBuffSize = currentSize;
+            }
+
+            // 2. Zazálohovat stav hlavní grafiky:
+            MainBuffGraphics.Render(BackupBuffGraphics.Graphics);
+        }
+        /// <summary>
+        /// Načte zálohu grafiky ze záložního grafického bufferu do hlavního (v němž se kreslí v metodě OnPaintToBuffer přes e.Graphics).
+        /// Pozor: před použitím je třeba ověřit, zda lze data načíst, ověřením že (BackupGraphicIsReady == true).
+        /// Použití: po některém dřívějším plném renderování grafiky lze výsledek zazálohovat (metodou BackupGraphicStore()).
+        /// Následně, když je třeba nad touto grafikou vykreslit např. letícího motýla, je vhodné tuto zálohu načíst touto metodou (BackupGraphicLoad(e.Graphics))
+        /// - tím se vrátíme do stavu po plném vyrenderování, a pak stačí nakreslit motýla, a je to hned.
+        /// </summary>
+        /// <param name="target">Cílová grafika, kam se má záloha přenést. Typicky v metodě OnPaintToBuffer() je to parametr e.Graphics.</param>
+        protected void BackupGraphicLoad(Graphics target)
+        {
+            if (!BackupGraphicIsReady)
+                App.ShowMessage("Byl proveden pokus o použití záložní grafiky za stavu, kdy to není přípustné.", MessageBoxIcon.Error);
+            BackupBuffGraphics.Render(target);
+        }
+        /// <summary>
+        /// Informace o tom, že (true) záložní grafika obsahuje použitelná data, a že je tedy přípustné použít metodu BackupGraphicLoad().
+        /// Pokud obsahuje false, pak záložní grafická data nejsou použitelná, a metoda BackupGraphicLoad() vyvolá chybu.
+        /// </summary>
+        protected bool BackupGraphicIsReady
+        {
+            get
+            {
+                return (MainBuffGraphics != null && this.BackupBuffSize == _MaximumBufferSize);
+            }
+        }
+        #endregion
+        #region Eventy, řízení metod na potomkovi
+        /// <summary>
+        /// Fyzický Paint.
+        /// Probíhá kdykoliv, když potřebuje okno překreslit.
+        /// Aplikační logiku k tomu nepotřebuje, obrázek pro vykreslení má připravený v bufferu. Jen jej přesune na obrazovku.
+        /// Aplikační logika kreslí v případě Resize (viz event Dbl_Resize) a v případě, kdy ona sama chce (když si vyvolá metodu Draw()).
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _PaintGraphics(object sender, PaintEventArgs e)
+        {
+            // Okno chce vykreslit svoji grafiku - okamžitě je vylijeme do okna z našeho bufferu:
+            MainBuffGraphics.Render(e.Graphics);
+        }
+        /// <summary>
+        /// Handler události OnResize: zajistí přípravu nového bufferu, vyvolání kreslení do bufferu, a zobrazení dat z bufferu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ResizeGraphics(object sender, EventArgs e)
+        {
+            OnAcceptControlSize();
+
+            // Re-create the graphics buffer for a new window size.
+            MainBuffGraphContent.MaximumBuffer = _MaximumBufferSize;
+            if (MainBuffGraphics != null)
+            {
+                MainBuffGraphics.Dispose();
+                MainBuffGraphics = null;
+            }
+            MainBuffGraphics = MainBuffGraphContent.Allocate(this.CreateGraphics(), _CurrentGraphicsRectangle);
+
+            ResizeAfter();
+        }
+        /// <summary>
+        /// Proběhne po změně velikosti, potomek může reagovat na aktuální velikost
+        /// </summary>
+        protected virtual void OnAcceptControlSize() { }
+        /// <summary>
+        /// Po změně Visible.
+        /// Při změně na true zajišťuje CheckToolTipInitialized() a Draw()
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+            if (this.Visible)
+            {
+                this.Draw();
+            }
+        }
+        /// <summary>
+        /// Tuto metodu mají přepisovat potomkové, kteří chtějí reagovat na změnu velikosti.
+        /// Až si připraví objekty, mají zavolat base.ResizeAfter(), kde se zajistí vyvolání Draw() => event PaintToBuffer().
+        /// </summary>
+        protected virtual void ResizeAfter()
+        {
+            this._Draw(Rectangle.Empty);
+        }
+        /// <summary>
+        /// Interní spouštěč metody pro kreslení dat
+        /// </summary>
+        /// <param name="drawRectangle">
+        /// Informace pro kreslící program o rozsahu překreslování.
+        /// Nemusí nutně jít o grafický prostor, toto je pouze informace předáváná z parametru metody Draw() do handleru PaintToBuffer().
+        /// V servisní třídě se nikdy nepoužije ve významu grafického prostoru.
+        /// </param>
+        private void _Draw(Rectangle drawRectangle)
+        {
+            if (_SuppressDrawing) return;              // Potlačené kreslení.
+            if (!EnabledDrawing) return;               // Nevhodná situace pro kreslení
+            if (this.CurrentlyDrawing) return;         // Už kreslím, nemohu kreslit podruhé
+            lock (this.CurrentlyDrawingLock)           // Zamknu si a znovu otestuji hodnotu this.CurrentlyDrawing:
+            {
+                if (!this.CurrentlyDrawing)
+                {
+                    this.CurrentlyDrawing = true;
+                    if (this.Width > 0 && this.Height > 0 && this.Visible)
+                    {
+                        PaintEventArgs e = new PaintEventArgs(this.MainBuffGraphics.Graphics, drawRectangle);
+                        this.OnPaintToBuffer(this, e);
+                        if (this.PaintToBuffer != null) this.PaintToBuffer(this, e);          // Event
+                    }
+                    if (this.InvokeRequired)
+                        this.BeginInvoke(new Action(this.Refresh));
+                    else
+                        this.Refresh();
+                    this.CurrentlyDrawing = false;
+                }
+            }
+        }
+        /// <summary>
+        /// true když je důvod abych se vykresloval
+        /// </summary>
+        protected bool EnabledDrawing
+        {
+            get
+            {
+                if (IsInDesignMode) return true;       // V design modu se vykreslovat budu
+                if (FormExists) return true;           // Když mám form, tak se vykreslovat budu
+                return false;                          // Jinak se do vykreslování pouštět nemusíme.
+            }
+        }
+        /// <summary>
+        /// Příznak, že právě nyní probíhá kreslení.
+        /// Pokud probíhá, pak další požadavky na vykreslení (Invalidate(), Refresh(), Draw()) jsou ignorovány.
+        /// </summary>
+        protected bool CurrentlyDrawing { get; private set; }
+        /// <summary>
+        /// Zámek pro nerušené kreslení
+        /// </summary>
+        private object CurrentlyDrawingLock = new object();
+        /// <summary>
+        /// true, pokud již existuje Form
+        /// </summary>
+        protected bool FormExists
+        {
+            get
+            {
+                if (_FormExists) return true;
+                Form form = this.FindForm();
+                if (form == null) return false;
+                _FormExists = true;
+                return true;
+            }
+        }
+        private bool _FormExists = false;
+        /// <summary>
+        /// true, pokud jsem já nebo můj parent v design modu. Pak sice nemám žádný Form, ale přesto bych se měl vykreslovat.
+        /// </summary>
+        internal bool IsInDesignMode
+        {
+            get
+            {
+                return true;
+            }
+        }
+        #endregion
         #endregion
         #endregion
         #region Podpora kreslení - konverze barev, kreslení Borderu, Stringu, atd
@@ -1271,6 +1313,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #endregion
         #endregion
     }
+
     #region class MouseState : stav myši
     /// <summary>
     /// Stav myši
@@ -1292,7 +1335,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             // Pokud isLeave je true, pak jsme volání z MouseLeave a jsme tedy mimo Control:
             bool isOnControl = (isLeave.HasValue && isLeave.Value ? false : control.ClientRectangle.Contains(locationNative));
             Point locationVirtual = locationNative;
-            if (control is GraphicsControl virtualControl) locationVirtual = virtualControl.GetVirtualPoint(locationNative);
+            if (control is GraphicsVirtualControl virtualControl) locationVirtual = virtualControl.GetVirtualPoint(locationNative);
             return new MouseState(time, locationNative, locationVirtual, locationAbsolute, buttons, modifierKeys, isOnControl);
         }
         /// <summary>

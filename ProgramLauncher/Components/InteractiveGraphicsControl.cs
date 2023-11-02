@@ -14,7 +14,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     /// <summary>
     /// Interaktivní control s optimalizovaným vykreslením grafiky
     /// </summary>
-    public class InteractiveGraphicsControl : GraphicsControl
+    public class InteractiveGraphicsControl : GraphicsVirtualControl
     {
         #region Konstrukce a proměnné
         /// <summary>

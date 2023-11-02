@@ -92,6 +92,7 @@ namespace DjSoft.Tools.ProgramLauncher
             string help = $@"Config={q}C:\Directory\SettingsFile.ini{q} => {App.Messages.HelpInfoSettingsFile}{eol}
 Single => {App.Messages.HelpInfoSingleApp}{eol}
 Reset => {App.Messages.HelpInfoReset}{eol}
+RunTests => {App.Messages.HelpInfoRunTests}{eol}
 Help => {App.Messages.HelpInfoHelp}{eol}
 ";
             App.ShowMessage(help, MessageBoxIcon.Information, App.Messages.HelpInfoTitle);

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -90,6 +91,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             if (value is String text) return (DateTime)Convertor.StringToDateTime(text);
             return DateTime.MinValue;
         }
+
+        public static System.Drawing.Color? ToColorN(object value)
+        {
+            if (value is null) return null;
+            if (value is Color color) return color;
+            if (value is String text) return (Color?)Convertor.StringToColor(text);
+            if (value is Int32 i32) return Color.FromArgb(i32);
+            return null;
+        }
         public static object ToType(object value, Type targetType)
         {
             var typeName = targetType.FullName;
@@ -103,6 +113,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 case "System.Double": return ToDouble(value);
                 case "System.Decimal": return ToDecimal(value);
                 case "System.DateTime": return ToDateTime(value);
+                case "System.Drawing.Color": return ToColorN(value);
             }
             return value;
         }
