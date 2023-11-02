@@ -858,6 +858,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             get
             {
+                if (!this.IsHandleCreated || this.Disposing || this.IsDisposed) return false;
+
                 var mousePoint = this.PointToClient(MousePosition);
                 var textBoxBounds = this.__TextBox.Bounds;
                 var mx = mousePoint.X;

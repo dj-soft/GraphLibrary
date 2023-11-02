@@ -131,31 +131,56 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         #endregion
         #region Synchronizace hlášek
         /// <summary>
-        /// Obsahuje true, pokud jsou všechny systémové hlášky přítomny ve všech Translate souborech.
-        /// Neřeší se tedy, zda jsou hlášky přeloženy, ale že v souborech je odpovídající položka (řádek) zadána.
+        /// Obsahuje informaci o počtu nepřeložených hlášek.
         /// </summary>
-        public bool IsTranslateComplete
+        public NonTranslatedInfo NonTranslated
         {
             get
             {
-                if (!__IsTranslateComplete.HasValue) __IsTranslateComplete = _GetTranslateComplete();
-                return __IsTranslateComplete.Value;
+                if (__NonTranslatedInfo is null) __NonTranslatedInfo = _GetNonTranslated();
+                return __NonTranslatedInfo;
             }
         }
-        private bool? __IsTranslateComplete;
+        private NonTranslatedInfo __NonTranslatedInfo;
         /// <summary>
-        /// Vrátí true, pokud jsou všechny systémové hlášky přítomny ve všech Translate souborech.
-        /// Neřeší se tedy, zda jsou hlášky přeloženy, ale že v souborech je odpovídající položka (řádek) zadána.
+        /// Vrátí info o nepřeložených hláškách
         /// </summary>
         /// <returns></returns>
-        private bool _GetTranslateComplete()
+        private NonTranslatedInfo _GetNonTranslated()
         {
+            int filesCount = 0;
+            int messagesCount = 0;
             var standardCodes = _GetStandardCodes();
             foreach (var languageFile in __Collection)
             {
-                if (!languageFile.IsTranslateComplete(standardCodes)) return false;
+                int count = languageFile.GetNonTranslatedCount(standardCodes);
+                if (count > 0)
+                {
+                    filesCount++;
+                    messagesCount += count;
+                }
             }
-            return true;
+            return new NonTranslatedInfo(filesCount, messagesCount);
+        }
+        /// <summary>
+        /// Informace o počtu nepřeložených hlášek
+        /// </summary>
+        public class NonTranslatedInfo
+        {
+            public NonTranslatedInfo(int filesCount, int messagesCount)
+            {
+                FilesCount = filesCount;
+                MessagesCount = messagesCount;
+            }
+            /// <summary>
+            /// Počet souborů, které obshaují nepřeložené hlášky.
+            /// Pokud je zde 0, pak je 0 i v <see cref="MessagesCount"/>. Pokud zde je kladné číslo, musí být i tam.
+            /// </summary>
+            public int FilesCount { get; private set; }
+            /// <summary>
+            /// Počet nepřeložených hlášek celkem.
+            /// </summary>
+            public int MessagesCount { get; private set; }
         }
         /// <summary>
         /// Metoda najde všechny aktuální kódy hlášek, jejich standardní texty a aktualizuje je do všech přítomných jazykových souborů.
@@ -245,6 +270,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string ToolStripButtonPreferenceToolTip { get { return _GetText("Nastavit chování aplikace"); } }
         public string ToolStripButtonEditToolTip { get { return _GetText("Upravit obsah"); } }
         public string ToolStripButtonMessageSyncToolTip { get { return _GetText("Naplnit jazykové soubory aktuálním seznamem hlášek"); } }
+        public string ToolStripButtonMessageSyncInfoToolTip { get { return _GetText("Naplnit jazykové soubory aktuálním seznamem hlášek.××Aktuálně není přeloženo %0 v %1."); } }
+        public string ToolStripButtonMessageSyncMessagesTexts { get { return _GetText("žádný text×text×texty×textů"); } }
+        public string ToolStripButtonMessageSyncFilesTexts { get { return _GetText("žádném souboru×souboru×souborech×souborech"); } }
+
         public string StatusStripPageCountText { get { return _GetText("bez stránek×stránka×stránky×stránek"); } }
         public string StatusStripApplicationText { get { return _GetText("bez aplikací×aplikace×aplikace×aplikací"); } }
 
@@ -299,6 +328,12 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string ToolTipTypeDefaultText { get { return _GetText("Defaultní tooltip"); } }
         public string ToolTipTypeFastText { get { return _GetText("Rychlý tooltip"); } }
         public string ToolTipTypeSlowText { get { return _GetText("Pomalý tooltip"); } }
+
+        public string HelpInfoTitle { get { return _GetText("Parametry aplikace"); } }
+        public string HelpInfoSettingsFile { get { return _GetText("Explicitně zadaný soubor s daty aplikace"); } }
+        public string HelpInfoSingleApp { get { return _GetText("Umožnit pouze jedinou spuštěnou aplikaci"); } }
+        public string HelpInfoReset { get { return _GetText("Vymaže veškerá data aplikace a začne od začátku"); } }
+        public string HelpInfoHelp { get { return _GetText("Zobrazení všech použitelných argumentů (=toto okno)"); } }
 
         public string DialogButtonOkText { get { return _GetText("OK"); } }
         public string DialogButtonCancelText { get { return _GetText("Storno"); } }
@@ -538,19 +573,20 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         #endregion
         #region Synchronizace hlášek
         /// <summary>
-        /// Vrátí true, pokud jsou všechny systémové hlášky přítomny ve všech Translate souborech.
-        /// Neřeší se tedy, zda jsou hlášky přeloženy, ale že v souborech je odpovídající položka (řádek) zadána.
+        /// Vrátí počet nepřeložených hlášek. Tedy 0 = vše je přeloženo.
+        /// Neřeší se, zda a jak jsou hlášky přeloženy, ale že v souborech je odpovídající položka (řádek) pro standardní Code zadána.
         /// </summary>
         /// <returns></returns>
-        public bool IsTranslateComplete(Dictionary<string, string> standardCodes)
+        public int GetNonTranslatedCount(Dictionary<string, string> standardCodes)
         {
+            int count = 0;
             // Nevadí mi, když this soubor má něco navíc. Proto neřeším nadbytečné kódy v __Codes.
             // Ale musím v tomto souboru mít všechny kódy, které jsou uvedeny v dodaném slovníku standardCodes jako klíče:
             foreach (var code in standardCodes.Keys)
-            {   // Jakmile v this.__Codes chybí byť i jen jediný kód z vnějšího seznamu standardCodes, pak vrátím false = nemám všechny hlášky.
-                if (!__Codes.ContainsKey(code)) return false;
+            {   // Jakmile v this.__Codes chybí hledaný standardní kód, započtu tento kód:
+                if (!__Codes.ContainsKey(code)) count++;
             }
-            return true;
+            return count;
         }
         /// <summary>
         /// Metoda aktualizuje seznam hlášek v tomto souboru podle defaultních kódů

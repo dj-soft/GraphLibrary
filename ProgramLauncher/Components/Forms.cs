@@ -258,6 +258,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         }
         /// <summary>
         /// Název formuláře v Settings, pokud chce ukládat a načítat svoji pozici do Settings.
+        /// Pokud bude dané jméno, ale data v Settings pro toto okno nebudou ještě k dispozici (=úplně první spuštění s novým Configem), pak okno zavolá metodu <see cref="OnFormStateDefault"/>, kde potomek nastaví výchozí velikost a umístění okna.
         /// </summary>
         public virtual string SettingsName { get; set; }
         /// <summary>
@@ -468,9 +469,18 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             if (!_HasSettingsName) return;
             if (__FormStateChanging) return;
 
-            _FormStateCurrent = App.Settings.FormPositionLoad(this.SettingsName);        // Načtu stav okna z dat uložených v Settings, a aplikuji jej do this okna
+            string savedState = App.Settings.FormPositionLoad(this.SettingsName);        // Načtu stav okna z dat uložených v Settings, a aplikuji jej do this okna
+            if (!String.IsNullOrEmpty(savedState))
+                _FormStateCurrent = savedState;
+            else
+                OnFormStateDefault();
             __FormStateSaved = _FormStateCurrent;                                        // Získám stav z okna a zapamatuji si jeho otisk pro případné porovnání po změnách
         }
+        /// <summary>
+        /// Tuto metodu volá bázová třída okna (<see cref="BaseForm"/>) v okamžiku, kdy by měl být restorován stav okna (<see cref="Form.WindowState"/> a jeho Bounds) z dat uložených v Settings, ale tam dosud nic není.
+        /// Potomek by v této metodě měl umístit okno do výchozí pozice.
+        /// </summary>
+        protected virtual void OnFormStateDefault() { }
         /// <summary>
         /// Zajistí sesbírání dat o pozice okna z this formuláře a jejich zapsání do <see cref="Settings"/>
         /// </summary>

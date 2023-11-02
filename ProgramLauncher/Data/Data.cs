@@ -233,6 +233,35 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             public ContextActionInfo ActionInfo { get; private set; }
         }
         /// <summary>
+        /// Provede editaci daného prvku
+        /// </summary>
+        /// <param name="menuItem"></param>
+        public void RunEditAction(MouseState mouseState, InteractiveGraphicsControl panel, BaseData areaData, BaseData itemData)
+        {
+            // Kompletní data si odzálohuji ještě před tím, než se začnou provádět změny. Pak je možná dám do UndoRedo containeru:
+            PageSetData pageSetClone = this.Clone(true);
+
+            bool isEdited = false;
+            if (itemData is PageData pageData)
+            {
+                isEdited = pageData.EditData(mouseState.LocationAbsolute);
+            }
+            else if (itemData is GroupData groupData)
+            {
+                isEdited = groupData.EditData(mouseState.LocationAbsolute);
+            }
+            else if (itemData is ApplicationData applicationData)
+            {
+                isEdited = applicationData.EditData(mouseState.LocationAbsolute);
+            }
+
+            if (isEdited)
+            {
+                App.Settings.SetChanged("PageSet");
+                App.UndoRedo.Add(pageSetClone);
+            }
+        }
+        /// <summary>
         /// Provede vybranou akci z kontextového menu
         /// </summary>
         /// <param name="menuItem"></param>
@@ -373,8 +402,12 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             // Pokud nevím, jakou Y adresu mám nastavit, tak nedělám nic:
             if (endMouseState.InteractiveCell is null) return false;
-            pageData.RelativeAdress = new Point(0, endMouseState.InteractiveCell.Adress.Y);
 
+            // Pokud není změna pozice, pak není žádná akce:
+            var newAdress = new Point(0, endMouseState.InteractiveCell.Adress.Y);
+            if (newAdress == pageData.RelativeAdress) return false;
+
+            pageData.RelativeAdress = newAdress;
             ReArrangePages(pageData);
             return true;
         }
@@ -708,8 +741,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <returns></returns>
         public bool MoveApplication(ApplicationData applicationData, MouseState beginMouseState, MouseState endMouseState, InteractiveGraphicsControl panel)
         {
+            bool isChanged = false;
+
             var beginGroup = applicationData?.ParentGroup;
-            if (beginGroup is null) return false;
+            if (beginGroup is null) return isChanged;
 
             var endGroup = SearchForGroup(endMouseState.InteractiveCell.Adress, false, out var endRelativeAdress);
 
@@ -721,13 +756,22 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 beginGroup.Applications.Remove(applicationData);
                 endGroup.Applications.AddWhenNotContains(applicationData);
                 beginGroup.ReArrangeApplications();
+                isChanged = true;
             }
 
-            applicationData.RelativeAdress = getValidAdress(endRelativeAdress);
-            endGroup.ReArrangeApplications(applicationData);
+            var newAdress = getValidAdress(endRelativeAdress);
+            if (newAdress != applicationData.RelativeAdress)
+                isChanged = true;
 
-            return true;
+            if (isChanged)
+            {
+                applicationData.RelativeAdress = newAdress;
+                endGroup.ReArrangeApplications(applicationData);
+            }
 
+            return isChanged;
+
+            // Vrátí platnou adresu (tedy s hodnotami X i Y ne-zápornými):
             Point getValidAdress(Point? adress)
             {
                 int x = adress?.X ?? 0;

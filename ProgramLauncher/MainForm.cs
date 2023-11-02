@@ -65,6 +65,37 @@ namespace DjSoft.Tools.ProgramLauncher
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+        /// <summary>
+        /// Tuto metodu volá bázová třída okna (<see cref="BaseForm"/>) v okamžiku, kdy by měl být restorován stav okna (<see cref="Form.WindowState"/> a jeho Bounds) z dat uložených v Settings, ale tam dosud nic není.
+        /// Potomek by v této metodě měl umístit okno do výchozí pozice.
+        /// </summary>
+        protected override void OnFormStateDefault()
+        {
+            this.Size = new Size(760, 580);
+            this.WindowState = FormWindowState.Normal;
+            this.StartPosition = FormStartPosition.WindowsDefaultLocation;
+        }
+        protected override void OnFirstShown()
+        {
+            this.CheckArgumentHelp();
+        }
+        /// <summary>
+        /// Pokud v argumentech aplikace je požadavek na Help, zobrazí okno s popisem všech argumentů
+        /// </summary>
+        protected void CheckArgumentHelp()
+        {
+            bool needHelp = App.HasArgument("?") || App.HasArgument("help");
+            if (!needHelp) return;
+
+            string eol = Environment.NewLine;
+            string q = "\"";
+            string help = $@"Config={q}C:\Directory\SettingsFile.ini{q} => {App.Messages.HelpInfoSettingsFile}{eol}
+Single => {App.Messages.HelpInfoSingleApp}{eol}
+Reset => {App.Messages.HelpInfoReset}{eol}
+Help => {App.Messages.HelpInfoHelp}{eol}
+";
+            App.ShowMessage(help, MessageBoxIcon.Information, App.Messages.HelpInfoTitle);
+        }
         protected override void WndProc(ref Message m)
         {
             if (SingleProcess.IsShowMeWmMessage(ref m))
@@ -89,7 +120,7 @@ namespace DjSoft.Tools.ProgramLauncher
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             // Kdy se povoluje velký Exit:
-            bool enableExit = App.ApplicationIsClosing || Control.ModifierKeys == Keys.Control || e.CloseReason == CloseReason.ApplicationExitCall || App.HasArgument("QX");
+            bool enableExit = (App.ApplicationIsClosing || Control.ModifierKeys == Keys.Control || e.CloseReason == CloseReason.ApplicationExitCall || App.HasArgument("QX") || !App.HasArgument("Single"));
             if (enableExit)
             {   
                 base.OnFormClosing(e);
@@ -258,7 +289,7 @@ namespace DjSoft.Tools.ProgramLauncher
 
             this._ToolPreferenceButton.Visible = false;
             this._ToolEditButton.Visible = false;
-            this._ToolMessageSyncButton.Visible = !App.Messages.IsTranslateComplete;
+            _ToolMessageSyncRefresh();
 
             App.UndoRedo.CurrentStateChanged += _UndoRedoCurrentStateChanged;
             App.UndoRedo.CatchCurrentRedoData += _UndoRedoCatchCurrentRedoData;
@@ -288,7 +319,7 @@ namespace DjSoft.Tools.ProgramLauncher
             this._ToolRedoButton.ToolTipText = App.Messages.ToolStripButtonRedoToolTip;
             this._ToolPreferenceButton.ToolTipText = App.Messages.ToolStripButtonPreferenceToolTip;
             this._ToolEditButton.ToolTipText = App.Messages.ToolStripButtonEditToolTip;
-            this._ToolMessageSyncButton.ToolTipText = App.Messages.ToolStripButtonMessageSyncToolTip;
+            _ToolMessageSyncRefresh();
         }
         /// <summary>
         /// Po kliknutí na tlačítko Toolbaru: Vzhled
@@ -319,7 +350,28 @@ namespace DjSoft.Tools.ProgramLauncher
         private void _ToolMessageSyncButton_Click(object sender, EventArgs e) 
         {
             App.TryRun(App.Messages.SynchronizeLanguageFiles);
-            this._ToolMessageSyncButton.Visible = !App.Messages.IsTranslateComplete;
+            _ToolMessageSyncRefresh();
+        }
+        /// <summary>
+        /// Aktualizuje button <see cref="_ToolMessageSyncButton"/> (Visible a ToolTip)
+        /// </summary>
+        private void _ToolMessageSyncRefresh()
+        {
+            var translateInfo = App.Messages.NonTranslated;
+
+            bool hasNonTranslated = (translateInfo.FilesCount > 0);
+            this._ToolMessageSyncButton.Visible = hasNonTranslated;
+            
+            if (!hasNonTranslated)
+            {
+                this._ToolMessageSyncButton.ToolTipText = App.Messages.ToolStripButtonMessageSyncToolTip;
+            }
+            else 
+            {
+                string messagesText = App.GetCountText(translateInfo.MessagesCount, App.Messages.ToolStripButtonMessageSyncMessagesTexts);
+                string filesText = App.GetCountText(translateInfo.FilesCount, App.Messages.ToolStripButtonMessageSyncFilesTexts);
+                this._ToolMessageSyncButton.ToolTipText = App.Messages.Format(App.Messages.ToolStripButtonMessageSyncInfoToolTip, messagesText, filesText);
+            }
         }
         private ToolStripButton _ToolAppearanceButton;
         private ToolStripButton _ToolUndoButton;
@@ -525,7 +577,9 @@ namespace DjSoft.Tools.ProgramLauncher
             var pageData = e.Item.UserData as Data.PageData;
             if (e.MouseState.Buttons == MouseButtons.Left)
             {
-                if (pageData != null)
+                if (e.MouseState.ModifierKeys == Keys.Control)
+                    this._PageSet.RunEditAction(e.MouseState, this._PagesPanel, this._PageSet, pageData);
+                else if (pageData != null)
                     _ActivePageData = pageData;
             }
             else if (e.MouseState.Buttons == MouseButtons.Right)
@@ -633,16 +687,18 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="e"></param>
         private void _ApplicationItemClick(object sender, Components.InteractiveItemEventArgs e)
         {
+            var itemData = e.Item.UserData as Data.BaseData;
             if (e.MouseState.Buttons == MouseButtons.Left)
             {
                 var applInfo = e.Item.UserData as Data.ApplicationData;
-                if (applInfo != null)
+                if (e.MouseState.ModifierKeys == Keys.Control)
+                    this._PageSet.RunEditAction(e.MouseState, this._PagesPanel, this._PageSet, itemData);
+                else if (applInfo != null)
                     App.TryRun(applInfo.RunApplication);
             }
             else if (e.MouseState.Buttons == MouseButtons.Right)
             {
-                var dataInfo = e.Item.UserData as Data.BaseData;
-                this._PageSet.ShowContextMenu(e.MouseState, this._ApplicationsPanel, this._ActivePageData, dataInfo);
+                this._PageSet.ShowContextMenu(e.MouseState, this._ApplicationsPanel, this._ActivePageData, itemData);
             }
         }
         /// <summary>
