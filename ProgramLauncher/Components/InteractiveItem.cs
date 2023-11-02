@@ -127,7 +127,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Definice layoutu: buď je lokální (specifická) podle <see cref="LayoutKind"/>, 
         /// anebo převzatá z Parenta (ten má svůj <see cref="InteractiveGraphicsControl.DefaultLayoutKind"/>).
         /// </summary>
-        public virtual ItemLayoutInfo DataLayout { get { return __Parent?.GetLayout(LayoutKind); } }
+        public virtual LayoutItemInfo DataLayout { get { return __Parent?.GetLayout(LayoutKind); } }
         /// <summary>
         /// Druh Layoutu tohoto prvku. Default = null = přebírá se z panelu, na kterém je umístěn.
         /// <para/>
@@ -153,7 +153,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         public Size CellSize { get { return __CellSize ?? this.DataLayout?.CellSize ?? Size.Empty; } set { __CellSize = value; ResetParentLayout(); } } private Size? __CellSize;
         /// <summary>
-        /// Souřadnice vnitřního aktivního prostoru tohoto prvku ve virtuálním prostoru (tj. velikost odpovídá <see cref="ItemLayoutInfo.CellSize"/>.
+        /// Souřadnice vnitřního aktivního prostoru tohoto prvku ve virtuálním prostoru (tj. velikost odpovídá <see cref="LayoutItemInfo.CellSize"/>.
         /// Pokud prvek nemá správnou adresu <see cref="Adress"/> (záporné hodnoty), pak má <see cref="VirtualBounds"/> = null! Pak nebude ani interaktivní.
         /// Pokud prvek má adresu OK, pak má <see cref="VirtualBounds"/> přidělenou i když jeho <see cref="Visible"/> by bylo false.
         /// </summary>

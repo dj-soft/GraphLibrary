@@ -626,10 +626,17 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         protected override void OnButtonClick()
         {
             string fileName = ApplicationData.GetCurrentFilePath(this.FileName);
-            string path = (!String.IsNullOrEmpty(fileName) ? System.IO.Path.GetDirectoryName(fileName) : "");
+
+            bool hasFileName = !String.IsNullOrEmpty(fileName);
+            if (hasFileName)
+            {
+                bool isUriValid = Uri.TryCreate(fileName, UriKind.RelativeOrAbsolute, out Uri uri);
+                hasFileName = isUriValid && uri.IsFile;
+            }
+            string path = (hasFileName ? System.IO.Path.GetDirectoryName(fileName) : "");
             if (String.IsNullOrEmpty(path)) path = DefaultPath;
             if (String.IsNullOrEmpty(path)) path = UserSelectedPath;
-            string name = (!String.IsNullOrEmpty(fileName) ? System.IO.Path.GetFileName(fileName) : "");
+            string name = (hasFileName ? System.IO.Path.GetFileName(fileName) : "");
             using (var dialog = new System.Windows.Forms.OpenFileDialog())
             {
                 dialog.Multiselect = false;
@@ -749,7 +756,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Prvek je aktivní osobně nebo jeho Text nebo Button
         /// </summary>
-        protected bool IsAnyActive { get { return (this.IsActive || __TextBox.IsActive || __Button.IsActive); } }
+        protected bool IsAnyActive { get { return (this.IsActive || this.IsMouseOnRightTexbBox || /* this.IsMouseOnMyBounds || */ __TextBox.IsActive || __Button.IsActive); } }
         protected override void OnActivityChange()
         {
             _DoLayoutOnActivityChange();
@@ -835,6 +842,30 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 bool currentIsActive = IsAnyActive;
                 bool layoutIsActive = __LayoutIsActive;
                 return (currentIsActive != layoutIsActive);
+            }
+        }
+        /// <summary>
+        /// Obsahuje true, pokud myš se nachází uvnitř this panelu a přesně na pravém okraji TextBoxu.
+        /// To je "mrtvé místo", kdy je myš fyicky uvnitř Panelu, ale přitom podle eventů není ani v TextBoxu a ani v Panelu.
+        /// Z TextBoxu už myš odešla (proběhl MouseLeave), ale do Panelu ještě nepřišla (MouseEnter).
+        /// Takže proběhne <see cref="OnActivityChange"/>, panel vyhodnotí že myš je úplně mimo panel (protože už není ani v TextBoxu a ještě není v Panelu),
+        /// a vykreslí v panelu jen TextBox přes plnou šířku a skryje Button. V tu chvíli ale TextBox bude pod myší a proběhne MouseEnter a následně <see cref="OnActivityChange"/>,
+        /// a tak začne panel blikat...
+        /// <para/>
+        /// Jakmile panel bude do testování <see cref="IsAnyActive"/> zahrnovat i tuto hodnotu <see cref="IsMouseOnRightTexbBox"/>, pak nebude blikat.
+        /// </summary>
+        protected bool IsMouseOnRightTexbBox
+        {
+            get
+            {
+                var mousePoint = this.PointToClient(MousePosition);
+                var textBoxBounds = this.__TextBox.Bounds;
+                var mx = mousePoint.X;
+                var my = mousePoint.Y;
+                var tr = textBoxBounds.Right;
+                var tt = textBoxBounds.Top;
+                var tb = textBoxBounds.Bottom;
+                return (mx >= (tr - 2) && mx <= tr && my > tt && my < (tb - 1));
             }
         }
         #endregion
@@ -1191,7 +1222,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         public bool HasFocus { get { return __HasFocus; } }
         private bool __HasFocus;
         /// <summary>
-        /// Prvek má myš
+        /// Prvek má myš - přímo nad svým vlastním prostorem.
+        /// Obsahuje false, když myš je sice nad this prvkem, ale v místě, kde je umístěn některý můj Child prvek.
+        /// Pak lze testovat <see cref="IsMouseOnMyBounds"/>.
         /// </summary>
         public bool HasMouse { get { return __HasMouse; } }
         private bool __HasMouse;
@@ -1199,6 +1232,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Prvek je aktivní, tedy má focus nebo myš
         /// </summary>
         public bool IsActive { get { return __HasFocus || __HasMouse; } }
+        /// <summary>
+        /// Obsahuje true, pokud aktuální pozice myši <see cref="Control.MousePosition"/> se nachází uvnitř this panelu.
+        /// Zde je true i tehdy, když <see cref="HasMouse"/> je false = a to tehdy, když myš je nad některým mým Child prvkem.
+        /// </summary>
+        /// <returns></returns>
+        public bool IsMouseOnMyBounds { get { return _IsMouseOnMyBounds(); } }
         #endregion
     }
     #endregion

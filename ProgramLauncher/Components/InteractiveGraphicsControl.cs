@@ -759,14 +759,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Výchozí layoutu pro prvky v tomto panelu. Jeden panel má jeden základní layout, konkrétní prvek může definovat svůj vlastní layout.
         /// </summary>
-        public ItemLayoutInfo DefaultLayout { get { return GetLayout(); } }
+        public LayoutItemInfo DefaultLayout { get { return GetLayout(); } }
         /// <summary>
         /// Metoda vrátí konkrétní layout daného druhu, z právě aktuální sady <see cref="App.CurrentLayoutSet"/>.
         /// Pokud na vstupu bude <paramref name="layoutKind"/> = null, pak se vyhledá základní layout dle <see cref="DefaultLayoutKind"/>.
         /// </summary>
         /// <param name="layoutKind"></param>
         /// <returns></returns>
-        public ItemLayoutInfo GetLayout(DataLayoutKind? layoutKind = null) { return App.CurrentLayoutSet.GetLayout(layoutKind ?? DefaultLayoutKind); }
+        public LayoutItemInfo GetLayout(DataLayoutKind? layoutKind = null) { return App.CurrentLayoutSet.GetLayout(layoutKind ?? DefaultLayoutKind); }
         #endregion
         #region Přepočet layoutu celé sady zdejších prvků = InteractiveMap
         /// <summary>
@@ -787,7 +787,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="items"></param>
         /// <param name="dataLayout"></param>
         /// <returns></returns>
-        public static InteractiveMap RecalculateVirtualBounds(IEnumerable<InteractiveItem> items, ItemLayoutInfo dataLayout)
+        public static InteractiveMap RecalculateVirtualBounds(IEnumerable<InteractiveItem> items, LayoutItemInfo dataLayout)
         {
             // Výstupní mapa prvků:
             var standardSize = dataLayout?.CellSize ?? new Size(120, 24);

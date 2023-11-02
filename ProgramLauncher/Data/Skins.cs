@@ -45,6 +45,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public ColorSet ActiveContentColor { get { return __ActiveContentColor; } set { if (!__IsReadOnly) __ActiveContentColor = value; } } private ColorSet __ActiveContentColor;
         /// <summary>
+        /// Sada barev pro čáru HeaderLine, kreslí se když její souřadnice jsou zadané.
+        /// </summary>
+        public ColorSet HeaderLineColors { get { return __HeaderLineColors; } set { if (!__IsReadOnly) __HeaderLineColors = value; } } private ColorSet __HeaderLineColors;
+        /// <summary>
         /// Sada barev pro čáru Border, kreslí se když <see cref="BorderWidth"/> je kladné
         /// </summary>
         public ColorSet BorderLineColors { get { return __BorderLineColors; } set { if (!__IsReadOnly) __BorderLineColors = value; } } private ColorSet __BorderLineColors;

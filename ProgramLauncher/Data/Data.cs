@@ -712,7 +712,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             if (beginGroup is null) return false;
 
             var endGroup = SearchForGroup(endMouseState.InteractiveCell.Adress, false, out var endRelativeAdress);
-            if (endGroup is null) endGroup = beginGroup;
+
+            _MoveApplicationCorrectAdress(beginGroup, endMouseState, ref endGroup, ref endRelativeAdress);
 
             bool isBetweenGroup = !Object.ReferenceEquals(beginGroup, endGroup);
             if (isBetweenGroup)
@@ -735,6 +736,83 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 if (y < 0) y = 0;
                 return new Point(x, y);
             }
+        }
+        /// <summary>
+        /// Koriguje cílový prostor pro situaci, kdy je jako cíl vybrán GroupHeader, anebo poslední řada prvků a její dolní okraj
+        /// </summary>
+        /// <param name="beginGroup"></param>
+        /// <param name="endMouseState"></param>
+        /// <param name="endGroup"></param>
+        /// <param name="endRelativeAdress"></param>
+        private void _MoveApplicationCorrectAdress(GroupData beginGroup, MouseState endMouseState, ref GroupData endGroup, ref Point? endRelativeAdress)
+        {
+            if (endGroup is null) endGroup = beginGroup;
+            if (!endRelativeAdress.HasValue) endRelativeAdress = new Point(0, endGroup.ApplicationsMaxPoint.Y + 1);
+
+            var endCellBounds = endMouseState.InteractiveCell.VirtualBounds;
+
+            if (endRelativeAdress.Value.Y < 0)
+            {   // Pokud jsem přesunul prvek přímo na záhlaví grupy, pak mám Y = -1...  Co s tím?
+                endRelativeAdress = new Point(endRelativeAdress.Value.X, 0);
+
+                // a) Pokud prvek pod koncovou myší je skutečně GroupData, pak určím, zda myš je na Y souřadnici v horní nebo dolní polovině Headeru:
+                bool isBottomHalf = true;
+                if (endCellBounds.Height > 6)
+                {
+                    int endCenter = endCellBounds.Top + (endCellBounds.Height / 2);
+                    isBottomHalf = endMouseState.LocationVirtual.Y > endCenter;          // true pokud myš je v dolní polovině headeru, false když jsme nahoře
+                }
+
+                // Pokud jsme v dolní polovině, pak prostě v endRelativeAdress nechám hodnotu Y = 0, a skončím:
+                if (isBottomHalf) return;
+
+                // Jsme v horní polovině Headeru: realizujeme přemístění do předešlé grupy (pokud existuje), do nového dolního řádku:
+                var prevGroup = endGroup.ParentPage.GetNearGroup(endGroup, -1);
+                // Pokud před danou grupou na offsetu -1 už není žádná grupa, pak jsme na první grupě a necháme ji tak včetně indexu Y = 0:
+                if (prevGroup is null) return;
+
+                endGroup = prevGroup;
+                endRelativeAdress = new Point(endRelativeAdress.Value.X, endGroup.ApplicationsMaxPoint.Y + 1);
+                return;
+            }
+
+            // Jsem v běžném prostoru aplikací dané grupy. 
+            // Pokud jsem v poslední řadě (Y) a v dolní třetině cílového prvku, a prvek existuje, pak prvek přesunu do další (=nové) dolní řady:
+            var endGroupMaxPoint = endGroup.ApplicationsMaxPoint;
+            if (endRelativeAdress.Value.Y < endGroupMaxPoint.Y) return;        // Cílová adresa má Y menším než poslední řada = nebudu nic korigovat.
+
+            // Pokud cílový prostor neobsahuje žádnou aplikaci (Item), pak do buňky klidně přesunu Target prvek = je tam pro něj místo:
+            if (endMouseState.InteractiveCell.Items is null || endMouseState.InteractiveCell.Items.Length == 0) return;
+
+            // Cílová buňka je v poslední řadě aplikací dané grupy, a je tam nějaká aplikace (je obsazeno).
+            // Pokud je myš v dolní třetině buňky, pak Target prvek umístím do nové další řady dolů => dám Y = +1:
+            if (endCellBounds.Height > 6)
+            {
+                int endTertia = endCellBounds.Top + (2 * endCellBounds.Height / 3);  // Pozice Y dolní třetiny cílové buňky
+                bool isBottomTertia = endMouseState.LocationVirtual.Y >= endTertia;
+                if (isBottomTertia)
+                {
+                    endRelativeAdress = new Point(endRelativeAdress.Value.X, endGroupMaxPoint.Y + 1);
+                    return;
+                }
+            }
+        }
+        /// <summary>
+        /// Vrátí grupu sousední k grupě dané v rámci this stránky.
+        /// Sousední = vzdálená o <paramref name="offset"/> od dané grupy <paramref name="groupData"/>.
+        /// Může vrátit null.
+        /// </summary>
+        /// <param name="groupData"></param>
+        /// <param name="offset"></param>
+        /// <returns></returns>
+        public GroupData GetNearGroup(GroupData groupData, int offset)
+        {
+            if (groupData is null) return null;
+            int index = this.Groups.IndexOf(groupData);
+            if (index < 0) return null;
+            int nearIndex = index + offset;
+            if (nearIndex < 0 ||  nearIndex >= this.Groups.Count) return null;
+            return this.Groups[nearIndex];
         }
         /// <summary>
         /// Zajistí validní uspořádání skupin na ose Y. Umožní umístit stránku <paramref name="targetPage"/> na cílovou Y pozici <paramref name="targetY"/>.
@@ -878,6 +956,19 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Při klonování se 
         /// </summary>
         private static int __NewUniqueId = 0;
+        /// <summary>
+        /// Obsahuje nejvyšší adresu X a Y ze všech aplikací.
+        /// </summary>
+        public Point ApplicationsMaxPoint
+        {
+            get
+            {
+                int maxX = 0;
+                int maxY = 0;
+                this.Applications.ForEachExec(a => { var p = a.RelativeAdress; if (p.X > maxX) maxX = p.X; if (p.Y > maxY) maxY = p.Y; });
+                return new Point(maxX, maxY);
+            }
+        }
         #endregion
         #region Provedení editační akce pro některý z mých Child prvků
         /// <summary>

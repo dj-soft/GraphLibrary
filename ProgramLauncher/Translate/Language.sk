@@ -20,7 +20,7 @@ StatusStripPageCountText bez stránok×stránka×stránky×stránok
 StatusStripApplicationText bez aplikácií×aplikácie×aplikácie×aplikácií
 AppearanceMenuHeaderColorPalette FAREBNÁ PALETA
 AppearanceMenuHeaderLayoutStyle VEĽKOSŤ
-AppearanceMenuHeaderToolTipType *TOOL TIP
+AppearanceMenuHeaderToolTipType TOOL TIP
 AppearanceMenuHeaderLanguage JAZYK
 AppContextMenuTitlePages Stránky
 AppContextMenuTitlePage Stránka '%0'
@@ -61,22 +61,22 @@ EditDataOnlyOneInstanceText Len jeden proces
 EditDataOpenMaximizedText Maximalizované okno
 ExecutableFileIsNotSpecified Aplikáciu nemožno spustiť, nie je zadaný jej súbor.
 ExecutableFileIsNotExists Aplikáciu nemožno spustiť, jej súbor neexistuje.
-ToolTipTypeNoneText *Žádný tooltip
-ToolTipTypeDefaultText *Defaultní tooltip
-ToolTipTypeFastText *Rychlý tooltip
-ToolTipTypeSlowText *Pomalý tooltip
-DialogButtonOkText *OK
-DialogButtonCancelText *Storno
-DialogButtonYesText *Ano
-DialogButtonNoText *Ne
-DialogButtonAbortText *Přerušit
-DialogButtonRetryText *Opakovat
-DialogButtonIgnoreText *Ignorovat
-DialogButtonHelpText *Nápověda
-DialogButtonNextText *Další
-DialogButtonPrevText *Zpět
-DialogButtonApplyText *Aplikovat
-DialogButtonSaveText *Uložit
+ToolTipTypeNoneText Žiadny tooltip
+ToolTipTypeDefaultText Defaultný tooltip
+ToolTipTypeFastText Rýchly tooltip
+ToolTipTypeSlowText Pomalý tooltip
+DialogButtonOkText OK
+DialogButtonCancelText Storno
+DialogButtonYesText Áno
+DialogButtonNoText Nie
+DialogButtonAbortText Prerušiť
+DialogButtonRetryText Opakovať
+DialogButtonIgnoreText Ignorovať
+DialogButtonHelpText Pomocník
+DialogButtonNextText Ďalšia
+DialogButtonPrevText Späť
+DialogButtonApplyText Aplikovať
+DialogButtonSaveText Uložiť
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Ukončenie aplikácie
 TrayIconBalloonText Aplikácia je len schovaná.××Pre reálne vypnutie ju zatvorte krížikom spolu s klávesom CTRL!××alebo použite kontextové menu na tejto ikone.

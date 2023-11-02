@@ -1416,16 +1416,16 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Pozor, tato property není propojena s <see cref="Settings.LayoutSetName"/>, toto propojení musí zajistit aplikace.
         /// Důvodem je vhodné načasování zaháčkování a provedení eventu po změně / inicializaci.
         /// </summary>
-        public static ItemLayoutSet CurrentLayoutSet { get { return Current._CurrentLayoutSet; } set { Current._CurrentLayoutSet = value; } }
+        public static LayoutSetInfo CurrentLayoutSet { get { return Current._CurrentLayoutSet; } set { Current._CurrentLayoutSet = value; } }
         /// <summary>
         /// Aktuální sada definující layout; řeší autoinicializaci i hlídání změny a vyvolání eventu
         /// </summary>
-        private ItemLayoutSet _CurrentLayoutSet
+        private LayoutSetInfo _CurrentLayoutSet
         {
             get
             {
                 if (__CurrentLayoutSet is null)
-                    __CurrentLayoutSet = ItemLayoutSet.Default;
+                    __CurrentLayoutSet = LayoutSetInfo.Default;
                 return __CurrentLayoutSet;
             }
             set
@@ -1439,7 +1439,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <summary>
         /// Aktuální sada definující layout, proměnná
         /// </summary>
-        private ItemLayoutSet __CurrentLayoutSet;
+        private LayoutSetInfo __CurrentLayoutSet;
         /// <summary>
         /// Událost volaná po změně skinu
         /// </summary>

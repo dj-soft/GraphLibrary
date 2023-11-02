@@ -9,10 +9,10 @@ using static DjSoft.Tools.ProgramLauncher.App;
 namespace DjSoft.Tools.ProgramLauncher.Data
 {
     /// <summary>
-    /// Sada layoutů: jedna sada obsahuje layouty <see cref="ItemLayoutInfo"/> pro standardní prvky rozhraní zobrazené v jedné zvolené velikosti.
-    /// Existují různé sady <see cref="ItemLayoutSet"/>, pro různé velikosti (které si volí uživatel).
+    /// Sada layoutů: jedna sada obsahuje layouty <see cref="LayoutItemInfo"/> pro standardní prvky rozhraní zobrazené v jedné zvolené velikosti.
+    /// Existují různé sady <see cref="LayoutSetInfo"/>, pro různé velikosti (které si volí uživatel).
     /// </summary>
-    public class ItemLayoutSet : IMenuItem
+    public class LayoutSetInfo : IMenuItem
     {
         #region Public instanční údaje = layouty pro jednotlivé prvky, pro stejnou velikost
         /// <summary>
@@ -30,15 +30,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Layout prvků Page
         /// </summary>
-        public ItemLayoutInfo LayoutPage { get { return __LayoutPage; } set { if (!__IsReadOnly) __LayoutPage = value; } } private ItemLayoutInfo __LayoutPage;
+        public LayoutItemInfo LayoutPage { get { return __LayoutPage; } set { if (!__IsReadOnly) __LayoutPage = value; } } private LayoutItemInfo __LayoutPage;
         /// <summary>
         /// Layout prvků Group
         /// </summary>
-        public ItemLayoutInfo LayoutGroup { get { return __LayoutGroup; } set { if (!__IsReadOnly) __LayoutGroup = value; } } private ItemLayoutInfo __LayoutGroup;
+        public LayoutItemInfo LayoutGroup { get { return __LayoutGroup; } set { if (!__IsReadOnly) __LayoutGroup = value; } } private LayoutItemInfo __LayoutGroup;
         /// <summary>
         /// Layout prvků Application
         /// </summary>
-        public ItemLayoutInfo LayoutApplication { get { return __LayoutApplication; } set { if (!__IsReadOnly) __LayoutApplication = value; } } private ItemLayoutInfo __LayoutApplication;
+        public LayoutItemInfo LayoutApplication { get { return __LayoutApplication; } set { if (!__IsReadOnly) __LayoutApplication = value; } } private LayoutItemInfo __LayoutApplication;
         /// <summary>
         /// Data jsou ReadOnly?
         /// </summary>
@@ -48,7 +48,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         /// <param name="layoutKind"></param>
         /// <returns></returns>
-        public ItemLayoutInfo GetLayout(DataLayoutKind layoutKind)
+        public LayoutItemInfo GetLayout(DataLayoutKind layoutKind)
         {
             switch (layoutKind)
             {
@@ -64,18 +64,18 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Kolekce všech standardních i přidaných definic
         /// </summary>
-        public static ItemLayoutSet[] Collection { get { return _Collection.Values.ToArray(); } }
+        public static LayoutSetInfo[] Collection { get { return _Collection.Values.ToArray(); } }
         /// <summary>
         /// Defaultní výchozí vzhled
         /// </summary>
-        public static ItemLayoutSet Default { get { return GetItem(_DefaultName); } }
+        public static LayoutSetInfo Default { get { return GetItem(_DefaultName); } }
         private const string _DefaultName = "Default";
         /// <summary>
         /// Vrátí prvek daného jména
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        public static ItemLayoutSet GetItem(string name, bool useDefault = false)
+        public static LayoutSetInfo GetItem(string name, bool useDefault = false)
         {
             var collection = _Collection;
             if (!String.IsNullOrEmpty(name) && collection.TryGetValue(name, out var item)) return item;
@@ -91,7 +91,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// List všech standardních i přidaných definic, autoinicializační, metodou <see cref="_CreateAllAppearances()"/>
         /// </summary>
-        private static Dictionary<string, ItemLayoutSet> _Collection
+        private static Dictionary<string, LayoutSetInfo> _Collection
         {
             get
             {
@@ -103,20 +103,20 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Dictionary všech standardních i přidaných definic, proměnná
         /// </summary>
-        private static Dictionary<string, ItemLayoutSet> __Collection;
+        private static Dictionary<string, LayoutSetInfo> __Collection;
         /// <summary>
         /// Vytvoří a vrátí List všech standardních i přidaných definic
         /// </summary>
         /// <returns></returns>
-        private static Dictionary<string, ItemLayoutSet> _CreateAllAppearances()
+        private static Dictionary<string, LayoutSetInfo> _CreateAllAppearances()
         {
-            List<ItemLayoutSet> list = new List<ItemLayoutSet>();
-            var methods = typeof(ItemLayoutSet).GetMethods(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.NonPublic);
+            List<LayoutSetInfo> list = new List<LayoutSetInfo>();
+            var methods = typeof(LayoutSetInfo).GetMethods(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.NonPublic);
             foreach (var method in methods)
             {
-                if (!method.IsSpecialName && method.ReturnType == typeof(ItemLayoutSet) && method.GetParameters().Length == 0)
+                if (!method.IsSpecialName && method.ReturnType == typeof(LayoutSetInfo) && method.GetParameters().Length == 0)
                 {
-                    if (method.Invoke(null, new object[] { }) is ItemLayoutSet info)
+                    if (method.Invoke(null, new object[] { }) is LayoutSetInfo info)
                         list.Add(info);
                 }
             }
@@ -128,15 +128,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Vytvoří new instanci sady "Default"
         /// </summary>
         /// <returns></returns>
-        private static ItemLayoutSet _CreateDefault()
+        private static LayoutSetInfo _CreateDefault()
         {
-            var layoutSet = new ItemLayoutSet();
+            var layoutSet = new LayoutSetInfo();
             layoutSet.__Name = _DefaultName;
             layoutSet.__ImageSmall = Properties.Resources.btn_g2_20;
             layoutSet.__SortOrder = 100;
-            layoutSet.__LayoutPage = ItemLayoutInfo.LayoutPageMedium;
-            layoutSet.__LayoutGroup = ItemLayoutInfo.SetGroupTitleMiddle;
-            layoutSet.__LayoutApplication = ItemLayoutInfo.SetMidiBrick;
+            layoutSet.__LayoutPage = LayoutItemInfo.LayoutPageMedium;
+            layoutSet.__LayoutGroup = LayoutItemInfo.SetGroupTitleMiddle;
+            layoutSet.__LayoutApplication = LayoutItemInfo.SetMidiBrick;
             layoutSet.__IsReadOnly = true;
             return layoutSet;
         }
@@ -144,15 +144,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Vytvoří new instanci palety "Small"
         /// </summary>
         /// <returns></returns>
-        private static ItemLayoutSet _CreateSmall()
+        private static LayoutSetInfo _CreateSmall()
         {
-            var layoutSet = new ItemLayoutSet();
+            var layoutSet = new LayoutSetInfo();
             layoutSet.__Name = "Small";
             layoutSet.__ImageSmall = Properties.Resources.btn_09_20;
             layoutSet.__SortOrder = 500;
-            layoutSet.__LayoutPage = ItemLayoutInfo.LayoutPageSmall;
-            layoutSet.__LayoutGroup = ItemLayoutInfo.SetGroupTitleMiddle;
-            layoutSet.__LayoutApplication = ItemLayoutInfo.SetMidiBrick;
+            layoutSet.__LayoutPage = LayoutItemInfo.LayoutPageSmall;
+            layoutSet.__LayoutGroup = LayoutItemInfo.SetGroupTitleMiddle;
+            layoutSet.__LayoutApplication = LayoutItemInfo.SetMidiBrick;
             layoutSet.__IsReadOnly = true;
             return layoutSet;
         }
@@ -160,15 +160,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Vytvoří new instanci palety "Medium"
         /// </summary>
         /// <returns></returns>
-        private static ItemLayoutSet _CreateMedium()
+        private static LayoutSetInfo _CreateMedium()
         {
-            var layoutSet = new ItemLayoutSet();
+            var layoutSet = new LayoutSetInfo();
             layoutSet.__Name = "Medium";
             layoutSet.__ImageSmall = Properties.Resources.btn_05_20;
             layoutSet.__SortOrder = 600;
-            layoutSet.__LayoutPage = ItemLayoutInfo.LayoutPageMedium;
-            layoutSet.__LayoutGroup = ItemLayoutInfo.SetGroupTitleMiddle;
-            layoutSet.__LayoutApplication = ItemLayoutInfo.SetMediumBrick;
+            layoutSet.__LayoutPage = LayoutItemInfo.LayoutPageMedium;
+            layoutSet.__LayoutGroup = LayoutItemInfo.SetGroupTitleMiddle;
+            layoutSet.__LayoutApplication = LayoutItemInfo.SetMediumBrick;
             layoutSet.__IsReadOnly = true;
             return layoutSet;
         }
@@ -176,15 +176,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Vytvoří new instanci palety "Big"
         /// </summary>
         /// <returns></returns>
-        private static ItemLayoutSet _CreateBig()
+        private static LayoutSetInfo _CreateBig()
         {
-            var layoutSet = new ItemLayoutSet();
+            var layoutSet = new LayoutSetInfo();
             layoutSet.__Name = "Big";
             layoutSet.__ImageSmall = Properties.Resources.btn_22_20;
             layoutSet.__SortOrder = 700;
-            layoutSet.__LayoutPage = ItemLayoutInfo.LayoutPageLarge;
-            layoutSet.__LayoutGroup = ItemLayoutInfo.SetGroupTitleMiddle;
-            layoutSet.__LayoutApplication = ItemLayoutInfo.SetMediumBrick;
+            layoutSet.__LayoutPage = LayoutItemInfo.LayoutPageLarge;
+            layoutSet.__LayoutGroup = LayoutItemInfo.SetGroupTitleMiddle;
+            layoutSet.__LayoutApplication = LayoutItemInfo.SetMediumBrick;
             layoutSet.__IsReadOnly = true;
             return layoutSet;
         }
@@ -203,7 +203,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
     /// <summary>
     /// Layout prvku: rozmístění, velikost, styl písma
     /// </summary>
-    public class ItemLayoutInfo
+    public class LayoutItemInfo
     {
         #region Public properties
         /// <summary>
@@ -212,11 +212,12 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string Name { get { return __Name; } set { if (!__IsReadOnly) __Name = value; } } private string __Name;
         /// <summary>
         /// Velikost celé buňky.
-        /// Základ pro tvorbu layoutu = poskládání jednotlivých prvků do matice v controlu. Používá se společně s adresou buňky <see cref="InteractiveItem.Adress"/>.
+        /// Tato velikost je základem pro tvorbu celého layoutu stránky = poskládání jednotlivých prvků do matice v controlu. Používá se společně s adresou buňky <see cref="InteractiveItem.Adress"/>.
         /// <para/>
         /// Může mít zápornou šířku, pak obsazuje disponibilní šířku v controlu ("Spring").
-        /// V případě, že určitý řádek (prvky na stejné adrese X) obsahuje prvky, jejichž <see cref="CellSize"/>.Width je záporné, pak tyto prvky obsadí celou šířku, 
-        /// která je určena těmi řádky, které neobshaují "Spring" prvky.
+        /// V případě, že určitý řádek (prvky na stejné adrese X) obsahuje prvky, jejichž <see cref="CellSize"/>.Width je záporné, pak tyto prvky obsadí celou disponibilní šířku, 
+        /// která je určena těmi okolními řádky, které neobsahují "Spring" prvky.
+        /// (Pokud neexistují okolní řádky s pevnou šířkou, použije se defaultní velikost buňky).
         /// <para/>
         /// Nelze odvozovat šířku celého řádku od vizuálního controlu, vždy jen od fixních prvků.
         /// </summary>
@@ -236,6 +237,12 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Texty mohou být i mimo tento prostor.
         /// </summary>
         public RectangleExt BorderBounds { get { return __BorderBounds; } set { if (!__IsReadOnly) __BorderBounds = value; } } private RectangleExt __BorderBounds;
+        /// <summary>
+        /// Souřadnice prostoru, který tvoří typickou vodorovnou linku v prostoru GroupHeader.
+        /// Pokud je Empty, pak se linka nekreslí.
+        /// V tomto prostoru je použita barva <see cref="HeaderLineColors"/>. 
+        /// </summary>
+        public RectangleExt HeaderLineBounds { get { return __HeaderLineBounds; } set { if (!__IsReadOnly) __HeaderLineBounds = value; } } private RectangleExt __HeaderLineBounds;
         /// <summary>
         /// Zaoblení Borderu, 0 = ostře hranatý
         /// </summary>
@@ -278,11 +285,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Záhlaví stránky - menší
         /// </summary>
-        public static ItemLayoutInfo LayoutPageSmall
+        public static LayoutItemInfo LayoutPageSmall
         {
             get
             {
-                ItemLayoutInfo dataLayout = new ItemLayoutInfo()
+                LayoutItemInfo dataLayout = new LayoutItemInfo()
                 {
                     Name = "Stránka malá",
                     CellSize = new Size(160, 40),
@@ -302,11 +309,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Záhlaví stránky - střední
         /// </summary>
-        public static ItemLayoutInfo LayoutPageMedium
+        public static LayoutItemInfo LayoutPageMedium
         {
             get
             {
-                ItemLayoutInfo dataLayout = new ItemLayoutInfo()
+                LayoutItemInfo dataLayout = new LayoutItemInfo()
                 {
                     Name = "Stránka malá",
                     CellSize = new Size(180, 48),
@@ -326,11 +333,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Záhlaví stránky - velký
         /// </summary>
-        public static ItemLayoutInfo LayoutPageLarge
+        public static LayoutItemInfo LayoutPageLarge
         {
             get
             {
-                ItemLayoutInfo dataLayout = new ItemLayoutInfo()
+                LayoutItemInfo dataLayout = new LayoutItemInfo()
                 {
                     Name = "Stránka malá",
                     CellSize = new Size(200, 60),
@@ -351,11 +358,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Střední obdélník
         /// </summary>
-        public static ItemLayoutInfo SetMidiBrick
+        public static LayoutItemInfo SetMidiBrick
         {
             get
             {
-                ItemLayoutInfo dataLayout = new ItemLayoutInfo()
+                LayoutItemInfo dataLayout = new LayoutItemInfo()
                 {
                     Name = "Menší cihla",
                     CellSize = new Size(160, 64),
@@ -375,11 +382,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Středně velký obdélník
         /// </summary>
-        public static ItemLayoutInfo SetMediumBrick
+        public static LayoutItemInfo SetMediumBrick
         {
             get
             {
-                ItemLayoutInfo dataLayout = new ItemLayoutInfo()
+                LayoutItemInfo dataLayout = new LayoutItemInfo()
                 {
                     Name = "Střední cihla",
                     CellSize = new Size(180, 92),
@@ -399,11 +406,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Středně velký titulek pro grupu
         /// </summary>
-        public static ItemLayoutInfo SetGroupTitleMiddle
+        public static LayoutItemInfo SetGroupTitleMiddle
         {
             get
             {
-                ItemLayoutInfo dataLayout = new ItemLayoutInfo()
+                LayoutItemInfo dataLayout = new LayoutItemInfo()
                 {
                     Name = "Střední titulek",
                     CellSize = new Size(-1, 24),

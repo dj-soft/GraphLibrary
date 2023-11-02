@@ -144,7 +144,7 @@ namespace DjSoft.Tools.ProgramLauncher
             App.Settings.Changed += _SettingsChanged;
 
             App.CurrentAppearance = AppearanceInfo.GetItem(App.Settings.AppearanceName, true);     // Aktivuje posledně aktivní, anebo defaultní vzhled
-            App.CurrentLayoutSet = ItemLayoutSet.GetItem(App.Settings.LayoutSetName, true);
+            App.CurrentLayoutSet = LayoutSetInfo.GetItem(App.Settings.LayoutSetName, true);
             App.CurrentLanguage = LanguageSet.GetItem(App.Settings.LanguageCode, true);
 
             this.StatusLabelVersion.Text = "DjSoft";
@@ -206,7 +206,7 @@ namespace DjSoft.Tools.ProgramLauncher
 
             items.Add(DataMenuItem.CreateSeparator());
             items.Add(DataMenuItem.CreateHeader(App.Messages.AppearanceMenuHeaderLayoutStyle));
-            items.AddRange(ItemLayoutSet.Collection);
+            items.AddRange(LayoutSetInfo.Collection);
 
             items.Add(DataMenuItem.CreateSeparator());
             items.Add(DataMenuItem.CreateHeader(App.Messages.AppearanceMenuHeaderToolTipType));
@@ -226,7 +226,7 @@ namespace DjSoft.Tools.ProgramLauncher
                     App.CurrentAppearance = appearanceInfo;
                     App.Settings.AppearanceName = appearanceInfo.Name;
                 }
-                else if (selectedItem is ItemLayoutSet itemLayoutSet)
+                else if (selectedItem is LayoutSetInfo itemLayoutSet)
                 {
                     App.CurrentLayoutSet = itemLayoutSet;
                     App.Settings.LayoutSetName = itemLayoutSet.Name;

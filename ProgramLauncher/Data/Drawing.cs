@@ -126,6 +126,17 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             }
         }
         /// <summary>
+        /// Obsahuje true, pokud this prostor je zcela nezadaný = prázdný.
+        /// </summary>
+        public bool IsEmpty
+        {
+            get
+            {
+                // Pokud i jen jediná hodnota je zadaná, pak vrátím false = objekt NENÍ prázdný:
+                return !(Left.HasValue || Width.HasValue || Right.HasValue || Top.HasValue || Height.HasValue || Bottom.HasValue);
+            }
+        }
+        /// <summary>
         /// Obsahuje true, pokud this prostor je korektně zadaný, a může mít kladný vnitřní prostor
         /// </summary>
         public bool IsValid

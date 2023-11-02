@@ -20,7 +20,7 @@ StatusStripPageCountText keine Seiten×Seite×Seite×Seiten
 StatusStripApplicationText keine Apps×App×App×Apps
 AppearanceMenuHeaderColorPalette FARBPALETTE
 AppearanceMenuHeaderLayoutStyle GRÖSSE
-AppearanceMenuHeaderToolTipType *TOOL TIP
+AppearanceMenuHeaderToolTipType TOOL-TIPP
 AppearanceMenuHeaderLanguage SPRACHE
 AppContextMenuTitlePages Seites
 AppContextMenuTitlePage Seite '%0'
@@ -61,10 +61,10 @@ EditDataOnlyOneInstanceText Nur ein Prozess
 EditDataOpenMaximizedText Maximiertes Fenster
 ExecutableFileIsNotSpecified Die Anwendung kann nicht gestartet werden, ihre Datei ist nicht angegeben.
 ExecutableFileIsNotExists Die Anwendung kann nicht gestartet werden, ihre Datei existiert nicht.
-ToolTipTypeNoneText *Žádný tooltip
-ToolTipTypeDefaultText *Defaultní tooltip
-ToolTipTypeFastText *Rychlý tooltip
-ToolTipTypeSlowText *Pomalý tooltip
+ToolTipTypeNoneText Kein Tooltip
+ToolTipTypeDefaultText Standard-Tooltip
+ToolTipTypeFastText Kurzer Tooltip
+ToolTipTypeSlowText Langsamer Tooltip
 DialogButtonOkText OK
 DialogButtonCancelText Stornierung
 DialogButtonYesText Ja
@@ -76,7 +76,7 @@ DialogButtonHelpText Helfen
 DialogButtonNextText Nächste
 DialogButtonPrevText Zurück
 DialogButtonApplyText Anwenden
-DialogButtonSaveText 
+DialogButtonSaveText Auferlegen
 TrayIconText Program Launcher
 TrayIconBalloonToolTip Beenden der Bewerbung
 TrayIconBalloonText Die Anwendung ist nur ausgeblendet.××Um sie tatsächlich auszuschalten, schließen Sie sie mit einem Kreuz zusammen mit der STRG-Taste!××Oder nutzen Sie das Kontextmenü auf diesem Symbol.
