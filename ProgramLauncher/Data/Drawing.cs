@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace DjSoft.Tools.ProgramLauncher.Data
 {
+    #region struct RectangleExt : Souřadnice prvku snadno ukotvitelné nejen Left a Top (jako Rectangle) ale i Right a Bottom a Center.
     /// <summary>
     /// Souřadnice.
     /// <para/>
@@ -176,4 +177,139 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             }
         }
     }
+    #endregion
+    #region struct ColorHSV : Barva v režimu HSV
+    /// <summary>
+    /// Barva v režimu HSV
+    /// </summary>
+    public struct ColorHSV
+    {
+        /// <summary>
+        /// Alfa kanál v rozsahu 0.00 ÷ 1.00 : 0.00 = neviditelná průhledná jako sklo / 1.00 = plná naprosto neprůhledná
+        /// </summary>
+        public double Alpha { get; set; }
+        /// <summary>
+        /// Odstín v rozsahu 0.0 ÷ 360.0°
+        /// </summary>
+        public double Hue { get; set; }
+        /// <summary>
+        /// Saturace v rozsahu 0.00 ÷ 1.00
+        /// </summary>
+        public double Saturation { get; set; }
+        /// <summary>
+        /// Světlost v rozsahu 0.00 ÷ 1.00
+        /// </summary>
+        public double Value { get; set; }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"ColorHSV: [Alpha:{Alpha:F3}; Hue:{Hue:F1}°; Saturation:{Saturation:F3}; Value:{Value:F3}; ]";
+        }
+        /// <summary>
+        /// Systémová barva
+        /// </summary>
+        public Color Color
+        {
+            get
+            {
+                int a = Convert.ToInt32(255d * Alpha);
+                var hue = Hue;
+                var saturation = Saturation;
+                var value = Value;
+
+                int hi = Convert.ToInt32(Math.Floor(hue / 60d)) % 6;
+                double f = hue / 60d - Math.Floor(hue / 60d);
+
+                value = value * 255d;
+                int v = Convert.ToInt32(value);
+                int p = Convert.ToInt32(value * (1 - saturation));
+                int q = Convert.ToInt32(value * (1 - f * saturation));
+                int t = Convert.ToInt32(value * (1 - (1 - f) * saturation));
+
+                switch (hi)
+                {
+                    case 0: return Color.FromArgb(a, v, t, p);
+                    case 1: return Color.FromArgb(a, q, v, p);
+                    case 2: return Color.FromArgb(a, p, v, t);
+                    case 3: return Color.FromArgb(a, p, q, v);
+                    case 4: return Color.FromArgb(a, t, p, v);
+                    default: return Color.FromArgb(a, v, p, q);
+                }
+            }
+            set
+            {
+                var color = value;
+
+                double max = Math.Max(color.R, Math.Max(color.G, color.B));
+                double min = Math.Min(color.R, Math.Min(color.G, color.B));
+
+                this.Alpha = (double)color.A / 255d;
+                this.Hue = color.GetHue();
+                this.Saturation = (max == 0) ? 0 : 1d - (1d * min / max);
+                this.Value = max / 255d;
+            }
+        }
+        public static ColorHSV FromHSV(double hue, double saturation, double value)
+        {
+            return FromAHSV(1d, hue, saturation, value);
+        }
+        public static ColorHSV FromAHSV(double alpha, double hue, double saturation, double value)
+        {
+            ColorHSV colorHSV = new ColorHSV();
+            colorHSV.Alpha = _Align(alpha, 0d, 1d);
+            colorHSV.Hue = _Align(hue, 0d, 360d);
+            colorHSV.Saturation = _Align(saturation, 0d, 1d);
+            colorHSV.Value = _Align(value, 0d, 1d);
+            return colorHSV;
+        }
+        public static ColorHSV FromColor(Color color)
+        {
+            ColorHSV colorHSV = new ColorHSV();
+            colorHSV.Color = color;
+            return colorHSV;
+        }
+        public static ColorHSV FromArgb(int alpha, int red, int green, int blue)
+        {
+            ColorHSV colorHSV = new ColorHSV();
+            colorHSV.Color = Color.FromArgb(alpha, red, green, blue);
+            return colorHSV;
+        }
+        public static ColorHSV FromArgb(int red, int green, int blue)
+        {
+            ColorHSV colorHSV = new ColorHSV();
+            colorHSV.Color = Color.FromArgb(red, green, blue);
+            return colorHSV;
+        }
+
+        public static Color ColorFromHSV(double hue, double saturation, double value)
+        {
+            int hi = Convert.ToInt32(Math.Floor(hue / 60)) % 6;
+            double f = hue / 60 - Math.Floor(hue / 60);
+
+            value = value * 255;
+            int v = Convert.ToInt32(value);
+            int p = Convert.ToInt32(value * (1 - saturation));
+            int q = Convert.ToInt32(value * (1 - f * saturation));
+            int t = Convert.ToInt32(value * (1 - (1 - f) * saturation));
+
+            if (hi == 0)
+                return Color.FromArgb(255, v, t, p);
+            else if (hi == 1)
+                return Color.FromArgb(255, q, v, p);
+            else if (hi == 2)
+                return Color.FromArgb(255, p, v, t);
+            else if (hi == 3)
+                return Color.FromArgb(255, p, q, v);
+            else if (hi == 4)
+                return Color.FromArgb(255, t, p, v);
+            else
+                return Color.FromArgb(255, v, p, q);
+        }
+
+        private static double _Align(double value, double min, double max) { return (value > max ? max : (value < min ? min : value)); }
+    }
+    #endregion
 }

@@ -532,4 +532,88 @@
   <data name="edit_text_frame_update_48" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pics\48px\edit-text-frame-update-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="thumb_h_b1_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-b1-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_b2_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-b2-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_b3_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-b3-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_b4_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-b4-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_c1_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-c1-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_c2_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-c2-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_c3_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-c3-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_c4_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-c4-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_d1_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-d1-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_d2_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-d2-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_d3_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-d3-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_d4_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-d4-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_g1_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-g1-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_g2_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-g2-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_g3_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-g3-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_g4_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-g4-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_r1_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-r1-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_r2_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-r2-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_r3_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-r3-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_r4_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-r4-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_v1_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-v1-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_v2_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-v2-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_v3_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-v3-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_v4_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-v4-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_y1_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-y1-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_y2_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-y2-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_y3_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-y3-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="thumb_h_y4_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\16px\thumb-h-y4-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>

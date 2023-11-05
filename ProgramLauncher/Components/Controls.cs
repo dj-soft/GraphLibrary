@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -1093,7 +1094,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     /// <summary>
     /// DColorBox
     /// </summary>
-    public class DColorBox : GraphicsControl, IControlExtended, IValueStorage
+    public class DColorBox : DPanel, IControlExtended, IValueStorage
     {
         public DColorBox()
         {
@@ -1101,72 +1102,23 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         }
         private void _InitializeControls()
         {
-            this.Height = 20;
-            this.PrepareColorBlend();
+            __ColorHueTrackBar = new GColorTrackBar() { Bounds = new Rectangle(0, 0, 200, 22) };
+            __ColorHueTrackBar.ColorBlenderGenerator = CreateColorBlendHue;
+            __ColorLightTrackBar = new GColorTrackBar() { Bounds = new Rectangle(205, 0, 200, 22) };
+            __ColorLightTrackBar.ColorBlenderGenerator = CreateColorBlendLight;
+            this.Controls.Add(__ColorHueTrackBar);
+            this.Controls.Add(__ColorLightTrackBar);
+            this.Height = 22;
         }
-      
-        /// <summary>
-        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
-        /// <para/>
-        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
-        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
-        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
-        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
-        /// </summary>
-        public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
-        #region Soubor, kliknutí na button
-        /// <summary>
-        /// Obsahuje jméno souboru
-        /// </summary>
+        private GColorTrackBar __ColorHueTrackBar;
+        private GColorTrackBar __ColorLightTrackBar;
+
         public Color? Color { get { return __Color; } set { __Color = value; } } private Color? __Color;
-
-        #endregion
-        #region Kreslení
-        protected override void OnPaintToBuffer(object sender, PaintEventArgs e)
-        {
-            base.OnPaintToBuffer(sender, e);
-            var size = this.ClientSize;
-            if (size.Height <= 2 || size.Width <= 16) return;
-
-            int x = 1;
-            int s = 4;
-            int w3 = (size.Width - 10) / 3;
-            int h = size.Height - 2;
-
-            Rectangle boundsHue = new Rectangle(x, 1, w3, h);
-            using (var brushHue = new LinearGradientBrush(new Point(x - 1, 1), new Point(x + w3 + 1, 1), System.Drawing.Color.Blue, System.Drawing.Color.Green))
-            {
-                brushHue.InterpolationColors = __ColorBlendHue;
-                e.Graphics.FillRectangle(brushHue, boundsHue);
-            }
-            x = x + w3 + s;
-
-            Rectangle boundsFull = new Rectangle(x, 1, w3, h);
-            using (var brushFull = new LinearGradientBrush(new Point(x - 1, 1), new Point(x + w3 + 1, 1), System.Drawing.Color.Blue, System.Drawing.Color.Green))
-            {
-                brushFull.InterpolationColors = __ColorBlendFull;
-                e.Graphics.FillRectangle(brushFull, boundsFull);
-            }
-            x = x + w3 + s;
-
-
-
-        }
-        #endregion
-        #region Míchání barev
-        private Rectangle __BoundsrHue;
-        private System.Drawing.Color __ColorHue;
-        private Rectangle __BoundsFull;
-        private System.Drawing.Color __ColorFull;
-        private void PrepareColorBlend()
-        {
-            PrepareColorBlendHue();
-            PrepareColorBlendFull();
-        }
-        private void PrepareColorBlendHue()
+        #region ColorBlenderGeneratory
+        protected ColorBlend CreateColorBlendHue(Color color)
         {
             var colors = new Color[]
-            {
+           {
                 System.Drawing.Color.FromArgb(127,0,255),
                 System.Drawing.Color.FromArgb(191,0,255),
                 System.Drawing.Color.FromArgb(255,0,255),
@@ -1192,7 +1144,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 System.Drawing.Color.FromArgb(0,0,255),
                 System.Drawing.Color.FromArgb(63,0,255),
                 System.Drawing.Color.FromArgb(127,0,255)
-            };
+           };
 
             int count = colors.Length;
             float last = (float)(count - 1);
@@ -1202,19 +1154,18 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 positions[i] = (float)i / last;
             }
 
-            var colorBlend = new ColorBlend(11);
+            var colorBlend = new ColorBlend(count);
             colorBlend.Colors = colors;
             colorBlend.Positions = positions;
 
-            __ColorHue = colors[12];
-            __ColorBlendHue = colorBlend;
+            return colorBlend;
         }
-        private void PrepareColorBlendFull()
+        protected ColorBlend CreateColorBlendLight(Color color)
         {
             var colors = new Color[]
             {
                 System.Drawing.Color.FromArgb(255,255,255),
-                __ColorHue,
+                color,
                 System.Drawing.Color.FromArgb(0,0,0)
             };
 
@@ -1226,15 +1177,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 positions[i] = (float)i / last;
             }
 
-            var colorBlend = new ColorBlend(11);
+            var colorBlend = new ColorBlend(count);
             colorBlend.Colors = colors;
             colorBlend.Positions = positions;
 
-            __ColorFull = colors[1];
-            __ColorBlendFull = colorBlend;
+            return colorBlend;
         }
-        private ColorBlend __ColorBlendHue;
-        private ColorBlend __ColorBlendFull;
         #endregion
         #region IValueStorage
         /// <summary>
@@ -1474,6 +1422,546 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
+        #endregion
+    }
+    #endregion
+    #endregion
+    #region Grafické controly (potomci GraphicsControl)
+    #region GColorTrackBar
+    /// <summary>
+    /// DColorBox
+    /// </summary>
+    public class GColorTrackBar : GTrackBar
+    {
+        #region Konstruktor, public hodnoty
+        public GColorTrackBar() { }
+        protected override void OnInitializeTrackBar()
+        {
+            base.OnInitializeTrackBar();
+            this.SetValueMinMax(0f, 1f);
+        }
+        #endregion
+        #region Kreslení a ColorBlender
+        /// <summary>
+        /// Vykreslíme barevné pozadí pro Tracker
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="trackBarBounds"></param>
+        /// <param name="orientation"></param>
+        protected override void OnPaintTrackerBackground(PaintEventArgs e, Rectangle trackBarBounds, Orientation orientation)
+        {
+            // Nevoláme: base.OnPaintTrackerBackground(e, trackBarBounds, orientation);
+
+            var colorBlend = ColorBlend;
+            if (colorBlend is null) return;
+            
+            switch (orientation)
+            {
+                case Orientation.Horizontal:
+                    using (var brush = new LinearGradientBrush(new Point(trackBarBounds.Left - 1, trackBarBounds.Y), new Point(trackBarBounds.Right + 1, trackBarBounds.Y), System.Drawing.Color.Blue, System.Drawing.Color.Green))
+                    {
+                        brush.InterpolationColors = ColorBlend;
+                        e.Graphics.FillRectangle(brush, trackBarBounds);
+                    }
+                    break;
+
+                case Orientation.Vertical:
+                    using (var brush = new LinearGradientBrush(new Point(trackBarBounds.X, trackBarBounds.Bottom + 1), new Point(trackBarBounds.X, trackBarBounds.Top - 1), System.Drawing.Color.Blue, System.Drawing.Color.Green))
+                    {
+                        brush.InterpolationColors = ColorBlend;
+                        e.Graphics.FillRectangle(brush, trackBarBounds);
+                    }
+                    break;
+            }
+        }
+        #endregion
+        #region Míchání barev
+        /// <summary>
+        /// Sem musí volající dodat referenci na funkci, která vygeneruje new instanci <see cref="ColorBlend"/>.
+        /// </summary>
+        public Func<Color, ColorBlend> ColorBlenderGenerator  { get { return __ColorBlenderGenerator; } set { __ColorBlenderGenerator = value; this.RefreshColorBlend(); this.Draw(); } }
+        private Func<Color, ColorBlend> __ColorBlenderGenerator;
+        public void RefreshColorBlend()
+        {
+            this.ColorBlend = this.ColorBlenderGenerator(this.ColorLast);
+        }
+        public void RefreshColorBlend(Color color)
+        {
+            this.ColorLast = color;
+            this.ColorBlend = this.ColorBlenderGenerator(color);
+        }
+        protected ColorBlend ColorBlend { get; set; }
+        protected Color ColorLast { get; set; }
+        #endregion
+    }
+    #endregion
+    #region GTrackBar
+    /// <summary>
+    /// DColorBox
+    /// </summary>
+    public class GTrackBar : GraphicsControl, IControlExtended, IValueStorage
+    {
+        #region Konstruktor, public hodnoty
+        public GTrackBar()
+        {
+            _InitializeControls();
+        }
+        private void _InitializeControls()
+        {
+            __ValueMin = 0.0f;
+            __ValueMax = 1.0f;
+            __Value = 0.5f;
+            __TrackBarPadding = new Padding(6, 2, 6, 2);         // Boční jsou větší kvůli přesahu Thumb ikony pod Min a přes Max. Zadání je pro Horizontální orientaci. 
+            __ActivePartColor = SystemColors.Highlight;
+            __InteractiveState = InteractiveState.Enabled;
+            __TrackBarEnabled = true;
+            _MouseInit();
+            OnInitializeTrackBar();
+        }
+        /// <summary>
+        /// V procesu inicializace si potomek připraví svoje data
+        /// </summary>
+        protected virtual void OnInitializeTrackBar() { }
+        /// <summary>
+        /// Počet čárek na trase TrackBaru. Null nebo 0 nebo záporné číslo = nekreslí se.
+        /// Maximum = 1/3 pixelů TrackBaru.
+        /// </summary>
+        public int? TrackBarLines { get { return __TrackBarLines; } set { __TrackBarLines = value; this.Draw(); } } private int? __TrackBarLines;
+        public Color ActivePartColor { get { return __ActivePartColor; } set { __ActivePartColor = value; this.Draw(); } } private Color __ActivePartColor;
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
+        #endregion
+        #region Kreslení jednotlivých segmentů
+        /// <summary>
+        /// Vykreslení obsahu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        protected override void OnPaintToBuffer(object sender, PaintEventArgs e)
+        {
+            base.OnPaintToBuffer(sender, e);
+
+            var trackBarBounds = TrackBarBounds;
+            this.TrackBarActiveBounds = trackBarBounds;
+            if (!trackBarBounds.IsEmpty) 
+            {
+                var orientation = ((trackBarBounds.Width < trackBarBounds.Height) ? Orientation.Vertical : Orientation.Horizontal);
+
+                this.OnPaintTrackerBorder(e, trackBarBounds, orientation);
+                this.OnPaintTrackerBackground(e, trackBarBounds, orientation);
+                this.OnPaintTrackerLines(e, trackBarBounds, orientation);
+                this.OnPaintTrackerThumb(e, trackBarBounds, orientation);
+            }
+        }
+        /// <summary>
+        /// Vykreslí rámeček Trackbaru, na souřadnici o 1 větší než <paramref name="trackBarBounds"/>
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="trackBarBounds"></param>
+        /// <param name="orientation"></param>
+        protected virtual void OnPaintTrackerBorder(PaintEventArgs e, Rectangle trackBarBounds, Orientation orientation)
+        {
+            var textBoxBounds = trackBarBounds.Enlarge(1);
+            System.Windows.Forms.TextBoxRenderer.DrawTextBox(e.Graphics, textBoxBounds, System.Windows.Forms.VisualStyles.TextBoxState.Assist);
+        }
+        /// <summary>
+        /// Vykreslí barevné pozadí Trackbaru
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="trackBarBounds"></param>
+        /// <param name="orientation"></param>
+        protected virtual void OnPaintTrackerBackground(PaintEventArgs e, Rectangle trackBarBounds, Orientation orientation)
+        {
+            using (GraphicsPath path = new GraphicsPath())
+            {
+                if (orientation == Orientation.Horizontal)
+                {
+                    path.AddLine(trackBarBounds.Left, trackBarBounds.Bottom, trackBarBounds.Right, trackBarBounds.Top - 1);
+                    path.AddLine(trackBarBounds.Right, trackBarBounds.Top - 1, trackBarBounds.Right, trackBarBounds.Bottom);
+                    path.AddLine(trackBarBounds.Right, trackBarBounds.Bottom, trackBarBounds.Left, trackBarBounds.Bottom);
+                }
+                else
+                {
+                    path.AddLine(trackBarBounds.Left, trackBarBounds.Bottom, trackBarBounds.Left, trackBarBounds.Top - 1);
+                    path.AddLine(trackBarBounds.Left, trackBarBounds.Top - 1, trackBarBounds.Right, trackBarBounds.Top - 1);
+                    path.AddLine(trackBarBounds.Right, trackBarBounds.Top - 1, trackBarBounds.Left, trackBarBounds.Bottom);
+                }
+                path.CloseFigure();
+                e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
+                e.Graphics.FillPath(App.GetBrush(this.ActivePartColor), path);
+            }
+        }
+        /// <summary>
+        /// Vykreslí čárky na hodnotách TrackBaru, podle <see cref="GTrackBar.TrackBarLines"/>
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="trackBarBounds"></param>
+        /// <param name="orientation"></param>
+        protected virtual void OnPaintTrackerLines(PaintEventArgs e, Rectangle trackBarBounds, Orientation orientation)
+        {
+            var trackBarLines = TrackBarLines;
+            if (trackBarLines.HasValue && trackBarLines.Value > 0)
+            {
+                int maxLines = trackBarBounds.Width / 3;
+                if (trackBarLines.Value > maxLines) trackBarLines = maxLines;
+
+                var tickBounds = trackBarBounds;
+                tickBounds.Y = tickBounds.Bottom - 4;
+                tickBounds.Height = 3;
+
+                TrackBarRenderer.DrawHorizontalTicks(e.Graphics, tickBounds, trackBarLines.Value, System.Windows.Forms.VisualStyles.EdgeStyle.Sunken);
+            }
+        }
+        /// <summary>
+        /// Vykreslí Thumb = button
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="trackBarBounds"></param>
+        /// <param name="orientation"></param>
+        protected virtual void OnPaintTrackerThumb(PaintEventArgs e, Rectangle trackBarBounds, Orientation orientation)
+        {
+            var image = GetThumbImage(orientation);
+            if (image is null) return;
+
+            var center = GetPixelFromValue(this.Value, trackBarBounds, orientation);
+            var thumbBounds = center.GetRectangleFromCenter(11, 11);
+            e.Graphics.DrawImage(image, thumbBounds.Location);
+
+            this.TrackBarActiveThumb = thumbBounds.Enlarge(3);
+        }
+        /// <summary>
+        /// Souřadnice vnitřního prostoru TrackBaru
+        /// </summary>
+        protected virtual Rectangle TrackBarBounds
+        {
+            get
+            {
+                var size = this.ClientSize;
+                var padding = __TrackBarPadding;
+                var minLength = TrackBarMinLength;
+                var minThick = TrackBarMinThick;
+                if (size.Width > size.Height)
+                {   // Horizontal
+                    int x = padding.Left;
+                    int w = size.Width - padding.Horizontal;
+                    int y = padding.Top;
+                    int h = size.Height - padding.Vertical;
+                    if (w >= minLength && h >= minThick)
+                        return new Rectangle(x, y, w, h);
+                }
+                else
+                {   // Vertical: otočíme význam Padding, protože ten je logicky postaven na orientaci Horizontal:
+                    int x = padding.Top;
+                    int w = size.Width - padding.Vertical;
+                    int y = padding.Bottom;
+                    int h = size.Height - padding.Horizontal;
+                    if (h >= minLength && w >= minThick)
+                        return new Rectangle(x, y, w, h);
+                }
+                return Rectangle.Empty;
+            }
+        }
+        /// <summary>
+        /// Orientace TrackBaru, je odvozena od fyzických souřadnic trackeru.
+        /// </summary>
+        protected virtual Orientation TrackBarOrientation { get { var size = this.ClientSize; return ((size.Width < size.Height) ? Orientation.Vertical : Orientation.Horizontal); } }
+        /// <summary>
+        /// true pokud rozměr TrackBaru je tak malý, že nebude kreslen
+        /// </summary>
+        protected virtual bool IsEmpty { get { var bounds = this.TrackBarBounds; return bounds.IsEmpty; } }
+        /// <summary>
+        /// Vnitřní okraje okolo TrackBaru. Jsou zadány pro polohu Horizontálně, tedy Left je před MinValue a Right je za MaxValue.
+        /// </summary>
+        protected virtual Padding TrackBarPadding { get { return __TrackBarPadding; } set { __TrackBarPadding = value; this.Draw(); } } private Padding __TrackBarPadding;
+        /// <summary>
+        /// Nejmenší délka aktivní části TrackBaru. Pokud reálná bude menší, nebude TrackBar kreslen a <see cref="IsEmpty"/> bude true.
+        /// </summary>
+        protected virtual int TrackBarMinLength { get { return 20; } }
+        /// <summary>
+        /// Nejmenší šířka aktivní části TrackBaru. Pokud reálná bude menší, nebude TrackBar kreslen a <see cref="IsEmpty"/> bude true.
+        /// </summary>
+        protected virtual int TrackBarMinThick { get { return 8; } }
+        /// <summary>
+        /// Vrátí Image pro aktuální TrackBar
+        /// </summary>
+        /// <returns></returns>
+        protected Image GetThumbImage()
+        {
+            return GetThumbImage(TrackBarOrientation);
+        }
+        /// <summary>
+        /// Vrátí Image pro aktuální TrackBar
+        /// </summary>
+        /// <returns></returns>
+        protected virtual Image GetThumbImage(Orientation orientation)
+        {
+            InteractiveState state = this.InteractiveState & InteractiveState.MaskBasicStates;
+            bool isHorizontal = (orientation == Orientation.Horizontal);
+            switch (state)
+            {
+                case InteractiveState.Disabled: return Properties.Resources.thumb_h_d2_11;
+                case InteractiveState.Enabled: return Properties.Resources.thumb_h_b3_11;
+                case InteractiveState.MouseOn: return Properties.Resources.thumb_h_v3_11;
+                case InteractiveState.MouseDown: return Properties.Resources.thumb_h_v4_11;
+            }
+            return Properties.Resources.thumb_h_b3_11;
+        }
+        #endregion
+        #region Interaktivita
+        private void _MouseInit()
+        {
+            this.MouseEnter += _MouseEnter;
+            this.MouseMove += _MouseMove;
+            this.MouseDown += _MouseDown;
+            this.MouseUp += _MouseUp;
+            this.MouseLeave += _MouseLeave;
+        }
+        private void _MouseEnter(object sender, EventArgs e)
+        {
+            if (TrackBarEnabled)
+                InteractiveState = InteractiveState.MouseOn;
+        }
+        private void _MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left && TrackBarEnabled && this.InteractiveState == InteractiveState.MouseDown)
+                this.InteractiveValueChange(e.Location);
+        }
+        private void _MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left && TrackBarEnabled && IsInActiveBounds(e.Location))
+            {
+                this.InteractiveState = InteractiveState.MouseDown;
+                this.InteractiveValueChange(e.Location);
+            }
+        }
+        private void _MouseUp(object sender, MouseEventArgs e)
+        {
+            bool isMouseOnControl = this.ClientRectangle.Contains(e.Location);
+            InteractiveState = (isMouseOnControl ? InteractiveState.MouseOn : InteractiveState.Enabled);
+        }
+        /// <summary>
+        /// Myš odchází z Controlu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MouseLeave(object sender, EventArgs e)
+        {
+            InteractiveState = InteractiveState.Enabled;
+        }
+        /// <summary>
+        /// Aktuální interaktivní stav
+        /// </summary>
+        protected InteractiveState InteractiveState 
+        { 
+            get { return (__TrackBarEnabled ? __InteractiveState : InteractiveState.Disabled); } 
+            set
+            {
+                var oldState = __InteractiveState;
+                var newState = value;
+                if (oldState != newState) 
+                {
+                    __InteractiveState = newState;
+                    __TrackBarEnabled = (newState != InteractiveState.Disabled);
+                    OnInteractiveStateChanged();
+                    InteractiveStateChanged?.Invoke(this, EventArgs.Empty);
+                    this.Draw();
+                }
+            }
+        } 
+        private InteractiveState __InteractiveState;
+        /// <summary>
+        /// Došlo ke změně interaktivního stavu
+        /// </summary>
+        protected virtual void OnInteractiveStateChanged() { }
+        public event EventHandler InteractiveStateChanged;
+        /// <summary>
+        /// TrackBar je Enabled?
+        /// </summary>
+        public bool TrackBarEnabled { get { return __TrackBarEnabled; } set { __TrackBarEnabled = value; this.Draw(); } } private bool __TrackBarEnabled;
+        /// <summary>
+        /// Metoda má přepočítat aktuální hodnotu podle souřadnice myši, a zavolat vykreslení controlu.
+        /// </summary>
+        /// <param name="mousePoint"></param>
+        protected virtual void InteractiveValueChange(Point mousePoint)
+        {
+            if (__TrackBarEnabled) 
+            {
+                this.Value = GetValueFromPixel(mousePoint);
+                this.Draw();
+            }
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný bod je umístěn v aktivním prostoru
+        /// </summary>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        protected bool IsInActiveBounds(Point point)
+        {
+            return this.TrackBarActiveBounds.Contains(point) || this.TrackBarActiveThumb.Contains(point);
+        }
+        /// <summary>
+        /// Souřadnice aktivního prostoru TrackBaru
+        /// </summary>
+        protected Rectangle TrackBarActiveBounds { get; set; }
+        /// <summary>
+        /// Souřadnice aktivního prostoru Thumbu
+        /// </summary>
+        protected Rectangle TrackBarActiveThumb { get; set; }
+        #endregion
+        #region Value a přepočty
+        /// <summary>
+        /// Obsahuje aktuální hodnotu v trackeru
+        /// </summary>
+        public float Value { get { return __Value; } set { SetValue(value); } } private float __Value;
+        /// <summary>
+        /// Obsahuje minimální hodnotu dostupnou v trackeru.Default = 0.0f
+        /// </summary>
+        public float ValueMin { get { return __ValueMin; } set { SetValueMinMax(value, this.ValueMax); } } private float __ValueMin;
+        /// <summary>
+        /// Obsahuje maximální hodnotu dostupnou v trackeru
+        /// </summary>
+        public float ValueMax { get { return __ValueMax; } set { SetValueMinMax(this.ValueMin, value); } } private float __ValueMax;
+        /// <summary>
+        /// Nastaví hodnotu Value, zarovnanou do aktuálních mezí.
+        /// Po změně hodnoty vyvolá event.
+        /// </summary>
+        /// <param name="value"></param>
+        protected void SetValue(float value)
+        {
+            float newValue = AlignValue(value);
+            bool isChanged = !(newValue == __Value);
+            __Value = newValue;
+            if (isChanged)
+            {
+                EventArgs e = EventArgs.Empty;
+                OnValueChanged(this, e);
+                ValueChanged?.Invoke(this, e);
+            }
+        }
+        /// <summary>
+        /// Vrátí zadanou hodnotu <paramref name="value"/> do rozsahu <see cref="ValueMin"/> ÷ <see cref="ValueMax"/>.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected float AlignValue(float value)
+        {
+            return (value > ValueMax ? ValueMax : (value < ValueMin ? ValueMin : value));
+        }
+        /// <summary>
+        /// Po změně hodnoty ve <see cref="Value"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        protected virtual void OnValueChanged(object sender, EventArgs e) { }
+        /// <summary>
+        /// Po změně hodnoty ve <see cref="Value"/>
+        /// </summary>
+        public event EventHandler ValueChanged;
+        /// <summary>
+        /// Nastaví hodnoty ValueMin a ValueMax
+        /// </summary>
+        /// <param name="valueMin"></param>
+        /// <param name="valueMax"></param>
+        protected void SetValueMinMax(float valueMin, float valueMax)
+        {
+            __ValueMin = valueMin;
+            valueMin += 0.001f;                          // Nejmenší rozdíl hodnot
+            __ValueMax = (valueMax > valueMin ? valueMax : valueMin);
+            SetValue(Value);
+        }
+        /// <summary>
+        /// Vrátí Value odpovídající dané souřadnici (v koordinátech this controlu)
+        /// </summary>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        protected float GetValueFromPixel(Point point)
+        {
+            float value = __Value;
+            var trackBarBounds = TrackBarBounds;
+            if (!trackBarBounds.IsEmpty)
+            {
+                var orientation = ((trackBarBounds.Width < trackBarBounds.Height) ? Orientation.Vertical : Orientation.Horizontal);
+                return GetValueFromPixel(point, trackBarBounds, orientation);
+            }
+            return value;
+        }
+        /// <summary>
+        /// Vrátí Value odpovídající dané souřadnici (v koordinátech this controlu)
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="trackBarBounds"></param>
+        /// <param name="orientation"></param>
+        /// <returns></returns>
+        protected float GetValueFromPixel(Point point, Rectangle trackBarBounds, Orientation orientation)
+        {
+            // Vzdálenost bodu point od základí souřadnice, podle orientace: Horizontal = Left, doprava, Vertical = Bottom, nahoru:
+            int dist = (orientation == Orientation.Horizontal ? point.X - trackBarBounds.Left : trackBarBounds.Bottom - point.Y);
+
+            // Velikost aktivního prostoru (poslední pixel je fyzicky nedostupný):
+            int size = (orientation == Orientation.Horizontal ? trackBarBounds.Width : trackBarBounds.Height) - 1;
+
+            // Pozice (0 ÷ 1) ve vizuálním rozsahu:
+            float ratio = (float)dist / (float)size;
+
+            float valueMin = this.ValueMin;
+            float valueMax = this.ValueMax;
+            float value = valueMin + (ratio * (valueMax - valueMin));
+            return AlignValue(value);
+        }
+        /// <summary>
+        /// Vrátí souřadnici (v koordinátech this controlu) odpovídající dané hodnotě
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected Point GetPixelFromValue(float value)
+        {
+            Point point = Point.Empty;
+            var trackBarBounds = TrackBarBounds;
+            if (!trackBarBounds.IsEmpty)
+            {
+                var orientation = ((trackBarBounds.Width < trackBarBounds.Height) ? Orientation.Vertical : Orientation.Horizontal);
+                point = GetPixelFromValue(value, trackBarBounds, orientation);
+            }
+            return point;
+        }
+        /// <summary>
+        /// Vrátí souřadnici (v koordinátech this controlu) odpovídající dané hodnotě
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="trackBarBounds"></param>
+        /// <param name="orientation"></param>
+        /// <returns></returns>
+        protected Point GetPixelFromValue(float value, Rectangle trackBarBounds, Orientation orientation)
+        {
+            // Vypočtu ratio = odpovídá pozici Value v prostoru (ValueMin ÷ ValueMax):
+            float valueMin = this.ValueMin;
+            float valueMax = this.ValueMax;
+            float ratio = (AlignValue(value) - valueMin) / (valueMax - valueMin);
+
+            // Velikost aktivního prostoru (poslední pixel je fyzicky nedostupný), vzdálenost hodnoty od počátku:
+            int size = (orientation == Orientation.Horizontal ? trackBarBounds.Width : trackBarBounds.Height) - 1;
+            int dist = (int)(Math.Round(ratio * (double)size, 0));
+
+            // Souřadnice poloviny v neaktivním směru (pro Horizontal: svislý střed TrackBaru, pro Vertical: vodorovný střed)
+            int half = (orientation == Orientation.Horizontal ? trackBarBounds.Y + (trackBarBounds.Height / 2) : trackBarBounds.X + (trackBarBounds.Width / 2));
+
+            return (orientation == Orientation.Horizontal ?
+                new Point(trackBarBounds.X + dist, half) :
+                new Point(half, trackBarBounds.Bottom - dist));
+        }
+        #endregion
+        #region IValueStorage
+        /// <summary>
+        /// Přístup na hodnotu
+        /// </summary>
+        object IValueStorage.Value { get { return this.Value; } set { this.Value = Conversion.ToSingle(value); } }
         #endregion
     }
     #endregion

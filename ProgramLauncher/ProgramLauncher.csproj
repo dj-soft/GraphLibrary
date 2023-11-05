@@ -313,6 +313,34 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="klickety-2-64.ico" />
+    <None Include="Pics\16px\thumb-h-d4-11.png" />
+    <None Include="Pics\16px\thumb-h-d3-11.png" />
+    <None Include="Pics\16px\thumb-h-d2-11.png" />
+    <None Include="Pics\16px\thumb-h-d1-11.png" />
+    <None Include="Pics\16px\thumb-h-y4-11.png" />
+    <None Include="Pics\16px\thumb-h-y3-11.png" />
+    <None Include="Pics\16px\thumb-h-y2-11.png" />
+    <None Include="Pics\16px\thumb-h-y1-11.png" />
+    <None Include="Pics\16px\thumb-h-v4-11.png" />
+    <None Include="Pics\16px\thumb-h-v3-11.png" />
+    <None Include="Pics\16px\thumb-h-v2-11.png" />
+    <None Include="Pics\16px\thumb-h-v1-11.png" />
+    <None Include="Pics\16px\thumb-h-r4-11.png" />
+    <None Include="Pics\16px\thumb-h-r3-11.png" />
+    <None Include="Pics\16px\thumb-h-r2-11.png" />
+    <None Include="Pics\16px\thumb-h-r1-11.png" />
+    <None Include="Pics\16px\thumb-h-g4-11.png" />
+    <None Include="Pics\16px\thumb-h-g3-11.png" />
+    <None Include="Pics\16px\thumb-h-g2-11.png" />
+    <None Include="Pics\16px\thumb-h-g1-11.png" />
+    <None Include="Pics\16px\thumb-h-c4-11.png" />
+    <None Include="Pics\16px\thumb-h-c3-11.png" />
+    <None Include="Pics\16px\thumb-h-c2-11.png" />
+    <None Include="Pics\16px\thumb-h-c1-11.png" />
+    <None Include="Pics\16px\thumb-h-b4-11.png" />
+    <None Include="Pics\16px\thumb-h-b3-11.png" />
+    <None Include="Pics\16px\thumb-h-b2-11.png" />
+    <None Include="Pics\16px\thumb-h-b1-11.png" />
     <None Include="Pics\48px\edit-text-frame-update-48.png" />
     <None Include="Pics\48px\edit-undo-4-48.png" />
     <None Include="Pics\48px\edit-undo-3-48.png" />
