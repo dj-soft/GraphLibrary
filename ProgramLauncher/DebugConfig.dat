@@ -3,8 +3,8 @@
  <id-data>
   <id-value id-value.Type="DjSoft.Tools.ProgramLauncher.Settings" tooltips="Fast" DefaultImagePath="C:\DavidPrac\VsProjects\ProgramLauncher\ProgramLauncher\Pics\samples" LayoutSetName="Small" TrayInfoIsAccepted="false">
    <form_positions>
-    <id-pair id-key="MainForm" id-value="Normal # 260;260;760;580 # 260;260;760;580" />
-    <id-pair id-key="MainForm at [P:0;0;1920;1080]" id-value="Normal # 260;260;760;580 # 260;260;760;580" />
+    <id-pair id-key="MainForm" id-value="Normal # 647;197;760;580 # 647;197;760;580" />
+    <id-pair id-key="MainForm at [P:0;0;1920;1080]" id-value="Normal # 647;197;760;580 # 647;197;760;580" />
    </form_positions>
    <id-value id-value.Target="program_set" RelativeAdress="0;0">
     <Pages id-array.Range="[0+2]">

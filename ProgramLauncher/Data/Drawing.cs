@@ -187,19 +187,19 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Alfa kanál v rozsahu 0.00 ÷ 1.00 : 0.00 = neviditelná průhledná jako sklo / 1.00 = plná naprosto neprůhledná
         /// </summary>
-        public double Alpha { get; set; }
+        public double Alpha { get { return __Alpha; } set { __Alpha = _Align(value, 0d, 1d); } } private double __Alpha;
         /// <summary>
         /// Odstín v rozsahu 0.0 ÷ 360.0°
         /// </summary>
-        public double Hue { get; set; }
+        public double Hue { get { return __Hue; } set { __Hue = _Align(value, 0d, 360d); } } private double __Hue;
         /// <summary>
         /// Saturace v rozsahu 0.00 ÷ 1.00
         /// </summary>
-        public double Saturation { get; set; }
+        public double Saturation { get { return __Saturation; } set { __Saturation = _Align(value, 0d, 1d); } } private double __Saturation;
         /// <summary>
         /// Světlost v rozsahu 0.00 ÷ 1.00
         /// </summary>
-        public double Value { get; set; }
+        public double Value { get { return __Value; } set { __Value = _Align(value, 0d, 1d); } } private double __Value;
         /// <summary>
         /// Vizualizace
         /// </summary>
@@ -259,10 +259,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public static ColorHSV FromAHSV(double alpha, double hue, double saturation, double value)
         {
             ColorHSV colorHSV = new ColorHSV();
-            colorHSV.Alpha = _Align(alpha, 0d, 1d);
-            colorHSV.Hue = _Align(hue, 0d, 360d);
-            colorHSV.Saturation = _Align(saturation, 0d, 1d);
-            colorHSV.Value = _Align(value, 0d, 1d);
+            colorHSV.Alpha = alpha;
+            colorHSV.Hue = hue;
+            colorHSV.Saturation = saturation;
+            colorHSV.Value = value;
             return colorHSV;
         }
         public static ColorHSV FromColor(Color color)
@@ -286,14 +286,18 @@ namespace DjSoft.Tools.ProgramLauncher.Data
 
         public static Color ColorFromHSV(double hue, double saturation, double value)
         {
-            int hi = Convert.ToInt32(Math.Floor(hue / 60)) % 6;
-            double f = hue / 60 - Math.Floor(hue / 60);
+            hue = _Align(hue, 0d, 360d);
+            saturation = _Align(saturation, 0d, 1d);
+            value = _Align(value, 0d, 1d);
 
-            value = value * 255;
+            int hi = Convert.ToInt32(Math.Floor(hue / 60d)) % 6;
+            double f = hue / 60d - Math.Floor(hue / 60d);
+
+            value = value * 255d;
             int v = Convert.ToInt32(value);
-            int p = Convert.ToInt32(value * (1 - saturation));
-            int q = Convert.ToInt32(value * (1 - f * saturation));
-            int t = Convert.ToInt32(value * (1 - (1 - f) * saturation));
+            int p = Convert.ToInt32(value * (1d - saturation));
+            int q = Convert.ToInt32(value * (1d - f * saturation));
+            int t = Convert.ToInt32(value * (1d - (1d - f) * saturation));
 
             if (hi == 0)
                 return Color.FromArgb(255, v, t, p);
@@ -308,7 +312,13 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             else
                 return Color.FromArgb(255, v, p, q);
         }
-
+        /// <summary>
+        /// Zarovná dodanou hodnotu do daných mezí
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <returns></returns>
         private static double _Align(double value, double min, double max) { return (value > max ? max : (value < min ? min : value)); }
     }
     #endregion

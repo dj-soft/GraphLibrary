@@ -1923,7 +1923,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             panel.AddCell(ControlType.TextBox, App.Messages.EditDataDescriptionText, nameof(Description), x1, y, w1); y += s2;
             panel.AddCell(ControlType.MemoBox, App.Messages.EditDataToolTipText, nameof(ToolTipText), x2, y0, w2, s3);
             panel.AddCell(ControlType.FileBox, App.Messages.EditDataImageFileNameText, nameof(ImageFileName), x1, y, w3); y += s2;
-            panel.AddCell(ControlType.ColorBox, App.Messages.EditDataBackColorText, nameof(BackColor), x1, y, w3); y += s1;
+            var colorControl = panel.AddCell(ControlType.ColorBox, App.Messages.EditDataBackColorText, nameof(BackColor), x1, y, w3);
+            y = colorControl.Bottom;
 
             panel.Buttons = new DialogButtonType[] { DialogButtonType.Ok, DialogButtonType.Cancel };
             panel.BackColor = Color.AntiqueWhite;

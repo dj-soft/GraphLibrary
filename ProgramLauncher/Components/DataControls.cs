@@ -117,8 +117,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="left"></param>
         /// <param name="top"></param>
         /// <param name="width"></param>
-        public void AddCell(ControlType controlType, string label, string propertyName, int left, int top, int width, int? height = null, Func<string, string> validator = null)
+        public Control AddCell(ControlType controlType, string label, string propertyName, int left, int top, int width, int? height = null, Func<string, string> validator = null)
         {
+            Control result = null;
             CellInfo cell = new CellInfo(propertyName, controlType);
             cell.Validator = validator;
             
@@ -127,6 +128,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 cell.LabelControl = ControlSupport.CreateControl(ControlType.Label, label, this);
                 cell.LabelBounds = new Rectangle(left + 2, top - 15, width - 8, 15);
                 LayoutContentOne(cell.LabelControl, cell.LabelBounds.Value);
+                result = cell.LabelControl;
             }
 
             if (controlType != ControlType.None)
@@ -137,9 +139,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 if (cell.InputControl != null && height.HasValue) cell.InputControl.Height = height.Value;
                 cell.InputBounds = new Rectangle(left, top, width, cell.InputControl?.Height ?? 20);
                 LayoutContentOne(cell.InputControl, cell.InputBounds.Value);
+                result = cell.InputControl;
             }
 
             __Cells.Add(propertyName, cell);
+
+            return result;
         }
         /// <summary>
         /// Vyhledá vstupní control pro danou property.

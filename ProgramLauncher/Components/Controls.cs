@@ -1096,71 +1096,147 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     /// </summary>
     public class DColorBox : DPanel, IControlExtended, IValueStorage
     {
+        #region Konstruktor, proměnné
         public DColorBox()
         {
             _InitializeControls();
         }
         private void _InitializeControls()
         {
-            __ColorHueTrackBar = new GColorTrackBar() { Bounds = new Rectangle(0, 0, 200, 22) };
-            __ColorHueTrackBar.ColorBlenderGenerator = CreateColorBlendHue;
-            __ColorLightTrackBar = new GColorTrackBar() { Bounds = new Rectangle(205, 0, 200, 22) };
-            __ColorLightTrackBar.ColorBlenderGenerator = CreateColorBlendLight;
+            __ColorHueTrackBar = new GColorTrackBar();
+            __ColorHueTrackBar.ColorsGenerator = CreateColorBlendHue;
+            __ColorHueTrackBar.ValueChanged += _ColorHueValueChanged;
             this.Controls.Add(__ColorHueTrackBar);
-            this.Controls.Add(__ColorLightTrackBar);
-            this.Height = 22;
+
+            __ColorSaturationTrackBar = new GColorTrackBar();
+            __ColorSaturationTrackBar.ColorsGenerator = CreateColorBlendSaturation;
+            __ColorSaturationTrackBar.ValueChanged += _ColorSaturationValueChanged;
+            this.Controls.Add(__ColorSaturationTrackBar);
+
+            __ColorValueTrackBar = new GColorTrackBar();
+            __ColorValueTrackBar.ColorsGenerator = CreateColorBlendValue;
+            __ColorValueTrackBar.ValueChanged += _ColorValueValueChanged;
+            this.Controls.Add(__ColorValueTrackBar);
+
+            __ColorAlphaTrackBar = new GColorTrackBar();
+            __ColorAlphaTrackBar.ColorsGenerator = CreateColorBlendAlpha;
+            __ColorAlphaTrackBar.ValueChanged += _ColorAlphaValueChanged;
+            this.Controls.Add(__ColorAlphaTrackBar);
+
+            __GColorSample = new GColorSample();
+            __GColorSample.CurrentColor = System.Drawing.Color.FromArgb(100, 32, 32, 200);
+            this.Controls.Add(__GColorSample);
+
+            this.Height = 46;
+            this.ClientSizeChanged += _ClientSizeChanged;
         }
         private GColorTrackBar __ColorHueTrackBar;
-        private GColorTrackBar __ColorLightTrackBar;
+        private GColorTrackBar __ColorValueTrackBar;
+        private GColorTrackBar __ColorSaturationTrackBar;
+        private GColorTrackBar __ColorAlphaTrackBar;
+        private GColorSample __GColorSample;
+        #endregion
+        #region Layout
+        private void _ClientSizeChanged(object sender, EventArgs e)
+        {
+            this.DoLayout();
+        }
+        private void DoLayout()
+        {
+            var size = this.ClientSize;
+
+            int th = 22;
+            int tdx = 4;
+            int tdy = 2;
+
+            int sw = 50;
+            int sh = 2 * th + tdy - 1;
+
+            int swh = sw / 2;
+            int cx = size.Width / 2;
+            int t1x = 0;
+            int tw = cx - swh - tdx;
+            int t2x = cx + swh + tdx;
+
+            int t1y = 0;
+            int t2y = th + 2;
+
+            int sx = cx - swh;
+
+            __ColorHueTrackBar.Bounds = new Rectangle(t1x, t1y, tw, th);
+            __ColorSaturationTrackBar.Bounds = new Rectangle(t2x, t1y, tw, th);
+            __ColorValueTrackBar.Bounds = new Rectangle(t1x, t2y, tw, th);
+            __ColorAlphaTrackBar.Bounds = new Rectangle(t2x, t2y, tw, th);
+            __GColorSample.Bounds = new Rectangle(sx, t1y, sw, sh);
+        }
+        #endregion
+        #region Jednotlivé hodnoty, eventy po změně z TrackBarů
+        private float _ColorHue { get { return 360f * __ColorHueTrackBar.Value; } set { __ColorHueTrackBar.Value = (value % 360f) / 360f; } }
+        private float _ColorValue { get { return __ColorValueTrackBar.Value; } set { __ColorValueTrackBar.Value = _Align(value); } }
+        private float _ColorSaturation { get { return __ColorSaturationTrackBar.Value; } set { __ColorSaturationTrackBar.Value = _Align(value); } }
+        private float _ColorAlpha { get { return __ColorAlphaTrackBar.Value; } set { __ColorAlphaTrackBar.Value = _Align(value); } }
+
+        private void _ColorHueValueChanged(object sender, EventArgs e)
+        {
+            ColorHSV colorHSV = ColorHSV.FromHSV(_ColorHue, 1d, 1d);
+            __ColorValueTrackBar.BasicColor = colorHSV.Color;
+            _RefreshSample();
+        }
+        private void _ColorSaturationValueChanged(object sender, EventArgs e)
+        {
+        }
+        private void _ColorValueValueChanged(object sender, EventArgs e)
+        {
+            ColorHSV colorHSV = ColorHSV.FromHSV(_ColorHue, 1d, _ColorValue);
+            __ColorSaturationTrackBar.BasicColor = colorHSV.Color;
+            _RefreshSample();
+        }
+        private void _ColorAlphaValueChanged(object sender, EventArgs e)
+        {
+            _RefreshSample();
+        }
+
+        private void _RefreshSample()
+        {
+            float hue = _ColorHue;
+            float value = _ColorValue;
+            float saturation = _ColorSaturation;
+            float alpha = _ColorAlpha;
+            ColorHSV colorHSV = ColorHSV.FromAHSV(alpha, hue, saturation, value);
+            __GColorSample.CurrentColor = colorHSV.Color;
+        }
+        private static float _Align(float value, float valueMin = 0f, float valueMax = 1f) { return (value > valueMax ? valueMax : (value < valueMin ? valueMin : value)); }
+        #endregion
+
+
 
         public Color? Color { get { return __Color; } set { __Color = value; } } private Color? __Color;
         #region ColorBlenderGeneratory
-        protected ColorBlend CreateColorBlendHue(Color color)
+        protected Color[] CreateColorBlendHue(Color color)
         {
-            var colors = new Color[]
-           {
-                System.Drawing.Color.FromArgb(127,0,255),
-                System.Drawing.Color.FromArgb(191,0,255),
-                System.Drawing.Color.FromArgb(255,0,255),
-                System.Drawing.Color.FromArgb(255,0,191),
-                System.Drawing.Color.FromArgb(255,0,127),
-                System.Drawing.Color.FromArgb(255,0,63),
-                System.Drawing.Color.FromArgb(255,0,0),
-                System.Drawing.Color.FromArgb(255,63,0),
-                System.Drawing.Color.FromArgb(255,127,0),
-                System.Drawing.Color.FromArgb(255,191,0),
-                System.Drawing.Color.FromArgb(255,255,0),
-                System.Drawing.Color.FromArgb(191,255,0),
-                System.Drawing.Color.FromArgb(127,255,0),
-                System.Drawing.Color.FromArgb(63,255,0),
-                System.Drawing.Color.FromArgb(0,255,0),
-                System.Drawing.Color.FromArgb(0,255,63),
-                System.Drawing.Color.FromArgb(0,255,127),
-                System.Drawing.Color.FromArgb(0,255,191),
-                System.Drawing.Color.FromArgb(0,255,255),
-                System.Drawing.Color.FromArgb(0,191,255),
-                System.Drawing.Color.FromArgb(0,127,255),
-                System.Drawing.Color.FromArgb(0,63,255),
-                System.Drawing.Color.FromArgb(0,0,255),
-                System.Drawing.Color.FromArgb(63,0,255),
-                System.Drawing.Color.FromArgb(127,0,255)
-           };
-
-            int count = colors.Length;
-            float last = (float)(count - 1);
-            var positions = new float[count];
-            for (int i = 0; i < count; i++)
+            ColorHSV colorHsv = ColorHSV.FromHSV(0d, 1d, 1d);
+            List<Color> colors = new List<Color>();
+            for(int angle = 0; angle <= 360; angle += 15)
             {
-                positions[i] = (float)i / last;
+                colorHsv.Hue = (double)angle;
+                float position = (float)angle / 360f;
+                colors.Add(colorHsv.Color);
             }
-
-            var colorBlend = new ColorBlend(count);
-            colorBlend.Colors = colors;
-            colorBlend.Positions = positions;
-
-            return colorBlend;
+            return colors.ToArray();
         }
-        protected ColorBlend CreateColorBlendLight(Color color)
+        protected Color[] CreateColorBlendSaturation(Color color)
+        {
+            ColorHSV colorHSV = ColorHSV.FromColor(color);
+            colorHSV.Saturation = 0d;
+            Color colorGray = colorHSV.Color;
+            var colors = new Color[]
+            {
+                colorGray,
+                color
+            };
+            return colors;
+        }
+        protected Color[] CreateColorBlendValue(Color color)
         {
             var colors = new Color[]
             {
@@ -1168,20 +1244,17 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 color,
                 System.Drawing.Color.FromArgb(0,0,0)
             };
-
-            int count = colors.Length;
-            float last = (float)(count - 1);
-            var positions = new float[count];
-            for (int i = 0; i < count; i++)
+            return colors;
+        }
+        protected Color[] CreateColorBlendAlpha(Color color)
+        {
+            var colors = new Color[]
             {
-                positions[i] = (float)i / last;
-            }
-
-            var colorBlend = new ColorBlend(count);
-            colorBlend.Colors = colors;
-            colorBlend.Positions = positions;
-
-            return colorBlend;
+                System.Drawing.Color.FromArgb(255,255,255),
+                color,
+                System.Drawing.Color.FromArgb(0,0,0)
+            };
+            return colors;
         }
         #endregion
         #region IValueStorage
@@ -1429,7 +1502,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     #region Grafické controly (potomci GraphicsControl)
     #region GColorTrackBar
     /// <summary>
-    /// DColorBox
+    /// GColorTrackBar
     /// </summary>
     public class GColorTrackBar : GTrackBar
     {
@@ -1450,7 +1523,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="orientation"></param>
         protected override void OnPaintTrackerBackground(PaintEventArgs e, Rectangle trackBarBounds, Orientation orientation)
         {
-            // Nevoláme: base.OnPaintTrackerBackground(e, trackBarBounds, orientation);
+            // Nevoláme: base.OnPaintTrackerBackground(e, trackBarBounds, orientation); - tam se kreslí pozadí pro běžný TrackBar. To my nechceme.
 
             var colorBlend = ColorBlend;
             if (colorBlend is null) return;
@@ -1477,22 +1550,172 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #endregion
         #region Míchání barev
         /// <summary>
+        /// Základní barva, která určuje barvu v paletě pro <see cref="ColorBlenderGenerator"/>. Nejde o barvu zde vybranou, ale o rozsah barev zde vykreslených.
+        /// Setování vyvolá vyvolání <see cref="RefreshColorBlend"/> a tedy <see cref="ColorBlenderGenerator"/> = změnu <see cref="ColorBlend"/> a následné překreslení.
+        /// </summary>
+        public Color BasicColor { get { return __BasicColor; } set { __BasicColor = value; RefreshColorBlend(); } } private Color __BasicColor;
+        /// <summary>
         /// Sem musí volající dodat referenci na funkci, která vygeneruje new instanci <see cref="ColorBlend"/>.
         /// </summary>
         public Func<Color, ColorBlend> ColorBlenderGenerator  { get { return __ColorBlenderGenerator; } set { __ColorBlenderGenerator = value; this.RefreshColorBlend(); this.Draw(); } }
+        /// <summary>
+        /// Sem musí volající dodat referenci na funkci, která vygeneruje pole barev, z něhož bude interně <see cref="ColorBlend"/>.
+        /// </summary>
+        public Func<Color, Color[]> ColorsGenerator { get { return __ColorsGenerator; } set { __ColorsGenerator = value; this.RefreshColorBlend(); this.Draw(); } }
+        /// <summary>
+        /// Metoda, která vrátí <see cref="ColorBlend"/> pro tento objekt a danou barvu
+        /// </summary>
         private Func<Color, ColorBlend> __ColorBlenderGenerator;
+        /// <summary>
+        /// Metoda, která vrátí pole <see cref="Color"/> pro tento objekt a danou barvu
+        /// </summary>
+        private Func<Color, Color[]> __ColorsGenerator;
+        /// <summary>
+        /// Zajistí znovu vytvoření nástroje na míchání barev <see cref="ColorBlend"/>, jeho uložení do this objektu a na závěr provede překreslení controlu.
+        /// </summary>
         public void RefreshColorBlend()
         {
-            this.ColorBlend = this.ColorBlenderGenerator(this.ColorLast);
+            if (this.ColorBlenderGenerator != null)
+                this.ColorBlend = this.ColorBlenderGenerator(this.BasicColor);
+            else if (this.ColorsGenerator != null)
+                this.ColorBlend = this._CreateColorBlender(this.ColorsGenerator(this.BasicColor));
+            this.Draw();
         }
-        public void RefreshColorBlend(Color color)
+        /// <summary>
+        /// Z dodaného pole barev vytvoří a vrátí <see cref="ColorBlend"/>,
+        /// </summary>
+        /// <param name="colors"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        private ColorBlend _CreateColorBlender(Color[] colors)
         {
-            this.ColorLast = color;
-            this.ColorBlend = this.ColorBlenderGenerator(color);
+            int count = colors.Length;
+            float last = (float)(count - 1);
+            var positions = new float[count];
+            for (int i = 0; i < count; i++)
+            {
+                positions[i] = (float)i / last;
+            }
+
+            var colorBlend = new ColorBlend(count);
+            colorBlend.Colors = colors;
+            colorBlend.Positions = positions;
+
+            return colorBlend;
         }
+        /// <summary>
+        /// Objekt míchající barvy
+        /// </summary>
         protected ColorBlend ColorBlend { get; set; }
-        protected Color ColorLast { get; set; }
         #endregion
+    }
+    #endregion
+    #region GColorSample
+    /// <summary>
+    /// Vzorek barvy
+    /// </summary>
+    public class GColorSample : GraphicsControl, IControlExtended
+    {
+        #region Konstruktor, public hodnoty
+        public GColorSample()
+        {
+            _InitializeControl();
+        }
+        private void _InitializeControl()
+        {
+            BorderRound = 8;
+            BackHashColor1 = Color.FromArgb(160, 160, 160);
+            BackHashColor2 = Color.FromArgb(180, 180, 180);
+            SampleShape = BasicShapeType.Ellipse;
+            BackHashStyle = HatchStyle.Percent25;
+        }
+        public Color? CurrentColor { get { return __CurrentColor; } set { __CurrentColor = value; this.Draw(); } } private Color? __CurrentColor;
+        public Color BackHashColor1 { get { return __BackHashColor1; } set { __BackHashColor1 = value; this.Draw(); } } private Color __BackHashColor1;
+        public Color BackHashColor2 { get { return __BackHashColor2; } set { __BackHashColor2 = value; this.Draw(); } } private Color __BackHashColor2;
+        public BasicShapeType SampleShape { get { return __SampleShape; } set { __SampleShape = value; this.Draw(); } } private BasicShapeType __SampleShape;
+        public HatchStyle? BackHashStyle { get { return __BackHashStyle; } set { __BackHashStyle = value; this.Draw(); } } private HatchStyle? __BackHashStyle;
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
+        #endregion
+        #region Kreslení
+        public int BorderRound { get; set; }
+        protected override void OnPaintToBuffer(object sender, PaintEventArgs e)
+        {
+            base.OnPaintToBuffer(sender, e);
+
+            this.PaintBackground(e);
+            this.PaintCurrentColor(e);
+        }
+        protected void PaintBackground(PaintEventArgs e)
+        {
+            var backBounds = this.ClientArea;
+            var hashStyle = BackHashStyle;
+            if (hashStyle.HasValue)
+            {
+                using (System.Drawing.Drawing2D.HatchBrush hb = new HatchBrush(hashStyle.Value, this.BackHashColor1, this.BackHashColor2))
+                {
+                    e.Graphics.FillRectangle(hb, backBounds);
+                }
+            }
+        }
+        protected void PaintCurrentColor(PaintEventArgs e)
+        {
+            var color = this.CurrentColor;
+
+            if (color.HasValue)
+            {
+                var colorBounds = this.ClientArea.Enlarge(-2);
+                switch (SampleShape)
+                {
+                    case BasicShapeType.Rectangle:
+                        PaintCurrentColorRectangle(e, color.Value, colorBounds);
+                        break;
+                    case BasicShapeType.RoundedRectangle:
+                        PaintCurrentColorRoundedRectangle(e, color.Value, colorBounds);
+                        break;
+                    case BasicShapeType.Ellipse:
+                        PaintCurrentColorEllipse(e, color.Value, colorBounds);
+                        break;
+                }
+            }
+        }
+        protected void PaintCurrentColorRectangle(PaintEventArgs e, Color color, Rectangle bounds)
+        {
+            bounds = bounds.Enlarge(-this.BorderRound);
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            e.Graphics.FillRectangle(App.GetBrush(color), bounds);
+        }
+        protected void PaintCurrentColorRoundedRectangle(PaintEventArgs e, Color color, Rectangle bounds)
+        {
+            using (var colorPath = bounds.GetRoundedRectanglePath(this.BorderRound))
+            {
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                e.Graphics.FillPath(App.GetBrush(color), colorPath);
+            }
+        }
+        protected void PaintCurrentColorEllipse(PaintEventArgs e, Color color, Rectangle bounds)
+        {
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            e.Graphics.FillEllipse(App.GetBrush(color), bounds);
+        }
+        #endregion
+    }
+    /// <summary>
+    /// Základní tvary
+    /// </summary>
+    public enum BasicShapeType
+    {
+        None = 0,
+        Rectangle,
+        RoundedRectangle,
+        Ellipse
     }
     #endregion
     #region GTrackBar
