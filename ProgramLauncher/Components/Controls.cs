@@ -1124,6 +1124,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             this.Controls.Add(__ColorAlphaTrackBar);
 
             __GColorSample = new GColorSample();
+            __GColorSample.BackHashStyle = HatchStyle.DottedDiamond;
             __GColorSample.CurrentColor = System.Drawing.Color.FromArgb(100, 32, 32, 200);
             this.Controls.Add(__GColorSample);
 
@@ -1172,14 +1173,16 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #endregion
         #region Jednotlivé hodnoty, eventy po změně z TrackBarů
         private float _ColorHue { get { return 360f * __ColorHueTrackBar.Value; } set { __ColorHueTrackBar.Value = (value % 360f) / 360f; } }
-        private float _ColorValue { get { return __ColorValueTrackBar.Value; } set { __ColorValueTrackBar.Value = _Align(value); } }
         private float _ColorSaturation { get { return __ColorSaturationTrackBar.Value; } set { __ColorSaturationTrackBar.Value = _Align(value); } }
+        private float _ColorValue { get { return __ColorValueTrackBar.Value; } set { __ColorValueTrackBar.Value = _Align(value); } }
         private float _ColorAlpha { get { return __ColorAlphaTrackBar.Value; } set { __ColorAlphaTrackBar.Value = _Align(value); } }
 
         private void _ColorHueValueChanged(object sender, EventArgs e)
         {
             ColorHSV colorHSV = ColorHSV.FromHSV(_ColorHue, 1d, 1d);
+            __ColorSaturationTrackBar.BasicColor = colorHSV.Color;
             __ColorValueTrackBar.BasicColor = colorHSV.Color;
+            __ColorAlphaTrackBar.BasicColor = colorHSV.Color;
             _RefreshSample();
         }
         private void _ColorSaturationValueChanged(object sender, EventArgs e)
@@ -1250,9 +1253,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             var colors = new Color[]
             {
-                System.Drawing.Color.FromArgb(255,255,255),
-                color,
-                System.Drawing.Color.FromArgb(0,0,0)
+                System.Drawing.Color.FromArgb(0, 255,255,255),
+                color
             };
             return colors;
         }
