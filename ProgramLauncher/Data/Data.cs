@@ -9,11 +9,6 @@ using DjSoft.Tools.ProgramLauncher.Components;
 using DjSoft.Tools.ProgramLauncher.Data;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
-using System.Management;
-using System.Drawing.Text;
-using static System.Net.Mime.MediaTypeNames;
-using System.Security.Policy;
-using System.Runtime.CompilerServices;
 
 namespace DjSoft.Tools.ProgramLauncher.Data
 {
