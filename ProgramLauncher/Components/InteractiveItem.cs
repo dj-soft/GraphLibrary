@@ -192,7 +192,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         public virtual InteractiveState InteractiveState { get; set; }
         /// <summary>
-        /// Platný interaktivní stav. Vychází z hodnoty <see cref="InteractiveState"/>, ale promítá do ní i <see cref="IsSelected"/>
+        /// Platný interaktivní stav. Vychází z hodnoty <see cref="InteractiveState"/>, ale promítá do ní i <see cref="Enabled"/> (tedy stav <see cref="InteractiveState.Disabled"/>)
+        /// a <see cref="IsSelected"/> a <see cref="IsDown"/>.
         /// </summary>
         public virtual InteractiveState CurrentInteractiveState 
         {
@@ -213,9 +214,15 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             if (!HasParent || !Visible) return;
 
-            bool paintGhost = (e.MouseDragState == MouseDragState.MouseDragActiveCurrent);       // true => kreslíme "ducha" = prvek, který je přesouván, má určitou průhlednost / nebo jen rámeček?
-            var virtualBounds = (paintGhost ? e.MouseDragCurrentBounds : this.VirtualBounds);    // Kreslení "ducha" je na jiné souřadnici, než na místě prvku samotného
+            bool paintGhost = (e.MouseDragState == MouseDragState.MouseDragActiveCurrent);         // true => kreslíme "ducha" = prvek, který je přesouván, má určitou průhlednost / nebo jen rámeček?
+            var virtualBounds = (paintGhost ? e.MouseDragCurrentBounds : this.VirtualBounds);      // Kreslení "ducha" je na jiné souřadnici, než na místě prvku samotného
             if (!virtualBounds.HasValue) return;
+
+            ItemPaintArgs paintArgs = new ItemPaintArgs(e);
+            paintArgs.VirtualBounds = virtualBounds.Value;
+            paintArgs.Alpha = (paintGhost ? (float?)App.CurrentAppearance.MouseDragActiveCurrentAlpha : (float?)null);
+            paintArgs.ClientBounds = this.Parent.GetControlBounds(virtualBounds.Value);            // 
+
             float? alpha = (paintGhost ? (float?)App.CurrentAppearance.MouseDragActiveCurrentAlpha : (float?)null);
 
             var dataLayout = this.DataLayout;
@@ -227,12 +234,13 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             Color? color;
             e.Graphics.SetClip(clientBounds);
 
-            var currentInteractiveState = this.CurrentInteractiveState;                            // Kompletní stav, definuje všechny barvy
-            var interactiveState = (currentInteractiveState & InteractiveState.MaskBasicStates);   // Obsahuje jen základní stav daný 
+            var currentInteractiveState = this.CurrentInteractiveState;                            // Kompletní stav, definuje všechny stavy a barvy
+            var interactiveState = (currentInteractiveState & InteractiveState.MaskBasicStates);   // Obsahuje jen základní stav, daný myší
             var isSelected = IsSelected;
             if (isSelected)
             { }
 
+            // this.OnPaintBack;
             // Celé pozadí buňky (buňka může mít explicitně danou barvu pozadí):
             color = this.BackColor.Morph(this.CellBackColor?.GetColor(currentInteractiveState));   // Statická barva pozadí + proměnná dle stavu
             if (color.HasValue)
@@ -327,6 +335,47 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             }
 
             e.Graphics.ResetClip();
+        }
+        protected class ItemPaintArgs
+        {
+            public ItemPaintArgs(PaintDataEventArgs paintData)
+            {
+                this.PaintData = paintData;
+            }
+            /// <summary>
+            /// Vstupní data, obshaují i údaje o myši atd
+            /// </summary>
+            public PaintDataEventArgs PaintData { get; set; }
+            /// <summary>
+            /// Grafika, cíl kreslení
+            /// </summary>
+            public Graphics Graphics { get { return PaintData.Graphics; } }
+            /// <summary>
+            /// Obsahuje true když se kreslí "přesouvaný duch"
+            /// </summary>
+            public bool PaintGhost { get; set; }
+            /// <summary>
+            /// Souřadnice ve virtuálním prostoru, odpovídá kompletním datům, před posouváním pomocí ScrollBarů
+            /// </summary>
+            public Rectangle VirtualBounds { get; set; }
+            /// <summary>
+            /// Souřadnice v systému souřadnic nativního controlu, v nich je vykreslován obsah prvku = jednotlivé prostory dané DataLayoutem
+            /// </summary>
+            public Rectangle ClientBounds { get; set; }
+            /// <summary>
+            /// Průhlednost všech barev a prvků, používá se při DragAndDrop. Null = kreslíme základní prvek.
+            /// </summary>
+            public float? Alpha { get; set; }
+
+            public LayoutItemInfo DataLayout { get; set; }
+            public AppearanceInfo PaletteSet { get; set; }
+            public InteractiveState CurrentInteractiveState { get; set; }
+
+            public InteractiveState BasicnteractiveState { get; set; }
+
+            public Rectangle ActiveBounds { get; set; }
+
+            public Color WorkspaceColor { get; set; }
         }
         #endregion
     }
