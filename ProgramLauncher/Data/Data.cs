@@ -1,19 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using System.Drawing;
 using DjSoft.Tools.ProgramLauncher.Components;
 using DjSoft.Tools.ProgramLauncher.Data;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
-using System.Management;
-using System.Drawing.Text;
-using static System.Net.Mime.MediaTypeNames;
-using System.Security.Policy;
-using System.Runtime.CompilerServices;
 
 namespace DjSoft.Tools.ProgramLauncher.Data
 {
