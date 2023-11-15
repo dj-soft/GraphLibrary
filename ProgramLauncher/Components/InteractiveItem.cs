@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing.Text;
 using System.Runtime.InteropServices;
+using static DjSoft.Tools.ProgramLauncher.Extensions;
 
 namespace DjSoft.Tools.ProgramLauncher.Components
 {
@@ -166,7 +167,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 if (virtualBounds.HasValue)
                 {
                     var dataLayout = this.DataLayout;
-                    virtualContentBounds = dataLayout.ContentBounds.GetBounds(virtualBounds.Value);
+                    virtualContentBounds = dataLayout.ActiveContentBounds.GetBounds(virtualBounds.Value);
                 }
                 return virtualContentBounds;
             }
@@ -219,123 +220,173 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             if (!virtualBounds.HasValue) return;
 
             ItemPaintArgs paintArgs = new ItemPaintArgs(e);
-            paintArgs.VirtualBounds = virtualBounds.Value;
+            paintArgs.PaintGhost = paintGhost;
             paintArgs.Alpha = (paintGhost ? (float?)App.CurrentAppearance.MouseDragActiveCurrentAlpha : (float?)null);
-            paintArgs.ClientBounds = this.Parent.GetControlBounds(virtualBounds.Value);            // 
+            paintArgs.DataLayout = this.DataLayout;
+            paintArgs.PaletteSet = App.CurrentAppearance;
+            paintArgs.WorkspaceColor = paintArgs.PaletteSet.WorkspaceColor;
+            paintArgs.VirtualBounds = virtualBounds.Value;
 
-            float? alpha = (paintGhost ? (float?)App.CurrentAppearance.MouseDragActiveCurrentAlpha : (float?)null);
+            this.OnPaintBackArea(paintArgs);
+            this.OnPaintActiveContentBackArea(paintArgs);
+            this.OnPaintBorderLine(paintArgs);
+            this.OnPaintMousePoint(paintArgs);
+            this.OnPaintImage(paintArgs);
+            this.OnPaintMainTitle(paintArgs);
 
-            var dataLayout = this.DataLayout;
-            var paletteSet = App.CurrentAppearance;
-            var clientBounds = this.Parent.GetControlBounds(virtualBounds.Value);                  // Souřadnice v systému souřadnic nativního controlu, v nich je vykreslován obsah prvku = jednotlivé prostory dané DataLayoutem
-            var activeBounds = dataLayout.ContentBounds.GetBounds(clientBounds);
-            var workspaceColor = App.CurrentAppearance.WorkspaceColor;
+            e.Graphics.ResetClip();
+        }
+        /// <summary>
+        /// Vykreslí celé pozadí pod prvkem.
+        /// </summary>
+        /// <param name="paintArgs"></param>
+        protected void OnPaintBackArea(ItemPaintArgs paintArgs)
+        {
+            paintArgs.ClientBounds = this.Parent.GetControlBounds(paintArgs.VirtualBounds);
+            paintArgs.Graphics.SetClip(paintArgs.ClientBounds);
 
-            Color? color;
-            e.Graphics.SetClip(clientBounds);
+            paintArgs.CurrentInteractiveState = this.CurrentInteractiveState;
+            paintArgs.BasicInteractiveState = (paintArgs.CurrentInteractiveState & InteractiveState.MaskBasicStates);
 
-            var currentInteractiveState = this.CurrentInteractiveState;                            // Kompletní stav, definuje všechny stavy a barvy
-            var interactiveState = (currentInteractiveState & InteractiveState.MaskBasicStates);   // Obsahuje jen základní stav, daný myší
-            var isSelected = IsSelected;
-            if (isSelected)
-            { }
-
-            // this.OnPaintBack;
             // Celé pozadí buňky (buňka může mít explicitně danou barvu pozadí):
-            color = this.BackColor.Morph(this.CellBackColor?.GetColor(currentInteractiveState));   // Statická barva pozadí + proměnná dle stavu
+            var color = this.BackColor.Morph(this.CellBackColor?.GetColor(paintArgs.CurrentInteractiveState));   // Statická barva pozadí + proměnná dle stavu
             if (color.HasValue)
             {   // Barva buňky se smíchá s barvou WorkspaceColor a vykreslí se celé její pozadí,
                 // a tato barva se pak stává základnou pro Morphování a kreslení všech dalších barev v různých oblastech:
-                workspaceColor = workspaceColor.Morph(color.Value);
-                e.Graphics.FillRectangle(clientBounds, workspaceColor, alpha);
+                paintArgs.WorkspaceColor = paintArgs.WorkspaceColor.Morph(color.Value);
             }
-            // Pozadí aktivní části buňky:
+
+
+            if (paintArgs.DataLayout.BackAreaSelected3DRatio.HasValue && this.IsSelected)
+            {
+                paintArgs.Graphics.FountainFill(paintArgs.ClientBounds, paintArgs.WorkspaceColor, paintArgs.DataLayout.BackAreaSelected3DRatio.Value, FountainDirection.ToDown, paintArgs.Alpha);
+            }
+            else if (paintArgs.DataLayout.BackAreaStatic3DRatio.HasValue)
+            {
+                paintArgs.Graphics.FountainFill(paintArgs.ClientBounds, paintArgs.WorkspaceColor, paintArgs.DataLayout.BackAreaStatic3DRatio.Value, FountainDirection.ToDown, paintArgs.Alpha);
+            }
+            else
+            {
+                paintArgs.Graphics.FillRectangle(paintArgs.ClientBounds, paintArgs.WorkspaceColor, paintArgs.Alpha);
+            }
+
+        }
+        /// <summary>
+        /// Vykreslí pozadí Aktivní části buňky
+        /// </summary>
+        /// <param name="paintArgs"></param>
+        protected void OnPaintActiveContentBackArea(ItemPaintArgs paintArgs)
+        {
+            paintArgs.ActiveContentBounds = paintArgs.DataLayout.ActiveContentBounds.GetBounds(paintArgs.ClientBounds);
+
+            // Pozadí aktivní části buňky - pokud je Selected:
             if (this.IsDown)
             {
-                color = paletteSet.ActiveContentColor.DownColor;
+                var color = paintArgs.PaletteSet.ActiveContentColor.DownColor;
                 if (color.HasValue)
-                    e.Graphics.FillRectangle(activeBounds, workspaceColor.Morph(color.Value), alpha);
+                    paintArgs.Graphics.FillRectangle(paintArgs.ActiveContentBounds, paintArgs.WorkspaceColor.Morph(color.Value), paintArgs.Alpha);
             }
 
-            // Podkreslení celé buňky v myšoaktivním stavu:
-            if ((interactiveState == InteractiveState.MouseOn || interactiveState == InteractiveState.MouseDown) && paletteSet.ActiveContentColor != null)
+            // Podkreslení aktivní části buňky - v myšoaktivním stavu:
+            if ((paintArgs.BasicInteractiveState == InteractiveState.MouseOn || paintArgs.BasicInteractiveState == InteractiveState.MouseDown) && paintArgs.PaletteSet.ActiveContentColor != null)
             {
-                color = paletteSet.ActiveContentColor.GetColor(interactiveState);
+                var color = paintArgs.PaletteSet.ActiveContentColor.GetColor(paintArgs.BasicInteractiveState);
                 if (color.HasValue)
-                    e.Graphics.FountainFill(activeBounds, workspaceColor.Morph(color.Value), Components.InteractiveState.Enabled, alpha);
+                    paintArgs.Graphics.FountainFill(paintArgs.ActiveContentBounds, paintArgs.WorkspaceColor.Morph(color.Value), Components.InteractiveState.Enabled, paintArgs.Alpha);
             }
-
-            // Rámeček a pozadí typu Border:
-            if (dataLayout.BorderBounds.HasContent)
+        }
+        /// <summary>
+        /// Vykreslí Rámeček a pozadí typu Border:
+        /// </summary>
+        /// <param name="paintArgs"></param>
+        protected void OnPaintBorderLine(ItemPaintArgs paintArgs)
+        {
+            if (paintArgs.DataLayout.BorderBounds.HasContent)
             {
-                var borderBounds = dataLayout.BorderBounds.GetBounds(clientBounds);
-                if (borderBounds.HasContent())
+                paintArgs.BorderBounds = paintArgs.DataLayout.BorderBounds.GetBounds(paintArgs.ClientBounds);
+                if (paintArgs.BorderBounds.HasContent())
                 {
-                    using (var borderPath = borderBounds.GetRoundedRectanglePath(dataLayout.BorderRound))
+                    using (var borderPath = paintArgs.BorderBounds.GetRoundedRectanglePath(paintArgs.DataLayout.BorderRound))
                     {
-                        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                        paintArgs.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
                         // Výplň dáme pod border:
-                        color = paletteSet.ButtonBackColors.GetColor(interactiveState);
+                        var color = paintArgs.PaletteSet.ButtonBackColors.GetColor(paintArgs.BasicInteractiveState);
                         if (color.HasValue)
-                            e.Graphics.FountainFill(borderPath, workspaceColor.Morph(color.Value), interactiveState, alpha);
+                            paintArgs.Graphics.FountainFill(borderPath, paintArgs.WorkspaceColor.Morph(color.Value), paintArgs.BasicInteractiveState, paintArgs.Alpha);
 
                         // Linka Border:
-                        if (dataLayout.BorderWidth > 0f)
+                        if (paintArgs.DataLayout.BorderWidth > 0f)
                         {
-                            var pen = App.GetPen(paletteSet.BorderLineColors, interactiveState, dataLayout.BorderWidth, alpha);
-                            if (pen != null) e.Graphics.DrawPath(pen, borderPath);
+                            var pen = App.GetPen(paintArgs.PaletteSet.BorderLineColors, paintArgs.BasicInteractiveState, paintArgs.DataLayout.BorderWidth, paintArgs.Alpha);
+                            if (pen != null) paintArgs.Graphics.DrawPath(pen, borderPath);
                         }
                     }
                 }
             }
-
-            // Zvýraznit pozici myši:
-            if (interactiveState == InteractiveState.MouseOn && dataLayout.MouseHighlightSize.HasContent() && paletteSet.ButtonBackColors.MouseHighlightColor.HasValue)
+        }
+        /// <summary>
+        /// Vykreslí Zvýraznění pozice myši:
+        /// </summary>
+        /// <param name="paintArgs"></param>
+        protected void OnPaintMousePoint(ItemPaintArgs paintArgs)
+        {
+            if (paintArgs.BasicInteractiveState == InteractiveState.MouseOn && paintArgs.DataLayout.MouseHighlightSize.HasContent() && paintArgs.PaletteSet.ButtonBackColors.MouseHighlightColor.HasValue)
             {
                 using (GraphicsPath mousePath = new GraphicsPath())
                 {
-                    var mousePoint = e.MouseState.LocationControl;
-                    var mouseBounds = mousePoint.GetRectangleFromCenter(dataLayout.MouseHighlightSize);
-                    mousePath.AddEllipse(mouseBounds);
+                    var mousePoint = paintArgs.MouseState.LocationControl;
+                    paintArgs.MouseBounds = mousePoint.GetRectangleFromCenter(paintArgs.DataLayout.MouseHighlightSize);
+                    mousePath.AddEllipse(paintArgs.MouseBounds);
                     using (System.Drawing.Drawing2D.PathGradientBrush pgb = new PathGradientBrush(mousePath))
                     {
-                        e.Graphics.ResetClip();
+                        paintArgs.Graphics.ResetClip();
                         pgb.CenterPoint = mousePoint;
-                        pgb.CenterColor = workspaceColor.Morph(paletteSet.ButtonBackColors.MouseHighlightColor).GetAlpha(alpha);
+                        pgb.CenterColor = paintArgs.WorkspaceColor.Morph(paintArgs.PaletteSet.ButtonBackColors.MouseHighlightColor).GetAlpha(paintArgs.Alpha);
                         pgb.SurroundColors = new Color[] { Color.Transparent, Color.Transparent, Color.Transparent, Color.Transparent };
-                        e.Graphics.FillPath(pgb, mousePath);
-                        e.Graphics.SetClip(clientBounds);
+                        paintArgs.Graphics.FillPath(pgb, mousePath);
+                        paintArgs.Graphics.SetClip(paintArgs.ClientBounds);
                     }
                 }
             }
-
-            // Vykreslit Image:
-            var image = App.GetImage(this.ImageName, this.ImageContent);
-            if (dataLayout.ImageBounds.HasContent && image != null)
-            {
-                var imageBounds = dataLayout.ImageBounds.GetBounds(clientBounds);
-                if (imageBounds.HasContent())
-                {
-                    e.Graphics.ResetClip();
-                    e.Graphics.SmoothingMode = SmoothingMode.None;
-                    e.Graphics.DrawImage(image, imageBounds, alpha);
-                    e.Graphics.SetClip(clientBounds);
-                }
-            }
-
-            // Vypsat text:
-            if (dataLayout.MainTitleBounds.HasContent && !String.IsNullOrEmpty(this.MainTitle))
-            {
-                var mainTitleBounds = dataLayout.MainTitleBounds.GetBounds(clientBounds);
-                if (mainTitleBounds.HasContent())
-                {
-                    e.Graphics.DrawText(this.MainTitle, mainTitleBounds, dataLayout.MainTitleAppearance, interactiveState, alpha);
-                }
-            }
-
-            e.Graphics.ResetClip();
         }
+        /// <summary>
+        /// Vykreslí Image
+        /// </summary>
+        /// <param name="paintArgs"></param>
+        protected void OnPaintImage(ItemPaintArgs paintArgs)
+        {
+            var image = App.GetImage(this.ImageName, this.ImageContent);
+            if (paintArgs.DataLayout.ImageBounds.HasContent && image != null)
+            {
+                paintArgs.ImageBounds = paintArgs.DataLayout.ImageBounds.GetBounds(paintArgs.ClientBounds);
+                if (paintArgs.ImageBounds.HasContent())
+                {
+                    paintArgs.Graphics.ResetClip();
+                    paintArgs.Graphics.SmoothingMode = SmoothingMode.None;
+                    paintArgs.Graphics.DrawImage(image, paintArgs.ImageBounds, paintArgs.Alpha);
+                    paintArgs.Graphics.SetClip(paintArgs.ClientBounds);
+                }
+            }
+        }
+        /// <summary>
+        /// Vykreslí Text MainTitle
+        /// </summary>
+        /// <param name="paintArgs"></param>
+        protected void OnPaintMainTitle(ItemPaintArgs paintArgs)
+        {
+            if (paintArgs.DataLayout.MainTitleBounds.HasContent && !String.IsNullOrEmpty(this.MainTitle))
+            {
+                paintArgs.MainTitleBounds = paintArgs.DataLayout.MainTitleBounds.GetBounds(paintArgs.ClientBounds);
+                if (paintArgs.MainTitleBounds.HasContent())
+                {
+                    paintArgs.Graphics.DrawText(this.MainTitle, paintArgs.MainTitleBounds, paintArgs.DataLayout.MainTitleAppearance, paintArgs.BasicInteractiveState, paintArgs.Alpha);
+                }
+            }
+        }
+        /// <summary>
+        /// Třída zahrnující data pro průběžné kreslení prvku
+        /// </summary>
         protected class ItemPaintArgs
         {
             public ItemPaintArgs(PaintDataEventArgs paintData)
@@ -345,15 +396,43 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             /// <summary>
             /// Vstupní data, obshaují i údaje o myši atd
             /// </summary>
-            public PaintDataEventArgs PaintData { get; set; }
+            public PaintDataEventArgs PaintData { get; private set; }
             /// <summary>
             /// Grafika, cíl kreslení
             /// </summary>
             public Graphics Graphics { get { return PaintData.Graphics; } }
             /// <summary>
+            /// Stav a pozice myši
+            /// </summary>
+            public MouseState MouseState { get { return PaintData.MouseState; } }
+            /// <summary>
             /// Obsahuje true když se kreslí "přesouvaný duch"
             /// </summary>
             public bool PaintGhost { get; set; }
+            /// <summary>
+            /// Průhlednost všech barev a prvků, používá se při DragAndDrop. Null = kreslíme základní prvek.
+            /// </summary>
+            public float? Alpha { get; set; }
+            /// <summary>
+            /// Typ layoutu prvku = souřadnice, barevný zdroj
+            /// </summary>
+            public LayoutItemInfo DataLayout { get; set; }
+            /// <summary>
+            /// Kompletní paleta, z ní se čerpají barvy
+            /// </summary>
+            public AppearanceInfo PaletteSet { get; set; }
+            /// <summary>
+            /// Barva pozadí základní
+            /// </summary>
+            public Color WorkspaceColor { get; set; }
+            /// <summary>
+            /// Kompletní interaktivní stav, definuje všechny stavy a barvy
+            /// </summary>
+            public InteractiveState CurrentInteractiveState { get; set; }
+            /// <summary>
+            /// Obsahuje jen základní interaktivní stav, daný myší
+            /// </summary>
+            public InteractiveState BasicInteractiveState { get; set; }
             /// <summary>
             /// Souřadnice ve virtuálním prostoru, odpovídá kompletním datům, před posouváním pomocí ScrollBarů
             /// </summary>
@@ -363,19 +442,25 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             /// </summary>
             public Rectangle ClientBounds { get; set; }
             /// <summary>
-            /// Průhlednost všech barev a prvků, používá se při DragAndDrop. Null = kreslíme základní prvek.
+            /// Souřadnice v systému souřadnic nativního controlu, v nich je vykreslován aktivní obsah prvku
             /// </summary>
-            public float? Alpha { get; set; }
-
-            public LayoutItemInfo DataLayout { get; set; }
-            public AppearanceInfo PaletteSet { get; set; }
-            public InteractiveState CurrentInteractiveState { get; set; }
-
-            public InteractiveState BasicnteractiveState { get; set; }
-
-            public Rectangle ActiveBounds { get; set; }
-
-            public Color WorkspaceColor { get; set; }
+            public Rectangle ActiveContentBounds { get; set; }
+            /// <summary>
+            /// Souřadnice v systému souřadnic nativního controlu, v nich je vykreslován rámeček
+            /// </summary>
+            public Rectangle BorderBounds { get; set; }
+            /// <summary>
+            /// Souřadnice v systému souřadnic nativního controlu, v nich je vykreslována pozice myši
+            /// </summary>
+            public Rectangle MouseBounds { get; set; }
+            /// <summary>
+            /// Souřadnice v systému souřadnic nativního controlu, v nich je vykreslována Ikona
+            /// </summary>
+            public Rectangle ImageBounds { get; set; }
+            /// <summary>
+            /// Souřadnice v systému souřadnic nativního controlu, v nich je vykreslován MainTitle
+            /// </summary>
+            public Rectangle MainTitleBounds { get; set; }
         }
         #endregion
     }

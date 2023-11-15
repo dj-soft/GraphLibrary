@@ -570,6 +570,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             graphics.FillRectangle(App.GetBrush(color, alpha), bounds);
         }
+
         public static void DrawText(this Graphics graphics, string text, RectangleF bounds, TextAppearance textAppearance, Components.InteractiveState interactiveState = Components.InteractiveState.Enabled, float? alpha = null)
         {
             var brush = App.GetBrush(textAppearance.TextColors, interactiveState, alpha);
