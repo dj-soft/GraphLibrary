@@ -256,20 +256,19 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 paintArgs.WorkspaceColor = paintArgs.WorkspaceColor.Morph(color.Value);
             }
 
-
-            if (paintArgs.DataLayout.BackAreaSelected3DRatio.HasValue && this.IsSelected)
-            {
+            // Jak vykreslit prostor celého prvku:
+            if (this.IsSelected && paintArgs.DataLayout.BackAreaSelected3DRatio.HasValue)
+            {   // Pokud prvek je Selected a má definovaný 3D efekt pro Selected:
                 paintArgs.Graphics.FountainFill(paintArgs.ClientBounds, paintArgs.WorkspaceColor, paintArgs.DataLayout.BackAreaSelected3DRatio.Value, FountainDirection.ToDown, paintArgs.Alpha);
             }
             else if (paintArgs.DataLayout.BackAreaStatic3DRatio.HasValue)
-            {
+            {   // Pokud prvek je má definovaný fixní 3D efekt:
                 paintArgs.Graphics.FountainFill(paintArgs.ClientBounds, paintArgs.WorkspaceColor, paintArgs.DataLayout.BackAreaStatic3DRatio.Value, FountainDirection.ToDown, paintArgs.Alpha);
             }
             else
-            {
+            {   // Běžná plná barva pozadí:
                 paintArgs.Graphics.FillRectangle(paintArgs.ClientBounds, paintArgs.WorkspaceColor, paintArgs.Alpha);
             }
-
         }
         /// <summary>
         /// Vykreslí pozadí Aktivní části buňky
@@ -380,7 +379,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 paintArgs.MainTitleBounds = paintArgs.DataLayout.MainTitleBounds.GetBounds(paintArgs.ClientBounds);
                 if (paintArgs.MainTitleBounds.HasContent())
                 {
-                    paintArgs.Graphics.DrawText(this.MainTitle, paintArgs.MainTitleBounds, paintArgs.DataLayout.MainTitleAppearance, paintArgs.BasicInteractiveState, paintArgs.Alpha);
+                    paintArgs.Graphics.DrawText(this.MainTitle, paintArgs.MainTitleBounds, paintArgs.DataLayout.MainTitleAppearance, paintArgs.BasicInteractiveState, paintArgs.Alpha, paintArgs.DataLayout.MainTitleAlignment);
                 }
             }
         }

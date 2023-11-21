@@ -438,6 +438,65 @@ namespace DjSoft.Tools.ProgramLauncher
 
             int center(int begin, int size) { return begin + (size / 2); }
         }
+        /// <summary>
+        /// Metoda vezme this velikost a umístí ji do zadaného prostoru do daného místa.
+        /// Volitelně lze řídit, zda zmenšit this velikost, pokud cílový prostor <paramref name="targetBounds"/> je menší, podle parametru <paramref name="cropToTarget"/>.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="targetBounds"></param>
+        /// <param name="contentAlignment"></param>
+        /// <param name="cropToTarget"></param>
+        /// <returns></returns>
+        public static RectangleF AlignContentTo(this SizeF size, RectangleF targetBounds, ContentAlignment contentAlignment, bool cropToTarget = true)
+        {
+            float sw = size.Width;
+            float sh = size.Height;
+            float tw = targetBounds.Width;
+            float th = targetBounds.Height;
+            if (cropToTarget)
+            {
+                if (sw > tw) sw = tw;
+                if (sh > th) sh = th;
+            }
+            float ax = 0f;
+            float ay = 0f;
+            float dw = tw - sw;
+            float dh = th - sh;
+            switch (contentAlignment) 
+            {
+                case ContentAlignment.TopLeft:
+                    break;
+                case ContentAlignment.TopCenter:
+                    ax = dw / 2f;
+                    break;
+                case ContentAlignment.TopRight:
+                    ax = dw;
+                    break;
+                case ContentAlignment.MiddleLeft:
+                    ay = dh / 2f;
+                    break;
+                case ContentAlignment.MiddleCenter:
+                    ax = dw / 2f;
+                    ay = dh / 2f;
+                    break;
+                case ContentAlignment.MiddleRight:
+                    ax = dw;
+                    ay = dh / 2f;
+                    break;
+                case ContentAlignment.BottomLeft:
+                    ay = dh;
+                    break;
+                case ContentAlignment.BottomCenter:
+                    ax = dw / 2f;
+                    ay = dh;
+                    break;
+                case ContentAlignment.BottomRight:
+                    ax = dw;
+                    ay = dh;
+                    break;
+            }
+            return new RectangleF(targetBounds.X + ax, targetBounds.Y + ay, sw, sh);
+        }
         #endregion
         #region Graphics - FountainFill, Draw
         /// <summary>
@@ -459,16 +518,30 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         public static void FountainFill(this Graphics graphics, Rectangle bounds, Color color, float morph, FountainDirection direction, float? alpha = null)
         {
-            _GetFountainFillColors(color, morph, out Color colorBegin, out Color colorEnd, alpha);
-            using (var brush = CreateLinearGradientBrush(bounds, colorBegin, colorEnd, direction))
-                graphics.FillRectangle(brush, bounds);
+            if (morph != 0f && direction != FountainDirection.None)
+            {
+                _GetFountainFillColors(color, morph, out Color colorBegin, out Color colorEnd, alpha);
+                using (var brush = CreateLinearGradientBrush(bounds, colorBegin, colorEnd, direction))
+                    graphics.FillRectangle(brush, bounds);
+            }
+            else
+            {   // Bez 3D efektu:
+                FillRectangle(graphics, bounds, color, alpha);
+            }
         }
         public static void FountainFill(this Graphics graphics, GraphicsPath path, Color color, float morph, FountainDirection direction, float? alpha = null)
         {
-            Rectangle bounds = path.GetBounds().GetOuterBounds();
-            _GetFountainFillColors(color, morph, out Color colorBegin, out Color colorEnd, alpha);
-            using (var brush = CreateLinearGradientBrush(bounds, colorBegin, colorEnd, direction))
-                graphics.FillPath(brush, path);
+            if (morph != 0f && direction != FountainDirection.None)
+            {
+                Rectangle bounds = path.GetBounds().GetOuterBounds();
+                _GetFountainFillColors(color, morph, out Color colorBegin, out Color colorEnd, alpha);
+                using (var brush = CreateLinearGradientBrush(bounds, colorBegin, colorEnd, direction))
+                    graphics.FillPath(brush, path);
+            }
+            else
+            {   // Bez 3D efektu:
+                FillPath(graphics, path, color, alpha);
+            }
         }
         /// <summary>
         /// Pro zadaný interaktivní stav <paramref name="interactiveState"/> určí hodnoty <paramref name="morph"/> a <paramref name="direction"/>
@@ -570,20 +643,68 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             graphics.FillRectangle(App.GetBrush(color, alpha), bounds);
         }
-
-        public static void DrawText(this Graphics graphics, string text, RectangleF bounds, TextAppearance textAppearance, Components.InteractiveState interactiveState = Components.InteractiveState.Enabled, float? alpha = null)
+        public static void FillPath(this Graphics graphics, GraphicsPath path, Color color, float? alpha = null)
         {
+            graphics.FillPath(App.GetBrush(color, alpha), path);
+        }
+        /// <summary>
+        /// Do aktuální grafiky vyplní daný prostor odpovídajícím stylem interaktivního pozadí
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="colorSet"></param>
+        /// <param name="interactiveState"></param>
+        /// <param name="alpha"></param>
+        public static void FillInteractiveBackArea(this Graphics graphics, Rectangle bounds, ColorSet colorSet, InteractiveState interactiveState, float? alpha = null)
+        {
+            var color = colorSet.GetColor(interactiveState);
+            if (!color.HasValue) color = colorSet.GetColor(InteractiveState.Enabled);
+
+            if (color.HasValue)
+            {
+                _GetFountainFillDirection(interactiveState, out float morph, out FountainDirection direction);
+                FountainFill(graphics, bounds, color.Value, morph, direction, alpha);
+            }
+        }
+        public static void DrawText(this Graphics graphics, string text, RectangleF bounds, TextAppearance textAppearance, Components.InteractiveState interactiveState = Components.InteractiveState.Enabled, float? alpha = null, ContentAlignment? contentAlignment = null)
+        {
+            if (String.IsNullOrEmpty(text)) return;
+
             var brush = App.GetBrush(textAppearance.TextColors, interactiveState, alpha);
             if (brush is null) return;
+
+            var textounds = bounds;
             var font = App.GetFont(textAppearance, interactiveState);
+            var stringFormat = App.GetStringFormatFor(contentAlignment);
+
+            //string test = "Abcde fghij klmno pqrst uvwxy Abcde fghij klmno pqrst uvwxy.";
+            //var size0 = graphics.MeasureString(test, font);
+            //var size1 = graphics.MeasureString(test, font, 80);
+            //var size2 = graphics.MeasureString(test, font, 80, stringFormat);
+            //var size3 = graphics.MeasureString(test, font, 80, stringFormat);
+
+
+            if (contentAlignment.HasValue)
+            {
+                var size = graphics.MeasureString(text, font, (int)(bounds.Width - 2f));
+                if (size.Height > 25f)
+                { }
+                var alignedBounds = size.AlignContentTo(bounds, contentAlignment.Value);
+            }
+
             graphics.SetForText();
-            graphics.DrawString(text, font, brush, bounds);
+            graphics.DrawString(text, font, brush, textounds, stringFormat);
         }
-        public static void DrawText(this Graphics graphics, string text, RectangleF bounds, Color color, FontType? fontType = null, float? emSize = null, FontStyle? fontStyle = null, float? alpha = null)
+        public static void DrawText(this Graphics graphics, string text, RectangleF bounds, Color color, FontType? fontType = null, float? emSize = null, FontStyle? fontStyle = null, float? alpha = null, ContentAlignment? contentAlignment = null)
         {
             var brush = App.GetBrush(color.GetAlpha(alpha));
             if (brush is null) return;
+
             var font = App.GetFont(fontType, emSize, fontStyle);
+            var stringFormat = App.GetStringFormatFor(contentAlignment);
+            if (contentAlignment.HasValue)
+                bounds = graphics.MeasureString(text, font, (int)(bounds.Width - 2f), stringFormat).AlignContentTo(bounds, contentAlignment.Value);
+
             graphics.SetForText();
             graphics.DrawString(text, font, brush, bounds);
         }

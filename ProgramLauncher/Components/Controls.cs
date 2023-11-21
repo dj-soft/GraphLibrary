@@ -1103,6 +1103,22 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         }
         private void _InitializeControls()
         {
+            __HsvCheckBox = new GCheckButton();
+            __HsvCheckBox.CheckButtonText = "Odstín";
+            __HsvCheckBox.CheckButtonChecked = true;
+            __HsvCheckBox.CheckButtonCheckedChanged += _HsvCheckBoxChecked;
+            this.Controls.Add(__HsvCheckBox);
+
+            __RgbCheckBox = new GCheckButton();
+            __RgbCheckBox.CheckButtonText = "RGB";
+            __RgbCheckBox.CheckButtonCheckedChanged += _RgbCheckBoxChecked;
+            this.Controls.Add(__RgbCheckBox);
+
+            __NonCheckBox = new GCheckButton();
+            __NonCheckBox.CheckButtonText = "Žádná";
+            __NonCheckBox.CheckButtonCheckedChanged += _NonCheckBoxChecked;
+            this.Controls.Add(__NonCheckBox);
+           
             __ColorHueTrackBar = new GColorTrackBar();
             __ColorHueTrackBar.ColorsGenerator = CreateColorBlendHue;
             __ColorHueTrackBar.ValueChanged += _ColorHueValueChanged;
@@ -1118,6 +1134,21 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             __ColorValueTrackBar.ValueChanged += _ColorValueValueChanged;
             this.Controls.Add(__ColorValueTrackBar);
 
+            __ColorRTrackBar = new GColorTrackBar();
+            __ColorRTrackBar.ColorsGenerator = CreateColorRgbR;
+            __ColorRTrackBar.ValueChanged += _ColorHueValueChanged;
+            this.Controls.Add(__ColorRTrackBar);
+
+            __ColorGTrackBar = new GColorTrackBar();
+            __ColorGTrackBar.ColorsGenerator = CreateColorRgbG;
+            __ColorGTrackBar.ValueChanged += _ColorSaturationValueChanged;
+            this.Controls.Add(__ColorGTrackBar);
+
+            __ColorBTrackBar = new GColorTrackBar();
+            __ColorBTrackBar.ColorsGenerator = CreateColorRgbB;
+            __ColorBTrackBar.ValueChanged += _ColorValueValueChanged;
+            this.Controls.Add(__ColorBTrackBar);
+
             __ColorAlphaTrackBar = new GColorTrackBar();
             __ColorAlphaTrackBar.ColorsGenerator = CreateColorBlendAlpha;
             __ColorAlphaTrackBar.ValueChanged += _ColorAlphaValueChanged;
@@ -1128,12 +1159,23 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             __GColorSample.CurrentColor = System.Drawing.Color.FromArgb(100, 32, 32, 200);
             this.Controls.Add(__GColorSample);
 
-            this.Height = 46;
+            this.Height = 60;
             this.ClientSizeChanged += _ClientSizeChanged;
+
+            _SetColorMode(ColorValueMode.Hsv, false);
         }
+        private GCheckButton __HsvCheckBox;
+        private GCheckButton __RgbCheckBox;
+        private GCheckButton __NonCheckBox;
+
         private GColorTrackBar __ColorHueTrackBar;
         private GColorTrackBar __ColorValueTrackBar;
         private GColorTrackBar __ColorSaturationTrackBar;
+
+        private GColorTrackBar __ColorRTrackBar;
+        private GColorTrackBar __ColorGTrackBar;
+        private GColorTrackBar __ColorBTrackBar;
+        
         private GColorTrackBar __ColorAlphaTrackBar;
         private GColorSample __GColorSample;
         #endregion
@@ -1146,29 +1188,50 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             var size = this.ClientSize;
 
-            int th = 22;
-            int tdx = 4;
-            int tdy = 2;
+            int checkLeft = 4;
+            int checkWidth = 85;
 
-            int sw = 50;
-            int sh = 2 * th + tdy - 1;
+            int trackLeft = checkLeft + checkWidth + 3;
+            int trackRight = size.Width - 3;
+            int trackSpaceX = trackRight - trackLeft;
+            int trackCenterX = trackLeft + (trackSpaceX / 2);
+            int sampleWidth = 50;
+            int sampleSpace = 4;
+            int sampleWidthHalf = sampleWidth / 2;
+            int sampleLeft = trackCenterX - sampleWidthHalf;
 
-            int swh = sw / 2;
-            int cx = size.Width / 2;
-            int t1x = 0;
-            int tw = cx - swh - tdx;
-            int t2x = cx + swh + tdx;
+            int trackWidth = (trackSpaceX - sampleWidth - sampleSpace) / 2;
+            int track1Left = trackLeft;
+            int track2Left = trackRight - trackWidth;
 
-            int t1y = 0;
-            int t2y = th + 2;
 
-            int sx = cx - swh;
+            int checkHeight = 18;
+            int checkSpaceY = 1;
+            int trackHeight = 26;
+            int trackSpaceY = 4;
+            int track1Top = 2;
+            int track2Top = trackHeight + trackSpaceY;
+            int sampleHeight = 2 * trackHeight + trackSpaceY;
 
-            __ColorHueTrackBar.Bounds = new Rectangle(t1x, t1y, tw, th);
-            __ColorSaturationTrackBar.Bounds = new Rectangle(t2x, t1y, tw, th);
-            __ColorValueTrackBar.Bounds = new Rectangle(t1x, t2y, tw, th);
-            __ColorAlphaTrackBar.Bounds = new Rectangle(t2x, t2y, tw, th);
-            __GColorSample.Bounds = new Rectangle(sx, t1y, sw, sh);
+            // CheckBoxy: 2+18+1+18+1+18+2 = 60
+            // TrackBary: 2+26+4+26+2 = 60
+            int checkTop = 2;
+            __HsvCheckBox.Bounds = new Rectangle(checkLeft, checkTop, checkWidth, checkHeight); checkTop = checkTop + checkHeight + checkSpaceY;
+            __RgbCheckBox.Bounds = new Rectangle(checkLeft, checkTop, checkWidth, checkHeight); checkTop = checkTop + checkHeight + checkSpaceY;
+            __NonCheckBox.Bounds = new Rectangle(checkLeft, checkTop, checkWidth, checkHeight); checkTop = checkTop + checkHeight + checkSpaceY;
+
+
+            __ColorHueTrackBar.Bounds = new Rectangle(track1Left, track1Top, trackWidth, trackHeight);
+            __ColorRTrackBar.Bounds = new Rectangle(track1Left, track1Top, trackWidth, trackHeight);
+
+            __ColorSaturationTrackBar.Bounds = new Rectangle(track2Left, track1Top, trackWidth, trackHeight);
+            __ColorGTrackBar.Bounds = new Rectangle(track2Left, track1Top, trackWidth, trackHeight);
+
+            __ColorValueTrackBar.Bounds = new Rectangle(track1Left, track2Top, trackWidth, trackHeight);
+            __ColorBTrackBar.Bounds = new Rectangle(track1Left, track2Top, trackWidth, trackHeight);
+
+            __ColorAlphaTrackBar.Bounds = new Rectangle(track2Left, track2Top, trackWidth, trackHeight);
+            __GColorSample.Bounds = new Rectangle(sampleLeft, track1Top, sampleWidth, sampleHeight);
         }
         #endregion
         #region Jednotlivé hodnoty, eventy po změně z TrackBarů
@@ -1177,6 +1240,37 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         private float _ColorValue { get { return __ColorValueTrackBar.Value; } set { __ColorValueTrackBar.Value = _Align(value); } }
         private float _ColorAlpha { get { return __ColorAlphaTrackBar.Value; } set { __ColorAlphaTrackBar.Value = _Align(value); } }
 
+        private void _HsvCheckBoxChecked(object sender, EventArgs e) { _SetColorMode(ColorValueMode.Hsv, true); }
+        private void _RgbCheckBoxChecked(object sender, EventArgs e) { _SetColorMode(ColorValueMode.Rgb, true); }
+        private void _NonCheckBoxChecked(object sender, EventArgs e) { _SetColorMode(ColorValueMode.None, true); }
+        private void _SetColorMode(ColorValueMode colorMode, bool runChanged)
+        {
+            bool isChanged = (__ColorMode != colorMode);
+            bool isHsv = (colorMode == ColorValueMode.Hsv);
+            bool isRgb = (colorMode == ColorValueMode.Rgb);
+            bool isNone = (colorMode == ColorValueMode.None);
+            __HsvCheckBox.CheckButtonCheckedSilent = isHsv;
+            __RgbCheckBox.CheckButtonCheckedSilent = isRgb;
+            __NonCheckBox.CheckButtonCheckedSilent = isNone;
+
+            __ColorRTrackBar.Visible = isRgb;
+            __ColorGTrackBar.Visible = isRgb;
+            __ColorBTrackBar.Visible = isRgb;
+
+            __ColorHueTrackBar.Visible = isHsv;
+            __ColorValueTrackBar.Visible = isHsv;
+            __ColorSaturationTrackBar.Visible = isHsv;
+
+            __ColorAlphaTrackBar.Visible = (isRgb || isHsv);
+            __GColorSample.Visible = (isRgb || isHsv);
+
+            __ColorMode = colorMode;
+
+            if (isChanged && runChanged)
+            {
+
+            }
+        }
         private void _ColorHueValueChanged(object sender, EventArgs e)
         {
             ColorHSV colorHSV = ColorHSV.FromHSV(_ColorHue, 1d, 1d);
@@ -1212,7 +1306,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #endregion
 
 
-
+        public ColorValueMode ColorMode { get { return __ColorMode; } set { _SetColorMode(value, true); } } private ColorValueMode __ColorMode;
         public Color? Color { get { return __Color; } set { __Color = value; } } private Color? __Color;
         #region ColorBlenderGeneratory
         protected Color[] CreateColorBlendHue(Color color)
@@ -1249,6 +1343,34 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             };
             return colors;
         }
+
+        protected Color[] CreateColorRgbR(Color color)
+        {
+            var colors = new Color[]
+            {
+                System.Drawing.Color.FromArgb(0,0,0),
+                System.Drawing.Color.FromArgb(255,0,0),
+            };
+            return colors;
+        }
+        protected Color[] CreateColorRgbG(Color color)
+        {
+            var colors = new Color[]
+            {
+                System.Drawing.Color.FromArgb(0,0,0),
+                System.Drawing.Color.FromArgb(0,255,0),
+            };
+            return colors;
+        }
+        protected Color[] CreateColorRgbB(Color color)
+        {
+            var colors = new Color[]
+            {
+                System.Drawing.Color.FromArgb(0,0,0),
+                System.Drawing.Color.FromArgb(0,0,255),
+            };
+            return colors;
+        }
         protected Color[] CreateColorBlendAlpha(Color color)
         {
             var colors = new Color[]
@@ -1265,6 +1387,15 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         object IValueStorage.Value { get { return this.Color; } set { this.Color = Conversion.ToColorN(value); } }
         #endregion
+    }
+    /// <summary>
+    /// Režim vstupu barvy
+    /// </summary>
+    public enum ColorValueMode
+    {
+        None,
+        Rgb,
+        Hsv
     }
     #endregion
     #region DCheckBox
@@ -2187,6 +2318,228 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Přístup na hodnotu
         /// </summary>
         object IValueStorage.Value { get { return this.Value; } set { this.Value = Conversion.ToSingle(value); } }
+        #endregion
+    }
+    #endregion
+    #region GCheckButton
+    public class GCheckButton : GraphicsControl, IControlExtended, IValueStorage
+    {
+        #region Konstruktor, public hodnoty
+        public GCheckButton()
+        {
+            _MouseInit();
+            _LayoutInit();
+            _StateInit();
+        }
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
+        #endregion
+        #region Interaktivita
+        private void _MouseInit()
+        {
+            __InteractiveState = InteractiveState.Enabled;
+            __CheckBoxEnabled = true;
+            this.MouseEnter += _MouseEnter;
+            this.MouseMove += _MouseMove;
+            this.MouseDown += _MouseDown;
+            this.MouseUp += _MouseUp;
+            this.MouseLeave += _MouseLeave;
+        }
+        private void _MouseEnter(object sender, EventArgs e)
+        {
+            if (CheckBoxEnabled)
+                InteractiveState = InteractiveState.MouseOn;
+        }
+        private void _MouseMove(object sender, MouseEventArgs e)
+        {
+        }
+        private void _MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left && CheckBoxEnabled && IsInActiveBounds(e.Location))
+            {
+                this.InteractiveState = InteractiveState.MouseDown;
+                this.CheckButtonChecked = !this.CheckButtonChecked;            // Vyvolá event + Draw
+            }
+        }
+        private void _MouseUp(object sender, MouseEventArgs e)
+        {
+            bool isMouseOnControl = this.ClientRectangle.Contains(e.Location);
+            InteractiveState = (isMouseOnControl ? InteractiveState.MouseOn : InteractiveState.Enabled);
+        }
+        /// <summary>
+        /// Myš odchází z Controlu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MouseLeave(object sender, EventArgs e)
+        {
+            InteractiveState = InteractiveState.Enabled;
+        }
+        /// <summary>
+        /// Aktuální interaktivní stav
+        /// </summary>
+        protected InteractiveState InteractiveState
+        {
+            get { return (CheckBoxEnabled ? __InteractiveState : InteractiveState.Disabled); }
+            set
+            {
+                var oldState = __InteractiveState;
+                var newState = value;
+                if (oldState != newState)
+                {
+                    __InteractiveState = newState;
+                    __CheckBoxEnabled = (newState != InteractiveState.Disabled);
+                    OnInteractiveStateChanged();
+                    InteractiveStateChanged?.Invoke(this, EventArgs.Empty);
+                    this.Draw();
+                }
+            }
+        }
+        private InteractiveState __InteractiveState;
+        /// <summary>
+        /// Došlo ke změně interaktivního stavu
+        /// </summary>
+        protected virtual void OnInteractiveStateChanged() { }
+        public event EventHandler InteractiveStateChanged;
+        /// <summary>
+        /// CheckBox je Enabled?
+        /// </summary>
+        public bool CheckBoxEnabled { get { return __CheckBoxEnabled; } set { __CheckBoxEnabled = value; this.Draw(); } } private bool __CheckBoxEnabled;
+        /// <summary>
+        /// Vrátí true, pokud daný bod je umístěn ve zdejším prostoru
+        /// </summary>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        protected bool IsInActiveBounds(Point point)
+        {
+            return this.ClientRectangle.Contains(point);
+        }
+        #endregion
+        #region Kreslení jednotlivých segmentů
+        /// <summary>
+        /// Vykreslení obsahu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        protected override void OnPaintToBuffer(object sender, PaintEventArgs e)
+        {
+            base.OnPaintToBuffer(sender, e);
+
+            this.OnPaintCheckBoxBackground(e);
+            this.OnPaintCheckBoxImage(e);
+            this.OnPaintCheckBoxText(e);
+        }
+        protected void OnPaintCheckBoxBackground(PaintEventArgs e)
+        {
+            e.Graphics.FillInteractiveBackArea(this.ClientRectangle, App.CurrentAppearance.ButtonBackColors, this.InteractiveState);
+        }
+        protected void OnPaintCheckBoxImage(PaintEventArgs e)
+        {
+            var image = GetImage();
+            if (image != null)
+                e.Graphics.DrawImage(image, this.CheckBoxImageBounds);
+        }
+        protected void OnPaintCheckBoxText(PaintEventArgs e)
+        {
+            var text = CheckButtonText;
+            if (!String.IsNullOrEmpty(text))
+                e.Graphics.DrawText(text, this.CheckBoxTextBounds, App.CurrentAppearance.StandardTextAppearance, this.InteractiveState, null, ContentAlignment.MiddleLeft);
+        }
+        protected Image GetImage()
+        {
+            bool isChecked = CheckButtonChecked;
+            var image = (isChecked ? CheckButtonImageTrue : CheckButtonImageFalse);
+            if (image is null)
+                image = App.GetImage(CheckButtonImageName);
+            return image;
+        }
+        #endregion
+        #region Layout
+        private void _LayoutInit()
+        {
+            this.__CheckButtonPadding = new Padding(3);
+            this.ClientSizeChanged += _ClientSizeChanged;
+        }
+
+        private void _ClientSizeChanged(object sender, EventArgs e)
+        {
+            DoLayout();
+        }
+        protected virtual void DoLayout()
+        {
+            var padding = this.CheckButtonPadding;
+            var clientSize = this.ClientSize;
+            int x = padding.Left;
+            int y = padding.Top;
+            var h = clientSize.Height - padding.Vertical;
+
+            var image = GetImage();
+            if (image != null)
+            {
+                this.CheckBoxImageBounds = new Rectangle(x, y, h, h);
+                x = x + h + 3;
+            }
+            else
+            {
+                this.CheckBoxImageBounds = new Rectangle(x, y, 0, h);
+            }
+
+            int w = clientSize.Width - padding.Right - x;
+            this.CheckBoxTextBounds = new Rectangle(x, y, w, h);
+
+            Draw();
+        }
+        /// <summary>
+        /// Souřadnice prostoru Image boxu
+        /// </summary>
+        protected Rectangle CheckBoxImageBounds { get; set; }
+        /// <summary>
+        /// Souřadnice prostoru Textu
+        /// </summary>
+        protected Rectangle CheckBoxTextBounds { get; set; }
+        #endregion
+        #region Hodnota, Ikona, text
+        private void _StateInit()
+        {
+            __CheckButtonText = "Check";
+            __CheckButtonChecked = false;
+            __CheckButtonImageFalse = Properties.Resources.btn_g4_20;
+            __CheckButtonImageTrue = Properties.Resources.btn_24_20;
+        }
+        public string CheckButtonText { get { return __CheckButtonText; } set { __CheckButtonText = value; Draw(); } } private string __CheckButtonText;
+        public bool CheckButtonChecked { get { return __CheckButtonChecked; } set { _SetCheckButtonChecked(value, true); Draw(); } }
+        public bool CheckButtonCheckedSilent { get { return __CheckButtonChecked; } set { _SetCheckButtonChecked(value, false); } } 
+        private void _SetCheckButtonChecked(bool value, bool runChanged)
+        {
+            if (__CheckButtonChecked == value) return;
+            __CheckButtonChecked = value;
+            if (runChanged)
+            {
+                OnCheckButtonCheckedChanged();
+                CheckButtonCheckedChanged?.Invoke(this, EventArgs.Empty);
+            }
+            this.Draw();
+        }
+        private bool __CheckButtonChecked;
+        protected virtual void OnCheckButtonCheckedChanged() { }
+        public event EventHandler CheckButtonCheckedChanged;
+        public Image CheckButtonImageFalse { get { return __CheckButtonImageFalse; } set { __CheckButtonImageFalse = value; DoLayout(); } } private Image __CheckButtonImageFalse;
+        public Image CheckButtonImageTrue { get { return __CheckButtonImageTrue; } set { __CheckButtonImageTrue = value; DoLayout(); } } private Image __CheckButtonImageTrue;
+        public string CheckButtonImageName { get { return __CheckButtonImageName; } set { __CheckButtonImageName = value; DoLayout(); } } private string __CheckButtonImageName;
+        public Padding CheckButtonPadding { get { return __CheckButtonPadding; } set { __CheckButtonPadding = value; DoLayout(); } } private Padding __CheckButtonPadding;
+        #endregion
+        #region IValueStorage
+        /// <summary>
+        /// Přístup na hodnotu
+        /// </summary>
+        object IValueStorage.Value { get { return this.CheckButtonChecked; } set { this.CheckButtonChecked = Conversion.ToBoolean(value); } }
         #endregion
     }
     #endregion

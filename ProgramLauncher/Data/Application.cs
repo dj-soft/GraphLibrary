@@ -1121,6 +1121,77 @@ namespace DjSoft.Tools.ProgramLauncher
             return Cursors.Default;
         }
         #endregion
+        #region StringFormaty
+        /// <summary>
+        /// Vrátí formátovací předpis pro daný alignment textu
+        /// </summary>
+        /// <param name="contentAlignment"></param>
+        /// <returns></returns>
+        public static StringFormat GetStringFormatFor(ContentAlignment? contentAlignment) { return Current._GetStringFormatFor(contentAlignment); }
+        private StringFormat _GetStringFormatFor(ContentAlignment? contentAlignment)
+        {
+            if (__StringFormats is null) __StringFormats = new Dictionary<ContentAlignment, StringFormat>();
+            var alignment = contentAlignment ?? ContentAlignment.TopLeft;
+            if (!__StringFormats.TryGetValue(alignment, out var stringFormat))
+            {
+                stringFormat = new StringFormat();
+                stringFormat.FormatFlags = StringFormatFlags.LineLimit;
+                switch (alignment)
+                {
+                    case ContentAlignment.TopLeft:
+                        stringFormat.Alignment = StringAlignment.Near;
+                        stringFormat.LineAlignment = StringAlignment.Near;
+                        break;
+                    case ContentAlignment.TopCenter:
+                        stringFormat.Alignment = StringAlignment.Center;
+                        stringFormat.LineAlignment = StringAlignment.Near;
+                        break;
+                    case ContentAlignment.TopRight:
+                        stringFormat.Alignment = StringAlignment.Far;
+                        stringFormat.LineAlignment = StringAlignment.Near;
+                        break;
+                    case ContentAlignment.MiddleLeft:
+                        stringFormat.Alignment = StringAlignment.Near;
+                        stringFormat.LineAlignment = StringAlignment.Center;
+                        break;
+                    case ContentAlignment.MiddleCenter:
+                        stringFormat.Alignment = StringAlignment.Center;
+                        stringFormat.LineAlignment = StringAlignment.Center;
+                        break;
+                    case ContentAlignment.MiddleRight:
+                        stringFormat.Alignment = StringAlignment.Far;
+                        stringFormat.LineAlignment = StringAlignment.Center;
+                        break;
+                    case ContentAlignment.BottomLeft:
+                        stringFormat.Alignment = StringAlignment.Near;
+                        stringFormat.LineAlignment = StringAlignment.Far;
+                        break;
+                    case ContentAlignment.BottomCenter:
+                        stringFormat.Alignment = StringAlignment.Center;
+                        stringFormat.LineAlignment = StringAlignment.Far;
+                        break;
+                    case ContentAlignment.BottomRight:
+                        stringFormat.Alignment = StringAlignment.Far;
+                        stringFormat.LineAlignment = StringAlignment.Far;
+                        break;
+                }
+                __StringFormats.Add(alignment, stringFormat);
+            }
+            return stringFormat;
+        }
+        private Dictionary<ContentAlignment, StringFormat> __StringFormats;
+        public static StringFormat StringFormatWrap { get { return Current._StringFormatWrap; } }
+        private StringFormat _StringFormatWrap 
+        { 
+            get 
+            {
+                if (__StringFormatWrap is null)
+                    __StringFormatWrap = new StringFormat(StringFormatFlags.NoClip) { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Near, Trimming = StringTrimming.EllipsisWord };
+                return __StringFormatWrap; 
+            }
+        }
+        private StringFormat __StringFormatWrap;
+        #endregion
         #region FontLibrary
         /// <summary>
         /// Najde a vrátí Font pro dané požadavky. Vrácený Font se nesmí Dispose, protože je opakovaně používán!
@@ -1323,6 +1394,7 @@ namespace DjSoft.Tools.ProgramLauncher
         private Image _GetImage(string fileName, byte[] content)
         {
             if (String.IsNullOrEmpty(fileName)) return null;
+
             string type = (content is null ? "File" : "Data");
             string key = _GetImageKey(type, fileName);
             if (!__Images.TryGetValue(key, out Image image))

@@ -135,8 +135,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             layoutSet.__ImageSmall = Properties.Resources.btn_g2_20;
             layoutSet.__SortOrder = 100;
             layoutSet.__LayoutPage = LayoutItemInfo.PageHeaderMedium;
-            layoutSet.__LayoutGroup = LayoutItemInfo.GroupHeaderMiddle;
-            layoutSet.__LayoutApplication = LayoutItemInfo.SetMidiBrick;
+            layoutSet.__LayoutGroup = LayoutItemInfo.GroupHeaderMedium;
+            layoutSet.__LayoutApplication = LayoutItemInfo.ItemWideSmall;
             layoutSet.__IsReadOnly = true;
             return layoutSet;
         }
@@ -151,8 +151,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             layoutSet.__ImageSmall = Properties.Resources.btn_09_20;
             layoutSet.__SortOrder = 500;
             layoutSet.__LayoutPage = LayoutItemInfo.PageHeaderSmall;
-            layoutSet.__LayoutGroup = LayoutItemInfo.GroupHeaderMiddle;
-            layoutSet.__LayoutApplication = LayoutItemInfo.SetMidiBrick;
+            layoutSet.__LayoutGroup = LayoutItemInfo.GroupHeaderMedium;
+            layoutSet.__LayoutApplication = LayoutItemInfo.ItemWideSmall;
             layoutSet.__IsReadOnly = true;
             return layoutSet;
         }
@@ -167,8 +167,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             layoutSet.__ImageSmall = Properties.Resources.btn_05_20;
             layoutSet.__SortOrder = 600;
             layoutSet.__LayoutPage = LayoutItemInfo.PageHeaderMedium;
-            layoutSet.__LayoutGroup = LayoutItemInfo.GroupHeaderMiddle;
-            layoutSet.__LayoutApplication = LayoutItemInfo.SetMediumBrick;
+            layoutSet.__LayoutGroup = LayoutItemInfo.GroupHeaderMedium;
+            layoutSet.__LayoutApplication = LayoutItemInfo.ItemWideMedium;
             layoutSet.__IsReadOnly = true;
             return layoutSet;
         }
@@ -183,8 +183,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             layoutSet.__ImageSmall = Properties.Resources.btn_22_20;
             layoutSet.__SortOrder = 700;
             layoutSet.__LayoutPage = LayoutItemInfo.PageHeaderLarge;
-            layoutSet.__LayoutGroup = LayoutItemInfo.GroupHeaderMiddle;
-            layoutSet.__LayoutApplication = LayoutItemInfo.SetMediumBrick;
+            layoutSet.__LayoutGroup = LayoutItemInfo.GroupHeaderMedium;
+            layoutSet.__LayoutApplication = LayoutItemInfo.ItemWideLarge;
             layoutSet.__IsReadOnly = true;
             return layoutSet;
         }
@@ -278,6 +278,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public RectangleExt MainTitleBounds { get { return __MainTitleBounds; } set { if (!__IsReadOnly) __MainTitleBounds = value; } } private RectangleExt __MainTitleBounds;
         /// <summary>
+        /// Umístění a zarovnání hlavního textu
+        /// </summary>
+        public ContentAlignment MainTitleAlignment { get { return __MainTitleAlignment; } set { if (!__IsReadOnly) __MainTitleAlignment = value; } } private ContentAlignment __MainTitleAlignment;
+        /// <summary>
         /// Typ vzhledu hlavního titulku
         /// </summary>
         public AppearanceTextPartType? MainTitleAppearanceType { get { return __MainTitleAppearanceType; } set { if (!__IsReadOnly) __MainTitleAppearanceType = value; } } private AppearanceTextPartType? __MainTitleAppearanceType;
@@ -311,6 +315,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     BorderWidth = 1f,
                     ImageBounds = new RectangleExt(8, 24, null, 8, 24, null),
                     MainTitleBounds = new RectangleExt(40, null, 6, 10, 20, null),
+                    MainTitleAlignment = ContentAlignment.MiddleLeft,
                     MainTitleAppearanceType = AppearanceTextPartType.MainTitle,
                     IsReadOnly = true
                 };
@@ -336,6 +341,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     BorderWidth = 1f,
                     ImageBounds = new RectangleExt(12, 24, null, 12, 24, null),
                     MainTitleBounds = new RectangleExt(46, null, 8, 10, 20, null),
+                    MainTitleAlignment = ContentAlignment.MiddleLeft,
                     MainTitleAppearanceType = AppearanceTextPartType.MainTitle,
                     IsReadOnly = true
                 };
@@ -361,6 +367,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     BorderWidth = 1f,
                     ImageBounds = new RectangleExt(12, 36, null, 12, 36, null),
                     MainTitleBounds = new RectangleExt(56, null, 8, 10, 20, null),
+                    MainTitleAlignment = ContentAlignment.MiddleLeft,
                     MainTitleAppearanceType = AppearanceTextPartType.MainTitle,
                     IsReadOnly = true
                 };
@@ -371,7 +378,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Středně velký titulek pro grupu
         /// </summary>
-        public static LayoutItemInfo GroupHeaderMiddle
+        public static LayoutItemInfo GroupHeaderMedium
         {
             get
             {
@@ -379,9 +386,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 {
                     Name = "Střední titulek",
                     CellSize = new Size(-1, 24),
-                    BackAreaStatic3DRatio = -0.20f,
+                    BackAreaStatic3DRatio = -0.15f,
                     ActiveContentBounds = new RectangleExt(0, null, 0, 0, 24, null),
                     MainTitleBounds = new RectangleExt(12, null, 12, 2, null, 2),
+                    MainTitleAlignment = ContentAlignment.MiddleLeft,
                     MainTitleAppearanceType = AppearanceTextPartType.MainTitle,
                     IsReadOnly = true
                 };
@@ -392,7 +400,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Střední obdélník
         /// </summary>
-        public static LayoutItemInfo SetMidiBrick
+        public static LayoutItemInfo ItemWideSmall
         {
             get
             {
@@ -406,7 +414,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     BorderRound = 4,
                     BorderWidth = 1f,
                     ImageBounds = new RectangleExt(8, 48, null, 8, 48, null),
-                    MainTitleBounds = new RectangleExt(62, null, 6, 22, 20, null),
+                    MainTitleBounds = new RectangleExt(62, null, 6, 8, 48, null),
+                    MainTitleAlignment = ContentAlignment.MiddleLeft,
                     MainTitleAppearanceType = AppearanceTextPartType.SubTitle,
                     IsReadOnly = true
                 };
@@ -416,7 +425,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Středně velký obdélník
         /// </summary>
-        public static LayoutItemInfo SetMediumBrick
+        public static LayoutItemInfo ItemWideMedium
         {
             get
             {
@@ -430,7 +439,33 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     BorderRound = 6,
                     BorderWidth = 1f,
                     ImageBounds = new RectangleExt(22, 48, null, 22, 48, null),
-                    MainTitleBounds = new RectangleExt(82, null, 8, 22, 22, null),
+                    MainTitleBounds = new RectangleExt(82, null, 8, 22, 48, null),
+                    MainTitleAlignment = ContentAlignment.MiddleLeft,
+                    MainTitleAppearanceType = AppearanceTextPartType.MainTitle,
+                    IsReadOnly = true
+                };
+                return dataLayout;
+            }
+        }
+        /// <summary>
+        /// Hodně velký obdélník
+        /// </summary>
+        public static LayoutItemInfo ItemWideLarge
+        {
+            get
+            {
+                LayoutItemInfo dataLayout = new LayoutItemInfo()
+                {
+                    Name = "Střední cihla",
+                    CellSize = new Size(180, 92),
+                    ActiveContentBounds = new RectangleExt(4, null, 4, 4, null, 4),
+                    BorderBounds = new RectangleExt(14, 64, null, 14, 64, null),
+                    MouseHighlightSize = new Size(48, 32),
+                    BorderRound = 6,
+                    BorderWidth = 1f,
+                    ImageBounds = new RectangleExt(22, 48, null, 22, 48, null),
+                    MainTitleBounds = new RectangleExt(82, null, 8, 22, 48, null),
+                    MainTitleAlignment = ContentAlignment.MiddleLeft,
                     MainTitleAppearanceType = AppearanceTextPartType.MainTitle,
                     IsReadOnly = true
                 };
