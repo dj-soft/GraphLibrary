@@ -1231,6 +1231,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             __ColorBTrackBar.Bounds = new Rectangle(track1Left, track2Top, trackWidth, trackHeight);
 
             __ColorAlphaTrackBar.Bounds = new Rectangle(track2Left, track2Top, trackWidth, trackHeight);
+
             __GColorSample.Bounds = new Rectangle(sampleLeft, track1Top, sampleWidth, sampleHeight);
         }
         #endregion
