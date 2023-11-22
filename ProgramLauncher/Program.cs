@@ -17,7 +17,9 @@ namespace DjSoft.Tools.ProgramLauncher
         [STAThread]
         static void Main(string[] args)
         {
-            if (_TryCreateMutex(out Mutex appMutex))
+            bool isSingleApp = App.ContainsArgument("Single", args);           // Pokud je na vstupu parametr "Single", pak použijeme Mutex a případně Pipe
+            Mutex appMutex = null;
+            if (!isSingleApp || _TryCreateMutex(out appMutex))
                 _RunNewProcess(args, appMutex);
             else
                 _ActivateSingleProcess();
@@ -34,7 +36,7 @@ namespace DjSoft.Tools.ProgramLauncher
             // Máme new mutex => jsme první aplikace!
             if (createdNew) return true;
 
-            // Nebyl vytvořen nový => již existuje => pokusíme se aktivovat aplikaci jinak
+            // Nebyl vytvořen nový => již existuje => vrátíme false a pokusíme se aktivovat aplikaci jinak:
             appMutex.TryDispose();
             appMutex = null;
             return false;

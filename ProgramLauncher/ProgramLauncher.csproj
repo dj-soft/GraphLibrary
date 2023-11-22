@@ -420,6 +420,6 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy $(ProjectDir)\Translate\*.* $(TargetDir)\*.*
-copy $(TargetDir)*.* $(ProjectDir)..\exe\*.*</PostBuildEvent>
+copy $(TargetDir)*.* "C:\DavidPrac\Utils\ProgramLauncher\*.*</PostBuildEvent>
   </PropertyGroup>
 </Project>

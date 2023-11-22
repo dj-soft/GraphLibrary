@@ -155,6 +155,18 @@ namespace DjSoft.Tools.ProgramLauncher
             return Current._TryGetArgument(text, out var _, caseSensitive, exactText);
         }
         /// <summary>
+        /// Vrátí true, pokud daný argument je přítomen v poli argumentů.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="arguments"></param>
+        /// <param name="caseSensitive"></param>
+        /// <param name="exactText"></param>
+        /// <returns></returns>
+        public static bool ContainsArgument(string text, string[] arguments, bool caseSensitive = false, bool exactText = false)
+        {
+            return _TryGetArgument(text, arguments, out var _, caseSensitive, exactText);
+        }
+        /// <summary>
         /// Zkusí najít argument s daným textem. Vrací true = nalezeno
         /// </summary>
         /// <param name="text">Hledaný text</param>
@@ -176,10 +188,22 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <returns></returns>
         private bool _TryGetArgument(string text, out string foundArgument, bool caseSensitive, bool exactText)
         {
+            return _TryGetArgument(text, __Arguments, out foundArgument, caseSensitive, exactText);
+        }
+        /// <summary>
+        /// Zkusí najít argument s daným textem. Vrací true = nalezeno
+        /// </summary>
+        /// <param name="text">Hledaný text</param>
+        /// <param name="arguments">Zadané pole argumentů</param>
+        /// <param name="foundArgument">Out nalezený text argumentu</param>
+        /// <param name="caseSensitive">Má se hledat CaseSensitive? Tedy pokud je true, pak "Abc" != "abc"</param>
+        /// <param name="exactText">Má se hledat celý text? Tedy pokud je true, pak při hledání "ABC" najdu jen argume "ABC", ale nenajdu argument "ABC=12345"</param>
+        /// <returns></returns>
+        private static bool _TryGetArgument(string text, string[] arguments, out string foundArgument, bool caseSensitive, bool exactText)
+        {
             foundArgument = null;
             if (String.IsNullOrEmpty(text)) return false;
-            var arguments = __Arguments;
-            if (arguments.Length == 0) return false;
+            if (arguments is null || arguments.Length == 0) return false;
             StringComparison comparison = (caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
             return arguments.TryFindFirst(a => (exactText ? String.Equals(a, text, comparison) : a.StartsWith(text, comparison)), out foundArgument);
         }
@@ -1745,7 +1769,16 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <summary>
         /// Jméno mutexu
         /// </summary>
-        public const string MutexName = "Applications.DjSoft.ProgramLauncher.Mutex";
+        public static string MutexName
+        {
+            get
+            {
+                if (!System.Diagnostics.Debugger.IsAttached)
+                    return "Applications.DjSoft.ProgramLauncher.Mutex";
+                else
+                    return "Applications.DjSoft.ProgramLauncher.Debug.Mutex";
+            }
+        }
         /// <summary>
         /// Jméno Message ShowMessage
         /// </summary>
