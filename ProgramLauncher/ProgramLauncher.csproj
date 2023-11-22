@@ -84,6 +84,7 @@
     <Compile Include="Data\Tests.cs" />
     <Compile Include="Data\UndoRedo.cs" />
     <Compile Include="Data\WatchTimer.cs" />
+    <Compile Include="Data\Win32.cs" />
     <Compile Include="Data\XmlPersist.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>

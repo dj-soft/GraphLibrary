@@ -37,6 +37,8 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         private void InitializeMainForm()
         {
+            this.Visible = false;
+
             int tabIndex = 0;
             this._MainContainer = new DSplitContainer() { IsSplitterFixed = true, SplitterDistance = 150, SplitterWidth = 1, TabIndex = ++tabIndex };
             this._ToolStrip = new DToolStrip() { TabIndex = ++tabIndex };
@@ -66,7 +68,7 @@ namespace DjSoft.Tools.ProgramLauncher
             this.PerformLayout();
         }
         /// <summary>
-        /// Tuto metodu volá bázová třída okna (<see cref="BaseForm"/>) v okamžiku, kdy by měl být restorován stav okna (<see cref="Form.WindowState"/> a jeho Bounds) z dat uložených v Settings, ale tam dosud nic není.
+        /// Tuto metodu volá bázová třída okna (<see cref="BaseForm.OnFormStateDefault"/>) v okamžiku, kdy by měl být restorován stav okna (<see cref="Form.WindowState"/> a jeho Bounds) z dat uložených v Settings, ale tam dosud nic není.
         /// Potomek by v této metodě měl umístit okno do výchozí pozice.
         /// </summary>
         protected override void OnFormStateDefault()

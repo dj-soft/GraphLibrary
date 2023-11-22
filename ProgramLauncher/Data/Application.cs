@@ -60,6 +60,7 @@ namespace DjSoft.Tools.ProgramLauncher
             _InitGraphics();
             _InitFonts();
             _InitImages();
+            _InitLog();
             // Co přidáš sem, přidej i do _Exit() !!!
         }
         #endregion
@@ -111,6 +112,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private void _Exit()
         {
+            _DisposeLog();
             _DisposeSettings();
             _DisposeGraphics();
             _DisposeFonts();
@@ -1688,6 +1690,52 @@ namespace DjSoft.Tools.ProgramLauncher
             return null;
         }
         #endregion
+        #region Log
+        public static void LogInfo(string text) { Current._LogInfo(text); }
+        /// <summary>
+        /// Text logu dosavadní
+        /// </summary>
+        public static string LogText { get { return Current._LogText; } }
+        /// <summary>
+        /// Inicializace logu
+        /// </summary>
+        private void _InitLog()
+        {
+            __Stopwatch = new Stopwatch();
+            __Frequency = (decimal)Stopwatch.Frequency;
+            __LogBuilder = new StringBuilder();
+            __Stopwatch.Start();
+        }
+        private void _DisposeLog()
+        {
+            __Stopwatch = null;
+            __LogBuilder = null;
+        }
+        private void _LogInfo(string text)
+        {
+            string time = _GetLogCurrentTime();
+            string line = time + "   " + text;
+            __LogBuilder.AppendLine(line);
+        }
+        private string _GetLogCurrentTime()
+        {
+            long lastTick = __LastTick;
+            long currentTick = __Stopwatch.ElapsedTicks;
+            __LastTick = currentTick;
+            return _GetLogTime(currentTick - lastTick);
+        }
+        private string _GetLogTime(long ticks)
+        {
+            decimal timeSec = (decimal)ticks / __Frequency;
+            return timeSec.ToString("0.000 000").PadLeft(12) + " μs";
+        }
+
+        private string _LogText { get { return __LogBuilder.ToString(); } }
+        private System.Diagnostics.Stopwatch __Stopwatch;
+        private decimal __Frequency;
+        private long __LastTick;
+        private StringBuilder __LogBuilder;
+        #endregion
         #region UndoRedo
         /// <summary>
         /// UndoRedo container
@@ -1714,7 +1762,6 @@ namespace DjSoft.Tools.ProgramLauncher
         }
 
         #endregion
-
     }
 
     #region Podpůrné třídy (StatusInfo) a enumy

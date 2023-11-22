@@ -244,18 +244,42 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #region Konstruktor a aktivace/deaktivace
         public BaseForm()
         {
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}': Constructor.Begin");
             this._FormInit();
             this._ToolTipInit();
             this._PositionInit();
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}': Constructor.End");
         }
         /// <summary>
-        /// Základní inicializace vlastnéstí formuláře
+        /// Základní inicializace vlastností formuláře
         /// </summary>
         private void _FormInit()
         {
             this.Icon = ControlSupport.StandardFormIcon;
-
         }
+        protected override void OnNotifyMessage(Message m)
+        {
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}':   OnNotifyMessage.Begin Msg={Win32.GetMsgName(m.Msg)}");
+            base.OnNotifyMessage(m);
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}':   OnNotifyMessage.End   Msg={Win32.GetMsgName(m.Msg)}");
+        }
+        public override bool PreProcessMessage(ref Message msg)
+        {
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}':   PreProcessMessage.Begin Msg={Win32.GetMsgName(msg.Msg)}");
+            var result = base.PreProcessMessage(ref msg);
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}':   PreProcessMessage.End   Msg={Win32.GetMsgName(msg.Msg)}");
+            return result;
+        }
+        protected override void WndProc(ref Message m)
+        {
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}':   WndProc.Begin Msg={Win32.GetMsgName(m.Msg)}");
+
+            if (m.Msg == Win32.WM.ACTIVATEAPP || m.Msg == Win32.WM.ACTIVATE) _CheckFormStateLoad();
+
+            base.WndProc(ref m);
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}':   WndProc.End   Msg={Win32.GetMsgName(m.Msg)}");
+        }
+        public override string Text { get { return __Text; } set { __Text = value; base.Text = value; } } private string __Text;
         /// <summary>
         /// Název formuláře v Settings, pokud chce ukládat a načítat svoji pozici do Settings.
         /// Pokud bude dané jméno, ale data v Settings pro toto okno nebudou ještě k dispozici (=úplně první spuštění s novým Configem), pak okno zavolá metodu <see cref="OnFormStateDefault"/>, kde potomek nastaví výchozí velikost a umístění okna.
@@ -276,8 +300,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="e"></param>
         protected override void OnActivated(EventArgs e)
         {
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}': OnActivated.Begin");
             ReActivateForm();
             base.OnActivated(e);
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}': OnActivated.End");
         }
         /// <summary>
         /// Reaktivace formuláře
@@ -288,6 +314,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 this.WindowState = __PrevWindowStateSize ?? FormWindowState.Normal;
             if (!this.Visible) this.Visible = true;
         }
+        /// <summary>
+        /// Obsahuje true v VisualStudio Debugger režimu, false při běžném Run mode
+        /// </summary>
+        protected bool IsDebugMode { get { return App.IsDebugMode; } }
         #endregion
         #region ToolTip
         /// <summary>
@@ -405,8 +435,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="e"></param>
         private void _LocationChanged(object sender, EventArgs e)
         {
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}': LocationChanged.Begin");
             if (__FormStateChanging) return;
             this._FormStateSave(FormStateChangeType.Location);
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}': LocationChanged.End");
         }
         /// <summary>
         /// Event po změně velikosti okna
@@ -415,8 +447,16 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="e"></param>
         private void _SizeChanged(object sender, EventArgs e)
         {
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}': SizeChanged.Begin");
             if (__FormStateChanging) return;
             this._FormStateSave(FormStateChangeType.Size);
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}': SizeChanged.End");
+        }
+        protected override void OnShown(EventArgs e)
+        {
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}': OnShown.Begin; IsAfterShow: {__IsAfterShow}");
+            base.OnShown(e);
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}': OnShown.End; IsAfterShow: {__IsAfterShow}");
         }
         /// <summary>
         /// Event po zobrazení okna
@@ -425,10 +465,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="e"></param>
         private void _Shown(object sender, EventArgs e)
         {
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}': Shown.Begin; IsAfterShow: {__IsAfterShow}");
             if (!__IsAfterShow)
             {
                 __IsAfterShow = true;
-                this._FormStateLoad();
+                this._CheckFormStateLoad();
                 this.OnFirstShown();
                 this.FirstShown?.Invoke(this, EventArgs.Empty);
             }
@@ -437,12 +478,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 this.OnNextShown();
                 this.NextShown?.Invoke(this, EventArgs.Empty);
             }
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}': Shown.End; IsAfterShow: {__IsAfterShow}");
         }
         /// <summary>
         /// Obsahuje true, pokud formulář již prošel fází Show
         /// </summary>
-        public bool IsShown { get { return __IsAfterShow; } }
-        private bool __IsAfterShow;
+        public bool IsShown { get { return __IsAfterShow; } } private bool __IsAfterShow;
         /// <summary>
         /// Proběhne při prvním zobrazení formuláře.
         /// V této době již má formulář nastavenou (restorovanou) pozici a stav.
@@ -462,12 +503,22 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         public event EventHandler NextShown;
         /// <summary>
+        /// POkud dosud nebyla načtena pozice okna, načte ji nyní
+        /// </summary>
+        private void _CheckFormStateLoad()
+        {
+            if (!__FormStateIsLoaded) _FormStateLoad();
+        }
+        /// <summary>
         /// Zajistí načtení pozice okna ze <see cref="Settings"/> a jejich aplikaci do this formuláře
         /// </summary>
         private void _FormStateLoad()
         {
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}': FormStateLoad.Begin");
             if (!_HasSettingsName) return;
             if (__FormStateChanging) return;
+
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}': FormStateLoad.Start");
 
             string savedState = App.Settings.FormPositionLoad(this.SettingsName);        // Načtu stav okna z dat uložených v Settings, a aplikuji jej do this okna
             if (!String.IsNullOrEmpty(savedState))
@@ -475,6 +526,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             else
                 OnFormStateDefault();
             __FormStateSaved = _FormStateCurrent;                                        // Získám stav z okna a zapamatuji si jeho otisk pro případné porovnání po změnách
+            __FormStateIsLoaded = true;
+            if (IsDebugMode) App.LogInfo($"{this.GetType().Name} '{this.Text}': FormStateLoad.End");
         }
         /// <summary>
         /// Tuto metodu volá bázová třída okna (<see cref="BaseForm"/>) v okamžiku, kdy by měl být restorován stav okna (<see cref="Form.WindowState"/> a jeho Bounds) z dat uložených v Settings, ale tam dosud nic není.
@@ -648,6 +701,11 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Právě probíhá změna stavu formuláře vyvolaná kódem, a nesmí se ukládat do Settings (pokud je false, pak rozměry mění uživatel a do Settings se ukládat má)
         /// </summary>
         private bool __FormStateChanging;
+        /// <summary>
+        /// Byla již načtena pozice okna z registru?
+        /// Obsahuje false na začátku, true po načtení, testuje metoda <see cref="_CheckFormStateLoad"/>
+        /// </summary>
+        private bool __FormStateIsLoaded;
         /// <summary>
         /// Obsahuje true, pokud je vyplněno jméno <see cref="SettingsName"/> = je vhodné ukládat a číst uložené souřadnice okna
         /// </summary>
