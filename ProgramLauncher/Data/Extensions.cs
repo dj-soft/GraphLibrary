@@ -506,14 +506,14 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="bounds"></param>
         /// <param name="color"></param>
         /// <param name="interactiveState"></param>
-        public static void FountainFill(this Graphics graphics, Rectangle bounds, Color color, Components.InteractiveState interactiveState = Components.InteractiveState.Enabled, float? alpha = null)
+        public static void FountainFill(this Graphics graphics, Rectangle bounds, Color color, Components.InteractiveState interactiveState = Components.InteractiveState.Enabled, ColorSet colorSet = null, float? alpha = null)
         {
-            _GetFountainFillDirection(interactiveState, out float morph, out FountainDirection direction);
+            _GetFountainFillDirection(interactiveState, colorSet, out float morph, out FountainDirection direction);
             FountainFill(graphics, bounds, color, morph, direction, alpha);
         }
-        public static void FountainFill(this Graphics graphics, GraphicsPath path, Color color, Components.InteractiveState interactiveState = Components.InteractiveState.Enabled, float? alpha = null)
+        public static void FountainFill(this Graphics graphics, GraphicsPath path, Color color, Components.InteractiveState interactiveState = Components.InteractiveState.Enabled, ColorSet colorSet = null, float? alpha = null)
         {
-            _GetFountainFillDirection(interactiveState, out float morph, out FountainDirection direction);
+            _GetFountainFillDirection(interactiveState, colorSet, out float morph, out FountainDirection direction);
             FountainFill(graphics, path, color, morph, direction, alpha);
         }
         public static void FountainFill(this Graphics graphics, Rectangle bounds, Color color, float morph, FountainDirection direction, float? alpha = null)
@@ -547,18 +547,19 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Pro zadaný interaktivní stav <paramref name="interactiveState"/> určí hodnoty <paramref name="morph"/> a <paramref name="direction"/>
         /// </summary>
         /// <param name="interactiveState"></param>
+        /// <param name="colorSet"></param>
         /// <param name="morph"></param>
         /// <param name="direction"></param>
-        private static void _GetFountainFillDirection(Components.InteractiveState interactiveState, out float morph, out FountainDirection direction)
+        private static void _GetFountainFillDirection(Components.InteractiveState interactiveState, ColorSet colorSet, out float morph, out FountainDirection direction)
         {
             switch (interactiveState)
             {
                 case Components.InteractiveState.MouseOn:
-                    morph = 0.10f;
+                    morph = colorSet?.MouseOn3DMorph ?? 0.10f;
                     direction = FountainDirection.ToDown;
                     return;
                 case Components.InteractiveState.MouseDown:
-                    morph = -0.20f;
+                    morph = colorSet?.MouseDown3DMorph ?? -0.20f;
                     direction = FountainDirection.ToDown;
                     return;
             }
@@ -662,7 +663,7 @@ namespace DjSoft.Tools.ProgramLauncher
 
             if (color.HasValue)
             {
-                _GetFountainFillDirection(interactiveState, out float morph, out FountainDirection direction);
+                _GetFountainFillDirection(interactiveState, colorSet,out float morph, out FountainDirection direction);
                 FountainFill(graphics, bounds, color.Value, morph, direction, alpha);
             }
         }

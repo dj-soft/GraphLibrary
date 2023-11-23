@@ -218,7 +218,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             paletteSet.__ActiveContentColor = ColorSet.CreateAllColors(true, null,
                 downColor: Color.FromArgb(255, 240, 240, 190),
                 mouseOnColor: Color.FromArgb(a0, 200, 200, 230),
-                mouseDownColor: Color.FromArgb(a0, 180, 180, 210));
+                mouseDownColor: Color.FromArgb(a0, 180, 180, 210),
+                mouseOn3DMorph: 0.15f,
+                mouseDown3DMorph: -0.20f);
             paletteSet.__BorderLineColors = new ColorSet(true,
                 Color.FromArgb(a1, b1, b1, b1),
                 Color.FromArgb(a1, b1, b1, b1),
@@ -298,7 +300,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             paletteSet.__ActiveContentColor = ColorSet.CreateAllColors(true, null,
                 downColor: Color.FromArgb(255, 48, 48, 96),
                 mouseOnColor: Color.FromArgb(a0, 32, 32, 48),
-                mouseDownColor: Color.FromArgb(a0, 40, 40, 64));
+                mouseDownColor: Color.FromArgb(a0, 40, 40, 64),
+                mouseOn3DMorph: 0.15f,
+                mouseDown3DMorph: -0.20f);
             paletteSet.__BorderLineColors = new ColorSet(true,
                 Color.FromArgb(a1, b1, b1, b1),
                 Color.FromArgb(a1, b1, b1, b1),
@@ -377,7 +381,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             paletteSet.__ActiveContentColor = ColorSet.CreateAllColors(true, null,
                 downColor: Color.FromArgb(255, 48, 48, 96),
                 mouseOnColor: Color.FromArgb(a0, 32, 32, 48),
-                mouseDownColor: Color.FromArgb(a0, 40, 40, 64));
+                mouseDownColor: Color.FromArgb(a0, 40, 40, 64),
+                mouseOn3DMorph: 0.15f,
+                mouseDown3DMorph: -0.20f);
             paletteSet.__BorderLineColors = new ColorSet(true,
                 Color.FromArgb(a1, b1, b1, b1),
                 Color.FromArgb(a1, b1, b1, b1),
@@ -456,7 +462,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             paletteSet.__ActiveContentColor = ColorSet.CreateAllColors(true, null,
                 downColor: Color.FromArgb(255, 48, 48, 96),
                 mouseOnColor: Color.FromArgb(a0, 32, 48, 32),
-                mouseDownColor: Color.FromArgb(a0, 40, 64, 40));
+                mouseDownColor: Color.FromArgb(a0, 40, 64, 40),
+                mouseOn3DMorph: 0.15f,
+                mouseDown3DMorph: -0.20f);
             paletteSet.__BorderLineColors = new ColorSet(true,
                 Color.FromArgb(a1, b1, b1, b1),
                 Color.FromArgb(a1, b1, b1, b1),
@@ -568,9 +576,13 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <param name="mouseDownColor"></param>
         /// <param name="mouseHighlightColor"></param>
         /// <returns></returns>
-        public static ColorSet CreateAllColors(Color? allColors, Color? disabledColor = null, Color? enabledColor = null, Color? downColor = null, Color? mouseOnColor = null, Color? mouseDownColor = null, Color? mouseHighlightColor = null, Color? selectedColor = null)
+        public static ColorSet CreateAllColors(Color? allColors, 
+            Color? disabledColor = null, Color? enabledColor = null, Color? downColor = null, Color? mouseOnColor = null, Color? mouseDownColor = null, Color? mouseHighlightColor = null, Color? selectedColor = null,
+            float? enabled3DMorph = null, float? down3DMorph = null, float? mouseOn3DMorph = null, float? mouseDown3DMorph = null, float? selected3DMorph = null)
         {
-            return new ColorSet(disabledColor ?? allColors, enabledColor ?? allColors, downColor ?? allColors, mouseOnColor ?? allColors, mouseDownColor ?? allColors, mouseHighlightColor ?? allColors, selectedColor ?? allColors);
+            return new ColorSet(false,
+                disabledColor ?? allColors, enabledColor ?? allColors, downColor ?? allColors, mouseOnColor ?? allColors, mouseDownColor ?? allColors, mouseHighlightColor ?? allColors, selectedColor ?? allColors,
+                enabled3DMorph, down3DMorph, mouseOn3DMorph, mouseDown3DMorph, selected3DMorph);
         }
         /// <summary>
         /// Vytvoří a vrátí <see cref="ColorSet"/>, kdy lze zadat jen jednu barvu, která se aplikuje do všech hodnot (pro všechny interaktivní stavy),
@@ -585,9 +597,13 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <param name="mouseDownColor"></param>
         /// <param name="mouseHighlightColor"></param>
         /// <returns></returns>
-        public static ColorSet CreateAllColors(bool isReadOnly, Color? allColors, Color? disabledColor = null, Color? enabledColor = null, Color? downColor = null, Color? mouseOnColor = null, Color? mouseDownColor = null, Color? mouseHighlightColor = null, Color? selectedColor = null)
+        public static ColorSet CreateAllColors(bool isReadOnly, Color? allColors, 
+            Color? disabledColor = null, Color? enabledColor = null, Color? downColor = null, Color? mouseOnColor = null, Color? mouseDownColor = null, Color? mouseHighlightColor = null, Color? selectedColor = null,
+            float? enabled3DMorph = null, float? down3DMorph = null, float? mouseOn3DMorph = null, float? mouseDown3DMorph = null, float? selected3DMorph = null)
         {
-            return new ColorSet(isReadOnly, disabledColor ?? allColors, enabledColor ?? allColors, downColor ?? allColors, mouseOnColor ?? allColors, mouseDownColor ?? allColors, mouseHighlightColor ?? allColors, selectedColor ?? allColors);
+            return new ColorSet(isReadOnly, 
+                disabledColor ?? allColors, enabledColor ?? allColors, downColor ?? allColors, mouseOnColor ?? allColors, mouseDownColor ?? allColors, mouseHighlightColor ?? allColors, selectedColor ?? allColors,
+                enabled3DMorph, down3DMorph, mouseOn3DMorph, mouseDown3DMorph, selected3DMorph);
         }
         /// <summary>
         /// Konstruktor
@@ -615,7 +631,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <param name="mouseOnColor"></param>
         /// <param name="mouseDownColor"></param>
         /// <param name="mouseHighlightColor"></param>
-        public ColorSet(bool isReadOnly, Color? disabledColor, Color? enabledColor, Color? downColor, Color? mouseOnColor, Color? mouseDownColor, Color? mouseHighlightColor, Color? selectedColor)
+        public ColorSet(bool isReadOnly, 
+            Color? disabledColor, Color? enabledColor, Color? downColor, Color? mouseOnColor, Color? mouseDownColor, Color? mouseHighlightColor, Color? selectedColor)
         {
             this.__DisabledColor = disabledColor;
             this.__EnabledColor = enabledColor;
@@ -627,6 +644,35 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             this.__IsReadOnly = isReadOnly;
         }
         /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="enabledColor"></param>
+        /// <param name="disabledColor"></param>
+        /// <param name="mouseOnColor"></param>
+        /// <param name="mouseDownColor"></param>
+        /// <param name="mouseHighlightColor"></param>
+        public ColorSet(bool isReadOnly, 
+            Color? disabledColor, Color? enabledColor, Color? downColor, Color? mouseOnColor, Color? mouseDownColor, Color? mouseHighlightColor, Color? selectedColor,
+            float? enabled3DMorph, float? down3DMorph, float? mouseOn3DMorph, float? mouseDown3DMorph, float? selected3DMorph)
+        {
+            this.__DisabledColor = disabledColor;
+            this.__EnabledColor = enabledColor;
+            this.__MouseOnColor = mouseOnColor;
+            this.__MouseDownColor = mouseDownColor;
+            this.__MouseHighlightColor = mouseHighlightColor;
+            this.__DownColor = downColor;
+            this.__SelectedColor = selectedColor;
+
+            this.__Enabled3DMorph = enabled3DMorph;
+            this.__Down3DMorph = down3DMorph;
+            this.__MouseOn3DMorph = mouseOn3DMorph;
+            this.__MouseDown3DMorph = mouseDown3DMorph;
+            this.__Selected3DMorph = selected3DMorph;
+
+            this.__IsReadOnly = isReadOnly;
+        }
+
+        /// <summary>
         /// Barva ve stavu Disabled = nedostupné
         /// </summary>
         public Color? DisabledColor { get { return __DisabledColor; } set { if (!__IsReadOnly) __DisabledColor = value; } } private Color? __DisabledColor;
@@ -635,21 +681,41 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public Color? EnabledColor { get { return __EnabledColor; } set { if (!__IsReadOnly) __EnabledColor = value; } } private Color? __EnabledColor;
         /// <summary>
+        /// 3D efekt pro vykreslení pozadí ve stavu Enabled; null = default = 0.00f = bez 3D efektu
+        /// </summary>
+        public float? Enabled3DMorph { get { return __Enabled3DMorph; } set { if (!__IsReadOnly) __Enabled3DMorph = value; } } private float? __Enabled3DMorph;
+        /// <summary>
         /// Barva ve stavu MouseOn = myš je na prvku
         /// </summary>
         public Color? MouseOnColor { get { return __MouseOnColor; } set { if (!__IsReadOnly) __MouseOnColor = value; } } private Color? __MouseOnColor;
+        /// <summary>
+        /// 3D efekt pro vykreslení pozadí ve stavu MouseOn; null = default = 0.10f
+        /// </summary>
+        public float? MouseOn3DMorph { get { return __MouseOn3DMorph; } set { if (!__IsReadOnly) __MouseOn3DMorph = value; } } private float? __MouseOn3DMorph;
         /// <summary>
         /// Barva ve stavu MouseDown
         /// </summary>
         public Color? MouseDownColor { get { return __MouseDownColor; } set { if (!__IsReadOnly) __MouseDownColor = value; } } private Color? __MouseDownColor;
         /// <summary>
+        /// 3D efekt pro vykreslení pozadí ve stavu MouseDown; null = default = -0.20f
+        /// </summary>
+        public float? MouseDown3DMorph { get { return __MouseDown3DMorph; } set { if (!__IsReadOnly) __MouseDown3DMorph = value; } } private float? __MouseDown3DMorph;
+        /// <summary>
         /// Barva ve stavu <see cref="Components.InteractiveItem.IsDown"/> = trvale stisknutá (jako plošný CheckBox), je dáno stavem konkrétního prvku.
         /// </summary>
         public Color? DownColor { get { return __DownColor; } set { if (!__IsReadOnly) __DownColor = value; } } private Color? __DownColor;
         /// <summary>
+        /// 3D efekt pro vykreslení pozadí ve stavu Down; null = default = 0f
+        /// </summary>
+        public float? Down3DMorph { get { return __Down3DMorph; } set { if (!__IsReadOnly) __Down3DMorph = value; } } private float? __Down3DMorph;
+        /// <summary>
         /// Barva ve stavu Selected
         /// </summary>
         public Color? SelectedColor { get { return __SelectedColor; } set { if (!__IsReadOnly) __SelectedColor = value; } } private Color? __SelectedColor;
+        /// <summary>
+        /// 3D efekt pro vykreslení pozadí ve stavu Down; null = default = 0f
+        /// </summary>
+        public float? Selected3DMorph { get { return __Selected3DMorph; } set { if (!__IsReadOnly) __Selected3DMorph = value; } } private float? __Selected3DMorph;
         /// <summary>
         /// Barva zvýraznění prostoru myši (oválek pod kurzorem)
         /// </summary>

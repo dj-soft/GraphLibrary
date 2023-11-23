@@ -16,6 +16,9 @@ ToolStripButtonRedoToolTip Előre görgeti az utolsó visszaállított változta
 ToolStripButtonPreferenceToolTip Alkalmazás viselkedésének beállítása
 ToolStripButtonEditToolTip Szerkessze a tartalmat
 ToolStripButtonMessageSyncToolTip Töltse ki a nyelvi fájlokat az aktuális hirdetmények listájával
+ToolStripButtonMessageSyncInfoToolTip Töltse ki a nyelvi fájlokat az aktuális üzenetlistával.××%0 itt: %1 jelenleg nincs lefordítva.
+ToolStripButtonMessageSyncMessagesTexts nincs szöveg×szöveg×szöveg×szöveg
+ToolStripButtonMessageSyncFilesTexts nincs fájl×fájl×fájl×fájl
 StatusStripPageCountText nincs oldal×oldal×oldal×oldal
 StatusStripApplicationText nincsenek alkalmazások×alkalmazás×alkalmazás×alkalmazások
 AppearanceMenuHeaderColorPalette SZÍN PALETTA
@@ -46,15 +49,20 @@ AppContextMenuNewApplicationToolTip Új alkalmazás hozzáadása: megnyit egy ab
 AppContextMenuNewGroupText Új csoport
 AppContextMenuNewGroupToolTip Új alkalmazáscsoportot ad hozzá, majd lehet majd hozzá alkalmazásokat hozzáadni
 EditFormTitleNewPage Új oldal
+EditFormTitleEditPage '%0' oldal szerkesztése
 EditFormTitleNewGroup Egy új alkalmazáscsoport
+EditFormTitleEditGroup '%0' csoport szerkesztése
 EditDataNewDefaultGroupTitle Új csoport
 EditFormTitleNewApplication Új alkalmazás
+EditFormTitleEditApplication '%0' alkalmazás szerkesztése
 EditFormTitleClone Másolás: %0
 EditDataTitleText Felirat
 EditDataDescriptionText Címke
 EditDataToolTipText Segítség
 EditDataImageFileNameText Kép
+EditDataBackColorText Szín
 EditDataExecutableFileNameText Alkalmazás
+EditDataExecutableWorkingDirectory Munkakönyvtár
 EditDataExecutableArgumentsText Érvek
 EditDataExecuteInAdminModeText Rendszergazdai jogosultságok
 EditDataOnlyOneInstanceText Csak egy folyamat
@@ -65,6 +73,12 @@ ToolTipTypeNoneText Nincs elemleírás
 ToolTipTypeDefaultText Alapértelmezett elemleírás
 ToolTipTypeFastText Gyors eszköztipp
 ToolTipTypeSlowText Lassú elemleírás
+HelpInfoTitle Alkalmazási paraméterek
+HelpInfoSettingsFile Kifejezetten megadott alkalmazás adatfájl
+HelpInfoSingleApp Csak egyetlen futó alkalmazás engedélyezése
+HelpInfoReset Törli az összes alkalmazásadatot, és a nulláról indul
+HelpInfoRunTests Amikor az alkalmazás elindul, belső teszteket hajt végre
+HelpInfoHelp Az összes alkalmazható argumentum megjelenítése (=ez az ablak)
 DialogButtonOkText rendben
 DialogButtonCancelText Törlés
 DialogButtonYesText Igen

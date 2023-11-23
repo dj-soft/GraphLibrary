@@ -16,11 +16,14 @@ ToolStripButtonRedoToolTip Rolls forward the last reverted change
 ToolStripButtonPreferenceToolTip Set application behavior
 ToolStripButtonEditToolTip Modify content
 ToolStripButtonMessageSyncToolTip Fill the language files with the current list of announcements
+ToolStripButtonMessageSyncInfoToolTip Fill the language files with the current list of messages.××%0 in %1 is not currently translated.
+ToolStripButtonMessageSyncMessagesTexts no text×text×texts×texts
+ToolStripButtonMessageSyncFilesTexts no file×file×file×file
 StatusStripPageCountText no pages×page×page×pages
 StatusStripApplicationText no apps×app×app×apps
 AppearanceMenuHeaderColorPalette COLOR PALETTE
 AppearanceMenuHeaderLayoutStyle LAYOUT SIZE
-AppearanceMenuHeaderToolTipType *TOOL TIP
+AppearanceMenuHeaderToolTipType TOOL TIP
 AppearanceMenuHeaderLanguage LANGUAGE
 AppContextMenuTitlePages Sites
 AppContextMenuTitlePage Page '%0'
@@ -46,25 +49,36 @@ AppContextMenuNewApplicationToolTip Adds a new application: opens a window and a
 AppContextMenuNewGroupText New group
 AppContextMenuNewGroupToolTip It will add a new group of applications, then it will be possible to add applications to it
 EditFormTitleNewPage New page
+EditFormTitleEditPage Edit Page '%0'
 EditFormTitleNewGroup A new group of applications
+EditFormTitleEditGroup Edit group '%0'
 EditDataNewDefaultGroupTitle New group
 EditFormTitleNewApplication New application
+EditFormTitleEditApplication Edit application '%0'
 EditFormTitleClone Copy: %0
 EditDataTitleText Title
 EditDataDescriptionText Description
 EditDataToolTipText Help
 EditDataImageFileNameText Image filename
+EditDataBackColorText Color
 EditDataExecutableFileNameText Application
+EditDataExecutableWorkingDirectory Working directory
 EditDataExecutableArgumentsText Arguments
 EditDataExecuteInAdminModeText Admin mode
 EditDataOnlyOneInstanceText Only single process
 EditDataOpenMaximizedText Maximized Window
 ExecutableFileIsNotSpecified The application cannot be started, its file is not specified.
 ExecutableFileIsNotExists The application cannot be started, its file does not exist.
-ToolTipTypeNoneText *Žádný tooltip
-ToolTipTypeDefaultText *Defaultní tooltip
-ToolTipTypeFastText *Rychlý tooltip
-ToolTipTypeSlowText *Pomalý tooltip
+ToolTipTypeNoneText No tooltip
+ToolTipTypeDefaultText Default tooltip
+ToolTipTypeFastText Quick tooltip
+ToolTipTypeSlowText Slow tooltip
+HelpInfoTitle Application parameters
+HelpInfoSettingsFile Explicitly specified application data file
+HelpInfoSingleApp Allow only a single running application
+HelpInfoReset It will clear all app data and start from scratch
+HelpInfoRunTests When the application starts, it performs a set of internal tests
+HelpInfoHelp Show all applicable arguments (=this window)
 DialogButtonOkText OK
 DialogButtonCancelText Cancel
 DialogButtonYesText Yes

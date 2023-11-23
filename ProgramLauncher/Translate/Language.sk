@@ -16,6 +16,9 @@ ToolStripButtonRedoToolTip Obnoví vpřed posledně vrácenou změnu
 ToolStripButtonPreferenceToolTip Nastaviť správanie aplikácie
 ToolStripButtonEditToolTip Upraviť obsah
 ToolStripButtonMessageSyncToolTip 
+ToolStripButtonMessageSyncInfoToolTip Naplniť jazykové súbory aktuálnym zoznamom hlášok.××Aktuálne nie je preložené %0 v %1.
+ToolStripButtonMessageSyncMessagesTexts žiadny text×text×texty×textov
+ToolStripButtonMessageSyncFilesTexts žiadnom súbore×súboru×súboroch×súboroch
 StatusStripPageCountText bez stránok×stránka×stránky×stránok
 StatusStripApplicationText bez aplikácií×aplikácie×aplikácie×aplikácií
 AppearanceMenuHeaderColorPalette FAREBNÁ PALETA
@@ -46,15 +49,20 @@ AppContextMenuNewApplicationToolTip Pridá novú aplikáciu: otvorí okno a umo�
 AppContextMenuNewGroupText Nová skupina
 AppContextMenuNewGroupToolTip Pridá novú skupinu aplikácií, do nej potom bude možné pridávať aplikácie
 EditFormTitleNewPage Nová stránka
+EditFormTitleEditPage Upraviť stránku '%0'
 EditFormTitleNewGroup Nová skupina aplikácií
+EditFormTitleEditGroup Upraviť skupinu '%0'
 EditDataNewDefaultGroupTitle Nová skupina
 EditFormTitleNewApplication Nová aplikácia
+EditFormTitleEditApplication Upraviť aplikáciu '%0'
 EditFormTitleClone Kópia: %0
 EditDataTitleText Titulok
 EditDataDescriptionText Popisok
 EditDataToolTipText Nápoveda
 EditDataImageFileNameText Obrázok
+EditDataBackColorText Farba
 EditDataExecutableFileNameText Aplikácia
+EditDataExecutableWorkingDirectory Pracovný adresár
 EditDataExecutableArgumentsText Argumenty
 EditDataExecuteInAdminModeText Oprávnenie Admin
 EditDataOnlyOneInstanceText Len jeden proces
@@ -65,6 +73,12 @@ ToolTipTypeNoneText Žiadny tooltip
 ToolTipTypeDefaultText Defaultný tooltip
 ToolTipTypeFastText Rýchly tooltip
 ToolTipTypeSlowText Pomalý tooltip
+HelpInfoTitle Parametre aplikácie
+HelpInfoSettingsFile Explicitne zadaný súbor s dátami aplikácie
+HelpInfoSingleApp Umožniť iba jedinú spustenú aplikáciu
+HelpInfoReset Vymaže všetky dáta aplikácie a začne od začiatku
+HelpInfoRunTests Pri štarte aplikácie vykoná sadu interných testov
+HelpInfoHelp Zobrazenie všetkých použiteľných argumentov (=toto okno)
 DialogButtonOkText OK
 DialogButtonCancelText Storno
 DialogButtonYesText Áno

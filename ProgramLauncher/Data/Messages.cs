@@ -307,9 +307,12 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string AppContextMenuNewGroupToolTip { get { return _GetText("Přidá novou skupinu aplikací, do ní pak bude možno přidávat aplikace"); } }
 
         public string EditFormTitleNewPage { get { return _GetText("Nová stránka"); } }
+        public string EditFormTitleEditPage { get { return _GetText("Upravit stránku '%0'"); } }
         public string EditFormTitleNewGroup { get { return _GetText("Nová skupina aplikací"); } }
+        public string EditFormTitleEditGroup { get { return _GetText("Upravit skupinu '%0'"); } }
         public string EditDataNewDefaultGroupTitle { get { return _GetText("Nová skupina"); } }
         public string EditFormTitleNewApplication { get { return _GetText("Nová aplikace"); } }
+        public string EditFormTitleEditApplication { get { return _GetText("Upravit aplikaci '%0'"); } }
         public string EditFormTitleClone { get { return _GetText("Kopie: %0"); } }
 
         public string EditDataTitleText { get { return _GetText("Titulek"); } }

@@ -237,15 +237,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             bool isEdited = false;
             if (itemData is PageData pageData)
             {
-                isEdited = pageData.EditData(mouseState.LocationAbsolute);
+                isEdited = pageData.EditData(mouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleEditPage, pageData.Title));
             }
             else if (itemData is GroupData groupData)
             {
-                isEdited = groupData.EditData(mouseState.LocationAbsolute);
+                isEdited = groupData.EditData(mouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleEditGroup, groupData.Title));
             }
             else if (itemData is ApplicationData applicationData)
             {
-                isEdited = applicationData.EditData(mouseState.LocationAbsolute);
+                isEdited = applicationData.EditData(mouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleEditApplication, applicationData.Title));
             }
 
             if (isEdited)
@@ -326,7 +326,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     break;
                 case DataItemActionType.EditPage:
                     if (hasPageData)
-                        isUpdated = pageData.EditData(actionInfo.MouseState.LocationAbsolute);
+                        isUpdated = pageData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleEditPage, pageData.Title));
                     break;
                 case DataItemActionType.CopyPage:
                     pageData = pageData.Clone(false);
@@ -690,7 +690,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     break;
                 case DataItemActionType.EditGroup:
                     if (hasGroupData)
-                        isUpdated = groupData.EditData(actionInfo.MouseState.LocationAbsolute);
+                        isUpdated = groupData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleEditGroup, groupData.Title));
                     break;
                 case DataItemActionType.CopyGroup:
                     groupData = groupData.Clone(false);
@@ -1030,7 +1030,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     break;
                 case DataItemActionType.EditApplication:
                     if (hasApplicationData)
-                        isUpdated = applicationData.EditData(actionInfo.MouseState.LocationAbsolute);
+                        isUpdated = applicationData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleEditApplication, applicationData.Title));
                     break;
                 case DataItemActionType.CopyApplication:
                     applicationData = applicationData.Clone(false);

@@ -16,11 +16,14 @@ ToolStripButtonRedoToolTip Κυλάει προς τα εμπρός την τελ
 ToolStripButtonPreferenceToolTip Ορισμός συμπεριφοράς εφαρμογής
 ToolStripButtonEditToolTip Επεξεργασία περιεχομένου
 ToolStripButtonMessageSyncToolTip Συμπληρώστε τα αρχεία γλώσσας με την τρέχουσα λίστα ανακοινώσεων
+ToolStripButtonMessageSyncInfoToolTip Συμπληρώστε τα αρχεία γλώσσας με την τρέχουσα λίστα μηνυμάτων. Το ××%0 στο %1 δεν μεταφράζεται αυτήν τη στιγμή.
+ToolStripButtonMessageSyncMessagesTexts χωρίς κείμενο×κείμενο×κείμενα×κείμενα
+ToolStripButtonMessageSyncFilesTexts κανένα αρχείο×αρχείο×αρχείο×αρχείο
 StatusStripPageCountText χωρίς σελίδες×σελίδα×σελίδα×σελίδες
 StatusStripApplicationText χωρίς εφαρμογές×app×app×εφαρμογές
 AppearanceMenuHeaderColorPalette ΧΡΩΜΑΤΙΚΗ ΠΑΛΕΤΑ
 AppearanceMenuHeaderLayoutStyle ΜΕΓΕΘΟΣ
-AppearanceMenuHeaderToolTipType *TOOL TIP
+AppearanceMenuHeaderToolTipType ΣΥΜΒΟΥΛΗ ΕΡΓΑΛΕΙΟΥ
 AppearanceMenuHeaderLanguage ΓΛΩΣΣΑ
 AppContextMenuTitlePages Τοποθεσίες
 AppContextMenuTitlePage Σελίδα '%0'
@@ -46,25 +49,36 @@ AppContextMenuNewApplicationToolTip Προσθέτει μια νέα εφαρμ�
 AppContextMenuNewGroupText Νέα ομάδα
 AppContextMenuNewGroupToolTip Θα προσθέσει μια νέα ομάδα εφαρμογών και στη συνέχεια θα είναι δυνατή η προσθήκη εφαρμογών σε αυτήν
 EditFormTitleNewPage ΝΕΑ ΣΕΛΙΔΑ
+EditFormTitleEditPage Επεξεργασία σελίδας '%0'
 EditFormTitleNewGroup Μια νέα ομάδα εφαρμογών
+EditFormTitleEditGroup Επεξεργασία ομάδας '%0'
 EditDataNewDefaultGroupTitle Νέα ομάδα
 EditFormTitleNewApplication Νέα εφαρμογή
+EditFormTitleEditApplication Επεξεργασία εφαρμογής '%0'
 EditFormTitleClone Αντίγραφο: %0
 EditDataTitleText Λεζάντα
 EditDataDescriptionText Επιγραφή
 EditDataToolTipText Βοήθεια
 EditDataImageFileNameText Εικόνα
+EditDataBackColorText Χρώμα
 EditDataExecutableFileNameText Εφαρμογή
+EditDataExecutableWorkingDirectory Κατάλογος εργασίας
 EditDataExecutableArgumentsText Επιχειρήματα
 EditDataExecuteInAdminModeText Δικαιώματα διαχειριστή
 EditDataOnlyOneInstanceText Μόνο μια διαδικασία
 EditDataOpenMaximizedText Μεγιστοποιημένο παράθυρο
 ExecutableFileIsNotSpecified Η εφαρμογή δεν μπορεί να ξεκινήσει, το αρχείο της δεν έχει καθοριστεί.
 ExecutableFileIsNotExists Η εφαρμογή δεν μπορεί να ξεκινήσει, το αρχείο της δεν υπάρχει.
-ToolTipTypeNoneText *Žádný tooltip
-ToolTipTypeDefaultText *Defaultní tooltip
-ToolTipTypeFastText *Rychlý tooltip
-ToolTipTypeSlowText *Pomalý tooltip
+ToolTipTypeNoneText Χωρίς επεξήγηση εργαλείου
+ToolTipTypeDefaultText Προεπιλεγμένη επεξήγηση εργαλείου
+ToolTipTypeFastText Γρήγορη συμβουλή εργαλείου
+ToolTipTypeSlowText Αργή συμβουλή εργαλείου
+HelpInfoTitle Παράμετροι εφαρμογής
+HelpInfoSettingsFile Ρητά καθορισμένο αρχείο δεδομένων εφαρμογής
+HelpInfoSingleApp Να επιτρέπεται μόνο μία εφαρμογή που εκτελείται
+HelpInfoReset Θα διαγράψει όλα τα δεδομένα της εφαρμογής και θα ξεκινήσει από την αρχή
+HelpInfoRunTests Όταν ξεκινά η εφαρμογή, εκτελεί ένα σύνολο εσωτερικών δοκιμών
+HelpInfoHelp Εμφάνιση όλων των ισχυόντων ορισμάτων (=αυτό το παράθυρο)
 DialogButtonOkText Εντάξει
 DialogButtonCancelText Ακύρωση
 DialogButtonYesText Ναί

@@ -251,8 +251,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             // Celé pozadí buňky (buňka může mít explicitně danou barvu pozadí):
             var color = this.BackColor.Morph(this.CellBackColor?.GetColor(paintArgs.CurrentInteractiveState));   // Statická barva pozadí + proměnná dle stavu
             if (color.HasValue)
-            {   // Barva buňky se smíchá s barvou WorkspaceColor a vykreslí se celé její pozadí,
-                // a tato barva se pak stává základnou pro Morphování a kreslení všech dalších barev v různých oblastech:
+            {   // Barva buňky (podle jejího Alpha kanálu) se smíchá s barvou WorkspaceColor a určí tak barvu pozadí celé buňky.
+                // Tato barva se pak stává základnou pro Morphování a kreslení všech dalších barev v různých oblastech:
                 paintArgs.WorkspaceColor = paintArgs.WorkspaceColor.Morph(color.Value);
             }
 
@@ -277,21 +277,23 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         protected void OnPaintActiveContentBackArea(ItemPaintArgs paintArgs)
         {
             paintArgs.ActiveContentBounds = paintArgs.DataLayout.ActiveContentBounds.GetBounds(paintArgs.ClientBounds);
+            var state = paintArgs.BasicInteractiveState;
+            var colorSet = paintArgs.PaletteSet.ActiveContentColor;
 
-            // Pozadí aktivní části buňky - pokud je Selected:
+            // Pozadí aktivní části buňky - pokud je Down:
             if (this.IsDown)
             {
-                var color = paintArgs.PaletteSet.ActiveContentColor.DownColor;
+                var color = colorSet.DownColor;
                 if (color.HasValue)
                     paintArgs.Graphics.FillRectangle(paintArgs.ActiveContentBounds, paintArgs.WorkspaceColor.Morph(color.Value), paintArgs.Alpha);
             }
 
             // Podkreslení aktivní části buňky - v myšoaktivním stavu:
-            if ((paintArgs.BasicInteractiveState == InteractiveState.MouseOn || paintArgs.BasicInteractiveState == InteractiveState.MouseDown) && paintArgs.PaletteSet.ActiveContentColor != null)
+            if ((state == InteractiveState.MouseOn || state == InteractiveState.MouseDown) && colorSet != null)
             {
-                var color = paintArgs.PaletteSet.ActiveContentColor.GetColor(paintArgs.BasicInteractiveState);
+                var color = colorSet.GetColor(state);
                 if (color.HasValue)
-                    paintArgs.Graphics.FountainFill(paintArgs.ActiveContentBounds, paintArgs.WorkspaceColor.Morph(color.Value), Components.InteractiveState.Enabled, paintArgs.Alpha);
+                    paintArgs.Graphics.FountainFill(paintArgs.ActiveContentBounds, paintArgs.WorkspaceColor.Morph(color.Value), state, colorSet, paintArgs.Alpha);
             }
         }
         /// <summary>
@@ -303,6 +305,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             if (paintArgs.DataLayout.BorderBounds.HasContent)
             {
                 paintArgs.BorderBounds = paintArgs.DataLayout.BorderBounds.GetBounds(paintArgs.ClientBounds);
+                var state = paintArgs.BasicInteractiveState;
+                var colorSet = paintArgs.PaletteSet.ButtonBackColors;
+
                 if (paintArgs.BorderBounds.HasContent())
                 {
                     using (var borderPath = paintArgs.BorderBounds.GetRoundedRectanglePath(paintArgs.DataLayout.BorderRound))
@@ -310,9 +315,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                         paintArgs.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
                         // Výplň dáme pod border:
-                        var color = paintArgs.PaletteSet.ButtonBackColors.GetColor(paintArgs.BasicInteractiveState);
+                        var color = colorSet.GetColor(paintArgs.BasicInteractiveState);
                         if (color.HasValue)
-                            paintArgs.Graphics.FountainFill(borderPath, paintArgs.WorkspaceColor.Morph(color.Value), paintArgs.BasicInteractiveState, paintArgs.Alpha);
+                            paintArgs.Graphics.FountainFill(borderPath, paintArgs.WorkspaceColor.Morph(color.Value), paintArgs.BasicInteractiveState, colorSet, paintArgs.Alpha);
 
                         // Linka Border:
                         if (paintArgs.DataLayout.BorderWidth > 0f)

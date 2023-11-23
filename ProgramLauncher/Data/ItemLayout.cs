@@ -386,7 +386,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 {
                     Name = "Střední titulek",
                     CellSize = new Size(-1, 24),
-                    BackAreaStatic3DRatio = -0.15f,
+                    BackAreaStatic3DRatio = 0.15f,
                     ActiveContentBounds = new RectangleExt(0, null, 0, 0, 24, null),
                     MainTitleBounds = new RectangleExt(12, null, 12, 2, null, 2),
                     MainTitleAlignment = ContentAlignment.MiddleLeft,

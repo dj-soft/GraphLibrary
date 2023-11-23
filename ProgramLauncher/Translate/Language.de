@@ -16,6 +16,9 @@ ToolStripButtonRedoToolTip Rollt die letzte rückgängig gemachte Änderung fort
 ToolStripButtonPreferenceToolTip Legen Sie das Anwendungsverhalten fest
 ToolStripButtonEditToolTip Inhalte bearbeiten
 ToolStripButtonMessageSyncToolTip Füllen Sie die Sprachdateien mit der aktuellen Ankündigungsliste
+ToolStripButtonMessageSyncInfoToolTip Füllen Sie die Sprachdateien mit der aktuellen Nachrichtenliste.××%0 in %1 ist derzeit nicht übersetzt.
+ToolStripButtonMessageSyncMessagesTexts kein Text×Text×Texte×Texte
+ToolStripButtonMessageSyncFilesTexts keine Datei×Datei×Datei×Datei
 StatusStripPageCountText keine Seiten×Seite×Seite×Seiten
 StatusStripApplicationText keine Apps×App×App×Apps
 AppearanceMenuHeaderColorPalette FARBPALETTE
@@ -46,15 +49,20 @@ AppContextMenuNewApplicationToolTip Fügt eine neue Anwendung hinzu: Öffnet ein
 AppContextMenuNewGroupText Neue Gruppe
 AppContextMenuNewGroupToolTip Es wird eine neue Gruppe von Anwendungen hinzugefügt, dann ist es möglich, Anwendungen hinzuzufügen
 EditFormTitleNewPage Neue Seite
+EditFormTitleEditPage Seite '%0' bearbeiten
 EditFormTitleNewGroup Eine neue Gruppe von Anwendungen
+EditFormTitleEditGroup Gruppe '%0' bearbeiten
 EditDataNewDefaultGroupTitle Neue Gruppe
 EditFormTitleNewApplication Neue Bewerbung
+EditFormTitleEditApplication Anwendung '%0' bearbeiten
 EditFormTitleClone Kopieren: %0
 EditDataTitleText Untertitel
 EditDataDescriptionText Etikett
 EditDataToolTipText Helfen
 EditDataImageFileNameText Bild
+EditDataBackColorText Farbe
 EditDataExecutableFileNameText Anwendung
+EditDataExecutableWorkingDirectory Arbeitsverzeichnis
 EditDataExecutableArgumentsText Argumente
 EditDataExecuteInAdminModeText Admin-Berechtigungen
 EditDataOnlyOneInstanceText Nur ein Prozess
@@ -65,6 +73,12 @@ ToolTipTypeNoneText Kein Tooltip
 ToolTipTypeDefaultText Standard-Tooltip
 ToolTipTypeFastText Kurzer Tooltip
 ToolTipTypeSlowText Langsamer Tooltip
+HelpInfoTitle Anwendungsparameter
+HelpInfoSettingsFile Explizit angegebene Anwendungsdatendatei
+HelpInfoSingleApp Erlauben Sie nur eine einzige laufende Anwendung
+HelpInfoReset Es löscht alle App-Daten und beginnt von vorne
+HelpInfoRunTests Wenn die Anwendung gestartet wird, führt sie eine Reihe interner Tests durch
+HelpInfoHelp Alle anwendbaren Argumente anzeigen (=dieses Fenster)
 DialogButtonOkText OK
 DialogButtonCancelText Stornierung
 DialogButtonYesText Ja
