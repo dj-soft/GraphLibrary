@@ -159,11 +159,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AdapterTest.cs" />
-    <Compile Include="AsolDX\DxControls.cs" />
-    <Compile Include="AsolDX\DxDataExtensions.cs" />
-    <Compile Include="AsolDX\DxDataForm.cs">
+    <Compile Include="AsolDX\DataForm\DxDataForm.cs" />
+    <Compile Include="AsolDX\DataForm\DxDataFormData.cs" />
+    <Compile Include="AsolDX\DataForm\DxGraphics.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="AsolDX\DataForm\DxInteractive.cs" />
+    <Compile Include="AsolDX\DxControls.cs" />
+    <Compile Include="AsolDX\DxDataExtensions.cs" />
+    <Compile Include="AsolDX\DxDataForm.cs" />
     <Compile Include="AsolDX\DxDataFormData.cs" />
     <Compile Include="AsolDX\DxDialogForm.cs">
       <SubType>Form</SubType>
@@ -244,12 +248,19 @@
     <Compile Include="Components\LayoutForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Components\Obsoletes\OldDataForm.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Components\Obsoletes\OldDataFormData.cs" />
     <Compile Include="Components\Randomizer.cs" />
     <Compile Include="Components\ThreadManager.cs" />
     <Compile Include="Forms\DataFormV1.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\DataFormV2.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\DataFormV3.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\DiagramControlForm.cs">

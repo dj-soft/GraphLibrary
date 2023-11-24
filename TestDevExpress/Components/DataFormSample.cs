@@ -7,7 +7,9 @@ using System.Drawing;
 using System.Windows.Forms;
 
 using Noris.Clients.Win.Components.AsolDX;
-using Noris.Clients.Win.Components.AsolDX.DataForm;
+
+using Noris.Clients.Win.Components.Obsoletes.Data;
+using Noris.Clients.Win.Components.Obsoletes.DataForm;
 
 namespace TestDevExpress.Components
 {

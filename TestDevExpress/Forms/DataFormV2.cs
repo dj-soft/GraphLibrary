@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing;
 using Noris.Clients.Win.Components.AsolDX;
+using Noris.Clients.Win.Components.Obsoletes.Data;
+using Noris.Clients.Win.Components.Obsoletes.DataForm;
 
 namespace TestDevExpress.Forms
 {
@@ -376,14 +378,14 @@ namespace TestDevExpress.Forms
         /// <param name="rowCount"></param>
         /// <param name="form"></param>
         /// <returns></returns>
-        private object CreateDataSource(int rowCount, Noris.Clients.Win.Components.AsolDX.DataForm.IDataForm form)
+        private object CreateDataSource(int rowCount, IDataForm form)
         {
             System.Data.DataTable dataTable = new System.Data.DataTable();
 
             var items = form.Pages
                         .SelectMany(p => p.Groups)
                         .SelectMany(g => g.Items)
-                        .OfType<Noris.Clients.Win.Components.AsolDX.DataForm.DataFormColumn>()
+                        .OfType<DataFormColumn>()
                         .ToArray();
             int c = 0;
             foreach (var item in items)

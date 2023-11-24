@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using DevExpress.Diagram.Core.Shapes;
+using DevExpress.Charts.Native;
 using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress.Forms
@@ -15,6 +17,7 @@ namespace TestDevExpress.Forms
     /// </summary>
     public class MainAppForm : Noris.Clients.Win.Components.AsolDX.DxMainAppForm
     {
+        #region Konstruktor, Ribbon, Statusbar
         /// <summary>
         /// Příprava Ribbonu
         /// </summary>
@@ -31,9 +34,7 @@ namespace TestDevExpress.Forms
             var start = DateTime.Now;
             // var runFormInfos = RunFormInfo.GetFormsWithProperty();             // Debug mode: 1202, 1307, 1247 milisecs;     Run mode: 224, 222, 233 milisecs
             var runFormInfos = RunFormInfo.GetFormsWithAttribute();            // Debug mode: 1354, 1283, 1224 milisecs;     Run mode: 219, 241, 238 milisecs
-            var stop = DateTime.Now;
-            int milisecs = (int)((TimeSpan)(stop - start)).TotalMilliseconds;
-            DxComponent.ShowMessageInfo($"Vyhledání aktivních formulářů s metodou RunFormInfo.GetFormsWithProperty(): čas = {milisecs} ms");
+            __FormLoadTime = DateTime.Now - start;
 
 
             RunFormInfo.CreateRibbonPages(runFormInfos, pages, homePage);
@@ -56,7 +57,28 @@ namespace TestDevExpress.Forms
             }
         }
 
+        protected override void DxStatusPrepare()
+        {
+            // nevoláme:  base.DxStatusPrepare();
+            __StatusVersionLabel = new DevExpress.XtraBars.BarStaticItem();
+            __StatusInfoLabel = new DevExpress.XtraBars.BarStaticItem();
+            this.DxStatusBar.ItemLinks.Add(__StatusVersionLabel);
+            this.DxStatusBar.ItemLinks.Add(__StatusInfoLabel);
 
+            StatusInfoText = $"Vyhledání aktivních formulářů s metodou RunFormInfo.GetFormsWithProperty(): čas = {__FormLoadTime.TotalMilliseconds:N0} ms";
+        }
+        /// <summary>
+        /// Text v prvním poli StatusBaru
+        /// </summary>
+        public string StatusVersionText { get { return __StatusVersionLabel?.Caption; } set { if (__StatusVersionLabel != null) __StatusVersionLabel.Caption = value; } }
+        /// <summary>
+        /// Text v druhém poli StatusBaru
+        /// </summary>
+        public string StatusInfoText { get { return __StatusInfoLabel?.Caption; } set { if (__StatusInfoLabel != null) __StatusInfoLabel.Caption = value; } }
+        private DevExpress.XtraBars.BarItem __StatusVersionLabel;
+        private DevExpress.XtraBars.BarItem __StatusInfoLabel;
+        private TimeSpan __FormLoadTime;
+        #endregion
         #region DockManager - služby
         protected override void InitializeDockPanelsContent()
         {
@@ -240,7 +262,6 @@ namespace TestDevExpress.Forms
         /// <returns></returns>
         public static Tuple<Type, RunFormInfo>[] GetFormsWithProperty()
         {
-            // var allAssemblies = System.AppDomain.CurrentDomain.GetAssemblies();
             var myAssembly = typeof(RunFormInfo).Assembly;
 
             var runFormInfos = new List<Tuple<Type, RunFormInfo>>();
@@ -280,7 +301,6 @@ namespace TestDevExpress.Forms
         /// <returns></returns>
         public static Tuple<Type, RunFormInfo>[] GetFormsWithAttribute()
         {
-            // var allAssemblies = System.AppDomain.CurrentDomain.GetAssemblies();
             var myAssembly = typeof(RunFormInfo).Assembly;
 
             var runFormInfos = new List<Tuple<Type, RunFormInfo>>();
