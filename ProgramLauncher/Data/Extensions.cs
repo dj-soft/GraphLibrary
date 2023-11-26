@@ -696,7 +696,7 @@ namespace DjSoft.Tools.ProgramLauncher
             graphics.SetForText();
             graphics.DrawString(text, font, brush, textounds, stringFormat);
         }
-        public static void DrawText(this Graphics graphics, string text, RectangleF bounds, Color color, FontType? fontType = null, float? emSize = null, FontStyle? fontStyle = null, float? alpha = null, ContentAlignment? contentAlignment = null)
+        public static void DrawText(this Graphics graphics, string text, RectangleF bounds, Color color, SystemFontType? fontType = null, float? emSize = null, FontStyle? fontStyle = null, float? alpha = null, ContentAlignment? contentAlignment = null)
         {
             var brush = App.GetBrush(color.GetAlpha(alpha));
             if (brush is null) return;

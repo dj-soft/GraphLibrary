@@ -233,11 +233,13 @@ namespace TestDevExpress.Forms
             _RemoveDataForms();
 
             __DataFormId++;
-            var dataForm = new DxPanelControl() { Dock = DockStyle.Fill };         // , BackColor = Color.FromArgb(190, 180, 240)
+            var dataForm = new DxVirtualPanel() { Dock = DockStyle.Fill };         // , BackColor = Color.FromArgb(190, 180, 240)
             DxMainPanel.Controls.Add(dataForm);
             dataForm.GotFocus += DxDataForm_GotFocus;
 
             _DxDataFormV3 = dataForm;
+            _DxDataFormV3.ContentPanel = new DxBufferedGraphicPanel();
+            _DxDataFormV3.ContentSize = new Size(1600, 2400);
 
             _RefreshTitle();
         }
@@ -270,7 +272,7 @@ namespace TestDevExpress.Forms
                 RefreshStatusCurrent();
             }
         }
-        private DxPanelControl _DxDataFormV3;
+        private DxVirtualPanel _DxDataFormV3;
         private DateTime? _DxShowTimeStart;
         private TimeSpan? _DxShowTimeSpan;
         #endregion

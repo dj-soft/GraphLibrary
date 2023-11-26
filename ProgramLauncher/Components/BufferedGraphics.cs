@@ -347,7 +347,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             public void ReloadScrollbarSize()
             {
                 __ScrollbarSize = _GetValue(() => SystemInformation.HorizontalScrollBarHeight, () => SystemInformation.VerticalScrollBarWidth);
-                __ScrollbarSmallChange = (int)(((float)SystemInformation.MouseWheelScrollLines) * App.GetSystemFont(App.FontType.DefaultFont).GetHeight());
+                __ScrollbarSmallChange = (int)(((float)SystemInformation.MouseWheelScrollLines) * App.GetSystemFont(App.SystemFontType.DefaultFont).GetHeight());
             }
             /// <summary>
             /// Velikost zdejšího Scrollbaru, pokud bude zobrazen. Zde je tedy kladné číslo, i když scrollbar aktuálně není zobrazen.
@@ -1313,7 +1313,55 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #endregion
         #endregion
     }
+    #region class ToolTipControl
+    public class ToolTipControl : Control
+    {
+        #region Podpora inicializace tooltipu - až poté, kdy je control umístěn na formuláři!
+        /// <summary>
+        /// Po změně Visible.
+        /// Při změně na true zajišťuje CheckToolTipInitialized() a Draw()
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+            if (this.Visible)
+                this.CheckToolTipInitialized();
+        }
+        /// <summary>
+        /// Event, který je volán tehdy, když se má inicializovat Tooltip
+        /// </summary>
+        public event EventHandler ToolTipInitialize;
+        /// <summary>
+        /// Virtuální metoda, do které je vhodné v potomkovi vepsat kód pro inicializaci tooltipu.
+        /// Metoda je volána jen tehdy, když objekt je již umístěn na Formu (tj. existuje již správce tooltipu), metoda je volána pouze jedenkrát.
+        /// Je možné využít i eventu ToolTipInitialize.
+        /// Bázová metoda na třídě DblGraphControl je prázdná.
+        /// </summary>
+        protected virtual void OnToolTipInitialize()
+        { }
+        /// <summary>
+        /// Výkonná metoda, zajistí že bude inicializován Tooltip pro tento control.
+        /// </summary>
+        protected void CheckToolTipInitialized()
+        {
+            if (this.ToolTipInitialized) return;
+            if (this.FindForm() == null) return;
 
+            if (this.ToolTipInitialize != null)
+                this.ToolTipInitialize(this, EventArgs.Empty);
+
+            this.OnToolTipInitialize();
+
+            this.ToolTipInitialized = true;
+        }
+        /// <summary>
+        /// Příznak, že tooltip již prošel inicializací
+        /// </summary>
+        protected bool ToolTipInitialized = false;
+        #endregion
+    }
+    #endregion
     #region class MouseState : stav myši
     /// <summary>
     /// Stav myši
@@ -1416,55 +1464,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     #region interface IVirtualContainer
     public interface IVirtualContainer
     { }
-    #endregion
-    #region class ToolTipControl
-    public class ToolTipControl : Control 
-    {
-        #region Podpora inicializace tooltipu - až poté, kdy je control umístěn na formuláři!
-        /// <summary>
-        /// Po změně Visible.
-        /// Při změně na true zajišťuje CheckToolTipInitialized() a Draw()
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void OnVisibleChanged(EventArgs e)
-        {
-            base.OnVisibleChanged(e);
-            if (this.Visible)
-                this.CheckToolTipInitialized();
-        }
-        /// <summary>
-        /// Event, který je volán tehdy, když se má inicializovat Tooltip
-        /// </summary>
-        public event EventHandler ToolTipInitialize;
-        /// <summary>
-        /// Virtuální metoda, do které je vhodné v potomkovi vepsat kód pro inicializaci tooltipu.
-        /// Metoda je volána jen tehdy, když objekt je již umístěn na Formu (tj. existuje již správce tooltipu), metoda je volána pouze jedenkrát.
-        /// Je možné využít i eventu ToolTipInitialize.
-        /// Bázová metoda na třídě DblGraphControl je prázdná.
-        /// </summary>
-        protected virtual void OnToolTipInitialize()
-        { }
-        /// <summary>
-        /// Výkonná metoda, zajistí že bude inicializován Tooltip pro tento control.
-        /// </summary>
-        protected void CheckToolTipInitialized()
-        {
-            if (this.ToolTipInitialized) return;
-            if (this.FindForm() == null) return;
-
-            if (this.ToolTipInitialize != null)
-                this.ToolTipInitialize(this, EventArgs.Empty);
-
-            this.OnToolTipInitialize();
-
-            this.ToolTipInitialized = true;
-        }
-        /// <summary>
-        /// Příznak, že tooltip již prošel inicializací
-        /// </summary>
-        protected bool ToolTipInitialized = false;
-        #endregion
-    }
     #endregion
     #region ScrollBars
     /// <summary>

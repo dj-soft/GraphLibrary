@@ -18,6 +18,9 @@ using System.Windows.Forms;
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
 
+    public interface IInteractiveItem
+    { }
+
     #region MouseState : stav myši v rámci interaktivních prvků
     /// <summary>
     /// Stav myši
@@ -78,7 +81,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private MouseButtons __Buttons;
         private Keys __ModifierKeys;
         private bool __IsOnControl;
-        private InteractiveItem __InteractiveItem;
+        private IInteractiveItem __InteractiveItem;
         /// <summary>
         /// Čas akce myši; důležité pro případný doubleclick
         /// </summary>
@@ -110,7 +113,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Prvek na pozici myši
         /// </summary>
-        public InteractiveItem InteractiveItem { get { return __InteractiveItem; } set { __InteractiveItem = value; } }
+        public IInteractiveItem InteractiveItem { get { return __InteractiveItem; } set { __InteractiveItem = value; } }
     }
     #endregion
 }

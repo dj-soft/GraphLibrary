@@ -242,7 +242,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             paletteSet.__TextStandardColors = ColorSet.CreateAllColors(true, Color.Black);
 
             paletteSet.__MainTitleAppearance = new TextAppearance(true,
-                FontType.CaptionFont,
+                SystemFontType.CaptionFont,
                 ContentAlignment.MiddleLeft,
                 AppearanceColorPartType.MainTitleColors,
                 null,
@@ -252,7 +252,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 );
 
             paletteSet.__SubTitleAppearance = new TextAppearance(true,
-                FontType.CaptionFont,
+                SystemFontType.CaptionFont,
                 ContentAlignment.MiddleLeft,
                 AppearanceColorPartType.MainTitleColors,
                 null,
@@ -262,7 +262,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 );
 
             paletteSet.__StandardTextAppearance = new TextAppearance(true,
-                FontType.CaptionFont,
+                SystemFontType.CaptionFont,
                 ContentAlignment.MiddleLeft,
                 AppearanceColorPartType.MainTitleColors,
                 null,
@@ -324,7 +324,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             paletteSet.__TextStandardColors = ColorSet.CreateAllColors(true, Color.White);
 
             paletteSet.__MainTitleAppearance = new TextAppearance(true,
-                FontType.CaptionFont,
+                SystemFontType.CaptionFont,
                 ContentAlignment.MiddleLeft,
                 AppearanceColorPartType.MainTitleColors,
                 null,
@@ -334,7 +334,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 );
 
             paletteSet.__SubTitleAppearance = new TextAppearance(true,
-                FontType.CaptionFont,
+                SystemFontType.CaptionFont,
                 ContentAlignment.MiddleLeft,
                 AppearanceColorPartType.MainTitleColors,
                 null,
@@ -344,7 +344,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 );
 
             paletteSet.__StandardTextAppearance = new TextAppearance(true,
-                FontType.CaptionFont,
+                SystemFontType.CaptionFont,
                 ContentAlignment.MiddleLeft,
                 AppearanceColorPartType.MainTitleColors,
                 null,
@@ -405,7 +405,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             paletteSet.__TextStandardColors = ColorSet.CreateAllColors(true, Color.Black);
 
             paletteSet.__MainTitleAppearance = new TextAppearance(true,
-                FontType.CaptionFont,
+                SystemFontType.CaptionFont,
                 ContentAlignment.MiddleLeft,
                 AppearanceColorPartType.MainTitleColors,
                 null,
@@ -415,7 +415,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 );
 
             paletteSet.__SubTitleAppearance = new TextAppearance(true,
-                FontType.CaptionFont,
+                SystemFontType.CaptionFont,
                 ContentAlignment.MiddleLeft,
                 AppearanceColorPartType.MainTitleColors,
                 null,
@@ -425,7 +425,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 );
 
             paletteSet.__StandardTextAppearance = new TextAppearance(true,
-                FontType.CaptionFont,
+                SystemFontType.CaptionFont,
                 ContentAlignment.MiddleLeft,
                 AppearanceColorPartType.MainTitleColors,
                 null,
@@ -486,7 +486,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             paletteSet.__TextStandardColors = ColorSet.CreateAllColors(true, Color.Black);
 
             paletteSet.__MainTitleAppearance = new TextAppearance(true,
-                FontType.CaptionFont,
+                SystemFontType.CaptionFont,
                 ContentAlignment.MiddleLeft,
                 AppearanceColorPartType.MainTitleColors,
                 null,
@@ -496,7 +496,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 );
 
             paletteSet.__SubTitleAppearance = new TextAppearance(true,
-                FontType.CaptionFont,
+                SystemFontType.CaptionFont,
                 ContentAlignment.MiddleLeft,
                 AppearanceColorPartType.MainTitleColors,
                 null,
@@ -506,7 +506,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 );
 
             paletteSet.__StandardTextAppearance = new TextAppearance(true,
-                FontType.CaptionFont,
+                SystemFontType.CaptionFont,
                 ContentAlignment.MiddleLeft,
                 AppearanceColorPartType.MainTitleColors,
                 null,
@@ -764,7 +764,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Konstruktor pro naplněnou instanci
         /// </summary>
-        public TextAppearance(bool isReadOnly, FontType? fontType, ContentAlignment textAlignment, AppearanceColorPartType textColorType, ColorSet textColors, params TextInteractiveStyle[] styles)
+        public TextAppearance(bool isReadOnly, SystemFontType? fontType, ContentAlignment textAlignment, AppearanceColorPartType textColorType, ColorSet textColors, params TextInteractiveStyle[] styles)
         {
             __FontType = fontType;
             __TextAlignment = textAlignment;
@@ -776,7 +776,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Typ systémového fontu
         /// </summary>
-        public FontType? FontType { get { return __FontType; } set { if (!__IsReadOnly) __FontType = value; } } private FontType? __FontType;
+        public SystemFontType? FontType { get { return __FontType; } set { if (!__IsReadOnly) __FontType = value; } } private SystemFontType? __FontType;
         /// <summary>
         /// Explicitně daná velikost, není ale nijak optimální definovat ji takto explicitně. 
         /// Lepší je definovat <see cref="SizeRatio"/>.

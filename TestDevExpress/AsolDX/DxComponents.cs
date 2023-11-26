@@ -1616,6 +1616,40 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Cache fontů. Klíče si instance tvoří sama.
         /// </summary>
         private Dictionary<string, Font> _FontCache;
+        /// <summary>
+        /// Vrátí systémový font, např. <see cref="SystemFonts.DefaultFont"/> pro daný typ <paramref name="fontType"/>
+        /// </summary>
+        /// <param name="fontType"></param>
+        /// <returns></returns>
+        public static Font GetSystemFont(SystemFontType fontType)
+        {
+            switch (fontType)
+            {
+                case SystemFontType.DefaultFont: return SystemFonts.DefaultFont;
+                case SystemFontType.DialogFont: return SystemFonts.DialogFont;
+                case SystemFontType.MessageBoxFont: return SystemFonts.MessageBoxFont;
+                case SystemFontType.CaptionFont: return SystemFonts.CaptionFont;
+                case SystemFontType.SmallCaptionFont: return SystemFonts.SmallCaptionFont;
+                case SystemFontType.MenuFont: return SystemFonts.MenuFont;
+                case SystemFontType.StatusFont: return SystemFonts.StatusFont;
+                case SystemFontType.IconTitleFont: return SystemFonts.IconTitleFont;
+            }
+            return SystemFonts.DefaultFont;
+        }
+        /// <summary>
+        /// Systémové typy fontů
+        /// </summary>
+        public enum SystemFontType
+        {
+            DefaultFont,
+            DialogFont,
+            MessageBoxFont,
+            CaptionFont,
+            SmallCaptionFont,
+            MenuFont,
+            StatusFont,
+            IconTitleFont
+        }
         #endregion
         #region Listenery
         /// <summary>

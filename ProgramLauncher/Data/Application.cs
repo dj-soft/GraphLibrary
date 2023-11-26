@@ -1226,7 +1226,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="emSize"></param>
         /// <param name="fontStyle"></param>
         /// <returns></returns>
-        public static Font GetFont(FontType? fontType = null, float? emSize = null, FontStyle? fontStyle = null)
+        public static Font GetFont(SystemFontType? fontType = null, float? emSize = null, FontStyle? fontStyle = null)
         {
             return Current._GetFont(fontType, emSize, fontStyle);
         }
@@ -1239,7 +1239,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <returns></returns>
         public static Font GetFont(TextAppearance textAppearance, Components.InteractiveState interactiveState = Components.InteractiveState.Enabled)
         {
-            FontType fontType = textAppearance.FontType ?? FontType.DefaultFont;
+            SystemFontType fontType = textAppearance.FontType ?? SystemFontType.DefaultFont;
             float emSize = textAppearance.TextStyles[interactiveState].EmSize ?? textAppearance.TextStyles[Components.InteractiveState.Enabled].EmSize ?? GetSystemFont(fontType).Size;
             var sizeRatio = textAppearance.TextStyles[interactiveState].SizeRatio ?? textAppearance.TextStyles[Components.InteractiveState.Enabled].SizeRatio;
             var fontStyle = textAppearance.TextStyles[interactiveState].FontStyle ?? textAppearance.TextStyles[Components.InteractiveState.Enabled].FontStyle;
@@ -1288,9 +1288,9 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="emSize"></param>
         /// <param name="fontStyle"></param>
         /// <returns></returns>
-        private Font _GetFont(FontType? fontType, float? emSize, FontStyle? fontStyle)
+        private Font _GetFont(SystemFontType? fontType, float? emSize, FontStyle? fontStyle)
         {
-            if (!fontType.HasValue) fontType = FontType.DefaultFont;
+            if (!fontType.HasValue) fontType = SystemFontType.DefaultFont;
             if (!emSize.HasValue) emSize = GetSystemFont(fontType.Value).Size;
             if (!fontStyle.HasValue) fontStyle = GetSystemFont(fontType.Value).Style;
 
@@ -1309,7 +1309,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="emSize"></param>
         /// <param name="fontStyle"></param>
         /// <returns></returns>
-        private static string _GetFontKey(FontType fontType, float emSize, FontStyle fontStyle)
+        private static string _GetFontKey(SystemFontType fontType, float emSize, FontStyle fontStyle)
         {
             int size = (int)Math.Round(5f * emSize, 0);
             string style = "S" +
@@ -1341,25 +1341,25 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         /// <param name="fontType"></param>
         /// <returns></returns>
-        public static Font GetSystemFont(FontType fontType)
+        public static Font GetSystemFont(SystemFontType fontType)
         {
             switch (fontType)
             {
-                case FontType.DefaultFont: return SystemFonts.DefaultFont;
-                case FontType.DialogFont: return SystemFonts.DialogFont;
-                case FontType.MessageBoxFont: return SystemFonts.MessageBoxFont;
-                case FontType.CaptionFont: return SystemFonts.CaptionFont;
-                case FontType.SmallCaptionFont: return SystemFonts.SmallCaptionFont;
-                case FontType.MenuFont: return SystemFonts.MenuFont;
-                case FontType.StatusFont: return SystemFonts.StatusFont;
-                case FontType.IconTitleFont: return SystemFonts.IconTitleFont;
+                case SystemFontType.DefaultFont: return SystemFonts.DefaultFont;
+                case SystemFontType.DialogFont: return SystemFonts.DialogFont;
+                case SystemFontType.MessageBoxFont: return SystemFonts.MessageBoxFont;
+                case SystemFontType.CaptionFont: return SystemFonts.CaptionFont;
+                case SystemFontType.SmallCaptionFont: return SystemFonts.SmallCaptionFont;
+                case SystemFontType.MenuFont: return SystemFonts.MenuFont;
+                case SystemFontType.StatusFont: return SystemFonts.StatusFont;
+                case SystemFontType.IconTitleFont: return SystemFonts.IconTitleFont;
             }
             return SystemFonts.DefaultFont;
         }
         /// <summary>
         /// Systémové typy fontů
         /// </summary>
-        public enum FontType
+        public enum SystemFontType
         {
             DefaultFont,
             DialogFont,

@@ -35,7 +35,53 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         #endregion
         #region Vlastní grafický control umístěný mezi Scrollbary, v něm se zobrazuje grafický obsah
+        /// <summary>
+        /// Vlastní grafický control umístěný mezi Scrollbary, v něm se zobrazuje grafický obsah
+        /// </summary>
+        public DxBufferedGraphicPanel ContentPanel
+        {
+            get { return __ContentPanel; }
+            set
+            {
+                var oldPanel = __ContentPanel;
+                if (oldPanel != null)
+                {
+                    _DetachPanel(oldPanel);
+                    this.Controls.Remove(oldPanel);
+                    oldPanel = null;
+                    __ContentPanel = null;
+                }
 
+                var newPanel = value;
+                if (newPanel != null)
+                {
+                    _AttachPanel(newPanel);
+                    this.Controls.Add(newPanel);
+                    __ContentPanel = newPanel;
+                    __ContentPanelBounds = null;
+                    _SetContentBounds();
+                }
+            }
+        }
+        private DxBufferedGraphicPanel __ContentPanel;
+        private void _AttachPanel(DxBufferedGraphicPanel contentPanel)
+        { }
+        private void _DetachPanel(DxBufferedGraphicPanel contentPanel)
+        { }
+        private void _SetContentPanelBounds(Rectangle contentBounds)
+        {
+            if (!__ContentPanelBounds.HasValue || (__ContentPanelBounds.HasValue && __ContentPanelBounds.Value != contentBounds))
+            {
+                __ContentPanelBounds = contentBounds;
+                var contentPanel = this.ContentPanel;
+                if (contentPanel != null)
+                {
+                    contentPanel.Bounds = contentBounds;
+                    contentPanel.Draw();
+                }
+            }
+        }
+        private Rectangle? __ContentPanelBounds;
         #endregion
         #region ScrollBars, Virtuální souřadnice - public
         /// <summary>
@@ -49,7 +95,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Pokud je false, a přitom je zadána veliksat obsahu <see cref="ContentSize"/>, pak jsme ve virtuálním režimu, 
         /// ale uživatel nevidí posuny prostoru (Scrollbary) a nemůže je ani interaktivně měnit. Posuny se pak řídí nastavením <see cref="VirtualBegin"/>.
         /// </summary>
-        public bool ScrollbarsEnabled { get { return __ScrollbarsEnabled; } set { __ScrollbarsEnabled = value; _RefreshScrollBars(); } }
+        public bool ScrollbarsEnabled { get { return __ScrollbarsEnabled; } set { __ScrollbarsEnabled = value; _RefreshInnerLayout(); } }
         private bool __ScrollbarsEnabled;
         /// <summary>
         /// Souřadnice počátku viditelného prostoru = souřadnice bodu ve virtuálním prostoru (prostordatového obsahu), který je zobrazen na vizuálním pixelu 0/0
@@ -76,7 +122,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         public Point GetVirtualPoint(Point controlPoint)
         {
             if (!_IsInVirtualMode) return controlPoint;
-            return controlPoint.GetShiftedPoint(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
+            return controlPoint.Add(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
         }
         /// <summary>
         /// Přepočte souřadnici bodu v datovém prostoru do souřadnice v pixelových koordinátech na this controlu (aplikuje reverzní posun daný Scrollbary)
@@ -86,7 +132,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         public Point GetControlPoint(Point virtualPoint)
         {
             if (!_IsInVirtualMode) return virtualPoint;
-            return virtualPoint.GetShiftedPoint(-__DimensionX.VirtualBegin, -__DimensionY.VirtualBegin);
+            return virtualPoint.Sub(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
         }
         /// <summary>
         /// Přepočte souřadnici prostoru v pixelových koordinátech na this controlu do souřadnice virtuálního prostoru v datovém prostoru (aplikuje posun daný Scrollbary)
@@ -96,7 +142,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         public Rectangle GetVirtualBounds(Rectangle controlBounds)
         {
             if (!_IsInVirtualMode) return controlBounds;
-            return controlBounds.GetShiftedRectangle(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
+            return controlBounds.Add(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
         }
         /// <summary>
         /// Přepočte souřadnici prostoru v datovém prostoru do souřadnice v pixelových koordinátech na this controlu (aplikuje reverzní posun daný Scrollbary)
@@ -106,7 +152,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         public Rectangle GetControlBounds(Rectangle virtualBounds)
         {
             if (!_IsInVirtualMode) return virtualBounds;
-            return virtualBounds.GetShiftedRectangle(-__DimensionX.VirtualBegin, -__DimensionY.VirtualBegin);
+            return virtualBounds.Sub(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
         }
         /// <summary>
         /// Velikost zdejšího Scrollbaru, pokud bude zobrazen. Zde je tedy kladné číslo, i když scrollbar aktuálně není zobrazen.
@@ -161,7 +207,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __ScrollBarY = new DxScrollBarY() { Visible = false };
             __ScrollBarY.ValueChanged += __DimensionY.ScrollBarValueChanged;
             this.Controls.Add(__ScrollBarY);
+
+            __VirtualInitialized = true;
+            this._RefreshInnerLayout();
         }
+        /// <summary>
+        /// Obsahuje true po dokončení inicializace virtuálního prostoru
+        /// </summary>
+        private bool VirtualInitialized { get { return __VirtualInitialized; } }private bool __VirtualInitialized;
         /// <summary>
         /// Nativní událost MouseWheel na controlu - přeneseme ji do Scrollbaru Y, pokud to lze
         /// </summary>
@@ -174,13 +227,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 __ScrollBarY.DoMouseWheel(e);
         }
         /// <summary>
-        /// Po změně virtuálního počátku
+        /// Po změně virtuálního počátku provedu vykreslení panelu
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void __Dimension_VirtualBeginChanged(object sender, EventArgs e)
         {
-            this.Draw();
+            this.ContentPanel?.Draw();
         }
         /// <summary>
         /// Fyzický Scrollbar vodorovný pro posun na ose X
@@ -219,22 +272,26 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             __HasContentSize = (contentSize.HasValue && contentSize.Value.Width > 0 && contentSize.Value.Height > 0);
             __ContentSize = (__HasContentSize ? contentSize : null);
-            _RefreshScrollBars();
+            _RefreshInnerLayout();
         }
         /// <summary>
         /// Akceptuje aktuální fyzickou velikost Controlu a zařídí podle ní platnost Scrollbarů
         /// </summary>
         private void _AcceptControlSize()
         {
-            _RefreshScrollBars();
+            _RefreshInnerLayout();
         }
         /// <summary>
-        /// Zajistí přepočty potřebnosti a hodnot ScrollBarů podle aktuální velikosti a aktuálního rozměru a zajistí jejich zobrazení / skrytí
+        /// Zajistí přepočty potřebnosti a hodnoty a souřadnice ScrollBarů podle aktuální velikosti a aktuálního rozměru a zajistí zobrazení / skrytí ScrollBarů.
+        /// Určí souřadnice prostoru pro <see cref="ContentPanel"/> a tento panel do daných souřadnic umístí. Vyvolá jeho překreslení.
         /// </summary>
-        private void _RefreshScrollBars()
+        private void _RefreshInnerLayout()
         {
+            if (!VirtualInitialized) return;
+
             _DetectScrollbars();
             _ShowScrollBars();
+            _SetContentBounds();
         }
         /// <summary>
         /// Detekuje potřebu zobrazení Scrollbarů. Volá se jak po změně <see cref="ContentSize"/>, tak po Resize controlu.
@@ -267,6 +324,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 __ScrollBarX.Visible = false;
                 __ScrollBarY.Visible = false;
             }
+        }
+        /// <summary>
+        /// Určí souřadnice pro <see cref="ContentPanel"/> podle aktuální velikosti celého controlu a podle přítomnosti Scrollbarů,
+        /// a <see cref="ContentPanel"/> do těchto souřadnic umístí.
+        /// </summary>
+        private void _SetContentBounds()
+        {
+            var clientBounds = this.CurrentClientBounds;
+
+            int clientRight = clientBounds.Right;
+            int clientBottom = clientBounds.Bottom;
+            if (_IsInVirtualMode)
+            {
+                if (__DimensionY.UseScrollbar && __DimensionY.ScrollBounds.HasValue) clientRight = __DimensionY.ScrollBounds.Value.Left;
+                if (__DimensionX.UseScrollbar && __DimensionX.ScrollBounds.HasValue) clientBottom = __DimensionX.ScrollBounds.Value.Top;
+            }
+            var contentBounds = Rectangle.FromLTRB(clientBounds.Left, clientBounds.Top, clientRight, clientBottom);
+            _SetContentPanelBounds(contentBounds);
         }
         /// <summary>
         /// Třída pro řešení virtuální / nativní souřadnice v jedné ose (Velikost obsahu / reálný prostor) + Scrollbar pro tuto osu
@@ -351,7 +426,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             public void ReloadScrollbarSize()
             {
                 __ScrollbarSize = _GetValue(() => SystemInformation.HorizontalScrollBarHeight, () => SystemInformation.VerticalScrollBarWidth);
-                __ScrollbarSmallChange = (int)(((float)SystemInformation.MouseWheelScrollLines) * App.GetSystemFont(App.FontType.DefaultFont).GetHeight());
+                __ScrollbarSmallChange = (int)(((float)SystemInformation.MouseWheelScrollLines) * DxComponent.GetSystemFont(DxComponent.SystemFontType.DefaultFont).GetHeight());
             }
             /// <summary>
             /// Velikost zdejšího Scrollbaru, pokud bude zobrazen. Zde je tedy kladné číslo, i když scrollbar aktuálně není zobrazen.
@@ -395,6 +470,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (scrollBar is null) return;
                 if (!UseScrollbar)
                 {   // Nezobrazovat:
+                    ScrollBounds = null;
                     if (scrollBar.Visible) scrollBar.Visible = false;
                     return;
                 }
@@ -403,8 +479,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 {
                     __SuppressScrollBarValueChange = true;
 
-                    scrollBar.Bounds = _GetScrollbarBounds();
+                    // Fyzická souřadnice:
+                    var bounds = _GetScrollbarBounds();
+                    ScrollBounds = bounds;
+                    scrollBar.Bounds = bounds;
 
+                    // Hodnoty:
                     _GetScrollbarValues(out int minimum, out int maximum, out int value, out int largeChange, out int smallChange);
                     scrollBar.Minimum = minimum;
                     scrollBar.Maximum = maximum;           // Reprezentuje celý virtuální prostor = ContentSize
@@ -419,6 +499,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
                 if (!scrollBar.Visible) scrollBar.Visible = true;
             }
+            /// <summary>
+            /// Aktuální fyzické souřadnice zdejšího scrollbaru, nebo null pokud není zobrazen
+            /// </summary>
+            public Rectangle? ScrollBounds { get; private set; }
             /// <summary>
             /// Handler události, kdy patřičný ScrollBar zaregistroval pohyb / změnu hodnoty
             /// </summary>
@@ -441,21 +525,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <returns></returns>
             private Rectangle _GetScrollbarBounds()
             {
-                var clientSize = this.__Owner.ClientSize;
+                Rectangle clientBounds = this.__Owner.CurrentClientBounds;
                 int x, y, w, h;
                 switch (this.__Axis)
                 {
                     case Axis.X:
-                        w = clientSize.Width - _OtherScrollbarSize;
+                        w = clientBounds.Width - _OtherScrollbarSize;
                         h = __ScrollbarSize;
-                        x = 0;
-                        y = clientSize.Height - h;
+                        x = clientBounds.Left;
+                        y = clientBounds.Height - h;
                         return new Rectangle(x, y, w, h);
                     case Axis.Y:
-                        h = clientSize.Height - _OtherScrollbarSize;
+                        h = clientBounds.Height - _OtherScrollbarSize;
                         w = __ScrollbarSize;
-                        y = 0;
-                        x = clientSize.Width - w;
+                        y = clientBounds.Top;
+                        x = clientBounds.Width - w;
                         return new Rectangle(x, y, w, h);
                 }
                 return Rectangle.Empty;
@@ -644,19 +728,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             set { base.BackColor = value; Draw(); }
         }
         /// <summary>
-        /// Okraj controlu
-        /// </summary>
-        [Description("Styl okraje prvku")]
-        [Category("Appearance")]
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-        [DefaultValue(BorderStyle.None)]
-        public virtual BorderStyle BorderStyle
-        {
-            get { return _BorderStyle; }
-            set { _BorderStyle = value; Draw(); }
-        }
-        private BorderStyle _BorderStyle = BorderStyle.None;
-        /// <summary>
         /// Vykreslované okraje controlu (strany borderu).
         /// Umožní řešit navazování různých controlů do jednoho borderu.
         /// </summary>
@@ -675,13 +746,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public Rectangle ClientArea { get { return this._GetClientArea(); } }
-        /// <summary>
-        /// Šířka Borderu na jednotlivých okrajích prvku
-        /// </summary>
-        [Browsable(false)]
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public Padding BorderWidth { get { return this._GetBorderWidth(); } }
+        public Rectangle ClientArea { get { return this._GetClientBounds(); } }
         #endregion
         #region Řízení kreslení - public vrstva: vyvolávací metoda + virtual výkonná metoda
         /// <summary>
@@ -733,6 +798,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this._SuppressLevel--;               // Každé volání sníží level
             if (this._SuppressLevel <= 0)        // A až se dostaneme na 0, tak obnovíme Drawing:
                 this.SuppressDrawing = false;
+        }
+        /// <summary>
+        /// Po změně prostoru uvnitř
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnClientSizeChanged(EventArgs e)
+        {
+            base.OnClientSizeChanged(e);
+            this.Draw();
         }
         /// <summary>
         /// Metoda, která zajišťuje kreslení.
@@ -1118,31 +1192,30 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Metoda vrátí aktuální prostor pro kreslení po odečtení Borderu od Size
         /// </summary>
         /// <returns></returns>
-        private Rectangle _GetClientArea()
+        private Rectangle _GetClientBounds()
         {
-            Padding borderPadd = _GetBorderWidth();
-            Rectangle client = new Rectangle(
-                borderPadd.Left,
-                borderPadd.Top,
-                this.Width - borderPadd.Left - borderPadd.Right,
-                this.Height - borderPadd.Top - borderPadd.Bottom);
-            return client;
+            Padding borderPadding = _GetBorderPadding();
+            Rectangle clientBounds = new Rectangle(
+                borderPadding.Left,
+                borderPadding.Top,
+                this.Width - borderPadding.Left - borderPadding.Right,
+                this.Height - borderPadding.Top - borderPadding.Bottom);
+            return clientBounds;
         }
         /// <summary>
         /// Metoda vrátí šířku Borderu na jednotlivých okrajích prvku
         /// </summary>
         /// <returns></returns>
-        private Padding _GetBorderWidth()
+        private Padding _GetBorderPadding()
         {
-            BorderStyle style = this.BorderStyle;
-            int border = (style == BorderStyle.None ? 0 : (style == BorderStyle.FixedSingle ? 1 : 2));
+            int borderWidth = this.BorderWidth;
 
             Border3DSide sides = this.BorderSides;
             Padding padd = new Padding();
-            padd.Top = (((sides & Border3DSide.Top) == Border3DSide.Top) ? border : 0);
-            padd.Left = (((sides & Border3DSide.Left) == Border3DSide.Left) ? border : 0);
-            padd.Right = (((sides & Border3DSide.Right) == Border3DSide.Right) ? border : 0);
-            padd.Bottom = (((sides & Border3DSide.Bottom) == Border3DSide.Bottom) ? border : 0);
+            padd.Top = (((sides & Border3DSide.Top) == Border3DSide.Top) ? borderWidth : 0);
+            padd.Left = (((sides & Border3DSide.Left) == Border3DSide.Left) ? borderWidth : 0);
+            padd.Right = (((sides & Border3DSide.Right) == Border3DSide.Right) ? borderWidth : 0);
+            padd.Bottom = (((sides & Border3DSide.Bottom) == Border3DSide.Bottom) ? borderWidth : 0);
             return padd;
         }
         /// <summary>
@@ -1152,7 +1225,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="rectangle">Prostor</param>
         public static void DrawBorder(Graphics graphics, Rectangle rectangle)
         {
-            DrawBorder(graphics, rectangle.Location, rectangle.Size, BorderStyle.Fixed3D, Border3DSide.All);
+            DrawBorder(graphics, rectangle.Location, rectangle.Size, DevExpress.XtraEditors.Controls.BorderStyles.Default, Border3DSide.All);
         }
         /// <summary>
         /// Vykreslí rámeček okolo celého předaného controlu
@@ -1162,7 +1235,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="size">Velikost</param>
         public static void DrawBorder(Graphics graphics, Point begin, Size size)
         {
-            DrawBorder(graphics, begin, size, BorderStyle.Fixed3D, Border3DSide.All);
+            DrawBorder(graphics, begin, size, DevExpress.XtraEditors.Controls.BorderStyles.Default, Border3DSide.All);
         }
         /// <summary>
         /// Vykreslí rámeček okolo celého předaného controlu, v daném stylu
@@ -1171,7 +1244,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="begin">Počátek</param>
         /// <param name="size">Velikost</param>
         /// <param name="borderStyle">Styl borderu, default = BorderStyle.Fixed3D</param>
-        public static void DrawBorder(Graphics graphics, Point begin, Size size, BorderStyle borderStyle)
+        public static void DrawBorder(Graphics graphics, Point begin, Size size, DevExpress.XtraEditors.Controls.BorderStyles borderStyle)
         {
             DrawBorder(graphics, begin, size, borderStyle, Border3DSide.All);
         }
@@ -1183,20 +1256,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="size">Velikost</param>
         /// <param name="borderStyle">Styl borderu, default = BorderStyle.Fixed3D</param>
         /// <param name="borderSide">Kreslené okraje borderu, default = Border3DSide.All</param>
-        public static void DrawBorder(Graphics graphics, Point begin, Size size, BorderStyle borderStyle, Border3DSide borderSide)
+        public static void DrawBorder(Graphics graphics, Point begin, Size size, DevExpress.XtraEditors.Controls.BorderStyles borderStyle, Border3DSide borderSide)
         {
-            if (borderStyle == BorderStyle.None) return;
+            if (borderStyle == DevExpress.XtraEditors.Controls.BorderStyles.NoBorder) return;
             Point target = new Point(begin.X + size.Width - 1, begin.Y + size.Height - 1);
             Color controlColor = SystemColors.ControlDark;
             using (Pen border = new Pen(controlColor, 1F))
             {
                 switch (borderStyle)
                 {
-                    case BorderStyle.FixedSingle:
+                    case DevExpress.XtraEditors.Controls.BorderStyles.Simple:
+                    case DevExpress.XtraEditors.Controls.BorderStyles.Flat:
+                    case DevExpress.XtraEditors.Controls.BorderStyles.HotFlat:
+                    case DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat:
                         border.Color = Color.Black;
                         graphics.DrawRectangle(border, begin.X, begin.Y, size.Width - 1, size.Height - 1);
                         break;
-                    case BorderStyle.Fixed3D:
+                    case DevExpress.XtraEditors.Controls.BorderStyles.Style3D:
+                    case DevExpress.XtraEditors.Controls.BorderStyles.Office2003:
+                    case DevExpress.XtraEditors.Controls.BorderStyles.Default:
                         border.Color = SystemColors.ControlDark;
                         graphics.DrawLine(border, begin.X, begin.Y, target.X - 1, begin.Y);                 // Vnější horní čára
                         graphics.DrawLine(border, begin.X, begin.Y, begin.X, target.Y - 1);                 // Vnější levá čára
