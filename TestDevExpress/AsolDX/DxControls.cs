@@ -1406,7 +1406,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             get
             {
                 if (!this.Enabled) return DxInteractiveState.Disabled;
-                DxInteractiveState state = DxInteractiveState.None;
+                DxInteractiveState state = DxInteractiveState.Enabled;
                 if (IsMouseOnPanel) state |= DxInteractiveState.HasMouse;
                 if (this.Focused) state |= DxInteractiveState.HasFocus;
                 return state;
@@ -9590,21 +9590,37 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         None = 0,
         /// <summary>
+        /// Prvek je Disabled
+        /// </summary>
+        Disabled = 0x01,
+        /// <summary>
+        /// Enabled = None (žádný specifický stav)
+        /// </summary>
+        Enabled = 0x02,
+        /// <summary>
         /// Myš vstoupila nad prvek = prvek je Hot
         /// </summary>
-        HasMouse = 0x01,
+        HasMouse = 0x04,
         /// <summary>
         /// Kurzor je v prvku
         /// </summary>
-        HasFocus = 0x02,
+        HasFocus = 0x08,
         /// <summary>
         /// Prvek je Selectován = nemusí mít Focus, ale mezi ostatními prvky je Aktivní
         /// </summary>
-        Selected = 0x04,
+        Selected = 0x10,
         /// <summary>
-        /// Prvek je Disabled
+        /// Levá myš je stisknuta
         /// </summary>
-        Disabled = 0x10
+        MouseLeftDown = 0x20,
+        /// <summary>
+        /// Pravá myš je stisknuta
+        /// </summary>
+        MouseRightDown = 0x40,
+        /// <summary>
+        /// Prvek je přesouván myší
+        /// </summary>
+        MouseDragging = 0x80
     }
     #endregion
     #region enum DxCursorType

@@ -1158,7 +1158,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool layoutHasMouse = this.IsMouseOnPanel;
             bool panelHasMouse = (__LayoutItemPanelWithMouse != null && Object.ReferenceEquals(panel, __LayoutItemPanelWithMouse));
             bool panelHasFocus = (__LayoutItemPanelWithFocus != null && Object.ReferenceEquals(panel, __LayoutItemPanelWithFocus));
-            DxInteractiveState state = DxInteractiveState.None;
+            DxInteractiveState state = DxInteractiveState.Enabled;
             if (layoutHasMouse && panelHasMouse) state |= DxInteractiveState.HasMouse;
             if (panelHasFocus) state |= (DxInteractiveState.HasFocus | DxInteractiveState.Selected);
             return state;
@@ -3366,7 +3366,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Interaktivní stav Ownera
         /// </summary>
-        private DxInteractiveState OwnerInteractiveState { get { return PanelOwner?.InteractiveState ?? DxInteractiveState.None; } }
+        private DxInteractiveState OwnerInteractiveState { get { return PanelOwner?.InteractiveState ?? DxInteractiveState.Enabled; } }
         /// <summary>
         /// Pozice Dock buttonu, který je aktuálně Disabled. To je ten, na jehož straně je nyní panel dokován, a proto by neměl být tento button dostupný.
         /// </summary>

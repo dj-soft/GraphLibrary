@@ -4684,7 +4684,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private long _LogLastWriteTicks;
         private long _LogTimeSpanForEmptyRow;
         #endregion
-        #region Draw metody
+        #region Draw metody a instance
         /// <summary>
         /// Vykreslí linku, která může být i gradientem kde <paramref name="color2"/> je barva u pravého okraje
         /// </summary>
@@ -4981,6 +4981,46 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _Pen.Color = color;
             return _Pen;
+        }
+        /// <summary>
+        /// Vrátí kurzor daného typu
+        /// </summary>
+        /// <param name="cursorTypes"></param>
+        /// <returns></returns>
+        public static Cursor GetCursor(DataForm.CursorTypes cursorTypes)
+        {
+            switch (cursorTypes)
+            {
+                case DataForm.CursorTypes.Default: return Cursors.Default;
+                case DataForm.CursorTypes.Hand: return Cursors.Hand;
+                case DataForm.CursorTypes.Arrow: return Cursors.Arrow;
+                case DataForm.CursorTypes.Cross: return Cursors.Cross;
+                case DataForm.CursorTypes.IBeam: return Cursors.IBeam;
+                case DataForm.CursorTypes.Help: return Cursors.Help;
+                case DataForm.CursorTypes.AppStarting: return Cursors.AppStarting;
+                case DataForm.CursorTypes.UpArrow: return Cursors.UpArrow;
+                case DataForm.CursorTypes.WaitCursor: return Cursors.WaitCursor;
+                case DataForm.CursorTypes.HSplit: return Cursors.HSplit;
+                case DataForm.CursorTypes.VSplit: return Cursors.VSplit;
+                case DataForm.CursorTypes.NoMove2D: return Cursors.NoMove2D;
+                case DataForm.CursorTypes.NoMoveHoriz: return Cursors.NoMoveHoriz;
+                case DataForm.CursorTypes.NoMoveVert: return Cursors.NoMoveVert;
+                case DataForm.CursorTypes.SizeAll: return Cursors.SizeAll;
+                case DataForm.CursorTypes.SizeNESW: return Cursors.SizeNESW;
+                case DataForm.CursorTypes.SizeNS: return Cursors.SizeNS;
+                case DataForm.CursorTypes.SizeNWSE: return Cursors.SizeNWSE;
+                case DataForm.CursorTypes.SizeWE: return Cursors.SizeWE;
+                case DataForm.CursorTypes.PanEast: return Cursors.PanEast;
+                case DataForm.CursorTypes.PanNE: return Cursors.PanNE;
+                case DataForm.CursorTypes.PanNorth: return Cursors.PanNorth;
+                case DataForm.CursorTypes.PanNW: return Cursors.PanNW;
+                case DataForm.CursorTypes.PanSE: return Cursors.PanSE;
+                case DataForm.CursorTypes.PanSouth: return Cursors.PanSouth;
+                case DataForm.CursorTypes.PanSW: return Cursors.PanSW;
+                case DataForm.CursorTypes.PanWest: return Cursors.PanWest;
+                case DataForm.CursorTypes.No: return Cursors.No;
+            }
+            return Cursors.Default;
         }
         /// <summary>
         /// Inicializace objektů pro kreslení

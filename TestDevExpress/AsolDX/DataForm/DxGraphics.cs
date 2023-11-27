@@ -65,9 +65,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private DxBufferedGraphicPanel __ContentPanel;
         private void _AttachPanel(DxBufferedGraphicPanel contentPanel)
-        { }
+        {
+            if (contentPanel != null)
+            {
+                contentPanel.VirtualPanel = this;
+            }
+        }
         private void _DetachPanel(DxBufferedGraphicPanel contentPanel)
-        { }
+        {
+            if (contentPanel != null)
+            {
+                contentPanel.VirtualPanel = null;
+            }
+        }
         /// <summary>
         /// Nastaví fyzické souřadnice panelu <see cref="ContentPanel"/> = kde je zobrazen.
         /// </summary>
@@ -748,6 +758,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         #endregion
         #region Public property a eventy
+        /// <summary>
+        /// Virtuální panel, který provádí přepočty designových hodnot na hodnoty vizuální (Zoom a posuny pomocí Scrollbarů)
+        /// </summary>
+        public DxVirtualPanel VirtualPanel { get; set; }
         /// <summary>
         /// Pokud chceme využít bufferovaného vykreslování této třídy bez toho, abychom ji dědili (použijeme nativní třídu),
         /// pak je nutno vykreslování umístit do tohoto eventu.
@@ -1614,7 +1628,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             get
             {
                 if (!this.Enabled) return DxInteractiveState.Disabled;
-                DxInteractiveState state = DxInteractiveState.None;
+                DxInteractiveState state = DxInteractiveState.Enabled;
                 if (IsMouseOnPanel) state |= DxInteractiveState.HasMouse;
                 if (this.Focused) state |= DxInteractiveState.HasFocus;
                 return state;

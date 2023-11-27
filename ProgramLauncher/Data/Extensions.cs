@@ -1334,7 +1334,6 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <typeparam name="TValue"></typeparam>
         /// <param name="items"></param>
         /// <param name="keySelector"></param>
-        /// <param name="ignoreDuplicity"></param>
         /// <returns></returns>
         public static Dictionary<TKey, TValue[]> CreateDictionaryArray<TKey, TValue>(this IEnumerable<TValue> items, Func<TValue, TKey> keySelector)
         {

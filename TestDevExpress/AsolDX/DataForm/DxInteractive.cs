@@ -209,7 +209,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 {
                     if (item.IsVisible)
                     {
-                        var itemBounds = item.Bounds;
+                        var itemBounds = item.VirtualBounds;
                         if (r < itemBounds.Right) r = itemBounds.Right;
                         if (b < itemBounds.Bottom) b = itemBounds.Bottom;
                     }
@@ -219,6 +219,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var padding = this.Padding;
             return new Size(r + padding.Horizontal, b + padding.Vertical);
         }
+        #endregion
+        #region Virtuální souřadnice - přepočty souřadnic s pomocí hostitelského panelu
+        
+
+
+
         #endregion
         #region Interaktivita
         #region Interaktivita nativní = eventy controlu
@@ -360,10 +366,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
         #region Interaktivita logicky řízená
         /// <summary>
-        /// Nativní event MouseMove
+        /// Pohyb myši
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         private void _MouseMove(MouseState mouseState)
         {
             bool lastNone = (__CurrentMouseButtons == MouseButtons.None);
@@ -398,7 +402,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="isOnControl"></param>
         private void _MouseMoveNone(MouseState mouseState, bool isOnControl)
         {
-            bool isChange = _MouseMoveCurrentExchange(mouseState, mouseState.InteractiveItem, InteractiveState.MouseOn, isOnControl);
+            bool isChange = _MouseMoveCurrentExchange(mouseState, mouseState.InteractiveItem, DxInteractiveState.HasMouse, isOnControl);
             bool useMouseTrack = true;
             if (useMouseTrack || isChange)
                 this.Draw();
@@ -409,7 +413,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="mouseState"></param>
         private void _MouseDown(MouseState mouseState)
         {
-            _MouseMoveCurrentExchange(mouseState, mouseState.InteractiveItem, InteractiveState.MouseDown, true);
+            var state = ((mouseState.Buttons == MouseButtons.Left) ? DxInteractiveState.MouseLeftDown :
+                         (mouseState.Buttons == MouseButtons.Right) ? DxInteractiveState.MouseRightDown : DxInteractiveState.HasMouse);
+            _MouseMoveCurrentExchange(mouseState, mouseState.InteractiveItem, state, true);
             __CurrentMouseDownState = mouseState;
             __CurrentMouseButtons = mouseState.Buttons;
             _MouseDragDown(mouseState, mouseState.InteractiveItem);
@@ -437,7 +443,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         /// <summary>
         /// Po provedení MouseUp jak v režimu Click, tak i Drag.
-        /// Najde prvek aktuálně pod myší se nacházející a zajistí <see cref="_MouseMoveCurrentExchange(MouseState, IInteractiveItem, InteractiveState, bool)"/> a <see cref="Draw"/>.
+        /// Najde prvek aktuálně pod myší se nacházející a zajistí <see cref="_MouseMoveCurrentExchange(MouseState, IInteractiveItem, DxInteractiveState, bool)"/> a <see cref="Draw"/>.
         /// </summary>
         /// <param name="mouseState"></param>
         private void _MouseUpEnd(MouseState mouseState)
@@ -446,8 +452,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __CurrentMouseButtons = MouseButtons.None;               // Ani žádný button
 
             // Znovu najdeme prvek pod myší, ale nehledáme Cell:
-            _RefreshMouseState(mouseState, false);
-            _MouseMoveCurrentExchange(mouseState, mouseState.InteractiveItem, InteractiveState.MouseOn, mouseState.IsOnControl);
+            _RefreshMouseState(mouseState);
+            _MouseMoveCurrentExchange(mouseState, mouseState.InteractiveItem, DxInteractiveState.HasMouse, mouseState.IsOnControl);
 
             // Vykreslíme:
             this.Draw();
@@ -464,7 +470,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             //  proto do eventu posílám objekt __CurrentMouseDownState (stav myši v době MouseDown) a nikoli currentItem (ten už má Buttons = None):
             _RunInteractiveItemClick(new InteractiveItemEventArgs(currentItem, __CurrentMouseDownState));
 
-            currentItem.InteractiveState = InteractiveState.Enabled;
+            currentItem.InteractiveState = DxInteractiveState.Enabled;
         }
         /// <summary>
         /// Dokončení myšokliku = uvolnění tlačítka myši, když nebyl proces Drag, a pod myší není žádný prvek.
@@ -489,7 +495,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="currentState"></param>
         /// <param name="isOnControl"></param>
         /// <returns></returns>
-        private bool _MouseMoveCurrentExchange(MouseState mouseState, IInteractiveItem currentMouseItem, InteractiveState currentState, bool isOnControl)
+        private bool _MouseMoveCurrentExchange(MouseState mouseState, IInteractiveItem currentMouseItem, DxInteractiveState currentState, bool isOnControl)
         {
             // Pozice myši nad controlem:
             bool lastOnControl = __MouseIsOnControl;
@@ -512,7 +518,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             if (lastExists && !currentExists)
             {   // Z dosavadního prvku na žádný prvek:
-                lastMouseItem.InteractiveState = InteractiveState.Enabled;
+                lastMouseItem.InteractiveState = DxInteractiveState.Enabled;
                 _RunInteractiveItemMouseLeave(new InteractiveItemEventArgs(lastMouseItem, mouseState));
                 __CurrentMouseItem = null;
                 return true;
@@ -532,7 +538,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
 
             // Změna prvku z dosavadního na nový:
-            lastMouseItem.InteractiveState = InteractiveState.Enabled;
+            lastMouseItem.InteractiveState = DxInteractiveState.Enabled;
             _RunInteractiveItemMouseLeave(new InteractiveItemEventArgs(lastMouseItem, mouseState));
 
             currentMouseItem.InteractiveState = currentState;
@@ -567,6 +573,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Volá se v okamžiku MouseDown a slouží k uložení dat pro případné budoucí zahájení procesu Mouse DragAndDrop
         /// </summary>
         /// <param name="mouseState"></param>
+        /// <param name="mouseItem"></param>
         private void _MouseDragDown(MouseState mouseState, IInteractiveItem mouseItem)
         {
             __CurrentMouseDragState = MouseDragProcessState.BeginZone;
@@ -587,7 +594,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 {   // Začíná Drag:
                     if (!EnabledDrag)
                     {   // Drag není povolen => rovnou přejdeme do stavu Cancelled:
-                        _MouseMoveCurrentExchange(mouseState, null, InteractiveState.Enabled, true);
+                        _MouseMoveCurrentExchange(mouseState, null, DxInteractiveState.Enabled, true);
                         __CurrentMouseDragState = MouseDragProcessState.Cancelled;
                         this.Draw();
                     }
@@ -648,7 +655,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (EnabledDrag)
             {
                 // Znovu najdeme prvek pod aktuální pozicí myši, vyhledáme i Target Cell:
-                _RefreshMouseState(mouseState, true);
+                _RefreshMouseState(mouseState);
                 InteractiveDragItemEventArgs args = new InteractiveDragItemEventArgs(__MouseDragCurrentDataItem, __DragBeginMouseState, mouseState);
                 _RunInteractiveItemDragAndDropEnd(args);
             }
@@ -718,7 +725,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public override void Draw()
         {
-            this._CheckContentSize();
+            this._VirtualSizeCheckValidity();
             base.Draw();
         }
         /// <summary>
@@ -733,7 +740,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </param>
         public override void Draw(Rectangle drawRectangle)
         {
-            this._CheckContentSize();
+            this._VirtualSizeCheckValidity();
             base.Draw(drawRectangle);
         }
         /// <summary>
@@ -744,7 +751,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         protected override void OnPaintToBuffer(object sender, PaintEventArgs e)
         {
             e.Graphics.Clear(this.BackColor);
-            _PaintMousePoints(e);
             _PaintAllDataItems(e);
         }
         /// <summary>
@@ -756,7 +762,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var mouseState = _CreateMouseState();
             using (PaintDataEventArgs pdea = new PaintDataEventArgs(e, mouseState, this))
             {
-                var zOrders = DataItems.CreateDictionaryArray(i => i.ZOrder).ToList();             // Key = ZOrder, Value = pole prvků se shodným ZOrder
+                // Vytvořím Dictionary, kde Key = ZOrder prvku, a z Dictionary udělám List<KeyValuePair<int = ZOrder, Value = IInteractiveItem[]>> :
+                var zOrders = __Items.CreateDictionaryArray(i => GetZOrder(i)).ToList();
                 if (zOrders.Count > 1) zOrders.Sort((a, b) => a.Key.CompareTo(b.Key));             // Setřídím podle ZOrder ASC
                 foreach (var zOrder in zOrders)
                 {
@@ -766,7 +773,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
                 if (this.__MouseDragCurrentDataItem != null && __CurrentMouseDragState == MouseDragProcessState.MouseDragItem)
                 {
-                    var dragShift = new Point(__DragVirtualCurrentPoint.LocationControl.X - this.__DragBeginMouseState.LocationControl.X, __DragVirtualCurrentPoint.LocationControl.Y - this.__DragBeginMouseState.LocationControl.Y);
+                    var dragBeginPoint = __DragBeginMouseState.LocationControl;
+                    var dragCurrentPoint = __DragVirtualCurrentPoint.LocationControl;
+                    var dragShift = dragCurrentPoint.Sub(dragBeginPoint);
                     pdea.MouseDragState = MouseDragState.MouseDragActiveCurrent;
                     pdea.MouseDragCurrentBounds = this.__MouseDragCurrentDataItem.VirtualBounds.Value.GetShiftedRectangle(dragShift);
                     this.__MouseDragCurrentDataItem.Paint(pdea);
@@ -782,7 +791,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Typ kurzoru aktuálně zobrazený
         /// </summary>
-        public CursorTypes CursorType { get { return __CursorType; } set { __CursorType = value; this.Cursor = App.GetCursor(value); } } private CursorTypes __CursorType;
+        public CursorTypes CursorType { get { return __CursorType; } set { __CursorType = value; this.Cursor = DxComponent.GetCursor(value); } } private CursorTypes __CursorType;
         /// <summary>
         /// Typ kurzoru, který bude aktivován po najetí myší na aktivní prvek
         /// </summary>
@@ -805,10 +814,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (GetIsSelected(item)) return 10;
             switch (item.InteractiveState)
             {
-                case InteractiveState.Disabled: return 0;
-                case InteractiveState.Enabled: return 1;
-                case InteractiveState.MouseOn: return 2;
-                case InteractiveState.MouseDown: return 3;
+                case DxInteractiveState.Disabled: return 0;
+                case DxInteractiveState.Enabled: return 1;
+                case DxInteractiveState.HasMouse: return 2;
+                case DxInteractiveState.MouseLeftDown: return 3;
+                case DxInteractiveState.MouseRightDown: return 3;
+                case DxInteractiveState.MouseDragging: return 3;
             }
             return 0;
         }
@@ -823,10 +834,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return (selectedItems != null && selectedItems.Length > 0 && selectedItems.Any(i => Object.ReferenceEquals(i, item)));
         }
         /// <summary>
-        /// Pole prvků, které jsou aktuálně Selected. Kreslí se do horní vrstvy
+        /// Pole prvků, které jsou aktuálně Selected. Kreslí se do horní vrstvy.
         /// </summary>
-        public IInteractiveItem[] SelectedItems { get { return __SelectedItems; } set { __SelectedItems = value; this.Draw(); } }
-        private IInteractiveItem[] __SelectedItems;
+        public IInteractiveItem[] SelectedItems { get { return __SelectedItems; } set { __SelectedItems = value; this.Draw(); } } private IInteractiveItem[] __SelectedItems;
         #endregion
 
         #region Public data a Eventy
@@ -918,8 +928,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     }
 
     #endregion
-
     #region interface IInteractiveItem a implementace InteractiveSimpleItem a InteractiveContainerItem
+
 
     /// <summary>
     /// Rozhraní definující jeden jakýkoli (interaktivní i non-interaktivní) prvek umístěný v prostoru <see cref="DxInteractivePanel"/>.
@@ -937,10 +947,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         bool IsVisible { get; }
         /// <summary>
-        /// Souřadnice prvku v rámci ClientRectangle jeho parenta
+        /// Souřadnice prvku v rámci jeho parenta. Souřadnice je "Virtual" = je daná designem. Do aktuálního controlu se souřadnice přepočítává.
         /// </summary>
-        Rectangle Bounds { get; }
-
+        Rectangle VirtualBounds { get; }
+        /// <summary>
+        /// Interaktivní stav prvku
+        /// </summary>
+        DxInteractiveState InteractiveState { get; set; }
+        /// <summary>
+        /// Provede vykreslení objektu
+        /// </summary>
+        /// <param name="pdea"></param>
+        void Paint(PaintDataEventArgs pdea);
     }
     #endregion
     #region MouseState : stav myši v rámci interaktivních prvků
@@ -1109,12 +1127,91 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public MouseState EndMouseState { get; private set; }
     }
+    /// <summary>
+    /// Argument pro kreslení dat
+    /// </summary>
+    public class PaintDataEventArgs : EventArgs, IDisposable
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="mouseState"></param>
+        /// <param name="interactivePanel"></param>
+        public PaintDataEventArgs(PaintEventArgs e, MouseState mouseState, DxInteractivePanel interactivePanel)
+        {
+            __Graphics = new WeakReference<Graphics>(e.Graphics);
+            __ClipRectangle = e.ClipRectangle;
+            __MouseState = mouseState;
+            __InteractivePanel = interactivePanel;
+        }
+        private WeakReference<Graphics> __Graphics;
+        private Rectangle __ClipRectangle;
+        private Rectangle? __MouseDragCurrentBounds;
+        private MouseDragState __MouseDragState;
+        private MouseState __MouseState;
+        private DxInteractivePanel __InteractivePanel;
+        void IDisposable.Dispose()
+        {
+            __Graphics = null;
+        }
+        /// <summary>
+        /// Gets the graphics used to paint. <br/>
+        /// The System.Drawing.Graphics object used to paint. The System.Drawing.Graphics object provides methods for drawing objects on the display device.
+        /// </summary>
+        public Graphics Graphics { get { return (__Graphics.TryGetTarget(out var graphics) ? graphics : null); } }
+        /// <summary>
+        /// Gets the rectangle in which to paint. <br/>
+        /// The System.Drawing.Rectangle in which to paint.
+        /// </summary>
+        public Rectangle ClipRectangle { get { return __ClipRectangle; } }
+        /// <summary>
+        /// Souřadnice aktivního prvku, kam by byl přesunut v procesu Mouse DragAndDrop, když <see cref="MouseDragState"/> je <see cref="MouseDragState.MouseDragActiveCurrent"/>
+        /// </summary>
+        public Rectangle? MouseDragCurrentBounds { get { return __MouseDragCurrentBounds; } set { __MouseDragCurrentBounds = value; } }
+        /// <summary>
+        /// Stav procesu Mouse DragAndDrop pro aktuální vykreslovaný prvek
+        /// </summary>
+        public MouseDragState MouseDragState { get { return __MouseDragState; } set { __MouseDragState = value; } }
+        /// <summary>
+        /// Pozice a stav myši
+        /// </summary>
+        public MouseState MouseState { get { return __MouseState; } }
+        /// <summary>
+        /// Interaktivní panel, do kterého je kresleno
+        /// </summary>
+        public DxInteractivePanel InteractivePanel { get { return __InteractivePanel; } }
+    }
     #endregion
     #region Enumy a další
-
+    /// <summary>
+    /// Stav procesu Mouse DragAndDrop
+    /// </summary>
+    public enum MouseDragState
+    {
+        /// <summary>
+        /// Nejedná se o Mouse DragAndDrop
+        /// </summary>
+        None,
+        /// <summary>
+        /// Aktuální vykreslovaný prvek je "pod" myší v procesu Mouse DragAndDrop = jde o běžný prvek, který není přesouván, ale leží na místě, kde se nachází myš v tomto procesu
+        /// </summary>
+        MouseDragTarget,
+        /// <summary>
+        /// Aktuální vykreslovaný prvek je ten, který se přesouvá v procesu Mouse DragAndDrop.
+        /// V tomto stavu se má vykreslit ve své původní pozici (Source).
+        /// </summary>
+        MouseDragActiveOriginal,
+        /// <summary>
+        /// Aktuální vykreslovaný prvek je ten, který se přesouvá v procesu Mouse DragAndDrop.
+        /// V tomto stavu se má vykreslit ve své cílové pozici, kde je zrovna umístěn při přetažení myší.
+        /// Pak se má pro kreslení použít souřadnice <see cref="PaintDataEventArgs.MouseDragCurrentBounds"/>
+        /// </summary>
+        MouseDragActiveCurrent
+    }
     /// <summary>
     /// Typ kurzoru. 
-    /// Fyzický kurzor pro konkrétní typ vrátí <see cref="App.GetCursor(CursorTypes)"/>.
+    /// Fyzický kurzor pro konkrétní typ vrátí <see cref="DxComponent.GetCursor(CursorTypes)"/>.
     /// </summary>
     public enum CursorTypes
     {

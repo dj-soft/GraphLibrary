@@ -110,6 +110,78 @@ namespace Noris.Clients.Win.Components.AsolDX
             return result;
         }
         /// <summary>
+        /// Z this kolekce vytvoří Dictionary s klíčem vybraným z prvku pomocí dodaného <paramref name="keySelector"/>.
+        /// Value ve výstupní Dictionary je pole (Array) prvků, které jsou přítomny ve vstupní kolekci a mají shodný klíč. Tato varianta tedy nemusí řešit duplicitu.
+        /// Pole má vždy nejméně jeden prvek.
+        /// <para/>
+        /// Metodu tedy lze použít jako alternativu k Grupování kolekce.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="keySelector"></param>
+        /// <returns></returns>
+        public static Dictionary<TKey, TValue[]> CreateDictionaryArray<TKey, TValue>(this IEnumerable<TValue> items, Func<TValue, TKey> keySelector)
+        {
+            if (keySelector is null) throw new ArgumentNullException($"CreateDictionaryArray() error: 'keySelector' can not be null.");
+            if (items is null) return null;
+
+            // Pracovní Dictionary, má jako Value prvek typu List (nikoliv Array):
+            var dictionary = new Dictionary<TKey, List<TValue>>();
+            foreach (var item in items)
+            {
+                var key = keySelector(item);
+                if (!dictionary.TryGetValue(key, out var list))
+                {
+                    list = new List<TValue>();
+                    dictionary.Add(key, list);
+                }
+                list.Add(item);
+            }
+
+            // Výstupní Dictionary, kde Value převedu z List na Array:
+            var result = dictionary.CreateDictionary(kvp => kvp.Key, kvp => kvp.Value.ToArray());
+            return result;
+        }
+        /// <summary>
+        /// Z this kolekce vytvoří Dictionary s klíčem vybraným z prvku pomocí dodaného <paramref name="keySelector"/>.
+        /// Value ve výstupní Dictionary je pole (Array) prvků, které jsou získány ze vstupního prvku pomocí <paramref name="valueSelector"/> a mají shodný klíč. Tato varianta tedy nemusí řešit duplicitu.
+        /// Pole má vždy nejméně jeden prvek.
+        /// <para/>
+        /// Metodu tedy lze použít jako alternativu k Grupování kolekce.
+        /// </summary>
+        /// <typeparam name="TItem">Typ vstupního prvku</typeparam>
+        /// <typeparam name="TKey">Typ klíče</typeparam>
+        /// <typeparam name="TValue">Typ výstupní hodnoty v Dictionary</typeparam>
+        /// <param name="items">this kolekce prvků</param>
+        /// <param name="keySelector">Funkce, která z prvku vstupní kolekce <typeparamref name="TItem"/> získá a vrátí klíč</param>
+        /// <param name="valueSelector">Funkce, která z prvku vstupní kolekce <typeparamref name="TItem"/> získá a vrátí hodnotu</param>
+        /// <returns></returns>
+        public static Dictionary<TKey, TValue[]> CreateDictionaryArray<TItem, TKey, TValue>(this IEnumerable<TItem> items, Func<TItem, TKey> keySelector, Func<TItem, TValue> valueSelector)
+        {
+            if (keySelector is null) throw new ArgumentNullException($"CreateDictionaryArray() error: 'keySelector' can not be null.");
+            if (valueSelector is null) throw new ArgumentNullException($"CreateDictionaryArray() error: 'valueSelector' can not be null.");
+            if (items is null) return null;
+
+            // Pracovní Dictionary, má jako Value prvek typu List (nikoliv Array):
+            var dictionary = new Dictionary<TKey, List<TValue>>();
+            foreach (var item in items)
+            {
+                var key = keySelector(item);
+                if (!dictionary.TryGetValue(key, out var list))
+                {
+                    list = new List<TValue>();
+                    dictionary.Add(key, list);
+                }
+                var value = valueSelector(item);
+                list.Add(value);
+            }
+
+            // Výstupní Dictionary, kde Value převedu z List na Array:
+            var result = dictionary.CreateDictionary(kvp => kvp.Key, kvp => kvp.Value.ToArray());
+            return result;
+        }
+        /// <summary>
         /// Pro každý prvek this kolekce provede danou akci
         /// </summary>
         /// <typeparam name="T"></typeparam>
