@@ -68,6 +68,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         { }
         private void _DetachPanel(DxBufferedGraphicPanel contentPanel)
         { }
+        /// <summary>
+        /// Nastaví fyzické souřadnice panelu <see cref="ContentPanel"/> = kde je zobrazen.
+        /// </summary>
+        /// <param name="contentBounds"></param>
         private void _SetContentPanelBounds(Rectangle contentBounds)
         {
             if (!__ContentPanelBounds.HasValue || (__ContentPanelBounds.HasValue && __ContentPanelBounds.Value != contentBounds))
@@ -81,22 +85,56 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
             }
         }
+        /// <summary>
+        /// Fyzické souřadnice panelu <see cref="ContentPanel"/> = kde je zobrazen. Nesouvisí s jeho virtuální velikostí (=jeho obsah).
+        /// </summary>
         private Rectangle? __ContentPanelBounds;
         #endregion
         #region ScrollBars, Virtuální souřadnice - public
         /// <summary>
-        /// Potřebná velikost obsahu. 
+        /// Potřebná velikost virtuální obsahu.
+        /// Pokud je použit <see cref="ContentPanel"/>, který definuje svoji virtuální velikost <see cref="DxBufferedGraphicPanel.VirtualSize"/> (=není null), pak je zde čtena jeho hodnota, a setování hodnoty je ignorováno.
         /// Výchozí je null = control zobrazuje to, co je vidět, a nikdy nepoužívá Scrollbary.
-        /// Lze setovat hodnotu = velikost zobrazených dat, pak se aktivuje virtuální režim se zobrazením výřezu.
+        /// Lze setovat hodnotu = celková velikost zobrazených dat, pak se aktivuje virtuální režim se zobrazením výřezu a s možností Scrollbarů.
         /// </summary>
-        public virtual Size? ContentSize { get { return __ContentSize; } set { _SetContentSize(value); } }
+        public virtual Size? VirtualSize
+        {
+            get 
+            {
+                Size? virtualSize = this.ContentPanel?.VirtualSize;
+                if (!virtualSize.HasValue)
+                    virtualSize = __VirtualSize;
+                return virtualSize;
+            }
+            set
+            {
+                __VirtualSize = value;
+                _RefreshInnerLayout();
+            }
+        }
         /// <summary>
-        /// Povoluje se práce se Scrollbary, pokud bude zadána velikost obsahu <see cref="ContentSize"/>. Default = true.
-        /// Pokud je false, a přitom je zadána veliksat obsahu <see cref="ContentSize"/>, pak jsme ve virtuálním režimu, 
+        /// Metoda je volána v situaci, kdy se určuje vnitřní layout a ScrollBary, a budeme potřebovat platnou hodnotu <see cref="VirtualSize"/>.
+        /// Vnější aplikace může reagovat On-Demand a tuto hodnotu validovat (např. pomocí eventhandleru )
+        /// </summary>
+        private void _ValidateVirtualSize()
+        {
+            OnValidateVirtualSize();
+            ValidateVirtualSize?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Volá se na začátku procesu určení vnitřního layoutu podle hodnoty <see cref="VirtualSize"/>. Toto je vhodná situace, kdy volající se může ujistit, že tuto velikost nastavil na platnou hodnotu.
+        /// </summary>
+        protected virtual void OnValidateVirtualSize() { }
+        /// <summary>
+        /// Volá se na začátku procesu určení vnitřního layoutu podle hodnoty <see cref="VirtualSize"/>. Toto je vhodná situace, kdy volající se může ujistit, že tuto velikost nastavil na platnou hodnotu.
+        /// </summary>
+        public event EventHandler ValidateVirtualSize;
+        /// <summary>
+        /// Povoluje se práce se Scrollbary, pokud bude zadána velikost obsahu <see cref="VirtualSize"/>. Default = true.
+        /// Pokud je false, a přitom je zadána veliksat obsahu <see cref="VirtualSize"/>, pak jsme ve virtuálním režimu, 
         /// ale uživatel nevidí posuny prostoru (Scrollbary) a nemůže je ani interaktivně měnit. Posuny se pak řídí nastavením <see cref="VirtualBegin"/>.
         /// </summary>
-        public bool ScrollbarsEnabled { get { return __ScrollbarsEnabled; } set { __ScrollbarsEnabled = value; _RefreshInnerLayout(); } }
-        private bool __ScrollbarsEnabled;
+        public bool ScrollbarsEnabled { get { return __ScrollbarsEnabled; } set { __ScrollbarsEnabled = value; _RefreshInnerLayout(); } } private bool __ScrollbarsEnabled;
         /// <summary>
         /// Souřadnice počátku viditelného prostoru = souřadnice bodu ve virtuálním prostoru (prostordatového obsahu), který je zobrazen na vizuálním pixelu 0/0
         /// </summary>
@@ -112,6 +150,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 __DimensionX.VirtualBegin = value.X;
                 __DimensionY.VirtualBegin = value.Y;
+                _RefreshInnerLayout();
             }
         }
         /// <summary>
@@ -164,7 +203,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Pro dimenzi X (vodorovná, řeší X a Width) je zde Výška vodorovného Scrollbaru.
         /// </summary>
         public int HorizontalScrollBarHeight { get { return __DimensionX.ScrollbarSize; } }
-
         #endregion
         #region private řešení virtuálního prostoru
 
@@ -252,28 +290,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private VirtualDimension __DimensionY;
         /// <summary>
-        /// Velikost virtuálního obsahu = na něj se dimenzují Scrollbary. Null = nemáme virtuální souřadnice.
+        /// Velikost virtuálního obsahu explicitně zadaná = platí jen když není přítomen <see cref="ContentPanel"/> anebo ten nemá svoji VirtualSize.
+        /// Zadat lze kdykoliv, ale ne vždy bude zadaná hodnota použita.
         /// </summary>
-        private Size? __ContentSize;
+        private Size? __VirtualSize;
         /// <summary>
-        /// Obsahuje true, pokud objekt obsahuje platnou hodnotu <see cref="ContentSize"/> a mohl by být ve virtuálním modu.
+        /// Obsahuje true, pokud objekt obsahuje platnou hodnotu <see cref="VirtualSize"/> a mohl by tedy být ve virtuálním modu.
         /// </summary>
-        private bool __HasContentSize;
+        private bool _HasContentSize { get { var virtualSize = this.VirtualSize; return (virtualSize.HasValue && virtualSize.Value.Width > 0 && virtualSize.Value.Height > 0); } }
         /// <summary>
-        /// Obsahuje true, pokud objekt reprezentuje virtuální prostor = má nastavenou velikost obsahu <see cref="ContentSize"/> (kladné rozměry)
+        /// Obsahuje true, pokud objekt reprezentuje virtuální prostor = má nastavenou velikost obsahu <see cref="VirtualSize"/> (kladné rozměry)
         /// a má povoleno používat Scrollbary <see cref="ScrollbarsEnabled"/>.
         /// </summary>
-        private bool _IsInVirtualMode { get { return (__HasContentSize && __ScrollbarsEnabled); } }
-        /// <summary>
-        /// Nastaví dodanou velikost obsahu a zajistí přepočty ScrollBarů podle této velikosti a aktuálního rozměru
-        /// </summary>
-        /// <param name="contentSize"></param>
-        private void _SetContentSize(Size? contentSize)
-        {
-            __HasContentSize = (contentSize.HasValue && contentSize.Value.Width > 0 && contentSize.Value.Height > 0);
-            __ContentSize = (__HasContentSize ? contentSize : null);
-            _RefreshInnerLayout();
-        }
+        private bool _IsInVirtualMode { get { return (_HasContentSize && __ScrollbarsEnabled); } }
         /// <summary>
         /// Akceptuje aktuální fyzickou velikost Controlu a zařídí podle ní platnost Scrollbarů
         /// </summary>
@@ -288,13 +317,27 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _RefreshInnerLayout()
         {
             if (!VirtualInitialized) return;
+            if (__RefreshInnerLayoutRunning) return;                           // Jeden _RefreshInnerLayout() už běží...
 
-            _DetectScrollbars();
-            _ShowScrollBars();
-            _SetContentBounds();
+            try
+            {
+                __RefreshInnerLayoutRunning = true;
+                _ValidateVirtualSize();                                        // Může vyvolat setování VirtualSize, tedy _SetVirtualSize(), což volá nás _RefreshInnerLayout(); ale druhá instance metody se neprovádí protože __RefreshInnerLayoutRunning je true
+                _DetectScrollbars();
+                _ShowScrollBars();
+                _SetContentBounds();
+            }
+            finally 
+            {
+                __RefreshInnerLayoutRunning = false;
+            }
         }
         /// <summary>
-        /// Detekuje potřebu zobrazení Scrollbarů. Volá se jak po změně <see cref="ContentSize"/>, tak po Resize controlu.
+        /// Aktuálně provádíme metodu <see cref="_RefreshInnerLayout"/>? Pak ji neumožníme provést rekurzivně.
+        /// </summary>
+        private bool __RefreshInnerLayoutRunning;
+        /// <summary>
+        /// Detekuje potřebu zobrazení Scrollbarů. Volá se jak po změně <see cref="VirtualSize"/>, tak po Resize controlu.
         /// </summary>
         private void _DetectScrollbars()
         {
@@ -406,7 +449,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 get
                 {
-                    int? contentSize = this._ContentSize;
+                    int? contentSize = this._VirtualSize;
                     if (!contentSize.HasValue) return false;
                     int clientSize = this._ClientSize - this._OtherScrollbarSize;
                     if (clientSize <= (__ScrollbarSize + 10)) return false;
@@ -435,22 +478,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             public int ScrollbarSize { get { return __ScrollbarSize; } }
             /// <summary>
-            /// Obsahuje true, pokud objekt reprezentuje virtuální prostor = má nastavenou velikost obsahu <see cref="__ContentSize"/> (kladné rozměry).
+            /// Obsahuje true, pokud objekt reprezentuje virtuální prostor = má nastavenou velikost obsahu <see cref="__VirtualSize"/> (kladné rozměry).
             /// V tom případě se v procesu Resize v metodě <see cref="_AcceptControlSize"/> 
             /// </summary>
             private bool _IsInVirtualMode { get { return __Owner._IsInVirtualMode; } }
             /// <summary>
             /// Velikost datového obsahu = virtuální velikost
             /// </summary>
-            private int? _ContentSize { get { return _GetValue(() => __Owner.__ContentSize?.Width, () => __Owner.__ContentSize?.Height); } }
+            private int? _VirtualSize { get { return _GetValue(() => __Owner.__VirtualSize?.Width, () => __Owner.__VirtualSize?.Height); } }
             /// <summary>
             /// Velikost viditelného prostoru, celková (tj. fyzický Control = obsah + případný scrollbar)
             /// </summary>
-            private int _ClientSize { get { return _GetValue(() => __Owner.ClientSize.Width, () => __Owner.ClientSize.Height); } }
+            private int _ClientSize { get { return _GetValue(() => __Owner.CurrentClientBounds.Width, () => __Owner.CurrentClientBounds.Height); } }
             /// <summary>
             /// Velikost viditelného datového prostoru, zmenšená o druhý (párový) Scrollbar = zde jsou zobrazena data
             /// </summary>
-            private int _DataSize { get { return _GetValue(() => __Owner.ClientSize.Width - __Owner.__DimensionY._CurrentScrollbarSize, () => __Owner.ClientSize.Height - __Owner.__DimensionX._CurrentScrollbarSize); } }
+            private int _DataSize { get { return _GetValue(() => __Owner.CurrentClientBounds.Width - __Owner.__DimensionY._CurrentScrollbarSize, () => __Owner.CurrentClientBounds.Height - __Owner.__DimensionX._CurrentScrollbarSize); } }
             /// <summary>
             /// Aktuální velikost zdejšího Scrollbar, se zohledněním <see cref="UseScrollbar"/> (pokud se nepoužívá, je zde 0)
             /// </summary>
@@ -557,7 +600,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var dataSize = _DataSize;
 
                 minimum = 0;
-                maximum = _ContentSize ?? dataSize;
+                maximum = _VirtualSize ?? dataSize;
                 value = VirtualBegin;
                 largeChange = dataSize;
                 smallChange = __ScrollbarSmallChange;
@@ -633,7 +676,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 int clientSize = _ClientSize;
                 int virtualEnd = virtualBegin + clientSize + 1;
-                int? contentSize = _ContentSize;
+                int? contentSize = _VirtualSize;
                 if (contentSize.HasValue && virtualEnd > contentSize.Value)
                 {
                     virtualEnd = contentSize.Value;
@@ -747,6 +790,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Rectangle ClientArea { get { return this._GetClientBounds(); } }
+        /// <summary>
+        /// Tato property může obsahovat potřebnou velikost prostoru, kterou budeme zobrazovat ve virtuálním panelu <see cref="DxVirtualPanel"/>.
+        /// Bázová třída <see cref="DxBufferedGraphicPaintArgs"/> vrací null, tato třída neřeší virtuální obsah.
+        /// Potomek může implementovat, pak přímo odsud bude <see cref="DxVirtualPanel"/> číst a akceptovat tuto hodnotu.
+        /// </summary>
+        public virtual Size? VirtualSize { get { return null; } }
         #endregion
         #region Řízení kreslení - public vrstva: vyvolávací metoda + virtual výkonná metoda
         /// <summary>
@@ -1612,6 +1661,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void _DetectClientSizeChange()
         {
+            _CurrentClientBoundsInvalidate();
+
             var currentSize = CurrentClientSize;
             var lastSize = __LastClientSize;
             if (lastSize.HasValue && lastSize.Value == currentSize) return;
@@ -1637,17 +1688,35 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             get
             {
-                var size = Size;
-                var clientSize = ClientSize;
-                var borderWidth = BorderWidth;
-                if (clientSize.Width == size.Width && borderWidth > 0)
-                {   // DevExpress s oblibou tvrdí, že ClientSize == Size, a přitom mají Border nenulové velikosti. Pak by se nám obsah kreslil přes Border.
-                    int b2 = 2 * borderWidth;
-                    return new Rectangle(borderWidth, borderWidth, size.Width - b2, size.Height - b2);
+                if (!__CurrentClientBounds.HasValue)
+                {
+                    var size = Size;
+                    var clientSize = ClientSize;
+                    var borderWidth = BorderWidth;
+                    if (clientSize.Width == size.Width && borderWidth > 0)
+                    {   // DevExpress s oblibou tvrdí, že ClientSize == Size, a přitom mají Border nenulové velikosti. Pak by se nám obsah kreslil přes Border.
+                        int b2 = 2 * borderWidth;
+                        __CurrentClientBounds = new Rectangle(borderWidth, borderWidth, size.Width - b2, size.Height - b2);
+                    }
+                    else
+                    {
+                        __CurrentClientBounds = new Rectangle(Point.Empty, clientSize);
+                    }
                 }
-                return new Rectangle(Point.Empty, clientSize);
+                return __CurrentClientBounds.Value;
             }
         }
+        /// <summary>
+        /// Invaliduje cache <see cref="CurrentClientBounds"/>; volá se po jakékoli změně, která ovlivní velikost vnitřního prostoru = tedy změny Border i Size
+        /// </summary>
+        private void _CurrentClientBoundsInvalidate()
+        {
+            __CurrentClientBounds = null;
+        }
+        /// <summary>
+        /// cache velikosti <see cref="CurrentClientBounds"/>
+        /// </summary>
+        private Rectangle? __CurrentClientBounds;
         /// <summary>
         /// Aktuální velikost klientského prostoru po odečtení Borderu, je tedy uvnitř <see cref="CurrentClientBounds"/>
         /// </summary>

@@ -239,7 +239,7 @@ namespace TestDevExpress.Forms
 
             _DxDataFormV3 = dataForm;
             _DxDataFormV3.ContentPanel = new DxBufferedGraphicPanel();
-            _DxDataFormV3.ContentSize = new Size(1600, 2400);
+            _DxDataFormV3.VirtualSize = new Size(1600, 2400);
 
             _RefreshTitle();
         }

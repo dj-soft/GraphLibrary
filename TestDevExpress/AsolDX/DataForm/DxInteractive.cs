@@ -32,28 +32,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public DxInteractivePanel()
         {
-            __DataItems = new ChildItems<DxInteractivePanel, IInteractiveItem>(this);
-            __DataItems.CollectionChanged += __DataItems_CollectionChanged;
+            _InitItems();
+            _InitLayout();
             _InitInteractivity();
         }
-        /// <summary>
-        /// Interaktivní data = jednotlivé prvky
-        /// </summary>
-        private ChildItems<DxInteractivePanel, IInteractiveItem> __DataItems;
         #endregion
-        #region Public prvky - soupis aktivních prvků, eventy
+        #region IInteractiveItem prvky - soupis aktivních prvků
         /// <summary>
         /// Prvky k zobrazení a interaktivní práci.
         /// Lze setovat, tím se dosavadní prvky zahodí a vloží se prvky z dodaného pole (ale instance dodaného pole se sem neukládá).
         /// </summary>
-        public IList<IInteractiveItem> DataItems
+        public IList<IInteractiveItem> Items
         {
-            get { return __DataItems; }
+            get { return __Items; }
             set
             {
-                __DataItems.Clear();
+                __Items.Clear();
                 if (value != null)
-                    __DataItems.AddRange(value);
+                    __Items.AddRange(value);
             }
         }
         /// <summary>
@@ -62,94 +58,779 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="items"></param>
         public void AddItems(IEnumerable<IInteractiveItem> items)
         {
-            __DataItems.AddRange(items);
+            __Items.AddRange(items);
         }
         /// <summary>
-        /// Zruší platnost layoutu jednotlivých prvků přítomných v <see cref="DataItems"/>
+        /// Přidá daný interaktivní prvek
         /// </summary>
-        public virtual void ResetItemLayout()
+        /// <param name="item"></param>
+        public void AddItem(IInteractiveItem item)
         {
-            _ResetItemLayout();
+            __Items.Add(item);
         }
         /// <summary>
-        /// Událost volaná po změně kolekce <see cref="DataItems"/>. Zajistí invalidaci příznaku platnosti <see cref="ContentAlignment"/>.
+        /// Odebere všechny interaktivní prvky
+        /// </summary>
+        public void ClearItems()
+        {
+            __Items.Clear();
+        }
+        /// <summary>
+        /// Odebere interaktivní prvky vyhovující danému filtru
+        /// </summary>
+        /// <param name="predicate"></param>
+        public void RemoveItems(Func<IInteractiveItem, bool> predicate)
+        {
+            __Items.RemoveAll(predicate);
+        }
+        /// <summary>
+        /// Inicializace oblasti Items
+        /// </summary>
+        private void _InitItems()
+        {
+            __Items = new ChildItems<DxInteractivePanel, IInteractiveItem>(this);
+            __Items.CollectionChanged += _ItemsChanged;
+        }
+        /// <summary>
+        /// Událost volaná po změně kolekce <see cref="Items"/>. Zajistí invalidaci příznaku platnosti <see cref="ContentAlignment"/>.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         /// <exception cref="NotImplementedException"></exception>
-        private void __DataItems_CollectionChanged(object sender, EventArgs e)
+        private void _ItemsChanged(object sender, EventArgs e)
         {
-            _ResetItemLayout();
+            _VirtualSizeInvalidate();
         }
         /// <summary>
-        /// Metoda zneplatní příznak platné hodnoty <see cref="ContentSize"/> (volá se po přidání / odebrání prvku a po změně layoutu).
-        /// Jen nastaví <see cref="__IsContentSizeValid"/> = false. Následně se musí vyhodnotit tato hodnota, viz <see cref="_CheckContentSize()"/>.
-        /// To se má volat před kreslením v metodách <see cref="Draw"/> na začátku.
+        /// Interaktivní data = jednotlivé prvky
         /// </summary>
-        private void _ResetItemLayout()
-        {
-            __IsContentSizeValid = false;
-        }
+        private ChildItems<DxInteractivePanel, IInteractiveItem> __Items;
+        #endregion
+        #region Layout prvků, velikost obsahu VirtualSize
         /// <summary>
-        /// Prověří velikost obsahu podle aktuálního layoutu a případně zajistí překreslení obsahu <see cref="DxBufferedGraphicPanel.Draw()"/>.
+        /// Souhrnná velikost obsahu = jednotlivé Items, včetně okrajů Padding
         /// </summary>
-        public void RefreshContentSize()
+        public override Size? VirtualSize { get { _VirtualSizeCheckValidity(); return __CurrentVirtualSize.Value; } }
+        /// <summary>
+        /// Znovu napočte rozmístění prvků a volitelně vyvolá jejich překreslení
+        /// </summary>
+        /// <param name="draw"></param>
+        public virtual void RefreshContent(bool draw = false)
         {
-            if (_CheckContentSize(true))
-                this.Draw();
+            _VirtualSizeInvalidate();
+            if (draw) this.Draw();
         }
         /// <summary>
-        /// Metoda zajistí, že velikost <see cref="ContentSize"/> bude platná (bude odpovídat souhrnu velikosti prvků).
+        /// Inicializace oblasti Layout
+        /// </summary>
+        private void _InitLayout()
+        {
+            Padding = new Padding(0);
+            PaddingChanged += _PaddingChanged;
+        }
+        /// <summary>
+        /// Po změně Padding
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _PaddingChanged(object sender, EventArgs e)
+        {
+            _VirtualSizeInvalidate();
+        }
+        /// <summary>
+        /// Metoda zneplatní příznak platné hodnoty <see cref="VirtualSize"/> (volá se po přidání / odebrání prvku a po změně layoutu).
+        /// </summary>
+        private void _VirtualSizeInvalidate()
+        {
+            __CurrentVirtualSize = null;
+        }
+        /// <summary>
+        /// Sumární velikost obsahu aktuální, null = nevalidní, musí projít validací.
+        /// </summary>
+        private Size? __CurrentVirtualSize;
+        /// <summary>
+        /// Sumární velikost obsahu posledně známá, null = nedefinováno. Slouží k detekci změny.
+        /// </summary>
+        private Size? __LastVirtualSize;
+        /// <summary>
+        /// Metoda zajistí, že velikost <see cref="__CurrentVirtualSize"/> bude platná (bude odpovídat souhrnu velikosti prvků).
         /// Vrátí true pokud došlo reálně ke změně velikosti obsahu.
         /// </summary>
-        private bool _CheckContentSize(bool force = false)
+        private bool _VirtualSizeCheckValidity(bool force = false)
         {
             bool isChanged = false;
-            if (force || !__IsContentSizeValid)
+            if (force || !__CurrentVirtualSize.HasValue)
             {
-                var lastContentSize = base.ContentSize;              // base property neprovádí _CheckContentSize() = zdejší metodu!!! Jinak bychom se zacyklili.
-                this._RecalculateVirtualBounds();
-                var currentContentSize = __InteractiveMap.ContentSize;
-                bool isContentSizeChanged = (currentContentSize != lastContentSize);
-                __IsContentSizeValid = true;
-                if (isContentSizeChanged)                            // Setování a event jen po reálné změně hodnoty
+                var lastVirtualSize = __LastVirtualSize;
+                var currentVirtualSize = CalculateVirtualSize();     // Souhrn Items + Padding
+                bool isSizeChanged = (!lastVirtualSize.HasValue || (lastVirtualSize.HasValue && currentVirtualSize != lastVirtualSize.Value));
+                __CurrentVirtualSize = currentVirtualSize;
+                if (isSizeChanged)                                   // event => jen po reálné změně hodnoty
                 {
-                    this.ContentSize = currentContentSize;           // Setování this volá base, ale nemá žádnou další logiku.
-                    this._RunContentSizeChanged();
+                    this._RunVirtualSizeChanged();
                     isChanged = true;
                 }
+                __LastVirtualSize = currentVirtualSize;
             }
             return isChanged;
         }
         /// <summary>
-        /// Příznak, že aktuální hodnota <see cref="ContentSize"/> je platná z hlediska přítomných prvků a jejich layoutu
+        /// Vyvolá <see cref="OnVirtualSizeChanged(EventArgs)"/> a event <see cref="VirtualSizeChanged"/>
         /// </summary>
-        private bool __IsContentSizeValid;
-        /// <summary>
-        /// Potřebná velikost obsahu. 
-        /// Výchozí je null = control zobrazuje to, co je vidět, a nikdy nepoužívá Scrollbary.
-        /// Lze setovat hodnotu = velikost zobrazených dat, pak se aktivuje virtuální režim se zobrazením výřezu.
-        /// Při změně hodnoty se nenuluje souřadnice počátku <see cref="CurrentWindow"/>, změna velikosti obsahu jej tedy nutně nemusí přesunout na počátek.
-        /// </summary>
-        public override Size? ContentSize { get { _CheckContentSize(); return base.ContentSize; } set { base.ContentSize = value; } }
-        /// <summary>
-        /// Událost vyvolaná po změně velikosti <see cref="ContentSize"/>.
-        /// </summary>
-        public event EventHandler ContentSizeChanged;
-        /// <summary>
-        /// Metoda vyvolaná po změně velikosti <see cref="ContentSize"/>.
-        /// </summary>
-        /// <param name="args"></param>
-        protected virtual void OnContentSizeChanged(EventArgs args) { }
-        /// <summary>
-        /// Vyvolá <see cref="OnContentSizeChanged(EventArgs)"/> a event <see cref="ContentSizeChanged"/>
-        /// </summary>
-        private void _RunContentSizeChanged()
+        private void _RunVirtualSizeChanged()
         {
             EventArgs args = EventArgs.Empty;
-            OnContentSizeChanged(args);
-            ContentSizeChanged?.Invoke(this, args);
+            OnVirtualSizeChanged(args);
+            VirtualSizeChanged?.Invoke(this, args);
         }
+        /// <summary>
+        /// Metoda vyvolaná po změně velikosti <see cref="VirtualSize"/>.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnVirtualSizeChanged(EventArgs args) { }
+        /// <summary>
+        /// Událost vyvolaná po změně velikosti <see cref="VirtualSize"/>.
+        /// </summary>
+        public event EventHandler VirtualSizeChanged;
+        /// <summary>
+        /// Metoda projde všechny své viditelné prvky a určí max potřebné souřadnice Right a Bottom. 
+        /// Přičte odpovídající hodnoty z Padding a vrátí výsledek.
+        /// Tato metoda nevepisuje aktuální souřadnice do prvků, to se řeší v procesu Draw.
+        /// </summary>
+        /// <returns></returns>
+        protected virtual Size CalculateVirtualSize()
+        {
+            int r = 0;
+            int b = 0;
+            var items = __Items;
+            if (items != null)
+            {
+                foreach (var item in items)
+                {
+                    if (item.IsVisible)
+                    {
+                        var itemBounds = item.Bounds;
+                        if (r < itemBounds.Right) r = itemBounds.Right;
+                        if (b < itemBounds.Bottom) b = itemBounds.Bottom;
+                    }
+                }
+            }
+
+            var padding = this.Padding;
+            return new Size(r + padding.Horizontal, b + padding.Vertical);
+        }
+        #endregion
+        #region Interaktivita
+        #region Interaktivita nativní = eventy controlu
+        /// <summary>
+        /// Inicializace nativních eventů myši
+        /// </summary>
+        private void _InitInteractivity()
+        {
+            this.MouseEnter += _MouseEnter;
+            this.MouseMove += _MouseMove;
+            this.MouseDown += _MouseDown;
+            this.MouseUp += _MouseUp;
+            this.MouseLeave += _MouseLeave;
+            this.KeyDown += _KeyDown;
+
+            this._MouseDragReset();
+
+            this.CursorTypeMouseDrag = CursorTypes.SizeAll;
+            this.CursorTypeMouseOn = CursorTypes.Hand;
+            this.CursorTypeMouseFrame = CursorTypes.Cross;
+        }
+        /// <summary>
+        /// Nativní event MouseEnter
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MouseEnter(object sender, EventArgs e)
+        {
+            var mouseState = _CreateMouseState();
+            _MouseMove(mouseState);
+        }
+        /// <summary>
+        /// Nativní event MouseMove
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MouseMove(object sender, MouseEventArgs e)
+        {
+            var mouseState = _CreateMouseState();
+            _MouseMove(mouseState);
+        }
+        /// <summary>
+        /// Nativní event MouseDown
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MouseDown(object sender, MouseEventArgs e)
+        {
+            var mouseState = _CreateMouseState();
+            _MouseDown(mouseState);
+        }
+        /// <summary>
+        /// Nativní event MouseUp
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MouseUp(object sender, MouseEventArgs e)
+        {
+            var mouseState = _CreateMouseState();
+            switch (__CurrentMouseDragState)
+            {
+                case MouseDragProcessState.MouseDragItem:
+                    _MouseDragEnd(mouseState);
+                    break;
+                case MouseDragProcessState.MouseFrameArea:
+                    _MouseFrameEnd(mouseState);
+                    break;
+                case MouseDragProcessState.Cancelled:
+                    _MouseDragReset();
+                    break;
+                default:
+                    _MouseClickUp(mouseState);
+                    break;
+            }
+            _MouseUpEnd(mouseState);
+        }
+        /// <summary>
+        /// Nativní event MouseLeave
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MouseLeave(object sender, EventArgs e)
+        {
+            var mouseState = _CreateMouseState(true);
+            _MouseMoveNone(mouseState, false);
+        }
+        /// <summary>
+        /// Nativní event KeyDown
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _KeyDown(object sender, KeyEventArgs e)
+        {
+            if (__CurrentMouseDragState == MouseDragProcessState.MouseDragItem || __CurrentMouseDragState == MouseDragProcessState.MouseFrameArea)
+                _MouseDragKeyDown(e);
+        }
+        #endregion
+        #region Získání informace o pozici myši, o prvku pod myší a o adrese pod myší
+        /// <summary>
+        /// Vytvoří a korektně naplní objekt <see cref="MouseState"/> a vrátí jej
+        /// </summary>
+        /// <returns></returns>
+        private MouseState _CreateMouseState(bool? isLeave = null)
+        {
+            var mouseState = MouseState.CreateCurrent(this);
+            _RefreshMouseState(mouseState);
+            return mouseState;
+        }
+        /// <summary>
+        /// Znovu najde a naplní do daného objektu <see cref="MouseState"/> nynější 
+        /// interaktivní prvek <see cref="MouseState.InteractiveItem"/>
+        /// podle aktuální pozice myši v prvku uložené.
+        /// </summary>
+        /// <returns></returns>
+        private void _RefreshMouseState(MouseState mouseState)
+        {
+            if (mouseState.IsOnControl)
+            {
+                mouseState.InteractiveItem = _GetMouseItem(mouseState);
+            }
+        }
+        /// <summary>
+        /// Najde nejvyšší aktivní prvek pro danou pozici myši
+        /// </summary>
+        /// <param name="mouseState"></param>
+        /// <returns></returns>
+        private IInteractiveItem _GetMouseItem(MouseState mouseState)
+        {
+            Point virtualPoint = this.GetVirtualPoint(mouseState.LocationControl);
+            var items = __Items;
+            int count = items.Count;
+            for (int i = count - 1; i >= 0; i--)
+            {
+                if (items[i].IsActiveOnVirtualPoint(virtualPoint))
+                    return items[i];
+            }
+            return null;
+        }
+        #endregion
+        #region Interaktivita logicky řízená
+        /// <summary>
+        /// Nativní event MouseMove
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MouseMove(MouseState mouseState)
+        {
+            bool lastNone = (__CurrentMouseButtons == MouseButtons.None);
+            bool currNone = (mouseState.Buttons == MouseButtons.None);
+
+            if (lastNone && currNone)
+            {   // Stále pohyb bez stisknutého tlačítke:
+                _MouseMoveNone(mouseState);
+            }
+            else if (lastNone && !currNone)
+            {   // Dříve bez tlačítka, nyní s tlačítkem (minuli jsme MouseDown):
+                _MouseDown(mouseState);
+                _MouseDragMove(mouseState);
+            }
+            else if (!currNone)
+            {   // Nyní s tlačítkem
+                _MouseDragMove(mouseState);
+            }
+        }
+        /// <summary>
+        /// Pohyb myši bez stisknutého tlačítka
+        /// </summary>
+        /// <param name="mouseState"></param>
+        private void _MouseMoveNone(MouseState mouseState)
+        {
+            _MouseMoveNone(mouseState, true);
+        }
+        /// <summary>
+        /// Pohyb myši bez stisknutého tlačítka
+        /// </summary>
+        /// <param name="mouseState"></param>
+        /// <param name="isOnControl"></param>
+        private void _MouseMoveNone(MouseState mouseState, bool isOnControl)
+        {
+            bool isChange = _MouseMoveCurrentExchange(mouseState, mouseState.InteractiveItem, InteractiveState.MouseOn, isOnControl);
+            bool useMouseTrack = true;
+            if (useMouseTrack || isChange)
+                this.Draw();
+        }
+        /// <summary>
+        /// Stisk tlačítka myši
+        /// </summary>
+        /// <param name="mouseState"></param>
+        private void _MouseDown(MouseState mouseState)
+        {
+            _MouseMoveCurrentExchange(mouseState, mouseState.InteractiveItem, InteractiveState.MouseDown, true);
+            __CurrentMouseDownState = mouseState;
+            __CurrentMouseButtons = mouseState.Buttons;
+            _MouseDragDown(mouseState, mouseState.InteractiveItem);
+
+            this.Draw();
+        }
+        /// <summary>
+        /// Uvolnění tlačítka myši, nikoli v režimu MouseDrag = provádí se MouseClick, pokud máme nalezený Item nebo na ploše Area
+        /// </summary>
+        /// <param name="mouseState"></param>
+        private void _MouseClickUp(MouseState mouseState)
+        {
+            // Odlišení kliknutí nebo doubleclicku (zde ale nejsme v režimu DragAndDrop, to si řeší _MouseUp => _MouseDragEnd):
+            var currentItem = __CurrentMouseItem;
+            if (currentItem is null)
+                _MouseAreaClick(mouseState);
+            else
+                _MouseItemClick(mouseState, currentItem);
+
+            // Řešení MouseUp
+            __PreviousMouseDownState = __CurrentMouseDownState;      // Aktuální stav myši odzálohuji do Previous, kvůli případnému doubleclicku
+
+            // Ukončení Mouse DragAndDrop, které ani nezačalo (proto jsme tady):
+            _MouseDragReset();
+        }
+        /// <summary>
+        /// Po provedení MouseUp jak v režimu Click, tak i Drag.
+        /// Najde prvek aktuálně pod myší se nacházející a zajistí <see cref="_MouseMoveCurrentExchange(MouseState, IInteractiveItem, InteractiveState, bool)"/> a <see cref="Draw"/>.
+        /// </summary>
+        /// <param name="mouseState"></param>
+        private void _MouseUpEnd(MouseState mouseState)
+        {
+            __CurrentMouseDownState = null;                          // Aktuálně nemáme myš Down
+            __CurrentMouseButtons = MouseButtons.None;               // Ani žádný button
+
+            // Znovu najdeme prvek pod myší, ale nehledáme Cell:
+            _RefreshMouseState(mouseState, false);
+            _MouseMoveCurrentExchange(mouseState, mouseState.InteractiveItem, InteractiveState.MouseOn, mouseState.IsOnControl);
+
+            // Vykreslíme:
+            this.Draw();
+        }
+        /// <summary>
+        /// Dokončení myšokliku = uvolnění tlačítka myši, když nebyl proces Drag, a pod myší je prvek.
+        /// Zde se detekuje Click/DoubleClick.
+        /// </summary>
+        /// <param name="mouseState"></param>
+        /// <param name="currentItem"></param>
+        private void _MouseItemClick(MouseState mouseState, IInteractiveItem currentItem)
+        {
+            // Click se volá v době MouseUp, ale v procesu Click nás zajímá mj. tlačítka myši v době MouseDown,
+            //  proto do eventu posílám objekt __CurrentMouseDownState (stav myši v době MouseDown) a nikoli currentItem (ten už má Buttons = None):
+            _RunInteractiveItemClick(new InteractiveItemEventArgs(currentItem, __CurrentMouseDownState));
+
+            currentItem.InteractiveState = InteractiveState.Enabled;
+        }
+        /// <summary>
+        /// Dokončení myšokliku = uvolnění tlačítka myši, když nebyl proces Drag, a pod myší není žádný prvek.
+        /// Zde se detekuje Click/DoubleClick.
+        /// </summary>
+        /// <param name="mouseState"></param>
+        private void _MouseAreaClick(MouseState mouseState)
+        {
+            // Click se volá v době MouseUp, ale v procesu Click nás zajímá mj. tlačítka myši v době MouseDown,
+            //  proto do eventu posílám objekt __CurrentMouseDownState (stav myši v době MouseDown) a nikoli currentItem (ten už má Buttons = None):
+            _RunInteractiveAreaClick(new InteractiveItemEventArgs(null, __CurrentMouseDownState));
+        }
+        /// <summary>
+        /// Vyřeší výměnu prvku pod myší (dosavadní prvek je v instanční proměnné <see cref="__CurrentMouseItem"/>,
+        /// nový je v parametru <paramref name="currentMouseItem"/>).
+        /// Řeší detekci změny, vložení správného interaktivního stavu do <see cref="IInteractiveItem.InteractiveState"/>, 
+        /// uložení nového do <see cref="__CurrentMouseItem"/>
+        /// a vrací true když jde o změnu.
+        /// </summary>
+        /// <param name="mouseState"></param>
+        /// <param name="currentMouseItem"></param>
+        /// <param name="currentState"></param>
+        /// <param name="isOnControl"></param>
+        /// <returns></returns>
+        private bool _MouseMoveCurrentExchange(MouseState mouseState, IInteractiveItem currentMouseItem, InteractiveState currentState, bool isOnControl)
+        {
+            // Pozice myši nad controlem:
+            bool lastOnControl = __MouseIsOnControl;
+            bool changedOnControl = (isOnControl != lastOnControl);
+            __MouseIsOnControl = isOnControl;
+
+            IInteractiveItem lastMouseItem = __CurrentMouseItem;
+            bool lastExists = (lastMouseItem != null);
+            bool currentExists = (currentMouseItem != null);
+
+            if (!lastExists && !currentExists) return changedOnControl;         // Stále mimo prvky
+
+            if (!lastExists && currentExists)
+            {   // Ze žádného prvku na nový prvek:
+                currentMouseItem.InteractiveState = currentState;
+                __CurrentMouseItem = currentMouseItem;
+                _RunInteractiveItemMouseEnter(new InteractiveItemEventArgs(currentMouseItem, mouseState));
+                return true;
+            }
+
+            if (lastExists && !currentExists)
+            {   // Z dosavadního prvku na žádný prvek:
+                lastMouseItem.InteractiveState = InteractiveState.Enabled;
+                _RunInteractiveItemMouseLeave(new InteractiveItemEventArgs(lastMouseItem, mouseState));
+                __CurrentMouseItem = null;
+                return true;
+            }
+
+            // Z dosavadních podmínek je jisté, že máme oba prvky (lastExists && currentExists).
+            // Pokud jsou stejné, pohybujeme se nad stále týmž prvkem:
+            if (Object.ReferenceEquals(lastMouseItem, currentMouseItem))
+            {
+                if (currentMouseItem.InteractiveState != currentState)
+                {   // Je na něm změna stavu:
+                    currentMouseItem.InteractiveState = currentState;
+                    return true;
+                }
+                // Prvek je stejný, ani nemá změnu stavu:
+                return changedOnControl;
+            }
+
+            // Změna prvku z dosavadního na nový:
+            lastMouseItem.InteractiveState = InteractiveState.Enabled;
+            _RunInteractiveItemMouseLeave(new InteractiveItemEventArgs(lastMouseItem, mouseState));
+
+            currentMouseItem.InteractiveState = currentState;
+            __CurrentMouseItem = currentMouseItem;
+            _RunInteractiveItemMouseEnter(new InteractiveItemEventArgs(currentMouseItem, mouseState));
+
+            return true;
+        }
+        /// <summary>
+        /// Aktuální tlačítka myši, zde je i None v době pohybu myši bez tlačítek
+        /// </summary>
+        private MouseButtons __CurrentMouseButtons;
+        /// <summary>
+        /// Stav myši (tlačítko a souřadnice) v okamžiku MouseDown při aktuálním stavu MouseDown, pro řízení MouseDrag
+        /// </summary>
+        private MouseState __CurrentMouseDownState;
+        /// <summary>
+        /// Stav myši v předchozím MouseDown, pro detekci DoubleClick
+        /// </summary>
+        private MouseState __PreviousMouseDownState;
+        /// <summary>
+        /// Aktuální prvek pod myší, s ním se pracuje
+        /// </summary>
+        private IInteractiveItem __CurrentMouseItem;
+        /// <summary>
+        /// Myš se nachází nad Controlem
+        /// </summary>
+        private bool __MouseIsOnControl;
+        #endregion
+        #region Interaktivní proces DragAndDrop
+        /// <summary>
+        /// Volá se v okamžiku MouseDown a slouží k uložení dat pro případné budoucí zahájení procesu Mouse DragAndDrop
+        /// </summary>
+        /// <param name="mouseState"></param>
+        private void _MouseDragDown(MouseState mouseState, IInteractiveItem mouseItem)
+        {
+            __CurrentMouseDragState = MouseDragProcessState.BeginZone;
+            __DragBeginMouseState = mouseState;
+            __DragVirtualBeginZone = mouseState.LocationControl.GetRectangleFromCenter(6, 6);
+            __DragVirtualCurrentPoint = mouseState;
+            __MouseDragCurrentDataItem = mouseItem;
+        }
+        /// <summary>
+        /// Pohyb myši když je stisknuté tlačítko = řeší začátek a průběh DragAndDrop
+        /// </summary>
+        /// <param name="mouseState"></param>
+        private void _MouseDragMove(MouseState mouseState)
+        {
+            if (__CurrentMouseDragState == MouseDragProcessState.BeginZone)
+            {   // Jsme v procesu čekání na výraznější pohyb myši = odtrhnutí od bodu MouseDown:
+                if (!__DragVirtualBeginZone.HasValue || !__DragVirtualBeginZone.Value.Contains(mouseState.LocationControl))
+                {   // Začíná Drag:
+                    if (!EnabledDrag)
+                    {   // Drag není povolen => rovnou přejdeme do stavu Cancelled:
+                        _MouseMoveCurrentExchange(mouseState, null, InteractiveState.Enabled, true);
+                        __CurrentMouseDragState = MouseDragProcessState.Cancelled;
+                        this.Draw();
+                    }
+                    else if (__MouseDragCurrentDataItem != null)
+                    {   // Pokud pod myší je prvek, a pokud se nechá Dragovat:
+                        __CurrentMouseDragState = MouseDragProcessState.MouseDragItem;
+                        this.CursorType = this.CursorTypeMouseDrag;
+                    }
+                    else
+                    {   // Začal proces Drag, ale není tam prvek = budeme Framovat?
+                        __CurrentMouseDragState = MouseDragProcessState.MouseFrameArea;
+                        this.CursorType = this.CursorTypeMouseFrame;
+                    }
+                    __DragVirtualBeginZone = null;
+                    __PreviousMouseDownState = null;               // Toto je podklad pro DoubleClick, a ten po Drag neplatí
+                }
+            }
+            // Předchozí blok mohl nastavit aktuální režim __CurrentMouseDragState, proto až nyní následuje switch:
+            switch (__CurrentMouseDragState)
+            {
+                case MouseDragProcessState.MouseDragItem:
+                    // Probíhá DragAndDrop: najdeme cílový prvek:
+                    __DragVirtualCurrentPoint = mouseState;
+                    __MouseDragTargetDataItem = _GetMouseItem(mouseState);
+                    this.Draw();
+                    break;
+                case MouseDragProcessState.MouseFrameArea:
+                    // Probíhá MouseFrame: zapíšeme cílový bod a vykreslíme:
+                    __DragVirtualCurrentPoint = mouseState;
+                    this.Draw();
+                    break;
+            }
+        }
+        /// <summary>
+        /// Volá se při KeyDown za stavu <see cref="__CurrentMouseDragState"/> == <see cref="MouseDragProcessState.MouseDragItem"/> nebo <see cref="MouseDragProcessState.MouseFrameArea"/>.
+        /// Pokud je stisknut Escape, pak rušíme Drag = nastavíme <see cref="__CurrentMouseDragState"/> == <see cref="MouseDragProcessState.Cancelled"/> a vyvoláme Draw.
+        /// </summary>
+        /// <param name="e"></param>
+        private void _MouseDragKeyDown(KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Escape &&
+                (__CurrentMouseDragState == MouseDragProcessState.BeginZone ||
+                 __CurrentMouseDragState == MouseDragProcessState.MouseDragItem ||
+                 __CurrentMouseDragState == MouseDragProcessState.MouseFrameArea))
+            {
+                __CurrentMouseDragState = MouseDragProcessState.Cancelled;
+                this.CursorType = CursorTypes.Default;
+                this.Draw();
+            }
+        }
+        /// <summary>
+        /// Volá se při události MouseUp při stavu <see cref="__CurrentMouseDragState"/> == <see cref="MouseDragProcessState.MouseDragItem"/>,
+        /// tedy když reálně probíhá Mouse DragAndDrop a nyní je dokončováno = Drop.
+        /// </summary>
+        /// <param name="mouseState"></param>
+        private void _MouseDragEnd(MouseState mouseState)
+        {
+            if (EnabledDrag)
+            {
+                // Znovu najdeme prvek pod aktuální pozicí myši, vyhledáme i Target Cell:
+                _RefreshMouseState(mouseState, true);
+                InteractiveDragItemEventArgs args = new InteractiveDragItemEventArgs(__MouseDragCurrentDataItem, __DragBeginMouseState, mouseState);
+                _RunInteractiveItemDragAndDropEnd(args);
+            }
+            _MouseDragReset();
+        }
+        /// <summary>
+        /// Volá se při události MouseUp při stavu <see cref="__CurrentMouseDragState"/> == <see cref="MouseDragProcessState.MouseFrameArea"/>,
+        /// tedy když reálně probíhá Mouse Frame a nyní je dokončováno = FrameSelect.
+        /// </summary>
+        /// <param name="mouseState"></param>
+        private void _MouseFrameEnd(MouseState mouseState)
+        {
+            if (EnabledDrag)
+            {
+
+            }
+
+            _MouseDragReset();
+        }
+        /// <summary>
+        /// Resetuje veškeré příznaky procesu DragAndDrop
+        /// </summary>
+        private void _MouseDragReset()
+        {
+            __CurrentMouseDragState = MouseDragProcessState.None;
+            __DragBeginMouseState = null;
+            __DragVirtualBeginZone = null;
+            __DragVirtualCurrentPoint = null;
+            __MouseDragCurrentDataItem = null;
+
+            this.CursorType = CursorTypes.Default;
+            this.Draw();
+        }
+        private MouseDragProcessState __CurrentMouseDragState;
+        /// <summary>
+        /// Kompletní stav myši v okamžiku, kdy byl zahájen proces DragAndDrop
+        /// </summary>
+        private MouseState __DragBeginMouseState;
+        private Rectangle? __DragVirtualBeginZone;
+        private MouseState __DragVirtualCurrentPoint;
+        /// <summary>
+        /// Prvek, který byl pod myší když začal proces DragAndDrop a je tedy přesouván na jinou pozici
+        /// </summary>
+        private IInteractiveItem __MouseDragCurrentDataItem;
+        /// <summary>
+        /// Prvek, který je nyní pod myší při přesouvání v procesu DragAndDrop, je tedy cílovým prvkem. Nikdy nejde o <see cref="__MouseDragCurrentDataItem"/>.
+        /// </summary>
+        private IInteractiveItem __MouseDragTargetDataItem;
+        /// <summary>
+        /// Fyzický stav procesu DragAndDrop
+        /// </summary>
+        private enum MouseDragProcessState
+        {
+            None,
+            BeginZone,
+            MouseDragItem,
+            MouseFrameArea,
+            Cancelled
+        }
+        #endregion
+        #endregion
+        #region Kreslení
+        /// <summary>
+        /// Tato metoda zajistí nové vykreslení objektu. Používá se namísto Invalidate() !!!
+        /// Důvodem je to, že Invalidate() znovu vykreslí obsah bufferu - ale ten obsahuje "stará" data.
+        /// Vyvolá událost PaintToBuffer() a pak přenese vykreslený obsah z bufferu do vizuálního controlu.
+        /// </summary>
+        public override void Draw()
+        {
+            this._CheckContentSize();
+            base.Draw();
+        }
+        /// <summary>
+        /// Tato metoda zajistí nové vykreslení objektu. Používá se namísto Invalidate() !!!
+        /// Důvodem je to, že Invalidate() znovu vykreslí obsah bufferu - ale ten obsahuje "stará" data.
+        /// Vyvolá událost PaintToBuffer() a pak přenese vykreslený obsah z bufferu do vizuálního controlu.
+        /// </summary>
+        /// <param name="drawRectangle">
+        /// Informace pro kreslící program o rozsahu překreslování.
+        /// Nemusí nutně jít o grafický prostor, toto je pouze informace předáváná z parametru metody Draw() do handleru PaintToBuffer().
+        /// V servisní třídě se nikdy nepoužije ve významu grafického prostoru.
+        /// </param>
+        public override void Draw(Rectangle drawRectangle)
+        {
+            this._CheckContentSize();
+            base.Draw(drawRectangle);
+        }
+        /// <summary>
+        /// Systémové kreslení
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        protected override void OnPaintToBuffer(object sender, PaintEventArgs e)
+        {
+            e.Graphics.Clear(this.BackColor);
+            _PaintMousePoints(e);
+            _PaintAllDataItems(e);
+        }
+        /// <summary>
+        /// Vykreslí všechny interaktivní prvky v základní vrstvě
+        /// </summary>
+        /// <param name="e"></param>
+        private void _PaintAllDataItems(PaintEventArgs e)
+        {
+            var mouseState = _CreateMouseState();
+            using (PaintDataEventArgs pdea = new PaintDataEventArgs(e, mouseState, this))
+            {
+                var zOrders = DataItems.CreateDictionaryArray(i => i.ZOrder).ToList();             // Key = ZOrder, Value = pole prvků se shodným ZOrder
+                if (zOrders.Count > 1) zOrders.Sort((a, b) => a.Key.CompareTo(b.Key));             // Setřídím podle ZOrder ASC
+                foreach (var zOrder in zOrders)
+                {
+                    foreach (var item in zOrder.Value)
+                        item.Paint(pdea);
+                }
+
+                if (this.__MouseDragCurrentDataItem != null && __CurrentMouseDragState == MouseDragProcessState.MouseDragItem)
+                {
+                    var dragShift = new Point(__DragVirtualCurrentPoint.LocationControl.X - this.__DragBeginMouseState.LocationControl.X, __DragVirtualCurrentPoint.LocationControl.Y - this.__DragBeginMouseState.LocationControl.Y);
+                    pdea.MouseDragState = MouseDragState.MouseDragActiveCurrent;
+                    pdea.MouseDragCurrentBounds = this.__MouseDragCurrentDataItem.VirtualBounds.Value.GetShiftedRectangle(dragShift);
+                    this.__MouseDragCurrentDataItem.Paint(pdea);
+                }
+            }
+        }
+        /// <summary>
+        /// Explicitní barva pozadí.
+        /// Zadaná bůže používat Alfa kanál (= průhlednost), pak pod touto barvou bude prosvítat barva pozadí dle palety.
+        /// Lze zadat null = žádná extra barva, čistě barva dle palety.
+        /// </summary>
+        public Color? BackColorUser { get { return __BackColorUser; } set { __BackColorUser = value; this.Draw(); } } private Color? __BackColorUser;
+        /// <summary>
+        /// Typ kurzoru aktuálně zobrazený
+        /// </summary>
+        public CursorTypes CursorType { get { return __CursorType; } set { __CursorType = value; this.Cursor = App.GetCursor(value); } } private CursorTypes __CursorType;
+        /// <summary>
+        /// Typ kurzoru, který bude aktivován po najetí myší na aktivní prvek
+        /// </summary>
+        public CursorTypes CursorTypeMouseOn { get { return __CursorTypeMouseOn; } set { __CursorTypeMouseOn = value; } } private CursorTypes __CursorTypeMouseOn;
+        /// <summary>
+        /// Typ kurzoru, který bude aktivován v procesu MouseDragDrop pro konkrétní prvek
+        /// </summary>
+        public CursorTypes CursorTypeMouseDrag { get { return __CursorTypeMouseDrag; } set { __CursorTypeMouseDrag = value; } } private CursorTypes __CursorTypeMouseDrag;
+        /// <summary>
+        /// Typ kurzoru, který bude aktivován v procesu MouseFrame
+        /// </summary>
+        public CursorTypes CursorTypeMouseFrame { get { return __CursorTypeMouseFrame; } set { __CursorTypeMouseFrame = value; } } private CursorTypes __CursorTypeMouseFrame;
+        /// <summary>
+        /// Vrátí ZOrder daného prvku.
+        /// </summary>
+        /// <param name="item"></param>
+        public int GetZOrder(IInteractiveItem item)
+        {
+            if (item is null) return 0;
+            if (GetIsSelected(item)) return 10;
+            switch (item.InteractiveState)
+            {
+                case InteractiveState.Disabled: return 0;
+                case InteractiveState.Enabled: return 1;
+                case InteractiveState.MouseOn: return 2;
+                case InteractiveState.MouseDown: return 3;
+            }
+            return 0;
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný prvek je Selected.
+        /// </summary>
+        /// <param name="item"></param>
+        public bool GetIsSelected(IInteractiveItem item)
+        {
+            if (item is null) return false;
+            var selectedItems = this.SelectedItems;
+            return (selectedItems != null && selectedItems.Length > 0 && selectedItems.Any(i => Object.ReferenceEquals(i, item)));
+        }
+        /// <summary>
+        /// Pole prvků, které jsou aktuálně Selected. Kreslí se do horní vrstvy
+        /// </summary>
+        public IInteractiveItem[] SelectedItems { get { return __SelectedItems; } set { __SelectedItems = value; this.Draw(); } }
+        private IInteractiveItem[] __SelectedItems;
+        #endregion
+
+        #region Public data a Eventy
+
 
         /// <summary>
         /// Je povoleno provádět ClickItem
@@ -164,6 +845,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Uživatel kliknul (levou nebo pravou myší) v prostoru Controlu, kde není žádný prvek.
         /// </summary>
         public event EventHandler<InteractiveItemEventArgs> InteractiveAreaClick;
+        /// <summary>
+        /// Uživatel kliknul (levou nebo pravou myší) v prostoru Controlu, kde není žádný prvek.
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnInteractiveAreaClick(InteractiveItemEventArgs args) { }
         private void _RunInteractiveAreaClick(InteractiveItemEventArgs args)
         {
@@ -174,6 +859,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Uživatel vstoupil myší do konkrétního prvku
         /// </summary>
         public event EventHandler<InteractiveItemEventArgs> InteractiveItemMouseEnter;
+        /// <summary>
+        /// Uživatel vstoupil myší do konkrétního prvku
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnInteractiveItemMouseEnter(InteractiveItemEventArgs args) { }
         private void _RunInteractiveItemMouseEnter(InteractiveItemEventArgs args)
         {
@@ -185,6 +874,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Uživatel odešel myší z konkrétního prvku
         /// </summary>
         public event EventHandler<InteractiveItemEventArgs> InteractiveItemMouseLeave;
+        /// <summary>
+        /// Uživatel odešel myší z konkrétního prvku
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnInteractiveItemMouseLeave(InteractiveItemEventArgs args) { }
         private void _RunInteractiveItemMouseLeave(InteractiveItemEventArgs args)
         {
@@ -196,6 +889,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Uživatel kliknul (levou nebo pravou myší) v prostoru Controlu, kde je konkrétní prvek.
         /// </summary>
         public event EventHandler<InteractiveItemEventArgs> InteractiveItemClick;
+        /// <summary>
+        /// Uživatel kliknul (levou nebo pravou myší) v prostoru Controlu, kde je konkrétní prvek.
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnInteractiveItemClick(InteractiveItemEventArgs args) { }
         private void _RunInteractiveItemClick(InteractiveItemEventArgs args)
         {
@@ -206,23 +903,46 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Uživatel provedl DragAndDrop proces, nyní právě ukončil proces.
         /// </summary>
         public event EventHandler<InteractiveDragItemEventArgs> InteractiveItemDragAndDropEnd;
+        /// <summary>
+        /// Uživatel provedl DragAndDrop proces, nyní právě ukončil proces.
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnInteractiveItemDragAndDropEnd(InteractiveDragItemEventArgs args) { }
         private void _RunInteractiveItemDragAndDropEnd(InteractiveDragItemEventArgs args)
         {
             OnInteractiveItemDragAndDropEnd(args);
             InteractiveItemDragAndDropEnd?.Invoke(this, args);
         }
-
         #endregion
 
     }
 
     #endregion
 
+    #region interface IInteractiveItem a implementace InteractiveSimpleItem a InteractiveContainerItem
 
+    /// <summary>
+    /// Rozhraní definující jeden jakýkoli (interaktivní i non-interaktivní) prvek umístěný v prostoru <see cref="DxInteractivePanel"/>.
+    /// Prvky mohou být typu Container i Simple, rozhraní pokrývá oba druhy. Konkrétní potomek pak implementuje to, co potřebuje.
+    /// Typicky prvků Simple (=Non-Container) je řádově více než Containerů, a pro práci vyžadují poměrně méně dat: implementuje je jednodušší třída.
+    /// </summary>
     public interface IInteractiveItem : IChildOfParent<DxInteractivePanel>
-    { }
+    {
+        /// <summary>
+        /// Prvek v sobě hostuje další prvky
+        /// </summary>
+        bool IsContainer { get; }
+        /// <summary>
+        /// Prvek je viditelný
+        /// </summary>
+        bool IsVisible { get; }
+        /// <summary>
+        /// Souřadnice prvku v rámci ClientRectangle jeho parenta
+        /// </summary>
+        Rectangle Bounds { get; }
 
+    }
+    #endregion
     #region MouseState : stav myši v rámci interaktivních prvků
     /// <summary>
     /// Stav myši
@@ -316,6 +1036,116 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Prvek na pozici myši
         /// </summary>
         public IInteractiveItem InteractiveItem { get { return __InteractiveItem; } set { __InteractiveItem = value; } }
+    }
+    #endregion
+    #region InteractiveItemEventArgs a InteractiveDragItemEventArgs : Třídy argumentů pro eventy
+    /// <summary>
+    /// Data pro interaktivní události s prvkem <see cref="IInteractiveItem"/> a stavem myši <see cref="MouseState"/>
+    /// </summary>
+    public class InteractiveItemEventArgs : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="mouseState"></param>
+        public InteractiveItemEventArgs(IInteractiveItem item, MouseState mouseState)
+        {
+            this.Item = item;
+            this.MouseState = mouseState;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Item: {Item}";
+        }
+        /// <summary>
+        /// Prvek
+        /// </summary>
+        public IInteractiveItem Item { get; private set; }
+        /// <summary>
+        /// Stav myši
+        /// </summary>
+        public MouseState MouseState { get; private set; }
+    }
+    /// <summary>
+    /// Data pro interaktivní události DragAndDrop s prvkem <see cref="IInteractiveItem"/> a stavem myši <see cref="BeginMouseState"/>
+    /// </summary>
+    public class InteractiveDragItemEventArgs : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="beginMouseState"></param>
+        /// <param name="endMouseState"></param>
+        public InteractiveDragItemEventArgs(IInteractiveItem item, MouseState beginMouseState, MouseState endMouseState)
+        {
+            this.Item = item;
+            this.BeginMouseState = beginMouseState;
+            this.EndMouseState = endMouseState;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Item: {Item}";
+        }
+        /// <summary>
+        /// Prvek
+        /// </summary>
+        public IInteractiveItem Item { get; private set; }
+        /// <summary>
+        /// Stav myši na počátku procesu DragAndDrop
+        /// </summary>
+        public MouseState BeginMouseState { get; private set; }
+        /// <summary>
+        /// Stav myši v procesu DragAndDrop (průběh nebo konec)
+        /// </summary>
+        public MouseState EndMouseState { get; private set; }
+    }
+    #endregion
+    #region Enumy a další
+
+    /// <summary>
+    /// Typ kurzoru. 
+    /// Fyzický kurzor pro konkrétní typ vrátí <see cref="App.GetCursor(CursorTypes)"/>.
+    /// </summary>
+    public enum CursorTypes
+    {
+        Default,
+        Hand,
+        Arrow,
+        Cross,
+        IBeam,
+        Help,
+        AppStarting,
+        UpArrow,
+        WaitCursor,
+        HSplit,
+        VSplit,
+        NoMove2D,
+        NoMoveHoriz,
+        NoMoveVert,
+        SizeAll,
+        SizeNESW,
+        SizeNS,
+        SizeNWSE,
+        SizeWE,
+        PanEast,
+        PanNE,
+        PanNorth,
+        PanNW,
+        PanSE,
+        PanSouth,
+        PanSW,
+        PanWest,
+        No
     }
     #endregion
     #region RectangleExt : Souřadnice prvku snadno ukotvitelné nejen Left a Top (jako Rectangle) ale i Right a Bottom a Center.

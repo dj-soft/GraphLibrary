@@ -120,16 +120,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Odebere všechny položky vyhovující dané podmínce
         /// </summary>
         /// <param name="predicate"></param>
-        public void RemoveAll(Predicate<TItem> predicate)
+        public void RemoveAll(Func<TItem, bool> predicate)
         {
             int count = 0;
-            this.__List.RemoveAll(predicate, i => { _RemoveParent(i); count++; });
+            ((IList<TItem>)this.__List).RemoveWhere(predicate, i => { _RemoveParent(i); count++; });         // Bez explicitního přetypování je __List ambiguous mezi generickým a nongenerickým... :-(
             if (count > 0)
                 _RunCollectionChanged();
         }
         /// <summary>
         /// Obecná událost volaná poté, kdy se přidal nebo odebral prvek kolekce (Add/Remove).
-        /// Při změn na více prvcích (<see cref="AddRange(IEnumerable{TItem})"/>, <see cref="RemoveAll(Predicate{TItem})"/>) je volána po dokončení změn.
+        /// Při provedení změn na více prvcích (<see cref="AddRange(IEnumerable{TItem})"/>, <see cref="RemoveAll(Func{TItem, bool})"/>) je událost volána jedenkrát, až po dokončení změn.
         /// </summary>
         public event EventHandler CollectionChanged;
         /// <summary>
