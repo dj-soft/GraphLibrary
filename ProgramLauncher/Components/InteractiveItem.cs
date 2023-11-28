@@ -340,7 +340,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 using (GraphicsPath mousePath = new GraphicsPath())
                 {
                     var mousePoint = paintArgs.MouseState.LocationControl;
-                    paintArgs.MouseBounds = mousePoint.GetRectangleFromCenter(paintArgs.DataLayout.MouseHighlightSize);
+                    paintArgs.MouseBounds = mousePoint.CreateRectangleFromCenter(paintArgs.DataLayout.MouseHighlightSize);
                     mousePath.AddEllipse(paintArgs.MouseBounds);
                     using (System.Drawing.Drawing2D.PathGradientBrush pgb = new PathGradientBrush(mousePath))
                     {

@@ -1988,7 +1988,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             if (image is null) return;
 
             var center = GetPixelFromValue(this.Value, trackBarBounds, orientation);
-            var thumbBounds = center.GetRectangleFromCenter(11, 11);
+            var thumbBounds = center.CreateRectangleFromCenter(11, 11);
             e.Graphics.DrawImage(image, thumbBounds.Location);
 
             this.TrackBarActiveThumb = thumbBounds.Enlarge(3);

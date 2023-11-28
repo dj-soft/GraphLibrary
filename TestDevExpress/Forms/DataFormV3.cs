@@ -233,14 +233,18 @@ namespace TestDevExpress.Forms
             _RemoveDataForms();
 
             __DataFormId++;
-            var dataForm = new DxVirtualPanel() { Dock = DockStyle.Fill };         // , BackColor = Color.FromArgb(190, 180, 240)
+            var dataForm = new DxDataFormPanel() { Dock = DockStyle.Fill };         // , BackColor = Color.FromArgb(190, 180, 240)
             DxMainPanel.Controls.Add(dataForm);
             dataForm.GotFocus += DxDataForm_GotFocus;
 
-            _DxDataFormV3 = dataForm;
-            _DxDataFormV3.ContentPanel = new DxBufferedGraphicPanel();
-            _DxDataFormV3.VirtualSize = new Size(1600, 2400);
+            dataForm.DataFormLayout.Add(new Noris.Clients.Win.Components.AsolDX.DataForm.Data.DataFormLayoutItem() { DesignBoundsExt = new RectangleExt(20, 200, null, 10, 60, null) });
+            dataForm.DataFormLayout.Add(new Noris.Clients.Win.Components.AsolDX.DataForm.Data.DataFormLayoutItem() { DesignBoundsExt = new RectangleExt(40, 180, null, 90, 20, null) });
 
+            dataForm.DataFormRows.Add(new Noris.Clients.Win.Components.AsolDX.DataForm.Data.DataFormRow());
+            dataForm.DataFormRows.Add(new Noris.Clients.Win.Components.AsolDX.DataForm.Data.DataFormRow());
+
+            _DxDataFormV3 = dataForm;
+        
             _RefreshTitle();
         }
         private void _RemoveDataForms()
@@ -272,7 +276,7 @@ namespace TestDevExpress.Forms
                 RefreshStatusCurrent();
             }
         }
-        private DxVirtualPanel _DxDataFormV3;
+        private DxDataFormPanel _DxDataFormV3;
         private DateTime? _DxShowTimeStart;
         private TimeSpan? _DxShowTimeSpan;
         #endregion

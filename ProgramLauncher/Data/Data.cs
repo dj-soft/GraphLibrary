@@ -1616,7 +1616,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Absolutní pozice prvku, určená z <see cref="RelativeAdress"/> + <see cref="OffsetAdress"/>.
         /// </summary>
         [PersistingEnabled(false)]
-        public virtual Point Adress { get { return RelativeAdress.GetShiftedPoint(OffsetAdress); } set { RelativeAdress = value.GetShiftedPoint(OffsetAdress, true); } }
+        public virtual Point Adress { get { return RelativeAdress.Add(OffsetAdress); } set { RelativeAdress = value.Add(OffsetAdress, true); } }
         /// <summary>
         /// Vizualizace
         /// </summary>

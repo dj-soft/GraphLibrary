@@ -902,6 +902,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             return new PointF((float)basePoint.X - subPoint.X, (float)basePoint.Y - subPoint.Y);
         }
+        /// <summary>
+        /// Vrátí daný bod přemístěný daným zoomem (obě souřadnice vynásobí Zoomem)
+        /// </summary>
+        /// <param name="basePoint"></param>
+        /// <param name="ratio">Poměr změny: 1.00 = nedojde ke změně; 1.50 = zvětšení o 50% (z hodnoty X = 300 bude hodnota X = 450)</param>
+        /// <returns></returns>
+        public static Point ZoomByRatio(this Point basePoint, double ratio)
+        {
+            int x = (int)(Math.Round((double)basePoint.X * ratio, 0));
+            int y = (int)(Math.Round((double)basePoint.Y * ratio, 0));
+            return new Point(x, y);
+        }
+        /// <summary>
+        /// Vrátí daný bod přemístěný daným zoomem (obě souřadnice vynásobí Zoomem)
+        /// </summary>
+        /// <param name="basePoint"></param>
+        /// <param name="ratio">Poměr změny: 1.00 = nedojde ke změně; 1.50 = zvětšení o 50% (z hodnoty X = 300 bude hodnota X = 450)</param>
+        /// <returns></returns>
+        public static PointF ZoomByRatio(this PointF basePoint, double ratio)
+        {
+            float x = (float)((double)basePoint.X * ratio);
+            float y = (float)((double)basePoint.Y * ratio);
+            return new PointF(x, y);
+        }
         #endregion
         #region souřadnice: IsVisible()
         /// <summary>

@@ -427,7 +427,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         {
             __CurrentMouseDragState = MouseDragProcessState.BeginZone;
             __DragBeginMouseState = mouseState;
-            __DragVirtualBeginZone = mouseState.LocationControl.GetRectangleFromCenter(6, 6);
+            __DragVirtualBeginZone = mouseState.LocationControl.CreateRectangleFromCenter(6, 6);
             __DragVirtualCurrentPoint = mouseState;
             __MouseDragCurrentDataItem = mouseItem;
         }
@@ -624,7 +624,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 {
                     var dragShift = new Point(__DragVirtualCurrentPoint.LocationControl.X - this.__DragBeginMouseState.LocationControl.X, __DragVirtualCurrentPoint.LocationControl.Y - this.__DragBeginMouseState.LocationControl.Y);
                     pdea.MouseDragState = MouseDragState.MouseDragActiveCurrent;
-                    pdea.MouseDragCurrentBounds = this.__MouseDragCurrentDataItem.VirtualBounds.Value.GetShiftedRectangle(dragShift);
+                    pdea.MouseDragCurrentBounds = this.__MouseDragCurrentDataItem.VirtualBounds.Value.Add(dragShift);
                     this.__MouseDragCurrentDataItem.Paint(pdea);
                 }
             }

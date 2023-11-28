@@ -82,7 +82,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         public Point GetVirtualPoint(Point controlPoint)
         {
             if (!_IsInVirtualMode) return controlPoint;
-            return controlPoint.GetShiftedPoint(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
+            return controlPoint.Add(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
         }
         /// <summary>
         /// Přepočte souřadnici bodu v datovém prostoru do souřadnice v pixelových koordinátech na this controlu (aplikuje reverzní posun daný Scrollbary)
@@ -92,7 +92,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         public Point GetControlPoint(Point virtualPoint)
         {
             if (!_IsInVirtualMode) return virtualPoint;
-            return virtualPoint.GetShiftedPoint(-__DimensionX.VirtualBegin, -__DimensionY.VirtualBegin);
+            return virtualPoint.Add(-__DimensionX.VirtualBegin, -__DimensionY.VirtualBegin);
         }
         /// <summary>
         /// Přepočte souřadnici prostoru v pixelových koordinátech na this controlu do souřadnice virtuálního prostoru v datovém prostoru (aplikuje posun daný Scrollbary)
@@ -102,7 +102,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         public Rectangle GetVirtualBounds(Rectangle controlBounds)
         {
             if (!_IsInVirtualMode) return controlBounds;
-            return controlBounds.GetShiftedRectangle(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
+            return controlBounds.Add(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
         }
         /// <summary>
         /// Přepočte souřadnici prostoru v datovém prostoru do souřadnice v pixelových koordinátech na this controlu (aplikuje reverzní posun daný Scrollbary)
@@ -112,7 +112,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         public Rectangle GetControlBounds(Rectangle virtualBounds)
         {
             if (!_IsInVirtualMode) return virtualBounds;
-            return virtualBounds.GetShiftedRectangle(-__DimensionX.VirtualBegin, -__DimensionY.VirtualBegin);
+            return virtualBounds.Add(-__DimensionX.VirtualBegin, -__DimensionY.VirtualBegin);
         }
         /// <summary>
         /// Inicializuje data pro Virtuální souřadnice

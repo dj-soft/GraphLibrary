@@ -15,6 +15,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Noris.Clients.Win.Components.AsolDX.DataForm.Data;
+using DevExpress.Charts.Native;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
@@ -26,6 +28,29 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// </summary>
     public class DxInteractivePanel : DxBufferedGraphicPanel
     {
+        #region Info ... Vnoření prvků, souřadné systémy, řádky
+        /*
+
+        Třída DxInteractivePanel v sobě hostuje interaktivní prvky IInteractiveItem uložené v DxInteractivePanel.Items, ty tvoří Root úroveň.
+        Mohou to být Containery { Panely, Záložky } nebo samotné prvky { TextBox, Label, Combo, Picture, CheckBox, atd }.
+        Containery v sobě mohou obsahovat další Containery nebo samotné prvky.
+        Containery obsahují svoje Child prvky v IInteractiveItem.Items. Jejich souřadný systém je pak relativní k jejich Parentu.
+        Scrollování je podporováno jen na úrovni celého DataFormu, ale nikoliv na úrovni Containeru (=Panel ani Záložka nebude mít ScrollBary).
+        DataForm podporuje Zoom. Výchozí je vložen při tvorbě DataFormu anebo při změně Zoomu, podporován je i interaktivní Zoom: Ctrl+MouseWheel.
+        Jde o dvě hodnoty Zoomu: systémový × lokální.
+        Prvek IInteractiveItem definuje svoji pozici v property DesignBounds, kde je souřadnice daná v Design pixelech (bez vlivu Zoomu), relativně k Parentu, v rámci řádku.
+
+          Řádky / Prvky a zdejší třída DxInteractivePanel versus potomek DxDataFormPanel:
+        Zdejší třída DxInteractivePanel NEZNÁ pojem řádek. Má sadu prvků IInteractiveItem uložené v DxInteractivePanel.Items a ty řeší.
+         - velikost prostoru VirtualSize určuje tedy jen z těchto Items.
+        Potomek třída DxDataFormPanel ŘEŠÍ řádky s daty (DataFormRows), eviduje vlastní zdroj definice vzhledu (DataFormLayout)
+         a z nich teprve generuje jednotlivé interaktivní prvky IInteractiveItem, kde jeden Item odpovídá jednomu Column v jednom konkrétním řádku.
+         Tedy tento IInteractiveItem reprezentuje obdobu Cell.
+         - Potomek DxDataFormPanel tedy řeší VirtualSize jinak = jako součin počtu řádků × velikost layoutu pro jeden řádek.
+         Více v třídě DxDataFormPanel.
+
+        */
+        #endregion
         #region Konstruktor
         /// <summary>
         /// Konstruktor
@@ -42,7 +67,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Prvky k zobrazení a interaktivní práci.
         /// Lze setovat, tím se dosavadní prvky zahodí a vloží se prvky z dodaného pole (ale instance dodaného pole se sem neukládá).
         /// </summary>
-        public IList<IInteractiveItem> Items
+        public DxInteractiveItems Items
         {
             get { return __Items; }
             set
@@ -53,42 +78,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         /// <summary>
-        /// Přidá sadu interaktivních prvků
-        /// </summary>
-        /// <param name="items"></param>
-        public void AddItems(IEnumerable<IInteractiveItem> items)
-        {
-            __Items.AddRange(items);
-        }
-        /// <summary>
-        /// Přidá daný interaktivní prvek
-        /// </summary>
-        /// <param name="item"></param>
-        public void AddItem(IInteractiveItem item)
-        {
-            __Items.Add(item);
-        }
-        /// <summary>
-        /// Odebere všechny interaktivní prvky
-        /// </summary>
-        public void ClearItems()
-        {
-            __Items.Clear();
-        }
-        /// <summary>
-        /// Odebere interaktivní prvky vyhovující danému filtru
-        /// </summary>
-        /// <param name="predicate"></param>
-        public void RemoveItems(Func<IInteractiveItem, bool> predicate)
-        {
-            __Items.RemoveAll(predicate);
-        }
-        /// <summary>
         /// Inicializace oblasti Items
         /// </summary>
         private void _InitItems()
         {
-            __Items = new ChildItems<DxInteractivePanel, IInteractiveItem>(this);
+            __Items = new DxInteractiveItems(this);
             __Items.CollectionChanged += _ItemsChanged;
         }
         /// <summary>
@@ -99,26 +93,64 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <exception cref="NotImplementedException"></exception>
         private void _ItemsChanged(object sender, EventArgs e)
         {
-            _VirtualSizeInvalidate();
+            VirtualSizeInvalidate();
         }
         /// <summary>
         /// Interaktivní data = jednotlivé prvky
         /// </summary>
-        private ChildItems<DxInteractivePanel, IInteractiveItem> __Items;
+        private DxInteractiveItems __Items;
         #endregion
         #region Layout prvků, velikost obsahu VirtualSize
         /// <summary>
         /// Souhrnná velikost obsahu = jednotlivé Items, včetně okrajů Padding
         /// </summary>
-        public override Size? VirtualSize { get { _VirtualSizeCheckValidity(); return __CurrentVirtualSize.Value; } }
+        public override Size? ContentDesignSize { get { _VirtualSizeCheckValidity(); return __CurrentVirtualSize.Value; } }
         /// <summary>
         /// Znovu napočte rozmístění prvků a volitelně vyvolá jejich překreslení
         /// </summary>
         /// <param name="draw"></param>
         public virtual void RefreshContent(bool draw = false)
         {
-            _VirtualSizeInvalidate();
+            VirtualSizeInvalidate();
             if (draw) this.Draw();
+        }
+        /// <summary>
+        /// Metoda zneplatní příznak platné hodnoty <see cref="ContentDesignSize"/> 
+        /// (volá se po změně definice <see cref="Items"/> a po změně layoutu a po dalších změnách, např. po změně počtu řádků na potomku).
+        /// Následně bude volána metoda <see cref="CalculateVirtualSize()"/>, která určí celkovou velikost obsahu, na kterou se následně nastaví ScrollBary.
+        /// </summary>
+        protected virtual void VirtualSizeInvalidate()
+        {
+            __CurrentVirtualSize = null;
+        }
+        /// <summary>
+        /// Metoda projde všechny své viditelné prvky a určí max potřebné souřadnice Right a Bottom. 
+        /// Přičte odpovídající hodnoty z Padding a vrátí výsledek.
+        /// Tato metoda nevepisuje aktuální souřadnice do prvků, to se řeší v procesu Draw.
+        /// <para/>
+        /// Potomek může velikost určovat jinak, než jen z přítomných <see cref="Items"/>.
+        /// </summary>
+        /// <returns></returns>
+        protected virtual Size CalculateVirtualSize()
+        {
+            int r = 0;
+            int b = 0;
+            var items = __Items;
+            if (items != null)
+            {
+                foreach (var item in items)
+                {
+                    if (item.IsVisible)
+                    {
+                        var itemBounds = item.DesignBounds;
+                        if (r < itemBounds.Right) r = itemBounds.Right;
+                        if (b < itemBounds.Bottom) b = itemBounds.Bottom;
+                    }
+                }
+            }
+
+            var padding = this.Padding;
+            return new Size(r + padding.Horizontal, b + padding.Vertical);
         }
         /// <summary>
         /// Inicializace oblasti Layout
@@ -135,17 +167,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="e"></param>
         private void _PaddingChanged(object sender, EventArgs e)
         {
-            _VirtualSizeInvalidate();
+            VirtualSizeInvalidate();
         }
         /// <summary>
-        /// Metoda zneplatní příznak platné hodnoty <see cref="VirtualSize"/> (volá se po přidání / odebrání prvku a po změně layoutu).
-        /// </summary>
-        private void _VirtualSizeInvalidate()
-        {
-            __CurrentVirtualSize = null;
-        }
-        /// <summary>
-        /// Sumární velikost obsahu aktuální, null = nevalidní, musí projít validací.
+        /// Sumární velikost obsahu aktuální. Pokud je null, pak je nevalidní, musí projít validací. Validaci provádí metoda <see cref="_VirtualSizeCheckValidity(bool)"/>,
+        /// kterou volá get property <see cref="ContentDesignSize"/>.
         /// </summary>
         private Size? __CurrentVirtualSize;
         /// <summary>
@@ -184,47 +210,60 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             VirtualSizeChanged?.Invoke(this, args);
         }
         /// <summary>
-        /// Metoda vyvolaná po změně velikosti <see cref="VirtualSize"/>.
+        /// Metoda vyvolaná po změně velikosti <see cref="ContentDesignSize"/>.
         /// </summary>
         /// <param name="args"></param>
         protected virtual void OnVirtualSizeChanged(EventArgs args) { }
         /// <summary>
-        /// Událost vyvolaná po změně velikosti <see cref="VirtualSize"/>.
+        /// Událost vyvolaná po změně velikosti <see cref="ContentDesignSize"/>.
         /// </summary>
         public event EventHandler VirtualSizeChanged;
-        /// <summary>
-        /// Metoda projde všechny své viditelné prvky a určí max potřebné souřadnice Right a Bottom. 
-        /// Přičte odpovídající hodnoty z Padding a vrátí výsledek.
-        /// Tato metoda nevepisuje aktuální souřadnice do prvků, to se řeší v procesu Draw.
-        /// </summary>
-        /// <returns></returns>
-        protected virtual Size CalculateVirtualSize()
-        {
-            int r = 0;
-            int b = 0;
-            var items = __Items;
-            if (items != null)
-            {
-                foreach (var item in items)
-                {
-                    if (item.IsVisible)
-                    {
-                        var itemBounds = item.VirtualBounds;
-                        if (r < itemBounds.Right) r = itemBounds.Right;
-                        if (b < itemBounds.Bottom) b = itemBounds.Bottom;
-                    }
-                }
-            }
-
-            var padding = this.Padding;
-            return new Size(r + padding.Horizontal, b + padding.Vertical);
-        }
         #endregion
         #region Virtuální souřadnice - přepočty souřadnic s pomocí hostitelského panelu
-        
-
-
-
+        /// <summary>
+        /// Přepočte souřadnici bodu z designového pixelu (kde se bod nachází v designovém návrhu) do souřadnice v pixelových koordinátech na this controlu (aplikuje Zoom a posun daný Scrollbary)
+        /// </summary>
+        /// <param name="designPoint">Souřadnice bodu v design pixelech</param>
+        /// <returns></returns>
+        public Point GetControlPoint(Point designPoint)
+        {
+            if (!HasVirtualPanel) return designPoint;
+            return VirtualPanel.GetControlPoint(designPoint);
+        }
+        /// <summary>
+        /// Přepočte souřadnici bodu v pixelových koordinátech na this controlu do souřadnice v designovém prostoru (aplikuje posun daný Scrollbary a Zoom)
+        /// </summary>
+        /// <param name="controlPoint">Souřadnice bodu fyzickém controlu</param>
+        /// <returns></returns>
+        public Point GetDesignPoint(Point controlPoint)
+        {
+            if (!HasVirtualPanel) return controlPoint;
+            return VirtualPanel.GetDesignPoint(controlPoint);
+        }
+        /// <summary>
+        /// Přepočte souřadnici prostoru z designového pixelu (kde se bod nachází v designovém návrhu) do souřadnice v pixelových koordinátech na this controlu (aplikuje Zoom a posun daný Scrollbary)
+        /// </summary>
+        /// <param name="designBounds">Souřadnice prostoru v design pixelech</param>
+        /// <returns></returns>
+        public Rectangle GetControlBounds(Rectangle designBounds)
+        {
+            if (!HasVirtualPanel) return designBounds;
+            return VirtualPanel.GetControlBounds(designBounds);
+        }
+        /// <summary>
+        /// Přepočte souřadnici prostoru v pixelových koordinátech na this controlu do souřadnice v designovém prostoru (aplikuje posun daný Scrollbary a Zoom)
+        /// </summary>
+        /// <param name="controlBounds">Souřadnice prostoru fyzickém controlu</param>
+        /// <returns></returns>
+        public Rectangle GetDesignBounds(Rectangle controlBounds)
+        {
+            if (!HasVirtualPanel) return controlBounds;
+            return VirtualPanel.GetDesignBounds(controlBounds);
+        }
+        /// <summary>
+        /// Obsahuje true, pokud this interaktivní panel je umístěn ve <see cref="DxBufferedGraphicPanel.VirtualPanel"/>
+        /// </summary>
+        protected bool HasVirtualPanel { get { return this.VirtualPanel != null; } }
         #endregion
         #region Interaktivita
         #region Interaktivita nativní = eventy controlu
@@ -353,7 +392,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         private IInteractiveItem _GetMouseItem(MouseState mouseState)
         {
-            Point virtualPoint = this.GetVirtualPoint(mouseState.LocationControl);
+            Point virtualPoint = mouseState.LocationVirtual;
             var items = __Items;
             int count = items.Count;
             for (int i = count - 1; i >= 0; i--)
@@ -578,7 +617,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             __CurrentMouseDragState = MouseDragProcessState.BeginZone;
             __DragBeginMouseState = mouseState;
-            __DragVirtualBeginZone = mouseState.LocationControl.GetRectangleFromCenter(6, 6);
+            __DragVirtualBeginZone = mouseState.LocationControl.CreateRectangleFromCenter(6, 6);
             __DragVirtualCurrentPoint = mouseState;
             __MouseDragCurrentDataItem = mouseItem;
         }
@@ -777,7 +816,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     var dragCurrentPoint = __DragVirtualCurrentPoint.LocationControl;
                     var dragShift = dragCurrentPoint.Sub(dragBeginPoint);
                     pdea.MouseDragState = MouseDragState.MouseDragActiveCurrent;
-                    pdea.MouseDragCurrentBounds = this.__MouseDragCurrentDataItem.VirtualBounds.Value.GetShiftedRectangle(dragShift);
+                    pdea.MouseDragCurrentBounds = this.__MouseDragCurrentDataItem.DesignBounds.Add(dragShift);
                     this.__MouseDragCurrentDataItem.Paint(pdea);
                 }
             }
@@ -838,10 +877,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public IInteractiveItem[] SelectedItems { get { return __SelectedItems; } set { __SelectedItems = value; this.Draw(); } } private IInteractiveItem[] __SelectedItems;
         #endregion
-
         #region Public data a Eventy
-
-
         /// <summary>
         /// Je povoleno provádět ClickItem
         /// </summary>
@@ -850,7 +886,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Je povoleno provádět DragAndDrop
         /// </summary>
         public bool EnabledDrag { get; set; }
-
         /// <summary>
         /// Uživatel kliknul (levou nebo pravou myší) v prostoru Controlu, kde není žádný prvek.
         /// </summary>
@@ -924,9 +959,30 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             InteractiveItemDragAndDropEnd?.Invoke(this, args);
         }
         #endregion
-
     }
-
+    #endregion
+    #region DxInteractiveItems : seznam interaktivních prvků
+    /// <summary>
+    /// Kolekce interaktivních prvků
+    /// </summary>
+    public class DxInteractiveItems : ChildItems<DxInteractivePanel, IInteractiveItem>
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="parent"></param>
+        public DxInteractiveItems(DxInteractivePanel parent)
+            : base(parent)
+        { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="capacity"></param>
+        public DxInteractiveItems(DxInteractivePanel parent, int capacity)
+            : base(parent, capacity)
+        { }
+    }
     #endregion
     #region interface IInteractiveItem a implementace InteractiveSimpleItem a InteractiveContainerItem
 
@@ -939,17 +995,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     public interface IInteractiveItem : IChildOfParent<DxInteractivePanel>
     {
         /// <summary>
+        /// Parent prvek. Plní vizuální komponenta za provozu, pokud this prvek je na pozici Child.
+        /// </summary>
+        IInteractiveItem ParentItem { get; set; }
+        /// <summary>
         /// Prvek v sobě hostuje další prvky
         /// </summary>
         bool IsContainer { get; }
+
         /// <summary>
         /// Prvek je viditelný
         /// </summary>
         bool IsVisible { get; }
         /// <summary>
-        /// Souřadnice prvku v rámci jeho parenta. Souřadnice je "Virtual" = je daná designem. Do aktuálního controlu se souřadnice přepočítává.
+        /// Souřadnice prvku v rámci jeho parenta. Souřadnice je "Design" = je daná designem. Do aktuálního controlu se souřadnice přepočítává.
         /// </summary>
-        Rectangle VirtualBounds { get; }
+        Rectangle DesignBounds { get; }
         /// <summary>
         /// Interaktivní stav prvku
         /// </summary>
@@ -959,6 +1020,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="pdea"></param>
         void Paint(PaintDataEventArgs pdea);
+        bool IsActiveOnVirtualPoint(Point virtualPoint);
     }
     #endregion
     #region MouseState : stav myši v rámci interaktivních prvků
@@ -983,7 +1045,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Pokud isLeave je true, pak jsme volání z MouseLeave a jsme tedy mimo Control:
             bool isOnControl = (isLeave.HasValue && isLeave.Value ? false : control.ClientRectangle.Contains(locationNative));
             Point locationVirtual = locationNative;
-            if (control is DxVirtualPanel virtualControl) locationVirtual = virtualControl.GetVirtualPoint(locationNative);
+            if (control is DxVirtualPanel virtualControl) locationVirtual = virtualControl.GetDesignPoint(locationNative);
             return new MouseState(time, locationNative, locationVirtual, locationAbsolute, buttons, modifierKeys, isOnControl);
         }
         /// <summary>

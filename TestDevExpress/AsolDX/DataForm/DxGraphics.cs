@@ -24,6 +24,45 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// </summary>
     public class DxVirtualPanel : DxGraphicsPanel, IDisposable
     {
+        #region Info ... Typy souřadnic a přepočty
+        /*
+
+        Úkolem virtuálního panelu DxVirtualPanel je zobrazovat určitý obsah v "uživatelském" panelu ContentPanel a umožnit virtuální posouvání jeho obsahu pomocí Scrollbarů.
+        Obsah tohoto panelu je vykreslovaný graficky (proto panel je typu DxBufferedGraphicPanel) a konkrétní prvek je vykreslen na určitou pozici v panelu.
+        Konkrétní prvek je deklarován na určitou Design souřadnici DesignBounds, která je v designových pixelech a je relativně k počátku 0/0 celkového prostoru.
+        Pokud souhrn velikostí jednotlivých prvků je větší než disponibilní reálný prostor, pak se zobrazí Scrollbar[y] a dovolí se posouvání obsahu uvnitř controlu.
+
+        Další funkcí DxVirtualPanel je poskytování Zoomu a tedy možnost zvětšení/zmenšení obsahu panelu.
+        Zoom se interně skládá ze dvou hodnot: Zoom systému (daný DxComponent.Zoom) krát Zoom panelu (DxVirtualPanel.Zoom), jehož výsledkem je DxVirtualPanel.CurrentZoom.
+        Tento CurrentZoom násobí pozice a rozměry dané Designem a určuje velikost písma standardních prvků.
+
+        Definice a přepočty souřadnic jsou následovné:
+        - DesignBounds     ... souřadnice definovaná designem, vztahuje se k "normalizovaným" pixelům (při Zoomu 1.00). Např. výška textboxu je 20 dpx (DesignPixel)
+        - VirtualBounds    ... souřadnice přepočtená aktuálním Zoomem (CurrentZoom), v koordinátech celé definice, tedy k počátku 0/0, nezahrnuje tedy posun daný Scrollbary
+        - ControlBounds    ... souřadnice fyzická na aktuálním ContentPanel, odpovídá např. souřadnici myši, zahrnuje posun Scrollbarů.
+
+        Základní souřadnice je DesignBounds, ze které je vypočtena sumární velikost všech prvků do DesignSize.
+        Hodnota DesignSize je přepočtena do VirtualSize pomocí CurrentZoom a odtud pak slouží jako výchozí hodnota pro ScrollBary.
+        Fyzická souřadnice ControlBounds je tedy vypočtena jako: (DesignBounds * CurrentZoom) [=VirtualBounds] - ScrollBar (kladná hodnota ScrollBaru se odečte od VirtualBounds)
+
+        Prvek Root a prvek Child:
+        Root prvek:  je umístěn přímo v DxInteractivePanel. Nejčastěji to je nějaký druh Containeru = obsahuje svoje Child prvky.
+                      Jeho Design souřadnice se vztahují k základnímu dokumentu
+        Child prvek: je umístěn ve svém Parent Containeru, v jeho ChildBounds. 
+                      Parent Container má svoje vlastní souřadnice, ve kterých kreslí svoji režii, a uvnitř svého prostoru poskytuje další prostor pro svoje Childs.
+
+        Postup přepočtů:
+        Design => Control :    Control = (Design * Zoom) - Scrollbar         // Scrollbar obsahuje kladnou hodnotu, určuje který virtuální pixel je zobrazen na fyzické pozici 0;
+        Control => Design :    Design  = (Control + Scrollbar) / Zoom        //  Zoom obsahuje 1.00 = 100%, obsahuje 1.50 při zvětšení na 150%, atd
+        
+        Přepočty Rectangle:    Vždy se určí souřadnice bodu TopLeft a souřadnice bodu BottomRight a z nich se vytvoří výsledný Rectangle.
+                               Nikdy se nepočítá samostatně Size, která by se připočetla k TopLeft! 
+                               Důvod? Tímto postupem budu mít správně určenou souřadnici Right,Bottom pro různé prvky, 
+                               které tímto postupem budou správně zarovnány doprava doprava/dolů. I při zaokrouhlování double => int.
+                               Opačný postup by sice vedl k přesné šířce, ale tu v rámci 1px nikdo neocení...
+
+        */
+        #endregion
         #region Konstruktor a Dispose
         /// <summary>
         /// Konstruktor
@@ -34,7 +73,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this._InitVirtualDimensions();
         }
         #endregion
-        #region Vlastní grafický control umístěný mezi Scrollbary, v něm se zobrazuje grafický obsah
+        #region ContentPanel: Vlastní grafický control umístěný mezi Scrollbary, v něm se zobrazuje grafický obsah
         /// <summary>
         /// Vlastní grafický control umístěný mezi Scrollbary, v něm se zobrazuje grafický obsah
         /// </summary>
@@ -99,109 +138,240 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Fyzické souřadnice panelu <see cref="ContentPanel"/> = kde je zobrazen. Nesouvisí s jeho virtuální velikostí (=jeho obsah).
         /// </summary>
         private Rectangle? __ContentPanelBounds;
-        #endregion
-        #region ScrollBars, Virtuální souřadnice - public
         /// <summary>
-        /// Potřebná velikost virtuální obsahu.
-        /// Pokud je použit <see cref="ContentPanel"/>, který definuje svoji virtuální velikost <see cref="DxBufferedGraphicPanel.VirtualSize"/> (=není null), pak je zde čtena jeho hodnota, a setování hodnoty je ignorováno.
+        /// Designový prostor v panelu <see cref="ContentPanel"/> když budou zobrazeny oba Scrollbary.
+        /// Tedy jde o vnitřní prostor zdejšího <see cref="DxVirtualPanel"/>, zmenšený o prostor Scrollbarů (i když by aktuálně nebyly zobrazeny) 
+        /// a přepočtený pomocí <see cref="CurrentZoom"/> na designové pixely.
+        /// Slouží k automatickému určování layoutu podle disponibilního prostoru.
+        /// </summary>
+        public Size ContentPanelDesignSize { get { return __ContentPanelDesignSize; } }
+        /// <summary>
+        /// Designový prostor v panelu <see cref="ContentPanel"/> když budou zobrazeny oba Scrollbary. Úložiště hodnoty.
+        /// </summary>
+        private Size __ContentPanelDesignSize;
+        #endregion
+        #region ScrollBars, Zoom, Virtuální / Designové souřadnice - public
+        /// <summary>
+        /// Potřebná velikost obsahu v designových pixelech.
+        /// Pokud je použit <see cref="ContentPanel"/>, který definuje svoji virtuální velikost <see cref="DxBufferedGraphicPanel.ContentDesignSize"/> (=není null), pak je zde čtena jeho hodnota, a setování hodnoty je ignorováno.
         /// Výchozí je null = control zobrazuje to, co je vidět, a nikdy nepoužívá Scrollbary.
         /// Lze setovat hodnotu = celková velikost zobrazených dat, pak se aktivuje virtuální režim se zobrazením výřezu a s možností Scrollbarů.
         /// </summary>
-        public virtual Size? VirtualSize
+        public virtual Size? ContentDesignSize
         {
-            get 
+            get
             {
-                Size? virtualSize = this.ContentPanel?.VirtualSize;
-                if (!virtualSize.HasValue)
-                    virtualSize = __VirtualSize;
-                return virtualSize;
+                Size? designSize = this.ContentPanel?.ContentDesignSize;
+                if (!designSize.HasValue)
+                    designSize = __ContentDesignSize;
+                return designSize;
             }
             set
             {
-                __VirtualSize = value;
+                __ContentDesignSize = value;
+                __ContentVirtualSize = null;
                 _RefreshInnerLayout();
             }
         }
         /// <summary>
-        /// Metoda je volána v situaci, kdy se určuje vnitřní layout a ScrollBary, a budeme potřebovat platnou hodnotu <see cref="VirtualSize"/>.
-        /// Vnější aplikace může reagovat On-Demand a tuto hodnotu validovat (např. pomocí eventhandleru )
+        /// Velikost vnitřního obsahu explicitně zadaná v virtuálních pixelech (násobené Zoom) = platí jen když není přítomen <see cref="ContentPanel"/> anebo ten nemá svoji VirtualSize.
         /// </summary>
-        private void _ValidateVirtualSize()
+        protected virtual Size? ContentVirtualSize
         {
-            OnValidateVirtualSize();
-            ValidateVirtualSize?.Invoke(this, EventArgs.Empty);
+            get
+            {
+                var designSize = ContentDesignSize;
+                if (!designSize.HasValue) return null;               // Pokud nejsem ve virtuálním režimu (ten má definovanou velikost obsahu), pak nemám ani potřebu přepočítávat ...
+
+                if (!__ContentVirtualSize.HasValue)
+                    __ContentVirtualSize = designSize.Value.ZoomByRatio(this.CurrentZoom);
+
+                return __ContentVirtualSize.Value;
+            }
         }
         /// <summary>
-        /// Volá se na začátku procesu určení vnitřního layoutu podle hodnoty <see cref="VirtualSize"/>. Toto je vhodná situace, kdy volající se může ujistit, že tuto velikost nastavil na platnou hodnotu.
+        /// Invaliduje celkovou velikost <see cref="ContentDesignSize"/> a navazující <see cref="ContentVirtualSize"/>.
+        /// Provádí se po změně řádků nebo definice designu.
         /// </summary>
-        protected virtual void OnValidateVirtualSize() { }
+        protected virtual void DesignSizeInvalidate()
+        {
+            __ContentDesignSize = null;
+            __ContentVirtualSize = null;
+        }
         /// <summary>
-        /// Volá se na začátku procesu určení vnitřního layoutu podle hodnoty <see cref="VirtualSize"/>. Toto je vhodná situace, kdy volající se může ujistit, že tuto velikost nastavil na platnou hodnotu.
+        /// Metoda je volána v situaci, kdy se určuje vnitřní layout a ScrollBary, a budeme potřebovat platnou hodnotu <see cref="ContentVirtualSize"/>.
+        /// Vnější aplikace může reagovat On-Demand a tuto hodnotu validovat (např. pomocí eventhandleru )
         /// </summary>
-        public event EventHandler ValidateVirtualSize;
+        private void _ValidateDesignSize()
+        {
+            OnValidateDesignSize();
+            ValidateDesignSize?.Invoke(this, EventArgs.Empty);
+        }
         /// <summary>
-        /// Povoluje se práce se Scrollbary, pokud bude zadána velikost obsahu <see cref="VirtualSize"/>. Default = true.
-        /// Pokud je false, a přitom je zadána veliksat obsahu <see cref="VirtualSize"/>, pak jsme ve virtuálním režimu, 
+        /// Volá se na začátku procesu určení vnitřního layoutu podle hodnoty <see cref="ContentDesignSize"/>. 
+        /// Toto je vhodná situace, kdy volající se může ujistit, že tuto velikost nastavil na platnou hodnotu.
+        /// </summary>
+        protected virtual void OnValidateDesignSize() { }
+        /// <summary>
+        /// Volá se na začátku procesu určení vnitřního layoutu podle hodnoty <see cref="ContentDesignSize"/>.
+        /// Toto je vhodná situace, kdy volající se může ujistit, že tuto velikost nastavil na platnou hodnotu.
+        /// </summary>
+        public event EventHandler ValidateDesignSize;
+        /// <summary>
+        /// Aktuálně platný Zoom = součin systémového <see cref="DxComponent.Zoom"/> * lokálního <see cref="DataFormZoom"/> Zoomu * koeficient DeviceDPI
+        /// </summary>
+        public double CurrentZoom { get { return (double)DxComponent.Zoom * this.DataFormZoom * this._DeviceDpiZoom; } }
+        /// <summary>
+        /// Zoom daný tímto konkrétním DataFormem. Lze měnit kolečkem myši. Rozsah hodnot 0.25 až 4.00
+        /// </summary>
+        public double DataFormZoom
+        {
+            get
+            {
+                return __DataFormZoom;
+            }
+            set
+            {
+                var oldZoom = __DataFormZoom;
+                __DataFormZoom = Math.Round((value < 0.25f ? 0.25f : (value > 4.0f ? 4.0f : value)),3);
+                var newZoom = __DataFormZoom;
+                if (newZoom != oldZoom)
+                    _RunInvalidateZoom();
+            }
+        }
+        /// <summary>
+        /// Obsahuje Zoom daný <see cref="Control.DeviceDpi"/> vůči designovému DPI = 96. 
+        /// Tedy pokud operační systém nastavil 150%, což se promítlo do <see cref="Control.DeviceDpi"/> = 144, pak zde je 1.5d
+        /// </summary>
+        private double _DeviceDpiZoom { get { return ((double)this.DeviceDpi / _DesignDpi); } }
+        /// <summary>
+        /// Designové DPI = 96
+        /// </summary>
+        private const double _DesignDpi = 96d;
+        /// <summary>
+        /// Po změně Zoomu v systému
+        /// </summary>
+        protected override void OnZoomChanged()
+        {
+            base.OnZoomChanged();
+            this._RunInvalidateZoom();
+        }
+        /// <summary>
+        /// Po změně DPI v systému
+        /// </summary>
+        protected override void OnCurrentDpiChanged()
+        {
+            base.OnCurrentDpiChanged();
+            this._RunInvalidateZoom();
+        }
+        /// <summary>
+        /// Invaliduje data po změně Zoomu systémového i lokálního. Volá event. Refreshuje vnitřní layout.
+        /// </summary>
+        protected virtual void _RunInvalidateZoom()
+        {
+            __ContentVirtualSize = null;
+            OnInvalidatedZoom();
+            InvalidatedZoom?.Invoke(this, EventArgs.Empty);
+            this.ContentPanel?.OnCurrentZoomChanged();
+            _RefreshInnerLayout();
+        }
+        /// <summary>
+        /// Proběhne po změně Zoomu za běhu aplikace. Může dojít k invalidaci cachovaných souřadnic prvků.
+        /// </summary>
+        protected virtual void OnInvalidatedZoom() { }
+        /// <summary>
+        /// Proběhne po změně Zoomu za běhu aplikace. Může dojít k invalidaci cachovaných souřadnic prvků.
+        /// </summary>
+        public event EventHandler InvalidatedZoom;
+        /// <summary>
+        /// Povoluje se práce se Scrollbary, pokud bude zadána velikost obsahu <see cref="ContentVirtualSize"/>. Default = true.
+        /// Pokud je false, a přitom je zadána veliksat obsahu <see cref="ContentVirtualSize"/>, pak jsme ve virtuálním režimu, 
         /// ale uživatel nevidí posuny prostoru (Scrollbary) a nemůže je ani interaktivně měnit. Posuny se pak řídí nastavením <see cref="VirtualBegin"/>.
         /// </summary>
         public bool ScrollbarsEnabled { get { return __ScrollbarsEnabled; } set { __ScrollbarsEnabled = value; _RefreshInnerLayout(); } } private bool __ScrollbarsEnabled;
         /// <summary>
-        /// Souřadnice počátku viditelného prostoru = souřadnice bodu ve virtuálním prostoru (prostordatového obsahu), který je zobrazen na vizuálním pixelu 0/0
+        /// Souřadnice počátku viditelného prostoru = souřadnice bodu ve virtuálním prostoru (prostor datového obsahu), který je zobrazen na vizuálním pixelu 0/0.
         /// </summary>
         public Point VirtualBegin
         {
-            get
-            {
-                var vx = __DimensionX.VirtualBegin;
-                var vy = __DimensionY.VirtualBegin;
-                return new Point(vx, vy);
-            }
+            get { return _VirtualBegin; }
             set
             {
                 __DimensionX.VirtualBegin = value.X;
                 __DimensionY.VirtualBegin = value.Y;
+                _VirtualBeginInvalidate();
                 _RefreshInnerLayout();
             }
         }
         /// <summary>
-        /// Přepočte souřadnici bodu v pixelových koordinátech na this controlu do souřadnice virtuálního bodu v datovém prostoru (aplikuje posun daný Scrollbary)
+        /// Přepočte souřadnici bodu z designového pixelu (kde se bod nachází v designovém návrhu) do souřadnice v pixelových koordinátech na this controlu (aplikuje Zoom a posun daný Scrollbary)
         /// </summary>
-        /// <param name="controlPoint"></param>
+        /// <param name="designPoint">Souřadnice bodu v design pixelech</param>
         /// <returns></returns>
-        public Point GetVirtualPoint(Point controlPoint)
+        public Point GetControlPoint(Point designPoint)
+        {
+            if (!_IsInVirtualMode) return designPoint;
+
+            // Design => Control :    Control = (Design * Zoom) - Scrollbar 
+            double zoom = this.CurrentZoom;
+            Point virtualPoint = designPoint.ZoomByRatio(zoom);
+            Point controlPoint = virtualPoint.Sub(_VirtualBegin);
+            return controlPoint;
+        }
+        /// <summary>
+        /// Přepočte souřadnici bodu v pixelových koordinátech na this controlu do souřadnice v designovém prostoru (aplikuje posun daný Scrollbary a Zoom)
+        /// </summary>
+        /// <param name="controlPoint">Souřadnice bodu fyzickém controlu</param>
+        /// <returns></returns>
+        public Point GetDesignPoint(Point controlPoint)
         {
             if (!_IsInVirtualMode) return controlPoint;
-            return controlPoint.Add(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
+
+            // Control => Design :    Design  = (Control + Scrollbar) / Zoom
+            double rZoom = 1d / this.CurrentZoom;
+            Point virtualPoint = controlPoint.Add(_VirtualBegin);
+            Point designPoint = virtualPoint.ZoomByRatio(rZoom);
+            return designPoint;
         }
         /// <summary>
-        /// Přepočte souřadnici bodu v datovém prostoru do souřadnice v pixelových koordinátech na this controlu (aplikuje reverzní posun daný Scrollbary)
+        /// Přepočte souřadnici prostoru z designového pixelu (kde se bod nachází v designovém návrhu) do souřadnice v pixelových koordinátech na this controlu (aplikuje Zoom a posun daný Scrollbary)
         /// </summary>
-        /// <param name="virtualPoint"></param>
+        /// <param name="designBounds">Souřadnice prostoru v design pixelech</param>
         /// <returns></returns>
-        public Point GetControlPoint(Point virtualPoint)
+        public Rectangle GetControlBounds(Rectangle designBounds)
         {
-            if (!_IsInVirtualMode) return virtualPoint;
-            return virtualPoint.Sub(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
+            if (!_IsInVirtualMode) return designBounds;
+
+            // Design => Control :    Control = (Design * Zoom) - Scrollbar 
+            double zoom = this.CurrentZoom;
+            var virtualBegin = _VirtualBegin;
+            Point virtualPointLT = designBounds.GetPoint(RectangleSide.TopLeft).Value.ZoomByRatio(zoom);
+            Point virtualPointBR = designBounds.GetPoint(RectangleSide.BottomRight).Value.ZoomByRatio(zoom);
+
+            Point controlPointLT = virtualPointLT.Sub(virtualBegin);
+            Point controlPointBR = virtualPointBR.Sub(virtualBegin);
+
+            return Rectangle.FromLTRB(controlPointLT.X, controlPointLT.Y, controlPointBR.X, controlPointBR.Y);
         }
         /// <summary>
-        /// Přepočte souřadnici prostoru v pixelových koordinátech na this controlu do souřadnice virtuálního prostoru v datovém prostoru (aplikuje posun daný Scrollbary)
+        /// Přepočte souřadnici prostoru v pixelových koordinátech na this controlu do souřadnice v designovém prostoru (aplikuje posun daný Scrollbary a Zoom)
         /// </summary>
-        /// <param name="controlBounds"></param>
+        /// <param name="controlBounds">Souřadnice prostoru fyzickém controlu</param>
         /// <returns></returns>
-        public Rectangle GetVirtualBounds(Rectangle controlBounds)
+        public Rectangle GetDesignBounds(Rectangle controlBounds)
         {
             if (!_IsInVirtualMode) return controlBounds;
-            return controlBounds.Add(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
-        }
-        /// <summary>
-        /// Přepočte souřadnici prostoru v datovém prostoru do souřadnice v pixelových koordinátech na this controlu (aplikuje reverzní posun daný Scrollbary)
-        /// </summary>
-        /// <param name="virtualBounds"></param>
-        /// <returns></returns>
-        public Rectangle GetControlBounds(Rectangle virtualBounds)
-        {
-            if (!_IsInVirtualMode) return virtualBounds;
-            return virtualBounds.Sub(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
+
+            // Control => Design :    Design  = (Control + Scrollbar) / Zoom
+            var virtualBegin = _VirtualBegin;
+            double rZoom = 1d / this.CurrentZoom;
+            Point virtualPointLT = controlBounds.GetPoint(RectangleSide.TopLeft).Value.Add(virtualBegin);
+            Point virtualPointBR = controlBounds.GetPoint(RectangleSide.BottomRight).Value.Add(virtualBegin);
+
+            Point designPointLT = virtualPointLT.ZoomByRatio(rZoom);
+            Point designPointBR = virtualPointBR.ZoomByRatio(rZoom);
+
+            return Rectangle.FromLTRB(designPointLT.X, designPointLT.Y, designPointBR.X, designPointBR.Y);
         }
         /// <summary>
         /// Velikost zdejšího Scrollbaru, pokud bude zobrazen. Zde je tedy kladné číslo, i když scrollbar aktuálně není zobrazen.
@@ -221,8 +391,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
          - Základem je naplnění ContentSize = velikost potřebného prostoru k zobrazení = suma velikosti dat + rezerva vpravo a dole
              Pokud není naplněno, pak control pracuje v jednoduchém režimu, a nic z dalšího se neřeší!
          - Proti tomu stojí reálná velikost controlu = ClientSize = do tohoto prostoru vykreslujeme obsah dat
-         - Pokud ContentSize <= ClientSize, pak nepoužijeme ScrollBary a hodnota __CurrentWindowBegin = {0,0} = zobrazujeme nativně = bez posouvání obsahu
+         - Pokud ContentSize <= ClientSize, pak nepoužijeme ScrollBary a hodnota _VirtualBegin = {0,0} = zobrazujeme nativně = bez posouvání obsahu
          - Pokud ContentSize >= ClientSize v jednom směru, pak zobrazíme patřičný Scrollbar, ten odebere část prostoru z ClientSize a přepočteme i druhý směr
+         - Potom se udržuje hodnota _VirtualBegin podle pohybu Scrollbarů
 
         */
 
@@ -243,26 +414,27 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __ScrollbarsEnabled = true;
 
             __DimensionX = new VirtualDimension(this, Axis.X);
-            __DimensionX.VirtualBeginChanged += __Dimension_VirtualBeginChanged;
+            __DimensionX.VirtualBeginChanged += _ScrollbarsValueChanged;
 
             __ScrollBarX = new DxScrollBarX() { Visible = false };
             __ScrollBarX.ValueChanged += __DimensionX.ScrollBarValueChanged;
             this.Controls.Add(__ScrollBarX);
 
             __DimensionY = new VirtualDimension(this, Axis.Y);
-            __DimensionY.VirtualBeginChanged += __Dimension_VirtualBeginChanged;
+            __DimensionY.VirtualBeginChanged += _ScrollbarsValueChanged;
 
             __ScrollBarY = new DxScrollBarY() { Visible = false };
             __ScrollBarY.ValueChanged += __DimensionY.ScrollBarValueChanged;
             this.Controls.Add(__ScrollBarY);
 
             __VirtualInitialized = true;
+            __DataFormZoom = 1f;
             this._RefreshInnerLayout();
         }
         /// <summary>
         /// Obsahuje true po dokončení inicializace virtuálního prostoru
         /// </summary>
-        private bool VirtualInitialized { get { return __VirtualInitialized; } }private bool __VirtualInitialized;
+        private bool _VirtualInitialized { get { return __VirtualInitialized; } } private bool __VirtualInitialized;
         /// <summary>
         /// Nativní událost MouseWheel na controlu - přeneseme ji do Scrollbaru Y, pokud to lze
         /// </summary>
@@ -279,10 +451,37 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void __Dimension_VirtualBeginChanged(object sender, EventArgs e)
+        private void _ScrollbarsValueChanged(object sender, EventArgs e)
         {
+            _VirtualBeginInvalidate();
             this.ContentPanel?.Draw();
         }
+        /// <summary>
+        /// Zajistí znovunapočtení hodnoty Počátek virtuálního prostoru, určený ze Scrollbarů
+        /// </summary>
+        private void _VirtualBeginInvalidate()
+        {
+            __VirtualBegin = null;
+        }
+        /// <summary>
+        /// Počátek virtuálního prostoru, určený ze Scrollbarů.
+        /// Validní a cachovaná hodnota.
+        /// </summary>
+        private Point _VirtualBegin
+        {
+            get
+            {
+                if (!_VirtualInitialized || !_HasContentSize) return Point.Empty;
+
+                if (!__VirtualBegin.HasValue)
+                    __VirtualBegin = new Point(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
+                return __VirtualBegin.Value;
+            }
+        }
+        /// <summary>
+        /// Počátek virtuálního prostoru, určený ze Scrollbarů. Úložiště hodnoty.
+        /// </summary>
+        private Point? __VirtualBegin;
         /// <summary>
         /// Fyzický Scrollbar vodorovný pro posun na ose X
         /// </summary>
@@ -300,16 +499,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private VirtualDimension __DimensionY;
         /// <summary>
-        /// Velikost virtuálního obsahu explicitně zadaná = platí jen když není přítomen <see cref="ContentPanel"/> anebo ten nemá svoji VirtualSize.
+        /// Zoom daný tímto konkrétním DataFormem.
+        /// </summary>
+        private double __DataFormZoom;
+        /// <summary>
+        /// Velikost vnitřního obsahu explicitně zadaná v designových pixelech = platí jen když není přítomen <see cref="ContentPanel"/> anebo ten nemá svoji VirtualSize.
         /// Zadat lze kdykoliv, ale ne vždy bude zadaná hodnota použita.
         /// </summary>
-        private Size? __VirtualSize;
+        private Size? __ContentDesignSize;
         /// <summary>
-        /// Obsahuje true, pokud objekt obsahuje platnou hodnotu <see cref="VirtualSize"/> a mohl by tedy být ve virtuálním modu.
+        /// Velikost vnitřního obsahu explicitně zadaná v virtuálních pixelech (násobené Zoom) = platí jen když není přítomen <see cref="ContentPanel"/> anebo ten nemá svoji VirtualSize.
         /// </summary>
-        private bool _HasContentSize { get { var virtualSize = this.VirtualSize; return (virtualSize.HasValue && virtualSize.Value.Width > 0 && virtualSize.Value.Height > 0); } }
+        private Size? __ContentVirtualSize;
         /// <summary>
-        /// Obsahuje true, pokud objekt reprezentuje virtuální prostor = má nastavenou velikost obsahu <see cref="VirtualSize"/> (kladné rozměry)
+        /// Obsahuje true, pokud objekt obsahuje platnou hodnotu <see cref="ContentVirtualSize"/> a mohl by tedy být ve virtuálním modu.
+        /// </summary>
+        private bool _HasContentSize { get { var virtualSize = this.ContentVirtualSize; return (virtualSize.HasValue && virtualSize.Value.Width > 0 && virtualSize.Value.Height > 0); } }
+        /// <summary>
+        /// Obsahuje true, pokud objekt reprezentuje virtuální prostor = má nastavenou velikost obsahu <see cref="ContentVirtualSize"/> (kladné rozměry)
         /// a má povoleno používat Scrollbary <see cref="ScrollbarsEnabled"/>.
         /// </summary>
         private bool _IsInVirtualMode { get { return (_HasContentSize && __ScrollbarsEnabled); } }
@@ -326,13 +533,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void _RefreshInnerLayout()
         {
-            if (!VirtualInitialized) return;
-            if (__RefreshInnerLayoutRunning) return;                           // Jeden _RefreshInnerLayout() už běží...
+            if (!_VirtualInitialized) return;
+            if (__RefreshInnerLayoutRunning) return;                 // Jeden _RefreshInnerLayout() už běží...
 
             try
             {
                 __RefreshInnerLayoutRunning = true;
-                _ValidateVirtualSize();                                        // Může vyvolat setování VirtualSize, tedy _SetVirtualSize(), což volá nás _RefreshInnerLayout(); ale druhá instance metody se neprovádí protože __RefreshInnerLayoutRunning je true
+                _ValidateDesignSize();                               // Může vyvolat setování VirtualSize, tedy _SetVirtualSize(), což volá nás _RefreshInnerLayout(); ale druhá instance metody se neprovádí protože __RefreshInnerLayoutRunning je true
                 _DetectScrollbars();
                 _ShowScrollBars();
                 _SetContentBounds();
@@ -347,7 +554,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private bool __RefreshInnerLayoutRunning;
         /// <summary>
-        /// Detekuje potřebu zobrazení Scrollbarů. Volá se jak po změně <see cref="VirtualSize"/>, tak po Resize controlu.
+        /// Detekuje potřebu zobrazení Scrollbarů. Volá se jak po změně <see cref="ContentVirtualSize"/>, tak po Resize controlu.
         /// </summary>
         private void _DetectScrollbars()
         {
@@ -388,13 +595,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             int clientRight = clientBounds.Right;
             int clientBottom = clientBounds.Bottom;
+            int scrollWidth = 0;
+            int scrollHeight = 0;
             if (_IsInVirtualMode)
             {
                 if (__DimensionY.UseScrollbar && __DimensionY.ScrollBounds.HasValue) clientRight = __DimensionY.ScrollBounds.Value.Left;
                 if (__DimensionX.UseScrollbar && __DimensionX.ScrollBounds.HasValue) clientBottom = __DimensionX.ScrollBounds.Value.Top;
+                scrollWidth = __DimensionY.ScrollbarSize;
+                scrollHeight = __DimensionX.ScrollbarSize;
             }
+            // Umístění ContentPanelu:
             var contentBounds = Rectangle.FromLTRB(clientBounds.Left, clientBounds.Top, clientRight, clientBottom);
             _SetContentPanelBounds(contentBounds);
+
+            // Viditelný prostor DesignSize:
+            double rZoom = 1d / this.CurrentZoom;
+            Size virtualSize = new Size(clientBounds.Width - scrollWidth, clientBounds.Height - scrollHeight);
+            Size designSize = virtualSize.ZoomByRatio(rZoom);
+            __ContentPanelDesignSize = designSize;
         }
         /// <summary>
         /// Třída pro řešení virtuální / nativní souřadnice v jedné ose (Velikost obsahu / reálný prostor) + Scrollbar pro tuto osu
@@ -488,14 +706,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             public int ScrollbarSize { get { return __ScrollbarSize; } }
             /// <summary>
-            /// Obsahuje true, pokud objekt reprezentuje virtuální prostor = má nastavenou velikost obsahu <see cref="__VirtualSize"/> (kladné rozměry).
+            /// Obsahuje true, pokud objekt reprezentuje virtuální prostor = má nastavenou velikost obsahu <see cref="__ContentDesignSize"/> (kladné rozměry).
             /// V tom případě se v procesu Resize v metodě <see cref="_AcceptControlSize"/> 
             /// </summary>
             private bool _IsInVirtualMode { get { return __Owner._IsInVirtualMode; } }
             /// <summary>
             /// Velikost datového obsahu = virtuální velikost
             /// </summary>
-            private int? _VirtualSize { get { return _GetValue(() => __Owner.__VirtualSize?.Width, () => __Owner.__VirtualSize?.Height); } }
+            private int? _VirtualSize { get { return _GetValue(() => __Owner.ContentVirtualSize?.Width, () => __Owner.ContentVirtualSize?.Height); } }
             /// <summary>
             /// Velikost viditelného prostoru, celková (tj. fyzický Control = obsah + případný scrollbar)
             /// </summary>
@@ -805,11 +1023,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Rectangle ClientArea { get { return this._GetClientBounds(); } }
         /// <summary>
-        /// Tato property může obsahovat potřebnou velikost prostoru, kterou budeme zobrazovat ve virtuálním panelu <see cref="DxVirtualPanel"/>.
+        /// Tato property může obsahovat potřebnou velikost prostoru v designových pixelech, kterou budeme zobrazovat ve virtuálním panelu <see cref="DxVirtualPanel"/>.
         /// Bázová třída <see cref="DxBufferedGraphicPaintArgs"/> vrací null, tato třída neřeší virtuální obsah.
         /// Potomek může implementovat, pak přímo odsud bude <see cref="DxVirtualPanel"/> číst a akceptovat tuto hodnotu.
         /// </summary>
-        public virtual Size? VirtualSize { get { return null; } }
+        public virtual Size? ContentDesignSize { get { return null; } }
+        /// <summary>
+        /// Metodu volá <see cref="DxVirtualPanel"/> v situaci, kdy na něm dojde k změně Zoomu v <see cref="DxVirtualPanel.CurrentZoom"/>.
+        /// Pak může this panel zajistit přepočet nebo invalidaci souřadnic svých prvků.
+        /// </summary>
+        public virtual void OnCurrentZoomChanged() { }
         #endregion
         #region Řízení kreslení - public vrstva: vyvolávací metoda + virtual výkonná metoda
         /// <summary>

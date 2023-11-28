@@ -72,7 +72,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="point"></param>
         /// <param name="offset"></param>
         /// <returns></returns>
-        public static Point GetShiftedPoint(this Point point, Point? offset, bool negative = false)
+        public static Point Add(this Point point, Point? offset, bool negative = false)
         {
             if (!offset.HasValue) return point;
             if (!negative) return new Point(point.X + offset.Value.X, point.Y + offset.Value.Y);
@@ -85,7 +85,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="offsetX"></param>
         /// <param name="offsetY"></param>
         /// <returns></returns>
-        public static Point GetShiftedPoint(this Point bounds, int offsetX, int offsetY)
+        public static Point Add(this Point bounds, int offsetX, int offsetY)
         {
             return new Point(bounds.X + offsetX, bounds.Y + offsetY);
         }
@@ -97,7 +97,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="bounds"></param>
         /// <param name="offset"></param>
         /// <returns></returns>
-        public static Rectangle GetShiftedRectangle(this Rectangle bounds, Point? offset, bool negative = false)
+        public static Rectangle Add(this Rectangle bounds, Point? offset, bool negative = false)
         {
             if (!offset.HasValue) return bounds;
             if (!negative) return new Rectangle(bounds.X + offset.Value.X, bounds.Y + offset.Value.Y, bounds.Width, bounds.Height);
@@ -110,7 +110,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="offsetX"></param>
         /// <param name="offsetY"></param>
         /// <returns></returns>
-        public static Rectangle GetShiftedRectangle(this Rectangle bounds, int offsetX, int offsetY)
+        public static Rectangle Add(this Rectangle bounds, int offsetX, int offsetY)
         {
             return new Rectangle(bounds.X + offsetX, bounds.Y + offsetY, bounds.Width, bounds.Height);
         }
@@ -120,7 +120,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="center"></param>
         /// <param name="size"></param>
         /// <returns></returns>
-        public static Rectangle GetRectangleFromCenter(this Point center, Size size)
+        public static Rectangle CreateRectangleFromCenter(this Point center, Size size)
         {
             return new Rectangle(center.X - (size.Width / 2), center.Y - (size.Height / 2), size.Width, size.Height);
         }
@@ -131,7 +131,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="width"></param>
         /// <param name="height"></param>
         /// <returns></returns>
-        public static Rectangle GetRectangleFromCenter(this Point center, int width, int height)
+        public static Rectangle CreateRectangleFromCenter(this Point center, int width, int height)
         {
             return new Rectangle(center.X - (width / 2), center.Y - (height / 2), width, height);
         }
