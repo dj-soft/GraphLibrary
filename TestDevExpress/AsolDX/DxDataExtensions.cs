@@ -591,6 +591,46 @@ namespace Noris.Clients.Win.Components.AsolDX
             public List<TItem> Items;
         }
         #endregion
+        #region IList
+        /// <summary>
+        /// Vyhledá první prvek odpovídající dané podmínce a vrátí true a předá nalezený index.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="list"></param>
+        /// <param name="condition"></param>
+        /// <param name="foundIndex"></param>
+        /// <returns></returns>
+        public static bool TryFindFirstIndex<T>(this IList<T> list, Func<T, bool> condition, out int foundIndex)
+        {
+            int count = list?.Count ?? 0;
+            if (condition is null) { foundIndex = (count > 0 ? 0 : -1); return (count > 0); }
+            for (int index = 0; index < count; index++)
+            {
+                if (condition(list[index])) { foundIndex = index; return true; }
+            }
+            foundIndex = -1;
+            return false;
+        }
+        /// <summary>
+        /// Vyhledá poslední prvek odpovídající dané podmínce (hledá od konce!) a vrátí true a předá nalezený index.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="list"></param>
+        /// <param name="condition"></param>
+        /// <param name="foundIndex"></param>
+        /// <returns></returns>
+        public static bool TryFindLastIndex<T>(this IList<T> list, Func<T, bool> condition, out int foundIndex)
+        {
+            int count = list?.Count ?? 0;
+            if (condition is null) { foundIndex = count - 1; return (count > 0); }
+            for (int index = (count - 1); index >= 0; index--)
+            {
+                if (condition(list[index])) { foundIndex = index; return true; }
+            }
+            foundIndex = -1;
+            return false;
+        }
+        #endregion
         #region Range
         /// <summary>
         /// Metoda vrátí List obsahující prvky viditelné v daném rozsahu.

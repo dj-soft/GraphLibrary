@@ -26,6 +26,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// </summary>
     public class DxDataFormPanel : DxVirtualPanel
     {
+        #region Konstruktor
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -37,53 +38,27 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             __Initialized = true;
         }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
             _DisposeContent();
             base.Dispose(disposing);
         }
-
-
-
-        /*
-        protected override void OnValidateDesignSize()
-        {
-            base.OnValidateDesignSize();
-
-        }
-        protected override void OnVisibleChanged(EventArgs e)
-        {
-            bool oldVisible = this.VisibleInternal;
-            base.OnVisibleChanged(e);
-            bool newVisible = this.VisibleInternal;
-
-            if (newVisible)
-                DebugReadValues();
-        }
-        protected override void OnParentChanged(EventArgs e)
-        {
-            base.OnParentChanged(e);
-            DebugReadValues();
-        }
-        public void DebugReadValues()
-        {
-            var rows = __DataFormRows;
-            var layout = __DataFormLayout;
-            var csv = __ContentDesignSize;
-            var csp = ContentDesignSize;
-
-            var layoutHostSize = layout.HostDesignSize;
-            var layoutDesignSize = layout.DesignSize;
-        }
-        */
-
-
-
-
         /// <summary>
         /// Obsahuje true po skončení inicializace
         /// </summary>
         private bool __Initialized;
+        /// <summary>
+        /// Po změně velikosti nebo scrollbarů ve virtual panelu zajistíme přepočet interaktivních prvků
+        /// </summary>
+        protected override void OnVisibleDesignBoundsChanged()
+        {
+            InteractiveItemsInvalidate(false);
+        }
+        #endregion
         #region Datové řádky
         /// <summary>
         /// Pole řádků zobrazených v formuláři
@@ -94,7 +69,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void _InitRows()
         {
-            __DataFormRows = new DataFormRows();
+            __DataFormRows = new DataFormRows(this);
             __DataFormRows.CollectionChanged += _RowsChanged;
         }
         /// <summary>
@@ -105,6 +80,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _RowsChanged(object sender, EventArgs e)
         {
             DesignSizeInvalidate();
+            InteractiveItemsInvalidate(true);
         }
         /// <summary>
         /// Fyzická kolekce řádků
@@ -122,7 +98,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void _InitLayout()
         {
-            __DataFormLayout = new DataFormLayoutSet();
+            __DataFormLayout = new DataFormLayoutSet(this);
             __DataFormLayout.CollectionChanged += _LayoutChanged;
 
             Padding = new WinForm.Padding(0);
@@ -147,6 +123,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _LayoutChanged(object sender, EventArgs e)
         {
             DesignSizeInvalidate();
+            InteractiveItemsInvalidate(true);
         }
         #endregion
         #region ContentPanel
@@ -216,6 +193,137 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private WinDraw.Size? __ContentDesignSize;
         #endregion
+        #region InteractiveItems : aktuálně dostupné prvky pro zobrazení
+        /// <summary>
+        /// Interaktivní data = jednotlivé prvky, platné pro aktuální layout a řádky a pozici Scrollbaru. Validní hodnota.
+        /// </summary>
+        public IList<IInteractiveItem> InteractiveItems { get { return _GetValidInteractiveItems(); } }
+        /// <summary>
+        /// Vrátí platé interaktivní prvky
+        /// </summary>
+        /// <returns></returns>
+        private List<IInteractiveItem> _GetValidInteractiveItems()
+        {
+            if (__InteractiveItems is null || !_IsValidInteractiveRows())
+                _PrepareValidInteractiveItems();
+            return __InteractiveItems;
+        }
+        /// <summary>
+        /// Vrátí true, pokud máme připravená platná data v <see cref="__InteractiveItems"/> pro aktuální viditelnou oblast.
+        /// </summary>
+        /// <returns></returns>
+        private bool _IsValidInteractiveRows()
+        {
+            if (__InteractiveItems is null) return false;
+            if (!_IsValidInteractiveItemsForVisibleBounds()) return false;
+            return true;
+        }
+        /// <summary>
+        /// Metoda zajistí přípravu interaktivních prvků do <see cref="__InteractiveItems"/> pro řádky, které jsou v aktuální viditelné oblasti plus kousek okolo.
+        /// </summary>
+        private void _PrepareValidInteractiveItems()
+        {
+            Int32Range designPixels = _GetDesignPixelsForInteractiveRows();
+            var rows = this.DataFormRows.GetRowsInDesignPixels(designPixels);
+            List<IInteractiveItem> items = new List<IInteractiveItem>();
+            foreach (var row in rows)
+                row.PrepareValidInteractiveItems(items);
+
+            __InteractiveItems = items;
+            __InteractiveItemsDesignPixels = designPixels;
+        }
+        /// <summary>
+        /// Určí rozsah designových pixelů, za jejichž odpovídající řádky budeme generovat interaktivní prvky.
+        /// Pokud vrátí null = pak se načtou všechny řádky.
+        /// </summary>
+        /// <returns></returns>
+        private Int32Range _GetDesignPixelsForInteractiveRows()
+        {
+            var contentSize = this.ContentDesignSize;                                    // Jak velký je celý obsah dat v DataFormu = výška kompletního balíku všech řádků
+            if (!contentSize.HasValue) return null;
+
+            // Pokud celý rozsah mých řádků je menší než minimum pro dynamické stránkování, tak vrátím celý rozsah a vytvoří se prvky pro všechny řádky:
+            int contentHeight = contentSize.Value.Height;
+            if (contentHeight < _MinimalHeightToCreateDynamicItems) new Int32Range(0, contentHeight, false);
+
+            var visibleBounds = this.VisibleDesignBounds;                                // Kolik prostoru mám reálně na zobrazení
+            double ratio = (double)visibleBounds.Height / (double)contentHeight;         // Jak velkou poměrnou část z celých dat aktuálně zobrazíme v controlu
+            // Pokud viditelná oblast pokrývá relativně větší část z výšky všech řádků, tak vrátím celý rozsah a vytvoří se prvky pro všechny řádky:
+            if (ratio >= _MinimalRatioToCreateDynamicItems) new Int32Range(0, contentHeight, false);
+
+            // Máme hodně velká data (hodně řádků * výška layoutu), vytvoříme prvky jen pro podmnožinu řádků a následně budeme provádět dynamické scrollování:
+            int addition = 2 * visibleBounds.Height;
+            if (addition < _MinimalAdditionheightForDynamicItems) addition = _MinimalAdditionheightForDynamicItems;
+            int rowBegin = visibleBounds.Top - addition;
+            if (rowBegin < 0) rowBegin = 0;
+            int rowEnd = visibleBounds.Bottom + addition;
+            if (rowEnd > contentHeight) rowEnd = contentHeight;
+
+            bool isDynamic = (rowBegin > 0 && rowEnd <contentHeight);
+            return new Int32Range(rowBegin, rowEnd, isDynamic);
+        }
+        /// <summary>
+        /// Počet pixelů výšky dat (=výška všech řádků), kdy je jednodušší vytvořit prvky za všechny řádky, než začít řešit dynamické stránkování
+        /// </summary>
+        private const int _MinimalHeightToCreateDynamicItems = 2000;
+        /// <summary>
+        /// Poměr výšky viditelné ku výšce všech řádků, kdy je jednodušší vytvořit prvky za všechny řádky, než začít řešit dynamické stránkování.
+        /// Pokud mám control, který zobrazuje na výšku 600px, a výška všech řádků (v aktuálním layoutu) je 2000px, pak se vyplatí vytvořit všechny interaktivní prvky najednou
+        /// a při scrollování pak nebude nutno 
+        /// </summary>
+        private const double _MinimalRatioToCreateDynamicItems = 0.25d;
+        /// <summary>
+        /// Počet přidaných pixelů výšky nad viditelný počátek a pod viditelný konec.
+        /// </summary>
+        private const int _MinimalAdditionheightForDynamicItems = 800;
+        /// <summary>
+        /// Invaliduje soupis prvků v <see cref="InteractiveItems"/>.
+        /// Podle parametru force: 
+        /// true = invalidace bezpodmínečná; 
+        /// false (nepovinně) = jen když aktuálně viditelný prostor zobrazuje data, která nejsou připravena (po Scrollu).
+        /// </summary>
+        /// <param name="force"></param>
+        protected void InteractiveItemsInvalidate(bool force)
+        {
+            if (!force && _IsValidInteractiveItemsForVisibleBounds())
+                // Non force (false) => pokud pro aktuální viditelnou oblast v VisibleDesignBounds máme již z dřívějška připraveny prvky, pak je nebudu invalidovat:
+                return;
+           
+            // Musíme zahodit připravená data:
+            __InteractiveItems = null;
+            __InteractiveItemsDesignPixels = null;
+        }
+        /// <summary>
+        /// Vrátí true, pokud máme připraveny prvky pro aktuálně viditelnou oblast. false pokud prvky nejsou připraveny vůbec, anebo nepokrývají viditelnou oblast.
+        /// </summary>
+        /// <returns></returns>
+        private bool _IsValidInteractiveItemsForVisibleBounds()
+        {
+            if (__InteractiveItems != null && __InteractiveItemsDesignPixels != null)
+            {
+                var visibleBounds = this.VisibleDesignBounds;                  // Aktuálně zobrazená oblast
+                if (visibleBounds.Height <= 0) return true;                    // Nic není viditelno: pak jsme OK.
+
+                // Pokud viditelná oblast se nachází uvnitř oblasti, kterou máme připravenou od dřívějška, pak si data neinvalidujeme.
+                Int32Range designPixels = __InteractiveItemsDesignPixels;
+                // Jde o malý posun a my jsme si moudře připravili interaktivní prvky pro větší oblast, než bylo nutno, takže nyní nemusíme zahazovat a generovat vše...
+                if (visibleBounds.Top >= designPixels.Begin && visibleBounds.Bottom <= designPixels.End) return true;
+            }
+            return false;
+        }
+        /// <summary>
+        /// Interaktivní data = jednotlivé prvky, platné pro aktuální layout a řádky a pozici Scrollbaru. Úložiště.
+        /// Pokrývá oblast na ose Y v rozsahu <see cref="__InteractiveItemsDesignPixels"/>.
+        /// </summary>
+        private List<IInteractiveItem> __InteractiveItems;
+        /// <summary>
+        /// Rozsah designových pixelů od prvního do posledního řádku, který má připravená svoje data v <see cref="__InteractiveItems"/>.
+        /// Zde je využit i příznak IsVariable, který říká: 
+        /// IsVariable = true: jsem proměnný interval, zobrazuji jen část řádků, při scrollování je třeba provádět reload interaktivních prvků;
+        /// IsVariable = false: jsem konstantní interval, zobrazuji všechny řádky. 
+        /// </summary>
+        private Int32Range __InteractiveItemsDesignPixels;
+        #endregion
     }
     #endregion
     #region DxDataFormPanel : fyzický interaktivní panel pro zobrazení contentu DataFormu
@@ -273,8 +381,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // DataForm plní fyzické InteractiveItems pouze pro potřebné viditelné řádky, ale ContentDesignSize odpovídá všem řádkům.
         }
         #endregion
-
+        #region Napojení zdejšího interaktivního panelu na zdroje v parentu DxDataFormPanel
+        /// <summary>
+        /// Hostitelský panel <see cref="DxDataFormPanel"/>; ten řeší naprostou většinu našich požadavků.
+        /// My jsme jen jeho zobrazovací plocha.
+        /// </summary>
+        protected DxDataFormPanel DataFormPanel { get { return this.VirtualPanel as DxDataFormPanel; } }
+        /// <summary>
+        /// Interaktivní data = jednotlivé prvky.
+        /// Třída <see cref="DxDataFormContentPanel"/> zde vrací pole z Parenta <see cref="DxDataFormPanel.InteractiveItems"/>.
+        /// </summary>
+        protected override IList<IInteractiveItem> InteractiveItems { get { return DataFormPanel?.InteractiveItems; } }
+        #endregion
     }
     #endregion
-
 }

@@ -3398,6 +3398,39 @@ namespace Noris.Clients.Win.Components.AsolDX
             return borders;
         }
         #endregion
+        #region DevExpress
+        /// <summary>
+        /// Posune hodnotu Scrollbaru jako by ji posunula myš kolečkem
+        /// </summary>
+        /// <param name="scrollBar"></param>
+        /// <param name="e"></param>
+        /// <param name="keyControl">Hodnota false provede malý pohyb (jako při kliknutí na Inc/Dec Button) = SmallChange;
+        /// Hodnota true simuluje velký pohyb (jako při kliknutí na Inc/Dec Area) = LargeChange</param>
+        public static void SimulateMouseWheel(this DevExpress.XtraEditors.IScrollBar scrollBar, MouseEventArgs e, bool keyControl = false)
+        {
+            var changeState = (e.Delta < 0 ?
+                (!keyControl ? DevExpress.XtraEditors.ViewInfo.ScrollBarState.IncButtonPressed : DevExpress.XtraEditors.ViewInfo.ScrollBarState.IncAreaPressed) :
+                (!keyControl ? DevExpress.XtraEditors.ViewInfo.ScrollBarState.DecButtonPressed : DevExpress.XtraEditors.ViewInfo.ScrollBarState.DecAreaPressed));
+            scrollBar.ChangeValueBasedByState(changeState);
+        }
+        /// <summary>
+        /// Posune hodnotu Scrollbaru jako by ji posunula myš kolečkem
+        /// </summary>
+        /// <param name="scrollBar"></param>
+        /// <param name="e"></param>
+        /// <param name="keyControl">Hodnota false provede malý pohyb (jako při kliknutí na Inc/Dec Button) = SmallChange;
+        /// Hodnota true simuluje velký pohyb (jako při kliknutí na Inc/Dec Area) = LargeChange</param>
+        public static void SimulateMouseWheelDx(this DataForm.IDxScrollBar scrollBar, MouseEventArgs e, bool keyControl = false)
+        {
+            int oldValue = scrollBar.Value;                                              // Výchozí hodnota
+            int change = (!keyControl ? scrollBar.SmallChange : scrollBar.LargeChange);  // Velikost kroku
+            int newValue = (e.Delta < 0 ? (oldValue + change) : (oldValue - change));    // Směr kroku
+            int valueTop = scrollBar.Maximum - scrollBar.LargeChange;                    // Maximum
+            if (newValue > valueTop) newValue = valueTop;                                // Ošetření Max
+            if (newValue < scrollBar.Minimum) newValue = scrollBar.Minimum;              // Ošetření Min
+            if (newValue != oldValue) scrollBar.Value = newValue;                        // Změna hodnoty
+        }
+        #endregion
         #region SvgImage
         /// <summary>
         /// Vrací stringový obsah daného SVG Image

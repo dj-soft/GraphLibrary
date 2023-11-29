@@ -96,9 +96,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             VirtualSizeInvalidate();
         }
         /// <summary>
-        /// Interaktivní data = jednotlivé prvky
+        /// Interaktivní data = jednotlivé prvky. Úložiště pole.
         /// </summary>
         private DxInteractiveItems __Items;
+        /// <summary>
+        /// Interaktivní data = jednotlivé prvky. Virtuální property, potomek může přepsat a řešit tak zcela vlastní zdroj pro interaktivní prvky.
+        /// Bázová třída <see cref="DxInteractivePanel"/> zde vrací pole <see cref="Items"/>.
+        /// </summary>
+        protected virtual IList<IInteractiveItem> InteractiveItems { get { return __Items; } }
         #endregion
         #region Layout prvků, velikost obsahu VirtualSize
         /// <summary>
@@ -135,7 +140,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             int r = 0;
             int b = 0;
-            var items = __Items;
+            var items = InteractiveItems;
             if (items != null)
             {
                 foreach (var item in items)
@@ -389,13 +394,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         private IInteractiveItem _GetMouseItem(MouseState mouseState)
         {
-            Point virtualPoint = mouseState.LocationVirtual;
-            var items = __Items;
-            int count = items.Count;
-            for (int i = count - 1; i >= 0; i--)
+            Point locationDesign = mouseState.LocationDesign;
+            var items = InteractiveItems;
+            if (items != null)
             {
-                if (items[i].IsActiveOnVirtualPoint(virtualPoint))
-                    return items[i];
+                int count = items.Count;
+                for (int i = count - 1; i >= 0; i--)
+                {
+                    if (items[i].IsActiveOnDesignPoint(locationDesign))
+                        return items[i];
+                }
             }
             return null;
         }
@@ -787,35 +795,48 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         protected override void OnPaintToBuffer(object sender, PaintEventArgs e)
         {
             e.Graphics.Clear(this.BackColor);
-            _PaintAllDataItems(e);
+            var items = InteractiveItems;
+            if (items != null)
+            {
+                var mouseState = _CreateMouseState();
+                using (PaintDataEventArgs pdea = new PaintDataEventArgs(e, mouseState, this))
+                {
+                    PaintAllDataItems(pdea, items);
+                    PaintDraggedItem(pdea);
+                }
+            }
         }
         /// <summary>
         /// Vykreslí všechny interaktivní prvky v základní vrstvě
         /// </summary>
-        /// <param name="e"></param>
-        private void _PaintAllDataItems(PaintEventArgs e)
+        /// <param name="pdea">Argument pro kreslení</param>
+        /// <param name="items">Vykreslované prvky</param>
+        protected virtual void PaintAllDataItems(PaintDataEventArgs pdea, IEnumerable<IInteractiveItem> items)
         {
-            var mouseState = _CreateMouseState();
-            using (PaintDataEventArgs pdea = new PaintDataEventArgs(e, mouseState, this))
+            // Vytvořím Dictionary, kde Key = ZOrder prvku, a z Dictionary udělám List<KeyValuePair<int = ZOrder, Value = IInteractiveItem[]>> :
+            var zOrders = items.CreateDictionaryArray(i => GetZOrder(i)).ToList();             // Seskupím podle ZOrder
+            if (zOrders.Count > 1) zOrders.Sort((a, b) => a.Key.CompareTo(b.Key));             // Setřídím podle ZOrder ASC
+            foreach (var zOrder in zOrders)
+            {   // Jednotlivé hladiny ZOrder:
+                foreach (var item in zOrder.Value)
+                    item.Paint(pdea);
+            }
+        }
+        /// <summary>
+        /// Vykreslí jediný prvek, který je aktuálně Dragged
+        /// </summary>
+        /// <param name="pdea">Argument pro kreslení</param>
+        protected virtual void PaintDraggedItem(PaintDataEventArgs pdea)
+        {
+            // Dragged item:
+            if (this.__MouseDragCurrentDataItem != null && __CurrentMouseDragState == MouseDragProcessState.MouseDragItem)
             {
-                // Vytvořím Dictionary, kde Key = ZOrder prvku, a z Dictionary udělám List<KeyValuePair<int = ZOrder, Value = IInteractiveItem[]>> :
-                var zOrders = __Items.CreateDictionaryArray(i => GetZOrder(i)).ToList();
-                if (zOrders.Count > 1) zOrders.Sort((a, b) => a.Key.CompareTo(b.Key));             // Setřídím podle ZOrder ASC
-                foreach (var zOrder in zOrders)
-                {
-                    foreach (var item in zOrder.Value)
-                        item.Paint(pdea);
-                }
-
-                if (this.__MouseDragCurrentDataItem != null && __CurrentMouseDragState == MouseDragProcessState.MouseDragItem)
-                {
-                    var dragBeginPoint = __DragBeginMouseState.LocationControl;
-                    var dragCurrentPoint = __DragVirtualCurrentPoint.LocationControl;
-                    var dragShift = dragCurrentPoint.Sub(dragBeginPoint);
-                    pdea.MouseDragState = MouseDragState.MouseDragActiveCurrent;
-                    pdea.MouseDragCurrentBounds = this.__MouseDragCurrentDataItem.DesignBounds.Add(dragShift);
-                    this.__MouseDragCurrentDataItem.Paint(pdea);
-                }
+                var dragBeginPoint = __DragBeginMouseState.LocationControl;
+                var dragCurrentPoint = __DragVirtualCurrentPoint.LocationControl;
+                var dragShift = dragCurrentPoint.Sub(dragBeginPoint);
+                pdea.MouseDragState = MouseDragState.MouseDragActiveCurrent;
+                pdea.MouseDragCurrentBounds = this.__MouseDragCurrentDataItem.DesignBounds.Add(dragShift);
+                this.__MouseDragCurrentDataItem.Paint(pdea);
             }
         }
         /// <summary>
@@ -992,18 +1013,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     public interface IInteractiveItem : IChildOfParent<DxInteractivePanel>
     {
         /// <summary>
-        /// Parent prvek. Plní vizuální komponenta za provozu, pokud this prvek je na pozici Child.
-        /// </summary>
-        IInteractiveItem ParentItem { get; set; }
-        /// <summary>
-        /// Prvek v sobě hostuje další prvky
-        /// </summary>
-        bool IsContainer { get; }
-
-        /// <summary>
         /// Prvek je viditelný
         /// </summary>
         bool IsVisible { get; }
+        /// <summary>
+        /// Prvek je viditelný
+        /// </summary>
+        bool IsInteractive { get; }
         /// <summary>
         /// Souřadnice prvku v rámci jeho parenta. Souřadnice je "Design" = je daná designem. Do aktuálního controlu se souřadnice přepočítává.
         /// </summary>
@@ -1017,7 +1033,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="pdea"></param>
         void Paint(PaintDataEventArgs pdea);
-        bool IsActiveOnVirtualPoint(Point virtualPoint);
+        /// <summary>
+        /// Vrátí true, pokud this prvek je aktivní na dané designové souřadnici
+        /// </summary>
+        /// <param name="designPoint"></param>
+        /// <returns></returns>
+        bool IsActiveOnDesignPoint(Point designPoint);
     }
     #endregion
     #region MouseState : stav myši v rámci interaktivních prvků
@@ -1035,32 +1056,32 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         public static MouseState CreateCurrent(Control control, bool? isLeave = null)
         {
             DateTime time = DateTime.Now;
-            Point locationAbsolute = Control.MousePosition;
+            Point locationScreen = Control.MousePosition;
             MouseButtons buttons = Control.MouseButtons;
             Keys modifierKeys = Control.ModifierKeys;
-            Point locationNative = control.PointToClient(locationAbsolute);
+            Point locationControl = control.PointToClient(locationScreen);
             // Pokud isLeave je true, pak jsme volání z MouseLeave a jsme tedy mimo Control:
-            bool isOnControl = (isLeave.HasValue && isLeave.Value ? false : control.ClientRectangle.Contains(locationNative));
-            Point locationVirtual = locationNative;
-            if (control is DxVirtualPanel virtualControl) locationVirtual = virtualControl.GetDesignPoint(locationNative);
-            return new MouseState(time, locationNative, locationVirtual, locationAbsolute, buttons, modifierKeys, isOnControl);
+            bool isOnControl = (isLeave.HasValue && isLeave.Value ? false : control.ClientRectangle.Contains(locationControl));
+            Point locationDesign = locationControl;
+            if (control is DxVirtualPanel virtualControl) locationDesign = virtualControl.GetDesignPoint(locationControl);
+            return new MouseState(time, locationControl, locationDesign, locationScreen, buttons, modifierKeys, isOnControl);
         }
         /// <summary>
         /// Vrátí stav myši pro dané hodnoty
         /// </summary>
         /// <param name="time"></param>
-        /// <param name="LocationControl">Souřadnice myši v koordinátech controlu (nativní prostor)</param>
-        /// <param name="locationVirtual">Souřadnice myši v koordinátech virtuálního prostoru vrámci Controlu</param>
-        /// <param name="locationAbsolute">Souřadnice myši v absolutních koordinátech (<see cref="Control.MousePosition"/>)</param>
+        /// <param name="locationControl">Souřadnice myši v koordinátech controlu (nativní prostor)</param>
+        /// <param name="locationDesign">Souřadnice myši v koordinátech virtuálního prostoru vrámci Controlu</param>
+        /// <param name="locationScreen">Souřadnice myši v absolutních koordinátech (<see cref="Control.MousePosition"/>)</param>
         /// <param name="buttons">Stisknuté buttony</param>
         /// <param name="modifierKeys">Stav kláves Control, Alt, Shift</param>
         /// <param name="isOnControl">true pokud myš se nachází fyzicky nad Controlem</param>
-        public MouseState(DateTime time, Point LocationControl, Point locationVirtual, Point locationAbsolute, MouseButtons buttons, Keys modifierKeys, bool isOnControl)
+        public MouseState(DateTime time, Point locationControl, Point locationDesign, Point locationScreen, MouseButtons buttons, Keys modifierKeys, bool isOnControl)
         {
             __Time = time;
-            __LocationControl = LocationControl;
-            __LocationVirtual = locationVirtual;
-            __LocationAbsolute = locationAbsolute;
+            __LocationControl = locationControl;
+            __LocationDesign = locationDesign;
+            __LocationScreen = locationScreen;
             __Buttons = buttons;
             __ModifierKeys = modifierKeys;
             __IsOnControl = isOnControl;
@@ -1075,8 +1096,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private DateTime __Time;
         private Point __LocationControl;
-        private Point __LocationVirtual;
-        private Point __LocationAbsolute;
+        private Point __LocationDesign;
+        private Point __LocationScreen;
         private MouseButtons __Buttons;
         private Keys __ModifierKeys;
         private bool __IsOnControl;
@@ -1086,17 +1107,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public DateTime Time { get { return __Time; } }
         /// <summary>
-        /// Souřadnice myši v koordinátech controlu (nativní prostor)
+        /// Souřadnice myši v koordinátech controlu (nativní pixely zobrazovacího controlu)
         /// </summary>
         public Point LocationControl { get { return __LocationControl; } }
         /// <summary>
-        /// Souřadnice myši ve virtuálním prostoru  koordinátech controlu (nativní prostor)
+        /// Souřadnice myši v designovém prostoru (přepočtené)
         /// </summary>
-        public Point LocationVirtual { get { return __LocationVirtual; } }
+        public Point LocationDesign { get { return __LocationDesign; } }
         /// <summary>
         /// Souřadnice myši v koordinátech absolutních (Screen)
         /// </summary>
-        public Point LocationAbsolute { get { return __LocationAbsolute; } }
+        public Point LocationScreen { get { return __LocationScreen; } }
         /// <summary>
         /// Stav buttonů myši
         /// </summary>

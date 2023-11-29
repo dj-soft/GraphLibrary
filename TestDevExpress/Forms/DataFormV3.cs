@@ -228,6 +228,10 @@ namespace TestDevExpress.Forms
         private DevExpress.XtraBars.BarStaticItem _StatusItemCurrent;
         #endregion
         #region DataForm
+        /// <summary>
+        /// Přidá DataForm s daným obsahem
+        /// </summary>
+        /// <param name="sampleId"></param>
         private void _AddDataFormSample(int sampleId)
         {
             _RemoveDataForms();
@@ -239,6 +243,8 @@ namespace TestDevExpress.Forms
 
             dataForm.DataFormLayout.Add(new Noris.Clients.Win.Components.AsolDX.DataForm.Data.DataFormLayoutItem() { DesignBoundsExt = new RectangleExt(20, 200, null, 10, 60, null) });
             dataForm.DataFormLayout.Add(new Noris.Clients.Win.Components.AsolDX.DataForm.Data.DataFormLayoutItem() { DesignBoundsExt = new RectangleExt(40, 180, null, 90, 20, null) });
+            dataForm.DataFormLayout.Add(new Noris.Clients.Win.Components.AsolDX.DataForm.Data.DataFormLayoutItem() { DesignBoundsExt = new RectangleExt(360, 400, null, 10, 40, null) });
+            dataForm.DataFormLayout.Add(new Noris.Clients.Win.Components.AsolDX.DataForm.Data.DataFormLayoutItem() { DesignBoundsExt = new RectangleExt(460, 300, null, 60, 50, null) });
 
             int rowsCount = 58;
             for ( int i = 0; i < rowsCount; i++ )
@@ -248,6 +254,9 @@ namespace TestDevExpress.Forms
         
             _RefreshTitle();
         }
+        /// <summary>
+        /// Odebere DataForm
+        /// </summary>
         private void _RemoveDataForms()
         {
             var dataForm = _DxDataFormV3;

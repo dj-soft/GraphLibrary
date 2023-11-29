@@ -5,10 +5,13 @@
 
 using DevExpress.Charts.Native;
 using DevExpress.DataProcessing.InMemoryDataProcessor;
+using DevExpress.Office.Utils;
 using DevExpress.XtraReports.UI;
+using Noris.Clients.Win.Components.Obsoletes.DataForm.Internal;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using WinDraw = System.Drawing;
@@ -25,10 +28,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormRows()
+        public DataFormRows(DxDataFormPanel dataFormPanel)
         {
+            __DataFormPanel = dataFormPanel;
             _InitRows();
         }
+        /// <summary>
+        /// Panel dataformu
+        /// </summary>
+        internal DxDataFormPanel DataFormPanel { get { return __DataFormPanel; } } private DxDataFormPanel __DataFormPanel;
         #region Jednotlivé řádky s daty
         /// <summary>
         /// Inicializace řádků
@@ -75,15 +83,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// <summary>
         /// Designová velikost celého pole řádků (ésumární prostor všech viditelných řádků).
         /// </summary>
-        public WinDraw.Size ContentDesignSize
-        {
-            get 
-            {
-                if (!__ContentDesignSize.HasValue)
-                    __ContentDesignSize = CalculateContentDesignSize();
-                return __ContentDesignSize.Value;
-            }
-        }
+        public WinDraw.Size ContentDesignSize { get { CheckContentDesignSize(); return __ContentDesignSize.Value; } }
         /// <summary>
         /// Designová velikost jednoho řádku daná definicí layoutu.
         /// Po setování hodnoty je možno číst <see cref="ContentDesignSize"/>
@@ -108,6 +108,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         {
             __OneRowDesignSize = oneRowDesignSize;
             __ContentDesignSize = CalculateContentDesignSize();
+        }
+        /// <summary>
+        /// Pokud je potřeba, přepočte pozice jednotlivých řádků
+        /// </summary>
+        /// <param name="force"></param>
+        protected void CheckContentDesignSize(bool force = false)
+        {
+            if (!__ContentDesignSize.HasValue)
+                __ContentDesignSize = CalculateContentDesignSize();
         }
         /// <summary>
         /// Určí umístění všec viditelných jednotlivých řádků podle aktuální velikosti designu jednoho řádku <see cref="OneRowDesignSize"/>
@@ -139,6 +148,35 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// Velikost designu celého seznamu
         /// </summary>
         private WinDraw.Size? __ContentDesignSize;
+        #endregion
+        #region Podmnožina řádků podle viditelných pixelů
+        /// <summary>
+        /// Metoda vytvoří a vrátí seznam řádků, které se alespoň částečně nacházejí v zadaném rozmezí.
+        /// Pokud rozmezí bude null, vrátí se všechny řádky.
+        /// </summary>
+        /// <param name="designPixels"></param>
+        /// <returns></returns>
+        internal List<DataFormRow> GetRowsInDesignPixels(Int32Range designPixels)
+        {
+            // Zkratka
+            if (designPixels is null) return __Rows.ToList();
+
+            var result = new List<DataFormRow>();
+            if (this.__Rows.Count > 0)
+            {
+                CheckContentDesignSize();
+                int firstPixel = designPixels.Begin;
+                int lastPixel = designPixels.End;
+                foreach (var row in __Rows)
+                {
+                    var bounds = row.RowDesignBounds;
+                    if (bounds.Bottom < firstPixel) continue;
+                    if (bounds.Top > lastPixel) break;
+                    result.Add(row);
+                }
+            }
+            return result;
+        }
         #endregion
         #region IList
         /// <summary>
@@ -255,6 +293,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         }
         DataFormRows IChildOfParent<DataFormRows>.Parent { get { return __Parent; } set { __Parent = value; } } private DataFormRows __Parent;
         /// <summary>
+        /// Parent = kolekce řádků
+        /// </summary>
+        protected DataFormRows Parent { get { return __Parent; } }
+        /// <summary>
+        /// Panel dataformu
+        /// </summary>
+        internal DxDataFormPanel DataFormPanel { get { return __Parent?.DataFormPanel; } }
+
+        /// <summary>
         /// Řádek je viditelný?
         /// </summary>
         public bool IsVisible { get; set; }
@@ -287,6 +334,42 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// </summary>
         public WinDraw.Rectangle RowDesignBounds { get; private set; }
         #endregion
+        #region Interaktivní prvky vytvořené z this řádku
+        /// <summary>
+        /// Metoda vytvoří interaktivní prvky za jednotlivé definice layoutu za tento řádek, a přidá je do předaného pole.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        internal void PrepareValidInteractiveItems(List<IInteractiveItem> items)
+        {
+            var dataFormPanel = DataFormPanel;
+        }
+        #endregion
+    }
+    /// <summary>
+    /// Reprezentuje jednu buňku = jeden fyzický prvek odpovídající prvku layoutu na jednom konkrétním řádku
+    /// </summary>
+    public class DataFormCell : IInteractiveItem
+    {
+        public bool IsVisible { get; set; }
+
+        public bool IsInteractive { get; set; }
+
+        public Rectangle DesignBounds { get; set; }
+
+        public DxInteractiveState InteractiveState { get; set; }
+        public DxInteractivePanel Parent { get; set; }
+
+        public bool IsActiveOnDesignPoint(Point designPoint)
+        {
+            return false;
+        }
+
+        public void Paint(PaintDataEventArgs pdea)
+        {
+            var controlBounds = pdea.InteractivePanel.GetControlBounds(this.DesignBounds);
+            pdea.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(Color.LightYellow), controlBounds);
+        }
     }
     #endregion
     #region Definice layoutu jednoho řádku
@@ -298,10 +381,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormLayoutSet()
+        public DataFormLayoutSet(DxDataFormPanel dataFormPanel)
         {
+            __DataFormPanel = dataFormPanel;
             _InitItems();
         }
+        /// <summary>
+        /// Panel dataformu
+        /// </summary>
+        internal DxDataFormPanel DataFormPanel { get { return __DataFormPanel; } } private DxDataFormPanel __DataFormPanel;
 
         #region Jednotlivé prvky definice
         /// <summary>
