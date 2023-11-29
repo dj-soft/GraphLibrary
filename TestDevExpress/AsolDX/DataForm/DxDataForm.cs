@@ -37,6 +37,49 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             __Initialized = true;
         }
+        protected override void Dispose(bool disposing)
+        {
+            _DisposeContent();
+            base.Dispose(disposing);
+        }
+
+
+
+        /*
+        protected override void OnValidateDesignSize()
+        {
+            base.OnValidateDesignSize();
+
+        }
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            bool oldVisible = this.VisibleInternal;
+            base.OnVisibleChanged(e);
+            bool newVisible = this.VisibleInternal;
+
+            if (newVisible)
+                DebugReadValues();
+        }
+        protected override void OnParentChanged(EventArgs e)
+        {
+            base.OnParentChanged(e);
+            DebugReadValues();
+        }
+        public void DebugReadValues()
+        {
+            var rows = __DataFormRows;
+            var layout = __DataFormLayout;
+            var csv = __ContentDesignSize;
+            var csp = ContentDesignSize;
+
+            var layoutHostSize = layout.HostDesignSize;
+            var layoutDesignSize = layout.DesignSize;
+        }
+        */
+
+
+
+
         /// <summary>
         /// Obsahuje true po skončení inicializace
         /// </summary>
@@ -115,6 +158,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __DataFormContent = new DxDataFormContentPanel();
             this.ContentPanel = __DataFormContent;
         }
+        private void _DisposeContent()
+        {
+            this.ContentPanel = null;
+        }
         private DxDataFormContentPanel __DataFormContent;
         #endregion
         #region ContentDesignSize : velikost obsahu v designových pixelech
@@ -133,6 +180,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 return __ContentDesignSize;
             }
             set { }
+        }
+        /// <summary>
+        /// Po změně hodnoty <see cref="DxVirtualPanel.ContentPanelDesignSize"/>
+        /// </summary>
+        protected override void OnContentPanelDesignSize()
+        {
+            base.OnContentPanelDesignSize();
+            if (__Initialized && this.DataFormLayout.IsDesignSizeDependOnHostSize)
+                DesignSizeInvalidate();
         }
         /// <summary>
         /// Invaliduje celkovou velikost <see cref="ContentDesignSize"/>.
@@ -201,8 +257,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
            
         }
+        /// <summary>
+        /// Metoda zajistí, že velikost <see cref="DxInteractivePanel.ContentDesignSize"/> bude platná (bude odpovídat souhrnu velikosti prvků).
+        /// Metoda je volána před každým Draw tohoto objektu.
+        /// </summary>
+        protected override void ContentDesignSizeCheckValidity(bool force = false)
+        {
+            // Zde jsme ve třídě DxDataFormContentPanel, kde zodpovědnost za velikost ContentDesignSize nese náš Parent = třída DxDataFormPanel.
+            // Zde jsme voláni v čase Draw() tohoto ContentPanelu, a to je už mírně pozdě na přepočty ContentDesignSize, protože Parent už má svůj layout vytvořený.
+            // Validaci i uchování hodnoty ContentDesignSize provádí parent (DxDataFormPanel), validaci volá před svým vykreslením.
+            // Proto my vůbec nevoláme:
+            //    base.ContentDesignSizeCheckValidity(force);
+            // - protože by šlo o nadbytečnou akci.
+            // Base třída by si napočítala ContentDesignSize ze svých InteractiveItems, které rozhodně netvoří celý obsazený prostor.
+            // DataForm plní fyzické InteractiveItems pouze pro potřebné viditelné řádky, ale ContentDesignSize odpovídá všem řádkům.
+        }
         #endregion
-      
+
     }
     #endregion
 

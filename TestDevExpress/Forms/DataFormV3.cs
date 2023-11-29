@@ -240,8 +240,9 @@ namespace TestDevExpress.Forms
             dataForm.DataFormLayout.Add(new Noris.Clients.Win.Components.AsolDX.DataForm.Data.DataFormLayoutItem() { DesignBoundsExt = new RectangleExt(20, 200, null, 10, 60, null) });
             dataForm.DataFormLayout.Add(new Noris.Clients.Win.Components.AsolDX.DataForm.Data.DataFormLayoutItem() { DesignBoundsExt = new RectangleExt(40, 180, null, 90, 20, null) });
 
-            dataForm.DataFormRows.Add(new Noris.Clients.Win.Components.AsolDX.DataForm.Data.DataFormRow());
-            dataForm.DataFormRows.Add(new Noris.Clients.Win.Components.AsolDX.DataForm.Data.DataFormRow());
+            int rowsCount = 58;
+            for ( int i = 0; i < rowsCount; i++ )
+                dataForm.DataFormRows.Add(new Noris.Clients.Win.Components.AsolDX.DataForm.Data.DataFormRow());
 
             _DxDataFormV3 = dataForm;
         

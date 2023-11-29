@@ -349,7 +349,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// <summary>
         /// Designová velikost panelu hostitele = prostor viditelný v rámci fyzického controlu, přepočtený na designové pixely
         /// </summary>
-        public WinDraw.Size? HostDesignSize { get { return __HostDesignSize; } set { __HostDesignSize = value; } }
+        public WinDraw.Size? HostDesignSize 
+        {
+            get { return __HostDesignSize; } 
+            set 
+            {
+                var oldValue = __HostDesignSize;
+                __HostDesignSize = value;
+                var newValue = __HostDesignSize;
+                if (oldValue != newValue && IsDesignSizeDependOnHostSize) { InvalidateDesignSize(); }
+            }
+        }
+        /// <summary>
+        /// Obsahuje true pokud zdejší <see cref="DesignSize"/> se může změnit poté, kdy se změní velikost <see cref="HostDesignSize"/>.
+        /// Tedy když implementujeme dynamické přeskupování obsahu podle dostupného prostoru.
+        /// </summary>
+        public bool IsDesignSizeDependOnHostSize { get { return false; } }
         /// <summary>
         /// Okraje kolem definice jednoho řádku
         /// </summary>
@@ -381,6 +396,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// </summary>
         private WinDraw.Size _CalculateDesignSize()
         {
+            if (!this.HostDesignSize.HasValue) return WinDraw.Size.Empty;
+
             var hostDesignSize = this.HostDesignSize.Value;
             WinDraw.Rectangle parentBounds = new WinDraw.Rectangle(0, 0, hostDesignSize.Width, hostDesignSize.Height);
 

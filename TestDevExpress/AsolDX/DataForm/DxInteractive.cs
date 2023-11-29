@@ -104,7 +104,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Souhrnná velikost obsahu = jednotlivé Items, včetně okrajů Padding
         /// </summary>
-        public override Size? ContentDesignSize { get { _VirtualSizeCheckValidity(); return __CurrentVirtualSize.Value; } }
+        public override Size? ContentDesignSize { get { ContentDesignSizeCheckValidity(); return __CurrentContentDesignSize.Value; } }
         /// <summary>
         /// Znovu napočte rozmístění prvků a volitelně vyvolá jejich překreslení
         /// </summary>
@@ -117,11 +117,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Metoda zneplatní příznak platné hodnoty <see cref="ContentDesignSize"/> 
         /// (volá se po změně definice <see cref="Items"/> a po změně layoutu a po dalších změnách, např. po změně počtu řádků na potomku).
-        /// Následně bude volána metoda <see cref="CalculateVirtualSize()"/>, která určí celkovou velikost obsahu, na kterou se následně nastaví ScrollBary.
+        /// Následně bude volána metoda <see cref="CalculateContentDesignSize()"/>, která určí celkovou velikost obsahu, na kterou se následně nastaví ScrollBary.
         /// </summary>
         protected virtual void VirtualSizeInvalidate()
         {
-            __CurrentVirtualSize = null;
+            __CurrentContentDesignSize = null;
         }
         /// <summary>
         /// Metoda projde všechny své viditelné prvky a určí max potřebné souřadnice Right a Bottom. 
@@ -131,7 +131,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Potomek může velikost určovat jinak, než jen z přítomných <see cref="Items"/>.
         /// </summary>
         /// <returns></returns>
-        protected virtual Size CalculateVirtualSize()
+        protected virtual Size CalculateContentDesignSize()
         {
             int r = 0;
             int b = 0;
@@ -170,54 +170,51 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             VirtualSizeInvalidate();
         }
         /// <summary>
-        /// Sumární velikost obsahu aktuální. Pokud je null, pak je nevalidní, musí projít validací. Validaci provádí metoda <see cref="_VirtualSizeCheckValidity(bool)"/>,
-        /// kterou volá get property <see cref="ContentDesignSize"/>.
+        /// Sumární velikost obsahu aktuální. Pokud je null, pak je nevalidní, musí projít validací. Validaci provádí metoda <see cref="ContentDesignSizeCheckValidity(bool)"/>,
+        /// kterou volá get property <see cref="ContentDesignSize"/> a je volána i před vykreslením.
         /// </summary>
-        private Size? __CurrentVirtualSize;
+        private Size? __CurrentContentDesignSize;
         /// <summary>
         /// Sumární velikost obsahu posledně známá, null = nedefinováno. Slouží k detekci změny.
         /// </summary>
-        private Size? __LastVirtualSize;
+        private Size? __LastContentDesignSize;
         /// <summary>
-        /// Metoda zajistí, že velikost <see cref="__CurrentVirtualSize"/> bude platná (bude odpovídat souhrnu velikosti prvků).
-        /// Vrátí true pokud došlo reálně ke změně velikosti obsahu.
+        /// Metoda zajistí, že velikost <see cref="DxInteractivePanel.ContentDesignSize"/> bude platná (bude odpovídat souhrnu velikosti prvků).
+        /// Metoda je volána před každým Draw tohoto objektu.
         /// </summary>
-        private bool _VirtualSizeCheckValidity(bool force = false)
+        protected virtual void ContentDesignSizeCheckValidity(bool force = false)
         {
-            bool isChanged = false;
-            if (force || !__CurrentVirtualSize.HasValue)
+            if (force || !__CurrentContentDesignSize.HasValue)
             {
-                var lastVirtualSize = __LastVirtualSize;
-                var currentVirtualSize = CalculateVirtualSize();     // Souhrn Items + Padding
-                bool isSizeChanged = (!lastVirtualSize.HasValue || (lastVirtualSize.HasValue && currentVirtualSize != lastVirtualSize.Value));
-                __CurrentVirtualSize = currentVirtualSize;
+                var lastSize = __LastContentDesignSize;
+                var currentSize = CalculateContentDesignSize();      // Souhrn Items + Padding
+                bool isSizeChanged = (!lastSize.HasValue || (lastSize.HasValue && currentSize != lastSize.Value));
+                __CurrentContentDesignSize = currentSize;
                 if (isSizeChanged)                                   // event => jen po reálné změně hodnoty
                 {
-                    this._RunVirtualSizeChanged();
-                    isChanged = true;
+                    this._RunContentDesignSizeChanged();
                 }
-                __LastVirtualSize = currentVirtualSize;
+                __LastContentDesignSize = currentSize;
             }
-            return isChanged;
         }
         /// <summary>
-        /// Vyvolá <see cref="OnVirtualSizeChanged(EventArgs)"/> a event <see cref="VirtualSizeChanged"/>
+        /// Vyvolá <see cref="OnContentDesignSizeChanged(EventArgs)"/> a event <see cref="ContentDesignSizeChanged"/>
         /// </summary>
-        private void _RunVirtualSizeChanged()
+        private void _RunContentDesignSizeChanged()
         {
             EventArgs args = EventArgs.Empty;
-            OnVirtualSizeChanged(args);
-            VirtualSizeChanged?.Invoke(this, args);
+            OnContentDesignSizeChanged(args);
+            ContentDesignSizeChanged?.Invoke(this, args);
         }
         /// <summary>
         /// Metoda vyvolaná po změně velikosti <see cref="ContentDesignSize"/>.
         /// </summary>
         /// <param name="args"></param>
-        protected virtual void OnVirtualSizeChanged(EventArgs args) { }
+        protected virtual void OnContentDesignSizeChanged(EventArgs args) { }
         /// <summary>
         /// Událost vyvolaná po změně velikosti <see cref="ContentDesignSize"/>.
         /// </summary>
-        public event EventHandler VirtualSizeChanged;
+        public event EventHandler ContentDesignSizeChanged;
         #endregion
         #region Virtuální souřadnice - přepočty souřadnic s pomocí hostitelského panelu
         /// <summary>
@@ -764,7 +761,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public override void Draw()
         {
-            this._VirtualSizeCheckValidity();
+            this.ContentDesignSizeCheckValidity();
             base.Draw();
         }
         /// <summary>
@@ -779,7 +776,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </param>
         public override void Draw(Rectangle drawRectangle)
         {
-            this._VirtualSizeCheckValidity();
+            this.ContentDesignSizeCheckValidity();
             base.Draw(drawRectangle);
         }
         /// <summary>

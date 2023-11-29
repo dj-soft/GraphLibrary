@@ -144,7 +144,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// a přepočtený pomocí <see cref="CurrentZoom"/> na designové pixely.
         /// Slouží k automatickému určování layoutu podle disponibilního prostoru.
         /// </summary>
-        public Size ContentPanelDesignSize { get { return __ContentPanelDesignSize; } }
+        public Size ContentPanelDesignSize
+        { 
+            get { return __ContentPanelDesignSize; }
+            private set
+            {
+                var oldValue = __ContentPanelDesignSize;
+                __ContentPanelDesignSize = value;
+                var newValue = __ContentPanelDesignSize;
+                if (oldValue != newValue) { OnContentPanelDesignSize(); }
+            }
+        }
+        /// <summary>
+        /// Po změně hodnoty <see cref="DxVirtualPanel.ContentPanelDesignSize"/>
+        /// </summary>
+        protected virtual void OnContentPanelDesignSize() { }
         /// <summary>
         /// Designový prostor v panelu <see cref="ContentPanel"/> když budou zobrazeny oba Scrollbary. Úložiště hodnoty.
         /// </summary>
@@ -188,6 +202,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
                 return __ContentVirtualSize.Value;
             }
+        }
+        /// <summary>
+        /// Metoda zajistí, že velikost <see cref="ContentDesignSize"/> bude platná (bude odpovídat souhrnu velikosti prvků).
+        /// Metoda je volána před každým Draw tohoto objektu.
+        /// </summary>
+        protected virtual void ContentDesignSizeCheckValidity(bool force = false)
+        {
+
         }
         /// <summary>
         /// Invaliduje celkovou velikost <see cref="ContentDesignSize"/> a navazující <see cref="ContentVirtualSize"/>.
@@ -404,6 +426,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             this._AcceptControlSize();
         }
+        protected override void OnBeforePaint()
+        {
+            base.OnBeforePaint();
+            _CheckValidityDesignSize();
+        }
         /// <summary>
         /// Inicializuje data pro Virtuální souřadnice
         /// </summary>
@@ -512,6 +539,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private Size? __ContentVirtualSize;
         /// <summary>
+        /// Hodnota <see cref="ContentVirtualSize"/>, která byla použita při určení layoutu v metodě <see cref="_RefreshInnerLayout"/>.
+        /// Před dalším kreslením se porovná s aktuální, a případně se znovu určí Layout, viz metoda <see cref="_CheckValidityDesignSize()"/>.
+        /// </summary>
+        private Size? __ValidatedVirtualSize;
+        /// <summary>
         /// Obsahuje true, pokud objekt obsahuje platnou hodnotu <see cref="ContentVirtualSize"/> a mohl by tedy být ve virtuálním modu.
         /// </summary>
         private bool _HasContentSize { get { var virtualSize = this.ContentVirtualSize; return (virtualSize.HasValue && virtualSize.Value.Width > 0 && virtualSize.Value.Height > 0); } }
@@ -526,6 +558,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _AcceptControlSize()
         {
             _RefreshInnerLayout();
+        }
+        /// <summary>
+        /// Kontrola platnosti souřadnic <see cref="ContentVirtualSize"/> a případný přepočet layoutu <see cref="_RefreshInnerLayout()"/>.
+        /// Volá se před vykreslením.
+        /// </summary>
+        private void _CheckValidityDesignSize()
+        {
+            var validatedVirtualSize = __ValidatedVirtualSize;
+            var currentVirtualSize = this.ContentVirtualSize;        // Tady proběhne validace hodnot i ve třídě potomka
+            if (currentVirtualSize != validatedVirtualSize) _RefreshInnerLayout();
         }
         /// <summary>
         /// Zajistí přepočty potřebnosti a hodnoty a souřadnice ScrollBarů podle aktuální velikosti a aktuálního rozměru a zajistí zobrazení / skrytí ScrollBarů.
@@ -543,6 +585,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 _DetectScrollbars();
                 _ShowScrollBars();
                 _SetContentBounds();
+                __ValidatedVirtualSize = this.ContentVirtualSize;
             }
             finally 
             {
@@ -612,7 +655,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             double rZoom = 1d / this.CurrentZoom;
             Size virtualSize = new Size(clientBounds.Width - scrollWidth, clientBounds.Height - scrollHeight);
             Size designSize = virtualSize.ZoomByRatio(rZoom);
-            __ContentPanelDesignSize = designSize;
+            ContentPanelDesignSize = designSize;
         }
         /// <summary>
         /// Třída pro řešení virtuální / nativní souřadnice v jedné ose (Velikost obsahu / reálný prostor) + Scrollbar pro tuto osu
@@ -1701,6 +1744,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this.SizeChanged += _ControlSizeChanged;
             this.ClientSizeChanged += _ControlClientSizeChanged;
         }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            OnBeforePaint();
+            base.OnPaint(e);
+        }
+        protected virtual void OnBeforePaint() { }
         /// <summary>
         /// Dispose panelu
         /// </summary>
