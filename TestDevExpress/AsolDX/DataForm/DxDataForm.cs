@@ -17,12 +17,14 @@ using DevExpress.Utils.Extensions;
 using DevExpress.XtraRichEdit.Model.History;
 using Noris.Clients.Win.Components.AsolDX.DataForm.Data;
 
-
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
-    #region DxDataFormPanel : panel pro zobrazení DataFormu
+    #region DxDataFormPanel : vnější panel DataForm - koordinátor, virtuální container
     /// <summary>
-    /// <see cref="DxDataFormPanel"/> : virtuální grafický panel sloužící pro zobrazení řádků a prvků dle layoutu DataForm.
+    /// <see cref="DxDataFormPanel"/> : vnější panel DataForm - koordinátor, virtuální container.
+    /// Obsahuje vnitřní ContentPanel typu <see cref="DxDataFormContentPanel"/>, který reálně zobrazuje obsah (řeší scrollování).
+    /// Obsahuje kolekci řádků <see cref="DataFormRows"/> a deklaraci layoutu <see cref="DataFormLayoutSet"/>.
+    /// Obsahuje managera fyzických controlů (obdoba RepositoryEditorů) <see cref="DxRepositoryManager"/>
     /// </summary>
     public class DxDataFormPanel : DxVirtualPanel
     {
@@ -34,6 +36,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _InitRows();
             _InitLayout();
+            _InitRepository();
             _InitContent();
 
             __Initialized = true;
@@ -87,7 +90,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private DataFormRows __DataFormRows;
         #endregion
-        #region Definice prvků layoutu jednotlivého řádku
+        #region Definice layoutu
         /// <summary>
         /// Definice vzhledu pro jednotlivý řádek: popisuje panely, záložky, prvky ve vnořené hierarchické podobě.
         /// Z této definice se následně generují jednotlivé interaktivní prvky pro jednotlivý řádek.
@@ -126,6 +129,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             InteractiveItemsInvalidate(true);
         }
         #endregion
+        #region Repository manager
+
+
+        private void _InitRepository()
+        {
+            __RepositoryManager = new DxRepositoryManager(this);
+        }
+
+        private DxRepositoryManager __RepositoryManager;
+        #endregion
         #region ContentPanel
         /// <summary>
         /// Inicializace Content panelu
@@ -139,6 +152,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             this.ContentPanel = null;
         }
+        /// <summary>
+        /// ContentPanel, potomek <see cref="DxDataFormContentPanel"/>
+        /// </summary>
+        public DxDataFormContentPanel DataFormContent { get { return __DataFormContent; } }
+        /// <summary>
+        /// ContentPanel, potomek <see cref="DxDataFormContentPanel"/>
+        /// </summary>
         private DxDataFormContentPanel __DataFormContent;
         #endregion
         #region ContentDesignSize : velikost obsahu v designových pixelech
@@ -326,7 +346,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
     }
     #endregion
-    #region DxDataFormPanel : fyzický interaktivní panel pro zobrazení contentu DataFormu
+    #region DxDataFormContentPanel : fyzický interaktivní panel pro zobrazení contentu DataFormu
     /// <summary>
     /// <see cref="DxDataFormContentPanel"/> : fyzický interaktivní panel pro zobrazení contentu DataFormu.
     /// Řeší grafické vykreslení prvků a řeší interaktivitu myši a klávesnice.

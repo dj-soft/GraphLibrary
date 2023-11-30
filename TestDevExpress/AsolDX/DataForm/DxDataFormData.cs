@@ -3,17 +3,13 @@
 // Redistribution and use in source and binary forms, with or without modification, 
 // is not permitted without valid contract with Asseco Solutions, a. s.
 
-using DevExpress.Charts.Native;
-using DevExpress.DataProcessing.InMemoryDataProcessor;
-using DevExpress.Office.Utils;
-using DevExpress.XtraReports.UI;
-using Noris.Clients.Win.Components.Obsoletes.DataForm.Internal;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+
 using WinDraw = System.Drawing;
 using WinForm = System.Windows.Forms;
 
@@ -25,6 +21,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
     /// </summary>
 	public class DataFormRows : IList<DataFormRow>
 	{
+        #region Konstruktor a proměnné
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -37,6 +34,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// Panel dataformu
         /// </summary>
         internal DxDataFormPanel DataFormPanel { get { return __DataFormPanel; } } private DxDataFormPanel __DataFormPanel;
+        #endregion
         #region Jednotlivé řádky s daty
         /// <summary>
         /// Inicializace řádků
@@ -291,6 +289,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         {
             IsVisible = true;
         }
+        /// <summary>
+        /// Parent
+        /// </summary>
         DataFormRows IChildOfParent<DataFormRows>.Parent { get { return __Parent; } set { __Parent = value; } } private DataFormRows __Parent;
         /// <summary>
         /// Parent = kolekce řádků
@@ -342,23 +343,33 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// <exception cref="NotImplementedException"></exception>
         internal void PrepareValidInteractiveItems(List<IInteractiveItem> items)
         {
-            var dataFormPanel = DataFormPanel;
+            var dataFormContent = DataFormPanel.DataFormContent;
+            Point rowDesignPoint = this.RowDesignBounds.Location;
+            var dataLayout = DataFormPanel.DataFormLayout;
+            items.AddRange(dataLayout.Items.Select(l => new DataFormCell(dataFormContent, l.DesignBounds.Add(rowDesignPoint))));
         }
         #endregion
     }
+    #endregion
+    #region class DataFormCell : jeden interaktivní prvek
     /// <summary>
     /// Reprezentuje jednu buňku = jeden fyzický prvek odpovídající prvku layoutu na jednom konkrétním řádku
     /// </summary>
     public class DataFormCell : IInteractiveItem
     {
-        public bool IsVisible { get; set; }
-
-        public bool IsInteractive { get; set; }
-
-        public Rectangle DesignBounds { get; set; }
-
-        public DxInteractiveState InteractiveState { get; set; }
+        public DataFormCell(DxInteractivePanel parent, Rectangle designBounds)
+        {
+            Parent = parent;
+            DesignBounds = designBounds;
+            IsVisible = true;
+            IsVisible = true;
+            InteractiveState = DxInteractiveState.Enabled;
+        }
         public DxInteractivePanel Parent { get; set; }
+        public Rectangle DesignBounds { get; set; }
+        public bool IsVisible { get; set; }
+        public bool IsInteractive { get; set; }
+        public DxInteractiveState InteractiveState { get; set; }
 
         public bool IsActiveOnDesignPoint(Point designPoint)
         {
@@ -378,6 +389,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
     /// </summary>
     public class DataFormLayoutSet : IList<DataFormLayoutItem>
     {
+        #region Konstruktor a proměnné
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -390,8 +402,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// Panel dataformu
         /// </summary>
         internal DxDataFormPanel DataFormPanel { get { return __DataFormPanel; } } private DxDataFormPanel __DataFormPanel;
-
+        #endregion
         #region Jednotlivé prvky definice
+        /// <summary>
+        /// Pole prvků definice
+        /// </summary>
+        public IList<DataFormLayoutItem> Items { get { return __Items; } }
         /// <summary>
         /// Inicializace řádků
         /// </summary>
@@ -619,6 +635,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
     /// </summary>
     public class DataFormLayoutItem : IChildOfParent<DataFormLayoutSet>
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DataFormLayoutItem()
+        {
+            IsVisible = true;
+        }
+        /// <summary>
+        /// Parent
+        /// </summary>
         DataFormLayoutSet IChildOfParent<DataFormLayoutSet>.Parent { get { return __Parent; } set { __Parent = value; } }
         private DataFormLayoutSet __Parent;
 
