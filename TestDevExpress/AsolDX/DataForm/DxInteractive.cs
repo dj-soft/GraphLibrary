@@ -9,14 +9,16 @@ using DevExpress.XtraCharts;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using Noris.Clients.Win.Components.AsolDX.DataForm.Data;
 using DevExpress.Charts.Native;
+
+using WinDraw = System.Drawing;
+using WinForm = System.Windows.Forms;
+
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
@@ -69,12 +71,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public DxInteractiveItems Items
         {
-            get { return __Items; }
+            get { return __ItemsAll; }
             set
             {
-                __Items.Clear();
+                __ItemsAll.Clear();
                 if (value != null)
-                    __Items.AddRange(value);
+                    __ItemsAll.AddRange(value);
             }
         }
         /// <summary>
@@ -82,41 +84,97 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void _InitItems()
         {
-            __Items = new DxInteractiveItems(this);
-            __Items.CollectionChanged += _ItemsChanged;
+            __ItemsAll = new DxInteractiveItems(this);
+            __ItemsAll.CollectionChanged += _ItemsChanged;
         }
         /// <summary>
-        /// Událost volaná po změně kolekce <see cref="Items"/>. Zajistí invalidaci příznaku platnosti <see cref="ContentAlignment"/>.
+        /// Událost volaná po změně kolekce <see cref="Items"/>. Zajistí invalidaci příznaku platnosti <see cref="WinDraw.ContentAlignment"/>.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         /// <exception cref="NotImplementedException"></exception>
         private void _ItemsChanged(object sender, EventArgs e)
         {
-            VirtualSizeInvalidate();
+            ContentDesignSizeInvalidate();
+            ItemsPaintedInteractiveInvalidate();
         }
         /// <summary>
         /// Interaktivní data = jednotlivé prvky. Úložiště pole.
         /// </summary>
-        private DxInteractiveItems __Items;
+        private DxInteractiveItems __ItemsAll;
         /// <summary>
-        /// Interaktivní data = jednotlivé prvky. Virtuální property, potomek může přepsat a řešit tak zcela vlastní zdroj pro interaktivní prvky.
+        /// Veškeré prvky, které mohou připadat do úvahy pro vykreslení a interaktivitu.
+        /// Virtuální property, potomek může přepsat a řešit tak zcela vlastní zdroj pro interaktivní prvky.
         /// Bázová třída <see cref="DxInteractivePanel"/> zde vrací pole <see cref="Items"/>.
         /// </summary>
-        protected virtual IList<IInteractiveItem> InteractiveItems { get { return __Items; } }
+        protected virtual IList<IInteractiveItem> ItemsAll { get { return __ItemsAll; } }
+        /// <summary>
+        /// Kolekce prvků, které byly naposledy vykresleny. Jde o prvky, které v procesu kreslení <see cref="PaintAllDataItems(PaintDataEventArgs, IEnumerable{IInteractiveItem})"/> 
+        /// byly kresleny metodou <see cref="IInteractiveItem.Paint(PaintDataEventArgs)"/> a vrátily v ní true = prvek je vykreslen (false značí, že prvek je mimo viditelný prostor a nekreslí se).
+        /// Pokud dosud nebyly prvky kresleny, je zde soupis všech prvků shodný s <see cref="ItemsAll"/>.
+        /// </summary>
+        protected virtual IList<IInteractiveItem> ItemsPainted 
+        {
+            get 
+            {
+                if (__ItemsPainted != null) return __ItemsPainted;
+                return ItemsAll;
+            }
+        }
+        /// <summary>
+        /// Kolekce prvků, které byly naposledy vykresleny a mají příznak interaktivity.
+        /// Jde o prvky, které v procesu kreslení <see cref="PaintAllDataItems(PaintDataEventArgs, IEnumerable{IInteractiveItem})"/> 
+        /// byly kresleny metodou <see cref="IInteractiveItem.Paint(PaintDataEventArgs)"/> a vrátily v ní true = prvek je vykreslen (false značí, že prvek je mimo viditelný prostor a nekreslí se).
+        /// Pokud dosud nebyly prvky kresleny, je zde soupis všech prvků shodný s <see cref="ItemsAll"/>.
+        /// </summary>
+        protected virtual IList<IInteractiveItem> ItemsInteractive
+        {
+            get
+            {
+                if (__ItemsInteractive != null) return __ItemsInteractive;
+                return ItemsAll;
+            }
+        }
+        /// <summary>
+        /// Invaliduje vnitřní data po změně v poli prvků.
+        /// Použvají potomci, kteří přepisují <see cref="ItemsAll"/> tak, že vracejí jiné pole, tuto metodu volají po změně ve svých datech.
+        /// </summary>
+        public virtual void ItemsAllChanged()
+        {
+            ItemsPaintedInteractiveInvalidate();
+        }
+        /// <summary>
+        /// Invaliduje pole fyzicky vykreslených a interaktivních prvků. 
+        /// Volá se po změně velikosti, po scrollu a po změnách interaktivních prvků v poli <see cref="ItemsAll"/>.
+        /// Validuje se prvním vykreslením prvků. 
+        /// Do té doby se za vykreslené a interaktivní berou všechny prvky.
+        /// </summary>
+        protected virtual void ItemsPaintedInteractiveInvalidate()
+        {
+            __ItemsPainted = null;
+            __ItemsInteractive = null;
+        }
+        /// <summary>
+        /// Kolekce prvků, které byly naposledy vykresleny bez ohledu na jejich interaktivitu. Úložiště.
+        /// </summary>
+        private List<IInteractiveItem> __ItemsPainted;
+        /// <summary>
+        /// Kolekce prvků, které byly naposledy vykresleny a mají příznak že jsou interaktivní. Úložiště.
+        /// </summary>
+        private List<IInteractiveItem> __ItemsInteractive;
         #endregion
         #region Layout prvků, velikost obsahu VirtualSize
         /// <summary>
         /// Souhrnná velikost obsahu = jednotlivé Items, včetně okrajů Padding
         /// </summary>
-        public override Size? ContentDesignSize { get { ContentDesignSizeCheckValidity(); return __CurrentContentDesignSize.Value; } }
+        public override WinDraw.Size? ContentDesignSize { get { ContentDesignSizeCheckValidity(); return __CurrentContentDesignSize.Value; } }
         /// <summary>
         /// Znovu napočte rozmístění prvků a volitelně vyvolá jejich překreslení
         /// </summary>
         /// <param name="draw"></param>
         public virtual void RefreshContent(bool draw = false)
         {
-            VirtualSizeInvalidate();
+            ContentDesignSizeInvalidate();
             if (draw) this.Draw();
         }
         /// <summary>
@@ -124,7 +182,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// (volá se po změně definice <see cref="Items"/> a po změně layoutu a po dalších změnách, např. po změně počtu řádků na potomku).
         /// Následně bude volána metoda <see cref="CalculateContentDesignSize()"/>, která určí celkovou velikost obsahu, na kterou se následně nastaví ScrollBary.
         /// </summary>
-        protected virtual void VirtualSizeInvalidate()
+        protected virtual void ContentDesignSizeInvalidate()
         {
             __CurrentContentDesignSize = null;
         }
@@ -136,11 +194,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Potomek může velikost určovat jinak, než jen z přítomných <see cref="Items"/>.
         /// </summary>
         /// <returns></returns>
-        protected virtual Size CalculateContentDesignSize()
+        protected virtual WinDraw.Size CalculateContentDesignSize()
         {
             int r = 0;
             int b = 0;
-            var items = InteractiveItems;
+            var items = ItemsAll;
             if (items != null)
             {
                 foreach (var item in items)
@@ -155,14 +213,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
 
             var padding = this.Padding;
-            return new Size(r + padding.Horizontal, b + padding.Vertical);
+            return new WinDraw.Size(r + padding.Horizontal, b + padding.Vertical);
         }
         /// <summary>
         /// Inicializace oblasti Layout
         /// </summary>
         private void _InitLayout()
         {
-            Padding = new Padding(0);
+            Padding = new WinForm.Padding(0);
             PaddingChanged += _PaddingChanged;
         }
         /// <summary>
@@ -172,17 +230,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="e"></param>
         private void _PaddingChanged(object sender, EventArgs e)
         {
-            VirtualSizeInvalidate();
+            ContentDesignSizeInvalidate();
+            ItemsPaintedInteractiveInvalidate();
         }
         /// <summary>
         /// Sumární velikost obsahu aktuální. Pokud je null, pak je nevalidní, musí projít validací. Validaci provádí metoda <see cref="ContentDesignSizeCheckValidity(bool)"/>,
         /// kterou volá get property <see cref="ContentDesignSize"/> a je volána i před vykreslením.
         /// </summary>
-        private Size? __CurrentContentDesignSize;
+        private WinDraw.Size? __CurrentContentDesignSize;
         /// <summary>
         /// Sumární velikost obsahu posledně známá, null = nedefinováno. Slouží k detekci změny.
         /// </summary>
-        private Size? __LastContentDesignSize;
+        private WinDraw.Size? __LastContentDesignSize;
         /// <summary>
         /// Metoda zajistí, že velikost <see cref="DxInteractivePanel.ContentDesignSize"/> bude platná (bude odpovídat souhrnu velikosti prvků).
         /// Metoda je volána před každým Draw tohoto objektu.
@@ -227,7 +286,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="designPoint">Souřadnice bodu v design pixelech</param>
         /// <returns></returns>
-        public Point GetControlPoint(Point designPoint)
+        public WinDraw.Point GetControlPoint(WinDraw.Point designPoint)
         {
             if (!HasVirtualPanel) return designPoint;
             return VirtualPanel.GetControlPoint(designPoint);
@@ -237,7 +296,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="controlPoint">Souřadnice bodu fyzickém controlu</param>
         /// <returns></returns>
-        public Point GetDesignPoint(Point controlPoint)
+        public WinDraw.Point GetDesignPoint(WinDraw.Point controlPoint)
         {
             if (!HasVirtualPanel) return controlPoint;
             return VirtualPanel.GetDesignPoint(controlPoint);
@@ -247,7 +306,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="designBounds">Souřadnice prostoru v design pixelech</param>
         /// <returns></returns>
-        public Rectangle GetControlBounds(Rectangle designBounds)
+        public WinDraw.Rectangle GetControlBounds(WinDraw.Rectangle designBounds)
         {
             if (!HasVirtualPanel) return designBounds;
             return VirtualPanel.GetControlBounds(designBounds);
@@ -257,10 +316,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="controlBounds">Souřadnice prostoru fyzickém controlu</param>
         /// <returns></returns>
-        public Rectangle GetDesignBounds(Rectangle controlBounds)
+        public WinDraw.Rectangle GetDesignBounds(WinDraw.Rectangle controlBounds)
         {
             if (!HasVirtualPanel) return controlBounds;
             return VirtualPanel.GetDesignBounds(controlBounds);
+        }
+        /// <summary>
+        /// Je voláno po změně virtuálních koordinátů (změna Zoomu, změna velikosti, posun Scrollbarů)
+        /// </summary>
+        public void VirtualCoordinatesChanged()
+        {
+            ItemsPaintedInteractiveInvalidate();
+            _MousePositionChanged();
         }
         /// <summary>
         /// Obsahuje true, pokud this interaktivní panel je umístěn ve <see cref="DxBufferedGraphicPanel.VirtualPanel"/>
@@ -295,6 +362,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _MouseEnter(object sender, EventArgs e)
         {
             var mouseState = _CreateMouseState();
+            __CurrentMouseButtons = mouseState.Buttons;
             _MouseMove(mouseState);
         }
         /// <summary>
@@ -302,7 +370,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _MouseMove(object sender, MouseEventArgs e)
+        private void _MouseMove(object sender, WinForm.MouseEventArgs e)
         {
             var mouseState = _CreateMouseState();
             _MouseMove(mouseState);
@@ -312,7 +380,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _MouseDown(object sender, MouseEventArgs e)
+        private void _MouseDown(object sender, WinForm.MouseEventArgs e)
         {
             var mouseState = _CreateMouseState();
             _MouseDown(mouseState);
@@ -322,7 +390,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _MouseUp(object sender, MouseEventArgs e)
+        private void _MouseUp(object sender, WinForm.MouseEventArgs e)
         {
             var mouseState = _CreateMouseState();
             switch (__CurrentMouseDragState)
@@ -357,10 +425,20 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _KeyDown(object sender, KeyEventArgs e)
+        private void _KeyDown(object sender, WinForm.KeyEventArgs e)
         {
             if (__CurrentMouseDragState == MouseDragProcessState.MouseDragItem || __CurrentMouseDragState == MouseDragProcessState.MouseFrameArea)
                 _MouseDragKeyDown(e);
+        }
+        /// <summary>
+        /// Metoda je volána zvenku, z <see cref="DxVirtualPanel"/>, po změně virtuální souřadnice = posunutí pomocí ScrollBarů.
+        /// Nedošlo tedy k pohybu myši, ale přesto se její pozice změnila - přnejmenším designová pozice.
+        /// V této metodě nasimulujeme "pohyb myši" i bez jejího pohybu...
+        /// </summary>
+        private void _MousePositionChanged()
+        {
+            var mouseState = _CreateMouseState();
+            _MouseMove(mouseState);
         }
         #endregion
         #region Získání informace o pozici myši, o prvku pod myší a o adrese pod myší
@@ -394,14 +472,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         private IInteractiveItem _GetMouseItem(MouseState mouseState)
         {
-            Point locationDesign = mouseState.LocationDesign;
-            var items = InteractiveItems;
+            WinDraw.Point controlPoint = mouseState.LocationControl;
+            WinDraw.Point designPoint = mouseState.LocationDesign;
+            var items = ItemsInteractive;
             if (items != null)
             {
                 int count = items.Count;
                 for (int i = count - 1; i >= 0; i--)
                 {
-                    if (items[i].IsActiveOnDesignPoint(locationDesign))
+                    if (items[i].IsActiveOnPoint(controlPoint, designPoint))
                         return items[i];
                 }
             }
@@ -414,8 +493,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void _MouseMove(MouseState mouseState)
         {
-            bool lastNone = (__CurrentMouseButtons == MouseButtons.None);
-            bool currNone = (mouseState.Buttons == MouseButtons.None);
+            bool lastNone = (__CurrentMouseButtons == WinForm.MouseButtons.None);
+            bool currNone = (mouseState.Buttons == WinForm.MouseButtons.None);
 
             if (lastNone && currNone)
             {   // Stále pohyb bez stisknutého tlačítke:
@@ -447,7 +526,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _MouseMoveNone(MouseState mouseState, bool isOnControl)
         {
             bool isChange = _MouseMoveCurrentExchange(mouseState, mouseState.InteractiveItem, DxInteractiveState.HasMouse, isOnControl);
-            bool useMouseTrack = true;
+            bool useMouseTrack = this.UseMouseTrack;
             if (useMouseTrack || isChange)
                 this.Draw();
         }
@@ -457,8 +536,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="mouseState"></param>
         private void _MouseDown(MouseState mouseState)
         {
-            var state = ((mouseState.Buttons == MouseButtons.Left) ? DxInteractiveState.MouseLeftDown :
-                         (mouseState.Buttons == MouseButtons.Right) ? DxInteractiveState.MouseRightDown : DxInteractiveState.HasMouse);
+            var state = ((mouseState.Buttons == WinForm.MouseButtons.Left) ? DxInteractiveState.MouseLeftDown :
+                         (mouseState.Buttons == WinForm.MouseButtons.Right) ? DxInteractiveState.MouseRightDown : DxInteractiveState.HasMouse);
             _MouseMoveCurrentExchange(mouseState, mouseState.InteractiveItem, state, true);
             __CurrentMouseDownState = mouseState;
             __CurrentMouseButtons = mouseState.Buttons;
@@ -487,13 +566,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         /// <summary>
         /// Po provedení MouseUp jak v režimu Click, tak i Drag.
-        /// Najde prvek aktuálně pod myší se nacházející a zajistí <see cref="_MouseMoveCurrentExchange(MouseState, IInteractiveItem, DxInteractiveState, bool)"/> a <see cref="Draw"/>.
+        /// Najde prvek aktuálně pod myší se nacházející a zajistí <see cref="_MouseMoveCurrentExchange(MouseState, IInteractiveItem, DxInteractiveState, bool)"/> a <see cref="Draw()"/>.
         /// </summary>
         /// <param name="mouseState"></param>
         private void _MouseUpEnd(MouseState mouseState)
         {
             __CurrentMouseDownState = null;                          // Aktuálně nemáme myš Down
-            __CurrentMouseButtons = MouseButtons.None;               // Ani žádný button
+            __CurrentMouseButtons = WinForm.MouseButtons.None;       // Ani žádný button
 
             // Znovu najdeme prvek pod myší, ale nehledáme Cell:
             _RefreshMouseState(mouseState);
@@ -514,7 +593,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             //  proto do eventu posílám objekt __CurrentMouseDownState (stav myši v době MouseDown) a nikoli currentItem (ten už má Buttons = None):
             _RunInteractiveItemClick(new InteractiveItemEventArgs(currentItem, __CurrentMouseDownState));
 
-            currentItem.InteractiveState = DxInteractiveState.Enabled;
+            // Jaký stav DxInteractiveState vepíšu do prvku currentItem?
+            //  Pokud myš je stále nad tímto prvkem (poznám podle dat v mouseState), tal HasMouse, jinak Enabled:
+            bool isMouseOverItem = (mouseState.IsOnControl && mouseState.InteractiveItem != null && Object.ReferenceEquals(mouseState.InteractiveItem, currentItem));
+            currentItem.InteractiveState = (!isMouseOverItem ? DxInteractiveState.Enabled : DxInteractiveState.HasMouse);
         }
         /// <summary>
         /// Dokončení myšokliku = uvolnění tlačítka myši, když nebyl proces Drag, a pod myší není žádný prvek.
@@ -594,7 +676,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Aktuální tlačítka myši, zde je i None v době pohybu myši bez tlačítek
         /// </summary>
-        private MouseButtons __CurrentMouseButtons;
+        private WinForm.MouseButtons __CurrentMouseButtons;
         /// <summary>
         /// Stav myši (tlačítko a souřadnice) v okamžiku MouseDown při aktuálním stavu MouseDown, pro řízení MouseDrag
         /// </summary>
@@ -677,9 +759,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Pokud je stisknut Escape, pak rušíme Drag = nastavíme <see cref="__CurrentMouseDragState"/> == <see cref="MouseDragProcessState.Cancelled"/> a vyvoláme Draw.
         /// </summary>
         /// <param name="e"></param>
-        private void _MouseDragKeyDown(KeyEventArgs e)
+        private void _MouseDragKeyDown(WinForm.KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Escape &&
+            if (e.KeyCode == WinForm.Keys.Escape &&
                 (__CurrentMouseDragState == MouseDragProcessState.BeginZone ||
                  __CurrentMouseDragState == MouseDragProcessState.MouseDragItem ||
                  __CurrentMouseDragState == MouseDragProcessState.MouseFrameArea))
@@ -738,7 +820,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Kompletní stav myši v okamžiku, kdy byl zahájen proces DragAndDrop
         /// </summary>
         private MouseState __DragBeginMouseState;
-        private Rectangle? __DragVirtualBeginZone;
+        private WinDraw.Rectangle? __DragVirtualBeginZone;
         private MouseState __DragVirtualCurrentPoint;
         /// <summary>
         /// Prvek, který byl pod myší když začal proces DragAndDrop a je tedy přesouván na jinou pozici
@@ -782,7 +864,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Nemusí nutně jít o grafický prostor, toto je pouze informace předáváná z parametru metody Draw() do handleru PaintToBuffer().
         /// V servisní třídě se nikdy nepoužije ve významu grafického prostoru.
         /// </param>
-        public override void Draw(Rectangle drawRectangle)
+        public override void Draw(WinDraw.Rectangle drawRectangle)
         {
             this.ContentDesignSizeCheckValidity();
             base.Draw(drawRectangle);
@@ -792,10 +874,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        protected override void OnPaintToBuffer(object sender, PaintEventArgs e)
+        protected override void OnPaintToBuffer(object sender, WinForm.PaintEventArgs e)
         {
-            e.Graphics.Clear(this.BackColor);
-            var items = InteractiveItems;
+            this.OnPaintBackground(e);
+
+            // e.Graphics.Clear(this.BackColor);
+            var items = ItemsAll;
             if (items != null)
             {
                 var mouseState = _CreateMouseState();
@@ -807,19 +891,40 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         /// <summary>
-        /// Vykreslí všechny interaktivní prvky v základní vrstvě
+        /// Vykreslí všechny interaktivní prvky v základní vrstvě.
+        /// Validuje data v polích <see cref="__ItemsPainted"/> a <see cref="__ItemsInteractive"/>, pokud je toho zapotřebí.
         /// </summary>
         /// <param name="pdea">Argument pro kreslení</param>
         /// <param name="items">Vykreslované prvky</param>
         protected virtual void PaintAllDataItems(PaintDataEventArgs pdea, IEnumerable<IInteractiveItem> items)
         {
+            // Bude validace?
+            bool doValidate = (__ItemsPainted is null || __ItemsInteractive is null);
+            List<IInteractiveItem> itemsPainted = (doValidate ? new List<IInteractiveItem>() : null);
+            List<IInteractiveItem> itemsInteractive = (doValidate ? new List<IInteractiveItem>() : null);
+
             // Vytvořím Dictionary, kde Key = ZOrder prvku, a z Dictionary udělám List<KeyValuePair<int = ZOrder, Value = IInteractiveItem[]>> :
             var zOrders = items.CreateDictionaryArray(i => GetZOrder(i)).ToList();             // Seskupím podle ZOrder
             if (zOrders.Count > 1) zOrders.Sort((a, b) => a.Key.CompareTo(b.Key));             // Setřídím podle ZOrder ASC
             foreach (var zOrder in zOrders)
             {   // Jednotlivé hladiny ZOrder:
                 foreach (var item in zOrder.Value)
-                    item.Paint(pdea);
+                {
+                    bool isPainted = item.Paint(pdea);
+                    if (doValidate && isPainted)
+                    {
+                        itemsPainted.Add(item);
+                        if (item.IsInteractive)
+                            itemsInteractive.Add(item);
+                    }
+                }
+            }
+
+            // Byla validace?
+            if (doValidate)
+            {
+                __ItemsPainted = itemsPainted;
+                __ItemsInteractive = itemsInteractive;
             }
         }
         /// <summary>
@@ -844,7 +949,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Zadaná bůže používat Alfa kanál (= průhlednost), pak pod touto barvou bude prosvítat barva pozadí dle palety.
         /// Lze zadat null = žádná extra barva, čistě barva dle palety.
         /// </summary>
-        public Color? BackColorUser { get { return __BackColorUser; } set { __BackColorUser = value; this.Draw(); } } private Color? __BackColorUser;
+        public WinDraw.Color? BackColorUser { get { return __BackColorUser; } set { __BackColorUser = value; this.Draw(); } } private WinDraw.Color? __BackColorUser;
+        /// <summary>
+        /// Používá se MouseTrack? To slouží k vykreslení místa s myší při pohybu myši po controlu. Default = false.
+        /// </summary>
+        public bool UseMouseTrack { get { return __UseMouseTrack; } set { __UseMouseTrack = value; this.Draw(); } } private bool __UseMouseTrack;
         /// <summary>
         /// Typ kurzoru aktuálně zobrazený
         /// </summary>
@@ -1023,22 +1132,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Souřadnice prvku v rámci jeho parenta. Souřadnice je "Design" = je daná designem. Do aktuálního controlu se souřadnice přepočítává.
         /// </summary>
-        Rectangle DesignBounds { get; }
+        WinDraw.Rectangle DesignBounds { get; }
         /// <summary>
         /// Interaktivní stav prvku
         /// </summary>
         DxInteractiveState InteractiveState { get; set; }
         /// <summary>
-        /// Provede vykreslení objektu
+        /// Provede vykreslení objektu.
+        /// Pokud objekt není vykreslen
         /// </summary>
         /// <param name="pdea"></param>
-        void Paint(PaintDataEventArgs pdea);
+        bool Paint(PaintDataEventArgs pdea);
         /// <summary>
-        /// Vrátí true, pokud this prvek je aktivní na dané designové souřadnici
+        /// Vrátí true, pokud this prvek je aktivní na dané Control nebo Designové souřadnici (objekt si sám vybere, kterou souřadnici bude vyhodnocovat).
         /// </summary>
-        /// <param name="designPoint"></param>
+        /// <param name="controlPoint">Souřadnice fyzická na controlu</param>
+        /// <param name="designPoint">Souřadnice designová</param>
         /// <returns></returns>
-        bool IsActiveOnDesignPoint(Point designPoint);
+        bool IsActiveOnPoint(WinDraw.Point controlPoint, WinDraw.Point designPoint);
     }
     #endregion
     #region MouseState : stav myši v rámci interaktivních prvků
@@ -1053,17 +1164,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="control"></param>
         /// <param name="isLeave"></param>
         /// <returns></returns>
-        public static MouseState CreateCurrent(Control control, bool? isLeave = null)
+        public static MouseState CreateCurrent(WinForm.Control control, bool? isLeave = null)
         {
-            DateTime time = DateTime.Now;
-            Point locationScreen = Control.MousePosition;
-            MouseButtons buttons = Control.MouseButtons;
-            Keys modifierKeys = Control.ModifierKeys;
-            Point locationControl = control.PointToClient(locationScreen);
+            var time = DateTime.Now;
+            var locationScreen = WinForm.Control.MousePosition;
+            var buttons = WinForm.Control.MouseButtons;
+            var modifierKeys = WinForm.Control.ModifierKeys;
+            var locationControl = control.PointToClient(locationScreen);
+
             // Pokud isLeave je true, pak jsme volání z MouseLeave a jsme tedy mimo Control:
-            bool isOnControl = (isLeave.HasValue && isLeave.Value ? false : control.ClientRectangle.Contains(locationControl));
-            Point locationDesign = locationControl;
+            var isOnControl = (isLeave.HasValue && isLeave.Value ? false : control.ClientRectangle.Contains(locationControl));
+
+            var locationDesign = locationControl;
             if (control is DxVirtualPanel virtualControl) locationDesign = virtualControl.GetDesignPoint(locationControl);
+            else if (control is DxInteractivePanel interactiveControl) locationDesign = interactiveControl.GetDesignPoint(locationControl);
+            
             return new MouseState(time, locationControl, locationDesign, locationScreen, buttons, modifierKeys, isOnControl);
         }
         /// <summary>
@@ -1072,11 +1187,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="time"></param>
         /// <param name="locationControl">Souřadnice myši v koordinátech controlu (nativní prostor)</param>
         /// <param name="locationDesign">Souřadnice myši v koordinátech virtuálního prostoru vrámci Controlu</param>
-        /// <param name="locationScreen">Souřadnice myši v absolutních koordinátech (<see cref="Control.MousePosition"/>)</param>
+        /// <param name="locationScreen">Souřadnice myši v absolutních koordinátech (<see cref="WinForm.Control.MousePosition"/>)</param>
         /// <param name="buttons">Stisknuté buttony</param>
         /// <param name="modifierKeys">Stav kláves Control, Alt, Shift</param>
         /// <param name="isOnControl">true pokud myš se nachází fyzicky nad Controlem</param>
-        public MouseState(DateTime time, Point locationControl, Point locationDesign, Point locationScreen, MouseButtons buttons, Keys modifierKeys, bool isOnControl)
+        public MouseState(DateTime time, WinDraw.Point locationControl, WinDraw.Point locationDesign, WinDraw.Point locationScreen, WinForm.MouseButtons buttons, WinForm.Keys modifierKeys, bool isOnControl)
         {
             __Time = time;
             __LocationControl = locationControl;
@@ -1095,11 +1210,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return $"Buttons: {__Buttons}; LocationNative: {__LocationControl}";
         }
         private DateTime __Time;
-        private Point __LocationControl;
-        private Point __LocationDesign;
-        private Point __LocationScreen;
-        private MouseButtons __Buttons;
-        private Keys __ModifierKeys;
+        private WinDraw.Point __LocationControl;
+        private WinDraw.Point __LocationDesign;
+        private WinDraw.Point __LocationScreen;
+        private WinForm.MouseButtons __Buttons;
+        private WinForm.Keys __ModifierKeys;
         private bool __IsOnControl;
         private IInteractiveItem __InteractiveItem;
         /// <summary>
@@ -1109,23 +1224,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Souřadnice myši v koordinátech controlu (nativní pixely zobrazovacího controlu)
         /// </summary>
-        public Point LocationControl { get { return __LocationControl; } }
+        public WinDraw.Point LocationControl { get { return __LocationControl; } }
         /// <summary>
         /// Souřadnice myši v designovém prostoru (přepočtené)
         /// </summary>
-        public Point LocationDesign { get { return __LocationDesign; } }
+        public WinDraw.Point LocationDesign { get { return __LocationDesign; } }
         /// <summary>
         /// Souřadnice myši v koordinátech absolutních (Screen)
         /// </summary>
-        public Point LocationScreen { get { return __LocationScreen; } }
+        public WinDraw.Point LocationScreen { get { return __LocationScreen; } }
         /// <summary>
         /// Stav buttonů myši
         /// </summary>
-        public MouseButtons Buttons { get { return __Buttons; } }
+        public WinForm.MouseButtons Buttons { get { return __Buttons; } }
         /// <summary>
         /// Stav kláves Control, Alt, Shift
         /// </summary>
-        public Keys ModifierKeys { get { return __ModifierKeys; } }
+        public WinForm.Keys ModifierKeys { get { return __ModifierKeys; } }
         /// <summary>
         /// Ukazatel myši se nachází nad controlem?
         /// </summary>
@@ -1218,19 +1333,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="e"></param>
         /// <param name="mouseState"></param>
         /// <param name="interactivePanel"></param>
-        public PaintDataEventArgs(PaintEventArgs e, MouseState mouseState, DxInteractivePanel interactivePanel)
+        public PaintDataEventArgs(WinForm.PaintEventArgs e, MouseState mouseState, DxInteractivePanel interactivePanel)
         {
-            __Graphics = new WeakReference<Graphics>(e.Graphics);
+            __Graphics = new WeakReference<WinDraw.Graphics>(e.Graphics);
             __ClipRectangle = e.ClipRectangle;
             __MouseState = mouseState;
             __InteractivePanel = interactivePanel;
+            __ClientArea = interactivePanel.ClientArea;
         }
-        private WeakReference<Graphics> __Graphics;
-        private Rectangle __ClipRectangle;
-        private Rectangle? __MouseDragCurrentBounds;
+        private WeakReference<WinDraw.Graphics> __Graphics;
+        private WinDraw.Rectangle __ClipRectangle;
+        private WinDraw.Rectangle? __MouseDragCurrentBounds;
         private MouseDragState __MouseDragState;
         private MouseState __MouseState;
         private DxInteractivePanel __InteractivePanel;
+        private WinDraw.Rectangle __ClientArea;
         void IDisposable.Dispose()
         {
             __Graphics = null;
@@ -1239,16 +1356,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Gets the graphics used to paint. <br/>
         /// The System.Drawing.Graphics object used to paint. The System.Drawing.Graphics object provides methods for drawing objects on the display device.
         /// </summary>
-        public Graphics Graphics { get { return (__Graphics.TryGetTarget(out var graphics) ? graphics : null); } }
+        public WinDraw.Graphics Graphics { get { return (__Graphics.TryGetTarget(out var graphics) ? graphics : null); } }
         /// <summary>
         /// Gets the rectangle in which to paint. <br/>
         /// The System.Drawing.Rectangle in which to paint.
         /// </summary>
-        public Rectangle ClipRectangle { get { return __ClipRectangle; } }
+        public WinDraw.Rectangle ClipRectangle { get { return __ClipRectangle; } }
         /// <summary>
         /// Souřadnice aktivního prvku, kam by byl přesunut v procesu Mouse DragAndDrop, když <see cref="MouseDragState"/> je <see cref="MouseDragState.MouseDragActiveCurrent"/>
         /// </summary>
-        public Rectangle? MouseDragCurrentBounds { get { return __MouseDragCurrentBounds; } set { __MouseDragCurrentBounds = value; } }
+        public WinDraw.Rectangle? MouseDragCurrentBounds { get { return __MouseDragCurrentBounds; } set { __MouseDragCurrentBounds = value; } }
         /// <summary>
         /// Stav procesu Mouse DragAndDrop pro aktuální vykreslovaný prvek
         /// </summary>
@@ -1261,6 +1378,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Interaktivní panel, do kterého je kresleno
         /// </summary>
         public DxInteractivePanel InteractivePanel { get { return __InteractivePanel; } }
+        /// <summary>
+        /// Prostor pro kreslení uvnitř tohoto prvku, s vynecháním aktuálního Borderu. Souřadný systém Controlu.
+        /// </summary>
+        public WinDraw.Rectangle ClientArea { get { return __ClientArea; } }
     }
     #endregion
     #region Enumy a další
@@ -1295,33 +1416,117 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// </summary>
     public enum CursorTypes
     {
+        /// <summary>
+        /// Default
+        /// </summary>
         Default,
+        /// <summary>
+        /// Hand
+        /// </summary>
         Hand,
+        /// <summary>
+        /// Arrow
+        /// </summary>
         Arrow,
+        /// <summary>
+        /// Cross
+        /// </summary>
         Cross,
+        /// <summary>
+        /// IBeam
+        /// </summary>
         IBeam,
+        /// <summary>
+        /// Help
+        /// </summary>
         Help,
+        /// <summary>
+        /// AppStarting
+        /// </summary>
         AppStarting,
+        /// <summary>
+        /// UpArrow
+        /// </summary>
         UpArrow,
+        /// <summary>
+        /// WaitCursor
+        /// </summary>
         WaitCursor,
+        /// <summary>
+        /// HSplit
+        /// </summary>
         HSplit,
+        /// <summary>
+        /// VSplit
+        /// </summary>
         VSplit,
+        /// <summary>
+        /// NoMove2D
+        /// </summary>
         NoMove2D,
+        /// <summary>
+        /// NoMoveHoriz
+        /// </summary>
         NoMoveHoriz,
+        /// <summary>
+        /// NoMoveVert
+        /// </summary>
         NoMoveVert,
+        /// <summary>
+        /// SizeAll
+        /// </summary>
         SizeAll,
+        /// <summary>
+        /// SizeNESW
+        /// </summary>
         SizeNESW,
+        /// <summary>
+        /// SizeNS
+        /// </summary>
         SizeNS,
+        /// <summary>
+        /// SizeNWSE
+        /// </summary>
         SizeNWSE,
+        /// <summary>
+        /// SizeWE
+        /// </summary>
         SizeWE,
+        /// <summary>
+        /// PanEast
+        /// </summary>
         PanEast,
+        /// <summary>
+        /// PanNE
+        /// </summary>
         PanNE,
+        /// <summary>
+        /// PanNorth
+        /// </summary>
         PanNorth,
+        /// <summary>
+        /// PanNW
+        /// </summary>
         PanNW,
+        /// <summary>
+        /// PanSE
+        /// </summary>
         PanSE,
+        /// <summary>
+        /// PanSouth
+        /// </summary>
         PanSouth,
+        /// <summary>
+        /// PanSW
+        /// </summary>
         PanSW,
+        /// <summary>
+        /// PanWest
+        /// </summary>
         PanWest,
+        /// <summary>
+        /// No
+        /// </summary>
         No
     }
     #endregion
@@ -1409,7 +1614,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="parentBounds"></param>
         /// <returns></returns>
-        public Rectangle GetBounds(Rectangle parentBounds)
+        public WinDraw.Rectangle GetBounds(WinDraw.Rectangle parentBounds)
         {
             if (!IsValid)
                 throw new InvalidOperationException($"Neplatně zadané souřadnice v {nameof(RectangleExt)}: {Text}");
@@ -1417,7 +1622,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var rectangleExt = this;
             getBound(Left, Width, Right, parentBounds.Left, parentBounds.Right, out int x, out int w);
             getBound(Top, Height, Bottom, parentBounds.Top, parentBounds.Bottom, out int y, out int h);
-            return new Rectangle(x, y, w, h);
+            return new WinDraw.Rectangle(x, y, w, h);
 
             void getBound(int? defB, int? defS, int? defE, int parentB, int parentE, out int begin, out int size)
             {

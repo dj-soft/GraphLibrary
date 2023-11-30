@@ -130,16 +130,40 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         #endregion
         #region Repository manager
-
-
+        /// <summary>
+        /// Repozitory, obsahující fyzické controly pro zobrazení a editaci dat
+        /// </summary>
+        public DxRepositoryManager RepositoryManager { get { return __RepositoryManager; } }
+        /// <summary>
+        /// Inicializace repozitory
+        /// </summary>
         private void _InitRepository()
         {
             __RepositoryManager = new DxRepositoryManager(this);
         }
-
+        /// <summary>
+        /// Repozitory
+        /// </summary>
         private DxRepositoryManager __RepositoryManager;
+        /// <summary>
+        /// Invaliduje repozitory a uložené bitmapy po změně skinu a zoomu. 
+        /// Vyvolá překreslení grafického panelu <see cref="DataFormContent"/>.
+        /// </summary>
+        public void InvalidateRepozitory()
+        {
+            __RepositoryManager?.InvalidateRepozitory();
+            DataFormContent.Draw();
+        }
+        /// <summary>
+        /// Po změně skinu
+        /// </summary>
+        protected override void OnStyleChanged()
+        {
+            base.OnStyleChanged();
+            InvalidateRepozitory();
+        }
         #endregion
-        #region ContentPanel
+        #region ContentPanel : zobrazuje vlastní obsah (grafická komponenta)
         /// <summary>
         /// Inicializace Content panelu
         /// </summary>
@@ -181,9 +205,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Po změně hodnoty <see cref="DxVirtualPanel.ContentPanelDesignSize"/>
         /// </summary>
-        protected override void OnContentPanelDesignSize()
+        protected override void OnContentPanelDesignSizeChanged()
         {
-            base.OnContentPanelDesignSize();
+            base.OnContentPanelDesignSizeChanged();
             if (__Initialized && this.DataFormLayout.IsDesignSizeDependOnHostSize)
                 DesignSizeInvalidate();
         }
@@ -243,18 +267,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void _PrepareValidInteractiveItems()
         {
-            Int32Range designPixels = _GetDesignPixelsForInteractiveRows();
-            var rows = this.DataFormRows.GetRowsInDesignPixels(designPixels);
-            List<IInteractiveItem> items = new List<IInteractiveItem>();
+            Int32Range designPixels = _GetDesignPixelsForInteractiveRows();              // Rozsah designových pixelů Od-Do, jejichž řádky bychom měli načíst (aktuálně viditelné plus rezerva nahoře a dole, ale možná taky null = celý rozsah)
+            var rows = this.DataFormRows.GetRowsInDesignPixels(ref designPixels);        // Načteme řádky a případně modifikujeme hodnoty v 'designPixels' podle reálných řádků
+            var items = new List<IInteractiveItem>();
             foreach (var row in rows)
-                row.PrepareValidInteractiveItems(items);
+                row.PrepareValidInteractiveItems(items);                                 // Řádky připraví svoje interaktivní prvky
 
+            __VisibleRows = rows;
             __InteractiveItems = items;
             __InteractiveItemsDesignPixels = designPixels;
         }
         /// <summary>
         /// Určí rozsah designových pixelů, za jejichž odpovídající řádky budeme generovat interaktivní prvky.
+        /// Obsahuje řadu optimalizací.
         /// Pokud vrátí null = pak se načtou všechny řádky.
+        /// Pokud vrátí not null instanci, pak ta je Variable = lze do ní modifikovat reálný počátek a konec načtených dat, to řeší <see cref="DataFormRows.GetRowsInDesignPixels(ref Int32Range)"/>, podle reálně nalezených hodnot řádků.
+        /// Zde určujeme "požadovaný rozsah", ale nehledáme konkrétní řádky a jejich souřadnice. To je určeno až při nalezení konkrétních řádků, pak se modifikuje tato instance <see cref="Int32Range"/>, 
+        /// protože ta poté slouží při kontrole, zda máme načtena data pro nově posunutou oblast...
         /// </summary>
         /// <returns></returns>
         private Int32Range _GetDesignPixelsForInteractiveRows()
@@ -262,25 +291,51 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var contentSize = this.ContentDesignSize;                                    // Jak velký je celý obsah dat v DataFormu = výška kompletního balíku všech řádků
             if (!contentSize.HasValue) return null;
 
+            /*   Slovní vysvětlení:
+
+             1. Je jisto, že budeme načítat interaktivní prvky pro některé řádky;
+             2. Buď můžeme načíst interaktivní prvky pro všechny řádky, ale to někdy může být milion prvků (Dataform může zobrazovat 10000 řádků a 50 sloupců + 50 labelů)
+                  => to je maximalistická krajní mez, a to nechceme dopustit (velká spotřeba paměti, časy při hledání prvků v paměti);
+             3. Anebo můžeme načíst pouze ty řádky, které jsou ve viditelné oblasti - bez žádné rezervy nad a pod
+                  => pak ale každý malý Scroll vede k tomu, že nebudeme mít podklady pro nově nascrollovanou oblast a budeme hledat interaktivní prvky pro nově posunutou oblast
+                     (každý malý Scroll vede k režii a spotřebě času a k pomalé reakci a trhání obrazu)
+             4. Takže zvolíme střední cestu:
+                - Pokud výška dat je menší než 2000 pixelů, tak načtu vše najednou, to vyřeší většinu běžných formulářů (odhaduji na 95%)
+                - Pokud viditelný prostor reprezentuje 25% výšky dat nebo víc, pak načtu vše najednou, protože tím předvyřeším zdržení při scrollování
+                - Pak už tedy řeším to, jak velkou podmnožinu dat z celkového rozsahu načtu nyní
+                - Pokusíme se optimalizovat mezi úsporou paměti a rychlostí reakce při scrollování:
+                - Když už načítám, tak načtu 2,5 obrazovky před i za aktuální prostor (tím urychlím scrollování), 
+                   ale pro malý viditelný prostor by 2.5 násobek nestál za řeč - takže přinejmenším načtu 800px navíc
+                   => toto je přídavek (výška v pixelech) nad rámec viditelné oblasti, nahoře i dole;
+                - Určím tedy rozsah pixelů pro načítané řádky = aktuálně viditelný prostor, mínus přídavek nahoře, plus přídavek dole;
+                - Pokud by se takto rozšířený prostor blížil k celému prostoru o nějakých 200 pixelů (nahoře a současně dole), tak radši načteme všechno;
+                - A jen v ostatních případech vrátíme určený rozsah pixelů a načte se podmnožina řádků, což vede k trhání při scrollování 
+                   (kdy při scrollování narazím na konec přednačtených dat a musím načíst data pro nový úsek)
+
+            */
+
             // Pokud celý rozsah mých řádků je menší než minimum pro dynamické stránkování, tak vrátím celý rozsah a vytvoří se prvky pro všechny řádky:
             int contentHeight = contentSize.Value.Height;
-            if (contentHeight < _MinimalHeightToCreateDynamicItems) new Int32Range(0, contentHeight, false);
+            if (contentHeight < _MinimalHeightToCreateDynamicItems) return null;
 
+            // Pokud aktuálně viditelná oblast pokrývá relativně větší část z výšky všech řádků, tak vrátím celý rozsah a vytvoří se prvky pro všechny řádky:
             var visibleBounds = this.VisibleDesignBounds;                                // Kolik prostoru mám reálně na zobrazení
             double ratio = (double)visibleBounds.Height / (double)contentHeight;         // Jak velkou poměrnou část z celých dat aktuálně zobrazíme v controlu
-            // Pokud viditelná oblast pokrývá relativně větší část z výšky všech řádků, tak vrátím celý rozsah a vytvoří se prvky pro všechny řádky:
-            if (ratio >= _MinimalRatioToCreateDynamicItems) new Int32Range(0, contentHeight, false);
+            if (ratio >= _MinimalRatioToCreateDynamicItems) return null;
 
-            // Máme hodně velká data (hodně řádků * výška layoutu), vytvoříme prvky jen pro podmnožinu řádků a následně budeme provádět dynamické scrollování:
-            int addition = 2 * visibleBounds.Height;
-            if (addition < _MinimalAdditionheightForDynamicItems) addition = _MinimalAdditionheightForDynamicItems;
+            // Máme hodně velká data (hodně řádků * výška layoutu) a/nebo malý prostor: vytvoříme prvky jen pro podmnožinu řádků a následně budeme provádět dynamické scrollování:
+            int addition = (int)(_AdditionRatioToDynamicItems * (double)visibleBounds.Height);
+            if (addition < _MinimalAdditionHeightForDynamicItems) addition = _MinimalAdditionHeightForDynamicItems;
             int rowBegin = visibleBounds.Top - addition;
             if (rowBegin < 0) rowBegin = 0;
             int rowEnd = visibleBounds.Bottom + addition;
             if (rowEnd > contentHeight) rowEnd = contentHeight;
 
-            bool isDynamic = (rowBegin > 0 && rowEnd <contentHeight);
-            return new Int32Range(rowBegin, rowEnd, isDynamic);
+            // Pokud rowBegin a současně rowEnd jsou téměř u konce, pak načtu vše:
+            if (rowBegin <= _MinimalDistanceToEndForDynamicItems && rowEnd >= (contentHeight - _MinimalDistanceToEndForDynamicItems)) return null;
+
+            // Pouze tady budu načítat podmnožinu řádků:
+            return new Int32Range(rowBegin, rowEnd, true);
         }
         /// <summary>
         /// Počet pixelů výšky dat (=výška všech řádků), kdy je jednodušší vytvořit prvky za všechny řádky, než začít řešit dynamické stránkování
@@ -293,9 +348,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private const double _MinimalRatioToCreateDynamicItems = 0.25d;
         /// <summary>
+        /// Násobek výšky viditelného controlu, pro který se načítají řádky nad rámec reálně viditelného prostoru. Jde o předem načtenou rezervu pro budoucí scrollování.
+        /// </summary>
+        private const double _AdditionRatioToDynamicItems = 2.5d;
+        /// <summary>
         /// Počet přidaných pixelů výšky nad viditelný počátek a pod viditelný konec.
         /// </summary>
-        private const int _MinimalAdditionheightForDynamicItems = 800;
+        private const int _MinimalAdditionHeightForDynamicItems = 800;
+        /// <summary>
+        /// Pokud určím dynamický rozsah, kterému k začátku i konci dat chybí tento počet pixelů, tak načtu všechny řádky
+        /// </summary>
+        private const int _MinimalDistanceToEndForDynamicItems = 200;
         /// <summary>
         /// Invaliduje soupis prvků v <see cref="InteractiveItems"/>.
         /// Podle parametru force: 
@@ -332,6 +395,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return false;
         }
         /// <summary>
+        /// Pole řádků, jejichž prvky jsou načteny v <see cref="__InteractiveItems"/>. Často jsou to všechny řádky z <see cref="DataFormRows"/>.
+        /// </summary>
+        private DataFormRow[] __VisibleRows;
+        /// <summary>
         /// Interaktivní data = jednotlivé prvky, platné pro aktuální layout a řádky a pozici Scrollbaru. Úložiště.
         /// Pokrývá oblast na ose Y v rozsahu <see cref="__InteractiveItemsDesignPixels"/>.
         /// </summary>
@@ -346,11 +413,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
     }
     #endregion
-    #region DxDataFormContentPanel : fyzický interaktivní panel pro zobrazení contentu DataFormu
+    #region DxDataFormContentPanel : fyzický grafický a interaktivní panel pro zobrazení contentu DataFormu
     /// <summary>
-    /// <see cref="DxDataFormContentPanel"/> : fyzický interaktivní panel pro zobrazení contentu DataFormu.
+    /// <see cref="DxDataFormContentPanel"/> : fyzický grafický a interaktivní panel pro zobrazení contentu DataFormu.
     /// Řeší grafické vykreslení prvků a řeší interaktivitu myši a klávesnice.
-    /// Pro fyzické vykreslení obsahu prvku volá jeho vlastní metodu, to neřeší panel.
+    /// Pro fyzické vykreslení obsahu prvku volá vlastní metodu konkrétního prvku <see cref="IInteractiveItem.Paint(PaintDataEventArgs)"/>, to neřeší sám panel.
     /// </summary>
     public class DxDataFormContentPanel : DxInteractivePanel
     {
@@ -411,7 +478,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Interaktivní data = jednotlivé prvky.
         /// Třída <see cref="DxDataFormContentPanel"/> zde vrací pole z Parenta <see cref="DxDataFormPanel.InteractiveItems"/>.
         /// </summary>
-        protected override IList<IInteractiveItem> InteractiveItems { get { return DataFormPanel?.InteractiveItems; } }
+        protected override IList<IInteractiveItem> ItemsAll { get { return DataFormPanel?.InteractiveItems as IList<IInteractiveItem>; } }
         #endregion
     }
     #endregion

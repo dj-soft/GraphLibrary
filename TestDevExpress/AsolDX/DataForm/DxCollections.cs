@@ -46,6 +46,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __List = new List<TItem>(items);
         }
         /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Count: {this.__List.Count}; Type: {typeof(TItem).FullName}";
+        }
+        /// <summary>
         /// List prvků
         /// </summary>
         private List<TItem> __List;
@@ -313,6 +321,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __Parent = parent;
             _SetParents(items);
             __List = new List<TItem>(items);
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Count: {this.__List.Count}; Type: {typeof(TItem).FullName}";
         }
         /// <summary>
         /// Parent, navazujeme jej do prvků

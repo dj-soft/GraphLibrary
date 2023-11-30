@@ -34,7 +34,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         internal DxDataFormPanel DataFormPanel { get { return __DataFormPanel; } } private DxDataFormPanel __DataFormPanel;
         #endregion
         #region Repository
-
+        /// <summary>
+        /// Invaliduje data v repozitory.
+        /// Volá se po změně skinu a zoomu, protože poté je třeba nově vygenerovat 
+        /// </summary>
+        public void InvalidateRepozitory()
+        { }
         /// <summary>
         /// Inicializace repozitory editorů
         /// </summary>

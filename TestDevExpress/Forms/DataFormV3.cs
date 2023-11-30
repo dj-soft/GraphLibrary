@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing;
 using Noris.Clients.Win.Components.AsolDX;
-using Noris.Clients.Win.Components.AsolDX.DataForm;
+using DxDForm = Noris.Clients.Win.Components.AsolDX.DataForm;
+using DxDData = Noris.Clients.Win.Components.AsolDX.DataForm.Data;
+using DevExpress.Export;
 
 namespace TestDevExpress.Forms
 {
@@ -65,20 +67,16 @@ namespace TestDevExpress.Forms
             string imageTest1 = "svgimages/xaf/actiongroup_easytestrecorder.svg";
             string imageTest2 = "svgimages/spreadsheet/showoutlineformpivottable.svg";
             string imageTest3 = "svgimages/spreadsheet/showtabularformpivottable.svg";
-            addSampleButton(10, "Mřížka 1", imageTest1);
-            // addSampleButton(20, "Mřížka 2", imageTest1);
-            // addSampleButton(30, "Mřížka 3", imageTest1);
-            // addSampleButton(40, "Mřížka 4", imageTest1);
 
-            addSampleButton(101, "Design 1", imageTest2, true);
-            // addSampleButton(102, "Design 2", imageTest2);
-            // addSampleButton(103, "Design 3", imageTest2);
-            // addSampleButton(104, "Design 4", imageTest2);
-
-            addSampleButton(201, "Controly 1", imageTest3, true);
-            // addSampleButton(202, "Controly 2", imageTest3);
-            // addSampleButton(203, "Controly 3", imageTest3);
-            // addSampleButton(204, "Controly 4", imageTest3);
+            // Na čísla Sample reagují metody _CreateSampleLayout() a _CreateSampleRows() !
+            addSampleButton(1001, "Form A x 1 řádek", imageTest1);
+            addSampleButton(1002, "Form A x 2 řádky", imageTest1);
+            addSampleButton(2001, "Form B x 1 řádek", imageTest2, true);
+            addSampleButton(2100, "Form B x 100 řádků", imageTest2);
+            addSampleButton(3001, "Table x 1 řádek", imageTest3, true);
+            addSampleButton(3012, "Table x 12 řádek", imageTest3);
+            addSampleButton(3144, "Table x 144 řádek", imageTest3);
+            addSampleButton(3600, "Table x 600 řádek", imageTest3);
 
             this.DxRibbon.Clear();
             this.DxRibbon.AddPages(pages);
@@ -237,23 +235,18 @@ namespace TestDevExpress.Forms
             _RemoveDataForms();
 
             __DataFormId++;
-            var dataForm = new DxDataFormPanel() { Dock = DockStyle.Fill };         // , BackColor = Color.FromArgb(190, 180, 240)
+            var dataForm = new DxDForm.DxDataFormPanel() { Dock = DockStyle.Fill };         // , BackColor = Color.FromArgb(190, 180, 240)
             DxMainPanel.Controls.Add(dataForm);
             dataForm.GotFocus += DxDataForm_GotFocus;
 
-            dataForm.DataFormLayout.Add(new Noris.Clients.Win.Components.AsolDX.DataForm.Data.DataFormLayoutItem() { DesignBoundsExt = new RectangleExt(20, 200, null, 10, 60, null) });
-            dataForm.DataFormLayout.Add(new Noris.Clients.Win.Components.AsolDX.DataForm.Data.DataFormLayoutItem() { DesignBoundsExt = new RectangleExt(40, 180, null, 90, 20, null) });
-            dataForm.DataFormLayout.Add(new Noris.Clients.Win.Components.AsolDX.DataForm.Data.DataFormLayoutItem() { DesignBoundsExt = new RectangleExt(360, 400, null, 10, 40, null) });
-            dataForm.DataFormLayout.Add(new Noris.Clients.Win.Components.AsolDX.DataForm.Data.DataFormLayoutItem() { DesignBoundsExt = new RectangleExt(460, 300, null, 60, 50, null) });
-
-            int rowsCount = 58;
-            for ( int i = 0; i < rowsCount; i++ )
-                dataForm.DataFormRows.Add(new Noris.Clients.Win.Components.AsolDX.DataForm.Data.DataFormRow());
+            dataForm.DataFormLayout.Store(_CreateSampleLayout(sampleId));
+            dataForm.DataFormRows.Store(_CreateSampleRows(sampleId));
 
             _DxDataFormV3 = dataForm;
         
             _RefreshTitle();
         }
+
         /// <summary>
         /// Odebere DataForm
         /// </summary>
@@ -286,9 +279,119 @@ namespace TestDevExpress.Forms
                 RefreshStatusCurrent();
             }
         }
-        private DxDataFormPanel _DxDataFormV3;
+        private DxDForm.DxDataFormPanel _DxDataFormV3;
         private DateTime? _DxShowTimeStart;
         private TimeSpan? _DxShowTimeSpan;
+        #endregion
+        #region Layouty
+        private List<DxDData.DataFormLayoutItem> _CreateSampleLayout(int sampleId)
+        {
+            var result = new List<DxDData.DataFormLayoutItem>();
+
+            int layoutId = (sampleId / 1000);
+            int rowsCount = (sampleId % 1000);
+
+            switch (layoutId)
+            {
+                case 1:
+                    addItemPairT("datum", "Datum:", DxDForm.DxRepositoryEditorType.TextBox, 6, 10, 60, 20);
+                    addItemPairT("reference", "Reference:", DxDForm.DxRepositoryEditorType.TextBox, 6, 80, 120, 20);
+                    addItemPairT("nazev", "Název:", DxDForm.DxRepositoryEditorType.TextBox, 6, 210, 250, 20);
+                    addItemPairT("pocet", "Počet:", DxDForm.DxRepositoryEditorType.TextBox, 50, 10, 90, 20);
+                    addItemPairT("cena1", "Cena 1ks:", DxDForm.DxRepositoryEditorType.TextBox, 50, 110, 80, 20);
+                    addItemPairT("sazbadph", "Sazba DPH:", DxDForm.DxRepositoryEditorType.TextBox, 94, 10, 140, 20);
+                    addItemPairT("cenacelk", "Cena celkem:", DxDForm.DxRepositoryEditorType.TextBox, 94, 160, 70, 20);
+                    addItemPairT("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.TextBox, 50, 240, 350, 90);
+                    break;
+                case 2:
+                    addItemPairL("datum", "Datum:", DxDForm.DxRepositoryEditorType.TextBox, 6, 10, 60, 20);
+                    addItemPairL("reference", "Reference:", DxDForm.DxRepositoryEditorType.TextBox, 6, 150, 120, 20);
+                    addItemPairL("nazev", "Název:", DxDForm.DxRepositoryEditorType.TextBox, 6, 345, 250, 20);
+                    addItemPairL("pocet", "Počet:", DxDForm.DxRepositoryEditorType.TextBox, 28, 10, 90, 20);
+                    addItemPairL("cena1", "Cena 1ks:", DxDForm.DxRepositoryEditorType.TextBox, 28, 180, 80, 20);
+                    addItemPairL("sazbadph", "Sazba DPH:", DxDForm.DxRepositoryEditorType.TextBox, 50, 10, 140, 20);
+                    addItemPairL("cenacelk", "Cena celkem:", DxDForm.DxRepositoryEditorType.TextBox, 50, 230, 70, 20);
+                    addItemPairL("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.TextBox, 6, 680, 350, 90);
+                    break;
+                case 3:
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 0, 75, null, 1, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 80, 40, null, 1, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 125, 40, null, 1, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 170, 150, null, 1, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 325, 150, null, 1, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 480, 100, null, 1, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 585, 60, null, 1, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 650, 60, null, 1, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 715, 200, null, 1, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 920, 400, null, 1, 20, null);
+                    break;
+            }
+
+            return result;
+
+            void addItemPairT(string columnId, string labelText, DxDForm.DxRepositoryEditorType columnType, int top, int left, int width, int height)
+            {
+                addItemLabel(columnId + ".label", labelText, left + 3, width - 8, null, top, 18, null);
+                addItemType(columnId, columnType, left, width, null, top + 18, height, null);
+            }
+            void addItemPairL(string columnId, string labelText, DxDForm.DxRepositoryEditorType columnType, int top, int left, int width, int height)
+            {
+                addItemLabel(columnId + ".label", labelText, left, 75, null, top + 2, 18, null);
+                addItemType(columnId, columnType, left + 78, width, null, top, height, null);
+            }
+
+            void addItemLabel(string columnId, string labelText, int? left, int? width, int? right, int? top, int? height, int? bottom)
+            {
+                DxDData.DataFormLayoutItem item = new DxDData.DataFormLayoutItem()
+                {
+                    ColumnId = columnId,
+                    ColumnType = DxDForm.DxRepositoryEditorType.Label,
+                    LabelText = labelText,
+                    DesignBoundsExt = new DxDForm.RectangleExt(left, width, right, top, height, bottom)
+                };
+                result.Add(item);
+            }
+            void addItemType(string columnId, DxDForm.DxRepositoryEditorType columnType, int? left, int? width, int? right, int? top, int? height, int? bottom)
+            {
+                DxDData.DataFormLayoutItem item = new DxDData.DataFormLayoutItem()
+                {
+                    ColumnId = columnId,
+                    ColumnType = columnType,
+                    DesignBoundsExt = new DxDForm.RectangleExt(left, width, right, top, height, bottom)
+                };
+                result.Add(item);
+            }
+        }
+
+        private List<DxDData.DataFormRow> _CreateSampleRows(int sampleId)
+        {
+            var result = new List<DxDData.DataFormRow>();
+
+            int layoutId = (sampleId / 1000);
+            int rowsCount = (sampleId % 1000);
+
+            for (int r = 0; r < rowsCount; r++)
+            {
+
+                switch (layoutId)
+                {
+                    case 1:
+                    case 2:
+                    case 3:
+                        addRow();
+                        break;
+
+
+                }
+            }
+
+            return result;
+
+            void addRow()
+            {
+                result.Add(new DxDData.DataFormRow());
+            }
+        }
         #endregion
     }
 }
