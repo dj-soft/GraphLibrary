@@ -5,6 +5,7 @@
 
 using DevExpress.Utils.Drawing;
 using DevExpress.Utils.Extensions;
+using DevExpress.XtraCharts;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -357,6 +358,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     Point virtualBegin = new Point(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
                     Point designBegin = virtualBegin.ZoomByRatio(rZoom);
                     __VisibleDesignBegin = designBegin;
+                    DxComponent.LogAddLine($"VirtualPanel: VisibleDesignBegin validated to {designBegin}");
                 }
                 return __VisibleDesignBegin.Value;
             }
@@ -371,6 +373,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _VirtualBeginInvalidate()
         {
             __VisibleDesignBegin = null;
+            DxComponent.LogAddLine($"VirtualPanel: VisibleDesignBegin invalidated");
         }
         /// <summary>
         /// Oblast designového prostoru, která je aktuálně zobrazena. Je přepočtena ze souřadnic Controlu na souřadnice Designové.
@@ -392,6 +395,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (!(__VisibleDesignBounds.HasValue && __VisibleDesignBounds.Value == designBounds))
                 {
                     __VisibleDesignBounds = designBounds;
+                    DxComponent.LogAddLine($"VirtualPanel: VisibleDesignBounds validated to {designBounds}");
+
                     InteractiveContentPanel?.VirtualCoordinatesChanged();
                     OnVisibleDesignBoundsChanged();
                     VisibleDesignBoundsChanged?.Invoke(this, EventArgs.Empty);
@@ -782,12 +787,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 get
                 {
-                    int? contentSize = this._VirtualSize;
-                    if (!contentSize.HasValue) return false;
-                    int contentEnd = contentSize.Value + _EndSpace;                      // K velikosti dat přidám prázdný prostor za koncem
-                    int clientSize = this._ClientSize - this._OtherScrollbarSize;
-                    if (clientSize <= (__ScrollbarSize + _EndSpace)) return false;
-                    return contentEnd > clientSize;
+                    int virtualBegin = 0;
+                    _ValidateVirtualBegin(ref virtualBegin, out bool needScrollbar, out bool beginChanged);
+                    return needScrollbar;
                 }
             }
             /// <summary>
@@ -826,35 +828,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             public void ModifyValueForClientSize()
             {
-                int currVirtualBegin = __VirtualBegin;
-                int newVirtualBegin = currVirtualBegin;
-                int? contentSize = this._VirtualSize;
-                if (contentSize.HasValue)
-                {
-                    int contentEnd = contentSize.Value + _EndSpace;                      // K velikosti dat přidám prázdný prostor za koncem
-                    if (newVirtualBegin > 0)
-                    {   // Máme posunutý počátek (je odscrollováno):
-                        int clientSize = this._ClientSize - this._OtherScrollbarSize;
-                        int virtualEnd = newVirtualBegin + clientSize;                   // Který poslední virtuální pixel vidím na posledním klientském pixelu
-                        int virtualEmpty = virtualEnd - contentEnd;                      // Kolik pixelů vidím na konci nadbytečně (i po zvětšení contentSize + _EndSpace)
-                        if (virtualEmpty > 0)
-                        {   // Jsme ve stavu, kdy zobrazujeme zbytečně moc prostoru za koncem dat, a přitom máme odscrollovaný Begin:
-                            newVirtualBegin -= virtualEmpty;
-                            if (newVirtualBegin < 0) newVirtualBegin = 0;
-                        }
-                    }
-                }
-                else
-                {
-                    newVirtualBegin = 0;
-                }
-
-                if (newVirtualBegin != currVirtualBegin)
-                {   // Upravím hodnotu počátku:
-                    int v = newVirtualBegin;
-
-
-                }
+                int virtualBegin = __VirtualBegin;
+                _ValidateVirtualBegin(ref virtualBegin, out bool needScrollbar, out bool beginChanged);
+                if (beginChanged)
+                    _SetVirtualBeginValidated(virtualBegin);
             }
             /// <summary>
             /// Obsahuje true, pokud objekt reprezentuje virtuální prostor = má nastavenou velikost obsahu <see cref="__ContentDesignSize"/> (kladné rozměry).
@@ -872,7 +849,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <summary>
             /// Velikost viditelného datového prostoru, zmenšená o druhý (párový) Scrollbar = zde jsou zobrazena data
             /// </summary>
-            private int _DataSize { get { return _GetValue(() => __Owner.CurrentClientBounds.Width - __Owner.__DimensionY._CurrentScrollbarSize, () => __Owner.CurrentClientBounds.Height - __Owner.__DimensionX._CurrentScrollbarSize); } }
+            private int _ClientDataSize { get { return _GetValue(() => __Owner.CurrentClientBounds.Width - __Owner.__DimensionY._CurrentScrollbarSize, () => __Owner.CurrentClientBounds.Height - __Owner.__DimensionX._CurrentScrollbarSize); } }
             /// <summary>
             /// Aktuální velikost zdejšího Scrollbar, se zohledněním <see cref="UseScrollbar"/> (pokud se nepoužívá, je zde 0)
             /// </summary>
@@ -976,7 +953,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <param name="smallChange"></param>
             private void _GetScrollbarValues(out int minimum, out int maximum, out int value, out int largeChange, out int smallChange)
             {
-                var dataSize = _DataSize;
+                var dataSize = _ClientDataSize;
 
                 minimum = 0;
                 maximum = _VirtualSize ?? dataSize;
@@ -1025,8 +1002,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 if (!UseScrollbar) return 0;
 
-                int virtualBegin = _GetValidVirtualBegin(__VirtualBegin);
-                if (virtualBegin != __VirtualBegin)
+                int virtualBegin = __VirtualBegin;
+                _ValidateVirtualBegin(ref virtualBegin, out bool needScrollbar, out bool beginChanged);
+                if (beginChanged)
                 {
                     __VirtualBegin = virtualBegin;
                     _RunVirtualBeginChanged();
@@ -1042,31 +1020,77 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (!_IsInVirtualMode) return;
                 if (!UseScrollbar) return;
 
-                var validVirtualBegin = _GetValidVirtualBegin(virtualBegin);
-                if (validVirtualBegin != __VirtualBegin)
+                _ValidateVirtualBegin(ref virtualBegin);
+                _SetVirtualBeginValidated(virtualBegin);
+            }
+            /// <summary>
+            /// Uloží dodanou hodnotu bez dalších kontrol do <see cref="__VirtualBegin"/> a vyvolá patřičné eventy. Hodnotu nekontroluje
+            /// </summary>
+            /// <param name="virtualBegin"></param>
+            private void _SetVirtualBeginValidated(int virtualBegin)
+            {
+                int oldBegin = __VirtualBegin;
+                if (virtualBegin != oldBegin)
                 {
-                    __VirtualBegin = validVirtualBegin;
+                    __VirtualBegin = virtualBegin;
+                    DxComponent.LogAddLine($"VirtualDimension {__Axis}: VirtualBeginChanged from {oldBegin} to {VirtualBegin}");
                     _RunVirtualBeginChanged();
                 }
             }
             /// <summary>
-            /// Vrátí hodnotu <paramref name="virtualBegin"/> zarovnanou do platných mezí tak, aby nebyla záporná a aby nepřesáhla konec
+            /// Provede validaci hodnoty <paramref name="virtualBegin"/> s ohledem na aktuální velikost panelu a velikost dat.
             /// </summary>
             /// <param name="virtualBegin"></param>
-            /// <returns></returns>
-            private int _GetValidVirtualBegin(int virtualBegin)
+            private void _ValidateVirtualBegin(ref int virtualBegin)
             {
-                int clientSize = _ClientSize;
-                int virtualEnd = virtualBegin + clientSize + 1;
-                int? contentSize = _VirtualSize;
-                if (contentSize.HasValue && virtualEnd > contentSize.Value)
-                {
-                    virtualEnd = contentSize.Value;
-                    virtualBegin = virtualEnd - clientSize;
-                }
-                if (virtualBegin < 0) virtualBegin = 0;
-                return virtualBegin;
+                _ValidateVirtualBegin(ref virtualBegin, out var _, out var _);
             }
+            /// <summary>
+            /// Provede validaci hodnoty <paramref name="virtualBegin"/> s ohledem na aktuální velikost panelu a velikost dat.
+            /// Tato metoda určí vhodnou hodnotu pro <see cref="VirtualBegin"/>, ale nikam ji nezapisuje.
+            /// Určí i potřebnost Scrollbaru = <see cref="NeedScrollbar"/>.
+            /// </summary>
+            /// <param name="virtualBegin"></param>
+            /// <param name="needScrollbar"></param>
+            /// <param name="beginChanged"></param>
+            private void _ValidateVirtualBegin(ref int virtualBegin, out bool needScrollbar, out bool beginChanged)
+            {
+                beginChanged = false;
+                int? virtualSize = _VirtualSize;                               // Celková velikost dat (DesignSize přepočtené Zoomem na VirtualSize) 
+                if (virtualSize.HasValue && virtualSize.Value > 0)
+                {   // Mám VirtualSize:
+                    int clientDataSize = this._ClientDataSize;                 // Velikost controlu zmenšená o ten druhý ScrollBar
+                    int virtualSpace = virtualSize.Value + _EndSpace;          // Velikost dat zvětšená o rezervu
+                    needScrollbar = (virtualSpace > clientDataSize);           // Scrollbar potřebuji, když data jsou větší než aktuální prostor
+                    if (needScrollbar)
+                    {   // Potřebuji Scrollbar = řeším hodnotu 'virtualBegin':
+                        int validBegin = virtualBegin;
+                        int virtualEnd = virtualBegin + clientDataSize;        // Toto by byl poslední zobrazený pixel na konci prostoru
+                        if (virtualEnd > virtualSpace)                         // Pokud teoretický poslední zobrazený pixel je větší než poslední potřebný pixel:
+                            validBegin = virtualSpace - clientDataSize;        //  tak posunu 'validBegin' tak, aby počínaje od něj + clientDataSize vyšel poslední zobrazený pixel == poslední potřebný pixel.
+                        if (validBegin < 0)                                    // Hodnota 'validBegin' nesmí být záporná.
+                            validBegin = 0;
+
+                        // Došlo ke změně 'virtualBegin'?
+                        beginChanged = (validBegin != virtualBegin);
+                        if (beginChanged)
+                            virtualBegin = validBegin;
+                    }
+                }
+                else
+                {   // Nemám zadanou VirtualSize => neřeším ScrollBar:
+                    needScrollbar = false;
+                }
+
+                if (!needScrollbar)
+                {   // Pokud nepotřebuji Scrollbar, pak 'virtualBegin' musí být 0:
+                    beginChanged = (virtualBegin != 0);
+                    virtualBegin = 0;
+                }
+            }
+            /// <summary>
+            /// Souřadnice počátku = odpovídá prvnímu viditelnému pixelu
+            /// </summary>
             private int __VirtualBegin;
             #endregion
         }
@@ -1216,7 +1240,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Umožní řídit potlačení vykreslování v hierarchii metod.
         /// Zajistí, že vykreslování bude potlačeno přinejmenším do párového vyvolání metody SuppressDrawingPop().
-        /// Chování je obdobou chování Stacku: první Push zablokuje kreslení, následné Push a Pop to nezmění, poslední Pop to povolí.
+        /// Chování je obdobou chování Stacku: první Push zablokuje kreslení, následné Push and Pop to nezmění, poslední Pop to povolí.
         /// Podmínka: Push a Pop musí být v páru, jinak kreslení zamrzne.
         /// Řešení: je možno kdykoliv vložit SuppressDrawing = false a vykreslování ožije (nepárový zásobník se vynuluje).
         /// </summary>
@@ -1229,7 +1253,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Umožní řídit potlačení vykreslování v hierarchii metod.
         /// Zajistí, že vykreslování bude potlačeno přinejmenším do párového vyvolání metody SuppressDrawingPop().
-        /// Chování je obdobou chování Stacku: první Push zablokuje kreslení, následné Push & Pop to nezmění, poslední Pop to povolí.
+        /// Chování je obdobou chování Stacku: první Push zablokuje kreslení, následné Push and Pop to nezmění, poslední Pop to povolí.
         /// Podmínka: Push a Pop musí být v páru, jinak kreslení zamrzne.
         /// Řešení: je možno kdykoliv vložit SuppressDrawing = false a vykreslování ožije (nepárový zásobník se vynuluje).
         /// </summary>
@@ -1599,7 +1623,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Posune danou barvu o daný posun, v každé složce může být jiný.
         /// </summary>
         /// <param name="color">Vstupní barva</param>
-        /// <param name="shift">Posun, zadaný v číslu (+- 255)</param>
+        /// <param name="shiftR">Posun složky R, zadaný v číslu (+- 255)</param>
+        /// <param name="shiftG">Posun složky G, zadaný v číslu (+- 255)</param>
+        /// <param name="shiftB">Posun složky B, zadaný v číslu (+- 255)</param>
         /// <returns>Upravená barva</returns>
         public static Color ColorShift(Color color, int shiftR, int shiftG, int shiftB)
         {
@@ -1736,11 +1762,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Do daného prostoru vepíše text, se zarovnáním
         /// </summary>
+        /// <param name="graphics"></param>
         /// <param name="text"></param>
         /// <param name="font"></param>
         /// <param name="brush"></param>
         /// <param name="textArea"></param>
         /// <param name="alignment"></param>
+        /// <param name="stringFormat"></param>
         public static void DrawString(Graphics graphics, string text, Font font, Brush brush, Rectangle textArea, ContentAlignment alignment, StringFormatFlags stringFormat)
         {
             StringFormat format = new StringFormat(stringFormat);
@@ -1855,11 +1883,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this.SizeChanged += _ControlSizeChanged;
             this.ClientSizeChanged += _ControlClientSizeChanged;
         }
+        /// <summary>
+        /// OnPaint
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnPaint(PaintEventArgs e)
         {
             OnBeforePaint();
             base.OnPaint(e);
         }
+        /// <summary>
+        /// Proběhne před bázovou metodu OnPaint
+        /// </summary>
         protected virtual void OnBeforePaint() { }
         /// <summary>
         /// Dispose panelu

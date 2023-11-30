@@ -74,7 +74,7 @@ namespace TestDevExpress.Forms
             addSampleButton(2001, "Form B x 1 řádek", imageTest2, true);
             addSampleButton(2100, "Form B x 100 řádků", imageTest2);
             addSampleButton(3001, "Table x 1 řádek", imageTest3, true);
-            addSampleButton(3012, "Table x 12 řádek", imageTest3);
+            addSampleButton(3036, "Table x 36 řádek", imageTest3);
             addSampleButton(3144, "Table x 144 řádek", imageTest3);
             addSampleButton(3600, "Table x 600 řádek", imageTest3);
 
@@ -284,6 +284,11 @@ namespace TestDevExpress.Forms
         private TimeSpan? _DxShowTimeSpan;
         #endregion
         #region Layouty
+        /// <summary>
+        /// Vytvoří a vrátí layout daného ID
+        /// </summary>
+        /// <param name="sampleId"></param>
+        /// <returns></returns>
         private List<DxDData.DataFormLayoutItem> _CreateSampleLayout(int sampleId)
         {
             var result = new List<DxDData.DataFormLayoutItem>();
@@ -314,16 +319,16 @@ namespace TestDevExpress.Forms
                     addItemPairL("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.TextBox, 6, 680, 350, 90);
                     break;
                 case 3:
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 0, 75, null, 1, 20, null);
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 80, 40, null, 1, 20, null);
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 125, 40, null, 1, 20, null);
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 170, 150, null, 1, 20, null);
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 325, 150, null, 1, 20, null);
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 480, 100, null, 1, 20, null);
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 585, 60, null, 1, 20, null);
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 650, 60, null, 1, 20, null);
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 715, 200, null, 1, 20, null);
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 920, 400, null, 1, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 0, 75, null, 2, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 80, 40, null, 2, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 125, 40, null, 2, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 170, 150, null, 2, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 325, 150, null, 2, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 480, 100, null, 2, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 585, 60, null, 2, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 650, 60, null, 2, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 715, 200, null, 2, 20, null);
+                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 920, 400, null, 2, 20, null);
                     break;
             }
 
@@ -362,7 +367,11 @@ namespace TestDevExpress.Forms
                 result.Add(item);
             }
         }
-
+        /// <summary>
+        /// Vytvoří a vrátí jednotlivé řádky pro layout daného ID
+        /// </summary>
+        /// <param name="sampleId"></param>
+        /// <returns></returns>
         private List<DxDData.DataFormRow> _CreateSampleRows(int sampleId)
         {
             var result = new List<DxDData.DataFormRow>();

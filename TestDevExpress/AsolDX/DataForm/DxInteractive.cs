@@ -3,22 +3,14 @@
 // Redistribution and use in source and binary forms, with or without modification, 
 // is not permitted without valid contract with Asseco Solutions, a. s.
 
-using DevExpress.Utils.Drawing;
-using DevExpress.Utils.Extensions;
-using DevExpress.XtraCharts;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
-using Noris.Clients.Win.Components.AsolDX.DataForm.Data;
-using DevExpress.Charts.Native;
 
 using WinDraw = System.Drawing;
 using WinForm = System.Windows.Forms;
-
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
@@ -142,6 +134,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         public virtual void ItemsAllChanged()
         {
             ItemsPaintedInteractiveInvalidate();
+            __CurrentMouseItem = null;
+            __CurrentMouseDownState = null;
+            __MouseDragCurrentDataItem = null;
         }
         /// <summary>
         /// Invaliduje pole fyzicky vykreslených a interaktivních prvků. 
@@ -497,7 +492,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             bool currNone = (mouseState.Buttons == WinForm.MouseButtons.None);
 
             if (lastNone && currNone)
-            {   // Stále pohyb bez stisknutého tlačítke:
+            {   // Stále pohyb bez stisknutého tlačítka:
                 _MouseMoveNone(mouseState);
             }
             else if (lastNone && !currNone)
@@ -876,12 +871,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="e"></param>
         protected override void OnPaintToBuffer(object sender, WinForm.PaintEventArgs e)
         {
-            this.OnPaintBackground(e);
+            DxComponent.LogAddLine($"InteractivePanel.Paint() for VisibleDesignBounds: {this.VirtualPanel?.VisibleDesignBounds}");
 
-            // e.Graphics.Clear(this.BackColor);
+            // this.OnPaintBackground(e);
+
+            e.Graphics.Clear(this.BackColor);
             var items = ItemsAll;
             if (items != null)
             {
+                if (DxComponent.LogActive)
+                {
+                    var activeItems = items.Where(i => (i.InteractiveState == DxInteractiveState.HasMouse || i.InteractiveState == DxInteractiveState.MouseLeftDown)).ToArray();
+                    DxComponent.LogAddLine($"InteractivePanel.Paint() AllItems.Count: {items.Count}; ActiveItems.Count: {activeItems.Length}");
+
+                    var currentItem = __CurrentMouseItem;
+                    if (currentItem != null)
+                        DxComponent.LogAddLine($"InteractivePanel.Paint() CurrentItem.State: {currentItem.InteractiveState};");
+                }
+
                 var mouseState = _CreateMouseState();
                 using (PaintDataEventArgs pdea = new PaintDataEventArgs(e, mouseState, this))
                 {

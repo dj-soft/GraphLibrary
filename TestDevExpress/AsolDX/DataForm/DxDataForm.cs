@@ -16,6 +16,7 @@ using DevExpress.XtraEditors;
 using DevExpress.Utils.Extensions;
 using DevExpress.XtraRichEdit.Model.History;
 using Noris.Clients.Win.Components.AsolDX.DataForm.Data;
+using DevExpress.Internal.WinApi.Windows.UI.Notifications;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
@@ -273,9 +274,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             foreach (var row in rows)
                 row.PrepareValidInteractiveItems(items);                                 // Řádky připraví svoje interaktivní prvky
 
+            DxComponent.LogAddLine($"DataFormPanel.PrepareValidInteractiveItems(): VisibleRows.Count: {rows.Length}; Items.Count: {items.Count}");
+
             __VisibleRows = rows;
             __InteractiveItems = items;
             __InteractiveItemsDesignPixels = designPixels;
+
+            this.__DataFormContent.ItemsAllChanged();
         }
         /// <summary>
         /// Určí rozsah designových pixelů, za jejichž odpovídající řádky budeme generovat interaktivní prvky.

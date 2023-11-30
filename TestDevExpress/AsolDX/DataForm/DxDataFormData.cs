@@ -166,6 +166,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             // Zkratka 2:
             if (designPixels is null)
             {
+                DxComponent.LogAddLine($"DataFormRows.GetRowsInDesignPixels(): AllRows");
                 designPixels = new Int32Range(0, ContentDesignSize.Height);
                 return __Rows.ToArray();
             }
@@ -190,6 +191,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
                     }
                 }
             }
+            DxComponent.LogAddLine($"DataFormRows.GetRowsInDesignPixels(): DesignPixels: {designPixels}; Rows.Count: {result.Count}");
+
             return result.ToArray();
         }
         #endregion
@@ -439,11 +442,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
 
         private bool _Paint(PaintDataEventArgs pdea)
         {
+            var state = this.__InteractiveState;
+            bool isActive = (state == DxInteractiveState.HasMouse || state == DxInteractiveState.MouseLeftDown);
+
             var controlBounds = pdea.InteractivePanel.GetControlBounds(this.__DesignBounds);
-            if (!pdea.ClientArea.IntersectsWith(controlBounds)) return false;            // Pokud vykreslovaný control a naše souřadnice nemají nic společného, pak nebudeme kreslit...
+            bool isDisplayed = pdea.ClientArea.IntersectsWith(controlBounds);
+
+            if (isActive)
+            {
+                DxComponent.LogAddLine($"DataFormCell.Paint(): IsActive: {isActive}; IsDisplayed: {isDisplayed}; DesignBounds: {__DesignBounds}");
+                if (!isDisplayed)
+                    DxComponent.LogAddLine($"DataFormCell.Paint(): Outside: ControlBounds: {controlBounds}; ClientArea: {pdea.ClientArea};");
+            }
+            if (!isDisplayed) return false;            // Pokud vykreslovaný control a naše souřadnice nemají nic společného, pak nebudeme kreslit...
+
+
 
             WinDraw.Color color = WinDraw.Color.LightYellow;
-            switch (this.__InteractiveState)
+            switch (state)
             {
                 case DxInteractiveState.HasMouse:
                     color = WinDraw.Color.LightGreen;
@@ -466,6 +482,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
 
             if (oldState == DxInteractiveState.MouseLeftDown)
             { }
+            if (interactiveState == DxInteractiveState.HasMouse)
+            { }
+            DxComponent.LogAddLine($"DataFormCell.SetInteractiveState: {__InteractiveState}; DesignBounds: {__DesignBounds}");
         }
 
         #region IInteractiveItem
