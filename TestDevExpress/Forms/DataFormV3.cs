@@ -44,6 +44,8 @@ namespace TestDevExpress.Forms
         /// </summary>
         protected override void DxRibbonPrepare()
         {
+            this.TestPainting = false;
+
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
             DataRibbonPage page;
             DataRibbonGroup group;
@@ -52,11 +54,14 @@ namespace TestDevExpress.Forms
             pages.Add(page);
 
             string imageStatusRefresh = "svgimages/xaf/action_refresh.svg";
+            string imageTestDrawing = "svgimages/dashboards/textbox.svg";
             string imageDataFormRemove = "svgimages/spreadsheet/removetablerows.svg";
             string imageLogClear = "svgimages/spreadsheet/removetablerows.svg";
+
             group = new DataRibbonGroup() { GroupText = "ZÁKLADNÍ" };
             page.Groups.Add(group);
             group.Items.Add(new DataRibbonItem() { ItemId = "StatusRefresh", Text = "Refresh Status", ToolTipText = "Znovu načíst údaje o spotřebě systémových zdrojů do statusbaru", ImageName = imageStatusRefresh });
+            group.Items.Add(new DataRibbonItem() { ItemId = "TestDrawing", Text = "TestDrawing", ToolTipText = "Vykreslování bez fyzických Controlů - pro test rychlosti", ImageName = imageTestDrawing, RibbonStyle = RibbonItemStyles.Large, ItemType = RibbonItemType.CheckButton, Checked = TestPainting });
             group.Items.Add(new DataRibbonItem() { ItemId = "LogClear", Text = "Clear Log", ToolTipText = "Smaže obsah logu vpravo", ImageName = imageLogClear, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "DataFormRemove", Text = "Remove DataForm", ToolTipText = "Zahodit DataForm a uvolnit jeho zdroje", ImageName = imageDataFormRemove });
 
@@ -71,8 +76,10 @@ namespace TestDevExpress.Forms
             // Na čísla Sample reagují metody _CreateSampleLayout() a _CreateSampleRows() !
             addSampleButton(1001, "Form A x 1 řádek", imageTest1);
             addSampleButton(1002, "Form A x 2 řádky", imageTest1);
+            addSampleButton(1060, "Form A x 60 řádků", imageTest1);
             addSampleButton(2001, "Form B x 1 řádek", imageTest2, true);
-            addSampleButton(2100, "Form B x 100 řádků", imageTest2);
+            addSampleButton(2024, "Form B x 24 řádků", imageTest2);
+            addSampleButton(2120, "Form B x 120 řádků", imageTest2);
             addSampleButton(3001, "Table x 1 řádek", imageTest3, true);
             addSampleButton(3036, "Table x 36 řádek", imageTest3);
             addSampleButton(3144, "Table x 144 řádek", imageTest3);
@@ -111,8 +118,10 @@ namespace TestDevExpress.Forms
             switch (itemId)
             {
                 case "StatusRefresh":
-                    GCCollect();
-                    RefreshStatusCurrent();
+                    RefreshStatusCurrent(true);
+                    break;
+                case "TestDrawing":
+                    this.TestPainting = e.Item?.Checked ?? false; 
                     break;
                 case "DataFormRemove":
                     _RemoveDataForms();
@@ -167,12 +176,12 @@ namespace TestDevExpress.Forms
         {
             if (WinProcessInfoAfterShown == null)
                 WinProcessInfoAfterShown = DxComponent.WinProcessInfo.GetCurent();
-            RefreshStatus();
+            RefreshStatus(false);
         }
         public DxComponent.WinProcessInfo WinProcessInfoBeforeForm { get; set; }
         public DxComponent.WinProcessInfo WinProcessInfoAfterInit { get; set; }
         public DxComponent.WinProcessInfo WinProcessInfoAfterShown { get; set; }
-        private void RefreshStatus()
+        private void RefreshStatus(bool withGcCollect)
         {
             string eol = Environment.NewLine;
             this._StatusItemTitle.Caption = ""; // "<b>DataForm tester</b>";
@@ -189,10 +198,12 @@ namespace TestDevExpress.Forms
             this._StatusItemDeltaShow.Caption = "   Delta Show: <b>" + (deltaShow?.Text2 ?? "") + "<b>";
             this._StatusItemDeltaShow.Hint = "Spotřeba paměti od dokončení inicializace do konce provádění Show:" + eol + (deltaShow?.Text4Full ?? "");
 
-            RefreshStatusCurrent();
+            RefreshStatusCurrent(withGcCollect);
         }
-        private void RefreshStatusCurrent()
+        private void RefreshStatusCurrent(bool withGcCollect)
         {
+            if (withGcCollect) GCCollect();
+
             string eol = Environment.NewLine;
             var current = DxComponent.WinProcessInfo.GetCurent();
 
@@ -241,6 +252,7 @@ namespace TestDevExpress.Forms
 
             dataForm.DataFormLayout.Store(_CreateSampleLayout(sampleId));
             dataForm.DataFormRows.Store(_CreateSampleRows(sampleId));
+            dataForm.TestPainting = this.TestPainting;
 
             _DxDataFormV3 = dataForm;
         
@@ -269,16 +281,31 @@ namespace TestDevExpress.Forms
             WinProcessInfoAfterShown = DxComponent.WinProcessInfo.GetCurent();
 
             _RefreshTitle();
-            RefreshStatusCurrent();
+            RefreshStatusCurrent(false);
         }
         private void DxDataForm_GotFocus(object sender, EventArgs e)
         {
             if (!_DxShowTimeSpan.HasValue && _DxShowTimeStart.HasValue)
             {
                 _DxShowTimeSpan = DateTime.Now - _DxShowTimeStart.Value;
-                RefreshStatusCurrent();
+                RefreshStatusCurrent(false);
             }
         }
+        /// <summary>
+        /// Používat testovací vykreslování
+        /// </summary>
+        public bool TestPainting
+        { 
+            get { return __TestPainting; } 
+            set 
+            {
+                __TestPainting = value;
+                if (this._DxDataFormV3 != null)
+                    this._DxDataFormV3.TestPainting = value;
+            }
+        }
+        private bool __TestPainting;
+
         private DxDForm.DxDataFormPanel _DxDataFormV3;
         private DateTime? _DxShowTimeStart;
         private TimeSpan? _DxShowTimeSpan;
@@ -295,61 +322,70 @@ namespace TestDevExpress.Forms
 
             int layoutId = (sampleId / 1000);
             int rowsCount = (sampleId % 1000);
-
+            int leftB = 14;
+            int left, leftM, topM;
+            int top = 0;
             switch (layoutId)
             {
                 case 1:
-                    addItemPairT("datum", "Datum:", DxDForm.DxRepositoryEditorType.TextBox, 6, 10, 60, 20);
-                    addItemPairT("reference", "Reference:", DxDForm.DxRepositoryEditorType.TextBox, 6, 80, 120, 20);
-                    addItemPairT("nazev", "Název:", DxDForm.DxRepositoryEditorType.TextBox, 6, 210, 250, 20);
-                    addItemPairT("pocet", "Počet:", DxDForm.DxRepositoryEditorType.TextBox, 50, 10, 90, 20);
-                    addItemPairT("cena1", "Cena 1ks:", DxDForm.DxRepositoryEditorType.TextBox, 50, 110, 80, 20);
-                    addItemPairT("sazbadph", "Sazba DPH:", DxDForm.DxRepositoryEditorType.TextBox, 94, 10, 140, 20);
-                    addItemPairT("cenacelk", "Cena celkem:", DxDForm.DxRepositoryEditorType.TextBox, 94, 160, 70, 20);
-                    addItemPairT("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.TextBox, 50, 240, 350, 90);
+                    top = 12;
+                    left = leftB;
+                    addItemPairT("datum", "Datum:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 60, 20);
+                    addItemPairT("reference", "Reference:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 120, 20);
+                    addItemPairT("nazev", "Název:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 250, 20);
+                    leftM = left;
+                    topM = top;
+                    left = leftB; top += 44; 
+                    addItemPairT("pocet", "Počet:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 90, 20);
+                    addItemPairT("cena1", "Cena 1ks:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 80, 20);
+                    left = leftB; top += 44;
+                    addItemPairT("sazbadph", "Sazba DPH:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 140, 20);
+                    addItemPairT("cenacelk", "Cena celkem:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 70, 20);
+                    left = leftM; top = topM;
+                    addItemPairT("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 350, 90);
                     break;
                 case 2:
-                    addItemPairL("datum", "Datum:", DxDForm.DxRepositoryEditorType.TextBox, 6, 10, 60, 20);
-                    addItemPairL("reference", "Reference:", DxDForm.DxRepositoryEditorType.TextBox, 6, 150, 120, 20);
-                    addItemPairL("nazev", "Název:", DxDForm.DxRepositoryEditorType.TextBox, 6, 345, 250, 20);
-                    addItemPairL("pocet", "Počet:", DxDForm.DxRepositoryEditorType.TextBox, 28, 10, 90, 20);
-                    addItemPairL("cena1", "Cena 1ks:", DxDForm.DxRepositoryEditorType.TextBox, 28, 180, 80, 20);
-                    addItemPairL("sazbadph", "Sazba DPH:", DxDForm.DxRepositoryEditorType.TextBox, 50, 10, 140, 20);
-                    addItemPairL("cenacelk", "Cena celkem:", DxDForm.DxRepositoryEditorType.TextBox, 50, 230, 70, 20);
+                    addItemPairL("datum", "Datum:", DxDForm.DxRepositoryEditorType.TextBox, 16, 10, 60, 20);
+                    addItemPairL("reference", "Reference:", DxDForm.DxRepositoryEditorType.TextBox, 16, 150, 120, 20);
+                    addItemPairL("nazev", "Název:", DxDForm.DxRepositoryEditorType.TextBox, 16, 345, 250, 20);
+                    addItemPairL("pocet", "Počet:", DxDForm.DxRepositoryEditorType.TextBox, 44, 10, 90, 20);
+                    addItemPairL("cena1", "Cena 1ks:", DxDForm.DxRepositoryEditorType.TextBox, 44, 180, 80, 20);
+                    addItemPairL("sazbadph", "Sazba DPH:", DxDForm.DxRepositoryEditorType.TextBox, 72, 10, 140, 20);
+                    addItemPairL("cenacelk", "Cena celkem:", DxDForm.DxRepositoryEditorType.TextBox, 72, 230, 70, 20);
                     addItemPairL("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.TextBox, 6, 680, 350, 90);
                     break;
                 case 3:
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 0, 75, null, 2, 20, null);
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 80, 40, null, 2, 20, null);
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 125, 40, null, 2, 20, null);
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 170, 150, null, 2, 20, null);
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 325, 150, null, 2, 20, null);
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 480, 100, null, 2, 20, null);
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 585, 60, null, 2, 20, null);
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 650, 60, null, 2, 20, null);
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 715, 200, null, 2, 20, null);
-                    addItemType("id", DxDForm.DxRepositoryEditorType.TextBox, 920, 400, null, 2, 20, null);
+                    addItemType("id1", DxDForm.DxRepositoryEditorType.TextBox, 0, 75, null, 2, 20, null);
+                    addItemType("id2", DxDForm.DxRepositoryEditorType.TextBox, 80, 40, null, 2, 20, null);
+                    addItemType("id3", DxDForm.DxRepositoryEditorType.TextBox, 125, 40, null, 2, 20, null);
+                    addItemType("id4", DxDForm.DxRepositoryEditorType.TextBox, 170, 150, null, 2, 20, null);
+                    addItemType("id5", DxDForm.DxRepositoryEditorType.TextBox, 325, 150, null, 2, 20, null);
+                    addItemType("id6", DxDForm.DxRepositoryEditorType.TextBox, 480, 100, null, 2, 20, null);
+                    addItemType("id7", DxDForm.DxRepositoryEditorType.TextBox, 585, 60, null, 2, 20, null);
+                    addItemType("id8", DxDForm.DxRepositoryEditorType.TextBox, 650, 60, null, 2, 20, null);
+                    addItemType("id9", DxDForm.DxRepositoryEditorType.TextBox, 715, 200, null, 2, 20, null);
+                    addItemType("id0", DxDForm.DxRepositoryEditorType.TextBox, 920, 400, null, 2, 20, null);
                     break;
             }
 
             return result;
 
-            void addItemPairT(string columnId, string labelText, DxDForm.DxRepositoryEditorType columnType, int top, int left, int width, int height)
+            void addItemPairT(string columnId, string labelText, DxDForm.DxRepositoryEditorType columnType, int top, ref int left, int width, int height)
             {
                 addItemLabel(columnId + ".label", labelText, left + 3, width - 8, null, top, 18, null);
                 addItemType(columnId, columnType, left, width, null, top + 18, height, null);
+                left = left + width + 8;
             }
             void addItemPairL(string columnId, string labelText, DxDForm.DxRepositoryEditorType columnType, int top, int left, int width, int height)
             {
                 addItemLabel(columnId + ".label", labelText, left, 75, null, top + 2, 18, null);
                 addItemType(columnId, columnType, left + 78, width, null, top, height, null);
             }
-
             void addItemLabel(string columnId, string labelText, int? left, int? width, int? right, int? top, int? height, int? bottom)
             {
                 DxDData.DataFormLayoutItem item = new DxDData.DataFormLayoutItem()
                 {
-                    ColumnId = columnId,
+                    ColumnName = columnId,
                     ColumnType = DxDForm.DxRepositoryEditorType.Label,
                     LabelText = labelText,
                     DesignBoundsExt = new DxDForm.RectangleExt(left, width, right, top, height, bottom)
@@ -360,7 +396,7 @@ namespace TestDevExpress.Forms
             {
                 DxDData.DataFormLayoutItem item = new DxDData.DataFormLayoutItem()
                 {
-                    ColumnId = columnId,
+                    ColumnName = columnId,
                     ColumnType = columnType,
                     DesignBoundsExt = new DxDForm.RectangleExt(left, width, right, top, height, bottom)
                 };

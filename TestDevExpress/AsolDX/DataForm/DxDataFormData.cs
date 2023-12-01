@@ -321,6 +321,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
     /// </summary>
     public class DataFormRow : IChildOfParent<DataFormRows>  // ChildItems<DataFormRow>
     {
+        #region Konstruktor a základní proměnné
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -340,6 +341,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// Panel dataformu
         /// </summary>
         internal DxDataFormPanel DataForm { get { return __Parent?.DataForm; } }
+        #endregion
+
+        /// <summary>
+        /// ID řádku, nemění se po dobu jeho života. Lze setovat jen jedenkrát. Při pokusu o další setování jiné hodnoty dojde k chybě.
+        /// </summary>
+        public int RowId
+        {
+            get { return __RowId ?? 0; }
+            set
+            {
+                if (!__RowId.HasValue) __RowId = value;              // První přiřazení
+                else if (__RowId.HasValue && __RowId.Value != value)
+                    throw new InvalidOperationException($"Cannot set 'rowId'={value} to row with assigned 'RowId'={__RowId}.");
+            }
+        }
+        private int? __RowId;
+        private Dictionary<int, object> __Values;
 
         /// <summary>
         /// Řádek je viditelný?
@@ -390,117 +408,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         #endregion
     }
     #endregion
-    #region DataFormCell : jeden interaktivní prvek
+    #region DataFormLayoutSet + DataFormLayoutItem : Definice layoutu jednoho řádku (celá sada + jeden prvek). Layout je hierarchický.
     /// <summary>
-    /// Reprezentuje jednu buňku = jeden fyzický prvek odpovídající prvku layoutu na jednom konkrétním řádku
-    /// </summary>
-    public class DataFormCell : IInteractiveItem
-    {
-        #region Konstruktor a proměnné
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="row"></param>
-        /// <param name="layoutItem"></param>
-        public DataFormCell(DataFormRow row, DataFormLayoutItem layoutItem)
-        {
-            this.__Row = row;
-            this.__LayoutItem = layoutItem;
-            this.__IsVisible = true;
-            this.__IsInteractive = true;
-            this.__DesignBounds = layoutItem.DesignBounds.Add(row.RowDesignBounds.Location);
-            this.__InteractiveState = DxInteractiveState.Enabled;
-        }
-        private DataFormRow __Row;
-        private DataFormLayoutItem __LayoutItem;
-        private WinDraw.Rectangle __DesignBounds;
-        private bool __IsVisible;
-        private bool __IsInteractive;
-        private DxInteractiveState __InteractiveState;
-        #endregion
-        #region Vztah na další instance - pomocí Row (DataForm, Repozitory) a LayoutSet
-        /// <summary>
-        /// DataForm
-        /// </summary>
-        private DxDataFormPanel _DataForm { get { return __Row.DataForm; } }
-        /// <summary>
-        /// Repozitory, obsahující fyzické controly pro zobrazení a editaci dat
-        /// </summary>
-        private DxRepositoryManager RepositoryManager { get { return __Row.DataForm?.RepositoryManager; } }
-        #endregion
-
-        /// <summary>
-        /// Vrátí true, pokud this prvek je aktivní na dané Control nebo Designové souřadnici (objekt si sám vybere, kterou souřadnici bude vyhodnocovat).
-        /// </summary>
-        /// <param name="controlPoint">Souřadnice fyzická na controlu</param>
-        /// <param name="designPoint">Souřadnice designová</param>
-        /// <returns></returns>
-        public bool _IsActiveOnPoint(WinDraw.Point controlPoint, WinDraw.Point designPoint)
-        {
-            return this.__IsInteractive && this.__DesignBounds.Contains(designPoint);
-        }
-
-        private bool _Paint(PaintDataEventArgs pdea)
-        {
-            var state = this.__InteractiveState;
-            bool isActive = (state == DxInteractiveState.HasMouse || state == DxInteractiveState.MouseLeftDown);
-
-            var controlBounds = pdea.InteractivePanel.GetControlBounds(this.__DesignBounds);
-            bool isDisplayed = pdea.ClientArea.IntersectsWith(controlBounds);
-
-            if (isActive)
-            {
-                DxComponent.LogAddLine($"DataFormCell.Paint(): IsActive: {isActive}; IsDisplayed: {isDisplayed}; DesignBounds: {__DesignBounds}");
-                if (!isDisplayed)
-                    DxComponent.LogAddLine($"DataFormCell.Paint(): Outside: ControlBounds: {controlBounds}; ClientArea: {pdea.ClientArea};");
-            }
-            if (!isDisplayed) return false;            // Pokud vykreslovaný control a naše souřadnice nemají nic společného, pak nebudeme kreslit...
-
-
-
-            WinDraw.Color color = WinDraw.Color.LightYellow;
-            switch (state)
-            {
-                case DxInteractiveState.HasMouse:
-                    color = WinDraw.Color.LightGreen;
-                    break;
-                case DxInteractiveState.MouseLeftDown:
-                case DxInteractiveState.MouseRightDown:
-                    color = WinDraw.Color.LightSkyBlue;
-                    break;
-            }
-            pdea.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(color), controlBounds);
-            return true;
-        }
-
-        private void _SetInteractiveState(DxInteractiveState interactiveState)
-        {
-            var oldState = __InteractiveState;
-            if (interactiveState == oldState) return;
-
-            __InteractiveState = interactiveState;
-
-            if (oldState == DxInteractiveState.MouseLeftDown)
-            { }
-            if (interactiveState == DxInteractiveState.HasMouse)
-            { }
-            DxComponent.LogAddLine($"DataFormCell.SetInteractiveState: {__InteractiveState}; DesignBounds: {__DesignBounds}");
-        }
-
-        #region IInteractiveItem
-        bool IInteractiveItem.IsVisible { get { return __IsVisible; } }
-        bool IInteractiveItem.IsInteractive { get { return __IsInteractive; } }
-        WinDraw.Rectangle IInteractiveItem.DesignBounds { get { return __DesignBounds; } }
-        DxInteractiveState IInteractiveItem.InteractiveState { get { return __InteractiveState; } set { _SetInteractiveState(value); } }
-        bool IInteractiveItem.Paint(PaintDataEventArgs pdea) { return this._Paint(pdea); }
-        bool IInteractiveItem.IsActiveOnPoint(WinDraw.Point controlPoint, WinDraw.Point designPoint) { return this._IsActiveOnPoint(controlPoint, designPoint); }
-        DxInteractivePanel IChildOfParent<DxInteractivePanel>.Parent { get { return null; } set { } }
-        #endregion
-    }
-    #endregion
-    #region DataFormLayoutSet + DataFormLayoutItem : Definice layoutu jednoho řádku (celá sada + jeden prvek)
-    /// <summary>
-    /// Sada definující layxout DataFormu = jednotlivé prvky
+    /// Sada definující layout DataFormu = jednotlivé prvky
     /// </summary>
     public class DataFormLayoutSet : IList<DataFormLayoutItem>
     {
@@ -768,7 +678,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
     /// Může to být container i jednotlivý prvek.
     /// Jde o ekvivalent "Column"
     /// </summary>
-    public class DataFormLayoutItem : IChildOfParent<DataFormLayoutSet>
+    public class DataFormLayoutItem : IDataFormLayoutDesignItem, IChildOfParent<DataFormLayoutSet>
     {
         /// <summary>
         /// Konstruktor
@@ -787,9 +697,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// </summary>
         internal DxDataFormPanel DataForm { get { return __Parent?.DataForm; } }
         /// <summary>
-        /// ID tohoto sloupce. K němu se dohledají další data a případné modifikace stylu v konkrétním řádku.
+        /// Jméno tohoto sloupce. K němu se dohledají další data a případné modifikace stylu v konkrétním řádku.
+        /// Interně se pracuje s <see cref="ColumnId"/> (int), konverze řeší <see cref="DataForm"/>.
         /// </summary>
-        public string ColumnId { get; set; }
+        public string ColumnName { get; set; }
         /// <summary>
         /// Druh vstupního prvku
         /// </summary>
@@ -799,6 +710,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// </summary>
         public string LabelText { get; set; }
         /// <summary>
+        /// ToolTip text
+        /// </summary>
+        public string ToolTipText { get; set; }
+        /// <summary>
         /// Prvek je viditelný?
         /// </summary>
         public bool IsVisible { get; set; }
@@ -807,10 +722,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// Viz metoda <see cref="RectangleExt.GetBounds(WinDraw.Rectangle)"/>
         /// </summary>
         public RectangleExt DesignBoundsExt { get; set; }
-        /// <summary>
-        /// Aktuální přidělená souřadnice v metodě <see cref="PrepareDesignSize(WinDraw.Rectangle, ref int, ref int, ref int, ref int)"/>
-        /// </summary>
-        public WinDraw.Rectangle DesignBounds { get; private set; }
         /// <summary>
         /// Určí aktuální designovou souřadnici v prostoru daného parenta
         /// </summary>
@@ -822,10 +733,174 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         internal void PrepareDesignSize(WinDraw.Rectangle parentBounds, ref int left, ref int top, ref int right, ref int bottom)
         {
             var designBounds = this.DesignBoundsExt.GetBounds(parentBounds);
-            DesignBounds = designBounds;
+            __CurrentDesignBounds = designBounds;
             if (right < designBounds.Right) right = designBounds.Right;
             if (bottom < designBounds.Bottom) bottom = designBounds.Bottom;
         }
+        /// <summary>
+        /// Aktuální přidělená souřadnice v metodě <see cref="PrepareDesignSize(WinDraw.Rectangle, ref int, ref int, ref int, ref int)"/>
+        /// </summary>
+        private WinDraw.Rectangle __CurrentDesignBounds;
+        #region IDataFormLayoutDesignItem
+        WinDraw.Rectangle IDataFormLayoutDesignItem.CurrentDesignBounds { get { return __CurrentDesignBounds; } }
+        #endregion
+    }
+    /// <summary>
+    /// Interface umožňující přístup na designová pracovní data prvku layoutu
+    /// </summary>
+    public interface IDataFormLayoutDesignItem
+    {
+        /// <summary>
+        /// Aktuální designové souřadnice
+        /// </summary>
+        WinDraw.Rectangle CurrentDesignBounds { get; }
+    }
+    #endregion
+    #region DataFormCell : jeden interaktivní prvek
+    /// <summary>
+    /// Reprezentuje jednu buňku = jeden fyzický prvek odpovídající prvku layoutu na jednom konkrétním řádku
+    /// </summary>
+    public class DataFormCell : IInteractiveItem, IPaintItemData
+    {
+        #region Konstruktor a proměnné
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="layoutItem"></param>
+        public DataFormCell(DataFormRow row, DataFormLayoutItem layoutItem)
+        {
+            this.__Row = row;
+            this.__LayoutItem = layoutItem;
+            this.__IsVisible = true;
+            this.__IsInteractive = true;
+            this.__DesignBounds = _ILayoutItem.CurrentDesignBounds.Add(row.RowDesignBounds.Location);
+            this.__InteractiveState = DxInteractiveState.Enabled;
+        }
+        private DataFormRow __Row;
+        private DataFormLayoutItem __LayoutItem;
+        private WinDraw.Rectangle __DesignBounds;
+        private bool __IsVisible;
+        private bool __IsInteractive;
+        private DxInteractiveState __InteractiveState;
+        #endregion
+        #region Vztah na další instance - pomocí Row (DataForm, Repozitory) a LayoutSet
+        /// <summary>
+        /// DataForm
+        /// </summary>
+        private DxDataFormPanel _DataForm { get { return __Row.DataForm; } }
+        /// <summary>
+        /// Repozitory, obsahující fyzické controly pro zobrazení a editaci dat
+        /// </summary>
+        private DxRepositoryManager _RepositoryManager { get { return __Row.DataForm?.RepositoryManager; } }
+        /// <summary>
+        /// Prvek layoutu <see cref="__LayoutItem"/> přetypovaný na <see cref="IDataFormLayoutDesignItem"/> pro přístup na interní data
+        /// </summary>
+        private IDataFormLayoutDesignItem _ILayoutItem { get { return __LayoutItem; } }
+        #endregion
+
+        /// <summary>
+        /// Vrátí true, pokud this prvek je aktivní na dané Control nebo Designové souřadnici (objekt si sám vybere, kterou souřadnici bude vyhodnocovat).
+        /// </summary>
+        /// <param name="controlPoint">Souřadnice fyzická na controlu</param>
+        /// <param name="designPoint">Souřadnice designová</param>
+        /// <returns></returns>
+        public bool _IsActiveOnPoint(WinDraw.Point controlPoint, WinDraw.Point designPoint)
+        {
+            return this.__IsInteractive && this.__DesignBounds.Contains(designPoint);
+        }
+        /// <summary>
+        /// Je požadováno vykreslení buňky do dodané grafiky
+        /// </summary>
+        /// <param name="pdea"></param>
+        /// <returns></returns>
+        private bool _Paint(PaintDataEventArgs pdea)
+        {
+            if (!__IsVisible) return false;
+
+            var controlBounds = pdea.InteractivePanel.GetControlBounds(this.__DesignBounds);
+            bool isDisplayed = pdea.ClientArea.IntersectsWith(controlBounds);
+
+            if (_DataForm.TestPainting)
+                return _PaintTest(pdea, controlBounds, isDisplayed);
+            else if (isDisplayed)
+            {
+                _RepositoryManager.PaintItem(this, pdea, controlBounds);
+                return true;
+            }
+
+            return false;
+        }
+        /// <summary>
+        /// Vykreslí prvek v testovacím režimu
+        /// </summary>
+        /// <param name="pdea"></param>
+        /// <param name="controlBounds"></param>
+        /// <param name="isDisplayed"></param>
+        /// <returns></returns>
+        private bool _PaintTest(PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
+        {
+            var state = this.__InteractiveState;
+            bool isActive = (state == DxInteractiveState.HasMouse || state == DxInteractiveState.MouseLeftDown);
+
+            if (isActive)
+            {
+                DxComponent.LogAddLine($"DataFormCell.Paint(): IsActive: {isActive}; IsDisplayed: {isDisplayed}; DesignBounds: {__DesignBounds}");
+                if (!isDisplayed)
+                    DxComponent.LogAddLine($"DataFormCell.Paint(): Outside: ControlBounds: {controlBounds}; ClientArea: {pdea.ClientArea};");
+            }
+            if (!isDisplayed) return false;            // Pokud vykreslovaný control a naše souřadnice nemají nic společného, pak nebudeme kreslit...
+
+            WinDraw.Color color = WinDraw.Color.LightYellow;
+            switch (state)
+            {
+                case DxInteractiveState.HasMouse:
+                    color = WinDraw.Color.LightGreen;
+                    break;
+                case DxInteractiveState.MouseLeftDown:
+                case DxInteractiveState.MouseRightDown:
+                    color = WinDraw.Color.LightSkyBlue;
+                    break;
+            }
+            pdea.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(color), controlBounds);
+            pdea.Graphics.DrawRectangle(DxComponent.PaintGetPen(WinDraw.Color.Black), controlBounds);
+            string text = __LayoutItem.LabelText;
+            if (!String.IsNullOrEmpty(text))
+                pdea.Graphics.DrawString(text, DxComponent.GetSystemFont(DxComponent.SystemFontType.DefaultFont), DxComponent.PaintGetSolidBrush(WinDraw.Color.Black), controlBounds);
+
+            return true;
+        }
+
+        private void _SetInteractiveState(DxInteractiveState interactiveState)
+        {
+            var oldState = __InteractiveState;
+            if (interactiveState == oldState) return;
+
+            __InteractiveState = interactiveState;
+
+            if (oldState == DxInteractiveState.MouseLeftDown)
+            { }
+            if (interactiveState == DxInteractiveState.HasMouse)
+            { }
+            DxComponent.LogAddLine($"DataFormCell.SetInteractiveState: {__InteractiveState}; DesignBounds: {__DesignBounds}");
+        }
+
+
+        #region IPaintItemData
+        DxRepositoryEditorType IPaintItemData.EditorType { get { return this.__LayoutItem.ColumnType; } }
+        string IPaintItemData.Text {  get { return __LayoutItem.LabelText; } }
+        string IPaintItemData.ImageDataKey { get { return __ImageDataKey; } set { __ImageDataKey = value; } } private string __ImageDataKey;
+        byte[] IPaintItemData.ImageData { get { return __ImageData; } set { __ImageData = value; } } private byte[] __ImageData;
+        #endregion
+        #region IInteractiveItem
+        bool IInteractiveItem.IsVisible { get { return __IsVisible; } }
+        bool IInteractiveItem.IsInteractive { get { return __IsInteractive; } }
+        WinDraw.Rectangle IInteractiveItem.DesignBounds { get { return __DesignBounds; } }
+        DxInteractiveState IInteractiveItem.InteractiveState { get { return __InteractiveState; } set { _SetInteractiveState(value); } }
+        bool IInteractiveItem.Paint(PaintDataEventArgs pdea) { return this._Paint(pdea); }
+        bool IInteractiveItem.IsActiveOnPoint(WinDraw.Point controlPoint, WinDraw.Point designPoint) { return this._IsActiveOnPoint(controlPoint, designPoint); }
+        DxInteractivePanel IChildOfParent<DxInteractivePanel>.Parent { get { return null; } set { } }
+        #endregion
     }
     #endregion
 }

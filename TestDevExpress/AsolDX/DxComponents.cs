@@ -1736,7 +1736,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (listeners.Length == 0) return;
             var method = _GetListenerMethod(typeof(T), 0);
             foreach (var listener in listeners)
-                method.Invoke(listener, null);
+            {
+                try { method.Invoke(listener, null); }
+                catch(Exception exc)
+                {
+                    try { DxComponent.LogAddException(exc); }
+                    catch { }
+                }
+            }
         }
         /// <summary>
         /// Zavolá fixní listenery, kteří nemusí být registrovaní
@@ -1757,7 +1764,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             var method = _GetListenerMethod(typeof(T), 1);
             object[] parameters = new object[] { args };
             foreach (var listener in listeners)
-                method.Invoke(listener, parameters);
+            {
+                try { method.Invoke(listener, parameters); }
+                catch (Exception exc)
+                {
+                    try { DxComponent.LogAddException(exc); }
+                    catch { }
+                }
+            }
         }
         /// <summary>
         /// Metoda najde jedinou metodu daného typu, a ověří že má přesně daný počet parametrů.
@@ -4435,20 +4449,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public static string LogLastLine { get { return Instance._LogLastLine; } }
         /// <summary>
-        /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(string, long?)"/>, za který se dosaví uplynulý čas v sekundách
+        /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(string, long?)"/>, za který se dosadí uplynulý čas v sekundách, včetně jednotky " sec"
         /// </summary>
-        public static string LogTokenTimeSec { get { return _LogTokenTimeSec; } }
-        private const string _LogTokenTimeSec = "{SEC}";
+        public static string LogTokenTimeSec { get { return _LogTokenTimeSec; } } private const string _LogTokenTimeSec = "{SEC}";
         /// <summary>
-        /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(string, long?)"/>, za který se dosaví uplynulý čas v milisekundách
+        /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(string, long?)"/>, za který se dosadí uplynulý čas v milisekundách, včetně jednotky " ms"
         /// </summary>
-        public static string LogTokenTimeMilisec { get { return _LogTokenTimeMilisec; } }
-        private const string _LogTokenTimeMilisec = "{MILISEC}";
+        public static string LogTokenTimeMilisec { get { return _LogTokenTimeMilisec; } } private const string _LogTokenTimeMilisec = "{MILISEC}";
         /// <summary>
-        /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(string, long?)"/>, za který se dosaví uplynulý čas v mikrosekundách
+        /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(string, long?)"/>, za který se dosadí uplynulý čas v mikrosekundách, včetně jednotky " μs"
         /// </summary>
-        public static string LogTokenTimeMicrosec { get { return _LogTokenTimeMicrosec; } }
-        private const string _LogTokenTimeMicrosec = "{MICROSEC}";
+        public static string LogTokenTimeMicrosec { get { return _LogTokenTimeMicrosec; } } private const string _LogTokenTimeMicrosec = "{MICROSEC}";
         /// <summary>
         /// Zaloguje výjimku
         /// </summary>
@@ -4588,12 +4599,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             if (line.Contains(LogTokenTimeMilisec))
             {
-                string info = Math.Round((seconds * 1000m), 3).ToString("### ### ### ##0.000").Trim() + " milisec";
+                string info = Math.Round((seconds * 1000m), 3).ToString("### ### ### ##0.000").Trim() + " ms";
                 line = line.Replace(LogTokenTimeMilisec, info);
             }
             if (line.Contains(LogTokenTimeMicrosec))
             {
-                string info = Math.Round((seconds * 1000000m), 3).ToString("### ### ### ##0.000").Trim() + " microsec";
+                string info = Math.Round((seconds * 1000000m), 0).ToString("### ### ### ##0").Trim() + " μs";
                 line = line.Replace(LogTokenTimeMicrosec, info);
             }
             _LogAddLine(line, false, startTime, nowTime);

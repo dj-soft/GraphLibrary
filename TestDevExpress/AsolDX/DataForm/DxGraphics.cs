@@ -265,11 +265,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Invaliduje celkovou velikost <see cref="ContentDesignSize"/> a navazující <see cref="ContentVirtualSize"/>.
         /// Provádí se po změně řádků nebo definice designu.
+        /// Volitelně provede i <see cref="RefreshInnerLayout"/>
         /// </summary>
-        protected virtual void DesignSizeInvalidate()
+        /// <param name="refreshLayout">Vyvolat poté metodu <see cref="RefreshInnerLayout"/></param>
+        protected virtual void DesignSizeInvalidate(bool refreshLayout)
         {
             __ContentDesignSize = null;
             __ContentVirtualSize = null;
+
+            if (refreshLayout)
+                _RefreshInnerLayout();
         }
         /// <summary>
         /// Kontrola platnosti souřadnic <see cref="ContentVirtualSize"/> a případný přepočet layoutu <see cref="_RefreshInnerLayout()"/>.
@@ -557,6 +562,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         #endregion
         #region Scrollbary a VirtualDimensions, včetně výpočtu _RefreshInnerLayout() a eventhandlerů
+        /// <summary>
+        /// Metoda přepočítá velikost controlu a celkovou velikost dat, a určí potřebost Scrollbarů, scrollbary umístí na správná místa a zobrazí je.
+        /// </summary>
+        public virtual void RefreshInnerLayout()
+        {
+            _RefreshInnerLayout();
+        }
         /// <summary>
         /// Povoluje se práce se Scrollbary, pokud bude zadána velikost obsahu <see cref="ContentVirtualSize"/>. Default = true.
         /// Pokud je false, a přitom je zadána veliksat obsahu <see cref="ContentVirtualSize"/>, pak jsme ve virtuálním režimu, 
@@ -1876,7 +1888,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
             this.Margin = new Padding(0);
             this.Padding = new Padding(0);
-            this.AllowTransparency = true;
+            this.AllowTransparency = false;
             this.LogActive = DxComponent.LogActive;
             this.SetStyle(ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
             DxComponent.RegisterListener(this);

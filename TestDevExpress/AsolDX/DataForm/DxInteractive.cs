@@ -871,7 +871,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="e"></param>
         protected override void OnPaintToBuffer(object sender, WinForm.PaintEventArgs e)
         {
-            DxComponent.LogAddLine($"InteractivePanel.Paint() for VisibleDesignBounds: {this.VirtualPanel?.VisibleDesignBounds}");
+            var startTime = DxComponent.LogTimeCurrent;
 
             // this.OnPaintBackground(e);
 
@@ -879,16 +879,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var items = ItemsAll;
             if (items != null)
             {
-                if (DxComponent.LogActive)
-                {
-                    var activeItems = items.Where(i => (i.InteractiveState == DxInteractiveState.HasMouse || i.InteractiveState == DxInteractiveState.MouseLeftDown)).ToArray();
-                    DxComponent.LogAddLine($"InteractivePanel.Paint() AllItems.Count: {items.Count}; ActiveItems.Count: {activeItems.Length}");
-
-                    var currentItem = __CurrentMouseItem;
-                    if (currentItem != null)
-                        DxComponent.LogAddLine($"InteractivePanel.Paint() CurrentItem.State: {currentItem.InteractiveState};");
-                }
-
                 var mouseState = _CreateMouseState();
                 using (PaintDataEventArgs pdea = new PaintDataEventArgs(e, mouseState, this))
                 {
@@ -896,6 +886,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     PaintDraggedItem(pdea);
                 }
             }
+
+            DxComponent.LogAddLineTime($"InteractivePanel.Paint() PaintCount: {LastPaintItemsCount}; Time: {DxComponent.LogTokenTimeMicrosec}; VisibleDesignBounds: {this.VirtualPanel?.VisibleDesignBounds}", startTime);
         }
         /// <summary>
         /// Vykreslí všechny interaktivní prvky v základní vrstvě.
@@ -909,6 +901,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             bool doValidate = (__ItemsPainted is null || __ItemsInteractive is null);
             List<IInteractiveItem> itemsPainted = (doValidate ? new List<IInteractiveItem>() : null);
             List<IInteractiveItem> itemsInteractive = (doValidate ? new List<IInteractiveItem>() : null);
+            int paintCount = 0;
 
             // Vytvořím Dictionary, kde Key = ZOrder prvku, a z Dictionary udělám List<KeyValuePair<int = ZOrder, Value = IInteractiveItem[]>> :
             var zOrders = items.CreateDictionaryArray(i => GetZOrder(i)).ToList();             // Seskupím podle ZOrder
@@ -918,11 +911,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 foreach (var item in zOrder.Value)
                 {
                     bool isPainted = item.Paint(pdea);
-                    if (doValidate && isPainted)
+                    if (isPainted)
                     {
-                        itemsPainted.Add(item);
-                        if (item.IsInteractive)
-                            itemsInteractive.Add(item);
+                        paintCount++;
+                        if (doValidate)
+                        {
+                            itemsPainted.Add(item);
+                            if (item.IsInteractive)
+                                itemsInteractive.Add(item);
+                        }
                     }
                 }
             }
@@ -933,6 +930,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 __ItemsPainted = itemsPainted;
                 __ItemsInteractive = itemsInteractive;
             }
+
+            // Počet víceméně pro statistiku
+            LastPaintItemsCount = paintCount;
         }
         /// <summary>
         /// Vykreslí jediný prvek, který je aktuálně Dragged
@@ -951,6 +951,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.__MouseDragCurrentDataItem.Paint(pdea);
             }
         }
+        /// <summary>
+        /// Počet prvků, které byly posledně vykresleny (v metodě <see cref="IInteractiveItem.Paint(PaintDataEventArgs)"/> vrátily true).
+        /// </summary>
+        protected int LastPaintItemsCount { get; set; }
         /// <summary>
         /// Explicitní barva pozadí.
         /// Zadaná bůže používat Alfa kanál (= průhlednost), pak pod touto barvou bude prosvítat barva pozadí dle palety.

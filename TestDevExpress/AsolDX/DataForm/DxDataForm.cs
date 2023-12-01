@@ -60,7 +60,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         protected override void OnVisibleDesignBoundsChanged()
         {
-            InteractiveItemsInvalidate(false);
+            InvalidateInteractiveItems(false);
         }
         #endregion
         #region Datové řádky
@@ -83,8 +83,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="e"></param>
         private void _RowsChanged(object sender, EventArgs e)
         {
-            DesignSizeInvalidate();
-            InteractiveItemsInvalidate(true);
+            InvalidateInteractiveItems(true);
+            DesignSizeInvalidate(true);
         }
         /// <summary>
         /// Fyzická kolekce řádků
@@ -113,7 +113,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="e"></param>
         protected override void OnPaddingChanged(EventArgs e)
         {
-            DesignSizeInvalidate();
+            DesignSizeInvalidate(true);
         }
         /// <summary>
         /// Definice vzhledu pro jednotlivý řádek
@@ -126,8 +126,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="e"></param>
         private void _LayoutChanged(object sender, EventArgs e)
         {
-            DesignSizeInvalidate();
-            InteractiveItemsInvalidate(true);
+            InvalidateInteractiveItems(true);
+            DesignSizeInvalidate(true);
         }
         #endregion
         #region Repository manager
@@ -152,8 +152,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public void InvalidateRepozitory()
         {
-            __RepositoryManager?.InvalidateRepozitory();
+            __RepositoryManager?.InvalidateManager();
+            InvalidateInteractiveImageCache();
             DataFormContent.Draw();
+        }
+        /// <summary>
+        /// Proběhne po změně Zoomu za běhu aplikace. Může dojít k invalidaci cachovaných souřadnic prvků.
+        /// </summary>
+        protected override void OnInvalidatedZoom()
+        {
+            base.OnInvalidatedZoom();
+            InvalidateRepozitory();
         }
         /// <summary>
         /// Po změně skinu
@@ -165,6 +174,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         #endregion
         #region ContentPanel : zobrazuje vlastní obsah (grafická komponenta)
+        /// <summary>
+        /// Používat testovací vykreslování
+        /// </summary>
+        public bool TestPainting { get { return __TestPainting; } set { __TestPainting = value; this.DrawContent(); } } private bool __TestPainting;
+        /// <summary>
+        /// Zajistí znovuvykreslení panelu s daty
+        /// </summary>
+        public void DrawContent()
+        {
+            this.DataFormContent?.Draw();
+        }
         /// <summary>
         /// Inicializace Content panelu
         /// </summary>
@@ -196,7 +216,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 if (__Initialized && !__ContentDesignSize.HasValue)
                 {
-                    DesignSizeInvalidate();
+                    DesignSizeInvalidate(false);
                     __ContentDesignSize = _CalculateContentDesignSize();
                 }
                 return __ContentDesignSize;
@@ -210,16 +230,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             base.OnContentPanelDesignSizeChanged();
             if (__Initialized && this.DataFormLayout.IsDesignSizeDependOnHostSize)
-                DesignSizeInvalidate();
+                DesignSizeInvalidate(false);
         }
         /// <summary>
-        /// Invaliduje celkovou velikost <see cref="ContentDesignSize"/>.
+        /// Invaliduje celkovou velikost <see cref="ContentDesignSize"/> a navazující <see cref="DxVirtualPanel.ContentVirtualSize"/>.
         /// Provádí se po změně řádků nebo definice designu.
+        /// Volitelně provede i <see cref="DxVirtualPanel.RefreshInnerLayout"/>
         /// </summary>
-        protected override void DesignSizeInvalidate()
+        /// <param name="refreshLayout">Vyvolat poté metodu <see cref="DxVirtualPanel.RefreshInnerLayout"/></param>
+        protected override void DesignSizeInvalidate(bool refreshLayout)
         {
             __ContentDesignSize = null;
-            base.DesignSizeInvalidate();
+            base.DesignSizeInvalidate(refreshLayout);
+            if (refreshLayout) this.DataFormContent?.Draw();
         }
         /// <summary>
         /// Vypočte a vrátí údaj: Potřebná velikost obsahu v designových pixelech.
@@ -249,19 +272,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         private List<IInteractiveItem> _GetValidInteractiveItems()
         {
-            if (__InteractiveItems is null || !_IsValidInteractiveRows())
+            if (__InteractiveItems is null || !_IsValidPreparedInteractiveRows())
                 _PrepareValidInteractiveItems();
             return __InteractiveItems;
-        }
-        /// <summary>
-        /// Vrátí true, pokud máme připravená platná data v <see cref="__InteractiveItems"/> pro aktuální viditelnou oblast.
-        /// </summary>
-        /// <returns></returns>
-        private bool _IsValidInteractiveRows()
-        {
-            if (__InteractiveItems is null) return false;
-            if (!_IsValidInteractiveItemsForVisibleBounds()) return false;
-            return true;
         }
         /// <summary>
         /// Metoda zajistí přípravu interaktivních prvků do <see cref="__InteractiveItems"/> pro řádky, které jsou v aktuální viditelné oblasti plus kousek okolo.
@@ -274,13 +287,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             foreach (var row in rows)
                 row.PrepareValidInteractiveItems(items);                                 // Řádky připraví svoje interaktivní prvky
 
-            DxComponent.LogAddLine($"DataFormPanel.PrepareValidInteractiveItems(): VisibleRows.Count: {rows.Length}; Items.Count: {items.Count}");
+            DxComponent.LogAddLine($"DataFormPanel.PrepareValidInteractiveItems(): VisibleRows.Count: {rows.Length}; Items.Count: {items.Count}; PreparedPixels: {designPixels}");
 
             __VisibleRows = rows;
             __InteractiveItems = items;
-            __InteractiveItemsDesignPixels = designPixels;
+            __InteractiveItemsPreparedDesignPixels = designPixels;
 
-            this.__DataFormContent.ItemsAllChanged();
+            this.__DataFormContent?.ItemsAllChanged();
         }
         /// <summary>
         /// Určí rozsah designových pixelů, za jejichž odpovídající řádky budeme generovat interaktivní prvky.
@@ -371,32 +384,73 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// false (nepovinně) = jen když aktuálně viditelný prostor zobrazuje data, která nejsou připravena (po Scrollu).
         /// </summary>
         /// <param name="force"></param>
-        protected void InteractiveItemsInvalidate(bool force)
+        protected void InvalidateInteractiveItems(bool force)
         {
-            if (!force && _IsValidInteractiveItemsForVisibleBounds())
+            if (!force && _IsValidPreparedInteractiveRows())
                 // Non force (false) => pokud pro aktuální viditelnou oblast v VisibleDesignBounds máme již z dřívějška připraveny prvky, pak je nebudu invalidovat:
                 return;
            
             // Musíme zahodit připravená data:
             __InteractiveItems = null;
-            __InteractiveItemsDesignPixels = null;
+            __InteractiveItemsPreparedDesignPixels = null;
+            DxComponent.LogAddLine($"DxDataFormPanel.InteractiveItemsInvalidate(): Invalidated items.");
+
+            this.__DataFormContent?.ItemsAllChanged();
+        }
+        /// <summary>
+        /// Provede invalidaci cache bitmap v připravených interaktivních prvcích <see cref="InteractiveItems"/>.
+        /// Provádí se po změně Skinu a/nebo Zoomu.
+        /// Následující vykreslení obsahu vytvoří nové cachované bitmapy již s novým skinem.
+        /// </summary>
+        protected void InvalidateInteractiveImageCache()
+        {
+            if (__InteractiveItems is null) return;
+            foreach (var item in __InteractiveItems.OfType<IPaintItemData>())
+                item.ImageData = null;
         }
         /// <summary>
         /// Vrátí true, pokud máme připraveny prvky pro aktuálně viditelnou oblast. false pokud prvky nejsou připraveny vůbec, anebo nepokrývají viditelnou oblast.
         /// </summary>
         /// <returns></returns>
-        private bool _IsValidInteractiveItemsForVisibleBounds()
+        private bool _IsValidPreparedInteractiveRows()
         {
-            if (__InteractiveItems != null && __InteractiveItemsDesignPixels != null)
+            var preparedDesignPixels = __InteractiveItemsPreparedDesignPixels;
+            if (__InteractiveItems is null || preparedDesignPixels is null)
             {
-                var visibleBounds = this.VisibleDesignBounds;                  // Aktuálně zobrazená oblast
-                if (visibleBounds.Height <= 0) return true;                    // Nic není viditelno: pak jsme OK.
-
-                // Pokud viditelná oblast se nachází uvnitř oblasti, kterou máme připravenou od dřívějška, pak si data neinvalidujeme.
-                Int32Range designPixels = __InteractiveItemsDesignPixels;
-                // Jde o malý posun a my jsme si moudře připravili interaktivní prvky pro větší oblast, než bylo nutno, takže nyní nemusíme zahazovat a generovat vše...
-                if (visibleBounds.Top >= designPixels.Begin && visibleBounds.Bottom <= designPixels.End) return true;
+                DxComponent.LogAddLine($"DxDataFormPanel.IsValidInteractiveRows(): data is null => Invalid");
+                return false;                                                  // Nejsou-li data, pak nejsme validní.
             }
+
+            // Aktuálně zobrazená oblast = je daná zobrazovačem:
+            var visibleBounds = this.VisibleDesignBounds;
+            if (visibleBounds.Height <= 0) 
+            {
+                // DxComponent.LogAddLine($"DxDataFormPanel.IsValidInteractiveRows(): Empty VisibleDesignBounds.Height => Valid");
+                return true;                                                   // Nic není viditelno: pak jsme OK.
+            }
+
+            // visibleBounds může být i větší, než je velikost dat (může zobrazovat prostor dole pod koncem reálných dat).
+            // To by bez korekcí potom vedlo k tomu, že bychom pro ten malý dolní proužek nikdy neměli validní data, protože je nemáme z čeho připravit.
+            // Proto určíme hodnoty VisibleDataBounds = to, co vidíme, a současně to obsahuje data:
+            var designSize = this.ContentDesignSize;
+            if (!designSize.HasValue)
+            {
+                DxComponent.LogAddLine($"DxDataFormPanel.IsValidInteractiveRows(): ContentDesignSize is null => Valid");
+                return true;                                                   // Nejsou-li data, pak jsme validní.
+            }
+            // Pokud by VisibleDesignBounds mělo z nějakého důvodu záporný Top, pak to neakceptujeme, data řádků máme počínaje od 0;
+            int visibleDataTop = (visibleBounds.Top < 0 ? 0 : visibleBounds.Top);
+            // Pokud Bottom viditelné oblasti je větší než Height existujících dat, pak jako reálný Bottom dáme konec našich dat:
+            int visibleDataBottom = (visibleBounds.Bottom > designSize.Value.Height ? designSize.Value.Height : visibleBounds.Bottom);
+
+            // Pokud viditelná oblast se nachází uvnitř oblasti, kterou máme připravenou od dřívějška, pak si data neinvalidujeme.
+            // Jde o malý posun a my jsme si moudře připravili interaktivní prvky pro větší oblast, než bylo nutno, takže nyní nemusíme zahazovat a generovat vše...
+            if (visibleDataTop >= preparedDesignPixels.Begin && visibleDataBottom <= preparedDesignPixels.End)
+            {
+                // DxComponent.LogAddLine($"DxDataFormPanel.IsValidInteractiveRows(): VisibleBounds is in PreparedDesignPixels =>  Valid");
+                return true;                                                   // Viditelná oblast se nachází uvnitř oblasti, pro kterou jsou připravena data
+            }
+            DxComponent.LogAddLine($"DxDataFormPanel.IsValidInteractiveRows(): VisibleBounds: {visibleDataTop}÷{visibleDataBottom}; PreparedPixels: {preparedDesignPixels.Begin}÷{preparedDesignPixels.End} => INVALID");
             return false;
         }
         /// <summary>
@@ -405,7 +459,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private DataFormRow[] __VisibleRows;
         /// <summary>
         /// Interaktivní data = jednotlivé prvky, platné pro aktuální layout a řádky a pozici Scrollbaru. Úložiště.
-        /// Pokrývá oblast na ose Y v rozsahu <see cref="__InteractiveItemsDesignPixels"/>.
+        /// Pokrývá oblast na ose Y v rozsahu <see cref="__InteractiveItemsPreparedDesignPixels"/>.
         /// </summary>
         private List<IInteractiveItem> __InteractiveItems;
         /// <summary>
@@ -414,7 +468,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// IsVariable = true: jsem proměnný interval, zobrazuji jen část řádků, při scrollování je třeba provádět reload interaktivních prvků;
         /// IsVariable = false: jsem konstantní interval, zobrazuji všechny řádky. 
         /// </summary>
-        private Int32Range __InteractiveItemsDesignPixels;
+        private Int32Range __InteractiveItemsPreparedDesignPixels;
         #endregion
     }
     #endregion
@@ -423,32 +477,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// <see cref="DxDataFormContentPanel"/> : fyzický grafický a interaktivní panel pro zobrazení contentu DataFormu.
     /// Řeší grafické vykreslení prvků a řeší interaktivitu myši a klávesnice.
     /// Pro fyzické vykreslení obsahu prvku volá vlastní metodu konkrétního prvku <see cref="IInteractiveItem.Paint(PaintDataEventArgs)"/>, to neřeší sám panel.
+    /// <para/>
+    /// Tato třída je pokud možno přenáší svoje požadavky do svého parenta = <see cref="DataFormPanel"/> a sama by měla být co nejjednodušší.
+    /// Slouží primárně jen jako zobrazovač a interaktivní koordinátor.
     /// </summary>
     public class DxDataFormContentPanel : DxInteractivePanel
     {
-        #region Info ... Vnoření prvků, souřadné systémy, řádky
-        /*
-        Třída DxInteractivePanel (náš předek) v sobě hostuje interaktivní prvky IInteractiveItem uložené v DxInteractivePanel.Items, ty tvoří Root úroveň.
-        Mohou to být Containery { Panely, Záložky } nebo samotné prvky { TextBox, Label, Combo, Picture, CheckBox, atd }.
-        Containery v sobě mohou obsahovat další Containery nebo samotné prvky.
-        Containery obsahují svoje Child prvky v IInteractiveItem.Items. Jejich souřadný systém je pak relativní k jejich Parentu.
-        Scrollování je podporováno jen na úrovni celého DataFormu, ale nikoliv na úrovni Containeru (=Panel ani Záložka nebude mít ScrollBary).
-        _LayoutChanged podporuje Zoom. Výchozí je vložen při tvorbě DataFormu anebo při změně Zoomu, podporován je i interaktivní Zoom: Ctrl+MouseWheel.
-        Jde o dvě hodnoty Zoomu: systémový × lokální.
-        Prvek IInteractiveItem definuje svoji pozici v property DesignBounds, kde je souřadnice daná v Design pixelech (bez vlivu Zoomu), relativně k Parentu, v rámci řádku.
-
-        Řádky:
-        Pole prvků DxInteractivePanel.Items definuje vzhled jednoho řádku.
-
-
-
-
-
-
-
-
-        */
-        #endregion
         #region Konstruktor
         /// <summary>
         /// Konstruktor
