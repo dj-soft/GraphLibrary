@@ -328,6 +328,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         public DataFormRow()
         {
             IsVisible = true;
+            __Values = new Dictionary<int, object>();
+
         }
         /// <summary>
         /// Parent

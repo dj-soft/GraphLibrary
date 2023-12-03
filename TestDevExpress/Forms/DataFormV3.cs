@@ -330,17 +330,18 @@ namespace TestDevExpress.Forms
                 case 1:
                     top = 12;
                     left = leftB;
-                    addItemPairT("datum", "Datum:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 60, 20);
+                    addItemPairT("datum", "Datum:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 70, 20);
                     addItemPairT("reference", "Reference:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 120, 20);
                     addItemPairT("nazev", "Název:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 250, 20);
                     leftM = left;
                     topM = top;
                     left = leftB; top += 44; 
-                    addItemPairT("pocet", "Počet:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 90, 20);
+                    addItemPairT("pocet", "Počet:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 110, 20);
                     addItemPairT("cena1", "Cena 1ks:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 80, 20);
+                    addItemType("button_open", DxDForm.DxRepositoryEditorType.Button, "Otevři", left + 60, 120, null, top + 18, 44, null);
                     left = leftB; top += 44;
-                    addItemPairT("sazbadph", "Sazba DPH:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 140, 20);
-                    addItemPairT("cenacelk", "Cena celkem:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 70, 20);
+                    addItemPairT("sazbadph", "Sazba DPH:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 120, 20);
+                    addItemPairT("cenacelk", "Cena cel.:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 70, 20);
                     left = leftM; top = topM;
                     addItemPairT("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 350, 90);
                     break;
@@ -355,16 +356,16 @@ namespace TestDevExpress.Forms
                     addItemPairL("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.TextBox, 6, 680, 350, 90);
                     break;
                 case 3:
-                    addItemType("id1", DxDForm.DxRepositoryEditorType.TextBox, 0, 75, null, 2, 20, null);
-                    addItemType("id2", DxDForm.DxRepositoryEditorType.TextBox, 80, 40, null, 2, 20, null);
-                    addItemType("id3", DxDForm.DxRepositoryEditorType.TextBox, 125, 40, null, 2, 20, null);
-                    addItemType("id4", DxDForm.DxRepositoryEditorType.TextBox, 170, 150, null, 2, 20, null);
-                    addItemType("id5", DxDForm.DxRepositoryEditorType.TextBox, 325, 150, null, 2, 20, null);
-                    addItemType("id6", DxDForm.DxRepositoryEditorType.TextBox, 480, 100, null, 2, 20, null);
-                    addItemType("id7", DxDForm.DxRepositoryEditorType.TextBox, 585, 60, null, 2, 20, null);
-                    addItemType("id8", DxDForm.DxRepositoryEditorType.TextBox, 650, 60, null, 2, 20, null);
-                    addItemType("id9", DxDForm.DxRepositoryEditorType.TextBox, 715, 200, null, 2, 20, null);
-                    addItemType("id0", DxDForm.DxRepositoryEditorType.TextBox, 920, 400, null, 2, 20, null);
+                    addItemType("id1", DxDForm.DxRepositoryEditorType.TextBox, null, 0, 75, null, 2, 20, null);
+                    addItemType("id2", DxDForm.DxRepositoryEditorType.TextBox, null, 80, 40, null, 2, 20, null);
+                    addItemType("id3", DxDForm.DxRepositoryEditorType.TextBox, null, 125, 40, null, 2, 20, null);
+                    addItemType("id4", DxDForm.DxRepositoryEditorType.TextBox, null, 170, 150, null, 2, 20, null);
+                    addItemType("id5", DxDForm.DxRepositoryEditorType.TextBox, null, 325, 150, null, 2, 20, null);
+                    addItemType("id6", DxDForm.DxRepositoryEditorType.TextBox, null, 480, 100, null, 2, 20, null);
+                    addItemType("id7", DxDForm.DxRepositoryEditorType.TextBox, null, 585, 60, null, 2, 20, null);
+                    addItemType("id8", DxDForm.DxRepositoryEditorType.TextBox, null, 650, 60, null, 2, 20, null);
+                    addItemType("id9", DxDForm.DxRepositoryEditorType.TextBox, null, 715, 200, null, 2, 20, null);
+                    addItemType("id0", DxDForm.DxRepositoryEditorType.TextBox, null, 920, 400, null, 2, 20, null);
                     break;
             }
 
@@ -373,13 +374,13 @@ namespace TestDevExpress.Forms
             void addItemPairT(string columnId, string labelText, DxDForm.DxRepositoryEditorType columnType, int top, ref int left, int width, int height)
             {
                 addItemLabel(columnId + ".label", labelText, left + 3, width - 8, null, top, 18, null);
-                addItemType(columnId, columnType, left, width, null, top + 18, height, null);
+                addItemType(columnId, columnType, null, left, width, null, top + 18, height, null);
                 left = left + width + 8;
             }
             void addItemPairL(string columnId, string labelText, DxDForm.DxRepositoryEditorType columnType, int top, int left, int width, int height)
             {
                 addItemLabel(columnId + ".label", labelText, left, 75, null, top + 2, 18, null);
-                addItemType(columnId, columnType, left + 78, width, null, top, height, null);
+                addItemType(columnId, columnType, null, left + 78, width, null, top, height, null);
             }
             void addItemLabel(string columnId, string labelText, int? left, int? width, int? right, int? top, int? height, int? bottom)
             {
@@ -392,12 +393,13 @@ namespace TestDevExpress.Forms
                 };
                 result.Add(item);
             }
-            void addItemType(string columnId, DxDForm.DxRepositoryEditorType columnType, int? left, int? width, int? right, int? top, int? height, int? bottom)
+            void addItemType(string columnId, DxDForm.DxRepositoryEditorType columnType, string text, int? left, int? width, int? right, int? top, int? height, int? bottom)
             {
                 DxDData.DataFormLayoutItem item = new DxDData.DataFormLayoutItem()
                 {
                     ColumnName = columnId,
                     ColumnType = columnType,
+                    LabelText = text,
                     DesignBoundsExt = new DxDForm.RectangleExt(left, width, right, top, height, bottom)
                 };
                 result.Add(item);
@@ -421,7 +423,11 @@ namespace TestDevExpress.Forms
                 switch (layoutId)
                 {
                     case 1:
+                        addRow();
+                        break;
                     case 2:
+                        addRow();
+                        break;
                     case 3:
                         addRow();
                         break;

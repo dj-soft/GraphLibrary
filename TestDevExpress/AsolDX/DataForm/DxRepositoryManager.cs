@@ -382,6 +382,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     }
     #endregion
     #region DxRepositoryEditor**** : Sada tříd, které fyzicky řídí tvorbu, plnění daty, vykreslení atd pro jednotlivé druhy DxRepositoryEditorType
+    /// <summary>
+    /// Label
+    /// </summary>
     internal class DxRepositoryEditorLabel : DxRepositoryEditor
     {
         /// <summary>
@@ -398,7 +401,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Režim práce s cache
         /// </summary>
-        protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCache; } }
+        protected override EditorCacheMode CacheMode { get { return EditorCacheMode.DirectPaint; } }
         /// <summary>
         /// Vykreslí prvek do dané grafiky
         /// </summary>
@@ -407,11 +410,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="controlBounds"></param>
         public override void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
+            string text = paintItem.Text;
+            if (String.IsNullOrEmpty(text)) return;
+
             byte[] imageData = null;
             switch (CacheMode)
             {
+                case EditorCacheMode.DirectPaint:
+                    DxComponent.DrawText(pdea.Graphics, text, DxComponent.GetFontDefault(), controlBounds, WinDraw.Color.Black, WinDraw.ContentAlignment.MiddleLeft);
+                    break;
                 case EditorCacheMode.ManagerCache:
-                    string key = CreateKey(paintItem.Text, controlBounds.Size);   // a další hodnoty, které jednoznačně definují identický výsledek, jako: Color, FontStyle, ... ?
+                    string key = CreateKey(text, controlBounds.Size);   // a další hodnoty, které jednoznačně definují identický výsledek, jako: Color, FontStyle, ... ?
                     if (!TryGetCacheImageData(key, out imageData))
                     {
                         imageData = CreateImageData(paintItem, pdea, controlBounds);
@@ -556,7 +565,82 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         DevExpress.XtraEditors.TextEdit __EditorPaint;
     }
+    internal class DxRepositoryEditorButton : DxRepositoryEditor
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="repositoryManager"></param>
+        public DxRepositoryEditorButton(DxRepositoryManager repositoryManager) : base(repositoryManager)
+        {
+        }
+        /// <summary>
+        /// Typ editoru
+        /// </summary>
+        public override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.Button; } }
+        /// <summary>
+        /// Režim práce s cache
+        /// </summary>
+        protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCache; } }
 
+        public override void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        {
+            byte[] imageData = null;
+            switch (CacheMode)
+            {
+                case EditorCacheMode.ManagerCache:
+                    string key = CreateKey(paintItem.Text, controlBounds.Size);   // a další hodnoty, které jednoznačně definují identický výsledek, jako: Color, FontStyle, ... ?
+                    if (!TryGetCacheImageData(key, out imageData))
+                    {
+                        imageData = CreateImageData(paintItem, pdea, controlBounds);
+                        AddImageDataToCache(key, imageData);
+                    }
+                    break;
+                case EditorCacheMode.ItemData:
+                    if (paintItem.ImageData is null)
+                        paintItem.ImageData = CreateImageData(paintItem, pdea, controlBounds);
+                    imageData = paintItem.ImageData;
+                    break;
+                case EditorCacheMode.None:
+                    imageData = CreateImageData(paintItem, pdea, controlBounds);
+                    break;
+            }
+            PaintFormData(imageData, pdea, controlBounds);
+        }
+        /// <summary>
+        /// Vygeneruje data bitmapy
+        /// </summary>
+        /// <param name="paintItem"></param>
+        /// <param name="pdea"></param>
+        /// <param name="controlBounds"></param>
+        /// <returns></returns>
+        private byte[] CreateImageData(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        {
+            __EditorPaint ??= new DevExpress.XtraEditors.SimpleButton();
+
+            int w = controlBounds.Width;
+            int h = controlBounds.Height;
+            __EditorPaint.Text = paintItem.Text;
+            __EditorPaint.Size = new WinDraw.Size(w, h);
+
+            return CreateBitmapData(__EditorPaint);
+        }
+        /// <summary>
+        /// Dispose objektu
+        /// </summary>
+        protected override void OnDispose()
+        {
+            if (__EditorPaint != null)
+            {
+                __EditorPaint.Dispose();
+                __EditorPaint = null;
+            }
+        }
+        DevExpress.XtraEditors.SimpleButton __EditorPaint;
+    }
+
+
+    
     #region class DxRepositoryEditor : Obecný abtraktní předek konkrétních editorů; obsahuje Factory pro tvorbu konkrétních potomků
     /// <summary>
     /// Obecný abtraktní předek konkrétních editorů; obsahuje Factory pro tvorbu konkrétních potomků
@@ -599,6 +683,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 case DxRepositoryEditorType.Label: return new DxRepositoryEditorLabel(repositoryManager);
                 case DxRepositoryEditorType.TextBox: return new DxRepositoryEditorTextBox(repositoryManager);
+                case DxRepositoryEditorType.Button: return new DxRepositoryEditorButton(repositoryManager);
             }
             throw new ArgumentException($"DxRepositoryEditor.CreateEditor(): Editor for type '{editorType}' does not exists.");
         }
@@ -635,7 +720,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <summary>
             /// Ukládat do společné cache v <see cref="DxRepositoryManager"/>
             /// </summary>
-            ManagerCache
+            ManagerCache,
+            /// <summary>
+            /// Přímé kreslení (Label, Image, a možná další jako Title?)
+            /// </summary>
+            DirectPaint
         }
         /// <summary>
         /// Pokud je dán klíč, pro který máme v evidenci data (uložená bitmapa ve formě byte[]), pak ji najde a vrátí true.

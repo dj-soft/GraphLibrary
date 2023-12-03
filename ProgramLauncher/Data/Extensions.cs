@@ -674,7 +674,7 @@ namespace DjSoft.Tools.ProgramLauncher
             var brush = App.GetBrush(textAppearance.TextColors, interactiveState, alpha);
             if (brush is null) return;
 
-            var textounds = bounds;
+            var textBounds = bounds;
             var font = App.GetFont(textAppearance, interactiveState);
             var stringFormat = App.GetStringFormatFor(contentAlignment);
 
@@ -694,7 +694,7 @@ namespace DjSoft.Tools.ProgramLauncher
             }
 
             graphics.SetForText();
-            graphics.DrawString(text, font, brush, textounds, stringFormat);
+            graphics.DrawString(text, font, brush, textBounds, stringFormat);
         }
         public static void DrawText(this Graphics graphics, string text, RectangleF bounds, Color color, SystemFontType? fontType = null, float? emSize = null, FontStyle? fontStyle = null, float? alpha = null, ContentAlignment? contentAlignment = null)
         {

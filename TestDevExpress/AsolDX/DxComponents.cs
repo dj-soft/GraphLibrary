@@ -16,17 +16,12 @@ using System.Drawing;
 
 using DevExpress.Utils;
 using System.Drawing.Drawing2D;
-using DevExpress.Pdf.Native;
-using DevExpress.XtraPdfViewer;
 using DevExpress.XtraEditors;
-using DevExpress.XtraRichEdit.Layout;
 using WSXmlSerializer = Noris.WS.Parser.XmlSerializer;
-using System.Diagnostics;
 using DevExpress.Utils.Svg;
 using DevExpress.Utils.Design;
 using System.Globalization;
-using DevExpress.Utils.Filtering.Internal;
-using System.Diagnostics.Eventing.Reader;
+using DevExpress.Drawing.Internal;
 
 // using BAR = DevExpress.XtraBars;
 // using EDI = DevExpress.XtraEditors;
@@ -1532,124 +1527,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aktuální hodnota (<see cref="Zoom"/> / <see cref="DesignDpi"/>), slouží k rychlému přepočtu Design souřadnic na cílové souřadnice v aktuálním Zoomu a TargetDPI.
         /// </summary>
         private decimal __ZoomDpi;
-        #endregion
-        #region FontCache
-        /// <summary>
-        /// Vrátí požadovaný font z cache. 
-        /// Nedávejme na něm Dispose(), tedy nepoužívejme jej v using() patternu!!!
-        /// </summary>
-        /// <param name="prototype"></param>
-        /// <param name="style"></param>
-        /// <returns></returns>
-        public static Font GetFont(Font prototype, FontStyle? style = null) { return Instance._GetFont(prototype, null, null, prototype.Size, style); }
-        /// <summary>
-        /// Vrátí požadovaný font z cache. 
-        /// Nedávejme na něm Dispose(), tedy nepoužívejme jej v using() patternu!!!
-        /// </summary>
-        /// <param name="family"></param>
-        /// <param name="emSize"></param>
-        /// <param name="style"></param>
-        /// <returns></returns>
-        public static Font GetFont(FontFamily family, float emSize, FontStyle? style = null) { return Instance._GetFont(null, family, null, emSize, style); }
-        /// <summary>
-        /// Vrátí požadovaný font z cache. 
-        /// Nedávejme na něm Dispose(), tedy nepoužívejme jej v using() patternu!!!
-        /// </summary>
-        /// <param name="familyName"></param>
-        /// <param name="emSize"></param>
-        /// <param name="style"></param>
-        /// <returns></returns>
-        public static Font GetFont(string familyName, float emSize, FontStyle? style = null) { return Instance._GetFont(null, null, familyName, emSize, style); }
-        /// <summary>
-        /// Vrátí požadovaný font z cache. 
-        /// Nedávejme na něm Dispose(), tedy nepoužívejme jej v using() patternu!!!
-        /// </summary>
-        /// <param name="prototype"></param>
-        /// <param name="family"></param>
-        /// <param name="familyName"></param>
-        /// <param name="emSize"></param>
-        /// <param name="fontStyle"></param>
-        /// <returns></returns>
-        private Font _GetFont(Font prototype, FontFamily family, string familyName, float emSize, FontStyle? fontStyle = null)
-        {
-            string name = (prototype != null ? prototype.Name : (family != null ? family.Name : familyName));
-            float size = (float)Math.Round((decimal)emSize, 2);
-            FontStyle style = fontStyle ?? FontStyle.Regular;
-            string styleKey = (style.HasFlag(FontStyle.Bold) ? "B" : "") + (style.HasFlag(FontStyle.Italic) ? "I" : "") + (style.HasFlag(FontStyle.Underline) ? "U" : "") + (style.HasFlag(FontStyle.Strikeout) ? "S" : "");
-            string key = $"'{name}':{size:###0.00}:{styleKey }";
-            Font font;
-            if (!_FontCache.TryGetValue(key, out font))
-            {
-                if (prototype != null)
-                    font = new Font(prototype, style);
-                else if (family != null)
-                    font = new Font(family, size, style);
-                else if (!String.IsNullOrEmpty(familyName))
-                    font = new Font(familyName, size, style);
-                else
-                    throw new ArgumentException($"Nelze vytvořit Font bez zadání jeho druhu.");
-                lock (_FontCache)
-                {
-                    if (!_FontCache.ContainsKey(key))
-                        _FontCache.Add(key, font);
-                }
-            }
-            return font;
-        }
-        /// <summary>
-        /// Inicializace cache pro fonty
-        /// </summary>
-        private void _InitFontCache()
-        {
-            _FontCache = new Dictionary<string, Font>();
-        }
-        /// <summary>
-        /// Dispose cache pro fonty
-        /// </summary>
-        private void _DisposeFontCache()
-        {
-            if (_FontCache != null)
-                _FontCache.Values.ForEachExec(f => { if (f != null) f.Dispose(); });
-            _FontCache.Clear();
-        }
-        /// <summary>
-        /// Cache fontů. Klíče si instance tvoří sama.
-        /// </summary>
-        private Dictionary<string, Font> _FontCache;
-        /// <summary>
-        /// Vrátí systémový font, např. <see cref="SystemFonts.DefaultFont"/> pro daný typ <paramref name="fontType"/>
-        /// </summary>
-        /// <param name="fontType"></param>
-        /// <returns></returns>
-        public static Font GetSystemFont(SystemFontType fontType)
-        {
-            switch (fontType)
-            {
-                case SystemFontType.DefaultFont: return SystemFonts.DefaultFont;
-                case SystemFontType.DialogFont: return SystemFonts.DialogFont;
-                case SystemFontType.MessageBoxFont: return SystemFonts.MessageBoxFont;
-                case SystemFontType.CaptionFont: return SystemFonts.CaptionFont;
-                case SystemFontType.SmallCaptionFont: return SystemFonts.SmallCaptionFont;
-                case SystemFontType.MenuFont: return SystemFonts.MenuFont;
-                case SystemFontType.StatusFont: return SystemFonts.StatusFont;
-                case SystemFontType.IconTitleFont: return SystemFonts.IconTitleFont;
-            }
-            return SystemFonts.DefaultFont;
-        }
-        /// <summary>
-        /// Systémové typy fontů
-        /// </summary>
-        public enum SystemFontType
-        {
-            DefaultFont,
-            DialogFont,
-            MessageBoxFont,
-            CaptionFont,
-            SmallCaptionFont,
-            MenuFont,
-            StatusFont,
-            IconTitleFont
-        }
         #endregion
         #region Listenery
         /// <summary>
@@ -4954,7 +4831,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="color"></param>
         /// <param name="alpha"></param>
         /// <returns></returns>
-        public static SolidBrush PaintGetSolidBrush(Color color, int alpha) { return Instance._GetSolidBrush(Color.FromArgb(alpha, color)); }
+        public static SolidBrush PaintGetSolidBrush(Color color, int? alpha) { return Instance._GetSolidBrush(color, alpha); }
         /// <summary>
         /// Okamžitě vrací Pen pro kreslení danou barvou. 
         /// Vrácený objekt Nesmí být Disposován!
@@ -4970,7 +4847,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="color"></param>
         /// <param name="alpha"></param>
         /// <returns></returns>
-        public static Pen PaintGetPen(Color color, int alpha) { return Instance._GetPen(Color.FromArgb(alpha, color)); }
+        public static Pen PaintGetPen(Color color, int? alpha) { return Instance._GetPen(color, alpha); }
         /// <summary>
         /// Okamžitě vrací SolidBrush dané barvy.
         /// Vrácený objekt Nesmí být Disposován!
@@ -4983,6 +4860,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             return _SolidBrush;
         }
         /// <summary>
+        /// Okamžitě vrací SolidBrush dané barvy.
+        /// Vrácený objekt Nesmí být Disposován!
+        /// </summary>
+        /// <param name="color"></param>
+        /// <param name="alpha"></param>
+        /// <returns></returns>
+        private SolidBrush _GetSolidBrush(Color color, int? alpha)
+        {
+            _SolidBrush.Color = (alpha.HasValue ? Color.FromArgb(alpha.Value, color) : color);
+            return _SolidBrush;
+        }
+        /// <summary>
         /// Okamžitě vrací Pen dané barvy.
         /// Vrácený objekt Nesmí být Disposován!
         /// </summary>
@@ -4991,6 +4880,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Pen _GetPen(Color color)
         {
             _Pen.Color = color;
+            return _Pen;
+        }
+        /// <summary>
+        /// Okamžitě vrací Pen dané barvy.
+        /// Vrácený objekt Nesmí být Disposován!
+        /// </summary>
+        /// <param name="color"></param>
+        /// <param name="alpha"></param>
+        /// <returns></returns>
+        private Pen _GetPen(Color color, int? alpha)
+        {
+            _Pen.Color = (alpha.HasValue ? Color.FromArgb(alpha.Value, color) : color);
+            _Pen.Width = 1f;
+            _Pen.DashStyle = DashStyle.Solid;
             return _Pen;
         }
         /// <summary>
@@ -5043,6 +4946,311 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private SolidBrush _SolidBrush;
         private Pen _Pen;
+        #region DrawString a Graphics
+        /// <summary>
+        /// Vykreslí string
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="text"></param>
+        /// <param name="font"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        /// <param name="aligment"></param>
+        /// <param name="alpha"></param>
+        public static void DrawText(Graphics graphics, string text, Font font, Rectangle bounds, Color color, ContentAlignment? aligment = null, int? alpha = null)
+        {
+            Instance._DrawText(graphics, text, font, bounds, color, aligment, alpha);
+        }
+        /// <summary>
+        /// Vykreslí string.
+        /// Písmo je vhodné získat metodou <see cref="GetFont(Font, FontStyle?)"/>.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="text"></param>
+        /// <param name="font"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        /// <param name="aligment"></param>
+        /// <param name="alpha"></param>
+        private void _DrawText(Graphics graphics, string text, Font font, Rectangle bounds, Color color, ContentAlignment? aligment = null, int? alpha = null)
+        {
+            if (String.IsNullOrEmpty(text)) return;
+
+            var brush = _GetSolidBrush(color, alpha);
+            var stringFormat = _GetStringFormatFor(aligment ?? ContentAlignment.MiddleLeft);
+            GraphicsSetForText(graphics);
+            graphics.DrawString(text, font, brush, bounds);
+        }
+        /// <summary>
+        /// Nastaví vlastnosti dané Graphics pro kreslení textu
+        /// </summary>
+        /// <param name="graphics"></param>
+        public static void GraphicsSetForText(Graphics graphics)
+        {
+            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;             // UHD: OK
+            graphics.SmoothingMode = SmoothingMode.AntiAlias;                                                // UHD: OK
+            graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+        }
+        /// <summary>
+        /// Nastaví vlastnosti dané Graphics pro kreslení gridů = základní kolmé čáry, nikoli šikmé
+        /// </summary>
+        /// <param name="graphics"></param>
+        public static void GraphicsSetForGrids(Graphics graphics)
+        {
+            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;             // UHD: OK
+            graphics.SmoothingMode = SmoothingMode.None;
+            graphics.InterpolationMode = InterpolationMode.Default;
+        }
+        #endregion
+        #region FontCache
+        /// <summary>
+        /// Vrátí požadovaný font z cache. 
+        /// Nedávejme na něm Dispose(), tedy nepoužívejme jej v using() patternu!!!
+        /// </summary>
+        /// <param name="prototype"></param>
+        /// <param name="style"></param>
+        /// <returns></returns>
+        public static Font GetFont(Font prototype, FontStyle? style = null) { return Instance._GetFont(prototype, null, null, prototype.Size, style); }
+        /// <summary>
+        /// Vrátí požadovaný font z cache. 
+        /// Nedávejme na něm Dispose(), tedy nepoužívejme jej v using() patternu!!!
+        /// </summary>
+        /// <param name="family"></param>
+        /// <param name="emSize"></param>
+        /// <param name="style"></param>
+        /// <returns></returns>
+        public static Font GetFont(FontFamily family, float emSize, FontStyle? style = null) { return Instance._GetFont(null, family, null, emSize, style); }
+        /// <summary>
+        /// Vrátí požadovaný font z cache. 
+        /// Nedávejme na něm Dispose(), tedy nepoužívejme jej v using() patternu!!!
+        /// </summary>
+        /// <param name="familyName"></param>
+        /// <param name="emSize"></param>
+        /// <param name="style"></param>
+        /// <returns></returns>
+        public static Font GetFont(string familyName, float emSize, FontStyle? style = null) { return Instance._GetFont(null, null, familyName, emSize, style); }
+        /// <summary>
+        /// Vrátí defaultní font, s případnými odchylkami od standardu. Neprovádět Dispose!!!
+        /// </summary>
+        /// <param name="fontType"></param>
+        /// <param name="sizeRatio"></param>
+        /// <param name="fontStyle"></param>
+        /// <returns></returns>
+        public static Font GetFontDefault(SystemFontType? fontType = null, float? sizeRatio = null, FontStyle? fontStyle = null) { return Instance._GetFontDefault(fontType, sizeRatio, fontStyle); }
+        /// <summary>
+        /// Vrátí defaultní font, s případnými odchylkami od standardu. Neprovádět Dispose!!!
+        /// </summary>
+        /// <param name="fontType"></param>
+        /// <param name="sizeRatio"></param>
+        /// <param name="fontStyle"></param>
+        /// <returns></returns>
+        private Font _GetFontDefault(SystemFontType? fontType = null, float? sizeRatio = null, FontStyle? fontStyle = null) 
+        {
+            var result = GetSystemFont(fontType ?? SystemFontType.DefaultFont);
+            if (sizeRatio.HasValue || fontStyle.HasValue)
+            {
+                float emSize = (sizeRatio.HasValue ? result.Size * sizeRatio.Value : result.Size);
+                result = _GetFont(result, null, null, emSize, fontStyle);
+            }
+            return result;
+        }
+        /// <summary>
+        /// Vrátí požadovaný font z cache. 
+        /// Nedávejme na něm Dispose(), tedy nepoužívejme jej v using() patternu!!!
+        /// </summary>
+        /// <param name="prototype"></param>
+        /// <param name="family"></param>
+        /// <param name="familyName"></param>
+        /// <param name="emSize"></param>
+        /// <param name="fontStyle"></param>
+        /// <returns></returns>
+        private Font _GetFont(Font prototype, FontFamily family, string familyName, float emSize, FontStyle? fontStyle = null)
+        {
+            string name = (prototype != null ? prototype.Name : (family != null ? family.Name : familyName));
+            float size = (float)Math.Round((decimal)emSize, 2);
+            FontStyle style = fontStyle ?? FontStyle.Regular;
+            string styleKey = (style.HasFlag(FontStyle.Bold) ? "B" : "") + (style.HasFlag(FontStyle.Italic) ? "I" : "") + (style.HasFlag(FontStyle.Underline) ? "U" : "") + (style.HasFlag(FontStyle.Strikeout) ? "S" : "");
+            string key = $"'{name}':{size:###0.00}:{styleKey}";
+            Font font;
+            if (!_FontCache.TryGetValue(key, out font))
+            {
+                if (prototype != null)
+                    font = new Font(prototype, style);
+                else if (family != null)
+                    font = new Font(family, size, style);
+                else if (!String.IsNullOrEmpty(familyName))
+                    font = new Font(familyName, size, style);
+                else
+                    throw new ArgumentException($"Nelze vytvořit Font bez zadání jeho druhu.");
+                lock (_FontCache)
+                {
+                    if (!_FontCache.ContainsKey(key))
+                        _FontCache.Add(key, font);
+                }
+            }
+            return font;
+        }
+        /// <summary>
+        /// Inicializace cache pro fonty
+        /// </summary>
+        private void _InitFontCache()
+        {
+            _FontCache = new Dictionary<string, Font>();
+        }
+        /// <summary>
+        /// Dispose cache pro fonty
+        /// </summary>
+        private void _DisposeFontCache()
+        {
+            if (_FontCache != null)
+                _FontCache.Values.ForEachExec(f => { if (f != null) f.Dispose(); });
+            _FontCache.Clear();
+        }
+        /// <summary>
+        /// Cache fontů. Klíče si instance tvoří sama.
+        /// </summary>
+        private Dictionary<string, Font> _FontCache;
+        /// <summary>
+        /// Vrátí systémový font, např. <see cref="SystemFonts.DefaultFont"/> pro daný typ <paramref name="fontType"/>
+        /// </summary>
+        /// <param name="fontType"></param>
+        /// <returns></returns>
+        public static Font GetSystemFont(SystemFontType fontType)
+        {
+            switch (fontType)
+            {
+                case SystemFontType.DefaultFont: return SystemFonts.DefaultFont;
+                case SystemFontType.DialogFont: return SystemFonts.DialogFont;
+                case SystemFontType.MessageBoxFont: return SystemFonts.MessageBoxFont;
+                case SystemFontType.CaptionFont: return SystemFonts.CaptionFont;
+                case SystemFontType.SmallCaptionFont: return SystemFonts.SmallCaptionFont;
+                case SystemFontType.MenuFont: return SystemFonts.MenuFont;
+                case SystemFontType.StatusFont: return SystemFonts.StatusFont;
+                case SystemFontType.IconTitleFont: return SystemFonts.IconTitleFont;
+            }
+            return SystemFonts.DefaultFont;
+        }
+        /// <summary>
+        /// Systémové typy fontů
+        /// </summary>
+        public enum SystemFontType
+        {
+            /// <summary>
+            /// <see cref="SystemFonts.DefaultFont"/>
+            /// </summary>
+            DefaultFont,
+            /// <summary>
+            /// <see cref="SystemFonts.DialogFont"/>
+            /// </summary>
+            DialogFont,
+            /// <summary>
+            /// <see cref="SystemFonts.MessageBoxFont"/>
+            /// </summary>
+            MessageBoxFont,
+            /// <summary>
+            /// <see cref="SystemFonts.CaptionFont"/>
+            /// </summary>
+            CaptionFont,
+            /// <summary>
+            /// <see cref="SystemFonts.SmallCaptionFont"/>
+            /// </summary>
+            SmallCaptionFont,
+            /// <summary>
+            /// <see cref="SystemFonts.MenuFont"/>
+            /// </summary>
+            MenuFont,
+            /// <summary>
+            /// <see cref="SystemFonts.StatusFont"/>
+            /// </summary>
+            StatusFont,
+            /// <summary>
+            /// <see cref="SystemFonts.IconTitleFont"/>
+            /// </summary>
+            IconTitleFont
+        }
+        #endregion
+        #region StringFormaty
+        /// <summary>
+        /// Vrátí formátovací předpis pro daný alignment textu
+        /// </summary>
+        /// <param name="contentAlignment"></param>
+        /// <returns></returns>
+        public static StringFormat GetStringFormatFor(ContentAlignment? contentAlignment) { return Instance._GetStringFormatFor(contentAlignment); }
+        /// <summary>
+        /// Vrátí formátovací předpis pro daný alignment textu
+        /// </summary>
+        /// <param name="contentAlignment"></param>
+        /// <returns></returns>
+        private StringFormat _GetStringFormatFor(ContentAlignment? contentAlignment)
+        {
+            if (__StringFormats is null) __StringFormats = new Dictionary<ContentAlignment, StringFormat>();
+            var alignment = contentAlignment ?? ContentAlignment.TopLeft;
+            if (!__StringFormats.TryGetValue(alignment, out var stringFormat))
+            {
+                stringFormat = new StringFormat();
+                stringFormat.FormatFlags = StringFormatFlags.LineLimit;
+                switch (alignment)
+                {
+                    case ContentAlignment.TopLeft:
+                        stringFormat.Alignment = StringAlignment.Near;
+                        stringFormat.LineAlignment = StringAlignment.Near;
+                        break;
+                    case ContentAlignment.TopCenter:
+                        stringFormat.Alignment = StringAlignment.Center;
+                        stringFormat.LineAlignment = StringAlignment.Near;
+                        break;
+                    case ContentAlignment.TopRight:
+                        stringFormat.Alignment = StringAlignment.Far;
+                        stringFormat.LineAlignment = StringAlignment.Near;
+                        break;
+                    case ContentAlignment.MiddleLeft:
+                        stringFormat.Alignment = StringAlignment.Near;
+                        stringFormat.LineAlignment = StringAlignment.Center;
+                        break;
+                    case ContentAlignment.MiddleCenter:
+                        stringFormat.Alignment = StringAlignment.Center;
+                        stringFormat.LineAlignment = StringAlignment.Center;
+                        break;
+                    case ContentAlignment.MiddleRight:
+                        stringFormat.Alignment = StringAlignment.Far;
+                        stringFormat.LineAlignment = StringAlignment.Center;
+                        break;
+                    case ContentAlignment.BottomLeft:
+                        stringFormat.Alignment = StringAlignment.Near;
+                        stringFormat.LineAlignment = StringAlignment.Far;
+                        break;
+                    case ContentAlignment.BottomCenter:
+                        stringFormat.Alignment = StringAlignment.Center;
+                        stringFormat.LineAlignment = StringAlignment.Far;
+                        break;
+                    case ContentAlignment.BottomRight:
+                        stringFormat.Alignment = StringAlignment.Far;
+                        stringFormat.LineAlignment = StringAlignment.Far;
+                        break;
+                }
+                __StringFormats.Add(alignment, stringFormat);
+            }
+            return stringFormat;
+        }
+        /// <summary>
+        /// Formáty pro různé zarovnání textu
+        /// </summary>
+        private Dictionary<ContentAlignment, StringFormat> __StringFormats;
+        /// <summary>
+        /// <see cref="StringFormat"/> zarovnaný doleva nahoru, s povoleným dělením slov
+        /// </summary>
+        public static StringFormat StringFormatWrap { get { return Instance._StringFormatWrap; } }
+        private StringFormat _StringFormatWrap
+        {
+            get
+            {
+                if (__StringFormatWrap is null)
+                    __StringFormatWrap = new StringFormat(StringFormatFlags.NoClip) { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Near, Trimming = StringTrimming.EllipsisWord };
+                return __StringFormatWrap;
+            }
+        }
+        private StringFormat __StringFormatWrap;
+        #endregion
         #endregion
         #region Lokalizace - můstek do systému
         /// <summary>
