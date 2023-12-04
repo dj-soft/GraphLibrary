@@ -7715,14 +7715,14 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             DataRibbonGroup iGroup = new DataRibbonGroup() { GroupId = DesignRibbonGroupId, GroupText = text };
 
-            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.SkinButton)) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinSetDropDown", ItemType = RibbonItemType.SkinSetDropDown });
-            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.PaletteButton)) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteDropDown", ItemType = RibbonItemType.SkinPaletteDropDown });
-            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.PaletteGallery)) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteGallery", ItemType = RibbonItemType.SkinPaletteGallery });
+            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.SkinButton)) iGroup.Items.Add(new DataRibbonItem() { ItemId = DesignRibbonItemSkinSetId, ItemType = RibbonItemType.SkinSetDropDown });
+            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.PaletteButton)) iGroup.Items.Add(new DataRibbonItem() { ItemId = DesignRibbonItemSkinPaletteDropDownId, ItemType = RibbonItemType.SkinPaletteDropDown });
+            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.PaletteGallery)) iGroup.Items.Add(new DataRibbonItem() { ItemId = DesignRibbonItemSkinPaletteDropGalleryId, ItemType = RibbonItemType.SkinPaletteGallery });
 
             if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.UhdSupport))
                 iGroup.Items.Add(new DataRibbonItem()
                 {
-                    ItemId = "_SYS__DevExpress_UhdSupportCheckBox",
+                    ItemId = DesignRibbonItemLogUhdSupport,
                     Text = "UHD Paint",
                     ToolTipText = "Zapíná podporu pro Full vykreslování na UHD monitoru",
                     ItemType = RibbonItemType.CheckButton,
@@ -7734,7 +7734,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.ImageGallery))
                 iGroup.Items.Add(new DataRibbonItem()
                 {
-                    ItemId = "_SYS__DevExpress_DxImageGallery",
+                    ItemId = DesignRibbonItemLogImageGallery,
                     Text = "DX Images",
                     ToolTipText = "Otevře okno s nabídkou systémových ikon",
                     ItemType = RibbonItemType.Button,
@@ -7746,7 +7746,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.LogActivity))
                 iGroup.Items.Add(new DataRibbonItem()
                 {
-                    ItemId = "_SYS__DevExpress_SetLogActivity",
+                    ItemId = DesignRibbonItemLogActivityId,
                     Text = "Log Active",
                     ToolTipText = "Zapíná / vypíná logování aktivity",
                     ItemType = RibbonItemType.CheckButton,
@@ -7758,6 +7758,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             return iGroup;
         }
         internal const string DesignRibbonGroupId = "_SYS__DevExpress_Design";
+        internal const string DesignRibbonItemSkinSetId = "_SYS__DevExpress_SkinSetDropDown";
+        internal const string DesignRibbonItemSkinPaletteDropDownId = "_SYS__DevExpress_SkinPaletteDropDown";
+        internal const string DesignRibbonItemSkinPaletteDropGalleryId = "_SYS__DevExpress_SkinPaletteGallery";
+        internal const string DesignRibbonItemLogUhdSupport = "_SYS__DevExpress_UhdSupportCheckBox";
+        internal const string DesignRibbonItemLogImageGallery = "_SYS__DevExpress_DxImageGallery";
+        internal const string DesignRibbonItemLogActivityId = "_SYS__DevExpress_SetLogActivity";
+
         /// <summary>
         /// Nastaví UHD paint. Pouze v Testovací aplikaci.
         /// </summary>

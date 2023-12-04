@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using Noris.Clients.Win.Components.AsolDX;
 using DxDForm = Noris.Clients.Win.Components.AsolDX.DataForm;
 using DxDData = Noris.Clients.Win.Components.AsolDX.DataForm.Data;
+using System.IO;
 
 namespace TestDevExpress.Forms
 {
@@ -16,8 +17,6 @@ namespace TestDevExpress.Forms
     [RunFormInfo(groupText: "Testovací okna", buttonText: "DataForm 3", buttonOrder: 12, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře okno DataForm verze 3")]
     public class DataFormV3 : DxRibbonForm
     {
-        // string resource1 = "svgimages/spreadsheet/showcompactformpivottable.svg";
-        // string resource2 = "svgimages/spreadsheet/showoutlineformpivottable.svg";
         #region Inicializace
         public DataFormV3()
         {
@@ -129,6 +128,9 @@ namespace TestDevExpress.Forms
                     break;
                 case "CreateSample":
                     _AddDataFormSample(sampleId);
+                    break;
+                default:
+                    var n = itemId;
                     break;
             }
         }
@@ -338,18 +340,24 @@ namespace TestDevExpress.Forms
                     addItemPairT("cena1", "Cena 1ks:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 80, 20);
                     addItemType("button_open", DxDForm.DxRepositoryEditorType.Button, "Otevři", left + 90, 140, null, top + 6, 44, null, item =>
                     {
-                        item.Content[DxDData.DxDataFormDef.IconName] = "";
-
+                        item.Content[DxDData.DxDataFormDef.IconName] = "svgimages/reports/preview.svg";
                     });
+
                     left = leftB; top += 44;
                     addItemPairT("sazbadph", "Sazba DPH:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 120, 20);
                     addItemPairT("cenacelk", "Cena cel.:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 70, 20);
-                    addItemPairT("filename", "Dokument:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 300, 20, item =>
+                    addItemPairT("filename", "Dokument:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 250, 20, item =>
                     {
-                        item.Content[DxDData.DxDataFormDef.TextEditButtons] = "FO";
+                        item.Content[DxDData.DxDataFormDef.TextBoxButtons] = "Down;Plus";
                     });
+                    left = leftB; top += 44;
+                    addItemPairT("relation", "Vztah:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 456, 20, item =>
+                    {
+                        item.Content[DxDData.DxDataFormDef.TextBoxButtons] = "SpinRight;Clear;Ellipsis";
+                    });
+
                     left = leftM; top = topM;
-                    addItemPairT("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 350, 90);
+                    addItemPairT("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.EditBox, top, ref left, 350, 154);
                     break;
                 case 2:
                     top = 16;
@@ -495,4 +503,3 @@ namespace TestDevExpress.Forms
         #endregion
     }
 }
-

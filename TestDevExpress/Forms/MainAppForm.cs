@@ -53,7 +53,10 @@ namespace TestDevExpress.Forms
         {
             switch (e.Item.ItemId)
             {
-                case "": break;
+                case DxRibbonControl.DesignRibbonItemLogActivityId:
+                    // Aktivita logu: spolupracuje s postranním panelem
+                    this.LogActivityDockPanelVisible = e.Item.Checked ?? false;
+                    break;
             }
         }
 
@@ -82,8 +85,12 @@ namespace TestDevExpress.Forms
         #region DockManager - služby
         protected override void InitializeDockPanelsContent()
         {
-            var logControl = new TestDevExpress.Components.AppLogPanel();
-            this.AddControlToDockPanels(logControl, "Log aplikace", DevExpress.XtraBars.Docking.DockingStyle.Right, DevExpress.XtraBars.Docking.DockVisibility.Visible, 350);
+            LogActivityDockPanel = new TestDevExpress.Components.AppLogPanel();
+
+            var visibility = (DxComponent.LogActive ? DevExpress.XtraBars.Docking.DockVisibility.Visible : DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
+            this.AddControlToDockPanels(LogActivityDockPanel, "Log aplikace", DevExpress.XtraBars.Docking.DockingStyle.Right, visibility, 350);
+
+
 
             //var logControl2 = new TestDevExpress.Components.AppLogPanel();
             //this.AddControlToDockPanels(logControl2, "Doplňkový log", DevExpress.XtraBars.Docking.DockingStyle.Right, DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
@@ -94,6 +101,35 @@ namespace TestDevExpress.Forms
             //var logControl4 = new TestDevExpress.Components.AppLogPanel();
             //this.AddControlToDockPanels(logControl4, "Jinopohledový log", DevExpress.XtraBars.Docking.DockingStyle.Left, DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
         }
+        /// <summary>
+        /// Viditelnost panelu <see cref="LogActivityDockPanel"/>
+        /// </summary>
+        protected bool LogActivityDockPanelVisible
+        {
+            get { return (LogActivityDockPanelVisibility == DevExpress.XtraBars.Docking.DockVisibility.Visible ? true : false); }
+            set { LogActivityDockPanelVisibility = (value ? DevExpress.XtraBars.Docking.DockVisibility.Visible : DevExpress.XtraBars.Docking.DockVisibility.AutoHide); }
+        }
+        /// <summary>
+        /// Viditelnost panelu <see cref="LogActivityDockPanel"/>
+        /// </summary>
+        protected DevExpress.XtraBars.Docking.DockVisibility LogActivityDockPanelVisibility
+        {
+            get 
+            {
+                if (LogActivityDockPanel?.Parent?.Parent is DevExpress.XtraBars.Docking.DockPanel dockPanel)
+                    return dockPanel.Visibility;
+                return DevExpress.XtraBars.Docking.DockVisibility.Hidden;
+            }
+            set 
+            {
+                if (LogActivityDockPanel?.Parent?.Parent is DevExpress.XtraBars.Docking.DockPanel dockPanel)
+                    dockPanel.Visibility = value;
+            }
+        }
+        /// <summary>
+        /// Panel obsahující LogActivity
+        /// </summary>
+        protected DxPanelControl LogActivityDockPanel;
         #endregion
         #region TabView BackImage a MouseClick
         /// <summary>

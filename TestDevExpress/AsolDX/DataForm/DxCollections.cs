@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
+    #region ChildItems<TItem> : kde Parent = přímo List
     /// <summary>
     /// Třída reprezentující List, jehož jednotlivé prvky (Childs) mají vztah na this instanci jako svého Parenta.
     /// Tento soupis <see cref="ChildItems{TItem}"/> uvedený vztah aktivně udržuje.
@@ -281,6 +282,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         #endregion
     }
+    #endregion
+    #region ChildItems<TParent, TItem> : kde Parent = zvenku dodaný majitel
     /// <summary>
     /// Třída reprezentující List, jehož jednotlivé prvky (Childs) mají vztah na svého externě dodaného Parenta.
     /// Tento soupis <see cref="ChildItems{TParent, TItem}"/> uvedený vztah aktivně udržuje.
@@ -562,6 +565,351 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         #endregion
     }
+    #endregion
+    #region BiDictionary : Dictionary, kde primárním klíčem je String a sekundárním klíčem je UInt64
+    /// <summary>
+    /// <see cref="BiDictionary{TValue}"/> : Dictionary, kde primárním klíčem je String a sekundárním klíčem je UInt64. 
+    /// Value je generická.
+    /// <para/>
+    /// Použití: tehdy, když pro vygenerovaný String klíč chceme uložit data, a současně pro ně chceme vytvořit unique UInt64, 
+    /// který budeme používat jako lokální klíč pro data.<br/>
+    /// Primární klíč String dokážeme vyhledat anebo založit nový záznam.
+    /// Při zakládání nového záznamu mu vygenerujeme nový UInt64 klíč.
+    /// Tento vygenerovaný klíč následně můžeme uložit v aplikaci a použít jako kratší verzi klíče.
+    /// </summary>
+    public class BiDictionary<TValue>
+    {
+        #region Konstruktor, proměnné, potřebné třídy pro uložení dvou klíčů a hodnot, komparátory
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public BiDictionary()
+        {
+            __ComparerKey = new ComparerKey();
+            __DictionaryKey = new Dictionary<BiKeyValue, BiKeyValue>(__ComparerKey);
+            __ComparerId = new ComparerId();
+            __DictionaryId = new Dictionary<BiKeyValue, BiKeyValue>(__ComparerId);
+            __LastId = 0UL;
+        }
+        /// <summary>
+        /// Instance komparátoru typu <see cref="BiKeyValue"/>, podle <see cref="BiKeyValue.Key"/>
+        /// </summary>
+        private ComparerKey __ComparerKey;
+        /// <summary>
+        /// Dictionary, kde klíčem budiž <see cref="BiKeyValue.Key"/>, neboť <see cref="IEqualityComparer{BiKey}"/> je instance třídy <see cref="ComparerKey"/> uložená v <see cref="__ComparerKey"/>
+        /// </summary>
+        private Dictionary<BiKeyValue, BiKeyValue> __DictionaryKey;
+        /// <summary>
+        /// Instance komparátoru typu <see cref="BiKeyValue"/>, podle <see cref="BiKeyValue.Id"/>
+        /// </summary>
+        private ComparerId __ComparerId;
+        /// <summary>
+        /// Dictionary, kde klíčem budiž <see cref="BiKeyValue.Id"/>, neboť <see cref="IEqualityComparer{BiKey}"/> je instance třídy <see cref="ComparerId"/> uložená v <see cref="__ComparerId"/>
+        /// </summary>
+        private Dictionary<BiKeyValue, BiKeyValue> __DictionaryId;
+        /// <summary>
+        /// Posledně přidělený číselný klíč
+        /// </summary>
+        private ulong __LastId;
+        /// <summary>
+        /// Třída komparátoru podle <see cref="BiKeyValue.Key"/>.
+        /// Dostane Dvojkíč a vrátí HashCode podle jeho stringového klíče, a porovná dva záznamy podle jejich stringových klíčů.
+        /// </summary>
+        private class ComparerKey : IEqualityComparer<BiKeyValue>
+        {
+            int IEqualityComparer<BiKeyValue>.GetHashCode(BiKeyValue biKey)
+            {
+                return biKey?.Key?.GetHashCode() ?? 0;
+            }
+            bool IEqualityComparer<BiKeyValue>.Equals(BiKeyValue x, BiKeyValue y)
+            {
+                return String.Equals(x.Key, y.Key);
+            }
+        }
+        /// <summary>
+        /// Třída komparátoru podle <see cref="BiKeyValue.Id"/>.
+        /// Dostane Dvojkíč a vrátí HashCode podle jeho číselného klíče, a porovná dva záznamy podle jejich číselných klíčů.
+        /// </summary>
+        private class ComparerId : IEqualityComparer<BiKeyValue>
+        {
+            int IEqualityComparer<BiKeyValue>.GetHashCode(BiKeyValue biKey)
+            {
+                return biKey?.Id.GetHashCode() ?? 0;
+            }
+            bool IEqualityComparer<BiKeyValue>.Equals(BiKeyValue x, BiKeyValue y)
+            {
+                return x.Id == y.Id;
+            }
+        }
+        /// <summary>
+        /// Úložiště dvou klíčů a hodnoty
+        /// </summary>
+        private class BiKeyValue : KeyValue
+        {
+            /// <summary>
+            /// Simple konstruktor jen pro Key, pro test existence
+            /// </summary>
+            /// <param name="key"></param>
+            /// <param name="id"></param>
+            /// <param name="value"></param>
+            public BiKeyValue(string key, ulong id, TValue value)
+            {
+                this.Key = key;
+                this.Id = id;
+                this.Value = value;
+            }
+            /// <summary>
+            /// Simple konstruktor jen pro Key, pro test existence
+            /// </summary>
+            /// <param name="key"></param>
+            public BiKeyValue(string key)
+            {
+                this.Key = key;
+            }
+            /// <summary>
+            /// Simple konstruktor jen pro Id, pro test existence
+            /// </summary>
+            /// <param name="id"></param>
+            public BiKeyValue(ulong id)
+            {
+                this.Id = id;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return $"Key: '{Key}'; Id: {Id}; Value: {Value}";
+            }
+            /// <summary>
+            /// Stringový primární klíč
+            /// </summary>
+            public readonly string Key;
+            /// <summary>
+            /// Číselný pracovní klíč
+            /// </summary>
+            public readonly ulong Id;
+            /// <summary>
+            /// Uložená data
+            /// </summary>
+            public TValue Value;
+            /// <summary>
+            /// Key
+            /// </summary>
+            string KeyValue.Key { get { return  this.Key; } }
+            /// <summary>
+            /// Id
+            /// </summary>
+            TValue KeyValue.Value { get { return this.Value; } }
+        }
+        #endregion
+        #region Přidání a vyhledání a odebrání prvku
+        /// <summary>
+        /// Vyprázdní vše
+        /// </summary>
+        /// <returns></returns>
+        public void Clear()
+        {
+            __DictionaryId.Clear();
+            __DictionaryKey.Clear();
+            __LastId = 0UL;
+        }
+        /// <summary>
+        /// Metoda přidá (pokud dosud není) anebo přepíše data pro daný klíč (pokud jej již máme), a vrátí ID tohoto klíče (v obou případech).
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public ulong Store(string key, TValue value)
+        {
+            if (!__DictionaryKey.TryGetValue(new BiKeyValue(key), out var data))
+            {   // Vložit data:
+                //  Vygeneruji new Id, vytvořím jednu new instanci BiKeyValue s dodaným Key a nově vygenerovaným Id a dodanou Value;
+                //  Tuto jednu instanci BiKeyValue vložím do obou Dictionary jako Key i Value,
+                //  ale protože každá Dictionary používá jiný IEqualityComparer, tak bude možno instanci najít jak podle Key, tak podle Id.
+                // A po nalezení instance (podle Key nebo Id) bude jako Value získána kompletní sada { Key + Id + Value },
+                //  takže nejen že pro Key najdu Value, ale pro Key určím i Id...
+                ulong id = ++__LastId;
+                data = new BiKeyValue(key, id, value);
+                __DictionaryKey.Add(data, data);
+                __DictionaryId.Add(data, data);
+                return id;
+            }
+            else
+            {   // Přepsat data:
+                // Tohle je jeden z důvodů celé konstrukce: pokud najdu instanci 'BiKeyValue data',
+                //  pak vím, že tutéž instanci třídy mám uloženou jak v __DictionaryKey tak i v __DictionaryId;
+                //  a přepsáním Value v instanci získané z __DictionaryKey se tatáž změna promítne i do instance __DictionaryId:
+                // Přitom neměním Key ani Id, takže Dictionary jsou konzistentní:
+                data.Value = value;
+                return data.Id;
+            }
+        }
+        /// <summary>
+        /// Obsahuje daný klíč?
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public bool ContainsKey(string key) { return __DictionaryKey.ContainsKey(new BiKeyValue(key)); }
+        /// <summary>
+        /// Obsahuje daný Id?
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public bool ContainsId(ulong id) { return __DictionaryId.ContainsKey(new BiKeyValue(id)); }
+        /// <summary>
+        /// Najdeme data pro daný klíč?
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public bool TryGetValue(string key, out TValue value)
+        {
+            if (__DictionaryKey.TryGetValue(new BiKeyValue(key), out var data))
+            {
+                value = data.Value;
+                return true;
+            }
+            value = default;
+            return false;
+        }
+        /// <summary>
+        /// Najdeme data pro daný klíč?
+        /// Pokud ano, pak do out <paramref name="id"/> předáme i jejich Id.
+        /// Pokud nenajdeme, pak do out <paramref name="id"/> vložíme 0UL (a výstup bude false).
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public bool TryGetValue(string key, out TValue value, out ulong id)
+        {
+            if (__DictionaryKey.TryGetValue(new BiKeyValue(key), out var data))
+            {
+                value = data.Value;
+                id = data.Id;
+                return true;
+            }
+            value = default;
+            id = 0UL;
+            return false;
+        }
+        /// <summary>
+        /// Najdeme data pro daný Id?
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public bool TryGetValue(ulong id, out TValue value)
+        {
+            if (__DictionaryKey.TryGetValue(new BiKeyValue(id), out var data))
+            {
+                value = data.Value;
+                return true;
+            }
+            value = default;
+            return false;
+        }
+        /// <summary>
+        /// Odebere prvek daného klíče
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public bool Remove(string key)
+        {
+            bool result = false;
+            var biKey = new BiKeyValue(key);
+            if (__DictionaryKey.TryGetValue(biKey, out var data))    // biKey obshauje jen Key, __DictionaryKey pracuje s klíčem podle Key
+            {
+                __DictionaryKey.Remove(biKey);                       // Odebereme Key z __DictionaryKey;
+                if (__DictionaryId.ContainsKey(data))                // data obsahují nejen Key, ale i Id (a Value)
+                    __DictionaryId.Remove(data);                     // Odebereme z __DictionaryId záznam podle klíče Id, který je obsažen v 'data'
+                result = true;
+            }
+            return result;
+        }
+        /// <summary>
+        /// Odebere prvek daného Id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public bool Remove(ulong id)
+        {
+            bool result = false;
+            var biId = new BiKeyValue(id);
+            if (__DictionaryId.TryGetValue(biId, out var data))      // biId obshauje jen Id, __DictionaryId pracuje s klíčem podle Id
+            {
+                __DictionaryId.Remove(biId);                         // Odebereme Id z __DictionaryId;
+                if (__DictionaryKey.ContainsKey(data))               // data obsahují nejen Id, ale i Key (a Value)
+                    __DictionaryKey.Remove(data);                    // Odebereme z __DictionaryKey záznam podle klíče Key, který je obsažen v 'data'
+                result = true;
+            }
+            return result;
+        }
+        #endregion
+        #region Indexery
+        /// <summary>
+        /// Vrátí nebo uloží hodnotu pro daný klíč.
+        /// Pokud hodnota neexistuje, vrátí default pro <typeparamref name="TValue"/>.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public TValue this[string key]
+        {
+            get { this.TryGetValue(key, out var value); return value; }
+            set { this.Store(key, value); }
+        }
+        /// <summary>
+        /// Vrátí hodnotu pro daný Id.
+        /// Pokud hodnota neexistuje, vrátí default pro <typeparamref name="TValue"/>.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public TValue this[ulong id]
+        {
+            get { this.TryGetValue(id, out var value); return value; }
+        }
+        #endregion
+        #region Kolekce
+        /// <summary>
+        /// Počet prvků
+        /// </summary>
+        public int Count { get { return this.__DictionaryKey.Count; } }
+        /// <summary>
+        /// Kolekce klíčů
+        /// </summary>
+        public IEnumerable<String> Keys { get { return this.__DictionaryKey.Values.Select(b => b.Key); } }
+        /// <summary>
+        /// Kolekce identifikátorů
+        /// </summary>
+        public IEnumerable<UInt64> Ids { get { return this.__DictionaryKey.Values.Select(b => b.Id); } }
+        /// <summary>
+        /// Kolekce hodnot
+        /// </summary>
+        public IEnumerable<TValue> Values { get { return this.__DictionaryKey.Values.Select(b => b.Value); } }
+        /// <summary>
+        /// Kolekce klíčů a hodnot
+        /// </summary>
+        public IEnumerable<KeyValue> KeyValues { get { return this.__DictionaryKey.Values; } }
+        /// <summary>
+        /// Předpis pro typ obsahující klíč a hodnotu
+        /// </summary>
+        public interface KeyValue
+        {
+            /// <summary>
+            /// Klíč
+            /// </summary>
+            string Key { get; }
+            /// <summary>
+            /// Hodnota
+            /// </summary>
+            TValue Value { get; }
+        }
+        #endregion
+    }
+    #endregion
+    #region interface IChildOfParent<TParent> a ISortableList<TItem>
     /// <summary>
     /// Předpis pro typ, který eviduje Parenta své instance
     /// </summary>
@@ -590,4 +938,5 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="comparison"></param>
         void Sort(Comparison<TItem> comparison);
     }
+    #endregion
 }

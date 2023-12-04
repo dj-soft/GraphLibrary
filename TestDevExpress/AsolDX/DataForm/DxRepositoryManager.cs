@@ -7,6 +7,7 @@ using DevExpress.ClipboardSource.SpreadsheetML;
 using DevExpress.DataProcessing.ExtractStorage;
 using DevExpress.Diagram.Core.Layout.Native;
 using DevExpress.XtraCharts;
+using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraRichEdit.UI;
 using System;
 using System.Collections.Generic;
@@ -148,9 +149,32 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         public bool TryGetCacheImageData(string key, out byte[] imageData)
         {
-            if (key != null && __CacheDict.TryGetValue(key, out imageData)) return true;
+            return TryGetCacheImageData(key, out imageData, out ulong _);
+        }
+        /// <summary>
+        /// Pokud je dán klíč, pro který máme v evidenci data (uložená bitmapa ve formě byte[]), pak ji najde a vrátí true. Získá rovněž ID dat.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="imageData"></param>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public bool TryGetCacheImageData(string key, out byte[] imageData, out ulong id)
+        {
+            if (key != null && __CacheDict.TryGetValue(key, out imageData, out id)) return true;
+
             imageData = null;
+            id = 0UL;
             return false;
+        }
+        /// <summary>
+        /// Pokud je dán ID, pro který máme v evidenci data (uložená bitmapa ve formě byte[]), pak ji najde a vrátí true.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="imageData"></param>
+        /// <returns></returns>
+        public bool TryGetCacheImageData(ulong id, out byte[] imageData)
+        {
+            return TryGetCacheImageData(id, out imageData);
         }
         /// <summary>
         /// Do cache přidá data (uložená bitmapa ve formě byte[]) pro daný klíč. Pokud klíč nebo data jsou null, nepřidá nic.
@@ -158,18 +182,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="key"></param>
         /// <param name="imageData"></param>
-        public void AddImageDataToCache(string key, byte[] imageData)
+        public ulong AddImageDataToCache(string key, byte[] imageData)
         {
-            if (key is null || imageData is null || __CacheDict.ContainsKey(key)) return;
+            if (key is null || imageData is null) return 0UL;
             _CleanUpCache();
-            __CacheDict.Add(key, imageData);
+            return __CacheDict.Store(key, imageData);
         }
         /// <summary>
         /// Inicializace cache hotových obrázků
         /// </summary>
         private void _InitCache()
         {
-            __CacheDict = new Dictionary<string, byte[]>();
+            __CacheDict = new BiDictionary<byte[]>();
         }
         /// <summary>
         /// Invaliduje data v cache hotových obrázků.
@@ -211,7 +235,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
                 //  Z cache něco smažeme:
                 // Vytvořím List, kde Key = klíč záznamu, a Value = velikost záznamu v Byte:
-                var sizes = __CacheDict.Select(kvp => new KeyValuePair<string, int>(kvp.Key, getRecSize(kvp))).ToList();
+                var sizes = __CacheDict.KeyValues.Select(kvp => new KeyValuePair<string, int>(kvp.Key, getRecSize(kvp.Key, kvp.Value))).ToList();
                 // Setřídím podle velikosti záznamu vzestupně:
                 sizes.Sort((a, b) => a.Value.CompareTo(b.Value));
                 // Ponechám si '_CacheCleanUpTargetCount' nejmenších záznamů, a ostatní odeberu:
@@ -238,12 +262,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Vrátí velikost dat celé cache
             int getCacheSize()
             {
-                return __CacheDict.Count * 16 + __CacheDict.Select(kvp => getRecSize(kvp)).Sum();
+                return __CacheDict.Count * 16 + __CacheDict.KeyValues.Select(kvp => getRecSize(kvp.Key, kvp.Value)).Sum();
             }
             // Vrátí velikost dat daného záznamu cache
-            int getRecSize(KeyValuePair<string, byte[]> keyValuePair)
+            int getRecSize(string key, byte[] value)
             {
-                return (2 * keyValuePair.Key.Length + keyValuePair.Value.Length);
+                return (2 * key.Length + value.Length);
             }
         }
         /// <summary>
@@ -283,9 +307,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __CacheDict = null;
         }
         /// <summary>
-        /// Úložiště hotových obrázků
+        /// Úložiště hotových obrázků.
+        /// Klíčem může být String = jednoznačný klíč definující data, anebo průběžně přidělený UInt64 = ID.
         /// </summary>
-        private Dictionary<string, byte[]> __CacheDict;
+        private BiDictionary<byte[]> __CacheDict;
         #endregion
     }
     #region interface IPaintItemData : přepis pro prvek, který může být vykreslen
@@ -318,9 +343,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         public bool TryGetContent<T>(string name, out T content);
         /// <summary>
-        /// Klíč popisující data uložená v <see cref="ImageData"/>
+        /// ID, který vede zrychleně k datům v cache.
+        /// Jakákoli změna hodnot v prvku sem nastaví null.
         /// </summary>
-        string ImageDataKey { get; set; }
+        ulong? ImageId { get; set; }
         /// <summary>
         /// Uložená data obrázku
         /// </summary>
@@ -346,7 +372,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         Title,
         /// <summary>
-        /// TextBox - prostý bez buttonů (buttony má <see cref="EditBoxButton"/>), podporuje password i nullvalue
+        /// TextBox - prostý bez buttonů (buttony má <see cref="TextBoxButton"/>), podporuje password i nullvalue
         /// </summary>
         TextBox,
         /// <summary>
@@ -356,7 +382,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// TextBox s buttony = pokrývá i Relation, Document, FileBox, CalendarBox a další textbox s přidanými tlačítky
         /// </summary>
-        EditBoxButton,
+        TextBoxButton,
         /// <summary>
         /// CheckBox: zaškrtávátko i DownButton
         /// </summary>
@@ -610,9 +636,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int h = controlBounds.Height;
             __EditorPaint.EditValue = value;
             __EditorPaint.Size = new WinDraw.Size(w, h);
+            __EditorPaint.Properties.BorderStyle = GetItemBorderStyle(paintItem);
+            // __EditorPaint.ErrorText = "ErrorText ...";
+            // __EditorPaint.ErrorImageOptions.Alignment = WinForm.ErrorIconAlignment.TopRight;
+            // __EditorPaint.ErrorImageOptions.
 
-            __EditorPaint.Properties.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Flat;
-            __EditorPaint.ErrorImageOptions.
 
             return CreateBitmapData(__EditorPaint);
         }
@@ -633,6 +661,225 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         DevExpress.XtraEditors.TextEdit __EditorPaint;
     }
     #endregion
+    #region TextBoxButton
+    /// <summary>
+    /// TextBoxButton
+    /// </summary>
+    internal class DxRepositoryEditorTextBoxButton : DxRepositoryEditor
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="repositoryManager"></param>
+        public DxRepositoryEditorTextBoxButton(DxRepositoryManager repositoryManager) : base(repositoryManager)
+        {
+        }
+        /// <summary>
+        /// Typ editoru
+        /// </summary>
+        public override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.TextBoxButton; } }
+        /// <summary>
+        /// Režim práce s cache
+        /// </summary>
+        protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCache; } }
+        /// <summary>
+        /// Vykreslí prvek dodané grafiky
+        /// </summary>
+        /// <param name="paintItem"></param>
+        /// <param name="pdea"></param>
+        /// <param name="controlBounds"></param>
+        /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
+        public override void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
+        {
+            object value = GetItemValue(paintItem);
+            string text = value?.ToString() ?? "";
+
+            byte[] imageData = null;
+            switch (CacheMode)
+            {
+                case EditorCacheMode.ManagerCache:
+                    var buttons = this.GetItemContent(paintItem, Data.DxDataFormDef.TextBoxButtons, "");
+                    string key = CreateKey(text, controlBounds.Size, buttons);   // a další hodnoty, které jednoznačně definují identický výsledek, jako: Color, FontStyle, ... ?
+                    if (!TryGetCacheImageData(key, out imageData))
+                    {
+                        imageData = CreateImageData(paintItem, pdea, controlBounds);
+                        AddImageDataToCache(key, imageData);
+                    }
+                    break;
+                case EditorCacheMode.ItemData:
+                    if (paintItem.ImageData is null)
+                        paintItem.ImageData = CreateImageData(paintItem, pdea, controlBounds);
+                    imageData = paintItem.ImageData;
+                    break;
+                case EditorCacheMode.None:
+                    imageData = CreateImageData(paintItem, pdea, controlBounds);
+                    break;
+            }
+            PaintFormData(imageData, pdea, controlBounds);
+        }
+        /// <summary>
+        /// Je voláno po změně interaktivního stavu dané buňky. Možná bude třeba pro buňku vytvořit a umístit nativní Control, anebo bude možno jej odebrat...
+        /// </summary>
+        /// <param name="paintItem"></param>
+        /// <param name="controlBounds"></param>
+        public override void ChangeItemInteractiveState(IPaintItemData paintItem, WinDraw.Rectangle controlBounds) { }
+        /// <summary>
+        /// Vygeneruje data bitmapy
+        /// </summary>
+        /// <param name="paintItem"></param>
+        /// <param name="pdea"></param>
+        /// <param name="controlBounds"></param>
+        /// <returns></returns>
+        private byte[] CreateImageData(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        {
+            __EditorPaint ??= new DevExpress.XtraEditors.ButtonEdit();
+            object value = GetItemValue(paintItem);
+
+            int w = controlBounds.Width;
+            int h = controlBounds.Height;
+            __EditorPaint.EditValue = value;
+            __EditorPaint.Size = new WinDraw.Size(w, h);
+            __EditorPaint.Properties.BorderStyle = GetItemBorderStyle(paintItem);
+
+            __EditorPaint.Properties.Buttons.Clear();
+            var buttons = this.GetItemContent(paintItem, Data.DxDataFormDef.TextBoxButtons, "");
+            if (!String.IsNullOrEmpty(buttons))
+            {
+                __EditorPaint.Properties.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+                var buttonNames = buttons.Split(',', ';');
+                foreach (var buttonName in buttonNames )
+                {
+                    if (Enum.TryParse< DevExpress.XtraEditors.Controls.ButtonPredefines>(buttonName, out DevExpress.XtraEditors.Controls.ButtonPredefines kind))
+                        __EditorPaint.Properties.Buttons.Add(new DevExpress.XtraEditors.Controls.EditorButton(kind));
+
+                }
+            }
+
+            return CreateBitmapData(__EditorPaint);
+        }
+        /// <summary>
+        /// Dispose objektu
+        /// </summary>
+        protected override void OnDispose()
+        {
+            if (__EditorPaint != null)
+            {
+                __EditorPaint.Dispose();
+                __EditorPaint = null;
+            }
+        }
+        /// <summary>
+        /// Nativní control používaný pro vykreslení obrázku do bitmapy
+        /// </summary>
+        DevExpress.XtraEditors.ButtonEdit __EditorPaint;
+    }
+    #endregion
+    #region EditBox
+    /// <summary>
+    /// EditBox
+    /// </summary>
+    internal class DxRepositoryEditorEditBox : DxRepositoryEditor
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="repositoryManager"></param>
+        public DxRepositoryEditorEditBox(DxRepositoryManager repositoryManager) : base(repositoryManager)
+        {
+        }
+        /// <summary>
+        /// Typ editoru
+        /// </summary>
+        public override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.TextBox; } }
+        /// <summary>
+        /// Režim práce s cache
+        /// </summary>
+        protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCache; } }
+        /// <summary>
+        /// Vykreslí prvek dodané grafiky
+        /// </summary>
+        /// <param name="paintItem"></param>
+        /// <param name="pdea"></param>
+        /// <param name="controlBounds"></param>
+        /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
+        public override void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
+        {
+            object value = GetItemValue(paintItem);
+            string text = value?.ToString() ?? "";
+
+            byte[] imageData = null;
+            switch (CacheMode)
+            {
+                case EditorCacheMode.ManagerCache:
+                    string key = CreateKey(text, controlBounds.Size);   // a další hodnoty, které jednoznačně definují identický výsledek, jako: Color, FontStyle, ... ?
+                    if (!TryGetCacheImageData(key, out imageData))
+                    {
+                        imageData = CreateImageData(paintItem, pdea, controlBounds);
+                        AddImageDataToCache(key, imageData);
+                    }
+                    break;
+                case EditorCacheMode.ItemData:
+                    if (paintItem.ImageData is null)
+                        paintItem.ImageData = CreateImageData(paintItem, pdea, controlBounds);
+                    imageData = paintItem.ImageData;
+                    break;
+                case EditorCacheMode.None:
+                    imageData = CreateImageData(paintItem, pdea, controlBounds);
+                    break;
+            }
+            PaintFormData(imageData, pdea, controlBounds);
+        }
+        /// <summary>
+        /// Je voláno po změně interaktivního stavu dané buňky. Možná bude třeba pro buňku vytvořit a umístit nativní Control, anebo bude možno jej odebrat...
+        /// </summary>
+        /// <param name="paintItem"></param>
+        /// <param name="controlBounds"></param>
+        public override void ChangeItemInteractiveState(IPaintItemData paintItem, WinDraw.Rectangle controlBounds) { }
+        /// <summary>
+        /// Vygeneruje data bitmapy
+        /// </summary>
+        /// <param name="paintItem"></param>
+        /// <param name="pdea"></param>
+        /// <param name="controlBounds"></param>
+        /// <returns></returns>
+        private byte[] CreateImageData(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        {
+            __EditorPaint ??= new DevExpress.XtraEditors.MemoEdit();
+            object value = GetItemValue(paintItem);
+
+            int w = controlBounds.Width;
+            int h = controlBounds.Height;
+            __EditorPaint.EditValue = value;
+            __EditorPaint.Size = new WinDraw.Size(w, h);
+            __EditorPaint.Properties.BorderStyle = GetItemBorderStyle(paintItem);
+            // __EditorPaint.ErrorText = "ErrorText ...";
+            // __EditorPaint.ErrorImageOptions.Alignment = WinForm.ErrorIconAlignment.TopRight;
+            // __EditorPaint.ErrorImageOptions.
+
+
+            return CreateBitmapData(__EditorPaint);
+        }
+        /// <summary>
+        /// Dispose objektu
+        /// </summary>
+        protected override void OnDispose()
+        {
+            if (__EditorPaint != null)
+            {
+                __EditorPaint.Dispose();
+                __EditorPaint = null;
+            }
+        }
+        /// <summary>
+        /// Nativní control používaný pro vykreslení obrázku do bitmapy
+        /// </summary>
+        DevExpress.XtraEditors.MemoEdit __EditorPaint;
+    }
+    #endregion
+    
+    // checkboxy, spinnery, range, atd atd atd
+    // containery
+
     #region Button
     /// <summary>
     /// Button
@@ -669,7 +916,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             switch (CacheMode)
             {
                 case EditorCacheMode.ManagerCache:
-                    string key = CreateKey(text, controlBounds.Size);   // a další hodnoty, které jednoznačně definují identický výsledek, jako: Color, FontStyle, ... ?
+                    var iconName = this.GetItemContent(paintItem, Data.DxDataFormDef.IconName, "");
+                    string key = CreateKey(text, controlBounds.Size, iconName);   // a další hodnoty, které jednoznačně definují identický výsledek, jako: Color, FontStyle, ... ?
                     if (!TryGetCacheImageData(key, out imageData))
                     {
                         imageData = CreateImageData(paintItem, pdea, controlBounds);
@@ -693,7 +941,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="paintItem"></param>
         /// <param name="controlBounds"></param>
         public override void ChangeItemInteractiveState(IPaintItemData paintItem, WinDraw.Rectangle controlBounds) { }
-
         /// <summary>
         /// Vygeneruje data bitmapy
         /// </summary>
@@ -710,6 +957,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int h = controlBounds.Height;
             __EditorPaint.Text = text;
             __EditorPaint.Size = new WinDraw.Size(w, h);
+
+            var iconName = this.GetItemContent(paintItem, Data.DxDataFormDef.IconName, "");
+            if (iconName != null)
+            {
+                DxComponent.ApplyImage(__EditorPaint.ImageOptions, iconName);
+                __EditorPaint.ImageOptions.ImageToTextAlignment = DevExpress.XtraEditors.ImageAlignToText.LeftCenter;
+            }
 
             return CreateBitmapData(__EditorPaint);
         }
@@ -769,7 +1023,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 case DxRepositoryEditorType.Label: return new DxRepositoryEditorLabel(repositoryManager);
                 case DxRepositoryEditorType.TextBox: return new DxRepositoryEditorTextBox(repositoryManager);
+                case DxRepositoryEditorType.TextBoxButton: return new DxRepositoryEditorTextBoxButton(repositoryManager);
                 case DxRepositoryEditorType.Button: return new DxRepositoryEditorButton(repositoryManager);
+                case DxRepositoryEditorType.EditBox: return new DxRepositoryEditorEditBox(repositoryManager);
             }
             throw new ArgumentException($"DxRepositoryEditor.CreateEditor(): Editor for type '{editorType}' does not exists.");
         }
@@ -820,24 +1076,36 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             DirectPaint
         }
         /// <summary>
-        /// Pokud je dán klíč, pro který máme v evidenci data (uložená bitmapa ve formě byte[]), pak ji najde a vrátí true.
+        /// Pokud je dán klíč, pro který máme v evidenci data (uložená bitmapa ve formě byte[]), pak ji najde a vrátí true. Určí i ID dat.
         /// </summary>
         /// <param name="key"></param>
         /// <param name="imageData"></param>
+        /// <param name="id"></param>
         /// <returns></returns>
-        protected bool TryGetCacheImageData(string key, out byte[] imageData)
+        protected bool TryGetCacheImageData(string key, out byte[] imageData, out ulong id)
         {
-            return __RepositoryManager.TryGetCacheImageData(key, out imageData);
+            return __RepositoryManager.TryGetCacheImageData(key, out imageData, out id);
+        }
+        /// <summary>
+        /// Pokud je dán ID, pro který máme v evidenci data (uložená bitmapa ve formě byte[]), pak ji najde a vrátí true.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="imageData"></param>
+        /// <returns></returns>
+        protected bool TryGetCacheImageData(ulong id, out byte[] imageData)
+        {
+            return __RepositoryManager.TryGetCacheImageData(id, out imageData);
         }
         /// <summary>
         /// Do cache přidá data (uložená bitmapa ve formě byte[]) pro daný klíč. Pokud klíč nebo data jsou null, nepřidá nic.
-        /// Pokud pro daný klíč už data evidujeme, nepřidá ani nepřepíše je.
+        /// Pokud pro daný klíč už data evidujeme, aktualizuje je.
+        /// Vrátí ID těchto dat. ID bude uloženo do prvku jako krátký identifikátor bitmapy.
         /// </summary>
         /// <param name="key"></param>
         /// <param name="imageData"></param>
-        protected void AddImageDataToCache(string key, byte[] imageData)
+        protected ulong AddImageDataToCache(string key, byte[] imageData)
         {
-            __RepositoryManager.AddImageDataToCache(key, imageData);
+            return __RepositoryManager.AddImageDataToCache(key, imageData);
         }
         /// <summary>
         /// Metoda vrátí klíč z dodaných dat
@@ -903,6 +1171,26 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="paintItem"></param>
         /// <returns></returns>
         protected string GetItemToolTipText(IPaintItemData paintItem) { return (paintItem.TryGetContent<string>(Data.DxDataFormDef.ToolTipText, out var content) ? content : null); }
+        /// <summary>
+        /// Z prvku přečte a vrátí BorderStyle
+        /// </summary>
+        /// <param name="paintItem"></param>
+        /// <returns></returns>
+        protected BorderStyles GetItemBorderStyle(IPaintItemData paintItem)
+        {
+            if (!paintItem.TryGetContent<string>(Data.DxDataFormDef.BorderStyle, out var content)) return BorderStyles.Default;
+            if (!Enum.TryParse(content, out BorderStyles borderStyles)) return BorderStyles.Default;
+            return borderStyles;
+        }
+        /// <summary>
+        /// Z prvku přečte a vrátí požadovanou hodnotu anebo vrátí default hodnotu
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="paintItem"></param>
+        /// <param name="name"></param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
+        protected T GetItemContent<T>(IPaintItemData paintItem, string name, T defaultValue) { return (paintItem.TryGetContent<T>(name, out T content) ? content : defaultValue); }
         #endregion
         #region Podpora pro konverze: Control => Bitmap => byte[], a následně byte[] => Bitmap => Graphics
         /// <summary>

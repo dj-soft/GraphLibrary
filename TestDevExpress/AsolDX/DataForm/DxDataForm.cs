@@ -104,6 +104,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             __DataFormLayout = new DataFormLayoutSet(this);
             __DataFormLayout.CollectionChanged += _LayoutChanged;
+            __Content = new DataContent();
+
+            Content[Data.DxDataFormDef.BorderStyle] = "HotFlat";
 
             Padding = new WinForm.Padding(0);
         }
@@ -129,6 +132,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             InvalidateInteractiveItems(true);
             DesignSizeInvalidate(true);
         }
+        /// <summary>
+        /// Obsah řádků: obsahuje sloupce i jejich datové a popisné hodnoty.
+        /// Klíčem je název sloupce.
+        /// </summary>
+        public DataContent Content { get { return __Content; } } private DataContent __Content;
         #endregion
         #region Repository manager
         /// <summary>

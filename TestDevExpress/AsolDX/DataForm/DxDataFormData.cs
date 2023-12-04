@@ -1036,6 +1036,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         {
             if (__Row.Content.TryGetContent(_GetFullName(name), out content)) return true;
             if (__LayoutItem.Content.TryGetContent(name, out content)) return true;
+            if (_DataForm.Content.TryGetContent(name, out content)) return true;
             content = default;
             return false;
         }
@@ -1063,7 +1064,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         DxInteractiveState IPaintItemData.InteractiveState { get { return this._InteractiveState; } }
         WinForm.Control IPaintItemData.NativeControl { get { return this.__NativeControl; } set { this.__NativeControl = value; } }
         bool IPaintItemData.TryGetContent<T>(string name, out T content) { return TryGetContent<T>(name, out content); }
-        string IPaintItemData.ImageDataKey { get { return __ImageDataKey; } set { __ImageDataKey = value; } } private string __ImageDataKey;
+        ulong? IPaintItemData.ImageId { get { return __ImageId; } set { __ImageId = value; } } private ulong? __ImageId;
         byte[] IPaintItemData.ImageData { get { return __ImageData; } set { __ImageData = value; } } private byte[] __ImageData;
         #endregion
         #region IInteractiveItem
@@ -1169,7 +1170,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         public const string FontStyle = "Fst";
         public const string BackColor = "BgC";
         public const string TextColor = "TxC";
-        public const string TextEditButtons = "TxEdBt";
+        public const string TextBoxButtons = "TxBxBt";
+        public const string BorderStyle = "BrS";
     }
 
     #endregion
