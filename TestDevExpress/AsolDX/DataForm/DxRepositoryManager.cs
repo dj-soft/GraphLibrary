@@ -346,13 +346,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         Title,
         /// <summary>
-        /// TextBox, pokrývá i Relation, Document, FileBox, CalendarBox a další textbox s přidanými tlačítky
+        /// TextBox - prostý bez buttonů (buttony má <see cref="EditBoxButton"/>), podporuje password i nullvalue
         /// </summary>
         TextBox,
         /// <summary>
         /// EditBox (Memo, Poznámka)
         /// </summary>
         EditBox,
+        /// <summary>
+        /// TextBox s buttony = pokrývá i Relation, Document, FileBox, CalendarBox a další textbox s přidanými tlačítky
+        /// </summary>
+        EditBoxButton,
         /// <summary>
         /// CheckBox: zaškrtávátko i DownButton
         /// </summary>
