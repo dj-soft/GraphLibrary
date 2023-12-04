@@ -4,11 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Drawing;
 using Noris.Clients.Win.Components.AsolDX;
 using DxDForm = Noris.Clients.Win.Components.AsolDX.DataForm;
 using DxDData = Noris.Clients.Win.Components.AsolDX.DataForm.Data;
-using DevExpress.Export;
 
 namespace TestDevExpress.Forms
 {
@@ -338,22 +336,41 @@ namespace TestDevExpress.Forms
                     left = leftB; top += 44; 
                     addItemPairT("pocet", "Počet:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 110, 20);
                     addItemPairT("cena1", "Cena 1ks:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 80, 20);
-                    addItemType("button_open", DxDForm.DxRepositoryEditorType.Button, "Otevři", left + 60, 120, null, top + 18, 44, null);
+                    addItemType("button_open", DxDForm.DxRepositoryEditorType.Button, "Otevři", left + 90, 140, null, top + 6, 44, null, item =>
+                    {
+                        item.Content[DxDData.DxDataFormDef.IconName] = "";
+
+                    });
                     left = leftB; top += 44;
                     addItemPairT("sazbadph", "Sazba DPH:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 120, 20);
                     addItemPairT("cenacelk", "Cena cel.:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 70, 20);
+                    addItemPairT("filename", "Dokument:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 300, 20, item =>
+                    {
+                        item.Content[DxDData.DxDataFormDef.TextEditButtons] = "FO";
+                    });
                     left = leftM; top = topM;
                     addItemPairT("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 350, 90);
                     break;
                 case 2:
-                    addItemPairL("datum", "Datum:", DxDForm.DxRepositoryEditorType.TextBox, 16, 10, 60, 20);
-                    addItemPairL("reference", "Reference:", DxDForm.DxRepositoryEditorType.TextBox, 16, 150, 120, 20);
-                    addItemPairL("nazev", "Název:", DxDForm.DxRepositoryEditorType.TextBox, 16, 345, 250, 20);
-                    addItemPairL("pocet", "Počet:", DxDForm.DxRepositoryEditorType.TextBox, 44, 10, 90, 20);
-                    addItemPairL("cena1", "Cena 1ks:", DxDForm.DxRepositoryEditorType.TextBox, 44, 180, 80, 20);
-                    addItemPairL("sazbadph", "Sazba DPH:", DxDForm.DxRepositoryEditorType.TextBox, 72, 10, 140, 20);
-                    addItemPairL("cenacelk", "Cena celkem:", DxDForm.DxRepositoryEditorType.TextBox, 72, 230, 70, 20);
-                    addItemPairL("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.TextBox, 6, 680, 350, 90);
+                    top = 16;
+                    left = leftB;
+                    addItemPairL("datum", "Datum:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 65, 20);
+                    addItemPairL("reference", "Reference:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 145, 20);
+                    addItemPairL("nazev", "Název:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 250, 20);
+
+                    top = 44;
+                    left = leftB;
+                    addItemPairL("pocet", "Počet:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 90, 20);
+                    addItemPairL("cena1", "Cena 1ks:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 120, 20);
+
+                    top = 72;
+                    left = leftB;
+                    addItemPairL("sazbadph", "Sazba DPH:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 140, 20);
+                    addItemPairL("cenacelk", "Cena celkem:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 70, 20);
+
+                    top = 16;
+                    left = 730;
+                    addItemPairL("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 350, 90);
                     break;
                 case 3:
                     addItemType("id1", DxDForm.DxRepositoryEditorType.TextBox, null, 0, 75, null, 2, 20, null);
@@ -371,16 +388,18 @@ namespace TestDevExpress.Forms
 
             return result;
 
-            void addItemPairT(string columnId, string labelText, DxDForm.DxRepositoryEditorType columnType, int top, ref int left, int width, int height)
+            void addItemPairT(string columnId, string labelText, DxDForm.DxRepositoryEditorType columnType, int top, ref int left, int width, int height, Action<DxDData.DataFormLayoutItem> modifier = null)
             {
                 addItemLabel(columnId + ".label", labelText, left + 3, width - 8, null, top, 18, null);
-                addItemType(columnId, columnType, null, left, width, null, top + 18, height, null);
+                addItemType(columnId, columnType, null, left, width, null, top + 18, height, null, modifier);
                 left = left + width + 8;
             }
-            void addItemPairL(string columnId, string labelText, DxDForm.DxRepositoryEditorType columnType, int top, int left, int width, int height)
+            void addItemPairL(string columnId, string labelText, DxDForm.DxRepositoryEditorType columnType, int top, ref int left, int width, int height, Action<DxDData.DataFormLayoutItem> modifier = null)
             {
                 addItemLabel(columnId + ".label", labelText, left, 75, null, top + 2, 18, null);
-                addItemType(columnId, columnType, null, left + 78, width, null, top, height, null);
+                left += 80;
+                addItemType(columnId, columnType, null, left, width, null, top, height, null, modifier);
+                left += (width + 8);
             }
             void addItemLabel(string columnId, string labelText, int? left, int? width, int? right, int? top, int? height, int? bottom)
             {
@@ -388,20 +407,21 @@ namespace TestDevExpress.Forms
                 {
                     ColumnName = columnId,
                     ColumnType = DxDForm.DxRepositoryEditorType.Label,
-                    LabelText = labelText,
+                    Label = labelText,
                     DesignBoundsExt = new DxDForm.RectangleExt(left, width, right, top, height, bottom)
                 };
                 result.Add(item);
             }
-            void addItemType(string columnId, DxDForm.DxRepositoryEditorType columnType, string text, int? left, int? width, int? right, int? top, int? height, int? bottom)
+            void addItemType(string columnId, DxDForm.DxRepositoryEditorType columnType, string text, int? left, int? width, int? right, int? top, int? height, int? bottom, Action<DxDData.DataFormLayoutItem> modifier = null)
             {
                 DxDData.DataFormLayoutItem item = new DxDData.DataFormLayoutItem()
                 {
                     ColumnName = columnId,
                     ColumnType = columnType,
-                    LabelText = text,
+                    Label = text,
                     DesignBoundsExt = new DxDForm.RectangleExt(left, width, right, top, height, bottom)
                 };
+                modifier?.Invoke(item);
                 result.Add(item);
             }
         }
@@ -414,33 +434,62 @@ namespace TestDevExpress.Forms
         {
             var result = new List<DxDData.DataFormRow>();
 
+            Random rand = new Random();
+
             int layoutId = (sampleId / 1000);
             int rowsCount = (sampleId % 1000);
 
             for (int r = 0; r < rowsCount; r++)
             {
-
                 switch (layoutId)
                 {
                     case 1:
-                        addRow();
+                        addRow(r.ToString("000"), "reference;nazev;pocet;cenacelk", "Ref {r};Název {r};{rnd};{rnd}");
                         break;
                     case 2:
-                        addRow();
+                        addRow(r.ToString("000"), "datum;reference;nazev;pocet;cena1", "{dr};R{r};Záznam {r};{rnd};{rnd}");
                         break;
                     case 3:
-                        addRow();
+                        addRow(r.ToString("000"), "id1;id2;id3;id4;id5;id6;id7", "{r};VYR;SKL;Výroba {r};Dne {dr};{t};==>");
                         break;
-
-
                 }
             }
 
             return result;
 
-            void addRow()
+            void addRow(string rowText, string columns = null, string values = null)
             {
-                result.Add(new DxDData.DataFormRow());
+                var dataRow = new DxDData.DataFormRow();
+                string dat = DateTime.Now.ToString("d.M.yyyy");
+                string tim = DateTime.Now.ToString("HH:mm");
+                if (!String.IsNullOrEmpty(columns) && !String.IsNullOrEmpty(values))
+                {
+                    var cols = columns.Split(';');
+                    var vals = values.Split(';');
+                    if (cols.Length > 0 && cols.Length == vals.Length)
+                    {
+                        for (int c = 0; c < cols.Length; c++)
+                        {
+                            string col = cols[c];
+                            string val = vals[c];
+                            if (val.Contains("{r}")) val = val.Replace("{r}", rowText);
+                            if (val.Contains("{d}")) val = val.Replace("{d}", dat);
+                            if (val.Contains("{dr}")) val = val.Replace("{dr}", randomDate());
+                            if (val.Contains("{t}")) val = val.Replace("{t}", tim);
+                            if (val.Contains("{rnd}")) val = val.Replace("{rnd}", ((decimal)(rand.Next(10000, 1000000)) / 100m).ToString("### ##0.00").Trim());
+                            dataRow.Content[col + DxDData.DxDataFormDef.ColumnDelimiter + DxDData.DxDataFormDef.Value] = val;
+                        }
+                    }
+                }
+
+                result.Add(dataRow);
+            }
+
+            // Náhodné datum -90 +30 dní ku dnešku
+            string randomDate()
+            {
+                var dateRnd = DateTime.Now.AddDays(120d * rand.NextDouble() - 90d);
+                return dateRnd.ToString("d.M.yyyy");
             }
         }
         #endregion

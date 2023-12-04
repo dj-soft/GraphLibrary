@@ -63,19 +63,31 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _InvalidateCache();
         }
         #endregion
-        #region Vykreslení prvku
+        #region Vykreslení prvku grafické, aktivace/deaktivace prvku nativního
         /// <summary>
         /// Je požadováno vykreslení buňky do dodané grafiky
         /// </summary>
         /// <param name="paintItem"></param>
         /// <param name="pdea"></param>
         /// <param name="controlBounds"></param>
+        /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
         /// <returns></returns>
-        public void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        public void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
         {
             if (paintItem is null) return;
             if (_TryGetEditor(paintItem.EditorType, out var editor))
-                editor.PaintItem(paintItem, pdea, controlBounds);
+                editor.PaintItem(paintItem, pdea, controlBounds, isDisplayed);
+        }
+        /// <summary>
+        /// Je voláno po změně interaktivního stavu dané buňky. Možná bude třeba pro buňku vytvořit a umístit nativní Control, anebo bude možno jej odebrat...
+        /// </summary>
+        /// <param name="paintItem"></param>
+        /// <param name="controlBounds"></param>
+        public void ChangeItemInteractiveState(IPaintItemData paintItem, WinDraw.Rectangle controlBounds)
+        {
+            if (paintItem is null) return;
+            if (_TryGetEditor(paintItem.EditorType, out var editor))
+                editor.ChangeItemInteractiveState(paintItem, controlBounds);
         }
         #endregion
         #region Repository použitých editorů
@@ -278,7 +290,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     }
     #region interface IPaintItemData : přepis pro prvek, který může být vykreslen
     /// <summary>
-    /// <see cref="IPaintItemData"/> : přepis pro prvek, který může být vykreslen v metodě <see cref="DxRepositoryManager.PaintItem(IPaintItemData, PaintDataEventArgs, WinDraw.Rectangle)"/>
+    /// <see cref="IPaintItemData"/> : přepis pro prvek, který může být vykreslen v metodě <see cref="DxRepositoryManager.PaintItem(IPaintItemData, PaintDataEventArgs, WinDraw.Rectangle, bool)"/>
     /// </summary>
     public interface IPaintItemData
     {
@@ -287,9 +299,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         DxRepositoryEditorType EditorType { get; }
         /// <summary>
-        /// Fixní text prvku, vkládá se do property Text (pro Label, Button, Checkboxy, Textboxy, ...)
+        /// Interaktivní stav
         /// </summary>
-        string Text { get; }
+        DxInteractiveState InteractiveState { get; }
+        /// <summary>
+        /// Nativní control, zobrazující zdejší data
+        /// </summary>
+        WinForm.Control NativeControl { get; set; }
+        /// <summary>
+        /// Zkusí najít hodnotu daného jména.
+        /// Dané jméno nesmí obsahovat jméno sloupce.
+        /// Hodnota se prioritně hledá v řádku (=specifická pro konkrétní řádek), a pokud tam není, pak se hledá v layoutu (defaultní hodnota).
+        /// Jména hodnot jsou v konstantách v <see cref="Data.DxDataFormDef"/>.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="name">Jméno vlastnosti. Nesmí obsahovat jméno sloupce, to bude přidáno.</param>
+        /// <param name="content">Out hodnota</param>
+        /// <returns></returns>
+        public bool TryGetContent<T>(string name, out T content);
         /// <summary>
         /// Klíč popisující data uložená v <see cref="ImageData"/>
         /// </summary>
@@ -409,17 +436,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="paintItem"></param>
         /// <param name="pdea"></param>
         /// <param name="controlBounds"></param>
-        public override void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
+        public override void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
         {
-            string text = paintItem.Text;
+            string text = GetItemLabel(paintItem);
             if (String.IsNullOrEmpty(text)) return;
 
             byte[] imageData = null;
             switch (CacheMode)
             {
                 case EditorCacheMode.DirectPaint:
-                    WinDraw.Color color = DxComponent.GetSkinColor(SkinElementColor.CommonSkins_Information) ?? WinDraw.Color.Violet;
-                    DxComponent.DrawText(pdea.Graphics, text, DxComponent.GetFontDefault(), controlBounds, WinDraw.Color.Black, WinDraw.ContentAlignment.MiddleLeft);
+                    var font = DxComponent.GetFontDefault(targetDpi: pdea.InteractivePanel.CurrentDpi);
+                    var color = DxComponent.GetSkinColor(SkinElementColor.CommonSkins_ControlText) ?? WinDraw.Color.Violet;
+                    DxComponent.DrawText(pdea.Graphics, text, font, controlBounds, color, WinDraw.ContentAlignment.MiddleLeft);
                     break;
                 case EditorCacheMode.ManagerCache:
                     string key = CreateKey(text, controlBounds.Size);   // a další hodnoty, které jednoznačně definují identický výsledek, jako: Color, FontStyle, ... ?
@@ -441,6 +470,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             PaintFormData(imageData, pdea, controlBounds);
         }
         /// <summary>
+        /// Je voláno po změně interaktivního stavu dané buňky. Možná bude třeba pro buňku vytvořit a umístit nativní Control, anebo bude možno jej odebrat...
+        /// </summary>
+        /// <param name="paintItem"></param>
+        /// <param name="controlBounds"></param>
+        public override void ChangeItemInteractiveState(IPaintItemData paintItem, WinDraw.Rectangle controlBounds) { }
+        /// <summary>
         /// Vygeneruje data bitmapy
         /// </summary>
         /// <param name="paintItem"></param>
@@ -459,7 +494,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             int w = controlBounds.Width;
             int h = controlBounds.Height;
-            __EditorPaint.Text = paintItem.Text;
+            __EditorPaint.Text = GetItemLabel(paintItem);
             __EditorPaint.Size = new WinDraw.Size(w, h);
 
             // První vygenerovanou bitmapu v životě Labelu vytvoříme a zahodíme, není pěkná...
@@ -521,13 +556,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="paintItem"></param>
         /// <param name="pdea"></param>
         /// <param name="controlBounds"></param>
-        public override void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
+        public override void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
         {
+            object value = GetItemValue(paintItem);
+            string text = value?.ToString() ?? "";
+
             byte[] imageData = null;
             switch (CacheMode)
             {
                 case EditorCacheMode.ManagerCache:
-                    string key = CreateKey(paintItem.Text, controlBounds.Size);   // a další hodnoty, které jednoznačně definují identický výsledek, jako: Color, FontStyle, ... ?
+                    string key = CreateKey(text, controlBounds.Size);   // a další hodnoty, které jednoznačně definují identický výsledek, jako: Color, FontStyle, ... ?
                     if (!TryGetCacheImageData(key, out imageData))
                     {
                         imageData = CreateImageData(paintItem, pdea, controlBounds);
@@ -546,6 +585,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             PaintFormData(imageData, pdea, controlBounds);
         }
         /// <summary>
+        /// Je voláno po změně interaktivního stavu dané buňky. Možná bude třeba pro buňku vytvořit a umístit nativní Control, anebo bude možno jej odebrat...
+        /// </summary>
+        /// <param name="paintItem"></param>
+        /// <param name="controlBounds"></param>
+        public override void ChangeItemInteractiveState(IPaintItemData paintItem, WinDraw.Rectangle controlBounds) { }
+        /// <summary>
         /// Vygeneruje data bitmapy
         /// </summary>
         /// <param name="paintItem"></param>
@@ -555,11 +600,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private byte[] CreateImageData(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
             __EditorPaint ??= new DevExpress.XtraEditors.TextEdit();
+            object value = GetItemValue(paintItem);
 
             int w = controlBounds.Width;
             int h = controlBounds.Height;
-            __EditorPaint.Text = paintItem.Text;
+            __EditorPaint.EditValue = value;
             __EditorPaint.Size = new WinDraw.Size(w, h);
+
+            __EditorPaint.Properties.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Flat;
+            __EditorPaint.ErrorImageOptions.
 
             return CreateBitmapData(__EditorPaint);
         }
@@ -574,6 +623,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 __EditorPaint = null;
             }
         }
+        /// <summary>
+        /// Nativní control používaný pro vykreslení obrázku do bitmapy
+        /// </summary>
         DevExpress.XtraEditors.TextEdit __EditorPaint;
     }
     #endregion
@@ -604,13 +656,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="paintItem"></param>
         /// <param name="pdea"></param>
         /// <param name="controlBounds"></param>
-        public override void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
+        public override void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
         {
+            string text = GetItemLabel(paintItem);
+      
             byte[] imageData = null;
             switch (CacheMode)
             {
                 case EditorCacheMode.ManagerCache:
-                    string key = CreateKey(paintItem.Text, controlBounds.Size);   // a další hodnoty, které jednoznačně definují identický výsledek, jako: Color, FontStyle, ... ?
+                    string key = CreateKey(text, controlBounds.Size);   // a další hodnoty, které jednoznačně definují identický výsledek, jako: Color, FontStyle, ... ?
                     if (!TryGetCacheImageData(key, out imageData))
                     {
                         imageData = CreateImageData(paintItem, pdea, controlBounds);
@@ -629,6 +684,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             PaintFormData(imageData, pdea, controlBounds);
         }
         /// <summary>
+        /// Je voláno po změně interaktivního stavu dané buňky. Možná bude třeba pro buňku vytvořit a umístit nativní Control, anebo bude možno jej odebrat...
+        /// </summary>
+        /// <param name="paintItem"></param>
+        /// <param name="controlBounds"></param>
+        public override void ChangeItemInteractiveState(IPaintItemData paintItem, WinDraw.Rectangle controlBounds) { }
+
+        /// <summary>
         /// Vygeneruje data bitmapy
         /// </summary>
         /// <param name="paintItem"></param>
@@ -638,10 +700,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private byte[] CreateImageData(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
             __EditorPaint ??= new DevExpress.XtraEditors.SimpleButton();
+            string text = GetItemLabel(paintItem);
 
             int w = controlBounds.Width;
             int h = controlBounds.Height;
-            __EditorPaint.Text = paintItem.Text;
+            __EditorPaint.Text = text;
             __EditorPaint.Size = new WinDraw.Size(w, h);
 
             return CreateBitmapData(__EditorPaint);
@@ -660,9 +723,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         DevExpress.XtraEditors.SimpleButton __EditorPaint;
     }
     #endregion
-
-
-
     #region class DxRepositoryEditor : Obecný abtraktní předek konkrétních editorů; obsahuje Factory pro tvorbu konkrétních potomků
     /// <summary>
     /// Obecný abtraktní předek konkrétních editorů; obsahuje Factory pro tvorbu konkrétních potomků
@@ -717,7 +777,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="paintItem"></param>
         /// <param name="pdea"></param>
         /// <param name="controlBounds"></param>
-        public abstract void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds);
+        /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
+        public abstract void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed);
+        /// <summary>
+        /// Je voláno po změně interaktivního stavu dané buňky. Možná bude třeba pro buňku vytvořit a umístit nativní Control, anebo bude možno jej odebrat...
+        /// </summary>
+        /// <param name="paintItem"></param>
+        /// <param name="controlBounds"></param>
+        public abstract void ChangeItemInteractiveState(IPaintItemData paintItem, WinDraw.Rectangle controlBounds);
         /// <summary>
         /// Typ editoru
         /// </summary>
@@ -812,6 +879,26 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
             return editorType.ToString();
         }
+        #endregion
+        #region Support pro potomky - čtení hodnot z prvku
+        /// <summary>
+        /// Z prvku přečte a vrátí jeho hodnotu
+        /// </summary>
+        /// <param name="paintItem"></param>
+        /// <returns></returns>
+        protected object GetItemValue(IPaintItemData paintItem) { return (paintItem.TryGetContent<object>(Data.DxDataFormDef.Value, out var content) ? content : null); }
+        /// <summary>
+        /// Z prvku přečte a vrátí konstantní text Label
+        /// </summary>
+        /// <param name="paintItem"></param>
+        /// <returns></returns>
+        protected string GetItemLabel(IPaintItemData paintItem) { return (paintItem.TryGetContent<string>(Data.DxDataFormDef.Label, out var content) ? content : null); }
+        /// <summary>
+        /// Z prvku přečte a vrátí konstantní text ToolTipText
+        /// </summary>
+        /// <param name="paintItem"></param>
+        /// <returns></returns>
+        protected string GetItemToolTipText(IPaintItemData paintItem) { return (paintItem.TryGetContent<string>(Data.DxDataFormDef.ToolTipText, out var content) ? content : null); }
         #endregion
         #region Podpora pro konverze: Control => Bitmap => byte[], a následně byte[] => Bitmap => Graphics
         /// <summary>

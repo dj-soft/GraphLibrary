@@ -9579,6 +9579,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         Disposed
     }
+
+    /// <summary>
+    /// Stav objektu z hlediska jeho základní situace (Enabled / Disabled / ReadOnly).
+    /// Hodnotově přesně odpovídá typu <see cref="DxInteractiveState"/> v základním stavu prvku (neaktivní, bez myší, bez focusu).
+    /// </summary>
+    [Flags]
+    public enum DxItemState
+    {
+        /// <summary>
+        /// Žádný specifický stav, prvek je Enabled ale bez myši a bez Focusu, a pokud může být Selected, tak aktuálně není
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Prvek je Disabled: nemůže získat Focus, nemůže měnit hodnotu, nereaguje na kliknutí.
+        /// </summary>
+        Disabled = 0x01,
+        /// <summary>
+        /// Prvek je ReadOnly: může získat Focus, ale nemůže měnit svoji hodnotu. Může být na něj kliknuto i na jeho SubButtony.
+        /// </summary>
+        ReadOnly = 0x02,
+        /// <summary>
+        /// Enabled: může získat Focus, může měnit svoji hodnotu. Může být na něj kliknuto i na jeho SubButtony.
+        /// </summary>
+        Enabled = 0x04,
+        /// <summary>
+        /// Prvek je Aktivní = nemusí mít Focus, ale mezi ostatními prvky je Aktivní (např. pokud Button je Down nebo Selected)
+        /// </summary>
+        Active = 0x08
+    }
     /// <summary>
     /// Stav objektu z hlediska myši a focusu
     /// </summary>
@@ -9590,25 +9619,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         None = 0,
         /// <summary>
-        /// Prvek je Disabled
+        /// Prvek je Disabled: nemůže získat Focus, nemůže měnit hodnotu, nereaguje na kliknutí.
         /// </summary>
         Disabled = 0x01,
         /// <summary>
-        /// Enabled = None (žádný specifický stav)
+        /// Prvek je ReadOnly: může získat Focus, ale nemůže měnit svoji hodnotu. Může být na něj kliknuto i na jeho SubButtony.
         /// </summary>
-        Enabled = 0x02,
+        ReadOnly = 0x02,
+        /// <summary>
+        /// Enabled: může získat Focus, může měnit svoji hodnotu. Může být na něj kliknuto i na jeho SubButtony.
+        /// </summary>
+        Enabled = 0x04,
+        /// <summary>
+        /// Prvek je Aktivní = nemusí mít Focus, ale mezi ostatními prvky je Aktivní (např. pokud Button je Down nebo Selected)
+        /// </summary>
+        Active = 0x08,
+
         /// <summary>
         /// Myš vstoupila nad prvek = prvek je Hot
         /// </summary>
-        HasMouse = 0x04,
-        /// <summary>
-        /// Kurzor je v prvku
-        /// </summary>
-        HasFocus = 0x08,
-        /// <summary>
-        /// Prvek je Selectován = nemusí mít Focus, ale mezi ostatními prvky je Aktivní
-        /// </summary>
-        Selected = 0x10,
+        HasMouse = 0x10,
         /// <summary>
         /// Levá myš je stisknuta
         /// </summary>
@@ -9620,7 +9650,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Prvek je přesouván myší
         /// </summary>
-        MouseDragging = 0x80
+        MouseDragging = 0x80,
+        /// <summary>
+        /// Kurzor je v prvku
+        /// </summary>
+        HasFocus = 0x100,
+
+        /// <summary>
+        /// Maska základního stavu prvku
+        /// </summary>
+        MaskItemState = Disabled | ReadOnly | Enabled | Active,
+        /// <summary>
+        /// Maska myší aktivity
+        /// </summary>
+        MaskMouse = HasMouse | MouseLeftDown | MouseRightDown | MouseDragging,
+        /// <summary>
+        /// Maska klávesnicové aktivity
+        /// </summary>
+        MaskKeyboard = HasFocus,
+        /// <summary>
+        /// Maska jakékoli interaktivity
+        /// </summary>
+        MaskInteractive = MaskMouse | MaskKeyboard
     }
     #endregion
     #region enum DxCursorType

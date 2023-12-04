@@ -319,7 +319,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
     /// <summary>
     /// Jeden každý řádek
     /// </summary>
-    public class DataFormRow : IChildOfParent<DataFormRows>  // ChildItems<DataFormRow>
+    public class DataFormRow : IChildOfParent<DataFormRows>
     {
         #region Konstruktor a základní proměnné
         /// <summary>
@@ -327,9 +327,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// </summary>
         public DataFormRow()
         {
+            __Content = new DataContent();
             IsVisible = true;
-            __Values = new Dictionary<int, object>();
-
         }
         /// <summary>
         /// Parent
@@ -359,8 +358,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             }
         }
         private int? __RowId;
-        private Dictionary<int, object> __Values;
-
+        /// <summary>
+        /// Obsah řádků: obsahuje sloupce i jejich datové a popisné hodnoty.
+        /// Klíčem musí být název sloupce + dvojtečka + název vlastnosti. Názvy vlastností jsou v konstantách <see cref="DxDataFormDef"/>
+        /// </summary>
+        public DataContent Content { get { return __Content; } } private DataContent __Content;
         /// <summary>
         /// Řádek je viditelný?
         /// </summary>
@@ -682,12 +684,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
     /// </summary>
     public class DataFormLayoutItem : IDataFormLayoutDesignItem, IChildOfParent<DataFormLayoutSet>
     {
+        #region Konstruktor a fixní vlastnosti
         /// <summary>
         /// Konstruktor
         /// </summary>
         public DataFormLayoutItem()
         {
+            __Content = new DataContent();
             ColumnType = DxRepositoryEditorType.TextBox;
+            
             IsVisible = true;
         }
         /// <summary>
@@ -708,22 +713,87 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// </summary>
         public DxRepositoryEditorType ColumnType { get; set; }
         /// <summary>
-        /// Konstantní text (pro Label, Button, atd)
-        /// </summary>
-        public string LabelText { get; set; }
-        /// <summary>
-        /// ToolTip text
-        /// </summary>
-        public string ToolTipText { get; set; }
-        /// <summary>
-        /// Prvek je viditelný?
-        /// </summary>
-        public bool IsVisible { get; set; }
-        /// <summary>
         /// Souřadnice definované pomocí vzdáleností / rozměrů, a tedy libovolně ukotvené.
         /// Viz metoda <see cref="RectangleExt.GetBounds(WinDraw.Rectangle)"/>
         /// </summary>
         public RectangleExt DesignBoundsExt { get; set; }
+        /// <summary>
+        /// Obsah řádků: obsahuje sloupce i jejich datové a popisné hodnoty.
+        /// Klíčem je název sloupce.
+        /// </summary>
+        public DataContent Content { get { return __Content; } } private DataContent __Content;
+        #endregion
+        #region Předpřipravené hodnoty obecně dostupné, získávané z Content
+        /// <summary>
+        /// Label prvku = fixní text
+        /// </summary>
+        public string Label
+        {
+            get { return ((TryGetContent<string>(DxDataFormDef.Label, out var content)) ? content : null); }
+            set { SetContent(DxDataFormDef.Label, value); }
+        }
+        /// <summary>
+        /// ToolTipText
+        /// </summary>
+        public string ToolTipText
+        {
+            get { return ((TryGetContent<string>(DxDataFormDef.ToolTipText, out var content)) ? content : null); }
+            set { SetContent(DxDataFormDef.ToolTipText, value); }
+        }
+        /// <summary>
+        /// Label prvku = fixní text
+        /// </summary>
+        public string IconName
+        {
+            get { return ((TryGetContent<string>(DxDataFormDef.IconName, out var content)) ? content : null); }
+            set { SetContent(DxDataFormDef.IconName, value); }
+        }
+        /// <summary>
+        /// Prvek je viditelný?
+        /// </summary>
+        public bool IsVisible
+        {
+            get { return ((TryGetContent<bool?>(DxDataFormDef.IsVisible, out var content) && content.HasValue) ? content.Value : true); }
+            set { SetContent(DxDataFormDef.IsVisible, (bool?)value); }
+        }
+        /// <summary>
+        /// Prvek je interaktvní?
+        /// </summary>
+        public bool IsInteractive
+        {
+            get { return ((TryGetContent<bool?>(DxDataFormDef.IsInteractive, out var content) && content.HasValue) ? content.Value : true); }
+            set { SetContent(DxDataFormDef.IsInteractive, (bool?)value); }
+        }
+        #endregion
+        #region Metody pro získání dat o prvku (hodnota, vzhled, editační maska, font, barva, editační styl, ikona, buttony, atd...)
+        /// <summary>
+        /// Zkusí najít hodnotu daného jména.
+        /// Jména hodnot jsou v konstantách v <see cref="DxDataFormDef"/>.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="name"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        public bool TryGetContent<T>(string name, out T content)
+        {
+            if (Content.TryGetContent(name, out content)) return true;
+            content = default;
+            return false;
+        }
+        /// <summary>
+        /// Uloží hodnotu daného jména.
+        /// Jména hodnot jsou v konstantách v <see cref="DxDataFormDef"/>.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="name"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        public void SetContent<T>(string name, T content)
+        {
+            Content[name] = content;
+        }
+        #endregion
+        #region Výpočty DesignSize, tvorba konkrétních buněk DataFormCell
         /// <summary>
         /// Určí aktuální designovou souřadnici v prostoru daného parenta
         /// </summary>
@@ -743,6 +813,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// Aktuální přidělená souřadnice v metodě <see cref="PrepareDesignSize(WinDraw.Rectangle, ref int, ref int, ref int, ref int)"/>
         /// </summary>
         private WinDraw.Rectangle __CurrentDesignBounds;
+        #endregion
         #region IDataFormLayoutDesignItem
         WinDraw.Rectangle IDataFormLayoutDesignItem.CurrentDesignBounds { get { return __CurrentDesignBounds; } }
         #endregion
@@ -758,9 +829,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         WinDraw.Rectangle CurrentDesignBounds { get; }
     }
     #endregion
-    #region DataFormCell : jeden interaktivní prvek
+    #region DataFormCell : jeden interaktivní prvek = Řádek × LayoutItem  (nikoliv Řádek × Sloupec)
     /// <summary>
-    /// Reprezentuje jednu buňku = jeden fyzický prvek odpovídající prvku layoutu na jednom konkrétním řádku
+    /// Reprezentuje jednu buňku = jeden fyzický prvek odpovídající konkrétnímu prvku layoutu na jednom konkrétním řádku
     /// </summary>
     public class DataFormCell : IInteractiveItem, IPaintItemData
     {
@@ -774,16 +845,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         {
             this.__Row = row;
             this.__LayoutItem = layoutItem;
-            this.__IsVisible = true;
-            this.__IsInteractive = true;
             this.__DesignBounds = _ILayoutItem.CurrentDesignBounds.Add(row.RowDesignBounds.Location);
-            this.__InteractiveState = DxInteractiveState.Enabled;
+            this.__ItemState = DxItemState.Enabled;
+            this.__InteractiveState = DxInteractiveState.None;
         }
         private DataFormRow __Row;
         private DataFormLayoutItem __LayoutItem;
         private WinDraw.Rectangle __DesignBounds;
-        private bool __IsVisible;
-        private bool __IsInteractive;
+        private WinDraw.Rectangle __ControlBounds;
+        private WinForm.Control __NativeControl;
+        private DxItemState __ItemState;
         private DxInteractiveState __InteractiveState;
         #endregion
         #region Vztah na další instance - pomocí Row (DataForm, Repozitory) a LayoutSet
@@ -800,7 +871,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// </summary>
         private IDataFormLayoutDesignItem _ILayoutItem { get { return __LayoutItem; } }
         #endregion
-
+        #region Metody pro detekci aktivity, kreslení a změnu interaktivního stavu
         /// <summary>
         /// Vrátí true, pokud this prvek je aktivní na dané Control nebo Designové souřadnici (objekt si sám vybere, kterou souřadnici bude vyhodnocovat).
         /// </summary>
@@ -809,42 +880,58 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// <returns></returns>
         public bool _IsActiveOnPoint(WinDraw.Point controlPoint, WinDraw.Point designPoint)
         {
-            return this.__IsInteractive && this.__DesignBounds.Contains(designPoint);
+            return this.IsInteractive && this.__DesignBounds.Contains(designPoint);
         }
         /// <summary>
-        /// Je požadováno vykreslení buňky do dodané grafiky
+        /// Provede vykreslení obrazu objektu, anebo umístění fyzického controlu.
+        /// Pokud objekt není vykreslen (tedy pokud se nenachází ve viditelném prostoru panelu), pak se zde vrací false.
         /// </summary>
         /// <param name="pdea"></param>
-        /// <returns></returns>
         private bool _Paint(PaintDataEventArgs pdea)
         {
-            if (!__IsVisible) return false;
+            if (!IsVisible) return false;
 
-            var controlBounds = pdea.InteractivePanel.GetControlBounds(this.__DesignBounds);
-            bool isDisplayed = pdea.ClientArea.IntersectsWith(controlBounds);
+            __ControlBounds = pdea.InteractivePanel.GetControlBounds(this.__DesignBounds);       // Umístění prvku v koordinátech nativního controlu (z Designové souřadnice, přes Zoom a posuny ScrollBarů do prostoru v Panelu)
+            bool isDisplayed = pdea.ClientArea.IntersectsWith(__ControlBounds);                  // true pokud se prvek nachází ve viditelné oblasti vizuálního panelu
 
-            if (_DataForm.TestPainting)
-                return _PaintTest(pdea, controlBounds, isDisplayed);
-            else if (isDisplayed)
+            if (_DataForm.TestPainting) return _PaintTest(pdea, isDisplayed);
+            
+            _RepositoryManager.PaintItem(this, pdea, __ControlBounds, isDisplayed);
+            return isDisplayed;
+        }
+        /// <summary>
+        /// Interaktivní stav prvku. Setování stavu může mít vliv na druh zobrazení (zda bude vykreslen obraz / nebo fyzický Control).
+        /// </summary>
+        private DxInteractiveState _InteractiveState
+        {
+            get
             {
-                _RepositoryManager.PaintItem(this, pdea, controlBounds);
-                return true;
+                var interactiveState = (((DxInteractiveState)this.__ItemState) & DxInteractiveState.MaskItemState) | (this.__InteractiveState & DxInteractiveState.MaskInteractive);
+                return interactiveState;
             }
-
-            return false;
+            set
+            {
+                var oldState = __InteractiveState;
+                var newState = (((DxInteractiveState)this.__ItemState) & DxInteractiveState.MaskItemState) | (value & DxInteractiveState.MaskInteractive);
+                this.__InteractiveState = newState;
+                if (oldState != newState)
+                {
+                    _RunInteractiveStateChanged();
+                    _RepositoryManager.ChangeItemInteractiveState(this, __ControlBounds);
+                }
+            }
         }
         /// <summary>
         /// Vykreslí prvek v testovacím režimu
         /// </summary>
         /// <param name="pdea"></param>
-        /// <param name="controlBounds"></param>
         /// <param name="isDisplayed"></param>
         /// <returns></returns>
-        private bool _PaintTest(PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
+        private bool _PaintTest(PaintDataEventArgs pdea, bool isDisplayed)
         {
             var state = this.__InteractiveState;
             bool isActive = (state == DxInteractiveState.HasMouse || state == DxInteractiveState.MouseLeftDown);
-
+            WinDraw.Rectangle controlBounds = __ControlBounds;
             if (isActive)
             {
                 DxComponent.LogAddLine($"DataFormCell.Paint(): IsActive: {isActive}; IsDisplayed: {isDisplayed}; DesignBounds: {__DesignBounds}");
@@ -866,43 +953,224 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             }
             pdea.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(color), controlBounds);
             pdea.Graphics.DrawRectangle(DxComponent.PaintGetPen(WinDraw.Color.Black), controlBounds);
-            string text = __LayoutItem.LabelText;
+            string text = __LayoutItem.Label;
             if (!String.IsNullOrEmpty(text))
                 pdea.Graphics.DrawString(text, DxComponent.GetSystemFont(DxComponent.SystemFontType.DefaultFont), DxComponent.PaintGetSolidBrush(WinDraw.Color.Black), controlBounds);
 
             return true;
         }
-
-        private void _SetInteractiveState(DxInteractiveState interactiveState)
+        /// <summary>
+        /// Po změně interaktivního stavu - dáme vědět někam? Do dataformu, do datové vrstvy? ...
+        /// </summary>
+        private void _RunInteractiveStateChanged()
         {
-            var oldState = __InteractiveState;
-            if (interactiveState == oldState) return;
-
-            __InteractiveState = interactiveState;
-
-            if (oldState == DxInteractiveState.MouseLeftDown)
-            { }
-            if (interactiveState == DxInteractiveState.HasMouse)
-            { }
-            DxComponent.LogAddLine($"DataFormCell.SetInteractiveState: {__InteractiveState}; DesignBounds: {__DesignBounds}");
         }
-
-
+        #endregion
+        #region Předpřipravené hodnoty obecně dostupné, získávané z Content
+        /// <summary>
+        /// Jméno tohoto sloupce. K němu se dohledají další data a případné modifikace stylu v konkrétním řádku.
+        /// Interně se pracuje s <see cref="ColumnId"/> (int), konverze řeší <see cref="DataForm"/>.
+        /// </summary>
+        public string ColumnName { get { return this.__LayoutItem.ColumnName; } }
+        /// <summary>
+        /// Hodnota prvku
+        /// </summary>
+        public object Value
+        {
+            get { return ((TryGetContent<object>(DxDataFormDef.Value, out var content)) ? content : null); }
+            set { SetContent(DxDataFormDef.Value, (bool?)value); }
+        }
+        /// <summary>
+        /// Label prvku = fixní text
+        /// </summary>
+        public string Label
+        {
+            get { return ((TryGetContent<string>(DxDataFormDef.Label, out var content)) ? content : null); }
+            set { SetContent(DxDataFormDef.Label, value); }
+        }
+        /// <summary>
+        /// ToolTipText
+        /// </summary>
+        public string ToolTipText
+        {
+            get { return ((TryGetContent<string>(DxDataFormDef.ToolTipText, out var content)) ? content : null); }
+            set { SetContent(DxDataFormDef.ToolTipText, value); }
+        }
+        /// <summary>
+        /// Label prvku = fixní text
+        /// </summary>
+        public string IconName
+        {
+            get { return ((TryGetContent<string>(DxDataFormDef.IconName, out var content)) ? content : null); }
+            set { SetContent(DxDataFormDef.IconName, value); }
+        }
+        /// <summary>
+        /// Prvek je viditelný?
+        /// </summary>
+        public bool IsVisible
+        {
+            get { return ((TryGetContent<bool?>(DxDataFormDef.IsVisible, out var content) && content.HasValue) ? content.Value : true); }
+            set { SetContent(DxDataFormDef.IsVisible, (bool?)value); }
+        }
+        /// <summary>
+        /// Prvek je interaktvní?
+        /// </summary>
+        public bool IsInteractive
+        {
+            get { return ((TryGetContent<bool?>(DxDataFormDef.IsInteractive, out var content) && content.HasValue) ? content.Value : true); }
+            set { SetContent(DxDataFormDef.IsInteractive, (bool?)value); }
+        }
+        #endregion
+        #region Metody pro získání dat o prvku (hodnota, vzhled, editační maska, font, barva, editační styl, ikona, buttony, atd...)
+        /// <summary>
+        /// Zkusí najít hodnotu daného jména.
+        /// Dané jméno nesmí obsahovat jméno sloupce.
+        /// Hodnota se prioritně hledá v řádku (=specifická pro konkrétní řádek), a pokud tam není, pak se hledá v layoutu (defaultní hodnota).
+        /// Jména hodnot jsou v konstantách v <see cref="DxDataFormDef"/>.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="name">Jméno vlastnosti. Nesmí obsahovat jméno sloupce, to bude přidáno.</param>
+        /// <param name="content">Out hodnota</param>
+        /// <returns></returns>
+        public bool TryGetContent<T>(string name, out T content)
+        {
+            if (__Row.Content.TryGetContent(_GetFullName(name), out content)) return true;
+            if (__LayoutItem.Content.TryGetContent(name, out content)) return true;
+            content = default;
+            return false;
+        }
+        /// <summary>
+        /// Zkusí najít hodnotu daného jména.
+        /// Dané jméno nesmí obsahovat jméno sloupce.
+        /// Hodnota se prioritně hledá v řádku (=specifická pro konkrétní řádek), a pokud tam není, pak se hledá v layoutu (defaultní hodnota).
+        /// Jména hodnot jsou v konstantách v <see cref="DxDataFormDef"/>.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="name">Jméno vlastnosti. Nesmí obsahovat jméno sloupce, to bude přidáno.</param>
+        /// <param name="content">Ukládaná hodnota</param>
+        /// <returns></returns>
+        public void SetContent<T>(string name, T content)
+        {
+            __Row.Content[_GetFullName(name)] = content;
+        }
+        private string _GetFullName(string propertyName)
+        {
+            return $"{this.ColumnName}{DxDataFormDef.ColumnDelimiter}{propertyName}";
+        }
+        #endregion
         #region IPaintItemData
         DxRepositoryEditorType IPaintItemData.EditorType { get { return this.__LayoutItem.ColumnType; } }
-        string IPaintItemData.Text {  get { return __LayoutItem.LabelText; } }
+        DxInteractiveState IPaintItemData.InteractiveState { get { return this._InteractiveState; } }
+        WinForm.Control IPaintItemData.NativeControl { get { return this.__NativeControl; } set { this.__NativeControl = value; } }
+        bool IPaintItemData.TryGetContent<T>(string name, out T content) { return TryGetContent<T>(name, out content); }
         string IPaintItemData.ImageDataKey { get { return __ImageDataKey; } set { __ImageDataKey = value; } } private string __ImageDataKey;
         byte[] IPaintItemData.ImageData { get { return __ImageData; } set { __ImageData = value; } } private byte[] __ImageData;
         #endregion
         #region IInteractiveItem
-        bool IInteractiveItem.IsVisible { get { return __IsVisible; } }
-        bool IInteractiveItem.IsInteractive { get { return __IsInteractive; } }
+        bool IInteractiveItem.IsVisible { get { return IsVisible; } }
+        bool IInteractiveItem.IsInteractive { get { return IsInteractive; } }
         WinDraw.Rectangle IInteractiveItem.DesignBounds { get { return __DesignBounds; } }
-        DxInteractiveState IInteractiveItem.InteractiveState { get { return __InteractiveState; } set { _SetInteractiveState(value); } }
+        DxItemState IInteractiveItem.ItemState { get { return __ItemState; } }
+        DxInteractiveState IInteractiveItem.InteractiveState { get { return _InteractiveState; } set { _InteractiveState = value; } }
         bool IInteractiveItem.Paint(PaintDataEventArgs pdea) { return this._Paint(pdea); }
         bool IInteractiveItem.IsActiveOnPoint(WinDraw.Point controlPoint, WinDraw.Point designPoint) { return this._IsActiveOnPoint(controlPoint, designPoint); }
         DxInteractivePanel IChildOfParent<DxInteractivePanel>.Parent { get { return null; } set { } }
         #endregion
     }
+    #endregion
+    #region DataContent : úložiště sady dat
+    /// <summary>
+    /// <see cref="DataContent"/> : Úložiště dat.<br/>
+    /// Ukládá data libovolného datového typu. Klíčem je string.
+    /// První částí klíče bývá jméno sloupce, za ním dvojtečka a pak jméno konkrétní vlastnosti. Jména vlastností jsou v konstantách ...
+    /// </summary>
+    public class DataContent
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DataContent()
+        {
+            __Content = new Dictionary<string, object>();
+        }
+        private Dictionary<string, object> __Content;
+        /// <summary>
+        /// Přístup na konkrétní hodnotu.
+        /// Setovat lze snadno hodnotu i tehdy, pokud dosud neexistuje.
+        /// Setování null hodnotu vymaže.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public object this[string name]
+        {
+            get 
+            {
+                if (name is null) return null;
+                if (__Content.TryGetValue(name, out var value))  return value;           // Moje vlastní data
+                return null;
+            }
+            set
+            {
+                if (name is null) return;
+
+                bool exists = __Content.ContainsKey(name);
+                if (value is null)
+                {
+                    if (exists)
+                        __Content.Remove(name);
+                }
+                else
+                {
+                    if (exists)
+                        __Content[name] = value;
+                    else
+                        __Content.Add(name, value);
+                }
+            }
+        }
+        /// <summary>
+        /// Vrátí true, pokud this instance obsahuje dané jméno. Pokud jméno je null, pak jej neobshauje.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public bool ContainsName(string name)
+        {
+            return (name != null && this.__Content.ContainsKey(name));
+        }
+        /// <summary>
+        /// Vrátí true, pokud this instance obsahuje dané jméno a uložená hodnota je daného typu. Pak na výstupu je hodnota již v požadovaném typu.
+        /// Pokud jméno je null, nebo jméno není nalezeno, anebo je nalezena hodnota jiná než typu T, pak výstupem je false.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        public bool TryGetContent<T>(string name, out T content)
+        {
+            if (name != null && this.__Content.TryGetValue(name, out var value) && value is T result)
+            {
+                content = result;
+                return true;
+            }
+            content = default;
+            return false;
+        }
+    }
+    #endregion
+    #region DxDataFormDef : definice pro DataForm, jména vlastností pro úložiště dat
+    public class DxDataFormDef
+    {
+        public const string ColumnDelimiter = ":";
+        public const string Value = "V";
+        public const string IsVisible = "Vis";
+        public const string IsInteractive = "Int";
+        public const string Label = "Lbl";
+        public const string ToolTipText = "Ttx";
+        public const string IconName = "Icn";
+        public const string FontStyle = "Fst";
+        public const string BackColor = "BgC";
+        public const string TextColor = "TxC";
+        public const string TextEditButtons = "TxEdBt";
+    }
+
     #endregion
 }

@@ -7788,6 +7788,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
 #if Compile_TestDevExpress
             DxComponent.LogActive = (menuItem?.Checked ?? false);
+            DxComponent.Settings.SetRawValue("Components", "AppLogActive", DxComponent.LogActive ? "True" : "False");
 #endif
         }
         /// <summary>

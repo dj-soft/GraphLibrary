@@ -5009,8 +5009,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="prototype"></param>
         /// <param name="style"></param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
-        public static Font GetFont(Font prototype, FontStyle? style = null) { return Instance._GetFont(prototype, null, null, prototype.Size, style); }
+        public static Font GetFont(Font prototype, FontStyle? style = null, int? targetDpi = null) { return Instance._GetFont(prototype, null, null, prototype.Size, style, targetDpi); }
         /// <summary>
         /// Vrátí požadovaný font z cache. 
         /// Nedávejme na něm Dispose(), tedy nepoužívejme jej v using() patternu!!!
@@ -5018,8 +5019,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="family"></param>
         /// <param name="emSize"></param>
         /// <param name="style"></param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
-        public static Font GetFont(FontFamily family, float emSize, FontStyle? style = null) { return Instance._GetFont(null, family, null, emSize, style); }
+        public static Font GetFont(FontFamily family, float emSize, FontStyle? style = null, int? targetDpi = null) { return Instance._GetFont(null, family, null, emSize, style, targetDpi); }
         /// <summary>
         /// Vrátí požadovaný font z cache. 
         /// Nedávejme na něm Dispose(), tedy nepoužívejme jej v using() patternu!!!
@@ -5027,30 +5029,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="familyName"></param>
         /// <param name="emSize"></param>
         /// <param name="style"></param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
-        public static Font GetFont(string familyName, float emSize, FontStyle? style = null) { return Instance._GetFont(null, null, familyName, emSize, style); }
+        public static Font GetFont(string familyName, float emSize, FontStyle? style = null, int? targetDpi = null) { return Instance._GetFont(null, null, familyName, emSize, style, targetDpi); }
         /// <summary>
         /// Vrátí defaultní font, s případnými odchylkami od standardu. Neprovádět Dispose!!!
         /// </summary>
         /// <param name="fontType"></param>
         /// <param name="sizeRatio"></param>
         /// <param name="fontStyle"></param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
-        public static Font GetFontDefault(SystemFontType? fontType = null, float? sizeRatio = null, FontStyle? fontStyle = null) { return Instance._GetFontDefault(fontType, sizeRatio, fontStyle); }
+        public static Font GetFontDefault(SystemFontType? fontType = null, float? sizeRatio = null, FontStyle? fontStyle = null, int? targetDpi = null) { return Instance._GetFontDefault(fontType, sizeRatio, fontStyle, targetDpi); }
         /// <summary>
         /// Vrátí defaultní font, s případnými odchylkami od standardu. Neprovádět Dispose!!!
         /// </summary>
         /// <param name="fontType"></param>
         /// <param name="sizeRatio"></param>
         /// <param name="fontStyle"></param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
-        private Font _GetFontDefault(SystemFontType? fontType = null, float? sizeRatio = null, FontStyle? fontStyle = null) 
+        private Font _GetFontDefault(SystemFontType? fontType = null, float? sizeRatio = null, FontStyle? fontStyle = null, int? targetDpi = null)
         {
             var result = GetSystemFont(fontType ?? SystemFontType.DefaultFont);
-            if (sizeRatio.HasValue || fontStyle.HasValue)
+            if (sizeRatio.HasValue || fontStyle.HasValue || targetDpi.HasValue)
             {
                 float emSize = (sizeRatio.HasValue ? result.Size * sizeRatio.Value : result.Size);
-                result = _GetFont(result, null, null, emSize, fontStyle);
+                result = _GetFont(result, null, null, emSize, fontStyle, targetDpi);
             }
             return result;
         }
@@ -5063,10 +5068,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="familyName"></param>
         /// <param name="emSize"></param>
         /// <param name="fontStyle"></param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
-        private Font _GetFont(Font prototype, FontFamily family, string familyName, float emSize, FontStyle? fontStyle = null)
+        private Font _GetFont(Font prototype, FontFamily family, string familyName, float emSize, FontStyle? fontStyle = null, int? targetDpi = null)
         {
             string name = (prototype != null ? prototype.Name : (family != null ? family.Name : familyName));
+            if (targetDpi.HasValue) emSize = ZoomToGui(emSize, targetDpi.Value);
             float size = (float)Math.Round((decimal)emSize, 2);
             FontStyle style = fontStyle ?? FontStyle.Regular;
             string styleKey = (style.HasFlag(FontStyle.Bold) ? "B" : "") + (style.HasFlag(FontStyle.Italic) ? "I" : "") + (style.HasFlag(FontStyle.Underline) ? "U" : "") + (style.HasFlag(FontStyle.Strikeout) ? "S" : "");

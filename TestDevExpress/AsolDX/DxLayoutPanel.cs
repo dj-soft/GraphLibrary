@@ -1160,7 +1160,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool panelHasFocus = (__LayoutItemPanelWithFocus != null && Object.ReferenceEquals(panel, __LayoutItemPanelWithFocus));
             DxInteractiveState state = DxInteractiveState.Enabled;
             if (layoutHasMouse && panelHasMouse) state |= DxInteractiveState.HasMouse;
-            if (panelHasFocus) state |= (DxInteractiveState.HasFocus | DxInteractiveState.Selected);
+            if (panelHasFocus) state |= (DxInteractiveState.HasFocus | DxInteractiveState.Active);
             return state;
         }
         /// <summary>

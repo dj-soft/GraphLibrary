@@ -589,9 +589,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _RunInteractiveItemClick(new InteractiveItemEventArgs(currentItem, __CurrentMouseDownState));
 
             // Jaký stav DxInteractiveState vepíšu do prvku currentItem?
-            //  Pokud myš je stále nad tímto prvkem (poznám podle dat v mouseState), tal HasMouse, jinak Enabled:
-            bool isMouseOverItem = (mouseState.IsOnControl && mouseState.InteractiveItem != null && Object.ReferenceEquals(mouseState.InteractiveItem, currentItem));
-            currentItem.InteractiveState = (!isMouseOverItem ? DxInteractiveState.Enabled : DxInteractiveState.HasMouse);
+            //  Pokud myš je stále nad tímto prvkem (poznám podle dat v mouseState), tak HasMouse, jinak None:
+            var isMouseOverItem = (mouseState.IsOnControl && mouseState.InteractiveItem != null && Object.ReferenceEquals(mouseState.InteractiveItem, currentItem));
+            var interactiveState = (!isMouseOverItem ? DxInteractiveState.None : DxInteractiveState.HasMouse);
+            // Tato metoda ponechá základní stav objektu a přidá k němu daný interaktovní stav:
+            _SetInteractiveState(currentItem, interactiveState);
         }
         /// <summary>
         /// Dokončení myšokliku = uvolnění tlačítka myši, když nebyl proces Drag, a pod myší není žádný prvek.
@@ -631,7 +633,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             if (!lastExists && currentExists)
             {   // Ze žádného prvku na nový prvek:
-                currentMouseItem.InteractiveState = currentState;
+                _SetInteractiveState(currentMouseItem, currentState);
                 __CurrentMouseItem = currentMouseItem;
                 _RunInteractiveItemMouseEnter(new InteractiveItemEventArgs(currentMouseItem, mouseState));
                 return true;
@@ -639,7 +641,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             if (lastExists && !currentExists)
             {   // Z dosavadního prvku na žádný prvek:
-                lastMouseItem.InteractiveState = DxInteractiveState.Enabled;
+                _SetInteractiveState(lastMouseItem, DxInteractiveState.None);
                 _RunInteractiveItemMouseLeave(new InteractiveItemEventArgs(lastMouseItem, mouseState));
                 __CurrentMouseItem = null;
                 return true;
@@ -649,24 +651,48 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Pokud jsou stejné, pohybujeme se nad stále týmž prvkem:
             if (Object.ReferenceEquals(lastMouseItem, currentMouseItem))
             {
-                if (currentMouseItem.InteractiveState != currentState)
-                {   // Je na něm změna stavu:
-                    currentMouseItem.InteractiveState = currentState;
+                bool isChanged = _SetInteractiveState(currentMouseItem, currentState);
+                if (isChanged)
+                    // Došlo ke změně stavu:
                     return true;
-                }
+                
                 // Prvek je stejný, ani nemá změnu stavu:
                 return changedOnControl;
             }
 
             // Změna prvku z dosavadního na nový:
-            lastMouseItem.InteractiveState = DxInteractiveState.Enabled;
+            _SetInteractiveState(lastMouseItem, DxInteractiveState.None);
             _RunInteractiveItemMouseLeave(new InteractiveItemEventArgs(lastMouseItem, mouseState));
 
-            currentMouseItem.InteractiveState = currentState;
+            _SetInteractiveState(currentMouseItem, currentState);
             __CurrentMouseItem = currentMouseItem;
             _RunInteractiveItemMouseEnter(new InteractiveItemEventArgs(currentMouseItem, mouseState));
 
             return true;
+        }
+        /// <summary>
+        /// Do daného prvku vloží daný interaktivní stav, přičemž v něm zachová jeho stav prvku.
+        /// Vrátí true, pokud nový stav je jiný než předchozí.
+        /// </summary>
+        /// <param name="item"></param>
+        private static DxInteractiveState _GetInteractiveState(IInteractiveItem item)
+        {
+            if (item is null) return DxInteractiveState.None;
+            DxInteractiveState interactiveState = (((DxInteractiveState)item.ItemState) & DxInteractiveState.MaskItemState) | (item.InteractiveState & DxInteractiveState.MaskInteractive);
+            return (interactiveState);
+        }
+        /// <summary>
+        /// Do daného prvku vloží daný interaktivní stav, přičemž v něm zachová jeho stav prvku.
+        /// Vrátí true, pokud nový stav je jiný než předchozí.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="interactiveState"></param>
+        private static bool _SetInteractiveState(IInteractiveItem item, DxInteractiveState interactiveState)
+        {
+            if (item is null) return false;
+            var oldState = item.InteractiveState;
+            item.InteractiveState = (((DxInteractiveState)item.ItemState) & DxInteractiveState.MaskItemState) | (interactiveState & DxInteractiveState.MaskInteractive);
+            return (item.InteractiveState != oldState);
         }
         /// <summary>
         /// Aktuální tlačítka myši, zde je i None v době pohybu myši bez tlačítek
@@ -989,19 +1015,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (item is null) return 0;
             if (GetIsSelected(item)) return 10;
-            switch (item.InteractiveState)
-            {
-                case DxInteractiveState.Disabled: return 0;
-                case DxInteractiveState.Enabled: return 1;
-                case DxInteractiveState.HasMouse: return 2;
-                case DxInteractiveState.MouseLeftDown: return 3;
-                case DxInteractiveState.MouseRightDown: return 3;
-                case DxInteractiveState.MouseDragging: return 3;
-            }
+            var state = _GetInteractiveState(item);
+            if (state.HasFlag(DxInteractiveState.MouseDragging)) return 20;
+            if (state.HasFlag(DxInteractiveState.HasFocus)) return 15;
+            if (state.HasFlag(DxInteractiveState.MouseLeftDown)) return 10;
+            if (state.HasFlag(DxInteractiveState.MouseRightDown)) return 10;
+            if (state.HasFlag(DxInteractiveState.HasMouse)) return 5;
+            if (state.HasFlag(DxInteractiveState.Enabled)) return 4;
+            if (state.HasFlag(DxInteractiveState.ReadOnly)) return 3;
+            if (state.HasFlag(DxInteractiveState.Disabled)) return 2;
             return 0;
         }
         /// <summary>
-        /// Vrátí true, pokud daný prvek je Selected.
+        /// Vrátí true, pokud daný prvek je Selected. Selected prvek je ten, který je přítomen v poli <see cref="SelectedItems"/>.
         /// </summary>
         /// <param name="item"></param>
         public bool GetIsSelected(IInteractiveItem item)
@@ -1145,12 +1171,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         WinDraw.Rectangle DesignBounds { get; }
         /// <summary>
-        /// Interaktivní stav prvku
+        /// Interaktivní stav vlastního prvku. Hodnotově je identický s <see cref="DxInteractiveState"/> a přenáší se do <see cref="InteractiveState"/> v situaci, kdy prvek není nijak interaktivní.
+        /// </summary>
+        DxItemState ItemState { get; }
+        /// <summary>
+        /// Interaktivní stav prvku. Setování stavu může mít vliv na druh zobrazení (zda bude vykreslen obraz / nebo fyzický Control).
         /// </summary>
         DxInteractiveState InteractiveState { get; set; }
         /// <summary>
-        /// Provede vykreslení objektu.
-        /// Pokud objekt není vykreslen
+        /// Provede vykreslení obrazu objektu, anebo umístění fyzického controlu.
+        /// Pokud objekt není vykreslen (tedy pokud se nenachází ve viditelném prostoru panelu), pak se zde vrací false.
         /// </summary>
         /// <param name="pdea"></param>
         bool Paint(PaintDataEventArgs pdea);

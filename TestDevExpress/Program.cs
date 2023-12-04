@@ -32,9 +32,11 @@ namespace TestDevExpress
                 styleListener.ActivateConfigStyle();
 
                 string uhdPaint = DxComponent.Settings.GetRawValue("Components", "UhdPaintEnabled");
-                DxComponent.LogActive = true;         // I při spuštění v režimu Run, to kvůli TimeLogům
-
                 DxComponent.UhdPaintEnabled = (uhdPaint != null && uhdPaint == "True");
+
+                string logActive = DxComponent.Settings.GetRawValue("Components", "AppLogActive");
+                DxComponent.LogActive = (logActive != null && logActive == "True");
+
 
                 var moon10 = DxComponent.CreateBitmapImage("Images/Moon10.png");
 

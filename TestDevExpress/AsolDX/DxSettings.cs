@@ -478,7 +478,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     #endregion
     #region Přístup na Settings z DxComponent
-    public partial class DxComponent
+    partial class DxComponent
     {
         /// <summary>
         /// Provozní konfigurace
