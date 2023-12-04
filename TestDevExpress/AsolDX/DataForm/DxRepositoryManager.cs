@@ -382,6 +382,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     }
     #endregion
     #region DxRepositoryEditor**** : Sada tříd, které fyzicky řídí tvorbu, plnění daty, vykreslení atd pro jednotlivé druhy DxRepositoryEditorType
+    #region Label
     /// <summary>
     /// Label
     /// </summary>
@@ -417,6 +418,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             switch (CacheMode)
             {
                 case EditorCacheMode.DirectPaint:
+                    WinDraw.Color color = DxComponent.GetSkinColor(SkinElementColor.CommonSkins_Information) ?? WinDraw.Color.Violet;
                     DxComponent.DrawText(pdea.Graphics, text, DxComponent.GetFontDefault(), controlBounds, WinDraw.Color.Black, WinDraw.ContentAlignment.MiddleLeft);
                     break;
                 case EditorCacheMode.ManagerCache:
@@ -491,7 +493,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return control;
         }
     }
-
+    #endregion
+    #region TextBox
+    /// <summary>
+    /// TextBox
+    /// </summary>
     internal class DxRepositoryEditorTextBox : DxRepositoryEditor
     {
         /// <summary>
@@ -509,7 +515,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Režim práce s cache
         /// </summary>
         protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCache; } }
-
+        /// <summary>
+        /// Vykreslí prvek dodané grafiky
+        /// </summary>
+        /// <param name="paintItem"></param>
+        /// <param name="pdea"></param>
+        /// <param name="controlBounds"></param>
         public override void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
             byte[] imageData = null;
@@ -565,6 +576,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         DevExpress.XtraEditors.TextEdit __EditorPaint;
     }
+    #endregion
+    #region Button
+    /// <summary>
+    /// Button
+    /// </summary>
     internal class DxRepositoryEditorButton : DxRepositoryEditor
     {
         /// <summary>
@@ -582,7 +598,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Režim práce s cache
         /// </summary>
         protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCache; } }
-
+        /// <summary>
+        /// Vykreslí prvek dodané grafiky
+        /// </summary>
+        /// <param name="paintItem"></param>
+        /// <param name="pdea"></param>
+        /// <param name="controlBounds"></param>
         public override void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
             byte[] imageData = null;
@@ -638,9 +659,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         DevExpress.XtraEditors.SimpleButton __EditorPaint;
     }
+    #endregion
 
 
-    
+
     #region class DxRepositoryEditor : Obecný abtraktní předek konkrétních editorů; obsahuje Factory pro tvorbu konkrétních potomků
     /// <summary>
     /// Obecný abtraktní předek konkrétních editorů; obsahuje Factory pro tvorbu konkrétních potomků
