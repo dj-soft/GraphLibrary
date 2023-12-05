@@ -863,6 +863,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// </summary>
         private DxDataFormPanel _DataForm { get { return __Row.DataForm; } }
         /// <summary>
+        /// DataFormContent = fyzický vykreslovací Control, na kterém jsou zobrazovány zdejší data
+        /// </summary>
+        private DxDataFormContentPanel _DataFormContent { get { return _DataForm.DataFormContent; } }
+        /// <summary>
         /// Repozitory, obsahující fyzické controly pro zobrazení a editaci dat
         /// </summary>
         private DxRepositoryManager _RepositoryManager { get { return __Row.DataForm?.RepositoryManager; } }
@@ -917,7 +921,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
                 if (oldState != newState)
                 {
                     _RunInteractiveStateChanged();
-                    _RepositoryManager.ChangeItemInteractiveState(this, __ControlBounds);
+                    _RepositoryManager.ChangeItemInteractiveState(this, _DataFormContent, __ControlBounds);
                 }
             }
         }

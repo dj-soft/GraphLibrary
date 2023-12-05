@@ -9669,7 +9669,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Maska jakékoli interaktivity
         /// </summary>
-        MaskInteractive = MaskMouse | MaskKeyboard
+        MaskInteractive = MaskMouse | MaskKeyboard,
+
+        /// <summary>
+        /// Maska stavů, kdy prvek má mít připraven nativní control - protože se očekává jeho nativní interaktivita
+        /// </summary>
+        MaskUseNativeControl = HasMouse | MouseLeftDown | MouseRightDown | MouseDragging | HasFocus
     }
     #endregion
     #region enum DxCursorType

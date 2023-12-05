@@ -15,7 +15,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using System.Windows.Forms;
 using SysIO = System.IO;
 using WinDraw = System.Drawing;
 using WinForm = System.Windows.Forms;
@@ -73,27 +73,28 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Je požadováno vykreslení buňky do dodané grafiky
         /// </summary>
-        /// <param name="paintItem"></param>
-        /// <param name="pdea"></param>
-        /// <param name="controlBounds"></param>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="pdea">Grafika pro kreslení</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
         /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
         /// <returns></returns>
-        public void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
+        public void PaintItem(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
         {
-            if (paintItem is null) return;
-            if (_TryGetEditor(paintItem.EditorType, out var editor))
-                editor.PaintItem(paintItem, pdea, controlBounds, isDisplayed);
+            if (paintData is null) return;
+            if (_TryGetEditor(paintData.EditorType, out var editor))
+                editor.PaintItem(paintData, pdea, controlBounds, isDisplayed);
         }
         /// <summary>
         /// Je voláno po změně interaktivního stavu dané buňky. Možná bude třeba pro buňku vytvořit a umístit nativní Control, anebo bude možno jej odebrat...
         /// </summary>
-        /// <param name="paintItem"></param>
-        /// <param name="controlBounds"></param>
-        public void ChangeItemInteractiveState(IPaintItemData paintItem, WinDraw.Rectangle controlBounds)
+        /// <param name="paintData">Aktivní prvek</param>
+        /// <param name="container">Fyzický container, na němž má být přítomný fyzický Control</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        public void ChangeItemInteractiveState(IPaintItemData paintData, WinForm.Control container, WinDraw.Rectangle controlBounds)
         {
-            if (paintItem is null) return;
-            if (_TryGetEditor(paintItem.EditorType, out var editor))
-                editor.ChangeItemInteractiveState(paintItem, controlBounds);
+            if (paintData is null) return;
+            if (_TryGetEditor(paintData.EditorType, out var editor))
+                editor.ChangeItemInteractiveState(paintData, container, controlBounds);
         }
         #endregion
         #region Repository použitých editorů
@@ -336,7 +337,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         DxInteractiveState InteractiveState { get; }
         /// <summary>
-        /// Nativní control, zobrazující zdejší data
+        /// Nativní control, zobrazující zdejší data. 
+        /// O jeho vložení a odebrání se stará <see cref="DxRepositoryManager"/> v procesu změny interaktivního stavu prvku <see cref="InteractiveState"/>,
+        /// v metodě <see cref="DxRepositoryManager.ChangeItemInteractiveState(IPaintItemData, WinForm.Control, Rectangle)"/>, na základě typu prvku <see cref="EditorType"/>.
+        /// <para/>
+        /// <see cref="DxRepositoryManager"/> určí, zda pro daný interaktivní stav je zapotřebí umístit nativní Control, a v případě potřeby jej získá,
+        /// kompletně naplní daty zdejšího prvku, a do Container panelu jej vloží. 
+        /// Manager pak odchytává eventy controlu, a předává je ke zpracování do DataFormu včetně this datového objektu jako zdroje dat.
         /// </summary>
         WinForm.Control NativeControl { get; set; }
         /// <summary>
@@ -473,34 +480,36 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         protected override EditorCacheMode CacheMode { get { return EditorCacheMode.DirectPaint; } }
         /// <summary>
-        /// Je voláno po změně interaktivního stavu dané buňky. Možná bude třeba pro buňku vytvořit a umístit nativní Control, anebo bude možno jej odebrat...
+        /// Vrátí true, pokud daný prvek má aktuálně používat nativní Control (tedy nebude se keslit jako Image),
+        /// a to dle aktuálního interaktivním stavu objektu a s přihlédnutím ke stavu <paramref name="isDisplayed"/>.
         /// </summary>
-        /// <param name="paintItem"></param>
-        /// <param name="controlBounds"></param>
-        public override void ChangeItemInteractiveState(IPaintItemData paintItem, WinDraw.Rectangle controlBounds)
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
+        /// <returns></returns>
+        protected override bool NeedUseNativeControl(IPaintItemData paintData, bool isDisplayed)
         {
-        
+            return false;                        // Label nepotřebuje nativní control nikdy...
         }
         /// <summary>
-        /// Vykreslí prvek do dané grafiky
+        /// Vrátí true, pokud daný prvek má vykreslovat svoje data (=kreslit pomocí metod např. <see cref="DxRepositoryEditor.CreateImageData(IPaintItemData, PaintDataEventArgs, Rectangle)"/>), 
+        /// a to dle aktuálního interaktivním stavu objektu a s přihlédnutím ke stavu <paramref name="isDisplayed"/>.
         /// </summary>
-        /// <param name="paintItem">Data konkrétního prvku</param>
-        /// <param name="pdea">Grafika pro kreslení</param>
-        /// <param name="controlBounds">Cílové souřadnice</param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
-        public override void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
+        /// <returns></returns>
+        protected override bool NeedPaintItem(IPaintItemData paintData, bool isDisplayed)
         {
-            PaintImageData(paintItem, pdea, controlBounds);
+            return (isDisplayed);                // Label bude evykreslovat tehdy, když je ve viditelné oblasti
         }
         /// <summary>
         /// Potomek zde přímo do cílové grafiky vykreslí obsah prvku, bez cache
         /// </summary>
-        /// <param name="paintItem"></param>
-        /// <param name="pdea"></param>
-        /// <param name="controlBounds"></param>
-        protected override void PaintImageDirect(IPaintItemData paintItem, PaintDataEventArgs pdea, Rectangle controlBounds)
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="pdea">Grafika pro kreslení</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        protected override void PaintImageDirect(IPaintItemData paintData, PaintDataEventArgs pdea, Rectangle controlBounds)
         {
-            string text = GetItemLabel(paintItem);
+            string text = GetItemLabel(paintData);
             if (!String.IsNullOrEmpty(text))
             {
                 var font = DxComponent.GetFontDefault(targetDpi: pdea.InteractivePanel.CurrentDpi);
@@ -511,26 +520,26 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Pro daný prvek (jeho typ a obsah, a velikost) vygeneruje jednoznačný String klíč, popisující Bitmapu uloženou v Cache
         /// </summary>
-        /// <param name="paintItem">Data konkrétního prvku</param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="controlBounds">Cílové souřadnice</param>
         /// <returns></returns>
-        protected override string CreateKey(IPaintItemData paintItem, Rectangle controlBounds)
+        protected override string CreateKey(IPaintItemData paintData, Rectangle controlBounds)
         {
-            string text = GetItemLabel(paintItem);
-            WinDraw.FontStyle fontStyle = GetItemContent(paintItem, Data.DxDataFormDef.FontStyle, WinDraw.FontStyle.Regular);
-            float sizeRatio = GetItemContent(paintItem, Data.DxDataFormDef.FontSizeRatio, 0f);
-            WinDraw.Color fontColor = GetItemContent(paintItem, Data.DxDataFormDef.TextColor, WinDraw.Color.Empty);
+            string text = GetItemLabel(paintData);
+            WinDraw.FontStyle fontStyle = GetItemContent(paintData, Data.DxDataFormDef.FontStyle, WinDraw.FontStyle.Regular);
+            float sizeRatio = GetItemContent(paintData, Data.DxDataFormDef.FontSizeRatio, 0f);
+            WinDraw.Color fontColor = GetItemContent(paintData, Data.DxDataFormDef.TextColor, WinDraw.Color.Empty);
 
             return CreateKey(text, controlBounds.Size, ToKey(fontStyle), ToKey(sizeRatio), ToKey(fontColor));
         }
         /// <summary>
         /// Pro daný prvek vygeneruje data jeho bitmapy
         /// </summary>
-        /// <param name="paintItem">Data konkrétního prvku</param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="pdea">Grafika pro kreslení</param>
         /// <param name="controlBounds">Cílové souřadnice</param>
         /// <returns></returns>
-        protected override byte[] CreateImageData(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
             // Některé controly (a DevExpress.XtraEditors.LabelControl mezi nimi) mají tu nectnost, že první vykreslení bitmapy v jejich životě je chybné.
             //  Nejde o první vykreslení do jedné Graphics, jde o první vykreslení po konstruktoru.
@@ -538,8 +547,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Proto detekujeme první použití (kdy na začátku je __EditorPaint = null), a v tom případě vygenerujeme tu úplně první bitmapu naprázdno.
             bool isFirstUse = (__EditorPaint is null);
 
-            __EditorPaint ??= _CreateControl(pdea);
-            PrepareControl(__EditorPaint, paintItem, pdea, controlBounds);
+            __EditorPaint ??= _CreateNativeControl(false);
+            _FillNativeControl(paintData, __EditorPaint, controlBounds);
 
             // První vygenerovanou bitmapu v životě Labelu vytvoříme a zahodíme, není pěkná...
             if (isFirstUse) CreateBitmapData(__EditorPaint);
@@ -548,19 +557,52 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return CreateBitmapData(__EditorPaint);
         }
         /// <summary>
+        /// Potomek zde vrátí nativní control
+        /// </summary>
+        /// <returns></returns>
+        protected override Control CreateNativeControl()
+        {
+            return null;
+        }
+        /// <summary>
+        /// Potomek zde do controlu naplní všechna potřebná data
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="nativeControl">Cílový control</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        protected override void FillNativeControl(IPaintItemData paintData, Control nativeControl, Rectangle controlBounds) 
+        {
+            this._FillNativeControl(paintData, nativeControl as DevExpress.XtraEditors.LabelControl, controlBounds);
+        }
+        /// <summary>
+        /// Metoda vytvoří a vrátí new instanci nativního controlu. 
+        /// Nastaví ji defaultní vzhled, nevkládá do ní hodnoty závislé na konkrétnbím prvku.
+        /// Eventhandlery registruje pokud <paramref name="withEvents"/> je true (hodnota false značí control vytvářený jen pro kreslení).
+        /// </summary>
+        /// <returns></returns>
+        private DevExpress.XtraEditors.LabelControl _CreateNativeControl(bool withEvents)
+        {
+            var control = new DevExpress.XtraEditors.LabelControl() { Location = new WinDraw.Point(25, -200) };
+            control.ResetBackColor();
+            control.LineStyle = WinDraw.Drawing2D.DashStyle.Solid;
+            control.LineVisible = true;
+            control.LineLocation = DevExpress.XtraEditors.LineLocation.Bottom;
+            control.LineColor = WinDraw.Color.DarkBlue;
+            control.LineOrientation = DevExpress.XtraEditors.LabelLineOrientation.Horizontal;
+            control.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Office2003;
+
+            return control;
+        }
+        /// <summary>
         /// Do dodaného controlu vloží data, která tento typ editoru řeší. Data získá z dodaného prvku.
         /// </summary>
-        /// <param name="control"></param>
-        /// <param name="paintItem"></param>
-        /// <param name="pdea"></param>
-        /// <param name="controlBounds"></param>
-        protected void PrepareControl(DevExpress.XtraEditors.LabelControl control, IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="control">Cílový control</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        private void _FillNativeControl(IPaintItemData paintData, DevExpress.XtraEditors.LabelControl control, WinDraw.Rectangle controlBounds)
         {
-            int w = controlBounds.Width;
-            int h = controlBounds.Height;
-            control.Text = GetItemLabel(paintItem);
+            control.Text = GetItemLabel(paintData);
             control.Size = controlBounds.Size;
-            // a řada dalších...
         }
         /// <summary>
         /// Dispose objektu
@@ -573,20 +615,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 __EditorPaint = null;
             }
         }
+        /// <summary>
+        /// Nativní control používaný pro kreslení
+        /// </summary>
         DevExpress.XtraEditors.LabelControl __EditorPaint;
-        private DevExpress.XtraEditors.LabelControl _CreateControl(PaintDataEventArgs pdea)
-        {
-            var control = new DevExpress.XtraEditors.LabelControl() { Location = new WinDraw.Point(25, -200) };
-            control.ResetBackColor();
-            control.LineStyle = WinDraw.Drawing2D.DashStyle.Solid;
-            control.LineVisible = true;
-            control.LineLocation = DevExpress.XtraEditors.LineLocation.Bottom;
-            control.LineColor = WinDraw.Color.DarkBlue;
-            control.LineOrientation = DevExpress.XtraEditors.LabelLineOrientation.Horizontal;
-            control.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Office2003;
-            // pdea.InteractivePanel.Controls.Add(control);
-            return control;
-        }
     }
     #endregion
     #region TextBox
@@ -611,75 +643,83 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCache; } }
         /// <summary>
-        /// Je voláno po změně interaktivního stavu dané buňky. Možná bude třeba pro buňku vytvořit a umístit nativní Control, anebo bude možno jej odebrat...
-        /// </summary>
-        /// <param name="paintItem"></param>
-        /// <param name="controlBounds"></param>
-        public override void ChangeItemInteractiveState(IPaintItemData paintItem, WinDraw.Rectangle controlBounds)
-        {
-
-        }
-        /// <summary>
-        /// Vykreslí prvek do dané grafiky
-        /// </summary>
-        /// <param name="paintItem">Data konkrétního prvku</param>
-        /// <param name="pdea">Grafika pro kreslení</param>
-        /// <param name="controlBounds">Cílové souřadnice</param>
-        /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
-        public override void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
-        {
-            PaintImageData(paintItem, pdea, controlBounds);
-        }
-        /// <summary>
         /// Potomek zde přímo do cílové grafiky vykreslí obsah prvku, bez cache
         /// </summary>
-        /// <param name="paintItem">Data konkrétního prvku</param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="pdea">Grafika pro kreslení</param>
         /// <param name="controlBounds">Cílové souřadnice</param>
-        protected override void PaintImageDirect(IPaintItemData paintItem, PaintDataEventArgs pdea, Rectangle controlBounds) { }
+        protected override void PaintImageDirect(IPaintItemData paintData, PaintDataEventArgs pdea, Rectangle controlBounds) { }
         /// <summary>
         /// Pro daný prvek (jeho typ a obsah, a velikost) vygeneruje jednoznačný String klíč, popisující Bitmapu uloženou v Cache
         /// </summary>
-        /// <param name="paintItem">Data konkrétního prvku</param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="controlBounds">Cílové souřadnice</param>
         /// <returns></returns>
-        protected override string CreateKey(IPaintItemData paintItem, Rectangle controlBounds)
+        protected override string CreateKey(IPaintItemData paintData, Rectangle controlBounds)
         {
-            object value = GetItemValue(paintItem);
-            WinDraw.FontStyle fontStyle = GetItemContent(paintItem, Data.DxDataFormDef.FontStyle, WinDraw.FontStyle.Regular);
-            float sizeRatio = GetItemContent(paintItem, Data.DxDataFormDef.FontSizeRatio, 0f);
-            WinDraw.Color fontColor = GetItemContent(paintItem, Data.DxDataFormDef.TextColor, WinDraw.Color.Empty);
+            object value = GetItemValue(paintData);
+            WinDraw.FontStyle fontStyle = GetItemContent(paintData, Data.DxDataFormDef.FontStyle, WinDraw.FontStyle.Regular);
+            float sizeRatio = GetItemContent(paintData, Data.DxDataFormDef.FontSizeRatio, 0f);
+            WinDraw.Color fontColor = GetItemContent(paintData, Data.DxDataFormDef.TextColor, WinDraw.Color.Empty);
 
             return CreateKey(value?.ToString(), controlBounds.Size, ToKey(fontStyle), ToKey(sizeRatio), ToKey(fontColor));
         }
         /// <summary>
         /// Pro daný prvek vygeneruje data jeho bitmapy
         /// </summary>
-        /// <param name="paintItem">Data konkrétního prvku</param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="pdea">Grafika pro kreslení</param>
         /// <param name="controlBounds">Cílové souřadnice</param>
         /// <returns></returns>
-        protected override byte[] CreateImageData(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
-            __EditorPaint ??= new DevExpress.XtraEditors.TextEdit();
-            PrepareControl(__EditorPaint, paintItem, pdea, controlBounds);
+            __EditorPaint ??= _CreateNativeControl(false);
+            _FillNativeControl(paintData, __EditorPaint, controlBounds);
             return CreateBitmapData(__EditorPaint);
+        }
+        /// <summary>
+        /// Potomek zde vrátí nativní control
+        /// </summary>
+        /// <returns></returns>
+        protected override Control CreateNativeControl()
+        {
+            return _CreateNativeControl(true);
+        }
+        /// <summary>
+        /// Potomek zde do controlu naplní všechna potřebná data.
+        /// Je předán ten control, který byl vytvořen v metodě <see cref="CreateNativeControl()"/>.
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <param name="nativeControl"></param>
+        /// <param name="controlBounds"></param>
+        protected override void FillNativeControl(IPaintItemData paintData, Control nativeControl, Rectangle controlBounds)
+        {
+            this._FillNativeControl(paintData, nativeControl as DevExpress.XtraEditors.TextEdit, controlBounds);
+        }
+        /// <summary>
+        /// Metoda vytvoří a vrátí new instanci nativního controlu. 
+        /// Nastaví ji defaultní vzhled, nevkládá do ní hodnoty závislé na konkrétnbím prvku.
+        /// Eventhandlery registruje pokud <paramref name="withEvents"/> je true (hodnota false značí control vytvářený jen pro kreslení).
+        /// </summary>
+        /// <returns></returns>
+        private DevExpress.XtraEditors.TextEdit _CreateNativeControl(bool withEvents)
+        {
+            var control = new DevExpress.XtraEditors.TextEdit() { Location = new WinDraw.Point(25, -200) };
+            control.ResetBackColor();
+
+            return control;
         }
         /// <summary>
         /// Do dodaného controlu vloží data, která tento typ editoru řeší. Data získá z dodaného prvku.
         /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="control">Cílový control</param>
-        /// <param name="paintItem">Data konkrétního prvku</param>
-        /// <param name="pdea">Grafika pro kreslení</param>
-        /// <param name="controlBounds">Cílové souřadnice</param>
-        protected void PrepareControl(DevExpress.XtraEditors.TextEdit control, IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        protected void _FillNativeControl(IPaintItemData paintData, DevExpress.XtraEditors.TextEdit control, WinDraw.Rectangle controlBounds)
         {
-            control.EditValue = GetItemValue(paintItem);
+            control.EditValue = GetItemValue(paintData);
             control.Size = controlBounds.Size;
-            control.Properties.BorderStyle = GetItemBorderStyle(paintItem);
-            // control.ErrorText = "ErrorText ...";
-            // control.ErrorImageOptions.Alignment = WinForm.ErrorIconAlignment.TopRight;
-            // control.ErrorImageOptions.
+            control.Properties.BorderStyle = GetItemBorderStyle(paintData);
         }
         /// <summary>
         /// Dispose objektu
@@ -693,7 +733,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         /// <summary>
-        /// Nativní control používaný pro vykreslení obrázku do bitmapy
+        /// Nativní control používaný pro kreslení
         /// </summary>
         DevExpress.XtraEditors.TextEdit __EditorPaint;
     }
@@ -720,74 +760,57 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCache; } }
         /// <summary>
-        /// Je voláno po změně interaktivního stavu dané buňky. Možná bude třeba pro buňku vytvořit a umístit nativní Control, anebo bude možno jej odebrat...
-        /// </summary>
-        /// <param name="paintItem"></param>
-        /// <param name="controlBounds"></param>
-        public override void ChangeItemInteractiveState(IPaintItemData paintItem, WinDraw.Rectangle controlBounds) { }
-        /// <summary>
-        /// Vykreslí prvek do dané grafiky
-        /// </summary>
-        /// <param name="paintItem">Data konkrétního prvku</param>
-        /// <param name="pdea">Grafika pro kreslení</param>
-        /// <param name="controlBounds">Cílové souřadnice</param>
-        /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
-        public override void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
-        {
-            PaintImageData(paintItem, pdea, controlBounds);
-        }
-        /// <summary>
         /// Potomek zde přímo do cílové grafiky vykreslí obsah prvku, bez cache
         /// </summary>
-        /// <param name="paintItem"></param>
-        /// <param name="pdea"></param>
-        /// <param name="controlBounds"></param>
-        protected override void PaintImageDirect(IPaintItemData paintItem, PaintDataEventArgs pdea, Rectangle controlBounds) { }
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="pdea">Grafika pro kreslení</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        protected override void PaintImageDirect(IPaintItemData paintData, PaintDataEventArgs pdea, Rectangle controlBounds) { }
         /// <summary>
         /// Pro daný prvek (jeho typ a obsah, a velikost) vygeneruje jednoznačný String klíč, popisující Bitmapu uloženou v Cache
         /// </summary>
-        /// <param name="paintItem">Data konkrétního prvku</param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="controlBounds">Cílové souřadnice</param>
         /// <returns></returns>
-        protected override string CreateKey(IPaintItemData paintItem, Rectangle controlBounds)
+        protected override string CreateKey(IPaintItemData paintData, Rectangle controlBounds)
         {
-            object value = GetItemValue(paintItem);
-            WinDraw.FontStyle fontStyle = GetItemContent(paintItem, Data.DxDataFormDef.FontStyle, WinDraw.FontStyle.Regular);
-            float sizeRatio = GetItemContent(paintItem, Data.DxDataFormDef.FontSizeRatio, 0f);
-            WinDraw.Color fontColor = GetItemContent(paintItem, Data.DxDataFormDef.TextColor, WinDraw.Color.Empty);
-            string buttons = GetItemContent(paintItem, Data.DxDataFormDef.TextBoxButtons, "");
+            object value = GetItemValue(paintData);
+            WinDraw.FontStyle fontStyle = GetItemContent(paintData, Data.DxDataFormDef.FontStyle, WinDraw.FontStyle.Regular);
+            float sizeRatio = GetItemContent(paintData, Data.DxDataFormDef.FontSizeRatio, 0f);
+            WinDraw.Color fontColor = GetItemContent(paintData, Data.DxDataFormDef.TextColor, WinDraw.Color.Empty);
+            string buttons = GetItemContent(paintData, Data.DxDataFormDef.TextBoxButtons, "");
             return CreateKey(value?.ToString(), controlBounds.Size, ToKey(fontStyle), ToKey(sizeRatio), ToKey(fontColor), buttons);
         }
         /// <summary>
         /// Pro daný prvek vygeneruje data jeho bitmapy
         /// </summary>
-        /// <param name="paintItem">Data konkrétního prvku</param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="pdea">Grafika pro kreslení</param>
         /// <param name="controlBounds">Cílové souřadnice</param>
         /// <returns></returns>
-        protected override byte[] CreateImageData(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
             __EditorPaint ??= new DevExpress.XtraEditors.ButtonEdit();
-            PrepareControl(__EditorPaint, paintItem, pdea, controlBounds);
+            PrepareControl(__EditorPaint, paintData, pdea, controlBounds);
             return CreateBitmapData(__EditorPaint);
         }
         /// <summary>
         /// Do dodaného controlu vloží data, která tento typ editoru řeší. Data získá z dodaného prvku.
         /// </summary>
         /// <param name="control"></param>
-        /// <param name="paintItem"></param>
-        /// <param name="pdea"></param>
-        /// <param name="controlBounds"></param>
-        protected void PrepareControl(DevExpress.XtraEditors.ButtonEdit control, IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="pdea">Grafika pro kreslení</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        protected void PrepareControl(DevExpress.XtraEditors.ButtonEdit control, IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
 
-            object value = GetItemValue(paintItem);
+            object value = GetItemValue(paintData);
 
             control.EditValue = value;
             control.Size = controlBounds.Size;
-            control.Properties.BorderStyle = GetItemBorderStyle(paintItem);
+            control.Properties.BorderStyle = GetItemBorderStyle(paintData);
             control.Properties.Buttons.Clear();
-            var buttons = this.GetItemContent(paintItem, Data.DxDataFormDef.TextBoxButtons, "");
+            var buttons = this.GetItemContent(paintData, Data.DxDataFormDef.TextBoxButtons, "");
             if (!String.IsNullOrEmpty(buttons))
             {
                 control.Properties.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
@@ -814,6 +837,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Nativní control používaný pro vykreslení obrázku do bitmapy
         /// </summary>
         DevExpress.XtraEditors.ButtonEdit __EditorPaint;
+        /// <summary>
+        /// Potomek zde vrátí nativní control
+        /// </summary>
+        /// <returns></returns>
+        protected override Control CreateNativeControl()
+        {
+            return new DevExpress.XtraEditors.ButtonEdit();
+        }
+        /// <summary>
+        /// Potomek zde do controlu naplní všechna potřebná data.
+        /// Je předán ten control, který byl vytvořen v metodě <see cref="CreateNativeControl()"/>.
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <param name="nativeControl"></param>
+        /// <param name="controlBounds"></param>
+        protected override void FillNativeControl(IPaintItemData paintData, Control nativeControl, Rectangle controlBounds)
+        {
+        }
     }
     #endregion
     #region EditBox
@@ -838,69 +879,52 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCache; } }
         /// <summary>
-        /// Je voláno po změně interaktivního stavu dané buňky. Možná bude třeba pro buňku vytvořit a umístit nativní Control, anebo bude možno jej odebrat...
-        /// </summary>
-        /// <param name="paintItem"></param>
-        /// <param name="controlBounds"></param>
-        public override void ChangeItemInteractiveState(IPaintItemData paintItem, WinDraw.Rectangle controlBounds) { }
-        /// <summary>
-        /// Vykreslí prvek do dané grafiky
-        /// </summary>
-        /// <param name="paintItem">Data konkrétního prvku</param>
-        /// <param name="pdea">Grafika pro kreslení</param>
-        /// <param name="controlBounds">Cílové souřadnice</param>
-        /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
-        public override void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
-        {
-            PaintImageData(paintItem, pdea, controlBounds);
-        }
-        /// <summary>
         /// Potomek zde přímo do cílové grafiky vykreslí obsah prvku, bez cache
         /// </summary>
-        /// <param name="paintItem">Data konkrétního prvku</param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="pdea">Grafika pro kreslení</param>
         /// <param name="controlBounds">Cílové souřadnice</param>
-        protected override void PaintImageDirect(IPaintItemData paintItem, PaintDataEventArgs pdea, Rectangle controlBounds) { }
+        protected override void PaintImageDirect(IPaintItemData paintData, PaintDataEventArgs pdea, Rectangle controlBounds) { }
         /// <summary>
         /// Pro daný prvek (jeho typ a obsah, a velikost) vygeneruje jednoznačný String klíč, popisující Bitmapu uloženou v Cache
         /// </summary>
-        /// <param name="paintItem">Data konkrétního prvku</param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="controlBounds">Cílové souřadnice</param>
         /// <returns></returns>
-        protected override string CreateKey(IPaintItemData paintItem, Rectangle controlBounds)
+        protected override string CreateKey(IPaintItemData paintData, Rectangle controlBounds)
         {
-            object value = GetItemValue(paintItem);
-            WinDraw.FontStyle fontStyle = GetItemContent(paintItem, Data.DxDataFormDef.FontStyle, WinDraw.FontStyle.Regular);
-            float sizeRatio = GetItemContent(paintItem, Data.DxDataFormDef.FontSizeRatio, 0f);
-            WinDraw.Color fontColor = GetItemContent(paintItem, Data.DxDataFormDef.TextColor, WinDraw.Color.Empty);
+            object value = GetItemValue(paintData);
+            WinDraw.FontStyle fontStyle = GetItemContent(paintData, Data.DxDataFormDef.FontStyle, WinDraw.FontStyle.Regular);
+            float sizeRatio = GetItemContent(paintData, Data.DxDataFormDef.FontSizeRatio, 0f);
+            WinDraw.Color fontColor = GetItemContent(paintData, Data.DxDataFormDef.TextColor, WinDraw.Color.Empty);
 
             return CreateKey(value?.ToString(), controlBounds.Size, ToKey(fontStyle), ToKey(sizeRatio), ToKey(fontColor));
         }
         /// <summary>
         /// Pro daný prvek vygeneruje data jeho bitmapy
         /// </summary>
-        /// <param name="paintItem">Data konkrétního prvku</param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="pdea">Grafika pro kreslení</param>
         /// <param name="controlBounds">Cílové souřadnice</param>
         /// <returns></returns>
-        protected override byte[] CreateImageData(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
             __EditorPaint ??= new DevExpress.XtraEditors.MemoEdit();
-            PrepareControl(__EditorPaint, paintItem, pdea, controlBounds);
+            PrepareControl(__EditorPaint, paintData, pdea, controlBounds);
             return CreateBitmapData(__EditorPaint);
         }
         /// <summary>
         /// Do dodaného controlu vloží data, která tento typ editoru řeší. Data získá z dodaného prvku.
         /// </summary>
         /// <param name="control">Cílový control</param>
-        /// <param name="paintItem">Data konkrétního prvku</param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="pdea">Grafika pro kreslení</param>
         /// <param name="controlBounds">Cílové souřadnice</param>
-        protected void PrepareControl(DevExpress.XtraEditors.MemoEdit control, IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        protected void PrepareControl(DevExpress.XtraEditors.MemoEdit control, IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
-            control.EditValue = GetItemValue(paintItem);
+            control.EditValue = GetItemValue(paintData);
             control.Size = controlBounds.Size;
-            control.Properties.BorderStyle = GetItemBorderStyle(paintItem);
+            control.Properties.BorderStyle = GetItemBorderStyle(paintData);
         }
         /// <summary>
         /// Dispose objektu
@@ -917,9 +941,27 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Nativní control používaný pro vykreslení obrázku do bitmapy
         /// </summary>
         DevExpress.XtraEditors.MemoEdit __EditorPaint;
+        /// <summary>
+        /// Potomek zde vrátí nativní control
+        /// </summary>
+        /// <returns></returns>
+        protected override Control CreateNativeControl()
+        {
+            return new DevExpress.XtraEditors.MemoEdit();
+        }
+        /// <summary>
+        /// Potomek zde do controlu naplní všechna potřebná data.
+        /// Je předán ten control, který byl vytvořen v metodě <see cref="CreateNativeControl()"/>.
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <param name="nativeControl"></param>
+        /// <param name="controlBounds"></param>
+        protected override void FillNativeControl(IPaintItemData paintData, Control nativeControl, Rectangle controlBounds)
+        {
+        }
     }
     #endregion
-    
+
     // checkboxy, spinnery, range, atd atd atd
     // containery
 
@@ -945,74 +987,85 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCache; } }
         /// <summary>
-        /// Je voláno po změně interaktivního stavu dané buňky. Možná bude třeba pro buňku vytvořit a umístit nativní Control, anebo bude možno jej odebrat...
-        /// </summary>
-        /// <param name="paintItem"></param>
-        /// <param name="controlBounds"></param>
-        public override void ChangeItemInteractiveState(IPaintItemData paintItem, WinDraw.Rectangle controlBounds)
-        {
-
-        }
-        /// <summary>
-        /// Vykreslí prvek do dané grafiky
-        /// </summary>
-        /// <param name="paintItem">Data konkrétního prvku</param>
-        /// <param name="pdea">Grafika pro kreslení</param>
-        /// <param name="controlBounds">Cílové souřadnice</param>
-        /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
-        public override void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
-        {
-            PaintImageData(paintItem, pdea, controlBounds);
-        }
-        /// <summary>
         /// Potomek zde přímo do cílové grafiky vykreslí obsah prvku, bez cache
         /// </summary>
-        /// <param name="paintItem">Data konkrétního prvku</param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="pdea">Grafika pro kreslení</param>
         /// <param name="controlBounds">Cílové souřadnice</param>
-        protected override void PaintImageDirect(IPaintItemData paintItem, PaintDataEventArgs pdea, Rectangle controlBounds) { }
+        protected override void PaintImageDirect(IPaintItemData paintData, PaintDataEventArgs pdea, Rectangle controlBounds) { }
         /// <summary>
         /// Pro daný prvek (jeho typ a obsah, a velikost) vygeneruje jednoznačný String klíč, popisující Bitmapu uloženou v Cache
         /// </summary>
-        /// <param name="paintItem">Data konkrétního prvku</param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="controlBounds">Cílové souřadnice</param>
         /// <returns></returns>
-        protected override string CreateKey(IPaintItemData paintItem, Rectangle controlBounds)
+        protected override string CreateKey(IPaintItemData paintData, Rectangle controlBounds)
         {
-            string text = GetItemLabel(paintItem);
-            var iconName = this.GetItemContent(paintItem, Data.DxDataFormDef.IconName, "");
-            WinDraw.FontStyle fontStyle = GetItemContent(paintItem, Data.DxDataFormDef.FontStyle, WinDraw.FontStyle.Regular);
-            float sizeRatio = GetItemContent(paintItem, Data.DxDataFormDef.FontSizeRatio, 0f);
-            WinDraw.Color fontColor = GetItemContent(paintItem, Data.DxDataFormDef.TextColor, WinDraw.Color.Empty);
+            string text = GetItemLabel(paintData);
+            var iconName = this.GetItemContent(paintData, Data.DxDataFormDef.IconName, "");
+            WinDraw.FontStyle fontStyle = GetItemContent(paintData, Data.DxDataFormDef.FontStyle, WinDraw.FontStyle.Regular);
+            float sizeRatio = GetItemContent(paintData, Data.DxDataFormDef.FontSizeRatio, 0f);
+            WinDraw.Color fontColor = GetItemContent(paintData, Data.DxDataFormDef.TextColor, WinDraw.Color.Empty);
 
             return CreateKey(text, controlBounds.Size, iconName, ToKey(fontStyle), ToKey(sizeRatio), ToKey(fontColor));
         }
         /// <summary>
         /// Pro daný prvek vygeneruje data jeho bitmapy
         /// </summary>
-        /// <param name="paintItem">Data konkrétního prvku</param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="pdea">Grafika pro kreslení</param>
         /// <param name="controlBounds">Cílové souřadnice</param>
         /// <returns></returns>
-        protected override byte[] CreateImageData(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
-            __EditorPaint ??= new DevExpress.XtraEditors.SimpleButton();
-            PrepareControl(__EditorPaint, paintItem, pdea, controlBounds);
+            __EditorPaint ??= _CreateNativeControl(false);
+            _FillNativeControl(paintData, __EditorPaint, controlBounds);
             return CreateBitmapData(__EditorPaint);
+        }
+        /// <summary>
+        /// Potomek zde vrátí nativní control
+        /// </summary>
+        /// <returns></returns>
+        protected override Control CreateNativeControl()
+        {
+            return _CreateNativeControl(true);
+        }
+        /// <summary>
+        /// Potomek zde do controlu naplní všechna potřebná data.
+        /// Je předán ten control, který byl vytvořen v metodě <see cref="CreateNativeControl()"/>.
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="nativeControl">Cílový control</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        protected override void FillNativeControl(IPaintItemData paintData, Control nativeControl, Rectangle controlBounds)
+        {
+            this._FillNativeControl(paintData, nativeControl as DevExpress.XtraEditors.SimpleButton, controlBounds);
+        }
+        /// <summary>
+        /// Metoda vytvoří a vrátí new instanci nativního controlu. 
+        /// Nastaví ji defaultní vzhled, nevkládá do ní hodnoty závislé na konkrétnbím prvku.
+        /// Eventhandlery registruje pokud <paramref name="withEvents"/> je true (hodnota false značí control vytvářený jen pro kreslení).
+        /// </summary>
+        /// <returns></returns>
+        private DevExpress.XtraEditors.SimpleButton _CreateNativeControl(bool withEvents)
+        {
+            var control = new DevExpress.XtraEditors.SimpleButton() { Location = new WinDraw.Point(25, -200) };
+            control.ResetBackColor();
+
+            return control;
         }
         /// <summary>
         /// Do dodaného controlu vloží data, která tento typ editoru řeší. Data získá z dodaného prvku.
         /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="control">Cílový control</param>
-        /// <param name="paintItem">Data konkrétního prvku</param>
-        /// <param name="pdea">Grafika pro kreslení</param>
-        /// <param name="controlBounds">Cílové souřadnice</param>
-        protected void PrepareControl(DevExpress.XtraEditors.SimpleButton control, IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        protected void _FillNativeControl(IPaintItemData paintData, DevExpress.XtraEditors.SimpleButton control, WinDraw.Rectangle controlBounds)
         {
-            control.Text = GetItemLabel(paintItem);
+            control.Text = GetItemLabel(paintData);
             control.Size = controlBounds.Size;
 
-            var iconName = this.GetItemContent(paintItem, Data.DxDataFormDef.IconName, "");
+            var iconName = this.GetItemContent(paintData, Data.DxDataFormDef.IconName, "");
             if (iconName != null)
             {
                 DxComponent.ApplyImage(control.ImageOptions, iconName);
@@ -1030,6 +1083,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 __EditorPaint = null;
             }
         }
+        /// <summary>
+        /// Nativní control používaný pro kreslení
+        /// </summary>
         DevExpress.XtraEditors.SimpleButton __EditorPaint;
     }
     #endregion
@@ -1058,9 +1114,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         protected virtual WinDraw.Imaging.ImageFormat CacheImageFormat { get { return RepositoryManager.CacheImageFormat; } }
         /// <summary>
+        /// Typ editoru
+        /// </summary>
+        public abstract DxRepositoryEditorType EditorType { get; }
+        /// <summary>
+        /// Režim práce s cache
+        /// </summary>
+        protected abstract EditorCacheMode CacheMode { get; }
+        /// <summary>
         /// Dispose
         /// </summary>
-        void IDisposable.Dispose() { OnDispose(); }
+        void IDisposable.Dispose() { _Dispose(); OnDispose(); }
         /// <summary>
         /// Potomek zde disposuje svoje prvky
         /// </summary>
@@ -1087,51 +1151,294 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             throw new ArgumentException($"DxRepositoryEditor.CreateEditor(): Editor for type '{editorType}' does not exists.");
         }
         #endregion
-        #region Support pro potomky, včetně abstract; vazba na Manager.Cache
-        /// <summary>
-        /// Potomek zde vykreslí prvek svého typu podle dodaných dat do dané grafiky a prostoru
-        /// </summary>
-        /// <param name="paintItem"></param>
-        /// <param name="pdea"></param>
-        /// <param name="controlBounds"></param>
-        /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
-        public abstract void PaintItem(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed);
+        #region Podpora pro práci s nativním controlem
         /// <summary>
         /// Je voláno po změně interaktivního stavu dané buňky. Možná bude třeba pro buňku vytvořit a umístit nativní Control, anebo bude možno jej odebrat...
         /// </summary>
-        /// <param name="paintItem"></param>
-        /// <param name="controlBounds"></param>
-        public abstract void ChangeItemInteractiveState(IPaintItemData paintItem, WinDraw.Rectangle controlBounds);
-        /// <summary>
-        /// Typ editoru
-        /// </summary>
-        public abstract DxRepositoryEditorType EditorType { get; }
-        /// <summary>
-        /// Režim práce s cache
-        /// </summary>
-        protected abstract EditorCacheMode CacheMode { get; }
-        /// <summary>
-        /// Režim ukládání grafických dat
-        /// </summary>
-        protected enum EditorCacheMode
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="container">Fyzický container, na němž má být přítomný fyzický Control</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        public virtual void ChangeItemInteractiveState(IPaintItemData paintData, WinForm.Control container, WinDraw.Rectangle controlBounds)
         {
-            /// <summary>
-            /// Nikdy neukládat = vždy generovat nová data
-            /// </summary>
-            None,
-            /// <summary>
-            /// Ukládat do privátní property <see cref="IPaintItemData.ImageData"/>
-            /// </summary>
-            ItemData,
-            /// <summary>
-            /// Ukládat do společné cache v <see cref="DxRepositoryManager"/>
-            /// </summary>
-            ManagerCache,
-            /// <summary>
-            /// Přímé kreslení (Label, Image, a možná další jako Title?)
-            /// </summary>
-            DirectPaint
+
+
+
         }
+        /// <summary>
+        /// Metoda zajistí, že pro daný prvek bude připraven nativní control.
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="container">Fyzický container, na němž má být přítomný fyzický Control</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        /// <param name="isStateChanged">true = metoda je volána po změně interaktivního stavu, false = je volána v procesu Draw</param>
+        protected virtual void CheckValidNativeControl(IPaintItemData paintData, WinForm.Control container, WinDraw.Rectangle controlBounds, bool isStateChanged)
+        {
+            var nativeControl = paintData.NativeControl;
+            if (nativeControl is null)
+            {
+                var pair = _GetDisponiblePair(paintData);
+
+                nativeControl = pair.NativeControl;
+                if (nativeControl is null)
+                    nativeControl = _CreateNativeControl();
+
+                if (nativeControl != null)
+                {
+                    _FillNativeControl(paintData, nativeControl, controlBounds);
+
+                    if (nativeControl.Parent is null)
+                        container.Controls.Add(nativeControl);
+                }
+
+                paintData.NativeControl = nativeControl;
+                pair.NativeControl = nativeControl;
+                pair.PaintData = paintData;
+            }
+        }
+        /// <summary>
+        /// Zajistí prvotní vytvoření Controlu,
+        /// </summary>
+        /// <returns></returns>
+        private WinForm.Control _CreateNativeControl()
+        {
+            var control = CreateNativeControl();
+
+            // Handlery naše, pokud control není null:
+
+
+            return control;
+        }
+        /// <summary>
+        /// Zajistí naplnění controlu aktuálními daty,
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <param name="nativeControl"></param>
+        /// <param name="controlBounds"></param>
+        private void _FillNativeControl(IPaintItemData paintData, Control nativeControl, Rectangle controlBounds)
+        {
+            nativeControl.Bounds = controlBounds;
+            FillNativeControl(paintData, nativeControl, controlBounds);
+        }
+        /// <summary>
+        /// Potomek zde vytvoří a vrátí nativní control.
+        /// </summary>
+        /// <returns></returns>
+        protected abstract WinForm.Control CreateNativeControl();
+
+        /// <summary>
+        /// Potomek zde do controlu naplní všechna potřebná data.
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <param name="nativeControl"></param>
+        /// <param name="controlBounds"></param>
+        protected abstract void FillNativeControl(IPaintItemData paintData, Control nativeControl, Rectangle controlBounds);
+
+        /// <summary>
+        /// Metoda zajistí, že pokud pro daný prvek byl připraven nativní control, tak nyní bude odebrán.
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="isStateChanged">true = metoda je volána po změně interaktivního stavu, false = je volána v procesu Draw</param>
+        protected virtual void CheckReleaseNativeControl(IPaintItemData paintData, bool isStateChanged)
+        { }
+        /// <summary>
+        /// Najde a vrátí disponibilní pár, jehož <see cref="ControlDataPair.NativeControl"/> je možno použít pro zobrazení nových dat.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        private ControlDataPair _GetDisponiblePair(IPaintItemData paintData)
+        {
+            ControlDataPair pair;
+
+            pair = _ControlUseQ;
+            if (isDisponible(pair)) return pair;
+
+            pair = _ControlUseW;
+            if (isDisponible(pair)) return pair;
+
+            throw new InvalidOperationException($"DxRepositoryEditor has not any disponible ControlDataPair.");
+
+            bool isDisponible(ControlDataPair testPair)
+            {
+                // Pokud tam nic není, můžeme to použít:
+                if (testPair.NativeControl is null)
+                {
+                    if (testPair.PaintData != null)
+                    {
+                        testPair.PaintData.NativeControl = null;
+                        testPair.PaintData = null;
+                    }
+                    return true;
+                }
+
+                // Ani PaintData?
+                if (testPair.PaintData is null) return true;
+
+                // Pokud v páru je přítomen právě ten prvek paintData, který hledá Pair, pak je to OK:
+                if (Object.ReferenceEquals(testPair.PaintData, paintData)) return true;
+
+                // Pokud prvek v jeho aktuálním stavu potřebuje nativní control, tak mu jej nebudeme brát:
+                if (NeedUseNativeControl(testPair.PaintData, true)) return false;
+
+                // Máme nativní control a máme i prvek, ale prvek jej už nepotřebuje = odvážeme je, a použijeme si jej my:
+                testPair.PaintData.NativeControl = null;
+                testPair.PaintData = null;
+                return true;
+            }
+        }
+        private void _Dispose()
+        {
+            __ControlUseQ?.Release();
+        }
+        private ControlDataPair _ControlUseQ { get { __ControlUseQ ??= new ControlDataPair(); return __ControlUseQ; } } private ControlDataPair __ControlUseQ;
+        private ControlDataPair _ControlUseW { get { __ControlUseW ??= new ControlDataPair(); return __ControlUseW; } } private ControlDataPair __ControlUseW;
+
+        protected class ControlDataPair
+        {
+            public WinForm.Control NativeControl { get; set; }
+            public IPaintItemData PaintData { get; set; }
+          
+            /// <summary>
+            /// Uvolní instance ve zdejší evidenci
+            /// </summary>
+            public void Release()
+            {
+                if (this.PaintData != null)
+                {
+                    this.PaintData.NativeControl = null;
+                    this.PaintData = null;
+                }
+
+                if (this.NativeControl != null)
+                {
+                    this.NativeControl.Dispose();
+                    this.NativeControl = null;
+                }
+            }
+        }
+        #endregion
+        #region Podpora pro práci s vykreslením prvku a práci s Cache uložených obrazů jednotlivých Controlů
+        /// <summary>
+        /// Potomek zde vykreslí prvek svého typu podle dodaných dat do dané grafiky a prostoru
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="pdea">Grafika pro kreslení</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
+        public void PaintItem(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
+        {
+            if (paintData is null) return;
+
+            bool needUseNativeControl = NeedUseNativeControl(paintData, isDisplayed);
+            if (needUseNativeControl) 
+            {   // Pokud se používá Nativní control, pak jen ověříme, že je připraven a přítomen na správné souřadnici.
+                // Často jsme volání víceméně po pohybu Scrollbarem kvůli přesunu nativního controlu na nové místo:
+                CheckValidNativeControl(paintData, pdea.InteractivePanel, controlBounds, false);
+                return;
+            }
+            CheckReleaseNativeControl(paintData, false);
+
+            // Nepotřebujeme nativní control => nejspíš budeme jen kreslit jeho obraz:
+            bool needPaint = NeedPaintItem(paintData, isDisplayed);
+            if (needPaint)
+            {
+                PaintImageData(paintData, pdea, controlBounds);
+            }
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný prvek má aktuálně používat nativní Control (tedy nebude se keslit jako Image),
+        /// a to dle aktuálního interaktivním stavu objektu a s přihlédnutím ke stavu <paramref name="isDisplayed"/>.
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
+        /// <returns></returns>
+        protected virtual bool NeedUseNativeControl(IPaintItemData paintData, bool isDisplayed)
+        {   // Většina aktivních prvků to má takhle; a ty specifické prvky si metodu přepíšou...
+            return (isDisplayed && ((paintData.InteractiveState & DxInteractiveState.MaskUseNativeControl) != 0));
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný prvek má vykreslovat svoje data (=kreslit pomocí metod např. <see cref="DxRepositoryEditor.CreateImageData(IPaintItemData, PaintDataEventArgs, Rectangle)"/>), 
+        /// a to dle aktuálního interaktivním stavu objektu a s přihlédnutím ke stavu <paramref name="isDisplayed"/>.
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
+        /// <returns></returns>
+        protected virtual bool NeedPaintItem(IPaintItemData paintData, bool isDisplayed)
+        {   // Většina aktivních prvků to má takhle; a ty specifické prvky si metodu přepíšou...
+            return (isDisplayed && ((paintData.InteractiveState & DxInteractiveState.MaskUseNativeControl) == 0));
+        }
+        /// <summary>
+        /// Metoda řeší vykreslení Image pro potomka na základě vygenerovaných dat obrázku
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="pdea">Grafika pro kreslení</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        protected virtual void PaintImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        {
+            byte[] imageData = null;
+            switch (CacheMode)
+            {
+                case EditorCacheMode.DirectPaint:
+                    // Přímé kreslení - např. Label se řeší zde:
+                    PaintImageDirect(paintData, pdea, controlBounds);
+                    break;
+                case EditorCacheMode.ManagerCache:
+                    // Použít ManagerCache: pokud v prvku máme ImageId, najdeme "naše" data podle toho ID:
+                    //  => to je tehdy, když typicky opakovaně kreslíme prvek, který jsme už dříve kreslili, a máme tedy uloženo rychlé ID do cache...
+                    // Uložená data nemusí být pouze "naše": pokud více prvků vytvoří shodný klíč pro data (key = CreateKey(..)),
+                    //  pak těchto více prvků (díky klíči a organizaci CacheImage) pro tento společný klíč bude sdílet i společné ID.
+                    // Účelem uloženého ID je jen to, že nemusíme generovat klíč Key při každém kreslení.
+                    // Po změně fyzických dat v prvku anebo po změně stylu se provede invalidace (buď v konkrétním prvku, anebo celého systému cache)
+                    //  a následující kreslení nenajde cachovaná data (ani v ManagerCache, ani v ImageData) a vytviří se nová...
+                    ulong imageId;
+                    bool isInCache = (paintData.ImageId.HasValue && TryGetCacheImageData(paintData.ImageId.Value, out imageData));
+                    if (!isInCache)
+                    {   // Nemáme ImageId (buď v prvku nebo v manageru): vytvoříme string klíč pro konkrétní data, a zkusíme najít Image podle klíče:
+                        string key = CreateKey(paintData, controlBounds);
+                        // Pokud pro Key najdeme data, pak najdeme i ID = imageId:
+                        if (!TryGetCacheImageData(key, out imageData, out imageId))
+                        {   // Pokud ani pro klíč nenajdeme data, pak je vytvoříme právě nyní a přidáme do managera,
+                            imageData = CreateImageData(paintData, pdea, controlBounds);
+                            //  a uchováme si imageId přidělené v manageru:
+                            imageId = AddImageDataToCache(key, imageData);
+                        }
+                        paintData.ImageId = imageId;
+                    }
+                    break;
+                case EditorCacheMode.ItemData:
+                    // Nepoužívat ManagerCache, ale jen lokální úložiště:
+                    if (paintData.ImageData is null)
+                        paintData.ImageData = CreateImageData(paintData, pdea, controlBounds);
+                    imageData = paintData.ImageData;
+                    break;
+                case EditorCacheMode.None:
+                    // Žádné úložiště, vždy znovu vygenerovat ImageData:
+                    imageData = CreateImageData(paintData, pdea, controlBounds);
+                    break;
+            }
+            PaintFormData(imageData, pdea, controlBounds);
+        }
+        /// <summary>
+        /// Potomek zde přímo do cílové grafiky vykreslí obsah prvku, bez cache
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="pdea">Grafika pro kreslení</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        protected virtual void PaintImageDirect(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds) { }
+        /// <summary>
+        /// Pro daný prvek (jeho typ a obsah, a velikost) vygeneruje jednoznačný String klíč, popisující Bitmapu uloženou v Cache
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        /// <returns></returns>
+        protected abstract string CreateKey(IPaintItemData paintData, WinDraw.Rectangle controlBounds);
+        /// <summary>
+        /// Pro daný prvek vygeneruje data jeho bitmapy
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="pdea">Grafika pro kreslení</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        /// <returns></returns>
+        protected abstract byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds);
         /// <summary>
         /// Pokud je dán klíč, pro který máme v evidenci data (uložená bitmapa ve formě byte[]), pak ji najde a vrátí true. Určí i ID dat.
         /// </summary>
@@ -1209,34 +1516,56 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
             return editorType.ToString();
         }
+        /// <summary>
+        /// Režim ukládání grafických dat
+        /// </summary>
+        protected enum EditorCacheMode
+        {
+            /// <summary>
+            /// Nikdy neukládat = vždy generovat nová data
+            /// </summary>
+            None,
+            /// <summary>
+            /// Ukládat do privátní property <see cref="IPaintItemData.ImageData"/>
+            /// </summary>
+            ItemData,
+            /// <summary>
+            /// Ukládat do společné cache v <see cref="DxRepositoryManager"/>
+            /// </summary>
+            ManagerCache,
+            /// <summary>
+            /// Přímé kreslení (Label, Image, a možná další jako Title?)
+            /// </summary>
+            DirectPaint
+        }
         #endregion
-        #region Support pro potomky - čtení hodnot z prvku IPaintItemData
+        #region Podpora pro potomky: čtení hodnot z prvku IPaintItemData
         /// <summary>
         /// Z prvku přečte a vrátí jeho hodnotu
         /// </summary>
-        /// <param name="paintItem"></param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <returns></returns>
-        protected object GetItemValue(IPaintItemData paintItem) { return (paintItem.TryGetContent<object>(Data.DxDataFormDef.Value, out var content) ? content : null); }
+        protected object GetItemValue(IPaintItemData paintData) { return (paintData.TryGetContent<object>(Data.DxDataFormDef.Value, out var content) ? content : null); }
         /// <summary>
         /// Z prvku přečte a vrátí konstantní text Label
         /// </summary>
-        /// <param name="paintItem"></param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <returns></returns>
-        protected string GetItemLabel(IPaintItemData paintItem) { return (paintItem.TryGetContent<string>(Data.DxDataFormDef.Label, out var content) ? content : null); }
+        protected string GetItemLabel(IPaintItemData paintData) { return (paintData.TryGetContent<string>(Data.DxDataFormDef.Label, out var content) ? content : null); }
         /// <summary>
         /// Z prvku přečte a vrátí konstantní text ToolTipText
         /// </summary>
-        /// <param name="paintItem"></param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <returns></returns>
-        protected string GetItemToolTipText(IPaintItemData paintItem) { return (paintItem.TryGetContent<string>(Data.DxDataFormDef.ToolTipText, out var content) ? content : null); }
+        protected string GetItemToolTipText(IPaintItemData paintData) { return (paintData.TryGetContent<string>(Data.DxDataFormDef.ToolTipText, out var content) ? content : null); }
         /// <summary>
         /// Z prvku přečte a vrátí BorderStyle
         /// </summary>
-        /// <param name="paintItem"></param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <returns></returns>
-        protected BorderStyles GetItemBorderStyle(IPaintItemData paintItem)
+        protected BorderStyles GetItemBorderStyle(IPaintItemData paintData)
         {
-            if (!paintItem.TryGetContent<string>(Data.DxDataFormDef.BorderStyle, out var content)) return BorderStyles.Default;
+            if (!paintData.TryGetContent<string>(Data.DxDataFormDef.BorderStyle, out var content)) return BorderStyles.Default;
             if (!Enum.TryParse(content, out BorderStyles borderStyles)) return BorderStyles.Default;
             return borderStyles;
         }
@@ -1244,11 +1573,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Z prvku přečte a vrátí požadovanou hodnotu anebo vrátí default hodnotu
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="paintItem"></param>
+        /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="name"></param>
         /// <param name="defaultValue"></param>
         /// <returns></returns>
-        protected T GetItemContent<T>(IPaintItemData paintItem, string name, T defaultValue) { return (paintItem.TryGetContent<T>(name, out T content) ? content : defaultValue); }
+        protected T GetItemContent<T>(IPaintItemData paintData, string name, T defaultValue) { return (paintData.TryGetContent<T>(name, out T content) ? content : defaultValue); }
         #endregion
         #region Podpora pro potomky: ValueToKey (konverze typové hodnoty do krátkého stringu do klíče)
         /// <summary>
@@ -1286,79 +1615,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
         #region Podpora pro konverze: Control => Bitmap => byte[], a následně byte[] => Bitmap => Graphics
         /// <summary>
-        /// Metoda řeší vykreslení Image pro potomka na základě vygenerovaných dat obrázku
-        /// </summary>
-        /// <param name="paintItem"></param>
-        /// <param name="pdea"></param>
-        /// <param name="controlBounds"></param>
-        protected virtual void PaintImageData(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
-        {
-            byte[] imageData = null;
-            switch (CacheMode)
-            {
-                case EditorCacheMode.DirectPaint:
-                    // Přímé kreslení - např. Label se řeší zde:
-                    PaintImageDirect(paintItem, pdea, controlBounds);
-                    break;
-                case EditorCacheMode.ManagerCache:
-                    // Použít ManagerCache: pokud v prvku máme ImageId, najdeme "naše" data podle toho ID:
-                    //  => to je tehdy, když typicky opakovaně kreslíme prvek, který jsme už dříve kreslili, a máme tedy uloženo rychlé ID do cache...
-                    // Uložená data nemusí být pouze "naše": pokud více prvků vytvoří shodný klíč pro data (key = CreateKey(..)),
-                    //  pak těchto více prvků (díky klíči a organizaci CacheImage) pro tento společný klíč bude sdílet i společné ID.
-                    // Účelem uloženého ID je jen to, že nemusíme generovat klíč Key při každém kreslení.
-                    // Po změně fyzických dat v prvku anebo po změně stylu se provede invalidace (buď v konkrétním prvku, anebo celého systému cache)
-                    //  a následující kreslení nenajde cachovaná data (ani v ManagerCache, ani v ImageData) a vytviří se nová...
-                    ulong imageId;
-                    bool isInCache = (paintItem.ImageId.HasValue && TryGetCacheImageData(paintItem.ImageId.Value, out imageData));
-                    if (!isInCache)
-                    {   // Nemáme ImageId (buď v prvku nebo v manageru): vytvoříme string klíč pro konkrétní data, a zkusíme najít Image podle klíče:
-                        string key = CreateKey(paintItem, controlBounds);
-                        // Pokud pro Key najdeme data, pak najdeme i ID = imageId:
-                        if (!TryGetCacheImageData(key, out imageData, out imageId))
-                        {   // Pokud ani pro klíč nenajdeme data, pak je vytvoříme právě nyní a přidáme do managera,
-                            imageData = CreateImageData(paintItem, pdea, controlBounds);
-                            //  a uchováme si imageId přidělené v manageru:
-                            imageId = AddImageDataToCache(key, imageData);
-                        }
-                        paintItem.ImageId = imageId;
-                    }
-                    break;
-                case EditorCacheMode.ItemData:
-                    // Nepoužívat ManagerCache, ale jen lokální úložiště:
-                    if (paintItem.ImageData is null)
-                        paintItem.ImageData = CreateImageData(paintItem, pdea, controlBounds);
-                    imageData = paintItem.ImageData;
-                    break;
-                case EditorCacheMode.None:
-                    // Žádné úložiště, vždy znovu vygenerovat ImageData:
-                    imageData = CreateImageData(paintItem, pdea, controlBounds);
-                    break;
-            }
-            PaintFormData(imageData, pdea, controlBounds);
-        }
-        /// <summary>
-        /// Potomek zde přímo do cílové grafiky vykreslí obsah prvku, bez cache
-        /// </summary>
-        /// <param name="paintItem"></param>
-        /// <param name="pdea"></param>
-        /// <param name="controlBounds"></param>
-        protected virtual void PaintImageDirect(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds) { }
-        /// <summary>
-        /// Pro daný prvek (jeho typ a obsah, a velikost) vygeneruje jednoznačný String klíč, popisující Bitmapu uloženou v Cache
-        /// </summary>
-        /// <param name="paintItem"></param>
-        /// <param name="controlBounds"></param>
-        /// <returns></returns>
-        protected abstract string CreateKey(IPaintItemData paintItem, WinDraw.Rectangle controlBounds);
-        /// <summary>
-        /// Pro daný prvek vygeneruje data jeho bitmapy
-        /// </summary>
-        /// <param name="paintItem"></param>
-        /// <param name="pdea"></param>
-        /// <param name="controlBounds"></param>
-        /// <returns></returns>
-        protected abstract byte[] CreateImageData(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds);
-        /// <summary>
         /// Požádá dodaný Control, aby se vykreslil do nové pracovní bitmapy daného nebo odpovídajícího rozměru, a z té bitmapy nám vrátil byte[]
         /// </summary>
         /// <param name="control"></param>
@@ -1389,21 +1645,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         /// <summary>
-        /// Vykreslí obrázek uložený v dodaném prvku <paramref name="paintItem"/> do dané grafiky v <paramref name="pdea"/> na určenou souřadnici <paramref name="controlBounds"/>
+        /// Vykreslí obrázek uložený v dodaném prvku <paramref name="paintData"/> do dané grafiky v <paramref name="pdea"/> na určenou souřadnici <paramref name="controlBounds"/>
         /// </summary>
-        /// <param name="paintItem"></param>
-        /// <param name="pdea"></param>
-        /// <param name="controlBounds"></param>
-        protected virtual void PaintFormData(IPaintItemData paintItem, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="pdea">Grafika pro kreslení</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        protected virtual void PaintFormData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
-            PaintFormData(paintItem?.ImageData, pdea, controlBounds);
+            PaintFormData(paintData?.ImageData, pdea, controlBounds);
         }
         /// <summary>
         /// Vykreslí obrázek uložený v dodaném poli <paramref name="data"/> do dané grafiky v <paramref name="pdea"/> na určenou souřadnici <paramref name="controlBounds"/>
         /// </summary>
         /// <param name="data"></param>
-        /// <param name="pdea"></param>
-        /// <param name="controlBounds"></param>
+        /// <param name="pdea">Grafika pro kreslení</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
         protected virtual void PaintFormData(byte[] data, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
             if (data != null && data.Length > 0)
