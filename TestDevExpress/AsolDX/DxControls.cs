@@ -760,8 +760,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void FormPosition_FormClosed(object sender, FormClosedEventArgs e)
         {
-            string text = DxComponent.LogText;
-
             this.FormPositionOnChange(true);
         }
         /// <summary>

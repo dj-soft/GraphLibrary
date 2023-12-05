@@ -4394,8 +4394,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             get
             {
                 string text = "";
-                lock (_LogSB)
-                    text = _LogSB.ToString();
+                if (_LogSB != null)
+                {
+                    lock (_LogSB)
+                        text = _LogSB?.ToString();
+                }
                 return text;
             }
         }
@@ -4406,10 +4409,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!_LogActive) return;
 
-            lock (_LogSB)
+            if (_LogSB != null)
             {
-                _LogSB.Clear();
-                _LogLastLine = null;
+                lock (_LogSB)
+                {
+                    _LogSB.Clear();
+                    _LogLastLine = null;
+                }
             }
 
             RunLogTextChanged();
