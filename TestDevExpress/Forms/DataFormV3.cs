@@ -452,13 +452,13 @@ namespace TestDevExpress.Forms
                 switch (layoutId)
                 {
                     case 1:
-                        addRow(r.ToString("000"), "reference;nazev;pocet;cenacelk", "Ref {r};Název {r};{rnd};{rnd}");
+                        addRow(r.ToString("000"), "datum;reference;nazev;pocet;cenacelk", "{dr};Ref {r};Název {r};{rnd};{rnd}");
                         break;
                     case 2:
                         addRow(r.ToString("000"), "datum;reference;nazev;pocet;cena1", "{dr};R{r};Záznam {r};{rnd};{rnd}");
                         break;
                     case 3:
-                        addRow(r.ToString("000"), "id1;id2;id3;id4;id5;id6;id7", "{r};VYR;SKL;Výroba {r};Dne {dr};{t};==>");
+                        addRow(r.ToString("000"), "id1;id2;id3;id4;id5;id7;id0", "{r};VYR;SKL;Výroba {r};Dne {dr};{t};{dr} ==> {rnd}");
                         break;
                 }
             }

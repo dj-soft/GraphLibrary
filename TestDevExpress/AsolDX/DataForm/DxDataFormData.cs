@@ -1064,6 +1064,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         DxInteractiveState IPaintItemData.InteractiveState { get { return this._InteractiveState; } }
         WinForm.Control IPaintItemData.NativeControl { get { return this.__NativeControl; } set { this.__NativeControl = value; } }
         bool IPaintItemData.TryGetContent<T>(string name, out T content) { return TryGetContent<T>(name, out content); }
+        void IPaintItemData.InvalidateCache() { __ImageId = null; __ImageData = null; }
         ulong? IPaintItemData.ImageId { get { return __ImageId; } set { __ImageId = value; } } private ulong? __ImageId;
         byte[] IPaintItemData.ImageData { get { return __ImageData; } set { __ImageData = value; } } private byte[] __ImageData;
         #endregion
@@ -1158,6 +1159,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
     }
     #endregion
     #region DxDataFormDef : definice pro DataForm, jména vlastností pro úložiště dat
+    /// <summary>
+    /// Konstanty definující jednotlivé prvky v ContentData.
+    /// Hodnota konstantn se může čas od času změnit, protože se používají jen interně, nikoli zvenku.
+    /// Hodnota má být krátká.
+    /// </summary>
     public class DxDataFormDef
     {
         public const string ColumnDelimiter = ":";
@@ -1168,6 +1174,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         public const string ToolTipText = "Ttx";
         public const string IconName = "Icn";
         public const string FontStyle = "Fst";
+        public const string FontSizeRatio = "Fsz";
         public const string BackColor = "BgC";
         public const string TextColor = "TxC";
         public const string TextBoxButtons = "TxBxBt";

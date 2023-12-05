@@ -723,6 +723,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         public ulong Store(string key, TValue value)
         {
+            if (key == null) return 0UL;
+
             if (!__DictionaryKey.TryGetValue(new BiKeyValue(key), out var data))
             {   // Vložit data:
                 //  Vygeneruji new Id, vytvořím jednu new instanci BiKeyValue s dodaným Key a nově vygenerovaným Id a dodanou Value;
@@ -751,13 +753,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="key"></param>
         /// <returns></returns>
-        public bool ContainsKey(string key) { return __DictionaryKey.ContainsKey(new BiKeyValue(key)); }
+        public bool ContainsKey(string key) { return key != null &&  __DictionaryKey.ContainsKey(new BiKeyValue(key)); }
         /// <summary>
         /// Obsahuje daný Id?
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public bool ContainsId(ulong id) { return __DictionaryId.ContainsKey(new BiKeyValue(id)); }
+        public bool ContainsId(ulong id) { return id > 0UL && __DictionaryId.ContainsKey(new BiKeyValue(id)); }
         /// <summary>
         /// Najdeme data pro daný klíč?
         /// </summary>
@@ -766,7 +768,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         public bool TryGetValue(string key, out TValue value)
         {
-            if (__DictionaryKey.TryGetValue(new BiKeyValue(key), out var data))
+            if (key != null && __DictionaryKey.TryGetValue(new BiKeyValue(key), out var data))
             {
                 value = data.Value;
                 return true;
@@ -785,7 +787,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         public bool TryGetValue(string key, out TValue value, out ulong id)
         {
-            if (__DictionaryKey.TryGetValue(new BiKeyValue(key), out var data))
+            if (key != null && __DictionaryKey.TryGetValue(new BiKeyValue(key), out var data))
             {
                 value = data.Value;
                 id = data.Id;
@@ -803,7 +805,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         public bool TryGetValue(ulong id, out TValue value)
         {
-            if (__DictionaryKey.TryGetValue(new BiKeyValue(id), out var data))
+            if (id > 0UL && __DictionaryId.TryGetValue(new BiKeyValue(id), out var data))
             {
                 value = data.Value;
                 return true;
@@ -818,6 +820,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         public bool Remove(string key)
         {
+            if (key == null) return false;
+
             bool result = false;
             var biKey = new BiKeyValue(key);
             if (__DictionaryKey.TryGetValue(biKey, out var data))    // biKey obshauje jen Key, __DictionaryKey pracuje s klíčem podle Key
@@ -836,6 +840,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         public bool Remove(ulong id)
         {
+            if (id == 0UL) return false;
+
             bool result = false;
             var biId = new BiKeyValue(id);
             if (__DictionaryId.TryGetValue(biId, out var data))      // biId obshauje jen Id, __DictionaryId pracuje s klíčem podle Id

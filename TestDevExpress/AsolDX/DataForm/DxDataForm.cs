@@ -149,6 +149,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _InitRepository()
         {
             __RepositoryManager = new DxRepositoryManager(this);
+            __CacheImageFormat = WinDraw.Imaging.ImageFormat.Png;
         }
         /// <summary>
         /// Repozitory
@@ -180,6 +181,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             base.OnStyleChanged();
             InvalidateRepozitory();
         }
+        /// <summary>
+        /// Formát bitmap, který se ukládá do cache
+        /// </summary>
+        public WinDraw.Imaging.ImageFormat CacheImageFormat { get { return __CacheImageFormat; } set { __CacheImageFormat = value; InvalidateRepozitory(); } } private WinDraw.Imaging.ImageFormat __CacheImageFormat;
         #endregion
         #region ContentPanel : zobrazuje vlastní obsah (grafická komponenta)
         /// <summary>
@@ -414,7 +419,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (__InteractiveItems is null) return;
             foreach (var item in __InteractiveItems.OfType<IPaintItemData>())
-                item.ImageData = null;
+                item.InvalidateCache();
         }
         /// <summary>
         /// Vrátí true, pokud máme připraveny prvky pro aktuálně viditelnou oblast. false pokud prvky nejsou připraveny vůbec, anebo nepokrývají viditelnou oblast.
