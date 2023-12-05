@@ -593,7 +593,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var isMouseOverItem = (mouseState.IsOnControl && mouseState.InteractiveItem != null && Object.ReferenceEquals(mouseState.InteractiveItem, currentItem));
             var interactiveState = (!isMouseOverItem ? DxInteractiveState.None : DxInteractiveState.HasMouse);
             // Tato metoda ponechá základní stav objektu a přidá k němu daný interaktovní stav:
-            _SetInteractiveState(currentItem, interactiveState);
+            _SetInteractiveMouseState(currentItem, interactiveState);
         }
         /// <summary>
         /// Dokončení myšokliku = uvolnění tlačítka myši, když nebyl proces Drag, a pod myší není žádný prvek.
@@ -633,7 +633,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             if (!lastExists && currentExists)
             {   // Ze žádného prvku na nový prvek:
-                _SetInteractiveState(currentMouseItem, currentState);
+                _SetInteractiveMouseState(currentMouseItem, currentState);
                 __CurrentMouseItem = currentMouseItem;
                 _RunInteractiveItemMouseEnter(new InteractiveItemEventArgs(currentMouseItem, mouseState));
                 return true;
@@ -641,7 +641,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             if (lastExists && !currentExists)
             {   // Z dosavadního prvku na žádný prvek:
-                _SetInteractiveState(lastMouseItem, DxInteractiveState.None);
+                _SetInteractiveMouseState(lastMouseItem, DxInteractiveState.None);
                 _RunInteractiveItemMouseLeave(new InteractiveItemEventArgs(lastMouseItem, mouseState));
                 __CurrentMouseItem = null;
                 return true;
@@ -651,7 +651,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Pokud jsou stejné, pohybujeme se nad stále týmž prvkem:
             if (Object.ReferenceEquals(lastMouseItem, currentMouseItem))
             {
-                bool isChanged = _SetInteractiveState(currentMouseItem, currentState);
+                bool isChanged = _SetInteractiveMouseState(currentMouseItem, currentState);
                 if (isChanged)
                     // Došlo ke změně stavu:
                     return true;
@@ -661,10 +661,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
 
             // Změna prvku z dosavadního na nový:
-            _SetInteractiveState(lastMouseItem, DxInteractiveState.None);
+            _SetInteractiveMouseState(lastMouseItem, DxInteractiveState.None);
             _RunInteractiveItemMouseLeave(new InteractiveItemEventArgs(lastMouseItem, mouseState));
 
-            _SetInteractiveState(currentMouseItem, currentState);
+            _SetInteractiveMouseState(currentMouseItem, currentState);
             __CurrentMouseItem = currentMouseItem;
             _RunInteractiveItemMouseEnter(new InteractiveItemEventArgs(currentMouseItem, mouseState));
 
@@ -682,8 +682,33 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return (interactiveState);
         }
         /// <summary>
-        /// Do daného prvku vloží daný interaktivní stav, přičemž v něm zachová jeho stav prvku.
+        /// Do daného prvku vloží daný interaktivní stav, přičemž v něm zachová jeho základní stav prvku <see cref="IInteractiveItem.ItemState"/>.
         /// Vrátí true, pokud nový stav je jiný než předchozí.
+        /// <para/>
+        /// POZOR: tato metoda do prvku ponechává nezměněný příznak <see cref="DxInteractiveState.HasFocus"/> (pokud je jeho hodnota zadaná v parametru <paramref name="interactiveState"/>, pak bude ignorována).
+        /// Pokud volající chce měnit i tento příznak, 
+        /// pak musí použít vedlejší metodu <see cref="_SetInteractiveState(IInteractiveItem, DxInteractiveState)"/> !
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="interactiveState"></param>
+        private static bool _SetInteractiveMouseState(IInteractiveItem item, DxInteractiveState interactiveState)
+        {
+            if (item is null) return false;
+            var oldState = item.InteractiveState;
+            DxInteractiveState itemState = (((DxInteractiveState)item.ItemState) & DxInteractiveState.MaskItemState);  // Statický stav vlastního prvku (Enabled, Disabled atd)
+            DxInteractiveState mouseState = (interactiveState & DxInteractiveState.MaskMouse);     // Vstupní zadaný stav týkající se Myši
+            DxInteractiveState keyboardState = (oldState & DxInteractiveState.MaskKeyboard);       // Dosavadní stav prvku týkající se Keyboardu (=Focus)
+            var newState = itemState | mouseState | keyboardState;
+            item.InteractiveState = newState;
+            return (newState != oldState);
+        }
+        /// <summary>
+        /// Do daného prvku vloží daný interaktivní stav, přičemž v něm zachová jeho základní stav prvku <see cref="IInteractiveItem.ItemState"/>.
+        /// Vrátí true, pokud nový stav je jiný než předchozí.
+        /// <para/>
+        /// POZOR: tato metoda do prvku vkládá (nastavuje nebo nuluje) i příznak <see cref="DxInteractiveState.HasFocus"/>, který tedy má být přítomný v parametru <paramref name="interactiveState"/>.
+        /// Pokud volající nechce měnit tento příznak, ale řeší pouze příznaky dané myší, 
+        /// pak musí použít vedlejší metodu <see cref="_SetInteractiveMouseState(IInteractiveItem, DxInteractiveState)"/> !
         /// </summary>
         /// <param name="item"></param>
         /// <param name="interactiveState"></param>
@@ -691,8 +716,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (item is null) return false;
             var oldState = item.InteractiveState;
-            item.InteractiveState = (((DxInteractiveState)item.ItemState) & DxInteractiveState.MaskItemState) | (interactiveState & DxInteractiveState.MaskInteractive);
-            return (item.InteractiveState != oldState);
+            DxInteractiveState itemState = (((DxInteractiveState)item.ItemState) & DxInteractiveState.MaskItemState);  // Statický stav vlastního prvku (Enabled, Disabled atd)
+            DxInteractiveState interState = (interactiveState & DxInteractiveState.MaskInteractive);                   // Vstupní zadaný stav týkající se Myši + Keyboardu (=Focus)
+            var newState = itemState | interState;
+            item.InteractiveState = newState;
+            return (newState != oldState);
         }
         /// <summary>
         /// Aktuální tlačítka myši, zde je i None v době pohybu myši bez tlačítek

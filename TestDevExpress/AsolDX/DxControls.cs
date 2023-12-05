@@ -9583,7 +9583,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Hodnotově přesně odpovídá typu <see cref="DxInteractiveState"/> v základním stavu prvku (neaktivní, bez myší, bez focusu).
     /// </summary>
     [Flags]
-    public enum DxItemState
+    public enum DxItemState : int
     {
         /// <summary>
         /// Žádný specifický stav, prvek je Enabled ale bez myši a bez Focusu, a pokud může být Selected, tak aktuálně není
@@ -9610,7 +9610,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Stav objektu z hlediska myši a focusu
     /// </summary>
     [Flags]
-    public enum DxInteractiveState
+    public enum DxInteractiveState : int
     {
         /// <summary>
         /// Žádný specifický stav, prvek je Enabled ale bez myši a bez Focusu, a pokud může být Selected, tak aktuálně není

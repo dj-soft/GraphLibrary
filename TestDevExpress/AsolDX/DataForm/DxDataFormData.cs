@@ -30,9 +30,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             _InitRows();
         }
         /// <summary>
-        /// Panel dataformu
+        /// Hlavní instance Dataformu
         /// </summary>
         internal DxDataFormPanel DataForm { get { return __DataForm; } } private DxDataFormPanel __DataForm;
+        /// <summary>
+        /// Panel obsahující data Dataformu
+        /// </summary>
+        public DxDataFormContentPanel DataFormContent { get { return __DataForm?.DataFormContent; } }
+        /// <summary>
+        /// Zajistí vykreslení obsahu Dataformu
+        /// </summary>
+        public void DataFormDraw() { DataFormContent?.Draw(); }
         #endregion
         #region Jednotlivé řádky s daty
         /// <summary>
@@ -428,9 +436,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             _InitItems();
         }
         /// <summary>
-        /// Panel dataformu
+        /// Hlavní instance Dataformu
         /// </summary>
-        internal DxDataFormPanel DataForm { get { return __DataForm; } } private DxDataFormPanel __DataForm;
+        public DxDataFormPanel DataForm { get { return __DataForm; } } private DxDataFormPanel __DataForm;
+        /// <summary>
+        /// Panel obsahující data Dataformu
+        /// </summary>
+        public DxDataFormContentPanel DataFormContent { get { return __DataForm?.DataFormContent; } }
+        /// <summary>
+        /// Zajistí vykreslení obsahu Dataformu
+        /// </summary>
+        public void DataFormDraw() { DataFormContent?.Draw(); }
         #endregion
         #region Jednotlivé prvky definice
         /// <summary>
@@ -1065,7 +1081,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         #endregion
         #region IPaintItemData
         DxRepositoryEditorType IPaintItemData.EditorType { get { return this.__LayoutItem.ColumnType; } }
-        DxInteractiveState IPaintItemData.InteractiveState { get { return this._InteractiveState; } }
+        DxInteractiveState IPaintItemData.InteractiveState { get { return this._InteractiveState; } set { this._InteractiveState = value; } }
         WinForm.Control IPaintItemData.NativeControl { get { return this.__NativeControl; } set { this.__NativeControl = value; } }
         bool IPaintItemData.TryGetContent<T>(string name, out T content) { return TryGetContent<T>(name, out content); }
         void IPaintItemData.InvalidateCache() { __ImageId = null; __ImageData = null; }

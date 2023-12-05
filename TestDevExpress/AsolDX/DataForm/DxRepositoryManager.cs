@@ -35,10 +35,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="dataFormPanel"></param>
-        public DxRepositoryManager(DxDataFormPanel dataFormPanel)
+        /// <param name="dataForm"></param>
+        public DxRepositoryManager(DxDataFormPanel dataForm)
         {
-            __DataFormPanel = dataFormPanel;
+            __DataForm = dataForm;
             _InitRepository();
             _InitCache();
         }
@@ -48,15 +48,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _DisposeCache();
         }
         /// <summary>
-        /// Panel dataformu
+        /// Hlavní instance Dataformu
         /// </summary>
-        private DxDataFormPanel _DataFormPanel { get { return __DataFormPanel; } } private DxDataFormPanel __DataFormPanel;
+        public DxDataFormPanel DataForm { get { return __DataForm; } } private DxDataFormPanel __DataForm;
+        /// <summary>
+        /// Panel obsahující data Dataformu
+        /// </summary>
+        public DxDataFormContentPanel DataFormContent { get { return __DataForm?.DataFormContent; } }
+        /// <summary>
+        /// Zajistí vykreslení obsahu Dataformu
+        /// </summary>
+        public void DataFormDraw() { DataFormContent?.Draw(); }
         #endregion
         #region Public hodnoty a služby
         /// <summary>
         /// Formát bitmap, který se ukládá do cache. Čte se z DataFormu: <see cref="DxDataFormPanel.CacheImageFormat"/>
         /// </summary>
-        public WinDraw.Imaging.ImageFormat CacheImageFormat { get { return _DataFormPanel.CacheImageFormat; } }
+        public WinDraw.Imaging.ImageFormat CacheImageFormat { get { return DataForm.CacheImageFormat; } }
         /// <summary>
         /// Invaliduje data v repozitory.
         /// Volá se po změně skinu a zoomu, protože poté je třeba nově vygenerovat.
@@ -333,9 +341,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         DxRepositoryEditorType EditorType { get; }
         /// <summary>
-        /// Interaktivní stav
+        /// Interaktivní stav. 
+        /// <para/>
+        /// Lze setovat, setování provede validaci a po změně vyvolá odpovídající událost.
+        /// Setování slouží víceméně pro řízení příznaku <see cref="DxInteractiveState.HasFocus"/>, 
+        /// protože tento příznak řídí nativní control (jeho eventy <see cref="WinForm.Control.Enter"/> a <see cref="WinForm.Control.Leave"/>).
         /// </summary>
-        DxInteractiveState InteractiveState { get; }
+        DxInteractiveState InteractiveState { get; set; }
         /// <summary>
         /// Nativní control, zobrazující zdejší data. 
         /// O jeho vložení a odebrání se stará <see cref="DxRepositoryManager"/> v procesu změny interaktivního stavu prvku <see cref="InteractiveState"/>,
@@ -641,7 +653,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Režim práce s cache
         /// </summary>
-        protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCache; } }
+        protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCacheWithItemImage; } }
         /// <summary>
         /// Potomek zde přímo do cílové grafiky vykreslí obsah prvku, bez cache
         /// </summary>
@@ -1160,9 +1172,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
         public virtual void ChangeItemInteractiveState(IPaintItemData paintData, WinForm.Control container, WinDraw.Rectangle controlBounds)
         {
-
-
-
+            bool needUseNativeControl = NeedUseNativeControl(paintData, true);
+            if (needUseNativeControl)
+            {   // Pokud se aktuálně pro tento prvek používá Nativní control, pak jen ověříme, že je připraven a přítomen na správné souřadnici.
+                // Často jsme volání víceméně po pohybu Scrollbarem kvůli přesunu nativního controlu na nové místo:
+                CheckValidNativeControl(paintData, container, controlBounds, true);
+                return;
+            }
+            else
+            {   // Prvek by nemusel vlastnit nativní control - měl by jej tedy uvolnit:
+                CheckReleaseNativeControl(paintData, controlBounds, true, true);
+            }
         }
         /// <summary>
         /// Metoda zajistí, že pro daný prvek bude připraven nativní control.
@@ -1173,26 +1193,34 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="isStateChanged">true = metoda je volána po změně interaktivního stavu, false = je volána v procesu Draw</param>
         protected virtual void CheckValidNativeControl(IPaintItemData paintData, WinForm.Control container, WinDraw.Rectangle controlBounds, bool isStateChanged)
         {
-            var nativeControl = paintData.NativeControl;
-            if (nativeControl is null)
-            {
-                var pair = _GetDisponiblePair(paintData);
+            // Základem práce je pár { IPaintItemData <=> NatoveControl } :
+            ControlDataPair pair;
+            if (!_TryGetAttachedPair(paintData, out pair))
+                pair = _GetDisponiblePair(paintData);
 
-                nativeControl = pair.NativeControl;
-                if (nativeControl is null)
-                    nativeControl = _CreateNativeControl();
+            // Pár musí mít NativeControl. Nemá jej pouze při prvním použití, pak si jej nese stále, do konce až do Release:
+            if (pair.NativeControl is null)
+                pair.NativeControl = _CreateNativeControl();
 
-                if (nativeControl != null)
-                {
-                    _FillNativeControl(paintData, nativeControl, controlBounds);
+            // Příznak, že NativeControl je pro paintData nový:
+            bool isNonAttachedControl = (paintData.NativeControl is null || !Object.ReferenceEquals(paintData.NativeControl, pair.NativeControl));
 
-                    if (nativeControl.Parent is null)
-                        container.Controls.Add(nativeControl);
-                }
+            // Pokud v paintData mám jiný NativeControl, než je v Pair (nebo žádný), tak je korektně propojím:
+            if (isNonAttachedControl)
+                pair.AttachPaintData(paintData);
 
-                paintData.NativeControl = nativeControl;
-                pair.NativeControl = nativeControl;
-                pair.PaintData = paintData;
+            // Do NativeControlu vložím buď všechna data, anebo jen souřadnici:
+            var nativeControl = pair.NativeControl;
+            if (nativeControl != null)
+            {   // Pokud tedy máme vytvořený NativeControl (on ne každý Editor generuje nativní control!), tak jej naplníme daty:
+                // ... a pokud je to nutno, pak jej zařadíme jako Child control do containeru:
+                if (nativeControl.Parent is null)
+                    container.Controls.Add(nativeControl);
+
+                if (isNonAttachedControl)
+                    _FillNativeControl(pair, paintData, controlBounds);
+                else
+                    _UpdateNativeBounds(pair, controlBounds);
             }
         }
         /// <summary>
@@ -1211,20 +1239,34 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Zajistí naplnění controlu aktuálními daty,
         /// </summary>
-        /// <param name="paintData"></param>
-        /// <param name="nativeControl"></param>
-        /// <param name="controlBounds"></param>
-        private void _FillNativeControl(IPaintItemData paintData, Control nativeControl, Rectangle controlBounds)
+        /// <param name="pair">Párová informace o datovém objektu a natovním controlu, plus target souřadnice</param>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        private void _FillNativeControl(ControlDataPair pair, IPaintItemData paintData, Rectangle controlBounds)
         {
-            nativeControl.Bounds = controlBounds;
-            FillNativeControl(paintData, nativeControl, controlBounds);
+            pair.NativeControl.Bounds = controlBounds;
+            FillNativeControl(paintData, pair.NativeControl, controlBounds);   // To řeší konkrétní potomek - naplní všechna konkrétní data...
+            pair.ControlBounds = controlBounds;
+        }
+        /// <summary>
+        /// Zajistí naplnění souřadnic controlu aktuálními daty, jen pokud jsou tyto souřadnice jiné než předešlé...
+        /// </summary>
+        /// <param name="pair">Párová informace o datovém objektu a natovním controlu, plus target souřadnice</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        private void _UpdateNativeBounds(ControlDataPair pair, Rectangle controlBounds)
+        {
+            bool isChangedBounds = (!pair.ControlBounds.HasValue || (pair.ControlBounds.HasValue && pair.ControlBounds.Value != controlBounds));
+            if (isChangedBounds)
+            {
+                pair.NativeControl.Bounds = controlBounds;
+                pair.ControlBounds = controlBounds;
+            }
         }
         /// <summary>
         /// Potomek zde vytvoří a vrátí nativní control.
         /// </summary>
         /// <returns></returns>
         protected abstract WinForm.Control CreateNativeControl();
-
         /// <summary>
         /// Potomek zde do controlu naplní všechna potřebná data.
         /// </summary>
@@ -1232,14 +1274,64 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="nativeControl"></param>
         /// <param name="controlBounds"></param>
         protected abstract void FillNativeControl(IPaintItemData paintData, Control nativeControl, Rectangle controlBounds);
-
         /// <summary>
-        /// Metoda zajistí, že pokud pro daný prvek byl připraven nativní control, tak nyní bude odebrán.
+        /// Metoda zajistí, že pokud pro daný prvek máme připravený nativní control, tak nyní bude pravděpodobně odebrán.
+        /// <para/>
+        /// Prvek někdy necháme, a někdy odebereme... Kdy a proč?<br/>
+        /// a) Pokud jsou souřadnice nativního prvku shodné s těmi aktuálními dle parametru <paramref name="controlBounds"/>, pak prvek ponecháme na místě.<br/>
+        /// Důvod: pokud jen myš nebo kurzor odešla z prvku, ale prvek zůstává na svém místě, může ještě probíhat animace typu "FadeOut" (typicky buttony v některých skinech).
+        /// Necháme tedy animaci proběhnout. Nativní control odebereme, až bude potřeba někde jinde, anebo při posunu controlu (až se budou lišit souřadnice ControlBounds).<br/>
+        /// b) Pokud se liší souřadnice umístění nativního controlu (ControlBounds) od aktuálně zadaných, tak nativní control odeberu ihned.<br/>
+        /// Důvod: Museli bychom control přemisťovat společně s virtuálním obsahem, a to nedokážeme synchronizovat tak, aby nevznikal dojem, 
+        /// že nativní control po parent containeru plave.
+        /// <para/>
+        /// Proto si v rámci <see cref="ControlDataPair"/> pamatujeme souřadnice, kam jsme control posledně umístili (souřadnice "požadovaná"): 
+        /// pro porovnání nepoužíváme souřadnici fyzického nativního controlu, protože ta se může lišit od souřadnice požadované...
         /// </summary>
         /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
         /// <param name="isStateChanged">true = metoda je volána po změně interaktivního stavu, false = je volána v procesu Draw</param>
-        protected virtual void CheckReleaseNativeControl(IPaintItemData paintData, bool isStateChanged)
-        { }
+        protected virtual void CheckReleaseNativeControl(IPaintItemData paintData, WinDraw.Rectangle controlBounds, bool isDisplayed, bool isStateChanged)
+        {
+            if (!_TryGetAttachedPair(paintData, out var pair)) return;
+
+            if (!isDisplayed)
+            {
+                pair.DetachPaintData();
+            }
+
+            // Prozatím nejlepší řešení:
+            pair.DetachPaintData();
+        }
+        /// <summary>
+        /// Metoda zjistí, zda daný prvek s daty <paramref name="paintData"/> je již napojen na některý nativní control v <see cref="_ControlUseQ"/> nebo <see cref="_ControlUseW"/>.
+        /// Pokud je napojen, určí jej a vrátí true.
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <param name="foundPair"></param>
+        /// <returns></returns>
+        private bool _TryGetAttachedPair(IPaintItemData paintData, out ControlDataPair foundPair)
+        {
+            if (paintData != null)
+            {
+                ControlDataPair pair;
+
+                pair = _ControlUseQ;
+                if (isAtttachedTo(pair)) { foundPair = pair; return true; }
+
+                pair = _ControlUseW;
+                if (isAtttachedTo(pair)) { foundPair = pair; return true; }
+            }
+            foundPair = null; 
+            return false;
+
+            // Metoda určí, zda aktuálně daný prvek 'paintData' je připojen v dodaném testovaném páru.
+            bool isAtttachedTo(ControlDataPair testPair)
+            {
+                return (testPair.PaintData != null && Object.ReferenceEquals(testPair.PaintData, paintData));
+            }
+        }
         /// <summary>
         /// Najde a vrátí disponibilní pár, jehož <see cref="ControlDataPair.NativeControl"/> je možno použít pro zobrazení nových dat.
         /// </summary>
@@ -1257,16 +1349,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             throw new InvalidOperationException($"DxRepositoryEditor has not any disponible ControlDataPair.");
 
+
+            // Vrátí true, pokud zadaný Pair je možno aktuálně použít = je disponibilní:
             bool isDisponible(ControlDataPair testPair)
             {
                 // Pokud tam nic není, můžeme to použít:
                 if (testPair.NativeControl is null)
                 {
-                    if (testPair.PaintData != null)
-                    {
-                        testPair.PaintData.NativeControl = null;
-                        testPair.PaintData = null;
-                    }
+                    testPair.DetachPaintData();
                     return true;
                 }
 
@@ -1276,37 +1366,172 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // Pokud v páru je přítomen právě ten prvek paintData, který hledá Pair, pak je to OK:
                 if (Object.ReferenceEquals(testPair.PaintData, paintData)) return true;
 
-                // Pokud prvek v jeho aktuálním stavu potřebuje nativní control, tak mu jej nebudeme brát:
+                // Pokud datový prvek v jeho aktuálním stavu stále potřebuje svůj nativní control, tak mu jej nebudeme brát:
                 if (NeedUseNativeControl(testPair.PaintData, true)) return false;
 
-                // Máme nativní control a máme i prvek, ale prvek jej už nepotřebuje = odvážeme je, a použijeme si jej my:
-                testPair.PaintData.NativeControl = null;
-                testPair.PaintData = null;
+                // Máme nativní control a máme i prvek, ale prvek jej už nepotřebuje = odvážeme datový prvek, a uvolněný Pair použijeme my:
+                testPair.DetachPaintData();
                 return true;
             }
         }
+        /// <summary>
+        /// Obsluha události po vstupu focusu do nativního controlu
+        /// </summary>
+        /// <param name="dataPair"></param>
+        private void _RunNativeControlFocusEnter(ControlDataPair dataPair)
+        {
+            if (dataPair.PaintData is null) return;
+
+            // Přidat příznak HasFocus:
+            DxInteractiveState maskHasFocus = DxInteractiveState.HasFocus;
+            dataPair.PaintData.InteractiveState |= maskHasFocus;
+            OnNativeControlFocusEnter(dataPair);
+        }
+        /// <summary>
+        /// Obsluha události po odchodu focusu z nativního controlu
+        /// </summary>
+        /// <param name="dataPair"></param>
+        private void _RunNativeControlFocusLeave(ControlDataPair dataPair)
+        {
+            if (dataPair.PaintData is null) return;
+
+            // Tady bychom mohli využít faktu, že máme NativeControl, a uložit si jeho obraz do PaintData.ImageData, a příště budeme vykreslovat přímo tento obraz:
+            if (this.CacheMode == EditorCacheMode.ManagerCacheWithItemImage)
+                dataPair.PaintData.ImageData = CreateBitmapData(dataPair.NativeControl);
+
+            // Odebrat příznak HasFocus:
+            DxInteractiveState maskNonFocus = (DxInteractiveState)(Int32.MaxValue ^ (int)DxInteractiveState.HasFocus);
+            dataPair.PaintData.InteractiveState &= maskNonFocus;     // Tady proběhne InteractiveStateChange => zdejší ChangeItemInteractiveState() => a možná CheckReleaseNativeControl() => a tedy zmizí fyzický NativeControl z containeru
+            OnNativeControlFocusEnter(dataPair);
+            this.__RepositoryManager.DataFormDraw();                 // Musíme zajistit vykreslení panelu (sám si to neudělá), aby byl vidět obraz prvku!
+        }
+        /// <summary>
+        /// Je voláno po vstupu focusu do nativního controlu
+        /// </summary>
+        /// <param name="dataPair"></param>
+        protected virtual void OnNativeControlFocusEnter(ControlDataPair dataPair) { }
+        /// <summary>
+        /// Je voláno po odchodu focusu z nativního controlu
+        /// </summary>
+        /// <param name="dataPair"></param>
+        protected virtual void OnNativeControlFocusLeave(ControlDataPair dataPair) { }
+        #endregion
+        #region ControlDataPair : dvě instance a třída, nativní WinForm controly reprezentující fyzický vstup
+        /// <summary>
+        /// Úložiště jednoho ze dvou controlů, které se poskytují do plochy k používání.
+        /// </summary>
+        private ControlDataPair _ControlUseQ { get { __ControlUseQ ??= new ControlDataPair(this); return __ControlUseQ; } } private ControlDataPair __ControlUseQ;
+        /// <summary>
+        /// Úložiště jednoho ze dvou controlů, které se poskytují do plochy k používání.
+        /// </summary>
+        private ControlDataPair _ControlUseW { get { __ControlUseW ??= new ControlDataPair(this); return __ControlUseW; } } private ControlDataPair __ControlUseW;
+        /// <summary>
+        /// Dispose nativních controlů
+        /// </summary>
         private void _Dispose()
         {
-            __ControlUseQ?.Release();
-        }
-        private ControlDataPair _ControlUseQ { get { __ControlUseQ ??= new ControlDataPair(); return __ControlUseQ; } } private ControlDataPair __ControlUseQ;
-        private ControlDataPair _ControlUseW { get { __ControlUseW ??= new ControlDataPair(); return __ControlUseW; } } private ControlDataPair __ControlUseW;
+            __ControlUseQ?.ReleaseAll();
+            __ControlUseQ = null;
 
+            __ControlUseW?.ReleaseAll();
+            __ControlUseW = null;
+        }
+        /// <summary>
+        /// Párová informace o nativním controlu <see cref="NativeControl"/> (který je takto součástí <see cref="DxRepositoryEditor"/>) 
+        /// a jeho aktuálním přiřazení do konkrétního vizuální buňky <see cref="PaintData"/> (typ <see cref="IPaintItemData"/>).
+        /// <para/>
+        /// Nativní control se víceméně nemění, zůstává v této instanci umístěn až do <see cref="ReleaseAll()"/>.<br/>
+        /// Vizuální buňka se mění podle potřeby.
+        /// </summary>
         protected class ControlDataPair
         {
-            public WinForm.Control NativeControl { get; set; }
+            #region Konstruktor, data, Release
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="editor"></param>
+            public ControlDataPair(DxRepositoryEditor editor)
+            {
+                __Editor = editor;
+            }
+            /// <summary>
+            /// Reference na editor
+            /// </summary>
+            private DxRepositoryEditor __Editor;
+            /// <summary>
+            /// Nativní control
+            /// </summary>
+            private WinForm.Control __NativeControl;
+            /// <summary>
+            /// Má můj prvek Focus?
+            /// </summary>
+            private bool __HasFocus;
+            /// <summary>
+            /// Nativní Control, víceméně zde bydlí permanentně týž objekt
+            /// </summary>
+            public WinForm.Control NativeControl
+            {
+                get { return __NativeControl; }
+                set 
+                {   // Eventhandlery původního controlu odvázat, a nového navázat:
+                    _DetachNativeControlEvents();
+                    __NativeControl = value;
+                    _AttachNativeControlEvents();
+                }
+            }
+            /// <summary>
+            /// Interaktivní prvek, střídají se zde podle potřeby - kdo zrovna potřebuje mít nativní control, ten je zde uložen.
+            /// </summary>
             public IPaintItemData PaintData { get; set; }
-          
+            /// <summary>
+            /// Má můj prvek Focus?
+            /// </summary>
+            public bool HasFocus { get { return __HasFocus; } }
+            /// <summary>
+            /// Souřadnice, na kterou jsme nativní control původně umístili. Nemusí být shodná s <see cref="WinForm.Control.Bounds"/>, a to ani okamžitě po prvním setování.
+            /// </summary>
+            public WinDraw.Rectangle? ControlBounds { get; set; }
+            /// <summary>
+            /// Zapojí dodaný datový prvek jako nynějšího vlastníka zdejšího <see cref="NativeControl"/>
+            /// </summary>
+            /// <param name="paintData">Data konkrétního prvku</param>
+            /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+            public void AttachPaintData(IPaintItemData paintData, WinDraw.Rectangle? controlBounds = null)
+            {
+                // Dosavadní datový prvek (i když by tam neměl být) odpojíme od NativeControl:
+                if (this.PaintData != null) this.PaintData.NativeControl = null;
+
+                // Nově dodaný datový prvek propojíme s NativeControl a uložíme sem:
+                paintData.NativeControl = this.NativeControl;
+                this.PaintData = paintData;
+
+                this.ControlBounds = controlBounds;
+
+                this.NativeControl.Visible = true;
+                if (controlBounds.HasValue)
+                    this.NativeControl.Bounds = controlBounds.Value;
+            }
+            /// <summary>
+            /// Uvolní ze své evidence prvek <see cref="PaintData"/> včetně navazující logiky
+            /// </summary>
+            public void DetachPaintData()
+            {
+                if (this.PaintData != null) this.PaintData.NativeControl = null;
+                this.PaintData = null;
+                this.ControlBounds = null;
+                if (this.NativeControl != null)
+                {
+                    this.NativeControl.Visible = false;
+                    if (__HasFocus)
+                        this.NativeControl.Parent.Select();
+                }
+            }
             /// <summary>
             /// Uvolní instance ve zdejší evidenci
             /// </summary>
-            public void Release()
+            public void ReleaseAll()
             {
-                if (this.PaintData != null)
-                {
-                    this.PaintData.NativeControl = null;
-                    this.PaintData = null;
-                }
+                DetachPaintData();
 
                 if (this.NativeControl != null)
                 {
@@ -1314,6 +1539,53 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     this.NativeControl = null;
                 }
             }
+            #endregion
+            #region Eventhandlery nativního controlu
+            /// <summary>
+            /// Po napojení nového <see cref="__NativeControl"/> do něj zaregistrujeme naše handlery
+            /// </summary>
+            private void _AttachNativeControlEvents()
+            {
+                var control = __NativeControl;
+                if (control != null)
+                {
+                    control.Enter += _NativeControlEnter;
+                    control.Leave += _NativeControlLeave;
+                }
+            }
+            /// <summary>
+            /// Před odpojením stávajícího <see cref="__NativeControl"/> z něj odregistrujeme naše handlery
+            /// </summary>
+            private void _DetachNativeControlEvents()
+            {
+                var control = __NativeControl;
+                if (control != null)
+                {
+                    control.Enter -= _NativeControlEnter;
+                    control.Leave -= _NativeControlLeave;
+                }
+            }
+            /// <summary>
+            /// Do nativního controlu vstoupil focus
+            /// </summary>
+            /// <param name="sender"></param>
+            /// <param name="e"></param>
+            private void _NativeControlEnter(object sender, EventArgs e)
+            {
+                __HasFocus = true;
+                __Editor._RunNativeControlFocusEnter(this);
+            }
+            /// <summary>
+            /// Z nativního controlu odešel focus
+            /// </summary>
+            /// <param name="sender"></param>
+            /// <param name="e"></param>
+            private void _NativeControlLeave(object sender, EventArgs e)
+            {
+                __HasFocus = false;
+                __Editor._RunNativeControlFocusLeave(this);
+            }
+            #endregion
         }
         #endregion
         #region Podpora pro práci s vykreslením prvku a práci s Cache uložených obrazů jednotlivých Controlů
@@ -1330,12 +1602,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             bool needUseNativeControl = NeedUseNativeControl(paintData, isDisplayed);
             if (needUseNativeControl) 
-            {   // Pokud se používá Nativní control, pak jen ověříme, že je připraven a přítomen na správné souřadnici.
+            {   // Pokud se aktuálně pro tento prvek používá Nativní control, pak jen ověříme, že je připraven a přítomen na správné souřadnici.
                 // Často jsme volání víceméně po pohybu Scrollbarem kvůli přesunu nativního controlu na nové místo:
                 CheckValidNativeControl(paintData, pdea.InteractivePanel, controlBounds, false);
                 return;
             }
-            CheckReleaseNativeControl(paintData, false);
+            CheckReleaseNativeControl(paintData, controlBounds, isDisplayed, false);
 
             // Nepotřebujeme nativní control => nejspíš budeme jen kreslit jeho obraz:
             bool needPaint = NeedPaintItem(paintData, isDisplayed);
@@ -1345,8 +1617,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         /// <summary>
-        /// Vrátí true, pokud daný prvek má aktuálně používat nativní Control (tedy nebude se keslit jako Image),
-        /// a to dle aktuálního interaktivním stavu objektu a s přihlédnutím ke stavu <paramref name="isDisplayed"/>.
+        /// Vrátí true, pokud daný prvek má aktuálně používat nativní Control (tedy: bude zobrazen fyzický Control, a nebude se kreslit jen jako statický Image),
+        /// a to dle aktuálního interaktivním stavu objektu a s přihlédnutím ke stavu <paramref name="isDisplayed"/>.<br/>
+        /// Pokud volající metoda neví, zda prvek je/není viditelný, pak jako parametr <paramref name="isDisplayed"/> musí poslat true.
         /// </summary>
         /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
@@ -1375,33 +1648,42 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         protected virtual void PaintImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
             byte[] imageData = null;
-            switch (CacheMode)
+            var cacheMode = CacheMode;
+            switch (cacheMode)
             {
                 case EditorCacheMode.DirectPaint:
                     // Přímé kreslení - např. Label se řeší zde:
                     PaintImageDirect(paintData, pdea, controlBounds);
                     break;
                 case EditorCacheMode.ManagerCache:
-                    // Použít ManagerCache: pokud v prvku máme ImageId, najdeme "naše" data podle toho ID:
-                    //  => to je tehdy, když typicky opakovaně kreslíme prvek, který jsme už dříve kreslili, a máme tedy uloženo rychlé ID do cache...
-                    // Uložená data nemusí být pouze "naše": pokud více prvků vytvoří shodný klíč pro data (key = CreateKey(..)),
-                    //  pak těchto více prvků (díky klíči a organizaci CacheImage) pro tento společný klíč bude sdílet i společné ID.
-                    // Účelem uloženého ID je jen to, že nemusíme generovat klíč Key při každém kreslení.
-                    // Po změně fyzických dat v prvku anebo po změně stylu se provede invalidace (buď v konkrétním prvku, anebo celého systému cache)
-                    //  a následující kreslení nenajde cachovaná data (ani v ManagerCache, ani v ImageData) a vytviří se nová...
-                    ulong imageId;
-                    bool isInCache = (paintData.ImageId.HasValue && TryGetCacheImageData(paintData.ImageId.Value, out imageData));
-                    if (!isInCache)
-                    {   // Nemáme ImageId (buď v prvku nebo v manageru): vytvoříme string klíč pro konkrétní data, a zkusíme najít Image podle klíče:
-                        string key = CreateKey(paintData, controlBounds);
-                        // Pokud pro Key najdeme data, pak najdeme i ID = imageId:
-                        if (!TryGetCacheImageData(key, out imageData, out imageId))
-                        {   // Pokud ani pro klíč nenajdeme data, pak je vytvoříme právě nyní a přidáme do managera,
-                            imageData = CreateImageData(paintData, pdea, controlBounds);
-                            //  a uchováme si imageId přidělené v manageru:
-                            imageId = AddImageDataToCache(key, imageData);
+                case EditorCacheMode.ManagerCacheWithItemImage:
+                    if (cacheMode == EditorCacheMode.ManagerCacheWithItemImage && paintData.ImageData != null)
+                    {   // Toto nastává v situaci, kdy jsme měli k dispozici NativeControl pro editaci (nebo MouseOver),
+                        // a zachovali jsme si jeho poslední obraz v paintData.ImageData => pak jej budeme keslit přímo z něj:
+                        imageData = paintData.ImageData;
+                    }
+                    else
+                    {   // Použít ManagerCache: pokud v prvku máme ImageId, najdeme "naše" data podle toho ID:
+                        //  => to je tehdy, když typicky opakovaně kreslíme prvek, který jsme už dříve kreslili, a máme tedy uloženo rychlé ID do cache...
+                        // Uložená data nemusí být pouze "naše": pokud více prvků vytvoří shodný klíč pro data (key = CreateKey(..)),
+                        //  pak těchto více prvků (díky klíči a organizaci CacheImage) pro tento společný klíč bude sdílet i společné ID.
+                        // Účelem uloženého ID je jen to, že nemusíme generovat klíč Key při každém kreslení.
+                        // Po změně fyzických dat v prvku anebo po změně stylu se provede invalidace (buď v konkrétním prvku, anebo celého systému cache)
+                        //  a následující kreslení nenajde cachovaná data (ani v ManagerCache, ani v ImageData) a vytviří se nová...
+                        ulong imageId;
+                        bool isInCache = (paintData.ImageId.HasValue && TryGetCacheImageData(paintData.ImageId.Value, out imageData));
+                        if (!isInCache)
+                        {   // Nemáme ImageId (buď v prvku nebo v manageru): vytvoříme string klíč pro konkrétní data, a zkusíme najít Image podle klíče:
+                            string key = CreateKey(paintData, controlBounds);
+                            // Pokud pro Key najdeme data, pak najdeme i ID = imageId:
+                            if (!TryGetCacheImageData(key, out imageData, out imageId))
+                            {   // Pokud ani pro klíč nenajdeme data, pak je vytvoříme právě nyní a přidáme do managera,
+                                imageData = CreateImageData(paintData, pdea, controlBounds);
+                                //  a uchováme si imageId přidělené v manageru:
+                                imageId = AddImageDataToCache(key, imageData);
+                            }
+                            paintData.ImageId = imageId;
                         }
-                        paintData.ImageId = imageId;
                     }
                     break;
                 case EditorCacheMode.ItemData:
@@ -1533,6 +1815,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Ukládat do společné cache v <see cref="DxRepositoryManager"/>
             /// </summary>
             ManagerCache,
+            /// <summary>
+            /// Ukládat do společné cache v <see cref="DxRepositoryManager"/>, a při LostFocus zachytit živý NativeControl do ImageData
+            /// </summary>
+            ManagerCacheWithItemImage,
             /// <summary>
             /// Přímé kreslení (Label, Image, a možná další jako Title?)
             /// </summary>
