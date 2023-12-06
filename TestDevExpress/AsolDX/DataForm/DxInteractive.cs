@@ -346,7 +346,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this._MouseDragReset();
 
             this.CursorTypeMouseDrag = CursorTypes.SizeAll;
-            this.CursorTypeMouseOn = CursorTypes.Hand;
             this.CursorTypeMouseFrame = CursorTypes.Cross;
         }
         /// <summary>
@@ -1024,10 +1023,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public CursorTypes CursorType { get { return __CursorType; } set { __CursorType = value; this.Cursor = DxComponent.GetCursor(value); } } private CursorTypes __CursorType;
         /// <summary>
-        /// Typ kurzoru, který bude aktivován po najetí myší na aktivní prvek
-        /// </summary>
-        public CursorTypes CursorTypeMouseOn { get { return __CursorTypeMouseOn; } set { __CursorTypeMouseOn = value; } } private CursorTypes __CursorTypeMouseOn;
-        /// <summary>
         /// Typ kurzoru, který bude aktivován v procesu MouseDragDrop pro konkrétní prvek
         /// </summary>
         public CursorTypes CursorTypeMouseDrag { get { return __CursorTypeMouseDrag; } set { __CursorTypeMouseDrag = value; } } private CursorTypes __CursorTypeMouseDrag;
@@ -1103,7 +1098,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         protected virtual void OnInteractiveItemMouseEnter(InteractiveItemEventArgs args) { }
         private void _RunInteractiveItemMouseEnter(InteractiveItemEventArgs args)
         {
-            this.CursorType = this.CursorTypeMouseOn;
+            this.CursorType = (args.Item.CursorTypeMouseOn ?? CursorTypes.Default);
             OnInteractiveItemMouseEnter(args);
             InteractiveItemMouseEnter?.Invoke(this, args);
         }
@@ -1206,6 +1201,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Interaktivní stav prvku. Setování stavu může mít vliv na druh zobrazení (zda bude vykreslen obraz / nebo fyzický Control).
         /// </summary>
         DxInteractiveState InteractiveState { get; set; }
+        /// <summary>
+        /// Typ kurzoru, který bude aktivován po najetí myší na aktivní prvek
+        /// </summary>
+        CursorTypes? CursorTypeMouseOn { get; }
         /// <summary>
         /// Provede vykreslení obrazu objektu, anebo umístění fyzického controlu.
         /// Pokud objekt není vykreslen (tedy pokud se nenachází ve viditelném prostoru panelu), pak se zde vrací false.

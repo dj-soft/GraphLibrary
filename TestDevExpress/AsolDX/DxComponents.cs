@@ -4985,7 +4985,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var brush = _GetSolidBrush(color, alpha);
             var stringFormat = _GetStringFormatFor(aligment ?? ContentAlignment.MiddleLeft);
             GraphicsSetForText(graphics);
-            graphics.DrawString(text, font, brush, bounds);
+            graphics.DrawString(text, font, brush, bounds, stringFormat);
         }
         /// <summary>
         /// Nastaví vlastnosti dané Graphics pro kreslení textu

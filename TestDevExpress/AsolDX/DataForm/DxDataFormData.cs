@@ -765,6 +765,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             set { SetContent(DxDataFormDef.IconName, value); }
         }
         /// <summary>
+        /// Typ kurzoru, který bude aktivován po najetí myší na aktivní prvek
+        /// </summary>
+        public CursorTypes? CursorTypeMouseOn
+        {
+            get { return ((TryGetContent<CursorTypes?>(DxDataFormDef.CursorTypeMouseOn, out var content)) ? content : null); }
+            set { SetContent(DxDataFormDef.CursorTypeMouseOn, value); }
+        }
+        /// <summary>
         /// Prvek je viditelný?
         /// </summary>
         public bool IsVisible
@@ -1033,6 +1041,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             set { SetContent(DxDataFormDef.IconName, value); }
         }
         /// <summary>
+        /// Typ kurzoru, který bude aktivován po najetí myší na aktivní prvek
+        /// </summary>
+        public CursorTypes? CursorTypeMouseOn
+        {
+            get { return ((TryGetContent<CursorTypes?>(DxDataFormDef.CursorTypeMouseOn, out var content)) ? content : null); }
+            set { SetContent(DxDataFormDef.CursorTypeMouseOn, value); }
+        }
+        /// <summary>
         /// Prvek je viditelný?
         /// </summary>
         public bool IsVisible
@@ -1122,6 +1138,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         WinDraw.Rectangle IInteractiveItem.DesignBounds { get { return __DesignBounds; } }
         DxItemState IInteractiveItem.ItemState { get { return __ItemState; } }
         DxInteractiveState IInteractiveItem.InteractiveState { get { return _InteractiveState; } set { _InteractiveState = value; } }
+        CursorTypes? IInteractiveItem.CursorTypeMouseOn { get { return CursorTypeMouseOn; } }
         bool IInteractiveItem.Paint(PaintDataEventArgs pdea) { return this._Paint(pdea); }
         bool IInteractiveItem.IsActiveOnPoint(WinDraw.Point controlPoint, WinDraw.Point designPoint) { return this._IsActiveOnPoint(controlPoint, designPoint); }
         DxInteractivePanel IChildOfParent<DxInteractivePanel>.Parent { get { return null; } set { } }
@@ -1228,6 +1245,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         public const string TextBoxButtons = "TxBxBt";
         public const string BorderStyle = "BrS";
         public const string ButtonPaintStyle = "BtPSt";
+        public const string CursorTypeMouseOn = "Cur";
+        public const string LabelAlignment = "LbAlg";
 
         public const string ActionButtonClick = "ButtonClick";
         public const string ActionButtonRightClick = "ButtonRightClick";
@@ -1235,7 +1254,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
     }
     #endregion
     #region Podpůrné třídy a enumy pro definici layoutu - specifikace detailů
-
+    #region TextBoxButtonProperties : definice sady buttonů
     /// <summary>
     /// Třída definující buttony přidané k nějakému Controlu
     /// </summary>
@@ -1411,7 +1430,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
                 return dxButton;
             }
         }
+        #endregion
     }
-
     #endregion
 }

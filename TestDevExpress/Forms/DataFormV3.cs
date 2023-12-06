@@ -5,9 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Noris.Clients.Win.Components.AsolDX;
+using WinDraw = System.Drawing;
 using DxDForm = Noris.Clients.Win.Components.AsolDX.DataForm;
 using DxDData = Noris.Clients.Win.Components.AsolDX.DataForm.Data;
-using System.IO;
 
 namespace TestDevExpress.Forms
 {
@@ -353,7 +353,7 @@ namespace TestDevExpress.Forms
                     left = leftB; top += 44;
                     addItemPairT("relation", "Vztah:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 456, 20, item =>
                     {
-                        item.Content[DxDData.DxDataFormDef.TextBoxButtons] = new DxDData.TextBoxButtonProperties("SpinLeft;SpinRight;Clear;Ellipsis");
+                        item.Content[DxDData.DxDataFormDef.TextBoxButtons] = new DxDData.TextBoxButtonProperties("SpinLeft;Ellipsis;SpinRight");
                     });
 
                     left = leftM; top = topM;
@@ -375,7 +375,7 @@ namespace TestDevExpress.Forms
                     addItemPairL("pocet", "Počet:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 90, 20);
                     addItemPairL("cena1", "Cena 1ks:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 120, 20);
                     left = left3;
-                    addItemPairL("document2", "Název:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 250, 20, item =>
+                    addItemPairL("document2", "Soubor:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 250, 20, item =>
                     {
                         item.Content[DxDData.DxDataFormDef.TextBoxButtons] = new DxDData.TextBoxButtonProperties("svgimages/xaf/modeleditor_hyperlink.svg");
                     });
@@ -385,14 +385,14 @@ namespace TestDevExpress.Forms
                     addItemPairL("sazbadph", "Sazba DPH:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 140, 20);
                     addItemPairL("cenacelk", "Cena celkem:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 70, 20);
                     left = left3;
-                    addItemPairL("document3", "Název:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 250, 20, item =>
+                    addItemPairL("document3", "Protokol:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 250, 20, item =>
                     {
                         item.Content[DxDData.DxDataFormDef.TextBoxButtons] = new DxDData.TextBoxButtonProperties("Plus;Clear");
                     });
 
                     top = 16;
-                    left = 730;
-                    addItemPairL("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.EditBox, top, ref left, 350, 90);
+                    left = 740;
+                    addItemPairL("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.EditBox, top, ref left, 350, 78);
                     break;
                 case 3:
                     addItemType("id1", DxDForm.DxRepositoryEditorType.TextBox, null, 0, 75, null, 2, 20, null);
@@ -412,18 +412,18 @@ namespace TestDevExpress.Forms
 
             void addItemPairT(string columnId, string labelText, DxDForm.DxRepositoryEditorType columnType, int top, ref int left, int width, int height, Action<DxDData.DataFormLayoutItem> modifier = null)
             {
-                addItemLabel(columnId + ".label", labelText, left + 3, width - 8, null, top, 18, null);
+                addItemLabel(columnId + ".label", labelText, left + 3, width - 8, null, top, 18, null, WinDraw.ContentAlignment.MiddleLeft);
                 addItemType(columnId, columnType, null, left, width, null, top + 18, height, null, modifier);
                 left = left + width + 8;
             }
             void addItemPairL(string columnId, string labelText, DxDForm.DxRepositoryEditorType columnType, int top, ref int left, int width, int height, Action<DxDData.DataFormLayoutItem> modifier = null)
             {
-                addItemLabel(columnId + ".label", labelText, left, 75, null, top + 2, 18, null);
+                addItemLabel(columnId + ".label", labelText, left, 75, null, top + 2, 18, null, WinDraw.ContentAlignment.MiddleRight);
                 left += 80;
                 addItemType(columnId, columnType, null, left, width, null, top, height, null, modifier);
                 left += (width + 8);
             }
-            void addItemLabel(string columnId, string labelText, int? left, int? width, int? right, int? top, int? height, int? bottom)
+            void addItemLabel(string columnId, string labelText, int? left, int? width, int? right, int? top, int? height, int? bottom, WinDraw.ContentAlignment alignment)
             {
                 DxDData.DataFormLayoutItem item = new DxDData.DataFormLayoutItem()
                 {
@@ -432,6 +432,7 @@ namespace TestDevExpress.Forms
                     Label = labelText,
                     DesignBoundsExt = new DxDForm.RectangleExt(left, width, right, top, height, bottom)
                 };
+                item.SetContent(DxDData.DxDataFormDef.LabelAlignment, alignment);
                 result.Add(item);
             }
             void addItemType(string columnId, DxDForm.DxRepositoryEditorType columnType, string text, int? left, int? width, int? right, int? top, int? height, int? bottom, Action<DxDData.DataFormLayoutItem> modifier = null)
@@ -454,6 +455,8 @@ namespace TestDevExpress.Forms
         /// <returns></returns>
         private List<DxDData.DataFormRow> _CreateSampleRows(int sampleId)
         {
+            Randomizer.ActiveWordBook = Randomizer.WordBookType.CampOfSaints;
+
             var result = new List<DxDData.DataFormRow>();
 
             Random rand = new Random();
@@ -466,10 +469,10 @@ namespace TestDevExpress.Forms
                 switch (layoutId)
                 {
                     case 1:
-                        addRow(r.ToString("000"), "datum;reference;document1;pocet;cenacelk;document2", "{dr};Ref {r};Název {r};{rnd};{rnd};Dokument {rnd}");
+                        addRow(r.ToString("000"), "datum;reference;nazev;pocet;cenacelk;filename;poznamka", "{dr};Ref {r};Název {r};{rnd};{rnd};Dokument {rnd};{memo}");
                         break;
                     case 2:
-                        addRow(r.ToString("000"), "datum;reference;nazev;pocet;cena1", "{dr};R{r};Záznam {r};{rnd};{rnd}");
+                        addRow(r.ToString("000"), "datum;reference;document1;pocet;cena1;document2;document3;poznamka", "{dr};R{r};Záznam {r};{rnd};{rnd};{file};{file};{memo}");
                         break;
                     case 3:
                         addRow(r.ToString("000"), "id1;id2;id3;id4;id5;id7;id0", "{r};VYR;SKL;Výroba {r};Dne {dr};{t};{dr} ==> {rnd}");
@@ -500,6 +503,8 @@ namespace TestDevExpress.Forms
                             if (val.Contains("{dr}")) val = val.Replace("{dr}", randomDate());
                             if (val.Contains("{t}")) val = val.Replace("{t}", tim);
                             if (val.Contains("{rnd}")) val = val.Replace("{rnd}", ((decimal)(rand.Next(10000, 1000000)) / 100m).ToString("### ##0.00").Trim());
+                            if (val.Contains("{file}")) val = val.Replace("{file}", randomFile());
+                            if (val.Contains("{memo}")) val = val.Replace("{memo}", randomMemo());
                             dataRow.Content[col + DxDData.DxDataFormDef.ColumnDelimiter + DxDData.DxDataFormDef.Value] = val;
                         }
                     }
@@ -513,6 +518,16 @@ namespace TestDevExpress.Forms
             {
                 var dateRnd = DateTime.Now.AddDays(120d * rand.NextDouble() - 90d);
                 return dateRnd.ToString("d.M.yyyy");
+            }
+            // Náhodný soubor:
+            string randomFile()
+            {
+                return Randomizer.GetSentence(2, 4, false) + "." + Randomizer.GetItem("doc.docx.txt.xls.html.cs.csproj.pdf.png.ico.jpg.mp4.rtf".Split('.'));
+            }
+            // Náhodná poznámka:
+            string randomMemo()
+            {
+                return Randomizer.GetSentences(2, 7, 3, 5);
             }
         }
         #endregion
