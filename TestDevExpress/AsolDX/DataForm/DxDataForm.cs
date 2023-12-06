@@ -12,11 +12,8 @@ using System.Runtime.InteropServices;
 using WinDraw = System.Drawing;
 using WinForm = System.Windows.Forms;
 
-using DevExpress.XtraEditors;
-using DevExpress.Utils.Extensions;
-using DevExpress.XtraRichEdit.Model.History;
-using Noris.Clients.Win.Components.AsolDX.DataForm.Data;
-using DevExpress.Internal.WinApi.Windows.UI.Notifications;
+using DxfData = Noris.Clients.Win.Components.AsolDX.DataForm.Data;
+
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
@@ -67,13 +64,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Pole řádků zobrazených v formuláři
         /// </summary>
-        public DataFormRows DataFormRows { get { return __DataFormRows; } }
+        public DxfData.DataFormRows DataFormRows { get { return __DataFormRows; } }
         /// <summary>
         /// Inicializace dat řádků
         /// </summary>
         private void _InitRows()
         {
-            __DataFormRows = new DataFormRows(this);
+            __DataFormRows = new DxfData.DataFormRows(this);
             __DataFormRows.CollectionChanged += _RowsChanged;
         }
         /// <summary>
@@ -89,22 +86,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Fyzická kolekce řádků
         /// </summary>
-        private DataFormRows __DataFormRows;
+        private DxfData.DataFormRows __DataFormRows;
         #endregion
         #region Definice layoutu
         /// <summary>
         /// Definice vzhledu pro jednotlivý řádek: popisuje panely, záložky, prvky ve vnořené hierarchické podobě.
         /// Z této definice se následně generují jednotlivé interaktivní prvky pro jednotlivý řádek.
         /// </summary>
-        public DataFormLayoutSet DataFormLayout { get { return __DataFormLayout; } }
+        public DxfData.DataFormLayoutSet DataFormLayout { get { return __DataFormLayout; } }
         /// <summary>
         /// Inicializace dat layoutu
         /// </summary>
         private void _InitLayout()
         {
-            __DataFormLayout = new DataFormLayoutSet(this);
+            __DataFormLayout = new DxfData.DataFormLayoutSet(this);
             __DataFormLayout.CollectionChanged += _LayoutChanged;
-            __Content = new DataContent();
+            __Content = new DxfData.DataContent();
 
             Content[Data.DxDataFormDef.BorderStyle] = "HotFlat";
 
@@ -121,7 +118,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Definice vzhledu pro jednotlivý řádek
         /// </summary>
-        private DataFormLayoutSet __DataFormLayout;
+        private DxfData.DataFormLayoutSet __DataFormLayout;
         /// <summary>
         /// Po změně definice layoutu (přidání, odebrání), nikoli po změně obsahu dat v prvku
         /// </summary>
@@ -136,7 +133,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Obsah řádků: obsahuje sloupce i jejich datové a popisné hodnoty.
         /// Klíčem je název sloupce.
         /// </summary>
-        public DataContent Content { get { return __Content; } } private DataContent __Content;
+        public DxfData.DataContent Content { get { return __Content; } } private DxfData.DataContent __Content;
         #endregion
         #region Repository manager
         /// <summary>
@@ -185,6 +182,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Formát bitmap, který se ukládá do cache
         /// </summary>
         public WinDraw.Imaging.ImageFormat CacheImageFormat { get { return __CacheImageFormat; } set { __CacheImageFormat = value; InvalidateRepozitory(); } } private WinDraw.Imaging.ImageFormat __CacheImageFormat;
+        #endregion
+        #region Akce uživatele na DataFOrmu
+        /// <summary>
+        /// Uživatel provedl nějakou akci na dataformu (kliknutí...)
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="columnName"></param>
+        /// <param name="actionName"></param>
+        /// <param name="actionData"></param>
+        public void OnInteractiveAction(DxfData.DataFormRow row, string columnName, string actionName, object actionData)
+        {
+            string text = $"Action on Row: {row.RowId}; Column: {columnName}, Action: {actionName}";
+            if (actionData != null) text += $"; Data: {actionData}";
+            DxComponent.ShowMessageInfo(text, "DataForm");
+        }
         #endregion
         #region ContentPanel : zobrazuje vlastní obsah (grafická komponenta)
         /// <summary>
@@ -469,7 +481,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Pole řádků, jejichž prvky jsou načteny v <see cref="__InteractiveItems"/>. Často jsou to všechny řádky z <see cref="DataFormRows"/>.
         /// </summary>
-        private DataFormRow[] __VisibleRows;
+        private DxfData.DataFormRow[] __VisibleRows;
         /// <summary>
         /// Interaktivní data = jednotlivé prvky, platné pro aktuální layout a řádky a pozici Scrollbaru. Úložiště.
         /// Pokrývá oblast na ose Y v rozsahu <see cref="__InteractiveItemsPreparedDesignPixels"/>.

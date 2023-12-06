@@ -7750,7 +7750,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     Text = "Log Active",
                     ToolTipText = "Zapíná / vypíná logování aktivity",
                     ItemType = RibbonItemType.CheckButton,
-                    ImageName = "svgimages/xaf/action_view_chart.svg",
+                    ImageName = "svgimages/spreadsheet/movepivottable.svg",
                     Checked = DxComponent.LogActive,
                     ClickAction = _SetLogActivity
                 });

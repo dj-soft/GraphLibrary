@@ -1049,7 +1049,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             set { SetContent(DxDataFormDef.IsInteractive, (bool?)value); }
         }
         #endregion
-        #region Metody pro získání dat o prvku (hodnota, vzhled, editační maska, font, barva, editační styl, ikona, buttony, atd...)
+        #region Metody pro získání a uložení dat o prvku (hodnota, vzhled, editační maska, font, barva, editační styl, ikona, buttony, atd...) a odeslání akce do DataFormu
         /// <summary>
         /// Zkusí najít hodnotu daného jména.
         /// Dané jméno nesmí obsahovat jméno sloupce.
@@ -1081,10 +1081,28 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         public void SetContent<T>(string name, T content)
         {
             __Row.Content[_GetFullName(name)] = content;
+            _InvalidateCache();
+        }
+        /// <summary>
+        /// Vyvolá danou akci
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="data"></param>
+        public void RunAction(string name, object data)
+        {
+            this._DataForm?.OnInteractiveAction(this.__Row, this.ColumnName, name, data);
         }
         private string _GetFullName(string propertyName)
         {
             return $"{this.ColumnName}{DxDataFormDef.ColumnDelimiter}{propertyName}";
+        }
+        /// <summary>
+        /// Invaliduje svoje grafická data (uložený statický obrázek) - volá se po změnách hodnoty
+        /// </summary>
+        private void _InvalidateCache()
+        {
+            __ImageId = null; 
+            __ImageData = null;
         }
         #endregion
         #region IPaintItemData
@@ -1092,7 +1110,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         DxInteractiveState IPaintItemData.InteractiveState { get { return this._InteractiveState; } set { this._InteractiveState = value; } }
         WinForm.Control IPaintItemData.NativeControl { get { return this.__NativeControl; } set { this.__NativeControl = value; } }
         bool IPaintItemData.TryGetContent<T>(string name, out T content) { return TryGetContent<T>(name, out content); }
-        void IPaintItemData.InvalidateCache() { __ImageId = null; __ImageData = null; }
+        void IPaintItemData.SetContent<T>(string name, T value) { SetContent<T>(name, value); }
+        void IPaintItemData.RunAction(string name, object data) { RunAction(name, data); }
+        void IPaintItemData.InvalidateCache() { _InvalidateCache(); }
         ulong? IPaintItemData.ImageId { get { return __ImageId; } set { __ImageId = value; } } private ulong? __ImageId;
         byte[] IPaintItemData.ImageData { get { return __ImageData; } set { __ImageData = value; } } private byte[] __ImageData;
         #endregion
@@ -1207,6 +1227,190 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         public const string TextColor = "TxC";
         public const string TextBoxButtons = "TxBxBt";
         public const string BorderStyle = "BrS";
+        public const string ButtonPaintStyle = "BtPSt";
+
+        public const string ActionButtonClick = "ButtonClick";
+        public const string ActionButtonRightClick = "ButtonRightClick";
+        public const string ActionButtonPressed = "ButtonPressed";
+    }
+    #endregion
+    #region Podpůrné třídy a enumy pro definici layoutu - specifikace detailů
+
+    /// <summary>
+    /// Třída definující buttony přidané k nějakému Controlu
+    /// </summary>
+    public class TextBoxButtonProperties
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public TextBoxButtonProperties()
+        {
+            __Buttons = new List<Button>();
+            __BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+        }
+        /// <summary>
+        /// Konstruktor pro jednoduchou definici
+        /// </summary>
+        /// <param name="simpleDefinition"></param>
+        public TextBoxButtonProperties(string simpleDefinition)
+            : this()
+        {
+            if (!String.IsNullOrEmpty(simpleDefinition))
+            {
+                var buttonNames = simpleDefinition.Split(',', ';');
+                foreach (var buttonName in buttonNames)
+                {
+                    if (!String.IsNullOrEmpty(buttonName))
+                    {
+                        if (Enum.TryParse(buttonName, out DevExpress.XtraEditors.Controls.ButtonPredefines kind))
+                            this.__Buttons.Add(new Button(kind));
+                        else
+                            this.__Buttons.Add(new Button(buttonName));
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Styl okrajů buttonu, default = <see cref="DevExpress.XtraEditors.Controls.BorderStyles.NoBorder"/>
+        /// </summary>
+        public DevExpress.XtraEditors.Controls.BorderStyles BorderStyle { get { return __BorderStyle; } set { __BorderStyle = value; } } private DevExpress.XtraEditors.Controls.BorderStyles __BorderStyle;
+        /// <summary>
+        /// Pole buttonů
+        /// </summary>
+        public List<Button> Buttons { get { return __Buttons; } } private List<Button> __Buttons;
+        /// <summary>
+        /// Stringový klíč, jednoznačně určuje sadu buttonů. Používá se při tvorbě klíče do <see cref="DxRepositoryEditor"/>.
+        /// </summary>
+        public string Key
+        {
+            get
+            {
+                var bs = __BorderStyle;
+                return (bs == DevExpress.XtraEditors.Controls.BorderStyles.NoBorder ? "" : bs.ToString() + ":") + Buttons.ToOneString(":", b => b.Key);
+            }
+        }
+        /// <summary>
+        /// Vytvoří a vrátí pole obsahující buttony DevExpress, použitelné do nativního controlu,
+        /// např. do <see cref="DevExpress.XtraEditors.ButtonEdit.Properties"/>.Buttons
+        /// </summary>
+        /// <returns></returns>
+        public DevExpress.XtraEditors.Controls.EditorButton[] CreateDxButtons()
+        {
+            return this.Buttons.Select(b => b.CreateDxButton()).ToArray();
+        }
+        /// <summary>
+        /// Třída definující jeden button
+        /// </summary>
+        public class Button
+        {
+            /// <summary>
+            /// Konstruktor prázdný
+            /// </summary>
+            public Button()
+            {
+                Kind = DevExpress.XtraEditors.Controls.ButtonPredefines.OK;
+                ImageName = null;
+                Alignment = BarItemAlignment.Right;
+                Text = "";
+                IsDefaultButton = false;
+                ToolTipText = null;
+                KeyShortcut = null;
+            }
+            /// <summary>
+            /// Konstruktor pro jednoduše definovaný button
+            /// </summary>
+            /// <param name="kind"></param>
+            public Button(DevExpress.XtraEditors.Controls.ButtonPredefines kind)
+                : this()
+            {
+                Kind = kind;
+            }
+            /// <summary>
+            /// Konstruktor pro jednoduše definovaný button
+            /// </summary>
+            /// <param name="imageName"></param>
+            public Button(string imageName)
+                : this()
+            {
+                Kind = DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph;
+                ImageName = imageName;
+            }
+            /// <summary>
+            /// Předdefinovaný druh obrázku
+            /// </summary>
+            public DevExpress.XtraEditors.Controls.ButtonPredefines Kind { get; set; }
+            /// <summary>
+            /// Jméno obrázku
+            /// </summary>
+            public string ImageName { get; set; }
+            /// <summary>
+            /// Umístění vlevo nebo vpravo, vpravo je default
+            /// </summary>
+            public BarItemAlignment Alignment { get; set; }
+            /// <summary>
+            /// Text (cože?)
+            /// </summary>
+            public string Text { get; set; }
+            /// <summary>
+            /// Jde o default button?
+            /// </summary>
+            public bool IsDefaultButton { get; set; }
+            /// <summary>
+            /// Text tooltipu
+            /// </summary>
+            public string ToolTipText { get; set; }
+            /// <summary>
+            /// Klávesová zkratka
+            /// </summary>
+            public DevExpress.Utils.KeyShortcut KeyShortcut { get; set; }
+            /// <summary>
+            /// Jméno akce = je předáno do datové vrstvy po kliknutí na Button.
+            /// Pokud není uvedeno, předává se <see cref="Kind"/> nebo <see cref="ImageName"/>.
+            /// </summary>
+            public string ActionName { get; set; }
+            /// <summary>
+            /// Jméno akce reálně použití pro Button (priorita: <see cref="ActionName"/> - <see cref="ImageName"/> - <see cref="Kind"/>)
+            /// </summary>
+            public string CurrentActionName 
+            { 
+                get
+                {
+                    if (!String.IsNullOrEmpty(this.ActionName)) return this.ActionName;
+                    if (!String.IsNullOrEmpty(this.ImageName)) return this.ImageName;
+                    return this.Kind.ToString();
+                }
+            }
+            /// <summary>
+            /// Stringový klíč, jednoznačně určuje sadu buttonů. Používá se při tvorbě klíče do <see cref="DxRepositoryEditor"/>.
+            /// </summary>
+            public string Key { get { return $"{CurrentActionName}{(Alignment == BarItemAlignment.Left ? ".L" : "")}"; } }
+            /// <summary>
+            /// Metoda vytvoří a vrátí new instanci buttonu ze své definice
+            /// </summary>
+            /// <returns></returns>
+            public DevExpress.XtraEditors.Controls.EditorButton CreateDxButton()
+            {
+                var dxButton = new DevExpress.XtraEditors.Controls.EditorButton();
+
+                dxButton.IsLeft = (this.Alignment == BarItemAlignment.Left);
+                dxButton.Caption = this.Text;
+                dxButton.IsDefaultButton = this.IsDefaultButton;
+                if (String.IsNullOrEmpty(this.ImageName))
+                    // Predefined kind:
+                    dxButton.Kind = this.Kind;
+                else
+                {   // User defined:
+                    dxButton.Kind = DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph;
+                    DxComponent.ApplyImage(dxButton.ImageOptions, this.ImageName, sizeType: ResourceImageSizeType.Small);
+                }
+                dxButton.ToolTip = this.ToolTipText;
+                dxButton.Shortcut = this.KeyShortcut;
+                dxButton.Tag = this.CurrentActionName;
+
+                return dxButton;
+            }
+        }
     }
 
     #endregion

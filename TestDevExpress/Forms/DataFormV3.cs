@@ -52,8 +52,8 @@ namespace TestDevExpress.Forms
 
             string imageStatusRefresh = "svgimages/xaf/action_refresh.svg";
             string imageTestDrawing = "svgimages/dashboards/textbox.svg";
+            string imageLogClear = "svgimages/spreadsheet/clearpivottable.svg";
             string imageDataFormRemove = "svgimages/spreadsheet/removetablerows.svg";
-            string imageLogClear = "svgimages/spreadsheet/removetablerows.svg";
 
             group = new DataRibbonGroup() { GroupText = "ZÁKLADNÍ" };
             page.Groups.Add(group);
@@ -323,7 +323,7 @@ namespace TestDevExpress.Forms
             int layoutId = (sampleId / 1000);
             int rowsCount = (sampleId % 1000);
             int leftB = 14;
-            int left, leftM, topM;
+            int left, leftM, left3, topM;
             int top = 0;
             switch (layoutId)
             {
@@ -348,12 +348,12 @@ namespace TestDevExpress.Forms
                     addItemPairT("cenacelk", "Cena cel.:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 70, 20);
                     addItemPairT("filename", "Dokument:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 250, 20, item =>
                     {
-                        item.Content[DxDData.DxDataFormDef.TextBoxButtons] = "Down;Plus";
+                        item.Content[DxDData.DxDataFormDef.TextBoxButtons] = new DxDData.TextBoxButtonProperties("Down;Plus");
                     });
                     left = leftB; top += 44;
                     addItemPairT("relation", "Vztah:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 456, 20, item =>
                     {
-                        item.Content[DxDData.DxDataFormDef.TextBoxButtons] = "SpinRight;Clear;Ellipsis";
+                        item.Content[DxDData.DxDataFormDef.TextBoxButtons] = new DxDData.TextBoxButtonProperties("SpinLeft;SpinRight;Clear;Ellipsis");
                     });
 
                     left = leftM; top = topM;
@@ -364,17 +364,31 @@ namespace TestDevExpress.Forms
                     left = leftB;
                     addItemPairL("datum", "Datum:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 65, 20);
                     addItemPairL("reference", "Reference:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 145, 20);
-                    addItemPairL("nazev", "Název:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 250, 20);
+                    left3 = left;
+                    addItemPairL("document1", "Název:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 250, 20, item =>
+                    {
+                        item.Content[DxDData.DxDataFormDef.TextBoxButtons] = new DxDData.TextBoxButtonProperties("svgimages/richedit/preview.svg;svgimages/richedit/insertequationcaption.svg");
+                    });
 
                     top = 44;
                     left = leftB;
                     addItemPairL("pocet", "Počet:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 90, 20);
                     addItemPairL("cena1", "Cena 1ks:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 120, 20);
+                    left = left3;
+                    addItemPairL("document2", "Název:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 250, 20, item =>
+                    {
+                        item.Content[DxDData.DxDataFormDef.TextBoxButtons] = new DxDData.TextBoxButtonProperties("svgimages/xaf/modeleditor_hyperlink.svg");
+                    });
 
                     top = 72;
                     left = leftB;
                     addItemPairL("sazbadph", "Sazba DPH:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 140, 20);
                     addItemPairL("cenacelk", "Cena celkem:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 70, 20);
+                    left = left3;
+                    addItemPairL("document3", "Název:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 250, 20, item =>
+                    {
+                        item.Content[DxDData.DxDataFormDef.TextBoxButtons] = new DxDData.TextBoxButtonProperties("Plus;Clear");
+                    });
 
                     top = 16;
                     left = 730;
@@ -452,7 +466,7 @@ namespace TestDevExpress.Forms
                 switch (layoutId)
                 {
                     case 1:
-                        addRow(r.ToString("000"), "datum;reference;nazev;pocet;cenacelk", "{dr};Ref {r};Název {r};{rnd};{rnd}");
+                        addRow(r.ToString("000"), "datum;reference;document1;pocet;cenacelk;document2", "{dr};Ref {r};Název {r};{rnd};{rnd};Dokument {rnd}");
                         break;
                     case 2:
                         addRow(r.ToString("000"), "datum;reference;nazev;pocet;cena1", "{dr};R{r};Záznam {r};{rnd};{rnd}");
@@ -467,7 +481,8 @@ namespace TestDevExpress.Forms
 
             void addRow(string rowText, string columns = null, string values = null)
             {
-                var dataRow = new DxDData.DataFormRow();
+                var dataRow = new DxDData.DataFormRow() { RowId = result.Count };
+
                 string dat = DateTime.Now.ToString("d.M.yyyy");
                 string tim = DateTime.Now.ToString("HH:mm");
                 if (!String.IsNullOrEmpty(columns) && !String.IsNullOrEmpty(values))
