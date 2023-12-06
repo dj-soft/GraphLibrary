@@ -378,7 +378,7 @@ namespace TestDevExpress.Forms
 
                     top = 16;
                     left = 730;
-                    addItemPairL("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 350, 90);
+                    addItemPairL("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.EditBox, top, ref left, 350, 90);
                     break;
                 case 3:
                     addItemType("id1", DxDForm.DxRepositoryEditorType.TextBox, null, 0, 75, null, 2, 20, null);

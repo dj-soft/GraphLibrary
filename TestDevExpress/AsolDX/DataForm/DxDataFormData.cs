@@ -865,6 +865,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             this.__ItemState = DxItemState.Enabled;
             this.__InteractiveState = DxInteractiveState.None;
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"ColumnName: {ColumnName}; State: {__InteractiveState}; Label: {Label}; Value: {Value}";
+        }
         private DataFormRow __Row;
         private DataFormLayoutItem __LayoutItem;
         private WinDraw.Rectangle __DesignBounds;
