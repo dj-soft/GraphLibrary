@@ -328,7 +328,7 @@ namespace TestDevExpress.Forms
             switch (layoutId)
             {
                 case 1:
-                    top = 12;
+                    top = 18;
                     left = leftB;
                     addItemPairT("datum", "Datum:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 70, 20);
                     addItemPairT("reference", "Reference:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 120, 20);
@@ -354,6 +354,13 @@ namespace TestDevExpress.Forms
                     addItemPairT("relation", "Vztah:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 456, 20, item =>
                     {
                         item.Content[DxDData.DxDataFormDef.TextBoxButtons] = new DxDData.TextBoxButtonProperties("SpinLeft;Ellipsis;SpinRight");
+                    });
+
+                    left = leftB; top += 44;
+                    addItemPairT("tracker01", "Tracker:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 120, 20);
+                    addItemPairT("combo01", "Combo:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 400, 20, item =>
+                    {
+                        item.Content[DxDData.DxDataFormDef.TextBoxButtons] = new DxDData.TextBoxButtonProperties("Down;Plus");
                     });
 
                     left = leftM; top = topM;
