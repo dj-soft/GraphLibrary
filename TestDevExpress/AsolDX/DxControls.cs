@@ -745,7 +745,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             AddLogPosition("FormPositionApply.After: ");
         }
         /// <summary>
-        /// Hlídá změnu pozice okna průběžně
+        /// Hlídá změnu pozice okna - průběžně
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -754,7 +754,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.FormPositionOnChange(false);
         }
         /// <summary>
-        /// Hlídá změnu pozice okna finálně
+        /// Hlídá změnu pozice okna - finálně
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>

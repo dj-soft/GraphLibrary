@@ -1243,6 +1243,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         public const string BackColor = "BgC";
         public const string TextColor = "TxC";
         public const string TextBoxButtons = "TxBxBt";
+        public const string ComboBoxItems = "CmxItms";
         public const string BorderStyle = "BrS";
         public const string ButtonPaintStyle = "BtPSt";
         public const string CursorTypeMouseOn = "Cur";
@@ -1266,7 +1267,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         public TextBoxButtonProperties()
         {
             __Buttons = new List<Button>();
-            __BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+            BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
         }
         /// <summary>
         /// Konstruktor pro jednoduchou definici
@@ -1291,9 +1292,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             }
         }
         /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return this.__Buttons.ToOneString(";");
+        }
+        /// <summary>
         /// Styl okrajů buttonu, default = <see cref="DevExpress.XtraEditors.Controls.BorderStyles.NoBorder"/>
         /// </summary>
-        public DevExpress.XtraEditors.Controls.BorderStyles BorderStyle { get { return __BorderStyle; } set { __BorderStyle = value; } } private DevExpress.XtraEditors.Controls.BorderStyles __BorderStyle;
+        public DevExpress.XtraEditors.Controls.BorderStyles BorderStyle { get; set; }
         /// <summary>
         /// Pole buttonů
         /// </summary>
@@ -1305,7 +1314,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         {
             get
             {
-                var bs = __BorderStyle;
+                var bs = BorderStyle;
                 return (bs == DevExpress.XtraEditors.Controls.BorderStyles.NoBorder ? "" : bs.ToString() + ":") + Buttons.ToOneString(":", b => b.Key);
             }
         }
@@ -1354,6 +1363,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             {
                 Kind = DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph;
                 ImageName = imageName;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return this.CurrentActionName;
             }
             /// <summary>
             /// Předdefinovaný druh obrázku
@@ -1430,7 +1447,170 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
                 return dxButton;
             }
         }
-        #endregion
     }
+    #endregion
+    #region ImageComboBoxProperties : definice sady položek pro ComboBox
+    /// <summary>
+    /// Třída definující sadu položek pro ComboBox
+    /// </summary>
+    public class ImageComboBoxProperties
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public ImageComboBoxProperties()
+        {
+            __Items = new List<Item>();
+            AutoComplete = true;
+            AllowDropDownWhenReadOnly = true;
+            ImmediatePopup = true;
+            PopupSizeable = true;
+        }
+        /// <summary>
+        /// Konstruktor pro jednoduchou definici.
+        /// Jednotlivé itemy jsou odděleny znakem ;
+        /// Uvnitř itemu jsou uvedeny Value,DisplayText,ImageName   oddělené znakem ,
+        /// </summary>
+        /// <param name="simpleDefinition"></param>
+        public ImageComboBoxProperties(string simpleDefinition)
+            : this()
+        {
+            if (!String.IsNullOrEmpty(simpleDefinition))
+            {
+                var items = simpleDefinition.Split(';');
+                foreach (var item in items)
+                {
+                    if (!String.IsNullOrEmpty(item))
+                    {
+                        var parts = item.Split(',');
+                        if (parts.Length >= 2 && !String.IsNullOrEmpty(parts[1]))
+                            this.__Items.Add(new Item(parts[0], parts[1], (parts.Length >= 3 ? parts[2] : null)));
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return this.__Items.ToOneString(";");
+        }
+        /// <summary>
+        /// Povolit vlastnost AutoComplete
+        /// </summary>
+        public bool AutoComplete { get; set; }
+        /// <summary>
+        /// Bude možno zobrazit DropDown, když Combo je ReadOnly?
+        /// </summary>
+        public bool AllowDropDownWhenReadOnly { get; set; }
+        /// <summary>
+        /// Zobrazit Popup hned po začátku psaní textu
+        /// </summary>
+        public bool ImmediatePopup { get; set; }
+        /// <summary>
+        /// Popup je resizovatelné
+        /// </summary>
+        public bool PopupSizeable { get; set; }
+        /// <summary>
+        /// Pole prvků
+        /// </summary>
+        public List<Item> Items { get { return __Items; } } private List<Item> __Items;
+        /// <summary>
+        /// Vytvoří a vrátí pole obsahující prvky <see cref="DevExpress.XtraEditors.Controls.ComboBoxItem"/> (typu DevExpress), použitelné do nativního controlu,
+        /// např. do <see cref="DevExpress.XtraEditors.ComboBoxEdit.Properties"/>.Items
+        /// </summary>
+        /// <returns></returns>
+        public DevExpress.XtraEditors.Controls.ComboBoxItem[] CreateDxComboItems()
+        {
+            return this.Items.Select(i => i.CreateDxComboItem()).ToArray();
+        }
+        /// <summary>
+        /// Vytvoří a vrátí pole obsahující prvky <see cref="DevExpress.XtraEditors.Controls.ImageComboBoxItem"/> (typu DevExpress), použitelné do nativního controlu,
+        /// např. do <see cref="DevExpress.XtraEditors.ImageComboBoxEdit.Properties"/>.Items
+        /// </summary>
+        /// <param name="imageList">Out ImageList, na který se vztahují indexy obrázků</param>
+        /// <param name="imageSize">Požadovaná velikost obrázků</param>
+        /// <returns></returns>
+        public DevExpress.XtraEditors.Controls.ImageComboBoxItem[] CreateDxImageComboItems(out object imageList, ResourceImageSizeType imageSize = ResourceImageSizeType.Small)
+        {
+            imageList = DxComponent.GetPreferredImageList(imageSize);
+            return this.Items.Select(i => i.CreateDxImageComboItem(imageSize)).ToArray();
+        }
+        /// <summary>
+        /// Metoda najde a vrátí index prvku, který má zadanou hodnotu (CodeValue).
+        /// Pokud na vstupu je null, anebo hodnota kterou nemá žádná zdejší položka, pak vrátí -1.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public int GetIndexOfValue(object value)
+        {
+            return ((value != null && this.Items.TryFindFirstIndex(i => Object.Equals(i.Value, value), out int foundIndex)) ? foundIndex : -1);
+        }
+        /// <summary>
+        /// Třída definující jeden prvek ComboBoxu
+        /// </summary>
+        public class Item
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            public Item()
+            { }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            public Item(object value, string displayText, string imageName = null)
+            {
+                this.Value = value;
+                this.DisplayText = displayText;
+                this.ImageName = imageName;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return this.DisplayText;
+            }
+            /// <summary>
+            /// CodeValue
+            /// </summary>
+            public object Value { get; set; }
+            /// <summary>
+            /// DisplayValue = Text
+            /// </summary>
+            public string DisplayText { get; set; }
+            /// <summary>
+            /// Jméno obrázku
+            /// </summary>
+            public string ImageName { get; set; }
+            /// <summary>
+            /// Metoda vytvoří a vrátí new instanci <see cref="DevExpress.XtraEditors.Controls.ComboBoxItem"/> ze své definice
+            /// </summary>
+            /// <returns></returns>
+            public DevExpress.XtraEditors.Controls.ComboBoxItem CreateDxComboItem()
+            {
+                var dxItem = new DevExpress.XtraEditors.Controls.ComboBoxItem();
+                dxItem.Value = this;
+                return dxItem;
+            }
+            /// <summary>
+            /// Metoda vytvoří a vrátí new instanci <see cref="DevExpress.XtraEditors.Controls.ImageComboBoxItem"/> ze své definice
+            /// </summary>
+            /// <returns></returns>
+            public DevExpress.XtraEditors.Controls.ImageComboBoxItem CreateDxImageComboItem(ResourceImageSizeType imageSize = ResourceImageSizeType.Small)
+            {
+                var dxItem = new DevExpress.XtraEditors.Controls.ImageComboBoxItem();
+                dxItem.Value = this.Value;
+                dxItem.Description = this.DisplayText;
+                dxItem.ImageIndex = DxComponent.GetPreferredImageIndex(this.ImageName, imageSize);
+                return dxItem;
+            }
+        }
+    }
+    #endregion
     #endregion
 }

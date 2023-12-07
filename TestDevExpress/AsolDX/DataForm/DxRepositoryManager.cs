@@ -438,9 +438,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         DropDownButton,
         /// <summary>
-        /// Combobox obou typů (List i Edit)
+        /// ComboBox bez obrázků
         /// </summary>
         ComboListBox,
+        /// <summary>
+        /// ComboBox s obrázky
+        /// </summary>
+        ImageComboListBox,
         /// <summary>
         /// Posouvací hodnota, jedna nebo dvě
         /// </summary>
@@ -482,7 +486,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// </summary>
     internal abstract class DxRepositoryEditor : IDisposable
     {
-        #region Konstruktor, Dispose, static factory metoda
+        #region Konstruktor, Dispose.    Static Factory metoda - zařadit nové potomky pro nové typy editorů!
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -540,6 +544,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 case DxRepositoryEditorType.TextBoxButton: return new DxRepositoryEditorTextBoxButton(repositoryManager);
                 case DxRepositoryEditorType.Button: return new DxRepositoryEditorButton(repositoryManager);
                 case DxRepositoryEditorType.EditBox: return new DxRepositoryEditorEditBox(repositoryManager);
+                case DxRepositoryEditorType.ComboListBox: return new DxRepositoryEditorComboListBox(repositoryManager);
+                case DxRepositoryEditorType.ImageComboListBox: return new DxRepositoryEditorImageComboListBox(repositoryManager);
             }
             throw new ArgumentException($"DxRepositoryEditor.CreateEditor(): Editor for type '{editorType}' does not exists.");
         }
@@ -1380,7 +1386,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 case DxRepositoryEditorType.RadioButton: return "O";
                 case DxRepositoryEditorType.Button: return "B";
                 case DxRepositoryEditorType.DropDownButton: return "D";
-                case DxRepositoryEditorType.ComboListBox: return "C";
+                case DxRepositoryEditorType.ImageComboListBox: return "C";
                 case DxRepositoryEditorType.TrackBar: return "A";
                 case DxRepositoryEditorType.Image: return "I";
                 case DxRepositoryEditorType.Grid: return "G";
@@ -1419,7 +1425,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             DirectPaint
         }
         #endregion
-        #region Podpora čtení a zápis hodnot z/do prvku IPaintItemData
+        #region Podpora čtení a zápis hodnot z/do prvku IPaintItemData, konverze typů DevExpress
         /// <summary>
         /// Z prvku přečte a vrátí jeho hodnotu
         /// </summary>
@@ -1473,6 +1479,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="content"></param>
         /// <returns></returns>
         protected bool TryGetItemContent<T>(IPaintItemData paintData, string name, out T content) { return paintData.TryGetContent<T>(name, out content); }
+        /// <summary>
+        /// Konverze do DevExpress hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected DevExpress.Utils.DefaultBoolean ConvertToDxBoolean(bool value)
+        {
+            return (value ? DevExpress.Utils.DefaultBoolean.True : DevExpress.Utils.DefaultBoolean.False);
+        }
+        /// <summary>
+        /// Konverze do DevExpress hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected DevExpress.Utils.DefaultBoolean ConvertToDxBoolean(bool? value)
+        {
+            return (value.HasValue ? (value.Value ? DevExpress.Utils.DefaultBoolean.True : DevExpress.Utils.DefaultBoolean.False) : DevExpress.Utils.DefaultBoolean.Default);
+        }
         #endregion
         #region Podpora pro tvorbu klíče: klíč se skládá z konkrétních směrodatných dat prvku a jednoznačně identifikuje bitmapu v cache
         /// <summary>
@@ -1778,13 +1802,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCacheWithItemImage; } }
         /// <summary>
-        /// Potomek zde přímo do cílové grafiky vykreslí obsah prvku, bez cache
-        /// </summary>
-        /// <param name="paintData">Data konkrétního prvku</param>
-        /// <param name="pdea">Grafika pro kreslení</param>
-        /// <param name="controlBounds">Cílové souřadnice</param>
-        protected override void PaintImageDirect(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds) { }
-        /// <summary>
         /// Pro daný prvek (jeho typ a obsah, a velikost) vygeneruje jednoznačný String klíč, popisující Bitmapu uloženou v Cache
         /// </summary>
         /// <param name="paintData">Data konkrétního prvku</param>
@@ -1917,13 +1934,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Režim práce s cache
         /// </summary>
         protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCache; } }
-        /// <summary>
-        /// Potomek zde přímo do cílové grafiky vykreslí obsah prvku, bez cache
-        /// </summary>
-        /// <param name="paintData">Data konkrétního prvku</param>
-        /// <param name="pdea">Grafika pro kreslení</param>
-        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        protected override void PaintImageDirect(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds) { }
         /// <summary>
         /// Pro daný prvek (jeho typ a obsah, a velikost) vygeneruje jednoznačný String klíč, popisující Bitmapu uloženou v Cache
         /// </summary>
@@ -2099,13 +2109,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCache; } }
         /// <summary>
-        /// Potomek zde přímo do cílové grafiky vykreslí obsah prvku, bez cache
-        /// </summary>
-        /// <param name="paintData">Data konkrétního prvku</param>
-        /// <param name="pdea">Grafika pro kreslení</param>
-        /// <param name="controlBounds">Cílové souřadnice</param>
-        protected override void PaintImageDirect(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds) { }
-        /// <summary>
         /// Pro daný prvek (jeho typ a obsah, a velikost) vygeneruje jednoznačný String klíč, popisující Bitmapu uloženou v Cache
         /// </summary>
         /// <param name="paintData">Data konkrétního prvku</param>
@@ -2217,10 +2220,371 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         DxeEdit.MemoEdit __EditorPaint;
     }
     #endregion
+    #region ComboListBox
+    /// <summary>
+    /// ComboListBox : <see cref="DxeEdit.ComboBoxEdit"/>
+    /// </summary>
+    internal class DxRepositoryEditorComboListBox : DxRepositoryEditor
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="repositoryManager"></param>
+        public DxRepositoryEditorComboListBox(DxRepositoryManager repositoryManager) : base(repositoryManager)
+        {
+        }
+        /// <summary>
+        /// Typ editoru
+        /// </summary>
+        public override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.ComboListBox; } }
+        /// <summary>
+        /// Režim práce s cache
+        /// </summary>
+        protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCache; } }
+        /// <summary>
+        /// Pro daný prvek (jeho typ a obsah, a velikost) vygeneruje jednoznačný String klíč, popisující Bitmapu uloženou v Cache
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="controlBounds">Cílové souřadnice</param>
+        /// <returns></returns>
+        protected override string CreateKey(IPaintItemData paintData, WinDraw.Rectangle controlBounds)
+        {
+            object value = GetItemValue(paintData);
+            WinDraw.FontStyle fontStyle = GetItemContent(paintData, Data.DxDataFormDef.FontStyle, WinDraw.FontStyle.Regular);
+            float sizeRatio = GetItemContent(paintData, Data.DxDataFormDef.FontSizeRatio, 0f);
+            WinDraw.Color fontColor = GetItemContent(paintData, Data.DxDataFormDef.TextColor, WinDraw.Color.Empty);
+            var buttons = this.GetItemContent<DxDData.TextBoxButtonProperties>(paintData, Data.DxDataFormDef.TextBoxButtons, null);
+            return CreateKey(value?.ToString(), controlBounds.Size, ToKey(fontStyle), ToKey(sizeRatio), ToKey(fontColor), buttons?.Key);
+        }
+        /// <summary>
+        /// Pro daný prvek vygeneruje data jeho bitmapy
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="pdea">Grafika pro kreslení</param>
+        /// <param name="controlBounds">Cílové souřadnice</param>
+        /// <returns></returns>
+        protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        {
+            __EditorPaint ??= _CreateNativeControl(false);
+            _FillNativeControl(paintData, __EditorPaint, controlBounds);
+            return CreateBitmapData(__EditorPaint);
+        }
+        /// <summary>
+        /// Potomek zde vrátí nativní control
+        /// </summary>
+        /// <returns></returns>
+        protected override WinForm.Control CreateNativeControl()
+        {
+            return _CreateNativeControl(true);
+        }
+        /// <summary>
+        /// Potomek zde do controlu naplní všechna potřebná data.
+        /// Je předán ten control, který byl vytvořen v metodě <see cref="CreateNativeControl()"/>.
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <param name="nativeControl"></param>
+        /// <param name="controlBounds"></param>
+        protected override void FillNativeControl(IPaintItemData paintData, WinForm.Control nativeControl, WinDraw.Rectangle controlBounds)
+        {
+            this._FillNativeControl(paintData, nativeControl as DxeEdit.ComboBoxEdit, controlBounds);
+        }
+        /// <summary>
+        /// Metoda vytvoří a vrátí new instanci nativního controlu. 
+        /// Nastaví ji defaultní vzhled, nevkládá do ní hodnoty závislé na konkrétnbím prvku.
+        /// Eventhandlery registruje pokud <paramref name="withEvents"/> je true (hodnota false značí control vytvářený jen pro kreslení).
+        /// </summary>
+        /// <returns></returns>
+        private DxeEdit.ComboBoxEdit _CreateNativeControl(bool withEvents)
+        {
+            var control = new DxeEdit.ComboBoxEdit() { Location = new WinDraw.Point(25, -200) };
+            control.ResetBackColor();
+            if (withEvents)
+                _AttachEvents(control);
+            return control;
+        }
+        /// <summary>
+        /// Do dodaného controlu vloží data, která tento typ editoru řeší. Data získá z dodaného prvku.
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="control">Cílový control</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        private void _FillNativeControl(IPaintItemData paintData, DxeEdit.ComboBoxEdit control, WinDraw.Rectangle controlBounds)
+        {
+            _FillNativeComboItems(paintData, control);
 
-    // checkboxy, spinnery, range, atd atd atd
-    // containery
+            control.Size = controlBounds.Size;
+            control.Properties.BorderStyle = GetItemBorderStyle(paintData);
+        }
+        /// <summary>
+        /// Najde data pro položky ComboBoxu, vygeneruje je a naplní i aktuálně vybranou hodnotu.
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <param name="control"></param>
+        private void _FillNativeComboItems(IPaintItemData paintData, DxeEdit.ComboBoxEdit control)
+        {
+            var value = GetItemValue(paintData);
+            int selectedIndex = -1;
 
+            try
+            {
+                control.Properties.Items.BeginUpdate();
+                control.Properties.Items.Clear();
+
+                var comboItems = this.GetItemContent<DxDData.ImageComboBoxProperties>(paintData, Data.DxDataFormDef.ComboBoxItems, null);
+                if (comboItems != null)
+                {
+                    control.Properties.AllowDropDownWhenReadOnly = ConvertToDxBoolean(comboItems.AllowDropDownWhenReadOnly);
+                    control.Properties.AutoComplete = comboItems.AutoComplete;
+                    control.Properties.ImmediatePopup = comboItems.ImmediatePopup;
+                    control.Properties.PopupSizeable = comboItems.PopupSizeable;
+                    control.Properties.ShowDropDown = DxeCont.ShowDropDown.SingleClick;
+                    control.Properties.ShowPopupShadow = true;
+                    control.Properties.Sorted = false;
+
+                    var dxComboItems = comboItems.CreateDxComboItems();
+                    control.Properties.Items.AddRange(dxComboItems);
+
+                    selectedIndex = comboItems.GetIndexOfValue(value);
+                }
+            }
+            finally
+            {
+                control.Properties.Items.EndUpdate();
+            }
+
+            control.SelectedIndex = selectedIndex;
+        }
+        /// <summary>
+        /// Do daného controlu naváže zdejší eventhandlery, které potřebuje k práci
+        /// </summary>
+        /// <param name="control"></param>
+        private void _AttachEvents(DxeEdit.ComboBoxEdit control)
+        {
+            control.EditValueChanged += _ControlEditValueChanged;
+        }
+        /// <summary>
+        /// Eventhandler po změně hodnoty v ButtonEdit controlu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ControlEditValueChanged(object sender, EventArgs e)
+        {
+            if (SuppressNativeEvents) return;
+
+            if (sender is DxeEdit.ComboBoxEdit control && TryGetPaintData(control, out var paintData))
+            {
+                var dxItem = control.SelectedItem;
+                if (dxItem != null && dxItem is DxDData.ImageComboBoxProperties.Item item)
+                {   // Je vybraná konkrétní položka?
+                    SetItemValue(paintData, item.Value);
+                }
+                else
+                {
+                    var editValue = control.EditValue;
+
+                }
+            }
+        }
+        /// <summary>
+        /// Dispose objektu
+        /// </summary>
+        protected override void OnDispose()
+        {
+            if (__EditorPaint != null)
+            {
+                __EditorPaint.Dispose();
+                __EditorPaint = null;
+            }
+        }
+        /// <summary>
+        /// Nativní control používaný pro kreslení
+        /// </summary>
+        DxeEdit.ComboBoxEdit __EditorPaint;
+    }
+    #endregion
+    #region ImageComboListBox
+    /// <summary>
+    /// ImageComboListBox : <see cref="DxeEdit.ImageComboBoxEdit"/>
+    /// </summary>
+    internal class DxRepositoryEditorImageComboListBox : DxRepositoryEditor
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="repositoryManager"></param>
+        public DxRepositoryEditorImageComboListBox(DxRepositoryManager repositoryManager) : base(repositoryManager)
+        {
+        }
+        /// <summary>
+        /// Typ editoru
+        /// </summary>
+        public override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.ImageComboListBox; } }
+        /// <summary>
+        /// Režim práce s cache
+        /// </summary>
+        protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCache; } }
+        /// <summary>
+        /// Pro daný prvek (jeho typ a obsah, a velikost) vygeneruje jednoznačný String klíč, popisující Bitmapu uloženou v Cache
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="controlBounds">Cílové souřadnice</param>
+        /// <returns></returns>
+        protected override string CreateKey(IPaintItemData paintData, WinDraw.Rectangle controlBounds)
+        {
+            object value = GetItemValue(paintData);
+            WinDraw.FontStyle fontStyle = GetItemContent(paintData, Data.DxDataFormDef.FontStyle, WinDraw.FontStyle.Regular);
+            float sizeRatio = GetItemContent(paintData, Data.DxDataFormDef.FontSizeRatio, 0f);
+            WinDraw.Color fontColor = GetItemContent(paintData, Data.DxDataFormDef.TextColor, WinDraw.Color.Empty);
+            var buttons = this.GetItemContent<DxDData.TextBoxButtonProperties>(paintData, Data.DxDataFormDef.TextBoxButtons, null);
+            return CreateKey(value?.ToString(), controlBounds.Size, ToKey(fontStyle), ToKey(sizeRatio), ToKey(fontColor), buttons?.Key);
+        }
+        /// <summary>
+        /// Pro daný prvek vygeneruje data jeho bitmapy
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="pdea">Grafika pro kreslení</param>
+        /// <param name="controlBounds">Cílové souřadnice</param>
+        /// <returns></returns>
+        protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        {
+            __EditorPaint ??= _CreateNativeControl(false);
+            _FillNativeControl(paintData, __EditorPaint, controlBounds);
+            return CreateBitmapData(__EditorPaint);
+        }
+        /// <summary>
+        /// Potomek zde vrátí nativní control
+        /// </summary>
+        /// <returns></returns>
+        protected override WinForm.Control CreateNativeControl()
+        {
+            return _CreateNativeControl(true);
+        }
+        /// <summary>
+        /// Potomek zde do controlu naplní všechna potřebná data.
+        /// Je předán ten control, který byl vytvořen v metodě <see cref="CreateNativeControl()"/>.
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <param name="nativeControl"></param>
+        /// <param name="controlBounds"></param>
+        protected override void FillNativeControl(IPaintItemData paintData, WinForm.Control nativeControl, WinDraw.Rectangle controlBounds)
+        {
+            this._FillNativeControl(paintData, nativeControl as DxeEdit.ImageComboBoxEdit, controlBounds);
+        }
+        /// <summary>
+        /// Metoda vytvoří a vrátí new instanci nativního controlu. 
+        /// Nastaví ji defaultní vzhled, nevkládá do ní hodnoty závislé na konkrétnbím prvku.
+        /// Eventhandlery registruje pokud <paramref name="withEvents"/> je true (hodnota false značí control vytvářený jen pro kreslení).
+        /// </summary>
+        /// <returns></returns>
+        private DxeEdit.ImageComboBoxEdit _CreateNativeControl(bool withEvents)
+        {
+            var control = new DxeEdit.ImageComboBoxEdit() { Location = new WinDraw.Point(25, -200) };
+            control.ResetBackColor();
+            if (withEvents)
+                _AttachEvents(control);
+            return control;
+        }
+        /// <summary>
+        /// Do dodaného controlu vloží data, která tento typ editoru řeší. Data získá z dodaného prvku.
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="control">Cílový control</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        private void _FillNativeControl(IPaintItemData paintData, DxeEdit.ImageComboBoxEdit control, WinDraw.Rectangle controlBounds)
+        {
+            _FillNativeComboItems(paintData, control);
+
+            control.Size = controlBounds.Size;
+            control.Properties.BorderStyle = GetItemBorderStyle(paintData);
+        }
+        /// <summary>
+        /// Najde data pro položky ComboBoxu, vygeneruje je a naplní i aktuálně vybranou hodnotu.
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <param name="control"></param>
+        private void _FillNativeComboItems(IPaintItemData paintData, DxeEdit.ImageComboBoxEdit control)
+        {
+            var value = GetItemValue(paintData);
+            int selectedIndex = -1;
+
+            try
+            {
+                control.Properties.Items.BeginUpdate();
+                control.Properties.Items.Clear();
+
+                var comboItems = this.GetItemContent<DxDData.ImageComboBoxProperties>(paintData, Data.DxDataFormDef.ComboBoxItems, null);
+                if (comboItems != null)
+                {
+                    control.Properties.AllowDropDownWhenReadOnly = ConvertToDxBoolean(comboItems.AllowDropDownWhenReadOnly);
+                    control.Properties.AutoComplete = comboItems.AutoComplete;
+                    control.Properties.ImmediatePopup = comboItems.ImmediatePopup;
+                    control.Properties.PopupSizeable = comboItems.PopupSizeable;
+                    control.Properties.ShowDropDown = DxeCont.ShowDropDown.SingleClick;
+                    control.Properties.ShowPopupShadow = true;
+                    control.Properties.Sorted = false;
+
+                    var dxComboItems = comboItems.CreateDxImageComboItems(out var imageList);
+                    control.Properties.SmallImages = imageList;
+                    control.Properties.Items.AddRange(dxComboItems);
+
+                    selectedIndex = comboItems.GetIndexOfValue(value);
+                }
+            }
+            finally
+            {
+                control.Properties.Items.EndUpdate();
+            }
+
+            control.SelectedIndex = selectedIndex;
+        }
+        /// <summary>
+        /// Do daného controlu naváže zdejší eventhandlery, které potřebuje k práci
+        /// </summary>
+        /// <param name="control"></param>
+        private void _AttachEvents(DxeEdit.ImageComboBoxEdit control)
+        {
+            control.EditValueChanged += _ControlEditValueChanged;
+        }
+        /// <summary>
+        /// Eventhandler po změně hodnoty v ButtonEdit controlu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ControlEditValueChanged(object sender, EventArgs e)
+        {
+            if (SuppressNativeEvents) return;
+
+            if (sender is DxeEdit.ImageComboBoxEdit control && TryGetPaintData(control, out var paintData))
+            {
+                var dxItem = control.SelectedItem;
+                if (dxItem != null && dxItem is DevExpress.XtraEditors.Controls.ImageComboBoxItem dxImageItem)
+                {   // Je vybraná konkrétní položka?
+                    SetItemValue(paintData, dxImageItem.Value);
+                }
+                else
+                {
+                    var editValue = control.EditValue;
+
+                }
+            }
+        }
+        /// <summary>
+        /// Dispose objektu
+        /// </summary>
+        protected override void OnDispose()
+        {
+            if (__EditorPaint != null)
+            {
+                __EditorPaint.Dispose();
+                __EditorPaint = null;
+            }
+        }
+        /// <summary>
+        /// Nativní control používaný pro kreslení
+        /// </summary>
+        DxeEdit.ImageComboBoxEdit __EditorPaint;
+    }
+    #endregion
     #region Button
     /// <summary>
     /// Button
@@ -2242,13 +2606,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Režim práce s cache
         /// </summary>
         protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCache; } }
-        /// <summary>
-        /// Potomek zde přímo do cílové grafiky vykreslí obsah prvku, bez cache
-        /// </summary>
-        /// <param name="paintData">Data konkrétního prvku</param>
-        /// <param name="pdea">Grafika pro kreslení</param>
-        /// <param name="controlBounds">Cílové souřadnice</param>
-        protected override void PaintImageDirect(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds) { }
         /// <summary>
         /// Pro daný prvek (jeho typ a obsah, a velikost) vygeneruje jednoznačný String klíč, popisující Bitmapu uloženou v Cache
         /// </summary>
@@ -2371,6 +2728,5 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         DxeEdit.SimpleButton __EditorPaint;
     }
     #endregion
-    
     #endregion
 }

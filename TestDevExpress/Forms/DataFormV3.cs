@@ -320,6 +320,22 @@ namespace TestDevExpress.Forms
         {
             var result = new List<DxDData.DataFormLayoutItem>();
 
+
+            string[] chartTypes = new string[]
+            {
+                "svgimages/chart/charttype_bar3d.svg",
+                "svgimages/chart/charttype_bar3dstacked100.svg",
+                "svgimages/chart/charttype_barstacked100.svg",
+                "svgimages/chart/charttype_bubble.svg",
+                "svgimages/chart/charttype_doughnut3d.svg",
+                "svgimages/chart/charttype_funnel3d.svg",
+                "svgimages/chart/charttype_histogram.svg",
+                "svgimages/chart/charttype_line3d.svg",
+                "svgimages/chart/charttype_manhattanbar.svg",
+                "svgimages/chart/charttype_pie3d.svg"
+            };
+
+
             int layoutId = (sampleId / 1000);
             int rowsCount = (sampleId % 1000);
             int leftB = 14;
@@ -357,14 +373,18 @@ namespace TestDevExpress.Forms
                     });
 
                     left = leftB; top += 44;
-                    addItemPairT("tracker01", "Tracker:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 120, 20);
-                    addItemPairT("combo01", "Combo:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 400, 20, item =>
+                    addItemPairT("valuecombo", "Tracker:", DxDForm.DxRepositoryEditorType.ComboListBox, top, ref left, 180, 20, item =>
                     {
-                        item.Content[DxDData.DxDataFormDef.TextBoxButtons] = new DxDData.TextBoxButtonProperties("Down;Plus");
+                        item.Content[DxDData.DxDataFormDef.ComboBoxItems] = new DxDData.ImageComboBoxProperties($"A,Anglicky;B,Belgicky;C,Chorvatsky;D,Dánsky;E,Estonsky;F,Finsky;G,Grónsky;H,Holandsky;I,Italsky;J,Japonsky;K,Korejsky;L,Latinsky;M,Moravsky;N,Norsky;O,Otevřeně;P,Pražsky;R,Rakousky;S,Slovensky;T,Turecky;U,Uzavřeně;V,Vizigótsky");
+                    });
+                    addItemPairT("towncombo", "Výběr města:", DxDForm.DxRepositoryEditorType.ImageComboListBox, top, ref left, 268, 20, item =>
+                    {
+                        item.Content[DxDData.DxDataFormDef.ComboBoxItems] = new DxDData.ImageComboBoxProperties($"A,Praha,{chartTypes[0]};B,Brno,{chartTypes[1]};C,Chrudim,{chartTypes[2]};D,Domažlice,{chartTypes[3]};H,Horní Planá,{chartTypes[4]};" +
+                            $"K,Kostelec nad Orlicí,{chartTypes[5]};L,Lomnice nad Popelkou,{chartTypes[6]};M,Mariánské Lázně,{chartTypes[7]};O,Ostrava,{chartTypes[8]};P,ParDubice,{chartTypes[9]}");
                     });
 
                     left = leftM; top = topM;
-                    addItemPairT("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.EditBox, top, ref left, 350, 154);
+                    addItemPairT("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.EditBox, top, ref left, 350, 198);
                     break;
                 case 2:
                     top = 16;
@@ -470,29 +490,32 @@ namespace TestDevExpress.Forms
 
             int layoutId = (sampleId / 1000);
             int rowsCount = (sampleId % 1000);
+            string aSequence = "ABCDEFGHIJKLMNOPQRSTUVZ";
 
             for (int r = 0; r < rowsCount; r++)
             {
                 switch (layoutId)
                 {
                     case 1:
-                        addRow(r.ToString("000"), "datum;reference;nazev;pocet;cenacelk;filename;poznamka", "{dr};Ref {r};Název {r};{rnd};{rnd};Dokument {rnd};{memo}");
+                        addRow(r, "datum;reference;nazev;pocet;cenacelk;filename;valuecombo;towncombo;poznamka", "{dr};Ref {ref};Název {ref};{rnd};{rnd};Dokument {rnd};{A};{A};{memoExt}");
                         break;
                     case 2:
-                        addRow(r.ToString("000"), "datum;reference;document1;pocet;cena1;document2;document3;poznamka", "{dr};R{r};Záznam {r};{rnd};{rnd};{file};{file};{memo}");
+                        addRow(r, "datum;reference;document1;pocet;cena1;document2;document3;poznamka", "{dr};R{ref};Záznam {ref};{rnd};{rnd};{file};{file};{memo}");
                         break;
                     case 3:
-                        addRow(r.ToString("000"), "id1;id2;id3;id4;id5;id7;id0", "{r};VYR;SKL;Výroba {r};Dne {dr};{t};{dr} ==> {rnd}");
+                        addRow(r, "id1;id2;id3;id4;id5;id7;id0", "{ref};VYR;SKL;Výroba {ref};Dne {dr};{t};{dr} ==> {rnd}");
                         break;
                 }
             }
 
             return result;
 
-            void addRow(string rowText, string columns = null, string values = null)
+            void addRow(int rId, string columns = null, string values = null)
             {
-                var dataRow = new DxDData.DataFormRow() { RowId = result.Count };
+                var dataRow = new DxDData.DataFormRow() { RowId = rId };
 
+                string rowText = rId.ToString("000");
+                string alpha = Randomizer.GetItem(aSequence.ToCharArray()).ToString();                   // Náhodné 1 písmeno ze sekvence aSequence, na místo tokenu {A}
                 string dat = DateTime.Now.ToString("d.M.yyyy");
                 string tim = DateTime.Now.ToString("HH:mm");
                 if (!String.IsNullOrEmpty(columns) && !String.IsNullOrEmpty(values))
@@ -505,13 +528,15 @@ namespace TestDevExpress.Forms
                         {
                             string col = cols[c];
                             string val = vals[c];
-                            if (val.Contains("{r}")) val = val.Replace("{r}", rowText);
+                            if (val.Contains("{ref}")) val = val.Replace("{ref}", rowText);
                             if (val.Contains("{d}")) val = val.Replace("{d}", dat);
                             if (val.Contains("{dr}")) val = val.Replace("{dr}", randomDate());
                             if (val.Contains("{t}")) val = val.Replace("{t}", tim);
+                            if (val.Contains("{A}")) val = val.Replace("{A}", alpha);
                             if (val.Contains("{rnd}")) val = val.Replace("{rnd}", ((decimal)(rand.Next(10000, 1000000)) / 100m).ToString("### ##0.00").Trim());
                             if (val.Contains("{file}")) val = val.Replace("{file}", randomFile());
                             if (val.Contains("{memo}")) val = val.Replace("{memo}", randomMemo());
+                            if (val.Contains("{memoExt}")) val = val.Replace("{memoExt}", randomMemoExt());
                             dataRow.Content[col + DxDData.DxDataFormDef.ColumnDelimiter + DxDData.DxDataFormDef.Value] = val;
                         }
                     }
@@ -536,6 +561,12 @@ namespace TestDevExpress.Forms
             {
                 return Randomizer.GetSentences(2, 7, 3, 5);
             }
+            // Náhodná poznámka dlouhá:
+            string randomMemoExt()
+            {
+                return Randomizer.GetSentences(4, 9, 12, 30);
+            }
+            
         }
         #endregion
     }
