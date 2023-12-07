@@ -9577,7 +9577,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         Disposed
     }
-
     /// <summary>
     /// Stav objektu z hlediska jeho základní situace (Enabled / Disabled / ReadOnly).
     /// Hodnotově přesně odpovídá typu <see cref="DxInteractiveState"/> v základním stavu prvku (neaktivní, bez myší, bez focusu).
@@ -9586,25 +9585,34 @@ namespace Noris.Clients.Win.Components.AsolDX
     public enum DxItemState : int
     {
         /// <summary>
-        /// Žádný specifický stav, prvek je Enabled ale bez myši a bez Focusu, a pokud může být Selected, tak aktuálně není
+        /// Neurčeno
         /// </summary>
         None = 0,
         /// <summary>
+        /// Prvek je vidět (Visible = true). Bez této hodnoty je prvek neviditelný a nezobrazuje se.
+        /// </summary>
+        Visible = 0x01,
+        /// <summary>
         /// Prvek je Disabled: nemůže získat Focus, nemůže měnit hodnotu, nereaguje na kliknutí.
         /// </summary>
-        Disabled = 0x01,
+        Disabled = 0x02,
         /// <summary>
-        /// Prvek je ReadOnly: může získat Focus, ale nemůže měnit svoji hodnotu. Může být na něj kliknuto i na jeho SubButtony.
+        /// Prvek je ReadOnly: může získat Focus, ale nemůže měnit svoji hodnotu. Může být na něj kliknuto i na jeho SubButtony a provedou akci. Může rozbalit Combo nabídku. Nemůže ale změnit hodnotu.
         /// </summary>
-        ReadOnly = 0x02,
+        ReadOnly = 0x04,
         /// <summary>
         /// Enabled: může získat Focus, může měnit svoji hodnotu. Může být na něj kliknuto i na jeho SubButtony.
         /// </summary>
-        Enabled = 0x04,
+        Enabled = 0x08,
+        /// <summary>
+        /// TabStop: může získat prostým procházením ze sousedního prvku (Tab, Enter, Šipka). Pokud nemá tento příznak, pak může získat focus kliknutím myši, ale nikoli klávesou.
+        /// </summary>
+        TabStop = 0x10,
+
         /// <summary>
         /// Prvek je Aktivní = nemusí mít Focus, ale mezi ostatními prvky je Aktivní (např. pokud Button je Down nebo Selected)
         /// </summary>
-        Active = 0x08
+        Active = 0x40,
     }
     /// <summary>
     /// Stav objektu z hlediska myši a focusu
@@ -9613,51 +9621,61 @@ namespace Noris.Clients.Win.Components.AsolDX
     public enum DxInteractiveState : int
     {
         /// <summary>
-        /// Žádný specifický stav, prvek je Enabled ale bez myši a bez Focusu, a pokud může být Selected, tak aktuálně není
+        /// Neurčeno
         /// </summary>
         None = 0,
         /// <summary>
+        /// Prvek je vidět (Visible = true). Bez této hodnoty je prvek neviditelný a nezobrazuje se.
+        /// </summary>
+        Visible = 0x01,
+        /// <summary>
         /// Prvek je Disabled: nemůže získat Focus, nemůže měnit hodnotu, nereaguje na kliknutí.
         /// </summary>
-        Disabled = 0x01,
+        Disabled = 0x02,
         /// <summary>
-        /// Prvek je ReadOnly: může získat Focus, ale nemůže měnit svoji hodnotu. Může být na něj kliknuto i na jeho SubButtony.
+        /// Prvek je ReadOnly: může získat Focus, ale nemůže měnit svoji hodnotu. Může být na něj kliknuto i na jeho SubButtony a provedou akci. Může rozbalit Combo nabídku. Nemůže ale změnit hodnotu.
         /// </summary>
-        ReadOnly = 0x02,
+        ReadOnly = 0x04,
         /// <summary>
         /// Enabled: může získat Focus, může měnit svoji hodnotu. Může být na něj kliknuto i na jeho SubButtony.
         /// </summary>
-        Enabled = 0x04,
+        Enabled = 0x08,
+        /// <summary>
+        /// TabStop: může získat prostým procházením ze sousedního prvku (Tab, Enter, Šipka). Pokud nemá tento příznak, pak může získat focus kliknutím myši, ale nikoli klávesou.
+        /// </summary>
+        TabStop = 0x10,
+
         /// <summary>
         /// Prvek je Aktivní = nemusí mít Focus, ale mezi ostatními prvky je Aktivní (např. pokud Button je Down nebo Selected)
         /// </summary>
-        Active = 0x08,
+        Active = 0x40,
 
         /// <summary>
         /// Myš vstoupila nad prvek = prvek je Hot
         /// </summary>
-        HasMouse = 0x10,
+        HasMouse = 0x100,
         /// <summary>
         /// Levá myš je stisknuta
         /// </summary>
-        MouseLeftDown = 0x20,
+        MouseLeftDown = 0x200,
         /// <summary>
         /// Pravá myš je stisknuta
         /// </summary>
-        MouseRightDown = 0x40,
+        MouseRightDown = 0x400,
         /// <summary>
         /// Prvek je přesouván myší
         /// </summary>
-        MouseDragging = 0x80,
+        MouseDragging = 0x800,
+
         /// <summary>
-        /// Kurzor je v prvku
+        /// Kurzor je v prvku, prvek má klávesový Focus
         /// </summary>
-        HasFocus = 0x100,
+        HasFocus = 0x1000,
 
         /// <summary>
         /// Maska základního stavu prvku
         /// </summary>
-        MaskItemState = Disabled | ReadOnly | Enabled | Active,
+        MaskItemState = Visible | Disabled | ReadOnly | Enabled | TabStop | Active,
         /// <summary>
         /// Maska myší aktivity
         /// </summary>
