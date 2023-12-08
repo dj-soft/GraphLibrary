@@ -14,7 +14,6 @@ using WinForm = System.Windows.Forms;
 
 using DxfData = Noris.Clients.Win.Components.AsolDX.DataForm.Data;
 
-
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
     #region DxDataFormPanel : vnější panel DataForm - koordinátor, virtuální container
@@ -195,7 +194,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             string text = $"Action on Row: {row.RowId}; Column: {columnName}, Action: {action}";
             if (actionData != null) text += $"; Data: {actionData}";
-            DxComponent.ShowMessageInfo(text, "DataForm");
+            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, text);      //  Moc násilné:  DxComponent.ShowMessageInfo(text, "DataForm");
         }
         #endregion
         #region ContentPanel : zobrazuje vlastní obsah (grafická komponenta)
@@ -312,7 +311,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             foreach (var row in rows)
                 row.PrepareValidInteractiveItems(items);                                 // Řádky připraví svoje interaktivní prvky
 
-            DxComponent.LogAddLine($"DataFormPanel.PrepareValidInteractiveItems(): VisibleRows.Count: {rows.Length}; Items.Count: {items.Count}; PreparedPixels: {designPixels}");
+            DxComponent.LogAddLine(LogActivityKind.DataFormRepository,  $"DataFormPanel.PrepareValidInteractiveItems(): VisibleRows.Count: {rows.Length}; Items.Count: {items.Count}; PreparedPixels: {designPixels}");
 
             __VisibleRows = rows;
             __InteractiveItems = items;
@@ -418,7 +417,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Musíme zahodit připravená data:
             __InteractiveItems = null;
             __InteractiveItemsPreparedDesignPixels = null;
-            DxComponent.LogAddLine($"DxDataFormPanel.InteractiveItemsInvalidate(): Invalidated items.");
+            DxComponent.LogAddLine(LogActivityKind.DataFormRepository, $"DxDataFormPanel.InteractiveItemsInvalidate(): Invalidated items.");
 
             this.__DataFormContent?.ItemsAllChanged();
         }
@@ -442,7 +441,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var preparedDesignPixels = __InteractiveItemsPreparedDesignPixels;
             if (__InteractiveItems is null || preparedDesignPixels is null)
             {
-                DxComponent.LogAddLine($"DxDataFormPanel.IsValidInteractiveRows(): data is null => Invalid");
+                DxComponent.LogAddLine(LogActivityKind.DataFormRepository, $"DxDataFormPanel.IsValidInteractiveRows(): data is null => Invalid");
                 return false;                                                  // Nejsou-li data, pak nejsme validní.
             }
 
@@ -460,7 +459,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var designSize = this.ContentDesignSize;
             if (!designSize.HasValue)
             {
-                DxComponent.LogAddLine($"DxDataFormPanel.IsValidInteractiveRows(): ContentDesignSize is null => Valid");
+                DxComponent.LogAddLine(LogActivityKind.DataFormRepository, $"DxDataFormPanel.IsValidInteractiveRows(): ContentDesignSize is null => Valid");
                 return true;                                                   // Nejsou-li data, pak jsme validní.
             }
             // Pokud by VisibleDesignBounds mělo z nějakého důvodu záporný Top, pak to neakceptujeme, data řádků máme počínaje od 0;
@@ -475,7 +474,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // DxComponent.LogAddLine($"DxDataFormPanel.IsValidInteractiveRows(): VisibleBounds is in PreparedDesignPixels =>  Valid");
                 return true;                                                   // Viditelná oblast se nachází uvnitř oblasti, pro kterou jsou připravena data
             }
-            DxComponent.LogAddLine($"DxDataFormPanel.IsValidInteractiveRows(): VisibleBounds: {visibleDataTop}÷{visibleDataBottom}; PreparedPixels: {preparedDesignPixels.Begin}÷{preparedDesignPixels.End} => INVALID");
+            DxComponent.LogAddLine(LogActivityKind.DataFormRepository, $"DxDataFormPanel.IsValidInteractiveRows(): VisibleBounds: {visibleDataTop}÷{visibleDataBottom}; PreparedPixels: {preparedDesignPixels.Begin}÷{preparedDesignPixels.End} => INVALID");
             return false;
         }
         /// <summary>

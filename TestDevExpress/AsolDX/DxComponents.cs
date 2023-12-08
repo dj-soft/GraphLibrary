@@ -4267,6 +4267,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public static bool LogActive { get { return Instance._LogActive; } set { Instance._LogActive = value; } }
         /// <summary>
+        /// Které aktivity se mají logovat?
+        /// </summary>
+        public static LogActivityKind LogActivities { get { return Instance.__LogActivities; } set { Instance.__LogActivities = value; } }
+        /// <summary>
         /// Aktuální obsah Log textu.
         /// Lze zaregistrovat eventhandler <see cref="LogTextChanged"/> pro hlídání všech změn
         /// </summary>
@@ -4278,7 +4282,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Událost po každé změně obsahu textu <see cref="LogText"/>
         /// </summary>
-        public static event EventHandler LogTextChanged { add { Instance._LogTextChanged += value; } remove { Instance._LogTextChanged -= value; } }
+        public static event EventHandler LogTextChanged { add { Instance.__LogTextChanged += value; } remove { Instance.__LogTextChanged -= value; } }
         /// <summary>
         /// Obsahuje přesný aktuální čas jako Int64. 
         /// Lze ho následně použít jako parametr 'long startTime' v metodě <see cref="LogAddLineTime(string, long?)"/> pro zápis uplynulého času.
@@ -4295,18 +4299,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Přidá titulek (mezera + daný text ohraničený znaky ===)
         /// </summary>
+        /// <param name="kind">Zdroj, filtruje se podle <see cref="LogActivities"/></param>
         /// <param name="title"></param>
         /// <param name="liner"></param>
-        public static void LogAddTitle(string title, char? liner = null) { Instance._LogAddTitle(title, liner); }
+        public static void LogAddTitle(LogActivityKind kind, string title, char? liner = null) { Instance._LogAddTitle(kind, title, liner); }
         /// <summary>
         /// Přidá dodaný řádek do logu. Umožní do textu vložit uplynulý čas:
         /// na místo tokenu z property <see cref="DxComponent.LogTokenTimeSec"/> vloží počet uplynulých sekund ve formě "25,651 sec";
         /// na místo tokenu z property <see cref="DxComponent.LogTokenTimeMilisec"/> vloží počet uplynulých milisekund ve formě "25,651 milisec";
         /// na místo tokenu z property <see cref="DxComponent.LogTokenTimeMicrosec"/> vloží počet uplynulých mikrosekund ve formě "98 354,25 mikrosec";
         /// </summary>
+        /// <param name="kind">Zdroj, filtruje se podle <see cref="LogActivities"/></param>
         /// <param name="line"></param>
         /// <param name="startTime"></param>
-        public static void LogAddLineTime(string line, long? startTime) { Instance._LogAddLineTime(line, startTime); }
+        public static void LogAddLineTime(LogActivityKind kind, string line, long? startTime) { Instance._LogAddLineTime(kind, line, startTime); }
         /// <summary>
         /// Do logu vepíše danou Message z daného controlu
         /// </summary>
@@ -4319,8 +4325,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Přidá dodaný řádek do logu. 
         /// Nepřidává se nic víc.
         /// </summary>
+        /// <param name="kind">Zdroj, filtruje se podle <see cref="LogActivities"/></param>
         /// <param name="line"></param>
-        public static void LogAddLine(string line) { Instance._LogAddLine(line, false); }
+        public static void LogAddLine(LogActivityKind kind, string line) { Instance._LogAddLine(kind, line, false); }
         /// <summary>
         /// Poslední řádek v logu
         /// </summary>
@@ -4343,6 +4350,80 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="exc"></param>
         public static void LogAddException(Exception exc) { Instance._LogAddLine(exc.Message, false); }
         /// <summary>
+        /// Zobrazí menu s výběrem logovaných aktivit
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="location"></param>
+        public static void AppLogShowSettingsMenu(Control control, Point location) { Instance._AppLogShowSettingsMenu(control, location); }
+        /// <summary>
+        /// Zobrazí menu s výběrem logovaných aktivit
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="location"></param>
+        private void _AppLogShowSettingsMenu(Control control, Point location)
+        {
+            var currentKind = DxComponent.LogActivities;
+            var menuItems = new List<IMenuItem>();
+            var fields = typeof(LogActivityKind).GetFields();
+            foreach (var field in fields)
+            {
+                if (Enum.TryParse(field.Name, out LogActivityKind kind))
+                {
+                    bool isActive = (kind == LogActivityKind.None ? currentKind == LogActivityKind.None :
+                                    (kind == LogActivityKind.Default ? currentKind == LogActivityKind.Default :
+                                    (kind == LogActivityKind.All ? currentKind == LogActivityKind.All :
+                                    ((currentKind & kind) != 0))));
+                    menuItems.Add(new DataMenuItem() { ItemId = field.Name, Text = field.Name, ItemType = MenuItemType.CheckBox, Checked = isActive, Tag = kind });
+                }
+            }
+
+            var menu = DxComponent.CreateDXPopupMenu(menuItems, "Settings", DevExpress.Utils.Menu.MenuViewType.Menu, true);
+            menu.ItemClick += _AppLogShowSettingsMenuClick;
+            menu.ShowPopup(control, location);
+        }
+        /// <summary>
+        /// Po výběru logovaných aktivit
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _AppLogShowSettingsMenuClick(object sender, DevExpress.Utils.Menu.DXMenuItemEventArgs e)
+        {
+            if (e.Item != null && e.Item.Tag is DataMenuItem menuItem && menuItem.Tag is LogActivityKind kind)
+            {
+                LogActivityKind oldKind = DxComponent.LogActivities;
+                LogActivityKind newKind = LogActivityKind.None;
+                switch (kind)
+                {
+                    case LogActivityKind.None:
+                    case LogActivityKind.Default:
+                    case LogActivityKind.All:
+                        newKind = kind;
+                        break;
+                    default:
+                        if (e.Item is DevExpress.Utils.Menu.DXMenuCheckItem checkItem)
+                        {
+                            bool isChecked = checkItem.Checked;
+                            if (isChecked)
+                                newKind = oldKind | kind;
+                            else
+                            {
+                                LogActivityKind maskKind = LogActivityKind.All ^ kind;
+                                newKind = oldKind & maskKind;
+                            }
+                        }
+                        break;
+                }
+
+                if (newKind != oldKind)
+                {
+                    DxComponent.LogActivities = newKind;
+#if Compile_TestDevExpress
+                    DxComponent.Settings.SetRawValue("Components", "AppLogActivitiesKind", ((Int64)DxComponent.LogActivities).ToString());
+#endif
+                }
+            }
+        }
+        /// <summary>
         /// Init systému Log
         /// </summary>
         private void _InitLog()
@@ -4360,24 +4441,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             get { return __LogActive; }
             set
             {
-                if (value && (_LogWatch == null || _LogSB == null))
+                if (value && (__LogWatch == null || __LogSB == null))
                 {   // Inicializace:
-                    _LogWatch = new System.Diagnostics.Stopwatch();
-                    _LogFrequencyLong = System.Diagnostics.Stopwatch.Frequency;
-                    _LogFrequency = _LogFrequencyLong;
-                    _LogTimeSpanForEmptyRow = System.Diagnostics.Stopwatch.Frequency / 10L;   // Pokud mezi dvěma zápisy do logu bude časová pauza 1/10 sekundy a víc, vložím EmptyRow
-                    _LogSB = new StringBuilder();
+                    __LogWatch = new System.Diagnostics.Stopwatch();
+                    __LogFrequencyLong = System.Diagnostics.Stopwatch.Frequency;
+                    __LogFrequency = __LogFrequencyLong;
+                    __LogTimeSpanForEmptyRow = System.Diagnostics.Stopwatch.Frequency / 10L;   // Pokud mezi dvěma zápisy do logu bude časová pauza 1/10 sekundy a víc, vložím EmptyRow
+                    __LogSB = new StringBuilder();
                 }
                 if (value && !__LogActive)
                 {   // Restart:
-                    _LogWatch.Start();
-                    _LogStartTicks = _LogWatch.ElapsedTicks;
-                    _LogLastWriteTicks = _LogStartTicks;
+                    __LogWatch.Start();
+                    __LogStartTicks = __LogWatch.ElapsedTicks;
+                    __LogLastWriteTicks = __LogStartTicks;
                 }
                 if (!value && __LogActive)
                 {   // Stop:
-                    if (_LogWatch != null)
-                        _LogWatch.Stop();
+                    if (__LogWatch != null)
+                        __LogWatch.Stop();
                     // if (_LogSB != null)
                     //    _LogSB.Clear();
                     // Instance nechávám existovat včetně obsahu. Clear obsahu lze řešit explicitně.
@@ -4394,10 +4475,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             get
             {
                 string text = "";
-                if (_LogSB != null)
+                if (__LogSB != null)
                 {
-                    lock (_LogSB)
-                        text = _LogSB?.ToString();
+                    lock (__LogSB)
+                        text = __LogSB?.ToString();
                 }
                 return text;
             }
@@ -4409,30 +4490,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!_LogActive) return;
 
-            if (_LogSB != null)
+            if (__LogSB != null)
             {
-                lock (_LogSB)
+                lock (__LogSB)
                 {
-                    _LogSB.Clear();
+                    __LogSB.Clear();
                     _LogLastLine = null;
                 }
             }
 
-            RunLogTextChanged();
+            _RunLogTextChanged();
         }
         /// <summary>
         /// Obsahuje aktuální čas jako ElapsedTicks
         /// </summary>
         /// <returns></returns>
-        private long _LogTimeCurrent { get { return (_LogActive ? _LogWatch.ElapsedTicks : 0L); } }
+        private long _LogTimeCurrent { get { return (_LogActive ? __LogWatch.ElapsedTicks : 0L); } }
         /// <summary>
         /// Přidá titulek (mezera + daný text ohraničený znaky ===)
         /// </summary>
+        /// <param name="kind">Zdroj, filtruje se podle <see cref="LogActivities"/></param>
         /// <param name="title"></param>
         /// <param name="liner"></param>
-        private void _LogAddTitle(string title, char? liner)
+        private void _LogAddTitle(LogActivityKind kind, string title, char? liner)
         {
             if (!_LogActive) return;
+            if (!_DoLog(kind)) return;
 
             string margins = "".PadRight(15, (liner ?? '='));
             string line = $"{margins}  {title}  {margins}";
@@ -4448,8 +4531,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!_LogActive) return 0m;
 
-            long nowTime = _LogWatch.ElapsedTicks;
-            decimal seconds = ((decimal)(nowTime - startTime)) / _LogFrequency;     // Počet sekund
+            long nowTime = __LogWatch.ElapsedTicks;
+            decimal seconds = ((decimal)(nowTime - startTime)) / __LogFrequency;     // Počet sekund
             string token = logTokenTime ?? LogTokenTimeMicrosec;
             switch (token)
             {
@@ -4467,14 +4550,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// na místo tokenu {MS} vloží počet uplynulých milisekund ve formě "25,651 milisec";
         /// na místo tokenu {US} vloží počet uplynulých mikrosekund ve formě "98 354,25 microsec";
         /// </summary>
+        /// <param name="kind">Zdroj, filtruje se podle <see cref="LogActivities"/></param>
         /// <param name="line"></param>
         /// <param name="startTime"></param>
-        private void _LogAddLineTime(string line, long? startTime)
+        private void _LogAddLineTime(LogActivityKind kind, string line, long? startTime)
         {
             if (!_LogActive) return;
+            if (!_DoLog(kind)) return;
 
-            long nowTime = _LogWatch.ElapsedTicks;
-            decimal seconds = (startTime.HasValue ? ((decimal)(nowTime - startTime.Value)) / _LogFrequency : 0m);     // Počet sekund
+            long nowTime = __LogWatch.ElapsedTicks;
+            decimal seconds = (startTime.HasValue ? ((decimal)(nowTime - startTime.Value)) / __LogFrequency : 0m);     // Počet sekund
             if (line.Contains(LogTokenTimeSec))
             {
                 string info = Math.Round(seconds, 3).ToString("### ### ### ##0.000").Trim() + " sec";
@@ -4501,7 +4586,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="suffix"></param>
         private void _LogAddMessage(Message msg, Control control, string prefix, string suffix)
         {
-            long nowTime = _LogWatch.ElapsedTicks;
+            if (!_LogActive) return;
+            if (!_DoLog(LogActivityKind.WinMessage)) return;
+
+            long nowTime = __LogWatch.ElapsedTicks;
 
             var msgName = _GetWinMessage(msg, false);
             if (msgName != null)
@@ -4520,31 +4608,43 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Přidá daný text jako další řádek
         /// </summary>
+        /// <param name="kind">Zdroj, filtruje se podle <see cref="LogActivities"/></param>
+        /// <param name="line"></param>
+        /// <param name="forceEmptyRow"></param>
+        /// <param name="startTime"></param>
+        /// <param name="nowTime"></param>
+        private void _LogAddLine(LogActivityKind kind, string line, bool forceEmptyRow, long? startTime = null, long? nowTime = null)
+        {
+            if (!_LogActive) return;
+            if (!_DoLog(kind)) return;
+
+            _LogAddLine(line, forceEmptyRow, startTime, nowTime);
+        }
+        /// <summary>
+        /// Přidá daný text jako další řádek
+        /// </summary>
         /// <param name="line"></param>
         /// <param name="forceEmptyRow"></param>
         /// <param name="startTime"></param>
         /// <param name="nowTime"></param>
         private void _LogAddLine(string line, bool forceEmptyRow, long? startTime = null, long? nowTime = null)
         {
-            if (!_LogActive) return;
-
-            // | mikrosekund od startu | mikrosekund od posledně | mikrosekund od starTime | Thread | ...
-            long nowTick = nowTime ?? _LogWatch.ElapsedTicks;
-            string totalUs = _LogGetMicroseconds(_LogStartTicks, nowTick).ToString();              // mikrosekund od startu
-            string stepUs = _LogGetMicroseconds(_LogLastWriteTicks, nowTick).ToString();           // mikrosekund od posledního logu
+            long nowTick = nowTime ?? __LogWatch.ElapsedTicks;
+            string totalUs = _LogGetMicroseconds(__LogStartTicks, nowTick).ToString();              // mikrosekund od startu
+            string stepUs = _LogGetMicroseconds(__LogLastWriteTicks, nowTick).ToString();           // mikrosekund od posledního logu
             string timeUs = (startTime.HasValue ? _LogGetMicroseconds(startTime.Value, nowTick).ToString() : "");    // mikrosekund od daného času
             string thread = System.Threading.Thread.CurrentThread.Name;
             string tab = "\t";
             string logLine = totalUs + tab + stepUs + tab + timeUs + tab + thread + tab + line;
-            lock (_LogSB)
+            lock (__LogSB)
             {
-                if (forceEmptyRow || ((nowTick - _LogLastWriteTicks) > _LogTimeSpanForEmptyRow))
-                    _LogSB.AppendLine();
-                _LogSB.AppendLine(logLine);
+                if (forceEmptyRow || ((nowTick - __LogLastWriteTicks) > __LogTimeSpanForEmptyRow))
+                    __LogSB.AppendLine();
+                __LogSB.AppendLine(logLine);
                 _LogLastLine = logLine;
             }
-            _LogLastWriteTicks = _LogWatch.ElapsedTicks;
-            RunLogTextChanged();
+            __LogLastWriteTicks = __LogWatch.ElapsedTicks;
+            _RunLogTextChanged();
         }
         /// <summary>
         /// Poslední řádek v logu
@@ -4558,25 +4658,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private long _LogGetMicroseconds(long start, long stop)
         {
-            return (1000000L * (stop - start)) / _LogFrequencyLong;
+            return (1000000L * (stop - start)) / __LogFrequencyLong;
         }
         /// <summary>
-        /// Vyvolá event <see cref="_LogTextChanged"/>.
+        /// Vyvolá event <see cref="__LogTextChanged"/>.
         /// </summary>
-        private void RunLogTextChanged()
+        private void _RunLogTextChanged()
         {
             // Tady nemá smysl řešit standardní metodu : protected virtual void OnLogTextChanged(), protože tahle třída je sealed a singleton
-            _LogTextChanged?.Invoke(null, EventArgs.Empty);
+            __LogTextChanged?.Invoke(null, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Vrátí true, pokud se log daného druhu má zapisovat
+        /// </summary>
+        /// <param name="kind"></param>
+        /// <returns></returns>
+        private bool _DoLog(LogActivityKind kind)
+        {
+            return ((kind & __LogActivities) != 0);
         }
         private bool __LogActive;
-        private System.Diagnostics.Stopwatch _LogWatch;
-        private decimal _LogFrequency;
-        private long _LogFrequencyLong;
-        private StringBuilder _LogSB;
-        private event EventHandler _LogTextChanged;
-        private long _LogStartTicks;
-        private long _LogLastWriteTicks;
-        private long _LogTimeSpanForEmptyRow;
+        private LogActivityKind __LogActivities;
+        private System.Diagnostics.Stopwatch __LogWatch;
+        private decimal __LogFrequency;
+        private long __LogFrequencyLong;
+        private StringBuilder __LogSB;
+        private event EventHandler __LogTextChanged;
+        private long __LogStartTicks;
+        private long __LogLastWriteTicks;
+        private long __LogTimeSpanForEmptyRow;
         #endregion
         #region Draw metody a instance
         /// <summary>
@@ -5970,10 +6080,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isPanelDarkSkin = SkinColorSet.IsPanelDark;
             bool isInputDarkSkin = SkinColorSet.IsEditorDark;
 
-            DxComponent.LogAddLine($"IsDarkSkin: By Ribbon.MenuText: {djIsDarkSkin}");
-            DxComponent.LogAddLine($"IsDarkSkin: By FrameHelper.IsDarkSkin: {dxIsDarkSkin}");
-            DxComponent.LogAddLine($"IsDarkSkin: By SkinColorSet.IsPanelDark: {isPanelDarkSkin}");
-            DxComponent.LogAddLine($"IsDarkSkin: By SkinColorSet.IsInputDark: {isInputDarkSkin}");
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"IsDarkSkin: By Ribbon.MenuText: {djIsDarkSkin}");
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"IsDarkSkin: By FrameHelper.IsDarkSkin: {dxIsDarkSkin}");
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"IsDarkSkin: By SkinColorSet.IsPanelDark: {isPanelDarkSkin}");
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"IsDarkSkin: By SkinColorSet.IsInputDark: {isInputDarkSkin}");
 
             return djIsDarkSkin;
         }
@@ -7989,6 +8099,40 @@ White
         public static string SystemColorWindowFrame { get { return SystemColors.WindowFrame.Name; } }
         /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorWindowText { get { return SystemColors.WindowText.Name; } }
+    }
+    /// <summary>
+    /// Druhy aktivit, které lze logovat
+    /// </summary>
+    [Flags]
+    public enum LogActivityKind : Int64
+    {
+        /// <summary>
+        /// Nic
+        /// </summary>
+        None = 0x00000000,
+        WinMessage = 0x00000001,
+        DevExpressEvents = 0x00000002,
+        InteractiveMove = 0x00000010,
+        InteractiveClick = 0x00000020,
+        InteractiveDrag = 0x00000040,
+        Scroll = 0x00000100,
+        VirtualChanges = 0x00000200,
+        Paint = 0x00000800,
+        DataFormRepository = 0x00001000,
+        DataFormEvents = 0x00002000,
+        Ribbon = 0x00004000,
+        LayoutPanel = 0x00008000,
+        DocumentManager = 0x00010000,
+        ThreadManager = 0x00020000,
+
+        /// <summary>
+        /// Default
+        /// </summary>
+        Default = Scroll | VirtualChanges | DataFormRepository | DataFormEvents | Ribbon | LayoutPanel | DocumentManager,
+        /// <summary>
+        /// Vše
+        /// </summary>
+        All = 0x7FFFFFFF
     }
     #endregion
     #endregion

@@ -998,7 +998,7 @@ namespace Noris.Clients.Win.Components.Obsoletes.DataForm
             {
                 _NextCleanLiable = false;
                 ImageCacheNextCleanId = paintLoop + _CACHECLEAN_AFTER_LOOPS;
-                if (LogActive) DxComponent.LogAddLineTime($"DxDataForm.CleanCache(): CacheSize={currentCacheSize}B; úklid není nutný. Čas akce: {DxComponent.LogTokenTimeMilisec}", startTime);
+                if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"DxDataForm.CleanCache(): CacheSize={currentCacheSize}B; úklid není nutný. Čas akce: {DxComponent.LogTokenTimeMilisec}", startTime);
                 return;
             }
 
@@ -1009,7 +1009,7 @@ namespace Noris.Clients.Win.Components.Obsoletes.DataForm
             {
                 _NextCleanLiable = false;
                 ImageCacheNextCleanId = paintLoop + _CACHECLEAN_AFTER_LOOPS_SMALL;
-                if (LogActive) DxComponent.LogAddLineTime($"DxDataForm.CleanCache(): CacheSize={currentCacheSize}B; úklid není možný, všechny položky se používají. Čas akce: {DxComponent.LogTokenTimeMilisec}", startTime);
+                if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"DxDataForm.CleanCache(): CacheSize={currentCacheSize}B; úklid není možný, všechny položky se používají. Čas akce: {DxComponent.LogTokenTimeMilisec}", startTime);
                 return;
             }
 
@@ -1022,7 +1022,7 @@ namespace Noris.Clients.Win.Components.Obsoletes.DataForm
             CleanImageCache(keys1);
 
             long cleanedCacheSize = ImageCacheSize;
-            if (LogActive) DxComponent.LogAddLineTime($"DxDataForm.CleanCache(): CacheSize={currentCacheSize}B; Odstraněno {keys1?.Length ?? 0} položek; Po provedení úklidu: {cleanedCacheSize}B. Čas akce: {DxComponent.LogTokenTimeMilisec}", startTime);
+            if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"DxDataForm.CleanCache(): CacheSize={currentCacheSize}B; Odstraněno {keys1?.Length ?? 0} položek; Po provedení úklidu: {cleanedCacheSize}B. Čas akce: {DxComponent.LogTokenTimeMilisec}", startTime);
 
             // Co a jak příště:
             if (cleanedCacheSize < _CACHESIZE_MIN)                   // Pokud byl tento úklid úspěšný z hlediska minimální paměti, pak příští úklid bude až za daný počet cyklů
@@ -3988,7 +3988,7 @@ namespace Noris.Clients.Win.Components.Obsoletes.DataForm.Internal
             {
                 _PaintingItems = false;
             }
-            DxComponent.LogAddLineTime($"DxDataForm Paint Standard() Items: {__VisibleItems?.Count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            DxComponent.LogAddLineTime(LogActivityKind.Paint, $"DxDataForm Paint Standard() Items: {__VisibleItems?.Count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         /// <summary>
         /// Provede vykreslení jedné dané grupy

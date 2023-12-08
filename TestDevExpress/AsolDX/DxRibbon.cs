@@ -2107,7 +2107,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _ClearingNow = false;
             }
 
-            if (LogActive) DxComponent.LogAddLineTime($" === ClearRibbon {this.DebugName}; Removed {removeItemsCount} items; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+            if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $" === ClearRibbon {this.DebugName}; Removed {removeItemsCount} items; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
         /// <summary>
         /// Korektně smaže BarItemy z this.Items.
@@ -2237,7 +2237,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             int removeItemsCount = 0;
             this._ClearItems(false, false, false, ref removeItemsCount);
 
-            if (LogActive) DxComponent.LogAddLineTime($" === ClearPageContents {this.DebugName}; Removed {removeItemsCount} items; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+            if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $" === ClearPageContents {this.DebugName}; Removed {removeItemsCount} items; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
         /// <summary>
         /// Smaže prázdné prázdné stránky a nevyužité kategorie v rámci this Ribbonu.
@@ -2480,7 +2480,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             AddQATUserListToRibbon();
 
-            if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: {logText} {list.Count} item[s]; Create: {count} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+            if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $" === Ribbon {DebugName}: {logText} {list.Count} item[s]; Create: {count} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
         /// <summary>
         /// Přidá prvky do this Ribbonu z dodané kolekce, v daném režimu LazyLoad
@@ -2496,7 +2496,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             int count = 0;
             _AddPage(iRibbonPage, createMode, ref count);
 
-            if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: {logText}; Create: {count} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+            if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $" === Ribbon {DebugName}: {logText}; Create: {count} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
         /// <summary>
         /// Metoda přidá do this Ribbonu data další stránky.
@@ -2794,7 +2794,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (_TryGetDataForRefreshGroup(iRibbonGroup, out var dxGroup, out var dxPage))
                     _RefreshGroup(iRibbonGroup, dxGroup, dxPage);
             }
-            if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: Refresh groups '{groupCount}', Items count: {itemCount}; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+            if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $" === Ribbon {DebugName}: Refresh groups '{groupCount}', Items count: {itemCount}; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
         /// <summary>
         /// Provede refresh dodaných prvků. Provede se jedním chodem.
@@ -2853,7 +2853,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ReloadGroup(iRibbonGroup, dxGroup, dxPage, createMode, ref count);
             AddQATUserListToRibbon();
 
-            if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: Refresh group '{iRibbonGroup.GroupId}', Items count: {count}; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+            if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $" === Ribbon {DebugName}: Refresh group '{iRibbonGroup.GroupId}', Items count: {count}; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
         /// <summary>
         /// Odebere z evidence dodané grupy
@@ -3090,7 +3090,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     AddQATUserListToRibbon();
                 }, true);
 
-                if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: CreateLazyStaticPages; Create: {pageCount} Pages; {itemCount} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+                if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $" === Ribbon {DebugName}: CreateLazyStaticPages; Create: {pageCount} Pages; {itemCount} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
             }
             _ActiveLazyLoadPagesOnIdle = false;
         }
@@ -4063,7 +4063,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     var startTime = DxComponent.LogTimeCurrent;
                     int count = 0;
                     _PopupMenu_FillItems(dxPopup, level + 1, itemInfo.DxGroup, lazyinfo.ParentItem, lazyinfo.SubItems, true, ref count);
-                    if (LogActive) DxComponent.LogAddLineTime($"LazyLoad SplitButton menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
+                    if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $"LazyLoad SplitButton menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
                     
                     if (lazyinfo.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || lazyinfo.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce)
                         deactivatePopupEvent = false;                     // Pokud máme o SubItems žádat server, necháme si aktivní událost Popup
@@ -4113,7 +4113,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var startTime = DxComponent.LogTimeCurrent;
                 int count = 0;
                 _PopupMenu_FillItems(dxPopup, itemInfo.Level + 1, itemInfo.DxGroup, lazyInfo.ParentItem, lazyInfo.SubItems, true, ref count);
-                if (LogActive) DxComponent.LogAddLineTime($"LazyLoad SplitButton menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
+                if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $"LazyLoad SplitButton menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
 
                 if (lazyInfo.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || lazyInfo.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce)
                     deactivatePopupEvent = false;                     // Pokud máme o SubItems žádat server, necháme si aktivní událost Popup
@@ -4179,7 +4179,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 int level = itemInfo.Level;
                 int count = 0;
                 _PopupMenu_FillItems(dxPopup, level + 1, itemInfo.DxGroup, newRibbonItem, newRibbonItem.SubItems, true, ref count);
-                if (LogActive) DxComponent.LogAddLineTime($"LazyLoad SplitButton menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
+                if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $"LazyLoad SplitButton menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
 
                 // Pokud menu je definováno jako 'OnDemandLoadEveryTime', pak bychom měli zajistit předání LazyInfo i pro následující otevření:
                 if (newRibbonItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime)
@@ -4342,7 +4342,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     _BarMenu_FillItems(menu, itemInfo.Level + 1, itemInfo.DxGroup, lazyInfo.ParentItem, lazyInfo.SubItems, true, ref count);
                     lazyInfo.SubItems = null;                        // SubItems, které jsme nyní vložili do menu, už příště nebudeme potřebovat. Jsou v menu, a dokud nepřijde Refresh, tak tam budou.
                     itemInfo.ValidMenu = true;                       // Prvek nyní obsahuje validní menu
-                    if (LogActive) DxComponent.LogAddLineTime($"LazyLoad Menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
+                    if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $"LazyLoad Menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
                 }
                 //  b) Je třeba zavolat server, aby nám dal nové prvky do menu (eventu ItemOnDemandLoad => RefreshItems => _BarMenu_OpenMenu()),
                 //      pak ale stávající prvky menu uživateli nezobrazíme:
@@ -4399,7 +4399,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _BarMenu_FillItems(barMenu, itemInfo.Level + 1, itemInfo.DxGroup, lazyInfo.ParentItem, lazyInfo.SubItems, true, ref count);
                 lazyInfo.SubItems = null;                            // SubItems, které jsme nyní vložili do menu, už příště nebudeme potřebovat. Jsou v menu, a dokud nepřijde Refresh, tak tam budou.
                 itemInfo.ValidMenu = true;                           // Prvek nyní obsahuje validní menu
-                if (LogActive) DxComponent.LogAddLineTime($"LazyLoad Menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
+                if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $"LazyLoad Menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
             }
             //  b) Je třeba zavolat server, aby nám dal nové prvky do menu (eventu ItemOnDemandLoad => RefreshItems => _BarMenu_OpenMenu()),
             //      pak ale stávající prvky menu uživateli nezobrazíme:
@@ -7372,7 +7372,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             
             this.StoreLastSelectedPage();
 
-            if (LogActive) DxComponent.LogAddLineTime($"MergeRibbon: to Parent: {this.DebugName}; from Child: {(childRibbon?.ToString())}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $"MergeRibbon: to Parent: {this.DebugName}; from Child: {(childRibbon?.ToString())}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         /// <summary>
         /// Dočasné úložiště požadavku (parametr forceSelectChildPage různých metod) na provedení SelectPage z Child Ribbonu po dokončení mergování do Parent Ribbonu.
@@ -7438,7 +7438,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _RunUnMergedAction(action);
                 SetModifiedState(ribbonsUp[0].Item2, true);          // Vrátím stav CurrentModifiedState původní, nikoliv false - ono tam mohlo být true!
                 activateOriginPage(true);
-                if (LogActive) DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: Current; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+                if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $"ModifyRibbon {this.DebugName}: Current; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
                 return;
             }
 
@@ -7482,7 +7482,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             // A protože po celou dobu byl potlačen CheckLazyContentEnabled, tak pro Top Ribbon to nyní provedu explicitně (pokud už je to povoleno : topRibbon.CheckLazyContentEnabled == true):
             activateOriginPage(false);
 
-            if (LogActive) DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: UnMerge + Action + Merge; Total Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $"ModifyRibbon {this.DebugName}: UnMerge + Action + Merge; Total Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
 
 
             // Aktivuje original page a volitelně prověří Lazy obsah stránky
@@ -7533,7 +7533,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // This Ribbon obnoví svoji práci:    tohle nedělej !!!!   Tohle způsobilo, že CollapsedGroup nešla otevřít, jenom blikla po dobu MouseDown:                       KEY: COLLAPSEDGROUP ERROR
                 //           this.BarManager.EndUpdate();
             }
-            if (LogActive) DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: RunAction; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $"ModifyRibbon {this.DebugName}: RunAction; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         /// <summary>
         /// Nastaví <see cref="CurrentModifiedState"/> = <paramref name="modifiedState"/>; a volitelně i <see cref="CheckLazyContentEnabled"/> = !<paramref name="modifiedState"/>; 
@@ -7640,7 +7640,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (childDxRibbon != null)
                 this.ActivateLastActivePage();
 
-            if (LogActive) DxComponent.LogAddLineTime($"UnMergeRibbon from Parent: {this.DebugName}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $"UnMergeRibbon from Parent: {this.DebugName}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         /// <summary>
         /// Metoda do daného Ribbonu (- pokud je umístěn na Formuláři, který je MDI Child, a Ribbon je v režimu ManualMdiMerge) vepíše danou Visible.
@@ -9563,11 +9563,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private void ComboBox_BeforeShowMenu(object sender, DevExpress.XtraEditors.Controls.BeforeShowMenuEventArgs e)
         {
-            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_BeforeShowMenu: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
+            DxComponent.LogAddLine(LogActivityKind.Ribbon, $"DxRibbonComboBox.ComboBox_BeforeShowMenu: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
         }
         private void ComboBox_BeforePopup(object sender, EventArgs e)
         {
-            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_BeforePopup: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
+            DxComponent.LogAddLine(LogActivityKind.Ribbon, $"DxRibbonComboBox.ComboBox_BeforePopup: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
         }
         /// <summary>
         /// Obsahuje true, když se nemá aktivovat událost o změně vybrané hodnoty
@@ -9579,7 +9579,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private object __LastSelectedItem;
         private void ComboBox_Click(object sender, EventArgs e)
         {
-            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_Click: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
+            DxComponent.LogAddLine(LogActivityKind.Ribbon, $"DxRibbonComboBox.ComboBox_Click: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
         }
         /// <summary>
         /// Před otevřením Popup
@@ -9588,22 +9588,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void ComboBox_QueryPopUp(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_Click: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
+            DxComponent.LogAddLine(LogActivityKind.Ribbon, $"DxRibbonComboBox.ComboBox_Click: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
         }
         private void ComboBox_Popup(object sender, EventArgs e)
         {
-            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_Popup: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
+            DxComponent.LogAddLine(LogActivityKind.Ribbon, $"DxRibbonComboBox.ComboBox_Popup: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
             __IsPopupOpen = true;
         }
         private void ComboBox_Closed(object sender, DevExpress.XtraEditors.Controls.ClosedEventArgs e)
         {
-            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_Closed: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
+            DxComponent.LogAddLine(LogActivityKind.Ribbon, $"DxRibbonComboBox.ComboBox_Closed: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
             __IsPopupOpen = false;
         }
         private bool __IsPopupOpen;
         private void ComboBox_Validating(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_Validating: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
+            DxComponent.LogAddLine(LogActivityKind.Ribbon, $"DxRibbonComboBox.ComboBox_Validating: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
         }
         /// <summary>
         /// Po změně vybrané hodnoty
@@ -9612,16 +9612,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void ComboBox_SelectedValueChanged(object sender, EventArgs e)
         {
-            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_SelectedValueChanged: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
+            DxComponent.LogAddLine(LogActivityKind.Ribbon, $"DxRibbonComboBox.ComboBox_SelectedValueChanged: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
             _CheckChangeItem();
         }
         private void ComboBox_ButtonPressed(object sender, DevExpress.XtraEditors.Controls.ButtonPressedEventArgs e)
         {
-            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_ButtonPressed: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}; Button={e.Button.Kind}");
+            DxComponent.LogAddLine(LogActivityKind.Ribbon, $"DxRibbonComboBox.ComboBox_ButtonPressed: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}; Button={e.Button.Kind}");
         }
         private void ComboBox_ButtonClick(object sender, DevExpress.XtraEditors.Controls.ButtonPressedEventArgs e)
         {
-            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_ButtonClick: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}; Button={e.Button.Kind}");
+            DxComponent.LogAddLine(LogActivityKind.Ribbon, $"DxRibbonComboBox.ComboBox_ButtonClick: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}; Button={e.Button.Kind}");
             if (e.Button.Kind != DevExpress.XtraEditors.Controls.ButtonPredefines.DropDown)
                 this._RunComboButtonClick(e.Button);
         }

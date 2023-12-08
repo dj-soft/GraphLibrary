@@ -55,7 +55,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var startTime = DxComponent.LogTimeCurrent;
             base.OnInvalidated(e);
-            if (LogActive) DxComponent.LogAddLineTime($"DxBufferedGraphic.OnInvalidated; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Paint, $"DxBufferedGraphic.OnInvalidated; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         /// <summary>
         /// OnPaintBackground
@@ -69,7 +69,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {   // Pokud nemáme platná data ve vrstvě nativního pozadí, pak si necháme base třídou vykreslit Background do vhodného objektu grafiky:
                 PaintEventArgs ee = _GetNativeBackgroundPaintArgs(e);     // Jiný argument = obsahuje grafiku z vrstvy _NativeBackgroundLayer. Do té grafiky se následně vykreslí Background.
                 base.OnPaintBackground(ee);                               // Tady se vykreslí pouze barva pozadí, ale nikoli motiv skinu. Vykreslí se do argumentu 'ee', který obsahuje grafiku z vrstvy _NativeBackgroundLayer.
-                if (LogActive) DxComponent.LogAddLineTime($"DxBufferedGraphic.OnPaintBackground; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+                if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Paint, $"DxBufferedGraphic.OnPaintBackground; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
             }
         }
         /// <summary>
@@ -91,7 +91,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     base.OnPaint(ee);                                         // Tady se do grafiky z vrstvy _NativeBackgroundLayer (která zatím obsahuje pouze barvu pozadí) vykreslí celý motiv pozadí (=obrázky skinu)
                     _NativeBackgroundIsValid = true;
                     contentIsChanged = true;
-                    if (LogActive) DxComponent.LogAddLineTime($"DxBufferedGraphic.Prepare(NativeBackground); Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+                    if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Paint, $"DxBufferedGraphic.Prepare(NativeBackground); Time: {DxComponent.LogTokenTimeMilisec}", startTime);
                 }
 
                 OnPaintLayers(e.Graphics, e.ClipRectangle, contentIsChanged);
@@ -100,13 +100,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             {   // Po chybě vypíšeme danou chybu do controlu:
                 base.OnPaint(e);                                             // Tady se do grafiky z vrstvy _NativeBackgroundLayer (která zatím obsahuje pouze barvu pozadí) vykreslí celý motiv pozadí (=obrázky skinu)
                 OnPaintException(e, exc);
-                DxComponent.LogAddLine($"DxPanelBufferedGraphic.OnPaint() error: {exc.Message}");
+                DxComponent.LogAddLine(LogActivityKind.Paint, $"DxPanelBufferedGraphic.OnPaint() error: {exc.Message}");
             }
             finally
             {
                 IsPaintLayersInProgress = false;
             }
-            if (LogActive && OnPaintStartTime.HasValue) DxComponent.LogAddLineTime($"DxBufferedGraphic.Paint(); TotalTime: {DxComponent.LogTokenTimeMilisec}", OnPaintStartTime.Value);
+            if (LogActive && OnPaintStartTime.HasValue) DxComponent.LogAddLineTime(LogActivityKind.Paint, $"DxBufferedGraphic.Paint(); TotalTime: {DxComponent.LogTokenTimeMilisec}", OnPaintStartTime.Value);
             OnPaintStartTime = null;
         }
         /// <summary>
@@ -297,7 +297,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
             }
             InvalidateUserData = null;
-            if (LogActive) DxComponent.LogAddLineTime($"DxPanelBufferedGraphic.OnPaintLayers() mode: {DrawingMode}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Paint, $"DxPanelBufferedGraphic.OnPaintLayers() mode: {DrawingMode}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         /// <summary>
         /// Metoda je volaná v procesu vykreslení controlu (po případném vykreslení pozadí controlu do vrstvy <see cref="_NativeBackgroundLayer"/>).
@@ -484,7 +484,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             else
                 CopyGraphicsDataBlt(sourceGraphicsData, targetGraphics, dwBitBltRop.Value);
 
-            if (logActive) DxComponent.LogAddLineTime($"DxBufferedGraphic.CopyGraphicsData({(logInfo ?? "")}); Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            if (logActive) DxComponent.LogAddLineTime(LogActivityKind.Paint, $"DxBufferedGraphic.CopyGraphicsData({(logInfo ?? "")}); Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         /// <summary>
         /// Zkopíruje obsah bufferované grafiky z <paramref name="sourceGraphicsData"/> do cílové grafiky <paramref name="targetGraphics"/>.
@@ -634,7 +634,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     this.LayerUserData = args.LayerUserData;
                     this._IsInvalidated = false;
                 }
-                if (logActive) DxComponent.LogAddLineTime($"DxBufferedGraphic.PaintLayer({LayerId}); Mode: Primitive; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+                if (logActive) DxComponent.LogAddLineTime(LogActivityKind.Paint, $"DxBufferedGraphic.PaintLayer({LayerId}); Mode: Primitive; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
             }
             /// <summary>
             /// Zajistí vykreslení this vrstvy.
@@ -662,7 +662,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     // Pokud ale v události RunOnPaintLayer() nikdo nepoužije grafiku DxBufferedGraphicPaintArgs.Graphics, pak tato vrstva nebude mít svůj obsah, a jako sourceLayer zůstane ta předchozí...
                     _Owner.RunOnPaintLayer(args);
                     this.LayerUserData = args.LayerUserData;
-                    if (logActive) DxComponent.LogAddLineTime($"DxBufferedGraphic.PaintLayer({LayerId}); Mode: RepaintOver; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+                    if (logActive) DxComponent.LogAddLineTime(LogActivityKind.Paint, $"DxBufferedGraphic.PaintLayer({LayerId}); Mode: RepaintOver; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
 
                     this._IsInvalidated = false;
                     this._HasContent = args.GraphicsIsUsed;
@@ -744,7 +744,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     logInfo += " CopyContent";
                 }
 
-                if (logActive) DxComponent.LogAddLineTime($"DxBufferedGraphic.PaintLayer({LayerId}); Mode: OnlyChanged; Info:{logInfo}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+                if (logActive) DxComponent.LogAddLineTime(LogActivityKind.Paint, $"DxBufferedGraphic.PaintLayer({LayerId}); Mode: OnlyChanged; Info:{logInfo}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
             }
             /// <summary>
             /// Svůj obsah přenese do dané cílové grafiky

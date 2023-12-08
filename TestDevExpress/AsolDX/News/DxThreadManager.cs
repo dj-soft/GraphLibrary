@@ -306,16 +306,16 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (__ActionId == Int32.MaxValue) __ActionId = 0;    // K tomuhle dojde maximálně 1x za 10 let, že - pane Chocholoušku :-)  -  ale jen, když nás příliš zásobujete, pane Karlík... :-D  ... Pokud stihneme dávat 6,80.. akcí za 1 sekundu, tak Int32.Max opravdu přetečeme za 10 let.
                 actionInfo.Id = ++__ActionId;
                 actionInfo.Owner = this;
-                if (__LogActive) DxComponent.LogAddLine($"{__Source}: Add {actionInfo}; Queue.Count: {(__ActionQueue.Count + 1)}");
+                if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: Add {actionInfo}; Queue.Count: {(__ActionQueue.Count + 1)}");
                 __ActionQueue.Enqueue(actionInfo);
                 actionInfo.ActionState = ThreadActionState.WaitingInQueue;
             }
-            if (__LogActive) DxComponent.LogAddLine($"{__Source}: Add {actionInfo}; Lock on Queue released, set signal NewActionIncome and AnyThreadDisponible ...");
+            if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: Add {actionInfo}; Lock on Queue released, set signal NewActionIncome and AnyThreadDisponible ...");
             __ActionAcceptedSignal.Reset();                          // Smažeme staré signály, počkáme si na aktuální...
             __NewActionIncomeSignal.Set();                           // To probudí thread __ActionDispatcherThread, který možná čeká na přidání další akce do fronty v metodě _ActionWaitToAnyAction()...
             __AnyThreadDisponibleSignal.Set();                       // To probudí thread __ActionDispatcherThread, který možná čeká na nějaký disponibilní thread v metodě __GetDisponibleThread()...
 
-            if (__LogActive) DxComponent.LogAddLine($"{__Source}: Add {actionInfo}; Waiting for ActionAccepted signal...");
+            if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: Add {actionInfo}; Waiting for ActionAccepted signal...");
 
             //  bez žádného kódu ...                       Nečeká vůbec, nepředá řízení do threadu Dispatcher
             // __ActionAcceptedSignal.WaitOne(1);          Občas zablokuje current thread na 15ms = nad rámec timeoutu, ale ihned předá řízení do Dispatcher a odstartuje provádění práce
@@ -326,7 +326,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             __ActionAcceptedSignal.WaitOne(1);                       // Tenhle signál posílá metoda pro čtení akcí i pro získání threadu. Oběma metodám jsme poslali signál a nyní se provádějí.
 
-            if (__LogActive) DxComponent.LogAddLine($"{__Source}: Add {actionInfo}; Done.");
+            if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: Add {actionInfo}; Done.");
         }
         /// <summary>
         /// Smyčka vlákna, které je dispečerem spouštění akcí.
@@ -354,12 +354,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             while (!__IsStopped)
             {
-                if (__LogActive) DxComponent.LogAddLine($"{__Source}: Test any Action...");
+                if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: Test any Action...");
                 if (__ActionQueueLockCount > 0) break;
-                if (__LogActive) DxComponent.LogAddLine($"{__Source}: Wait to any Action...");
+                if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: Wait to any Action...");
                 __NewActionIncomeSignal.WaitOne(3000);
             }
-            if (__LogActive) DxComponent.LogAddLine($"{__Source}: Any action exists, set signal ActionAccepted.");
+            if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: Any action exists, set signal ActionAccepted.");
             __ActionAcceptedSignal.Set();
         }
         /// <summary>
@@ -377,7 +377,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     actionInfo.ActionState = ThreadActionState.WaitingToThread;
                 }
             }
-            if (__LogActive) DxComponent.LogAddLine($"{__Source}: Found {actionInfo} to Run; Queue.Count: {(__ActionQueue.Count + 1)}");
+            if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: Found {actionInfo} to Run; Queue.Count: {(__ActionQueue.Count + 1)}");
             return actionInfo;
         }
         /// <summary>
@@ -390,7 +390,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (actionInfo != null)
             {
-                if (__LogActive) DxComponent.LogAddLine($"{__Source}: Run {actionInfo} in {threadWrap}");
+                if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: Run {actionInfo} in {threadWrap}");
                 threadWrap.RunAction(actionInfo);
             }
             else
@@ -465,7 +465,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     runningCount = actions.Where(a => a.State != ThreadActionState.Completed).Count();
                     if (runningCount == 0) break;
-                    if (__LogActive) DxComponent.LogAddLine($"{__Source}: WaitToActionsDone : waiting for {runningCount} actions...");
+                    if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: WaitToActionsDone : waiting for {runningCount} actions...");
                     signal.WaitOne(1000);
                     if (hasTimeout && DateTime.UtcNow >= end.Value) break;
                 }
@@ -477,7 +477,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     action?.StateChangedSignalsRemove(signal);
             }
 
-            if (__LogActive) DxComponent.LogAddLine(__Source + ": " + (runningCount == 0 ? $"WaitToActionsDone : all actions completed." : $"WaitToActionsDone : Timeout {timeout} expired, {runningCount} actions are still incomplete."));
+            if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, __Source + ": " + (runningCount == 0 ? $"WaitToActionsDone : all actions completed." : $"WaitToActionsDone : Timeout {timeout} expired, {runningCount} actions are still incomplete."));
         }
         /// <summary>
         /// ID posledně přidané akce, příští bude mít +1
@@ -673,7 +673,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 catch (Exception exc)
                 {
-                    DxComponent.LogAddLine(exc.ToString());
+                    DxComponent.LogAddException(exc);
                 }
                 finally
                 {
@@ -794,7 +794,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (__IsStopped) return null;
 
-            if (__LogActive) DxComponent.LogAddLine($"{__Source}: Search for disponible thread, current ThreadCount: {__Threads.Count} ...");
+            if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: Search for disponible thread, current ThreadCount: {__Threads.Count} ...");
             ThreadWrap threadWrap = null;
             bool logThread = false;
             while (true)
@@ -806,7 +806,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 if (__TryGetDisponibleThread(out threadWrap)) break;                               // Najde volný thread / vytvoří nový thread a vrátí jej. Podmínečně píše do logu způsob získání threadu
                 if (__IsStopped) break;                                                            // Končíme jako celek? Vrátíme null...
-                DxComponent.LogAddLine($"{__Source}: ThreadManager Waiting for disponible thread, current ThreadCount: {__Threads.Count} ...");        // Tohle loguju povinně...
+                DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: ThreadManager Waiting for disponible thread, current ThreadCount: {__Threads.Count} ...");        // Tohle loguju povinně...
                 __AnyThreadDisponibleSignal.WaitOne(3000);                                         //  ... počká na uvolnění některého threadu ... (anebo na signál o nové akci)
 
                 // Zvenku zadaná akce (v metodě _AddAction(ActionInfo actionInfo)) přidala novou akci, poslala signály a AnyThreadDisponible) a nyní čeká na signál ActionAccepted.
@@ -820,7 +820,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // A protože jsme do logu dali info o čekání, dáme tam i nalezený thread:
                 logThread = true;
             }
-            if (!__LogActive && logThread) DxComponent.LogAddLine($"{__Source}: Allocated: {threadWrap}");// Tohle loguju jen když není log aktivní a čekali jsme na thread, to se loguje povinně, ale neloguje se druh získání threadu...
+            if (!__LogActive && logThread) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: Allocated: {threadWrap}");// Tohle loguju jen když není log aktivní a čekali jsme na thread, to se loguje povinně, ale neloguje se druh získání threadu...
             return threadWrap;
         }
         /// <summary>
@@ -841,7 +841,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 threadWrap = threadList.FirstOrDefault(t => t.TryAllocate());                      // Najdeme první thread, který je možno alokovat a rovnou jej Alokujeme
                 if (threadWrap != null)
                 {
-                    if (__LogActive) DxComponent.LogAddLine($"{__Source}: Allocated existing: {threadWrap}");
+                    if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: Allocated existing: {threadWrap}");
                 }
                 else
                 {
@@ -849,10 +849,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (count < __MaxThreadCount)
                     {   // Můžeme ještě přidat další thread:
                         string name = $"ThreadInPool{(count + 1)}";
-                        if (__LogActive) DxComponent.LogAddLine($"{__Source}: Preparing new thread: {name}");
+                        if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: Preparing new thread: {name}");
                         threadWrap = new ThreadWrap(this, name, ThreadWrapState.Allocated);       // Vytvoříme nový thread, a rovnou jako Alokovaný
                         __Threads.Add(threadWrap);
-                        if (__LogActive) DxComponent.LogAddLine($"{__Source}: Created new: {threadWrap}");
+                        if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: Created new: {threadWrap}");
                     }
                     // Pokud již nemůžeme přidat další thread a všechny existující jsou právě nyní obsazené, 
                     //  pak vrátíme false a nadřízená metoda počká ve smyčce (s pomocí semaforu __AnyThreadDisponibleSemaphore) na uvolnění některého threadu.
@@ -960,7 +960,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="abortNow"></param>
         private void __StopAll(bool abortNow = false)
         {
-            if (__LogActive) DxComponent.LogAddLine($"{__Source}: Stop all threads...");
+            if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: Stop all threads...");
             lock (__Threads)
             {
                 foreach (var threadWrap in __Threads)
@@ -972,7 +972,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 __IsStopped = true;
                 __AnyThreadDisponibleSignal.Set();
             }
-            if (__LogActive) DxComponent.LogAddLine($"{__Source}: All threads is stopped.");
+            if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: All threads is stopped.");
         }
         /// <summary>
         /// Soupis dosud vytvořených threadů.
@@ -1087,7 +1087,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     var state = __State;
                     if (!__End && __State == ThreadWrapState.Disponible)
                     {
-                        if (__LogActive) DxComponent.LogAddLine($"{__Source}: Allocate current: {this}");
+                        if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: Allocate current: {this}");
                         __State = ThreadWrapState.Allocated;
                         isAllocated = true;
                     }
@@ -1144,7 +1144,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     var state = __State;
                     if (state == ThreadWrapState.Allocated)
                     {
-                        if (__LogActive) DxComponent.LogAddLine($"{__Source}: {this} : Released");
+                        if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: {this} : Released");
                         __DisponibleFrom = DateTime.UtcNow;
                         __State = ThreadWrapState.Disponible;
                         isReleased = true;
@@ -1158,7 +1158,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 if (isReleased)
                 {
-                    if (__LogActive) DxComponent.LogAddLine($"{__Source}: {this} : Disponible");
+                    if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: {this} : Disponible");
                     AfterThreadDisponible();
                 }
             }
@@ -1207,16 +1207,16 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {   // Běh aplikační akce probíhá už bez zámku:
                     try
                     {
-                        if (__LogActive) DxComponent.LogAddLine($"{__Source}: {this} : Run {actionInfo}");
+                        if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: {this} : Run {actionInfo}");
                         actionInfo.Run();
-                        if (__LogActive) DxComponent.LogAddLine($"{__Source}: {this} : Done {actionInfo}");
+                        if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: {this} : Done {actionInfo}");
                     }
-                    catch (Exception exc) { DxComponent.LogAddLine(exc.ToString()); }
+                    catch (Exception exc) { DxComponent.LogAddException(exc); }
                     finally
                     {
                         __DisponibleFrom = DateTime.UtcNow;
                         __State = ThreadWrapState.Disponible;
-                        if (__LogActive) DxComponent.LogAddLine($"{__Source}: {this} : Disponible");
+                        if (__LogActive) DxComponent.LogAddLine(LogActivityKind.ThreadManager, $"{__Source}: {this} : Disponible");
                         AfterThreadDisponible();
                     }
                 }

@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using System.Drawing;
 using DevExpress.XtraBars;
 using Noris.Clients.Win.Components.AsolDX;
+using System.Drawing.Text;
 
 namespace TestDevExpress.Components
 {
@@ -59,7 +60,7 @@ namespace TestDevExpress.Components
                 case "addbreak":
                     bool isActive = this.AppLogActive;
                     if (!isActive) this.AppLogActive = true;
-                    DxComponent.LogAddLine((_BreakPageId++).ToString() + " ".PadRight(50, '-'));
+                    DxComponent.LogAddLine(LogActivityKind.All, (_BreakPageId++).ToString() + " ".PadRight(50, '-'));
                     this._RefreshLogText(true);
                     if (!isActive) this.AppLogActive = false;
                     break;
@@ -71,6 +72,9 @@ namespace TestDevExpress.Components
                     break;
                 case "refresh":
                     this._RefreshLogText(true);
+                    break;
+                case "settings":
+                    _SettingsMenuShow();
                     break;
             }
         }
@@ -86,6 +90,7 @@ namespace TestDevExpress.Components
             string imagePause = "svgimages/xaf/action_pauserecording.svg";               // "svgimages/xaf/action_debug_stop.svg"
             string imageResume = "svgimages/xaf/action_resumerecording.svg";             // "svgimages/xaf/action_debug_start.svg"
             string imageInsertBreak = "svgimages/snap/separatorlist.svg";                // "svgimages/snap/separatorlistnone.svg";     "svgimages/snap/separatorpagebreaklist.svg";
+            string imageSettings = "svgimages/dashboards/itemtypechecked.svg";
 
             bool isLogActive = this.AppLogActive;
 
@@ -95,10 +100,18 @@ namespace TestDevExpress.Components
             items.Add(new DataRibbonItem() { ItemId = "pause", ImageName = imagePause, ToolTipTitle = "Pause", ToolTipText = "Pozastaví výpis logu", RibbonStyle = Noris.Clients.Win.Components.AsolDX.RibbonItemStyles.SmallWithoutText, ItemIsFirstInGroup = true, ItemType = RibbonItemType.CheckButton, Checked = !isLogActive, RadioButtonGroupName = "LogActivity" });
             items.Add(new DataRibbonItem() { ItemId = "resume", ImageName = imageResume, ToolTipTitle = "Resume", ToolTipText = "Obnoví aktualizace", RibbonStyle = Noris.Clients.Win.Components.AsolDX.RibbonItemStyles.SmallWithoutText, ItemType = RibbonItemType.CheckButton, Checked = isLogActive, RadioButtonGroupName = "LogActivity" });
             items.Add(new DataRibbonItem() { ItemId = "refresh", ImageName = imageRefresh, ToolTipTitle = "Refresh", ToolTipText = "Znovu načte obsah logu", RibbonStyle = Noris.Clients.Win.Components.AsolDX.RibbonItemStyles.SmallWithoutText });
+            items.Add(new DataRibbonItem() { ItemId = "settings", ImageName = imageSettings, ToolTipTitle = "Settings", ToolTipText = "Výběr logovaných aktivit", RibbonStyle = Noris.Clients.Win.Components.AsolDX.RibbonItemStyles.SmallWithoutText });
 
             return items.ToArray();
         }
         private DxSingleToolbar __ToolBar;
+        #endregion
+        #region Settings
+        private void _SettingsMenuShow()
+        {
+            DxComponent.AppLogShowSettingsMenu(this, new Point(6, 35));
+        }
+
         #endregion
         #region Aplikační log a Text
         private void _InitAppLog()

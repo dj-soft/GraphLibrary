@@ -279,7 +279,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (page != null) page.IsActiveContent = false;
             _TabPaneChangeNameOld = page?.DebugName;
             RunTabChangeDone();
-            DxComponent.LogAddLineTime($"TabChange from '{_TabPaneChangeNameOld}' to '{_TabPaneChangeNameNew}'; Time: {DxComponent.LogTokenTimeMilisec}", _TabPaneChangeStart);
+            DxComponent.LogAddLineTime(LogActivityKind.DataFormEvents, $"TabChange from '{_TabPaneChangeNameOld}' to '{_TabPaneChangeNameNew}'; Time: {DxComponent.LogTokenTimeMilisec}", _TabPaneChangeStart);
         }
 
         private long? _TabPaneChangeStart;
@@ -751,7 +751,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             long beginTime = DxComponent.LogTimeCurrent;
             long startTime;
 
-            DxComponent.LogAddTitle($"ScrollPanel '{DebugName}' RefreshVisibleItems");
+            DxComponent.LogAddTitle(LogActivityKind.DataFormEvents, $"ScrollPanel '{DebugName}' RefreshVisibleItems");
 
             RefreshItemsInfo refreshInfo = new RefreshItemsInfo(this.ClientSize, this.VisibleBounds, this.CanOptimizeControls, this.IsActiveContent, DataForm.MemoryMode);
 
@@ -759,7 +759,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             startTime = DxComponent.LogTimeCurrent;
             foreach (var item in Items)
                 item.PrepareVisibleItem(refreshInfo);
-            DxComponent.LogAddLineTime($"ScrollPanel '{DebugName}' PrepareVisibleItems(): Items: {Items.Count}; {refreshInfo}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            DxComponent.LogAddLineTime(LogActivityKind.DataFormEvents, $"ScrollPanel '{DebugName}' PrepareVisibleItems(): Items: {Items.Count}; {refreshInfo}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
 
             // Tady hromadně přidám a odeberu controly z daného pole:
             if (refreshInfo.NeedRefreshContent)
@@ -773,10 +773,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                     item.FinaliseVisibleItemAdd(refreshInfo);
                 foreach (var item in refreshInfo.RemovedItems)
                     item.FinaliseVisibleItemRemoved(refreshInfo);
-                DxComponent.LogAddLineTime($"ScrollPanel '{DebugName}' FinaliseVisibleItems(): Items: {Items.Count}; {refreshInfo}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+                DxComponent.LogAddLineTime(LogActivityKind.DataFormEvents, $"ScrollPanel '{DebugName}' FinaliseVisibleItems(): Items: {Items.Count}; {refreshInfo}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
             }
 
-            DxComponent.LogAddLineTime($"ScrollPanel '{DebugName}' RefreshVisibleItems({reason}); TotalTime: {DxComponent.LogTokenTimeMilisec}", beginTime);
+            DxComponent.LogAddLineTime(LogActivityKind.DataFormEvents, $"ScrollPanel '{DebugName}' RefreshVisibleItems({reason}); TotalTime: {DxComponent.LogTokenTimeMilisec}", beginTime);
         }
         /// <summary>
         /// Tohle bychom měli umět...
@@ -1081,7 +1081,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var addControls = refreshInfo.AddedItems.Select(i => i.Control).ToArray();
                 this.Controls.AddRange(addControls);
                 refreshInfo.HostedCount += count;
-                DxComponent.LogAddLineTime($"ContentPanel '{ScrollPanel?.DebugName}'; RefeshVisibleItems; AddControls: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+                DxComponent.LogAddLineTime(LogActivityKind.DataFormEvents, $"ContentPanel '{ScrollPanel?.DebugName}'; RefeshVisibleItems; AddControls: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
             }
 
             count = refreshInfo.RemovedItems.Count;
@@ -1093,7 +1093,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 foreach (var removeControl in removeControls)
                     this.Controls.Remove(removeControl);
                 refreshInfo.RemovedCount += count;
-                DxComponent.LogAddLineTime($"ContentPanel '{ScrollPanel?.DebugName}'; RefeshVisibleItems; RemoveControls: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+                DxComponent.LogAddLineTime(LogActivityKind.DataFormEvents, $"ContentPanel '{ScrollPanel?.DebugName}'; RefeshVisibleItems; RemoveControls: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
             }
 
             // Tohle vezme řádově 0,5 milisekundy, to do logu tedy dáme:
@@ -1101,7 +1101,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
-            DxComponent.LogAddLineTime($"ContentPanel '{ScrollPanel?.DebugName}'; RefeshVisibleItems; SuspendEnd; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            DxComponent.LogAddLineTime(LogActivityKind.DataFormEvents, $"ContentPanel '{ScrollPanel?.DebugName}'; RefeshVisibleItems; SuspendEnd; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         #region Screenshot
         /// <summary>

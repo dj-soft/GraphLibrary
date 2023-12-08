@@ -37,6 +37,10 @@ namespace TestDevExpress
                 string logActive = DxComponent.Settings.GetRawValue("Components", "AppLogActive");
                 DxComponent.LogActive = (logActive != null && logActive == "True");
 
+                string logActivitiesKind = DxComponent.Settings.GetRawValue("Components", "AppLogActivitiesKind");
+                Int64 logActivities = 0;
+                bool hasActivities = (!String.IsNullOrEmpty(logActivitiesKind) && Int64.TryParse(logActivitiesKind, out logActivities));
+                DxComponent.LogActivities = (hasActivities ? (LogActivityKind)logActivities: LogActivityKind.Default);
 
                 var moon10 = DxComponent.CreateBitmapImage("Images/Moon10.png");
 

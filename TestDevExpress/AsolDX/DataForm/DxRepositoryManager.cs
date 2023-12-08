@@ -262,7 +262,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         removeCount++;
                         removeSize += sizes[i].Value;
                     }
-                    DxComponent.LogAddLineTime($"DxRepositoryManager.CleanUpCache() From: {count} [{totalBytes} B]; Removed: {removeCount} [{removeSize} B]; Time: {DxComponent.LogTokenTimeMicrosec}", startTime);
+                    DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"DxRepositoryManager.CleanUpCache() From: {count} [{totalBytes} B]; Removed: {removeCount} [{removeSize} B]; Time: {DxComponent.LogTokenTimeMicrosec}", startTime);
                 }
             }
 
@@ -509,6 +509,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Reference na <see cref="DxRepositoryManager"/>, do něhož tento editor patří
         /// </summary>
         protected DxRepositoryManager RepositoryManager { get { return __RepositoryManager; } } private DxRepositoryManager __RepositoryManager;
+        /// <summary>
+        /// Hlavní instance Dataformu
+        /// </summary>
+        protected DxDataFormPanel DataForm { get { return __RepositoryManager?.DataForm; } }
         /// <summary>
         /// Formát bitmap, který se ukládá do cache. Čte se z DataFormu: <see cref="DxDataFormPanel.CacheImageFormat"/>
         /// (přes <see cref="DxRepositoryManager.CacheImageFormat"/>)
@@ -828,10 +832,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 ControlDataPair pair;
 
                 pair = _ControlUseQ;
-                if (isAtttachedTo(pair, control)) { paintData = pair.PaintData; return true; }
+                if (isAtttachedTo(pair, control)) { paintData = pair.PaintData; return (paintData != null); }
 
                 pair = _ControlUseW;
-                if (isAtttachedTo(pair, control)) { paintData = pair.PaintData; return true; }
+                if (isAtttachedTo(pair, control)) { paintData = pair.PaintData; return (paintData != null); }
             }
             paintData = null;
             return false;
@@ -1439,7 +1443,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="paintData"></param>
         /// <param name="value"></param>
-        protected void SetItemValue(IPaintItemData paintData, object value) { paintData.SetContent(Data.DxDataFormProperty.Value, value); }
+        /// <param name="callAction">Vyvolat akci po změně hodnoty?</param>
+        protected void SetItemValue(IPaintItemData paintData, object value, bool callAction)
+        {
+            var oldValue = (callAction ? GetItemValue(paintData) : null);
+            paintData.SetContent(Data.DxDataFormProperty.Value, value);
+            if (callAction && !Object.Equals(value, oldValue)) paintData.RunAction(DxDData.DxDataFormAction.ValueChanged, value);
+        }
         /// <summary>
         /// Z prvku přečte a vrátí konstantní text Label
         /// </summary>
@@ -1895,7 +1905,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             if (sender is DxeEdit.TextEdit control && TryGetPaintData(control, out var paintData))
             {
-                SetItemValue(paintData, control.EditValue);
+                SetItemValue(paintData, control.EditValue, true);
             }
         }
         /// <summary>
@@ -2038,7 +2048,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             if (sender is DxeEdit.ButtonEdit control && TryGetPaintData(control, out var paintData))
             {
-                SetItemValue(paintData, control.EditValue);
+                SetItemValue(paintData, control.EditValue, true);
             }
         }
         /// <summary>
@@ -2202,7 +2212,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             if (sender is DxeEdit.MemoEdit control && TryGetPaintData(control, out var paintData))
             {
-                SetItemValue(paintData, control.EditValue);
+                SetItemValue(paintData, control.EditValue, true);
             }
         }
         /// <summary>
@@ -2382,7 +2392,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var dxItem = control.SelectedItem;
                 if (dxItem != null && dxItem is DxDData.ImageComboBoxProperties.Item item)
                 {   // Je vybraná konkrétní položka?
-                    SetItemValue(paintData, item.Value);
+                    SetItemValue(paintData, item.Value, true);
                 }
                 else
                 {
@@ -2612,7 +2622,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var dxItem = control.SelectedItem;
                 if (dxItem != null && dxItem is DevExpress.XtraEditors.Controls.ImageComboBoxItem dxImageItem)
                 {   // Je vybraná konkrétní položka?
-                    SetItemValue(paintData, dxImageItem.Value);
+                    SetItemValue(paintData, dxImageItem.Value, true);
                 }
                 else
                 {

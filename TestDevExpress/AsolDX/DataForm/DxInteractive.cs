@@ -583,6 +583,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="currentItem"></param>
         private void _MouseItemClick(MouseState mouseState, IInteractiveItem currentItem)
         {
+            DxComponent.LogAddLine(LogActivityKind.InteractiveClick, $"InteractivePanel.MouseItemClick() on {currentItem}");
+
             // Click se volá v době MouseUp, ale v procesu Click nás zajímá mj. tlačítka myši v době MouseDown,
             //  proto do eventu posílám objekt __CurrentMouseDownState (stav myši v době MouseDown) a nikoli currentItem (ten už má Buttons = None):
             _RunInteractiveItemClick(new InteractiveItemEventArgs(currentItem, __CurrentMouseDownState));
@@ -601,6 +603,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="mouseState"></param>
         private void _MouseAreaClick(MouseState mouseState)
         {
+            DxComponent.LogAddLine(LogActivityKind.InteractiveClick, $"InteractivePanel.MouseAreaClick()");
+
             // Click se volá v době MouseUp, ale v procesu Click nás zajímá mj. tlačítka myši v době MouseDown,
             //  proto do eventu posílám objekt __CurrentMouseDownState (stav myši v době MouseDown) a nikoli currentItem (ten už má Buttons = None):
             _RunInteractiveAreaClick(new InteractiveItemEventArgs(null, __CurrentMouseDownState));
@@ -632,6 +636,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             if (!lastExists && currentExists)
             {   // Ze žádného prvku na nový prvek:
+                DxComponent.LogAddLine(LogActivityKind.InteractiveMove, $"InteractivePanel.MouseExchange(): Enter to {currentMouseItem}");
                 _SetInteractiveMouseState(currentMouseItem, currentState);
                 __CurrentMouseItem = currentMouseItem;
                 _RunInteractiveItemMouseEnter(new InteractiveItemEventArgs(currentMouseItem, mouseState));
@@ -640,6 +645,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             if (lastExists && !currentExists)
             {   // Z dosavadního prvku na žádný prvek:
+                DxComponent.LogAddLine(LogActivityKind.InteractiveMove, $"InteractivePanel.MouseExchange(): Leave from {lastMouseItem}");
                 _SetInteractiveMouseState(lastMouseItem, DxInteractiveState.None);
                 _RunInteractiveItemMouseLeave(new InteractiveItemEventArgs(lastMouseItem, mouseState));
                 __CurrentMouseItem = null;
@@ -660,6 +666,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
 
             // Změna prvku z dosavadního na nový:
+            DxComponent.LogAddLine(LogActivityKind.InteractiveMove, $"InteractivePanel.MouseExchange(): Change from {lastMouseItem} to {currentMouseItem}");
+
             _SetInteractiveMouseState(lastMouseItem, DxInteractiveState.None);
             _RunInteractiveItemMouseLeave(new InteractiveItemEventArgs(lastMouseItem, mouseState));
 
@@ -768,17 +776,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 {   // Začíná Drag:
                     if (!EnabledDrag)
                     {   // Drag není povolen => rovnou přejdeme do stavu Cancelled:
+                        DxComponent.LogAddLine(LogActivityKind.InteractiveDrag, $"InteractivePanel.MouseDrag() Begin: Disabled");
+
                         _MouseMoveCurrentExchange(mouseState, null, DxInteractiveState.Enabled, true);
                         __CurrentMouseDragState = MouseDragProcessState.Cancelled;
                         this.Draw();
                     }
                     else if (__MouseDragCurrentDataItem != null)
                     {   // Pokud pod myší je prvek, a pokud se nechá Dragovat:
+                        DxComponent.LogAddLine(LogActivityKind.InteractiveDrag, $"InteractivePanel.MouseDrag() Begin Drag on item: {__MouseDragCurrentDataItem}");
+
                         __CurrentMouseDragState = MouseDragProcessState.MouseDragItem;
                         this.CursorType = this.CursorTypeMouseDrag;
                     }
                     else
                     {   // Začal proces Drag, ale není tam prvek = budeme Framovat?
+                        DxComponent.LogAddLine(LogActivityKind.InteractiveDrag, $"InteractivePanel.MouseDrag() Begin Frame on area");
+
                         __CurrentMouseDragState = MouseDragProcessState.MouseFrameArea;
                         this.CursorType = this.CursorTypeMouseFrame;
                     }
@@ -814,6 +828,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                  __CurrentMouseDragState == MouseDragProcessState.MouseDragItem ||
                  __CurrentMouseDragState == MouseDragProcessState.MouseFrameArea))
             {
+                DxComponent.LogAddLine(LogActivityKind.InteractiveDrag, $"InteractivePanel.MouseDrag() Drag Cancelled");
+
                 __CurrentMouseDragState = MouseDragProcessState.Cancelled;
                 this.CursorType = CursorTypes.Default;
                 this.Draw();
@@ -831,6 +847,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // Znovu najdeme prvek pod aktuální pozicí myši, vyhledáme i Target Cell:
                 _RefreshMouseState(mouseState);
                 InteractiveDragItemEventArgs args = new InteractiveDragItemEventArgs(__MouseDragCurrentDataItem, __DragBeginMouseState, mouseState);
+
+                DxComponent.LogAddLine(LogActivityKind.InteractiveDrag, $"InteractivePanel.MouseDrag() End");
+
                 _RunInteractiveItemDragAndDropEnd(args);
             }
             _MouseDragReset();
@@ -940,7 +959,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
             }
 
-            DxComponent.LogAddLineTime($"InteractivePanel.Paint() PaintCount: {LastPaintItemsCount}; Time: {DxComponent.LogTokenTimeMicrosec}; VisibleDesignBounds: {this.VirtualPanel?.VisibleDesignBounds}", startTime);
+            DxComponent.LogAddLineTime(LogActivityKind.Paint, $"InteractivePanel.Paint() PaintCount: {LastPaintItemsCount}; Time: {DxComponent.LogTokenTimeMicrosec}; VisibleDesignBounds: {this.VirtualPanel?.VisibleDesignBounds}", startTime);
         }
         /// <summary>
         /// Vykreslí všechny interaktivní prvky v základní vrstvě.

@@ -83,6 +83,9 @@ namespace TestDevExpress.Forms
         private TimeSpan __FormLoadTime;
         #endregion
         #region DockManager - služby
+        /// <summary>
+        /// Inicializace DockPanelu LogActivity
+        /// </summary>
         protected override void InitializeDockPanelsContent()
         {
             LogActivityDockPanel = new TestDevExpress.Components.AppLogPanel();

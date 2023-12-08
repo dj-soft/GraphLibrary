@@ -309,7 +309,7 @@ namespace TestDevExpress.Forms
 
                 _DxDataFormV2 = dataForm;
                 _DoLayoutAnyDataForm();
-                DxComponent.LogAddLineTime($"Create DxDataFormV2: Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+                DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Create DxDataFormV2: Time: {DxComponent.LogTokenTimeMilisec}", startTime);
             }
 
             startTime = DxComponent.LogTimeCurrent;
@@ -324,7 +324,7 @@ namespace TestDevExpress.Forms
             RefreshStatusCurrent();
 
             int count = 0; // dataForm.ItemsCount;
-            DxComponent.LogAddLineTime($"AddItems: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"AddItems: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
 
             _FocusInButton.Focus();
         }

@@ -119,7 +119,7 @@ namespace TestDevExpress.Forms
         private void DxQuickAccessToolbar_QATItemKeysChanged(object sender, EventArgs e)
         {
             string line = "Nový obsah QAT: " + DxQuickAccessToolbar.ConfigValue;
-            DxComponent.LogAddLine(line);
+            DxComponent.LogAddLine(LogActivityKind.Ribbon, line);
         }
 
         private DxSplitContainerControl _DxMainSplit;
@@ -790,7 +790,7 @@ namespace TestDevExpress.Forms
             var pages = DxRibbonSample.CreatePages(this.Ribbon.DebugName, pageCountMin, pageCountMax, groupCountMin, groupCountMax, out var qatItems,
                 CategoryName, CategoryName, CategoryColor, 
                 pageIndex);
-            DxComponent.LogAddLine("Ribon: " + this._Ribbon.DebugName +"; QAT: " + qatItems);
+            DxComponent.LogAddLine(LogActivityKind.Ribbon, "Ribon: " + this._Ribbon.DebugName +"; QAT: " + qatItems);
             AddNewQatItems(qatItems);
             DxRibbonSample.SetPageMergeOrder(pages, this.PageMergeOrder);
             _Ribbon.AddPages(pages, clearCurrentContent);
@@ -1291,7 +1291,7 @@ namespace TestDevExpress.Forms
                 _AddGroups(page, groupCountMin, groupCountMax, ref qatItems);
             }
             int count = _RibbonItemId - prevId;
-            DxComponent.LogAddLineTime($"Vygenerováno {count} prvků v čase {DxComponent.LogTokenTimeMilisec}", startTime);
+            DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $"Vygenerováno {count} prvků v čase {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         /// <summary>
         /// Do stránky přidá grupy

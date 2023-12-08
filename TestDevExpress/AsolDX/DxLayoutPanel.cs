@@ -1169,7 +1169,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="panel"></param>
         internal void ChangeInteractiveStatePanelMouse(DxLayoutItemPanel panel)
         {
-            if (this.LogActive) DxComponent.LogAddLine($"DxLayoutpanel.PanelEnter Mouse: {panel.TitleText}");
+            if (this.LogActive) DxComponent.LogAddLine(LogActivityKind.LayoutPanel, $"DxLayoutpanel.PanelEnter Mouse: {panel.TitleText}");
 
             var newPanel = panel;
             var oldPanel = __LayoutItemPanelWithMouse;
@@ -1188,7 +1188,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="panel"></param>
         internal void ChangeInteractiveStatePanelFocus(DxLayoutItemPanel panel)
         {
-            if (this.LogActive) DxComponent.LogAddLine($"DxLayoutpanel.PanelEnter Focus: {panel.TitleText}");
+            if (this.LogActive) DxComponent.LogAddLine(LogActivityKind.LayoutPanel, $"DxLayoutpanel.PanelEnter Focus: {panel.TitleText}");
 
             var newPanel = panel;
             var oldPanel = __LayoutItemPanelWithFocus;

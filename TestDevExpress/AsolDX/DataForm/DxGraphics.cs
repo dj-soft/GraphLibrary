@@ -363,7 +363,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     Point virtualBegin = new Point(__DimensionX.VirtualBegin, __DimensionY.VirtualBegin);
                     Point designBegin = virtualBegin.ZoomByRatio(rZoom);
                     __VisibleDesignBegin = designBegin;
-                    DxComponent.LogAddLine($"VirtualPanel: VisibleDesignBegin validated to {designBegin}");
+                    DxComponent.LogAddLine(LogActivityKind.VirtualChanges, $"VirtualPanel: VisibleDesignBegin validated to {designBegin}");
                 }
                 return __VisibleDesignBegin.Value;
             }
@@ -378,7 +378,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _VirtualBeginInvalidate()
         {
             __VisibleDesignBegin = null;
-            DxComponent.LogAddLine($"VirtualPanel: VisibleDesignBegin invalidated");
+            DxComponent.LogAddLine(LogActivityKind.VirtualChanges, $"VirtualPanel: VisibleDesignBegin invalidated");
         }
         /// <summary>
         /// Oblast designového prostoru, která je aktuálně zobrazena. Je přepočtena ze souřadnic Controlu na souřadnice Designové.
@@ -400,7 +400,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (!(__VisibleDesignBounds.HasValue && __VisibleDesignBounds.Value == designBounds))
                 {
                     __VisibleDesignBounds = designBounds;
-                    DxComponent.LogAddLine($"VirtualPanel: VisibleDesignBounds validated to {designBounds}");
+                    DxComponent.LogAddLine(LogActivityKind.VirtualChanges, $"VirtualPanel: VisibleDesignBounds validated to {designBounds}");
 
                     InteractiveContentPanel?.VirtualCoordinatesChanged();
                     OnVisibleDesignBoundsChanged();
@@ -1045,7 +1045,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (virtualBegin != oldBegin)
                 {
                     __VirtualBegin = virtualBegin;
-                    DxComponent.LogAddLine($"VirtualDimension {__Axis}: VirtualBeginChanged from {oldBegin} to {VirtualBegin}");
+                    DxComponent.LogAddLine(LogActivityKind.Scroll, $"VirtualDimension {__Axis}: VirtualBeginChanged from {oldBegin} to {VirtualBegin}");
                     _RunVirtualBeginChanged();
                 }
             }
@@ -1881,7 +1881,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public DxGraphicsPanel()
         {
-            this.__LogActive = false;
             this.__CurrentDpi = DxComponent.DesignDpi;
             this.__LastDpi = DxComponent.DesignDpi;           // ??? anebo   0 ?
             this.__LastClientSize = null;
@@ -1889,7 +1888,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this.Margin = new Padding(0);
             this.Padding = new Padding(0);
             this.AllowTransparency = false;
-            this.LogActive = DxComponent.LogActive;
             this.SetStyle(ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
             DxComponent.RegisterListener(this);
             this.SizeChanged += _ControlSizeChanged;
@@ -1985,11 +1983,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Hodnotu čte DevExpress při zpracování panelu. V DxPanelControl ji umožníme nastavit.
         /// </summary>
         protected override bool AllowTotalTransparency { get { return __AllowTransparency; /* namísto base.AllowTotalTransparency */ } }
-        /// <summary>
-        /// Jsou aktivní zápisy do logu? Default = <see cref="DxComponent.LogActive"/>
-        /// </summary>
-        public virtual bool LogActive { get { return __LogActive; } set { __LogActive = value; } }
-        private bool __LogActive;
         #endregion
         #region HasMouse a InteractiveState
         /// <summary>

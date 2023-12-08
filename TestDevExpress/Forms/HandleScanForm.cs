@@ -334,11 +334,9 @@ namespace TestDevExpress.Forms
         {
             get
             {
-                DxComponent.LogAddLine($"Process {Text} detect ItemFontStyle...");
                 FontStyle? result = null;
                 if (this.IsCurrentProcess) result = FontStyle.Bold;
                 else if (!this.IsAlive) result = FontStyle.Italic;
-                DxComponent.LogAddLine($"Process {Text} detected ItemFontStyle: {result}");
                 return result;
             }
         }

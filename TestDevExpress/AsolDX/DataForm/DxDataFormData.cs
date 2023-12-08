@@ -174,7 +174,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             // Zkratka 2:
             if (designPixels is null)
             {
-                DxComponent.LogAddLine($"DataFormRows.GetRowsInDesignPixels(): AllRows");
+                DxComponent.LogAddLine(LogActivityKind.DataFormRepository, $"DataFormRows.GetRowsInDesignPixels(): AllRows");
                 designPixels = new Int32Range(0, ContentDesignSize.Height);
                 return __Rows.ToArray();
             }
@@ -199,7 +199,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
                     }
                 }
             }
-            DxComponent.LogAddLine($"DataFormRows.GetRowsInDesignPixels(): DesignPixels: {designPixels}; Rows.Count: {result.Count}");
+            DxComponent.LogAddLine(LogActivityKind.VirtualChanges, $"DataFormRows.GetRowsInDesignPixels(): DesignPixels: {designPixels}; Rows.Count: {result.Count}");
 
             return result.ToArray();
         }
@@ -975,9 +975,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             WinDraw.Rectangle controlBounds = __ControlBounds;
             if (isActive)
             {
-                DxComponent.LogAddLine($"DataFormCell.Paint(): IsActive: {isActive}; IsDisplayed: {isDisplayed}; DesignBounds: {__DesignBounds}");
+                DxComponent.LogAddLine(LogActivityKind.Paint, $"DataFormCell.Paint(): IsActive: {isActive}; IsDisplayed: {isDisplayed}; DesignBounds: {__DesignBounds}");
                 if (!isDisplayed)
-                    DxComponent.LogAddLine($"DataFormCell.Paint(): Outside: ControlBounds: {controlBounds}; ClientArea: {pdea.ClientArea};");
+                    DxComponent.LogAddLine(LogActivityKind.Paint, $"DataFormCell.Paint(): Outside: ControlBounds: {controlBounds}; ClientArea: {pdea.ClientArea};");
             }
             if (!isDisplayed) return false;            // Pokud vykreslovaný control a naše souřadnice nemají nic společného, pak nebudeme kreslit...
 
@@ -1547,6 +1547,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// Pravá myš (vede na kontextové menu), v přidaných datech je předána instance <see cref="DxMouseActionInfo"/>
         /// </summary>
         RightClick,
+        /// <summary>
+        /// Došlo ke změně hodnoty
+        /// </summary>
+        ValueChanged
     }
     /// <summary>
     /// Informace o stavu myši a kláves Ctrl-Alt-Shift v době akce

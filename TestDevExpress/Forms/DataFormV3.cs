@@ -52,14 +52,12 @@ namespace TestDevExpress.Forms
 
             string imageStatusRefresh = "svgimages/xaf/action_refresh.svg";
             string imageTestDrawing = "svgimages/dashboards/textbox.svg";
-            string imageLogClear = "svgimages/spreadsheet/clearpivottable.svg";
             string imageDataFormRemove = "svgimages/spreadsheet/removetablerows.svg";
 
             group = new DataRibbonGroup() { GroupText = "ZÁKLADNÍ" };
             page.Groups.Add(group);
             group.Items.Add(new DataRibbonItem() { ItemId = "StatusRefresh", Text = "Refresh Status", ToolTipText = "Znovu načíst údaje o spotřebě systémových zdrojů do statusbaru", ImageName = imageStatusRefresh });
             group.Items.Add(new DataRibbonItem() { ItemId = "TestDrawing", Text = "TestDrawing", ToolTipText = "Vykreslování bez fyzických Controlů - pro test rychlosti", ImageName = imageTestDrawing, RibbonStyle = RibbonItemStyles.Large, ItemType = RibbonItemType.CheckButton, Checked = TestPainting });
-            group.Items.Add(new DataRibbonItem() { ItemId = "LogClear", Text = "Clear Log", ToolTipText = "Smaže obsah logu vpravo", ImageName = imageLogClear, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "DataFormRemove", Text = "Remove DataForm", ToolTipText = "Zahodit DataForm a uvolnit jeho zdroje", ImageName = imageDataFormRemove });
 
             var groupSamples = new DataRibbonGroup() { GroupText = "VZORKY" };
@@ -321,7 +319,6 @@ namespace TestDevExpress.Forms
         {
             var result = new List<DxDData.DataFormLayoutItem>();
 
-
             string[] chartTypes = new string[]
             {
                 "svgimages/chart/charttype_bar3d.svg",
@@ -335,7 +332,6 @@ namespace TestDevExpress.Forms
                 "svgimages/chart/charttype_manhattanbar.svg",
                 "svgimages/chart/charttype_pie3d.svg"
             };
-
 
             int layoutId = (sampleId / 1000);
             int rowsCount = (sampleId % 1000);

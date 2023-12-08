@@ -334,7 +334,7 @@ namespace TestDevExpress.Forms
             var sampleItems = DxDataFormTest.CreateSample(sampleId);
             if (sampleItems == null) return;
             int count = sampleItems.Count();
-            DxComponent.LogAddLineTime($"CreateSample: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
+            DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"CreateSample: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
 
             _RemoveDataForms();
 
@@ -347,7 +347,7 @@ namespace TestDevExpress.Forms
 
             var addStartTime = DxComponent.LogTimeCurrent;
             dxDataForm.AddItems(sampleItems);
-            DxComponent.LogAddLineTime($"AddItems: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
+            DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"AddItems: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
 
             _DxTestPanel.Controls.Add(dxDataForm);
 
@@ -367,11 +367,11 @@ namespace TestDevExpress.Forms
             var sampleStartTime = DxComponent.LogTimeCurrent;
             var sampleItems = DxDataFormTest.CreateSample(sample);
             int count = sampleItems.Count();
-            DxComponent.LogAddLineTime($"CreateSample: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
+            DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"CreateSample: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
 
             var addStartTime = DxComponent.LogTimeCurrent;
             dxDataForm.AddItems(sampleItems);
-            DxComponent.LogAddLineTime($"AddItems: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
+            DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"AddItems: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
 
             _DxTestPanel.Controls.Add(dxDataForm);
         }
