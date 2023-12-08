@@ -103,7 +103,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __DataFormLayout.CollectionChanged += _LayoutChanged;
             __Content = new DxfData.DataContent();
 
-            Content[Data.DxDataFormDef.BorderStyle] = "HotFlat";
+            Content[Data.DxDataFormProperty.BorderStyle] = "HotFlat";
 
             Padding = new WinForm.Padding(0);
         }
@@ -189,11 +189,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="row"></param>
         /// <param name="columnName"></param>
-        /// <param name="actionName"></param>
+        /// <param name="action"></param>
         /// <param name="actionData"></param>
-        public void OnInteractiveAction(DxfData.DataFormRow row, string columnName, string actionName, object actionData)
+        public void OnInteractiveAction(DxfData.DataFormRow row, string columnName, DxfData.DxDataFormAction action, object actionData)
         {
-            string text = $"Action on Row: {row.RowId}; Column: {columnName}, Action: {actionName}";
+            string text = $"Action on Row: {row.RowId}; Column: {columnName}, Action: {action}";
             if (actionData != null) text += $"; Data: {actionData}";
             DxComponent.ShowMessageInfo(text, "DataForm");
         }

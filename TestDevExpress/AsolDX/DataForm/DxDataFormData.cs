@@ -329,7 +329,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
     /// </summary>
     public class DataFormRow : IChildOfParent<DataFormRows>
     {
-        #region Konstruktor a základní proměnné
+        #region Konstruktor a základní proměnné, Parent
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -368,7 +368,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         private int? __RowId;
         /// <summary>
         /// Obsah řádků: obsahuje sloupce i jejich datové a popisné hodnoty.
-        /// Klíčem musí být název sloupce + dvojtečka + název vlastnosti. Názvy vlastností jsou v konstantách <see cref="DxDataFormDef"/>
+        /// Klíčem je název sloupce a druh vlastnosti <see cref="DxDataFormProperty"/>
         /// </summary>
         public DataContent Content { get { return __Content; } } private DataContent __Content;
         /// <summary>
@@ -712,6 +712,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             IsVisible = true;
         }
         /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"{ColumnName}  [{ColumnType}]";
+        }
+        /// <summary>
         /// Parent
         /// </summary>
         DataFormLayoutSet IChildOfParent<DataFormLayoutSet>.Parent { get { return __Parent; } set { __Parent = value; } } private DataFormLayoutSet __Parent;
@@ -721,7 +729,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         internal DxDataFormPanel DataForm { get { return __Parent?.DataForm; } }
         /// <summary>
         /// Jméno tohoto sloupce. K němu se dohledají další data a případné modifikace stylu v konkrétním řádku.
-        /// Interně se pracuje s <see cref="ColumnId"/> (int), konverze řeší <see cref="DataForm"/>.
         /// </summary>
         public string ColumnName { get; set; }
         /// <summary>
@@ -745,76 +752,74 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// </summary>
         public string Label
         {
-            get { return ((TryGetContent<string>(DxDataFormDef.Label, out var content)) ? content : null); }
-            set { SetContent(DxDataFormDef.Label, value); }
+            get { return ((TryGetContent<string>(DxDataFormProperty.Label, out var content)) ? content : null); }
+            set { SetContent(DxDataFormProperty.Label, value); }
         }
         /// <summary>
         /// ToolTipText
         /// </summary>
         public string ToolTipText
         {
-            get { return ((TryGetContent<string>(DxDataFormDef.ToolTipText, out var content)) ? content : null); }
-            set { SetContent(DxDataFormDef.ToolTipText, value); }
+            get { return ((TryGetContent<string>(DxDataFormProperty.ToolTipText, out var content)) ? content : null); }
+            set { SetContent(DxDataFormProperty.ToolTipText, value); }
         }
         /// <summary>
         /// Label prvku = fixní text
         /// </summary>
         public string IconName
         {
-            get { return ((TryGetContent<string>(DxDataFormDef.IconName, out var content)) ? content : null); }
-            set { SetContent(DxDataFormDef.IconName, value); }
+            get { return ((TryGetContent<string>(DxDataFormProperty.IconName, out var content)) ? content : null); }
+            set { SetContent(DxDataFormProperty.IconName, value); }
         }
         /// <summary>
         /// Typ kurzoru, který bude aktivován po najetí myší na aktivní prvek
         /// </summary>
         public CursorTypes? CursorTypeMouseOn
         {
-            get { return ((TryGetContent<CursorTypes?>(DxDataFormDef.CursorTypeMouseOn, out var content)) ? content : null); }
-            set { SetContent(DxDataFormDef.CursorTypeMouseOn, value); }
+            get { return ((TryGetContent<CursorTypes?>(DxDataFormProperty.CursorTypeMouseOn, out var content)) ? content : null); }
+            set { SetContent(DxDataFormProperty.CursorTypeMouseOn, value); }
         }
         /// <summary>
         /// Prvek je viditelný?
         /// </summary>
         public bool IsVisible
         {
-            get { return ((TryGetContent<bool?>(DxDataFormDef.IsVisible, out var content) && content.HasValue) ? content.Value : true); }
-            set { SetContent(DxDataFormDef.IsVisible, (bool?)value); }
+            get { return ((TryGetContent<bool?>(DxDataFormProperty.IsVisible, out var content) && content.HasValue) ? content.Value : true); }
+            set { SetContent(DxDataFormProperty.IsVisible, (bool?)value); }
         }
         /// <summary>
         /// Prvek je interaktvní?
         /// </summary>
         public bool IsInteractive
         {
-            get { return ((TryGetContent<bool?>(DxDataFormDef.IsInteractive, out var content) && content.HasValue) ? content.Value : true); }
-            set { SetContent(DxDataFormDef.IsInteractive, (bool?)value); }
+            get { return ((TryGetContent<bool?>(DxDataFormProperty.IsInteractive, out var content) && content.HasValue) ? content.Value : true); }
+            set { SetContent(DxDataFormProperty.IsInteractive, (bool?)value); }
         }
         #endregion
         #region Metody pro získání dat o prvku (hodnota, vzhled, editační maska, font, barva, editační styl, ikona, buttony, atd...)
         /// <summary>
-        /// Zkusí najít hodnotu daného jména.
-        /// Jména hodnot jsou v konstantách v <see cref="DxDataFormDef"/>.
+        /// Zkusí najít hodnotu požadované vlastnosti.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="name"></param>
+        /// <param name="property">Určení požadované vlastnosti (typ property)</param>
         /// <param name="content"></param>
         /// <returns></returns>
-        public bool TryGetContent<T>(string name, out T content)
+        public bool TryGetContent<T>(DxDataFormProperty property, out T content)
         {
-            if (Content.TryGetContent(name, out content)) return true;
+            if (Content.TryGetContent(property, out content)) return true;
             content = default;
             return false;
         }
         /// <summary>
-        /// Uloží hodnotu daného jména.
-        /// Jména hodnot jsou v konstantách v <see cref="DxDataFormDef"/>.
+        /// Uloží hodnotu požadované vlastnosti.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="name"></param>
+        /// <param name="property">Určení požadované vlastnosti (typ property)</param>
         /// <param name="content"></param>
         /// <returns></returns>
-        public void SetContent<T>(string name, T content)
+        public void SetContent<T>(DxDataFormProperty property, T content)
         {
-            Content[name] = content;
+            Content[property] = content;
         }
         #endregion
         #region Výpočty DesignSize, tvorba konkrétních buněk DataFormCell
@@ -1005,7 +1010,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         #region Předpřipravené hodnoty obecně dostupné, získávané z Content
         /// <summary>
         /// Jméno tohoto sloupce. K němu se dohledají další data a případné modifikace stylu v konkrétním řádku.
-        /// Interně se pracuje s <see cref="ColumnId"/> (int), konverze řeší <see cref="DataForm"/>.
         /// </summary>
         public string ColumnName { get { return this.__LayoutItem.ColumnName; } }
         /// <summary>
@@ -1013,104 +1017,97 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// </summary>
         public object Value
         {
-            get { return ((TryGetContent<object>(DxDataFormDef.Value, out var content)) ? content : null); }
-            set { SetContent(DxDataFormDef.Value, (bool?)value); }
+            get { return ((TryGetContent<object>(DxDataFormProperty.Value, out var content)) ? content : null); }
+            set { SetContent(DxDataFormProperty.Value, (bool?)value); }
         }
         /// <summary>
         /// Label prvku = fixní text
         /// </summary>
         public string Label
         {
-            get { return ((TryGetContent<string>(DxDataFormDef.Label, out var content)) ? content : null); }
-            set { SetContent(DxDataFormDef.Label, value); }
+            get { return ((TryGetContent<string>(DxDataFormProperty.Label, out var content)) ? content : null); }
+            set { SetContent(DxDataFormProperty.Label, value); }
         }
         /// <summary>
         /// ToolTipText
         /// </summary>
         public string ToolTipText
         {
-            get { return ((TryGetContent<string>(DxDataFormDef.ToolTipText, out var content)) ? content : null); }
-            set { SetContent(DxDataFormDef.ToolTipText, value); }
+            get { return ((TryGetContent<string>(DxDataFormProperty.ToolTipText, out var content)) ? content : null); }
+            set { SetContent(DxDataFormProperty.ToolTipText, value); }
         }
         /// <summary>
         /// Label prvku = fixní text
         /// </summary>
         public string IconName
         {
-            get { return ((TryGetContent<string>(DxDataFormDef.IconName, out var content)) ? content : null); }
-            set { SetContent(DxDataFormDef.IconName, value); }
+            get { return ((TryGetContent<string>(DxDataFormProperty.IconName, out var content)) ? content : null); }
+            set { SetContent(DxDataFormProperty.IconName, value); }
         }
         /// <summary>
         /// Typ kurzoru, který bude aktivován po najetí myší na aktivní prvek
         /// </summary>
         public CursorTypes? CursorTypeMouseOn
         {
-            get { return ((TryGetContent<CursorTypes?>(DxDataFormDef.CursorTypeMouseOn, out var content)) ? content : null); }
-            set { SetContent(DxDataFormDef.CursorTypeMouseOn, value); }
+            get { return ((TryGetContent<CursorTypes?>(DxDataFormProperty.CursorTypeMouseOn, out var content)) ? content : null); }
+            set { SetContent(DxDataFormProperty.CursorTypeMouseOn, value); }
         }
         /// <summary>
         /// Prvek je viditelný?
         /// </summary>
         public bool IsVisible
         {
-            get { return ((TryGetContent<bool?>(DxDataFormDef.IsVisible, out var content) && content.HasValue) ? content.Value : true); }
-            set { SetContent(DxDataFormDef.IsVisible, (bool?)value); }
+            get { return ((TryGetContent<bool?>(DxDataFormProperty.IsVisible, out var content) && content.HasValue) ? content.Value : true); }
+            set { SetContent(DxDataFormProperty.IsVisible, (bool?)value); }
         }
         /// <summary>
         /// Prvek je interaktvní?
         /// </summary>
         public bool IsInteractive
         {
-            get { return ((TryGetContent<bool?>(DxDataFormDef.IsInteractive, out var content) && content.HasValue) ? content.Value : true); }
-            set { SetContent(DxDataFormDef.IsInteractive, (bool?)value); }
+            get { return ((TryGetContent<bool?>(DxDataFormProperty.IsInteractive, out var content) && content.HasValue) ? content.Value : true); }
+            set { SetContent(DxDataFormProperty.IsInteractive, (bool?)value); }
         }
         #endregion
         #region Metody pro získání a uložení dat o prvku (hodnota, vzhled, editační maska, font, barva, editační styl, ikona, buttony, atd...) a odeslání akce do DataFormu
         /// <summary>
-        /// Zkusí najít hodnotu daného jména.
-        /// Dané jméno nesmí obsahovat jméno sloupce.
+        /// Zkusí najít hodnotu požadované vlastnosti.
         /// Hodnota se prioritně hledá v řádku (=specifická pro konkrétní řádek), a pokud tam není, pak se hledá v layoutu (defaultní hodnota).
-        /// Jména hodnot jsou v konstantách v <see cref="DxDataFormDef"/>.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="name">Jméno vlastnosti. Nesmí obsahovat jméno sloupce, to bude přidáno.</param>
+        /// <param name="property">Určení požadované vlastnosti (typ property)</param>
         /// <param name="content">Out hodnota</param>
         /// <returns></returns>
-        public bool TryGetContent<T>(string name, out T content)
+        public bool TryGetContent<T>(DxDataFormProperty property, out T content)
         {
-            if (__Row.Content.TryGetContent(_GetFullName(name), out content)) return true;
-            if (__LayoutItem.Content.TryGetContent(name, out content)) return true;
-            if (_DataForm.Content.TryGetContent(name, out content)) return true;
+            if (__Row.Content.TryGetContent(__LayoutItem.ColumnName, property, out content)) return true;
+            if (__LayoutItem.Content.TryGetContent(property, out content)) return true;
+            if (_DataForm.Content.TryGetContent(__LayoutItem.ColumnName, property, out content)) return true;
+            if (_DataForm.Content.TryGetContent(property, out content)) return true;
             content = default;
             return false;
         }
         /// <summary>
-        /// Zkusí najít hodnotu daného jména.
-        /// Dané jméno nesmí obsahovat jméno sloupce.
+        /// Zkusí najít hodnotu požadované vlastnosti.
         /// Hodnota se prioritně hledá v řádku (=specifická pro konkrétní řádek), a pokud tam není, pak se hledá v layoutu (defaultní hodnota).
-        /// Jména hodnot jsou v konstantách v <see cref="DxDataFormDef"/>.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="name">Jméno vlastnosti. Nesmí obsahovat jméno sloupce, to bude přidáno.</param>
+        /// <param name="property">Určení požadované vlastnosti (typ property)</param>
         /// <param name="content">Ukládaná hodnota</param>
         /// <returns></returns>
-        public void SetContent<T>(string name, T content)
+        public void SetContent<T>(DxDataFormProperty property, T content)
         {
-            __Row.Content[_GetFullName(name)] = content;
+            __Row.Content[__LayoutItem.ColumnName, property] = content;
             _InvalidateCache();
         }
         /// <summary>
         /// Vyvolá danou akci
         /// </summary>
-        /// <param name="name"></param>
+        /// <param name="action"></param>
         /// <param name="data"></param>
-        public void RunAction(string name, object data)
+        public void RunAction(DxDataFormAction action, object data)
         {
-            this._DataForm?.OnInteractiveAction(this.__Row, this.ColumnName, name, data);
-        }
-        private string _GetFullName(string propertyName)
-        {
-            return $"{this.ColumnName}{DxDataFormDef.ColumnDelimiter}{propertyName}";
+            this._DataForm?.OnInteractiveAction(this.__Row, this.ColumnName, action, data);
         }
         /// <summary>
         /// Invaliduje svoje grafická data (uložený statický obrázek) - volá se po změnách hodnoty
@@ -1125,9 +1122,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         DxRepositoryEditorType IPaintItemData.EditorType { get { return this.__LayoutItem.ColumnType; } }
         DxInteractiveState IPaintItemData.InteractiveState { get { return this._InteractiveState; } set { this._InteractiveState = value; } }
         WinForm.Control IPaintItemData.NativeControl { get { return this.__NativeControl; } set { this.__NativeControl = value; } }
-        bool IPaintItemData.TryGetContent<T>(string name, out T content) { return TryGetContent<T>(name, out content); }
-        void IPaintItemData.SetContent<T>(string name, T value) { SetContent<T>(name, value); }
-        void IPaintItemData.RunAction(string name, object data) { RunAction(name, data); }
+        DataFormLayoutItem IPaintItemData.LayoutItem { get { return __LayoutItem; } }
+        bool IPaintItemData.TryGetContent<T>(DxDataFormProperty property, out T content) { return TryGetContent<T>(property, out content); }
+        void IPaintItemData.SetContent<T>(DxDataFormProperty property, T value) { SetContent<T>(property, value); }
+        void IPaintItemData.RunAction(DxDataFormAction action, object data) { RunAction(action, data); }
         void IPaintItemData.InvalidateCache() { _InvalidateCache(); }
         ulong? IPaintItemData.ImageId { get { return __ImageId; } set { __ImageId = value; } } private ulong? __ImageId;
         byte[] IPaintItemData.ImageData { get { return __ImageData; } set { __ImageData = value; } } private byte[] __ImageData;
@@ -1148,110 +1146,429 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
     #region DataContent : úložiště sady dat
     /// <summary>
     /// <see cref="DataContent"/> : Úložiště dat.<br/>
-    /// Ukládá data libovolného datového typu. Klíčem je string.
-    /// První částí klíče bývá jméno sloupce, za ním dvojtečka a pak jméno konkrétní vlastnosti. Jména vlastností jsou v konstantách ...
+    /// Ukládá data libovolného datového typu. Klíčem je jméno sloupce (volitelně) a typ vlastnosti <see cref="DxDataFormProperty"/>.
+    /// Pokud vlastníkem tohoto objektu je konkrétní sloupec (<see cref="DataFormLayoutItem"/>), pak se v klíči nepoužívá jméno sloupce.
+    /// Pokud vlastníkem tohoto objektu je řádek, pak se jméno sloupce zadává.
     /// </summary>
     public class DataContent
     {
+        #region Konstruktor
         /// <summary>
         /// Konstruktor
         /// </summary>
         public DataContent()
         {
-            __Content = new Dictionary<string, object>();
         }
-        private Dictionary<string, object> __Content;
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Columns: {(__Columns is null ? "None" : __Columns.Count.ToString())}; Data: {(__Content is null ? "None" : __Content.Count.ToString())}";
+        }
+        #endregion
+        #region Columns: konverzní tabulka ColumnName => ID, protože data jednotlivých vlastností se uchovávají s klíčem ID a nikoli String
+        /*    Původně jsem chtěl mít tuto tabulku { ColumnName => ID } jen jednu na celý DataForm. Dávalo by to velice smysl.
+           Ale nepřišel jsem na to, jak koordinovat tvorbu řádků a layoutu tak, aby v době tvorby (když se do objektů DataFormRow a DataFormLayoutItem vkládají data)
+           byl k dispozici i cílový objekt DataForm, který by obsahoval centrální tabulku { ColumnName => ID }.
+           Musel bych vynutit tvorbu těchto objektů prostřednictvím DataFormu (něco jako DataForm.CreateRow) a to mi přijde krkolomný.
+              Další variantou by bylo: vytvářet nejprve data separátně (s lokální tabulkou { ColumnName => ID }),
+           a tuto lokální tabulku pak v okamžiku napojení na DataForm mergovat do centrální a současně změnit ID datových záznamů... ale i to mi přijde krkolomný.
+              Budu tedy mít v každé instanci (DataForm, DataFormRow a DataFormLayoutItem) lokální ColumnId a zvenku se bude používat string ColumnName.
+              Navíc instance DataFormLayoutItem pro získání dat nepoužívá jméno sloupce takže ai nevznikne tabulka { ColumnName => ID }
+        */
+
+        /// <summary>
+        /// Vrátí ID sloupce daného jména.
+        /// Zadáním <paramref name="forWrite"/> = false říkáme, že hledáme data pro čtení 
+        /// - a pokud daný sloupec dosud nemáme v evidenci, pak jej ani nebudeme ukládat (protože mu sice přidělíme ID, ale 
+        /// </summary>
+        /// <param name="columnName"></param>
+        /// <param name="forWrite">Hledáme klíč pro zápis.<br/>
+        /// true: pro zápis = Pokud je zadáno jméno sloupce, který dosud neexistuje, pak jej musíme zaevidovat a přidělit ID sloupce, abychom do něj mohli zapsat hodnotu.<br/>
+        /// false: pro čtení = Pokud zadané jméno sloupce neexistuje, pak jej nemusíme zakládat, protože jeho hodnota stejně nebude nalezena.</param>
+        /// <returns></returns>
+        private int _GetColumnId(string columnName, bool forWrite)
+        {
+            if (String.IsNullOrEmpty(columnName)) return 0;          // Bez jména sloupce vrátím 0, což je validní číslo "bez sloupce" (první reálný dostane 1).
+
+            if (__Columns is null)
+            {
+                if (!forWrite) return -1;                  // Požadavek je "číst hodnotu konkrétního sloupce" a my dosud nemáme žádné sloupce => nemůžeme mít ani data => vrátím -1 a číst se nebude.
+
+                // Chceme zapisovat data do konkrétního sloupce (a dosud nemáme Dictionary  { ColumnName => ID }:
+                __Columns = new Dictionary<string, int>();
+                __LastColumnId = 0;
+            }
+
+            if (!this.ExactColumnNames) columnName = columnName.Trim().ToLower();
+            if (!__Columns.TryGetValue(columnName, out int id))
+            {
+                if (!forWrite) return -1;                  // Požadavek je "číst hodnotu konkrétního sloupce" a my tento sloupec dosud nemáme => nemůžeme mít ani data => vrátím -1 a číst se nebude.
+
+                // Chceme zapisovat data do konkrétního sloupce, a ten sloupec tu dosud není => přidělíme mu nové ID a uložíme si jej:
+                id = ++__LastColumnId;
+                __Columns.Add(columnName, id);
+            }
+            return id;
+        }
+        /// <summary>
+        /// Používat exaktní jména sloupců? <br/>
+        /// true = včetně mezer a CaseSensitive;<br/>
+        /// false = Trim() a CaseInsensitive.
+        /// <para/>
+        /// Nelze změnit za běhu, když objekt už obsahuje data sloupců.
+        /// </summary>
+        public bool ExactColumnNames
+        {
+            get { return __ExactColumnNames; }
+            set
+            {
+                if (__Columns != null && __Columns.Count > 0)
+                    throw new InvalidOperationException("DataContent.ExactColumnNames cannot be changed if any columns already exist.");
+                __ExactColumnNames = value;
+            }
+        }
+        private int __LastColumnId;
+        private Dictionary<string, int> __Columns;
+        private bool __ExactColumnNames;
+        #endregion
+        #region Data
         /// <summary>
         /// Přístup na konkrétní hodnotu.
         /// Setovat lze snadno hodnotu i tehdy, pokud dosud neexistuje.
         /// Setování null hodnotu vymaže.
         /// </summary>
-        /// <param name="name"></param>
+        /// <param name="property">Určení požadované vlastnosti (typ property)</param>
         /// <returns></returns>
-        public object this[string name]
+        public object this[DxDataFormProperty property]
         {
-            get 
+            get { return this[null, property]; }
+            set { this[null, property] = value; }
+        }
+        /// <summary>
+        /// Přístup na konkrétní hodnotu.
+        /// Setovat lze snadno hodnotu i tehdy, pokud dosud neexistuje.
+        /// Setování null hodnotu vymaže.
+        /// </summary>
+        /// <param name="columnName">Jméno sloupce</param>
+        /// <param name="property">Určení požadované vlastnosti (typ property)</param>
+        /// <returns></returns>
+        public object this[string columnName, DxDataFormProperty property]
+        {
+            get
             {
-                if (name is null) return null;
-                if (__Content.TryGetValue(name, out var value))  return value;           // Moje vlastní data
+                int key = _GetKey(columnName, property, false);
+                if (key > 0)
+                {
+                    var content = _Content;
+                    if (content.TryGetValue(key, out var value)) return value;
+                }
                 return null;
             }
             set
             {
-                if (name is null) return;
-
-                bool exists = __Content.ContainsKey(name);
-                if (value is null)
+                int key = _GetKey(columnName, property, true);
+                if (key > 0)
                 {
-                    if (exists)
-                        __Content.Remove(name);
-                }
-                else
-                {
-                    if (exists)
-                        __Content[name] = value;
+                    var content = _Content;
+                    bool exists = content.ContainsKey(key);
+                    if (value is null)
+                    {
+                        if (exists)
+                            content.Remove(key);
+                    }
                     else
-                        __Content.Add(name, value);
+                    {
+                        if (exists)
+                            content[key] = value;
+                        else
+                            content.Add(key, value);
+                    }
                 }
             }
         }
         /// <summary>
         /// Vrátí true, pokud this instance obsahuje dané jméno. Pokud jméno je null, pak jej neobshauje.
         /// </summary>
-        /// <param name="name"></param>
+        /// <param name="property">Určení požadované vlastnosti (typ property)</param>
         /// <returns></returns>
-        public bool ContainsName(string name)
+        public bool ContainsName(DxDataFormProperty property)
         {
-            return (name != null && this.__Content.ContainsKey(name));
+            return ContainsName(null, property);
+        }
+        /// <summary>
+        /// Vrátí true, pokud this instance obsahuje dané jméno. Pokud jméno je null, pak jej neobshauje.
+        /// </summary>
+        /// <param name="columnName">Jméno sloupce</param>
+        /// <param name="property">Určení požadované vlastnosti (typ property)</param>
+        /// <returns></returns>
+        public bool ContainsName(string columnName, DxDataFormProperty property)
+        {
+            int key = _GetKey(columnName, property, false);
+            if (key == 0) return false;
+
+            var content = _Content;
+            return (content.ContainsKey(key));
         }
         /// <summary>
         /// Vrátí true, pokud this instance obsahuje dané jméno a uložená hodnota je daného typu. Pak na výstupu je hodnota již v požadovaném typu.
         /// Pokud jméno je null, nebo jméno není nalezeno, anebo je nalezena hodnota jiná než typu T, pak výstupem je false.
         /// </summary>
-        /// <param name="name"></param>
+        /// <param name="property">Určení požadované vlastnosti (typ property)</param>
         /// <param name="content"></param>
         /// <returns></returns>
-        public bool TryGetContent<T>(string name, out T content)
+        public bool TryGetContent<T>(DxDataFormProperty property, out T content)
         {
-            if (name != null && this.__Content.TryGetValue(name, out var value) && value is T result)
+            return TryGetContent<T>(null, property, out content);
+        }
+        /// <summary>
+        /// Vrátí true, pokud this instance obsahuje dané jméno a uložená hodnota je daného typu. Pak na výstupu je hodnota již v požadovaném typu.
+        /// Pokud jméno je null, nebo jméno není nalezeno, anebo je nalezena hodnota jiná než typu T, pak výstupem je false.
+        /// </summary>
+        /// <param name="columnName">Jméno sloupce</param>
+        /// <param name="property">Určení požadované vlastnosti (typ property)</param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public bool TryGetContent<T>(string columnName, DxDataFormProperty property, out T data)
+        {
+            int key = _GetKey(columnName, property, false);
+            if (key > 0)
             {
-                content = result;
-                return true;
+                var content = _Content;
+                if (content.TryGetValue(key, out var value) && value is T result)
+                {
+                    data = result;
+                    return true;
+                }
             }
-            content = default;
+            data = default;
             return false;
         }
+        /// <summary>
+        /// Vrátí unikátní Int klíč pro data daného sloupce a danou vlastnost
+        /// </summary>
+        /// <param name="columnName"></param>
+        /// <param name="property">Určení požadované vlastnosti (typ property)</param>
+        /// <param name="forWrite">Hledáme klíč pro zápis.<br/>
+        /// true: pro zápis = Pokud je zadáno jméno sloupce, který dosud neexistuje, pak jej musíme zaevidovat a přidělit ID sloupce, abychom do něj mohli zapsat hodnotu.<br/>
+        /// false: pro čtení = Pokud zadané jméno sloupce neexistuje, pak jej nemusíme zakládat, protože jeho hodnota stejně nebude nalezena.</param>
+        /// <returns></returns>
+        private int _GetKey(string columnName, DxDataFormProperty property, bool forWrite)
+        {
+            if (property == DxDataFormProperty.None) return 0;
+
+            int columnId = _GetColumnId(columnName, forWrite);
+            // Pokud vrácené columnId je záporné, pak jde o zadané jméno sloupce, který dosud nebyl použit a my jsme v režimu (forWrite == false) tedy čteme hodnotu.
+            // Neexistující sloupec nikdy nemůže mít uloženou hodnotu, proto pro záporné ID vracím Key = 0 = neexistující data:
+            // (Sloupec null vrátí hodnotu 0, což je hodnota bez sloupce, a ta se číst i ukládat může)
+            if (columnId < 0) return 0;
+
+            // Výstupní hodnota Int32 má 32 bitů, z nich použijeme dolních 31 (horní je znaménko Negative).
+            // Pokud přidělím horních 15 bitů pro číslo sloupce, pak může existovat až 32767 sloupců, to je dost. 
+            // A stejně tak 32767 vlastností umístíme do dolních 15 bitů. Tolik jich nikdy nebude.
+            return ((columnId & 0x7FFF) << 16) | (((int)property) & 0x7FFF);
+            // ==> Případné úpravy promítni i do zdejší metody _CreateData() !!!
+        }
+        /// <summary>
+        /// Úložiště dat, autoinicializační property
+        /// </summary>
+        private Dictionary<int, object> _Content { get { return __Content ??= new Dictionary<int, object>(); } }
+        /// <summary>
+        /// Úložiště dat
+        /// </summary>
+        private Dictionary<int, object> __Content;
+        #endregion
+        #region Debugovací pole obsahující jména sloupců, vlastností a hodnoty - v provozu se nepoužívá, ale bez něj se špatně hledají data
+        /// <summary>
+        /// Data všech uložených sloupců a vlastností
+        /// </summary>
+        public ContentItem[] Data { get { return _CreateData(); } }
+        /// <summary>
+        /// Vytvoří a vrátí Data všech uložených sloupců a vlastností
+        /// </summary>
+        /// <returns></returns>
+        private ContentItem[] _CreateData()
+        {
+            // Sloupce:
+            var revColumns = (__Columns is null) ? new Dictionary<int, string>() : __Columns.CreateDictionary(kvp => kvp.Value, kvp => kvp.Key);
+
+            // Data:
+            List<ContentItem> data = new List<ContentItem>();
+            var content = __Content;
+            if (content != null)
+            {
+                foreach (var kvp in content)
+                {
+                    getColumnProperty(kvp.Key, out string columnName, out DxDataFormProperty property);
+                    data.Add(new ContentItem(columnName, property, kvp.Value));
+                }
+            }
+            return data.ToArray();
+
+            // Reverzní cesta z int klíče na string ColumnName a DxDataFormProperty:
+            void getColumnProperty(int key, out string colName, out DxDataFormProperty prop)
+            {
+                int colId = ((key >> 16) & 0x7FFF);
+                int propId = (key & 0x7FFF);
+                colName = ((colId > 0 && revColumns.TryGetValue(colId, out var name)) ? name : null);
+                prop = (DxDataFormProperty)propId;
+            }
+        }
+        /// <summary>
+        /// Data jednoho prvku
+        /// </summary>
+        public class ContentItem
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="columnName"></param>
+            /// <param name="property"></param>
+            /// <param name="value"></param>
+            public ContentItem(string columnName, DxDataFormProperty property, object value)
+            {
+                ColumnName = columnName;
+                Property = property;
+                Value = value;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return $"{(ColumnName is null ? "[common]" : ColumnName)}:{Property} = {Value}";
+            }
+            /// <summary>
+            /// Jméno sloupce
+            /// </summary>
+            public string ColumnName { get; private set; }
+            /// <summary>
+            /// Typ vlastnosti
+            /// </summary>
+            public DxDataFormProperty Property { get; private set; }
+            /// <summary>
+            /// Data
+            /// </summary>
+            public object Value { get; private set; }
+        }
+        #endregion
     }
     #endregion
-    #region DxDataFormDef : definice pro DataForm, jména vlastností pro úložiště dat
+    #region DxDataFormProperty : definice jednotlivých vlastností pro DataForm
     /// <summary>
-    /// Konstanty definující jednotlivé prvky v ContentData.
-    /// Hodnota konstantn se může čas od času změnit, protože se používají jen interně, nikoli zvenku.
-    /// Hodnota má být krátká.
+    /// Souhrn veškerých vlastností (property) ze všech editorových typů.
+    /// Konkrétní editorový typ používá jen podmnožinu vlastností.
+    /// Všechny vlastnosti se ukládají do instance třídy <see cref="DataContent"/>
+    /// Každá konkrétní vlastnost má svůj datový typ, 
     /// </summary>
-    public class DxDataFormDef
+    public enum DxDataFormProperty
     {
-        public const string ColumnDelimiter = ":";
-        public const string Value = "V";
-        public const string IsVisible = "Vis";
-        public const string IsInteractive = "Int";
-        public const string Label = "Lbl";
-        public const string ToolTipText = "Ttx";
-        public const string IconName = "Icn";
-        public const string FontStyle = "Fst";
-        public const string FontSizeRatio = "Fsz";
-        public const string BackColor = "BgC";
-        public const string TextColor = "TxC";
-        public const string TextBoxButtons = "TxBxBt";
-        public const string ComboBoxItems = "CmxItms";
-        public const string BorderStyle = "BrS";
-        public const string ButtonPaintStyle = "BtPSt";
-        public const string CursorTypeMouseOn = "Cur";
-        public const string LabelAlignment = "LbAlg";
-
-        public const string ActionButtonClick = "ButtonClick";
-        public const string ActionButtonRightClick = "ButtonRightClick";
-        public const string ActionButtonPressed = "ButtonPressed";
+        /// <summary>
+        /// Není property. Její hodnota se neukládá a tedy nikdy neexistuje.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Je viditelný?  Používá se v deklaraci layoutu
+        /// </summary>
+        IsVisible,
+        /// <summary>
+        /// Je ReadOnly?  Používá se v deklaraci layoutu
+        /// </summary>
+        IsReadOnly,
+        /// <summary>
+        /// Je Enabled?  Používá se v deklaraci layoutu
+        /// </summary>
+        IsEnabled,
+        /// <summary>
+        /// Je interaktivní?  Používá se v deklaraci layoutu
+        /// </summary>
+        IsInteractive,
+        /// <summary>
+        /// Statický text (pro Label, Title, ...)
+        /// </summary>
+        Label,
+        /// <summary>
+        /// Hodnota
+        /// </summary>
+        Value,
+        ToolTipText,
+        IconName,
+        FontStyle,
+        FontSizeRatio,
+        BackColor,
+        TextColor,
+        /// <summary>
+        /// Definice přidaných tlačítek u TextBoxu, instance třídy <see cref="TextBoxButtonProperties"/>
+        /// </summary>
+        TextBoxButtons,
+        /// <summary>
+        /// Definice prvků ComboBoxu, instance třídy <see cref="ImageComboBoxProperties"/>
+        /// </summary>
+        ComboBoxItems,
+        BorderStyle,
+        ButtonPaintStyle,
+        CursorTypeMouseOn,
+        LabelAlignment,
+        /// <summary>
+        /// Velikost Popup okna (=nabídka pod ComboBoxem)
+        /// </summary>
+        ComboPopupFormSize
+    }
+    /// <summary>
+    /// Souhrn veškerých akcí, které může kterýkoli editorový typ vyvolat.
+    /// Konkrétní editorový typ používá jen podmnožinu akcí.
+    /// </summary>
+    public enum DxDataFormAction
+    {
+        /// <summary>
+        /// Není akce
+        /// </summary>
+        None,
+        /// <summary>
+        /// Vstup focusu do prvku
+        /// </summary>
+        GotFocus,
+        /// <summary>
+        /// Odchod focusu z prvku
+        /// </summary>
+        LostFocus,
+        /// <summary>
+        /// Kliknutí na button (včetně subbuttonů)
+        /// </summary>
+        ButtonClick,
+        /// <summary>
+        /// Stisknutí buttonu (???)
+        /// </summary>
+        ButtonPressed,
+        /// <summary>
+        /// Pravá myš (vede na kontextové menu), v přidaných datech je předána instance <see cref="DxMouseActionInfo"/>
+        /// </summary>
+        RightClick,
+    }
+    /// <summary>
+    /// Informace o stavu myši a kláves Ctrl-Alt-Shift v době akce
+    /// </summary>
+    public class DxMouseActionInfo
+    {
+        /// <summary>
+        /// Pozice myši v koordinátech Screens
+        /// </summary>
+        public WinDraw.Point MouseAbsoluteLocation { get; private set; }
+        /// <summary>
+        /// Pozice myši v koordinátech Control
+        /// </summary>
+        public WinDraw.Point MouseControlLocation { get; private set; }
+        /// <summary>
+        /// Tlačítka myši
+        /// </summary>
+        public WinForm.MouseButtons MouseButtons { get; private set; }
+        /// <summary>
+        /// Modifikátorové klávesy
+        /// </summary>
+        public WinForm.Keys ModifierKeys { get; private set; }
     }
     #endregion
     #region Podpůrné třídy a enumy pro definici layoutu - specifikace detailů

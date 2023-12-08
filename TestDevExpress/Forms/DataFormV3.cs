@@ -246,13 +246,14 @@ namespace TestDevExpress.Forms
             _RemoveDataForms();
 
             __DataFormId++;
-            var dataForm = new DxDForm.DxDataFormPanel() { Dock = DockStyle.Fill };         // , BackColor = Color.FromArgb(190, 180, 240)
-            DxMainPanel.Controls.Add(dataForm);
+            var dataForm = new DxDForm.DxDataFormPanel() { Dock = DockStyle.Fill };
+            dataForm.TestPainting = this.TestPainting;
             dataForm.GotFocus += DxDataForm_GotFocus;
 
             dataForm.DataFormLayout.Store(_CreateSampleLayout(sampleId));
             dataForm.DataFormRows.Store(_CreateSampleRows(sampleId));
-            dataForm.TestPainting = this.TestPainting;
+
+            DxMainPanel.Controls.Add(dataForm);
 
             _DxDataFormV3 = dataForm;
         
@@ -356,7 +357,7 @@ namespace TestDevExpress.Forms
                     addItemPairT("cena1", "Cena 1ks:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 80, 20);
                     addItemType("button_open", DxDForm.DxRepositoryEditorType.Button, "Otevři", left + 90, 140, null, top + 6, 44, null, item =>
                     {
-                        item.Content[DxDData.DxDataFormDef.IconName] = "svgimages/reports/preview.svg";
+                        item.Content[DxDData.DxDataFormProperty.IconName] = "svgimages/reports/preview.svg";
                     });
 
                     left = leftB; top += 44;
@@ -364,22 +365,22 @@ namespace TestDevExpress.Forms
                     addItemPairT("cenacelk", "Cena cel.:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 70, 20);
                     addItemPairT("filename", "Dokument:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 250, 20, item =>
                     {
-                        item.Content[DxDData.DxDataFormDef.TextBoxButtons] = new DxDData.TextBoxButtonProperties("Down;Plus");
+                        item.Content[DxDData.DxDataFormProperty.TextBoxButtons] = new DxDData.TextBoxButtonProperties("Down;Plus");
                     });
                     left = leftB; top += 44;
                     addItemPairT("relation", "Vztah:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 456, 20, item =>
                     {
-                        item.Content[DxDData.DxDataFormDef.TextBoxButtons] = new DxDData.TextBoxButtonProperties("SpinLeft;Ellipsis;SpinRight");
+                        item.Content[DxDData.DxDataFormProperty.TextBoxButtons] = new DxDData.TextBoxButtonProperties("SpinLeft;Ellipsis;SpinRight");
                     });
 
                     left = leftB; top += 44;
                     addItemPairT("valuecombo", "Tracker:", DxDForm.DxRepositoryEditorType.ComboListBox, top, ref left, 180, 20, item =>
                     {
-                        item.Content[DxDData.DxDataFormDef.ComboBoxItems] = new DxDData.ImageComboBoxProperties($"A,Anglicky;B,Belgicky;C,Chorvatsky;D,Dánsky;E,Estonsky;F,Finsky;G,Grónsky;H,Holandsky;I,Italsky;J,Japonsky;K,Korejsky;L,Latinsky;M,Moravsky;N,Norsky;O,Otevřeně;P,Pražsky;R,Rakousky;S,Slovensky;T,Turecky;U,Uzavřeně;V,Vizigótsky");
+                        item.Content[DxDData.DxDataFormProperty.ComboBoxItems] = new DxDData.ImageComboBoxProperties($"A,Anglicky;B,Belgicky;C,Chorvatsky;D,Dánsky;E,Estonsky;F,Finsky;G,Grónsky;H,Holandsky;I,Italsky;J,Japonsky;K,Korejsky;L,Latinsky;M,Moravsky;N,Norsky;O,Otevřeně;P,Pražsky;R,Rakousky;S,Slovensky;T,Turecky;U,Uzavřeně;V,Vizigótsky");
                     });
                     addItemPairT("towncombo", "Výběr města:", DxDForm.DxRepositoryEditorType.ImageComboListBox, top, ref left, 268, 20, item =>
                     {
-                        item.Content[DxDData.DxDataFormDef.ComboBoxItems] = new DxDData.ImageComboBoxProperties($"A,Praha,{chartTypes[0]};B,Brno,{chartTypes[1]};C,Chrudim,{chartTypes[2]};D,Domažlice,{chartTypes[3]};H,Horní Planá,{chartTypes[4]};" +
+                        item.Content[DxDData.DxDataFormProperty.ComboBoxItems] = new DxDData.ImageComboBoxProperties($"A,Praha,{chartTypes[0]};B,Brno,{chartTypes[1]};C,Chrudim,{chartTypes[2]};D,Domažlice,{chartTypes[3]};H,Horní Planá,{chartTypes[4]};" +
                             $"K,Kostelec nad Orlicí,{chartTypes[5]};L,Lomnice nad Popelkou,{chartTypes[6]};M,Mariánské Lázně,{chartTypes[7]};O,Ostrava,{chartTypes[8]};P,ParDubice,{chartTypes[9]}");
                     });
 
@@ -394,7 +395,7 @@ namespace TestDevExpress.Forms
                     left3 = left;
                     addItemPairL("document1", "Název:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 250, 20, item =>
                     {
-                        item.Content[DxDData.DxDataFormDef.TextBoxButtons] = new DxDData.TextBoxButtonProperties("svgimages/richedit/preview.svg;svgimages/richedit/insertequationcaption.svg");
+                        item.Content[DxDData.DxDataFormProperty.TextBoxButtons] = new DxDData.TextBoxButtonProperties("svgimages/richedit/preview.svg;svgimages/richedit/insertequationcaption.svg");
                     });
 
                     top = 44;
@@ -404,7 +405,7 @@ namespace TestDevExpress.Forms
                     left = left3;
                     addItemPairL("document2", "Soubor:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 250, 20, item =>
                     {
-                        item.Content[DxDData.DxDataFormDef.TextBoxButtons] = new DxDData.TextBoxButtonProperties("svgimages/xaf/modeleditor_hyperlink.svg");
+                        item.Content[DxDData.DxDataFormProperty.TextBoxButtons] = new DxDData.TextBoxButtonProperties("svgimages/xaf/modeleditor_hyperlink.svg");
                     });
 
                     top = 72;
@@ -414,7 +415,7 @@ namespace TestDevExpress.Forms
                     left = left3;
                     addItemPairL("document3", "Protokol:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 250, 20, item =>
                     {
-                        item.Content[DxDData.DxDataFormDef.TextBoxButtons] = new DxDData.TextBoxButtonProperties("Plus;Clear");
+                        item.Content[DxDData.DxDataFormProperty.TextBoxButtons] = new DxDData.TextBoxButtonProperties("Plus;Clear");
                     });
 
                     top = 16;
@@ -459,7 +460,7 @@ namespace TestDevExpress.Forms
                     Label = labelText,
                     DesignBoundsExt = new DxDForm.RectangleExt(left, width, right, top, height, bottom)
                 };
-                item.SetContent(DxDData.DxDataFormDef.LabelAlignment, alignment);
+                item.SetContent(DxDData.DxDataFormProperty.LabelAlignment, alignment);
                 result.Add(item);
             }
             void addItemType(string columnId, DxDForm.DxRepositoryEditorType columnType, string text, int? left, int? width, int? right, int? top, int? height, int? bottom, Action<DxDData.DataFormLayoutItem> modifier = null)
@@ -537,7 +538,7 @@ namespace TestDevExpress.Forms
                             if (val.Contains("{file}")) val = val.Replace("{file}", randomFile());
                             if (val.Contains("{memo}")) val = val.Replace("{memo}", randomMemo());
                             if (val.Contains("{memoExt}")) val = val.Replace("{memoExt}", randomMemoExt());
-                            dataRow.Content[col + DxDData.DxDataFormDef.ColumnDelimiter + DxDData.DxDataFormDef.Value] = val;
+                            dataRow.Content[col, DxDData.DxDataFormProperty.Value] = val;
                         }
                     }
                 }
