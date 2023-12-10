@@ -1554,10 +1554,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// </summary>
         ButtonClick,
         /// <summary>
-        /// Stisknutí buttonu (???)
-        /// </summary>
-        ButtonPressed,
-        /// <summary>
         /// Pravá myš (vede na kontextové menu), v přidaných datech je předána instance <see cref="DxMouseActionInfo"/>
         /// </summary>
         RightClick,

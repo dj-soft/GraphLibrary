@@ -2051,6 +2051,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     else
                     {
                         SetItemValue(dataPair.OriginalPaintData, dataPair.CurrentValue, true);
+                        dataPair.OriginalValue = dataPair.CurrentValue;
+                        paintData.InvalidateCache();
                     }
                 }
             }
@@ -2182,7 +2184,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             control.EditValueChanged += _ControlEditValueChanged;
             control.ButtonClick += _NativeControlButtonClick;
-            control.ButtonPressed += _NativeControlButtonPressed;
         }
         /// <summary>
         /// Eventhandler po změně hodnoty v ButtonEdit controlu
@@ -2205,22 +2206,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="e"></param>
         /// <exception cref="NotImplementedException"></exception>
         private void _NativeControlButtonClick(object sender, DxeCont.ButtonPressedEventArgs e)
-        {
-            if (SuppressNativeEvents) return;
-
-            if (sender is DxeEdit.ButtonEdit control && TryGetPaintData(control, out var paintData))
-            {
-                string actionName = e.Button.Tag as string;
-                var actionInfo = new DataFormItemNameInfo(paintData.Row, paintData.LayoutItem.ColumnName, DxDData.DxDataFormAction.ButtonClick, actionName);
-                this.DataForm.OnInteractiveAction(actionInfo);
-            }
-        }
-        /// <summary>
-        /// Eventhandler ButtonPressed v ButtonEdit controlu
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _NativeControlButtonPressed(object sender, DxeCont.ButtonPressedEventArgs e)
         {
             if (SuppressNativeEvents) return;
 
@@ -3108,6 +3093,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         else
                         {
                             SetItemValue(dataPair.OriginalPaintData, dataPair.CurrentValue, true);
+                            dataPair.OriginalValue = dataPair.CurrentValue;
                         }
                     }
                 }
