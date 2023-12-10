@@ -355,6 +355,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         WinForm.Control NativeControl { get; set; }
         /// <summary>
+        /// Řádek s daty
+        /// </summary>
+        DxDData.DataFormRow Row { get; }
+        /// <summary>
         /// Definice layoutu pro tuto buňku
         /// </summary>
         DxDData.DataFormLayoutItem LayoutItem { get; }
@@ -373,12 +377,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="property">Určení požadované vlastnosti (typ property)</param>
         /// <param name="value"></param>
         void SetContent<T>(DxDData.DxDataFormProperty property, T value);
-        /// <summary>
-        /// Vyvolá danou akci, typicky ButtonClick nebo jinou - v kontextu aktuální buňky (=sloupec + řádek).
-        /// </summary>
-        /// <param name="action"></param>
-        /// <param name="data"></param>
-        void RunAction(Data.DxDataFormAction action, object data);
         /// <summary>
         /// Invaliduje si svoje cachovaná grafická data. Volá se po změnách jak dat, tak stylu.
         /// </summary>
@@ -510,23 +508,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         protected virtual void CheckValidNativeControl(IPaintItemData paintData, WinForm.Control container, WinDraw.Rectangle controlBounds, bool isStateChanged)
         {
             // Základem práce je pár { IPaintItemData <=> NatoveControl } :
-            ControlDataPair pair;
-            if (!TryGetAttachedPair(paintData, out pair))
-                pair = _GetDisponiblePair(paintData);
+            ControlDataPair dataPair;
+            if (!TryGetAttachedPair(paintData, out dataPair))
+                dataPair = _GetDisponiblePair(paintData);
 
             // Pár musí mít NativeControl. Nemá jej pouze při prvním použití, pak si jej nese stále, do konce až do Release:
-            if (pair.NativeControl is null)
-                pair.NativeControl = _CreateNativeControl();
+            if (dataPair.NativeControl is null)
+                dataPair.NativeControl = _CreateNativeControl();
 
             // Příznak, že NativeControl je pro paintData nový:
-            bool isNonAttachedControl = (paintData.NativeControl is null || !Object.ReferenceEquals(paintData.NativeControl, pair.NativeControl));
+            bool isNonAttachedControl = (paintData.NativeControl is null || !Object.ReferenceEquals(paintData.NativeControl, dataPair.NativeControl));
 
             // Pokud v paintData mám jiný NativeControl, než je v Pair (nebo žádný), tak je korektně propojím:
             if (isNonAttachedControl)
-                pair.AttachPaintData(paintData);
+                dataPair.AttachPaintData(paintData);
 
             // Do NativeControlu vložím buď všechna data, anebo jen souřadnici:
-            var nativeControl = pair.NativeControl;
+            var nativeControl = dataPair.NativeControl;
             if (nativeControl != null)
             {   // Pokud tedy máme vytvořený NativeControl (on ne každý Editor generuje nativní control!), tak jej naplníme daty:
                 // ... a pokud je to nutno, pak jej zařadíme jako Child control do containeru:
@@ -534,9 +532,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     container.Controls.Add(nativeControl);
 
                 if (isNonAttachedControl)
-                    _FillNativeControl(pair, controlBounds);
+                    _FillNativeControl(dataPair, controlBounds);
                 else
-                    _UpdateNativeBounds(pair, controlBounds);
+                    _UpdateNativeBounds(dataPair, controlBounds);
                 nativeControl.Visible = true;
                 // _DebugNativeControl(pair);
             }
@@ -557,49 +555,34 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Zajistí naplnění controlu aktuálními daty,
         /// </summary>
-        /// <param name="pair">Párová informace o datovém objektu a natovním controlu, plus target souřadnice</param>
+        /// <param name="dataPair">Párová informace o datovém objektu a natovním controlu, plus target souřadnice</param>
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        private void _FillNativeControl(ControlDataPair pair, WinDraw.Rectangle controlBounds)
+        private void _FillNativeControl(ControlDataPair dataPair, WinDraw.Rectangle controlBounds)
         {
             try
             {
                 SuppressNativeEvents = true;
-                FillNativeControl(pair.PaintData, pair.NativeControl, controlBounds);   // To řeší konkrétní potomek - naplní všechna konkrétní data...
-                pair.NativeControl.Bounds = controlBounds;
-                pair.ControlBounds = controlBounds;
+                FillNativeControl(dataPair, controlBounds);   // To řeší konkrétní potomek - naplní všechna konkrétní data...
+                dataPair.NativeControl.Bounds = controlBounds;
+                dataPair.ControlBounds = controlBounds;
             }
             finally
             {
                 SuppressNativeEvents = false;
             }
         }
-
-        // ke smazání - pouze signalizovalo stav prvku vizuálně:
-        private void _DebugNativeControl(ControlDataPair pair)
-        {
-            var state = pair.PaintData.InteractiveState;
-            bool hasFocus = state.HasFlag(DxInteractiveState.HasFocus);
-            bool hasMouse = state.HasFlag(DxInteractiveState.HasMouse);
-
-            WinDraw.Color backColor = (hasFocus && hasMouse ? WinDraw.Color.PaleVioletRed :
-                                      (hasFocus ? WinDraw.Color.LightBlue :
-                                      (hasMouse ? WinDraw.Color.LightYellow :
-                                      WinDraw.Color.Gray)));
-            pair.NativeControl.BackColor = backColor;
-        }
-
         /// <summary>
         /// Zajistí naplnění souřadnic controlu aktuálními daty, jen pokud jsou tyto souřadnice jiné než předešlé...
         /// </summary>
-        /// <param name="pair">Párová informace o datovém objektu a natovním controlu, plus target souřadnice</param>
+        /// <param name="dataPair">Párová informace o datovém objektu a natovním controlu, plus target souřadnice</param>
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        private void _UpdateNativeBounds(ControlDataPair pair, WinDraw.Rectangle controlBounds)
+        private void _UpdateNativeBounds(ControlDataPair dataPair, WinDraw.Rectangle controlBounds)
         {
-            bool isChangedBounds = (!pair.ControlBounds.HasValue || (pair.ControlBounds.HasValue && pair.ControlBounds.Value != controlBounds));
+            bool isChangedBounds = (!dataPair.ControlBounds.HasValue || (dataPair.ControlBounds.HasValue && dataPair.ControlBounds.Value != controlBounds));
             if (isChangedBounds)
             {
-                pair.NativeControl.Bounds = controlBounds;
-                pair.ControlBounds = controlBounds;
+                dataPair.NativeControl.Bounds = controlBounds;
+                dataPair.ControlBounds = controlBounds;
             }
         }
         /// <summary>
@@ -617,10 +600,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Potomek zde do controlu naplní všechna potřebná data.
         /// </summary>
-        /// <param name="paintData"></param>
-        /// <param name="nativeControl"></param>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="controlBounds"></param>
-        protected abstract void FillNativeControl(IPaintItemData paintData, WinForm.Control nativeControl, WinDraw.Rectangle controlBounds);
+        protected abstract void FillNativeControl(ControlDataPair dataPair, WinDraw.Rectangle controlBounds);
         /// <summary>
         /// Metoda zajistí, že pokud pro daný prvek máme připravený nativní control, tak nyní bude pravděpodobně odebrán.
         /// <para/>
@@ -662,13 +644,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (paintData != null)
             {
-                ControlDataPair pair;
+                ControlDataPair dataPair;
 
-                pair = _ControlUseQ;
-                if (isAttachedTo(pair)) { foundPair = pair; return true; }
+                dataPair = _ControlUseQ;
+                if (isAttachedTo(dataPair)) { foundPair = dataPair; return true; }
 
-                pair = _ControlUseW;
-                if (isAttachedTo(pair)) { foundPair = pair; return true; }
+                dataPair = _ControlUseW;
+                if (isAttachedTo(dataPair)) { foundPair = dataPair; return true; }
             }
             foundPair = null;
             return false;
@@ -680,25 +662,54 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         /// <summary>
+        /// Metoda zjistí, zda k danému WinForm controlu <paramref name="nativeControl"/> máme v evidenci párovou informaci <see cref="ControlDataPair"/> a určí ji.
+        /// Pokud je napojen, určí jej a vrátí true.
+        /// </summary>
+        /// <param name="nativeControl"></param>
+        /// <param name="foundPair"></param>
+        /// <returns></returns>
+        protected bool TryGetAttachedPair(WinForm.Control nativeControl, out ControlDataPair foundPair)
+        {
+            if (nativeControl != null)
+            {
+                ControlDataPair dataPair;
+
+                dataPair = _ControlUseQ;
+                if (isAttachedTo(dataPair)) { foundPair = dataPair; return true; }
+
+                dataPair = _ControlUseW;
+                if (isAttachedTo(dataPair)) { foundPair = dataPair; return true; }
+            }
+            foundPair = null;
+            return false;
+
+            // Metoda určí, zda aktuálně daný prvek 'paintData' je připojen v dodaném testovaném páru.
+            bool isAttachedTo(ControlDataPair testPair)
+            {
+                return (testPair.NativeControl != null && Object.ReferenceEquals(testPair.NativeControl, nativeControl));
+            }
+        }
+
+        /// <summary>
         /// Najde a vrátí disponibilní pár, jehož <see cref="ControlDataPair.NativeControl"/> je možno použít pro zobrazení nových dat.
         /// </summary>
         /// <returns></returns>
         /// <exception cref="InvalidOperationException"></exception>
         private ControlDataPair _GetDisponiblePair(IPaintItemData paintData)
         {
-            ControlDataPair pair;
+            ControlDataPair dataPair;
 
-            pair = _ControlUseQ;
-            if (isDisponible(pair, false)) return pair;
+            dataPair = _ControlUseQ;
+            if (isDisponible(dataPair, false)) return dataPair;
 
-            pair = _ControlUseW;
-            if (isDisponible(pair, false)) return pair;
+            dataPair = _ControlUseW;
+            if (isDisponible(dataPair, false)) return dataPair;
 
-            pair = _ControlUseQ;
-            if (isDisponible(pair, true)) return pair;
+            dataPair = _ControlUseQ;
+            if (isDisponible(dataPair, true)) return dataPair;
 
-            pair = _ControlUseW;
-            if (isDisponible(pair, true)) return pair;
+            dataPair = _ControlUseW;
+            if (isDisponible(dataPair, true)) return dataPair;
 
             throw new InvalidOperationException($"DxRepositoryEditor has not any disponible ControlDataPair.");
 
@@ -743,13 +754,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (sender is WinForm.Control control)
             {
-                ControlDataPair pair;
+                ControlDataPair dataPair;
 
-                pair = _ControlUseQ;
-                if (isAtttachedTo(pair, control)) { paintData = pair.PaintData; return (paintData != null); }
+                dataPair = _ControlUseQ;
+                if (isAtttachedTo(dataPair, control)) { paintData = dataPair.PaintData; return (paintData != null); }
 
-                pair = _ControlUseW;
-                if (isAtttachedTo(pair, control)) { paintData = pair.PaintData; return (paintData != null); }
+                dataPair = _ControlUseW;
+                if (isAtttachedTo(dataPair, control)) { paintData = dataPair.PaintData; return (paintData != null); }
             }
             paintData = null;
             return false;
@@ -943,6 +954,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Interaktivní prvek, střídají se zde podle potřeby - kdo zrovna potřebuje mít nativní control, ten je zde uložen.
             /// </summary>
             public IPaintItemData PaintData { get; set; }
+            /// <summary>
+            /// Interaktivní prvek, kerý je nositelem editované hodnoty.
+            /// S ohledem na proces LostFocus a Validation (kdy nejprve probíhá LostFocus, v jeho rámci pak zdejší <see cref="DetachPaintData()"/> kdy se nuluje <see cref="PaintData"/>)
+            /// se v procesu validace nelze spolehnout na objekt v <see cref="PaintData"/> (ten už je null). Proto validace pracuje s <see cref="OriginalPaintData"/>.
+            /// Hodnotu do <see cref="OriginalPaintData"/> vkládá konkrétní editor společně v té chvíli, kdy ukládá originál editované hodnoty do <see cref="OriginalValue"/>.
+            /// </summary>
+            public IPaintItemData OriginalPaintData { get; set; }
+            /// <summary>
+            /// Hodnota buňky, která byla do nativního controlu <see cref="NativeControl"/> vložena v době plnění controlu v <see cref="DxRepositoryEditor.FillNativeControl(ControlDataPair, Rectangle)"/>.<br/>
+            /// Pokud při opouštění buňky se výsledná hodnota v controlu liší od této uložené hodnoty, pak se hlásí změna hodnoty pomocí akce.
+            /// </summary>
+            public object OriginalValue { get; set; }
+            /// <summary>
+            /// Hodnota buňky, která je v nativním controlu <see cref="NativeControl"/> přítomna v průběhu editace a po dokončení editace.
+            /// Pokud při opouštění buňky se tato výsledná hodnota v controlu liší od hodnoty uložené v <see cref="OriginalValue"/>, pak se hlásí změna hodnoty pomocí akce.
+            /// </summary>
+            public object CurrentValue { get; set; }
             /// <summary>
             /// Má můj prvek Focus?
             /// </summary>
@@ -1369,7 +1397,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             var oldValue = (callAction ? GetItemValue(paintData) : null);
             paintData.SetContent(Data.DxDataFormProperty.Value, value);
-            if (callAction && !Object.Equals(value, oldValue)) paintData.RunAction(DxDData.DxDataFormAction.ValueChanged, value);
+            if (callAction && !Object.Equals(value, oldValue))
+            {
+                var actionInfo = new DataFormValueChangedInfo(paintData.Row, paintData.LayoutItem.ColumnName, DxDData.DxDataFormAction.ValueChanged, oldValue, value);
+                this.DataForm.OnInteractiveAction(actionInfo);
+            }
         }
         /// <summary>
         /// Z prvku přečte a vrátí konstantní text Label
@@ -1402,6 +1434,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (!paintData.TryGetContent<BorderStyle>(Data.DxDataFormProperty.CheckBoxBorderStyle, out var content)) return DxeCont.BorderStyles.NoBorder;
             return ConvertToDxBorderStyles(content, DxeCont.BorderStyles.NoBorder);
+        }
+        /// <summary>
+        /// Z prvku přečte a vrátí BorderStyle - z vlastnosti <see cref="Data.DxDataFormProperty.IconHorizontAlignment"/>
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <returns></returns>
+        protected DevExpress.Utils.HorzAlignment GetItemIconHorzizontalAlignment(IPaintItemData paintData)
+        {
+            if (!paintData.TryGetContent<HorizontAlignment>(Data.DxDataFormProperty.IconHorizontAlignment, out var content)) return DevExpress.Utils.HorzAlignment.Default;
+            return ConvertToDxHorzAlignment(content, DevExpress.Utils.HorzAlignment.Default);
         }
         /// <summary>
         /// Z prvku přečte a vrátí požadovanou hodnotu anebo vrátí default hodnotu
@@ -1459,6 +1501,26 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     case BorderStyle.Style3D: return DxeCont.BorderStyles.Style3D;
                     case BorderStyle.Office2003: return DxeCont.BorderStyles.Office2003;
                     case BorderStyle.Default: return DxeCont.BorderStyles.Default;
+                }
+            }
+            return defaultValue;
+        }
+        /// <summary>
+        /// Konverze do DevExpress hodnoty
+        /// </summary>
+        /// <param name="horizontAlignment"></param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
+        protected DevExpress.Utils.HorzAlignment ConvertToDxHorzAlignment(HorizontAlignment? horizontAlignment, DevExpress.Utils.HorzAlignment defaultValue)
+        {
+            if (horizontAlignment.HasValue)
+            {
+                switch (horizontAlignment)
+                {
+                    case HorizontAlignment.Default: return DevExpress.Utils.HorzAlignment.Default;
+                    case HorizontAlignment.Near: return DevExpress.Utils.HorzAlignment.Near;
+                    case HorizontAlignment.Center: return DevExpress.Utils.HorzAlignment.Center;
+                    case HorizontAlignment.Far: return DevExpress.Utils.HorzAlignment.Far;
                 }
             }
             return defaultValue;
@@ -1769,7 +1831,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             bool isFirstUse = (__EditorPaint is null);
 
             __EditorPaint ??= _CreateNativeControl(false);
-            _FillNativeControl(paintData, __EditorPaint, controlBounds);
+            _FillNativeControl(null, paintData, __EditorPaint, controlBounds);
 
             // První vygenerovanou bitmapu v životě Labelu vytvoříme a zahodíme, není pěkná...
             if (isFirstUse) CreateBitmapData(__EditorPaint);
@@ -1788,12 +1850,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Potomek zde do controlu naplní všechna potřebná data
         /// </summary>
-        /// <param name="paintData">Data konkrétního prvku</param>
-        /// <param name="nativeControl">Cílový control</param>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        protected override void FillNativeControl(IPaintItemData paintData, WinForm.Control nativeControl, WinDraw.Rectangle controlBounds) 
+        protected override void FillNativeControl(ControlDataPair dataPair, WinDraw.Rectangle controlBounds) 
         {
-            this._FillNativeControl(paintData, nativeControl as DxeEdit.LabelControl, controlBounds);
+            this._FillNativeControl(dataPair, dataPair.PaintData, dataPair.NativeControl as DxeEdit.LabelControl, controlBounds);
         }
         /// <summary>
         /// Metoda vytvoří a vrátí new instanci nativního controlu. 
@@ -1817,10 +1878,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Do dodaného controlu vloží data, která tento typ editoru řeší. Data získá z dodaného prvku.
         /// </summary>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="control">Cílový control</param>
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        private void _FillNativeControl(IPaintItemData paintData, DxeEdit.LabelControl control, WinDraw.Rectangle controlBounds)
+        private void _FillNativeControl(ControlDataPair dataPair, IPaintItemData paintData, DxeEdit.LabelControl control, WinDraw.Rectangle controlBounds)
         {   //  Ono po pravdě, protože 'CacheMode' je DirectPaint, a protože NeedUseNativeControl vrací vždy false, 
             // tak je jisto, že Label nikdy nebude používat nativní Control => neprojdeme tudy:
             control.Text = GetItemLabel(paintData);
@@ -1889,7 +1951,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
             __EditorPaint ??= _CreateNativeControl(false);
-            _FillNativeControl(paintData, __EditorPaint, controlBounds);
+            _FillNativeControl(null, paintData, __EditorPaint, controlBounds);
             return CreateBitmapData(__EditorPaint);
         }
         /// <summary>
@@ -1904,12 +1966,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Potomek zde do controlu naplní všechna potřebná data.
         /// Je předán ten control, který byl vytvořen v metodě <see cref="CreateNativeControl()"/>.
         /// </summary>
-        /// <param name="paintData"></param>
-        /// <param name="nativeControl"></param>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="controlBounds"></param>
-        protected override void FillNativeControl(IPaintItemData paintData, WinForm.Control nativeControl, WinDraw.Rectangle controlBounds)
+        protected override void FillNativeControl(ControlDataPair dataPair, WinDraw.Rectangle controlBounds)
         {
-            this._FillNativeControl(paintData, nativeControl as DxeEdit.TextEdit, controlBounds);
+            this._FillNativeControl(dataPair, dataPair.PaintData, dataPair.NativeControl as DxeEdit.TextEdit, controlBounds);
         }
         /// <summary>
         /// Metoda vytvoří a vrátí new instanci nativního controlu. 
@@ -1928,12 +1989,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Do dodaného controlu vloží data, která tento typ editoru řeší. Data získá z dodaného prvku.
         /// </summary>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="control">Cílový control</param>
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        private void _FillNativeControl(IPaintItemData paintData, DxeEdit.TextEdit control, WinDraw.Rectangle controlBounds)
+        private void _FillNativeControl(ControlDataPair dataPair, IPaintItemData paintData, DxeEdit.TextEdit control, WinDraw.Rectangle controlBounds)
         {
-            control.EditValue = GetItemValue(paintData);
+            object value = GetItemValue(paintData);
+            control.EditValue = value;
+            if (dataPair != null)
+            {
+                dataPair.OriginalPaintData = paintData;
+                dataPair.OriginalValue = value;
+            }
             control.Size = controlBounds.Size;
             control.Properties.BorderStyle = GetItemBorderStyle(paintData);
         }
@@ -1943,7 +2011,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="control"></param>
         private void _PrepareInteractive(DxeEdit.TextEdit control)
         {
+            control.CausesValidation = true;
             control.EditValueChanged += _ControlEditValueChanged;
+            control.Validating += _NativeControlValidating;
         }
         /// <summary>
         /// Eventhandler po změně hodnoty v TextEdit controlu
@@ -1954,9 +2024,35 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (SuppressNativeEvents) return;
 
-            if (sender is DxeEdit.TextEdit control && TryGetPaintData(control, out var paintData))
-            {
-                SetItemValue(paintData, control.EditValue, true);
+            if (sender is DxeEdit.TextEdit control && TryGetAttachedPair(control, out var dataPair))
+            {   // Toto je průběžně volaný event, v procesu editace, a nemá valného významu:
+                dataPair.CurrentValue = control.EditValue;
+            }
+        }
+        /// <summary>
+        /// Eventhandler při validaci zadané hodnoty
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _NativeControlValidating(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (SuppressNativeEvents) return;
+
+            if (sender is DxeEdit.TextEdit control && TryGetAttachedPair(control, out var dataPair) && dataPair.OriginalPaintData != null)
+            {   // Toto je event volaný při ukončení editace
+                dataPair.CurrentValue = control.EditValue;
+                if (!Object.Equals(dataPair.CurrentValue, dataPair.OriginalValue))
+                {
+                    IPaintItemData paintData = dataPair.OriginalPaintData;
+                    var actionInfo = new DataFormValueChangingInfo(paintData.Row, paintData.LayoutItem.ColumnName, DxDData.DxDataFormAction.ValueValidating, dataPair.OriginalValue, dataPair.CurrentValue);
+                    this.DataForm.OnInteractiveAction(actionInfo);
+                    if (actionInfo.Cancel)
+                    { }
+                    else
+                    {
+                        SetItemValue(dataPair.OriginalPaintData, dataPair.CurrentValue, true);
+                    }
+                }
             }
         }
         /// <summary>
@@ -2022,7 +2118,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
             __EditorPaint ??= _CreateNativeControl(false);
-            _FillNativeControl(paintData, __EditorPaint, controlBounds);
+            _FillNativeControl(null, paintData, __EditorPaint, controlBounds);
             return CreateBitmapData(__EditorPaint);
         }
         /// <summary>
@@ -2037,12 +2133,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Potomek zde do controlu naplní všechna potřebná data.
         /// Je předán ten control, který byl vytvořen v metodě <see cref="CreateNativeControl()"/>.
         /// </summary>
-        /// <param name="paintData"></param>
-        /// <param name="nativeControl"></param>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="controlBounds"></param>
-        protected override void FillNativeControl(IPaintItemData paintData, WinForm.Control nativeControl, WinDraw.Rectangle controlBounds)
+        protected override void FillNativeControl(ControlDataPair dataPair, WinDraw.Rectangle controlBounds)
         {
-            this._FillNativeControl(paintData, nativeControl as DxeEdit.ButtonEdit, controlBounds);
+            this._FillNativeControl(dataPair, dataPair.PaintData, dataPair.NativeControl as DxeEdit.ButtonEdit, controlBounds);
         }
         /// <summary>
         /// Metoda vytvoří a vrátí new instanci nativního controlu. 
@@ -2061,10 +2156,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Do dodaného controlu vloží data, která tento typ editoru řeší. Data získá z dodaného prvku.
         /// </summary>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="control">Cílový control</param>
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        private void _FillNativeControl(IPaintItemData paintData, DxeEdit.ButtonEdit control, WinDraw.Rectangle controlBounds)
+        private void _FillNativeControl(ControlDataPair dataPair, IPaintItemData paintData, DxeEdit.ButtonEdit control, WinDraw.Rectangle controlBounds)
         {
             control.EditValue = GetItemValue(paintData);
             control.Size = controlBounds.Size;
@@ -2115,7 +2211,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (sender is DxeEdit.ButtonEdit control && TryGetPaintData(control, out var paintData))
             {
                 string actionName = e.Button.Tag as string;
-                paintData.RunAction(Data.DxDataFormAction.ButtonClick, actionName);
+                var actionInfo = new DataFormItemNameInfo(paintData.Row, paintData.LayoutItem.ColumnName, DxDData.DxDataFormAction.ButtonClick, actionName);
+                this.DataForm.OnInteractiveAction(actionInfo);
             }
         }
         /// <summary>
@@ -2130,7 +2227,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (sender is DxeEdit.ButtonEdit control && TryGetPaintData(control, out var paintData))
             {
                 string actionName = e.Button.Tag as string;
-                paintData.RunAction(Data.DxDataFormAction.ButtonPressed, actionName);
+                var actionInfo = new DataFormItemNameInfo(paintData.Row, paintData.LayoutItem.ColumnName, DxDData.DxDataFormAction.ButtonClick, actionName);
+                this.DataForm.OnInteractiveAction(actionInfo);
             }
         }
         /// <summary>
@@ -2196,7 +2294,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
             __EditorPaint ??= _CreateNativeControl(false);
-            _FillNativeControl(paintData, __EditorPaint, controlBounds);
+            _FillNativeControl(null, paintData, __EditorPaint, controlBounds);
             return CreateBitmapData(__EditorPaint, null, pdea.InteractivePanel.BackColor);
         }
         /// <summary>
@@ -2211,12 +2309,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Potomek zde do controlu naplní všechna potřebná data.
         /// Je předán ten control, který byl vytvořen v metodě <see cref="CreateNativeControl()"/>.
         /// </summary>
-        /// <param name="paintData"></param>
-        /// <param name="nativeControl"></param>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="controlBounds"></param>
-        protected override void FillNativeControl(IPaintItemData paintData, WinForm.Control nativeControl, WinDraw.Rectangle controlBounds)
+        protected override void FillNativeControl(ControlDataPair dataPair, WinDraw.Rectangle controlBounds)
         {
-            this._FillNativeControl(paintData, nativeControl as DxeEdit.CheckEdit, controlBounds);
+            this._FillNativeControl(dataPair, dataPair.PaintData, dataPair.NativeControl as DxeEdit.CheckEdit, controlBounds);
         }
         /// <summary>
         /// Metoda vytvoří a vrátí new instanci nativního controlu. 
@@ -2240,10 +2337,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Do dodaného controlu vloží data, která tento typ editoru řeší. Data získá z dodaného prvku.
         /// </summary>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="control">Cílový control</param>
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        private void _FillNativeControl(IPaintItemData paintData, DxeEdit.CheckEdit control, WinDraw.Rectangle controlBounds)
+        private void _FillNativeControl(ControlDataPair dataPair, IPaintItemData paintData, DxeEdit.CheckEdit control, WinDraw.Rectangle controlBounds)
         {
             control.Size = controlBounds.Size;
             control.ReadOnly = true;
@@ -2356,7 +2454,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
             __EditorPaint ??= _CreateNativeControl(false);
-            _FillNativeControl(paintData, __EditorPaint, controlBounds);
+            _FillNativeControl(null, paintData, __EditorPaint, controlBounds);
             return CreateBitmapData(__EditorPaint);
         }
         /// <summary>
@@ -2371,12 +2469,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Potomek zde do controlu naplní všechna potřebná data.
         /// Je předán ten control, který byl vytvořen v metodě <see cref="CreateNativeControl()"/>.
         /// </summary>
-        /// <param name="paintData"></param>
-        /// <param name="nativeControl"></param>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="controlBounds"></param>
-        protected override void FillNativeControl(IPaintItemData paintData, WinForm.Control nativeControl, WinDraw.Rectangle controlBounds)
+        protected override void FillNativeControl(ControlDataPair dataPair, WinDraw.Rectangle controlBounds)
         {
-            this._FillNativeControl(paintData, nativeControl as DxeEdit.ToggleSwitch, controlBounds);
+            this._FillNativeControl(dataPair, dataPair.PaintData, dataPair.NativeControl as DxeEdit.ToggleSwitch, controlBounds);
         }
         /// <summary>
         /// Metoda vytvoří a vrátí new instanci nativního controlu. 
@@ -2399,10 +2496,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Do dodaného controlu vloží data, která tento typ editoru řeší. Data získá z dodaného prvku.
         /// </summary>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="control">Cílový control</param>
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        private void _FillNativeControl(IPaintItemData paintData, DxeEdit.ToggleSwitch control, WinDraw.Rectangle controlBounds)
+        private void _FillNativeControl(ControlDataPair dataPair, IPaintItemData paintData, DxeEdit.ToggleSwitch control, WinDraw.Rectangle controlBounds)
         {
             control.Size = controlBounds.Size;
             control.IsOn = GetItemValue(paintData, false);
@@ -2410,8 +2508,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             control.Properties.EditorToThumbWidthRatio = GetItemContent(paintData, DxDData.DxDataFormProperty.ToggleSwitchRatio, 2.5f);
             control.Properties.OffText = GetItemContent(paintData, DxDData.DxDataFormProperty.CheckBoxLabelFalse, "Off");
             control.Properties.OnText = GetItemContent(paintData, DxDData.DxDataFormProperty.CheckBoxLabelTrue, "On");
-            control.ReadOnly = true;
-            control.Enabled = true;
+            control.Properties.GlyphAlignment = GetItemIconHorzizontalAlignment(paintData);
+            // control.ReadOnly = true;
+            // control.Enabled = true;
         }
         /// <summary>
         /// Daný control připraví pro interaktivní práci: nastaví potřebné vlastnosti a naváže zdejší eventhandlery, které potřebuje k práci.
@@ -2514,7 +2613,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
             __EditorPaint ??= _CreateNativeControl(false);
-            _FillNativeControl(paintData, __EditorPaint, controlBounds);
+            _FillNativeControl(null, paintData, __EditorPaint, controlBounds);
             return CreateBitmapData(__EditorPaint);
         }
         /// <summary>
@@ -2529,12 +2628,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Potomek zde do controlu naplní všechna potřebná data.
         /// Je předán ten control, který byl vytvořen v metodě <see cref="CreateNativeControl()"/>.
         /// </summary>
-        /// <param name="paintData"></param>
-        /// <param name="nativeControl"></param>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="controlBounds"></param>
-        protected override void FillNativeControl(IPaintItemData paintData, WinForm.Control nativeControl, WinDraw.Rectangle controlBounds)
+        protected override void FillNativeControl(ControlDataPair dataPair, WinDraw.Rectangle controlBounds)
         {
-            this._FillNativeControl(paintData, nativeControl as DxeEdit.MemoEdit, controlBounds);
+            this._FillNativeControl(dataPair, dataPair.PaintData, dataPair.NativeControl as DxeEdit.MemoEdit, controlBounds);
         }
         /// <summary>
         /// Metoda vytvoří a vrátí new instanci nativního controlu. 
@@ -2553,10 +2651,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Do dodaného controlu vloží data, která tento typ editoru řeší. Data získá z dodaného prvku.
         /// </summary>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="control">Cílový control</param>
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        private void _FillNativeControl(IPaintItemData paintData, DxeEdit.MemoEdit control, WinDraw.Rectangle controlBounds)
+        private void _FillNativeControl(ControlDataPair dataPair, IPaintItemData paintData, DxeEdit.MemoEdit control, WinDraw.Rectangle controlBounds)
         {
             control.EditValue = GetItemValue(paintData);
             control.Size = controlBounds.Size;
@@ -2647,7 +2746,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
             __EditorPaint ??= _CreateNativeControl(false);
-            _FillNativeControl(paintData, __EditorPaint, controlBounds);
+            _FillNativeControl(null, paintData, __EditorPaint, controlBounds);
             return CreateBitmapData(__EditorPaint);
         }
         /// <summary>
@@ -2662,12 +2761,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Potomek zde do controlu naplní všechna potřebná data.
         /// Je předán ten control, který byl vytvořen v metodě <see cref="CreateNativeControl()"/>.
         /// </summary>
-        /// <param name="paintData"></param>
-        /// <param name="nativeControl"></param>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="controlBounds"></param>
-        protected override void FillNativeControl(IPaintItemData paintData, WinForm.Control nativeControl, WinDraw.Rectangle controlBounds)
+        protected override void FillNativeControl(ControlDataPair dataPair, WinDraw.Rectangle controlBounds)
         {
-            this._FillNativeControl(paintData, nativeControl as DxeEdit.ComboBoxEdit, controlBounds);
+            this._FillNativeControl(dataPair, dataPair.PaintData, dataPair.NativeControl as DxeEdit.ComboBoxEdit, controlBounds);
         }
         /// <summary>
         /// Metoda vytvoří a vrátí new instanci nativního controlu. 
@@ -2686,10 +2784,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Do dodaného controlu vloží data, která tento typ editoru řeší. Data získá z dodaného prvku.
         /// </summary>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="control">Cílový control</param>
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        private void _FillNativeControl(IPaintItemData paintData, DxeEdit.ComboBoxEdit control, WinDraw.Rectangle controlBounds)
+        private void _FillNativeControl(ControlDataPair dataPair, IPaintItemData paintData, DxeEdit.ComboBoxEdit control, WinDraw.Rectangle controlBounds)
         {
             _FillNativeComboItems(paintData, control);
 
@@ -2876,7 +2975,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
             __EditorPaint ??= _CreateNativeControl(false);
-            _FillNativeControl(paintData, __EditorPaint, controlBounds);
+            _FillNativeControl(null, paintData, __EditorPaint, controlBounds);
             return CreateBitmapData(__EditorPaint);
         }
         /// <summary>
@@ -2891,12 +2990,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Potomek zde do controlu naplní všechna potřebná data.
         /// Je předán ten control, který byl vytvořen v metodě <see cref="CreateNativeControl()"/>.
         /// </summary>
-        /// <param name="paintData"></param>
-        /// <param name="nativeControl"></param>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="controlBounds"></param>
-        protected override void FillNativeControl(IPaintItemData paintData, WinForm.Control nativeControl, WinDraw.Rectangle controlBounds)
+        protected override void FillNativeControl(ControlDataPair dataPair, WinDraw.Rectangle controlBounds)
         {
-            this._FillNativeControl(paintData, nativeControl as DxeEdit.ImageComboBoxEdit, controlBounds);
+            this._FillNativeControl(dataPair, dataPair.PaintData, dataPair.NativeControl as DxeEdit.ImageComboBoxEdit, controlBounds);
         }
         /// <summary>
         /// Metoda vytvoří a vrátí new instanci nativního controlu. 
@@ -2915,11 +3013,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Do dodaného controlu vloží data, která tento typ editoru řeší. Data získá z dodaného prvku.
         /// </summary>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="control">Cílový control</param>
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        private void _FillNativeControl(IPaintItemData paintData, DxeEdit.ImageComboBoxEdit control, WinDraw.Rectangle controlBounds)
+        private void _FillNativeControl(ControlDataPair dataPair, IPaintItemData paintData, DxeEdit.ImageComboBoxEdit control, WinDraw.Rectangle controlBounds)
         {
+            if (dataPair != null)
+            {
+                dataPair.OriginalPaintData = paintData;
+                dataPair.OriginalValue = GetItemValue(paintData);
+            }
+
             _FillNativeComboItems(paintData, control);
 
             control.Size = controlBounds.Size;
@@ -2972,6 +3077,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _PrepareInteractive(DxeEdit.ImageComboBoxEdit control)
         {
             control.Properties.AllowMouseWheel = false;
+            control.CausesValidation = true;
             control.EditValueChanged += _ControlEditValueChanged;
             control.Properties.QueryPopUp += _NativeControlQueryPopUp;
             control.Properties.BeforePopup += _NativeControlBeforePopup;
@@ -2986,12 +3092,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (SuppressNativeEvents) return;
 
-            if (sender is DxeEdit.ImageComboBoxEdit control && TryGetPaintData(control, out var paintData))
+            if (sender is DxeEdit.ImageComboBoxEdit control && TryGetAttachedPair(control, out var dataPair) && dataPair.OriginalPaintData != null)
             {
                 var dxItem = control.SelectedItem;
                 if (dxItem != null && dxItem is DevExpress.XtraEditors.Controls.ImageComboBoxItem dxImageItem)
                 {   // Je vybraná konkrétní položka?
-                    SetItemValue(paintData, dxImageItem.Value, true);
+                    dataPair.CurrentValue = dxImageItem.Value;
+                    if (!Object.Equals(dataPair.CurrentValue, dataPair.OriginalValue))
+                    {
+                        IPaintItemData paintData = dataPair.OriginalPaintData;
+                        var actionInfo = new DataFormValueChangingInfo(paintData.Row, paintData.LayoutItem.ColumnName, DxDData.DxDataFormAction.ValueValidating, dataPair.OriginalValue, dataPair.CurrentValue);
+                        this.DataForm.OnInteractiveAction(actionInfo);
+                        if (actionInfo.Cancel)
+                        { }
+                        else
+                        {
+                            SetItemValue(dataPair.OriginalPaintData, dataPair.CurrentValue, true);
+                        }
+                    }
                 }
                 else
                 {
@@ -3107,7 +3225,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
             __EditorPaint ??= _CreateNativeControl(false);
-            _FillNativeControl(paintData, __EditorPaint, controlBounds);
+            _FillNativeControl(null, paintData, __EditorPaint, controlBounds);
             return CreateBitmapData(__EditorPaint);
         }
         /// <summary>
@@ -3122,12 +3240,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Potomek zde do controlu naplní všechna potřebná data.
         /// Je předán ten control, který byl vytvořen v metodě <see cref="CreateNativeControl()"/>.
         /// </summary>
-        /// <param name="paintData">Data konkrétního prvku</param>
-        /// <param name="nativeControl">Cílový control</param>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        protected override void FillNativeControl(IPaintItemData paintData, WinForm.Control nativeControl, WinDraw.Rectangle controlBounds)
+        protected override void FillNativeControl(ControlDataPair dataPair, WinDraw.Rectangle controlBounds)
         {
-            this._FillNativeControl(paintData, nativeControl as DxeEdit.SimpleButton, controlBounds);
+            this._FillNativeControl(dataPair, dataPair.PaintData, dataPair.NativeControl as DxeEdit.SimpleButton, controlBounds);
         }
         /// <summary>
         /// Metoda vytvoří a vrátí new instanci nativního controlu. 
@@ -3146,10 +3263,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Do dodaného controlu vloží data, která tento typ editoru řeší. Data získá z dodaného prvku.
         /// </summary>
+        /// <param name="dataPair">Párová informace: data o buňce + nativní control</param>
         /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="control">Cílový control</param>
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        protected void _FillNativeControl(IPaintItemData paintData, DxeEdit.SimpleButton control, WinDraw.Rectangle controlBounds)
+        protected void _FillNativeControl(ControlDataPair dataPair, IPaintItemData paintData, DxeEdit.SimpleButton control, WinDraw.Rectangle controlBounds)
         {
             control.Text = GetItemLabel(paintData);
             control.Size = controlBounds.Size;
@@ -3183,7 +3301,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             if (sender is DxeEdit.SimpleButton control && TryGetPaintData(control, out var paintData))
             {
-                paintData.RunAction(Data.DxDataFormAction.ButtonClick, null);
+                var actionInfo = new DataFormActionInfo(paintData.Row, paintData.LayoutItem.ColumnName, DxDData.DxDataFormAction.ButtonClick);
+                this.DataForm.OnInteractiveAction(actionInfo);
             }
         }
         /// <summary>
@@ -3219,5 +3338,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         Office2003,
         Default
     }
+    public enum HorizontAlignment
+    {
+        Default,
+        Near,
+        Center,
+        Far
+    }
+
     #endregion
 }

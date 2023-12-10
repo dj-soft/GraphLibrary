@@ -13,6 +13,7 @@ using WinDraw = System.Drawing;
 using WinForm = System.Windows.Forms;
 
 using DxfData = Noris.Clients.Win.Components.AsolDX.DataForm.Data;
+using Noris.Clients.Win.Components.AsolDX.DataForm.Data;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
@@ -200,14 +201,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Uživatel provedl nějakou akci na dataformu (kliknutí...)
         /// </summary>
-        /// <param name="row"></param>
-        /// <param name="columnName"></param>
-        /// <param name="action"></param>
-        /// <param name="actionData"></param>
-        public void OnInteractiveAction(DxfData.DataFormRow row, string columnName, DxfData.DxDataFormAction action, object actionData)
+        /// <param name="actionInfo"></param>
+        public void OnInteractiveAction(DataFormActionInfo actionInfo)
         {
-            string text = $"Action on Row: {row.RowId}; Column: {columnName}, Action: {action}";
-            if (actionData != null) text += $"; Data: {actionData}";
+            string text = actionInfo.ToString();
             DxComponent.LogAddLine(LogActivityKind.DataFormEvents, text);      //  Moc násilné:  DxComponent.ShowMessageInfo(text, "DataForm");
         }
         #endregion
@@ -557,6 +554,135 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         protected override IList<IInteractiveItem> ItemsAll { get { return DataFormPanel?.InteractiveItems as IList<IInteractiveItem>; } }
         #endregion
+    }
+    #endregion
+    #region Podpůrné třídy
+    /// <summary>
+    /// Data pro akce typu Změna hodnoty s možností Cancel
+    /// </summary>
+    public class DataFormValueChangingInfo : DataFormValueChangedInfo
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="columnName"></param>
+        /// <param name="action"></param>
+        /// <param name="oldValue"></param>
+        /// <param name="newValue"></param>
+        public DataFormValueChangingInfo(DataFormRow row, string columnName, DxDataFormAction action, object oldValue, object newValue)
+            : base(row, columnName, action, oldValue, newValue)
+        {
+            this.Cancel = false;
+        }
+        /// <summary>
+        /// DataForm požaduje storno editace
+        /// </summary>
+        public bool Cancel { get; set; }
+    }
+    /// <summary>
+    /// Data pro akce typu Změna hodnoty bez možnost Cancel
+    /// </summary>
+    public class DataFormValueChangedInfo : DataFormActionInfo
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="columnName"></param>
+        /// <param name="action"></param>
+        /// <param name="oldValue"></param>
+        /// <param name="newValue"></param>
+        public DataFormValueChangedInfo(DataFormRow row, string columnName, DxDataFormAction action, object oldValue, object newValue)
+            : base(row, columnName, action)
+        {
+            this.OldValue = oldValue;
+            this.NewValue = newValue;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"{base.ToString()}; OldValue: '{OldValue}'; NewValue: '{NewValue}'";
+        }
+        /// <summary>
+        /// Hodnota v okamžiku vstupu kurzoru do prvku
+        /// </summary>
+        public object OldValue { get; private set; }
+        /// <summary>
+        /// Hodnota v okamžiku ukončení editace
+        /// </summary>
+        public object NewValue { get; private set; }
+    }
+    /// <summary>
+    /// Data pro akce, které nesou název prvku (typicky SubButton)
+    /// </summary>
+    public class DataFormItemNameInfo : DataFormActionInfo
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="columnName"></param>
+        /// <param name="action"></param>
+        /// <param name="itemName"></param>
+        public DataFormItemNameInfo(DataFormRow row, string columnName, DxDataFormAction action, string itemName)
+            : base(row, columnName, action)
+        {
+            this.ItemName = itemName;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"{base.ToString()}'; ItemName: '{this.ItemName}'";
+        }
+        /// <summary>
+        /// Prvek, jeho název
+        /// </summary>
+        public string ItemName { get; private set; }
+    }
+    /// <summary>
+    /// Data pro akce, které nenesou žádná další data
+    /// </summary>
+    public class DataFormActionInfo
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="columnName"></param>
+        /// <param name="action"></param>
+        public DataFormActionInfo(DataFormRow row, string columnName, DxDataFormAction action)
+        {
+            this.Row = row;
+            this.ColumnName = columnName;
+            this.Action = action;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Action '{this.Action}'; Row: {this.Row.RowId}; Column: '{this.ColumnName}'";
+        }
+        /// <summary>
+        /// Řádek, kde došlo k události
+        /// </summary>
+        public DataFormRow Row { get; private set; }
+        /// <summary>
+        /// Sloupec, kde došlo k události
+        /// </summary>
+        public string ColumnName { get; private set; }
+        /// <summary>
+        /// Druh události
+        /// </summary>
+        public DxDataFormAction Action { get; private set; }
     }
     #endregion
 }

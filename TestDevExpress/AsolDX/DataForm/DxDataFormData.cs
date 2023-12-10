@@ -1101,15 +1101,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             _InvalidateCache();
         }
         /// <summary>
-        /// Vyvolá danou akci
-        /// </summary>
-        /// <param name="action"></param>
-        /// <param name="data"></param>
-        public void RunAction(DxDataFormAction action, object data)
-        {
-            this._DataForm?.OnInteractiveAction(this.__Row, this.ColumnName, action, data);
-        }
-        /// <summary>
         /// Invaliduje svoje grafická data (uložený statický obrázek) - volá se po změnách hodnoty
         /// </summary>
         private void _InvalidateCache()
@@ -1122,10 +1113,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         DxRepositoryEditorType IPaintItemData.EditorType { get { return this.__LayoutItem.ColumnType; } }
         DxInteractiveState IPaintItemData.InteractiveState { get { return this._InteractiveState; } set { this._InteractiveState = value; } }
         WinForm.Control IPaintItemData.NativeControl { get { return this.__NativeControl; } set { this.__NativeControl = value; } }
+        DataFormRow IPaintItemData.Row { get { return __Row; } }
         DataFormLayoutItem IPaintItemData.LayoutItem { get { return __LayoutItem; } }
         bool IPaintItemData.TryGetContent<T>(DxDataFormProperty property, out T content) { return TryGetContent<T>(property, out content); }
         void IPaintItemData.SetContent<T>(DxDataFormProperty property, T value) { SetContent<T>(property, value); }
-        void IPaintItemData.RunAction(DxDataFormAction action, object data) { RunAction(action, data); }
         void IPaintItemData.InvalidateCache() { _InvalidateCache(); }
         ulong? IPaintItemData.ImageId { get { return __ImageId; } set { __ImageId = value; } } private ulong? __ImageId;
         byte[] IPaintItemData.ImageData { get { return __ImageData; } set { __ImageData = value; } } private byte[] __ImageData;
@@ -1520,6 +1511,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         CursorTypeMouseOn,
         LabelAlignment,
         /// <summary>
+        /// Zarovnání ikony vzhledem k prvku (Near = vlevo, Far = vpravo)
+        /// </summary>
+        IconHorizontAlignment,
+        /// <summary>
         /// Velikost Popup okna (=nabídka pod ComboBoxem)
         /// </summary>
         ComboPopupFormSize,
@@ -1566,6 +1561,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// Pravá myš (vede na kontextové menu), v přidaných datech je předána instance <see cref="DxMouseActionInfo"/>
         /// </summary>
         RightClick,
+        /// <summary>
+        /// Validuje se hodnota
+        /// </summary>
+        ValueValidating,
         /// <summary>
         /// Došlo ke změně hodnoty
         /// </summary>
