@@ -12,6 +12,7 @@ using WinForm = System.Windows.Forms;
 using DxDData = Noris.Clients.Win.Components.AsolDX.DataForm.Data;
 using DxeEdit = DevExpress.XtraEditors;
 using DxeCont = DevExpress.XtraEditors.Controls;
+using System.Drawing;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
@@ -393,95 +394,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         byte[] ImageData { get; set; }
     }
     #endregion
-    #region Enumy
-    /// <summary>
-    /// Druh prvku
-    /// </summary>
-    public enum DxRepositoryEditorType
-    {
-        /// <summary>
-        /// Žádný prvek
-        /// </summary>
-        None,
-        /// <summary>
-        /// Label
-        /// </summary>
-        Label,
-        /// <summary>
-        /// Titulkový řádek s možností vodorovné čáry a/nebo textu
-        /// </summary>
-        Title,
-        /// <summary>
-        /// TextBox - prostý bez buttonů (buttony má <see cref="TextBoxButton"/>), podporuje password i nullvalue
-        /// </summary>
-        TextBox,
-        /// <summary>
-        /// EditBox (Memo, Poznámka)
-        /// </summary>
-        EditBox,
-        /// <summary>
-        /// TextBox s buttony = pokrývá i Relation, Document, FileBox, CalendarBox a další textbox s přidanými tlačítky
-        /// </summary>
-        TextBoxButton,
-        /// <summary>
-        /// CheckBox: zaškrtávátko i DownButton
-        /// </summary>
-        CheckBox,
-        /// <summary>
-        /// Jeden prvek ze sady RadioButtonů
-        /// </summary>
-        RadioButton,
-        /// <summary>
-        /// Klasické tlačítko
-        /// </summary>
-        Button,
-        /// <summary>
-        /// Button s přidaným rozbalovacím menu
-        /// </summary>
-        DropDownButton,
-        /// <summary>
-        /// ComboBox bez obrázků
-        /// </summary>
-        ComboListBox,
-        /// <summary>
-        /// ComboBox s obrázky
-        /// </summary>
-        ImageComboListBox,
-        /// <summary>
-        /// Posouvací hodnota, jedna nebo dvě
-        /// </summary>
-        TrackBar,
-        /// <summary>
-        /// Image
-        /// </summary>
-        Image,
-        /// <summary>
-        /// Malá tabulka
-        /// </summary>
-        Grid,
-        /// <summary>
-        /// Strom s prvky
-        /// </summary>
-        Tree,
-        /// <summary>
-        /// HTML prohlížeč
-        /// </summary>
-        HtmlContent,
-        /// <summary>
-        /// Container typu Panel, s možností titulku
-        /// </summary>
-        Panel,
-        /// <summary>
-        /// Container typu Sada stránek, jeho Child prvky jsou pouze Page
-        /// </summary>
-        PageSet,
-        /// <summary>
-        /// Container typu Stránka, je umístěn v <see cref="PageSet"/> a může obsahovat cokoliv
-        /// </summary>
-        Page
-        // ... rozšíříme na požádání.
-    }
-    #endregion
     #region DxRepositoryEditor : Abtraktní předek konkrétních editorů; obsahuje Factory pro tvorbu konkrétních potomků a spoustu výkonného kódu
     /// <summary>
     /// Obecný abtraktní předek konkrétních editorů; obsahuje Factory pro tvorbu konkrétních potomků
@@ -548,6 +460,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 case DxRepositoryEditorType.Label: return new DxRepositoryEditorLabel(repositoryManager);
                 case DxRepositoryEditorType.TextBox: return new DxRepositoryEditorTextBox(repositoryManager);
                 case DxRepositoryEditorType.TextBoxButton: return new DxRepositoryEditorTextBoxButton(repositoryManager);
+                case DxRepositoryEditorType.CheckEdit: return new DxRepositoryEditorCheckEdit(repositoryManager);
+                case DxRepositoryEditorType.ToggleSwitch: return new DxRepositoryEditorToggleSwitch(repositoryManager);
                 case DxRepositoryEditorType.Button: return new DxRepositoryEditorButton(repositoryManager);
                 case DxRepositoryEditorType.EditBox: return new DxRepositoryEditorEditBox(repositoryManager);
                 case DxRepositoryEditorType.ComboListBox: return new DxRepositoryEditorComboListBox(repositoryManager);
@@ -1388,7 +1302,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 case DxRepositoryEditorType.TextBox: return "T";
                 case DxRepositoryEditorType.TextBoxButton: return "N";
                 case DxRepositoryEditorType.EditBox: return "E";
-                case DxRepositoryEditorType.CheckBox: return "X";
+                case DxRepositoryEditorType.CheckEdit: return "X";
                 case DxRepositoryEditorType.RadioButton: return "O";
                 case DxRepositoryEditorType.Button: return "B";
                 case DxRepositoryEditorType.DropDownButton: return "D";
@@ -1439,6 +1353,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         protected object GetItemValue(IPaintItemData paintData) { return (paintData.TryGetContent<object>(Data.DxDataFormProperty.Value, out var content) ? content : null); }
         /// <summary>
+        /// Z prvku přečte a vrátí jeho hodnotu
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="defaultValue">Defaultní hodnota, pokud nebude nalezena</param>
+        /// <returns></returns>
+        protected T GetItemValue<T>(IPaintItemData paintData, T defaultValue) { return (paintData.TryGetContent<T>(Data.DxDataFormProperty.Value, out var content) ? content : defaultValue); }
+        /// <summary>
         /// Vloží danou hodnotu do daného datového prvku, provádí se po editaci
         /// </summary>
         /// <param name="paintData"></param>
@@ -1469,9 +1390,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         protected DxeCont.BorderStyles GetItemBorderStyle(IPaintItemData paintData)
         {
-            if (!paintData.TryGetContent<string>(Data.DxDataFormProperty.BorderStyle, out var content)) return DxeCont.BorderStyles.Default;
-            if (!Enum.TryParse(content, out DxeCont.BorderStyles borderStyles)) return DxeCont.BorderStyles.Default;
-            return borderStyles;
+            if (!paintData.TryGetContent<BorderStyle>(Data.DxDataFormProperty.BorderStyle, out var content)) return DxeCont.BorderStyles.Default;
+            return ConvertToDxBorderStyles(content, DxeCont.BorderStyles.NoBorder);
+        }
+        /// <summary>
+        /// Z prvku přečte a vrátí BorderStyle
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <returns></returns>
+        protected DxeCont.BorderStyles GetItemCheckBoxBorderStyle(IPaintItemData paintData)
+        {
+            if (!paintData.TryGetContent<BorderStyle>(Data.DxDataFormProperty.CheckBoxBorderStyle, out var content)) return DxeCont.BorderStyles.NoBorder;
+            return ConvertToDxBorderStyles(content, DxeCont.BorderStyles.NoBorder);
         }
         /// <summary>
         /// Z prvku přečte a vrátí požadovanou hodnotu anebo vrátí default hodnotu
@@ -1508,6 +1438,30 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         protected DevExpress.Utils.DefaultBoolean ConvertToDxBoolean(bool? value)
         {
             return (value.HasValue ? (value.Value ? DevExpress.Utils.DefaultBoolean.True : DevExpress.Utils.DefaultBoolean.False) : DevExpress.Utils.DefaultBoolean.Default);
+        }
+        /// <summary>
+        /// Konverze do DevExpress hodnoty
+        /// </summary>
+        /// <param name="borderStyles"></param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
+        protected DxeCont.BorderStyles ConvertToDxBorderStyles(BorderStyle? borderStyles, DxeCont.BorderStyles defaultValue)
+        {
+            if (borderStyles.HasValue)
+            {
+                switch (borderStyles.Value)
+                {
+                    case BorderStyle.NoBorder: return DxeCont.BorderStyles.NoBorder;
+                    case BorderStyle.Simple: return DxeCont.BorderStyles.Simple;
+                    case BorderStyle.Flat: return DxeCont.BorderStyles.Flat;
+                    case BorderStyle.HotFlat: return DxeCont.BorderStyles.HotFlat;
+                    case BorderStyle.UltraFlat: return DxeCont.BorderStyles.UltraFlat;
+                    case BorderStyle.Style3D: return DxeCont.BorderStyles.Style3D;
+                    case BorderStyle.Office2003: return DxeCont.BorderStyles.Office2003;
+                    case BorderStyle.Default: return DxeCont.BorderStyles.Default;
+                }
+            }
+            return defaultValue;
         }
         #endregion
         #region Podpora pro tvorbu klíče: klíč se skládá z konkrétních směrodatných dat prvku a jednoznačně identifikuje bitmapu v cache
@@ -1572,14 +1526,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="control"></param>
         /// <param name="exactBitmapSize"></param>
+        /// <param name="bitmapBackColor">Barva pozadí bitmapy</param>
         /// <returns></returns>
-        protected virtual byte[] CreateBitmapData(WinForm.Control control, WinDraw.Size? exactBitmapSize = null)
+        protected virtual byte[] CreateBitmapData(WinForm.Control control, WinDraw.Size? exactBitmapSize = null, WinDraw.Color? bitmapBackColor = null)
         {
             int w = exactBitmapSize?.Width ?? control.Width;
             int h = exactBitmapSize?.Height ?? control.Height;
             using (var bitmap = new WinDraw.Bitmap(w, h))
             {
-                bitmap.MakeTransparent();
+                if (bitmapBackColor.HasValue)
+                    bitmap.MakeTransparent(bitmapBackColor.Value);
+                else
+                    bitmap.MakeTransparent();
                 control.DrawToBitmap(bitmap, new WinDraw.Rectangle(0, 0, w, h));
                 return CreateBitmapData(bitmap);
             }
@@ -1624,6 +1582,99 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         #endregion
     }
+    #region enum DxRepositoryEditorType
+    /// <summary>
+    /// Druh prvku
+    /// </summary>
+    public enum DxRepositoryEditorType
+    {
+        /// <summary>
+        /// Žádný prvek
+        /// </summary>
+        None,
+        /// <summary>
+        /// Label
+        /// </summary>
+        Label,
+        /// <summary>
+        /// Titulkový řádek s možností vodorovné čáry a/nebo textu
+        /// </summary>
+        Title,
+        /// <summary>
+        /// TextBox - prostý bez buttonů (buttony má <see cref="TextBoxButton"/>), podporuje password i nullvalue
+        /// </summary>
+        TextBox,
+        /// <summary>
+        /// EditBox (Memo, Poznámka)
+        /// </summary>
+        EditBox,
+        /// <summary>
+        /// TextBox s buttony = pokrývá i Relation, Document, FileBox, CalendarBox a další textbox s přidanými tlačítky
+        /// </summary>
+        TextBoxButton,
+        /// <summary>
+        /// CheckBox: zaškrtávátko i DownButton
+        /// </summary>
+        CheckEdit,
+        /// <summary>
+        /// Přepínací switch (moderní checkbox s animovaným přechodem On-Off)
+        /// </summary>
+        ToggleSwitch,
+        /// <summary>
+        /// Jeden prvek ze sady RadioButtonů
+        /// </summary>
+        RadioButton,
+        /// <summary>
+        /// Klasické tlačítko
+        /// </summary>
+        Button,
+        /// <summary>
+        /// Button s přidaným rozbalovacím menu
+        /// </summary>
+        DropDownButton,
+        /// <summary>
+        /// ComboBox bez obrázků
+        /// </summary>
+        ComboListBox,
+        /// <summary>
+        /// ComboBox s obrázky
+        /// </summary>
+        ImageComboListBox,
+        /// <summary>
+        /// Posouvací hodnota, jedna nebo dvě
+        /// </summary>
+        TrackBar,
+        /// <summary>
+        /// Image
+        /// </summary>
+        Image,
+        /// <summary>
+        /// Malá tabulka
+        /// </summary>
+        Grid,
+        /// <summary>
+        /// Strom s prvky
+        /// </summary>
+        Tree,
+        /// <summary>
+        /// HTML prohlížeč
+        /// </summary>
+        HtmlContent,
+        /// <summary>
+        /// Container typu Panel, s možností titulku
+        /// </summary>
+        Panel,
+        /// <summary>
+        /// Container typu Sada stránek, jeho Child prvky jsou pouze Page
+        /// </summary>
+        PageSet,
+        /// <summary>
+        /// Container typu Stránka, je umístěn v <see cref="PageSet"/> a může obsahovat cokoliv
+        /// </summary>
+        Page
+        // ... rozšíříme na požádání.
+    }
+    #endregion
     #endregion
     #region Sada tříd konkrétních editorů (Label, TextBox, EditBox, Button, .......)
     #region Label
@@ -2097,6 +2148,324 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Nativní control používaný pro kreslení
         /// </summary>
         DxeEdit.ButtonEdit __EditorPaint;
+    }
+    #endregion
+    #region CheckEdit
+    /// <summary>
+    /// CheckEdit
+    /// </summary>
+    internal class DxRepositoryEditorCheckEdit : DxRepositoryEditor
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="repositoryManager"></param>
+        public DxRepositoryEditorCheckEdit(DxRepositoryManager repositoryManager) : base(repositoryManager)
+        {
+        }
+        /// <summary>
+        /// Typ editoru
+        /// </summary>
+        public override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.CheckEdit; } }
+        /// <summary>
+        /// Režim práce s cache
+        /// </summary>
+        protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCache; } }
+        /// <summary>
+        /// Pro daný prvek (jeho typ a obsah, a velikost) vygeneruje jednoznačný String klíč, popisující Bitmapu uloženou v Cache
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="controlBounds">Cílové souřadnice</param>
+        /// <returns></returns>
+        protected override string CreateKey(IPaintItemData paintData, WinDraw.Rectangle controlBounds)
+        {
+            object value = GetItemValue(paintData);
+            WinDraw.FontStyle fontStyle = GetItemContent(paintData, Data.DxDataFormProperty.FontStyle, WinDraw.FontStyle.Regular);
+            float sizeRatio = GetItemContent(paintData, Data.DxDataFormProperty.FontSizeRatio, 0f);
+            WinDraw.Color fontColor = GetItemContent(paintData, Data.DxDataFormProperty.TextColor, WinDraw.Color.Empty);
+            var buttons = this.GetItemContent<DxDData.TextBoxButtonProperties>(paintData, Data.DxDataFormProperty.TextBoxButtons, null);
+            return CreateKey(value?.ToString(), controlBounds.Size, ToKey(fontStyle), ToKey(sizeRatio), ToKey(fontColor), buttons?.Key);
+        }
+        /// <summary>
+        /// Pro daný prvek vygeneruje data jeho bitmapy
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="pdea">Grafika pro kreslení</param>
+        /// <param name="controlBounds">Cílové souřadnice</param>
+        /// <returns></returns>
+        protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        {
+            __EditorPaint ??= _CreateNativeControl(false);
+            _FillNativeControl(paintData, __EditorPaint, controlBounds);
+            return CreateBitmapData(__EditorPaint, null, pdea.InteractivePanel.BackColor);
+        }
+        /// <summary>
+        /// Potomek zde vrátí nativní control
+        /// </summary>
+        /// <returns></returns>
+        protected override WinForm.Control CreateNativeControl()
+        {
+            return _CreateNativeControl(true);
+        }
+        /// <summary>
+        /// Potomek zde do controlu naplní všechna potřebná data.
+        /// Je předán ten control, který byl vytvořen v metodě <see cref="CreateNativeControl()"/>.
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <param name="nativeControl"></param>
+        /// <param name="controlBounds"></param>
+        protected override void FillNativeControl(IPaintItemData paintData, WinForm.Control nativeControl, WinDraw.Rectangle controlBounds)
+        {
+            this._FillNativeControl(paintData, nativeControl as DxeEdit.CheckEdit, controlBounds);
+        }
+        /// <summary>
+        /// Metoda vytvoří a vrátí new instanci nativního controlu. 
+        /// Nastaví ji defaultní vzhled, nevkládá do ní hodnoty závislé na konkrétnbím prvku.
+        /// Eventhandlery registruje pokud <paramref name="isInteractive"/> je true (hodnota false značí control vytvářený jen pro kreslení).
+        /// </summary>
+        /// <returns></returns>
+        private DxeEdit.CheckEdit _CreateNativeControl(bool isInteractive)
+        {
+            var control = new DxeEdit.CheckEdit() { Location = new WinDraw.Point(25, -200) };
+            // Konstantní nastavení controlu:
+            control.Properties.AutoHeight = false;
+            control.Properties.AutoWidth = false;
+            control.Properties.CheckBoxOptions.Style = DxeCont.CheckBoxStyle.SvgCheckBox1;
+            control.Properties.GlyphAlignment = DevExpress.Utils.HorzAlignment.Near;
+            // control.ResetBackColor();
+            if (isInteractive)
+                _PrepareInteractive(control);
+            return control;
+        }
+        /// <summary>
+        /// Do dodaného controlu vloží data, která tento typ editoru řeší. Data získá z dodaného prvku.
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="control">Cílový control</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        private void _FillNativeControl(IPaintItemData paintData, DxeEdit.CheckEdit control, WinDraw.Rectangle controlBounds)
+        {
+            control.Size = controlBounds.Size;
+            control.ReadOnly = true;
+            control.Enabled = true;
+            string label = GetItemLabel(paintData);
+            control.Checked = GetItemValue(paintData, false);
+            control.Properties.Caption = label;
+            control.Properties.DisplayValueUnchecked = GetItemContent(paintData, DxDData.DxDataFormProperty.CheckBoxLabelFalse, label);
+            control.Properties.DisplayValueChecked = GetItemContent(paintData, DxDData.DxDataFormProperty.CheckBoxLabelTrue, label);
+            control.Properties.BorderStyle = GetItemCheckBoxBorderStyle(paintData);
+        }
+        /// <summary>
+        /// Daný control připraví pro interaktivní práci: nastaví potřebné vlastnosti a naváže zdejší eventhandlery, které potřebuje k práci.
+        /// </summary>
+        /// <param name="control"></param>
+        private void _PrepareInteractive(DxeEdit.CheckEdit control)
+        {
+            control.EditValueChanged += _ControlEditValueChanged;
+            control.CheckedChanged += _NativeControlCheckedChanged;
+        }
+        /// <summary>
+        /// Eventhandler po změně hodnoty v CheckEdit controlu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ControlEditValueChanged(object sender, EventArgs e)
+        {
+            if (SuppressNativeEvents) return;
+
+            if (sender is DxeEdit.CheckEdit control && TryGetPaintData(control, out var paintData))
+            {
+                SetItemValue(paintData, control.EditValue, true);
+            }
+        }
+        /// <summary>
+        /// Eventhandler po změně hodnoty v CheckEdit controlu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _NativeControlCheckedChanged(object sender, EventArgs e)
+        {
+            if (SuppressNativeEvents) return;
+
+            if (sender is DxeEdit.CheckEdit control && TryGetPaintData(control, out var paintData))
+            {
+                SetItemValue(paintData, control.EditValue, true);
+            }
+        }
+        /// <summary>
+        /// Dispose objektu
+        /// </summary>
+        protected override void OnDispose()
+        {
+            if (__EditorPaint != null)
+            {
+                __EditorPaint.Dispose();
+                __EditorPaint = null;
+            }
+        }
+        /// <summary>
+        /// Nativní control používaný pro kreslení
+        /// </summary>
+        DxeEdit.CheckEdit __EditorPaint;
+    }
+    #endregion
+    #region ToggleSwitch
+    /// <summary>
+    /// ToggleSwitch
+    /// </summary>
+    internal class DxRepositoryEditorToggleSwitch : DxRepositoryEditor
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="repositoryManager"></param>
+        public DxRepositoryEditorToggleSwitch(DxRepositoryManager repositoryManager) : base(repositoryManager)
+        {
+        }
+        /// <summary>
+        /// Typ editoru
+        /// </summary>
+        public override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.ToggleSwitch; } }
+        /// <summary>
+        /// Režim práce s cache
+        /// </summary>
+        protected override EditorCacheMode CacheMode { get { return EditorCacheMode.ManagerCache; } }
+        /// <summary>
+        /// Pro daný prvek (jeho typ a obsah, a velikost) vygeneruje jednoznačný String klíč, popisující Bitmapu uloženou v Cache
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="controlBounds">Cílové souřadnice</param>
+        /// <returns></returns>
+        protected override string CreateKey(IPaintItemData paintData, WinDraw.Rectangle controlBounds)
+        {
+            object value = GetItemValue(paintData);
+            WinDraw.FontStyle fontStyle = GetItemContent(paintData, Data.DxDataFormProperty.FontStyle, WinDraw.FontStyle.Regular);
+            float sizeRatio = GetItemContent(paintData, Data.DxDataFormProperty.FontSizeRatio, 0f);
+            WinDraw.Color fontColor = GetItemContent(paintData, Data.DxDataFormProperty.TextColor, WinDraw.Color.Empty);
+            var buttons = this.GetItemContent<DxDData.TextBoxButtonProperties>(paintData, Data.DxDataFormProperty.TextBoxButtons, null);
+            return CreateKey(value?.ToString(), controlBounds.Size, ToKey(fontStyle), ToKey(sizeRatio), ToKey(fontColor), buttons?.Key);
+        }
+        /// <summary>
+        /// Pro daný prvek vygeneruje data jeho bitmapy
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="pdea">Grafika pro kreslení</param>
+        /// <param name="controlBounds">Cílové souřadnice</param>
+        /// <returns></returns>
+        protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        {
+            __EditorPaint ??= _CreateNativeControl(false);
+            _FillNativeControl(paintData, __EditorPaint, controlBounds);
+            return CreateBitmapData(__EditorPaint);
+        }
+        /// <summary>
+        /// Potomek zde vrátí nativní control
+        /// </summary>
+        /// <returns></returns>
+        protected override WinForm.Control CreateNativeControl()
+        {
+            return _CreateNativeControl(true);
+        }
+        /// <summary>
+        /// Potomek zde do controlu naplní všechna potřebná data.
+        /// Je předán ten control, který byl vytvořen v metodě <see cref="CreateNativeControl()"/>.
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <param name="nativeControl"></param>
+        /// <param name="controlBounds"></param>
+        protected override void FillNativeControl(IPaintItemData paintData, WinForm.Control nativeControl, WinDraw.Rectangle controlBounds)
+        {
+            this._FillNativeControl(paintData, nativeControl as DxeEdit.ToggleSwitch, controlBounds);
+        }
+        /// <summary>
+        /// Metoda vytvoří a vrátí new instanci nativního controlu. 
+        /// Nastaví ji defaultní vzhled, nevkládá do ní hodnoty závislé na konkrétnbím prvku.
+        /// Eventhandlery registruje pokud <paramref name="isInteractive"/> je true (hodnota false značí control vytvářený jen pro kreslení).
+        /// </summary>
+        /// <returns></returns>
+        private DxeEdit.ToggleSwitch _CreateNativeControl(bool isInteractive)
+        {
+            var control = new DxeEdit.ToggleSwitch() { Location = new WinDraw.Point(25, -200) };
+            // Konstantní nastavení controlu:
+            control.Properties.AutoHeight = false;
+            control.Properties.AutoWidth = false;
+            control.Properties.ShowText = true;
+            control.ResetBackColor();
+            if (isInteractive)
+                _PrepareInteractive(control);
+            return control;
+        }
+        /// <summary>
+        /// Do dodaného controlu vloží data, která tento typ editoru řeší. Data získá z dodaného prvku.
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="control">Cílový control</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        private void _FillNativeControl(IPaintItemData paintData, DxeEdit.ToggleSwitch control, WinDraw.Rectangle controlBounds)
+        {
+            control.Size = controlBounds.Size;
+            control.IsOn = GetItemValue(paintData, false);
+            control.Properties.BorderStyle = GetItemCheckBoxBorderStyle(paintData);
+            control.Properties.EditorToThumbWidthRatio = GetItemContent(paintData, DxDData.DxDataFormProperty.ToggleSwitchRatio, 2.5f);
+            control.Properties.OffText = GetItemContent(paintData, DxDData.DxDataFormProperty.CheckBoxLabelFalse, "Off");
+            control.Properties.OnText = GetItemContent(paintData, DxDData.DxDataFormProperty.CheckBoxLabelTrue, "On");
+            control.ReadOnly = true;
+            control.Enabled = true;
+        }
+        /// <summary>
+        /// Daný control připraví pro interaktivní práci: nastaví potřebné vlastnosti a naváže zdejší eventhandlery, které potřebuje k práci.
+        /// </summary>
+        /// <param name="control"></param>
+        private void _PrepareInteractive(DxeEdit.ToggleSwitch control)
+        {
+            control.EditValueChanged += _ControlEditValueChanged;
+            control.Toggled += _NativeControlToggled;
+        }
+        /// <summary>
+        /// Eventhandler po změně hodnoty v ToggleSwitch controlu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ControlEditValueChanged(object sender, EventArgs e)
+        {
+            if (SuppressNativeEvents) return;
+
+            if (sender is DxeEdit.ToggleSwitch control && TryGetPaintData(control, out var paintData))
+            {
+                SetItemValue(paintData, control.EditValue, true);
+            }
+        }
+        /// <summary>
+        /// Eventhandler po změně hodnoty v ToggleSwitch controlu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _NativeControlToggled(object sender, EventArgs e)
+        {
+            if (SuppressNativeEvents) return;
+
+            if (sender is DxeEdit.ToggleSwitch control && TryGetPaintData(control, out var paintData))
+            {
+                SetItemValue(paintData, control.IsOn, true);
+            }
+        }
+        /// <summary>
+        /// Dispose objektu
+        /// </summary>
+        protected override void OnDispose()
+        {
+            if (__EditorPaint != null)
+            {
+                __EditorPaint.Dispose();
+                __EditorPaint = null;
+            }
+        }
+        /// <summary>
+        /// Nativní control používaný pro kreslení
+        /// </summary>
+        DxeEdit.ToggleSwitch __EditorPaint;
     }
     #endregion
     #region EditBox
@@ -2834,5 +3203,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         DxeEdit.SimpleButton __EditorPaint;
     }
     #endregion
+    #endregion
+    #region Enumy pro layout, typicky kopie DevExpress (nebo podmnožina hodnot); konvertory jsou v DxRepositoryEditor (tam se konvertují do DevExpress enumu)
+    /// <summary>
+    /// Styl okraje
+    /// </summary>
+    public enum BorderStyle
+    {
+        NoBorder,
+        Simple,
+        Flat,
+        HotFlat,
+        UltraFlat,
+        Style3D,
+        Office2003,
+        Default
+    }
     #endregion
 }

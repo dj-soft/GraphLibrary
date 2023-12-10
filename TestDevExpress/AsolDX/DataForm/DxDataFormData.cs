@@ -1508,14 +1508,33 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// Definice prvků ComboBoxu, instance třídy <see cref="ImageComboBoxProperties"/>
         /// </summary>
         ComboBoxItems,
+        /// <summary>
+        /// Běžné orámované prvky jako TextBox, Combo atd: typ <see cref="DataForm.BorderStyle"/>, default = <see cref="BorderStyle.HotFlat"/>
+        /// </summary>
         BorderStyle,
+        /// <summary>
+        /// Běžné neorámované prvky jako CheckBox, Toggle, RadioButton atd: typ <see cref="DataForm.BorderStyle"/>, default = <see cref="BorderStyle.NoBorder"/>
+        /// </summary>
+        CheckBoxBorderStyle,
         ButtonPaintStyle,
         CursorTypeMouseOn,
         LabelAlignment,
         /// <summary>
         /// Velikost Popup okna (=nabídka pod ComboBoxem)
         /// </summary>
-        ComboPopupFormSize
+        ComboPopupFormSize,
+        /// <summary>
+        /// ToggleSwitch: float poměr šířky přepínače k výšce objektu; default = 2.5f, vhodná hodnota 1.8 - 4
+        /// </summary>
+        ToggleSwitchRatio,
+        /// <summary>
+        /// CheckBox + ToggleSwitch: string text pro hodnotu False
+        /// </summary>
+        CheckBoxLabelFalse,
+        /// <summary>
+        /// CheckBox + ToggleSwitch: string text pro hodnotu true
+        /// </summary>
+        CheckBoxLabelTrue
     }
     /// <summary>
     /// Souhrn veškerých akcí, které může kterýkoli editorový typ vyvolat.

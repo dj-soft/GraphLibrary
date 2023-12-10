@@ -102,7 +102,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __DataFormLayout.CollectionChanged += _LayoutChanged;
             __Content = new DxfData.DataContent();
 
-            Content[Data.DxDataFormProperty.BorderStyle] = "HotFlat";
+            PrepareDefaultContent();
 
             Padding = new WinForm.Padding(0);
         }
@@ -133,6 +133,20 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Klíčem je název sloupce.
         /// </summary>
         public DxfData.DataContent Content { get { return __Content; } } private DxfData.DataContent __Content;
+        #endregion
+        #region Defaultní hodnoty
+        /// <summary>
+        /// Naplní defaultní hodnoty určitých vlastností, které se použijí v případě, 
+        /// kdy nebudou zadány hodnoty ani pro <see cref="DxfData.DataFormRow"/>, ani pro <see cref="DxLayoutItemInfo"/>.
+        /// </summary>
+        protected virtual void PrepareDefaultContent()
+        {
+            Content[DxfData.DxDataFormProperty.BorderStyle] = DataForm.BorderStyle.HotFlat;
+            Content[DxfData.DxDataFormProperty.CheckBoxBorderStyle] = DataForm.BorderStyle.NoBorder;
+            Content[Data.DxDataFormProperty.ToggleSwitchRatio] = 2.5f;
+            Content[Data.DxDataFormProperty.CheckBoxLabelFalse] = "Vypnuto";
+            Content[Data.DxDataFormProperty.CheckBoxLabelTrue] = "Aktivní";
+        }
         #endregion
         #region Repository manager
         /// <summary>
