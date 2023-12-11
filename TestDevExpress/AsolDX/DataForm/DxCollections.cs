@@ -52,7 +52,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Count: {this.__List.Count}; Type: {typeof(TItem).FullName}";
+            return $"Count: {this.__List.Count}; ItemType: '{typeof(TItem).FullName}'";
         }
         /// <summary>
         /// List prvků
@@ -331,7 +331,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Count: {this.__List.Count}; Type: {typeof(TItem).FullName}";
+            return $"Count: {this.__List.Count}; ItemType: '{typeof(TItem).FullName}'";
         }
         /// <summary>
         /// Parent, navazujeme jej do prvků
@@ -590,6 +590,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __ComparerId = new ComparerId();
             __DictionaryId = new Dictionary<BiKeyValue, BiKeyValue>(__ComparerId);
             __LastId = 0UL;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Count: {this.Count}; ValueType: '{typeof(TValue).FullName}'";
         }
         /// <summary>
         /// Instance komparátoru typu <see cref="BiKeyValue"/>, podle <see cref="BiKeyValue.Key"/>

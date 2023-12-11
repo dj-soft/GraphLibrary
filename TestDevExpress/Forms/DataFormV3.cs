@@ -47,6 +47,7 @@ namespace TestDevExpress.Forms
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
             DataRibbonPage page;
             DataRibbonGroup group;
+            string radioGroupName = "SamplesGroup";
 
             page = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.None);
             pages.Add(page);
@@ -54,23 +55,25 @@ namespace TestDevExpress.Forms
             string imageStatusRefresh = "svgimages/xaf/action_refresh.svg";
             string imageTestDrawing = "svgimages/dashboards/textbox.svg";
             string imageDataFormRemove = "svgimages/spreadsheet/removetablerows.svg";
+            string imageChangeData = "svgimages/richedit/trackingchanges_allmarkup.svg";        // "svgimages/richedit/trackingchanges_trackchanges.svg";
 
-            group = new DataRibbonGroup() { GroupText = "ZÁKLADNÍ" };
+
+            group = new DataRibbonGroup() { GroupText = "DataForm" };
             page.Groups.Add(group);
             group.Items.Add(new DataRibbonItem() { ItemId = "StatusRefresh", Text = "Refresh Status", ToolTipText = "Znovu načíst údaje o spotřebě systémových zdrojů do statusbaru", ImageName = imageStatusRefresh });
             group.Items.Add(new DataRibbonItem() { ItemId = "TestDrawing", Text = "TestDrawing", ToolTipText = "Vykreslování bez fyzických Controlů - pro test rychlosti", ImageName = imageTestDrawing, RibbonStyle = RibbonItemStyles.Large, ItemType = RibbonItemType.CheckButton, Checked = TestPainting });
-            group.Items.Add(new DataRibbonItem() { ItemId = "DataFormRemove", Text = "Remove DataForm", ToolTipText = "Zahodit DataForm a uvolnit jeho zdroje", ImageName = imageDataFormRemove });
 
-            var groupSamples = new DataRibbonGroup() { GroupText = "VZORKY" };
+            var groupSamples = new DataRibbonGroup() { GroupText = "Ukázky layoutu a počtu řádků" };
+            groupSamples.Items.Add(new DataRibbonItem() { ItemId = "DataFormRemove", Text = "Remove DataForm", ToolTipText = "Zahodit DataForm a uvolnit jeho zdroje", ImageName = imageDataFormRemove, ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName, Checked = true });
+            groupSamples.Items.Add(new DataRibbonItem() { ItemId = "ChangeData", Text = "Change Data", ToolTipText = "Změní obsah dat / stav Enabled v dataformu", ImageName = imageChangeData });
 
-            string radioGroupName = "SamplesGroup";
             page.Groups.Add(groupSamples);
             string imageTest1 = "svgimages/xaf/actiongroup_easytestrecorder.svg";
             string imageTest2 = "svgimages/spreadsheet/showoutlineformpivottable.svg";
             string imageTest3 = "svgimages/spreadsheet/showtabularformpivottable.svg";
 
             // Na čísla Sample reagují metody _CreateSampleLayout() a _CreateSampleRows() !
-            addSampleButton(1001, "Form A x 1 řádek", imageTest1);
+            addSampleButton(1001, "Form A x 1 řádek", imageTest1, true);
             addSampleButton(1002, "Form A x 2 řádky", imageTest1);
             addSampleButton(1060, "Form A x 60 řádků", imageTest1);
             addSampleButton(2001, "Form B x 1 řádek", imageTest2, true);
@@ -127,6 +130,9 @@ namespace TestDevExpress.Forms
                     break;
                 case "CreateSample":
                     _AddDataFormSample(sampleId);
+                    break;
+                case "ChangeData":
+                    _ChangeDataInDataForm();
                     break;
                 default:
                     var n = itemId;
@@ -254,9 +260,22 @@ namespace TestDevExpress.Forms
 
             DxMainPanel.Controls.Add(dataForm);
 
+            _DataFormSampleId = sampleId;
             _DxDataFormV3 = dataForm;
         
             _RefreshTitle();
+            RefreshStatusCurrent(true);
+        }
+        /// <summary>
+        /// Změní nějaká data v dataformu
+        /// </summary>
+        private void _ChangeDataInDataForm()
+        {
+            var sampleId = _DataFormSampleId;
+            if (_DxDataFormV3 is null || !sampleId.HasValue) return;
+
+            var rows = _DxDataFormV3.DataFormRows;
+
         }
         /// <summary>
         /// Odebere DataForm
@@ -273,6 +292,7 @@ namespace TestDevExpress.Forms
 
             }
             _DxDataFormV3 = null;
+            _DataFormSampleId = null;
             _DxShowTimeStart = null;
             _DxShowTimeSpan = null;
 
@@ -304,8 +324,21 @@ namespace TestDevExpress.Forms
             }
         }
         private bool __TestPainting;
+        /// <summary>
+        /// Instance dataformu
+        /// </summary>
         private DxDForm.DxDataFormPanel _DxDataFormV3;
+        /// <summary>
+        /// ID vzorku s daty, který je právě zobrazen. Null pokud není žádný.
+        /// </summary>
+        private int? _DataFormSampleId;
+        /// <summary>
+        /// Čas zahájení
+        /// </summary>
         private DateTime? _DxShowTimeStart;
+        /// <summary>
+        /// Doba prvního zobrazení
+        /// </summary>
         private TimeSpan? _DxShowTimeSpan;
         #endregion
         #region Layouty

@@ -90,9 +90,18 @@ namespace TestDevExpress.Forms
         {
             LogActivityDockPanel = new TestDevExpress.Components.AppLogPanel();
 
-            var visibility = (DxComponent.LogActive ? DevExpress.XtraBars.Docking.DockVisibility.Visible : DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
-            this.AddControlToDockPanels(LogActivityDockPanel, "Log aplikace", DevExpress.XtraBars.Docking.DockingStyle.Right, visibility, 350);
+            DockPanelLayoutInfo dockPanelLayout = new DockPanelLayoutInfo();
+            dockPanelLayout.DockStyle = DevExpress.XtraBars.Docking.DockingStyle.Right;
+            dockPanelLayout.PanelSize = new Size(360, 220);
+            dockPanelLayout.Definition = DxComponent.Settings.GetRawValue("Components", "AppLogPanelPosition");        // Pokud v Settings nebude hodnota, najde se null a vloží se do dockPanelLayout, tam vložení hodnoty null je ignorováno.
+            dockPanelLayout.UserControl = LogActivityDockPanel;
+            dockPanelLayout.PanelTitle = "Log aplikace";
+            dockPanelLayout.Visibility = (DxComponent.LogActive ? DevExpress.XtraBars.Docking.DockVisibility.Visible : DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
+            dockPanelLayout.ImageName = "svgimages/xaf/action_aboutinfo.svg";
 
+            this.AddControlToDockPanels(dockPanelLayout);
+
+            dockPanelLayout.LayoutChanged += _LogActivityPanel_LayoutChanged;
 
 
             //var logControl2 = new TestDevExpress.Components.AppLogPanel();
@@ -104,6 +113,15 @@ namespace TestDevExpress.Forms
             //var logControl4 = new TestDevExpress.Components.AppLogPanel();
             //this.AddControlToDockPanels(logControl4, "Jinopohledový log", DevExpress.XtraBars.Docking.DockingStyle.Left, DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
         }
+
+        private void _LogActivityPanel_LayoutChanged(object sender, EventArgs e)
+        {
+            if (this.WasShown && sender is DockPanelLayoutInfo dockPanelLayout)
+            {
+                DxComponent.Settings.SetRawValue("Components", "AppLogPanelPosition", dockPanelLayout.Definition);
+            }
+        }
+
         /// <summary>
         /// Viditelnost panelu <see cref="LogActivityDockPanel"/>
         /// </summary>

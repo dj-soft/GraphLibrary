@@ -30,6 +30,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             _InitRows();
         }
         /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Count: {this.Count}; ItemType: '{(typeof(DataFormRow).FullName)}'";
+        }
+        /// <summary>
         /// Hlavní instance Dataformu
         /// </summary>
         internal DxDataFormPanel DataForm { get { return __DataForm; } } private DxDataFormPanel __DataForm;
@@ -434,6 +442,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         {
             __DataForm = dataForm;
             _InitItems();
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Count: {this.Count}; ItemType: '{(typeof(DataFormLayoutItem).FullName)}'";
         }
         /// <summary>
         /// Hlavní instance Dataformu
@@ -896,6 +912,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         #endregion
         #region Vztah na další instance - pomocí Row (DataForm, Repozitory) a LayoutSet
         /// <summary>
+        /// Řádek s daty
+        /// </summary>
+        public DataFormRow Row { get { return __Row; } }
+        /// <summary>
+        /// Definice layoutu
+        /// </summary>
+        public DataFormLayoutItem LayoutItem { get { return __LayoutItem; } }
+        /// <summary>
+        /// Název sloupce
+        /// </summary>
+        public string ColumnName { get { return __LayoutItem.ColumnName; } }
+        /// <summary>
+        /// Invaliduje svoje grafická data (uložený statický obrázek) - volá se po změnách hodnoty
+        /// </summary>
+        public void InvalidateCache() { this._InvalidateCache(); }
+        /// <summary>
         /// DataForm
         /// </summary>
         private DxDataFormPanel _DataForm { get { return __Row.DataForm; } }
@@ -1008,10 +1040,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         }
         #endregion
         #region Předpřipravené hodnoty obecně dostupné, získávané z Content
-        /// <summary>
-        /// Jméno tohoto sloupce. K němu se dohledají další data a případné modifikace stylu v konkrétním řádku.
-        /// </summary>
-        public string ColumnName { get { return this.__LayoutItem.ColumnName; } }
         /// <summary>
         /// Hodnota prvku
         /// </summary>
@@ -1632,7 +1660,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// <returns></returns>
         public override string ToString()
         {
-            return this.__Buttons.ToOneString(";");
+            return "TextBoxButtonProperties: " + this.__Buttons.ToOneString(";");
         }
         /// <summary>
         /// Styl okrajů buttonu, default = <see cref="DevExpress.XtraEditors.Controls.BorderStyles.NoBorder"/>
@@ -1830,7 +1858,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// <returns></returns>
         public override string ToString()
         {
-            return this.__Items.ToOneString(";");
+            return "ImageComboBoxProperties: " + this.__Items.ToOneString(";");
         }
         /// <summary>
         /// Povolit vlastnost AutoComplete

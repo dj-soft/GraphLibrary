@@ -30,8 +30,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (section == null || key == null) return null;
             var values = _ValidValues;
-            if (!values.TryGetValue(section, out var sectionValues)) return null;
-            if (!sectionValues.TryGetValue(key, out var value)) return null;
+            if (!values.TryGetValue(section, out var sectionValues)) return defValue;
+            if (!sectionValues.TryGetValue(key, out var value)) return defValue;
             return value;
         }
         /// <summary>

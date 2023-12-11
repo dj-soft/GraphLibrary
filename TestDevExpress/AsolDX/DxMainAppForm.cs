@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DevExpress.Utils.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -21,7 +22,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxMainAppForm() : base() 
         {
             this.WindowState = FormWindowState.Maximized;
+            this.FirstShownAfter += _FirstShownAfter;
             __MainAppForm = new WeakTarget<DxMainAppForm>(this);
+        }
+        /// <summary>
+        /// Po prvním zobrazení formuláře
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _FirstShownAfter(object sender, EventArgs e)
+        {
+            this.OnFirstShownApplyDockPanelsSize();
         }
         /// <summary>
         /// Dispose
@@ -518,17 +529,43 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region DockManager - služby
         /// <summary>
+        /// Po prvním zobrazení formuláře aplikuje velikosti DockPanelů
+        /// </summary>
+        protected virtual void OnFirstShownApplyDockPanelsSize()
+        {
+            this._Panels.ForEachExec(p => p.ApplySizeAndVisibility());
+        }
+        /// <summary>
         /// Přidá nový dokovaný panel
         /// </summary>
         /// <param name="control"></param>
         /// <param name="panelTitle"></param>
         /// <param name="dockStyle"></param>
+        /// <param name="panelSize">Velikost panelu; použije se ta hodnota, která je vhodná s ohledem na <paramref name="dockStyle"/></param>
         /// <param name="visibility"></param>
-        /// <param name="width"></param>
-        public void AddControlToDockPanels(Control control, string panelTitle, DevExpress.XtraBars.Docking.DockingStyle dockStyle, DevExpress.XtraBars.Docking.DockVisibility visibility = DevExpress.XtraBars.Docking.DockVisibility.AutoHide, int? width = null)
+        /// <param name="imageName">Jméno ikony</param>
+        public void AddControlToDockPanels(Control control, string panelTitle, DevExpress.XtraBars.Docking.DockingStyle dockStyle, Size? panelSize = null, DevExpress.XtraBars.Docking.DockVisibility visibility = DevExpress.XtraBars.Docking.DockVisibility.AutoHide, string imageName = null)
+        {
+            var dockPanelLayout = new DockPanelLayoutInfo()
+            {
+                UserControl = control,
+                PanelTitle = panelTitle,
+                DockStyle = dockStyle,
+                PanelSize = panelSize,
+                Visibility = visibility,
+                ImageName = imageName
+            };
+            AddControlToDockPanels(dockPanelLayout);
+        }
+        /// <summary>
+        /// Přidá nový dokovaný panel
+        /// </summary>
+        /// <param name="dockPanelLayout"></param>
+        public void AddControlToDockPanels(DockPanelLayoutInfo dockPanelLayout)
         {
             DevExpress.XtraBars.Docking.DockPanel panel;
 
+            var dockStyle = dockPanelLayout.DockStyle ?? DevExpress.XtraBars.Docking.DockingStyle.Right;
             var rootPanel = this.__DockManager.RootPanels.FirstOrDefault(p => p.Dock == dockStyle);
             if (rootPanel is null)
             {
@@ -540,20 +577,38 @@ namespace Noris.Clients.Win.Components.AsolDX
                 panel = rootPanel.AddPanel();
             }
 
-            panel.Text = panelTitle;
-            panel.Visibility = visibility;
-            panel.Width = (width.HasValue ? width.Value : 250);
+            panel.Text = dockPanelLayout.PanelTitle;
 
-            control.Dock = DockStyle.Fill;
-            panel.Controls.Add(control);
+            dockPanelLayout.UserControl.Dock = DockStyle.Fill;
+            panel.Controls.Add(dockPanelLayout.UserControl);
 
-            string resource1 = "svgimages/xaf/action_aboutinfo.svg";
-            DxComponent.ApplyImage(panel.ImageOptions, resource1);
+            DxComponent.ApplyImage(panel.ImageOptions, dockPanelLayout.ImageName);
             panel.ImageOptions.SvgImageSize = new System.Drawing.Size(20, 20);
 
             this.__DockManager.DockingOptions.ShowCaptionImage = true;
 
-            _Panels.Add(new Tuple<Control, DevExpress.XtraBars.Docking.DockPanel>(control, panel));
+            dockPanelLayout.DockStyle = dockStyle;                   // Reálná hodnota namísto Null
+            dockPanelLayout.Visibility = panel.Visibility;           // Reálná hodnota namísto Null
+
+            dockPanelLayout.DockPanel = panel;
+            dockPanelLayout.HostForm = this;
+            dockPanelLayout.ApplySizeAndVisibility();
+            _Panels.Add(dockPanelLayout);
+
+            panel.DockChanged += dockPanelLayout.Panel_DockChanged;
+            panel.SizeChanged += dockPanelLayout.Panel_SizeChanged;
+            panel.VisibilityChanged += dockPanelLayout.Panel_VisibilityChanged;
+
+            dockPanelLayout.CheckChanged();
+        }
+        /// <summary>
+        /// Metoda vrátí panel, v němž je nyní umístěn daný Control.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <returns></returns>
+        public DevExpress.XtraBars.Docking.DockPanel GetDockPanelForControl(Control control)
+        {
+            return _Panels.FirstOrDefault(p => Object.ReferenceEquals(p.UserControl, control))?.DockPanel;
         }
         /// <summary>
         /// Metoda vrátí panel, v němž je nyní umístěn control který vyhoví dodané podmínce.
@@ -563,21 +618,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public DevExpress.XtraBars.Docking.DockPanel GetDockPanelForControl(Func<Control, bool> predicate)
         {
-            return _Panels.FirstOrDefault(t => predicate(t.Item1))?.Item2;
+            return _Panels.FirstOrDefault(p => predicate(p.UserControl))?.DockPanel;
         }
         /// <summary>
         /// Seznam zadokovaných controlů a panelů, na nichž jsou dokovány
         /// </summary>
-        private List<Tuple<Control, DevExpress.XtraBars.Docking.DockPanel>> _Panels
+        private List<DockPanelLayoutInfo> _Panels
         {
             get
             {
                 if (__Panels is null)
-                    __Panels = new List<Tuple<Control, DevExpress.XtraBars.Docking.DockPanel>>();
+                    __Panels = new List<DockPanelLayoutInfo>();
                 return __Panels;
             }
         }
-        private List<Tuple<Control, DevExpress.XtraBars.Docking.DockPanel>> __Panels;
+        private List<DockPanelLayoutInfo> __Panels;
         #endregion
         #region Otevírání Child okna v okně aplikace
         /// <summary>
@@ -602,4 +657,263 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
+    #region DockPanelLayoutInfo : informace o umístění a velikosti dokovaného panelu
+    /// <summary>
+    /// Sada informací o dokovaném controlu
+    /// </summary>
+    public class DockPanelLayoutInfo
+    {
+        #region Data
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DockPanelLayoutInfo() { }
+        /// <summary>
+        /// Text obsahující Název panelu pro uživatele
+        /// </summary>
+        public string PanelTitle { get; set; }
+        /// <summary>
+        /// Jméno obrázku
+        /// </summary>
+        public string ImageName { get; set; }
+        /// <summary>
+        /// Styl dokování (kde je umístěn)
+        /// </summary>
+        public DevExpress.XtraBars.Docking.DockingStyle? DockStyle { get; set; }
+        /// <summary>
+        /// Pořadí panelu v rámci dokované strany
+        /// </summary>
+        public int DockOrder { get; set; }
+        /// <summary>
+        /// Požadovaná / aktuální velikost panelu
+        /// </summary>
+        public Size? PanelSize { get; set; }
+        /// <summary>
+        /// Main formulář, který řídí dokování
+        /// </summary>
+        public DxMainAppForm HostForm { get; set; }
+        /// <summary>
+        /// Dokovací panel, kde je <see cref="UserControl"/> umístěn
+        /// </summary>
+        public DevExpress.XtraBars.Docking.DockPanel DockPanel { get; set; }
+        /// <summary>
+        /// Fyzický zobrazený Control
+        /// </summary>
+        public Control UserControl { get; set; }
+        /// <summary>
+        /// Požadovaná / aktuální viditelnost panelu
+        /// </summary>
+        public DevExpress.XtraBars.Docking.DockVisibility? Visibility { get; set; }
+        #endregion
+        #region Eventhandlery
+        /// <summary>
+        /// Ověří zda nedošlo ke změně hodnot (Dock a Size) a případně vyvolá událost 
+        /// </summary>
+        public void CheckChanged() { _CheckLayoutChanged(); }
+        /// <summary>
+        /// Po změně <see cref="DockPanel"/>.Dock
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        public void Panel_DockChanged(object sender, EventArgs e) { _CheckLayoutChanged(); }
+        /// <summary>
+        /// Po změně <see cref="DockPanel"/>.Size
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        public void Panel_SizeChanged(object sender, EventArgs e) { _CheckLayoutChanged(); }
+        /// <summary>
+        /// Po změně <see cref="DockPanel"/>.Visibility
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        public void Panel_VisibilityChanged(object sender, DevExpress.XtraBars.Docking.VisibilityChangedEventArgs e) { _CheckLayoutChanged(); }
+        /// <summary>
+        /// Porovná fyzický stav panelu a data, aktualizuje data a volá <see cref="LayoutChanged"/>
+        /// </summary>
+        private void _CheckLayoutChanged()
+        {
+            if (__SuppressSizeAndVisibilityChange) return;
+
+            bool wasShown = this.HostForm?.WasShown ?? false;
+            if (!wasShown)
+            {   // Okno dosud nebylo zobrazeno => nejde o změnu od uživatele, ale od WinFormu (typicky EndInit => PerformLayout):
+                // ApplySizeAndVisibility();
+            }
+            else
+            {   // Po zobrazení okna budeme reálně hlídat hodnoty z panelu a ukládat je do this properties, a volat eventhandler LayoutChanged:
+                var oldDock = this.DockStyle;
+                var newDock = this.DockPanel.Dock;
+                var oldSize = this.PanelSize;
+                var newSize = this.DockPanel.Size;
+                var oldVisibility = this.Visibility;
+                var newVisibility = this.DockPanel.Visibility;
+
+                bool isChanged = false;
+
+                if (!oldDock.HasValue || (oldDock.HasValue && oldDock.Value != newDock)) { this.DockStyle = newDock; isChanged = true; }
+                if (!oldSize.HasValue || (oldSize.HasValue && !isEqualSize(oldSize.Value, newSize, newDock))) { this.PanelSize = newSize; isChanged = true; }
+                if (!oldVisibility.HasValue || (oldVisibility.HasValue && oldVisibility.Value != newVisibility)) { this.Visibility = newVisibility; isChanged = true; }
+
+                if (isChanged) LayoutChanged?.Invoke(this, EventArgs.Empty);
+            }
+
+            bool isEqualSize(Size s1, Size s2, DevExpress.XtraBars.Docking.DockingStyle style)
+            {
+                switch (style)
+                {
+                    case DevExpress.XtraBars.Docking.DockingStyle.Top:
+                    case DevExpress.XtraBars.Docking.DockingStyle.Bottom:
+                        return s1.Height == s2.Height;
+                    case DevExpress.XtraBars.Docking.DockingStyle.Left:
+                    case DevExpress.XtraBars.Docking.DockingStyle.Right:
+                        return s1.Width == s2.Width;
+                    case DevExpress.XtraBars.Docking.DockingStyle.Float:
+                        return s1.Width == s2.Width && s1.Height == s2.Height;
+                    case DevExpress.XtraBars.Docking.DockingStyle.Fill:
+                        return true;
+                }
+                return true;
+            }
+        }
+        /// <summary>
+        /// Do panelu <see cref="DockPanel"/> aplikuje velikost <see cref="PanelSize"/> podle stylu dokování <see cref="DockStyle"/>.
+        /// </summary>
+        public void ApplySizeAndVisibility()
+        {
+            if (__SuppressSizeAndVisibilityChange) return;
+            bool formWasShown = this.HostForm?.WasShown ?? false;
+            if (!formWasShown) return;
+
+            __SuppressSizeAndVisibilityChange = true;
+            try
+            {
+                var dockStyle = this.DockStyle ?? DevExpress.XtraBars.Docking.DockingStyle.Right;
+                var panelSize = this.PanelSize;
+                var panel = this.DockPanel;
+                var container = this.HostForm.DockManager.Panels;
+                switch (dockStyle)
+                {
+                    case DevExpress.XtraBars.Docking.DockingStyle.Top:
+                    case DevExpress.XtraBars.Docking.DockingStyle.Bottom:
+                        int h = panelSize?.Height ?? 150;
+                        if (panel.Height != h) panel.Height = h;
+                        break;
+                    case DevExpress.XtraBars.Docking.DockingStyle.Left:
+                    case DevExpress.XtraBars.Docking.DockingStyle.Right:
+                        int w = panelSize?.Width ?? 270;
+                        if (panel.Width != w) panel.Width = w;
+                        break;
+                    case DevExpress.XtraBars.Docking.DockingStyle.Float:
+                        Size s = panelSize ?? new Size(480, 200);
+                        if (panel.Size != s) panel.Size = s;
+                        break;
+                }
+
+                var v = this?.Visibility ?? DevExpress.XtraBars.Docking.DockVisibility.AutoHide; ;
+                if (panel.Visibility != v) panel.Visibility = v;
+            }
+            finally
+            {
+                __SuppressSizeAndVisibilityChange = false;
+            }
+        }
+        /// <summary>
+        /// Příznak, že provádíme změnu Size a Visibility v <see cref="DockPanel"/>, a máme ignorovat eventy, které to způsobuje
+        /// </summary>
+        private bool __SuppressSizeAndVisibilityChange;
+        /// <summary>
+        /// Událost volaná po změně dokování nebo velikosti nebo viditelnosti
+        /// </summary>
+        public event EventHandler LayoutChanged;
+        #endregion
+        #region Serializace
+        /// <summary>
+        /// Z dodaného stringu vytvoří a naplní new instanci, vrací true. Pokud vstupní formát není platný, vrací false.
+        /// </summary>
+        /// <param name="definition"></param>
+        /// <param name="layoutInfo"></param>
+        /// <returns></returns>
+        public static bool TryLoadFrom(string definition, out DockPanelLayoutInfo layoutInfo)
+        {
+            if (_TryParseDefinition(definition, out DevExpress.XtraBars.Docking.DockingStyle? dockStyle, out Size? size, out DevExpress.XtraBars.Docking.DockVisibility? visibility))
+            {
+                layoutInfo = new DockPanelLayoutInfo()
+                {
+                    DockStyle = dockStyle,
+                    PanelSize = size,
+                    Visibility = visibility
+                };
+                return true;
+            }
+            layoutInfo = null;
+            return false;
+        }
+        /// <summary>
+        /// Stringová definice. Lze setovat, setování ??? změní stav ???
+        /// </summary>
+        public string Definition
+        {
+            get { return _CreateDefinition(this.DockStyle, this.PanelSize, this.Visibility); }
+            set 
+            {
+                if (_TryParseDefinition(value, out DevExpress.XtraBars.Docking.DockingStyle? dockStyle, out Size? size, out DevExpress.XtraBars.Docking.DockVisibility? visibility))
+                {
+                    this.DockStyle = dockStyle;
+                    this.PanelSize = size;
+                    this.Visibility = visibility;
+                }
+            }
+        }
+        /// <summary>
+        /// Serializuje dodané hodnoty do stringu
+        /// </summary>
+        /// <param name="dockStyle"></param>
+        /// <param name="size"></param>
+        /// <param name="visibility"></param>
+        /// <returns></returns>
+        private static string _CreateDefinition(DevExpress.XtraBars.Docking.DockingStyle? dockStyle, Size? size, DevExpress.XtraBars.Docking.DockVisibility? visibility)
+        {
+            string d = dockStyle?.ToString() ?? "#";
+            string s = size.HasValue ? Convertor.SizeToString(size.Value, '×') : "#";
+            string v = visibility?.ToString() ?? "#";
+            return $"{d};{s};{v}";
+        }
+        /// <summary>
+        /// Deserializuje definici ze stringu do hodnot
+        /// </summary>
+        /// <param name="definition"></param>
+        /// <param name="dockStyle"></param>
+        /// <param name="size"></param>
+        /// <param name="visibility"></param>
+        /// <returns></returns>
+        private static bool _TryParseDefinition(string definition, out DevExpress.XtraBars.Docking.DockingStyle? dockStyle, out Size? size, out DevExpress.XtraBars.Docking.DockVisibility? visibility)
+        {
+            if (!String.IsNullOrEmpty(definition))
+            {
+                var parts = definition.Split(';');
+                if (parts.Length >= 3)
+                {
+                    if ((Enum.TryParse(parts[0], false, out DevExpress.XtraBars.Docking.DockingStyle d)) &&
+                        (Enum.TryParse(parts[2], false, out DevExpress.XtraBars.Docking.DockVisibility v)))
+                    {
+                        var c = Convertor.StringToSize(parts[1], '×');
+                        if (c is Size s && (s.Width > 0 || s.Height > 0))
+                        {
+                            dockStyle = d;
+                            size = s;
+                            visibility = v;
+                            return true;
+                        }
+                    }
+                }
+            }
+            dockStyle = null;
+            size = null;
+            visibility = null;
+            return false;
+        }
+        #endregion
+    }
+    #endregion
 }

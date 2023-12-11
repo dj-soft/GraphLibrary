@@ -17,10 +17,10 @@ using Noris.Clients.Win.Components.AsolDX.DataForm.Data;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
-    #region DxDataFormPanel : vnější panel DataForm - koordinátor, virtuální container
+    #region DxDataFormPanel : vnější panel DataForm - virtuální container
     /// <summary>
-    /// <see cref="DxDataFormPanel"/> : vnější panel DataForm - koordinátor, virtuální container.
-    /// Obsahuje vnitřní ContentPanel typu <see cref="DxDataFormContentPanel"/>, který reálně zobrazuje obsah (řeší scrollování).
+    /// <see cref="DxDataFormPanel"/> : vnější panel DataForm - virtuální container.
+    /// Obsahuje vnitřní ContentPanel typu <see cref="DxDataFormContentPanel"/>, který reálně zobrazuje obsah (ve spolupráci s this třídou řeší scrollování i Zoom).
     /// Obsahuje kolekci řádků <see cref="DataFormRows"/> a deklaraci layoutu <see cref="DataFormLayoutSet"/>.
     /// Obsahuje managera fyzických controlů (obdoba RepositoryEditorů) <see cref="DxRepositoryManager"/>
     /// </summary>
@@ -197,7 +197,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public WinDraw.Imaging.ImageFormat CacheImageFormat { get { return __CacheImageFormat; } set { __CacheImageFormat = value; InvalidateRepozitory(); } } private WinDraw.Imaging.ImageFormat __CacheImageFormat;
         #endregion
-        #region Akce uživatele na DataFOrmu
+        #region Akce uživatele na DataFormu
         /// <summary>
         /// Uživatel provedl nějakou akci na dataformu (kliknutí...)
         /// </summary>
@@ -205,7 +205,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         public void OnInteractiveAction(DataFormActionInfo actionInfo)
         {
             string text = actionInfo.ToString();
-            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, text);      //  Moc násilné:  DxComponent.ShowMessageInfo(text, "DataForm");
+            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, text);
         }
         #endregion
         #region ContentPanel : zobrazuje vlastní obsah (grafická komponenta)
@@ -513,7 +513,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// Řeší grafické vykreslení prvků a řeší interaktivitu myši a klávesnice.
     /// Pro fyzické vykreslení obsahu prvku volá vlastní metodu konkrétního prvku <see cref="IInteractiveItem.Paint(PaintDataEventArgs)"/>, to neřeší sám panel.
     /// <para/>
-    /// Tato třída je pokud možno přenáší svoje požadavky do svého parenta = <see cref="DataFormPanel"/> a sama by měla být co nejjednodušší.
+    /// Tato třída pokud možno přenáší svoje požadavky do svého parenta = <see cref="DataFormPanel"/> a sama by měla být co nejjednodušší.
     /// Slouží primárně jen jako zobrazovač a interaktivní koordinátor.
     /// </summary>
     public class DxDataFormContentPanel : DxInteractivePanel
@@ -522,10 +522,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DxDataFormContentPanel()
-        {
-           
-        }
+        public DxDataFormContentPanel() { }
         /// <summary>
         /// Metoda zajistí, že velikost <see cref="DxInteractivePanel.ContentDesignSize"/> bude platná (bude odpovídat souhrnu velikosti prvků).
         /// Metoda je volána před každým Draw tohoto objektu.
@@ -565,13 +562,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="row"></param>
-        /// <param name="columnName"></param>
+        /// <param name="cell">Buňka, kde došlo k akci</param>
         /// <param name="action"></param>
         /// <param name="oldValue"></param>
         /// <param name="newValue"></param>
-        public DataFormValueChangingInfo(DataFormRow row, string columnName, DxDataFormAction action, object oldValue, object newValue)
-            : base(row, columnName, action, oldValue, newValue)
+        public DataFormValueChangingInfo(DataFormCell cell, DxDataFormAction action, object oldValue, object newValue)
+            : base(cell, action, oldValue, newValue)
         {
             this.Cancel = false;
         }
@@ -588,13 +584,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="row"></param>
-        /// <param name="columnName"></param>
+        /// <param name="cell">Buňka, kde došlo k akci</param>
         /// <param name="action"></param>
         /// <param name="oldValue"></param>
         /// <param name="newValue"></param>
-        public DataFormValueChangedInfo(DataFormRow row, string columnName, DxDataFormAction action, object oldValue, object newValue)
-            : base(row, columnName, action)
+        public DataFormValueChangedInfo(DataFormCell cell, DxDataFormAction action, object oldValue, object newValue)
+            : base(cell, action)
         {
             this.OldValue = oldValue;
             this.NewValue = newValue;
@@ -624,12 +619,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="row"></param>
-        /// <param name="columnName"></param>
+        /// <param name="cell">Buňka, kde došlo k akci</param>
         /// <param name="action"></param>
         /// <param name="itemName"></param>
-        public DataFormItemNameInfo(DataFormRow row, string columnName, DxDataFormAction action, string itemName)
-            : base(row, columnName, action)
+        public DataFormItemNameInfo(DataFormCell cell, DxDataFormAction action, string itemName)
+            : base(cell, action)
         {
             this.ItemName = itemName;
         }
@@ -654,13 +648,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="row"></param>
-        /// <param name="columnName"></param>
+        /// <param name="cell">Buňka, kde došlo k akci</param>
         /// <param name="action"></param>
-        public DataFormActionInfo(DataFormRow row, string columnName, DxDataFormAction action)
+        public DataFormActionInfo(DataFormCell cell, DxDataFormAction action)
         {
-            this.Row = row;
-            this.ColumnName = columnName;
+            this.Cell = cell;
             this.Action = action;
         }
         /// <summary>
@@ -672,13 +664,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return $"Action '{this.Action}'; Row: {this.Row.RowId}; Column: '{this.ColumnName}'";
         }
         /// <summary>
+        /// Buňka, kde došlo k akci
+        /// </summary>
+        public DataFormCell Cell { get; private set; }
+        /// <summary>
         /// Řádek, kde došlo k události
         /// </summary>
-        public DataFormRow Row { get; private set; }
+        public DataFormRow Row { get { return Cell.Row; } }
+        /// <summary>
+        /// Definice layoutu
+        /// </summary>
+        public DataFormLayoutItem LayoutItem { get { return Cell.LayoutItem; } }
         /// <summary>
         /// Sloupec, kde došlo k události
         /// </summary>
-        public string ColumnName { get; private set; }
+        public string ColumnName { get { return Cell.ColumnName; } }
         /// <summary>
         /// Druh události
         /// </summary>

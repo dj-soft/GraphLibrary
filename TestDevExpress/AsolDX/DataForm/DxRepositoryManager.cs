@@ -1399,7 +1399,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             paintData.SetContent(Data.DxDataFormProperty.Value, value);
             if (callAction && !Object.Equals(value, oldValue))
             {
-                var actionInfo = new DataFormValueChangedInfo(paintData.Row, paintData.LayoutItem.ColumnName, DxDData.DxDataFormAction.ValueChanged, oldValue, value);
+                var actionInfo = new DataFormValueChangedInfo(paintData as DxDData.DataFormCell, DxDData.DxDataFormAction.ValueChanged, oldValue, value);
                 this.DataForm.OnInteractiveAction(actionInfo);
             }
         }
@@ -1984,6 +1984,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             control.ResetBackColor();
             if (isInteractive)
                 _PrepareInteractive(control);
+            else
+                this.DataForm.DataFormContent.Controls.Add(control);
             return control;
         }
         /// <summary>
@@ -2044,7 +2046,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (!Object.Equals(dataPair.CurrentValue, dataPair.OriginalValue))
                 {
                     IPaintItemData paintData = dataPair.OriginalPaintData;
-                    var actionInfo = new DataFormValueChangingInfo(paintData.Row, paintData.LayoutItem.ColumnName, DxDData.DxDataFormAction.ValueValidating, dataPair.OriginalValue, dataPair.CurrentValue);
+                    var actionInfo = new DataFormValueChangingInfo(paintData as DxDData.DataFormCell, DxDData.DxDataFormAction.ValueValidating, dataPair.OriginalValue, dataPair.CurrentValue);
                     this.DataForm.OnInteractiveAction(actionInfo);
                     if (actionInfo.Cancel)
                     { }
@@ -2212,7 +2214,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (sender is DxeEdit.ButtonEdit control && TryGetPaintData(control, out var paintData))
             {
                 string actionName = e.Button.Tag as string;
-                var actionInfo = new DataFormItemNameInfo(paintData.Row, paintData.LayoutItem.ColumnName, DxDData.DxDataFormAction.ButtonClick, actionName);
+                var actionInfo = new DataFormItemNameInfo(paintData as DxDData.DataFormCell, DxDData.DxDataFormAction.ButtonClick, actionName);
                 this.DataForm.OnInteractiveAction(actionInfo);
             }
         }
@@ -3086,7 +3088,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     if (!Object.Equals(dataPair.CurrentValue, dataPair.OriginalValue))
                     {
                         IPaintItemData paintData = dataPair.OriginalPaintData;
-                        var actionInfo = new DataFormValueChangingInfo(paintData.Row, paintData.LayoutItem.ColumnName, DxDData.DxDataFormAction.ValueValidating, dataPair.OriginalValue, dataPair.CurrentValue);
+                        var actionInfo = new DataFormValueChangingInfo(paintData as DxDData.DataFormCell, DxDData.DxDataFormAction.ValueValidating, dataPair.OriginalValue, dataPair.CurrentValue);
                         this.DataForm.OnInteractiveAction(actionInfo);
                         if (actionInfo.Cancel)
                         { }
@@ -3287,7 +3289,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             if (sender is DxeEdit.SimpleButton control && TryGetPaintData(control, out var paintData))
             {
-                var actionInfo = new DataFormActionInfo(paintData.Row, paintData.LayoutItem.ColumnName, DxDData.DxDataFormAction.ButtonClick);
+                var actionInfo = new DataFormActionInfo(paintData as DxDData.DataFormCell, DxDData.DxDataFormAction.ButtonClick);
                 this.DataForm.OnInteractiveAction(actionInfo);
             }
         }
