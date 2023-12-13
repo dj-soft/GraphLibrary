@@ -147,7 +147,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Úložiště prvků editorů
         /// </summary>
         private Dictionary<DxRepositoryEditorType, DxRepositoryEditor> __RepositoryDict;
-
         #endregion
         #region Cache obrázků
         /// <summary>
@@ -815,12 +814,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _RunNativeControlFocusEnter(ControlDataPair dataPair)
         {
             if (dataPair.PaintData is null) return;
+            dataPair.OriginalPaintData = dataPair.PaintData;
             if (dataPair.PaintData.InteractiveState.HasFlag(DxInteractiveState.HasFocus)) return;  // Zdejší metoda už nemusí měnit stav, nejspíš to stihla předešlá metoda
 
             // Přidat příznak HasFocus:
             DxInteractiveState maskHasFocus = DxInteractiveState.HasFocus;
             dataPair.PaintData.InteractiveState |= maskHasFocus;
             OnNativeControlFocusEnter(dataPair);
+
+            this.DataForm.OnInteractiveAction(new DataFormActionInfo(dataPair.PaintData as DxDData.DataFormCell, DxDData.DxDataFormAction.GotFocus));
         }
         /// <summary>
         /// Obsluha události po odchodu focusu z nativního controlu
@@ -843,6 +845,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             DxInteractiveState maskNonFocus = (DxInteractiveState)(Int32.MaxValue ^ (int)DxInteractiveState.HasFocus);
             dataPair.PaintData.InteractiveState &= maskNonFocus;     // Tady proběhne InteractiveStateChange => zdejší ChangeItemInteractiveState() => a nejspíš CheckReleaseNativeControl() => a tedy zmizí fyzický NativeControl z containeru!
             OnNativeControlFocusLeave(dataPair);
+
+            this.DataForm.OnInteractiveAction(new DataFormActionInfo(dataPair.OriginalPaintData as DxDData.DataFormCell, DxDData.DxDataFormAction.LostFocus));
 
             this.__RepositoryManager.DataFormDraw();                 //  ... musíme tedy zajistit vykreslení panelu (sám si to neudělá), aby byl vidět obraz prvku namísto nativního Controlu!
         }
@@ -1400,6 +1404,101 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (callAction && !Object.Equals(value, oldValue))
             {
                 var actionInfo = new DataFormValueChangedInfo(paintData as DxDData.DataFormCell, DxDData.DxDataFormAction.ValueChanged, oldValue, value);
+                this.DataForm.OnInteractiveAction(actionInfo);
+            }
+        }
+        /// <summary>
+        /// Metoda slouží pro potomky, kdy před zahájením editace - typicky v metodě <see cref="FillNativeControl(ControlDataPair, Rectangle)"/> ukládáme
+        /// data buňky <paramref name="paintData"/> uložíme do do dodaného páru <paramref name="dataPair"/> do <see cref="ControlDataPair.OriginalPaintData"/>;
+        /// a dodanou hodnotu <paramref name="originalValue"/> (načtenou z datové buňky) uložíme do <see cref="ControlDataPair.OriginalValue"/>.
+        /// Pokud dodaný pár <paramref name="dataPair"/> je null, je to validní stav a nic neřešíme.
+        /// </summary>
+        /// <param name="dataPair"></param>
+        /// <param name="paintData"></param>
+        /// <param name="originalValue"></param>
+        protected void StorePairOriginalData(ControlDataPair dataPair, IPaintItemData paintData, object originalValue)
+        {
+            if (dataPair != null)
+            {
+                dataPair.OriginalPaintData = paintData;
+                dataPair.OriginalValue = originalValue;
+            }
+        }
+        /// <summary>
+        /// Metoda slouží pro potomky, kdy uvnitř procesu editace (typicky v eventu EditValueChanged) uloží aktuální rozeditovanou hodnotu (dodanou jako <paramref name="currentValue"/>)
+        /// do <see cref="ControlDataPair.CurrentValue"/>.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="currentValue"></param>
+        protected void TryStorePairCurrentEditingValue(WinForm.Control control, object currentValue)
+        {
+            if (TryGetAttachedPair(control, out var dataPair))
+            {   // Toto je průběžně volaný event, v procesu editace, a nemá valného významu:
+                dataPair.CurrentValue = currentValue;
+            }
+        }
+        /// <summary>
+        /// Metoda slouží pro potomky, kdy při dokončení editace (LostFocus, nebo Validating...) máme nově editovanou hodnotu <paramref name="validatedValue"/>
+        /// odeslat do dataformu k validaci: <see cref="DxDataFormPanel.OnInteractiveAction(DataFormActionInfo)"/> s akcí <see cref="DxDData.DxDataFormAction.ValueValidating"/>.
+        /// Pokud nebude nastaveno <see cref="DataFormValueChangingInfo.Cancel"/>, pak se nová hodnota uloží do buňky a vrátí true.
+        /// Pokud bude Cancel = true, pak se neuloží, a vrací se false.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="validatedValue"></param>
+        /// <param name="forceValidating"></param>
+        /// <param name="cancelInfo"></param>
+        /// <returns></returns>
+        protected bool TryStoreValidatingValue(WinForm.Control control, object validatedValue, bool forceValidating, out DataFormValueChangingInfo cancelInfo)
+        {
+            if (TryGetAttachedPair(control, out var dataPair) && dataPair.OriginalPaintData != null)
+            {   // Toto je event volaný při ukončení editace
+                dataPair.CurrentValue = validatedValue;
+                if (forceValidating || !Object.Equals(dataPair.CurrentValue, dataPair.OriginalValue))
+                {
+                    IPaintItemData paintData = dataPair.OriginalPaintData;
+                    var actionInfo = new DataFormValueChangingInfo(paintData as DxDData.DataFormCell, DxDData.DxDataFormAction.ValueValidating, dataPair.OriginalValue, dataPair.CurrentValue);
+                    this.DataForm.OnInteractiveAction(actionInfo);
+                    if (actionInfo.Cancel)
+                    {   // Validace vrátila false: nebudu ukládat data, předám Info a vrátím false => volající si zajistí vrácení dat...:
+                        cancelInfo = actionInfo;
+                        return false;
+                    }
+                    else
+                    {   // Změna dat a z validace nepřišlo Cancel => uložím nová data:
+                        SetItemValue(dataPair.OriginalPaintData, dataPair.CurrentValue, true);
+                        dataPair.OriginalValue = dataPair.CurrentValue;
+                        paintData.InvalidateCache();
+                    }
+                }
+            }
+            // Cancel není, data jsou [nezměněna | uložena] => vracíme true:
+            cancelInfo = null;
+            return true;
+        }
+        /// <summary>
+        /// Pro daný <paramref name="control"/> dohledá buňku dataformu a do dataformu odešle zadanou akci.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="action"></param>
+        protected void RunDataFormAction(WinForm.Control control, DxDData.DxDataFormAction action)
+        {
+            if (TryGetAttachedPair(control, out var dataPair) && dataPair.OriginalPaintData != null)
+            {
+                var actionInfo = new DataFormActionInfo(dataPair.OriginalPaintData as DxDData.DataFormCell, action);
+                this.DataForm.OnInteractiveAction(actionInfo);
+            }
+        }
+        /// <summary>
+        /// Pro daný <paramref name="control"/> dohledá buňku dataformu a do dataformu odešle zadanou akci a název prvku.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="action"></param>
+        /// <param name="itemName"></param>
+        protected void RunDataFormAction(WinForm.Control control, DxDData.DxDataFormAction action, string itemName)
+        {
+            if (TryGetAttachedPair(control, out var dataPair) && dataPair.OriginalPaintData != null)
+            {
+                var actionInfo = new DataFormItemNameInfo(dataPair.OriginalPaintData as DxDData.DataFormCell, action, itemName);
                 this.DataForm.OnInteractiveAction(actionInfo);
             }
         }
@@ -1999,11 +2098,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             object value = GetItemValue(paintData);
             control.EditValue = value;
-            if (dataPair != null)
-            {
-                dataPair.OriginalPaintData = paintData;
-                dataPair.OriginalValue = value;
-            }
+            StorePairOriginalData(dataPair, paintData, value);
             control.Size = controlBounds.Size;
             control.Properties.BorderStyle = GetItemBorderStyle(paintData);
         }
@@ -2014,22 +2109,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _PrepareInteractive(DxeEdit.TextEdit control)
         {
             control.CausesValidation = true;
-            control.EditValueChanged += _ControlEditValueChanged;
+            control.EditValueChanged += _NativeControlEditValueChanged;
             control.Validating += _NativeControlValidating;
+            control.MouseDoubleClick += _NativeControlMouseDoubleClick;
+            control.MouseClick += _NativeControlMouseClick;
         }
         /// <summary>
         /// Eventhandler po změně hodnoty v TextEdit controlu
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _ControlEditValueChanged(object sender, EventArgs e)
+        private void _NativeControlEditValueChanged(object sender, EventArgs e)
         {
             if (SuppressNativeEvents) return;
 
-            if (sender is DxeEdit.TextEdit control && TryGetAttachedPair(control, out var dataPair))
-            {   // Toto je průběžně volaný event, v procesu editace, a nemá valného významu:
-                dataPair.CurrentValue = control.EditValue;
-            }
+            // Toto je průběžně volaný event, v procesu editace, a nemá valného významu:
+            if (sender is DxeEdit.TextEdit control)
+                this.TryStorePairCurrentEditingValue(control, control.EditValue);
         }
         /// <summary>
         /// Eventhandler při validaci zadané hodnoty
@@ -2040,24 +2136,38 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (SuppressNativeEvents) return;
 
-            if (sender is DxeEdit.TextEdit control && TryGetAttachedPair(control, out var dataPair) && dataPair.OriginalPaintData != null)
+            if (sender is DxeEdit.TextEdit control)
             {   // Toto je event volaný při ukončení editace
-                dataPair.CurrentValue = control.EditValue;
-                if (!Object.Equals(dataPair.CurrentValue, dataPair.OriginalValue))
-                {
-                    IPaintItemData paintData = dataPair.OriginalPaintData;
-                    var actionInfo = new DataFormValueChangingInfo(paintData as DxDData.DataFormCell, DxDData.DxDataFormAction.ValueValidating, dataPair.OriginalValue, dataPair.CurrentValue);
-                    this.DataForm.OnInteractiveAction(actionInfo);
-                    if (actionInfo.Cancel)
-                    { }
-                    else
-                    {
-                        SetItemValue(dataPair.OriginalPaintData, dataPair.CurrentValue, true);
-                        dataPair.OriginalValue = dataPair.CurrentValue;
-                        paintData.InvalidateCache();
-                    }
+                bool isValidated = TryStoreValidatingValue(control, control.EditValue, false, out var cancelInfo);
+                if (!isValidated)
+                {   // Že bych vrátil původní hodnotu?
+                    control.EditValue = cancelInfo.OriginalValue;
+                    e.Cancel = true;
                 }
             }
+        }
+        /// <summary>
+        /// Eventhandler při myším kliku, řeší RightClick
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _NativeControlMouseClick(object sender, WinForm.MouseEventArgs e)
+        {
+            if (SuppressNativeEvents) return;
+            if (e.Button == WinForm.MouseButtons.Right)
+                this.RunDataFormAction(sender as WinForm.Control, DxDData.DxDataFormAction.RightClick);
+        }
+        /// <summary>
+        /// Eventhandler při myším DoubleClicku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _NativeControlMouseDoubleClick(object sender, WinForm.MouseEventArgs e)
+        {
+            if (SuppressNativeEvents) return;
+            this.RunDataFormAction(sender as WinForm.Control, DxDData.DxDataFormAction.DoubleClick);
         }
         /// <summary>
         /// Dispose objektu
@@ -2166,7 +2276,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
         private void _FillNativeControl(ControlDataPair dataPair, IPaintItemData paintData, DxeEdit.ButtonEdit control, WinDraw.Rectangle controlBounds)
         {
-            control.EditValue = GetItemValue(paintData);
+            object value = GetItemValue(paintData);
+            control.EditValue = value;
+            StorePairOriginalData(dataPair, paintData, value);
             control.Size = controlBounds.Size;
             control.Properties.BorderStyle = GetItemBorderStyle(paintData);
 
@@ -2184,8 +2296,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="control"></param>
         private void _PrepareInteractive(DxeEdit.ButtonEdit control)
         {
+            control.CausesValidation = true;
             control.EditValueChanged += _ControlEditValueChanged;
             control.ButtonClick += _NativeControlButtonClick;
+            control.Validating += _NativeControlValidating;
+            control.MouseDoubleClick += _NativeControlMouseDoubleClick;
+            control.MouseClick += _NativeControlMouseClick;
         }
         /// <summary>
         /// Eventhandler po změně hodnoty v ButtonEdit controlu
@@ -2196,10 +2312,51 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (SuppressNativeEvents) return;
 
-            if (sender is DxeEdit.ButtonEdit control && TryGetPaintData(control, out var paintData))
-            {
-                SetItemValue(paintData, control.EditValue, true);
+            // Toto je průběžně volaný event, v procesu editace, a nemá valného významu:
+            if (sender is DxeEdit.ButtonEdit control)
+                this.TryStorePairCurrentEditingValue(control, control.EditValue);
+        }
+        /// <summary>
+        /// Eventhandler při validaci zadané hodnoty
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _NativeControlValidating(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (SuppressNativeEvents) return;
+
+            if (sender is DxeEdit.ButtonEdit control)
+            {   // Toto je event volaný při ukončení editace
+                bool isValidated = TryStoreValidatingValue(control, control.EditValue, false, out var cancelInfo);
+                if (!isValidated)
+                {   // Že bych vrátil původní hodnotu?
+                    control.EditValue = cancelInfo.OriginalValue;
+                    e.Cancel = true;
+                }
             }
+        }
+        /// <summary>
+        /// Eventhandler při myším kliku, řeší RightClick
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _NativeControlMouseClick(object sender, WinForm.MouseEventArgs e)
+        {
+            if (SuppressNativeEvents) return;
+            if (e.Button == WinForm.MouseButtons.Right)
+                this.RunDataFormAction(sender as WinForm.Control, DxDData.DxDataFormAction.RightClick);
+        }
+        /// <summary>
+        /// Eventhandler při myším DoubleClicku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _NativeControlMouseDoubleClick(object sender, WinForm.MouseEventArgs e)
+        {
+            if (SuppressNativeEvents) return;
+            this.RunDataFormAction(sender as WinForm.Control, DxDData.DxDataFormAction.DoubleClick);
         }
         /// <summary>
         /// Eventhandler po kliknutí na button v ButtonEdit controlu
@@ -2210,13 +2367,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _NativeControlButtonClick(object sender, DxeCont.ButtonPressedEventArgs e)
         {
             if (SuppressNativeEvents) return;
-
-            if (sender is DxeEdit.ButtonEdit control && TryGetPaintData(control, out var paintData))
-            {
-                string actionName = e.Button.Tag as string;
-                var actionInfo = new DataFormItemNameInfo(paintData as DxDData.DataFormCell, DxDData.DxDataFormAction.ButtonClick, actionName);
-                this.DataForm.OnInteractiveAction(actionInfo);
-            }
+            this.RunDataFormAction(sender as WinForm.Control, DxDData.DxDataFormAction.ButtonClick, e.Button.Tag as string);
         }
         /// <summary>
         /// Dispose objektu
@@ -2330,11 +2481,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
         private void _FillNativeControl(ControlDataPair dataPair, IPaintItemData paintData, DxeEdit.CheckEdit control, WinDraw.Rectangle controlBounds)
         {
+            bool value = GetItemValue(paintData, false);
+            control.Checked = value;
+            StorePairOriginalData(dataPair, paintData, value);
             control.Size = controlBounds.Size;
-            control.ReadOnly = true;
-            control.Enabled = true;
             string label = GetItemLabel(paintData);
-            control.Checked = GetItemValue(paintData, false);
             control.Properties.Caption = label;
             control.Properties.DisplayValueUnchecked = GetItemContent(paintData, DxDData.DxDataFormProperty.CheckBoxLabelFalse, label);
             control.Properties.DisplayValueChecked = GetItemContent(paintData, DxDData.DxDataFormProperty.CheckBoxLabelTrue, label);
@@ -2346,22 +2497,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="control"></param>
         private void _PrepareInteractive(DxeEdit.CheckEdit control)
         {
-            control.EditValueChanged += _ControlEditValueChanged;
             control.CheckedChanged += _NativeControlCheckedChanged;
-        }
-        /// <summary>
-        /// Eventhandler po změně hodnoty v CheckEdit controlu
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ControlEditValueChanged(object sender, EventArgs e)
-        {
-            if (SuppressNativeEvents) return;
-
-            if (sender is DxeEdit.CheckEdit control && TryGetPaintData(control, out var paintData))
-            {
-                SetItemValue(paintData, control.EditValue, true);
-            }
         }
         /// <summary>
         /// Eventhandler po změně hodnoty v CheckEdit controlu
@@ -2373,9 +2509,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (SuppressNativeEvents) return;
 
-            if (sender is DxeEdit.CheckEdit control && TryGetPaintData(control, out var paintData))
-            {
-                SetItemValue(paintData, control.EditValue, true);
+            if (sender is DxeEdit.CheckEdit control)
+            {   // Toto je event volaný při ukončení editace
+                bool isValidated = TryStoreValidatingValue(control, control.Checked, true, out var cancelInfo);
+                if (!isValidated)
+                {   // Že bych vrátil původní hodnotu?
+                    control.Checked = (bool)cancelInfo.OriginalValue;
+                }
             }
         }
         /// <summary>
@@ -2489,8 +2629,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
         private void _FillNativeControl(ControlDataPair dataPair, IPaintItemData paintData, DxeEdit.ToggleSwitch control, WinDraw.Rectangle controlBounds)
         {
+            bool value = GetItemValue(paintData, false);
+            control.IsOn = value;
             control.Size = controlBounds.Size;
-            control.IsOn = GetItemValue(paintData, false);
             control.Properties.BorderStyle = GetItemCheckBoxBorderStyle(paintData);
             control.Properties.EditorToThumbWidthRatio = GetItemContent(paintData, DxDData.DxDataFormProperty.ToggleSwitchRatio, 2.5f);
             control.Properties.OffText = GetItemContent(paintData, DxDData.DxDataFormProperty.CheckBoxLabelFalse, "Off");
@@ -2505,22 +2646,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="control"></param>
         private void _PrepareInteractive(DxeEdit.ToggleSwitch control)
         {
-            control.EditValueChanged += _ControlEditValueChanged;
             control.Toggled += _NativeControlToggled;
-        }
-        /// <summary>
-        /// Eventhandler po změně hodnoty v ToggleSwitch controlu
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ControlEditValueChanged(object sender, EventArgs e)
-        {
-            if (SuppressNativeEvents) return;
-
-            if (sender is DxeEdit.ToggleSwitch control && TryGetPaintData(control, out var paintData))
-            {
-                SetItemValue(paintData, control.EditValue, true);
-            }
         }
         /// <summary>
         /// Eventhandler po změně hodnoty v ToggleSwitch controlu
@@ -2532,9 +2658,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (SuppressNativeEvents) return;
 
-            if (sender is DxeEdit.ToggleSwitch control && TryGetPaintData(control, out var paintData))
-            {
-                SetItemValue(paintData, control.IsOn, true);
+            if (sender is DxeEdit.ToggleSwitch control)
+            {   // Toto je event volaný při ukončení editace
+                bool isValidated = TryStoreValidatingValue(control, control.IsOn, false, out var cancelInfo);
+                if (!isValidated)
+                {   // Že bych vrátil původní hodnotu?
+                    control.IsOn = (bool)cancelInfo.OriginalValue;
+                }
             }
         }
         /// <summary>
@@ -2583,7 +2713,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         protected override string CreateKey(IPaintItemData paintData, WinDraw.Rectangle controlBounds)
         {
-            object value = GetItemValue(paintData);
+            // Pokud zobrazený text bude delší než 50 znaků, pak nebudu vytvářet klíč.
+            // Důsledkem toho bude, že tento konkrétní prvek nebude ukládat svoji bitmapu do cache obrázků v DxRepositoryManager 
+            //  (metody TryGetCacheImageData a AddImageDataToCache), ale bude bitmapu obrázku ukládat privátně do IPaintItemData.ImageData.
+            // Důvod: u dlouhých textů v tomto typu editoru (který je určen právě pro zobrazení dlouhých textů!) bychom generovali velice dlouhý Key, 
+            //  a málokdy by se na jednom DataFormu sešly dva EditBoxy se shodným klíčem (=textem). 
+            // Proto považuji za vhodné ukládat do cache víceméně jen prázdné EditBoxy (bez textu) anebo s krátkým textem, kdy jeho Key nebude dlouhý 
+            //  a je šance na opakované využití stejného obrázku pro víc controlů (např. pro zobrazené texty: OK, Odmítnuto, Dořešit, ...)
+            // Při uložení obrázku do Cache se ukládá nejen obrázek, ale i jeho (dlouhý) string klíč a long ID (=režie), kdežto při uložení do ImageData se ukládá jen obrázek.
+            string value = GetItemValue(paintData) as string;
+            if (value != null && value.Length > 24) return null;
+
+            // Text je krátký, vytvoříme Key a návazně uložíme obrázek do Cache:
             WinDraw.FontStyle fontStyle = GetItemContent(paintData, Data.DxDataFormProperty.FontStyle, WinDraw.FontStyle.Regular);
             float sizeRatio = GetItemContent(paintData, Data.DxDataFormProperty.FontSizeRatio, 0f);
             WinDraw.Color fontColor = GetItemContent(paintData, Data.DxDataFormProperty.TextColor, WinDraw.Color.Empty);
@@ -2644,7 +2785,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
         private void _FillNativeControl(ControlDataPair dataPair, IPaintItemData paintData, DxeEdit.MemoEdit control, WinDraw.Rectangle controlBounds)
         {
-            control.EditValue = GetItemValue(paintData);
+            object value = GetItemValue(paintData);
+            control.EditValue = value;
+            StorePairOriginalData(dataPair, paintData, value);
             control.Size = controlBounds.Size;
             control.Properties.BorderStyle = GetItemBorderStyle(paintData);
         }
@@ -2654,21 +2797,66 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="control"></param>
         private void _PrepareInteractive(DxeEdit.MemoEdit control)
         {
-            control.EditValueChanged += _ControlEditValueChanged;
+            control.CausesValidation = true;
+            control.EditValueChanged += _NativeControlEditValueChanged;
+            control.Validating += _NativeControlValidating;
+            control.MouseDoubleClick += _NativeControlMouseDoubleClick;
+            control.MouseClick += _NativeControlMouseClick;
         }
         /// <summary>
         /// Eventhandler po změně hodnoty v MemoEdit controlu
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _ControlEditValueChanged(object sender, EventArgs e)
+        private void _NativeControlEditValueChanged(object sender, EventArgs e)
         {
             if (SuppressNativeEvents) return;
 
-            if (sender is DxeEdit.MemoEdit control && TryGetPaintData(control, out var paintData))
-            {
-                SetItemValue(paintData, control.EditValue, true);
+            // Toto je průběžně volaný event, v procesu editace, a nemá valného významu:
+            if (sender is DxeEdit.MemoEdit control)
+                this.TryStorePairCurrentEditingValue(control, control.EditValue);
+        }
+        /// <summary>
+        /// Eventhandler při validaci zadané hodnoty
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _NativeControlValidating(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (SuppressNativeEvents) return;
+
+            if (sender is DxeEdit.MemoEdit control)
+            {   // Toto je event volaný při ukončení editace
+                bool isValidated = TryStoreValidatingValue(control, control.EditValue, false, out var cancelInfo);
+                if (!isValidated)
+                {   // Že bych vrátil původní hodnotu?
+                    control.EditValue = cancelInfo.OriginalValue;
+                    e.Cancel = true;
+                }
             }
+        }
+        /// <summary>
+        /// Eventhandler při myším kliku, řeší RightClick
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _NativeControlMouseClick(object sender, WinForm.MouseEventArgs e)
+        {
+            if (SuppressNativeEvents) return;
+            if (e.Button == WinForm.MouseButtons.Right)
+                this.RunDataFormAction(sender as WinForm.Control, DxDData.DxDataFormAction.RightClick);
+        }
+        /// <summary>
+        /// Eventhandler při myším DoubleClicku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _NativeControlMouseDoubleClick(object sender, WinForm.MouseEventArgs e)
+        {
+            if (SuppressNativeEvents) return;
+            this.RunDataFormAction(sender as WinForm.Control, DxDData.DxDataFormAction.DoubleClick);
         }
         /// <summary>
         /// Dispose objektu
@@ -2777,8 +2965,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
         private void _FillNativeControl(ControlDataPair dataPair, IPaintItemData paintData, DxeEdit.ComboBoxEdit control, WinDraw.Rectangle controlBounds)
         {
-            _FillNativeComboItems(paintData, control);
-
+            var value = GetItemValue(paintData);
+            _FillNativeComboItems(paintData, control, value);
+            StorePairOriginalData(dataPair, paintData, value);
             control.Size = controlBounds.Size;
             control.Properties.BorderStyle = GetItemBorderStyle(paintData);
         }
@@ -2787,9 +2976,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="paintData"></param>
         /// <param name="control"></param>
-        private void _FillNativeComboItems(IPaintItemData paintData, DxeEdit.ComboBoxEdit control)
+        /// <param name="value"></param>
+        private void _FillNativeComboItems(IPaintItemData paintData, DxeEdit.ComboBoxEdit control, object value)
         {
-            var value = GetItemValue(paintData);
             int selectedIndex = -1;
 
             try
@@ -2830,7 +3019,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             control.Properties.AllowMouseWheel = false;
             control.EditValueChanged += _NativeControlEditValueChanged;
             control.Properties.QueryPopUp += _NativeControlQueryPopUp;
-            control.Properties.BeforePopup += _NativeControlBeforePopup;
             control.LostFocus += _NativeControlLostFocus;
         }
         /// <summary>
@@ -2842,17 +3030,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (SuppressNativeEvents) return;
 
-            if (sender is DxeEdit.ComboBoxEdit control && TryGetPaintData(control, out var paintData))
+            // Toto je event volaný po každé změně, v procesu editace, ale v Combo reagujeme ihned:
+            if (sender is DxeEdit.ComboBoxEdit control)
             {
                 var dxItem = control.SelectedItem;
                 if (dxItem != null && dxItem is DxDData.ImageComboBoxProperties.Item item)
                 {   // Je vybraná konkrétní položka?
-                    SetItemValue(paintData, item.Value, true);
+                    var value = item.Value;
+                    bool isValidated = TryStoreValidatingValue(control, value, false, out var cancelInfo);
+                    if (!isValidated)
+                    {   // Že bych vrátil původní hodnotu?
+                        // control.EditValue = cancelInfo.OriginalValue;
+                    }
                 }
                 else
-                {
+                {   // Není vybraná konkrétní položka, ale je vepsán kus textu...
                     var editValue = control.EditValue;
-
+                    // Co s tím?
                 }
             }
         }
@@ -2873,16 +3067,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         /// <summary>
-        /// Eventhandler před otevřením Popup okna
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        /// <exception cref="NotImplementedException"></exception>
-        private void _NativeControlBeforePopup(object sender, EventArgs e)
-        {
-            if (SuppressNativeEvents) return;
-        }
-        /// <summary>
         /// Eventhandler po odchodu z prvku
         /// </summary>
         /// <param name="sender"></param>
@@ -2892,11 +3076,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (SuppressNativeEvents) return;
 
-            if (sender is DxeEdit.ComboBoxEdit control && TryGetPaintData(control, out var paintData))
+            if (sender is DxeEdit.ComboBoxEdit control)
             {
-                var size = control.GetPopupEditForm()?.Size;                   // Funguje   (na rozdíl od : control.Properties.PopupFormSize)
-                if (size.HasValue && size.Value.Width > 50 && size.Value.Height > 50)
-                    paintData.LayoutItem.SetContent<WinDraw.Size>(DxDData.DxDataFormProperty.ComboPopupFormSize, size.Value);
+                // Uložím si velikost Popup okna:
+                if (TryGetPaintData(control, out var paintData))
+                {
+                    var size = control.GetPopupEditForm()?.Size;                   // Funguje   (na rozdíl od : control.Properties.PopupFormSize)
+                    if (size.HasValue && size.Value.Width > 50 && size.Value.Height > 50)
+                        paintData.LayoutItem.SetContent<WinDraw.Size>(DxDData.DxDataFormProperty.ComboPopupFormSize, size.Value);
+                }
             }
         }
         /// <summary>
@@ -3006,14 +3194,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
         private void _FillNativeControl(ControlDataPair dataPair, IPaintItemData paintData, DxeEdit.ImageComboBoxEdit control, WinDraw.Rectangle controlBounds)
         {
-            if (dataPair != null)
-            {
-                dataPair.OriginalPaintData = paintData;
-                dataPair.OriginalValue = GetItemValue(paintData);
-            }
-
-            _FillNativeComboItems(paintData, control);
-
+            object value = GetItemValue(paintData);
+            _FillNativeComboItems(paintData, control, value);
+            StorePairOriginalData(dataPair, paintData, value);
             control.Size = controlBounds.Size;
             control.Properties.BorderStyle = GetItemBorderStyle(paintData);
         }
@@ -3022,9 +3205,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="paintData"></param>
         /// <param name="control"></param>
-        private void _FillNativeComboItems(IPaintItemData paintData, DxeEdit.ImageComboBoxEdit control)
+        /// <param name="value"></param>
+        private void _FillNativeComboItems(IPaintItemData paintData, DxeEdit.ImageComboBoxEdit control, object value)
         {
-            var value = GetItemValue(paintData);
             int selectedIndex = -1;
 
             try
@@ -3079,30 +3262,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (SuppressNativeEvents) return;
 
-            if (sender is DxeEdit.ImageComboBoxEdit control && TryGetAttachedPair(control, out var dataPair) && dataPair.OriginalPaintData != null)
+            // Toto je event volaný po každé změně, v procesu editace, ale v Combo reagujeme ihned:
+            if (sender is DxeEdit.ImageComboBoxEdit control)
             {
                 var dxItem = control.SelectedItem;
                 if (dxItem != null && dxItem is DevExpress.XtraEditors.Controls.ImageComboBoxItem dxImageItem)
                 {   // Je vybraná konkrétní položka?
-                    dataPair.CurrentValue = dxImageItem.Value;
-                    if (!Object.Equals(dataPair.CurrentValue, dataPair.OriginalValue))
-                    {
-                        IPaintItemData paintData = dataPair.OriginalPaintData;
-                        var actionInfo = new DataFormValueChangingInfo(paintData as DxDData.DataFormCell, DxDData.DxDataFormAction.ValueValidating, dataPair.OriginalValue, dataPair.CurrentValue);
-                        this.DataForm.OnInteractiveAction(actionInfo);
-                        if (actionInfo.Cancel)
-                        { }
-                        else
-                        {
-                            SetItemValue(dataPair.OriginalPaintData, dataPair.CurrentValue, true);
-                            dataPair.OriginalValue = dataPair.CurrentValue;
-                        }
+                    var value = dxImageItem.Value;
+                    bool isValidated = TryStoreValidatingValue(control, value, false, out var cancelInfo);
+                    if (!isValidated)
+                    {   // Že bych vrátil původní hodnotu?
+                        // control.EditValue = cancelInfo.OriginalValue;
                     }
-                }
-                else
-                {
-                    var editValue = control.EditValue;
-
                 }
             }
         }
@@ -3277,6 +3448,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _PrepareInteractive(DxeEdit.SimpleButton control)
         {
             control.Click += _ControlButtonClick;
+            control.MouseDoubleClick += _NativeControlMouseDoubleClick;
+            control.MouseClick += _NativeControlMouseClick;
         }
         /// <summary>
         /// Eventhandler po kliknutí na button
@@ -3292,6 +3465,29 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var actionInfo = new DataFormActionInfo(paintData as DxDData.DataFormCell, DxDData.DxDataFormAction.ButtonClick);
                 this.DataForm.OnInteractiveAction(actionInfo);
             }
+        }
+        /// <summary>
+        /// Eventhandler při myším kliku, řeší RightClick
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _NativeControlMouseClick(object sender, WinForm.MouseEventArgs e)
+        {
+            if (SuppressNativeEvents) return;
+            if (e.Button == WinForm.MouseButtons.Right)
+                this.RunDataFormAction(sender as WinForm.Control, DxDData.DxDataFormAction.RightClick);
+        }
+        /// <summary>
+        /// Eventhandler při myším DoubleClicku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _NativeControlMouseDoubleClick(object sender, WinForm.MouseEventArgs e)
+        {
+            if (SuppressNativeEvents) return;
+            this.RunDataFormAction(sender as WinForm.Control, DxDData.DxDataFormAction.DoubleClick);
         }
         /// <summary>
         /// Dispose objektu

@@ -564,10 +564,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="cell">Buňka, kde došlo k akci</param>
         /// <param name="action"></param>
-        /// <param name="oldValue"></param>
-        /// <param name="newValue"></param>
-        public DataFormValueChangingInfo(DataFormCell cell, DxDataFormAction action, object oldValue, object newValue)
-            : base(cell, action, oldValue, newValue)
+        /// <param name="originalValue"></param>
+        /// <param name="currentValue"></param>
+        public DataFormValueChangingInfo(DataFormCell cell, DxDataFormAction action, object originalValue, object currentValue)
+            : base(cell, action, originalValue, currentValue)
         {
             this.Cancel = false;
         }
@@ -586,13 +586,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="cell">Buňka, kde došlo k akci</param>
         /// <param name="action"></param>
-        /// <param name="oldValue"></param>
-        /// <param name="newValue"></param>
-        public DataFormValueChangedInfo(DataFormCell cell, DxDataFormAction action, object oldValue, object newValue)
+        /// <param name="originalValue"></param>
+        /// <param name="currentValue"></param>
+        public DataFormValueChangedInfo(DataFormCell cell, DxDataFormAction action, object originalValue, object currentValue)
             : base(cell, action)
         {
-            this.OldValue = oldValue;
-            this.NewValue = newValue;
+            this.OriginalValue = originalValue;
+            this.CurrentValue = currentValue;
         }
         /// <summary>
         /// Vizualizace
@@ -600,16 +600,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         public override string ToString()
         {
-            return $"{base.ToString()}; OldValue: '{OldValue}'; NewValue: '{NewValue}'";
+            return $"{base.ToString()}; OldValue: '{OriginalValue}'; NewValue: '{CurrentValue}'";
         }
         /// <summary>
         /// Hodnota v okamžiku vstupu kurzoru do prvku
         /// </summary>
-        public object OldValue { get; private set; }
+        public object OriginalValue { get; private set; }
         /// <summary>
         /// Hodnota v okamžiku ukončení editace
         /// </summary>
-        public object NewValue { get; private set; }
+        public object CurrentValue { get; private set; }
     }
     /// <summary>
     /// Data pro akce, které nesou název prvku (typicky SubButton)
@@ -670,15 +670,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Řádek, kde došlo k události
         /// </summary>
-        public DataFormRow Row { get { return Cell.Row; } }
+        public DataFormRow Row { get { return Cell?.Row; } }
         /// <summary>
         /// Definice layoutu
         /// </summary>
-        public DataFormLayoutItem LayoutItem { get { return Cell.LayoutItem; } }
+        public DataFormLayoutItem LayoutItem { get { return Cell?.LayoutItem; } }
         /// <summary>
         /// Sloupec, kde došlo k události
         /// </summary>
-        public string ColumnName { get { return Cell.ColumnName; } }
+        public string ColumnName { get { return Cell?.ColumnName; } }
         /// <summary>
         /// Druh události
         /// </summary>

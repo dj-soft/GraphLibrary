@@ -1586,6 +1586,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// </summary>
         RightClick,
         /// <summary>
+        /// Dvojklik myší
+        /// </summary>
+        DoubleClick,
+        /// <summary>
         /// Validuje se hodnota
         /// </summary>
         ValueValidating,
