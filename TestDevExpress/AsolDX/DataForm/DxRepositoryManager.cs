@@ -771,7 +771,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         #endregion
-        #region Předání událostí (Mouse, Focus) z Nativního controlu (z ControlDataPair) do datového objektu PaintData
+        #region Předání událostí (Mouse, Focus, RightClick, KeyDown) z Nativního controlu (z ControlDataPair) do datového objektu PaintData
         /// <summary>
         /// Obsluha události po vstupu myši do nativního controlu
         /// </summary>
@@ -808,6 +808,28 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this.__RepositoryManager.DataFormDraw();                 //  ... musíme tedy zajistit vykreslení panelu (sám si to neudělá), aby byl vidět obraz prvku namísto nativního Controlu!
         }
         /// <summary>
+        /// Obsluha události po kliknutí RightClick myši z nativního controlu
+        /// </summary>
+        /// <param name="dataPair"></param>
+        private void _RunNativeControlMouseRightClickUp(ControlDataPair dataPair)
+        {
+            if (dataPair.PaintData is null) return;
+            var actionInfo = new DataFormMouseActionInfo(dataPair.PaintData as DxDData.DataFormCell, DxDData.DxDataFormAction.RightClick, WinForm.Control.ModifierKeys, dataPair.MouseDownButtons ?? WinForm.MouseButtons.Right, dataPair.MouseDownLoaction ?? WinForm.Control.MousePosition);
+            this.DataForm.OnInteractiveAction(actionInfo);
+            OnNativeControlMouseRightClickUp(dataPair);
+        }
+        /// <summary>
+        /// Obsluha události při DoubleClicku myši na nativního controlu
+        /// </summary>
+        /// <param name="dataPair"></param>
+        private void _RunNativeControlMouseDoubleClick(ControlDataPair dataPair)
+        {
+            if (dataPair.PaintData is null) return;
+            var actionInfo = new DataFormActionInfo(dataPair.PaintData as DxDData.DataFormCell, DxDData.DxDataFormAction.DoubleClick);
+            this.DataForm.OnInteractiveAction(actionInfo);
+            OnNativeControlMouseDoubleClick(dataPair);
+        }
+        /// <summary>
         /// Obsluha události po vstupu focusu do nativního controlu
         /// </summary>
         /// <param name="dataPair"></param>
@@ -823,6 +845,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             OnNativeControlFocusEnter(dataPair);
 
             this.DataForm.OnInteractiveAction(new DataFormActionInfo(dataPair.PaintData as DxDData.DataFormCell, DxDData.DxDataFormAction.GotFocus));
+        }
+        /// <summary>
+        /// Nativní event controlu: někdo zmáčkl klávesu
+        /// </summary>
+        /// <param name="dataPair"></param>
+        /// <param name="keyArgs"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _RunNativeControlKeyDown(ControlDataPair dataPair, WinForm.KeyEventArgs keyArgs)
+        {
+            if (dataPair.PaintData is null) return;
+            if (DataForm.NeedTraceKeyDown(keyArgs))
+            {
+                var actionInfo = new DataFormKeyActionInfo(dataPair.PaintData as DxDData.DataFormCell, DxDData.DxDataFormAction.KeyDown, keyArgs);
+                this.DataForm.OnInteractiveAction(actionInfo);
+            }
+            OnNativeControlKeyDown(dataPair, keyArgs);
         }
         /// <summary>
         /// Obsluha události po odchodu focusu z nativního controlu
@@ -861,10 +899,26 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="dataPair"></param>
         protected virtual void OnNativeControlMouseLeave(ControlDataPair dataPair) { }
         /// <summary>
+        /// Je voláno po kliknutí RightClick myši z nativního controlu
+        /// </summary>
+        /// <param name="dataPair"></param>
+        protected virtual void OnNativeControlMouseRightClickUp(ControlDataPair dataPair) { }
+        /// <summary>
+        /// Je voláno při DoubleClicku myši na nativního controlu
+        /// </summary>
+        /// <param name="dataPair"></param>
+        protected virtual void OnNativeControlMouseDoubleClick(ControlDataPair dataPair) { }
+        /// <summary>
         /// Je voláno po vstupu focusu do nativního controlu
         /// </summary>
         /// <param name="dataPair"></param>
         protected virtual void OnNativeControlFocusEnter(ControlDataPair dataPair) { }
+        /// <summary>
+        /// Je voláno po stisku klávesy v nativním controlu
+        /// </summary>
+        /// <param name="dataPair"></param>
+        /// <param name="keyArgs"></param>
+        protected virtual void OnNativeControlKeyDown(ControlDataPair dataPair, WinForm.KeyEventArgs keyArgs) { }
         /// <summary>
         /// Je voláno po odchodu focusu z nativního controlu
         /// </summary>
@@ -984,6 +1038,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             public WinDraw.Rectangle? ControlBounds { get; set; }
             /// <summary>
+            /// Stisknuté buttony myši při události MouseDown
+            /// </summary>
+            public WinForm.MouseButtons? MouseDownButtons { get { return __MouseDownButtons; } }
+            /// <summary>
+            /// Pozice myši absolutní při události MouseDown
+            /// </summary>
+            public WinDraw.Point? MouseDownLoaction { get { return __MouseDownLoaction; } }
+            /// <summary>
             /// Zapojí dodaný datový prvek jako nynějšího vlastníka zdejšího <see cref="NativeControl"/>
             /// </summary>
             /// <param name="paintData">Data konkrétního prvku</param>
@@ -1063,8 +1125,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 {
                     control.MouseEnter += _NativeControlMouseEnter;
                     control.MouseMove += _NativeControlMouseMove;
+                    control.MouseDown += _NativeControlMouseDown;
+                    control.MouseUp += _NativeControlMouseUp;
+                    control.DoubleClick += _NativeControlDoubleClick;
                     control.MouseLeave += _NativeControlMouseLeave;
                     control.Enter += _NativeControlEnter;
+                    control.PreviewKeyDown += _NativeControlPreviewKeyDown;
+                    control.KeyDown += _NativeControlKeyDown;
                     control.Leave += _NativeControlLeave;
                 }
             }
@@ -1076,7 +1143,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var control = __NativeControl;
                 if (control != null)
                 {
+                    control.MouseEnter -= _NativeControlMouseEnter;
+                    control.MouseMove -= _NativeControlMouseMove;
+                    control.MouseDown -= _NativeControlMouseDown;
+                    control.MouseUp -= _NativeControlMouseUp;
+                    control.DoubleClick -= _NativeControlDoubleClick;
+                    control.MouseLeave -= _NativeControlMouseLeave;
                     control.Enter -= _NativeControlEnter;
+                    control.KeyDown -= _NativeControlKeyDown;
                     control.Leave -= _NativeControlLeave;
                 }
             }
@@ -1107,6 +1181,38 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
             }
             /// <summary>
+            /// Nativní event controlu: myš stiskla button
+            /// </summary>
+            /// <param name="sender"></param>
+            /// <param name="e"></param>
+            /// <exception cref="NotImplementedException"></exception>
+            private void _NativeControlMouseDown(object sender, WinForm.MouseEventArgs e)
+            {
+                __MouseDownButtons = e.Button;
+                __MouseDownLoaction = WinForm.Control.MousePosition;
+            }
+            /// <summary>
+            /// Nativní event controlu: myš uvolnila button
+            /// </summary>
+            /// <param name="sender"></param>
+            /// <param name="e"></param>
+            /// <exception cref="NotImplementedException"></exception>
+            private void _NativeControlMouseUp(object sender, WinForm.MouseEventArgs e)
+            {
+                if (__MouseDownButtons.HasValue && __MouseDownButtons.Value == WinForm.MouseButtons.Right)
+                    __Editor._RunNativeControlMouseRightClickUp(this);
+            }
+            /// <summary>
+            /// Nativní event controlu: myš dala DoubleClick
+            /// </summary>
+            /// <param name="sender"></param>
+            /// <param name="e"></param>
+            /// <exception cref="NotImplementedException"></exception>
+            private void _NativeControlDoubleClick(object sender, EventArgs e)
+            {
+                __Editor._RunNativeControlMouseDoubleClick(this);
+            }
+            /// <summary>
             /// Nativní event controlu: myš odešla z controlu
             /// </summary>
             /// <param name="sender"></param>
@@ -1133,6 +1239,26 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
             }
             /// <summary>
+            /// Nativní event controlu: vyhodnotit klávesu KeyDown jestli nás zajímá
+            /// </summary>
+            /// <param name="sender"></param>
+            /// <param name="e"></param>
+            private void _NativeControlPreviewKeyDown(object sender, WinForm.PreviewKeyDownEventArgs e)
+            {
+                if (e.KeyData == WinForm.Keys.Tab || e.KeyData == (WinForm.Keys.Shift | WinForm.Keys.Tab))
+                    e.IsInputKey = true;
+            }
+            /// <summary>
+            /// Nativní event controlu: někdo zmáčkl klávesu
+            /// </summary>
+            /// <param name="sender"></param>
+            /// <param name="e"></param>
+            /// <exception cref="NotImplementedException"></exception>
+            private void _NativeControlKeyDown(object sender, WinForm.KeyEventArgs e)
+            {
+                __Editor._RunNativeControlKeyDown(this, e);
+            }
+            /// <summary>
             /// Nativní event controlu: z controlu odešel focus
             /// </summary>
             /// <param name="sender"></param>
@@ -1145,6 +1271,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     __Editor._RunNativeControlFocusLeave(this);
                 }
             }
+            /// <summary>
+            /// Stisknuté buttony myši při události MouseDown
+            /// </summary>
+            private WinForm.MouseButtons? __MouseDownButtons;
+            /// <summary>
+            /// Pozice myši absolutní při události MouseDown
+            /// </summary>
+            private WinDraw.Point? __MouseDownLoaction;
             #endregion
         }
         #endregion
@@ -2111,8 +2245,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             control.CausesValidation = true;
             control.EditValueChanged += _NativeControlEditValueChanged;
             control.Validating += _NativeControlValidating;
-            control.MouseDoubleClick += _NativeControlMouseDoubleClick;
-            control.MouseClick += _NativeControlMouseClick;
         }
         /// <summary>
         /// Eventhandler po změně hodnoty v TextEdit controlu
@@ -2145,29 +2277,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     e.Cancel = true;
                 }
             }
-        }
-        /// <summary>
-        /// Eventhandler při myším kliku, řeší RightClick
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        /// <exception cref="NotImplementedException"></exception>
-        private void _NativeControlMouseClick(object sender, WinForm.MouseEventArgs e)
-        {
-            if (SuppressNativeEvents) return;
-            if (e.Button == WinForm.MouseButtons.Right)
-                this.RunDataFormAction(sender as WinForm.Control, DxDData.DxDataFormAction.RightClick);
-        }
-        /// <summary>
-        /// Eventhandler při myším DoubleClicku
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        /// <exception cref="NotImplementedException"></exception>
-        private void _NativeControlMouseDoubleClick(object sender, WinForm.MouseEventArgs e)
-        {
-            if (SuppressNativeEvents) return;
-            this.RunDataFormAction(sender as WinForm.Control, DxDData.DxDataFormAction.DoubleClick);
         }
         /// <summary>
         /// Dispose objektu
@@ -2300,8 +2409,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             control.EditValueChanged += _ControlEditValueChanged;
             control.ButtonClick += _NativeControlButtonClick;
             control.Validating += _NativeControlValidating;
-            control.MouseDoubleClick += _NativeControlMouseDoubleClick;
-            control.MouseClick += _NativeControlMouseClick;
         }
         /// <summary>
         /// Eventhandler po změně hodnoty v ButtonEdit controlu
@@ -2334,29 +2441,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     e.Cancel = true;
                 }
             }
-        }
-        /// <summary>
-        /// Eventhandler při myším kliku, řeší RightClick
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        /// <exception cref="NotImplementedException"></exception>
-        private void _NativeControlMouseClick(object sender, WinForm.MouseEventArgs e)
-        {
-            if (SuppressNativeEvents) return;
-            if (e.Button == WinForm.MouseButtons.Right)
-                this.RunDataFormAction(sender as WinForm.Control, DxDData.DxDataFormAction.RightClick);
-        }
-        /// <summary>
-        /// Eventhandler při myším DoubleClicku
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        /// <exception cref="NotImplementedException"></exception>
-        private void _NativeControlMouseDoubleClick(object sender, WinForm.MouseEventArgs e)
-        {
-            if (SuppressNativeEvents) return;
-            this.RunDataFormAction(sender as WinForm.Control, DxDData.DxDataFormAction.DoubleClick);
         }
         /// <summary>
         /// Eventhandler po kliknutí na button v ButtonEdit controlu
@@ -2800,8 +2884,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             control.CausesValidation = true;
             control.EditValueChanged += _NativeControlEditValueChanged;
             control.Validating += _NativeControlValidating;
-            control.MouseDoubleClick += _NativeControlMouseDoubleClick;
-            control.MouseClick += _NativeControlMouseClick;
         }
         /// <summary>
         /// Eventhandler po změně hodnoty v MemoEdit controlu
@@ -2834,29 +2916,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     e.Cancel = true;
                 }
             }
-        }
-        /// <summary>
-        /// Eventhandler při myším kliku, řeší RightClick
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        /// <exception cref="NotImplementedException"></exception>
-        private void _NativeControlMouseClick(object sender, WinForm.MouseEventArgs e)
-        {
-            if (SuppressNativeEvents) return;
-            if (e.Button == WinForm.MouseButtons.Right)
-                this.RunDataFormAction(sender as WinForm.Control, DxDData.DxDataFormAction.RightClick);
-        }
-        /// <summary>
-        /// Eventhandler při myším DoubleClicku
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        /// <exception cref="NotImplementedException"></exception>
-        private void _NativeControlMouseDoubleClick(object sender, WinForm.MouseEventArgs e)
-        {
-            if (SuppressNativeEvents) return;
-            this.RunDataFormAction(sender as WinForm.Control, DxDData.DxDataFormAction.DoubleClick);
         }
         /// <summary>
         /// Dispose objektu
@@ -3448,8 +3507,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _PrepareInteractive(DxeEdit.SimpleButton control)
         {
             control.Click += _ControlButtonClick;
-            control.MouseDoubleClick += _NativeControlMouseDoubleClick;
-            control.MouseClick += _NativeControlMouseClick;
         }
         /// <summary>
         /// Eventhandler po kliknutí na button
@@ -3465,29 +3522,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var actionInfo = new DataFormActionInfo(paintData as DxDData.DataFormCell, DxDData.DxDataFormAction.ButtonClick);
                 this.DataForm.OnInteractiveAction(actionInfo);
             }
-        }
-        /// <summary>
-        /// Eventhandler při myším kliku, řeší RightClick
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        /// <exception cref="NotImplementedException"></exception>
-        private void _NativeControlMouseClick(object sender, WinForm.MouseEventArgs e)
-        {
-            if (SuppressNativeEvents) return;
-            if (e.Button == WinForm.MouseButtons.Right)
-                this.RunDataFormAction(sender as WinForm.Control, DxDData.DxDataFormAction.RightClick);
-        }
-        /// <summary>
-        /// Eventhandler při myším DoubleClicku
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        /// <exception cref="NotImplementedException"></exception>
-        private void _NativeControlMouseDoubleClick(object sender, WinForm.MouseEventArgs e)
-        {
-            if (SuppressNativeEvents) return;
-            this.RunDataFormAction(sender as WinForm.Control, DxDData.DxDataFormAction.DoubleClick);
         }
         /// <summary>
         /// Dispose objektu

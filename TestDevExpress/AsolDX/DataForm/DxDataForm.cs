@@ -207,6 +207,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             string text = actionInfo.ToString();
             DxComponent.LogAddLine(LogActivityKind.DataFormEvents, text);
         }
+        /// <summary>
+        /// Dataform vrací true, pokud chce dostat akci <see cref="DxDataFormAction.KeyDown"/> o stisku dané klávesy.
+        /// Typicky chce dostávat jen klávesy Tab a ShiftTab, a Enter = pro pohyb focusu po formuláři.
+        /// </summary>
+        /// <param name="keyArgs"></param>
+        /// <returns></returns>
+        public bool NeedTraceKeyDown(WinForm.KeyEventArgs keyArgs)
+        {
+            var key = keyArgs.KeyData;
+            return (key == WinForm.Keys.Tab || key == (WinForm.Keys.Tab | WinForm.Keys.Shift) || key == WinForm.Keys.Enter);
+        }
         #endregion
         #region ContentPanel : zobrazuje vlastní obsah (grafická komponenta)
         /// <summary>
@@ -610,6 +621,76 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Hodnota v okamžiku ukončení editace
         /// </summary>
         public object CurrentValue { get; private set; }
+    }
+    /// <summary>
+    /// Data pro akce, které nesou informaci o stisknuté klávese v akci <see cref="DxDataFormAction.KeyDown"/>
+    /// </summary>
+    public class DataFormKeyActionInfo : DataFormActionInfo
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="cell">Buňka, kde došlo k akci</param>
+        /// <param name="action"></param>
+        /// <param name="keyArgs"></param>
+        public DataFormKeyActionInfo(DataFormCell cell, DxDataFormAction action, WinForm.KeyEventArgs keyArgs)
+            : base(cell, action)
+        {
+            this.KeyArgs = keyArgs;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"{base.ToString()}'; KeyData: '{this.KeyArgs.KeyData}'; Modifiers: '{this.KeyArgs.Modifiers}'";
+        }
+        /// <summary>
+        /// Stisknutá klávesa
+        /// </summary>
+        public WinForm.KeyEventArgs KeyArgs { get; private set; }
+    }
+    /// <summary>
+    /// Data pro akce, které nesou informaci o stavu myši a modifikačních kláves
+    /// </summary>
+    public class DataFormMouseActionInfo : DataFormActionInfo
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="cell">Buňka, kde došlo k akci</param>
+        /// <param name="action">Akce</param>
+        /// <param name="modifierKeys"></param>
+        /// <param name="mouseButtons"></param>
+        /// <param name="mouseAbsoluteLocation"></param>
+        public DataFormMouseActionInfo(DataFormCell cell, DxDataFormAction action, WinForm.Keys modifierKeys, WinForm.MouseButtons mouseButtons, WinDraw.Point mouseAbsoluteLocation)
+            : base(cell, action)
+        {
+            this.ModifierKeys = modifierKeys;
+            this.MouseButtons = mouseButtons;
+            this.MouseAbsoluteLocation = mouseAbsoluteLocation;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"{base.ToString()}'; ModifierKeys: '{this.ModifierKeys}'; MouseButtons: '{this.MouseButtons}'; MouseAbsoluteLocation: '{this.MouseAbsoluteLocation}'";
+        }
+        /// <summary>
+        /// Modifikační klávesy (Ctrl, Shift, Alt)
+        /// </summary>
+        public WinForm.Keys ModifierKeys { get; private set; }
+        /// <summary>
+        /// Absolutní pozice myši
+        /// </summary>
+        public WinDraw.Point MouseAbsoluteLocation { get; private set; }
+        /// <summary>
+        /// Aktuální tlačítka Buttonu
+        /// </summary>
+        public WinForm.MouseButtons MouseButtons { get; private set; }
     }
     /// <summary>
     /// Data pro akce, které nesou název prvku (typicky SubButton)
