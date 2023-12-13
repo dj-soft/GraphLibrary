@@ -17,48 +17,84 @@ using Noris.Clients.Win.Components.AsolDX.DataForm.Data;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
-    #region DxDataFormPanel : vnější panel DataForm - virtuální container
+    #region DxDataForm : koordinátor DataFormu - datová část, propojená s vizuálním DxDataFormPanel
     /// <summary>
-    /// <see cref="DxDataFormPanel"/> : vnější panel DataForm - virtuální container.
-    /// Obsahuje vnitřní ContentPanel typu <see cref="DxDataFormContentPanel"/>, který reálně zobrazuje obsah (ve spolupráci s this třídou řeší scrollování i Zoom).
+    /// <see cref="DxDataForm"/> : koordinátor DataFormu - datová část, propojená s vizuálním DxDataFormPanel.
+    /// Ttao třída řeší veškerá data, ale nejde o vizuální panel. Na ten je napojen.
     /// Obsahuje kolekci řádků <see cref="DataFormRows"/> a deklaraci layoutu <see cref="DataFormLayoutSet"/>.
     /// Obsahuje managera fyzických controlů (obdoba RepositoryEditorů) <see cref="DxRepositoryManager"/>
     /// </summary>
-    public class DxDataFormPanel : DxVirtualPanel
+    public class DxDataForm : IDisposable
     {
-        #region Konstruktor
+        #region Konstruktor a napojení na vizuální control
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DxDataFormPanel()
+        public DxDataForm(DxDataFormPanel dataFormPanel)
         {
+            __DataFormPanel = dataFormPanel;
             _InitRows();
             _InitLayout();
             _InitRepository();
-            _InitContent();
 
-            __Initialized = true;
+            __IsPrepared = true;
         }
         /// <summary>
         /// Dispose
         /// </summary>
         /// <param name="disposing"></param>
-        protected override void Dispose(bool disposing)
+        public void Dispose()
         {
             _DisposeContent();
-            base.Dispose(disposing);
+            __IsPrepared = false;
         }
         /// <summary>
         /// Obsahuje true po skončení inicializace
         /// </summary>
-        private bool __Initialized;
+        public bool IsPrepared { get { return __IsPrepared; } } private bool __IsPrepared;
+        /// <summary>
+        /// Rozpustí obsah
+        /// </summary>
+        private void _DisposeContent()
+        {
+            __DataFormPanel = null;
+        }
         /// <summary>
         /// Po změně velikosti nebo scrollbarů ve virtual panelu zajistíme přepočet interaktivních prvků
         /// </summary>
-        protected override void OnVisibleDesignBoundsChanged()
+        public void OnVisibleDesignBoundsChanged()
         {
             InvalidateInteractiveItems(false);
         }
+        #endregion
+        #region Napojení na vizuální panel
+        /// <summary>
+        /// Obsahuje true, pokud this datový základ má napojen vizuální panel <see cref="DataFormPanel"/>
+        /// </summary>
+        public bool HasDataFormPanel { get { return __DataFormPanel != null; } }
+        /// <summary>
+        /// Vizuální control <see cref="DxDataFormPanel"/> = virtuální hostitel obsahující Scrollbary a <see cref="DxDataFormContentPanel"/>
+        /// </summary>
+        public DxDataFormPanel DataFormPanel { get { return __DataFormPanel; } set { __DataFormPanel = value; } }
+        /// <summary>
+        /// ContentPanel (<see cref="DxDataFormContentPanel"/>), v něm se fyzicky zobrazují obrazy a controly DataFormu
+        /// </summary>
+        public DxDataFormContentPanel DataFormContent { get { return __DataFormPanel?.DataFormContent; } }
+        /// <summary>
+        /// Používat testovací vykreslování
+        /// </summary>
+        public bool TestPainting { get { return DataFormPanel?.TestPainting ?? false; } set { if (DataFormPanel != null) DataFormPanel.TestPainting = value; } }
+        /// <summary>
+        /// Zajistí znovuvykreslení panelu s daty
+        /// </summary>
+        public void DrawContent()
+        {
+            this.DataFormContent?.Draw();
+        }
+        /// <summary>
+        /// Vizuální control <see cref="DxDataFormPanel"/> = virtuální hostitel obsahující Scrollbary a <see cref="DxDataFormContentPanel"/>
+        /// </summary>
+        private DxDataFormPanel __DataFormPanel;
         #endregion
         #region Datové řádky
         /// <summary>
@@ -81,7 +117,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _RowsChanged(object sender, EventArgs e)
         {
             InvalidateInteractiveItems(true);
-            DesignSizeInvalidate(true);
+            InvalidateContentDesignSize(true, true);
         }
         /// <summary>
         /// Fyzická kolekce řádků
@@ -102,18 +138,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __DataFormLayout = new DxfData.DataFormLayoutSet(this);
             __DataFormLayout.CollectionChanged += _LayoutChanged;
             __Content = new DxfData.DataContent();
-
-            PrepareDefaultContent();
-
-            Padding = new WinForm.Padding(0);
-        }
-        /// <summary>
-        /// Změna Padding vede ke změně <see cref="ContentDesignSize"/>
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void OnPaddingChanged(EventArgs e)
-        {
-            DesignSizeInvalidate(true);
+            PrepareDefaultContentValues();
         }
         /// <summary>
         /// Definice vzhledu pro jednotlivý řádek
@@ -127,7 +152,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _LayoutChanged(object sender, EventArgs e)
         {
             InvalidateInteractiveItems(true);
-            DesignSizeInvalidate(true);
+            InvalidateContentDesignSize(true, true);
         }
         /// <summary>
         /// Obsah řádků: obsahuje sloupce i jejich datové a popisné hodnoty.
@@ -140,7 +165,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Naplní defaultní hodnoty určitých vlastností, které se použijí v případě, 
         /// kdy nebudou zadány hodnoty ani pro <see cref="DxfData.DataFormRow"/>, ani pro <see cref="DxLayoutItemInfo"/>.
         /// </summary>
-        protected virtual void PrepareDefaultContent()
+        protected virtual void PrepareDefaultContentValues()
         {
             Content[DxfData.DxDataFormProperty.BorderStyle] = DataForm.BorderStyle.HotFlat;
             Content[DxfData.DxDataFormProperty.CheckBoxBorderStyle] = DataForm.BorderStyle.NoBorder;
@@ -177,22 +202,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             DataFormContent.Draw();
         }
         /// <summary>
-        /// Proběhne po změně Zoomu za běhu aplikace. Může dojít k invalidaci cachovaných souřadnic prvků.
-        /// </summary>
-        protected override void OnInvalidatedZoom()
-        {
-            base.OnInvalidatedZoom();
-            InvalidateRepozitory();
-        }
-        /// <summary>
-        /// Po změně skinu
-        /// </summary>
-        protected override void OnStyleChanged()
-        {
-            base.OnStyleChanged();
-            InvalidateRepozitory();
-        }
-        /// <summary>
         /// Formát bitmap, který se ukládá do cache
         /// </summary>
         public WinDraw.Imaging.ImageFormat CacheImageFormat { get { return __CacheImageFormat; } set { __CacheImageFormat = value; InvalidateRepozitory(); } } private WinDraw.Imaging.ImageFormat __CacheImageFormat;
@@ -209,60 +218,29 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         /// <summary>
         /// Dataform vrací true, pokud chce dostat akci <see cref="DxDataFormAction.KeyDown"/> o stisku dané klávesy.
-        /// Typicky chce dostávat jen klávesy Tab a ShiftTab, a Enter = pro pohyb focusu po formuláři.
+        /// Typicky chce dostávat jen klávesy Tab a ShiftTab a Enter = pro pohyb focusu po formuláři.
+        /// <para/>
+        /// Pokud zdejší metoda vrátí true, pak teprve bude volána metoda <see cref="OnInteractiveAction(DataFormActionInfo)"/> s kompletními daty (včetně dat o buňce),
+        /// s akcí <see cref="DxDataFormAction.KeyDown"/>, /// kde bude reálně vyhodnocen požadavek na změnu focusu.<br/>
+        /// Tady jen říkáme: "Když je to klávesa TAB, mohlo by nás to zajímat".
         /// </summary>
-        /// <param name="keyArgs"></param>
+        /// <param name="key"></param>
         /// <returns></returns>
-        public bool NeedTraceKeyDown(WinForm.KeyEventArgs keyArgs)
+        public bool NeedTraceKeyDown(WinForm.Keys key)
         {
-            var key = keyArgs.KeyData;
             return (key == WinForm.Keys.Tab || key == (WinForm.Keys.Tab | WinForm.Keys.Shift) || key == WinForm.Keys.Enter);
         }
-        #endregion
-        #region ContentPanel : zobrazuje vlastní obsah (grafická komponenta)
-        /// <summary>
-        /// Používat testovací vykreslování
-        /// </summary>
-        public bool TestPainting { get { return __TestPainting; } set { __TestPainting = value; this.DrawContent(); } } private bool __TestPainting;
-        /// <summary>
-        /// Zajistí znovuvykreslení panelu s daty
-        /// </summary>
-        public void DrawContent()
-        {
-            this.DataFormContent?.Draw();
-        }
-        /// <summary>
-        /// Inicializace Content panelu
-        /// </summary>
-        private void _InitContent()
-        {
-            __DataFormContent = new DxDataFormContentPanel();
-            this.ContentPanel = __DataFormContent;
-        }
-        private void _DisposeContent()
-        {
-            this.ContentPanel = null;
-        }
-        /// <summary>
-        /// ContentPanel, potomek <see cref="DxDataFormContentPanel"/>
-        /// </summary>
-        public DxDataFormContentPanel DataFormContent { get { return __DataFormContent; } }
-        /// <summary>
-        /// ContentPanel, potomek <see cref="DxDataFormContentPanel"/>
-        /// </summary>
-        private DxDataFormContentPanel __DataFormContent;
         #endregion
         #region ContentDesignSize : velikost obsahu v designových pixelech
         /// <summary>
         /// Potřebná velikost obsahu v designových pixelech. Validovaná hodnota.
         /// </summary>
-        public override WinDraw.Size? ContentDesignSize 
+        public WinDraw.Size? ContentDesignSize
         {
             get
             {
-                if (__Initialized && !__ContentDesignSize.HasValue)
+                if (__IsPrepared && !__ContentDesignSize.HasValue)
                 {
-                    DesignSizeInvalidate(false);
                     __ContentDesignSize = _CalculateContentDesignSize();
                 }
                 return __ContentDesignSize;
@@ -270,25 +248,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             set { }
         }
         /// <summary>
-        /// Po změně hodnoty <see cref="DxVirtualPanel.ContentPanelDesignSize"/>
+        /// Zajistí invalidaci hodnoty <see cref="ContentDesignSize"/>, podle parametru <paramref name="forceSize"/>:
+        /// Pokud je true, pak se invaliduje vždy (používá se po změně řádků nebo layoutu); 
+        /// pokud je false pak se invaliduje jen tehdy, když uspořádání prvků je závislé na velikosti panelu (<see cref="DataFormLayoutSet.IsDesignSizeDependOnHostSize"/>.
         /// </summary>
-        protected override void OnContentPanelDesignSizeChanged()
+        /// <param name="forceSize">Invalidovat velikost: true = vždy / false = jen když vychází z rozměrů hostitele</param>
+        /// <param name="runDraw">Po invalidaci vyvolat Draw</param>
+        public void InvalidateContentDesignSize(bool forceSize, bool runDraw)
         {
-            base.OnContentPanelDesignSizeChanged();
-            if (__Initialized && this.DataFormLayout.IsDesignSizeDependOnHostSize)
-                DesignSizeInvalidate(false);
-        }
-        /// <summary>
-        /// Invaliduje celkovou velikost <see cref="ContentDesignSize"/> a navazující <see cref="DxVirtualPanel.ContentVirtualSize"/>.
-        /// Provádí se po změně řádků nebo definice designu.
-        /// Volitelně provede i <see cref="DxVirtualPanel.RefreshInnerLayout"/>
-        /// </summary>
-        /// <param name="refreshLayout">Vyvolat poté metodu <see cref="DxVirtualPanel.RefreshInnerLayout"/></param>
-        protected override void DesignSizeInvalidate(bool refreshLayout)
-        {
-            __ContentDesignSize = null;
-            base.DesignSizeInvalidate(refreshLayout);
-            if (refreshLayout) this.DataFormContent?.Draw();
+            bool invalidateDesignSize = forceSize;
+            if (!invalidateDesignSize && __IsPrepared && this.DataFormLayout.IsDesignSizeDependOnHostSize) invalidateDesignSize = true;
+            if (invalidateDesignSize)
+            {
+                __ContentDesignSize = null;
+                DataFormPanel.InvalidateVisualDesignSize(runDraw);
+            }
+
+            if (runDraw)
+                this.DataFormContent?.Draw();
         }
         /// <summary>
         /// Vypočte a vrátí údaj: Potřebná velikost obsahu v designových pixelech.
@@ -296,10 +273,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         private WinDraw.Size _CalculateContentDesignSize()
         {
-            var padding = this.Padding;
-            this.DataFormLayout.HostDesignSize = this.ContentPanelDesignSize;            // Do Layoutu vložím viditelnou velikost
-            this.DataFormRows.OneRowDesignSize = this.DataFormLayout.DesignSize;         // Z Layoutu načtu velikost jednoho řádku a vložím do RowSetu
-            var allRowsDesignSize = this.DataFormRows.ContentDesignSize;                 // Z RowSetu načtu velikost všech řádků
+            var padding = this.DataFormPanel.Padding;
+            this.DataFormLayout.HostDesignSize = this.DataFormPanel.ContentPanelDesignSize;        // Do Layoutu vložím viditelnou velikost
+            this.DataFormRows.OneRowDesignSize = this.DataFormLayout.DesignSize;                   // Z Layoutu načtu velikost jednoho řádku a vložím do RowSetu
+            var allRowsDesignSize = this.DataFormRows.ContentDesignSize;                           // Z RowSetu načtu velikost všech řádků
             return allRowsDesignSize.Add(padding);
         }
         /// <summary>
@@ -339,7 +316,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __InteractiveItems = items;
             __InteractiveItemsPreparedDesignPixels = designPixels;
 
-            this.__DataFormContent?.ItemsAllChanged();
+            this.DataFormContent?.ItemsAllChanged();
         }
         /// <summary>
         /// Určí rozsah designových pixelů, za jejichž odpovídající řádky budeme generovat interaktivní prvky.
@@ -354,6 +331,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             var contentSize = this.ContentDesignSize;                                    // Jak velký je celý obsah dat v DataFormu = výška kompletního balíku všech řádků
             if (!contentSize.HasValue) return null;
+            if (!HasDataFormPanel) return null;
 
             /*   Slovní vysvětlení:
 
@@ -383,7 +361,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (contentHeight < _MinimalHeightToCreateDynamicItems) return null;
 
             // Pokud aktuálně viditelná oblast pokrývá relativně větší část z výšky všech řádků, tak vrátím celý rozsah a vytvoří se prvky pro všechny řádky:
-            var visibleBounds = this.VisibleDesignBounds;                                // Kolik prostoru mám reálně na zobrazení
+            var visibleBounds = this.DataFormPanel.VisibleDesignBounds;                  // Kolik prostoru mám reálně na zobrazení
             double ratio = (double)visibleBounds.Height / (double)contentHeight;         // Jak velkou poměrnou část z celých dat aktuálně zobrazíme v controlu
             if (ratio >= _MinimalRatioToCreateDynamicItems) return null;
 
@@ -441,7 +419,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __InteractiveItemsPreparedDesignPixels = null;
             DxComponent.LogAddLine(LogActivityKind.DataFormRepository, $"DxDataFormPanel.InteractiveItemsInvalidate(): Invalidated items.");
 
-            this.__DataFormContent?.ItemsAllChanged();
+            this.DataFormContent?.ItemsAllChanged();
         }
         /// <summary>
         /// Provede invalidaci cache bitmap v připravených interaktivních prvcích <see cref="InteractiveItems"/>.
@@ -461,17 +439,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private bool _IsValidPreparedInteractiveRows()
         {
             var preparedDesignPixels = __InteractiveItemsPreparedDesignPixels;
-            if (__InteractiveItems is null || preparedDesignPixels is null)
+            if (!HasDataFormPanel || __InteractiveItems is null || preparedDesignPixels is null)
             {
                 DxComponent.LogAddLine(LogActivityKind.DataFormRepository, $"DxDataFormPanel.IsValidInteractiveRows(): data is null => Invalid");
                 return false;                                                  // Nejsou-li data, pak nejsme validní.
             }
 
             // Aktuálně zobrazená oblast = je daná zobrazovačem:
-            var visibleBounds = this.VisibleDesignBounds;
+            var visibleBounds = this.DataFormPanel.VisibleDesignBounds;
             if (visibleBounds.Height <= 0) 
             {
-                // DxComponent.LogAddLine($"DxDataFormPanel.IsValidInteractiveRows(): Empty VisibleDesignBounds.Height => Valid");
                 return true;                                                   // Nic není viditelno: pak jsme OK.
             }
 
@@ -518,53 +495,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
     }
     #endregion
-    #region DxDataFormContentPanel : fyzický grafický a interaktivní panel pro zobrazení contentu DataFormu
-    /// <summary>
-    /// <see cref="DxDataFormContentPanel"/> : fyzický grafický a interaktivní panel pro zobrazení contentu DataFormu.
-    /// Řeší grafické vykreslení prvků a řeší interaktivitu myši a klávesnice.
-    /// Pro fyzické vykreslení obsahu prvku volá vlastní metodu konkrétního prvku <see cref="IInteractiveItem.Paint(PaintDataEventArgs)"/>, to neřeší sám panel.
-    /// <para/>
-    /// Tato třída pokud možno přenáší svoje požadavky do svého parenta = <see cref="DataFormPanel"/> a sama by měla být co nejjednodušší.
-    /// Slouží primárně jen jako zobrazovač a interaktivní koordinátor.
-    /// </summary>
-    public class DxDataFormContentPanel : DxInteractivePanel
-    {
-        #region Konstruktor
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        public DxDataFormContentPanel() { }
-        /// <summary>
-        /// Metoda zajistí, že velikost <see cref="DxInteractivePanel.ContentDesignSize"/> bude platná (bude odpovídat souhrnu velikosti prvků).
-        /// Metoda je volána před každým Draw tohoto objektu.
-        /// </summary>
-        protected override void ContentDesignSizeCheckValidity(bool force = false)
-        {
-            // Zde jsme ve třídě DxDataFormContentPanel, kde zodpovědnost za velikost ContentDesignSize nese náš Parent = třída DxDataFormPanel.
-            // Zde jsme voláni v čase Draw() tohoto ContentPanelu, a to je už mírně pozdě na přepočty ContentDesignSize, protože Parent už má svůj layout vytvořený.
-            // Validaci i uchování hodnoty ContentDesignSize provádí parent (DxDataFormPanel), validaci volá před svým vykreslením.
-            // Proto my vůbec nevoláme:
-            //    base.ContentDesignSizeCheckValidity(force);
-            // - protože by šlo o nadbytečnou akci.
-            // Base třída by si napočítala ContentDesignSize ze svých InteractiveItems, které rozhodně netvoří celý obsazený prostor.
-            // DataForm plní fyzické InteractiveItems pouze pro potřebné viditelné řádky, ale ContentDesignSize odpovídá všem řádkům.
-        }
-        #endregion
-        #region Napojení zdejšího interaktivního panelu na zdroje v parentu DxDataFormPanel
-        /// <summary>
-        /// Hostitelský panel <see cref="DxDataFormPanel"/>; ten řeší naprostou většinu našich požadavků.
-        /// My jsme jen jeho zobrazovací plocha.
-        /// </summary>
-        protected DxDataFormPanel DataFormPanel { get { return this.VirtualPanel as DxDataFormPanel; } }
-        /// <summary>
-        /// Interaktivní data = jednotlivé prvky.
-        /// Třída <see cref="DxDataFormContentPanel"/> zde vrací pole z Parenta <see cref="DxDataFormPanel.InteractiveItems"/>.
-        /// </summary>
-        protected override IList<IInteractiveItem> ItemsAll { get { return DataFormPanel?.InteractiveItems as IList<IInteractiveItem>; } }
-        #endregion
-    }
-    #endregion
-    #region Podpůrné třídy
+    #region Podpůrné datové třídy
+    #region Argumenty DataFormActionInfo pro událost DxDataForm.OnInteractiveAction()
     /// <summary>
     /// Data pro akce typu Změna hodnoty s možností Cancel
     /// </summary>
@@ -765,5 +697,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public DxDataFormAction Action { get; private set; }
     }
+    #endregion
     #endregion
 }

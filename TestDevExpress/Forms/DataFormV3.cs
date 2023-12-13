@@ -251,17 +251,17 @@ namespace TestDevExpress.Forms
             _RemoveDataForms();
 
             __DataFormId++;
-            var dataForm = new DxDForm.DxDataFormPanel() { Dock = DockStyle.Fill };
-            dataForm.TestPainting = this.TestPainting;
-            dataForm.GotFocus += DxDataForm_GotFocus;
+            var dataFormPanel = new DxDForm.DxDataFormPanel() { Dock = DockStyle.Fill };
+            dataFormPanel.TestPainting = this.TestPainting;
+            dataFormPanel.GotFocus += DxDataForm_GotFocus;
 
-            dataForm.DataFormLayout.Store(_CreateSampleLayout(sampleId));
-            dataForm.DataFormRows.Store(_CreateSampleRows(sampleId));
+            dataFormPanel.DataForm.DataFormLayout.Store(_CreateSampleLayout(sampleId));
+            dataFormPanel.DataForm.DataFormRows.Store(_CreateSampleRows(sampleId));
 
-            DxMainPanel.Controls.Add(dataForm);
+            DxMainPanel.Controls.Add(dataFormPanel);
 
             _DataFormSampleId = sampleId;
-            _DxDataFormV3 = dataForm;
+            _DxDataFormV3 = dataFormPanel;
         
             _RefreshTitle();
             RefreshStatusCurrent(true);
@@ -274,7 +274,7 @@ namespace TestDevExpress.Forms
             var sampleId = _DataFormSampleId;
             if (_DxDataFormV3 is null || !sampleId.HasValue) return;
 
-            var rows = _DxDataFormV3.DataFormRows;
+            var rows = _DxDataFormV3.DataForm.DataFormRows;
 
         }
         /// <summary>

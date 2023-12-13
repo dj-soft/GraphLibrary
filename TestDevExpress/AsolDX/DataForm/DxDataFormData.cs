@@ -24,7 +24,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormRows(DxDataFormPanel dataForm)
+        public DataFormRows(DxDataForm dataForm)
         {
             __DataForm = dataForm;
             _InitRows();
@@ -38,9 +38,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             return $"Count: {this.Count}; ItemType: '{(typeof(DataFormRow).FullName)}'";
         }
         /// <summary>
-        /// Hlavní instance Dataformu
+        /// Datový základ DataFormu
         /// </summary>
-        internal DxDataFormPanel DataForm { get { return __DataForm; } } private DxDataFormPanel __DataForm;
+        internal DxDataForm DataForm { get { return __DataForm; } } private DxDataForm __DataForm;
+        /// <summary>
+        /// Vizuální control <see cref="DxDataFormPanel"/> = virtuální hostitel obsahující Scrollbary a <see cref="DxDataFormContentPanel"/>
+        /// </summary>
+        public DxDataFormPanel DataFormPanel { get { return __DataForm?.DataFormPanel; } }
         /// <summary>
         /// Panel obsahující data Dataformu
         /// </summary>
@@ -355,9 +359,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// </summary>
         protected DataFormRows Parent { get { return __Parent; } }
         /// <summary>
-        /// Panel dataformu
+        /// Data dataformu
         /// </summary>
-        internal DxDataFormPanel DataForm { get { return __Parent?.DataForm; } }
+        internal DxDataForm DataForm { get { return __Parent?.DataForm; } }
+        /// <summary>
+        /// Vizuální panel dataformu
+        /// </summary>
+        internal DxDataFormPanel DataFormPanel { get { return __Parent?.DataFormPanel; } }
         #endregion
 
         /// <summary>
@@ -420,7 +428,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// <exception cref="NotImplementedException"></exception>
         internal void PrepareValidInteractiveItems(List<IInteractiveItem> items)
         {
-            var dataFormContent = DataForm.DataFormContent;
+            var dataFormContent = DataFormPanel.DataFormContent;
             var rowDesignPoint = this.RowDesignBounds.Location;
             var dataLayout = DataForm.DataFormLayout;
             items.AddRange(dataLayout.Items.Select(l => new DataFormCell(this, l)));
@@ -438,7 +446,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormLayoutSet(DxDataFormPanel dataForm)
+        public DataFormLayoutSet(DxDataForm dataForm)
         {
             __DataForm = dataForm;
             _InitItems();
@@ -452,9 +460,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             return $"Count: {this.Count}; ItemType: '{(typeof(DataFormLayoutItem).FullName)}'";
         }
         /// <summary>
-        /// Hlavní instance Dataformu
+        /// Datový základ DataFormu
         /// </summary>
-        public DxDataFormPanel DataForm { get { return __DataForm; } } private DxDataFormPanel __DataForm;
+        internal DxDataForm DataForm { get { return __DataForm; } } private DxDataForm __DataForm;
+        /// <summary>
+        /// Vizuální control <see cref="DxDataFormPanel"/> = virtuální hostitel obsahující Scrollbary a <see cref="DxDataFormContentPanel"/>
+        /// </summary>
+        public DxDataFormPanel DataFormPanel { get { return __DataForm?.DataFormPanel; } }
         /// <summary>
         /// Panel obsahující data Dataformu
         /// </summary>
@@ -742,7 +754,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// <summary>
         /// Panel dataformu
         /// </summary>
-        internal DxDataFormPanel DataForm { get { return __Parent?.DataForm; } }
+        internal DxDataFormPanel DataForm { get { return __Parent?.DataFormPanel; } }
         /// <summary>
         /// Jméno tohoto sloupce. K němu se dohledají další data a případné modifikace stylu v konkrétním řádku.
         /// </summary>
@@ -928,9 +940,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// </summary>
         public void InvalidateCache() { this._InvalidateCache(); }
         /// <summary>
-        /// DataForm
+        /// Datový základ DataFormu
         /// </summary>
-        private DxDataFormPanel _DataForm { get { return __Row.DataForm; } }
+        private DxDataForm _DataForm { get { return __Row.DataForm; } }
+        /// <summary>
+        /// Vizuální control <see cref="DxDataFormPanel"/> = virtuální hostitel obsahující Scrollbary a <see cref="DxDataFormContentPanel"/>
+        /// </summary>
+        private DxDataFormPanel _DataFormPanel { get { return __Row.DataFormPanel; } }
         /// <summary>
         /// DataFormContent = fyzický vykreslovací Control, na kterém jsou zobrazovány zdejší data
         /// </summary>
@@ -938,7 +954,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// <summary>
         /// Repozitory, obsahující fyzické controly pro zobrazení a editaci dat
         /// </summary>
-        private DxRepositoryManager _RepositoryManager { get { return __Row.DataForm?.RepositoryManager; } }
+        private DxRepositoryManager _RepositoryManager { get { return _DataForm.RepositoryManager; } }
         /// <summary>
         /// Prvek layoutu <see cref="__LayoutItem"/> přetypovaný na <see cref="IDataFormLayoutDesignItem"/> pro přístup na interní data
         /// </summary>
@@ -967,7 +983,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             __ControlBounds = pdea.InteractivePanel.GetControlBounds(this.__DesignBounds);       // Umístění prvku v koordinátech nativního controlu (z Designové souřadnice, přes Zoom a posuny ScrollBarů do prostoru v Panelu)
             bool isDisplayed = pdea.ClientArea.IntersectsWith(__ControlBounds);                  // true pokud se prvek nachází ve viditelné oblasti vizuálního panelu
 
-            if (_DataForm.TestPainting) return _PaintTest(pdea, isDisplayed);
+            if (_DataFormPanel.TestPainting) return _PaintTest(pdea, isDisplayed);
             
             _RepositoryManager.PaintItem(this, pdea, __ControlBounds, isDisplayed);
             return isDisplayed;

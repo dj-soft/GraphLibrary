@@ -31,7 +31,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Konstruktor
         /// </summary>
         /// <param name="dataForm"></param>
-        public DxRepositoryManager(DxDataFormPanel dataForm)
+        public DxRepositoryManager(DxDataForm dataForm)
         {
             __DataForm = dataForm;
             _InitRepository();
@@ -43,9 +43,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _DisposeCache();
         }
         /// <summary>
-        /// Hlavní instance Dataformu
+        /// Datový základ DataFormu
         /// </summary>
-        public DxDataFormPanel DataForm { get { return __DataForm; } } private DxDataFormPanel __DataForm;
+        internal DxDataForm DataForm { get { return __DataForm; } } private DxDataForm __DataForm;
+        /// <summary>
+        /// Vizuální control <see cref="DxDataFormPanel"/> = virtuální hostitel obsahující Scrollbary a <see cref="DxDataFormContentPanel"/>
+        /// </summary>
+        public DxDataFormPanel DataFormPanel { get { return __DataForm?.DataFormPanel; } }
         /// <summary>
         /// Panel obsahující data Dataformu
         /// </summary>
@@ -57,7 +61,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
         #region Public hodnoty a služby
         /// <summary>
-        /// Formát bitmap, který se ukládá do cache. Čte se z DataFormu: <see cref="DxDataFormPanel.CacheImageFormat"/>
+        /// Formát bitmap, který se ukládá do cache. Čte se z DataFormu: <see cref="DxDataForm.CacheImageFormat"/>
         /// </summary>
         public WinDraw.Imaging.ImageFormat CacheImageFormat { get { return DataForm.CacheImageFormat; } }
         /// <summary>
@@ -419,11 +423,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         protected DxRepositoryManager RepositoryManager { get { return __RepositoryManager; } } private DxRepositoryManager __RepositoryManager;
         /// <summary>
-        /// Hlavní instance Dataformu
+        /// Datový základ DataFormu
         /// </summary>
-        protected DxDataFormPanel DataForm { get { return __RepositoryManager?.DataForm; } }
+        internal DxDataForm DataForm { get { return __RepositoryManager.DataForm; } }
         /// <summary>
-        /// Formát bitmap, který se ukládá do cache. Čte se z DataFormu: <see cref="DxDataFormPanel.CacheImageFormat"/>
+        /// Vizuální control <see cref="DxDataFormPanel"/> = virtuální hostitel obsahující Scrollbary a <see cref="DxDataFormContentPanel"/>
+        /// </summary>
+        public DxDataFormPanel DataFormPanel { get { return __RepositoryManager?.DataFormPanel; } }
+        /// <summary>
+        /// Panel obsahující data Dataformu
+        /// </summary>
+        public DxDataFormContentPanel DataFormContent { get { return __RepositoryManager.DataFormContent; } }
+        /// <summary>
+        /// Formát bitmap, který se ukládá do cache. Čte se z DataFormu: <see cref="DxDataForm.CacheImageFormat"/>
         /// (přes <see cref="DxRepositoryManager.CacheImageFormat"/>)
         /// </summary>
         protected virtual WinDraw.Imaging.ImageFormat CacheImageFormat { get { return RepositoryManager.CacheImageFormat; } }
@@ -467,7 +479,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             throw new ArgumentException($"DxRepositoryEditor.CreateEditor(): Editor for type '{editorType}' does not exists.");
         }
         #endregion
-        #region Podpora pro práci s nativním controlem
+        #region Podpora pro práci s nativním controlem, zpracování nízkoúrovňových eventů Controlu (Focus, Mouse, KeyDown)
         /// <summary>
         /// Je voláno po změně interaktivního stavu dané buňky. Možná bude třeba pro buňku vytvořit a umístit nativní Control, anebo bude možno jej odebrat...
         /// </summary>
@@ -688,7 +700,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 return (testPair.NativeControl != null && Object.ReferenceEquals(testPair.NativeControl, nativeControl));
             }
         }
-
         /// <summary>
         /// Najde a vrátí disponibilní pár, jehož <see cref="ControlDataPair.NativeControl"/> je možno použít pro zobrazení nových dat.
         /// </summary>
@@ -770,7 +781,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 return (testPair.NativeControl != null && Object.ReferenceEquals(testPair.NativeControl, nativeControl));
             }
         }
-        #endregion
         #region Předání událostí (Mouse, Focus, RightClick, KeyDown) z Nativního controlu (z ControlDataPair) do datového objektu PaintData
         /// <summary>
         /// Obsluha události po vstupu myši do nativního controlu
@@ -855,8 +865,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _RunNativeControlKeyDown(ControlDataPair dataPair, WinForm.KeyEventArgs keyArgs)
         {
             if (dataPair.PaintData is null) return;
-            if (DataForm.NeedTraceKeyDown(keyArgs))
-            {
+            if (!this.NeedProcessKeyDown(dataPair, keyArgs) && DataForm.NeedTraceKeyDown(keyArgs.KeyData))
+            {   // Konkrétní buňka i DataForm chce dostávat informaci o dané stisknuté klávese:
                 var actionInfo = new DataFormKeyActionInfo(dataPair.PaintData as DxDData.DataFormCell, DxDData.DxDataFormAction.KeyDown, keyArgs);
                 this.DataForm.OnInteractiveAction(actionInfo);
             }
@@ -924,6 +934,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="dataPair"></param>
         protected virtual void OnNativeControlFocusLeave(ControlDataPair dataPair) { }
+        /// <summary>
+        /// Potomek v této metodě dostává informaci o stisknuté klávese, a může ovlivnit, zda tuto klávesu dostane DataForm k vyhodnocení, zda jde o klávesu posouvající Focus.
+        /// Pokud potomek zde vrátí true, pak on sám bude zpracovávat tuto klávesu a nechce, aby ji dostal někdo jiný.
+        /// Typicky EditBox chce zpracovat klávesu Enter (= nový řádek v textu) i kurzorové klávesy nahoru/dolů. 
+        /// Stejně tak CheckBox chce zpracovat klávesu Enter (= změna stavu Checked).
+        /// <para/>
+        /// Bázová třída vrací false = všechny běžné klávesy mohou být vyhodnoceny v DataFormu a mohou přemístit Focus.
+        /// </summary>
+        /// <param name="dataPair"></param>
+        /// <param name="keyArgs"></param>
+        /// <returns></returns>
+        protected virtual bool NeedProcessKeyDown(ControlDataPair dataPair, WinForm.KeyEventArgs keyArgs) { return false; }
+        #endregion
         #endregion
         #region ControlDataPair : dvě instance a třída, nativní WinForm controly reprezentující fyzický vstup
         /// <summary>
@@ -1245,7 +1268,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <param name="e"></param>
             private void _NativeControlPreviewKeyDown(object sender, WinForm.PreviewKeyDownEventArgs e)
             {
-                if (e.KeyData == WinForm.Keys.Tab || e.KeyData == (WinForm.Keys.Shift | WinForm.Keys.Tab))
+                if (__Editor.DataForm.NeedTraceKeyDown(e.KeyData))
                     e.IsInputKey = true;
             }
             /// <summary>
@@ -1282,7 +1305,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             #endregion
         }
         #endregion
-        #region Podpora pro práci s vykreslením prvku a práci s Cache uložených obrazů jednotlivých Controlů
+        #region Vykreslování obrazu prvku, tvorba obrazu z Controlu, ukládání a čtení obrazu z ImageCache v rámci DxRepositoryManager, tvorba klíče pro obraz v Cache
         /// <summary>
         /// Potomek zde vykreslí prvek svého typu podle dodaných dat do dané grafiky a prostoru
         /// </summary>
@@ -1510,8 +1533,125 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             DirectPaint
         }
+        #region Podpora pro tvorbu klíče: klíč se skládá z konkrétních směrodatných dat prvku a jednoznačně identifikuje bitmapu v cache
+        /// <summary>
+        /// Pro daný prvek (jeho typ a obsah, a velikost) vygeneruje jednoznačný String klíč, popisující Bitmapu uloženou v Cache.
+        /// Pokud prvek vrátí klíč = null, pak se jeho bitmapa neukládá do systémové Cache, ale do lokální proměnné v konkrétní Cell do ImageData.
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        /// <returns></returns>
+        protected abstract string CreateKey(IPaintItemData paintData, WinDraw.Rectangle controlBounds);
+        /// <summary>
+        /// Metoda vrátí klíč z dodaných dat
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="controlSize"></param>
+        /// <param name="others"></param>
+        /// <returns></returns>
+        protected virtual string CreateKey(string text, WinDraw.Size controlSize, params string[] others)
+        {
+            string key = $"{CreateEditorTypeCode(this.EditorType)};{text};{controlSize.Width}×{controlSize.Height}";
+            foreach (var other in others)
+                key += $";{other}";
+            return key;
+        }
+        /// <summary>
+        /// Převede danou hodnotu do stringu do klíče
+        /// </summary>
+        /// <param name="fontStyle"></param>
+        /// <returns></returns>
+        protected static string ToKey(WinDraw.FontStyle fontStyle)
+        {
+            return "S" +
+                   (fontStyle.HasFlag(WinDraw.FontStyle.Bold) ? "B" : "") +
+                   (fontStyle.HasFlag(WinDraw.FontStyle.Italic) ? "I" : "") +
+                   (fontStyle.HasFlag(WinDraw.FontStyle.Underline) ? "U" : "") +
+                   (fontStyle.HasFlag(WinDraw.FontStyle.Strikeout) ? "S" : "");
+        }
+        /// <summary>
+        /// Převede danou hodnotu do stringu do klíče
+        /// </summary>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
+        protected static string ToKey(float ratio)
+        {
+            return ratio.ToString().Replace(",", ".");
+        }
+        /// <summary>
+        /// Převede danou hodnotu do stringu do klíče
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        protected static string ToKey(WinDraw.Color color)
+        {
+            return color.ToArgb().ToString("X8");
+        }
+
         #endregion
-        #region Podpora čtení a zápis hodnot z/do prvku IPaintItemData, konverze typů DevExpress
+        #region Podpora pro používání Bitmapy: Control => Bitmap => byte[], a následně byte[] => Bitmap => Graphics
+        /// <summary>
+        /// Požádá dodaný Control, aby se vykreslil do nové pracovní bitmapy daného nebo odpovídajícího rozměru, a z té bitmapy nám vrátil byte[]
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="exactBitmapSize"></param>
+        /// <param name="bitmapBackColor">Barva pozadí bitmapy</param>
+        /// <returns></returns>
+        protected virtual byte[] CreateBitmapData(WinForm.Control control, WinDraw.Size? exactBitmapSize = null, WinDraw.Color? bitmapBackColor = null)
+        {
+            int w = exactBitmapSize?.Width ?? control.Width;
+            int h = exactBitmapSize?.Height ?? control.Height;
+            using (var bitmap = new WinDraw.Bitmap(w, h))
+            {
+                if (bitmapBackColor.HasValue)
+                    bitmap.MakeTransparent(bitmapBackColor.Value);
+                else
+                    bitmap.MakeTransparent();
+                control.DrawToBitmap(bitmap, new WinDraw.Rectangle(0, 0, w, h));
+                return CreateBitmapData(bitmap);
+            }
+        }
+        /// <summary>
+        /// Z dodané bitmapy vrátí byte[]
+        /// </summary>
+        /// <param name="bitmap"></param>
+        /// <returns></returns>
+        protected virtual byte[] CreateBitmapData(WinDraw.Bitmap bitmap)
+        {
+            using (var stream = new SysIO.MemoryStream())
+            {
+                bitmap.Save(stream, this.CacheImageFormat);
+                return stream.GetBuffer();
+            }
+        }
+        /// <summary>
+        /// Vykreslí obrázek uložený v dodaném prvku <paramref name="paintData"/> do dané grafiky v <paramref name="pdea"/> na určenou souřadnici <paramref name="controlBounds"/>
+        /// </summary>
+        /// <param name="paintData">Data konkrétního prvku</param>
+        /// <param name="pdea">Grafika pro kreslení</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        protected virtual void PaintFormData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        {
+            PaintFormData(paintData?.ImageData, pdea, controlBounds);
+        }
+        /// <summary>
+        /// Vykreslí obrázek uložený v dodaném poli <paramref name="data"/> do dané grafiky v <paramref name="pdea"/> na určenou souřadnici <paramref name="controlBounds"/>
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="pdea">Grafika pro kreslení</param>
+        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
+        protected virtual void PaintFormData(byte[] data, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
+        {
+            if (data != null && data.Length > 0)
+            {
+                using (var stream = new SysIO.MemoryStream(data))
+                using (var bitmap = WinDraw.Bitmap.FromStream(stream))
+                    pdea.Graphics.DrawImageUnscaled(bitmap, controlBounds);
+            }
+        }
+        #endregion
+        #endregion
+        #region Čtení a zápis hodnot z/do prvku IPaintItemData, konverze typů DevExpress
         /// <summary>
         /// Z prvku přečte a vrátí jeho hodnotu
         /// </summary>
@@ -1757,123 +1897,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
             }
             return defaultValue;
-        }
-        #endregion
-        #region Podpora pro tvorbu klíče: klíč se skládá z konkrétních směrodatných dat prvku a jednoznačně identifikuje bitmapu v cache
-        /// <summary>
-        /// Pro daný prvek (jeho typ a obsah, a velikost) vygeneruje jednoznačný String klíč, popisující Bitmapu uloženou v Cache.
-        /// Pokud prvek vrátí klíč = null, pak se jeho bitmapa neukládá do systémové Cache, ale do lokální proměnné v konkrétní Cell do ImageData.
-        /// </summary>
-        /// <param name="paintData">Data konkrétního prvku</param>
-        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        /// <returns></returns>
-        protected abstract string CreateKey(IPaintItemData paintData, WinDraw.Rectangle controlBounds);
-        /// <summary>
-        /// Metoda vrátí klíč z dodaných dat
-        /// </summary>
-        /// <param name="text"></param>
-        /// <param name="controlSize"></param>
-        /// <param name="others"></param>
-        /// <returns></returns>
-        protected virtual string CreateKey(string text, WinDraw.Size controlSize, params string[] others)
-        {
-            string key = $"{CreateEditorTypeCode(this.EditorType)};{text};{controlSize.Width}×{controlSize.Height}";
-            foreach (var other in others)
-                key += $";{other}";
-            return key;
-        }
-        /// <summary>
-        /// Převede danou hodnotu do stringu do klíče
-        /// </summary>
-        /// <param name="fontStyle"></param>
-        /// <returns></returns>
-        protected static string ToKey(WinDraw.FontStyle fontStyle)
-        {
-            return "S" +
-                   (fontStyle.HasFlag(WinDraw.FontStyle.Bold) ? "B" : "") +
-                   (fontStyle.HasFlag(WinDraw.FontStyle.Italic) ? "I" : "") +
-                   (fontStyle.HasFlag(WinDraw.FontStyle.Underline) ? "U" : "") +
-                   (fontStyle.HasFlag(WinDraw.FontStyle.Strikeout) ? "S" : "");
-        }
-        /// <summary>
-        /// Převede danou hodnotu do stringu do klíče
-        /// </summary>
-        /// <param name="ratio"></param>
-        /// <returns></returns>
-        protected static string ToKey(float ratio)
-        {
-            return ratio.ToString().Replace(",", ".");
-        }
-        /// <summary>
-        /// Převede danou hodnotu do stringu do klíče
-        /// </summary>
-        /// <param name="color"></param>
-        /// <returns></returns>
-        protected static string ToKey(WinDraw.Color color)
-        {
-            return color.ToArgb().ToString("X8");
-        }
-
-        #endregion
-        #region Podpora pro používání Bitmapy: Control => Bitmap => byte[], a následně byte[] => Bitmap => Graphics
-        /// <summary>
-        /// Požádá dodaný Control, aby se vykreslil do nové pracovní bitmapy daného nebo odpovídajícího rozměru, a z té bitmapy nám vrátil byte[]
-        /// </summary>
-        /// <param name="control"></param>
-        /// <param name="exactBitmapSize"></param>
-        /// <param name="bitmapBackColor">Barva pozadí bitmapy</param>
-        /// <returns></returns>
-        protected virtual byte[] CreateBitmapData(WinForm.Control control, WinDraw.Size? exactBitmapSize = null, WinDraw.Color? bitmapBackColor = null)
-        {
-            int w = exactBitmapSize?.Width ?? control.Width;
-            int h = exactBitmapSize?.Height ?? control.Height;
-            using (var bitmap = new WinDraw.Bitmap(w, h))
-            {
-                if (bitmapBackColor.HasValue)
-                    bitmap.MakeTransparent(bitmapBackColor.Value);
-                else
-                    bitmap.MakeTransparent();
-                control.DrawToBitmap(bitmap, new WinDraw.Rectangle(0, 0, w, h));
-                return CreateBitmapData(bitmap);
-            }
-        }
-        /// <summary>
-        /// Z dodané bitmapy vrátí byte[]
-        /// </summary>
-        /// <param name="bitmap"></param>
-        /// <returns></returns>
-        protected virtual byte[] CreateBitmapData(WinDraw.Bitmap bitmap)
-        {
-            using (var stream = new SysIO.MemoryStream())
-            {
-                bitmap.Save(stream, this.CacheImageFormat);
-                return stream.GetBuffer();
-            }
-        }
-        /// <summary>
-        /// Vykreslí obrázek uložený v dodaném prvku <paramref name="paintData"/> do dané grafiky v <paramref name="pdea"/> na určenou souřadnici <paramref name="controlBounds"/>
-        /// </summary>
-        /// <param name="paintData">Data konkrétního prvku</param>
-        /// <param name="pdea">Grafika pro kreslení</param>
-        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        protected virtual void PaintFormData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
-        {
-            PaintFormData(paintData?.ImageData, pdea, controlBounds);
-        }
-        /// <summary>
-        /// Vykreslí obrázek uložený v dodaném poli <paramref name="data"/> do dané grafiky v <paramref name="pdea"/> na určenou souřadnici <paramref name="controlBounds"/>
-        /// </summary>
-        /// <param name="data"></param>
-        /// <param name="pdea">Grafika pro kreslení</param>
-        /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        protected virtual void PaintFormData(byte[] data, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
-        {
-            if (data != null && data.Length > 0)
-            {
-                using (var stream = new SysIO.MemoryStream(data))
-                using (var bitmap = WinDraw.Bitmap.FromStream(stream))
-                    pdea.Graphics.DrawImageUnscaled(bitmap, controlBounds);
-            }
         }
         #endregion
     }
