@@ -24,13 +24,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// Obsahuje kolekci řádků <see cref="DataFormRows"/> a deklaraci layoutu <see cref="DataFormLayoutSet"/>.
     /// Obsahuje managera fyzických controlů (obdoba RepositoryEditorů) <see cref="DxRepositoryManager"/>
     /// </summary>
-    public class DxDataForm : IDisposable
+    internal class DxDataForm : IDisposable
     {
         #region Konstruktor a napojení na vizuální control
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DxDataForm(DxDataFormPanel dataFormPanel)
+        internal DxDataForm(DxDataFormPanel dataFormPanel)
         {
             __DataFormPanel = dataFormPanel;
             _InitRows();
@@ -51,7 +51,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Obsahuje true po skončení inicializace
         /// </summary>
-        public bool IsPrepared { get { return __IsPrepared; } } private bool __IsPrepared;
+        internal bool IsPrepared { get { return __IsPrepared; } } private bool __IsPrepared;
         /// <summary>
         /// Rozpustí obsah
         /// </summary>
@@ -62,7 +62,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Po změně velikosti nebo scrollbarů ve virtual panelu zajistíme přepočet interaktivních prvků
         /// </summary>
-        public void OnVisibleDesignBoundsChanged()
+        internal void OnVisibleDesignBoundsChanged()
         {
             InvalidateInteractiveItems(false);
         }
@@ -71,23 +71,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Obsahuje true, pokud this datový základ má napojen vizuální panel <see cref="DataFormPanel"/>
         /// </summary>
-        public bool HasDataFormPanel { get { return __DataFormPanel != null; } }
+        internal bool HasDataFormPanel { get { return __DataFormPanel != null; } }
         /// <summary>
         /// Vizuální control <see cref="DxDataFormPanel"/> = virtuální hostitel obsahující Scrollbary a <see cref="DxDataFormContentPanel"/>
         /// </summary>
-        public DxDataFormPanel DataFormPanel { get { return __DataFormPanel; } set { __DataFormPanel = value; } }
+        internal DxDataFormPanel DataFormPanel { get { return __DataFormPanel; } set { __DataFormPanel = value; } }
         /// <summary>
         /// ContentPanel (<see cref="DxDataFormContentPanel"/>), v něm se fyzicky zobrazují obrazy a controly DataFormu
         /// </summary>
-        public DxDataFormContentPanel DataFormContent { get { return __DataFormPanel?.DataFormContent; } }
+        internal DxDataFormContentPanel DataFormContent { get { return __DataFormPanel?.DataFormContent; } }
         /// <summary>
         /// Používat testovací vykreslování
         /// </summary>
-        public bool TestPainting { get { return DataFormPanel?.TestPainting ?? false; } set { if (DataFormPanel != null) DataFormPanel.TestPainting = value; } }
+        internal bool TestPainting { get { return DataFormPanel?.TestPainting ?? false; } set { if (DataFormPanel != null) DataFormPanel.TestPainting = value; } }
         /// <summary>
         /// Zajistí znovuvykreslení panelu s daty
         /// </summary>
-        public void DrawContent()
+        internal void DrawContent()
         {
             this.DataFormContent?.Draw();
         }
@@ -100,7 +100,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Pole řádků zobrazených v formuláři
         /// </summary>
-        public DxfData.DataFormRows DataFormRows { get { return __DataFormRows; } }
+        internal DxfData.DataFormRows DataFormRows { get { return __DataFormRows; } }
         /// <summary>
         /// Inicializace dat řádků
         /// </summary>
@@ -129,7 +129,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Definice vzhledu pro jednotlivý řádek: popisuje panely, záložky, prvky ve vnořené hierarchické podobě.
         /// Z této definice se následně generují jednotlivé interaktivní prvky pro jednotlivý řádek.
         /// </summary>
-        public DxfData.DataFormLayoutSet DataFormLayout { get { return __DataFormLayout; } }
+        internal DxfData.DataFormLayoutSet DataFormLayout { get { return __DataFormLayout; } }
         /// <summary>
         /// Inicializace dat layoutu
         /// </summary>
@@ -158,7 +158,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Obsah řádků: obsahuje sloupce i jejich datové a popisné hodnoty.
         /// Klíčem je název sloupce.
         /// </summary>
-        public DxfData.DataContent Content { get { return __Content; } } private DxfData.DataContent __Content;
+        internal DxfData.DataContent Content { get { return __Content; } } private DxfData.DataContent __Content;
         #endregion
         #region Defaultní hodnoty
         /// <summary>
@@ -178,7 +178,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Repozitory, obsahující fyzické controly pro zobrazení a editaci dat
         /// </summary>
-        public DxRepositoryManager RepositoryManager { get { return __RepositoryManager; } }
+        internal DxRepositoryManager RepositoryManager { get { return __RepositoryManager; } }
         /// <summary>
         /// Inicializace repozitory
         /// </summary>
@@ -195,7 +195,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Invaliduje repozitory a uložené bitmapy po změně skinu a zoomu. 
         /// Vyvolá překreslení grafického panelu <see cref="DataFormContent"/>.
         /// </summary>
-        public void InvalidateRepozitory()
+        internal void InvalidateRepozitory()
         {
             __RepositoryManager?.InvalidateManager();
             InvalidateInteractiveImageCache();
@@ -204,14 +204,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Formát bitmap, který se ukládá do cache
         /// </summary>
-        public WinDraw.Imaging.ImageFormat CacheImageFormat { get { return __CacheImageFormat; } set { __CacheImageFormat = value; InvalidateRepozitory(); } } private WinDraw.Imaging.ImageFormat __CacheImageFormat;
+        internal WinDraw.Imaging.ImageFormat CacheImageFormat { get { return __CacheImageFormat; } set { __CacheImageFormat = value; InvalidateRepozitory(); } } private WinDraw.Imaging.ImageFormat __CacheImageFormat;
         #endregion
         #region Akce uživatele na DataFormu
         /// <summary>
         /// Uživatel provedl nějakou akci na dataformu (kliknutí...)
         /// </summary>
         /// <param name="actionInfo"></param>
-        public void OnInteractiveAction(DataFormActionInfo actionInfo)
+        internal void OnInteractiveAction(DataFormActionInfo actionInfo)
         {
             string text = actionInfo.ToString();
             DxComponent.LogAddLine(LogActivityKind.DataFormEvents, text);
@@ -226,7 +226,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="key"></param>
         /// <returns></returns>
-        public bool NeedTraceKeyDown(WinForm.Keys key)
+        internal bool NeedTraceKeyDown(WinForm.Keys key)
         {
             return (key == WinForm.Keys.Tab || key == (WinForm.Keys.Tab | WinForm.Keys.Shift) || key == WinForm.Keys.Enter);
         }
@@ -235,7 +235,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Potřebná velikost obsahu v designových pixelech. Validovaná hodnota.
         /// </summary>
-        public WinDraw.Size? ContentDesignSize
+        internal WinDraw.Size? ContentDesignSize
         {
             get
             {
@@ -254,7 +254,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="forceSize">Invalidovat velikost: true = vždy / false = jen když vychází z rozměrů hostitele</param>
         /// <param name="runDraw">Po invalidaci vyvolat Draw</param>
-        public void InvalidateContentDesignSize(bool forceSize, bool runDraw)
+        internal void InvalidateContentDesignSize(bool forceSize, bool runDraw)
         {
             bool invalidateDesignSize = forceSize;
             if (!invalidateDesignSize && __IsPrepared && this.DataFormLayout.IsDesignSizeDependOnHostSize) invalidateDesignSize = true;
@@ -288,7 +288,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Interaktivní data = jednotlivé prvky, platné pro aktuální layout a řádky a pozici Scrollbaru. Validní hodnota.
         /// </summary>
-        public IList<IInteractiveItem> InteractiveItems { get { return _GetValidInteractiveItems(); } }
+        internal IList<IInteractiveItem> InteractiveItems { get { return _GetValidInteractiveItems(); } }
         /// <summary>
         /// Vrátí platé interaktivní prvky
         /// </summary>
@@ -500,7 +500,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// <summary>
     /// Data pro akce typu Změna hodnoty s možností Cancel
     /// </summary>
-    public class DataFormValueChangingInfo : DataFormValueChangedInfo
+    internal class DataFormValueChangingInfo : DataFormValueChangedInfo
     {
         /// <summary>
         /// Konstruktor
@@ -509,7 +509,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="action"></param>
         /// <param name="originalValue"></param>
         /// <param name="currentValue"></param>
-        public DataFormValueChangingInfo(DataFormCell cell, DxDataFormAction action, object originalValue, object currentValue)
+        internal DataFormValueChangingInfo(DataFormCell cell, DxDataFormAction action, object originalValue, object currentValue)
             : base(cell, action, originalValue, currentValue)
         {
             this.Cancel = false;
@@ -517,12 +517,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// DataForm požaduje storno editace
         /// </summary>
-        public bool Cancel { get; set; }
+        internal bool Cancel { get; set; }
     }
     /// <summary>
     /// Data pro akce typu Změna hodnoty bez možnost Cancel
     /// </summary>
-    public class DataFormValueChangedInfo : DataFormActionInfo
+    internal class DataFormValueChangedInfo : DataFormActionInfo
     {
         /// <summary>
         /// Konstruktor
@@ -531,7 +531,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="action"></param>
         /// <param name="originalValue"></param>
         /// <param name="currentValue"></param>
-        public DataFormValueChangedInfo(DataFormCell cell, DxDataFormAction action, object originalValue, object currentValue)
+        internal DataFormValueChangedInfo(DataFormCell cell, DxDataFormAction action, object originalValue, object currentValue)
             : base(cell, action)
         {
             this.OriginalValue = originalValue;
@@ -548,16 +548,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Hodnota v okamžiku vstupu kurzoru do prvku
         /// </summary>
-        public object OriginalValue { get; private set; }
+        internal object OriginalValue { get; private set; }
         /// <summary>
         /// Hodnota v okamžiku ukončení editace
         /// </summary>
-        public object CurrentValue { get; private set; }
+        internal object CurrentValue { get; private set; }
     }
     /// <summary>
     /// Data pro akce, které nesou informaci o stisknuté klávese v akci <see cref="DxDataFormAction.KeyDown"/>
     /// </summary>
-    public class DataFormKeyActionInfo : DataFormActionInfo
+    internal class DataFormKeyActionInfo : DataFormActionInfo
     {
         /// <summary>
         /// Konstruktor
@@ -565,7 +565,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="cell">Buňka, kde došlo k akci</param>
         /// <param name="action"></param>
         /// <param name="keyArgs"></param>
-        public DataFormKeyActionInfo(DataFormCell cell, DxDataFormAction action, WinForm.KeyEventArgs keyArgs)
+        internal DataFormKeyActionInfo(DataFormCell cell, DxDataFormAction action, WinForm.KeyEventArgs keyArgs)
             : base(cell, action)
         {
             this.KeyArgs = keyArgs;
@@ -581,12 +581,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Stisknutá klávesa
         /// </summary>
-        public WinForm.KeyEventArgs KeyArgs { get; private set; }
+        internal WinForm.KeyEventArgs KeyArgs { get; private set; }
     }
     /// <summary>
     /// Data pro akce, které nesou informaci o stavu myši a modifikačních kláves
     /// </summary>
-    public class DataFormMouseActionInfo : DataFormActionInfo
+    internal class DataFormMouseActionInfo : DataFormActionInfo
     {
         /// <summary>
         /// Konstruktor
@@ -596,7 +596,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="modifierKeys"></param>
         /// <param name="mouseButtons"></param>
         /// <param name="mouseAbsoluteLocation"></param>
-        public DataFormMouseActionInfo(DataFormCell cell, DxDataFormAction action, WinForm.Keys modifierKeys, WinForm.MouseButtons mouseButtons, WinDraw.Point mouseAbsoluteLocation)
+        internal DataFormMouseActionInfo(DataFormCell cell, DxDataFormAction action, WinForm.Keys modifierKeys, WinForm.MouseButtons mouseButtons, WinDraw.Point mouseAbsoluteLocation)
             : base(cell, action)
         {
             this.ModifierKeys = modifierKeys;
@@ -614,20 +614,20 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Modifikační klávesy (Ctrl, Shift, Alt)
         /// </summary>
-        public WinForm.Keys ModifierKeys { get; private set; }
+        internal WinForm.Keys ModifierKeys { get; private set; }
         /// <summary>
         /// Absolutní pozice myši
         /// </summary>
-        public WinDraw.Point MouseAbsoluteLocation { get; private set; }
+        internal WinDraw.Point MouseAbsoluteLocation { get; private set; }
         /// <summary>
         /// Aktuální tlačítka Buttonu
         /// </summary>
-        public WinForm.MouseButtons MouseButtons { get; private set; }
+        internal WinForm.MouseButtons MouseButtons { get; private set; }
     }
     /// <summary>
     /// Data pro akce, které nesou název prvku (typicky SubButton)
     /// </summary>
-    public class DataFormItemNameInfo : DataFormActionInfo
+    internal class DataFormItemNameInfo : DataFormActionInfo
     {
         /// <summary>
         /// Konstruktor
@@ -635,7 +635,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="cell">Buňka, kde došlo k akci</param>
         /// <param name="action"></param>
         /// <param name="itemName"></param>
-        public DataFormItemNameInfo(DataFormCell cell, DxDataFormAction action, string itemName)
+        internal DataFormItemNameInfo(DataFormCell cell, DxDataFormAction action, string itemName)
             : base(cell, action)
         {
             this.ItemName = itemName;
@@ -651,19 +651,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Prvek, jeho název
         /// </summary>
-        public string ItemName { get; private set; }
+        internal string ItemName { get; private set; }
     }
     /// <summary>
     /// Data pro akce, které nenesou žádná další data
     /// </summary>
-    public class DataFormActionInfo
+    internal class DataFormActionInfo
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="cell">Buňka, kde došlo k akci</param>
         /// <param name="action"></param>
-        public DataFormActionInfo(DataFormCell cell, DxDataFormAction action)
+        internal DataFormActionInfo(DataFormCell cell, DxDataFormAction action)
         {
             this.Cell = cell;
             this.Action = action;
@@ -679,23 +679,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Buňka, kde došlo k akci
         /// </summary>
-        public DataFormCell Cell { get; private set; }
+        internal DataFormCell Cell { get; private set; }
         /// <summary>
         /// Řádek, kde došlo k události
         /// </summary>
-        public DataFormRow Row { get { return Cell?.Row; } }
+        internal DataFormRow Row { get { return Cell?.Row; } }
         /// <summary>
         /// Definice layoutu
         /// </summary>
-        public DataFormLayoutItem LayoutItem { get { return Cell?.LayoutItem; } }
+        internal DataFormLayoutItem LayoutItem { get { return Cell?.LayoutItem; } }
         /// <summary>
         /// Sloupec, kde došlo k události
         /// </summary>
-        public string ColumnName { get { return Cell?.ColumnName; } }
+        internal string ColumnName { get { return Cell?.ColumnName; } }
         /// <summary>
         /// Druh události
         /// </summary>
-        public DxDataFormAction Action { get; private set; }
+        internal DxDataFormAction Action { get; private set; }
     }
     #endregion
     #endregion

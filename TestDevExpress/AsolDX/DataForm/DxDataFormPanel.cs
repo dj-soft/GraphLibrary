@@ -24,13 +24,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// Obsahuje kolekci řádků <see cref="DataFormRows"/> a deklaraci layoutu <see cref="DataFormLayoutSet"/>.
     /// Obsahuje managera fyzických controlů (obdoba RepositoryEditorů) <see cref="DxRepositoryManager"/>
     /// </summary>
-    public class DxDataFormPanel : DxVirtualPanel
+    internal class DxDataFormPanel : DxVirtualPanel
     {
         #region Konstruktor
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DxDataFormPanel()
+        internal DxDataFormPanel()
         {
             _InitLayout();
             _InitContent();
@@ -61,7 +61,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Datová základna DataFormu
         /// </summary>
-        public DxDataForm DataForm 
+        internal DxDataForm DataForm 
         { 
             get 
             {
@@ -94,7 +94,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Interaktivní data = jednotlivé prvky, platné pro aktuální layout a řádky a pozici Scrollbaru. Validní hodnota.
         /// </summary>
-        public IList<IInteractiveItem> InteractiveItems { get { return (_HasDataForm ? _DataForm.InteractiveItems : null); } }
+        internal IList<IInteractiveItem> InteractiveItems { get { return (_HasDataForm ? _DataForm.InteractiveItems : null); } }
         /// <summary>
         /// Proběhne po změně Zoomu za běhu aplikace. Může dojít k invalidaci cachovaných souřadnic prvků.
         /// </summary>
@@ -115,7 +115,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Invaliduje základní vizuální informace o DesignSize
         /// </summary>
         /// <param name="refreshLayout"></param>
-        public void InvalidateVisualDesignSize(bool refreshLayout)
+        internal void InvalidateVisualDesignSize(bool refreshLayout)
         {
             base.DesignSizeInvalidate(refreshLayout);
         }
@@ -124,11 +124,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Používat testovací vykreslování
         /// </summary>
-        public bool TestPainting { get { return __TestPainting; } set { __TestPainting = value; this.DrawContent(); } } private bool __TestPainting;
+        internal bool TestPainting { get { return __TestPainting; } set { __TestPainting = value; this.DrawContent(); } } private bool __TestPainting;
         /// <summary>
         /// Zajistí znovuvykreslení panelu s daty
         /// </summary>
-        public void DrawContent()
+        internal void DrawContent()
         {
             this.DataFormContent?.Draw();
         }
@@ -151,7 +151,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// ContentPanel (<see cref="DxDataFormContentPanel"/>), v něm se fyzicky zobrazují obrazy a controly DataFormu
         /// </summary>
-        public DxDataFormContentPanel DataFormContent { get { return __DataFormContent; } }
+        internal DxDataFormContentPanel DataFormContent { get { return __DataFormContent; } }
         /// <summary>
         /// ContentPanel (<see cref="DxDataFormContentPanel"/>), v něm se fyzicky zobrazují obrazy a controly DataFormu
         /// </summary>
@@ -209,13 +209,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// Tato třída pokud možno přenáší svoje požadavky do svého parenta = <see cref="DataFormPanel"/> a sama by měla být co nejjednodušší.
     /// Slouží primárně jen jako zobrazovač a interaktivní koordinátor.
     /// </summary>
-    public class DxDataFormContentPanel : DxInteractivePanel
+    internal class DxDataFormContentPanel : DxInteractivePanel
     {
         #region Konstruktor
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DxDataFormContentPanel() { }
+        internal DxDataFormContentPanel() { }
         /// <summary>
         /// Metoda zajistí, že velikost <see cref="DxInteractivePanel.ContentDesignSize"/> bude platná (bude odpovídat souhrnu velikosti prvků).
         /// Metoda je volána před každým Draw tohoto objektu.

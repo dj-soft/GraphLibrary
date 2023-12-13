@@ -24,14 +24,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// Po odchodu myši nebo focusu z editačního prvku je tento prvek vykreslen do bitmapy a obsah bitmapy je uložen do interaktivního prvku <see cref="Data.DataFormCell"/>,
     /// odkud je pak průběžně vykreslován do grafického panelu <see cref="DxDataFormContentPanel"/> (řídí <see cref="Data.DataFormCell"/>).
     /// </summary>
-    public class DxRepositoryManager : IDisposable
+    internal class DxRepositoryManager : IDisposable
     {
         #region Konstruktor a proměnné
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="dataForm"></param>
-        public DxRepositoryManager(DxDataForm dataForm)
+        internal DxRepositoryManager(DxDataForm dataForm)
         {
             __DataForm = dataForm;
             _InitRepository();
@@ -49,28 +49,28 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Vizuální control <see cref="DxDataFormPanel"/> = virtuální hostitel obsahující Scrollbary a <see cref="DxDataFormContentPanel"/>
         /// </summary>
-        public DxDataFormPanel DataFormPanel { get { return __DataForm?.DataFormPanel; } }
+        internal DxDataFormPanel DataFormPanel { get { return __DataForm?.DataFormPanel; } }
         /// <summary>
         /// Panel obsahující data Dataformu
         /// </summary>
-        public DxDataFormContentPanel DataFormContent { get { return __DataForm?.DataFormContent; } }
+        internal DxDataFormContentPanel DataFormContent { get { return __DataForm?.DataFormContent; } }
         /// <summary>
         /// Zajistí vykreslení obsahu Dataformu
         /// </summary>
-        public void DataFormDraw() { DataFormContent?.Draw(); }
+        internal void DataFormDraw() { DataFormContent?.Draw(); }
         #endregion
         #region Public hodnoty a služby
         /// <summary>
         /// Formát bitmap, který se ukládá do cache. Čte se z DataFormu: <see cref="DxDataForm.CacheImageFormat"/>
         /// </summary>
-        public WinDraw.Imaging.ImageFormat CacheImageFormat { get { return DataForm.CacheImageFormat; } }
+        internal WinDraw.Imaging.ImageFormat CacheImageFormat { get { return DataForm.CacheImageFormat; } }
         /// <summary>
         /// Invaliduje data v repozitory.
         /// Volá se po změně skinu a zoomu, protože poté je třeba nově vygenerovat.
         /// Po invalidaci bude navazující kreslení trvat o kousek déle, protože všechny vykreslovací prvky se budou znovu OnDemand generovat, a bude se postupně plnit cache.
         /// Ale o žádná dat se nepřijde, tady nejsou data jen nářadí...
         /// </summary>
-        public void InvalidateManager()
+        internal void InvalidateManager()
         {
             _InvalidateRepozitory();
             _InvalidateCache();
@@ -85,7 +85,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
         /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
         /// <returns></returns>
-        public void PaintItem(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
+        internal void PaintItem(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
         {
             if (paintData is null) return;
             if (_TryGetEditor(paintData.EditorType, out var editor))
@@ -97,7 +97,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="paintData">Aktivní prvek</param>
         /// <param name="container">Fyzický container, na němž má být přítomný fyzický Control</param>
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        public void ChangeItemInteractiveState(IPaintItemData paintData, WinForm.Control container, WinDraw.Rectangle controlBounds)
+        internal void ChangeItemInteractiveState(IPaintItemData paintData, WinForm.Control container, WinDraw.Rectangle controlBounds)
         {
             if (paintData is null) return;
             if (_TryGetEditor(paintData.EditorType, out var editor))
@@ -159,7 +159,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="key"></param>
         /// <param name="imageData"></param>
         /// <returns></returns>
-        public bool TryGetCacheImageData(string key, out byte[] imageData)
+        internal bool TryGetCacheImageData(string key, out byte[] imageData)
         {
             return TryGetCacheImageData(key, out imageData, out ulong _);
         }
@@ -170,7 +170,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="imageData"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        public bool TryGetCacheImageData(string key, out byte[] imageData, out ulong id)
+        internal bool TryGetCacheImageData(string key, out byte[] imageData, out ulong id)
         {
             if (key != null && __CacheDict.TryGetValue(key, out imageData, out id)) return true;
 
@@ -184,7 +184,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="id"></param>
         /// <param name="imageData"></param>
         /// <returns></returns>
-        public bool TryGetCacheImageData(ulong id, out byte[] imageData)
+        internal bool TryGetCacheImageData(ulong id, out byte[] imageData)
         {
             if (id > 0UL && __CacheDict.TryGetValue(id, out imageData)) return true;
 
@@ -197,7 +197,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="key"></param>
         /// <param name="imageData"></param>
-        public ulong AddImageDataToCache(string key, byte[] imageData)
+        internal ulong AddImageDataToCache(string key, byte[] imageData)
         {
             if (key is null || imageData is null) return 0UL;
             _CleanUpCache();
@@ -333,7 +333,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// <summary>
     /// <see cref="IPaintItemData"/> : přepis pro prvek, který může být vykreslen v metodě <see cref="DxRepositoryManager.PaintItem(IPaintItemData, PaintDataEventArgs, WinDraw.Rectangle, bool)"/>
     /// </summary>
-    public interface IPaintItemData
+    internal interface IPaintItemData
     {
         /// <summary>
         /// Druh vstupního prvku
@@ -406,7 +406,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Konstruktor
         /// </summary>
         /// <param name="repositoryManager"></param>
-        public DxRepositoryEditor(DxRepositoryManager repositoryManager)
+        internal DxRepositoryEditor(DxRepositoryManager repositoryManager)
         {
             __RepositoryManager = repositoryManager;
         }
@@ -429,11 +429,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Vizuální control <see cref="DxDataFormPanel"/> = virtuální hostitel obsahující Scrollbary a <see cref="DxDataFormContentPanel"/>
         /// </summary>
-        public DxDataFormPanel DataFormPanel { get { return __RepositoryManager?.DataFormPanel; } }
+        internal DxDataFormPanel DataFormPanel { get { return __RepositoryManager?.DataFormPanel; } }
         /// <summary>
         /// Panel obsahující data Dataformu
         /// </summary>
-        public DxDataFormContentPanel DataFormContent { get { return __RepositoryManager.DataFormContent; } }
+        internal DxDataFormContentPanel DataFormContent { get { return __RepositoryManager.DataFormContent; } }
         /// <summary>
         /// Formát bitmap, který se ukládá do cache. Čte se z DataFormu: <see cref="DxDataForm.CacheImageFormat"/>
         /// (přes <see cref="DxRepositoryManager.CacheImageFormat"/>)
@@ -442,7 +442,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Typ editoru
         /// </summary>
-        public abstract DxRepositoryEditorType EditorType { get; }
+        internal abstract DxRepositoryEditorType EditorType { get; }
         /// <summary>
         /// Režim práce s cache
         /// </summary>
@@ -486,7 +486,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="paintData">Data konkrétního prvku</param>
         /// <param name="container">Fyzický container, na němž má být přítomný fyzický Control</param>
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
-        public virtual void ChangeItemInteractiveState(IPaintItemData paintData, WinForm.Control container, WinDraw.Rectangle controlBounds)
+        internal virtual void ChangeItemInteractiveState(IPaintItemData paintData, WinForm.Control container, WinDraw.Rectangle controlBounds)
         {
             // <=====   TEST / DEBUG / SMAZAT :
             var state = paintData.InteractiveState;
@@ -985,7 +985,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             /// <param name="editor"></param>
             /// <param name="name"></param>
-            public ControlDataPair(DxRepositoryEditor editor, string name)
+            internal ControlDataPair(DxRepositoryEditor editor, string name)
             {
                 __Editor = editor;
                 __Name = name;
@@ -1021,7 +1021,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <summary>
             /// Nativní Control, víceméně zde bydlí permanentně týž objekt
             /// </summary>
-            public WinForm.Control NativeControl
+            internal WinForm.Control NativeControl
             {
                 get { return __NativeControl; }
                 set
@@ -1034,45 +1034,45 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <summary>
             /// Interaktivní prvek, střídají se zde podle potřeby - kdo zrovna potřebuje mít nativní control, ten je zde uložen.
             /// </summary>
-            public IPaintItemData PaintData { get; set; }
+            internal IPaintItemData PaintData { get; set; }
             /// <summary>
             /// Interaktivní prvek, kerý je nositelem editované hodnoty.
             /// S ohledem na proces LostFocus a Validation (kdy nejprve probíhá LostFocus, v jeho rámci pak zdejší <see cref="DetachPaintData()"/> kdy se nuluje <see cref="PaintData"/>)
             /// se v procesu validace nelze spolehnout na objekt v <see cref="PaintData"/> (ten už je null). Proto validace pracuje s <see cref="OriginalPaintData"/>.
             /// Hodnotu do <see cref="OriginalPaintData"/> vkládá konkrétní editor společně v té chvíli, kdy ukládá originál editované hodnoty do <see cref="OriginalValue"/>.
             /// </summary>
-            public IPaintItemData OriginalPaintData { get; set; }
+            internal IPaintItemData OriginalPaintData { get; set; }
             /// <summary>
             /// Hodnota buňky, která byla do nativního controlu <see cref="NativeControl"/> vložena v době plnění controlu v <see cref="DxRepositoryEditor.FillNativeControl(ControlDataPair, Rectangle)"/>.<br/>
             /// Pokud při opouštění buňky se výsledná hodnota v controlu liší od této uložené hodnoty, pak se hlásí změna hodnoty pomocí akce.
             /// </summary>
-            public object OriginalValue { get; set; }
+            internal object OriginalValue { get; set; }
             /// <summary>
             /// Hodnota buňky, která je v nativním controlu <see cref="NativeControl"/> přítomna v průběhu editace a po dokončení editace.
             /// Pokud při opouštění buňky se tato výsledná hodnota v controlu liší od hodnoty uložené v <see cref="OriginalValue"/>, pak se hlásí změna hodnoty pomocí akce.
             /// </summary>
-            public object CurrentValue { get; set; }
+            internal object CurrentValue { get; set; }
             /// <summary>
             /// Má můj prvek Focus?
             /// </summary>
-            public bool HasFocus { get { return __HasFocus; } }
+            internal bool HasFocus { get { return __HasFocus; } }
             /// <summary>
             /// Souřadnice, na kterou jsme nativní control původně umístili. Nemusí být shodná s <see cref="WinForm.Control.Bounds"/>, a to ani okamžitě po prvním setování.
             /// </summary>
-            public WinDraw.Rectangle? ControlBounds { get; set; }
+            internal WinDraw.Rectangle? ControlBounds { get; set; }
             /// <summary>
             /// Stisknuté buttony myši při události MouseDown
             /// </summary>
-            public WinForm.MouseButtons? MouseDownButtons { get { return __MouseDownButtons; } }
+            internal WinForm.MouseButtons? MouseDownButtons { get { return __MouseDownButtons; } }
             /// <summary>
             /// Pozice myši absolutní při události MouseDown
             /// </summary>
-            public WinDraw.Point? MouseDownLoaction { get { return __MouseDownLoaction; } }
+            internal WinDraw.Point? MouseDownLoaction { get { return __MouseDownLoaction; } }
             /// <summary>
             /// Zapojí dodaný datový prvek jako nynějšího vlastníka zdejšího <see cref="NativeControl"/>
             /// </summary>
             /// <param name="paintData">Data konkrétního prvku</param>
-            public void AttachPaintData(IPaintItemData paintData)
+            internal void AttachPaintData(IPaintItemData paintData)
             {
                 // Dosavadní datový prvek (i když by tam neměl být) odpojíme od NativeControl:
                 if (this.PaintData != null) this.PaintData.NativeControl = null;
@@ -1099,7 +1099,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <summary>
             /// Uvolní ze své evidence prvek <see cref="PaintData"/> včetně navazující logiky
             /// </summary>
-            public void DetachPaintData()
+            internal void DetachPaintData()
             {
                 // Pokud končím ve stavu, kdy mám Focus, tak jej zruším:
                 bool hasFocus = this.__HasFocus;
@@ -1126,7 +1126,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <summary>
             /// Uvolní instance ve zdejší evidenci
             /// </summary>
-            public void ReleaseAll()
+            internal void ReleaseAll()
             {
                 DetachPaintData();
 
@@ -1313,7 +1313,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="pdea">Grafika pro kreslení</param>
         /// <param name="controlBounds">Souřadnice v koordinátech Controlu, kde má být přítomen fyzický Control</param>
         /// <param name="isDisplayed">Prvek je ve viditelné části panelu.Pokud je false, pak se vykreslování nemusí provádět, a případný dočasný nativní control se může odebrat.</param>
-        public void PaintItem(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
+        internal void PaintItem(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds, bool isDisplayed)
         {
             if (paintData is null) return;
 
@@ -1904,7 +1904,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// <summary>
     /// Druh prvku
     /// </summary>
-    public enum DxRepositoryEditorType
+    internal enum DxRepositoryEditorType
     {
         /// <summary>
         /// Žádný prvek
@@ -2005,13 +2005,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Konstruktor
         /// </summary>
         /// <param name="repositoryManager"></param>
-        public DxRepositoryEditorLabel(DxRepositoryManager repositoryManager) : base(repositoryManager)
+        internal DxRepositoryEditorLabel(DxRepositoryManager repositoryManager) : base(repositoryManager)
         {
         }
         /// <summary>
         /// Typ editoru
         /// </summary>
-        public override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.Label; } }
+        internal override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.Label; } }
         /// <summary>
         /// Režim práce s cache
         /// </summary>
@@ -2171,13 +2171,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Konstruktor
         /// </summary>
         /// <param name="repositoryManager"></param>
-        public DxRepositoryEditorTextBox(DxRepositoryManager repositoryManager) : base(repositoryManager)
+        internal DxRepositoryEditorTextBox(DxRepositoryManager repositoryManager) : base(repositoryManager)
         {
         }
         /// <summary>
         /// Typ editoru
         /// </summary>
-        public override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.TextBox; } }
+        internal override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.TextBox; } }
         /// <summary>
         /// Režim práce s cache
         /// </summary>
@@ -2328,13 +2328,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Konstruktor
         /// </summary>
         /// <param name="repositoryManager"></param>
-        public DxRepositoryEditorTextBoxButton(DxRepositoryManager repositoryManager) : base(repositoryManager)
+        internal DxRepositoryEditorTextBoxButton(DxRepositoryManager repositoryManager) : base(repositoryManager)
         {
         }
         /// <summary>
         /// Typ editoru
         /// </summary>
-        public override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.TextBoxButton; } }
+        internal override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.TextBoxButton; } }
         /// <summary>
         /// Režim práce s cache
         /// </summary>
@@ -2503,13 +2503,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Konstruktor
         /// </summary>
         /// <param name="repositoryManager"></param>
-        public DxRepositoryEditorCheckEdit(DxRepositoryManager repositoryManager) : base(repositoryManager)
+        internal DxRepositoryEditorCheckEdit(DxRepositoryManager repositoryManager) : base(repositoryManager)
         {
         }
         /// <summary>
         /// Typ editoru
         /// </summary>
-        public override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.CheckEdit; } }
+        internal override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.CheckEdit; } }
         /// <summary>
         /// Režim práce s cache
         /// </summary>
@@ -2652,13 +2652,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Konstruktor
         /// </summary>
         /// <param name="repositoryManager"></param>
-        public DxRepositoryEditorToggleSwitch(DxRepositoryManager repositoryManager) : base(repositoryManager)
+        internal DxRepositoryEditorToggleSwitch(DxRepositoryManager repositoryManager) : base(repositoryManager)
         {
         }
         /// <summary>
         /// Typ editoru
         /// </summary>
-        public override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.ToggleSwitch; } }
+        internal override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.ToggleSwitch; } }
         /// <summary>
         /// Režim práce s cache
         /// </summary>
@@ -2801,13 +2801,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Konstruktor
         /// </summary>
         /// <param name="repositoryManager"></param>
-        public DxRepositoryEditorEditBox(DxRepositoryManager repositoryManager) : base(repositoryManager)
+        internal DxRepositoryEditorEditBox(DxRepositoryManager repositoryManager) : base(repositoryManager)
         {
         }
         /// <summary>
         /// Typ editoru
         /// </summary>
-        public override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.TextBox; } }
+        internal override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.TextBox; } }
         /// <summary>
         /// Režim práce s cache
         /// </summary>
@@ -2967,13 +2967,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Konstruktor
         /// </summary>
         /// <param name="repositoryManager"></param>
-        public DxRepositoryEditorComboListBox(DxRepositoryManager repositoryManager) : base(repositoryManager)
+        internal DxRepositoryEditorComboListBox(DxRepositoryManager repositoryManager) : base(repositoryManager)
         {
         }
         /// <summary>
         /// Typ editoru
         /// </summary>
-        public override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.ComboListBox; } }
+        internal override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.ComboListBox; } }
         /// <summary>
         /// Režim práce s cache
         /// </summary>
@@ -3196,13 +3196,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Konstruktor
         /// </summary>
         /// <param name="repositoryManager"></param>
-        public DxRepositoryEditorImageComboListBox(DxRepositoryManager repositoryManager) : base(repositoryManager)
+        internal DxRepositoryEditorImageComboListBox(DxRepositoryManager repositoryManager) : base(repositoryManager)
         {
         }
         /// <summary>
         /// Typ editoru
         /// </summary>
-        public override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.ImageComboListBox; } }
+        internal override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.ImageComboListBox; } }
         /// <summary>
         /// Režim práce s cache
         /// </summary>
@@ -3429,13 +3429,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Konstruktor
         /// </summary>
         /// <param name="repositoryManager"></param>
-        public DxRepositoryEditorButton(DxRepositoryManager repositoryManager) : base(repositoryManager)
+        internal DxRepositoryEditorButton(DxRepositoryManager repositoryManager) : base(repositoryManager)
         {
         }
         /// <summary>
         /// Typ editoru
         /// </summary>
-        public override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.Button; } }
+        internal override DxRepositoryEditorType EditorType { get { return DxRepositoryEditorType.Button; } }
         /// <summary>
         /// Režim práce s cache
         /// </summary>
