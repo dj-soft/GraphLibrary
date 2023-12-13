@@ -566,6 +566,226 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
     }
     #endregion
+    #region ChildDictionary<TParent, TKey, TValue> : Dictionary s vyhledáváním podle klíče, s prvky které mají vztah na Parenta
+    /// <summary>
+    /// <see cref="ChildDictionary{TParent, TKey, TValue}"/> : Dictionary s vyhledáváním podle klíče, s prvky které mají vztah na Parenta. 
+    /// Generuje event o změně kolekce.
+    /// </summary>
+    /// <typeparam name="TParent"></typeparam>
+    /// <typeparam name="TKey"></typeparam>
+    /// <typeparam name="TValue"></typeparam>
+    public class ChildDictionary<TParent, TKey, TValue> : IDictionary<TKey, TValue>, IEnumerable<TValue>
+        where TParent : class
+        where TValue : class, IChildOfParent<TParent>
+    {
+        #region Konstruktory
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="parent"></param>
+        public ChildDictionary(TParent parent)
+        {
+            __Parent = parent;
+            __Dictionary = new Dictionary<TKey, TValue>();
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="capacity"></param>
+        public ChildDictionary(TParent parent, int capacity)
+        {
+            __Parent = parent;
+            __Dictionary = new Dictionary<TKey, TValue>(capacity);
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="comparer"></param>
+        public ChildDictionary(TParent parent, IEqualityComparer<TKey> comparer)
+        {
+            __Parent = parent;
+            __Dictionary = new Dictionary<TKey, TValue>(comparer);
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="dictionary"></param>
+        public ChildDictionary(TParent parent, IDictionary<TKey, TValue> dictionary)
+        {
+            __Parent = parent;
+            __Dictionary = new Dictionary<TKey, TValue>(dictionary);
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="capacity"></param>
+        /// <param name="comparer"></param>
+        public ChildDictionary(TParent parent, int capacity, IEqualityComparer<TKey> comparer)
+        {
+            __Parent = parent;
+            __Dictionary = new Dictionary<TKey, TValue>(capacity, comparer);
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="dictionary"></param>
+        /// <param name="comparer"></param>
+        public ChildDictionary(TParent parent, IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey> comparer)
+        {
+            __Parent = parent;
+            __Dictionary = new Dictionary<TKey, TValue>(dictionary, comparer);
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Count: {this.__Dictionary.Count}; KeyType: '{typeof(TKey).FullName}' ItemType: '{typeof(TValue).FullName}'";
+        }
+
+        /// <summary>
+        /// Parent, navazujeme jej do prvků
+        /// </summary>
+        private TParent __Parent;
+        /// <summary>
+        /// Dictionary prvků
+        /// </summary>
+        private Dictionary<TKey, TValue> __Dictionary;
+        /// <summary>
+        /// Do všech prvků vloží parenta
+        /// </summary>
+        /// <param name="items"></param>
+        private void _SetParents(IEnumerable<TValue> items)
+        {
+            if (items != null)
+            {
+                foreach (var item in items)
+                {
+                    if (item != null)
+                        item.Parent = __Parent;
+                }
+            }
+        }
+        /// <summary>
+        /// Do daného prvku vloží parenta
+        /// </summary>
+        /// <param name="item"></param>
+        private void _SetParent(TValue item)
+        {
+            if (item != null)
+                item.Parent = __Parent;
+        }
+        /// <summary>
+        /// Z daných prvků odebere parenta
+        /// </summary>
+        /// <param name="items"></param>
+        private void _RemoveParents(IEnumerable<TValue> items)
+        {
+            if (items != null)
+                items.ForEachExec(i => _RemoveParent(i));
+        }
+        /// <summary>
+        /// Z daného prvku odebere parenta
+        /// </summary>
+        /// <param name="item"></param>
+        private void _RemoveParent(TValue item)
+        {
+            if (item != null)
+                item.Parent = null;
+        }
+        #endregion
+        #region Přidané funkce a události
+        /// <summary>
+        /// Obecná událost volaná poté, kdy se přidal nebo odebral prvek kolekce (Add/Remove).
+        /// </summary>
+        public event EventHandler CollectionChanged;
+        /// <summary>
+        /// Metoda volaná poté, kdy se přidal nebo odebral prvek kolekce (Add/Remove).
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnCollectionChanged(EventArgs e) { }
+        /// <summary>
+        /// Zavolá metody <see cref="OnCollectionChanged(EventArgs)"/> a event <see cref="CollectionChanged"/>.
+        /// </summary>
+        private void _RunCollectionChanged()
+        {
+            var args = EventArgs.Empty;
+            OnCollectionChanged(args);
+            CollectionChanged?.Invoke(this, args);
+        }
+        #endregion
+        #region Implementace
+        public bool ContainsKey(TKey key) 
+        {
+            return __Dictionary.ContainsKey(key);
+        }
+        public void Add(TKey key, TValue value) 
+        {
+            _SetParent(value);
+            __Dictionary.Add(key, value);
+            _RunCollectionChanged();
+        }
+        public bool Remove(TKey key)
+        {
+            bool isRemoved = false;
+            if (__Dictionary.TryGetValue(key, out var value))
+            {
+                _RemoveParent(value);
+                isRemoved = __Dictionary.Remove(key);
+                if (isRemoved) _RunCollectionChanged();
+            }
+            return isRemoved;
+        }
+        public bool TryGetValue(TKey key, out TValue value)
+        {
+            return __Dictionary.TryGetValue(key, out value);
+        }
+        public void Add(KeyValuePair<TKey, TValue> item)
+        {
+            _SetParent(item.Value);
+            __Dictionary.Add(item.Key, item.Value);
+            _RunCollectionChanged();
+        }
+        public void Clear()
+        {
+            if (__Dictionary.Count > 0)
+            {
+                _RemoveParents(__Dictionary.Values);
+                __Dictionary.Clear();
+                _RunCollectionChanged();
+            }
+        }
+
+        public bool Contains(KeyValuePair<TKey, TValue> item) { return __Dictionary.ContainsKey(item.Key); }
+        public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
+        {
+            ((ICollection<KeyValuePair<TKey, TValue>>)__Dictionary).CopyTo(array, arrayIndex);
+        }
+
+        public bool Remove(KeyValuePair<TKey, TValue> item) { return this.Remove(item.Key); }
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() { return __Dictionary.GetEnumerator(); }
+        public ICollection<TKey> Keys { get { return __Dictionary.Keys; } }
+        public ICollection<TValue> Values { get { return __Dictionary.Values; } }
+        public int Count { get { return __Dictionary.Count; } }
+        public bool IsReadOnly => ((ICollection<KeyValuePair<TKey, TValue>>)__Dictionary).IsReadOnly;
+
+        public TValue this[TKey key] 
+        {
+            get => ((IDictionary<TKey, TValue>)__Dictionary)[key]; 
+            set => ((IDictionary<TKey, TValue>)__Dictionary)[key] = value;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() { return __Dictionary.Values.GetEnumerator(); }
+        IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() { return __Dictionary.Values.GetEnumerator(); }
+        #endregion
+    }
+    #endregion
     #region BiDictionary : Dictionary, kde primárním klíčem je String a sekundárním klíčem je UInt64
     /// <summary>
     /// <see cref="BiDictionary{TValue}"/> : Dictionary, kde primárním klíčem je String a sekundárním klíčem je UInt64. 

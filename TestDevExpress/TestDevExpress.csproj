@@ -169,6 +169,7 @@
     <Compile Include="AsolDX\DataForm\DxInteractive.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="AsolDX\DataForm\DxRepositoryEditors.cs" />
     <Compile Include="AsolDX\DataForm\DxRepositoryManager.cs" />
     <Compile Include="AsolDX\DxControls.cs" />
     <Compile Include="AsolDX\DxDataExtensions.cs" />

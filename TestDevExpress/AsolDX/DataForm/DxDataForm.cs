@@ -124,7 +124,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private DxfData.DataFormRows __DataFormRows;
         #endregion
-        #region Definice layoutu
+        #region Definice layoutu : pole 
         /// <summary>
         /// Definice vzhledu pro jednotlivý řádek: popisuje panely, záložky, prvky ve vnořené hierarchické podobě.
         /// Z této definice se následně generují jednotlivé interaktivní prvky pro jednotlivý řádek.
@@ -160,7 +160,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         internal DxfData.DataContent Content { get { return __Content; } } private DxfData.DataContent __Content;
         #endregion
-        #region Defaultní hodnoty
+        #region Defaultní hodnoty layoutu a chování, uložené do Content
         /// <summary>
         /// Naplní defaultní hodnoty určitých vlastností, které se použijí v případě, 
         /// kdy nebudou zadány hodnoty ani pro <see cref="DxfData.DataFormRow"/>, ani pro <see cref="DxLayoutItemInfo"/>.
@@ -205,31 +205,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Formát bitmap, který se ukládá do cache
         /// </summary>
         internal WinDraw.Imaging.ImageFormat CacheImageFormat { get { return __CacheImageFormat; } set { __CacheImageFormat = value; InvalidateRepozitory(); } } private WinDraw.Imaging.ImageFormat __CacheImageFormat;
-        #endregion
-        #region Akce uživatele na DataFormu
-        /// <summary>
-        /// Uživatel provedl nějakou akci na dataformu (kliknutí...)
-        /// </summary>
-        /// <param name="actionInfo"></param>
-        internal void OnInteractiveAction(DataFormActionInfo actionInfo)
-        {
-            string text = actionInfo.ToString();
-            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, text);
-        }
-        /// <summary>
-        /// Dataform vrací true, pokud chce dostat akci <see cref="DxDataFormAction.KeyDown"/> o stisku dané klávesy.
-        /// Typicky chce dostávat jen klávesy Tab a ShiftTab a Enter = pro pohyb focusu po formuláři.
-        /// <para/>
-        /// Pokud zdejší metoda vrátí true, pak teprve bude volána metoda <see cref="OnInteractiveAction(DataFormActionInfo)"/> s kompletními daty (včetně dat o buňce),
-        /// s akcí <see cref="DxDataFormAction.KeyDown"/>, /// kde bude reálně vyhodnocen požadavek na změnu focusu.<br/>
-        /// Tady jen říkáme: "Když je to klávesa TAB, mohlo by nás to zajímat".
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        internal bool NeedTraceKeyDown(WinForm.Keys key)
-        {
-            return (key == WinForm.Keys.Tab || key == (WinForm.Keys.Tab | WinForm.Keys.Shift) || key == WinForm.Keys.Enter);
-        }
         #endregion
         #region ContentDesignSize : velikost obsahu v designových pixelech
         /// <summary>
@@ -492,6 +467,45 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// IsVariable = false: jsem konstantní interval, zobrazuji všechny řádky. 
         /// </summary>
         private Int32Range __InteractiveItemsPreparedDesignPixels;
+        #endregion
+        #region Akce uživatele na DataFormu
+        /// <summary>
+        /// Uživatel provedl nějakou akci na dataformu (kliknutí...)
+        /// </summary>
+        /// <param name="actionInfo"></param>
+        internal void OnInteractiveAction(DataFormActionInfo actionInfo)
+        {
+            string text = actionInfo.ToString();
+            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, text);
+
+            switch (actionInfo.Action)
+            {
+                case DxDataFormAction.KeyDown: _OnInteractiveActionKeyDown(actionInfo as DataFormKeyActionInfo); break;
+            }
+        }
+        /// <summary>
+        /// Interaktivní akce: <see cref="DxDataFormAction.KeyDown"/>.
+        /// Určité klávesy mohou změnit Focus.
+        /// </summary>
+        /// <param name="actionInfo"></param>
+        private void _OnInteractiveActionKeyDown(DataFormKeyActionInfo actionInfo)
+        {
+
+        }
+        /// <summary>
+        /// Dataform vrací true, pokud chce dostat akci <see cref="DxDataFormAction.KeyDown"/> o stisku dané klávesy.
+        /// Typicky chce dostávat jen klávesy Tab a ShiftTab a Enter = pro pohyb focusu po formuláři.
+        /// <para/>
+        /// Pokud zdejší metoda vrátí true, pak teprve bude volána metoda <see cref="OnInteractiveAction(DataFormActionInfo)"/> s kompletními daty (včetně dat o buňce),
+        /// s akcí <see cref="DxDataFormAction.KeyDown"/>, /// kde bude reálně vyhodnocen požadavek na změnu focusu.<br/>
+        /// Tady jen říkáme: "Když je to klávesa TAB, mohlo by nás to zajímat".
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        internal bool NeedTraceKeyDown(WinForm.Keys key)
+        {
+            return (key == WinForm.Keys.Tab || key == (WinForm.Keys.Tab | WinForm.Keys.Shift) || key == WinForm.Keys.Enter);
+        }
         #endregion
     }
     #endregion
