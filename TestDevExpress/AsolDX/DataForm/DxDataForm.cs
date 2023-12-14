@@ -96,6 +96,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private DxDataFormPanel __DataFormPanel;
         #endregion
+        #region Formát DataFormu = *.frm.xml
+        /// <summary>
+        /// Zde je obsažena definice formátu dat v dataformu.
+        /// </summary>
+        public DxDataFormat DataFormat 
+        {
+            get { return __DataFormat; }
+            set { }
+        }
+        private DxDataFormat __DataFormat;
+        #endregion
         #region Datové řádky
         /// <summary>
         /// Pole řádků zobrazených v formuláři

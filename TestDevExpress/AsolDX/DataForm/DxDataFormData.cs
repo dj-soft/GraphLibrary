@@ -499,6 +499,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             _RunCollectionChanged();
         }
         /// <summary>
+        /// Zavolá metody <see cref="OnCollectionChanged(EventArgs)"/> a event <see cref="CollectionChanged"/>.
+        /// </summary>
+        private void _RunCollectionChanged()
+        {
+            this.InvalidateDesignSize();
+            this.InvalidateTabOrders();
+            var args = EventArgs.Empty;
+            OnCollectionChanged(args);
+            CollectionChanged?.Invoke(this, args);
+        }
+        /// <summary>
         /// Obecná událost volaná poté, kdy se přidal nebo odebral prvek kolekce (Add/Remove).
         /// </summary>
         internal event EventHandler CollectionChanged;
@@ -508,19 +519,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// <param name="e"></param>
         protected virtual void OnCollectionChanged(EventArgs e) { }
         /// <summary>
-        /// Zavolá metody <see cref="OnCollectionChanged(EventArgs)"/> a event <see cref="CollectionChanged"/>.
-        /// </summary>
-        private void _RunCollectionChanged()
-        {
-            this.InvalidateDesignSize();
-            var args = EventArgs.Empty;
-            OnCollectionChanged(args);
-            CollectionChanged?.Invoke(this, args);
-        }
-        /// <summary>
         /// Pole prvků definice
         /// </summary>
         private ChildItems<DataFormLayoutSet, DataFormLayoutItem> __Items;
+        #endregion
+        #region TabOrder: pořadí prvků
+        /// <summary>
+        /// Obsahuje soupis všech prků layoutu seřazený podle jejich pořadí TabOrder.
+        /// </summary>
+        public DataFormLayoutItem[] TabOrderItems;
+        /// <summary>
+        /// Invaliduje pole prvků uspořádaných dle jejich pořadí
+        /// </summary>
+        public void InvalidateTabOrders()
+        {
+            __TabOrderItems = null;
+        }
+
+        private DataFormLayoutItem[] __TabOrderItems;
         #endregion
         #region DesignSize : celková designová velikost prvků v této definici
         /// <summary>
