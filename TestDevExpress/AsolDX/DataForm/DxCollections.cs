@@ -363,7 +363,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _SetParent(TItem item)
         {
             if (item != null)
+            {
                 item.Parent = __Parent;
+                _RunItemAdded(item);
+            }
         }
         /// <summary>
         /// Z daného prvku odebere parenta
@@ -372,7 +375,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _RemoveParent(TItem item)
         {
             if (item != null)
+            {
                 item.Parent = null;
+                _RunItemRemoved(item);
+            }
         }
         #endregion
         #region Přidané funkce a události
@@ -407,16 +413,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (count > 0)
                 _RunCollectionChanged();
         }
-        /// <summary>
-        /// Obecná událost volaná poté, kdy se přidal nebo odebral prvek kolekce (Add/Remove).
-        /// Při provedení změn na více prvcích (<see cref="AddRange(IEnumerable{TItem})"/>, <see cref="RemoveAll(Func{TItem, bool})"/>) je událost volána jedenkrát, až po dokončení změn.
-        /// </summary>
-        public event EventHandler CollectionChanged;
-        /// <summary>
-        /// Metoda volaná poté, kdy se přidal nebo odebral prvek kolekce (Add/Remove).
-        /// </summary>
-        /// <param name="e"></param>
-        protected virtual void OnCollectionChanged(EventArgs e) { }
+
         /// <summary>
         /// Zavolá metody <see cref="OnCollectionChanged(EventArgs)"/> a event <see cref="CollectionChanged"/>.
         /// </summary>
@@ -426,6 +423,53 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             OnCollectionChanged(args);
             CollectionChanged?.Invoke(this, args);
         }
+        /// <summary>
+        /// Metoda volaná poté, kdy se přidal nebo odebral prvek kolekce (Add/Remove).
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnCollectionChanged(EventArgs e) { }
+        /// <summary>
+        /// Obecná událost volaná poté, kdy se přidal nebo odebral prvek kolekce (Add/Remove).
+        /// Při provedení změn na více prvcích (<see cref="AddRange(IEnumerable{TItem})"/>, <see cref="RemoveAll(Func{TItem, bool})"/>) je událost volána jedenkrát, až po dokončení změn.
+        /// </summary>
+        public event EventHandler CollectionChanged;
+        /// <summary>
+        /// Zavolá metody <see cref="OnItemAdded(TEventArgs{TItem})"/> a event <see cref="ItemAdded"/>.
+        /// </summary>
+        private void _RunItemAdded(TItem item)
+        {
+            var args = new TEventArgs<TItem>(item);
+            OnItemAdded(args);
+            ItemAdded?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Metoda volaná poté, kdy se přidal konkrétní prvek do kolekce (Add).
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnItemAdded(TEventArgs<TItem> e) { }
+        /// <summary>
+        /// Událost volaná poté, kdy se přidal konkrétní prvek do kolekce (Add).
+        /// </summary>
+        public event EventHandler<TEventArgs<TItem>> ItemAdded;
+        /// <summary>
+        /// Zavolá metody <see cref="OnItemRemoved(TEventArgs{TItem})"/> a event <see cref="ItemRemoved"/>.
+        /// </summary>
+        private void _RunItemRemoved(TItem item)
+        {
+            var args = new TEventArgs<TItem>(item);
+
+            OnItemRemoved(args);
+            ItemRemoved?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Metoda volaná poté, kdy se odebral konkrétní prvek z kolekce (Remove).
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnItemRemoved(TEventArgs<TItem> e) { }
+        /// <summary>
+        /// Událost volaná poté, kdy se odebral konkrétní prvek z kolekce (Remove).
+        /// </summary>
+        public event EventHandler<TEventArgs<TItem>> ItemRemoved;
         #endregion
         #region Interfaces IList, IEnumerable
         /// <summary>
@@ -648,7 +692,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             return $"Count: {this.__Dictionary.Count}; KeyType: '{typeof(TKey).FullName}' ItemType: '{typeof(TValue).FullName}'";
         }
-
         /// <summary>
         /// Parent, navazujeme jej do prvků
         /// </summary>
@@ -673,13 +716,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         /// <summary>
-        /// Do daného prvku vloží parenta
+        /// Do daného prvku vloží parenta.
         /// </summary>
-        /// <param name="item"></param>
-        private void _SetParent(TValue item)
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        private void _SetParent(TKey key, TValue value)
         {
-            if (item != null)
-                item.Parent = __Parent;
+            if (value != null)
+            {
+                value.Parent = __Parent;
+                _RunItemAdded(key, value);
+            }
         }
         /// <summary>
         /// Z daných prvků odebere parenta
@@ -697,19 +744,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _RemoveParent(TValue item)
         {
             if (item != null)
+            {
                 item.Parent = null;
+                _RunItemRemoved(item);
+            }
         }
         #endregion
         #region Přidané funkce a události
-        /// <summary>
-        /// Obecná událost volaná poté, kdy se přidal nebo odebral prvek kolekce (Add/Remove).
-        /// </summary>
-        public event EventHandler CollectionChanged;
-        /// <summary>
-        /// Metoda volaná poté, kdy se přidal nebo odebral prvek kolekce (Add/Remove).
-        /// </summary>
-        /// <param name="e"></param>
-        protected virtual void OnCollectionChanged(EventArgs e) { }
         /// <summary>
         /// Zavolá metody <see cref="OnCollectionChanged(EventArgs)"/> a event <see cref="CollectionChanged"/>.
         /// </summary>
@@ -719,15 +760,61 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             OnCollectionChanged(args);
             CollectionChanged?.Invoke(this, args);
         }
+        /// <summary>
+        /// Metoda volaná poté, kdy se přidal nebo odebral nějaký prvek do/z kolekce (Add/Remove).
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnCollectionChanged(EventArgs e) { }
+        /// <summary>
+        /// Obecná událost volaná poté, kdy se přidal nebo odebral nějaký prvek do/z kolekce (Add/Remove).
+        /// </summary>
+        public event EventHandler CollectionChanged;
+        /// <summary>
+        /// Zavolá metody <see cref="OnItemAdded(TEventArgs{Tuple{TKey, TValue}})"/> a event <see cref="ItemAdded"/>.
+        /// </summary>
+        private void _RunItemAdded(TKey key, TValue value)
+        {
+            TEventArgs<Tuple<TKey, TValue>> args = new TEventArgs<Tuple<TKey, TValue>>(new Tuple<TKey, TValue>(key, value));
+            OnItemAdded(args);
+            ItemAdded?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Metoda volaná poté, kdy se přidal konkrétní prvek do kolekce (Add).
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnItemAdded(TEventArgs<Tuple<TKey, TValue>> e) { }
+        /// <summary>
+        /// Obecná událost volaná poté, kdy se přidal konkrétní prvek do kolekce (Add).
+        /// </summary>
+        public event EventHandler<TEventArgs<Tuple<TKey, TValue>>> ItemAdded;
+        /// <summary>
+        /// Zavolá metody <see cref="OnItemRemoved(TEventArgs{TValue})"/> a event <see cref="ItemRemoved"/>.
+        /// </summary>
+        private void _RunItemRemoved(TValue item)
+        {
+            TEventArgs<TValue> args = new TEventArgs<TValue>(item);
+
+            OnItemRemoved(args);
+            ItemRemoved?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Metoda volaná poté, kdy se odebral konkrétní prvek z kolekce (Remove).
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnItemRemoved(TEventArgs<TValue> e) { }
+        /// <summary>
+        /// Obecná událost volaná poté, kdy se odebral konkrétní prvek z kolekce (Remove).
+        /// </summary>
+        public event EventHandler<TEventArgs<TValue>> ItemRemoved;
         #endregion
         #region Implementace
         public bool ContainsKey(TKey key) 
         {
             return __Dictionary.ContainsKey(key);
         }
-        public void Add(TKey key, TValue value) 
+        public void Add(TKey key, TValue value)
         {
-            _SetParent(value);
+            _SetParent(key, value);
             __Dictionary.Add(key, value);
             _RunCollectionChanged();
         }
@@ -748,7 +835,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         public void Add(KeyValuePair<TKey, TValue> item)
         {
-            _SetParent(item.Value);
+            _SetParent(item.Key, item.Value);
             __Dictionary.Add(item.Key, item.Value);
             _RunCollectionChanged();
         }
