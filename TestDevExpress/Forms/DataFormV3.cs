@@ -15,7 +15,7 @@ namespace TestDevExpress.Forms
     /// <summary>
     /// Formulář pro testy komponenty <see cref="DxDataFormX"/>
     /// </summary>
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "DataForm 3", buttonOrder: 12, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře okno DataForm verze 3")]
+    [RunFormInfo(groupText: "Testovací okna", buttonText: "DataForm 3", buttonOrder: 12, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře okno DataForm verze 3", tabViewToolTip: "Okno zobrazující nový DataForm")]
     public class DataFormV3 : DxRibbonForm
     {
         #region Inicializace

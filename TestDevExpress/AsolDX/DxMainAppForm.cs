@@ -640,14 +640,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="form"></param>
         /// <param name="showFloating"></param>
-        public static void ShowChildForm(Form form, bool showFloating)
+        /// <param name="toolTip"></param>
+        public static void ShowChildForm(Form form, bool showFloating, string toolTip)
         {
             var mainAppForm = MainAppForm;
             if (mainAppForm != null)
             {
                 form.MdiParent = mainAppForm;
-                mainAppForm.__TabbedView.AddDocument(form);
-                // mainAppForm._TabbedView.AddDocument(form);
+                DevExpress.XtraBars.Docking2010.Views.Tabbed.Document document;
+                if (!showFloating)
+                    document = mainAppForm.__TabbedView.AddDocument(form) as DevExpress.XtraBars.Docking2010.Views.Tabbed.Document;
+                else
+                    document = mainAppForm.__TabbedView.AddFloatDocument(form) as DevExpress.XtraBars.Docking2010.Views.Tabbed.Document;
+
+                if (!String.IsNullOrEmpty(toolTip))
+                    document.Tooltip = toolTip;
+
                 form.Show();
             }
             else

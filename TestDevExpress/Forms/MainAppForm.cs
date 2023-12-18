@@ -36,7 +36,6 @@ namespace TestDevExpress.Forms
             var runFormInfos = RunFormInfo.GetFormsWithAttribute();            // Debug mode: 1354, 1283, 1224 milisecs;     Run mode: 219, 241, 238 milisecs
             __FormLoadTime = DateTime.Now - start;
 
-
             RunFormInfo.CreateRibbonPages(runFormInfos, pages, homePage);
 
             this.DxRibbon.AddPages(pages, true);
@@ -59,7 +58,9 @@ namespace TestDevExpress.Forms
                     break;
             }
         }
-
+        /// <summary>
+        /// Příprava StatusBaru
+        /// </summary>
         protected override void DxStatusPrepare()
         {
             // nevoláme:  base.DxStatusPrepare();
@@ -300,6 +301,10 @@ namespace TestDevExpress.Forms
         /// </summary>
         public bool RunAsFloating { get; set; }
         /// <summary>
+        /// ToolTip k otevřenému oknu nad záložkou
+        /// </summary>
+        public string TabViewToolTip { get; set; }
+        /// <summary>
         /// true pro použitelný prvek
         /// </summary>
         internal bool IsValid { get { return (!String.IsNullOrEmpty(ButtonText) || !String.IsNullOrEmpty(ButtonImage)); } }
@@ -406,6 +411,7 @@ namespace TestDevExpress.Forms
             runFormInfo.ButtonToolTip = runFormInfoAttribute.ButtonToolTip;
             runFormInfo.RunAsFloating = runFormInfoAttribute.RunAsFloating;
             runFormInfo.RunAsModal = runFormInfoAttribute.RunAsModal;
+            runFormInfo.TabViewToolTip = runFormInfoAttribute.TabViewToolTip;
             return runFormInfo;
         }
         #endregion
@@ -476,7 +482,7 @@ namespace TestDevExpress.Forms
         private void Run(Type formType)
         {
             var form = System.Activator.CreateInstance(formType) as System.Windows.Forms.Form;
-            DxMainAppForm.ShowChildForm(form, this.RunAsFloating);
+            DxMainAppForm.ShowChildForm(form, this.RunAsFloating, this.TabViewToolTip);
         }
         #endregion
     }
@@ -499,9 +505,10 @@ namespace TestDevExpress.Forms
         /// <param name="buttonImage"></param>
         /// <param name="buttonToolTip"></param>
         /// <param name="runAsFloating"></param>
+        /// <param name="tabViewToolTip"></param>
         public RunFormInfoAttribute(string pageText = null, int pageOrder = 0, string groupText = null, int groupOrder = 0,
             string buttonText = null, int buttonOrder = 0, string buttonImage = null,
-            string buttonToolTip = null, bool runAsFloating = false)
+            string buttonToolTip = null, bool runAsFloating = false, string tabViewToolTip = null)
         {
             this.PageText = pageText;
             this.PageOrder = pageOrder;
@@ -512,6 +519,7 @@ namespace TestDevExpress.Forms
             this.ButtonImage = buttonImage;
             this.ButtonToolTip = buttonToolTip;
             this.RunAsFloating = runAsFloating;
+            this.TabViewToolTip = tabViewToolTip;
         }
         /// <summary>
         /// Vizualizace
@@ -567,6 +575,11 @@ namespace TestDevExpress.Forms
         /// Spouštět jako Floating okno
         /// </summary>
         public bool RunAsFloating { get; private set; }
+        /// <summary>
+        /// ToolTip k otevřenému oknu nad záložkou
+        /// </summary>
+        public string TabViewToolTip { get; private set; }
+
     }
     #endregion
     #endregion
