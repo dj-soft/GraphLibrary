@@ -67,7 +67,8 @@ namespace TestDevExpress.Forms
             groupSvg.Items.Add(new DataRibbonItem() { ItemId = "g1", Text = "Circle", ImageName = "@circle|#881166|95|#EEAADD",  RibbonStyle = RibbonItemStyles.Large });
             groupSvg.Items.Add(new DataRibbonItem() { ItemId = "g2", Text = "Arrow", ImageName = "@arrow|D|red", RibbonStyle = RibbonItemStyles.Large });
             groupSvg.Items.Add(new DataRibbonItem() { ItemId = "g3", Text = "Copy", ImageName = "@edit|copy|green", RibbonStyle = RibbonItemStyles.Large });
-            groupSvg.Items.Add(new DataRibbonItem() { ItemId = "g4", Text = "Text", ImageName = "@text|DJ|blue|||6|#662266|#FFDDFF", RibbonStyle = RibbonItemStyles.Large });
+            groupSvg.Items.Add(new DataRibbonItem() { ItemId = "g4", Text = "Text", ImageName = "@text|M|#7F00FF|||12|#7777FF|#60D7FF", RibbonStyle = RibbonItemStyles.Large });
+            groupSvg.Items.Add(new DataRibbonItem() { ItemId = "g5", Text = "Ikona", ImageName = "@text|m|#7F00FF|||12|#7777FF|#60D7FF", RibbonStyle = RibbonItemStyles.SmallWithText });
             page.Groups.Add(groupSvg);
 
             // Samply:

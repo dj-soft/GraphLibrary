@@ -341,24 +341,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             return null;
         }
         /// <summary>
-        /// Ze vstupního stringu detekuje parametry generického SVG.
-        /// Pokud vrátí true, pak na indexu [0] pole out <paramref name="genericItems"/> bude klíčové slovo, na indexech 1++ budou jeho parametry.
-        /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="genericItems"></param>
-        /// <returns></returns>
-        private static bool _TryGetGenericParameters(string imageName, out string[] genericItems)
-        {
-            genericItems = null;
-            bool result = false;
-            if (!String.IsNullOrEmpty(imageName) && imageName[0] == GenericHeader && imageName.Length > 1)
-            {
-                genericItems = imageName.Substring(1).Split(GenericParamSeparator);
-                result = (genericItems.Length >= 1 && genericItems[0].Length > 0);
-            }
-            return result;
-        }
-        /// <summary>
         /// @  Úvodní znak generické deklarace SvgImage
         /// </summary>
         public static char GenericHeader { get { return '@'; } }
@@ -382,18 +364,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static bool _TryGetGenericSvgCircleGradient1(string imageName, string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage)
         {
             int size = (sizeType.HasValue && sizeType.Value == ResourceImageSizeType.Small ? 16 : 32);
-            string xmlHeader = _GetXmlContentHeader(size);
+            string xmlHeader = _GetXmlBodyHeader(size);
 
-            string xmlStyles = _GetXmlDevExpressStyles();
+            string xmlStyles = _GetXmlElementDevExpressStyles();
 
             string circleColorName = _GetGenericParam(genericItems, 1, "Green");
             int radiusRel = _GetGenericParam(genericItems, 2, 80);
             string outerColorName = _GetGenericParam(genericItems, 3, circleColorName);
 
-            string xmlGradient = _GetXmlContentGradientRadial(size, "CircleGradient", circleColorName, outerColorName, radiusRel);
-            string xmlCircle = _GetXmlContentCircle(size, "url(#CircleGradient)", radiusRel);
+            string xmlGradient = _GetXmlElementGradientRadial(size, "CircleGradient", circleColorName, outerColorName, radiusRel);
+            string xmlCircle = _GetXmlElementCircle(size, "url(#CircleGradient)", radiusRel);
 
-            string xmlFooter = _GetXmlContentFooter();
+            string xmlFooter = _GetXmlBodyFooter();
 
             string xmlContent = xmlHeader + xmlStyles + xmlGradient + xmlCircle + xmlFooter;
             dxSvgImage = DxSvgImage.Create(imageName, DxSvgImagePaletteType.LightSkin, xmlContent);
@@ -525,9 +507,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             int a0, int a2, int a4, int a6, int a8, int b0, int b2, int b4, int b6, int b8)
         {
             int size = (sizeType.HasValue && sizeType.Value == ResourceImageSizeType.Small ? 16 : 32);
-            string xmlHeader = _GetXmlContentHeader(size);
+            string xmlHeader = _GetXmlBodyHeader(size);
 
-            string xmlStyles = _GetXmlDevExpressStyles();
+            string xmlStyles = _GetXmlElementDevExpressStyles();
 
             ArrowType arrowType = _GetArrowType(_GetGenericParam(genericItems, 1, ""));
             string arrowColorName = _GetGenericParam(genericItems, 2, "");
@@ -578,7 +560,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             }
 
-            string xmlFooter = _GetXmlContentFooter();
+            string xmlFooter = _GetXmlBodyFooter();
 
             string xmlContent = xmlHeader + xmlStyles + xmlGradient + paths + xmlFooter;
             dxSvgImage = DxSvgImage.Create(imageName, DxSvgImagePaletteType.LightSkin, xmlContent);
@@ -740,8 +722,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             EditType editType = _GetEditType(_GetGenericParam(genericItems, 1, ""));
             string editStyle1, editStyle2, editStyle3;
-            string xmlHeader = _GetXmlContentHeader(coordinates);
-            string xmlStyles = _GetXmlDevExpressStyles();
+            string xmlHeader = _GetXmlBodyHeader(coordinates);
+            string xmlStyles = _GetXmlElementDevExpressStyles();
             string xmlGradient = "";
 
             string xmlPaths = "";
@@ -787,7 +769,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
             }
 
-            string xmlFooter = _GetXmlContentFooter();
+            string xmlFooter = _GetXmlBodyFooter();
 
             string xmlContent = xmlHeader + xmlStyles + xmlGradient + xmlPaths + xmlFooter;
             dxSvgImage = DxSvgImage.Create(imageName, DxSvgImagePaletteType.LightSkin, xmlContent);
@@ -820,10 +802,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             int w = coordinates[7] - d0;
 
             string xmlPaths =
-                _GetXmlPathRectangleFill(d0, d0, w, w, thick, borderStyle, fillStyle) +
-                _GetXmlPathRectangleFill(d1, d0, w, w, thick, borderStyle, fillStyle) +
-                _GetXmlPathRectangleFill(d0, d1, w, w, thick, borderStyle, fillStyle) +
-                _GetXmlPathRectangleFill(d1, d1, w, w, thick, borderStyle, fillStyle);
+                _GetXmlPathFilledRectangle(d0, d0, w, w, thick, borderStyle, fillStyle) +
+                _GetXmlPathFilledRectangle(d1, d0, w, w, thick, borderStyle, fillStyle) +
+                _GetXmlPathFilledRectangle(d0, d1, w, w, thick, borderStyle, fillStyle) +
+                _GetXmlPathFilledRectangle(d1, d1, w, w, thick, borderStyle, fillStyle);
 
             return xmlPaths;
         }
@@ -1088,11 +1070,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             string x8 = _GetCoordCenter(x9, x9 - m);                 // X vpravo kde začíná pravý oblouk
             string y1 = _GetCoordCenter(y0, y0 + m);                 // Y nahoře kde začíná horní oblouk
             string y8 = _GetCoordCenter(y9, y9 - m);                 // Y dole kde začíná dolní oblouk
-            _GetXmlQuadCurveR1R2(m, out string d4, out string d2);             // 1/4 a 1/2 průměru kružnice = kulatý roh
-            string clh = _GetXmlQuadCurve(CurveDirections.LeftDown, d4, d2);   // levý horní roh, směr doleva a dolů, relativní definice
-            string cld = _GetXmlQuadCurve(CurveDirections.DownRight, d4, d2);  // levý dolní roh, směr dolů a doprava, relativní definice  (použitelný zvenku vpravo dole i uvnitř nahoře vlevo v rožku)
-            string cpd = _GetXmlQuadCurve(CurveDirections.RightUp, d4, d2);    // pravý dolní roh, směr doprava a nahoru, relativní definice
-            string cph = _GetXmlQuadCurve(CurveDirections.UpLeft, d4, d2);     // pravý horní roh, směr nahoru a doprava, relativní definice
+            _GetSvgDataQuadCurveD4D2(m, out string d4, out string d2);             // 1/4 a 1/2 průměru kružnice = kulatý roh
+            string clh = _GetSvgDataQuadCurve(CurveDirections.LeftDown, d4, d2);   // levý horní roh, směr doleva a dolů, relativní definice
+            string cld = _GetSvgDataQuadCurve(CurveDirections.DownRight, d4, d2);  // levý dolní roh, směr dolů a doprava, relativní definice  (použitelný zvenku vpravo dole i uvnitř nahoře vlevo v rožku)
+            string cpd = _GetSvgDataQuadCurve(CurveDirections.RightUp, d4, d2);    // pravý dolní roh, směr doprava a nahoru, relativní definice
+            string cph = _GetSvgDataQuadCurve(CurveDirections.UpLeft, d4, d2);     // pravý horní roh, směr nahoru a doprava, relativní definice
 
             string xmlPath = "";
             if (edge > 0 && iw >= 4 && ih >= 4)
@@ -1228,7 +1210,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {   // Využijeme metodu _TryGetGenericSvgText, předáme jí explicitní parametry:
             string text = DxComponent.GetCaptionForIcon(caption);
             string imageName = $"@text|{text}";     //   ... |Black|sans-serif|N|4|DarkBlue|White";
-            if (!TryGetGenericSvg(imageName, sizeType, out DxSvgImage dxSvgImage)) return null;
+            if (!TryGetGenericSvg(imageName, sizeType, out DxSvgImage dxSvgImage)) return null;    // Přejdeme do zdejší metody _TryGetGenericSvgText()
             return dxSvgImage;
         }
         /// <summary>
@@ -1261,15 +1243,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 "M31,0H1C0.5,0,0,0.5,0,1v30c0,0.5,0.5,1,1,1h30c0.5,0,1-0.5,1-1V1C32,0.5,31.5,0,31,0z " + path2 :
                 "M15.5,0H0.5C0.25,0,0,0.25,0,0.5v15c0,0.25,0.25,0.5,0.5,0.5h15c0.25,0,0.5-0.25,0.5-0.5V0.5C16,0.25,15.75,0,15.5,0z " + path2;
 
-            string xmlHeader = _GetXmlContentHeader(size);
-            string xmlStyles = _GetXmlDevExpressStyles();
+            string xmlHeader = _GetXmlBodyHeader(size);
+            string xmlStyles = _GetXmlElementDevExpressStyles();
             string xmlText = $@"  <g id='icon{text}' style='font-size: {fontSize}; text-anchor: middle; font-family: {fontFamily}; font-weight: {weight}'>
     <path d='{path1}' class='{borderClass}' />
     <path d='{path2}' class='{fillClass}' />
     <text x='{textX}' y='{textY}' class='{textClass}'>{text}</text>
   </g>
 ";
-            string xmlFooter = _GetXmlContentFooter();
+            string xmlFooter = _GetXmlBodyFooter();
 
             string xmlContent = xmlHeader + xmlStyles + xmlText + xmlFooter;
             xmlContent = xmlContent.Replace("'", "\"");
@@ -1313,19 +1295,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private static bool _TryGetGenericSvgText(string imageName, string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage)
         {
+            // Název ImageName pro vytvoření generické ikony typu Text má vzhled:
+            //   "@text|DJ|blue|serif|B|4|#662266|#FFDDFF"
+            // Kde
+            //    @text                                         0: klíčové slovo pro generování textu;
+            //          DJ                                      1: vlastní text
+            //             blue                                 2: barva písma
+            //                  serif                           3: typ písma, default = sans-serif
+            //                        B                         4: Bold písmo (jiný formát není povolen)
+            //                          4                       5: Průměr kulatosti rohu borderu vzhledem k velikosti ikony 16
+            //                            #662266               6: Barva rámečku
+            //                                     #FFDDFF      7: Barva výplně pod písmenem
             bool isDarkTheme = DxComponent.IsDarkTheme;
             int p = 1;
-            string text = _GetGenericParam(genericItems, p++, "");                                           // 1: Text, bude pouze Trimován
-            string textParam = _GetGenericDefinition(genericItems, p++, "fill", (isDarkTheme ? _GenericTextColorDarkSkinText : _GenericTextColorLightSkinText));         // 2: Barva písma (class, fill, nic)
-            string fontFamily = _GetGenericDefinition(genericItems, p++, "sans-serif", "");                  // 3: Font: Default = bezpatkové písmo
+            string text = _GetGenericParam(genericItems, p++, "");
+            string textParam = _GetGenericDefinition(genericItems, p++, "fill", (isDarkTheme ? _GenericTextColorDarkSkinText : _GenericTextColorLightSkinText));
+            string fontFamily = _GetGenericDefinition(genericItems, p++, "sans-serif", "");
             
-            bool isBold = (_GetGenericParam(genericItems, p++, "N").StartsWith("B", StringComparison.InvariantCultureIgnoreCase));     // 4: Bold
+            bool isBold = (_GetGenericParam(genericItems, p++, "N").StartsWith("B", StringComparison.InvariantCultureIgnoreCase));
 
-            string roundT = _GetGenericParam(genericItems, p++, "");                 // 5: Zaoblení rohů
+            string roundT = _GetGenericParam(genericItems, p++, "");
             int? round = ((!String.IsNullOrEmpty(roundT) && Int32.TryParse(roundT, out int r) && r >= 2 && r < 16) ? (int?)r : (int?)null);
 
-            string borderParam = _GetGenericDefinition(genericItems, p++, "fill", (isDarkTheme ? _GenericTextColorDarkSkinBorder : _GenericTextColorLightSkinBorder));   // 6: Barva rámečku
-            string fillParam = _GetGenericDefinition(genericItems, p++, "fill", (isDarkTheme ? _GenericTextColorDarkSkinFill : _GenericTextColorLightSkinFill));         // 7: Barva podkladu: Default = průhledná
+            string borderParam = _GetGenericDefinition(genericItems, p++, "fill", (isDarkTheme ? _GenericTextColorDarkSkinBorder : _GenericTextColorLightSkinBorder));
+            string fillParam = _GetGenericDefinition(genericItems, p++, "fill", (isDarkTheme ? _GenericTextColorDarkSkinFill : _GenericTextColorLightSkinFill));
 
             return _TryGetGenericSvgTextParts(imageName, text, sizeType, ref dxSvgImage, GenericTextParts.All, textParam, fontFamily, isBold, round, borderParam, fillParam);
         }
@@ -1347,24 +1340,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static bool _TryGetGenericSvgTextParts(string imageName, string text, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage, GenericTextParts parts,
             string textParam, string fontFamily, bool isBold, int? round, string borderParam, string fillParam)
         {
-            int size = (sizeType.HasValue && sizeType.Value == ResourceImageSizeType.Small ? 16 : 32);
-            bool hasRound = (round.HasValue & round.Value > 1);
+            bool isLarge = (sizeType.HasValue && sizeType.Value != ResourceImageSizeType.Small);
+            int size = (!isLarge ? 16 : 32);
 
             TextInfo textInfo = new TextInfo(text, size, fontFamily, isBold);
 
-            string xmlHeader = _GetXmlContentHeader(size);
-            string xmlStyles = _GetXmlDevExpressStyles();
+            string xmlHeader = _GetXmlBodyHeader(size);
+            string xmlStyles = _GetXmlElementDevExpressStyles();
             string xmlTextBegin = parts.HasFlag(GenericTextParts.Text) ? textInfo.GetXmlGroupBegin() : "";
-            string xmlPathBorder = parts.HasFlag(GenericTextParts.Border) ? _GetXmlPathBorderSquare(size, isBold, borderParam, false, null, round) : "";
-            string xmlPathFill = parts.HasFlag(GenericTextParts.Fill) ? 
-                                  (hasRound ?
-                                    _GetXmlPathBorderSquare(size, isBold, fillParam, false, new Padding(1), round) :
-                                    _GetXmlPathFillSquare(size, isBold, fillParam))
-                                   : "";
-            string xmlTextText = parts.HasFlag(GenericTextParts.Text) ? textInfo.GetXmlGroupText(textParam) : "";
-            string xmlFooter = _GetXmlContentFooter();
 
-            string xmlContent = xmlHeader + xmlStyles + xmlTextBegin + xmlPathBorder + xmlPathFill + xmlTextText + xmlFooter;
+            string borderStyle = (parts.HasFlag(GenericTextParts.Border) ? borderParam : "");
+            string fillStyle = (parts.HasFlag(GenericTextParts.Fill) ? fillParam : "");
+            int borderLine = (isLarge || isBold ? 2 : 1);
+            int diameter = (round.HasValue && round.Value > 0 ? (isLarge ? 2 * round.Value : round.Value) : 0);
+            string xmlBackButton = _GetXmlPathButton(size, borderLine, borderStyle, fillStyle, Padding.Empty, diameter);
+
+            string xmlTextText = parts.HasFlag(GenericTextParts.Text) ? textInfo.GetXmlGroupText(textParam) : "";
+            string xmlFooter = _GetXmlBodyFooter();
+
+            string xmlContent = xmlHeader + xmlStyles + xmlTextBegin + xmlBackButton + xmlTextText + xmlFooter;
             dxSvgImage = DxSvgImage.Create(text, DxSvgImagePaletteType.LightSkin, xmlContent);
             dxSvgImage.SizeType = sizeType;
             dxSvgImage.GenericSource = imageName;
@@ -1489,7 +1483,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>Barva pro generický text, tmavý skin: výplň</summary>
         private static string _GenericTextColorDarkSkinFill { get { return "#383838"; } }
         #endregion
-
+        #region Dokumenty (zatím jen zchycené SVG definice, nikoli generátory)
         /* Dokument s podbarvením bez ohnutého rohu
 ﻿<?xml version='1.0' encoding='UTF-8'?>
 <svg x="0px" y="0px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" id="Layer_1" style="enable-background:new 0 0 32 32">
@@ -1533,23 +1527,23 @@ M22,18H10v2H22v-2z
 M22,22H10v2H22v-2z " class="Black" />
 </svg>
         */
-
-        #region Generic Support: Header, Styles, Paths, Curve, Footer, Convertors, Parameters...
+        #endregion
+        #region Tvorba XML elementů a jejich částí pro Header a Footer SVG definice, tvorba pole koordinátů
         /// <summary>
         /// Vrací XML text zahajující SVG image dané velikosti. Generuje záhlaví SVG a otevírá element G.
         /// </summary>
         /// <param name="coordinates"></param>
         /// <returns></returns>
-        private static string _GetXmlContentHeader(int[] coordinates)
+        private static string _GetXmlBodyHeader(int[] coordinates)
         {
-            return _GetXmlContentHeader(coordinates[16]);
+            return _GetXmlBodyHeader(coordinates[16]);
         }
         /// <summary>
         /// Vrací XML text zahajující SVG image dané velikosti. Generuje záhlaví SVG a otevírá element G.
         /// </summary>
         /// <param name="size"></param>
         /// <returns></returns>
-        private static string _GetXmlContentHeader(int size)
+        private static string _GetXmlBodyHeader(int size)
         {
             string xml = $@"﻿<?xml version='1.0' encoding='UTF-8'?>
 <svg x='0' y='0' width='{size}' height='{size}' viewBox='0 0 {size} {size}' enable-background='new 0 0 {size} {size}' 
@@ -1560,13 +1554,25 @@ M22,22H10v2H22v-2z " class="Black" />
         }
         /// <summary>
         /// Vrací XML text definující styly DevExpress.
-        /// Dává se hned za Header = <see cref="_GetXmlContentHeader(int)"/>.
+        /// Dává se hned za Header = <see cref="_GetXmlBodyHeader(int)"/>.
+        /// Definuje styly (=barvy), které následně může DevExpress modifikovat podle světlého / tmavého skinu.
         /// Obsahuje pouze kompletní tag STYLE, nezačíná tag G.
         /// </summary>
         /// <returns></returns>
-        private static string _GetXmlDevExpressStyles()
+        private static string _GetXmlElementDevExpressStyles()
         {
             string xml = @"    <style type='text/css'> .White{fill:#FFFFFF;} .Red{fill:#D11C1C;} .Green{fill:#039C23;} .Blue{fill:#1177D7;} .Yellow{fill:#FFB115;} .Black{fill:#727272;} .st0{opacity:0.75;} .st1{opacity:0.5;} </style>
+";
+            return xml.Replace("'", "\"");
+        }
+        /// <summary>
+        /// Vrací XML text ukončující SVG image: ukončuje element G a poté SVG.
+        /// </summary>
+        /// <returns></returns>
+        private static string _GetXmlBodyFooter()
+        {
+            string xml = $@"  </g>
+</svg>
 ";
             return xml.Replace("'", "\"");
         }
@@ -1615,122 +1621,62 @@ M22,22H10v2H22v-2z " class="Black" />
             }
             return result;
         }
+        #endregion
+        #region Tvorba XML elementů a jejich částí pro jednotlivá grafická data
         /// <summary>
         /// Vrátí element path, ve tvaru obdélníku (s kulatými rohy) vepsaného do dané velikosti (size), s okraji (padding) o síle okraje (isBold ? 2 : 1).
         /// </summary>
         /// <param name="size"></param>
-        /// <param name="isBold"></param>
-        /// <param name="styleParam"></param>
-        /// <param name="counterClockWise"></param>
+        /// <param name="borderLine">Šířka linky. Platí daná hodnota, nijak se neupravuje. 0 = nebude border.</param>
+        /// <param name="borderStyle"></param>
+        /// <param name="fillStyle"></param>
         /// <param name="padding"></param>
-        /// <param name="round">Kulatost rohů</param>
+        /// <param name="diameter">Kulatost rohů = průměr kruhu. Platí daná hodnota, nijak se neupravuje. 0 = nebude kulatý roh ale hranatý.</param>
         /// <returns></returns>
-        private static string _GetXmlPathBorderSquare(int size, bool isBold, string styleParam, bool counterClockWise = false, Padding? padding = null, int? round = null)
+        private static string _GetXmlPathButton(int size, int borderLine, string borderStyle, string fillStyle, Padding padding, int diameter)
         {
-            _ValidateGenericDefinition(ref styleParam);
-            if (size <= 0 || String.IsNullOrEmpty(styleParam)) return "";
+            _ValidateGenericDefinition(ref borderStyle);
+            _ValidateGenericDefinition(ref fillStyle);
+            bool hasBorder = !String.IsNullOrEmpty(borderStyle) && borderLine > 0;
+            bool hasFill = !String.IsNullOrEmpty(fillStyle);
+            if (size <= 0 || (!hasBorder && !hasFill)) return "";              // Není kam anebo není co dělat
 
-            string pathData = _GetXmlPathDataBorderSquare(size, isBold, counterClockWise, padding, round);
-            string xml = $@"      <path d='{pathData}' {styleParam} />
+            // Vstupní parametry:
+            Padding p = padding;                                               // Použitý Padding
+            int s = borderLine <= 0 ? 0 : borderLine;                          // Šířka linky borderu
+            int d = diameter;                                                     // Průměr zaoblení rohů
+            int maxD = size;
+            d = (d > maxD ? maxD : (d < 0 ? 0 : d));                           // d zarovat do mezí 0 až size/4
+
+            // Vnější souřadnice:
+            int l = p.Left;
+            int t = p.Top;
+            int w = size - p.Horizontal;
+            int h = size - p.Vertical;
+            string outerData = _GetSvgDataRoundSquare(l, t, w, h, d, false);   // Data, definující vnější křivku (daný rozměr - padding; { zaoblené rohy / hranaté } = autodetekce v _GetSvgDataRoundSquare()
+
+            // Vnitřní souřadnice zmenším o Border:
+            int b1 = s;
+            int b2 = 2 * b1;
+            l += b1;
+            t += b1;
+            w -= b2;
+            h -= b2;
+            d = (d <= b2 ? 0 : d - b2);                                       // Průměr kruhu zaoblení: pokud nebylo nějak veliké, pak vnitřní křivka bude mít d=0 (=hranatý), jinak průměr zmenšením o 2x border
+            string innerData = _GetSvgDataRoundSquare(l, t, w, h, d, true);    // Data, definující vnitřní křivku (daný rozměr - padding; { zaoblené rohy / hranaté } = autodetekce v _GetSvgDataRoundSquare()
+
+            string xml = "";
+            if (hasBorder) xml += $@"      <path d='{outerData} {innerData}' {borderStyle} />
 ";
-            return xml.Replace("'", "\"");
-        }
-        /// <summary>
-        ///  Vrátí čistá data pro element path, ve tvaru obdélníku (s kulatými rohy) vepsaného do dané velikosti (size), s okraji (padding) o síle okraje (isBold ? 2 : 1).
-        /// </summary>
-        /// <param name="size"></param>
-        /// <param name="isBold"></param>
-        /// <param name="counterClockWise"></param>
-        /// <param name="padding"></param>
-        /// <param name="round">Kulatost rohů</param>
-        /// <returns></returns>
-        private static string _GetXmlPathDataBorderSquare(int size, bool isBold, bool counterClockWise, Padding? padding = null, int? round = null)
-        {
-            if (size <= 0) return "";
 
-            Padding p = padding ?? Padding.Empty;
-            bool isLarge = (size >= 24);
-            int d = (isLarge ? 2 : 1);                     // Průměr kruhu zaoblení hran (=dva radiusy)
-            if (round.HasValue && round.Value > 1) d = d * round.Value;
-            int w = size - (p.Horizontal + d);             // Šířka rovné části (tj. bez zaoblené části)
-            int h = size - (p.Vertical + d);               // Výška rovné části (tj. bez zaoblené části)
-            _GetXmlQuadCurveR1R2(d, out var d4, out var d2);        // Deklarace křivky, polovina a čtvrtina radiusu "d"
-
-            string xml, bx, by, tr, br, bl, tl;
-            if (!counterClockWise)
-            {   // Ve směru hodinových ručiček
-                bx = _GetXmlNumber(p.Left, d, 2);          // Počátek rovné části vlevo úplně nahoře, X
-                by = _GetXmlNumber(p.Top, 0, 1);           // Počátek rovné části vlevo úplně nahoře, Y
-                tr = _GetXmlQuadCurve(CurveDirections.RightDown, d4, d2);
-                br = _GetXmlQuadCurve(CurveDirections.DownLeft, d4, d2);
-                bl = _GetXmlQuadCurve(CurveDirections.LeftUp, d4, d2);
-                tl = _GetXmlQuadCurve(CurveDirections.UpRight, d4, d2);
-
-                xml = $"M{bx},{by}h{w}{tr}v{h}{br}h-{w}{bl}v-{h}{tl}z " + _GetXmlPathDataFillSquare(size, isBold, true, padding);
-            }
-            else
-            {   // V protisměru
-                bx = _GetXmlNumber(p.Left, 0, 1);          // Počátek rovné části úplně vlevo nahoře, X
-                by = _GetXmlNumber(p.Top, d, 2);           // Počátek rovné části úplně vlevo nahoře, Y
-                bl = _GetXmlQuadCurve(CurveDirections.DownRight, d4, d2);
-                br = _GetXmlQuadCurve(CurveDirections.RightUp, d4, d2);
-                tr = _GetXmlQuadCurve(CurveDirections.UpLeft, d4, d2);
-                tl = _GetXmlQuadCurve(CurveDirections.LeftDown, d4, d2);
-
-                xml = $"M{bx},{by}v{h}{bl}h{w}{br}v-{h}{tr}h-{w}{tl}z " + _GetXmlPathDataFillSquare(size, isBold, false, padding);
-
-            }
-            return xml.Replace("'", "\"");
-        }
-        /// <summary>
-        /// Vrátí element path, ve tvaru obdélníku vepsaného do dané velikosti (size), s okraji (padding) a s odstupem od okrajů (isBold ? 2 : 1).
-        /// Slouží mj. jako výplň do rámečku vráceného v metodě <see cref="_GetXmlPathBorderSquare(int, bool, string, bool, Padding?)"/>.
-        /// </summary>
-        /// <param name="size"></param>
-        /// <param name="isBold"></param>
-        /// <param name="styleParam"></param>
-        /// <param name="counterClockWise">Směr: false = po směru ručiček, true = proti směru</param>
-        /// <param name="padding"></param>
-        /// <returns></returns>
-        private static string _GetXmlPathFillSquare(int size, bool isBold, string styleParam, bool counterClockWise = false, Padding? padding = null)
-        {
-            _ValidateGenericDefinition(ref styleParam);
-            if (size <= 0 || String.IsNullOrEmpty(styleParam)) return "";
-
-            string pathData = _GetXmlPathDataFillSquare(size, isBold, counterClockWise, padding);
-            string xml = $@"      <path d='{pathData}' {styleParam} />
+            if (hasFill) xml += $@"      <path d='{innerData}' {fillStyle} />
 ";
-            return xml.Replace("'", "\"");
-        }
-        /// <summary>
-        /// Vrátí čistá data pro element path, ve tvaru obdélníku vepsaného do dané velikosti (size), s okraji (padding) a s odstupem od okrajů (isBold ? 2 : 1).
-        /// Slouží jako výplň do rámečku vráceného v metodě <see cref="_GetXmlPathDataBorderSquare(int, bool, bool, Padding?)"/>.
-        /// </summary>
-        /// <param name="size"></param>
-        /// <param name="isBold"></param>
-        /// <param name="counterClockWise">Směr: false = po směru ručiček, true = proti směru</param>
-        /// <param name="padding"></param>
-        /// <returns></returns>
-        private static string _GetXmlPathDataFillSquare(int size, bool isBold, bool counterClockWise, Padding? padding = null)
-        {
-            if (size <= 0) return "";
-
-            Padding p = padding ?? Padding.Empty;
-            bool isLarge = (size >= 24);
-            int s = (isLarge && isBold ? 2 : 1);           // Šířka linky
-            int l = p.Left + s;                            // Left, Top, Right, Bottom:
-            int t = p.Top + s;
-            int r = size - p.Right - s;
-            int b = size - p.Bottom - s;
-            int w = r - l;
-            int h = b - t;
-
-            string xml = _GetXmlPathDataRectangle(l, t, w, h, counterClockWise);
 
             return xml.Replace("'", "\"");
         }
         /// <summary>
-        /// Vrací kompletní element "path" pro rectangle dané velikosti s danými vlastnostmi, plný (bez vnitřního otvoru)
+        /// Vrací dva kompletní elementy "path" pro vnější Border rectangle s danou šířkou a barvou Borderu <paramref name="borderStyle"/>, 
+        /// a druhý Path pro vnitřní prostor (uvnitř Borderu) s danou barvou (stylem) <paramref name="fillStyle"/>
         /// </summary>
         /// <param name="l"></param>
         /// <param name="t"></param>
@@ -1740,7 +1686,7 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <param name="borderStyle"></param>
         /// <param name="fillStyle"></param>
         /// <returns></returns>
-        private static string _GetXmlPathRectangleFill(int l, int t, int w, int h, int thick, string borderStyle, string fillStyle)
+        private static string _GetXmlPathFilledRectangle(int l, int t, int w, int h, int thick, string borderStyle, string fillStyle)
         {
             string xml = "";
             xml += _GetXmlPathRectangle(l, t, w, h, thick, borderStyle);
@@ -1777,115 +1723,18 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <returns></returns>
         private static string _GetXmlPathRectangle(int l, int t, int w, int h, int thick, string styleParam)
         {
-            string pathData1 = _GetXmlPathDataRectangle(l, t, w, h, true);
+            string pathData1 = _GetSvgDataRectangle(l, t, w, h, true);
             string pathData2 = "";
             if (thick > 0 && thick < w && thick < h)
             {
                 int th1 = thick;
                 int th2 = 2 * th1;
-                pathData2 = _GetXmlPathDataRectangle(l + th1, t + th1, w - th2, h - th2, false);
+                pathData2 = _GetSvgDataRectangle(l + th1, t + th1, w - th2, h - th2, false);
             }
             string xml = $@"      <path d='{pathData1}{pathData2}' {styleParam} />
 ";
             return xml.Replace("'", "\"");
         }
-        /// <summary>
-        /// Vrátí čistá data pro XML path pro rectangle na dané souřadnici (l,t) a velikosti (w,h), v daném směru.
-        /// </summary>
-        /// <param name="l"></param>
-        /// <param name="t"></param>
-        /// <param name="w"></param>
-        /// <param name="h"></param>
-        /// <param name="counterClockWise"></param>
-        /// <returns></returns>
-        private static string _GetXmlPathDataRectangle(int l, int t, int w, int h, bool counterClockWise)
-        {
-            string xml = !counterClockWise ?
-                $"M{l},{t}h{w}v{h}h-{w}v-{h}z " :          // Ve směru hodinových ručiček
-                $"M{l},{t}v{h}h{w}v-{h}h-{w}z ";           // V protisměru
-            return xml;
-        }
-
-        private static string _GetXmlPathDocumentInt(int l, int t, int w, int h, int thick, int corner, string styleParam)
-        {
-            string pathData = _GetXmlPathDataRectangle(l, t, w, h, true);
-            string xml = $@"      <path d='{pathData}' {styleParam} />
-";
-            return xml.Replace("'", "\"");
-        }
-        /// <summary>
-        /// Vrací čistá data pro Path reprezentující vnitřek dokumentu
-        /// </summary>
-        /// <returns></returns>
-        private static string _GetXmlPathDataDocumentInt(int l, int t, int w, int h, int thick, int corner)
-        {
-            if (thick < 0) thick = 0;
-            int th1 = thick;
-            int th2 = 2 * th1;
-            int x0 = l + th1;
-            int x1 = l + w - th2;
-            int y0 = t + th1;
-            int y1 = t + h - th2;
-            return "";
-        }
-        /// <summary>
-        /// Vrátí souřadice pro definici křivky pro dané modulo = průměr kružnice.
-        /// </summary>
-        /// <param name="diameter">Průměr kružnice v pixelech</param>
-        /// <param name="d4">Out 1/4 průměru = 1/2 poloměru oblouku</param>
-        /// <param name="d2">Out 1/2 průměru = celý poloměr oblouku</param>
-        /// <returns></returns>
-        private static void _GetXmlQuadCurveR1R2(int diameter, out string d4, out string d2)
-        {
-            d4 = _GetXmlNumber(0, diameter, 4);            // Deklarace křivky, polovina radiusu : pro large je zde "0.5", pro small je zde "0.25"
-            d2 = _GetXmlNumber(0, diameter, 2);            // Deklarace křivky, celý radius      : pro large je zde "1", pro small je zde "0.50"
-        }
-        /// <summary>
-        /// Vrátí křivku ve tvaru čtvrtkruhu, relativně umístěnou, v daném směru <paramref name="directions"/>;
-        /// pro dané modulo = průměr kružnice.
-        /// </summary>
-        /// <param name="directions"></param>
-        /// <param name="diameter"></param>
-        /// <returns></returns>
-        private static string _GetXmlQuadCurve(CurveDirections directions, int diameter)
-        {
-            _GetXmlQuadCurveR1R2(diameter, out string d4, out string d2);
-            return _GetXmlQuadCurve(directions, d4, d2);
-        }
-        /// <summary>
-        /// Vrátí křivku ve tvaru čtvrtkruhu, relativně umístěnou, v daném směru <paramref name="directions"/>;
-        /// kde parametr <paramref name="d4"/> určuje půlrádius a <paramref name="d2"/> určuje rádius.
-        /// <para/>
-        /// Čtvrtkruh vychází z aktuálního bodu ve směru první části směrníku <see cref="CurveDirections"/>, a otáčí se směrem k druhé části směrníku.
-        /// Například směrník <see cref="CurveDirections.RightDown"/> jde nejprve doprava, a ohýbá se směrem dolů (jde o pravý horní roh čtverce ve směru hodinových ručiček).
-        /// Na rozdíl od toho směrník <see cref="CurveDirections.DownRight"/> jde nejprve dolů, a pak zahýbá doprava (jde o levý dolní roh čtverce proti směru hodinových ručiček).
-        /// <para/>
-        /// Jako radiusy je třeba zadat text odpovídající počtu pixelů rohu, i jako desetiné číslo, bez znaménka mínus.
-        /// Pokud tedy chceme vykreslit oblouk přes jeden pixel, předáme <paramref name="d4"/> = "0.5" a <paramref name="d2"/> = "1".
-        /// </summary>
-        /// <param name="directions"></param>
-        /// <param name="d4">1/4 průměru = 1/2 poloměru oblouku</param>
-        /// <param name="d2">1/2 průměru = celý poloměr oblouku</param>
-        /// <returns></returns>
-        private static string _GetXmlQuadCurve(CurveDirections directions, string d4, string d2)
-        {
-            switch (directions)
-            {
-                case CurveDirections.RightDown: return $"c{d4},0,{d2},{d4},{d2},{d2}";
-                case CurveDirections.RightUp: return $"c{d4},0,{d2},-{d4},{d2},-{d2}";
-                case CurveDirections.LeftDown: return $"c-{d4},0,-{d2},{d4},-{d2},{d2}";
-                case CurveDirections.LeftUp: return $"c-{d4},0,-{d2},-{d4},-{d2},-{d2}";
-                case CurveDirections.UpRight: return $"c0,-{d4},{d4},-{d2},{d2},-{d2}";
-                case CurveDirections.UpLeft: return $"c0,-{d4},-{d4},-{d2},-{d2},-{d2}";
-                case CurveDirections.DownRight: return $"c0,{d4},{d4},{d2},{d2},{d2}";
-                case CurveDirections.DownLeft: return $"c0,{d4},-{d4},{d2},-{d2},{d2}";
-            }
-            return "";
-        }
-        /// <summary>
-        /// Směr křivky
-        /// </summary>
-        private enum CurveDirections { None, RightDown, RightUp, LeftDown, LeftUp, UpRight, UpLeft, DownRight, DownLeft }
         /// <summary>
         /// Vrací XML text definující RadialGradient
         /// </summary>
@@ -1895,7 +1744,7 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <param name="outerColorName"></param>
         /// <param name="radiusRel"></param>
         /// <returns></returns>
-        private static string _GetXmlContentGradientRadial(int size, string name, string centerColorName, string outerColorName = null, int radiusRel = 80)
+        private static string _GetXmlElementGradientRadial(int size, string name, string centerColorName, string outerColorName = null, int radiusRel = 80)
         {
             int add = size * radiusRel / 1200;
             int c = size / 2;
@@ -1934,7 +1783,7 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <param name="fill"></param>
         /// <param name="radiusRel"></param>
         /// <returns></returns>
-        private static string _GetXmlContentCircle(int size, string fill, int radiusRel)
+        private static string _GetXmlElementCircle(int size, string fill, int radiusRel)
         {
             int c = size / 2;
             int cx = c;
@@ -1948,15 +1797,202 @@ M22,22H10v2H22v-2z " class="Black" />
             return xml.Replace("'", "\"");
         }
         /// <summary>
-        /// Vrací XML text ukončující SVG image: ukončuje element G a poté SVG.
+        /// Vrátí XML element PATH pro daný obdélník
         /// </summary>
+        /// <param name="l"></param>
+        /// <param name="t"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="thick"></param>
+        /// <param name="corner"></param>
+        /// <param name="styleParam"></param>
         /// <returns></returns>
-        private static string _GetXmlContentFooter()
+        private static string _GetXmlPathDocumentInt(int l, int t, int w, int h, int thick, int corner, string styleParam)
         {
-            string xml = $@"  </g>
-</svg>
+            string pathData = _GetSvgDataRectangle(l, t, w, h, true);
+            string xml = $@"      <path d='{pathData}' {styleParam} />
 ";
             return xml.Replace("'", "\"");
+        }
+        #endregion
+        #region Tvorba SVG definice dat křivek, rectangle, atd - základní vnitřní texty
+        /// <summary>
+        /// Vrátí čistá data pro XML path pro rectangle na dané souřadnici (l,t) a velikosti (w,h), v daném směru.<br/>
+        /// Vrací tedy např. "M2,2h28v28h-28v-28z "  (pro <paramref name="l"/>=2, <paramref name="t"/>=2, <paramref name="w"/>=28, <paramref name="h"/>=28).
+        /// </summary>
+        /// <param name="l">Left</param>
+        /// <param name="t">Top</param>
+        /// <param name="w">Width</param>
+        /// <param name="h">Height</param>
+        /// <param name="counterClockWise">true = proti směru hodinových ručiček. Má vliv na správnou tvorbu výplně u více kombinovaných elementů.</param>
+        /// <returns></returns>
+        private static string _GetSvgDataRectangle(int l, int t, int w, int h, bool counterClockWise)
+        {
+            string data = !counterClockWise ?
+                $"M{l},{t}h{w}v{h}h-{w}v-{h}z " :          // Ve směru hodinových ručiček
+                $"M{l},{t}v{h}h{w}v-{h}h-{w}z ";           // V protisměru
+            return data;
+        }
+        /// <summary>
+        /// Vrátí čistá data pro XML element path, ve tvaru obdélníku s kulatými rohy v zadaném prostoru s danými kulatými rohy, v daném směru.
+        /// Vrací pouze jednu křivku, neřeší její vnitřní křivku pro případnou tvorbu rámečku Border.
+        /// </summary>
+        /// <param name="l">Left</param>
+        /// <param name="t">Top</param>
+        /// <param name="w">Width</param>
+        /// <param name="h">Height</param>
+        /// <param name="d">Průměr kružnice určující kulatý roh</param>
+        /// <param name="counterClockWise">true = proti směru hodinových ručiček. Má vliv na správnou tvorbu výplně u více kombinovaných elementů.</param>
+        /// <returns></returns>
+        private static string _GetSvgDataRoundSquare(int l, int t, int w, int h, int d, bool counterClockWise)
+        {
+            // Odbočka a zkratka, pokud zakulacení rohů je nula:
+            if (d <= 0) return _GetSvgDataRectangle(l, t, w, h, counterClockWise);
+
+            // Skutečně budou zakulacené rohy, ošetříme horní meze:
+            int s = (w < h ? w : h);
+            int s2 = s / 2;
+            if (d > s2) d = s2;
+
+            _GetSvgDataQuadCurveD4D2(d, out var d4, out var d2);               // Deklarace křivky: polovina a čtvrtina radiusu "d"
+            string wi = (w - d).ToString();                                    // Šířka interní rovné části (tj. bez zaoblené části)
+            string hi = (h - d).ToString();                                    // Výška interní rovné části (tj. bez zaoblené části)
+
+            string data, bx, by, tr, br, bl, tl;
+            if (!counterClockWise)
+            {   // Ve směru hodinových ručiček
+                bx = _GetSvgDataNumberRatio(l, d, 2);                          // Počátek rovné části vlevo úplně nahoře, X + 1/2 průměru kulatého rohu
+                by = _GetSvgDataNumberRatio(t, 0, 1);                          // Počátek rovné části vlevo úplně nahoře, Y bez posunutí
+                tr = _GetSvgDataQuadCurve(CurveDirections.RightDown, d4, d2);
+                br = _GetSvgDataQuadCurve(CurveDirections.DownLeft, d4, d2);
+                bl = _GetSvgDataQuadCurve(CurveDirections.LeftUp, d4, d2);
+                tl = _GetSvgDataQuadCurve(CurveDirections.UpRight, d4, d2);
+
+                data = $"M{bx},{by}h{wi}{tr}v{hi}{br}h-{wi}{bl}v-{hi}{tl}z ";
+            }
+            else
+            {   // V protisměru
+                bx = _GetSvgDataNumberRatio(l, 0, 1);                          // Počátek rovné části úplně vlevo nahoře, X bez posunutí
+                by = _GetSvgDataNumberRatio(t, d, 2);                          // Počátek rovné části úplně vlevo nahoře, Y + 1/2 průměru kulatého rohu
+                bl = _GetSvgDataQuadCurve(CurveDirections.DownRight, d4, d2);
+                br = _GetSvgDataQuadCurve(CurveDirections.RightUp, d4, d2);
+                tr = _GetSvgDataQuadCurve(CurveDirections.UpLeft, d4, d2);
+                tl = _GetSvgDataQuadCurve(CurveDirections.LeftDown, d4, d2);
+
+                data = $"M{bx},{by}v{hi}{bl}h{wi}{br}v-{hi}{tr}h-{wi}{tl}z ";
+            }
+            return data;
+        }
+        /// <summary>
+        /// Vrátí souřadice pro definici křivky pro dané modulo = průměr kružnice.
+        /// </summary>
+        /// <param name="diameter">Průměr kružnice v pixelech</param>
+        /// <param name="d4">Out 1/4 průměru = 1/2 poloměru oblouku</param>
+        /// <param name="d2">Out 1/2 průměru = celý poloměr oblouku</param>
+        /// <returns></returns>
+        private static void _GetSvgDataQuadCurveD4D2(int diameter, out string d4, out string d2)
+        {
+            d4 = _GetSvgDataNumberRatio(0, diameter, 4);            // Deklarace křivky, polovina radiusu : pro large je zde "0.5", pro small je zde "0.25"
+            d2 = _GetSvgDataNumberRatio(0, diameter, 2);            // Deklarace křivky, celý radius      : pro large je zde "1", pro small je zde "0.50"
+        }
+        /// <summary>
+        /// Vrátí křivku ve tvaru čtvrtkruhu, relativně umístěnou, v daném směru <paramref name="directions"/>;
+        /// pro dané modulo = průměr kružnice.<br/>
+        /// Vrátí tedy čistý SVG DATA text např. "c1,0,2,1,2,2" (pro <paramref name="directions"/> = <see cref="CurveDirections.RightDown"/>, <paramref name="diameter"/> = 4)
+        /// </summary>
+        /// <param name="directions"></param>
+        /// <param name="diameter"></param>
+        /// <returns></returns>
+        private static string _GetSvgDataQuadCurve(CurveDirections directions, int diameter)
+        {
+            _GetSvgDataQuadCurveD4D2(diameter, out string d4, out string d2);
+            return _GetSvgDataQuadCurve(directions, d4, d2);
+        }
+        /// <summary>
+        /// Vrátí křivku ve tvaru čtvrtkruhu, relativně umístěnou, v daném směru <paramref name="directions"/>;
+        /// kde parametr <paramref name="d4"/> určuje půlrádius a <paramref name="d2"/> určuje rádius.<br/>
+        /// Vrátí tedy čistý SVG DATA text např. "c1,0,2,1,2,2" (pro <paramref name="directions"/> = <see cref="CurveDirections.RightDown"/>, <paramref name="d4"/> = 1, <paramref name="d2"/> = 2)
+        /// <para/>
+        /// Čtvrtkruh vychází z aktuálního bodu ve směru první části směrníku <see cref="CurveDirections"/>, a otáčí se směrem k druhé části směrníku.
+        /// Například směrník <see cref="CurveDirections.RightDown"/> jde nejprve doprava, a ohýbá se směrem dolů (jde o pravý horní roh čtverce ve směru hodinových ručiček).
+        /// Na rozdíl od toho směrník <see cref="CurveDirections.DownRight"/> jde nejprve dolů, a pak zahýbá doprava (jde o levý dolní roh čtverce proti směru hodinových ručiček).
+        /// <para/>
+        /// Jako radiusy je třeba zadat text odpovídající počtu pixelů rohu, i jako desetiné číslo, bez znaménka mínus.
+        /// Pokud tedy chceme vykreslit oblouk přes jeden pixel, předáme <paramref name="d4"/> = "0.5" a <paramref name="d2"/> = "1".
+        /// </summary>
+        /// <param name="directions"></param>
+        /// <param name="d4">1/4 průměru = 1/2 poloměru oblouku</param>
+        /// <param name="d2">1/2 průměru = celý poloměr oblouku</param>
+        /// <returns></returns>
+        private static string _GetSvgDataQuadCurve(CurveDirections directions, string d4, string d2)
+        {
+            switch (directions)
+            {
+                case CurveDirections.RightDown: return $"c{d4},0,{d2},{d4},{d2},{d2}";
+                case CurveDirections.RightUp: return $"c{d4},0,{d2},-{d4},{d2},-{d2}";
+                case CurveDirections.LeftDown: return $"c-{d4},0,-{d2},{d4},-{d2},{d2}";
+                case CurveDirections.LeftUp: return $"c-{d4},0,-{d2},-{d4},-{d2},-{d2}";
+                case CurveDirections.UpRight: return $"c0,-{d4},{d4},-{d2},{d2},-{d2}";
+                case CurveDirections.UpLeft: return $"c0,-{d4},-{d4},-{d2},-{d2},-{d2}";
+                case CurveDirections.DownRight: return $"c0,{d4},{d4},{d2},{d2},{d2}";
+                case CurveDirections.DownLeft: return $"c0,{d4},-{d4},{d2},-{d2},{d2}";
+            }
+            return "";
+        }
+        /// <summary>
+        /// Směr křivky (čtvrt-oblouku), který bude generovat např. metoda <see cref="_GetSvgDataQuadCurve(CurveDirections, string, string)"/>
+        /// </summary>
+        private enum CurveDirections { None, RightDown, RightUp, LeftDown, LeftUp, UpRight, UpLeft, DownRight, DownLeft }
+        /// <summary>
+        /// Vrátí string obsahující výsledek (a + b / c) vyhovující XML zápisu (desetinná tečka, bez mezer, bez koncových nul)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <param name="c"></param>
+        /// <param name="decimals"></param>
+        /// <returns></returns>
+        private static string _GetSvgDataNumberRatio(int a, int b, int c, int decimals = 3)
+        {
+            decimal r = (decimal)a + ((decimal)b / (decimal)c);
+            string t = r.ToString();
+            if (t.Contains(",")) t = t.Replace(",", ".");
+            if (t.Contains(" ")) t = t.Replace(" ", "");
+            if (t.Contains("."))
+            {
+                while (t.Length > 1 && t.EndsWith("0"))
+                    t = t.Substring(0, t.Length - 1);
+            }
+            return t;
+        }
+        /// <summary>
+        /// Konvertuje dodanou barvu do stringu vhodného pro SVG
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        private static string _GetSvgDataColor(Color color)
+        {
+            if (color.IsNamedColor) return color.Name.ToLower();
+            return "#" + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");
+        }
+        #endregion
+        #region Čtení parametrů, jejich validace
+        /// <summary>
+        /// Ze vstupního stringu detekuje parametry generického SVG.
+        /// Pokud vrátí true, pak na indexu [0] pole out <paramref name="genericItems"/> bude klíčové slovo, na indexech 1++ budou jeho parametry.
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="genericItems"></param>
+        /// <returns></returns>
+        private static bool _TryGetGenericParameters(string imageName, out string[] genericItems)
+        {
+            genericItems = null;
+            bool result = false;
+            if (!String.IsNullOrEmpty(imageName) && imageName[0] == GenericHeader && imageName.Length > 1)
+            {
+                genericItems = imageName.Substring(1).Split(GenericParamSeparator);
+                result = (genericItems.Length >= 1 && genericItems[0].Length > 0);
+            }
+            return result;
         }
         /// <summary>
         /// Z dodaného pole z prvku na daném indexu vrátí jeho Int hodnotu
@@ -2081,37 +2117,6 @@ M22,22H10v2H22v-2z " class="Black" />
             object value = Convertor.StringToColor(item);
             if (!(value is Color)) return defaultValue;
             return (Color)value;
-        }
-        /// <summary>
-        /// Konvertuje dodanou barvu do stringu vhodného pro SVG
-        /// </summary>
-        /// <param name="color"></param>
-        /// <returns></returns>
-        private static string _GetXmlColor(Color color)
-        {
-            if (color.IsNamedColor) return color.Name.ToLower();
-            return "#" + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");
-        }
-        /// <summary>
-        /// Vrátí string obsahující výsledek (a + b / c) vyhovující XML zápisu (desetinná tečka, bez mezer, bez koncových nul)
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <param name="c"></param>
-        /// <param name="decimals"></param>
-        /// <returns></returns>
-        private static string _GetXmlNumber(int a, int b, int c, int decimals = 3)
-        {
-            decimal r = (decimal)a + ((decimal)b / (decimal)c);
-            string t = r.ToString();
-            if (t.Contains(",")) t = t.Replace(",", ".");
-            if (t.Contains(" ")) t = t.Replace(" ", "");
-            if (t.Contains("."))
-            {
-                while (t.Length > 1 && t.EndsWith("0"))
-                    t = t.Substring(0, t.Length - 1);
-            }
-            return t;
         }
         #endregion
         #endregion
