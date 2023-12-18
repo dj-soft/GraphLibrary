@@ -110,14 +110,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Proto detekujeme první použití (kdy na začátku je __EditorPaint = null), a v tom případě vygenerujeme tu úplně první bitmapu naprázdno.
             bool isFirstUse = (__EditorPaint is null);
 
-            __EditorPaint ??= _CreateNativeControl(false);
+            __EditorPaint ??= _CreateNativeControl(false, pdea.InteractivePanel);
             _FillNativeControl(null, paintData, __EditorPaint, controlBounds);
 
             // První vygenerovanou bitmapu v životě Labelu vytvoříme a zahodíme, není pěkná...
-            if (isFirstUse) CreateBitmapData(__EditorPaint);
+            if (isFirstUse) CreateBitmapData(__EditorPaint, pdea.Graphics);
 
             // Teprve ne-první bitmapy jsou OK:
-            return CreateBitmapData(__EditorPaint);
+            return CreateBitmapData(__EditorPaint, pdea.Graphics);
         }
         /// <summary>
         /// Potomek zde vrátí nativní control
@@ -141,17 +141,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Nastaví ji defaultní vzhled, nevkládá do ní hodnoty závislé na konkrétnbím prvku.
         /// Eventhandlery registruje pokud <paramref name="isInteractive"/> je true (hodnota false značí control vytvářený jen pro kreslení).
         /// </summary>
+        /// <param name="isInteractive">Vytvořit interaktovní control: navázat do něj zdejší eventhandlery</param>
+        /// <param name="parent">Parent control, do něhož je vytvořený Control vložen. Pouze pro EditorPaint control. Přebírá z něj barvu Background.</param>
         /// <returns></returns>
-        private DxeEdit.LabelControl _CreateNativeControl(bool isInteractive)
+        private DxeEdit.LabelControl _CreateNativeControl(bool isInteractive, WinForm.Control parent = null)
         {
             var control = new DxeEdit.LabelControl() { Location = new WinDraw.Point(25, -200) };
-            control.ResetBackColor();
+            // control.ResetBackColor();
             control.LineStyle = WinDraw.Drawing2D.DashStyle.Solid;
             control.LineVisible = true;
             control.LineLocation = DxeEdit.LineLocation.Bottom;
             control.LineColor = WinDraw.Color.DarkBlue;
             control.LineOrientation = DxeEdit.LabelLineOrientation.Horizontal;
             control.BorderStyle = DxeCont.BorderStyles.Office2003;
+            if (parent != null)
+                parent.Controls.Add(control);
 
             return control;
         }
@@ -230,9 +234,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
-            __EditorPaint ??= _CreateNativeControl(false);
+            __EditorPaint ??= _CreateNativeControl(false, pdea.InteractivePanel);
             _FillNativeControl(null, paintData, __EditorPaint, controlBounds);
-            return CreateBitmapData(__EditorPaint);
+            return CreateBitmapData(__EditorPaint, pdea.Graphics);
         }
         /// <summary>
         /// Potomek zde vrátí nativní control
@@ -257,15 +261,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Nastaví ji defaultní vzhled, nevkládá do ní hodnoty závislé na konkrétnbím prvku.
         /// Eventhandlery registruje pokud <paramref name="isInteractive"/> je true (hodnota false značí control vytvářený jen pro kreslení).
         /// </summary>
+        /// <param name="isInteractive">Vytvořit interaktovní control: navázat do něj zdejší eventhandlery</param>
+        /// <param name="parent">Parent control, do něhož je vytvořený Control vložen. Pouze pro EditorPaint control. Přebírá z něj barvu Background.</param>
         /// <returns></returns>
-        private DxeEdit.TextEdit _CreateNativeControl(bool isInteractive)
+        private DxeEdit.TextEdit _CreateNativeControl(bool isInteractive, WinForm.Control parent = null)
         {
             var control = new DxeEdit.TextEdit() { Location = new WinDraw.Point(25, -200) };
-            control.ResetBackColor();
+            if (parent != null)
+                parent.Controls.Add(control);
             if (isInteractive)
                 _PrepareInteractive(control);
-            else
-                this.DataForm.DataFormContent.Controls.Add(control);
             return control;
         }
         /// <summary>
@@ -387,9 +392,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
-            __EditorPaint ??= _CreateNativeControl(false);
+            __EditorPaint ??= _CreateNativeControl(false, pdea.InteractivePanel);
             _FillNativeControl(null, paintData, __EditorPaint, controlBounds);
-            return CreateBitmapData(__EditorPaint);
+            return CreateBitmapData(__EditorPaint, pdea.Graphics);
         }
         /// <summary>
         /// Potomek zde vrátí nativní control
@@ -414,11 +419,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Nastaví ji defaultní vzhled, nevkládá do ní hodnoty závislé na konkrétnbím prvku.
         /// Eventhandlery registruje pokud <paramref name="isInteractive"/> je true (hodnota false značí control vytvářený jen pro kreslení).
         /// </summary>
+        /// <param name="isInteractive">Vytvořit interaktovní control: navázat do něj zdejší eventhandlery</param>
+        /// <param name="parent">Parent control, do něhož je vytvořený Control vložen. Pouze pro EditorPaint control. Přebírá z něj barvu Background.</param>
         /// <returns></returns>
-        private DxeEdit.ButtonEdit _CreateNativeControl(bool isInteractive)
+        private DxeEdit.ButtonEdit _CreateNativeControl(bool isInteractive, WinForm.Control parent = null)
         {
             var control = new DxeEdit.ButtonEdit() { Location = new WinDraw.Point(25, -200) };
-            control.ResetBackColor();
+            if (parent != null)
+                parent.Controls.Add(control);
             if (isInteractive)
                 _PrepareInteractive(control);
             return control;
@@ -589,9 +597,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
-            __EditorPaint ??= _CreateNativeControl(false);
+            __EditorPaint ??= _CreateNativeControl(false, pdea.InteractivePanel);
             _FillNativeControl(null, paintData, __EditorPaint, controlBounds);
-            return CreateBitmapData(__EditorPaint);
+            return CreateBitmapData(__EditorPaint, pdea.Graphics);
         }
         /// <summary>
         /// Potomek zde vrátí nativní control
@@ -616,11 +624,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Nastaví ji defaultní vzhled, nevkládá do ní hodnoty závislé na konkrétnbím prvku.
         /// Eventhandlery registruje pokud <paramref name="isInteractive"/> je true (hodnota false značí control vytvářený jen pro kreslení).
         /// </summary>
+        /// <param name="isInteractive">Vytvořit interaktovní control: navázat do něj zdejší eventhandlery</param>
+        /// <param name="parent">Parent control, do něhož je vytvořený Control vložen. Pouze pro EditorPaint control. Přebírá z něj barvu Background.</param>
         /// <returns></returns>
-        private DxeEdit.MemoEdit _CreateNativeControl(bool isInteractive)
+        private DxeEdit.MemoEdit _CreateNativeControl(bool isInteractive, WinForm.Control parent = null)
         {
             var control = new DxeEdit.MemoEdit() { Location = new WinDraw.Point(25, -200) };
-            control.ResetBackColor();
+            // control.ResetBackColor();
+            if (parent != null)
+                parent.Controls.Add(control);
             if (isInteractive)
                 _PrepareInteractive(control);
             return control;
@@ -760,9 +772,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
-            __EditorPaint ??= _CreateNativeControl(false);
+            __EditorPaint ??= _CreateNativeControl(false, pdea.InteractivePanel);
             _FillNativeControl(null, paintData, __EditorPaint, controlBounds);
-            return CreateBitmapData(__EditorPaint, null, pdea.InteractivePanel.BackColor);
+
+            // var image = __EditorPaint.Properties.Appearance.GetImage();
+            // image?.Save(@"c:\DavidPrac\CheckEdit.png", WinDraw.Imaging.ImageFormat.Png);
+            // __EditorPaint.
+
+
+            return CreateBitmapData(__EditorPaint, pdea.Graphics, null, WinDraw.Color.LightCoral);
         }
         /// <summary>
         /// Potomek zde vrátí nativní control
@@ -787,8 +805,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Nastaví ji defaultní vzhled, nevkládá do ní hodnoty závislé na konkrétnbím prvku.
         /// Eventhandlery registruje pokud <paramref name="isInteractive"/> je true (hodnota false značí control vytvářený jen pro kreslení).
         /// </summary>
+        /// <param name="isInteractive">Vytvořit interaktovní control: navázat do něj zdejší eventhandlery</param>
+        /// <param name="parent">Parent control, do něhož je vytvořený Control vložen. Pouze pro EditorPaint control. Přebírá z něj barvu Background.</param>
         /// <returns></returns>
-        private DxeEdit.CheckEdit _CreateNativeControl(bool isInteractive)
+        private DxeEdit.CheckEdit _CreateNativeControl(bool isInteractive, WinForm.Control parent = null)
         {
             var control = new DxeEdit.CheckEdit() { Location = new WinDraw.Point(25, -200) };
             // Konstantní nastavení controlu:
@@ -796,7 +816,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             control.Properties.AutoWidth = false;
             control.Properties.CheckBoxOptions.Style = DxeCont.CheckBoxStyle.SvgCheckBox1;
             control.Properties.GlyphAlignment = DevExpress.Utils.HorzAlignment.Near;
-            // control.ResetBackColor();
+            if (parent != null)
+                parent.Controls.Add(control);
             if (isInteractive)
                 _PrepareInteractive(control);
             return control;
@@ -909,9 +930,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
-            __EditorPaint ??= _CreateNativeControl(false);
+            __EditorPaint ??= _CreateNativeControl(false, pdea.InteractivePanel);
             _FillNativeControl(null, paintData, __EditorPaint, controlBounds);
-            return CreateBitmapData(__EditorPaint);
+            return CreateBitmapData(__EditorPaint, pdea.Graphics);
         }
         /// <summary>
         /// Potomek zde vrátí nativní control
@@ -936,15 +957,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Nastaví ji defaultní vzhled, nevkládá do ní hodnoty závislé na konkrétnbím prvku.
         /// Eventhandlery registruje pokud <paramref name="isInteractive"/> je true (hodnota false značí control vytvářený jen pro kreslení).
         /// </summary>
+        /// <param name="isInteractive">Vytvořit interaktovní control: navázat do něj zdejší eventhandlery</param>
+        /// <param name="parent">Parent control, do něhož je vytvořený Control vložen. Pouze pro EditorPaint control. Přebírá z něj barvu Background.</param>
         /// <returns></returns>
-        private DxeEdit.ToggleSwitch _CreateNativeControl(bool isInteractive)
+        private DxeEdit.ToggleSwitch _CreateNativeControl(bool isInteractive, WinForm.Control parent = null)
         {
             var control = new DxeEdit.ToggleSwitch() { Location = new WinDraw.Point(25, -200) };
             // Konstantní nastavení controlu:
             control.Properties.AutoHeight = false;
             control.Properties.AutoWidth = false;
             control.Properties.ShowText = true;
-            control.ResetBackColor();
+            if (parent != null)
+                parent.Controls.Add(control);
             if (isInteractive)
                 _PrepareInteractive(control);
             return control;
@@ -1058,9 +1082,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
-            __EditorPaint ??= _CreateNativeControl(false);
+            __EditorPaint ??= _CreateNativeControl(false, pdea.InteractivePanel);
             _FillNativeControl(null, paintData, __EditorPaint, controlBounds);
-            return CreateBitmapData(__EditorPaint);
+            return CreateBitmapData(__EditorPaint, pdea.Graphics);
         }
         /// <summary>
         /// Potomek zde vrátí nativní control
@@ -1085,11 +1109,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Nastaví ji defaultní vzhled, nevkládá do ní hodnoty závislé na konkrétnbím prvku.
         /// Eventhandlery registruje pokud <paramref name="isInteractive"/> je true (hodnota false značí control vytvářený jen pro kreslení).
         /// </summary>
+        /// <param name="isInteractive">Vytvořit interaktovní control: navázat do něj zdejší eventhandlery</param>
+        /// <param name="parent">Parent control, do něhož je vytvořený Control vložen. Pouze pro EditorPaint control. Přebírá z něj barvu Background.</param>
         /// <returns></returns>
-        private DxeEdit.ComboBoxEdit _CreateNativeControl(bool isInteractive)
+        private DxeEdit.ComboBoxEdit _CreateNativeControl(bool isInteractive, WinForm.Control parent = null)
         {
             var control = new DxeEdit.ComboBoxEdit() { Location = new WinDraw.Point(25, -200) };
-            control.ResetBackColor();
+            if (parent != null)
+                parent.Controls.Add(control);
             if (isInteractive)
                 _PrepareInteractive(control);
             return control;
@@ -1287,9 +1314,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
-            __EditorPaint ??= _CreateNativeControl(false);
+            __EditorPaint ??= _CreateNativeControl(false, pdea.InteractivePanel);
             _FillNativeControl(null, paintData, __EditorPaint, controlBounds);
-            return CreateBitmapData(__EditorPaint);
+            return CreateBitmapData(__EditorPaint, pdea.Graphics);
         }
         /// <summary>
         /// Potomek zde vrátí nativní control
@@ -1314,11 +1341,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Nastaví ji defaultní vzhled, nevkládá do ní hodnoty závislé na konkrétnbím prvku.
         /// Eventhandlery registruje pokud <paramref name="isInteractive"/> je true (hodnota false značí control vytvářený jen pro kreslení).
         /// </summary>
+        /// <param name="isInteractive">Vytvořit interaktovní control: navázat do něj zdejší eventhandlery</param>
+        /// <param name="parent">Parent control, do něhož je vytvořený Control vložen. Pouze pro EditorPaint control. Přebírá z něj barvu Background.</param>
         /// <returns></returns>
-        private DxeEdit.ImageComboBoxEdit _CreateNativeControl(bool isInteractive)
+        private DxeEdit.ImageComboBoxEdit _CreateNativeControl(bool isInteractive, WinForm.Control parent = null)
         {
             var control = new DxeEdit.ImageComboBoxEdit() { Location = new WinDraw.Point(25, -200) };
-            control.ResetBackColor();
+            if (parent != null)
+                parent.Controls.Add(control);
             if (isInteractive)
                 _PrepareInteractive(control);
             return control;
@@ -1521,9 +1551,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         protected override byte[] CreateImageData(IPaintItemData paintData, PaintDataEventArgs pdea, WinDraw.Rectangle controlBounds)
         {
-            __EditorPaint ??= _CreateNativeControl(false);
+            __EditorPaint ??= _CreateNativeControl(false, pdea.InteractivePanel);
             _FillNativeControl(null, paintData, __EditorPaint, controlBounds);
-            return CreateBitmapData(__EditorPaint);
+            return CreateBitmapData(__EditorPaint, pdea.Graphics);
         }
         /// <summary>
         /// Potomek zde vrátí nativní control
@@ -1548,11 +1578,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Nastaví ji defaultní vzhled, nevkládá do ní hodnoty závislé na konkrétnbím prvku.
         /// Eventhandlery registruje pokud <paramref name="isInteractive"/> je true (hodnota false značí control vytvářený jen pro kreslení).
         /// </summary>
+        /// <param name="isInteractive">Vytvořit interaktovní control: navázat do něj zdejší eventhandlery</param>
+        /// <param name="parent">Parent control, do něhož je vytvořený Control vložen. Pouze pro EditorPaint control. Přebírá z něj barvu Background.</param>
         /// <returns></returns>
-        private DxeEdit.SimpleButton _CreateNativeControl(bool isInteractive)
+        private DxeEdit.SimpleButton _CreateNativeControl(bool isInteractive, WinForm.Control parent = null)
         {
             var control = new DxeEdit.SimpleButton() { Location = new WinDraw.Point(25, -200) };
-            control.ResetBackColor();
+            if (parent != null)
+                parent.Controls.Add(control);
             if (isInteractive)
                 _PrepareInteractive(control);
             return control;

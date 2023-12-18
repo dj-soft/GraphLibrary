@@ -400,10 +400,10 @@ namespace TestDevExpress.Forms
                     left = leftB; top += 44;
                     addItemPairT("sazbadph", "Sazba DPH:", DxDForm.DxRepositoryEditorType.CheckEdit, top, ref left, 120, 20, item =>
                     {
+                        item.Content[DxDData.DxDataFormProperty.Label] = "Je to pochoutka";
                         item.Content[DxDData.DxDataFormProperty.IsEnabled] = false;
                         item.Content[DxDData.DxDataFormProperty.FontStyle] = FontStyle.Bold;
                         item.Content[DxDData.DxDataFormProperty.CheckBoxLabelTrue] = "SVÍTÍ!";
-                        // item.Content[DxDData.DxDataFormProperty.Label] = "Je to pochoutka";
                     });
                     addItemPairT("cenacelk", "Cena cel.:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 70, 20);
                     addItemPairT("filename", "Dokument:", DxDForm.DxRepositoryEditorType.TextBoxButton, top, ref left, 250, 20, item =>

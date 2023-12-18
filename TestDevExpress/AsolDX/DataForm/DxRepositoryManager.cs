@@ -12,7 +12,6 @@ using WinForm = System.Windows.Forms;
 using DxDData = Noris.Clients.Win.Components.AsolDX.DataForm.Data;
 using DxeEdit = DevExpress.XtraEditors;
 using DxeCont = DevExpress.XtraEditors.Controls;
-using System.Drawing;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
@@ -1528,20 +1527,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Požádá dodaný Control, aby se vykreslil do nové pracovní bitmapy daného nebo odpovídajícího rozměru, a z té bitmapy nám vrátil byte[]
         /// </summary>
         /// <param name="control"></param>
+        /// <param name="graphics"></param>
         /// <param name="exactBitmapSize"></param>
-        /// <param name="bitmapBackColor">Barva pozadí bitmapy</param>
         /// <returns></returns>
-        protected virtual byte[] CreateBitmapData(WinForm.Control control, WinDraw.Size? exactBitmapSize = null, WinDraw.Color? bitmapBackColor = null)
+        protected virtual byte[] CreateBitmapData(WinForm.Control control, WinDraw.Graphics graphics, WinDraw.Size? exactBitmapSize = null, WinDraw.Color? fillBackColor = null)
         {
             int w = exactBitmapSize?.Width ?? control.Width;
             int h = exactBitmapSize?.Height ?? control.Height;
-            using (var bitmap = new WinDraw.Bitmap(w, h))
+            using (var bitmap = new WinDraw.Bitmap(w, h, WinDraw.Imaging.PixelFormat.Format32bppArgb /* graphics */))
             {
-                if (bitmapBackColor.HasValue)
-                    bitmap.MakeTransparent(bitmapBackColor.Value);
-                else
-                    bitmap.MakeTransparent();
+                if (fillBackColor.HasValue) bitmap.Save(@"c:\DavidPrac\CheckBox0.png", WinDraw.Imaging.ImageFormat.Png);
+                bitmap.MakeTransparent();
+                if (fillBackColor.HasValue) bitmap.FillColor(fillBackColor.Value);
+                if (fillBackColor.HasValue) bitmap.Save(@"c:\DavidPrac\CheckBox1.png", WinDraw.Imaging.ImageFormat.Png);
                 control.DrawToBitmap(bitmap, new WinDraw.Rectangle(0, 0, w, h));
+                if (fillBackColor.HasValue) bitmap.Save(@"c:\DavidPrac\CheckBox2.png", WinDraw.Imaging.ImageFormat.Png);
                 return CreateBitmapData(bitmap);
             }
         }
@@ -1733,7 +1733,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return ConvertToDxBorderStyles(content, DxeCont.BorderStyles.NoBorder);
         }
         /// <summary>
-        /// Z prvku přečte a vrátí BorderStyle
+        /// Z prvku přečte a vrátí hodnotu <see cref="Data.DxDataFormProperty.CheckBoxBorderStyle"/> převedenou na <see cref="DxeCont.BorderStyles"/>
         /// </summary>
         /// <param name="paintData">Data konkrétního prvku</param>
         /// <returns></returns>

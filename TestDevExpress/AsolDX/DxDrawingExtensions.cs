@@ -3398,6 +3398,95 @@ namespace Noris.Clients.Win.Components.AsolDX
             return borders;
         }
         #endregion
+        #region Bitmap
+        /// <summary>
+        /// Vrátí pole barev dané bitmapy
+        /// </summary>
+        /// <param name="bitmap"></param>
+        /// <returns></returns>
+        public static Color[,] CreateColorArray(this Bitmap bitmap)
+        {
+            if (bitmap is null) return null;
+
+            int w = bitmap.Width;
+            int h = bitmap.Height;
+            var result = new Color[w, h];
+            for (int x = 0; x < w; x++)
+                for (int y = 0; y < h; y++)
+                    result[x, y] = bitmap.GetPixel(x, y);
+            return result;
+        }
+        /// <summary>
+        /// Vrátí pole barev dané bitmapy
+        /// </summary>
+        /// <param name="bitmap"></param>
+        /// <returns></returns>
+        public static string[,] CreateColorDefArray(this Bitmap bitmap)
+        {
+            if (bitmap is null) return null;
+
+            int w = bitmap.Width;
+            int h = bitmap.Height;
+            var result = new string[w, h];
+            for (int x = 0; x < w; x++)
+                for (int y = 0; y < h; y++)
+                { 
+                    var pixel = bitmap.GetPixel(x, y);
+                    result[x, y] = $"#{pixel.R.ToString("X2")}{pixel.G.ToString("X2")}{pixel.B.ToString("X2")}";
+                }
+            return result;
+        }
+        /// <summary>
+        /// Vrátí pole barev dané bitmapy
+        /// </summary>
+        /// <param name="bitmap"></param>
+        /// <param name="exact"></param>
+        /// <returns></returns>
+        public static string CreateColorMap(this Bitmap bitmap, bool exact = false)
+        {
+            if (bitmap is null) return null;
+
+            string map = "◘☻☺Oo.  ";
+            int mapCount = map.Length;
+            int mapRatio = 3 * 255 / mapCount;
+            int w = bitmap.Width;
+            int h = bitmap.Height;
+            var result = new StringBuilder();
+
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                    result.Append(getPixel(bitmap.GetPixel(x, y)));
+                result.AppendLine();
+            }
+            return result.ToString();
+
+            string getPixel(Color pixel)
+            {
+                if (exact) return $"#{pixel.R:X2}{pixel.G:X2}{pixel.B:X2} ";
+
+                var index = (pixel.R + pixel.G + pixel.B) / mapRatio;
+                if (index >= mapCount) return " ";
+                return map.Substring(index, 1);
+            }
+        }
+        /// <summary>
+        /// Do dané bitmapy nastaví každý pixel danou barvou
+        /// </summary>
+        /// <param name="bitmap"></param>
+        /// <param name="fillColor"></param>
+        /// <returns></returns>
+        public static void FillColor(this Bitmap bitmap, Color fillColor)
+        {
+            if (bitmap is null) return;
+
+            int w = bitmap.Width;
+            int h = bitmap.Height;
+            for (int x = 0; x < w; x++)
+                for (int y = 0; y < h; y++)
+                    bitmap.SetPixel(x, y, fillColor);
+        }
+        #endregion
         #region DevExpress
         /// <summary>
         /// Posune hodnotu Scrollbaru jako by ji posunula myš kolečkem
