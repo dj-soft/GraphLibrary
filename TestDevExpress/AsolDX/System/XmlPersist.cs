@@ -2523,7 +2523,7 @@ namespace Noris.WS.Parser.XmlSerializer.InternalPersistor
                 return this.Serial;
             }
             /// <summary>
-            /// Vizualizace konkrétní pozice, vrací typicky "[0,12,2]" pro pole, obshaující hodnoty { 0, 12, 2 }
+            /// Vizualizace konkrétní pozice, vrací typicky "[0,12,2]" pro pole, obsahující hodnoty { 0, 12, 2 }
             /// </summary>
             /// <param name="indices"></param>
             /// <returns></returns>

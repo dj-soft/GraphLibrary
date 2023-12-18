@@ -7016,7 +7016,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static bool ContainAllNames(Dictionary<string, Color> svgDict, params string[] names)
         {
             if (svgDict is null || svgDict.Count == 0) return false;           // Pokud Dictionary je null nebo prázdná, pak neobsahuje nic
-            if (names.Any(n => !svgDict.ContainsKey(n))) return false;         // Pokud najdu jediné names, které NEEXISTUJE v Dictionary, pak vracím false = neobshauje všechny klíče.
+            if (names.Any(n => !svgDict.ContainsKey(n))) return false;         // Pokud najdu jediné names, které NEEXISTUJE v Dictionary, pak vracím false = neobsahuje všechny klíče.
             return true;
         }
         #endregion

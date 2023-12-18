@@ -1139,7 +1139,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             bool result = false;
             var biKey = new BiKeyValue(key);
-            if (__DictionaryKey.TryGetValue(biKey, out var data))    // biKey obshauje jen Key, __DictionaryKey pracuje s klíčem podle Key
+            if (__DictionaryKey.TryGetValue(biKey, out var data))    // biKey obsahuje jen Key, __DictionaryKey pracuje s klíčem podle Key
             {
                 __DictionaryKey.Remove(biKey);                       // Odebereme Key z __DictionaryKey;
                 if (__DictionaryId.ContainsKey(data))                // data obsahují nejen Key, ale i Id (a Value)
@@ -1159,7 +1159,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             bool result = false;
             var biId = new BiKeyValue(id);
-            if (__DictionaryId.TryGetValue(biId, out var data))      // biId obshauje jen Id, __DictionaryId pracuje s klíčem podle Id
+            if (__DictionaryId.TryGetValue(biId, out var data))      // biId obsahuje jen Id, __DictionaryId pracuje s klíčem podle Id
             {
                 __DictionaryId.Remove(biId);                         // Odebereme Id z __DictionaryId;
                 if (__DictionaryKey.ContainsKey(data))               // data obsahují nejen Id, ale i Key (a Value)

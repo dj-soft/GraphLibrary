@@ -844,7 +844,7 @@ namespace Noris.WS.Parser.NetParser
         /// Například pravidla pro SQL určují, že <see cref="Setting.InitialSegmentName"/> = "SqlCode", 
         /// a definice segmentu "SqlCode" obsahuje (v <see cref="SettingSegment.EndWith"/>), že tento segment může být ukončen znakem ";".
         /// Proto parsování tohoto textu "DECLARE @cislo int;SET @cislo = 25;" vygeneruje následující strukturu:
-        /// a) Výstupní <see cref="ParsedItem"/> je <see cref="ParsedItem.IsRoot"/>, a obshauje 2 prvky v poli <see cref="ParsedItem.Items"/>;
+        /// a) Výstupní <see cref="ParsedItem"/> je <see cref="ParsedItem.IsRoot"/>, a obsahuje 2 prvky v poli <see cref="ParsedItem.Items"/>;
         /// b) Prvek [0] obsahuje pole prvků, které dávají dohromady první příkaz: "DECLARE @cislo int;"
         /// b1) Obsahuje tedy jednotlivé prvky: Text: "DECLARE"; Blank: " "; Text: "@cislo"; Blank: " "; Text: "int"; a hodnotu EndText: ";"
         /// b) Prvek [1] obsahuje pole prvků, které dávají dohromady první příkaz: "SET @cislo = 25;", obdobně poskládané.

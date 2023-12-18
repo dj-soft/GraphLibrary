@@ -2445,7 +2445,7 @@ namespace TestDevExpress.Forms
                     subItems.Add(getItem());
                 return subItems;
             }
-            // Přidá do 'menuItems' prvek obsahující OnDemand SubMenu, volitelně obshaující jeden SubItem s daným textem (subItemHeaderText), null = bez tohoto prvku
+            // Přidá do 'menuItems' prvek obsahující OnDemand SubMenu, volitelně obsahující jeden SubItem s daným textem (subItemHeaderText), null = bez tohoto prvku
             void addOnDemandItem(string text, string subItemHeaderText)
             {
                 // OnDemand prvek v menu:

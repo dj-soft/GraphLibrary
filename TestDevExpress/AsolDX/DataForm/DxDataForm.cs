@@ -100,12 +100,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Zde je obsažena definice formátu dat v dataformu.
         /// </summary>
-        public DxDataFormat DataFormat 
+        public Format.DataFormat DataFormat 
         {
             get { return __DataFormat; }
             set { }
         }
-        private DxDataFormat __DataFormat;
+        private Format.DataFormat __DataFormat;
         #endregion
         #region Datové řádky
         /// <summary>

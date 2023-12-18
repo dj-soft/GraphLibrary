@@ -15,6 +15,7 @@ using DevExpress.Utils;
 using DevExpress.Utils.Svg;
 
 using Noris.WS.DataContracts.Desktop.Data;
+using DevExpress.XtraRichEdit.Model;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -387,8 +388,9 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             string circleColorName = _GetGenericParam(genericItems, 1, "Green");
             int radiusRel = _GetGenericParam(genericItems, 2, 80);
+            string outerColorName = _GetGenericParam(genericItems, 3, circleColorName);
 
-            string xmlGradient = _GetXmlContentGradientRadial(size, "CircleGradient", circleColorName, null, radiusRel);
+            string xmlGradient = _GetXmlContentGradientRadial(size, "CircleGradient", circleColorName, outerColorName, radiusRel);
             string xmlCircle = _GetXmlContentCircle(size, "url(#CircleGradient)", radiusRel);
 
             string xmlFooter = _GetXmlContentFooter();
@@ -529,7 +531,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             ArrowType arrowType = _GetArrowType(_GetGenericParam(genericItems, 1, ""));
             string arrowColorName = _GetGenericParam(genericItems, 2, "");
-            _ResolveSvgDesignParam(ref arrowColorName, "class='Blue'");
+            _ValidateGenericDefinition(ref arrowColorName, "class", "Blue");
 
             int arrowLineDiff = _GetGenericParam(genericItems, 3, -1);
             if (arrowLineDiff >= 0)
@@ -747,38 +749,38 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 case EditType.SelectAll1:
                     // Čtyři čtverce kousek od sebe:
-                    editStyle1 = _GetGenericSvgDesignParam(genericItems, 2, "class='Blue'");
-                    editStyle2 = _GetGenericSvgDesignParam(genericItems, 3, "class='White'");
+                    editStyle1 = _GetGenericDefinition(genericItems, 2, "class", "Blue");
+                    editStyle2 = _GetGenericDefinition(genericItems, 3, "class", "White");
                     xmlPaths += _GetEditPartSelectAll1(coordinates, subSize, editStyle1, editStyle2);
                     break;
                 case EditType.SelectAll2:
                     // Střední čtverec dané barvy a černý tečkovaný okraj:
-                    editStyle1 = _GetGenericSvgDesignParam(genericItems, 2, "class='Blue'");
+                    editStyle1 = _GetGenericDefinition(genericItems, 2, "class", "Blue");
                     xmlPaths += _GetEditPartSelectAllCenter2(coordinates, subSize, editStyle1);
-                    editStyle2 = _GetGenericSvgDesignParam(genericItems, 3, "class='Black'");
+                    editStyle2 = _GetGenericDefinition(genericItems, 3, "class", "Black");
                     xmlPaths += _GetEditPartBorderIntermitent(coordinates, subSize, editStyle2);
                     break;
                 case EditType.SelectAll3:
                     // Střední čtverec dané barvy a černý tečkovaný okraj:
-                    editStyle1 = _GetGenericSvgDesignParam(genericItems, 2, "class='Blue'");
+                    editStyle1 = _GetGenericDefinition(genericItems, 2, "class", "Blue");
                     xmlPaths += _GetEditPartSelectAllCenter3(coordinates, subSize, editStyle1);
-                    editStyle2 = _GetGenericSvgDesignParam(genericItems, 3, "class='Black'");
+                    editStyle2 = _GetGenericDefinition(genericItems, 3, "class", "Black");
                     xmlPaths += _GetEditPartBorderIntermitent(coordinates, subSize, editStyle2);
                     break;
                 case EditType.Delete1:
                     // tenká linka:
-                    editStyle1 = _GetGenericSvgDesignParam(genericItems, 2, "class='Red'");
+                    editStyle1 = _GetGenericDefinition(genericItems, 2, "class", "Red");
                     xmlPaths += _GetEditPartXCross(coordinates, subSize, editStyle1, 1);
                     break;
                 case EditType.Delete2:
                     // tlustší linka:
-                    editStyle1 = _GetGenericSvgDesignParam(genericItems, 2, "class='Red'");
+                    editStyle1 = _GetGenericDefinition(genericItems, 2, "class", "Red");
                     xmlPaths += _GetEditPartXCross(coordinates, subSize, editStyle1, 2);
                     break;
                 case EditType.Copy:
-                    editStyle1 = _GetGenericSvgDesignParam(genericItems, 2, "class='Black'");
-                    editStyle2 = _GetGenericSvgDesignParam(genericItems, 3, "class='White'");
-                    editStyle3 = _GetGenericSvgDesignParam(genericItems, 4, "class='White'");
+                    editStyle1 = _GetGenericDefinition(genericItems, 2, "class", "Black");
+                    editStyle2 = _GetGenericDefinition(genericItems, 3, "class", "White");
+                    editStyle3 = _GetGenericDefinition(genericItems, 4, "class", "White");
                     int edge = _GetGenericParam(genericItems, 5, 3);
                     xmlPaths += _GetEditPartDocument(coordinates, subSize, editStyle1, editStyle3, 5, 1, 1, 3, 1, edge);
                     xmlPaths += _GetEditPartDocument(coordinates, subSize, editStyle1, editStyle2, 2, 3, 4, 1, 1, edge);
@@ -1225,7 +1227,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static SvgImage CreateCaptionVector(string caption, ResourceImageSizeType sizeType)
         {   // Využijeme metodu _TryGetGenericSvgText, předáme jí explicitní parametry:
             string text = DxComponent.GetCaptionForIcon(caption);
-            string imageName = $"@text|{text}";     //   ... |fill='Black'|sans-serif|N|fill='DarkBlue'|fill='White'";
+            string imageName = $"@text|{text}";     //   ... |Black|sans-serif|N|4|DarkBlue|White";
             if (!TryGetGenericSvg(imageName, sizeType, out DxSvgImage dxSvgImage)) return null;
             return dxSvgImage;
         }
@@ -1295,7 +1297,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             string fontFamily = _GetGenericParam(genericItems, p++, "");                   // Font: Default = bezpatkové písmo
             if (String.IsNullOrEmpty(fontFamily)) fontFamily = "sans-serif";
             bool isBold = (_GetGenericParam(genericItems, p++, "N").StartsWith("B", StringComparison.InvariantCultureIgnoreCase));     // Bold
-            return _TryGetGenericSvgTextParts(imageName, text, sizeType, ref dxSvgImage, GenericTextParts.Text, textParam, fontFamily, isBold, "", "");
+            return _TryGetGenericSvgTextParts(imageName, text, sizeType, ref dxSvgImage, GenericTextParts.Text, textParam, fontFamily, isBold, null, "", "");
         }
         /// <summary>
         ///  Z dodané definice a pro danou velikost vygeneruje SvgImage obsahující text.
@@ -1313,17 +1315,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             bool isDarkTheme = DxComponent.IsDarkTheme;
             int p = 1;
-            string text = _GetGenericParam(genericItems, p++, "");                         // Text, bude pouze Trimován
-            string textParam = _GetGenericParam(genericItems, p++, "");                    // Barva písma (class, fill, nic)
-            if (String.IsNullOrEmpty(textParam)) textParam = $"fill='{(isDarkTheme ? _GenericTextColorDarkSkinText : _GenericTextColorLightSkinText)}'";
-            string fontFamily = _GetGenericParam(genericItems, p++, "");                   // Font: Default = bezpatkové písmo
-            if (String.IsNullOrEmpty(fontFamily)) fontFamily = "sans-serif";
-            bool isBold = (_GetGenericParam(genericItems, p++, "N").StartsWith("B", StringComparison.InvariantCultureIgnoreCase));     // Bold
-            string borderParam = _GetGenericParam(genericItems, p++, "");                  // Barva rámečku
-            if (String.IsNullOrEmpty(borderParam)) borderParam = $"fill='{(isDarkTheme ? _GenericTextColorDarkSkinBorder : _GenericTextColorLightSkinBorder)}'";
-            string fillParam = _GetGenericParam(genericItems, p++, "");                    // Barva podkladu: Default = průhledná
-            if (String.IsNullOrEmpty(fillParam)) fillParam = $"fill='{(isDarkTheme ? _GenericTextColorDarkSkinFill : _GenericTextColorLightSkinFill)}'";
-            return _TryGetGenericSvgTextParts(imageName, text, sizeType, ref dxSvgImage, GenericTextParts.All, textParam, fontFamily, isBold, borderParam, fillParam);
+            string text = _GetGenericParam(genericItems, p++, "");                                           // 1: Text, bude pouze Trimován
+            string textParam = _GetGenericDefinition(genericItems, p++, "fill", (isDarkTheme ? _GenericTextColorDarkSkinText : _GenericTextColorLightSkinText));         // 2: Barva písma (class, fill, nic)
+            string fontFamily = _GetGenericDefinition(genericItems, p++, "sans-serif", "");                  // 3: Font: Default = bezpatkové písmo
+            
+            bool isBold = (_GetGenericParam(genericItems, p++, "N").StartsWith("B", StringComparison.InvariantCultureIgnoreCase));     // 4: Bold
+
+            string roundT = _GetGenericParam(genericItems, p++, "");                 // 5: Zaoblení rohů
+            int? round = ((!String.IsNullOrEmpty(roundT) && Int32.TryParse(roundT, out int r) && r >= 2 && r < 16) ? (int?)r : (int?)null);
+
+            string borderParam = _GetGenericDefinition(genericItems, p++, "fill", (isDarkTheme ? _GenericTextColorDarkSkinBorder : _GenericTextColorLightSkinBorder));   // 6: Barva rámečku
+            string fillParam = _GetGenericDefinition(genericItems, p++, "fill", (isDarkTheme ? _GenericTextColorDarkSkinFill : _GenericTextColorLightSkinFill));         // 7: Barva podkladu: Default = průhledná
+
+            return _TryGetGenericSvgTextParts(imageName, text, sizeType, ref dxSvgImage, GenericTextParts.All, textParam, fontFamily, isBold, round, borderParam, fillParam);
         }
         /// <summary>
         /// Z dodané definice a pro danou velikost vygeneruje SvgImage obsahující text.
@@ -1336,20 +1340,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="textParam"></param>
         /// <param name="fontFamily"></param>
         /// <param name="isBold"></param>
+        /// <param name="round"></param>
         /// <param name="borderParam"></param>
         /// <param name="fillParam"></param>
         /// <returns></returns>
         private static bool _TryGetGenericSvgTextParts(string imageName, string text, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage, GenericTextParts parts,
-            string textParam, string fontFamily, bool isBold, string borderParam, string fillParam)
+            string textParam, string fontFamily, bool isBold, int? round, string borderParam, string fillParam)
         {
             int size = (sizeType.HasValue && sizeType.Value == ResourceImageSizeType.Small ? 16 : 32);
+            bool hasRound = (round.HasValue & round.Value > 1);
+
             TextInfo textInfo = new TextInfo(text, size, fontFamily, isBold);
 
             string xmlHeader = _GetXmlContentHeader(size);
             string xmlStyles = _GetXmlDevExpressStyles();
             string xmlTextBegin = parts.HasFlag(GenericTextParts.Text) ? textInfo.GetXmlGroupBegin() : "";
-            string xmlPathBorder = parts.HasFlag(GenericTextParts.Border) ? _GetXmlPathBorderSquare(size, isBold, borderParam) : "";
-            string xmlPathFill = parts.HasFlag(GenericTextParts.Fill) ? _GetXmlPathFillSquare(size, isBold, fillParam) : "";
+            string xmlPathBorder = parts.HasFlag(GenericTextParts.Border) ? _GetXmlPathBorderSquare(size, isBold, borderParam, false, null, round) : "";
+            string xmlPathFill = parts.HasFlag(GenericTextParts.Fill) ? 
+                                  (hasRound ?
+                                    _GetXmlPathBorderSquare(size, isBold, fillParam, false, new Padding(1), round) :
+                                    _GetXmlPathFillSquare(size, isBold, fillParam))
+                                   : "";
             string xmlTextText = parts.HasFlag(GenericTextParts.Text) ? textInfo.GetXmlGroupText(textParam) : "";
             string xmlFooter = _GetXmlContentFooter();
 
@@ -1451,7 +1462,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <returns></returns>
             public string GetXmlGroupText(string textParam)
             {
-                _ResolveSvgDesignParam(ref textParam, "class='Black'");
+                _ValidateGenericDefinition(ref textParam, "class", "Black'");
                 string xmlText = $@"      <text x='{this.TextX}' y='{this.TextY}' {textParam} text-rendering='optimizeLegibility' >{this.Text}</text>
     </g>
 ";
@@ -1612,13 +1623,14 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <param name="styleParam"></param>
         /// <param name="counterClockWise"></param>
         /// <param name="padding"></param>
+        /// <param name="round">Kulatost rohů</param>
         /// <returns></returns>
-        private static string _GetXmlPathBorderSquare(int size, bool isBold, string styleParam, bool counterClockWise = false, Padding? padding = null)
+        private static string _GetXmlPathBorderSquare(int size, bool isBold, string styleParam, bool counterClockWise = false, Padding? padding = null, int? round = null)
         {
-            _ResolveSvgDesignParam(ref styleParam);
+            _ValidateGenericDefinition(ref styleParam);
             if (size <= 0 || String.IsNullOrEmpty(styleParam)) return "";
 
-            string pathData = _GetXmlPathDataBorderSquare(size, isBold, counterClockWise, padding);
+            string pathData = _GetXmlPathDataBorderSquare(size, isBold, counterClockWise, padding, round);
             string xml = $@"      <path d='{pathData}' {styleParam} />
 ";
             return xml.Replace("'", "\"");
@@ -1630,14 +1642,16 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <param name="isBold"></param>
         /// <param name="counterClockWise"></param>
         /// <param name="padding"></param>
+        /// <param name="round">Kulatost rohů</param>
         /// <returns></returns>
-        private static string _GetXmlPathDataBorderSquare(int size, bool isBold, bool counterClockWise, Padding? padding = null)
+        private static string _GetXmlPathDataBorderSquare(int size, bool isBold, bool counterClockWise, Padding? padding = null, int? round = null)
         {
             if (size <= 0) return "";
 
             Padding p = padding ?? Padding.Empty;
             bool isLarge = (size >= 24);
             int d = (isLarge ? 2 : 1);                     // Průměr kruhu zaoblení hran (=dva radiusy)
+            if (round.HasValue && round.Value > 1) d = d * round.Value;
             int w = size - (p.Horizontal + d);             // Šířka rovné části (tj. bez zaoblené části)
             int h = size - (p.Vertical + d);               // Výška rovné části (tj. bez zaoblené části)
             _GetXmlQuadCurveR1R2(d, out var d4, out var d2);        // Deklarace křivky, polovina a čtvrtina radiusu "d"
@@ -1680,7 +1694,7 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <returns></returns>
         private static string _GetXmlPathFillSquare(int size, bool isBold, string styleParam, bool counterClockWise = false, Padding? padding = null)
         {
-            _ResolveSvgDesignParam(ref styleParam);
+            _ValidateGenericDefinition(ref styleParam);
             if (size <= 0 || String.IsNullOrEmpty(styleParam)) return "";
 
             string pathData = _GetXmlPathDataFillSquare(size, isBold, counterClockWise, padding);
@@ -1814,7 +1828,6 @@ M22,22H10v2H22v-2z " class="Black" />
             int y1 = t + h - th2;
             return "";
         }
-
         /// <summary>
         /// Vrátí souřadice pro definici křivky pro dané modulo = průměr kružnice.
         /// </summary>
@@ -1902,6 +1915,7 @@ M22,22H10v2H22v-2z " class="Black" />
       </radialGradient>
     </defs>
 ";
+            /*
             // alternativa
             xml = $@"    <defs>
       <radialGradient id='{name}' gradientUnits='userSpaceOnUse' cx='{fx}' cy='{fy}' r='{r}' fx='{cx}' fy='{cy}'>
@@ -1910,6 +1924,7 @@ M22,22H10v2H22v-2z " class="Black" />
       </radialGradient>
     </defs>
 ";
+            */
             return xml.Replace("'", "\"");
         }
         /// <summary>
@@ -1971,17 +1986,83 @@ M22,22H10v2H22v-2z " class="Black" />
             return genericItems[index];
         }
         /// <summary>
-        /// Vrátí daný parametr z pole parametrů, ošetří jej jako SVG styl
+        /// Načte daný parametr z pole parametrů, získanou hodnotu ošetří jej jako SVG styl.
+        /// <para/>
+        /// Pokud z dodaného parametru načte výraz, obsahující rovnítko, považuje jej za kompletní definici stylu a nemění ji, vrátí ji beze změn. 
+        /// Například: <c>style='Blue'</c>
+        /// <br/>
+        /// Pokud z dodaného parametru načte výraz, obsahující text bez rovnítka, považuje jej za hodnotu (typicky barvu) a výstupní definici sestaví jako:
+        /// <c>defaultElement='hodnota z parametru'</c>
+        /// <br/>
+        /// Pokud z dodaného parametru nenačte nic, pak sestaví výstupní definici z dodaného elementu a hodnoty:
+        /// <c>defaultElement='defaultValue'</c>
         /// </summary>
-        /// <param name="genericItems"></param>
-        /// <param name="index"></param>
-        /// <param name="defaultStyle"></param>
+        /// <param name="genericItems">Sada parametrů</param>
+        /// <param name="index">Pozice načítaného parametru</param>
+        /// <param name="defaultElement">Defaultní element</param>
+        /// <param name="defaultValue">Defaultní hodnota, bez krajních apostrofů</param>
         /// <returns></returns>
-        private static string _GetGenericSvgDesignParam(string[] genericItems, int index, string defaultStyle)
+        private static string _GetGenericDefinition(string[] genericItems, int index, string defaultElement, string defaultValue)
         {
             string style = _GetGenericParam(genericItems, index, "");
-            _ResolveSvgDesignParam(ref style, defaultStyle);
+            _ValidateGenericDefinition(ref style, defaultElement, defaultValue);
             return style;
+        }
+        /// <summary>
+        /// Ošetří dodaný parametr, definující SVG vzhled. 
+        /// Vstup smí být prázdný, nebo může obsahovat kompletní definici vzhledu ("fill='#e02080' stroke='Black'")
+        /// Pokud je prázdný, na výstupu je "".
+        /// Pokud je zadán a neobsahuje rovnítko, předsadí class, rovnítko a obalí apostrofy:    class='param'.
+        /// Jinak jej ponechá beze změny.
+        /// <para/>
+        /// Tedy: 
+        /// - pokud na vstupu je param = null nebo prázdný string, pak na výstupu je v param = defValue (nebo prázdný string);
+        /// - pokud na vstupu je param obsahující mimo jiné rovnítko, pak na výstupu je param beze změny (ponecháme explicitní deklaraci)
+        /// - pokud tedy na vstupu je neprázdný text bez rovnítka, považuje se text za jméno třídy CSS stylu a pak na výstupu je param:   class='vstupní text param'
+        /// (například: vstup = "blue", výstup = "class='blue'")
+        /// </summary>
+        /// <param name="definition"></param>
+        private static void _ValidateGenericDefinition(ref string definition)
+        {
+            if (String.IsNullOrEmpty(definition)) definition = "";
+        }
+        /// <summary>
+        /// Ošetří dodaný parametr, definující SVG vzhled. 
+        /// Vstup smí být prázdný, nebo může obsahovat kompletní definici vzhledu ("fill='#e02080' stroke='Black'")
+        /// Pokud je prázdný, na výstupu je "".
+        /// Pokud je zadán a neobsahuje rovnítko, předsadí class, rovnítko a obalí apostrofy:    class='param'.
+        /// Jinak jej ponechá beze změny.
+        /// <para/>
+        /// Tedy: 
+        /// - pokud na vstupu je param = null nebo prázdný string, pak na výstupu je v param = defValue (nebo prázdný string);
+        /// - pokud na vstupu je param obsahující mimo jiné rovnítko, pak na výstupu je param beze změny (ponecháme explicitní deklaraci)
+        /// - pokud tedy na vstupu je neprázdný text bez rovnítka, považuje se text za jméno třídy CSS stylu a pak na výstupu je param:   class='vstupní text param'
+        /// (například: vstup = "blue", výstup = "class='blue'")
+        /// </summary>
+        /// <param name="definition"></param>
+        /// <param name="defaultElement">Defaultní element</param>
+        /// <param name="defaultValue">Defaultní hodnota, bez krajních apostrofů</param>
+        private static void _ValidateGenericDefinition(ref string definition, string defaultElement, string defaultValue)
+        {
+            bool hasDefinition = !String.IsNullOrEmpty(definition);
+            bool hasDefaultElement = !String.IsNullOrEmpty(defaultElement);
+            bool hasDefaultValue = !String.IsNullOrEmpty(defaultValue);
+
+            if (!hasDefinition)
+            {   // Dodaná definice je zcela prázdná: musím sestavit definici z defaultů:
+                if (hasDefaultElement && hasDefaultValue) definition = $"{defaultElement}='{defaultValue}'";
+                else if (hasDefaultElement) definition = $"{defaultElement}";
+                else if (hasDefaultValue) definition = $"'{defaultValue}'";
+                else definition = "";
+            }
+            else if (definition.IndexOf("=") < 0 && hasDefaultElement && hasDefaultValue)
+            {   // Dodaná definice není prázdná, ale neobsahuje rovnítko: obsahuje pouze hodnotu
+                //  A pokud máme dodaný defaultní Element i defaultní hodnotu (tedy očekáváme definici ve tvaru "fill='Blue'"),
+                //  pak sestavím text s defaultním elementem a dodanou hodnotou:
+                bool hasApostroph = (definition.Length >= 2 && definition[0] == '\'' && definition[definition.Length - 1] == '\'');
+                if (hasApostroph) definition = $"{defaultElement}={definition}";       // hodnota je dodána s apostrofy, nepřidáváme další
+                else definition = $"{defaultElement}='{definition}'";
+            }
         }
         /// <summary>
         /// Z dodaného pole z prvku na daném indexu vrátí jeho Color hodnotu.
@@ -2031,28 +2112,6 @@ M22,22H10v2H22v-2z " class="Black" />
                     t = t.Substring(0, t.Length - 1);
             }
             return t;
-        }
-        /// <summary>
-        /// Ošetří dodaný parametr, definující SVG vzhled. 
-        /// Vstup smí být prázdný, nebo může obsahovat kompletní definici vzhledu ("fill='#e02080' stroke='Black'")
-        /// Pokud je prázdný, na výstupu je "".
-        /// Pokud je zadán a neobsahuje rovnítko, předsadí class, rovnítko a obalí apostrofy:    class='param'.
-        /// Jinak jej ponechá beze změny.
-        /// <para/>
-        /// Tedy: 
-        /// - pokud na vstupu je param = null nebo prázdný string, pak na výstupu je v param = defValue (nebo prázdný string);
-        /// - pokud na vstupu je param obsahující mimo jiné rovnítko, pak na výstupu je param beze změny (ponecháme explicitní deklaraci)
-        /// - pokud tedy na vstupu je neprázdný text bez rovnítka, považuje se text za jméno třídy CSS stylu a pak na výstupu je param:   class='vstupní text param'
-        /// (například: vstup = "blue", výstup = "class='blue'")
-        /// </summary>
-        /// <param name="param"></param>
-        /// <param name="defValue"></param>
-        private static void _ResolveSvgDesignParam(ref string param, string defValue = null)
-        {
-            if (String.IsNullOrEmpty(param))
-                param = defValue ?? "";
-            else if (param.IndexOf("=") < 0)
-                param = "class='" + param + "'";
         }
         #endregion
         #endregion

@@ -590,7 +590,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aktuální stav filtru: obsahuje typ filtru (<see cref="_CurrentFilterOperator"/>:ItemId) a aktuálně zadaný text (<see cref="_CurrentText"/>).
         /// Používá se po stisku klávesy Enter pro detekci změny hodnoty filtru (tam se zohlední i změna typu filtru bez změny zadaného textu).
         /// <para/>
-        /// Nikdy není null, vždy obshauje new instanci, které v sobě obsahuje aktuálně platné hodnoty.
+        /// Nikdy není null, vždy obsahuje new instanci, které v sobě obsahuje aktuálně platné hodnoty.
         /// </summary>
         protected DxFilterBoxValue CurrentFilterValue { get { return new DxFilterBoxValue(_CurrentFilterOperator, _CurrentText, _CurrentValue); } }
         /// <summary>

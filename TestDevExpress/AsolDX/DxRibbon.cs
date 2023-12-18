@@ -2333,7 +2333,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             //   a) vstupující OnDemand stránka neobsahuje data => pokud bude aktivována, pak by MĚLA provést OnDemand donačtení,
             //       protože zdroj dat jen nadeklaroval OnDemnd stránku bez obsahu, ale uživatel chce vidět její obsah;
             //     anebo
-            //   b) OnDemand stránka již OBSHAUJE data => pak ale metoda CheckLazyContentCurrentPage() nemá vyvolat OnDemand donačítání (protože bychom se zacyklili),
+            //   b) OnDemand stránka již OBSAHUJE data => pak ale metoda CheckLazyContentCurrentPage() nemá vyvolat OnDemand donačítání (protože bychom se zacyklili),
             //       to je situace, když zdroj dat právě už naplnil stránku daty a posílá ji do Ribbonu.
             //  Řešení:
             //   - příznak isReFill říká, že nyní přicházejí naplněná data (a nebude se tedy žádat o jejich další donačtení)

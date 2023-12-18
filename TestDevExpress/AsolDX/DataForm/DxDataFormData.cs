@@ -1341,7 +1341,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             }
         }
         /// <summary>
-        /// Vrátí true, pokud this instance obsahuje dané jméno. Pokud jméno je null, pak jej neobshauje.
+        /// Vrátí true, pokud this instance obsahuje dané jméno. Pokud jméno je null, pak jej neobsahuje.
         /// </summary>
         /// <param name="property">Určení požadované vlastnosti (typ property)</param>
         /// <returns></returns>
@@ -1350,7 +1350,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             return ContainsName(null, property);
         }
         /// <summary>
-        /// Vrátí true, pokud this instance obsahuje dané jméno. Pokud jméno je null, pak jej neobshauje.
+        /// Vrátí true, pokud this instance obsahuje dané jméno. Pokud jméno je null, pak jej neobsahuje.
         /// </summary>
         /// <param name="columnName">Jméno sloupce</param>
         /// <param name="property">Určení požadované vlastnosti (typ property)</param>

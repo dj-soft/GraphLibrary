@@ -57,12 +57,20 @@ namespace TestDevExpress.Forms
             string imageDataFormRemove = "svgimages/spreadsheet/removetablerows.svg";
             string imageChangeData = "svgimages/richedit/trackingchanges_allmarkup.svg";        // "svgimages/richedit/trackingchanges_trackchanges.svg";
 
-
             group = new DataRibbonGroup() { GroupText = "DataForm" };
             page.Groups.Add(group);
             group.Items.Add(new DataRibbonItem() { ItemId = "StatusRefresh", Text = "Refresh Status", ToolTipText = "Znovu načíst údaje o spotřebě systémových zdrojů do statusbaru", ImageName = imageStatusRefresh });
             group.Items.Add(new DataRibbonItem() { ItemId = "TestDrawing", Text = "TestDrawing", ToolTipText = "Vykreslování bez fyzických Controlů - pro test rychlosti", ImageName = imageTestDrawing, RibbonStyle = RibbonItemStyles.Large, ItemType = RibbonItemType.CheckButton, Checked = TestPainting });
 
+            // smazat:
+            var groupSvg = new DataRibbonGroup() { GroupText = "GenericSvgImages" };
+            groupSvg.Items.Add(new DataRibbonItem() { ItemId = "g1", Text = "Circle", ImageName = "@circle|#881166|95|#EEAADD",  RibbonStyle = RibbonItemStyles.Large });
+            groupSvg.Items.Add(new DataRibbonItem() { ItemId = "g2", Text = "Arrow", ImageName = "@arrow|D|red", RibbonStyle = RibbonItemStyles.Large });
+            groupSvg.Items.Add(new DataRibbonItem() { ItemId = "g3", Text = "Copy", ImageName = "@edit|copy|green", RibbonStyle = RibbonItemStyles.Large });
+            groupSvg.Items.Add(new DataRibbonItem() { ItemId = "g4", Text = "Text", ImageName = "@text|DJ|blue|||6|#662266|#FFDDFF", RibbonStyle = RibbonItemStyles.Large });
+            page.Groups.Add(groupSvg);
+
+            // Samply:
             var groupSamples = new DataRibbonGroup() { GroupText = "Ukázky layoutu a počtu řádků" };
             groupSamples.Items.Add(new DataRibbonItem() { ItemId = "DataFormRemove", Text = "Remove DataForm", ToolTipText = "Zahodit DataForm a uvolnit jeho zdroje", ImageName = imageDataFormRemove, ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName, Checked = true });
             groupSamples.Items.Add(new DataRibbonItem() { ItemId = "ChangeData", Text = "Change Data", ToolTipText = "Změní obsah dat / stav Enabled v dataformu", ImageName = imageChangeData });
