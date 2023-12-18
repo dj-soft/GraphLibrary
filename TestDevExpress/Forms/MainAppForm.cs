@@ -85,6 +85,19 @@ namespace TestDevExpress.Forms
         #endregion
         #region DockManager - služby
         /// <summary>
+        /// Po dokončení tvorby Dockmanageru, DocumentManageru, TabbedView a DockPanelů
+        /// </summary>
+        protected override void DxMainContentPreparedAfter() 
+        {
+            this.TabbedView.Paint += _TabbedView_Paint;
+        }
+
+        private void _TabbedView_Paint(object sender, PaintEventArgs e)
+        {
+            e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(Color.Pink), new RectangleF(80, 8, 16, 16));
+        }
+
+        /// <summary>
         /// Inicializace DockPanelu LogActivity
         /// </summary>
         protected override void InitializeDockPanelsContent()

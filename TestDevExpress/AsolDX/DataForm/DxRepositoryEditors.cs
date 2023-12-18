@@ -780,7 +780,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // __EditorPaint.
 
 
-            return CreateBitmapData(__EditorPaint, pdea.Graphics, null, WinDraw.Color.LightCoral);
+            return CreateBitmapData(__EditorPaint, pdea.Graphics);
         }
         /// <summary>
         /// Potomek zde vrátí nativní control
@@ -990,6 +990,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             control.Properties.OffText = GetItemContent(paintData, DxDData.DxDataFormProperty.CheckBoxLabelFalse, "Off");
             control.Properties.OnText = GetItemContent(paintData, DxDData.DxDataFormProperty.CheckBoxLabelTrue, "On");
             control.Properties.GlyphAlignment = GetItemIconHorzizontalAlignment(paintData);
+
             // control.ReadOnly = true;
             // control.Enabled = true;
         }

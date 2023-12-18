@@ -398,7 +398,7 @@ namespace TestDevExpress.Forms
                     });
 
                     left = leftB; top += 44;
-                    addItemPairT("sazbadph", "Sazba DPH:", DxDForm.DxRepositoryEditorType.CheckEdit, top, ref left, 120, 20, item =>
+                    addItemPairT("sazbadph", "Sazba DPH:", DxDForm.DxRepositoryEditorType.ToggleSwitch, top, ref left, 120, 20, item =>
                     {
                         item.Content[DxDData.DxDataFormProperty.Label] = "Je to pochoutka";
                         item.Content[DxDData.DxDataFormProperty.IsEnabled] = false;

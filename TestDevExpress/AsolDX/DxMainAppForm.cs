@@ -125,11 +125,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             SetupDocumentManager();
             SetupTabbedView();
             SetupDockManager();
-
             InitializeFinalControls();
-
             InitializeDockPanelsContent();
+            DxMainContentPreparedAfter();
         }
+        /// <summary>
+        /// Po dokončení tvorby Dockmanageru, DocumentManageru, TabbedView a DockPanelů
+        /// </summary>
+        protected virtual void DxMainContentPreparedAfter() { }
         /// <summary>
         /// Nastavení komponenty DocumentManager
         /// </summary>

@@ -1530,18 +1530,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="graphics"></param>
         /// <param name="exactBitmapSize"></param>
         /// <returns></returns>
-        protected virtual byte[] CreateBitmapData(WinForm.Control control, WinDraw.Graphics graphics, WinDraw.Size? exactBitmapSize = null, WinDraw.Color? fillBackColor = null)
+        protected virtual byte[] CreateBitmapData(WinForm.Control control, WinDraw.Graphics graphics, WinDraw.Size? exactBitmapSize = null)
         {
             int w = exactBitmapSize?.Width ?? control.Width;
             int h = exactBitmapSize?.Height ?? control.Height;
             using (var bitmap = new WinDraw.Bitmap(w, h, WinDraw.Imaging.PixelFormat.Format32bppArgb /* graphics */))
             {
-                if (fillBackColor.HasValue) bitmap.Save(@"c:\DavidPrac\CheckBox0.png", WinDraw.Imaging.ImageFormat.Png);
                 bitmap.MakeTransparent();
-                if (fillBackColor.HasValue) bitmap.FillColor(fillBackColor.Value);
-                if (fillBackColor.HasValue) bitmap.Save(@"c:\DavidPrac\CheckBox1.png", WinDraw.Imaging.ImageFormat.Png);
                 control.DrawToBitmap(bitmap, new WinDraw.Rectangle(0, 0, w, h));
-                if (fillBackColor.HasValue) bitmap.Save(@"c:\DavidPrac\CheckBox2.png", WinDraw.Imaging.ImageFormat.Png);
                 return CreateBitmapData(bitmap);
             }
         }
