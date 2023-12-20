@@ -89,12 +89,111 @@ namespace TestDevExpress.Forms
         /// </summary>
         protected override void DxMainContentPreparedAfter() 
         {
-            this.TabbedView.Paint += _TabbedView_Paint;
+            this.TabbedView.CustomDrawTabHeader += TabbedView_CustomDrawTabHeader;       // Vykreslení jednotlivého TabHeaderu => doplnění ikony do neaktivního headeru
         }
-
-        private void _TabbedView_Paint(object sender, PaintEventArgs e)
+        /// <summary>
+        /// Vykreslení jednotlivého TabHeaderu = doplnění ikony do neaktivního headeru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void TabbedView_CustomDrawTabHeader(object sender, DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e)
         {
-            e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(Color.Pink), new RectangleF(80, 8, 16, 16));
+            bool isControl = Control.ModifierKeys == Keys.Control;
+            if (isControl)
+            {
+                e.DefaultDraw();
+                e.Handled = true;
+            }
+            else
+            {
+                _CustomDrawTabHeader(e);
+            }
+        }
+        /// <summary>
+        /// Zajistí Vykreslení jednotlivého TabHeaderu + doplnění ikony do neaktivního headeru
+        /// </summary>
+        /// <param name="e"></param>
+        private void _CustomDrawTabHeader(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e)
+        {
+            e.DefaultDrawBackground();
+            e.DefaultDrawImage();
+            e.DefaultDrawText();
+            _DrawHeaderIcon(e);
+            e.DefaultDrawButtons();
+            e.Handled = true;
+        }
+        /// <summary>
+        /// Vykreslí doplňkovou ikonu
+        /// </summary>
+        /// <param name="e"></param>
+        private void _DrawHeaderIcon(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e)
+        {
+            // Pokud je TAB nějak aktivní, pak do něj nekreslíme:
+            if (e.TabHeaderInfo.IsActiveState || e.TabHeaderInfo.IsHotState) return;
+
+            // Urči jméno ikony z dat formuláře:
+            string iconName = _GetIconName(e);
+            if (String.IsNullOrEmpty(iconName)) return;
+
+            var iconBounds = _GetIconBounds(e, 0, new Size(16, 16));
+            var image = DxComponent.GetBitmapImage(iconName, ResourceImageSizeType.Small);
+            e.Cache.DrawImage(image, iconBounds);
+        }
+        /// <summary>
+        /// Vrátí název ImageName pro doplňkovou ikonu
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private static string _GetIconName(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e)
+        {
+            var document = e.TabHeaderInfo.Page as DevExpress.XtraBars.Docking2010.Views.Tabbed.IDocumentInfo;
+            var userForm = document?.Document?.Control;
+            if (userForm is null) return null;
+
+            var typeName = userForm.GetType().FullName;
+            switch (typeName)
+            {
+                case "TestDevExpress.Forms.DataFormV3": return "@text|D|#002266||B|3|#88AAFF|#CCEEFF";
+                case "TestDevExpress.Components.LayoutForm": return "@text|L|#006622||B|3|#88FFAA|#CCFFEE";
+                case "TestDevExpress.Forms.RibbonForm": return "@text|R|#660022||B|3|#FF88AA|#FFCCEE";
+            }
+            return null;
+        }
+        /// <summary>
+        /// Vrátí souřadnice pro doplňkovou ikonu
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="index"></param>
+        /// <param name="iconSize"></param>
+        /// <returns></returns>
+        private static Rectangle _GetIconBounds(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e, int index, Size iconSize)
+        {
+            var buttons = e.TabHeaderInfo.ButtonsPanel?.ViewInfo?.Buttons;
+            if (buttons != null && buttons.Count > 0)
+            {
+                if (index >= 0)
+                {   // Konkrétní button:
+                    var buttonIndex = (index < 0 ? 0 : (index >= buttons.Count ? buttons.Count - 1 : index));
+                    var buttonBounds = buttons[buttonIndex].Bounds;
+                    var center = buttonBounds.Center();
+                    return center.CreateRectangleFromCenter(iconSize);
+                }
+                else
+                {   // Střed všech buttonů:
+                    var boundsL = buttons[buttons.Count - 1].Bounds;
+                    var boundsR = buttons[0].Bounds;
+                    int l = boundsL.Left;
+                    int r = boundsR.Right;
+                    int xc = l + ((r - l) / 2);
+                    int yc = boundsL.Y + (boundsL.Height / 2);
+                    return new Point(xc, yc).CreateRectangleFromCenter(iconSize);
+                }
+            }
+
+            // Vpravo:
+            var x = e.TabHeaderInfo.Content.Right - iconSize.Width;
+            var y = e.TabHeaderInfo.Image.Top;
+            return new Rectangle(x, y, iconSize.Width, iconSize.Height);
         }
 
         /// <summary>
