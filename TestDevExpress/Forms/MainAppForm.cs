@@ -160,7 +160,8 @@ namespace TestDevExpress.Forms
             return null;
         }
         /// <summary>
-        /// Vrátí souřadnice pro doplňkovou ikonu
+        /// Vrátí souřadnice pro doplňkovou ikonu. Souřadnice jsou v místě zadaného tlačítka v rámci prostoru Buttons = vpravo (Close nebo Pin), anebo uprostřed tohoto prostoru.
+        /// Index <paramref name="index"/> odkazuje na pozici tlačítka. Počítá se zprava (0=Close, 1=Pin). Hodnota -1 = uprostřed.
         /// </summary>
         /// <param name="e"></param>
         /// <param name="index"></param>
