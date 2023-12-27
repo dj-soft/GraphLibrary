@@ -96,16 +96,13 @@ namespace TestDevExpress.Forms
             __TabHeaderImagePainter = new DxTabHeaderImagePainter();
             __TabHeaderImagePainter.TabbedView = this.TabbedView;
             __TabHeaderImagePainter.ImageSizeType = ResourceImageSizeType.Medium;
-
-            __TabHeaderImagePainter.ImagePosition = DxTabHeaderImagePainter.ImagePositionType.InsteadStandardIcon;
-            __TabHeaderImagePainter.ImagePosition = DxTabHeaderImagePainter.ImagePositionType.AfterStandardIcon;
             __TabHeaderImagePainter.ImagePosition = DxTabHeaderImagePainter.ImagePositionType.InsteadCloseButton;
-            __TabHeaderImagePainter.ImagePosition = DxTabHeaderImagePainter.ImagePositionType.InsteadStandardIcon;
-            __TabHeaderImagePainter.ImagePosition = DxTabHeaderImagePainter.ImagePositionType.AfterStandardIcon;
-
             __TabHeaderImagePainter.ImageNameBasicGenerator = _TabHeaderImageBasicGenerator;
             __TabHeaderImagePainter.ImageNameAddGenerator = _TabHeaderImageAddGenerator;
         }
+        /// <summary>
+        /// 
+        /// </summary>
         private DxTabHeaderImagePainter __TabHeaderImagePainter;
         private static string _TabHeaderImageBasicGenerator(Control control)
         {

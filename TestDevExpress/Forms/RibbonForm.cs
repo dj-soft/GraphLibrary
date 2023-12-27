@@ -28,6 +28,7 @@ namespace TestDevExpress.Forms
         public RibbonForm()
         {
             this.ImageName = "svgimages/dashboards/grid.svg";
+            this.ImageNameAdd = "@text|R|#660022||B|3|#FF88AA|#FFCCEE";
 
             var moon10 = DxComponent.CreateBitmapImage("Images/Moon10.png");
             DxComponent.SplashShow("Testovací okno Ribbonů Nephrite", "DJ soft & ASOL",

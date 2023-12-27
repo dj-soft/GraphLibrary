@@ -22,6 +22,7 @@ namespace TestDevExpress.Forms
         public DataFormV3()
         {
             this.ImageName = "svgimages/spreadsheet/showcompactformpivottable.svg";
+            this.ImageNameAdd = "@text|D|#002266||B|3|#88AAFF|#CCEEFF";
 
             __CurrentId = ++__InstanceCounter;
             __DataFormId = 0;

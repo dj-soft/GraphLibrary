@@ -7723,6 +7723,9 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     #endregion
     #region DxTabHeaderImagePainter : třída, která vykreslí další ikonu do záhlaví TabHeaderu
+    /// <summary>
+    /// <see cref="DxTabHeaderImagePainter"/> : třída, která vykreslí další ikonu do záhlaví TabHeaderu, a dovolí i vykreslovat základní ikonu.
+    /// </summary>
     internal class DxTabHeaderImagePainter : IDisposable
     {
         #region Konstruktor a public vlastnosti
@@ -7754,6 +7757,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {   // detach:
                     __TabbedView.CustomDrawTabHeader -= TabbedView_CustomDrawTabHeader;
                     __TabbedView.DocumentAdded -= __TabbedView_DocumentAdded;
+                    __TabbedView.Manager.MdiParent.DpiChanged -= _MdiParent_DpiChanged;
                 }
 
                 __TabbedView = value;
@@ -7762,10 +7766,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {   // attach:
                     __TabbedView.CustomDrawTabHeader += TabbedView_CustomDrawTabHeader;
                     __TabbedView.DocumentAdded += __TabbedView_DocumentAdded;
-
-
-                    __TabbedView.Style = DevExpress.XtraBars.Docking2010.Views.DockingViewStyle.Light;
-                    __TabbedView.Manager.View.Style = DevExpress.XtraBars.Docking2010.Views.DockingViewStyle.Light;
+                    __TabbedView.Manager.MdiParent.DpiChanged += _MdiParent_DpiChanged;
                 }
             }
         }
@@ -7792,11 +7793,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Velikost ikony, pixely
         /// </summary>
-        public Size ImageSize { get { return DxComponent.GetImageSize(this.ImageSizeType, true); } }
+        public Size ImageSize { get { return DxComponent.GetImageSize(this.ImageSizeType, true, CurrentDpi); } }
         /// <summary>
         /// Pozice ikony
         /// </summary>
         public ImagePositionType ImagePosition { get; set; }
+        /// <summary>
+        /// Aktuální DPI
+        /// </summary>
+        private int? CurrentDpi { get { return (__TabbedView?.Manager?.MdiParent?.DeviceDpi); } }
         /// <summary>
         /// Po přidání dokumentu (=nové okno) 
         /// </summary>
@@ -7808,6 +7813,29 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (imageInfo != null)
                 e.Document.ImageOptions.SvgImageSize = imageInfo.TotalImageSize;
             e.Document.Tag = imageInfo;
+        }
+        /// <summary>
+        /// Po změně DPI na formuláři, který nás hostuje = má vliv na velikost ikon
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MdiParent_DpiChanged(object sender, DpiChangedEventArgs e)
+        {
+            _RefreshIconSizes();
+        }
+        /// <summary>
+        /// Aktualizuje velikost ikon
+        /// </summary>
+        private void _RefreshIconSizes()
+        {
+            var documents = __TabbedView?.Documents;
+            if (documents is null) return;
+
+            foreach (var document in documents)
+            {
+                if (document.Tag is ImageInfo imageInfo)
+                    imageInfo.RefreshIconSizes(this, document);
+            }
         }
         #endregion
         #region Enumy
@@ -7892,39 +7920,39 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private static Rectangle _GetImageBoundsInControlBox(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e, int index, Size iconSize)
         {
+            var controlBounds = e.TabHeaderInfo.ControlBox;
+            var imageBounds = e.TabHeaderInfo.Image;
+            int imageCY = imageBounds.Y + (imageBounds.Height / 2);
+            int imageCX;
+
             var buttons = e.TabHeaderInfo.ButtonsPanel?.ViewInfo?.Buttons;
-            Rectangle result;
             if (buttons != null && buttons.Count > 0)
             {
                 if (index >= 0)
                 {   // Konkrétní button:
                     var buttonIndex = (index < 0 ? 0 : (index >= buttons.Count ? buttons.Count - 1 : index));
                     var buttonBounds = buttons[buttonIndex].Bounds;
-                    var center = buttonBounds.Center();
-                    result = center.CreateRectangleFromCenter(iconSize);
+                    imageCX = buttonBounds.X + (buttonBounds.Width / 2);
                 }
                 else
                 {   // Střed všech buttonů:
-                    var boundsL = buttons[buttons.Count - 1].Bounds;
-                    var boundsR = buttons[0].Bounds;
-                    int l = boundsL.Left;
-                    int r = boundsR.Right;
-                    int xc = l + ((r - l) / 2);
-                    int yc = boundsL.Y + (boundsL.Height / 2);
-                    result = new Point(xc, yc).CreateRectangleFromCenter(iconSize);
+                    imageCX = controlBounds.X + (controlBounds.Width / 2);
                 }
             }
             else
             {
                 // Vpravo:
-                var x = e.TabHeaderInfo.Content.Right - iconSize.Width;
-                var y = e.TabHeaderInfo.Image.Top;
-                result = new Rectangle(x, y, iconSize.Width, iconSize.Height);
+                var contentBounds = e.TabHeaderInfo.Content;
+                imageCX = contentBounds.Right - (iconSize.Width / 2);
             }
 
-            Rectangle controlBounds = e.TabHeaderInfo.ControlBox;
+            // Ze souřadnice středu ikony a její velikosti vytvořím Rectangle pro ikonu:
+            var result = new Point(imageCX, imageCY).CreateRectangleFromCenter(iconSize);
+
+            // Zarovnat do prostoru ControlBox:
             if (result.X < controlBounds.X) result.X = controlBounds.X;
             if (result.Right > controlBounds.Right) result.X = controlBounds.Right - result.Width;
+
             return result;
         }
         /// <summary>
@@ -8048,32 +8076,51 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <returns></returns>
             public static ImageInfo Create(DxTabHeaderImagePainter owner, DevExpress.XtraBars.Docking2010.Views.BaseDocument document)
             {
-                var form = document?.Control;
-                string imageNameBasic = owner.ImageNameBasicGenerator?.Invoke(form);
-                string imageNameAdd = owner.ImageNameAddGenerator?.Invoke(form);
-                var position = owner.ImagePosition;
-                var imageSize = DxComponent.GetImageSize(owner.ImageSizeType, true);
+                var imageInfo = new ImageInfo();
+                imageInfo.RefreshIconNames(owner, document);
+                imageInfo.RefreshIconSizes(owner, document);
+                return imageInfo;
+            }
+            /// <summary>
+            /// Aktualizuje názvy ikon z formuláře dodaného v dokumentu
+            /// </summary>
+            public void RefreshIconNames(DxTabHeaderImagePainter owner, DevExpress.XtraBars.Docking2010.Views.BaseDocument document)
+            {
+                Control form = document?.Control;
+                if (form is IDxControlWithIcons iconsForm)
+                {
+                    this.ImageNameBasic = iconsForm.IconNameBasic;
+                    this.ImageNameAdd = iconsForm.IconNameAdd;
+                }
+                else
+                {
+                    this.ImageNameBasic = owner.ImageNameBasicGenerator?.Invoke(form);
+                    this.ImageNameAdd = owner.ImageNameAddGenerator?.Invoke(form);
+                }
+            }
+            /// <summary>
+            /// Aktualizuje velikost ikon
+            /// </summary>
+            public void RefreshIconSizes(DxTabHeaderImagePainter owner, DevExpress.XtraBars.Docking2010.Views.BaseDocument document)
+            {
+                var imageSize = owner.ImageSize;
                 var totalImageSize = imageSize;
 
                 // V režimu AfterStandardIcon: totalImageSize musí mít šířku pro dvě standardní ikony + 2/8 [nebo 1/8 ?] rozestup mezi nimi:
                 int imageAddOffsetX = 0;
-                if (position == ImagePositionType.AfterStandardIcon)
+                if (owner.ImagePosition == ImagePositionType.AfterStandardIcon)
                 {
                     int w = totalImageSize.Width;
                     imageAddOffsetX = w + totalImageSize.Width / 8;
                     totalImageSize.Width = totalImageSize.Width + imageAddOffsetX;
                 }
 
-                var imageInfo = new ImageInfo()
-                {
-                    ImageSize = imageSize,
-                    TotalImageSize = totalImageSize,
-                    ImageNameBasic = imageNameBasic,
-                    ImageNameAdd = imageNameAdd,
-                    ImageAddOffsetX = imageAddOffsetX
-                };
+                this.ImageSize = imageSize;
+                this.TotalImageSize = totalImageSize;
+                this.ImageAddOffsetX = imageAddOffsetX;
 
-                return imageInfo;
+                if (document != null)
+                    document.ImageOptions.SvgImageSize = totalImageSize;
             }
             /// <summary>
             /// Privátní konstruktor
