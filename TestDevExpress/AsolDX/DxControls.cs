@@ -18,6 +18,7 @@ using XS = Noris.WS.Parser.XmlSerializer;
 using System.ComponentModel;
 using DevExpress.XtraBars.Controls;
 using DevExpress.Utils.Drawing;
+using DevExpress.Utils.Text;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -7694,6 +7695,280 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private bool __IsMouseCursorOnImage;
         #endregion
+    }
+    #endregion
+    #region DxTabHeaderImagePainter : třída, která vykreslí další ikonu do záhlaví TabHeaderu
+    internal class DxTabHeaderImagePainter : IDisposable
+    {
+        #region Konstruktor a public vlastnosti
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxTabHeaderImagePainter()
+        {
+            ImagePosition = ImagePositionType.None;
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        public void Dispose()
+        {
+            TabbedView = null;
+            ImageNameGenerator = null;
+        }
+        /// <summary>
+        /// Reference na TabbedView, v jehož TabHeaderech se bude vykreslovat přidaná ikona
+        /// </summary>
+        public DevExpress.XtraBars.Docking2010.Views.Tabbed.TabbedView TabbedView
+        {
+            get { return __TabbedView; }
+            set
+            {
+                if (__TabbedView != null)
+                {   // detach:
+                    __TabbedView.CustomDrawTabHeader -= TabbedView_CustomDrawTabHeader;
+                }
+
+                __TabbedView = value;
+                if (__TabbedView != null)
+                {   // attach:
+                    __TabbedView.CustomDrawTabHeader += TabbedView_CustomDrawTabHeader;
+                }
+            }
+        }
+        private DevExpress.XtraBars.Docking2010.Views.Tabbed.TabbedView __TabbedView;
+        /// <summary>
+        /// Metoda, která dostane jako parametr Control reprezentující obsah dokumentu v TabHeader (typicky Formulář), a najde v něm jméno přidané ikony (Image).
+        /// Reaguje např. na typ formuláře, nebo na jeho obsah...
+        /// Pokud je zde null, anebo funkce vrátí prázdný string, ikona se nebude kreslit.
+        /// </summary>
+        public Func<Control, string> ImageNameGenerator { get; set; }
+        /// <summary>
+        /// Pozice ikony
+        /// </summary>
+        public ImagePositionType ImagePosition { get; set; }
+        #endregion
+        #region Enumy
+        public enum ImagePositionType
+        {
+            None,
+            InsteadCloseButton,
+            InsteadPinButton,
+            CenterControlArea,
+            InsteadStandardIcon,
+            AfterStandardIcon
+        }
+        #endregion
+        #region Privátní oblast, kreslení
+        /// <summary>
+        /// Vykreslení jednotlivého TabHeaderu = doplnění ikony do neaktivního headeru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void TabbedView_CustomDrawTabHeader(object sender, DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e)
+        {
+            string imageName = _GetIconName(e);
+            if (String.IsNullOrEmpty(imageName)) return;
+
+            switch (ImagePosition)
+            {
+                case ImagePositionType.None: return;                 // Vykreslí DevExpress defaultně
+                case ImagePositionType.InsteadCloseButton: _DrawTabHeaderInControlBox(e, imageName, 0); break;
+                case ImagePositionType.InsteadPinButton: _DrawTabHeaderInControlBox(e, imageName, 1); break;
+                case ImagePositionType.CenterControlArea: _DrawTabHeaderInControlBox(e, imageName, -1); break;
+                case ImagePositionType.InsteadStandardIcon: _DrawTabHeaderInsteadStandardIcon(e, imageName); break;
+                case ImagePositionType.AfterStandardIcon: _DrawTabHeaderAfterStandardIcon(e, imageName); break;
+            }
+        }
+        /// <summary>
+        /// Vrátí název ImageName pro doplňkovou ikonu
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private string _GetIconName(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e)
+        {
+            var generator = ImageNameGenerator;
+            if (generator is null) return null;
+
+            var document = e.TabHeaderInfo.Page as DevExpress.XtraBars.Docking2010.Views.Tabbed.IDocumentInfo;
+            var userForm = document?.Document?.Control;
+            if (userForm is null) return null;
+            return generator(userForm);
+        }
+        /// <summary>
+        /// Vykreslí celý TabHeader s přidaným Image na místo ControlBoxu (Buttony vpravo)
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="imageName"></param>
+        /// <param name="index"></param>
+        private void _DrawTabHeaderInControlBox(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e, string imageName, int index)
+        {
+            e.DefaultDrawBackground();
+            e.DefaultDrawImage();
+            e.DefaultDrawText();
+
+            bool isTabActive = (e.TabHeaderInfo.IsActiveState || e.TabHeaderInfo.IsHotState);
+            if (!isTabActive)
+            {   // Image kreslíme jen do neaktivního TabHeaderu:
+                var imageBounds = _GetImageBoundsInControlBox(e, index, new Size(16, 16));
+                var image = DxComponent.GetBitmapImage(imageName, ResourceImageSizeType.Small);
+                e.Cache.DrawImage(image, imageBounds);
+            }
+            else
+            {   // Do aktivního TabHeaderu kreslíme defaultní Buttony:
+                e.DefaultDrawButtons();
+            }
+            e.Handled = true;
+        }
+        /// <summary>
+        /// Vrátí souřadnice pro doplňkovou ikonu. Souřadnice jsou v místě zadaného tlačítka v rámci prostoru Buttons = vpravo (Close nebo Pin), anebo uprostřed tohoto prostoru.
+        /// Index <paramref name="index"/> odkazuje na pozici tlačítka. Počítá se zprava (0=Close, 1=Pin). Hodnota -1 = uprostřed.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="index"></param>
+        /// <param name="iconSize"></param>
+        /// <returns></returns>
+        private static Rectangle _GetImageBoundsInControlBox(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e, int index, Size iconSize)
+        {
+            var buttons = e.TabHeaderInfo.ButtonsPanel?.ViewInfo?.Buttons;
+            if (buttons != null && buttons.Count > 0)
+            {
+                if (index >= 0)
+                {   // Konkrétní button:
+                    var buttonIndex = (index < 0 ? 0 : (index >= buttons.Count ? buttons.Count - 1 : index));
+                    var buttonBounds = buttons[buttonIndex].Bounds;
+                    var center = buttonBounds.Center();
+                    return center.CreateRectangleFromCenter(iconSize);
+                }
+                else
+                {   // Střed všech buttonů:
+                    var boundsL = buttons[buttons.Count - 1].Bounds;
+                    var boundsR = buttons[0].Bounds;
+                    int l = boundsL.Left;
+                    int r = boundsR.Right;
+                    int xc = l + ((r - l) / 2);
+                    int yc = boundsL.Y + (boundsL.Height / 2);
+                    return new Point(xc, yc).CreateRectangleFromCenter(iconSize);
+                }
+            }
+
+            // Vpravo:
+            var x = e.TabHeaderInfo.Content.Right - iconSize.Width;
+            var y = e.TabHeaderInfo.Image.Top;
+            return new Rectangle(x, y, iconSize.Width, iconSize.Height);
+        }
+        /// <summary>
+        /// Vykreslí celý TabHeader s přidaným Image na místo ikony okna (vlevo)
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="imageName"></param>
+        private void _DrawTabHeaderInsteadStandardIcon(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e, string imageName)
+        {
+            e.DefaultDrawBackground();
+
+            var imageBounds = e.TabHeaderInfo.Image;
+            var image = DxComponent.GetBitmapImage(imageName, ResourceImageSizeType.Small);
+            e.Cache.DrawImage(image, imageBounds);
+
+            // e.DefaultDrawImage();
+            e.DefaultDrawText();
+            e.DefaultDrawButtons();
+            e.Handled = true;
+        }
+        /// <summary>
+        /// Vykreslí celý TabHeader s přidaným Image na místo ikony okna (vlevo)
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="imageName"></param>
+        private void _DrawTabHeaderAfterStandardIcon(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e, string imageName)
+        {
+            e.DefaultDrawBackground();
+            e.DefaultDrawImage();
+
+            var imageBounds = e.TabHeaderInfo.Image;
+            imageBounds.X = imageBounds.Right;
+            var image = DxComponent.GetBitmapImage(imageName, ResourceImageSizeType.Small);
+            e.Cache.DrawImage(image, imageBounds);
+
+ //           e.DefaultDrawText();
+            DrawHeaderPageText(e);
+
+            e.DefaultDrawButtons();
+            e.Handled = true;
+
+        }
+        protected virtual void DrawHeaderPageText(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs args)
+        {
+            DevExpress.XtraTab.Drawing.TabDrawArgs e = args.ControlInfo;
+            DevExpress.XtraTab.ViewInfo.BaseTabPageViewInfo pInfo = args.TabHeaderInfo;
+
+            int angle = 0;
+            if (e.ViewInfo.HeaderInfo.RealPageOrientation ==  DevExpress.XtraTab.TabOrientation.Vertical)
+            {
+                angle = 90;
+                if (e.ViewInfo.HeaderInfo.IsLeftLocation || e.ViewInfo.HeaderInfo.IsTopLocation)
+                {
+                    angle = 270;
+                }
+            }
+            AppearanceObject paintAppearance = pInfo.PaintAppearance;
+            HKeyPrefix? hKeyPrefix = ((paintAppearance.TextOptions.HotkeyPrefix == HKeyPrefix.Default && pInfo.UseHotkeyPrefixDrawModeOverride) ? (HKeyPrefix?)pInfo.HotkeyPrefixDrawModeOverride : null);
+            HKeyPrefix hotkeyPrefix = paintAppearance.TextOptions.HotkeyPrefix;
+            if (hKeyPrefix.HasValue)
+            {
+                paintAppearance.TextOptions.SetHotKeyPrefix(hKeyPrefix.Value);
+            }
+            if (e.ViewInfo.PropertiesEx.AllowHtmlDraw)
+            {
+                FrozenAppearance frozenAppearance = new FrozenAppearance(paintAppearance);
+                frozenAppearance.ForeColor = pInfo.PaintAppearance.ForeColor;
+                // args.Cache.DrawString(pInfo.Page.Text, )
+                StringPainter.Default.DrawString(e.Cache, frozenAppearance, pInfo.Page.Text, pInfo.Text, frozenAppearance.TextOptions, args.ControlInfo);
+            }
+            else
+            {
+                args.Cache.DrawVString(pInfo.Page.Text, paintAppearance.GetFont(), e.Cache.GetSolidBrush(pInfo.PaintAppearance.ForeColor), pInfo.Text, DxComponent.GetStringFormatFor(ContentAlignment.MiddleLeft), angle);
+            }
+            paintAppearance.TextOptions.SetHotKeyPrefix(hotkeyPrefix);
+        }
+        #endregion
+
+
+        // smazat:
+
+        /// <summary>
+        /// Zajistí Vykreslení jednotlivého TabHeaderu + doplnění ikony do neaktivního headeru
+        /// </summary>
+        /// <param name="e"></param>
+        private void _CustomDrawTabHeader(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e)
+        {
+            e.DefaultDrawBackground();
+            e.DefaultDrawImage();
+            e.DefaultDrawText();
+            _DrawHeaderIcon(e);
+            e.DefaultDrawButtons();
+            e.Handled = true;
+        }
+        /// <summary>
+        /// Vykreslí doplňkovou ikonu
+        /// </summary>
+        /// <param name="e"></param>
+        private void _DrawHeaderIcon(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e)
+        {
+            // Pokud je TAB nějak aktivní, pak do něj nekreslíme:
+            if (e.TabHeaderInfo.IsActiveState || e.TabHeaderInfo.IsHotState) return;
+
+            // Urči jméno ikony z dat formuláře:
+            string iconName = _GetIconName(e);
+            if (String.IsNullOrEmpty(iconName)) return;
+
+            var iconBounds = _GetImageBoundsInControlBox(e, 0, new Size(16, 16));
+            var image = DxComponent.GetBitmapImage(iconName, ResourceImageSizeType.Small);
+            e.Cache.DrawImage(image, iconBounds);
+        }
+     
+       
+       
     }
     #endregion
     #region DxChartControl
