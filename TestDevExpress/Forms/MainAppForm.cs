@@ -95,12 +95,28 @@ namespace TestDevExpress.Forms
         {
             __TabHeaderImagePainter = new DxTabHeaderImagePainter();
             __TabHeaderImagePainter.TabbedView = this.TabbedView;
+            __TabHeaderImagePainter.ImageSizeType = ResourceImageSizeType.Medium;
             __TabHeaderImagePainter.ImagePosition = DxTabHeaderImagePainter.ImagePositionType.InsteadStandardIcon;
             __TabHeaderImagePainter.ImagePosition = DxTabHeaderImagePainter.ImagePositionType.AfterStandardIcon;
-            __TabHeaderImagePainter.ImageNameGenerator = _TabHeaderImageGenerator;
+            __TabHeaderImagePainter.ImageNameBasicGenerator = _TabHeaderImageBasicGenerator;
+            __TabHeaderImagePainter.ImageNameAddGenerator = _TabHeaderImageAddGenerator;
         }
         private DxTabHeaderImagePainter __TabHeaderImagePainter;
-        private static string _TabHeaderImageGenerator(Control control)
+        private static string _TabHeaderImageBasicGenerator(Control control)
+        {
+            if (control != null)
+            {
+                var typeName = control.GetType().FullName;
+                switch (typeName)
+                {
+                    case "TestDevExpress.Forms.DataFormV3": return "@text|W|#002266||B|3|#88AAFF|#CCEEFF";
+                    case "TestDevExpress.Components.LayoutForm": return "@text|W|#006622||B|3|#88FFAA|#CCFFEE";
+                    case "TestDevExpress.Forms.RibbonForm": return "@text|W|#660022||B|3|#FF88AA|#FFCCEE";
+                }
+            }
+            return null;
+        }
+        private static string _TabHeaderImageAddGenerator(Control control)
         {
             if (control != null)
             {
