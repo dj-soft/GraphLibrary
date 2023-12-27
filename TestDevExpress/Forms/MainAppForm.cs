@@ -96,8 +96,13 @@ namespace TestDevExpress.Forms
             __TabHeaderImagePainter = new DxTabHeaderImagePainter();
             __TabHeaderImagePainter.TabbedView = this.TabbedView;
             __TabHeaderImagePainter.ImageSizeType = ResourceImageSizeType.Medium;
+
             __TabHeaderImagePainter.ImagePosition = DxTabHeaderImagePainter.ImagePositionType.InsteadStandardIcon;
             __TabHeaderImagePainter.ImagePosition = DxTabHeaderImagePainter.ImagePositionType.AfterStandardIcon;
+            __TabHeaderImagePainter.ImagePosition = DxTabHeaderImagePainter.ImagePositionType.InsteadCloseButton;
+            __TabHeaderImagePainter.ImagePosition = DxTabHeaderImagePainter.ImagePositionType.InsteadStandardIcon;
+            __TabHeaderImagePainter.ImagePosition = DxTabHeaderImagePainter.ImagePositionType.AfterStandardIcon;
+
             __TabHeaderImagePainter.ImageNameBasicGenerator = _TabHeaderImageBasicGenerator;
             __TabHeaderImagePainter.ImageNameAddGenerator = _TabHeaderImageAddGenerator;
         }
@@ -106,6 +111,8 @@ namespace TestDevExpress.Forms
         {
             if (control != null)
             {
+                if (control is IDxControlWithIcons iconsForm) return iconsForm.IconNameBasic;
+
                 var typeName = control.GetType().FullName;
                 switch (typeName)
                 {
@@ -120,6 +127,8 @@ namespace TestDevExpress.Forms
         {
             if (control != null)
             {
+                if (control is IDxControlWithIcons iconsForm && !String.IsNullOrEmpty(iconsForm.IconNameAdd)) return iconsForm.IconNameAdd;
+
                 var typeName = control.GetType().FullName;
                 switch (typeName)
                 {

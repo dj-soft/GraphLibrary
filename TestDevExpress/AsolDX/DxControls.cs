@@ -76,7 +76,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Základní formulář bez Ribbonu a StatusBaru
     /// </summary>
-    public class DxStdForm : DevExpress.XtraEditors.XtraForm, IListenerZoomChange, IListenerStyleChanged, IListenerApplicationIdle
+    public class DxStdForm : DevExpress.XtraEditors.XtraForm, IDxControlWithIcons, IListenerZoomChange, IListenerStyleChanged, IListenerApplicationIdle
     {
         #region Konstruktor a základní vlastnosti
         /// <summary>
@@ -243,8 +243,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Název obrázku, který reprezentuje ikonu tohoto okna
         /// </summary>
-        public string ImageName { get { return _ImageName; } set { _ImageName = value; DxComponent.ApplyImage(this.IconOptions, value, sizeType: ResourceImageSizeType.Large); } }
-        private string _ImageName;
+        public string ImageName { get { return _ImageName; } set { _ImageName = value; DxComponent.ApplyImage(this.IconOptions, value, sizeType: ResourceImageSizeType.Large); } } private string _ImageName;
+        /// <summary>
+        /// Název obrázku, který reprezentuje přidanou ikonu tohoto okna
+        /// </summary>
+        public string ImageNameAdd { get { return _ImageNameAdd; } set { _ImageNameAdd = value; } } private string _ImageNameAdd;
+        string IDxControlWithIcons.IconNameBasic { get { return ImageName; } }
+        string IDxControlWithIcons.IconNameAdd { get { return ImageNameAdd; } }
         #endregion
         #region Stav okna, změny stavu
         /// <summary>
@@ -460,7 +465,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Formulář s ribbonem.
     /// Obsahuje připravený Ribbon <see cref="DxRibbon"/> a připravený StatusBar <see cref="DxStatusBar"/>.
     /// </summary>
-    public abstract class DxRibbonBaseForm : DevExpress.XtraBars.Ribbon.RibbonForm, IListenerZoomChange, IListenerStyleChanged, IListenerApplicationIdle
+    public abstract class DxRibbonBaseForm : DevExpress.XtraBars.Ribbon.RibbonForm, IDxControlWithIcons, IListenerZoomChange, IListenerStyleChanged, IListenerApplicationIdle
     {
         #region Konstruktor a základní vlastnosti
         /// <summary>
@@ -592,8 +597,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Název obrázku, který reprezentuje ikonu tohoto okna
         /// </summary>
-        public string ImageName { get { return _ImageName; } set { _ImageName = value; DxComponent.ApplyImage(this.IconOptions, value, sizeType: ResourceImageSizeType.Large); } }
-        private string _ImageName;
+        public string ImageName { get { return _ImageName; } set { _ImageName = value; DxComponent.ApplyImage(this.IconOptions, value, sizeType: ResourceImageSizeType.Large); } } private string _ImageName;
+        /// <summary>
+        /// Název obrázku, který reprezentuje přidanou ikonu tohoto okna
+        /// </summary>
+        public string ImageNameAdd { get { return _ImageNameAdd; } set { _ImageNameAdd = value; } } private string _ImageNameAdd;
+        string IDxControlWithIcons.IconNameBasic { get { return ImageName; } }
+        string IDxControlWithIcons.IconNameAdd { get { return ImageNameAdd; } }
         #endregion
         #region Pozice okna
         /// <summary>
@@ -1185,6 +1195,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Stringová pozice
         /// </summary>
         public string Position { get { return CreatePosition(WindowState, NormalBounds, MaximizedBounds); } }
+    }
+    /// <summary>
+    /// Interface, který zaručuje přítomnost property s názvem základní a rozšířené ikony okna
+    /// </summary>
+    public interface IDxControlWithIcons
+    {
+        /// <summary>
+        /// Jméno základní ikony
+        /// </summary>
+        string IconNameBasic { get; }
+        /// <summary>
+        /// Jméno přidané ikony (zobrazuje se v TabHeaderu)
+        /// </summary>
+        string IconNameAdd { get; }
     }
     #endregion
     #region DxPanelControl + IDxPanelPaintedItem
@@ -7869,6 +7893,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static Rectangle _GetImageBoundsInControlBox(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e, int index, Size iconSize)
         {
             var buttons = e.TabHeaderInfo.ButtonsPanel?.ViewInfo?.Buttons;
+            Rectangle result;
             if (buttons != null && buttons.Count > 0)
             {
                 if (index >= 0)
@@ -7876,7 +7901,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     var buttonIndex = (index < 0 ? 0 : (index >= buttons.Count ? buttons.Count - 1 : index));
                     var buttonBounds = buttons[buttonIndex].Bounds;
                     var center = buttonBounds.Center();
-                    return center.CreateRectangleFromCenter(iconSize);
+                    result = center.CreateRectangleFromCenter(iconSize);
                 }
                 else
                 {   // Střed všech buttonů:
@@ -7886,14 +7911,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                     int r = boundsR.Right;
                     int xc = l + ((r - l) / 2);
                     int yc = boundsL.Y + (boundsL.Height / 2);
-                    return new Point(xc, yc).CreateRectangleFromCenter(iconSize);
+                    result = new Point(xc, yc).CreateRectangleFromCenter(iconSize);
                 }
             }
+            else
+            {
+                // Vpravo:
+                var x = e.TabHeaderInfo.Content.Right - iconSize.Width;
+                var y = e.TabHeaderInfo.Image.Top;
+                result = new Rectangle(x, y, iconSize.Width, iconSize.Height);
+            }
 
-            // Vpravo:
-            var x = e.TabHeaderInfo.Content.Right - iconSize.Width;
-            var y = e.TabHeaderInfo.Image.Top;
-            return new Rectangle(x, y, iconSize.Width, iconSize.Height);
+            Rectangle controlBounds = e.TabHeaderInfo.ControlBox;
+            if (result.X < controlBounds.X) result.X = controlBounds.X;
+            if (result.Right > controlBounds.Right) result.X = controlBounds.Right - result.Width;
+            return result;
         }
         /// <summary>
         /// Vykreslí celý TabHeader s přidaným Image na místo ikony okna (vlevo)

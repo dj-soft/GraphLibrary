@@ -25,6 +25,9 @@ namespace TestDevExpress.Components
         { }
         public LayoutForm(bool useDevExpress)
         {
+            this.ImageName = "devav/layout/pages.svg";
+
+
             this.Text = $"Test řízení LayoutPanel :: {DxComponent.FrameworkName}";
 
             var resourcesSvg = DxComponent.GetResourceNames(".svg", true, false);

@@ -21,6 +21,8 @@ namespace TestDevExpress.Forms
         #region Inicializace
         public DataFormV3()
         {
+            this.ImageName = "svgimages/spreadsheet/showcompactformpivottable.svg";
+
             __CurrentId = ++__InstanceCounter;
             __DataFormId = 0;
             _RefreshTitle();
