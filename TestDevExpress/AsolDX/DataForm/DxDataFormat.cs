@@ -23,10 +23,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
       - 'DataFormat' je třída reprezentující komplexní formát obsahu DataFormu
          - 'DataFormat' může být jednoduchý, pak v property 'Panel' obsahuje jednu instanci 'DataFormatFlowPanel', nezobrazuje záložky ale přímo obsah
          - 'DataFormat' může obsahovat i sadu záložek, umístěnou v property 'Pages', ta v sobě obsahuje sadu stránek 'DataFormatPages'
-         - Nikdy nesmí obsahovat obě najednou
-      - Jedna stránka je potomkem 'DataFormatFlowPanel', proto má podobné chování; obsahuje navíc text a ikony pro záložku
+         -    Nikdy nesmí obsahovat obě najednou!
+      - Jedna stránka 'DataFormatPage' je potomkem 'DataFormatFlowPanel', proto má podobné chování; obsahuje navíc text a ikony pro záložku
       - Panel 'DataFormatFlowPanel' může tedy být zobrazen jako single, anebo jako obsah jedné záložky
-      - Panel 'DataFormatFlowPanel' v sobě může obsahovat jednotlivé prvky, které může umísťovat pod sebe nebo vedle sebe v závislosti na disponibilním prostoru a vlastnostech
+      - Panel 'DataFormatFlowPanel' v sobě může obsahovat jednotlivé containery, které může umísťovat pod sebe nebo vedle sebe v závislosti na disponibilním prostoru a vlastnostech
       - Jednotlivé prvky v 'DataFormatFlowPanel' jsou buď vnořené další 'DataFormatFlowPanel', anebo koncové Taby 'DataFormatTab'
       - Prvky v 'DataFormatFlowPanel' si samy určí svoji velikost podle svého obsahu a dalších vlastností
          a tím je následně určena i pozice jednotlivých prvků (tok obsahu dolů / dolů a pak doprava / zleva doprava a pak dolů / zalomení podle nastavení) => layout celé stránky

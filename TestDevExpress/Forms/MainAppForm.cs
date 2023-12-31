@@ -96,47 +96,12 @@ namespace TestDevExpress.Forms
             __TabHeaderImagePainter = new DxTabHeaderImagePainter();
             __TabHeaderImagePainter.TabbedView = this.TabbedView;
             __TabHeaderImagePainter.ImageSizeType = ResourceImageSizeType.Medium;
-            __TabHeaderImagePainter.ImagePosition = DxTabHeaderImagePainter.ImagePositionType.InsteadCloseButton;
-            __TabHeaderImagePainter.ImageNameBasicGenerator = _TabHeaderImageBasicGenerator;
-            __TabHeaderImagePainter.ImageNameAddGenerator = _TabHeaderImageAddGenerator;
+            __TabHeaderImagePainter.ImagePosition = DxTabHeaderImagePainter.ImagePositionType.CenterControlArea; // .AfterStandardIcon;
         }
         /// <summary>
-        /// 
+        /// Pomocník pro kreslení ikon (standardní + přidaná) v záhlaví TabHeader.
         /// </summary>
         private DxTabHeaderImagePainter __TabHeaderImagePainter;
-        private static string _TabHeaderImageBasicGenerator(Control control)
-        {
-            if (control != null)
-            {
-                if (control is IDxControlWithIcons iconsForm) return iconsForm.IconNameBasic;
-
-                var typeName = control.GetType().FullName;
-                switch (typeName)
-                {
-                    case "TestDevExpress.Forms.DataFormV3": return "@text|W|#002266||B|3|#88AAFF|#CCEEFF";
-                    case "TestDevExpress.Components.LayoutForm": return "@text|W|#006622||B|3|#88FFAA|#CCFFEE";
-                    case "TestDevExpress.Forms.RibbonForm": return "@text|W|#660022||B|3|#FF88AA|#FFCCEE";
-                }
-            }
-            return null;
-        }
-        private static string _TabHeaderImageAddGenerator(Control control)
-        {
-            if (control != null)
-            {
-                if (control is IDxControlWithIcons iconsForm && !String.IsNullOrEmpty(iconsForm.IconNameAdd)) return iconsForm.IconNameAdd;
-
-                var typeName = control.GetType().FullName;
-                switch (typeName)
-                {
-                    case "TestDevExpress.Forms.DataFormV3": return "@text|D|#002266||B|3|#88AAFF|#CCEEFF";
-                    case "TestDevExpress.Components.LayoutForm": return "@text|L|#006622||B|3|#88FFAA|#CCFFEE";
-                    case "TestDevExpress.Forms.RibbonForm": return "@text|R|#660022||B|3|#FF88AA|#FFCCEE";
-                }
-            }
-            return null;
-        }
-
         /// <summary>
         /// Inicializace DockPanelu LogActivity
         /// </summary>

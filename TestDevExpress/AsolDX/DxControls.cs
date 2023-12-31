@@ -7726,7 +7726,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// <see cref="DxTabHeaderImagePainter"/> : třída, která vykreslí další ikonu do záhlaví TabHeaderu, a dovolí i vykreslovat základní ikonu.
     /// </summary>
-    internal class DxTabHeaderImagePainter : IDisposable
+    internal class DxTabHeaderImagePainter : IListenerZoomChange, IDisposable
     {
         #region Konstruktor a public vlastnosti
         /// <summary>
@@ -7736,12 +7736,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             ImagePosition = ImagePositionType.None;
             ImageSizeType = ResourceImageSizeType.Medium;
+            DxComponent.RegisterListener(this);
         }
         /// <summary>
         /// Dispose
         /// </summary>
         public void Dispose()
         {
+            DxComponent.UnregisterListener(this);
             TabbedView = null;
             ImageNameAddGenerator = null;
         }
@@ -7755,18 +7757,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (__TabbedView != null)
                 {   // detach:
-                    __TabbedView.CustomDrawTabHeader -= TabbedView_CustomDrawTabHeader;
-                    __TabbedView.DocumentAdded -= __TabbedView_DocumentAdded;
-                    __TabbedView.Manager.MdiParent.DpiChanged -= _MdiParent_DpiChanged;
+                    __TabbedView.CustomDrawTabHeader -= _CustomDrawTabHeader;
+                    __TabbedView.DocumentAdded -= _DocumentAdded;
+                    __TabbedView.Manager.MdiParent.DpiChanged -= _DpiChanged;
                 }
 
                 __TabbedView = value;
 
                 if (__TabbedView != null)
                 {   // attach:
-                    __TabbedView.CustomDrawTabHeader += TabbedView_CustomDrawTabHeader;
-                    __TabbedView.DocumentAdded += __TabbedView_DocumentAdded;
-                    __TabbedView.Manager.MdiParent.DpiChanged += _MdiParent_DpiChanged;
+                    __TabbedView.CustomDrawTabHeader += _CustomDrawTabHeader;
+                    __TabbedView.DocumentAdded += _DocumentAdded;
+                    __TabbedView.Manager.MdiParent.DpiChanged += _DpiChanged;
                 }
             }
         }
@@ -7778,12 +7780,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Metoda, která dostane jako parametr Control reprezentující obsah dokumentu v TabHeader (typicky Formulář), a najde v něm jméno základní ikony (ImageNameBasic).
         /// Reaguje např. na typ formuláře, nebo na jeho obsah...
         /// Pokud je zde null, anebo funkce vrátí prázdný string, ikona se nebude kreslit.
+        /// <para/>
+        /// Může zůstat null, pokud se zobrazují pouze formuláře které implementují interface <see cref="IDxControlWithIcons"/>.
+        /// Z takových formulářů si jméno ikony přečteme sami z property <see cref="IDxControlWithIcons.IconNameBasic"/>, a zdejší metodu nevoláme.
         /// </summary>
         public Func<Control, string> ImageNameBasicGenerator { get; set; }
         /// <summary>
         /// Metoda, která dostane jako parametr Control reprezentující obsah dokumentu v TabHeader (typicky Formulář), a najde v něm jméno přidané ikony (ImageNameAdd).
         /// Reaguje např. na typ formuláře, nebo na jeho obsah...
         /// Pokud je zde null, anebo funkce vrátí prázdný string, ikona se nebude kreslit.
+        /// <para/>
+        /// Může zůstat null, pokud se zobrazují pouze formuláře které implementují interface <see cref="IDxControlWithIcons"/>.
+        /// Z takových formulářů si jméno ikony přečteme sami z property <see cref="IDxControlWithIcons.IconNameAdd"/>, a zdejší metodu nevoláme.
         /// </summary>
         public Func<Control, string> ImageNameAddGenerator { get; set; }
         /// <summary>
@@ -7807,7 +7815,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void __TabbedView_DocumentAdded(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
+        private void _DocumentAdded(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
         {
             ImageInfo imageInfo = ImageInfo.Create(this, e.Document);
             if (imageInfo != null)
@@ -7819,7 +7827,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _MdiParent_DpiChanged(object sender, DpiChangedEventArgs e)
+        private void _DpiChanged(object sender, DpiChangedEventArgs e)
+        {
+            _RefreshIconSizes();
+        }
+        /// <summary>
+        /// Je voláno po změně Zoomu
+        /// </summary>
+        /// <exception cref="NotImplementedException"></exception>
+        void IListenerZoomChange.ZoomChanged()
         {
             _RefreshIconSizes();
         }
@@ -7839,13 +7855,34 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Enumy
+        /// <summary>
+        /// Umístění přidané ikony
+        /// </summary>
         public enum ImagePositionType
         {
+            /// <summary>
+            /// Nebude kreslena
+            /// </summary>
             None,
+            /// <summary>
+            /// Namísto buttonu Close, pouze v neaktivních TabHeader
+            /// </summary>
             InsteadCloseButton,
+            /// <summary>
+            /// Namísto buttonu Pin, pouze v neaktivních TabHeader
+            /// </summary>
             InsteadPinButton,
+            /// <summary>
+            /// Uprostřed pole Buttonů vpravo, pouze v neaktivních TabHeader
+            /// </summary>
             CenterControlArea,
+            /// <summary>
+            /// Namísto standardní ikony vlevo
+            /// </summary>
             InsteadStandardIcon,
+            /// <summary>
+            /// Vedle standardní ikony, napravo od ikony, před textem
+            /// </summary>
             AfterStandardIcon
         }
         #endregion
@@ -7855,14 +7892,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void TabbedView_CustomDrawTabHeader(object sender, DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e)
+        private void _CustomDrawTabHeader(object sender, DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e)
         {
             ImageInfo imageInfo = _GetImageInfo(e);
             if (imageInfo is null || String.IsNullOrEmpty(imageInfo.ImageNameAdd)) return;
 
             switch (ImagePosition)
             {
-                case ImagePositionType.None: return;                 // Vykreslí DevExpress defaultně
+                case ImagePositionType.None: return;                 // Vykreslí DevExpress = defaultně
                 case ImagePositionType.InsteadCloseButton: _DrawTabHeaderInControlBox(e, imageInfo, 0); break;
                 case ImagePositionType.InsteadPinButton: _DrawTabHeaderInControlBox(e, imageInfo, 1); break;
                 case ImagePositionType.CenterControlArea: _DrawTabHeaderInControlBox(e, imageInfo, -1); break;
@@ -7877,12 +7914,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private ImageInfo _GetImageInfo(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e)
         {
-            var generator = ImageNameAddGenerator;
-            if (generator is null) return null;
-
             var documentInfo = e.TabHeaderInfo.Page as DevExpress.XtraBars.Docking2010.Views.Tabbed.IDocumentInfo;
             var imageInfo = documentInfo?.Document?.Tag as ImageInfo;
-
             return imageInfo;
         }
         /// <summary>
@@ -8097,6 +8130,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     this.ImageNameBasic = owner.ImageNameBasicGenerator?.Invoke(form);
                     this.ImageNameAdd = owner.ImageNameAddGenerator?.Invoke(form);
                 }
+                RefreshIconSizes(owner, document);
             }
             /// <summary>
             /// Aktualizuje velikost ikon
@@ -8107,8 +8141,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var totalImageSize = imageSize;
 
                 // V režimu AfterStandardIcon: totalImageSize musí mít šířku pro dvě standardní ikony + 2/8 [nebo 1/8 ?] rozestup mezi nimi:
+                //  (pokud přidaná ikona ImageNameAdd je definovaná)
                 int imageAddOffsetX = 0;
-                if (owner.ImagePosition == ImagePositionType.AfterStandardIcon)
+                string imageNameAdd = this.ImageNameAdd;
+                if (owner.ImagePosition == ImagePositionType.AfterStandardIcon && !String.IsNullOrEmpty(imageNameAdd))
                 {
                     int w = totalImageSize.Width;
                     imageAddOffsetX = w + totalImageSize.Width / 8;
