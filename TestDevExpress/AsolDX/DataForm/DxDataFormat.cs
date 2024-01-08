@@ -19,6 +19,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
       - Reprezentuje definici vzhledu a chování DataFormu
       - Odpovídá aktuální verzi formátu V4
 
+
+      Form => { TabContainer | }
+      - Tab:
+         .Style = { TabContainer, TabHeader,  }
+
+
+
+
+
+
+
+
+
+
+
           Hierarchie uvnitř DataFormu
       - 'DataFormat' je třída reprezentující komplexní formát obsahu DataFormu
          - 'DataFormat' může být jednoduchý, pak v property 'Panel' obsahuje jednu instanci 'DataFormatFlowPanel', nezobrazuje záložky ale přímo obsah
