@@ -62,6 +62,214 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
 
 
     */
+
+
+
+
+    #region Shared
+
+    /// <summary>
+    /// Definice formátu jednoho bloku v DataFormu.
+    /// Blok může představovat celou sadu stránek, nebo jednu stránku, nebo viditelný odstavec stránky, nebo 
+    /// </summary>
+    public class DataFormatTab : DataFormatItem
+    {
+        /// <summary>
+        /// Styl odstavce
+        /// </summary>
+        public DfTabStyle Style { get; set; }
+        /// <summary>
+        /// Pořadí prvku v poli ostatních prvků v Parentu
+        /// </summary>
+        public int Order { get; set; }
+        /// <summary>
+        /// Klíčové jméno prvku pro identifikaci
+        /// </summary>
+        public string Name { get; set; }
+        /// <summary>
+        /// Text titulku odstavce (titulek stránky, titulek odstavce).
+        /// Ignoruje se pro <see cref="Style"/> == <see cref="DfTabStyle.PageSet"/>.
+        /// </summary>
+        public string Text { get; set; }
+        /// <summary>
+        /// Název ikony v titulkovém řádku.
+        /// Ignoruje se pro <see cref="Style"/> == <see cref="DfTabStyle.PageSet"/>.
+        /// </summary>
+        public string ImageName { get; set; }
+        /// <summary>
+        /// Souřadnice počátku, Left. Typicky je null. Zadáním lze exaktně umístit panel. Některé styly bloku (<see cref="DfTabStyle.Page"/>) tuto hodnotu ignorují.
+        /// </summary>
+        public int? Left { get; set; }
+        /// <summary>
+        /// Souřadnice počátku, Top. Typicky je null. Zadáním lze exaktně umístit panel. Některé styly bloku (<see cref="DfTabStyle.Page"/>) tuto hodnotu ignorují.
+        /// </summary>
+        public int? Top { get; set; }
+        /// <summary>
+        /// Celková šířka panelu. Pokud je null, určí se podle souřadnic vnitřních prvků. Některé styly bloku (<see cref="DfTabStyle.Page"/>) tuto hodnotu ignorují.
+        /// </summary>
+        public int? Width { get; set; }
+        /// <summary>
+        /// Celková výška panelu. Pokud je null, určí se podle souřadnic vnitřních prvků. Některé styly bloku (<see cref="DfTabStyle.Page"/>) tuto hodnotu ignorují.
+        /// </summary>
+        public int? Height { get; set; }
+        /// <summary>
+        /// Okraje okolo vnitřních prvků. 
+        /// Left a Top určují pozici, kde začínají controly na souřadnici 0/0.
+        /// Right a Bottom určují okraj za posledními prvky při výpočtu Width a Height, pokud zde nejsou určeny.
+        /// </summary>
+        public DfPadding Padding { get; set; }
+        /// <summary>
+        /// Sada prvků
+        /// </summary>
+        public List<DataFormatItem> Items { get; set; }
+    }
+    /// <summary>
+    /// Jeden konkrétní control (column) = vstupní prvek, nikoli container
+    /// </summary>
+    public class DataFormatControl : DataFormatItem
+    {
+        /// <summary>
+        /// Klíčové jméno prvku pro identifikaci
+        /// </summary>
+        public string Name { get; set; }
+        /// <summary>
+        /// Souřadnice počátku, Left.
+        /// </summary>
+        public int Left { get; set; }
+        /// <summary>
+        /// Souřadnice počátku, Top.
+        /// </summary>
+        public int Top { get; set; }
+        /// <summary>
+        /// Celková šířka prvku.
+        /// </summary>
+        public int Width { get; set; }
+        /// <summary>
+        /// Celková výška prvku. 
+        /// Pokud je null, vytvoří ji GUI podle konkrétního prvku (typicky TextBox, CheckBox, Label a podobně: mají výšku pro zobrazení jednoho řádku).
+        /// </summary>
+        public int? Height { get; set; }
+
+    }
+
+    public class DataFormatItem
+    { }
+
+    /// <summary>
+    /// Okraje
+    /// </summary>
+    public sealed class DfPadding
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DfPadding() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="all"></param>
+        public DfPadding(int all)
+        {
+            this.Left = all;
+            this.Top = all;
+            this.Right = all;
+            this.Bottom = all;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="top"></param>
+        /// <param name="right"></param>
+        /// <param name="bottom"></param>
+        public DfPadding(int left, int top, int right, int bottom)
+        {
+            this.Left = left;
+            this.Top = top;
+            this.Right = right;
+            this.Bottom = bottom;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            if (IsEmpty) return "Empty";
+            if (IsAll)return $"All: {Left}";
+            return $"Left: {Left}; Top: {Top}; Right: {Right}; Bottom: {Bottom}";
+        }
+        /// <summary>
+        /// Okraj vlevo
+        /// </summary>
+        public int Left { get; set; }
+        /// <summary>
+        /// Okraj nahoře
+        /// </summary>
+        public int Top { get; set; }
+        /// <summary>
+        /// Okraj vpravo
+        /// </summary>
+        public int Right { get; set; }
+        /// <summary>
+        /// Okraj dole
+        /// </summary>
+        public int Bottom { get; set; }
+        /// <summary>
+        /// Je empty = vše je 0
+        /// </summary>
+        private bool IsEmpty { get { return (this.Left == 0 && this.Top == 0 && this.Right == 0 && this.Bottom == 0); } }
+        /// <summary>
+        /// Je všud stejný = všechny hodnoty jsou stejné
+        /// </summary>
+        private bool IsAll { get { return (this.Left == this.Top && this.Top == this.Right && this.Right == this.Bottom); } }
+    }
+
+
+    /// <summary>
+    /// Styl jednoho bloku = odstavce
+    /// </summary>
+    public enum DfTabStyle
+    {
+        /// <summary>
+        /// Běžný vnitřní TAB (odstavec), může / nemusí mít titulek (podle jeho titulku)
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Záhlaví stránky. Ignoruje souřadnice 
+        /// </summary>
+        Page,
+        /// <summary>
+        /// Sada stránek; její vnitřní prvky musí být stylu <see cref="DfTabStyle.Page"/>
+        /// </summary>
+        PageSet
+    }
+
+    [Flags]
+    public enum DfItemState
+    {
+        None = 0,
+        Invisible = 0x0001,
+        Enabled = 0x0002,
+        Disabled = 0x0004,
+        ReadOnly = 0x0008,
+
+        Default = Invisible | Enabled
+
+    }
+    [Flags]
+    public enum DfItemStyle
+    {
+        None = 0,
+        Required,
+        Relation,
+        Document,
+
+
+    }
+    #endregion
+
+    /*
     /// <summary>
     /// Definice formátu jednoho DataFormu = buď sada záložek, anebo jeden panel
     /// </summary>
@@ -108,19 +316,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
 
     }
 
-    /// <summary>
-    /// Definice formátu jednoho odstavce v DataFormu = obsahuje titulek optional velikost, a sadu prvků - buď columns, nebo vnořené grupy
-    /// </summary>
-    internal class DataFormatTab
-    {
-        public List<DataFormatFixedItem> Items { get; set; }
-        public int? Width { get; set; }
-        public int? Height { get; set; }
-        /// <summary>
-        /// Okraje za posledními prvky (vpravo, dole). Použije se tehdy, když není daná 
-        /// </summary>
-        public WinForm.Padding? Padding { get; set; }
-    }
+   
 
     /// <summary>
     /// Definice formátu jedné grupy v DataFormu = obsahuje titulek optional velikost, a sadu prvků - buď columns, nebo vnořené grupy
@@ -145,4 +341,5 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
     {
         public WinDraw.Rectangle Bounds { get; set; }
     }
+    */
 }
