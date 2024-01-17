@@ -66,58 +66,51 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
 
 
 
-    #region Shared
+    #region Shared : třídy pouze nesou data, nemají funkcinalitu
 
     /// <summary>
     /// Definice formátu jednoho bloku v DataFormu.
-    /// Blok může představovat celou sadu stránek, nebo jednu stránku, nebo viditelný odstavec stránky, nebo 
+    /// Blok může představovat celou sadu stránek, nebo jednu stránku, nebo viditelný odstavec stránky, nebo vnitřní blok 
     /// </summary>
     public class DataFormatTab : DataFormatItem
     {
         /// <summary>
         /// Styl odstavce
         /// </summary>
-        public DfTabStyle Style { get; set; }
+        public TabStyle Style { get; set; }
         /// <summary>
         /// Pořadí prvku v poli ostatních prvků v Parentu
         /// </summary>
         public int Order { get; set; }
         /// <summary>
-        /// Klíčové jméno prvku pro identifikaci
-        /// </summary>
-        public string Name { get; set; }
-        /// <summary>
-        /// Text titulku odstavce (titulek stránky, titulek odstavce).
-        /// Ignoruje se pro <see cref="Style"/> == <see cref="DfTabStyle.PageSet"/>.
-        /// </summary>
-        public string Text { get; set; }
-        /// <summary>
         /// Název ikony v titulkovém řádku.
-        /// Ignoruje se pro <see cref="Style"/> == <see cref="DfTabStyle.PageSet"/>.
+        /// Ignoruje se pro <see cref="Style"/> == <see cref="TabStyle.PageSet"/>.
         /// </summary>
         public string ImageName { get; set; }
         /// <summary>
-        /// Souřadnice počátku, Left. Typicky je null. Zadáním lze exaktně umístit panel. Některé styly bloku (<see cref="DfTabStyle.Page"/>) tuto hodnotu ignorují.
+        /// Souřadnice počátku, Left. Typicky je null. Zadáním lze exaktně umístit panel. Některé styly bloku (<see cref="TabStyle.Page"/>) tuto hodnotu ignorují.
         /// </summary>
         public int? Left { get; set; }
         /// <summary>
-        /// Souřadnice počátku, Top. Typicky je null. Zadáním lze exaktně umístit panel. Některé styly bloku (<see cref="DfTabStyle.Page"/>) tuto hodnotu ignorují.
+        /// Souřadnice počátku, Top. Typicky je null. Zadáním lze exaktně umístit panel. Některé styly bloku (<see cref="TabStyle.Page"/>) tuto hodnotu ignorují.
         /// </summary>
         public int? Top { get; set; }
         /// <summary>
-        /// Celková šířka panelu. Pokud je null, určí se podle souřadnic vnitřních prvků. Některé styly bloku (<see cref="DfTabStyle.Page"/>) tuto hodnotu ignorují.
+        /// Celková šířka panelu. Pokud je null, určí se podle souřadnic vnitřních prvků. Některé styly bloku (<see cref="TabStyle.Page"/>) tuto hodnotu ignorují.
         /// </summary>
         public int? Width { get; set; }
         /// <summary>
-        /// Celková výška panelu. Pokud je null, určí se podle souřadnic vnitřních prvků. Některé styly bloku (<see cref="DfTabStyle.Page"/>) tuto hodnotu ignorují.
+        /// Celková výška panelu. Pokud je null, určí se podle souřadnic vnitřních prvků. Některé styly bloku (<see cref="TabStyle.Page"/>) tuto hodnotu ignorují.
         /// </summary>
         public int? Height { get; set; }
         /// <summary>
-        /// Okraje okolo vnitřních prvků. 
+        /// Okraje okolo vnitřních prvků. Jde o prostor mezi hranou this containeru a vnitřními prvky v něm obsaženými.
+        /// Tento okraj je prázdný, a uvnitř něj jsou pak umístěny vnitřní prvky.<br/>
         /// Left a Top určují pozici, kde začínají controly na souřadnici 0/0.
         /// Right a Bottom určují okraj za posledními prvky při výpočtu Width a Height, pokud zde nejsou určeny.
         /// </summary>
-        public DfPadding Padding { get; set; }
+        public Margins InnerMargins { get; set; }
+
         /// <summary>
         /// Sada prvků
         /// </summary>
@@ -128,10 +121,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
     /// </summary>
     public class DataFormatControl : DataFormatItem
     {
-        /// <summary>
-        /// Klíčové jméno prvku pro identifikaci
-        /// </summary>
-        public string Name { get; set; }
         /// <summary>
         /// Souřadnice počátku, Left.
         /// </summary>
@@ -149,26 +138,50 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// Pokud je null, vytvoří ji GUI podle konkrétního prvku (typicky TextBox, CheckBox, Label a podobně: mají výšku pro zobrazení jednoho řádku).
         /// </summary>
         public int? Height { get; set; }
+        /// <summary>
+        /// Druh vstupního prvku
+        /// </summary>
+        public ControlType ControlType { get; set; }
+
+        public string EditMask { get; set; }
+        public Data.ItemSet Items { get; set; }
+        public Data.ItemSet Buttons { get; set; }
 
     }
-
+    /// <summary>
+    /// Bázová třída pro <see cref="DataFormatTab"/> a <see cref="DataFormatControl"/>.
+    /// </summary>
     public class DataFormatItem
-    { }
+    {
+        /// <summary>
+        /// Klíčové jméno prvku pro identifikaci
+        /// </summary>
+        public string Name { get; set; }
+        /// <summary>
+        /// Stav bloku nebo prvku (viditelnost, editovatelnost)
+        /// </summary>
+        public ItemState State { get; set; }
+        /// <summary>
+        /// Text titulku odstavce (titulek stránky, titulek odstavce, text Labelu, text CheckBoxu, Buttonu, atd).
+        /// Použití se liší podle typu prvku.
+        /// </summary>
+        public string Text { get; set; }
 
+    }
     /// <summary>
     /// Okraje
     /// </summary>
-    public sealed class DfPadding
+    public sealed class Margins
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DfPadding() { }
+        public Margins() { }
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="all"></param>
-        public DfPadding(int all)
+        public Margins(int all)
         {
             this.Left = all;
             this.Top = all;
@@ -182,7 +195,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// <param name="top"></param>
         /// <param name="right"></param>
         /// <param name="bottom"></param>
-        public DfPadding(int left, int top, int right, int bottom)
+        public Margins(int left, int top, int right, int bottom)
         {
             this.Left = left;
             this.Top = top;
@@ -224,12 +237,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// </summary>
         private bool IsAll { get { return (this.Left == this.Top && this.Top == this.Right && this.Right == this.Bottom); } }
     }
-
-
     /// <summary>
     /// Styl jednoho bloku = odstavce
     /// </summary>
-    public enum DfTabStyle
+    public enum TabStyle
     {
         /// <summary>
         /// Běžný vnitřní TAB (odstavec), může / nemusí mít titulek (podle jeho titulku)
@@ -240,32 +251,127 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// </summary>
         Page,
         /// <summary>
-        /// Sada stránek; její vnitřní prvky musí být stylu <see cref="DfTabStyle.Page"/>
+        /// Sada stránek; její vnitřní prvky musí být stylu <see cref="TabStyle.Page"/>
         /// </summary>
         PageSet
     }
-
+    /// <summary>
+    /// Stav prvku. 
+    /// Jde o Flags. Lze je sčítat z celé hierarchie containerů (OR), výsledek popisuje stav nejvyššího prvku.
+    /// Tedy pokud jeden jediný prvek v hierarchii je <see cref="Invisible"/>, pak finální prvek je neviditelný.
+    /// Obdobně <see cref="Disabled"/> nebo <see cref="ReadOnly"/>.
+    /// Pokud součet všech hodnot je <see cref="Default"/>, pak prvek je viditelný a editovatelný.
+    /// </summary>
     [Flags]
-    public enum DfItemState
+    public enum ItemState
     {
-        None = 0,
+        /// <summary>
+        /// Prvek je viditelný a editovatelný
+        /// </summary>
+        Default = 0,
+        /// <summary>
+        /// Prvek je neviditelný.
+        /// </summary>
         Invisible = 0x0001,
-        Enabled = 0x0002,
+        /// <summary>
+        /// Prvek je ReadOnly: lze do něj dát focus, ale nelze změnit jeho hodnotu.
+        /// Na Button lze kliknout a provede akci.
+        /// Kliknutí na CheckBox nezmění jeho stav.
+        /// DateTime otevře kalendář, ale nezmění svoji hodnotu.
+        /// Vztah otevře vztažený záznam.
+        /// A obdobně pro jiné typy prvků.
+        /// </summary>
+        ReadOnly = 0x0002,
+        /// <summary>
+        /// Prvek je Disabled: nelze do něj dát Focus.
+        /// Na Button nelze kliknout = neprovede akci.
+        /// DateTime neotevře kalendář.
+        /// Vztah neotevře vztažený záznam.
+        /// </summary>
         Disabled = 0x0004,
-        ReadOnly = 0x0008,
-
-        Default = Invisible | Enabled
-
+        /// <summary>
+        /// Pokud je tento příznak aktivní, pak tento prvek je přeskakován při pohybu klávesnicí (jeho TabStop je false).
+        /// Lze tedy hierarchicky zakázat TabStop pro samotný prvek, nebo pro určitý jeho Parent (a tím zakázat TabStop pro všechny prvky v Parent containeru).
+        /// </summary>
+        TabSkip = 0x0008
     }
-    [Flags]
-    public enum DfItemStyle
+    /// <summary>
+    /// Druh vstupního prvku
+    /// </summary>
+    public enum ControlType
     {
-        None = 0,
-        Required,
-        Relation,
-        Document,
-
-
+        /// <summary>
+        /// Žádný prvek
+        /// </summary>
+        None,
+        /// <summary>
+        /// Label
+        /// </summary>
+        Label,
+        /// <summary>
+        /// Titulkový řádek s možností vodorovné čáry a/nebo textu
+        /// </summary>
+        Title,
+        /// <summary>
+        /// TextBox - prostý bez buttonů (buttony má <see cref="TextBoxButton"/>), podporuje password i nullvalue
+        /// </summary>
+        TextBox,
+        /// <summary>
+        /// EditBox (Memo, Poznámka)
+        /// </summary>
+        EditBox,
+        /// <summary>
+        /// TextBox s buttony = pokrývá i Relation, Document, FileBox, CalendarBox a další textbox s přidanými tlačítky
+        /// </summary>
+        TextBoxButton,
+        /// <summary>
+        /// CheckBox: zaškrtávátko i DownButton
+        /// </summary>
+        CheckEdit,
+        /// <summary>
+        /// Přepínací switch (moderní checkbox s animovaným přechodem On-Off)
+        /// </summary>
+        ToggleSwitch,
+        /// <summary>
+        /// Jeden prvek ze sady RadioButtonů
+        /// </summary>
+        RadioButton,
+        /// <summary>
+        /// Klasické tlačítko
+        /// </summary>
+        Button,
+        /// <summary>
+        /// Button s přidaným rozbalovacím menu
+        /// </summary>
+        DropDownButton,
+        /// <summary>
+        /// ComboBox bez obrázků
+        /// </summary>
+        ComboListBox,
+        /// <summary>
+        /// ComboBox s obrázky
+        /// </summary>
+        ImageComboListBox,
+        /// <summary>
+        /// Posouvací hodnota, jedna nebo dvě
+        /// </summary>
+        TrackBar,
+        /// <summary>
+        /// Image
+        /// </summary>
+        Image,
+        /// <summary>
+        /// Malá tabulka
+        /// </summary>
+        Grid,
+        /// <summary>
+        /// Strom s prvky
+        /// </summary>
+        Tree,
+        /// <summary>
+        /// HTML prohlížeč
+        /// </summary>
+        HtmlContent
     }
     #endregion
 

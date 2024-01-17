@@ -1854,16 +1854,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
     #endregion
     #region ImageComboBoxProperties : definice sady položek pro ComboBox
     /// <summary>
-    /// Třída definující sadu položek pro ComboBox
+    /// Třída definující sadu položek pro <see cref="DevExpress.XtraEditors.Controls.ComboBoxItem"/> / <see cref="DevExpress.XtraEditors.Controls.ImageComboBoxItem"/>
     /// </summary>
-    internal class ImageComboBoxProperties
+    internal class ImageComboBoxProperties : ItemSet
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        internal ImageComboBoxProperties()
+        internal ImageComboBoxProperties() : base()
         {
-            __Items = new List<Item>();
             AutoComplete = true;
             AllowDropDownWhenReadOnly = true;
             ImmediatePopup = true;
@@ -1887,7 +1886,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
                     {
                         var parts = item.Split(',');
                         if (parts.Length >= 2 && !String.IsNullOrEmpty(parts[1]))
-                            this.__Items.Add(new Item(parts[0], parts[1], (parts.Length >= 3 ? parts[2] : null)));
+                            this.Items.Add(new Item(parts[0], parts[1], (parts.Length >= 3 ? parts[2] : null)));
                     }
                 }
             }
@@ -1898,7 +1897,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// <returns></returns>
         public override string ToString()
         {
-            return "ImageComboBoxProperties: " + this.__Items.ToOneString(";");
+            return "ImageComboBoxProperties: " + this.Items.ToOneString(";");
         }
         /// <summary>
         /// Povolit vlastnost AutoComplete
@@ -1917,17 +1916,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// </summary>
         internal bool PopupSizeable { get; set; }
         /// <summary>
-        /// Pole prvků
-        /// </summary>
-        internal List<Item> Items { get { return __Items; } } private List<Item> __Items;
-        /// <summary>
         /// Vytvoří a vrátí pole obsahující prvky <see cref="DevExpress.XtraEditors.Controls.ComboBoxItem"/> (typu DevExpress), použitelné do nativního controlu,
         /// např. do <see cref="DevExpress.XtraEditors.ComboBoxEdit.Properties"/>.Items
         /// </summary>
         /// <returns></returns>
         internal DevExpress.XtraEditors.Controls.ComboBoxItem[] CreateDxComboItems()
         {
-            return this.Items.Select(i => i.CreateDxComboItem()).ToArray();
+            return this.Items.Select(i => CreateDxComboItem(i)).ToArray();
         }
         /// <summary>
         /// Vytvoří a vrátí pole obsahující prvky <see cref="DevExpress.XtraEditors.Controls.ImageComboBoxItem"/> (typu DevExpress), použitelné do nativního controlu,
@@ -1939,8 +1934,60 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         internal DevExpress.XtraEditors.Controls.ImageComboBoxItem[] CreateDxImageComboItems(out object imageList, ResourceImageSizeType imageSize = ResourceImageSizeType.Small)
         {
             imageList = DxComponent.GetPreferredImageList(imageSize);
-            return this.Items.Select(i => i.CreateDxImageComboItem(imageSize)).ToArray();
+            return this.Items.Select(i => CreateDxImageComboItem(i, imageSize)).ToArray();
         }
+        /// <summary>
+        /// Metoda vytvoří a vrátí new instanci <see cref="DevExpress.XtraEditors.Controls.ComboBoxItem"/> ze své definice
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        internal DevExpress.XtraEditors.Controls.ComboBoxItem CreateDxComboItem(Item item)
+        {
+            var dxItem = new DevExpress.XtraEditors.Controls.ComboBoxItem();
+            dxItem.Value = item;
+            return dxItem;
+        }
+        /// <summary>
+        /// Metoda vytvoří a vrátí new instanci <see cref="DevExpress.XtraEditors.Controls.ImageComboBoxItem"/> ze své definice
+        /// </summary>
+        /// <returns></returns>
+        internal DevExpress.XtraEditors.Controls.ImageComboBoxItem CreateDxImageComboItem(Item item, ResourceImageSizeType imageSize = ResourceImageSizeType.Small)
+        {
+            var dxItem = new DevExpress.XtraEditors.Controls.ImageComboBoxItem();
+            dxItem.Value = item.Value;
+            dxItem.Description = item.DisplayText;
+            dxItem.ImageIndex = DxComponent.GetPreferredImageIndex(item.ImageName, imageSize);
+            return dxItem;
+        }
+    }
+    /// <summary>
+    /// Třída definující obecnou sadu položek pro prvek zobrazující více položek (ComboBox, ImageComboBox, a další)
+    /// </summary>
+    internal class ItemSet
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        internal ItemSet()
+        {
+            __Items = new List<Item>();
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="items"></param>
+        internal ItemSet(IEnumerable<Item> items)
+        {
+            __Items = new List<Item>(items);
+        }
+        /// <summary>
+        /// Pole prvků
+        /// </summary>
+        internal List<Item> Items { get { return __Items; } } private List<Item> __Items;
+        /// <summary>
+        /// Počet prvků
+        /// </summary>
+        internal int Count { get { return this.Items.Count; } }
         /// <summary>
         /// Metoda najde a vrátí index prvku, který má zadanou hodnotu (CodeValue).
         /// Pokud na vstupu je null, anebo hodnota kterou nemá žádná zdejší položka, pak vrátí -1.
@@ -1990,28 +2037,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             /// Jméno obrázku
             /// </summary>
             internal string ImageName { get; set; }
-            /// <summary>
-            /// Metoda vytvoří a vrátí new instanci <see cref="DevExpress.XtraEditors.Controls.ComboBoxItem"/> ze své definice
-            /// </summary>
-            /// <returns></returns>
-            internal DevExpress.XtraEditors.Controls.ComboBoxItem CreateDxComboItem()
-            {
-                var dxItem = new DevExpress.XtraEditors.Controls.ComboBoxItem();
-                dxItem.Value = this;
-                return dxItem;
-            }
-            /// <summary>
-            /// Metoda vytvoří a vrátí new instanci <see cref="DevExpress.XtraEditors.Controls.ImageComboBoxItem"/> ze své definice
-            /// </summary>
-            /// <returns></returns>
-            internal DevExpress.XtraEditors.Controls.ImageComboBoxItem CreateDxImageComboItem(ResourceImageSizeType imageSize = ResourceImageSizeType.Small)
-            {
-                var dxItem = new DevExpress.XtraEditors.Controls.ImageComboBoxItem();
-                dxItem.Value = this.Value;
-                dxItem.Description = this.DisplayText;
-                dxItem.ImageIndex = DxComponent.GetPreferredImageIndex(this.ImageName, imageSize);
-                return dxItem;
-            }
         }
     }
     #endregion
