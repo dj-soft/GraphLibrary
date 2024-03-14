@@ -6,7 +6,43 @@
           MasterWidth="530" MasterHeight="320"
           TotalWidth="750" TotalHeight="520"  >
 
-    <tab Name="tab_3b8b20f5-e861-46c0-8470-7488eb46ab06">
+    <panel Name="Panel1" >
+        <label Name="l1" Text="" ToolTipTitle="" State="SkipTab" Invisible=""/>
+        <textbox Name="text1" />
+        <label Name="l2" X="32" Width="120"/>
+        <combobox Name="col12">
+            <comboItem Name="Z" Text="Zahájeno"/>
+            <comboItem Name="U" Text="Ukončeno"/>
+        </combobox>
+        <textbox_button Name="">
+            <buttonRight Name=""/>
+        </textbox_button>
+        <button Name="butOpen" HotKey="F8" Bounds="0,50,120,35" Text="Otevři..." ButtonFunction="aaa" Action="RunFunction" />
+
+        <panel Name="p1234" >
+            <label Name="aaa"/>
+        </panel>
+    </panel>
+
+    <pageset>
+        <page Name="page01" Title="Základní" IconName="pic/image">
+            
+        </page>
+        <page Name="page02" Title="Nastavení">
+            <label Name="Pocet01l" Text="Počet kusů:" Alignment="MiddleRight" Bounds="10,2,120"/>
+            <textbox Name="Pocet01" Bounds="135,2,120" Required="True"/>
+        </page>
+    </pageset>
+    <panel>
+        <label Name="t3"/>
+        <textbox_button Name="tb1" ButtonsVisibility="Default">
+            <buttonLeft Name=""/>
+        </textbox_button>
+    </panel>
+
+    <!--  obsolete
+
+    <panel Name="tab_3b8b20f5-e861-46c0-8470-7488eb46ab06">
         <column Name="date_validity" Width="150"></column>
         <column Name="produce_me" Width="150" InputType="checkbox"></column>
         <column Name="plan_me" InputType="checkbox"></column>
@@ -21,30 +57,8 @@
 
         <label Name="t4" ></label>
         <textbox Name="colname1" ></textbox>
-    
-    </tab>
 
-    <panel Name="Panel1" >
-        <label Name="l1" Text="" ToolTipTitle="" State="SkipTab" Invisible=""/>
-        <textbox Name="text1" />
-        <label Name="l2" X="32" Width="120"/>
-        <combobox Name="col12">
-            <comboItem Name="Z" Text="Zahájeno"/>
-            <comboItem Name="U" Text="Ukončeno"/>
-        </combobox>
-        <textbox_button Name="">
-            <buttonRight Name=""/>
-        </textbox_button>
-        <button Name="butOpen" HotKey="F8" Bounds="0,50,120,35" Text="Otevři..." ButtonFunction="aaa" Action="RunFunction" />
     </panel>
-    
-    <tab>
-        <label Name="t3"/>
-        <textbox_button Name="tb1" ButtonsVisibility="Default">
-            <buttonLeft Name=""/>
-        </textbox_button>
-    </tab>
-    
     
     <tab>
         <column Name="weight" Width="150"></column>
@@ -73,4 +87,7 @@
         <column Name="pachatel_nazev" Width="100%" ColSpan="2" LabelPos="None"></column>
         <column Name="placeholder2" InputType="Placeholder"></column>
     </tab>
+    
+    
+    -->
 </template>

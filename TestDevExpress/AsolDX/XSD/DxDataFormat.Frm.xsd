@@ -14,21 +14,21 @@
             <xs:sequence>
                 <!--    V šabloně se mohou střídat libovolně elementy pageset a panel    -->
                 <xs:choice minOccurs="0" maxOccurs="unbounded">
-                    <xs:element name="tab" type="type_tab" minOccurs="0" maxOccurs="unbounded" >
+                    <xs:element name="pageset" type="type_pageset" minOccurs="0" maxOccurs="unbounded" >
                         <xs:annotation>
-                            <xs:documentation xml:lang="cs-cz">Jeden odstavec obsahující prvky</xs:documentation>
+                            <xs:documentation xml:lang="cs-cz">Jeden objekt s více záložkami (page)</xs:documentation>
                         </xs:annotation>
                     </xs:element>
 
-                    <xs:element name="panel" type="type_tab" minOccurs="0" maxOccurs="unbounded">
+                    <xs:element name="panel" type="type_panel" minOccurs="0" maxOccurs="unbounded">
                         <xs:annotation>
-                            <xs:documentation xml:lang="cs-cz">Jedna stránka</xs:documentation>
+                            <xs:documentation xml:lang="cs-cz">Jeden kontejner, obsahující prvky anebo další kontejnery</xs:documentation>
                         </xs:annotation>
                     </xs:element>
                 </xs:choice>
             </xs:sequence>
 
-            <xs:attribute name="FormatVersion" type="type_format_version" default="4">
+            <xs:attribute name="FormatVersion" type="enum_format_version" default="4">
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Formát tohoto souboru. Defaultní = 4</xs:documentation></xs:annotation>
             </xs:attribute>
 
@@ -48,7 +48,7 @@
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Celková výška (tedy včetně dynamických vztahů a dolních záložek)</xs:documentation></xs:annotation>
             </xs:attribute>
 
-            <xs:attribute name="AutoLabelPosition" type="type_label_pos" >
+            <xs:attribute name="AutoLabelPosition" type="enum_label_pos" >
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = None</xs:documentation></xs:annotation>
             </xs:attribute>
 
@@ -64,11 +64,11 @@
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Číslo třídy, pro kterou budou načteny popisky atributů a vztahů</xs:documentation></xs:annotation>
             </xs:attribute>
 
-            <xs:attribute name="AddUda" type="bool">
+            <xs:attribute name="AddUda" type="enum_bool">
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Automaticky přidat záložku pro UDA atributy a vztahy. Nezadáno = True</xs:documentation></xs:annotation>
             </xs:attribute>
 
-            <xs:attribute name="UdaLabelPosition" type="type_label_pos">
+            <xs:attribute name="UdaLabelPosition" type="enum_label_pos">
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Umístění labelů pro automaticky generované UDA atributy a vztahy. Defaultní = Top</xs:documentation></xs:annotation>
             </xs:attribute>
             
@@ -76,13 +76,107 @@
     </xs:element>
     
     
-    
-    <!--    Definice složených typů   -->
+    <!--    Definice kontejnerů   -->
 
-
-    <xs:complexType name="type_tab">
+    <!--    PageSet               -->
+    <xs:complexType name="type_pageset">
         <xs:sequence>
-            <!--    V šabloně se mohou střídat libovolně elementy pageset a panel    -->
+            <xs:element name="page" type="type_page" minOccurs="0" maxOccurs="unbounded" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Jedna záložka v řadě záložek</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+
+        <xs:attribute name="X" type="xs:int">
+            <xs:annotation>
+                <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%)</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="Y" type="xs:int">
+            <xs:annotation>
+                <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%)</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="Width" type="xs:int">
+            <xs:annotation>
+                <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%)</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="Height" type="xs:int">
+            <xs:annotation>
+                <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Často je ignorována, pokud prvek má výšku danou přirozeně.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="Bounds" type="xs:string">
+            <xs:annotation>
+                <xs:documentation xml:lang="cs-cz">Souřadnice prvku v jednom políčku, v pořadí: X,Y,Width[,Height]. Alternativa hodnot X, Y, Width, Height.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <!--    Page                  -->
+    <xs:complexType name="type_page">
+        <xs:complexContent>
+            <xs:extension base="type_container">
+                
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!--    Panel                 -->
+    <xs:complexType name="type_panel">
+        <xs:complexContent>
+            <xs:extension base="type_container">
+
+
+
+                <xs:attribute name="NestedTemplate" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Název souboru, který obsahuje definici vnořené šablony</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+
+                <xs:attribute name="X" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%)</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+
+                <xs:attribute name="Y" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%)</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+
+                <xs:attribute name="Width" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%)</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+
+                <xs:attribute name="Height" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Často je ignorována, pokud prvek má výšku danou přirozeně.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+
+                <xs:attribute name="Bounds" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Souřadnice prvku v jednom políčku, v pořadí: X,Y,Width[,Height]. Alternativa hodnot X, Y, Width, Height.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!--    Container             -->
+    <xs:complexType name="type_container">
+        <xs:sequence>
             <xs:choice minOccurs="0" maxOccurs="unbounded">
                 <xs:element name="label" type="type_label" minOccurs="0" maxOccurs="unbounded">
                     <xs:annotation>
@@ -114,16 +208,12 @@
                     </xs:annotation>
                 </xs:element>
 
-
-
                 
-
-                <xs:element name="column" type="type_column" minOccurs="0" maxOccurs="unbounded">
+                <xs:element name="panel" type="type_panel" minOccurs="0" maxOccurs="unbounded">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Jeden prvek (textové políčko, label, combo box, image, atd)</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Vnořený panel</xs:documentation>
                     </xs:annotation>
                 </xs:element>
-
 
             </xs:choice>
         </xs:sequence>
@@ -136,25 +226,34 @@
         
         <xs:attribute name="Invisible" type="xs:string" />
 
-        <xs:attribute name="LabelPos" type="type_label_pos" />
-        <xs:attribute name="NestedTemplate" type="xs:string" />
-        <xs:attribute name="TabPageLabel" type="xs:string" />
-        <xs:attribute name="Width" type="xs:string" />
-        <xs:attribute name="Align" type="leftrightcenter" />
-        <xs:attribute name="UDA" type="bool" />
-        <xs:attribute name="NoBorder" type="bool" />
-        <xs:attribute name="AdvancedSettings" type="bool" />
-        <xs:attribute name="RenderAs">
-            <xs:simpleType>
-                <xs:restriction base="xs:string">
-                    <xs:enumeration value="TabPage"/>
-                    <xs:enumeration value="DesignTab"/>
-                    <xs:enumeration value="DesignTabWithLabel"/>
-                </xs:restriction>
-            </xs:simpleType>
+        <xs:attribute name="Title" type="xs:string">
+            <xs:annotation>
+                <xs:documentation xml:lang="cs-cz">Pevný text prvku (text Labelu, Buttonu, Checkboxu, ...). Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="IconName" type="xs:string">
+            <xs:annotation>
+                <xs:documentation xml:lang="cs-cz">Název ikony. Zobrazují ji pouze některé prvky.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="ToolTipTitle" type="xs:string">
+            <xs:annotation>
+                <xs:documentation xml:lang="cs-cz">Titulek v okně ToolTip</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="ToolTipText" type="xs:string">
+            <xs:annotation>
+                <xs:documentation xml:lang="cs-cz">Text v okně ToolTip</xs:documentation>
+            </xs:annotation>
         </xs:attribute>
     </xs:complexType>
 
+    <!--    Definice jednotlivých controlů     -->
+
+    <!--    Label                              -->
     <xs:complexType name="type_label">
         <xs:complexContent>
             <xs:extension base="type_control">
@@ -162,11 +261,13 @@
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
-    
+
+    <!--    TextBox obyčejný                   -->
     <xs:complexType name="type_textbox">
         <xs:complexContent>
             <xs:extension base="type_control">
                 <xs:attribute name="EditMask"/>
+                <xs:attribute name="Required" type="enum_bool"/>
             </xs:extension>
         </xs:complexContent>        
     </xs:complexType>
@@ -209,7 +310,7 @@
                     </xs:choice>
                 </xs:sequence>
 
-                <xs:attribute name="ButtonsVisibility" type="type_buttons_visibility">
+                <xs:attribute name="ButtonsVisibility" type="enum_buttons_visibility">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Viditelnost buttonů v textboxu v závislosti na aktivitě TextBoxu</xs:documentation>
                     </xs:annotation>
@@ -218,6 +319,7 @@
         </xs:complexContent>
     </xs:complexType>
 
+    <!--    Button obyčejný                    -->
     <xs:complexType name="type_button">
         <xs:complexContent>
             <xs:extension base="type_control">
@@ -242,7 +344,7 @@
         </xs:complexContent>
     </xs:complexType>
 
-
+    <!--    Control - bázová třída             -->
     <xs:complexType name="type_control">
         <xs:attribute name="Name" type="xs:string" use="required">
             <xs:annotation>
@@ -262,7 +364,7 @@
             </xs:annotation>
         </xs:attribute>
 
-        <xs:attribute name="Alignment" type="type_content_alignment">
+        <xs:attribute name="Alignment" type="enum_content_alignment">
             <xs:annotation>
                 <xs:documentation xml:lang="cs-cz">Zarovnání obsahu (textu) v definovaném prostoru prvku</xs:documentation>
             </xs:annotation>
@@ -325,8 +427,151 @@
     </xs:complexType>
 
 
+
+    <!--    Definice enumů     -->
+    <xs:simpleType name="enum_format_version">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="4" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">DataForm deklarovaný pro Nephrite</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="3" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">DataForm deklarovaný pro Green, pokročilá verze. Nepoužívá se v této šabloně.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="2" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">DataForm deklarovaný pro Green, střední verze. Nepoužívá se v této šabloně.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="1" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">DataForm deklarovaný pro Green, základní verze. Nepoužívá se v této šabloně.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
     
+    <xs:simpleType name="enum_label_pos">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Left" />
+            <xs:enumeration value="Up" />
+            <xs:enumeration value="None" />
+            <xs:enumeration value="Right" />
+        </xs:restriction>
+    </xs:simpleType>
     
+    <xs:simpleType name="enum_content_alignment">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="TopLeft" />
+            <xs:enumeration value="TopCenter" />
+            <xs:enumeration value="TopRight" />
+            <xs:enumeration value="MiddleLeft" />
+            <xs:enumeration value="MiddleCenter" />
+            <xs:enumeration value="MiddleRight" />
+            <xs:enumeration value="BottomLeft" />
+            <xs:enumeration value="BottomCenter" />
+            <xs:enumeration value="BottomRight" />
+        </xs:restriction>
+    </xs:simpleType>
+    
+    <xs:simpleType name="enum_buttons_visibility">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Default">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Defaultní = jen v aktivním prvku (Focus nebo MouseOn), vyjma stavu Disabled</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+
+            <xs:enumeration value="OnlyActive">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Jen v aktivním prvku (Focus nebo MouseOn), vyjma stavu Disabled</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+
+            <xs:enumeration value="VisibleAlways">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Viditelné vždy</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+
+            <xs:enumeration value="Invisible">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Neviditelné</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="type_button_action">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Click">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Odešle kliknutí na server</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+
+            <xs:enumeration value="Update">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Odešle Update dat na server</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+
+            <xs:enumeration value="ClickCheckRequired">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Ověří vyplněnost Required polí</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+
+            <xs:enumeration value="RunFunction">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Spustí funkci, název funkce je v atributu ButtonFunction</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+
+            <xs:enumeration value="Close">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Zavře okno</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="type_control_state">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Default" />
+            <xs:enumeration value="Enabled" />
+            <xs:enumeration value="ReadOnly" />
+            <xs:enumeration value="Disabled" />
+            <xs:enumeration value="Invisible" />
+            <xs:enumeration value="SkipTab" />
+        </xs:restriction>
+    </xs:simpleType>
+    
+    <xs:simpleType name="enum_bool">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="True" />
+            <xs:enumeration value="False" />
+        </xs:restriction>
+    </xs:simpleType>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <!--    OBSOLETE   -->
     
     
     <xs:complexType name="type_column">
@@ -410,7 +655,7 @@
                 <xs:documentation>"Dynamicka stranka (struktura: "AssemblyName;FullObjectName") vydedena z NrsInputWindow, ktera slouzi pro vyplneni pole (napr. strukturovana tlf. cisla)"</xs:documentation>
             </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="CurrencyDisplay" type="bool" />
+        <xs:attribute name="CurrencyDisplay" type="enum_bool" />
         <xs:attribute name="MaxLength" type="xs:int" />
         <xs:attribute name="Name" type="xs:string" />
         <xs:attribute name="Label" type="xs:string" />
@@ -420,9 +665,9 @@
         <xs:attribute name="LabelToolTipHide" type="xs:string" />
         <xs:attribute name="Width" type="xs:string" />
         <xs:attribute name="Height" type="xs:int" />
-        <xs:attribute name="Required" type="bool" />
+        <xs:attribute name="Required" type="enum_bool" />
         <xs:attribute name="Invisible" type="xs:string" />
-        <xs:attribute name="ReadOnly" type="bool" />
+        <xs:attribute name="ReadOnly" type="enum_bool" />
         <xs:attribute name="InputType">
             <xs:simpleType>
                 <xs:restriction base="xs:string">
@@ -569,7 +814,7 @@
             </xs:simpleType>
         </xs:attribute>
         <xs:attribute name="Protect" type="xs:string" />
-        <xs:attribute name="HtmlEdit" type="bool">
+        <xs:attribute name="HtmlEdit" type="enum_bool">
             <xs:annotation>
                 <xs:documentation xml:lang="cs-cz">
                     OBSOLETE - use InputType=htmltext
@@ -588,25 +833,25 @@
         <xs:attribute name="ColSpan" type="xs:int" default="1" />
         <!--//DAVID.CHARVAT 0038832 22.06.2011 Podpora RowSpan ve form.šabloně-->
         <xs:attribute name="RowSpan" type="xs:int" default="1" />
-        <xs:attribute name="LabelPos" type="type_label_pos" />
+        <xs:attribute name="LabelPos" type="enum_label_pos" />
         <xs:attribute name="Align" type="leftright" />
         <xs:attribute name="AlignValue" type="leftright" />
-        <xs:attribute name="RegisterItemChange" type="bool" />
-        <xs:attribute name="RegisterDblClick" type="bool" />
+        <xs:attribute name="RegisterItemChange" type="enum_bool" />
+        <xs:attribute name="RegisterDblClick" type="enum_bool" />
         <xs:attribute name="BoxCols" type="xs:string" />
         <xs:attribute name="BoxRows" type="xs:string" />
         <xs:attribute name="BoxStyle" type="xs:string" />
-        <xs:attribute name="AttrShortName" type="bool" />
+        <xs:attribute name="AttrShortName" type="enum_bool" />
         <xs:attribute name="RelationParams" type="xs:string" />
-        <xs:attribute name="RelationAddName" type="bool" />
+        <xs:attribute name="RelationAddName" type="enum_bool" />
         <xs:attribute name="RenderAs" type="RenderAs1" />
-        <xs:attribute name="SetEmptyStringIsNull" type="bool" />
+        <xs:attribute name="SetEmptyStringIsNull" type="enum_bool" />
         <!--DCH 0052507 19.04.2016-->
         <xs:attribute name="MaxDropDownItems" type="xs:int" default="12" use="optional"></xs:attribute>
         <!-- add break line after this item -->
-        <xs:attribute name="Break" type="bool" />
+        <xs:attribute name="Break" type="enum_bool" />
         <!-- only for InputType=button -->
-        <xs:attribute name="Default" type="bool">
+        <xs:attribute name="Default" type="enum_bool">
             <xs:annotation>
                 <xs:documentation xml:lang="cs-cz">
                     OBSOLETE - use dynamicPage template.DefaultControl
@@ -650,8 +895,8 @@
             </xs:simpleType>
         </xs:attribute>
         <!-- only for InputType=calendar -->
-        <xs:attribute name="OneMonthOnly" type="bool" />
-        <xs:attribute name="NoBorder" type="bool" />
+        <xs:attribute name="OneMonthOnly" type="enum_bool" />
+        <xs:attribute name="NoBorder" type="enum_bool" />
         <!-- so far only for DDLB!!! -->
         <xs:attribute name="RadioTextAlign">
             <xs:simpleType>
@@ -732,7 +977,7 @@
 
 
         <!-- //DCH 0054246 02.12.2016 -->
-        <xs:attribute name="AllowExtendedEditor" type="bool" default="True">
+        <xs:attribute name="AllowExtendedEditor" type="enum_bool" default="True">
             <xs:annotation>
                 <xs:documentation xml:lang="cs-cz">
                     Nastavení se aplikuje na políčko typu TextArea. Hodnota určuje zda je dovoleno otevřít rozšířující editor při dvojkliku na políčko typu TextArea. Hodnota False znamená, že na políčku není automatický rozšuřující editor.
@@ -741,7 +986,7 @@
         </xs:attribute>
 
         <!-- //STR0058109 - 2018.02.20 -->
-        <xs:attribute name="SuppressReadOnlyFromDataForm" type="bool" use="optional" />
+        <xs:attribute name="SuppressReadOnlyFromDataForm" type="enum_bool" use="optional" />
 
         <!-- //DCH 0059196 19.06.2018 Grafické zobrazení stavu/procesu - jádro -->
         <xs:attribute name="DDLBEditor" >
@@ -824,41 +1069,6 @@
     </xs:attributeGroup>
 
 
-    <!--    Definice jednoduchých typů   -->
-    <xs:simpleType name="type_format_version">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="4" >
-                <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">DataForm deklarovaný pro Nephrite</xs:documentation>
-                </xs:annotation>
-            </xs:enumeration>
-            <xs:enumeration value="3" >
-                <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">DataForm deklarovaný pro Green, pokročilá verze. Nepoužívá se v této šabloně.</xs:documentation>
-                </xs:annotation>
-            </xs:enumeration>
-            <xs:enumeration value="2" >
-                <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">DataForm deklarovaný pro Green, střední verze. Nepoužívá se v této šabloně.</xs:documentation>
-                </xs:annotation>
-            </xs:enumeration>
-            <xs:enumeration value="1" >
-                <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">DataForm deklarovaný pro Green, základní verze. Nepoužívá se v této šabloně.</xs:documentation>
-                </xs:annotation>
-            </xs:enumeration>
-        </xs:restriction>
-    </xs:simpleType>
-
-    
-    <xs:simpleType name="type_label_pos">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="Left" />
-            <xs:enumeration value="Up" />
-            <xs:enumeration value="None" />
-            <xs:enumeration value="Right" />
-        </xs:restriction>
-    </xs:simpleType>
     <xs:simpleType name="leftright">
         <xs:restriction base="xs:string">
             <xs:enumeration value="Left" />
@@ -873,102 +1083,8 @@
         </xs:restriction>
     </xs:simpleType>
     
-    <xs:simpleType name="type_content_alignment">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="TopLeft" />
-            <xs:enumeration value="TopCenter" />
-            <xs:enumeration value="TopRight" />
-            <xs:enumeration value="MiddleLeft" />
-            <xs:enumeration value="MiddleCenter" />
-            <xs:enumeration value="MiddleRight" />
-            <xs:enumeration value="BottomLeft" />
-            <xs:enumeration value="BottomCenter" />
-            <xs:enumeration value="BottomRight" />
-        </xs:restriction>
-    </xs:simpleType>
 
-    <xs:simpleType name="type_buttons_visibility">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="Default">
-                <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Defaultní = jen v aktivním prvku (Focus nebo MouseOn), vyjma stavu Disabled</xs:documentation>
-                </xs:annotation>
-            </xs:enumeration>
-            
-            <xs:enumeration value="OnlyActive">
-                <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Jen v aktivním prvku (Focus nebo MouseOn), vyjma stavu Disabled</xs:documentation>
-                </xs:annotation>
-            </xs:enumeration>
-
-            <xs:enumeration value="VisibleAlways">
-                <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Viditelné vždy</xs:documentation>
-                </xs:annotation>
-            </xs:enumeration>
-
-            <xs:enumeration value="Invisible">
-                <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Neviditelné</xs:documentation>
-                </xs:annotation>
-            </xs:enumeration>
-        </xs:restriction>
-    </xs:simpleType>
-
-    <xs:simpleType name="type_button_action">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="Click">
-                <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Odešle kliknutí na server</xs:documentation>
-                </xs:annotation>
-            </xs:enumeration>
-            
-            <xs:enumeration value="Update">
-                <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Odešle Update dat na server</xs:documentation>
-                </xs:annotation>
-            </xs:enumeration>
-
-            <xs:enumeration value="ClickCheckRequired">
-                <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Ověří vyplněnost Required polí</xs:documentation>
-                </xs:annotation>
-            </xs:enumeration>
-
-            <xs:enumeration value="RunFunction">
-                <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Spustí funkci, název funkce je v atributu ButtonFunction</xs:documentation>
-                </xs:annotation>
-            </xs:enumeration>
-
-            <xs:enumeration value="Close">
-                <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Zavře okno</xs:documentation>
-                </xs:annotation>
-            </xs:enumeration>
-
-        </xs:restriction>
-    </xs:simpleType>
-
-    <xs:simpleType name="type_control_state">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="Default" />
-            <xs:enumeration value="Enabled" />
-            <xs:enumeration value="ReadOnly" />
-            <xs:enumeration value="Disabled" />
-            <xs:enumeration value="Invisible" />
-            <xs:enumeration value="SkipTab" />
-        </xs:restriction>
-    </xs:simpleType>
     
-
-
-    <xs:simpleType name="bool">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="True" />
-            <xs:enumeration value="False" />
-        </xs:restriction>
-    </xs:simpleType>
     <xs:simpleType name="RenderAs1">
         <xs:restriction base="xs:string">
             <xs:enumeration value="string" />
