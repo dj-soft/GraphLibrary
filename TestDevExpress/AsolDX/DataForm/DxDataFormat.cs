@@ -64,16 +64,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
     */
 
 
-
-
     #region Shared : třídy pouze nesou data, nemají funkcinalitu
-
     /// <summary>
     /// Definice formátu jednoho bloku v DataFormu.
     /// Blok může představovat celou sadu stránek, nebo jednu stránku, nebo viditelný odstavec stránky, nebo vnitřní blok 
     /// </summary>
     public class DataFormatTab : DataFormatItem
     {
+        /// <summary>
+        /// Konstruktor, vytvoří new instanci seznamu a nastaví defaulty
+        /// </summary>
+        public DataFormatTab() : base()
+        {
+            this.Style = TabStyle.Default;
+            this.Items = new List<DataFormatItem>();
+        }
         /// <summary>
         /// Styl odstavce
         /// </summary>
@@ -87,6 +92,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// Ignoruje se pro <see cref="Style"/> == <see cref="TabStyle.PageSet"/>.
         /// </summary>
         public string ImageName { get; set; }
+        /// <summary>
+        /// Název barevného kalíšku pozadí odstavce, prázdné = podle Parenta (nebo defaultní)
+        /// </summary>
+        public string BackColorName { get; set; }
         /// <summary>
         /// Souřadnice počátku, Left. Typicky je null. Zadáním lze exaktně umístit panel. Některé styly bloku (<see cref="TabStyle.Page"/>) tuto hodnotu ignorují.
         /// </summary>
@@ -110,17 +119,92 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// Right a Bottom určují okraj za posledními prvky při výpočtu Width a Height, pokud zde nejsou určeny.
         /// </summary>
         public Margins InnerMargins { get; set; }
-
         /// <summary>
         /// Sada prvků
         /// </summary>
         public List<DataFormatItem> Items { get; set; }
     }
     /// <summary>
-    /// Jeden konkrétní control (column) = vstupní prvek, nikoli container
+    /// Jeden konkrétní control (column) = vstupní prvek.
+    /// Tato třída může reprezentovat <see cref="ControlType.ComboListBox"/>, <see cref="ControlType.ImageComboListBox"/>, <see cref="ControlType.DropDownButton"/>, 
+    /// <see cref="ControlType.BreadCrumb"/>, <see cref="ControlType.StepProgressBar"/>, <see cref="ControlType.TokenEdit"/>.
+    /// </summary>
+    public class DataFormatListEdit : DataFormatControl
+    {
+        /// <summary>
+        /// Konstruktor, vytvoří new instanci seznamu a nastaví defaulty
+        /// </summary>
+        public DataFormatListEdit() : base()
+        {
+            this.SubItems = new List<DataFormatItem>();
+        }
+        /// <summary>
+        /// Sub prvky
+        /// </summary>
+        public List<DataFormatItem> SubItems { get; set; }
+    }
+    /// <summary>
+    /// Jeden konkrétní control (column) = vstupní prvek.
+    /// Editor textu s přidanými tlačítky.
+    /// Tato třída může reprezentovat <see cref="ControlType.TextBoxButton"/>.
+    /// </summary>
+    public class DataFormatTextButtonEdit : DataFormatTextEdit
+    {
+        /// <summary>
+        /// Konstruktor, vytvoří new instanci seznamu a nastaví defaulty
+        /// </summary>
+        public DataFormatTextButtonEdit() : base()
+        {
+            this.ButtonsLeft = new List<DataFormatItem>();
+            this.ButtonsRight = new List<DataFormatItem>();
+        }
+        /// <summary>
+        /// Buttony umístěné u tohoto TextBoxu, vlevo
+        /// </summary>
+        public List<DataFormatItem> ButtonsLeft { get; set; }
+        /// <summary>
+        /// Buttony umístěné u tohoto TextBoxu, vpravo
+        /// </summary>
+        public List<DataFormatItem> ButtonsRight { get; set; }
+    }
+    /// <summary>
+    /// Jeden konkrétní control (column) = vstupní prvek.
+    /// Prostý editor textu.
+    /// Tato třída může reprezentovat <see cref="ControlType.TextBox"/>, <see cref="ControlType.EditBox"/>.
+    /// </summary>
+    public class DataFormatTextEdit : DataFormatControl
+    {
+        /// <summary>
+        /// Konstruktor, nastaví defaulty
+        /// </summary>
+        public DataFormatTextEdit() : base()
+        {
+            this.EditMask = null;
+        }
+        /// <summary>
+        /// Editační maska pro vstupní text
+        /// </summary>
+        public string EditMask { get; set; }
+    }
+    /// <summary>
+    /// Jeden konkrétní control (column) = vstupní prvek, nikoli container.
+    /// Základní třída, obsahuje pouze pozici.
+    /// Tato třída může reprezentovat <see cref="ControlType.Label"/>, <see cref="ControlType.Button"/>, <see cref="ControlType.CheckEdit"/>, 
+    /// <see cref="ControlType.RadioButton"/>.
     /// </summary>
     public class DataFormatControl : DataFormatItem
     {
+        /// <summary>
+        /// Konstruktor, nastaví defaulty
+        /// </summary>
+        public DataFormatControl() : base()
+        {
+            this.ControlType = ControlType.None;
+        }
+        /// <summary>
+        /// Druh vstupního prvku (Control).
+        /// </summary>
+        public ControlType ControlType { get; set; }
         /// <summary>
         /// Souřadnice počátku, Left.
         /// </summary>
@@ -138,23 +222,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// Pokud je null, vytvoří ji GUI podle konkrétního prvku (typicky TextBox, CheckBox, Label a podobně: mají výšku pro zobrazení jednoho řádku).
         /// </summary>
         public int? Height { get; set; }
-        /// <summary>
-        /// Druh vstupního prvku
-        /// </summary>
-        public ControlType ControlType { get; set; }
-
-        public string EditMask { get; set; }
-        public Data.ItemSet Items { get; set; }
-        public Data.ItemSet Buttons { get; set; }
-
     }
     /// <summary>
     /// Bázová třída pro <see cref="DataFormatTab"/> a <see cref="DataFormatControl"/>.
+    /// Samostatně lze používat jak SubItem (např. v prvku typu <see cref="ControlType.ComboListBox"/>).
     /// </summary>
     public class DataFormatItem
     {
         /// <summary>
-        /// Klíčové jméno prvku pro identifikaci
+        /// Konstruktor, nastaví defaulty
+        /// </summary>
+        public DataFormatItem() : base()
+        {
+            this.State = ItemState.Default;
+            this.Alignment = ContentAlignmentType.Default;
+        }
+        /// <summary>
+        /// Klíčové jméno prvku pro jeho jednoznačnou identifikaci.
+        /// Odstavce a prvky musí mít <see cref="Name"/> jednoznačné přes celý formulář = přes všechny záložky.
+        /// Subprvky (=položky editačního stylu) a subbuttony (tlačítka v <see cref="ControlType.TextBoxButton"/>) mají <see cref="Name"/> jednoznačné jen v rámci svého prvku.
         /// </summary>
         public string Name { get; set; }
         /// <summary>
@@ -162,12 +248,30 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// </summary>
         public ItemState State { get; set; }
         /// <summary>
-        /// Text titulku odstavce (titulek stránky, titulek odstavce, text Labelu, text CheckBoxu, Buttonu, atd).
+        /// Text titulku odstavce nebo prvku (titulek stránky, titulek odstavce, text Labelu, text CheckBoxu, Buttonu, atd).
         /// Použití se liší podle typu prvku.
         /// </summary>
         public string Text { get; set; }
-
+        /// <summary>
+        /// Jméno ikony odstavce nebo prvku (v titulku stránky, v titulku odstavce, ikona Buttonu, atd).
+        /// Použití se liší podle typu prvku.
+        /// </summary>
+        public string IconName { get; set; }
+        /// <summary>
+        /// Zarovnání textu v rámci prostoru
+        /// </summary>
+        public ContentAlignmentType Alignment { get; set; }
+        /// <summary>
+        /// Titulek ToolTipu.
+        /// </summary>
+        public string ToolTipTitle { get; set; }
+        /// <summary>
+        /// Text ToolTipu.
+        /// </summary>
+        public string ToolTipText { get; set; }
     }
+    #endregion
+    #region Podpůrné třídy a enumy
     /// <summary>
     /// Okraje
     /// </summary>
@@ -243,17 +347,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
     public enum TabStyle
     {
         /// <summary>
-        /// Běžný vnitřní TAB (odstavec), může / nemusí mít titulek (podle jeho titulku)
+        /// Běžný vnitřní TAB (odstavec), může / nemusí mít titulek (podle přítomnosti textu <see cref="DataFormatItem.Text"/>)
         /// </summary>
         Default,
         /// <summary>
-        /// Záhlaví stránky. Ignoruje souřadnice 
-        /// </summary>
-        Page,
-        /// <summary>
         /// Sada stránek; její vnitřní prvky musí být stylu <see cref="TabStyle.Page"/>
         /// </summary>
-        PageSet
+        PageSet,
+        /// <summary>
+        /// Záhlaví stránky. Ignoruje souřadnice 
+        /// </summary>
+        Page
+
     }
     /// <summary>
     /// Stav prvku. 
@@ -266,7 +371,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
     public enum ItemState
     {
         /// <summary>
-        /// Prvek je viditelný a editovatelný
+        /// Prvek je viditelný a editovatelný, a TAB na něm zastavuje.
         /// </summary>
         Default = 0,
         /// <summary>
@@ -361,6 +466,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// </summary>
         Image,
         /// <summary>
+        /// Bar code
+        /// </summary>
+        BarCode,
+        /// <summary>
+        /// Postup procesu - všechny hodnoty editačního stylu s jednou zvýrazněnou
+        /// </summary>
+        BreadCrumb,
+        /// <summary>
+        /// Obdoba BreadCrumb, jednotlivé kroky procesu s obrázky, názvy, komentáři
+        /// </summary>
+        StepProgressBar,
+        /// <summary>
+        /// Soupis více položek zobrazený v jednom řádku (adresáti emailu)
+        /// </summary>
+        TokenEdit,
+        /// <summary>
         /// Malá tabulka
         /// </summary>
         Grid,
@@ -372,6 +493,91 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// HTML prohlížeč
         /// </summary>
         HtmlContent
+    }
+    /// <summary>
+    /// Zarovnání obsahu.
+    /// Shoduje se hodnotami s enumem <see cref="AlignmentSideType"/>
+    /// </summary>
+    [Flags]
+    public enum ContentAlignmentType
+    {
+        /// <summary>
+        /// Nahoře vlevo
+        /// </summary>
+        TopLeft      = AlignmentSideType.VTop    | AlignmentSideType.HLeft,
+        /// <summary>
+        /// Nahoře uprostřed
+        /// </summary>
+        TopCenter    = AlignmentSideType.VTop    | AlignmentSideType.HCenter,
+        /// <summary>
+        /// Nahoře vpravo
+        /// </summary>
+        TopRight     = AlignmentSideType.VTop    | AlignmentSideType.HRight,
+        /// <summary>
+        /// Svisle na střed, vlevo
+        /// </summary>
+        MiddleLeft   = AlignmentSideType.VMiddle | AlignmentSideType.HLeft,
+        /// <summary>
+        /// Svisle na střed, uprostřed
+        /// </summary>
+        MiddleCenter = AlignmentSideType.VMiddle | AlignmentSideType.HCenter,
+        /// <summary>
+        /// Svisle na střed, vpravo
+        /// </summary>
+        MiddleRight  = AlignmentSideType.VMiddle | AlignmentSideType.HRight,
+        /// <summary>
+        /// Dole vlevo
+        /// </summary>
+        BottomLeft   = AlignmentSideType.VBottom | AlignmentSideType.HLeft,
+        /// <summary>
+        /// Dole na střed
+        /// </summary>
+        BottomCenter = AlignmentSideType.VBottom | AlignmentSideType.HCenter,
+        /// <summary>
+        /// Dole vpravo
+        /// </summary>
+        BottomRight  = AlignmentSideType.VBottom | AlignmentSideType.HRight,
+
+        /// <summary>
+        /// Defaultně = Nahoře vlevo
+        /// </summary>
+        Default      = TopLeft
+    }
+    /// <summary>
+    /// Zarovnání obsahu, jednotlivé strany. 
+    /// Shoduje se hodnotami s enumem <see cref="ContentAlignmentType"/>
+    /// </summary>
+    [Flags]
+    public enum AlignmentSideType
+    {
+        /// <summary>
+        /// Nezarovnáno
+        /// </summary>
+        None    = 0,
+        /// <summary>
+        /// Horizontálně: vlevo
+        /// </summary>
+        HLeft   = 0b00000100,
+        /// <summary>
+        /// Horizontálně: uprostřed
+        /// </summary>
+        HCenter = 0b00000010,
+        /// <summary>
+        /// Horizontálně: vpravo
+        /// </summary>
+        HRight  = 0b00000001,
+        /// <summary>
+        /// Vertikálně: nahoru
+        /// </summary>
+        VTop    = 0b01000000,
+        /// <summary>
+        /// Vertikálně: na střed
+        /// </summary>
+        VMiddle = 0b00100000,
+        /// <summary>
+        /// Vertikálně: dole
+        /// </summary>
+        VBottom = 0b00010000
     }
     #endregion
 

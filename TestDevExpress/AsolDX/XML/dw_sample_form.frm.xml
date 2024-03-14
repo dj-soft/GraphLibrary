@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<template xmlns="http://tempuri.org/DxDataFormat.Frm.xsd" 
+          FormatVersion="4"
+          UseNorisClass="1161"
+          Messages="/app/lcs/Manufacturing/Forms/DwMfrFrm.msg.xml"
+          MasterWidth="530" MasterHeight="320"
+          TotalWidth="750" TotalHeight="520"  >
+
+    <tab Name="tab_3b8b20f5-e861-46c0-8470-7488eb46ab06">
+        <column Name="date_validity" Width="150"></column>
+        <column Name="produce_me" Width="150" InputType="checkbox"></column>
+        <column Name="plan_me" InputType="checkbox"></column>
+        <column Name="reference_subjektu" Width="150" ColSpan="3"></column>
+        <column Name="constr_element_refer" Width="100%"></column>
+        <column Name="constr_element_nazev" Width="100%" ColSpan="2" LabelPos="None"></column>
+        <column Name="variation_refer" Label="fmr(1151,lcs.constr_element.variation,l)" Width="100%" RelationParams="r(8566)"></column>
+        <column Name="order_relation_refer" Label="fmr(1151,lcs.constr_element.order_relation,l)" Width="150" ColSpan="2" RelationParams="r(8565)"></column>
+        <column Name="plan_unit_s_refer" Width="150"></column>
+        <column Name="plan_unit_s_nazev" Width="300" ColSpan="2" LabelPos="None"></column>
+        <column Name="placeholder1" InputType="Placeholder"></column>
+
+        <label Name="t4" ></label>
+        <textbox Name="colname1" ></textbox>
+    
+    </tab>
+
+    <panel Name="Panel1" >
+        <label Name="l1" Text="" ToolTipTitle="" State="SkipTab" Invisible=""/>
+        <textbox Name="text1" />
+        <label Name="l2" X="32" Width="120"/>
+        <combobox Name="col12">
+            <comboItem Name="Z" Text="Zahájeno"/>
+            <comboItem Name="U" Text="Ukončeno"/>
+        </combobox>
+        <textbox_button Name="">
+            <buttonRight Name=""/>
+        </textbox_button>
+        <button Name="butOpen" HotKey="F8" Bounds="0,50,120,35" Text="Otevři..." ButtonFunction="aaa" Action="RunFunction" />
+    </panel>
+    
+    <tab>
+        <label Name="t3"/>
+        <textbox_button Name="tb1" ButtonsVisibility="Default">
+            <buttonLeft Name=""/>
+        </textbox_button>
+    </tab>
+    
+    
+    <tab>
+        <column Name="weight" Width="150"></column>
+        <column Name="area" Width="150"></column>
+        <column EditMask="L10;D6;Z0;T0" Name="area_mu" Width="60" LabelPos="None"></column>
+        <column Name="fixed_number_of_defection" Width="100%"></column>
+        <column Name="defection_percent" Width="150" ColSpan="2"></column>
+        <column Name="drawing" Width="450" ColSpan="3"></column>
+        <column Name="document_version" Width="100%"></column>
+        <column Name="typ_dokumentace" Width="300" ColSpan="2"></column>
+        <column Name="user_att" Width="450" ColSpan="3"></column>
+        <column Name="note" Width="100%" InputType="textarea" ColSpan="3"></column>
+    </tab>
+    <tab TabPageLabel="fm(MSG10530)" RenderAs="DesignTabWithLabel">
+        <column Name="date_author" Width="150"></column>
+        <column Name="author_nazev" Width="300" ColSpan="2" LabelPos="None"></column>
+        <column Name="date_valid_structure" Width="100%"></column>
+        <column Name="valid_structure_nazev" Width="100%" ColSpan="2" LabelPos="None"></column>
+        <column Name="date_valid_operation" Width="100%"></column>
+        <column Name="valid_operation_nazev" Width="100%" ColSpan="2" LabelPos="None"></column>
+        <column Name="date_valid_norm" Width="100%"></column>
+        <column Name="valid_norm_nazev" Width="100%" ColSpan="2" LabelPos="None"></column>
+        <column Name="protocol_on_refer" Width="100%"></column>
+        <column Name="protocol_on_nazev" Width="100%" ColSpan="2" LabelPos="None"></column>
+        <column Name="datum_vzniku" Width="100%" EditStyle="datum_cas"></column>
+        <column Name="pachatel_nazev" Width="100%" ColSpan="2" LabelPos="None"></column>
+        <column Name="placeholder2" InputType="Placeholder"></column>
+    </tab>
+</template>
