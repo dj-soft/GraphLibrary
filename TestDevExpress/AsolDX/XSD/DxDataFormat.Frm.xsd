@@ -8,7 +8,7 @@
         </xs:documentation>
     </xs:annotation>
 
-    <!--    Struktura souboru, definujícího vzhled celého DataFormu    -->
+    <!--    Template : Struktura souboru, definujícího vzhled celého DataFormu    -->
     <xs:element name="template">
         <xs:complexType>
             <xs:sequence>
@@ -25,6 +25,13 @@
                             <xs:documentation xml:lang="cs-cz">Jeden kontejner, obsahující prvky anebo další kontejnery</xs:documentation>
                         </xs:annotation>
                     </xs:element>
+
+                    <xs:element name="nestedpanel" type="type_nested_panel" minOccurs="0" maxOccurs="unbounded">
+                        <xs:annotation>
+                            <xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona</xs:documentation>
+                        </xs:annotation>
+                    </xs:element>
+
                 </xs:choice>
             </xs:sequence>
 
@@ -90,25 +97,25 @@
 
         <xs:attribute name="X" type="xs:int">
             <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%)</xs:documentation>
+                <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
 
         <xs:attribute name="Y" type="xs:int">
             <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%)</xs:documentation>
+                <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
 
         <xs:attribute name="Width" type="xs:int">
             <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%)</xs:documentation>
+                <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
 
         <xs:attribute name="Height" type="xs:int">
             <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Často je ignorována, pokud prvek má výšku danou přirozeně.</xs:documentation>
+                <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
 
@@ -133,35 +140,27 @@
         <xs:complexContent>
             <xs:extension base="type_container">
 
-
-
-                <xs:attribute name="NestedTemplate" type="xs:string">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Název souboru, který obsahuje definici vnořené šablony</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-
                 <xs:attribute name="X" type="xs:int">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%)</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
 
                 <xs:attribute name="Y" type="xs:int">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%)</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
 
                 <xs:attribute name="Width" type="xs:int">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%)</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
 
                 <xs:attribute name="Height" type="xs:int">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Často je ignorována, pokud prvek má výšku danou přirozeně.</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
 
@@ -215,6 +214,12 @@
                     </xs:annotation>
                 </xs:element>
 
+                <xs:element name="nestedpanel" type="type_nested_panel" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                
             </xs:choice>
         </xs:sequence>
         
@@ -238,6 +243,18 @@
             </xs:annotation>
         </xs:attribute>
 
+        <xs:attribute name="BackColorName" type="enum_color_style">
+            <xs:annotation>
+                <xs:documentation xml:lang="cs-cz">Barva pozadí, zadaná jako název kalíšku.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="BackColor" type="xs:string">
+            <xs:annotation>
+                <xs:documentation xml:lang="cs-cz">Barva pozadí, zadaná explicitně: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd. Tato barva nereaguje na změnu tmavého skinu.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
         <xs:attribute name="ToolTipTitle" type="xs:string">
             <xs:annotation>
                 <xs:documentation xml:lang="cs-cz">Titulek v okně ToolTip</xs:documentation>
@@ -256,7 +273,7 @@
     <!--    Label                              -->
     <xs:complexType name="type_label">
         <xs:complexContent>
-            <xs:extension base="type_control">
+            <xs:extension base="type_control_text">
                 <xs:attribute name="LabelMask"/>
             </xs:extension>
         </xs:complexContent>
@@ -265,44 +282,66 @@
     <!--    TextBox obyčejný                   -->
     <xs:complexType name="type_textbox">
         <xs:complexContent>
-            <xs:extension base="type_control">
+            <xs:extension base="type_control_base">
                 <xs:attribute name="EditMask"/>
-                <xs:attribute name="Required" type="enum_bool"/>
+                
+                <xs:attribute name="Required" type="enum_bool">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Příznak povinného políčka. Je barevně zvýrazněné.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+
+                <xs:attribute name="Alignment" type="enum_content_alignment">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Zarovnání obsahu (textu) v definovaném prostoru prvku</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+
             </xs:extension>
         </xs:complexContent>        
     </xs:complexType>
 
+    <!--    ComboBox obyčejný                  -->
     <xs:complexType name="type_combobox">
         <xs:complexContent>
-            <xs:extension base="type_control">
+            <xs:extension base="type_control_base">
                 <xs:sequence minOccurs="0" maxOccurs="unbounded">
-                    <xs:element name="comboItem" type="type_control">
+                    <xs:element name="comboItem" type="type_control_text">
                         <xs:annotation>
                             <xs:documentation xml:lang="cs-cz">Explicitně zadaný prvek v nabídce ComboBoxu</xs:documentation>
                         </xs:annotation>
                     </xs:element>
                 </xs:sequence>
-                <xs:attribute name="EditStyle" type="xs:string">
+                
+                <xs:attribute name="EditStyleName" type="xs:string">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Název editačního stylu. Může být prázdné, pokud budou zadány prvky comboItem.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
+
+                <xs:attribute name="ComboStyle" type="enum_combo_style">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Styl zobrazení ComboBoxu: S možností psaní, Pouze výběr hodnot, Výběr včetně zobrazení ikony</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
 
+    <!--    TextBox s možností přidat malá tlačítka vpravo / vlevo   -->
     <xs:complexType name="type_textbox_button">
         <xs:complexContent>
             <xs:extension base="type_textbox">
                 <xs:sequence>
                     <xs:choice minOccurs="0" maxOccurs="unbounded">
-                        <xs:element name="buttonRight" type="type_control">
+                        <xs:element name="buttonRight" type="type_control_text">
                             <xs:annotation>
                                 <xs:documentation xml:lang="cs-cz">Button zobrazený na pravé straně TextBoxu</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                         
-                        <xs:element name="buttonLeft" type="type_control">
+                        <xs:element name="buttonLeft" type="type_control_text">
                             <xs:annotation>
                                 <xs:documentation xml:lang="cs-cz">Button zobrazený na levé straně TextBoxu</xs:documentation>
                             </xs:annotation>
@@ -321,8 +360,10 @@
 
     <!--    Button obyčejný                    -->
     <xs:complexType name="type_button">
+        <xs:annotation><xs:documentation>Jednoduché tlačítko. Obsahuje Text, IconName, Action, HotKey atd.</xs:documentation></xs:annotation>
+
         <xs:complexContent>
-            <xs:extension base="type_control">
+            <xs:extension base="type_control_text">
                 <xs:attribute name="Action" type="type_button_action">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Akce, kterou button provede</xs:documentation>
@@ -344,8 +385,50 @@
         </xs:complexContent>
     </xs:complexType>
 
-    <!--    Control - bázová třída             -->
-    <xs:complexType name="type_control">
+    <!--    NestedPanel = z hlediska DataFormu jde o Container, ale z hlediska zadávání o jednotlivý Control é nemá vnitřní prvky (elementy)   -->
+    <xs:complexType name="type_nested_panel">
+        <xs:complexContent>
+            <xs:extension base="type_control_base">
+                <xs:attribute name="NestedTemplate" type="xs:string" use="required">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Název souboru, který obsahuje definici vnořené šablony.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!--    ControlText - bázová třída s Textem a Image = pro Labely, Buttony, Checkboxy, atd            -->
+    <xs:complexType name="type_control_text">
+        <xs:annotation><xs:documentation>Základní třída pro Controly, obshající konstantní Text: obsahuje Text, zarovnání a IconName. Pro Labely, Buttony atd.</xs:documentation></xs:annotation>
+
+        <xs:complexContent>
+            <xs:extension base="type_control_base">
+                <xs:attribute name="Text" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Pevný text prvku (text Labelu, Buttonu, Checkboxu, ...). Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+
+                <xs:attribute name="Alignment" type="enum_content_alignment">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Zarovnání obsahu (textu) v definovaném prostoru prvku</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+
+                <xs:attribute name="IconName" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Název ikony. Zobrazují ji pouze některé prvky.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!--    ControlBase - bázová třída bez Textu a Image = pro TextBoxy, ComboBoxy, TokenEdity atd  -->
+    <xs:complexType name="type_control_base">
+        <xs:annotation><xs:documentation>Nejzákladnější třída pro Control: obsahuje Name, pozici, ToolTip a Stav. Neobsahuje Text. Pro TextBoxy, ComboBoxy, TokenEdit, BreadCrumb atd.</xs:documentation></xs:annotation>
+        
         <xs:attribute name="Name" type="xs:string" use="required">
             <xs:annotation>
                 <xs:documentation xml:lang="cs-cz">Identifikátor prvku, jméno sloupce v datech. Musí být jednoznačné v rámci DataFormu. Pro pomocné prvky (TextBoxButtony, ListItemy) musí být jednoznačné v rámci Owner prvku.</xs:documentation>
@@ -355,24 +438,6 @@
         <xs:attribute name="State" type="type_control_state">
             <xs:annotation>
                 <xs:documentation xml:lang="cs-cz">Stav prvku (viditelnost, editovatelnost)</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="Text" type="xs:string">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Pevný text prvku (text Labelu, Buttonu, Checkboxu, ...). Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="Alignment" type="enum_content_alignment">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Zarovnání obsahu (textu) v definovaném prostoru prvku</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-        
-        <xs:attribute name="IconName" type="xs:string">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Název ikony. Zobrazují ji pouze některé prvky.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
 
@@ -396,25 +461,25 @@
 
         <xs:attribute name="X" type="xs:int">
             <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%)</xs:documentation>
+                <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
 
         <xs:attribute name="Y" type="xs:int">
             <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%)</xs:documentation>
+                <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
         
         <xs:attribute name="Width" type="xs:int">
             <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%)</xs:documentation>
+                <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
 
         <xs:attribute name="Height" type="xs:int">
             <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Často je ignorována, pokud prvek má výšku danou přirozeně.</xs:documentation>
+                <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Často je ignorována, pokud prvek má výšku danou přirozeně. Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
 
@@ -476,7 +541,36 @@
             <xs:enumeration value="BottomRight" />
         </xs:restriction>
     </xs:simpleType>
-    
+
+    <xs:simpleType name="enum_combo_style">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="ListEdit">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Do políčka je možno vepisovat text, anebo je možno vybrat z nabídky. Nemá ikonu.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+
+            <xs:enumeration value="List">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Do políčka je možno pouze vybrat hodnotu z nabídky. Nemá ikonu.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+
+            <xs:enumeration value="IconTextList">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Do políčka je možno pouze vybrat hodnotu z nabídky. Zobrazuje ikonu i text.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+
+            <xs:enumeration value="IconList">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Do políčka je možno pouze vybrat hodnotu z nabídky. Zobrazuje pouze ikonu.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:simpleType name="enum_buttons_visibility">
         <xs:restriction base="xs:string">
             <xs:enumeration value="Default">
@@ -558,6 +652,45 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <!--    Jméno barvy: Enum zadaných hodnot, s možností zadat i jinou hodnotu než vyjmenovanou   -->
+    <xs:simpleType name="enum_color_style">
+        <xs:union memberTypes="xs:string">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="User_1" />
+                    <xs:enumeration value="User_2" />
+                    <xs:enumeration value="User_3" />
+                    <xs:enumeration value="User_4" />
+                    <xs:enumeration value="User_5" />
+                    <xs:enumeration value="User_6" />
+                    <xs:enumeration value="User_7" />
+                    <xs:enumeration value="User_8" />
+                    <xs:enumeration value="User_9" />
+                    <xs:enumeration value="GoodValue" />
+                    <xs:enumeration value="BetterValue" />
+                    <xs:enumeration value="ExcellentValue" />
+                    <xs:enumeration value="BadValue" />
+                    <xs:enumeration value="WorseValue" />
+                    <xs:enumeration value="AwfulValue" />
+                    <xs:enumeration value="ToProcess" />
+                    <xs:enumeration value="InProcess" />
+                    <xs:enumeration value="Success" />
+                    <xs:enumeration value="Warning" />
+                    <xs:enumeration value="Error" />
+                    <xs:enumeration value="Warning" />
+                    <xs:enumeration value="Red_front_normal" />
+                    <xs:enumeration value="Red_front_protect" />
+                    <xs:enumeration value="Green_front_normal" />
+                    <xs:enumeration value="Green_front_protect" />
+                    <xs:enumeration value="Orange_front_normal" />
+                    <xs:enumeration value="Orange_front_protect" />
+                    <xs:enumeration value="Blue_front_normal" />
+                    <xs:enumeration value="Blue_front_protect" />
+                    <xs:enumeration value="Black_label_front_bold" />
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:union>
+    </xs:simpleType>
 
 
 
@@ -565,28 +698,44 @@
 
 
 
-
-
-
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
 
 
     <!--    OBSOLETE   -->
-    
-    
     <xs:complexType name="type_column">
         <xs:sequence>
             <xs:element name="groupcolumn" type="column_e1" minOccurs="0" maxOccurs="unbounded" />
         </xs:sequence>
         <xs:attributeGroup ref="column_attr" />
     </xs:complexType>
-    
-    
     <xs:complexType name="column_e1">
         <xs:attributeGroup ref="column_attr" />
     </xs:complexType>
-    
-    
     <xs:attributeGroup name="column_attr">
         <xs:attribute name="TabIndex" type="xs:int" />
         <!-- <0, =0, >0 -->
@@ -772,7 +921,7 @@
                     <xs:enumeration value="Close" />
                     <!-- //DCH 0059598 31.07.2018 Spouštění funkcí tlačítky na formuláři  -->
                     <xs:enumeration value="RunFunction" />
-                    <!-- //STR0060162 - 2018.10.12 - doplnění akce ClickCheckRequired: při stisku tlačítka zkontroluje required sloupce obdobně jako akce 'Update'  -->
+                    <!-- //STR0060162 - 2018.10.12 - doplnění akce ClickCheckRequired: při stisku tlačítka zkontroluje required sloupce obdobně jako akce Update'  -->
                     <xs:enumeration value="ClickCheckRequired" />
                 </xs:restriction>
             </xs:simpleType>
@@ -1067,8 +1216,6 @@
 
 
     </xs:attributeGroup>
-
-
     <xs:simpleType name="leftright">
         <xs:restriction base="xs:string">
             <xs:enumeration value="Left" />
@@ -1082,9 +1229,6 @@
             <xs:enumeration value="Center" />
         </xs:restriction>
     </xs:simpleType>
-    
-
-    
     <xs:simpleType name="RenderAs1">
         <xs:restriction base="xs:string">
             <xs:enumeration value="string" />

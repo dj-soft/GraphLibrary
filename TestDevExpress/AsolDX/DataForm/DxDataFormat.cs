@@ -63,8 +63,38 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
 
     */
 
+    /*   Typy a vlastnosti
 
-    #region Shared : třídy pouze nesou data, nemají funkcinalitu
+
+    CONTAINERY
+    ----------
+       Každý prvek má vlastnost: Name
+            Bounds   Title   Icon  BackColor  ToolTip  Invisible
+Form          -        -      A       A          -         -
+PageSet       A        -      -       -          -         A
+Page          -        A      A       A          A         A
+Panel         A        A      A       A          -         A
+
+
+    CONTROLY
+    --------
+       Každý prvek má vlastnosti: Name,  State,  ToolTip
+               Bounds  BackColor  Invisible  Text   FontType  TextColor  Icon   Action  SubItems  SubButtons
+SubItem          -       -             -      A       -          -         A
+SubButton        -       -             -      A       -          -         A       A
+Label            A       A             A      A       A          A         -
+TitleRow         A       A             A      A       A          A         -
+CheckBox         A       A             A      A       A          A         -
+TextBox          A       A             A      -       A          A         -
+TextBoxButton    A       A             A      -       A          A         -       -       -          A
+ComboBox         A       A             A      -       A          A         -       -       A
+Button           A       A             A      A       A          A         A       A
+SplitButton      A       A             A      A       A          A         A       A       -          A
+
+
+    */
+
+    #region Shared : třídy pouze nesou data, nemají funkcinalitu. Poměrně dobře korespondují s XML schematem DxDataFormat.Frm
     /// <summary>
     /// Definice formátu jednoho bloku v DataFormu.
     /// Blok může představovat celou sadu stránek, nebo jednu stránku, nebo viditelný odstavec stránky, nebo vnitřní blok 
@@ -123,6 +153,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// Sada prvků
         /// </summary>
         public List<DataFormatItem> Items { get; set; }
+        /// <summary>
+        /// Debug text
+        /// </summary>
+        protected override string DebugText { get { return $"{Style}; Name: '{Name}'; Text: '{Text}'; Items.Count: {Items?.Count}"; } }
     }
     /// <summary>
     /// Jeden konkrétní control (column) = vstupní prvek.
@@ -186,67 +220,271 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// </summary>
         public string EditMask { get; set; }
     }
+    #endregion
+
+
+    #region Konkrétní třídy Containerů
     /// <summary>
-    /// Jeden konkrétní control (column) = vstupní prvek, nikoli container.
-    /// Základní třída, obsahuje pouze pozici.
-    /// Tato třída může reprezentovat <see cref="ControlType.Label"/>, <see cref="ControlType.Button"/>, <see cref="ControlType.CheckEdit"/>, 
-    /// <see cref="ControlType.RadioButton"/>.
+    /// Celý DataForm
     /// </summary>
-    public class DataFormatControl : DataFormatItem
+    public class DataFormatContainerForm : DataFormatContainerBase
     {
         /// <summary>
-        /// Konstruktor, nastaví defaulty
+        /// Konstruktor
         /// </summary>
-        public DataFormatControl() : base()
+        public DataFormatContainerForm()
         {
-            this.ControlType = ControlType.None;
+            this.Style = TabStyle.Form;
+            this.Tabs = new List<DataFormatContainerBase>();
         }
         /// <summary>
-        /// Druh vstupního prvku (Control).
+        /// Jednotlivé prvky - PageSet nebo Panely
         /// </summary>
-        public ControlType ControlType { get; set; }
-        /// <summary>
-        /// Souřadnice počátku, Left.
-        /// </summary>
-        public int Left { get; set; }
-        /// <summary>
-        /// Souřadnice počátku, Top.
-        /// </summary>
-        public int Top { get; set; }
-        /// <summary>
-        /// Celková šířka prvku.
-        /// </summary>
-        public int Width { get; set; }
-        /// <summary>
-        /// Celková výška prvku. 
-        /// Pokud je null, vytvoří ji GUI podle konkrétního prvku (typicky TextBox, CheckBox, Label a podobně: mají výšku pro zobrazení jednoho řádku).
-        /// </summary>
-        public int? Height { get; set; }
+        public List<DataFormatContainerBase> Tabs { get; set; }
     }
     /// <summary>
-    /// Bázová třída pro <see cref="DataFormatTab"/> a <see cref="DataFormatControl"/>.
-    /// Samostatně lze používat jak SubItem (např. v prvku typu <see cref="ControlType.ComboListBox"/>).
+    /// Container obsahující prvky i containery
     /// </summary>
-    public class DataFormatItem
+    public class DataFormatContainerPageSet : DataFormatContainerBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DataFormatContainerPageSet()
+        {
+            this.Style = TabStyle.PageSet;
+            this.Pages = new List<DataFormatContainerPage>();
+        }
+        /// <summary>
+        /// Pozice v rámci Parenta
+        /// </summary>
+        public Bounds Bounds { get; set; }
+        /// <summary>
+        /// Stránky na záložkách
+        /// </summary>
+        public List<DataFormatContainerPage> Pages { get; set; }
+    }
+    /// <summary>
+    /// Container obsahující prvky i containery
+    /// </summary>
+    public class DataFormatContainerPage : DataFormatContainerBase
+    {
+        public DataFormatContainerPage()
+        {
+
+        }
+
+    }
+    /// <summary>
+    /// Panel, může obsahovat controly i containery
+    /// </summary>
+    public class DataFormatContainerPanel : DataFormatContainerBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DataFormatContainerPanel() : base()
+        {
+            this.Items = new List<DataFormatBase>();
+        }
+        /// <summary>
+        /// Pozice v rámci Parenta
+        /// </summary>
+        public Bounds Bounds { get; set; }
+        /// <summary>
+        /// Stránky na záložkách
+        /// </summary>
+        public List<DataFormatBase> Items { get; set; }
+    }
+    /// <summary>
+    /// Panel, může obsahovat controly i containery
+    /// </summary>
+    public class DataFormatContainerBase : DataFormatBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DataFormatContainerBase() : base()
+        {
+            this.Style = TabStyle.None;
+        }
+        /// <summary>
+        /// Styl odstavce
+        /// </summary>
+        public TabStyle Style { get; set; }
+    }
+    #endregion
+    #region Konkrétní třídy Controlů
+    /// <summary>
+    /// DxDataForm : Label
+    /// </summary>
+    public class DataFormatControlLabel : DataFormatControlTextBase
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
         /// </summary>
-        public DataFormatItem() : base()
+        public DataFormatControlLabel() : base()
         {
-            this.State = ItemState.Default;
+            this.ControlType = ControlType.Label;
+        }
+    }
+    /// <summary>
+    /// DxDataForm : Title
+    /// </summary>
+    public class DataFormatControlTitle : DataFormatControlTextBase
+    {
+        /// <summary>
+        /// Konstruktor, nastaví defaulty
+        /// </summary>
+        public DataFormatControlTitle() : base()
+        {
+            this.ControlType = ControlType.Title;
+        }
+    }
+    /// <summary>
+    /// DxDataForm : CheckBox
+    /// </summary>
+    public class DataFormatControlCheckBox : DataFormatControlTextBase
+    {
+        /// <summary>
+        /// Konstruktor, nastaví defaulty
+        /// </summary>
+        public DataFormatControlCheckBox() : base()
+        {
+            this.ControlType = ControlType.CheckEdit;
+        }
+    }
+    /// <summary>
+    /// DxDataForm : Button
+    /// </summary>
+    public class DataFormatControlButton : DataFormatControlTextBase
+    {
+        /// <summary>
+        /// Konstruktor, nastaví defaulty
+        /// </summary>
+        public DataFormatControlButton() : base()
+        {
+            this.ControlType = ControlType.Button;
+        }
+        /// <summary>
+        /// Akce na tomto buttonu
+        /// </summary>
+        public string ActionName { get; set; }
+        /// <summary>
+        /// Data pro akci na tomto buttonu
+        /// </summary>
+        public string ActionData { get; set; }
+    }
+    /// <summary>
+    /// DxDataForm : DropDownButton
+    /// </summary>
+    public class DataFormatControlDropDownButton : DataFormatControlButton
+    {
+        /// <summary>
+        /// Konstruktor, nastaví defaulty
+        /// </summary>
+        public DataFormatControlDropDownButton() : base()
+        {
+            this.ControlType = ControlType.DropDownButton;
+            this.Items = null;
+        }
+        /// <summary>
+        /// DropDown prvky na buttonu.
+        /// Výchozí hodnota je NULL.
+        /// </summary>
+        public List<DataFormatSubButton> Items { get; set; }
+    }
+    /// <summary>
+    /// DxDataForm : SubButton = součást <see cref="ControlType.DropDownButton"/> i <see cref="ControlType.TextBoxButton"/>
+    /// </summary>
+    public class DataFormatSubButton : DataFormatSubControlBase
+    {
+        /// <summary>
+        /// Konstruktor, nastaví defaulty
+        /// </summary>
+        public DataFormatSubButton() : base()
+        {
+        }
+        /// <summary>
+        /// Text titulku odstavce nebo prvku (titulek stránky, titulek odstavce, text Labelu, text CheckBoxu, Buttonu, atd).
+        /// Použití se liší podle typu prvku.
+        /// </summary>
+        public string Text { get; set; }
+        /// <summary>
+        /// Jméno ikony odstavce nebo prvku (v titulku stránky, v titulku odstavce, ikona Buttonu, atd).
+        /// Použití se liší podle typu prvku.
+        /// </summary>
+        public string IconName { get; set; }
+        /// <summary>
+        /// Akce na tomto sub-buttonu
+        /// </summary>
+        public string ActionName { get; set; }
+        /// <summary>
+        /// Data pro akci na tomto sub-buttonu
+        /// </summary>
+        public string ActionData { get; set; }
+    }
+    /// <summary>
+    /// DxDataForm : TextBox
+    /// </summary>
+    public class DataFormatControlTextBox : DataFormatControlBase
+    {
+        /// <summary>
+        /// Konstruktor, nastaví defaulty
+        /// </summary>
+        public DataFormatControlTextBox() : base()
+        {
+            this.ControlType = ControlType.TextBox;
             this.Alignment = ContentAlignmentType.Default;
         }
         /// <summary>
-        /// Klíčové jméno prvku pro jeho jednoznačnou identifikaci.
-        /// Odstavce a prvky musí mít <see cref="Name"/> jednoznačné přes celý formulář = přes všechny záložky.
-        /// Subprvky (=položky editačního stylu) a subbuttony (tlačítka v <see cref="ControlType.TextBoxButton"/>) mají <see cref="Name"/> jednoznačné jen v rámci svého prvku.
+        /// Zarovnání textu v rámci prostoru
         /// </summary>
-        public string Name { get; set; }
+        public ContentAlignmentType Alignment { get; set; }
         /// <summary>
-        /// Stav bloku nebo prvku (viditelnost, editovatelnost)
+        /// Editační maska
         /// </summary>
-        public ItemState State { get; set; }
+        public string EditMask { get; set; }
+    }
+    /// <summary>
+    /// DxDataForm : TextBoxButton
+    /// </summary>
+    public class DataFormatControlTextBoxButton : DataFormatControlTextBox
+    {
+        /// <summary>
+        /// Konstruktor, nastaví defaulty
+        /// </summary>
+        public DataFormatControlTextBoxButton() : base()
+        {
+            this.ControlType = ControlType.TextBoxButton;
+            this.ButtonsLeft = null;
+            this.ButtonsRight = null;
+        }
+        /// <summary>
+        /// Buttony na levé straně TextBoxu.
+        /// Výchozí hodnota je NULL.
+        /// </summary>
+        public List<DataFormatSubButton> ButtonsLeft { get; set; }
+        /// <summary>
+        /// Buttony na levé straně TextBoxu.
+        /// Výchozí hodnota je NULL.
+        /// </summary>
+        public List<DataFormatSubButton> ButtonsRight { get; set; }
+    }
+    #endregion
+    #region Bázové třídy Controlů
+    /// <summary>
+    /// Bázová třída pro všechny samostatné controly s neměnným textem a ikonou - Label, Button, CheckBox, ...
+    /// </summary>
+    public class DataFormatControlTextBase : DataFormatControlBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DataFormatControlTextBase() : base()
+        {
+            this.Alignment = ContentAlignmentType.Default;
+        }
         /// <summary>
         /// Text titulku odstavce nebo prvku (titulek stránky, titulek odstavce, text Labelu, text CheckBoxu, Buttonu, atd).
         /// Použití se liší podle typu prvku.
@@ -261,6 +499,53 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// Zarovnání textu v rámci prostoru
         /// </summary>
         public ContentAlignmentType Alignment { get; set; }
+    }
+    /// <summary>
+    /// Bázová třída pro všechny samostatné controly - Label, TextBox, Button, CheckBox, ComboBox, ...
+    /// </summary>
+    public class DataFormatControlBase : DataFormatBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DataFormatControlBase() : base()
+        {
+            this.ControlType = ControlType.None;
+            this.Required = RequiredType.Default;
+        }
+        /// <summary>
+        /// Druh vstupního prvku (Control).
+        /// </summary>
+        public ControlType ControlType { get; set; }
+        /// <summary>
+        /// Povinnost vyplnění prvku
+        /// </summary>
+        public RequiredType Required { get; set; }
+        /// <summary>
+        /// Umístění prvku
+        /// </summary>
+        public Bounds Bounds { get; set; }
+        /// <summary>
+        /// Debug text
+        /// </summary>
+        protected override string DebugText { get { return $"{ControlType}; Name: '{Name}'"; } }
+    }
+    /// <summary>
+    /// Bázová třída pro všechny controly - včetně subcontrolů (pro položky v ComboBoxu i SubButtony)
+    /// </summary>
+    public class DataFormatSubControlBase : DataFormatBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DataFormatSubControlBase() : base()
+        {
+            this.State = ItemState.Default;
+        }
+        /// <summary>
+        /// Stav bloku nebo prvku (viditelnost, editovatelnost)
+        /// </summary>
+        public ItemState State { get; set; }
         /// <summary>
         /// Titulek ToolTipu.
         /// </summary>
@@ -269,9 +554,88 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// Text ToolTipu.
         /// </summary>
         public string ToolTipText { get; set; }
+        /// <summary>
+        /// Výraz určující Invisible
+        /// </summary>
+        public string Invisible { get; set; }
+    }
+    /// <summary>
+    /// Bázová třída pro všechny prvky - controly i containery.
+    /// </summary>
+    public class DataFormatBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DataFormatBase()
+        {
+        }
+        /// <summary>
+        /// Klíčové jméno prvku pro jeho jednoznačnou identifikaci.
+        /// Odstavce a prvky musí mít <see cref="Name"/> jednoznačné přes celý formulář = přes všechny záložky.
+        /// Subprvky (=položky editačního stylu) a subbuttony (tlačítka v <see cref="ControlType.TextBoxButton"/>) mají <see cref="Name"/> jednoznačné jen v rámci svého prvku.
+        /// </summary>
+        public string Name { get; set; }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.DebugText; }
+        /// <summary>
+        /// Debug text
+        /// </summary>
+        protected virtual string DebugText { get { return $"Name: '{Name}'"; } }
     }
     #endregion
     #region Podpůrné třídy a enumy
+    /// <summary>
+    /// Souřadnice
+    /// </summary>
+    public sealed class Bounds
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public Bounds() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="top"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        public Bounds(int? left, int? top, int? width, int?height)
+        {
+            this.Left = left;
+            this.Top = top;
+            this.Width = width;
+            this.Height = height;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Left: {Left}; Top: {Top}; Width: {Width}; Height: {Height}";
+        }
+        /// <summary>
+        /// Left
+        /// </summary>
+        public int? Left { get; set; }
+        /// <summary>
+        /// Top
+        /// </summary>
+        public int? Top { get; set; }
+        /// <summary>
+        /// Width
+        /// </summary>
+        public int? Width { get; set; }
+        /// <summary>
+        /// Height
+        /// </summary>
+        public int? Height { get; set; }
+    }
     /// <summary>
     /// Okraje
     /// </summary>
@@ -347,9 +711,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
     public enum TabStyle
     {
         /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None,
+        /// <summary>
         /// Běžný vnitřní TAB (odstavec), může / nemusí mít titulek (podle přítomnosti textu <see cref="DataFormatItem.Text"/>)
         /// </summary>
         Default,
+        /// <summary>
+        /// Vrcholový container, reprezentuje celý formulář
+        /// </summary>
+        Form,
         /// <summary>
         /// Sada stránek; její vnitřní prvky musí být stylu <see cref="TabStyle.Page"/>
         /// </summary>
@@ -357,7 +729,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// <summary>
         /// Záhlaví stránky. Ignoruje souřadnice 
         /// </summary>
-        Page
+        Page,
+        /// <summary>
+        /// Běžný panel, jako <see cref="Default"/>
+        /// </summary>
+        Panel
 
     }
     /// <summary>
@@ -495,6 +871,28 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         HtmlContent
     }
     /// <summary>
+    /// Povinnost vyplnění prvku (zadání neprázdné hodnoty)
+    /// </summary>
+    public enum RequiredType
+    {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None,
+        /// <summary>
+        /// Běžná nepovinná hodnota
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Důležitá hodnota, ale nepovinná
+        /// </summary>
+        Important,
+        /// <summary>
+        /// Povinná hodnota
+        /// </summary>
+        Required
+    }
+    /// <summary>
     /// Zarovnání obsahu.
     /// Shoduje se hodnotami s enumem <see cref="AlignmentSideType"/>
     /// </summary>
@@ -580,78 +978,4 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         VBottom = 0b00010000
     }
     #endregion
-
-    /*
-    /// <summary>
-    /// Definice formátu jednoho DataFormu = buď sada záložek, anebo jeden panel
-    /// </summary>
-    internal class DataFormat
-    {
-        /// <summary>
-        /// Hlavní záložky v DataFormu = souhrn jednotlivých stránek <see cref="DataFormatPage"/>.
-        /// Pokud je <see cref="Pages"/> zadáno, pak musí být <see cref="Panel"/> null (a naopak).
-        /// </summary>
-        public DataFormatPages Pages { get; set; }
-        /// <summary>
-        /// Základní jednoduchá stránka DataFormu. Takový dataform pak zobrazuje přímo stránku, nikoli záložly.
-        /// Pokud je <see cref="Panel"/> zadáno, pak musí být <see cref="Pages"/> null (a naopak).
-        /// </summary>
-        public DataFormatFlowPanel Panel { get; set; }
-        /// <summary>
-        /// Okraj mezi vnějším okrajem zobrazovacího panelu a vnitřními prvky (panely).
-        /// </summary>
-        public WinForm.Padding Padding { get; set; }
-    }
-    /// <summary>
-    /// Definice formátu skupiny záložek v DataFormu = obsahuje sadu záložek
-    /// </summary>
-    internal class DataFormatPages
-    {
-        /// <summary>
-        /// Soupis jednotlivých stránek = záložek
-        /// </summary>
-        public List<DataFormatPage> Pages { get; set; }
-    }
-
-    /// <summary>
-    /// Definice formátu jedné záložky v DataFormu = potomek FlowPanel, obsahuje Taby
-    /// </summary>
-    internal class DataFormatPage : DataFormatFlowPanel
-    {
-        public string HeaderText { get; set; }
-    }
-    /// <summary>
-    /// Definice formátu jednoho panelu v DataFormu = je umístěn jako jediný panel DataFormu, anebo jako jedna strána ve skupně záložek. Obsahuje buď Taby, nebo další FlowPanely.
-    /// </summary>
-    internal class DataFormatFlowPanel
-    {
-
-    }
-
-   
-
-    /// <summary>
-    /// Definice formátu jedné grupy v DataFormu = obsahuje titulek optional velikost, a sadu prvků - buď columns, nebo vnořené grupy
-    /// </summary>
-    internal class DataFormatGroup : DataFormatFixedItem
-    {
-        public List<DataFormatControl> Controls { get; set; }
-    }
-    /// <summary>
-    /// Definice formátu jednoho controlu v DataFormu = label, editbox, button, atd
-    /// </summary>
-    internal class DataFormatControl : DataFormatFixedItem
-    {
-
-        public DataFormatControl() { }
-
-         
-
-
-    }
-    internal class DataFormatFixedItem
-    {
-        public WinDraw.Rectangle Bounds { get; set; }
-    }
-    */
 }

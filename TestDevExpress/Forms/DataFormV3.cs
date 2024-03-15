@@ -66,6 +66,7 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "TestDrawing", Text = "TestDrawing", ToolTipText = "Vykreslování bez fyzických Controlů - pro test rychlosti", ImageName = imageTestDrawing, RibbonStyle = RibbonItemStyles.Large, ItemType = RibbonItemType.CheckButton, Checked = TestPainting });
 
             // smazat:
+            /*
             var groupSvg = new DataRibbonGroup() { GroupText = "GenericSvgImages" };
             groupSvg.Items.Add(new DataRibbonItem() { ItemId = "g1", Text = "Circle", ImageName = "@circle|#881166|95|#EEAADD",  RibbonStyle = RibbonItemStyles.Large });
             groupSvg.Items.Add(new DataRibbonItem() { ItemId = "g2", Text = "Arrow", ImageName = "@arrow|D|red", RibbonStyle = RibbonItemStyles.Large });
@@ -73,11 +74,13 @@ namespace TestDevExpress.Forms
             groupSvg.Items.Add(new DataRibbonItem() { ItemId = "g4", Text = "Text", ImageName = "@text|M|#7F00FF|||12|#7777FF|#60D7FF", RibbonStyle = RibbonItemStyles.Large });
             groupSvg.Items.Add(new DataRibbonItem() { ItemId = "g5", Text = "Ikona", ImageName = "@text|m|#7F00FF|||12|#7777FF|#60D7FF", RibbonStyle = RibbonItemStyles.SmallWithText });
             page.Groups.Add(groupSvg);
+            */
 
             // Samply:
             var groupSamples = new DataRibbonGroup() { GroupText = "Ukázky layoutu a počtu řádků" };
             groupSamples.Items.Add(new DataRibbonItem() { ItemId = "DataFormRemove", Text = "Remove DataForm", ToolTipText = "Zahodit DataForm a uvolnit jeho zdroje", ImageName = imageDataFormRemove, ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName, Checked = true });
             groupSamples.Items.Add(new DataRibbonItem() { ItemId = "ChangeData", Text = "Change Data", ToolTipText = "Změní obsah dat / stav Enabled v dataformu", ImageName = imageChangeData });
+            groupSamples.Items.Add(new DataRibbonItem() { ItemId = "LoadFormFile", Text = "Load FormFile", ToolTipText = "Načte definici ze souboru", ImageName = imageChangeData });
 
             page.Groups.Add(groupSamples);
             string imageTest1 = "svgimages/xaf/actiongroup_easytestrecorder.svg";
@@ -145,6 +148,9 @@ namespace TestDevExpress.Forms
                     break;
                 case "ChangeData":
                     _ChangeDataInDataForm();
+                    break;
+                case "LoadFormFile":
+                    _LoadFormFile();
                     break;
                 default:
                     var n = itemId;
@@ -288,6 +294,22 @@ namespace TestDevExpress.Forms
 
             var rows = _DxDataFormV3.DataForm.DataFormRows;
 
+        }
+        /// <summary>
+        /// Načte definici ze souboru
+        /// </summary>
+        private void _LoadFormFile()
+        {
+            try
+            {
+                var dxf = DxDForm.DxDataFormatLoader.LoadFromFile(@"C:\DavidPrac\GitRepo\dj-soft\GraphLibrary\TestDevExpress\AsolDX\XML\dw_sample_form.frm.xml", loadNested);
+            }
+            catch(Exception ex) 
+            {
+                DxComponent.ShowMessageException(ex);
+            }
+
+            string loadNested(string name) { return null; }
         }
         /// <summary>
         /// Odebere DataForm
