@@ -21,11 +21,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="fileName"></param>
         /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména</param>
         /// <returns></returns>
-        internal static DataFormatTab LoadFromFile(string fileName, Func<string, string> nestedLoader = null)
+        internal static DataFormatContainerForm LoadFromFile(string fileName, Func<string, string> nestedLoader = null)
         {
+            var startTime1 = DxComponent.LogTimeCurrent;
             LoaderContext loaderContext = new LoaderContext() { NestedLoader = nestedLoader };
             var xDocument = System.Xml.Linq.XDocument.Load(fileName);
-            return _LoadFromDocument(xDocument, loaderContext);
+            DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'XDocument' from file: {DxComponent.LogTokenTimeMicrosec}", startTime1);
+
+            var startTime2 = DxComponent.LogTimeCurrent;
+            var form = _LoadFromDocument(xDocument, loaderContext);
+            DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'DataFormatContainerForm' from XDocument: {DxComponent.LogTokenTimeMicrosec}", startTime2);
+
+            return form;
         }
         /// <summary>
         /// Načte a vrátí <see cref="DataFormatTab"/> ze zadané XML definice (=typicky obsah souboru)
@@ -33,7 +40,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="content"></param>
         /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména</param>
         /// <returns></returns>
-        internal static DataFormatTab LoadFromContent(string content, Func<string, string> nestedLoader = null)
+        internal static DataFormatContainerForm LoadFromContent(string content, Func<string, string> nestedLoader = null)
         {
             LoaderContext loaderContext = new LoaderContext() { NestedLoader = nestedLoader };
             var xDocument = System.Xml.Linq.XDocument.Parse(content);
@@ -45,7 +52,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xDocument"></param>
         /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména</param>
         /// <returns></returns>
-        internal static DataFormatTab LoadFromDocument(System.Xml.Linq.XDocument xDocument, Func<string, string> nestedLoader = null)
+        internal static DataFormatContainerForm LoadFromDocument(System.Xml.Linq.XDocument xDocument, Func<string, string> nestedLoader = null)
         {
             LoaderContext loaderContext = new LoaderContext() { NestedLoader = nestedLoader };
             return _LoadFromDocument(xDocument, loaderContext);
@@ -56,21 +63,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xDocument"></param>
         /// <param name="loaderContext">Průběžná data pro načítání obsahu</param>
         /// <returns></returns>
-        private static DataFormatTab _LoadFromDocument(System.Xml.Linq.XDocument xDocument, LoaderContext loaderContext)
+        private static DataFormatContainerForm _LoadFromDocument(System.Xml.Linq.XDocument xDocument, LoaderContext loaderContext)
         {
-            DataFormatTab form = new DataFormatTab()
-            {
-                Style = TabStyle.Form
-            };
-
+            DataFormatContainerForm form = new DataFormatContainerForm();
             var xElements = xDocument.Root.Elements();
             foreach (var xElement in xElements)
             {
-                DataFormatTab tab = _LoadContainer(xElement, loaderContext);
-                if (tab != null) form.Items.Add(tab);
-
+                DataFormatControlBase control = _LoadContainer(xElement, loaderContext);
+                if (control != null) form.Controls.Add(control);
             }
-
             return form;
         }
         #endregion
@@ -80,17 +81,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement"></param>
         /// <param name="loaderContext">Průběžná data pro načítání obsahu</param>
-        private static DataFormatTab _LoadContainer(System.Xml.Linq.XElement xElement, LoaderContext loaderContext)
+        private static DataFormatControlBase _LoadContainer(System.Xml.Linq.XElement xElement, LoaderContext loaderContext)
         {
             string elementName = xElement?.Name.LocalName.ToLower();          // pageset, panel, nestedpanel
             switch (elementName)
             {
                 case "pageset":
                     return _LoadPageSet(xElement, loaderContext);
-
                 case "panel":
                     return _LoadPanel(xElement, loaderContext);
-
                 case "nestedpanel":
                     return _LoadNestedPanel(xElement, loaderContext);
             }
@@ -102,25 +101,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xPageSet"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatTab _LoadPageSet(System.Xml.Linq.XElement xPageSet, LoaderContext loaderContext)
+        private static DataFormatControlBase _LoadPageSet(System.Xml.Linq.XElement xPageSet, LoaderContext loaderContext)
         {
             // Záložkovník bez jednotlivých záložek neakceptuji:
             var xPages = xPageSet.Elements();
             if (xPages is null) return null;
 
             // Výsledná instance:
-            DataFormatTab pageSet = new DataFormatTab() { Style = TabStyle.PageSet };
+            var pageSet = new DataFormatContainerPageSet();
 
             // Atributy:
 
             // Elementy:
             foreach (var xPage in xPages)
             {
-                DataFormatTab page = _LoadPage(xPage, loaderContext);
-                if (page != null) pageSet.Items.Add(page);
+                var page = _LoadPage(xPage, loaderContext);
+                if (page != null) pageSet.Controls.Add(page);
             }
 
-            return ((pageSet.Items.Count > 0) ? pageSet : null);
+            return ((pageSet.Pages.Length > 0) ? pageSet : null);
         }
         /// <summary>
         /// Z dodaného elementu <paramref name="xPage"/> načte a vrátí odpovídající Page, včetně jeho obsahu
@@ -128,10 +127,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xPage"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatTab _LoadPage(System.Xml.Linq.XElement xPage, LoaderContext loaderContext)
+        private static DataFormatControlBase _LoadPage(System.Xml.Linq.XElement xPage, LoaderContext loaderContext)
         {
             // Výsledná instance:
-            DataFormatTab page = new DataFormatTab() { Style = TabStyle.Page };
+            var page = new DataFormatContainerPage();
 
             // Atributy:
 
@@ -141,8 +140,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 foreach (var xItem in xItems)
                 {
-                    DataFormatItem item = _LoadItem(xItem, loaderContext);
-                    if (item != null) page.Items.Add(page);
+                    var item = _LoadItem(xItem, loaderContext);
+                    if (item != null) page.Controls.Add(page);
                 }
             }
 
@@ -154,14 +153,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xNestedPanel"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatTab _LoadNestedPanel(System.Xml.Linq.XElement xNestedPanel, LoaderContext loaderContext)
+        private static DataFormatControlBase _LoadNestedPanel(System.Xml.Linq.XElement xNestedPanel, LoaderContext loaderContext)
         {
             // Nested šablona:
             string nestedTemplateName = _ReadAttributeString(xNestedPanel, "NestedTemplate", "");
             if (String.IsNullOrEmpty(nestedTemplateName)) return null;
 
             // Výsledná instance:
-            DataFormatTab nestedPanel = new DataFormatTab() { Style = TabStyle.Panel };
+            var nestedPanel = new DataFormatContainerPanel();
 
             // Atributy:
             nestedPanel.Name = _ReadAttributeString(xNestedPanel, "Name", "");
@@ -176,7 +175,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (nestedTemplate != null)
                 {   // Přenesu některé atributy a všechny prvky Items:
 
-                    nestedPanel.Items.AddRange(nestedTemplate.Items);
+                    nestedPanel.Controls.AddRange(nestedTemplate.Controls);
                 }
             }
 
@@ -188,10 +187,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xPanel"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatTab _LoadPanel(System.Xml.Linq.XElement xPanel, LoaderContext loaderContext)
+        private static DataFormatControlBase _LoadPanel(System.Xml.Linq.XElement xPanel, LoaderContext loaderContext)
         {
             // Výsledná instance:
-            DataFormatTab panel = new DataFormatTab() { Style = TabStyle.Panel };
+            var panel = new DataFormatContainerPanel();
 
             // Atributy:
 
@@ -201,8 +200,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 foreach (var xItem in xItems)
                 {
-                    DataFormatItem item = _LoadItem(xItem, loaderContext);
-                    if (item != null) panel.Items.Add(panel);
+                    var item = _LoadItem(xItem, loaderContext);
+                    if (item != null) panel.Controls.Add(panel);
                 }
             }
 
@@ -216,19 +215,20 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xItem"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatItem _LoadItem(System.Xml.Linq.XElement xItem, LoaderContext loaderContext)
+        private static DataFormatControlBase _LoadItem(System.Xml.Linq.XElement xItem, LoaderContext loaderContext)
         {
             string elementName = xItem?.Name.LocalName.ToLower();          // label, textbox, textbox_button, button, combobox, ...,   pageset, panel, nestedpanel,
             switch (elementName)
             {
-                case "label":
-                    return _LoadItemLabel(xItem, loaderContext);
+                case "label": return _LoadItemLabel(xItem, loaderContext);
+                case "textbox": return _LoadItemTextBox(xItem, loaderContext);
+                case "textbox_button": return _LoadItemTextBoxButton(xItem, loaderContext);
+                case "button": return _LoadItemButton(xItem, loaderContext);
 
-                case "textbox":
-                    return _LoadItemTextBox(xItem, loaderContext);
+                case "panel": return _LoadPanel(xItem, loaderContext);
+                case "nestedpanel": return _LoadNestedPanel(xItem, loaderContext);
+                case "pageset": return _LoadPageSet(xItem, loaderContext);
 
-                case "textbox_button":
-                    return _LoadItemTextBoxButton(xItem, loaderContext);
             }
             return null;
         }
@@ -238,10 +238,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xItem"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatControl _LoadItemLabel(System.Xml.Linq.XElement xItem, LoaderContext loaderContext)
+        private static DataFormatControlBase _LoadItemLabel(System.Xml.Linq.XElement xItem, LoaderContext loaderContext)
         {
-            DataFormatControl control = new DataFormatControl() { ControlType = ControlType.Label };
-            _FillAttributesControlText(xItem, control);
+            var control = new DataFormatControlLabel() { ControlType = ControlType.Label };
+            _FillCommonAttributes(xItem, control);
+
+            control.Text = _ReadAttributeString(xItem, "Text", null);
+            control.Alignment = _ReadAttributeEnum(xItem, "Alignment", ContentAlignmentType.Default);
 
             return control;
         }
@@ -251,10 +254,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xItem"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatControl _LoadItemTextBox(System.Xml.Linq.XElement xItem, LoaderContext loaderContext)
+        private static DataFormatControlBase _LoadItemTextBox(System.Xml.Linq.XElement xItem, LoaderContext loaderContext)
         {
-            DataFormatControl control = new DataFormatControl() { ControlType = ControlType.TextBox };
-            _FillAttributesControlBase(xItem, control);
+            var control = new DataFormatControlTextBox() { ControlType = ControlType.TextBox };
+            _FillCommonAttributes(xItem, control);
 
 
             return control;
@@ -265,73 +268,63 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xItem"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatControl _LoadItemTextBoxButton(System.Xml.Linq.XElement xItem, LoaderContext loaderContext)
+        private static DataFormatControlBase _LoadItemTextBoxButton(System.Xml.Linq.XElement xItem, LoaderContext loaderContext)
         {
-            DataFormatControl control = new DataFormatControl() { ControlType = ControlType.TextBoxButton };
-            _FillAttributesControlText(xItem, control);
+            var control = new DataFormatControlTextBoxButton() { ControlType = ControlType.TextBoxButton };
+            _FillCommonAttributes(xItem, control);
 
 
             return control;
 
         }
+
+        /// <summary>
+        /// Z dodaného elementu <paramref name="xItem"/> načte a vrátí odpovídající Button, včetně jeho obsahu
+        /// </summary>
+        /// <param name="xItem"></param>
+        /// <param name="loaderContext"></param>
+        /// <returns></returns>
+        private static DataFormatControlBase _LoadItemButton(System.Xml.Linq.XElement xItem, LoaderContext loaderContext)
+        {
+            var control = new DataFormatControlButton() { ControlType = ControlType.Button };
+            _FillCommonAttributes(xItem, control);
+
+
+            return control;
+        }
         #endregion
         #region Načítání atributů
         /// <summary>
-        /// Z dodaného <paramref name="xElement"/> načte hodnoty odpovídající typu XSD: <c>type_control_text</c> (Text, IconName, Alignment)
-        /// a vloží je do dodaného controlu <paramref name="control"/>.
+        /// Z dodaného <paramref name="xElement"/> načte hodnoty odpovídající cílovému typu,
+        /// a vloží je do dodaného controlu <paramref name="target"/>.
         /// </summary>
         /// <param name="xElement"></param>
-        /// <param name="control"></param>
-        private static void _FillAttributesControlText(System.Xml.Linq.XElement xElement, DataFormatControl control)
+        /// <param name="target"></param>
+        private static void _FillCommonAttributes(System.Xml.Linq.XElement xElement, DataFormatBase target)
         {
-            _FillAttributesControlBase(xElement, control);
+            target.Name = _ReadAttributeString(xElement, "Name", null);
 
-            control.Text = _ReadAttributeString(xElement, "Text", null);
-            control.IconName = _ReadAttributeString(xElement, "IconName", null);
-            control.Alignment = _ReadAttributeEnum(xElement, "Alignment", ContentAlignmentType.Default);
-        }
-        /// <summary>
-        /// Z dodaného <paramref name="xElement"/> načte hodnoty odpovídající typu XSD: <c>type_control_base</c> (Name, State, ToolTipTitle, ToolTipText, Invisible)
-        /// a vloží je do dodaného controlu <paramref name="control"/>.
-        /// </summary>
-        /// <param name="xElement"></param>
-        /// <param name="control"></param>
-        private static void _FillAttributesControlBase(System.Xml.Linq.XElement xElement, DataFormatControl control)
-        {
-            _FillAttributesControlBounds(xElement, control);
-
-            control.Name = _ReadAttributeString(xElement, "Name", null);
-            control.State = _ReadAttributeEnum(xElement, "State", ItemState.Default);
-            control.ToolTipTitle = _ReadAttributeString(xElement, "ToolTipTitle", null);
-            control.ToolTipText = _ReadAttributeString(xElement, "ToolTipText", null);
-            control.Invisible = _ReadAttributeString(xElement, "Invisible", null);
-        }
-        /// <summary>
-        /// Z dodaného <paramref name="xElement"/> načte hodnoty odpovídající souřadnicím prvku
-        /// a vloží je do dodaného controlu <paramref name="control"/>.
-        /// </summary>
-        /// <param name="xElement"></param>
-        /// <param name="control"></param>
-        private static void _FillAttributesControlBounds(System.Xml.Linq.XElement xElement, DataFormatControl control)
-        {
-            var bounds = _ReadAttributeString(xElement, "Bounds", null);
-            if (!String.IsNullOrEmpty(bounds))
+            if (target is DataFormatSubControlBase subControl)
             {
-                var numbers = _SplitAndParseInt32(bounds);
-                if (numbers != null && numbers.Count >= 2)
-                {
-                    int cnt = numbers.Count;
-                    control.Left = numbers[0];
-                    control.Top = numbers[1];
-                    control.Width = (cnt >= 3 ? numbers[2] : null);
-                    control.Height = (cnt >= 4 ? numbers[3] : null);
-                    return;
-                }
+                subControl.State = _ReadAttributeEnum(xElement, "State", ItemState.Default);
+                subControl.ToolTipTitle = _ReadAttributeString(xElement, "ToolTipTitle", null);
+                subControl.ToolTipText = _ReadAttributeString(xElement, "ToolTipText", null);
+                subControl.Invisible = _ReadAttributeString(xElement, "Invisible", null);
             }
-            control.Left = _ReadAttributeInt32N(xElement, "X", 0).Value;
-            control.Top = _ReadAttributeInt32N(xElement, "Y", 0).Value;
-            control.Width = _ReadAttributeInt32N(xElement, "Width", null);
-            control.Height = _ReadAttributeInt32N(xElement, "Height", null);
+            if (target is DataFormatControlBase control)
+            {
+                control.Bounds = _ReadAttributeBounds(xElement, null);
+            }
+            if (target is DataFormatInputControlBase inputControl)
+            {
+                inputControl.Required = _ReadAttributeEnum(xElement, "Required", RequiredType.Default);
+            }
+            if (target is DataFormatTextControlBase textControl)
+            {
+                textControl.Text = _ReadAttributeString(xElement, "Text", null);
+                textControl.IconName = _ReadAttributeString(xElement, "IconName", null);
+                textControl.Alignment = _ReadAttributeEnum(xElement, "Alignment", ContentAlignmentType.Default);
+            }
         }
         /// <summary>
         /// V daném elementu najde atribut daného jména a vrátí jeho String podobu
@@ -383,6 +376,75 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
             }
             return value;
+        }
+        /// <summary>
+        /// Z dodaného <paramref name="xElement"/> načte hodnoty odpovídající souřadnicím prvku a vrátí je.
+        /// </summary>
+        /// <param name="xElement"></param>
+        /// <param name="defaultValue"></param>
+        private static Bounds _ReadAttributeBounds(System.Xml.Linq.XElement xElement, Bounds defaultValue)
+        {
+            int? left, top, width, height;
+
+            var textBounds = _ReadAttributeString(xElement, "Bounds", null);
+            if (!String.IsNullOrEmpty(textBounds))
+            {
+                var numbers = _SplitAndParseInt32(textBounds);
+                if (numbers != null && numbers.Count >= 2)
+                {
+                    int cnt = numbers.Count;
+                    left = numbers[0];
+                    top = numbers[1];
+                    width = (cnt >= 3 ? numbers[2] : null);
+                    height = (cnt >= 4 ? numbers[3] : null);
+                    return new Bounds(left, top, width, height);
+                }
+            }
+
+            left = _ReadAttributeInt32N(xElement, "X", null);
+            top = _ReadAttributeInt32N(xElement, "Y", null);
+            width = _ReadAttributeInt32N(xElement, "Width", null);
+            height = _ReadAttributeInt32N(xElement, "Height", null);
+            if (left.HasValue || top.HasValue || width.HasValue || height.HasValue) return new Bounds(left, top, width, height);
+
+            return defaultValue;
+        }
+        /// <summary>
+        /// Z dodaného <paramref name="xElement"/> načte hodnoty odpovídající souřadnicím prvku a vrátí je.
+        /// </summary>
+        /// <param name="xElement"></param>
+        /// <param name="defaultValue"></param>
+        private static Margins _ReadAttributesMargin(System.Xml.Linq.XElement xElement, Margins defaultValue)
+        {
+            int? left, top, right, bottom;
+
+            var textMargins = _ReadAttributeString(xElement, "Margins", null);
+            if (!String.IsNullOrEmpty(textMargins))
+            {
+                var numbers = _SplitAndParseInt32(textMargins);
+                if (numbers != null && numbers.Count >= 1)
+                {
+                    int cnt = numbers.Count;
+
+                    left = numbers[0];
+                    if (cnt == 1) return new Margins(left.Value);
+
+                    top = numbers[1];
+                    if (cnt == 2) return new Margins(left.Value, top.Value, left.Value, top.Value);
+
+                    right = (cnt >= 3 ? numbers[2] : null);
+                    bottom = (cnt >= 4 ? numbers[3] : null);
+                    return new Margins(left ?? 0, top ?? 0, right ?? 0, bottom ?? 0);
+                }
+            }
+
+            left = _ReadAttributeInt32N(xElement, "X", null);
+            top = _ReadAttributeInt32N(xElement, "Y", null);
+            right = _ReadAttributeInt32N(xElement, "Width", null);
+            bottom = _ReadAttributeInt32N(xElement, "Height", null);
+            if (left.HasValue || top.HasValue || right.HasValue || bottom.HasValue) new Margins(left ?? 0, top ?? 0, right ?? 0, bottom ?? 0);
+
+            return defaultValue;
         }
         /// <summary>
         /// Rozdělí dodaný string <paramref name="text"/>v místě daných oddělovačů <paramref name="splitters"/> a převede prvky na čísla Int.
