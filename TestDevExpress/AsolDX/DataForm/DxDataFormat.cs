@@ -101,96 +101,105 @@ SplitButton      A       A             A      A       A          A         A    
     /// <summary>
     /// Celý DataForm
     /// </summary>
-    public class DataFormatContainerForm : DataFormatContainerBase
+    public class DataFormatContainerForm : DataFormatBaseContainer
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
         public DataFormatContainerForm()
         {
-            this.Style = TabStyle.Form;
+            this.Style = ContainerStyle.Form;
         }
         /// <summary>
         /// Jednotlivé prvky - PageSet nebo Panely, vždy containery
         /// </summary>
-        public DataFormatContainerBase[] Tabs { get { return this.Controls.OfType<DataFormatContainerBase>().ToArray(); } }
+        public DataFormatBaseContainer[] Tabs { get { return this.Controls?.OfType<DataFormatBaseContainer>().ToArray(); } }
     }
     /// <summary>
     /// Sada stránek = záložky
     /// </summary>
-    public class DataFormatContainerPageSet : DataFormatContainerBase
+    public class DataFormatContainerPageSet : DataFormatBaseContainer
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
         public DataFormatContainerPageSet()
         {
-            this.Style = TabStyle.PageSet;
+            this.Style = ContainerStyle.PageSet;
         }
         /// <summary>
         /// Stránky na záložkách
         /// </summary>
-        public DataFormatContainerPage[] Pages { get { return this.Controls.OfType<DataFormatContainerPage>().ToArray(); } }
+        public DataFormatContainerPage[] Pages { get { return this.Controls?.OfType<DataFormatContainerPage>().ToArray(); } }
     }
     /// <summary>
     /// Jedna stránka = obsahuje další Panely (nebo i PageSet nebo Controly).
     /// </summary>
-    public class DataFormatContainerPage : DataFormatContainerBase
+    public class DataFormatContainerPage : DataFormatBaseContainer
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
         public DataFormatContainerPage()
         {
-            this.Style = TabStyle.Page;
+            this.Style = ContainerStyle.Page;
         }
+        /// <summary>
+        /// Text titulku záhlaví
+        /// </summary>
+        public string Title { get; set; }
+        /// <summary>
+        /// Jméno ikony odstavce nebo prvku (v titulku stránky, v titulku odstavce, ikona Buttonu, atd).
+        /// Použití se liší podle typu prvku.
+        /// </summary>
+        public string IconName { get; set; }
         /// <summary>
         /// Jednotlivé prvky - PageSet nebo Panely, vždy containery
         /// </summary>
-        public DataFormatContainerBase[] Tabs { get { return this.Controls.OfType<DataFormatContainerBase>().ToArray(); } }
+        public DataFormatBaseContainer[] Tabs { get { return this.Controls?.OfType<DataFormatBaseContainer>().ToArray(); } }
     }
     /// <summary>
     /// Panel, může obsahovat controly i containery
     /// </summary>
-    public class DataFormatContainerPanel : DataFormatContainerBase
+    public class DataFormatContainerPanel : DataFormatBaseContainer
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
         public DataFormatContainerPanel() : base()
         {
-            this.Style = TabStyle.Panel;
+            this.Style = ContainerStyle.Panel;
         }
     }
     /// <summary>
     /// Panel, může obsahovat controly i containery
     /// </summary>
-    public class DataFormatContainerBase : DataFormatControlBase
+    public class DataFormatBaseContainer : DataFormatBaseControl
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormatContainerBase() : base()
+        public DataFormatBaseContainer() : base()
         {
-            this.Style = TabStyle.None;
-            this.Controls = new List<DataFormatControlBase>();
+            this.Style = ContainerStyle.None;
         }
         /// <summary>
         /// Styl odstavce
         /// </summary>
-        public TabStyle Style { get; set; }
+        public ContainerStyle Style { get; set; }
         /// <summary>
         /// Controly v rámci tohoto Containeru.
         /// Mohou zde být i další Containery.
+        /// Default = null.
         /// </summary>
-        public List<DataFormatControlBase> Controls { get; set; }
+        public List<DataFormatBaseControl> Controls { get; set; }
     }
     #endregion
     #region Konkrétní třídy Controlů
     /// <summary>
     /// DxDataForm : Label
     /// </summary>
-    public class DataFormatControlLabel : DataFormatControlBase
+    public class DataFormatControlLabel : DataFormatBaseControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
@@ -201,19 +210,22 @@ SplitButton      A       A             A      A       A          A         A    
             this.Alignment = ContentAlignmentType.Default;
         }
         /// <summary>
-        /// Text titulku odstavce nebo prvku (titulek stránky, titulek odstavce, text Labelu, text CheckBoxu, Buttonu, atd).
-        /// Použití se liší podle typu prvku.
+        /// Text popisku
         /// </summary>
         public string Text { get; set; }
         /// <summary>
         /// Zarovnání textu v rámci prostoru
         /// </summary>
         public ContentAlignmentType Alignment { get; set; }
+        /// <summary>
+        /// Debug text
+        /// </summary>
+        protected override string DebugText { get { return $"{ControlType}; Name: '{Name}'; Text: '{Text}'"; } }
     }
     /// <summary>
     /// DxDataForm : Title
     /// </summary>
-    public class DataFormatControlTitle : DataFormatTextControlBase
+    public class DataFormatControlTitle : DataFormatControlLabel
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
@@ -226,20 +238,28 @@ SplitButton      A       A             A      A       A          A         A    
     /// <summary>
     /// DxDataForm : CheckBox
     /// </summary>
-    public class DataFormatControlCheckBox : DataFormatTextControlBase
+    public class DataFormatControlCheckBox : DataFormatBaseTextControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
         /// </summary>
         public DataFormatControlCheckBox() : base()
         {
-            this.ControlType = ControlType.CheckEdit;
+            this.ControlType = ControlType.CheckBox;
         }
+        /// <summary>
+        /// Styl vizualizace CheckBoxu
+        /// </summary>
+        public CheckBoxStyleType Style { get; set; }
+        /// <summary>
+        /// Debug text
+        /// </summary>
+        protected override string DebugText { get { return $"{ControlType}; Name: '{Name}'; Style: '{Style}'"; } }
     }
     /// <summary>
     /// DxDataForm : Button
     /// </summary>
-    public class DataFormatControlButton : DataFormatTextControlBase
+    public class DataFormatControlButton : DataFormatBaseTextControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
@@ -256,6 +276,10 @@ SplitButton      A       A             A      A       A          A         A    
         /// Data pro akci na tomto buttonu
         /// </summary>
         public string ActionData { get; set; }
+        /// <summary>
+        /// Klávesová zkratka
+        /// </summary>
+        public string HotKey { get; set; }
     }
     /// <summary>
     /// DxDataForm : DropDownButton
@@ -268,20 +292,20 @@ SplitButton      A       A             A      A       A          A         A    
         public DataFormatControlDropDownButton() : base()
         {
             this.ControlType = ControlType.DropDownButton;
-            this.Items = null;
+            this.DropDownButtons = null;
         }
         /// <summary>
         /// DropDown prvky na buttonu.
         /// Výchozí hodnota je NULL.
         /// </summary>
-        public List<DataFormatSubButton> Items { get; set; }
+        public List<DataFormatSubButton> DropDownButtons { get; set; }
     }
     /// <summary>
     /// DxDataForm : TextBox
     /// <para/>
     /// Tato třída přináší property <see cref="Alignment"/>, <see cref="EditMask"/>.
     /// </summary>
-    public class DataFormatControlTextBox : DataFormatInputControlBase
+    public class DataFormatControlTextBox : DataFormatBaseInputControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
@@ -292,13 +316,13 @@ SplitButton      A       A             A      A       A          A         A    
             this.Alignment = ContentAlignmentType.Default;
         }
         /// <summary>
-        /// Zarovnání textu v rámci prostoru
-        /// </summary>
-        public ContentAlignmentType Alignment { get; set; }
-        /// <summary>
         /// Editační maska
         /// </summary>
         public string EditMask { get; set; }
+        /// <summary>
+        /// Zarovnání textu v rámci prostoru
+        /// </summary>
+        public ContentAlignmentType Alignment { get; set; }
     }
     /// <summary>
     /// DxDataForm : TextBoxButton
@@ -311,24 +335,52 @@ SplitButton      A       A             A      A       A          A         A    
         public DataFormatControlTextBoxButton() : base()
         {
             this.ControlType = ControlType.TextBoxButton;
-            this.ButtonsLeft = null;
-            this.ButtonsRight = null;
+            this.LeftButtons = null;
+            this.RightButtons = null;
         }
         /// <summary>
         /// Buttony na levé straně TextBoxu.
         /// Výchozí hodnota je NULL.
         /// </summary>
-        public List<DataFormatSubButton> ButtonsLeft { get; set; }
+        public List<DataFormatSubButton> LeftButtons { get; set; }
         /// <summary>
         /// Buttony na levé straně TextBoxu.
         /// Výchozí hodnota je NULL.
         /// </summary>
-        public List<DataFormatSubButton> ButtonsRight { get; set; }
+        public List<DataFormatSubButton> RightButtons { get; set; }
+    }
+    /// <summary>
+    /// DxDataForm : ComboBox
+    /// <para/>
+    /// Tato třída přináší property 
+    /// </summary>
+    public class DataFormatComboBox : DataFormatBaseInputControl
+    {
+        /// <summary>
+        /// Konstruktor, nastaví defaulty
+        /// </summary>
+        public DataFormatComboBox() : base()
+        {
+            this.ControlType = ControlType.ComboListBox;
+            this.Style = ComboBoxStyleType.Default;
+        }
+        /// <summary>
+        /// Styl zobrazení ComboBoxu: S možností psaní, Pouze výběr hodnot, Výběr včetně zobrazení ikony
+        /// </summary>
+        public ComboBoxStyleType Style { get; set; }
+        /// <summary>
+        /// Název editačního stylu. Může být prázdné, pokud budou zadány prvky comboItem.
+        /// </summary>
+        public string EditStyleName { get; set; }
+        /// <summary>
+        /// Položky v nabídce
+        /// </summary>
+        public List<DataFormatSubButton> ComboItems { get; set; }
     }
     /// <summary>
     /// DxDataForm : SubButton = součást <see cref="ControlType.DropDownButton"/> i <see cref="ControlType.TextBoxButton"/>
     /// </summary>
-    public class DataFormatSubButton : DataFormatSubControlBase
+    public class DataFormatSubButton : DataFormatBaseSubControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
@@ -337,8 +389,7 @@ SplitButton      A       A             A      A       A          A         A    
         {
         }
         /// <summary>
-        /// Text titulku odstavce nebo prvku (titulek stránky, titulek odstavce, text Labelu, text CheckBoxu, Buttonu, atd).
-        /// Použití se liší podle typu prvku.
+        /// Text popisku
         /// </summary>
         public string Text { get; set; }
         /// <summary>
@@ -362,18 +413,17 @@ SplitButton      A       A             A      A       A          A         A    
     /// <para/>
     /// Tato třída přináší property <see cref="Text"/>,  <see cref="IconName"/> a <see cref="Alignment"/>.
     /// </summary>
-    public class DataFormatTextControlBase : DataFormatInputControlBase
+    public class DataFormatBaseTextControl : DataFormatBaseInputControl
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormatTextControlBase() : base()
+        public DataFormatBaseTextControl() : base()
         {
             this.Alignment = ContentAlignmentType.Default;
         }
         /// <summary>
-        /// Text titulku odstavce nebo prvku (titulek stránky, titulek odstavce, text Labelu, text CheckBoxu, Buttonu, atd).
-        /// Použití se liší podle typu prvku.
+        /// Text popisku controlu
         /// </summary>
         public string Text { get; set; }
         /// <summary>
@@ -391,12 +441,12 @@ SplitButton      A       A             A      A       A          A         A    
     /// <para/>
     /// Tato třída přináší property <see cref="ControlType"/> a <see cref="Required"/>.
     /// </summary>
-    public class DataFormatInputControlBase : DataFormatControlBase
+    public class DataFormatBaseInputControl : DataFormatBaseControl
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormatInputControlBase() : base()
+        public DataFormatBaseInputControl() : base()
         {
             this.Required = RequiredType.Default;
         }
@@ -411,12 +461,12 @@ SplitButton      A       A             A      A       A          A         A    
     /// <para/>
     /// Tato třída přináší souřadnice <see cref="Bounds"/>.
     /// </summary>
-    public class DataFormatControlBase : DataFormatSubControlBase
+    public class DataFormatBaseControl : DataFormatBaseSubControl
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormatControlBase() : base()
+        public DataFormatBaseControl() : base()
         {
             this.ControlType = ControlType.None;
         }
@@ -438,12 +488,12 @@ SplitButton      A       A             A      A       A          A         A    
     /// <para/>
     /// Tato třída přináší property: <see cref="State"/>, výraz <see cref="Invisible"/> a texty pro ToolTip <see cref="ToolTipTitle"/> a <see cref="ToolTipText"/>.
     /// </summary>
-    public class DataFormatSubControlBase : DataFormatBase
+    public class DataFormatBaseSubControl : DataFormatBase
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormatSubControlBase() : base()
+        public DataFormatBaseSubControl() : base()
         {
             this.State = ItemState.Default;
         }
@@ -615,14 +665,14 @@ SplitButton      A       A             A      A       A          A         A    
     /// <summary>
     /// Styl jednoho bloku = odstavce
     /// </summary>
-    public enum TabStyle
+    public enum ContainerStyle
     {
         /// <summary>
         /// Neurčeno
         /// </summary>
         None,
         /// <summary>
-        /// Běžný vnitřní TAB (odstavec), může / nemusí mít titulek (podle přítomnosti textu <see cref="DataFormatTextControlBase.Text"/>)
+        /// Běžný vnitřní TAB (odstavec), může / nemusí mít titulek (podle přítomnosti textu <see cref="DataFormatBaseTextControl.Text"/>)
         /// </summary>
         Default,
         /// <summary>
@@ -630,7 +680,7 @@ SplitButton      A       A             A      A       A          A         A    
         /// </summary>
         Form,
         /// <summary>
-        /// Sada stránek; její vnitřní prvky musí být stylu <see cref="TabStyle.Page"/>
+        /// Sada stránek; její vnitřní prvky musí být stylu <see cref="ContainerStyle.Page"/>
         /// </summary>
         PageSet,
         /// <summary>
@@ -641,6 +691,58 @@ SplitButton      A       A             A      A       A          A         A    
         /// Běžný panel, jako <see cref="Default"/>
         /// </summary>
         Panel
+    }
+    /// <summary>
+    /// Styl zobrazení ComboBoxu
+    /// </summary>
+    public enum ComboBoxStyleType
+    {
+        /// <summary>
+        /// Default = List
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Do políčka je možno vepisovat text, anebo je možno vybrat z nabídky. Nemá ikonu.
+        /// </summary>
+        ListEdit,
+        /// <summary>
+        /// Do políčka je možno pouze vybrat hodnotu z nabídky. Nemá ikonu.
+        /// </summary>
+        List,
+        /// <summary>
+        /// Do políčka je možno pouze vybrat hodnotu z nabídky. Zobrazuje ikonu i text.
+        /// </summary>
+        IconTextList,
+        /// <summary>
+        /// Do políčka je možno pouze vybrat hodnotu z nabídky. Zobrazuje pouze ikonu.
+        /// </summary>
+        IconList
+    }
+    /// <summary>
+    /// Styl zobrazení CheckBoxu
+    /// </summary>
+    public enum CheckBoxStyleType
+    {
+        /// <summary>
+        /// Default = CheckBox
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Klasický CheckBox: čtvercové zaškrtávátko s křížkem uvnitř.
+        /// </summary>
+        CheckBox,
+        /// <summary>
+        /// Button s aktivním stavem Down (zmáčknuté výrazné tlačítko).
+        /// </summary>
+        DownButton,
+        /// <summary>
+        /// RadioButton: kolečko s kulatým puntíkem uvnitř.
+        /// </summary>
+        RadioButton,
+        /// <summary>
+        /// Zapínač ve stylu Android; TrackBar: přesouvající se kulička zleva doprava se zvýrazněním barvy ON.
+        /// </summary>
+        ToggleSwitch
     }
     /// <summary>
     /// Stav prvku. 
@@ -712,17 +814,9 @@ SplitButton      A       A             A      A       A          A         A    
         /// </summary>
         TextBoxButton,
         /// <summary>
-        /// CheckBox: zaškrtávátko i DownButton
+        /// CheckBox: zaškrtávátko i DownButton i RadioButton i ToggleSwitch
         /// </summary>
-        CheckEdit,
-        /// <summary>
-        /// Přepínací switch (moderní checkbox s animovaným přechodem On-Off)
-        /// </summary>
-        ToggleSwitch,
-        /// <summary>
-        /// Jeden prvek ze sady RadioButtonů
-        /// </summary>
-        RadioButton,
+        CheckBox,
         /// <summary>
         /// Klasické tlačítko
         /// </summary>
@@ -732,7 +826,7 @@ SplitButton      A       A             A      A       A          A         A    
         /// </summary>
         DropDownButton,
         /// <summary>
-        /// ComboBox bez obrázků
+        /// ComboBox bez obrázků nebo s obrázky
         /// </summary>
         ComboListBox,
         /// <summary>

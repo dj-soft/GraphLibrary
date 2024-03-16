@@ -303,6 +303,7 @@ namespace TestDevExpress.Forms
             try
             {
                 var dxf = DxDForm.DxDataFormatLoader.LoadFromFile(@"C:\DavidPrac\GitRepo\dj-soft\GraphLibrary\TestDevExpress\AsolDX\XML\dw_sample_form.frm.xml", loadNested);
+                var x = 0;
             }
             catch(Exception ex) 
             {

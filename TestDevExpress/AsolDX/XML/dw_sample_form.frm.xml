@@ -10,25 +10,25 @@
         <label Name="info1_lbl" Bounds="14,2,150" Text="Popisek" ToolTipTitle="Nápověda" ToolTipText="Informace k tomuto prvku neexistuje" />
         <textbox Name="info1" Bounds="10,20,160" Required="True" State="SkipTab" />
         <label Name="info2_lbl" Bounds="184,2,150" Text="Informace" />
-        <combobox Name="info2" Bounds="180,20,160" ComboStyle="IconTextList" >
+        <combobox Name="info2" Bounds="180,20,160" Style="IconTextList" >
             <comboItem Name="Z" Text="Zahájeno" IconName="pic/status1"/>
             <comboItem Name="U" Text="Ukončeno" IconName="pic/status2"/>
             <comboItem Name="S" Text="Stornováno" IconName="pic/status3"/>
         </combobox>
         <label Name="info3_lbl" Bounds="14,47,150" Text="Další nabídka" />
-        <combobox Name="info3" Bounds="10,65,160" EditStyleName="mfr_product_status" ComboStyle="IconTextList" />
-        <textbox_button Name="button1" Bounds="180,47,120" >
-            <buttonRight Name="dots" Text="..." />
-        </textbox_button>
+        <combobox Name="info3" Bounds="10,65,160" EditStyleName="mfr_product_status" Combo="IconTextList" />
+        <textboxbutton Name="button1" Bounds="180,47,120" >
+            <rightButton Name="dots" Text="..." />
+        </textboxbutton>
         
-        <button Name="butOpen" HotKey="F8" Bounds="2,50,120,35" Text="Otevři..." Action="RunFunction" ButtonFunction="aaa" ToolTipTitle="Otevřít dveře" ToolTipText="Přistoupit ku dveřím, stiskem kliky uvolnit a pak tahem otevřít..."/>
+        <button Name="butOpen" HotKey="F8" Bounds="2,50,120,35" Text="Otevři..." ActionName="RunFunction" ActionData="aaa" ToolTipTitle="Otevřít dveře" ToolTipText="Přistoupit ku dveřím, stiskem kliky uvolnit a pak tahem otevřít..."/>
         
         <panel Name="p1234" BackColorName="Blue_front_protect" >
             <label Name="aaa" Text="Vnitřní popisek"/>
         </panel>
     </panel>
 
-    <pageset >
+    <pageset Name="aaaa">
         <page Name="page01" Title="Základní" IconName="pic/image">
             
         </page>
@@ -37,11 +37,11 @@
             <textbox Name="Pocet01" Bounds="135,2,120" Required="True"/>
         </page>
     </pageset>
-    <panel BackColorName="User_12" BackColor="">
+    <panel Name="vvvv" BackColorName="User_12" BackColor="">
         <label Name="t3"/>
-        <textbox_button Name="tb1" ButtonsVisibility="Default">
-            <buttonLeft Name=""/>
-        </textbox_button>
+        <textboxbutton Name="tb1" ButtonsVisibility="Default">
+            <leftButton Name="fff" Text=".." IconName="pic"/>
+        </textboxbutton>
         <nestedpanel Name="nestedpanel1" NestedTemplate="app/lcs/manufacturing/forms/pricetable.frm.xml" X="0" Y="250"/>
     </panel>
 

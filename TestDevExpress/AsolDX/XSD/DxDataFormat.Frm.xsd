@@ -19,62 +19,49 @@
                             <xs:documentation xml:lang="cs-cz">Jeden objekt s více záložkami (page)</xs:documentation>
                         </xs:annotation>
                     </xs:element>
-
                     <xs:element name="panel" type="type_panel" minOccurs="0" maxOccurs="unbounded">
                         <xs:annotation>
                             <xs:documentation xml:lang="cs-cz">Jeden kontejner, obsahující prvky anebo další kontejnery</xs:documentation>
                         </xs:annotation>
                     </xs:element>
-
                     <xs:element name="nestedpanel" type="type_nested_panel" minOccurs="0" maxOccurs="unbounded">
                         <xs:annotation>
                             <xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona</xs:documentation>
                         </xs:annotation>
                     </xs:element>
-
                 </xs:choice>
             </xs:sequence>
 
             <xs:attribute name="FormatVersion" type="enum_format_version" default="4">
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Formát tohoto souboru. Defaultní = 4</xs:documentation></xs:annotation>
             </xs:attribute>
-
             <xs:attribute name="MasterWidth" type="xs:int">
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Šířka oblasti DataFormu (Master) (tedy bez dynamických vztahů a dolních záložek)</xs:documentation></xs:annotation>
             </xs:attribute>
-
             <xs:attribute name="MasterHeight" type="xs:int">
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Výška oblasti DataFormu (Master) (tedy bez dynamických vztahů a dolních záložek)</xs:documentation></xs:annotation>
             </xs:attribute>
-
             <xs:attribute name="TotalWidth" type="xs:int">
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Celková šířka (tedy včetně dynamických vztahů a dolních záložek)</xs:documentation></xs:annotation>
             </xs:attribute>
-
             <xs:attribute name="TotalHeight" type="xs:int">
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Celková výška (tedy včetně dynamických vztahů a dolních záložek)</xs:documentation></xs:annotation>
             </xs:attribute>
-
             <xs:attribute name="AutoLabelPosition" type="enum_label_pos" >
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = None</xs:documentation></xs:annotation>
             </xs:attribute>
-
             <xs:attribute name="DataSource" type="xs:string">
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Jméno souboru, z něhož bude načtena definice dat</xs:documentation></xs:annotation>
             </xs:attribute>
-
             <xs:attribute name="Messages" type="xs:string">
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Jméno souboru, z něhož budou čteny překlady popisků a tooltipů</xs:documentation></xs:annotation>
             </xs:attribute>
-            
             <xs:attribute name="UseNorisClass" type="xs:int">
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Číslo třídy, pro kterou budou načteny popisky atributů a vztahů</xs:documentation></xs:annotation>
             </xs:attribute>
-
             <xs:attribute name="AddUda" type="enum_bool">
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Automaticky přidat záložku pro UDA atributy a vztahy. Nezadáno = True</xs:documentation></xs:annotation>
             </xs:attribute>
-
             <xs:attribute name="UdaLabelPosition" type="enum_label_pos">
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Umístění labelů pro automaticky generované UDA atributy a vztahy. Defaultní = Top</xs:documentation></xs:annotation>
             </xs:attribute>
@@ -87,50 +74,69 @@
 
     <!--    PageSet               -->
     <xs:complexType name="type_pageset">
-        <xs:sequence>
-            <xs:element name="page" type="type_page" minOccurs="0" maxOccurs="unbounded" >
-                <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Jedna záložka v řadě záložek</xs:documentation>
-                </xs:annotation>
-            </xs:element>
-        </xs:sequence>
+        <xs:complexContent>
+            <xs:extension base="type_base">
+                <xs:sequence>
+                    <xs:element name="page" type="type_page" minOccurs="0" maxOccurs="unbounded" >
+                        <xs:annotation>
+                            <xs:documentation xml:lang="cs-cz">Jedna záložka v řadě záložek</xs:documentation>
+                        </xs:annotation>
+                    </xs:element>
+                </xs:sequence>
 
-        <xs:attribute name="X" type="xs:int">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="Y" type="xs:int">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="Width" type="xs:int">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="Height" type="xs:int">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="Bounds" type="xs:string">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Souřadnice prvku v jednom políčku, v pořadí: X,Y,Width[,Height]. Alternativa hodnot X, Y, Width, Height.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
+                <xs:attribute name="Bounds" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Souřadnice prvku v jednom políčku, v pořadí: X,Y,Width[,Height]. Alternativa hodnot X, Y, Width, Height.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="X" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Y" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Width" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Height" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>
     </xs:complexType>
 
     <!--    Page                  -->
     <xs:complexType name="type_page">
         <xs:complexContent>
-            <xs:extension base="type_container">
-                
+            <xs:extension base="type_base_container">
+                <xs:attribute name="Title" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Pevný text prvku (text Labelu, Buttonu, Checkboxu, ...). Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="IconName" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Název ikony. Zobrazují ji pouze některé prvky.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="ToolTipTitle" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Titulek v okně ToolTip</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="ToolTipText" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Text v okně ToolTip</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
@@ -138,220 +144,160 @@
     <!--    Panel                 -->
     <xs:complexType name="type_panel">
         <xs:complexContent>
-            <xs:extension base="type_container">
-
-                <xs:attribute name="X" type="xs:int">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-
-                <xs:attribute name="Y" type="xs:int">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-
-                <xs:attribute name="Width" type="xs:int">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-
-                <xs:attribute name="Height" type="xs:int">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-
+            <xs:extension base="type_base_container">
                 <xs:attribute name="Bounds" type="xs:string">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Souřadnice prvku v jednom políčku, v pořadí: X,Y,Width[,Height]. Alternativa hodnot X, Y, Width, Height.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
+                <xs:attribute name="X" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Y" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Width" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Height" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
 
-    <!--    Container             -->
-    <xs:complexType name="type_container">
-        <xs:sequence>
-            <xs:choice minOccurs="0" maxOccurs="unbounded">
-                <xs:element name="label" type="type_label" minOccurs="0" maxOccurs="unbounded">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Neinteraktivní textový popisek</xs:documentation>
-                    </xs:annotation>
-                </xs:element>
-
-                <xs:element name="textbox" type="type_textbox" minOccurs="0" maxOccurs="unbounded">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Vstupní textové políčko</xs:documentation>
-                    </xs:annotation>
-                </xs:element>
-
-                <xs:element name="textbox_button" type="type_textbox_button" minOccurs="0" maxOccurs="unbounded">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Vstupní textové políčko s buttony</xs:documentation>
-                    </xs:annotation>
-                </xs:element>
-
-                <xs:element name="button" type="type_button" minOccurs="0" maxOccurs="unbounded">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Samostatné tlačítko</xs:documentation>
-                    </xs:annotation>
-                </xs:element>
-
-                <xs:element name="combobox" type="type_combobox" minOccurs="0" maxOccurs="unbounded">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Rozbalovací nabídka typu ComboBox</xs:documentation>
-                    </xs:annotation>
-                </xs:element>
-
-                
-                <xs:element name="panel" type="type_panel" minOccurs="0" maxOccurs="unbounded">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Vnořený panel</xs:documentation>
-                    </xs:annotation>
-                </xs:element>
-
-                <xs:element name="nestedpanel" type="type_nested_panel" minOccurs="0" maxOccurs="unbounded">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona</xs:documentation>
-                    </xs:annotation>
-                </xs:element>
-                
-            </xs:choice>
-        </xs:sequence>
-        
-        <xs:attribute name="Name" type="xs:string">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Název odstavce / stránky. Jednoznačný v rámci DataFormu. </xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-        
-        <xs:attribute name="Invisible" type="xs:string" />
-
-        <xs:attribute name="Title" type="xs:string">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Pevný text prvku (text Labelu, Buttonu, Checkboxu, ...). Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="IconName" type="xs:string">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Název ikony. Zobrazují ji pouze některé prvky.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="BackColorName" type="enum_color_style">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Barva pozadí, zadaná jako název kalíšku.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="BackColor" type="xs:string">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Barva pozadí, zadaná explicitně: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd. Tato barva nereaguje na změnu tmavého skinu.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="ToolTipTitle" type="xs:string">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Titulek v okně ToolTip</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="ToolTipText" type="xs:string">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Text v okně ToolTip</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-    </xs:complexType>
-
-    <!--    Definice jednotlivých controlů     -->
-
-    <!--    Label                              -->
-    <xs:complexType name="type_label">
+    <!--    Container = základ pro Panel a pro Page            -->
+    <xs:complexType name="type_base_container">
         <xs:complexContent>
-            <xs:extension base="type_control_text">
-                <xs:attribute name="LabelMask"/>
-            </xs:extension>
-        </xs:complexContent>
-    </xs:complexType>
-
-    <!--    TextBox obyčejný                   -->
-    <xs:complexType name="type_textbox">
-        <xs:complexContent>
-            <xs:extension base="type_control_base">
-                <xs:attribute name="EditMask"/>
-                
-                <xs:attribute name="Required" type="enum_bool">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Příznak povinného políčka. Je barevně zvýrazněné.</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-
-                <xs:attribute name="Alignment" type="enum_content_alignment">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Zarovnání obsahu (textu) v definovaném prostoru prvku</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-
-            </xs:extension>
-        </xs:complexContent>        
-    </xs:complexType>
-
-    <!--    ComboBox obyčejný                  -->
-    <xs:complexType name="type_combobox">
-        <xs:complexContent>
-            <xs:extension base="type_control_base">
-                <xs:sequence minOccurs="0" maxOccurs="unbounded">
-                    <xs:element name="comboItem" type="type_control_text">
-                        <xs:annotation>
-                            <xs:documentation xml:lang="cs-cz">Explicitně zadaný prvek v nabídce ComboBoxu</xs:documentation>
-                        </xs:annotation>
-                    </xs:element>
-                </xs:sequence>
-                
-                <xs:attribute name="EditStyleName" type="xs:string">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Název editačního stylu. Může být prázdné, pokud budou zadány prvky comboItem.</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-
-                <xs:attribute name="ComboStyle" type="enum_combo_style">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Styl zobrazení ComboBoxu: S možností psaní, Pouze výběr hodnot, Výběr včetně zobrazení ikony</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-
-            </xs:extension>
-        </xs:complexContent>
-    </xs:complexType>
-
-    <!--    TextBox s možností přidat malá tlačítka vpravo / vlevo   -->
-    <xs:complexType name="type_textbox_button">
-        <xs:complexContent>
-            <xs:extension base="type_textbox">
+            <xs:extension base="type_base">
                 <xs:sequence>
                     <xs:choice minOccurs="0" maxOccurs="unbounded">
-                        <xs:element name="buttonRight" type="type_control_text">
+                        <xs:element name="label" type="type_label" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Button zobrazený na pravé straně TextBoxu</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Neinteraktivní textový popisek</xs:documentation>
                             </xs:annotation>
                         </xs:element>
-                        
-                        <xs:element name="buttonLeft" type="type_control_text">
+                        <xs:element name="title" type="type_title" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Button zobrazený na levé straně TextBoxu</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Neinteraktivní titulkový prvek</xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                        <xs:element name="checkbox" type="type_checkbox" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="cs-cz">Checkbox, zaškrtávátko, různé styly</xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                        <xs:element name="button" type="type_button" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="cs-cz">Samostatné tlačítko</xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                        <xs:element name="dropdownbutton" type="type_drop_down_button" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="cs-cz">Samostatné tlačítko s přidaným DropDown menu pod-tlačítek</xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                        <xs:element name="textbox" type="type_textbox" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="cs-cz">Vstupní textové políčko</xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                        <xs:element name="textboxbutton" type="type_textboxbutton" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="cs-cz">Vstupní textové políčko s buttony</xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                        <xs:element name="combobox" type="type_combobox" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="cs-cz">Rozbalovací nabídka typu ComboBox</xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                        <xs:element name="panel" type="type_panel" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="cs-cz">Vnořený panel</xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                        <xs:element name="nestedpanel" type="type_nested_panel" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                     </xs:choice>
                 </xs:sequence>
 
-                <xs:attribute name="ButtonsVisibility" type="enum_buttons_visibility">
+                <xs:attribute name="BackColorName" type="enum_color_style">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Viditelnost buttonů v textboxu v závislosti na aktivitě TextBoxu</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Barva pozadí, zadaná jako název kalíšku.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="BackColor" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Barva pozadí, zadaná explicitně: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd. Tato barva nereaguje na změnu tmavého skinu.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Invisible" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Výraz, při jehož splnění bude prvek neviditelný. Například: True (=neviditelný), pocet = 0 (pokud pocet bude 0, prvek bude neviditelný), ...</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    
+    <!--    Definice jednotlivých controlů     -->
+
+    <!--    Label                              -->
+    <xs:complexType name="type_label">
+        <xs:complexContent>
+            <xs:extension base="type_base_control">
+                <xs:attribute name="Text" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Pevný text prvku (text Labelu, Buttonu, Checkboxu, ...). Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Alignment" type="enum_content_alignment">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Zarovnání obsahu (textu) v definovaném prostoru prvku</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!--    Titulkový řádek uvnitř Panelu      -->
+    <xs:complexType name="type_title">
+        <xs:complexContent>
+            <xs:extension base="type_base_control">
+                <xs:attribute name="Text" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Pevný text prvku (text Labelu, Buttonu, Checkboxu, ...). Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Alignment" type="enum_content_alignment">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Zarovnání obsahu (textu) v definovaném prostoru prvku</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    
+    <!--    CheckBox, RadioButton, Switch      -->
+    <xs:complexType name="type_checkbox">
+        <xs:complexContent>
+            <xs:extension base="type_base_text_control">
+                <xs:attribute name="Style" type="enum_checkbox_style">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Styl zobrazení CheckBoxu</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>
@@ -360,22 +306,21 @@
 
     <!--    Button obyčejný                    -->
     <xs:complexType name="type_button">
-        <xs:annotation><xs:documentation>Jednoduché tlačítko. Obsahuje Text, IconName, Action, HotKey atd.</xs:documentation></xs:annotation>
-
+        <xs:annotation>
+            <xs:documentation>Jednoduché tlačítko. Obsahuje Text, IconName, Action, HotKey atd.</xs:documentation>
+        </xs:annotation>
         <xs:complexContent>
-            <xs:extension base="type_control_text">
-                <xs:attribute name="Action" type="type_button_action">
+            <xs:extension base="type_base_text_control">
+                <xs:attribute name="ActionName" type="type_button_action">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Akce, kterou button provede</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-
-                <xs:attribute name="ButtonFunction" type="xs:string">
+                <xs:attribute name="ActionData" type="xs:string">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Jméno funkce, kterou button vyvolá</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Data pro akci, název funkce, atd</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-
                 <xs:attribute name="HotKey" type="xs:string">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Klávesa odpovídající buttonu, např. F6, Alt+Q, Shift+F3, atd...</xs:documentation>
@@ -385,10 +330,125 @@
         </xs:complexContent>
     </xs:complexType>
 
+    <!--    DropDownButton obyčejný                    -->
+    <xs:complexType name="type_drop_down_button">
+        <xs:annotation>
+            <xs:documentation>Tlačítko s rozbalovacím menu. Obsahuje navíc kolekci subtlačítek.</xs:documentation>
+        </xs:annotation>
+        <xs:complexContent>
+            <xs:extension base="type_button">
+                <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                    <xs:element name="dropDownButton" type="type_subbutton">
+                        <xs:annotation>
+                            <xs:documentation xml:lang="cs-cz">Tlačítko v rozbalovacím menu DropDownButtonu</xs:documentation>
+                        </xs:annotation>
+                    </xs:element>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!--    TextBox obyčejný                   -->
+    <xs:complexType name="type_textbox">
+        <xs:complexContent>
+            <xs:extension base="type_base_input_control">
+                <xs:attribute name="EditMask"/>
+                <xs:attribute name="Alignment" type="enum_content_alignment">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Zarovnání obsahu (textu) v definovaném prostoru prvku</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>        
+    </xs:complexType>
+
+    <!--    TextBox s možností přidat malá tlačítka vpravo / vlevo   -->
+    <xs:complexType name="type_textboxbutton">
+        <xs:complexContent>
+            <xs:extension base="type_textbox">
+                <xs:sequence>
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                        <xs:element name="leftButton" type="type_subbutton">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="cs-cz">Button zobrazený na levé straně TextBoxu</xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                        <xs:element name="rightButton" type="type_subbutton">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="cs-cz">Button zobrazený na pravé straně TextBoxu</xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                    </xs:choice>
+                </xs:sequence>
+                <xs:attribute name="ButtonsVisibility" type="enum_buttons_visibility">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Viditelnost buttonů v textboxu v závislosti na aktivitě TextBoxu</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!--    ComboBox obyčejný                  -->
+    <xs:complexType name="type_combobox">
+        <xs:complexContent>
+            <xs:extension base="type_base_input_control">
+                <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                    <xs:element name="comboItem" type="type_subbutton">
+                        <xs:annotation>
+                            <xs:documentation xml:lang="cs-cz">Explicitně zadaný prvek v nabídce ComboBoxu</xs:documentation>
+                        </xs:annotation>
+                    </xs:element>
+                </xs:sequence>
+                <xs:attribute name="EditStyleName" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Název editačního stylu. Může být prázdné, pokud budou zadány prvky comboItem.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Style" type="enum_combo_style">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Styl zobrazení ComboBoxu: S možností psaní, Pouze výběr hodnot, Výběr včetně zobrazení ikony</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!--    SubButton přidávaný do DropDownButtonu i do TextEditButotnu               -->
+    <xs:complexType name="type_subbutton">
+        <xs:annotation>
+            <xs:documentation>Jednoduché tlačítko. Obsahuje Text, IconName, Action, HotKey atd.</xs:documentation>
+        </xs:annotation>
+        <xs:complexContent>
+            <xs:extension base="type_base_sub_control">
+                <xs:attribute name="Text" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Pevný text prvku (text Labelu, Buttonu, Checkboxu, ...). Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="IconName" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Název ikony. Zobrazují ji pouze některé prvky.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="ActionName" type="type_button_action">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Akce, kterou button provede</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="ActionData" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Data pro akci, název funkce, atd</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
     <!--    NestedPanel = z hlediska DataFormu jde o Container, ale z hlediska zadávání o jednotlivý Control é nemá vnitřní prvky (elementy)   -->
     <xs:complexType name="type_nested_panel">
         <xs:complexContent>
-            <xs:extension base="type_control_base">
+            <xs:extension base="type_base_control">
                 <xs:attribute name="NestedTemplate" type="xs:string" use="required">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Název souboru, který obsahuje definici vnořené šablony.</xs:documentation>
@@ -398,101 +458,117 @@
         </xs:complexContent>
     </xs:complexType>
 
-    <!--    ControlText - bázová třída s Textem a Image = pro Labely, Buttony, Checkboxy, atd            -->
-    <xs:complexType name="type_control_text">
-        <xs:annotation><xs:documentation>Základní třída pro Controly, obshající konstantní Text: obsahuje Text, zarovnání a IconName. Pro Labely, Buttony atd.</xs:documentation></xs:annotation>
+    
+    <!--    Bázové třídy     -->
 
+    <!--    DataFormatTextControlBase - Bázová třída pro všechny samostatné controly s neměnným textem a ikonou - Label, Button, CheckBox, ...  -->
+    <xs:complexType name="type_base_text_control">
         <xs:complexContent>
-            <xs:extension base="type_control_base">
+            <xs:extension base="type_base_input_control">
                 <xs:attribute name="Text" type="xs:string">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Pevný text prvku (text Labelu, Buttonu, Checkboxu, ...). Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-
-                <xs:attribute name="Alignment" type="enum_content_alignment">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Zarovnání obsahu (textu) v definovaném prostoru prvku</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-
                 <xs:attribute name="IconName" type="xs:string">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Název ikony. Zobrazují ji pouze některé prvky.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Alignment" type="enum_content_alignment">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Zarovnání obsahu (textu) v definovaném prostoru prvku</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
 
-    <!--    ControlBase - bázová třída bez Textu a Image = pro TextBoxy, ComboBoxy, TokenEdity atd  -->
-    <xs:complexType name="type_control_base">
-        <xs:annotation><xs:documentation>Nejzákladnější třída pro Control: obsahuje Name, pozici, ToolTip a Stav. Neobsahuje Text. Pro TextBoxy, ComboBoxy, TokenEdit, BreadCrumb atd.</xs:documentation></xs:annotation>
-        
+    <!--    DataFormatInputControlBase - Bázová třída pro všechny samostatné interaktivní controly - TextBox, Button, CheckBox, ComboBox, ...  -->
+    <xs:complexType name="type_base_input_control">
+        <xs:complexContent>
+            <xs:extension base="type_base_control">
+                <xs:attribute name="Required" type="enum_bool">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Příznak povinného políčka. Je barevně zvýrazněné.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!--    DataFormatControlBase - Bázová třída pro všechny samostatné controly bez ohledu na jejich vlastní interaktivitu - tedy Label, Picture, Panel; a dále i pro interaktivní controly: TextBox, Button, CheckBox, ComboBox, ... Slouží i jako podklad pro Containery.  -->
+    <xs:complexType name="type_base_control">
+        <xs:complexContent>
+            <xs:extension base="type_base_sub_control">
+                <xs:attribute name="Bounds" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Souřadnice prvku v jednom políčku, v pořadí: X,Y,Width[,Height]. Alternativa hodnot X, Y, Width, Height.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="X" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Y" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Width" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Height" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Často je ignorována, pokud prvek má výšku danou přirozeně. Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!--    DataFormatSubControlBase - Bázová třída pro všechny controly - včetně subcontrolů (pro položky v ComboBoxu i SubButtony).  -->
+    <xs:complexType name="type_base_sub_control">
+        <xs:complexContent>
+            <xs:extension base="type_base">
+                <xs:attribute name="State" type="type_control_state">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Stav prvku (viditelnost, editovatelnost)</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="ToolTipTitle" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Titulek v okně ToolTip</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="ToolTipText" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Text v okně ToolTip</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Invisible" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Výraz, při jehož splnění bude prvek neviditelný. Například: True (=neviditelný), pocet = 0 (pokud pocet bude 0, prvek bude neviditelný), ...</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!--    DataFormatBase - Bázová třída pro všechny prvky - controly i containery  -->
+    <xs:complexType name="type_base">
         <xs:attribute name="Name" type="xs:string" use="required">
             <xs:annotation>
                 <xs:documentation xml:lang="cs-cz">Identifikátor prvku, jméno sloupce v datech. Musí být jednoznačné v rámci DataFormu. Pro pomocné prvky (TextBoxButtony, ListItemy) musí být jednoznačné v rámci Owner prvku.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
-
-        <xs:attribute name="State" type="type_control_state">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Stav prvku (viditelnost, editovatelnost)</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="ToolTipTitle" type="xs:string">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Titulek v okně ToolTip</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="ToolTipText" type="xs:string">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Text v okně ToolTip</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="Invisible" type="xs:string">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Výraz, při jehož splnění bude prvek neviditelný. Například: True (=neviditelný), pocet = 0 (pokud pocet bude 0, prvek bude neviditelný), ...</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="X" type="xs:int">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="Y" type="xs:int">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-        
-        <xs:attribute name="Width" type="xs:int">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="Height" type="xs:int">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Často je ignorována, pokud prvek má výšku danou přirozeně. Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="Bounds" type="xs:string">
-            <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Souřadnice prvku v jednom políčku, v pořadí: X,Y,Width[,Height]. Alternativa hodnot X, Y, Width, Height.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
     </xs:complexType>
 
-
-
+    
+    
     <!--    Definice enumů     -->
     <xs:simpleType name="enum_format_version">
         <xs:restriction base="xs:string">
@@ -518,7 +594,6 @@
             </xs:enumeration>
         </xs:restriction>
     </xs:simpleType>
-    
     <xs:simpleType name="enum_label_pos">
         <xs:restriction base="xs:string">
             <xs:enumeration value="Left" />
@@ -527,7 +602,6 @@
             <xs:enumeration value="Right" />
         </xs:restriction>
     </xs:simpleType>
-    
     <xs:simpleType name="enum_content_alignment">
         <xs:restriction base="xs:string">
             <xs:enumeration value="TopLeft" />
@@ -541,7 +615,30 @@
             <xs:enumeration value="BottomRight" />
         </xs:restriction>
     </xs:simpleType>
-
+    <xs:simpleType name="enum_checkbox_style">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="CheckBox">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Klasický CheckBox: čtvercové zaškrtávátko s křížkem uvnitř.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="DownButton">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Button s aktivním stavem Down (zmáčknuté výrazné tlačítko).</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="RadioButton">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">RadioButton: kolečko s kulatým puntíkem uvnitř.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ToggleSwitch">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Zapínač ve stylu Android; TrackBar: přesouvající se kulička zleva doprava se zvýrazněním barvy ON.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
     <xs:simpleType name="enum_combo_style">
         <xs:restriction base="xs:string">
             <xs:enumeration value="ListEdit">
@@ -549,28 +646,23 @@
                     <xs:documentation xml:lang="cs-cz">Do políčka je možno vepisovat text, anebo je možno vybrat z nabídky. Nemá ikonu.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
-
             <xs:enumeration value="List">
                 <xs:annotation>
                     <xs:documentation xml:lang="cs-cz">Do políčka je možno pouze vybrat hodnotu z nabídky. Nemá ikonu.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
-
             <xs:enumeration value="IconTextList">
                 <xs:annotation>
                     <xs:documentation xml:lang="cs-cz">Do políčka je možno pouze vybrat hodnotu z nabídky. Zobrazuje ikonu i text.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
-
             <xs:enumeration value="IconList">
                 <xs:annotation>
                     <xs:documentation xml:lang="cs-cz">Do políčka je možno pouze vybrat hodnotu z nabídky. Zobrazuje pouze ikonu.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
-
         </xs:restriction>
     </xs:simpleType>
-
     <xs:simpleType name="enum_buttons_visibility">
         <xs:restriction base="xs:string">
             <xs:enumeration value="Default">
@@ -578,19 +670,16 @@
                     <xs:documentation xml:lang="cs-cz">Defaultní = jen v aktivním prvku (Focus nebo MouseOn), vyjma stavu Disabled</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
-
             <xs:enumeration value="OnlyActive">
                 <xs:annotation>
                     <xs:documentation xml:lang="cs-cz">Jen v aktivním prvku (Focus nebo MouseOn), vyjma stavu Disabled</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
-
             <xs:enumeration value="VisibleAlways">
                 <xs:annotation>
                     <xs:documentation xml:lang="cs-cz">Viditelné vždy</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
-
             <xs:enumeration value="Invisible">
                 <xs:annotation>
                     <xs:documentation xml:lang="cs-cz">Neviditelné</xs:documentation>
@@ -598,7 +687,6 @@
             </xs:enumeration>
         </xs:restriction>
     </xs:simpleType>
-
     <xs:simpleType name="type_button_action">
         <xs:restriction base="xs:string">
             <xs:enumeration value="Click">
@@ -633,7 +721,6 @@
 
         </xs:restriction>
     </xs:simpleType>
-
     <xs:simpleType name="type_control_state">
         <xs:restriction base="xs:string">
             <xs:enumeration value="Default" />
@@ -644,15 +731,12 @@
             <xs:enumeration value="SkipTab" />
         </xs:restriction>
     </xs:simpleType>
-    
     <xs:simpleType name="enum_bool">
         <xs:restriction base="xs:string">
             <xs:enumeration value="True" />
             <xs:enumeration value="False" />
         </xs:restriction>
     </xs:simpleType>
-
-    <!--    Jméno barvy: Enum zadaných hodnot, s možností zadat i jinou hodnotu než vyjmenovanou   -->
     <xs:simpleType name="enum_color_style">
         <xs:union memberTypes="xs:string">
             <xs:simpleType>
