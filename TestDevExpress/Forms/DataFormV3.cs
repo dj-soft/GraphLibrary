@@ -80,7 +80,10 @@ namespace TestDevExpress.Forms
             var groupSamples = new DataRibbonGroup() { GroupText = "Ukázky layoutu a počtu řádků" };
             groupSamples.Items.Add(new DataRibbonItem() { ItemId = "DataFormRemove", Text = "Remove DataForm", ToolTipText = "Zahodit DataForm a uvolnit jeho zdroje", ImageName = imageDataFormRemove, ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName, Checked = true });
             groupSamples.Items.Add(new DataRibbonItem() { ItemId = "ChangeData", Text = "Change Data", ToolTipText = "Změní obsah dat / stav Enabled v dataformu", ImageName = imageChangeData });
-            groupSamples.Items.Add(new DataRibbonItem() { ItemId = "LoadFormFile", Text = "Load FormFile", ToolTipText = "Načte definici ze souboru", ImageName = imageChangeData });
+
+            string imageOpen = "svgimages/dashboards/open.svg";
+            var openFileItems = _GetFrmXmlFileItems();
+            groupSamples.Items.Add(new DataRibbonItem() { ItemId = "LoadFormFile", Text = "Load FormFile", ToolTipText = "Načte definici ze souboru", ImageName = imageOpen, ItemType = RibbonItemType.Menu, SubItems = openFileItems });
 
             page.Groups.Add(groupSamples);
             string imageTest1 = "svgimages/xaf/actiongroup_easytestrecorder.svg";
@@ -129,6 +132,12 @@ namespace TestDevExpress.Forms
             if (itemId.StartsWith("CreateSample") && Int32.TryParse(itemId.Substring(12), out sampleId) && sampleId > 0)
                 itemId = "CreateSample";
 
+            string fileName = null;
+            if (itemId.StartsWith("LoadFormFileOne_") && e.Item.Tag is string tagText && !String.IsNullOrEmpty(tagText))
+            {
+                itemId = "LoadFormFileOne";
+                fileName = tagText;
+            }
             switch (itemId)
             {
                 case "StatusRefresh":
@@ -149,13 +158,39 @@ namespace TestDevExpress.Forms
                 case "ChangeData":
                     _ChangeDataInDataForm();
                     break;
-                case "LoadFormFile":
-                    _LoadFormFile();
+                case "LoadFormFileOne":
+                    _LoadFormFile(fileName);
                     break;
                 default:
                     var n = itemId;
                     break;
             }
+        }
+
+        private ListExt<IRibbonItem> _GetFrmXmlFileItems()
+        {
+            ListExt<IRibbonItem> ribbonItems = new ListExt<IRibbonItem>();
+
+            string iconXml1 = "images/xaf/templatesv2images/action_export_toxml.svg";
+            string iconXml2 = "svgimages/xaf/modeleditor_action_xml.svg";
+
+            string appPath = DxComponent.ApplicationPath;                           // C:\DavidPrac\GitRepo\dj-soft\GraphLibrary\TestDevExpress\bin 
+            string projPath = System.IO.Path.GetDirectoryName(appPath);             // C:\DavidPrac\GitRepo\dj-soft\GraphLibrary\TestDevExpress
+            var files = System.IO.Directory.GetFiles(projPath, "*.xml", System.IO.SearchOption.AllDirectories).ToList();
+            files.Sort();
+            int itemId = 0;
+            foreach ( var file in files)
+            {
+                if (file.EndsWith(".frm.xml", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    itemId++;
+                    string relFile = System.IO.Path.GetFileName(file);
+                    DataRibbonItem fileItem = new DataRibbonItem() { ItemId = $"LoadFormFileOne_{itemId}", ImageName = iconXml1, Text = relFile, ToolTipTitle = "Načte obsah souboru", ToolTipText = file, Tag = file };
+                    ribbonItems.Add(fileItem);
+                }
+            }
+
+            return ribbonItems;
         }
         #endregion
         #region Status - proměnné, Zobrazení spotřeby paměti
@@ -298,12 +333,20 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Načte definici ze souboru
         /// </summary>
-        private void _LoadFormFile()
+        private void _LoadFormFile(string fileName)
         {
             try
             {
-                var dxf = DxDForm.DxDataFormatLoader.LoadFromFile(@"C:\DavidPrac\GitRepo\dj-soft\GraphLibrary\TestDevExpress\AsolDX\XML\dw_sample_form.frm.xml", loadNested);
-                var x = 0;
+                var dxInfo = DxDForm.DxDataFormatLoader.LoadInfoFromFile(fileName, out var xDocument, true);
+                if (dxInfo.FormatVersion == "4")
+                {
+                    var dxForm = DxDForm.DxDataFormatLoader.LoadFromDocument(xDocument, loadNested, true);
+                    var x = 0;
+                }
+                else
+                {
+                    DxComponent.ShowMessageWarning($"Zadaný dokument '{fileName}' nemá odpovídající FormatVersion='4', jde o '{dxInfo.FormatVersion}'.");
+                }
             }
             catch(Exception ex) 
             {

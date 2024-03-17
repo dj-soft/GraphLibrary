@@ -1,4 +1,9 @@
-﻿using System;
+﻿// Supervisor: David Janáček, od 01.11.2023
+// Part of Helios Nephrite, proprietary software, (c) Asseco Solutions, a. s.
+// Redistribution and use in source and binary forms, with or without modification, 
+// is not permitted without valid contract with Asseco Solutions, a. s.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
@@ -20,17 +25,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="fileName"></param>
         /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména</param>
+        /// <param name="logTime">Logovat časy?</param>
         /// <returns></returns>
-        internal static DataFormatContainerForm LoadFromFile(string fileName, Func<string, string> nestedLoader = null)
+        internal static DataFormatContainerForm LoadFromFile(string fileName, Func<string, string> nestedLoader = null, bool logTime = false)
         {
-            var startTime1 = DxComponent.LogTimeCurrent;
             LoaderContext loaderContext = new LoaderContext() { NestedLoader = nestedLoader };
-            var xDocument = System.Xml.Linq.XDocument.Load(fileName);
-            DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'XDocument' from file: {DxComponent.LogTokenTimeMicrosec}", startTime1);
+
+            var startTime1 = DxComponent.LogTimeCurrent;
+            string content = System.IO.File.ReadAllText(fileName);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'Content' from file: {DxComponent.LogTokenTimeMicrosec}", startTime1);
 
             var startTime2 = DxComponent.LogTimeCurrent;
+            var xDocument = System.Xml.Linq.XDocument.Parse(content);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Parse 'XDocument' from 'Content': {DxComponent.LogTokenTimeMicrosec}", startTime2);
+
+            var startTime3 = DxComponent.LogTimeCurrent;
             var form = _LoadFromDocument(xDocument, loaderContext);
-            DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'DataFormatContainerForm' from XDocument: {DxComponent.LogTokenTimeMicrosec}", startTime2);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'DataFormatContainerForm' from 'XDocument': {DxComponent.LogTokenTimeMicrosec}", startTime3);
 
             return form;
         }
@@ -39,23 +50,130 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="content"></param>
         /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména</param>
+        /// <param name="logTime">Logovat časy?</param>
         /// <returns></returns>
-        internal static DataFormatContainerForm LoadFromContent(string content, Func<string, string> nestedLoader = null)
+        internal static DataFormatContainerForm LoadFromContent(string content, Func<string, string> nestedLoader = null, bool logTime = false)
         {
             LoaderContext loaderContext = new LoaderContext() { NestedLoader = nestedLoader };
+
+            var startTime2 = DxComponent.LogTimeCurrent;
             var xDocument = System.Xml.Linq.XDocument.Parse(content);
-            return _LoadFromDocument(xDocument, loaderContext);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Parse 'XDocument' from 'Content': {DxComponent.LogTokenTimeMicrosec}", startTime2);
+
+            var startTime3 = DxComponent.LogTimeCurrent;
+            var form = _LoadFromDocument(xDocument, loaderContext);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'DataFormatContainerForm' from 'XDocument': {DxComponent.LogTokenTimeMicrosec}", startTime3);
+
+            return form;
         }
         /// <summary>
         /// Načte a vrátí <see cref="DataFormatContainerForm"/> z dodaného <see cref="System.Xml.Linq.XDocument"/>
         /// </summary>
         /// <param name="xDocument"></param>
         /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména</param>
+        /// <param name="logTime">Logovat časy?</param>
         /// <returns></returns>
-        internal static DataFormatContainerForm LoadFromDocument(System.Xml.Linq.XDocument xDocument, Func<string, string> nestedLoader = null)
+        internal static DataFormatContainerForm LoadFromDocument(System.Xml.Linq.XDocument xDocument, Func<string, string> nestedLoader = null, bool logTime = false)
         {
             LoaderContext loaderContext = new LoaderContext() { NestedLoader = nestedLoader };
-            return _LoadFromDocument(xDocument, loaderContext);
+
+            var startTime3 = DxComponent.LogTimeCurrent;
+            var form = _LoadFromDocument(xDocument, loaderContext);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'DataFormatContainerForm' from 'XDocument': {DxComponent.LogTokenTimeMicrosec}", startTime3);
+
+            return form;
+        }
+
+        /// <summary>
+        /// Načte a vrátí <see cref="DataFormatInfoForm"/> ze zadaného souboru
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="logTime">Logovat časy?</param>
+        /// <returns></returns>
+        internal static DataFormatInfoForm LoadInfoFromFile(string fileName, bool logTime = false)
+        {
+            return LoadInfoFromFile(fileName, out var _, logTime);
+        }
+        /// <summary>
+        /// Načte a vrátí <see cref="DataFormatInfoForm"/> ze zadaného souboru
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="xDocument"></param>
+        /// <param name="logTime">Logovat časy?</param>
+        /// <returns></returns>
+        internal static DataFormatInfoForm LoadInfoFromFile(string fileName, out System.Xml.Linq.XDocument xDocument, bool logTime = false)
+        {
+            LoaderContext loaderContext = new LoaderContext() { IsLoadOnlyDocumentAttributes = true };
+
+            var startTime1 = DxComponent.LogTimeCurrent;
+            string content = System.IO.File.ReadAllText(fileName);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'Content' from file: {DxComponent.LogTokenTimeMicrosec}", startTime1);
+
+            var startTime2 = DxComponent.LogTimeCurrent;
+            xDocument = System.Xml.Linq.XDocument.Parse(content);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Parse 'XDocument' from 'Content': {DxComponent.LogTokenTimeMicrosec}", startTime2);
+
+            var startTime3 = DxComponent.LogTimeCurrent;
+            var form = _LoadFromDocument(xDocument, loaderContext);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'DataFormatContainerForm' from 'XDocument': {DxComponent.LogTokenTimeMicrosec}", startTime3);
+
+            return _CreateInfoForm(form);
+        }
+        /// <summary>
+        /// Načte a vrátí <see cref="DataFormatInfoForm"/> ze zadané XML definice (=typicky obsah souboru)
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="logTime">Logovat časy?</param>
+        /// <returns></returns>
+        internal static DataFormatInfoForm LoadInfoFromContent(string content, bool logTime = false)
+        {
+            return LoadInfoFromFile(content, out var _, logTime);
+        }
+        /// <summary>
+        /// Načte a vrátí <see cref="DataFormatInfoForm"/> ze zadané XML definice (=typicky obsah souboru)
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="xDocument"></param>
+        /// <param name="logTime">Logovat časy?</param>
+        /// <returns></returns>
+        internal static DataFormatInfoForm LoadInfoFromContent(string content, out System.Xml.Linq.XDocument xDocument, bool logTime = false)
+        {
+            LoaderContext loaderContext = new LoaderContext() { IsLoadOnlyDocumentAttributes = true };
+
+            var startTime2 = DxComponent.LogTimeCurrent;
+             xDocument = System.Xml.Linq.XDocument.Parse(content);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Parse 'XDocument' from 'Content': {DxComponent.LogTokenTimeMicrosec}", startTime2);
+
+            var startTime3 = DxComponent.LogTimeCurrent;
+            var form = _LoadFromDocument(xDocument, loaderContext);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'DataFormatContainerForm' from 'XDocument': {DxComponent.LogTokenTimeMicrosec}", startTime3);
+
+            return _CreateInfoForm(form);
+        }
+        /// <summary>
+        /// Načte a vrátí <see cref="DataFormatInfoForm"/> z dodaného <see cref="System.Xml.Linq.XDocument"/>
+        /// </summary>
+        /// <param name="xDocument"></param>
+        /// <param name="logTime">Logovat časy?</param>
+        /// <returns></returns>
+        internal static DataFormatInfoForm LoadInfoFromDocument(System.Xml.Linq.XDocument xDocument, bool logTime = false)
+        {
+            LoaderContext loaderContext = new LoaderContext() { IsLoadOnlyDocumentAttributes = true };
+
+            var startTime3 = DxComponent.LogTimeCurrent;
+            var form = _LoadFromDocument(xDocument, loaderContext);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'DataFormatContainerForm' from 'XDocument': {DxComponent.LogTokenTimeMicrosec}", startTime3);
+
+            return _CreateInfoForm(form);
+        }
+        /// <summary>
+        /// Z dodaného kompletního <see cref="DataFormatContainerForm"/> vytvoří jednoduchý <see cref="DataFormatInfoForm"/>
+        /// </summary>
+        /// <param name="form"></param>
+        /// <returns></returns>
+        private static DataFormatInfoForm _CreateInfoForm(DataFormatContainerForm form)
+        {
+            return new DataFormatInfoForm() { XmlNamespace = form?.XmlNamespace, FormatVersion = form?.FormatVersion };
         }
         #endregion
         #region Načítání obsahu - private tvorba containerů
@@ -67,19 +185,53 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         private static DataFormatContainerForm _LoadFromDocument(System.Xml.Linq.XDocument xDocument, LoaderContext loaderContext)
         {
-            DataFormatContainerForm form = new DataFormatContainerForm();
-            var xElements = xDocument.Root.Elements();
-            foreach (var xElement in xElements)
+            return _FillContainerForm(xDocument.Root, null, loaderContext);
+        }
+        /// <summary>
+        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající Form, včetně jeho obsahu
+        /// </summary>
+        /// <param name="xElement"></param>
+        /// <param name="control"></param>
+        /// <param name="loaderContext"></param>
+        /// <returns></returns>
+        private static DataFormatContainerForm _FillContainerForm(System.Xml.Linq.XElement xElement, DataFormatContainerForm control, LoaderContext loaderContext)
+        {
+            if (control is null) control = new DataFormatContainerForm();
+            control.Style = ContainerStyle.Form;
+
+            // Atributy:
+            _FillBaseAttributes(xElement, control);
+            control.XmlNamespace = _ReadAttributeString(xElement, "xmlns", null);
+            control.FormatVersion = _ReadAttributeString(xElement, "FormatVersion", null);
+
+            // Rychlá odbočka?
+            if (loaderContext.IsLoadOnlyDocumentAttributes) return control;
+
+            // Full Load:
+            control.MasterWidth = _ReadAttributeInt32N(xElement, "MasterWidth", null);
+            control.MasterHeight = _ReadAttributeInt32N(xElement, "MasterHeight", null);
+            control.TotalWidth = _ReadAttributeInt32N(xElement, "TotalWidth", null);
+            control.TotalHeight = _ReadAttributeInt32N(xElement, "TotalHeight", null);
+            control.AutoLabelPosition = _ReadAttributeEnum(xElement, "AutoLabelPosition", LabelPositionType.None);
+            control.DataSource = _ReadAttributeString(xElement, "DataSource", null);
+            control.Messages = _ReadAttributeString(xElement, "Messages", null);
+            control.UseNorisClass = _ReadAttributeInt32N(xElement, "UseNorisClass", null);
+            control.AddUda = _ReadAttributeBoolN(xElement, "UseNorisClass", true);
+            control.UdaLabelPosition = _ReadAttributeEnum(xElement, "UdaLabelPosition", LabelPositionType.Up);
+
+            // Elementy:
+            var xContainers = xElement.Elements();
+            foreach (var xContainer in xContainers)
             {
-                DataFormatBaseControl control = _LoadContainer(xElement, loaderContext);
-                if (control != null)
+                DataFormatBaseControl container = _LoadContainer(xContainer, loaderContext);
+                if (container != null)
                 {
-                    if (form.Controls is null)
-                        form.Controls = new List<DataFormatBaseControl>();
-                    form.Controls.Add(control);
+                    if (control.Controls is null)
+                        control.Controls = new List<DataFormatBaseControl>();
+                    control.Controls.Add(container);
                 }
             }
-            return form;
+            return control;
         }
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající kontejner (pageset, panel, nestedpanel), včetně jeho obsahu
@@ -92,11 +244,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             switch (elementName)
             {
                 case "pageset":
-                    return _LoadPageSet(xElement, loaderContext);
+                    return _FillContainerPageSet(xElement, null, loaderContext);
                 case "panel":
-                    return _LoadPanel(xElement, loaderContext);
+                    return _FillContainerPanel(xElement, null, loaderContext);
                 case "nestedpanel":
-                    return _LoadNestedPanel(xElement, loaderContext);
+                    return _FillContainerNestedPanel(xElement, null, loaderContext);
             }
             return null;
         }
@@ -104,74 +256,78 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající PageSet, včetně jeho obsahu
         /// </summary>
         /// <param name="xElement"></param>
+        /// <param name="control"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatBaseControl _LoadPageSet(System.Xml.Linq.XElement xElement, LoaderContext loaderContext)
+        private static DataFormatContainerPageSet _FillContainerPageSet(System.Xml.Linq.XElement xElement, DataFormatContainerPageSet control, LoaderContext loaderContext)
         {
             // Záložkovník bez jednotlivých záložek neakceptuji:
             var xPages = xElement.Elements();
             if (xPages is null) return null;
 
             // Výsledná instance:
-            var pageSet = new DataFormatContainerPageSet();
-            pageSet.Style = ContainerStyle.PageSet;
+            if (control is null) control = new DataFormatContainerPageSet();
+            control.Style = ContainerStyle.PageSet;
 
             // Atributy:
-            _FillBaseAttributes(xElement, pageSet);
+            _FillBaseAttributes(xElement, control);
 
             // Elementy:
             foreach (var xPage in xPages)
             {
-                var page = _LoadPage(xPage, loaderContext);
+                var page = _FillContainerPage(xPage, null, loaderContext);
                 if (page != null)
                 {
-                    if (pageSet.Controls is null)
-                        pageSet.Controls = new List<DataFormatBaseControl>();
-                    pageSet.Controls.Add(page);
+                    if (control.Controls is null)
+                        control.Controls = new List<DataFormatBaseControl>();
+                    control.Controls.Add(page);
                 }
             }
 
-            return ((pageSet.Pages.Length > 0) ? pageSet : null);
+            return ((control.Pages.Length > 0) ? control : null);
         }
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající Page, včetně jeho obsahu
         /// </summary>
         /// <param name="xElement"></param>
+        /// <param name="control"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatBaseControl _LoadPage(System.Xml.Linq.XElement xElement, LoaderContext loaderContext)
+        private static DataFormatContainerPage _FillContainerPage(System.Xml.Linq.XElement xElement, DataFormatContainerPage control, LoaderContext loaderContext)
         {
             // Výsledná instance:
-            var page = new DataFormatContainerPage();
+            if (control is null) control = new DataFormatContainerPage();
+            control.Style = ContainerStyle.Page;
 
             // Atributy:
-            _FillBaseAttributes(xElement, page);
-            page.Title = _ReadAttributeString(xElement, "Title", null);
-            page.IconName = _ReadAttributeString(xElement, "IconName", null);
+            _FillBaseAttributes(xElement, control);
+            control.Title = _ReadAttributeString(xElement, "Title", null);
+            control.IconName = _ReadAttributeString(xElement, "IconName", null);
 
             // Elementy = Controly:
-            _LoadContainerControls(xElement, page, loaderContext);
+            _LoadContainerControls(xElement, control, loaderContext);
 
-            return page;
+            return control;
         }
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající NestedPanel, včetně jeho obsahu
         /// </summary>
         /// <param name="xElement"></param>
+        /// <param name="control"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatBaseControl _LoadNestedPanel(System.Xml.Linq.XElement xElement, LoaderContext loaderContext)
+        private static DataFormatContainerPanel _FillContainerNestedPanel(System.Xml.Linq.XElement xElement, DataFormatContainerPanel control, LoaderContext loaderContext)
         {
             // Nested šablona:
             string nestedTemplateName = _ReadAttributeString(xElement, "NestedTemplate", "");
             if (String.IsNullOrEmpty(nestedTemplateName)) return null;
 
             // Výsledná instance:
-            var nestedPanel = new DataFormatContainerPanel();
-            nestedPanel.Style = ContainerStyle.Panel;
+            if (control is null) control = new DataFormatContainerPanel();
+            control.Style = ContainerStyle.Panel;
 
             // Atributy:
-            _FillBaseAttributes(xElement, nestedPanel);
+            _FillBaseAttributes(xElement, control);
 
             // Obsah nested panelu:
             if (loaderContext.NestedLoader is null) throw new InvalidOperationException($"DataForm contains NestedTemplate '{nestedTemplateName}', but 'NestedLoader' is null.");
@@ -183,33 +339,39 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (nestedTemplate != null)
                 {   // Přenesu některé atributy a všechny prvky Items:
 
-                    nestedPanel.Controls.AddRange(nestedTemplate.Controls);
+                    control.Controls.AddRange(nestedTemplate.Controls);
                 }
             }
 
-            return nestedPanel;
+            return control;
         }
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající Panel, včetně jeho obsahu
         /// </summary>
         /// <param name="xElement"></param>
+        /// <param name="control"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatBaseControl _LoadPanel(System.Xml.Linq.XElement xElement, LoaderContext loaderContext)
+        private static DataFormatContainerPanel _FillContainerPanel(System.Xml.Linq.XElement xElement, DataFormatContainerPanel control, LoaderContext loaderContext)
         {
             // Výsledná instance:
-            var panel = new DataFormatContainerPanel();
-            panel.Style = ContainerStyle.Panel;
+            if (control is null) control = new DataFormatContainerPanel();
+            control.Style = ContainerStyle.Panel;
 
             // Atributy:
-            _FillBaseAttributes(xElement, panel);
+            _FillBaseAttributes(xElement, control);
             
             // Elementy = Controly:
-            _LoadContainerControls(xElement, panel, loaderContext);
+            _LoadContainerControls(xElement, control, loaderContext);
 
-            return panel;
+            return control;
         }
-
+        /// <summary>
+        /// Z dodaného elementu <paramref name="xElement"/> načte jeho vnitřní elementy, reprezentující controly, a uloží je do dodaného containeru <paramref name="container"/>.
+        /// </summary>
+        /// <param name="xElement"></param>
+        /// <param name="container"></param>
+        /// <param name="loaderContext"></param>
         private static void _LoadContainerControls(System.Xml.Linq.XElement xElement, DataFormatBaseContainer container, LoaderContext loaderContext)
         {
             // Elementy = Items:
@@ -218,7 +380,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 foreach (var xItem in xItems)
                 {
-                    var item = _LoadItem(xItem, loaderContext);
+                    var item = _CreateItem(xItem, loaderContext);
                     if (item != null)
                     {
                         if (container.Controls is null)
@@ -236,7 +398,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xElement"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatBaseControl _LoadItem(System.Xml.Linq.XElement xElement, LoaderContext loaderContext)
+        private static DataFormatBaseControl _CreateItem(System.Xml.Linq.XElement xElement, LoaderContext loaderContext)
         {
             string elementName = xElement?.Name.LocalName.ToLower();          // label, textbox, textbox_button, button, combobox, ...,   pageset, panel, nestedpanel,
             switch (elementName)
@@ -250,10 +412,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 case "textboxbutton": return _FillControlTextBoxButton(xElement, new DataFormatControlTextBoxButton(), loaderContext);
                 case "combobox": return _FillControlComboBox(xElement, new DataFormatComboBox(), loaderContext);
 
-                case "panel": return _LoadPanel(xElement, loaderContext);
-                case "nestedpanel": return _LoadNestedPanel(xElement, loaderContext);
-                case "pageset": return _LoadPageSet(xElement, loaderContext);
-
+                case "pageset": return _FillContainerPageSet(xElement, null, loaderContext);
+                case "panel": return _FillContainerPanel(xElement, null, loaderContext);
+                case "nestedpanel": return _FillContainerNestedPanel(xElement, null, loaderContext);
             }
             return null;
         }
@@ -269,6 +430,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             control.ControlType = ControlType.Title;
             _FillControlLabel(xElement, control, loaderContext);
+            control.Style = _ReadAttributeEnum(xElement, "Style", TitleStyleType.Default);
             return control;
         }
         private static DataFormatBaseControl _FillControlCheckBox(System.Xml.Linq.XElement xElement, DataFormatControlCheckBox control, LoaderContext loaderContext)
@@ -467,6 +629,44 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return value;
         }
         /// <summary>
+        /// V daném elementu najde atribut daného jména a vrátí jeho Boolean? podobu
+        /// </summary>
+        /// <param name="xElement"></param>
+        /// <param name="attributeName"></param>
+        /// <param name="defaultValue"></param>
+        private static bool? _ReadAttributeBoolN(System.Xml.Linq.XElement xElement, string attributeName, bool? defaultValue)
+        {
+            bool? value = defaultValue;
+            if (xElement.HasAttributes && !String.IsNullOrEmpty(attributeName))
+            {
+                var xAttribute = xElement.Attribute(attributeName);
+                if (xAttribute != null && !String.IsNullOrEmpty(xAttribute.Value))
+                {
+                    string text = xAttribute.Value.Trim().ToLower();
+                    switch (text)
+                    {
+                        case "0":
+                        case "f":
+                        case "false":
+                        case "n":
+                        case "ne":
+                            value = false;
+                            break;
+                        case "1":
+                        case "t":
+                        case "true":
+                        case "a":
+                        case "ano":
+                            value = true;
+                            break;
+                    }
+                }
+            }
+            return value;
+        }
+
+        
+        /// <summary>
         /// V daném elementu najde atribut daného jména a vrátí jeho hodnotu převedenou do enumu <typeparamref name="TEnum"/>.
         /// </summary>
         /// <param name="xElement"></param>
@@ -593,7 +793,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
         #region class LoaderContext
         /// <summary>
-        /// Třída, zahrnující v sobě průběžná data pro načítání obsahu <see cref="DataFormatTab"/> v metodách v <see cref="DxDataFormatLoader"/>
+        /// Třída, zahrnující v sobě průběžná data pro načítání obsahu <see cref="DataFormatContainerForm"/> v metodách v <see cref="DxDataFormatLoader"/>
         /// </summary>
         private class LoaderContext
         {
@@ -601,7 +801,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Funkce, která vrátí stringový obsah nested šablony daného jména
             /// </summary>
             public Func<string, string> NestedLoader { get; set; }
-
+            /// <summary>
+            /// Máme načíst pouze atributy dokumentu, pro detekci jeho hlavičky (<see cref="DataFormatContainerForm.XmlNamespace"/> a <see cref="DataFormatContainerForm.FormatVersion"/>)
+            /// </summary>
+            public bool IsLoadOnlyDocumentAttributes { get; set; }
         }
         #endregion
     }

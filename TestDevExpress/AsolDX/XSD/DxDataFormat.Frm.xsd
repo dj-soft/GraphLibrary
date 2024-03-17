@@ -65,7 +65,10 @@
             <xs:attribute name="UdaLabelPosition" type="enum_label_pos">
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Umístění labelů pro automaticky generované UDA atributy a vztahy. Defaultní = Top</xs:documentation></xs:annotation>
             </xs:attribute>
-            
+            <xs:attribute name="Margins" type="xs:string">
+                <xs:annotation><xs:documentation xml:lang="cs-cz">Vnitřní okraje uvnitř containeru: mezi vnější souřadnicí a prvním prvkem na souřadnici 0/0. Ve formě: All   nebo   Left,Top[,Right,Bottom].</xs:documentation></xs:annotation>
+            </xs:attribute>
+
         </xs:complexType>
     </xs:element>
     
@@ -137,6 +140,11 @@
                         <xs:documentation xml:lang="cs-cz">Text v okně ToolTip</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
+                <xs:attribute name="Margins" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Vnitřní okraje uvnitř containeru: mezi vnější souřadnicí a prvním prvkem na souřadnici 0/0. Ve formě: All   nebo   Left,Top[,Right,Bottom].</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
@@ -168,6 +176,11 @@
                 <xs:attribute name="Height" type="xs:int">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Margins" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Vnitřní okraje uvnitř containeru: mezi vnější souřadnicí a prvním prvkem na souřadnici 0/0. Ve formě: All   nebo   Left,Top[,Right,Bottom].</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>
@@ -261,7 +274,7 @@
             <xs:extension base="type_base_control">
                 <xs:attribute name="Text" type="xs:string">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Pevný text prvku (text Labelu, Buttonu, Checkboxu, ...). Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Pevný text prvku (text Labelu). Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="Alignment" type="enum_content_alignment">
@@ -279,7 +292,12 @@
             <xs:extension base="type_base_control">
                 <xs:attribute name="Text" type="xs:string">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Pevný text prvku (text Labelu, Buttonu, Checkboxu, ...). Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Pevný text prvku (text titulku). Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Style" type="enum_title_style">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Styl titulku.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="Alignment" type="enum_content_alignment">
@@ -596,10 +614,36 @@
     </xs:simpleType>
     <xs:simpleType name="enum_label_pos">
         <xs:restriction base="xs:string">
-            <xs:enumeration value="Left" />
-            <xs:enumeration value="Up" />
-            <xs:enumeration value="None" />
-            <xs:enumeration value="Right" />
+            <xs:enumeration value="Default" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Default = Nikde = výchozí</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="None" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Nikde = výchozí</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Left" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Vlevo před textem</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Right" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Vpravo</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Up" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Nahoře nad textem</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Bottom" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Dole pod textem</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
         </xs:restriction>
     </xs:simpleType>
     <xs:simpleType name="enum_content_alignment">
@@ -613,6 +657,35 @@
             <xs:enumeration value="BottomLeft" />
             <xs:enumeration value="BottomCenter" />
             <xs:enumeration value="BottomRight" />
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="enum_title_style">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Default">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Defaultní = TextWithLineBottom.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TextOnly">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Pouze výrazný text, bez linky.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TextWithLineBottom">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Text a linka pod textem v celé šířce.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TextWithLineRight">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Text a linka vpravo od textu ve výšce linky řádku.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TextWithLineAbove">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Text a linka nad textem.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
         </xs:restriction>
     </xs:simpleType>
     <xs:simpleType name="enum_checkbox_style">

@@ -1,15 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <template xmlns="http://tempuri.org/DxDataFormat.Frm.xsd" 
-          FormatVersion="4"
-          UseNorisClass="1161"
-          Messages="/app/lcs/Manufacturing/Forms/DwMfrFrm.msg.xml"
+          FormatVersion="1"
+          UseNorisClass="12"
+          Messages="/app/lcs/Base/Forms/DwMfrFrm.msg.xml"
+          DataSource="/app/lcs/Base/Forms/dw_organizace_form.data.xml"
           MasterWidth="530" MasterHeight="320"
-          TotalWidth="750" TotalHeight="520"  >
+          TotalWidth="750" TotalHeight="520"
+          Margins="10,6">
 
-    <panel Name="Panel1" >
-        <label Name="info1_lbl" Bounds="14,2,150" Text="Popisek" ToolTipTitle="Nápověda" ToolTipText="Informace k tomuto prvku neexistuje" />
-        <textbox Name="info1" Bounds="10,20,160" Required="True" State="SkipTab" />
-        <label Name="info2_lbl" Bounds="184,2,150" Text="Informace" />
+    <panel Name="panelName"  >
+        <title Name="nameTitle" Text="Základní data"/>
+        <label Name="reference_subjektu_lbl" Bounds="14,2,150" Text="Reference" ToolTipTitle="Nápověda" ToolTipText="Informace k tomuto prvku neexistuje" />
+        <textbox Name="reference_subjektu" Bounds="10,20,160" Required="True" />
+        <label Name="nazev_subjektu_lbl" Bounds="184,2,150" Text="Název" />
+        <textbox Name="reference_subjektu" Bounds="180,20,220" Required="True" />
+        
+        
         <combobox Name="info2" Bounds="180,20,160" Style="IconTextList" >
             <comboItem Name="Z" Text="Zahájeno" IconName="pic/status1"/>
             <comboItem Name="U" Text="Ukončeno" IconName="pic/status2"/>

@@ -99,6 +99,20 @@ SplitButton      A       A             A      A       A          A         A    
 
     #region Konkrétní třídy Containerů
     /// <summary>
+    /// Hlavičková informace o dokumentu: obsahuje pouze <see cref="XmlNamespace"/> a <see cref="FormatVersion"/>.
+    /// </summary>
+    public class DataFormatInfoForm
+    {
+        /// <summary>
+        /// Namespace XML dokumentu
+        /// </summary>
+        public string XmlNamespace { get; set; }
+        /// <summary>
+        /// Formát tohoto souboru. Defaultní = 4
+        /// </summary>
+        public string FormatVersion { get; set; }
+    }
+    /// <summary>
     /// Celý DataForm
     /// </summary>
     public class DataFormatContainerForm : DataFormatBaseContainer
@@ -110,6 +124,55 @@ SplitButton      A       A             A      A       A          A         A    
         {
             this.Style = ContainerStyle.Form;
         }
+
+        /// <summary>
+        /// Namespace XML dokumentu
+        /// </summary>
+        public string XmlNamespace { get; set; }
+        /// <summary>
+        /// Formát tohoto souboru. Defaultní = 4
+        /// </summary>
+        public string FormatVersion { get; set; }
+        /// <summary>
+        /// Šířka oblasti DataFormu (Master) (tedy bez dynamických vztahů a dolních záložek)
+        /// </summary>
+        public int? MasterWidth { get; set; }
+        /// <summary>
+        /// Výška oblasti DataFormu (Master) (tedy bez dynamických vztahů a dolních záložek)
+        /// </summary>
+        public int? MasterHeight { get; set; }
+        /// <summary>
+        /// Celková šířka (tedy včetně dynamických vztahů a dolních záložek)
+        /// </summary>
+        public int? TotalWidth { get; set; }
+        /// <summary>
+        /// Celková výška (tedy včetně dynamických vztahů a dolních záložek)
+        /// </summary>
+        public int? TotalHeight { get; set; }
+        /// <summary>
+        /// Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = <see cref="LabelPositionType.None"/>
+        /// </summary>
+        public LabelPositionType AutoLabelPosition { get; set; }
+        /// <summary>
+        /// Jméno souboru, z něhož bude načtena definice dat
+        /// </summary>
+        public string DataSource { get; set; }
+        /// <summary>
+        /// Jméno souboru, z něhož budou čteny překlady popisků a tooltipů
+        /// </summary>
+        public string Messages { get; set; }
+        /// <summary>
+        /// Číslo třídy, pro kterou budou načteny popisky atributů a vztahů
+        /// </summary>
+        public int? UseNorisClass { get; set; }
+        /// <summary>
+        /// Automaticky přidat záložku pro UDA atributy a vztahy. Nezadáno = True
+        /// </summary>
+        public bool? AddUda { get; set; }
+        /// <summary>
+        /// Umístění labelů pro automaticky generované UDA atributy a vztahy. Defaultní = <see cref="LabelPositionType.Up"/>
+        /// </summary>
+        public LabelPositionType UdaLabelPosition { get; set; }
         /// <summary>
         /// Jednotlivé prvky - PageSet nebo Panely, vždy containery
         /// </summary>
@@ -188,6 +251,10 @@ SplitButton      A       A             A      A       A          A         A    
         /// </summary>
         public ContainerStyle Style { get; set; }
         /// <summary>
+        /// Okraje = mezi krajem formuláře / Page / Panel a souřadnicí 0/0
+        /// </summary>
+        public Margins Margins { get; set; }
+        /// <summary>
         /// Controly v rámci tohoto Containeru.
         /// Mohou zde být i další Containery.
         /// Default = null.
@@ -234,6 +301,10 @@ SplitButton      A       A             A      A       A          A         A    
         {
             this.ControlType = ControlType.Title;
         }
+        /// <summary>
+        /// Styl titulku.
+        /// </summary>
+        public TitleStyleType Style { get; set; }
     }
     /// <summary>
     /// DxDataForm : CheckBox
@@ -693,6 +764,32 @@ SplitButton      A       A             A      A       A          A         A    
         Panel
     }
     /// <summary>
+    /// Styl zobrazení Title řádku
+    /// </summary>
+    public enum TitleStyleType
+    {
+        /// <summary>
+        /// Defaultní = TextWithLineBottom.
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Pouze výrazný text, bez linky.
+        /// </summary>
+        TextOnly,
+        /// <summary>
+        /// Text a linka pod textem v celé šířce.
+        /// </summary>
+        TextWithLineBottom,
+        /// <summary>
+        /// Text a linka vpravo od textu ve výšce linky řádku.
+        /// </summary>
+        TextWithLineRight,
+        /// <summary>
+        /// Text a linka nad textem.
+        /// </summary>
+        TextWithLineAbove
+    }
+    /// <summary>
     /// Styl zobrazení ComboBoxu
     /// </summary>
     public enum ComboBoxStyleType
@@ -891,6 +988,37 @@ SplitButton      A       A             A      A       A          A         A    
         /// Povinná hodnota
         /// </summary>
         Required
+    }
+    /// <summary>
+    /// Zarovnání obsahu.
+    /// Shoduje se hodnotami s enumem <see cref="AlignmentSideType"/>
+    /// </summary>
+    public enum LabelPositionType
+    {
+        /// <summary>
+        /// Default = Nikde = výchozí
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Nikde = výchozí
+        /// </summary>
+        None,
+        /// <summary>
+        /// Vlevo před textem
+        /// </summary>
+        Left,
+        /// <summary>
+        /// Vpravo
+        /// </summary>
+        Right,
+        /// <summary>
+        /// Nahoře nad textem
+        /// </summary>
+        Up,
+        /// <summary>
+        /// Dole pod textem
+        /// </summary>
+        Bottom
     }
     /// <summary>
     /// Zarovnání obsahu.
