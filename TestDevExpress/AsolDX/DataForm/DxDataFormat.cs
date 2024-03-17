@@ -16,6 +16,42 @@ using WinForm = System.Windows.Forms;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
 {
+    /*    Deklarace dat  +  deklarace XSD  +  Načítací algoritmus
+     1. Struktury dat jsou deklarovány zde, nemají žádnou logiku, jde jen  o obálku na data
+     2. V podstatě identické struktury jsou deklarovány v XSD suoboru - stejná hierarchie tříd, stejnojmenné property ve stejných třídách, stejné enumy a jejich hodnoty
+     3. Existuje statická třída DxDataFormatLoader, která z XML dokumentu (zadaného podle XSD schematu) vytvoří a vrátí odpovídající struktury zdejších tříd (C#)
+
+          Hierarchie tříd
+     - Třídy pro data jsou uspořádány hierarchicky
+     - Bázová třída je DataFormatBase, nese pouze Name
+     - Z ní jsou postupně děděny třídy pro Controly i pro Containery
+     - Obdobná hierarchie je i ve schematu XSD (i tam je použita dědičnost typů!)
+
+      TŘÍDA                                                            ÚČEL                                   PROPERTIES
+    DataFormatBase                                                   Bázová                                 Name
+      +  DataFormatBaseSubControl                                    Pro SubControly bez souřadnic          State, ToolTip, Invisible
+           +  DataFormatSubButton                                    Pomocný SubButton, SubItem             Text, IconName, ActionName, ActionData
+           +  DataFormatBaseControl                                  Pro všechny Controly                   ControlType, Bounds
+                +  DataFormatControlLabel                            Label                                  Text, Alignment
+                |    +  DataFormatControlTitle                       Titulek                                Style
+                +  DataFormatBaseInputControl                        Obecný vstupní control                 Required
+                |    +  DataFormatBaseTextControl                    Vstupní control s textem               Text, IconName, Alignment
+                |    |    +  DataFormatControlCheckBox               Checkboxy více typů                    Style
+                |    |    +  DataFormatControlButton                 Samostatné tlačítko                    ActionName, ActionData, HotKey
+                |    |         +  DataFormatControlDropDownButton    Button s podnabídkou                   DropDownButtons
+                |    +  DataFormatControlTextBox                     Běžný TextBox                          EditMask, Alignment
+                |    |    +  DataFormatControlTextBoxButton          TextBox s tlačítky                     LeftButtons, RightButtons
+                |    +  DataFormatComboBox                           ComboBox různých stylů                 Style, EditStyleName, ComboItems
+                +  DataFormatBaseContainer                           Base pro containery                    Style, Margins, Controls
+                     +  DataFormatContainerPanel                     Běžný panel vč. Nested                 
+                     +  DataFormatContainerPage                      Stránka v PageSetu                     Title, IconName, Tabs
+                     +  DataFormatContainerPageSet                   Sada stránek / záložky                 Pages
+                     +  DataFormatContainerForm                      Kompletní formulář                     FormatVersion, MasterWidth, ..., Tabs
+     
+
+    */
+
+
     /*    DataFormat
       - Reprezentuje definici vzhledu a chování DataFormu
       - Odpovídá aktuální verzi formátu V4
@@ -63,6 +99,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
 
 
     */
+
 
     /*   Typy a vlastnosti
 

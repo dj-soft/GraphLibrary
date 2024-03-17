@@ -19,7 +19,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// </summary>
     internal class DxDataFormatLoader
     {
-        #region Načítání obsahu - public rozhraní
+        #region Načítání obsahu a načítání Info - public rozhraní
         /// <summary>
         /// Načte a vrátí <see cref="DataFormatContainerForm"/> ze zadaného souboru
         /// </summary>
@@ -30,14 +30,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         internal static DataFormatContainerForm LoadFromFile(string fileName, Func<string, string> nestedLoader = null, bool logTime = false)
         {
             LoaderContext loaderContext = new LoaderContext() { NestedLoader = nestedLoader };
+            string name = System.IO.Path.GetFileName(fileName);
 
             var startTime1 = DxComponent.LogTimeCurrent;
             string content = System.IO.File.ReadAllText(fileName);
-            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'Content' from file: {DxComponent.LogTokenTimeMicrosec}", startTime1);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'Content' from file '{name}': {DxComponent.LogTokenTimeMicrosec}", startTime1);
 
             var startTime2 = DxComponent.LogTimeCurrent;
             var xDocument = System.Xml.Linq.XDocument.Parse(content);
-            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Parse 'XDocument' from 'Content': {DxComponent.LogTokenTimeMicrosec}", startTime2);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Parse 'XDocument' from 'Content' ({content.Length} B): {DxComponent.LogTokenTimeMicrosec}", startTime2);
 
             var startTime3 = DxComponent.LogTimeCurrent;
             var form = _LoadFromDocument(xDocument, loaderContext);
@@ -58,7 +59,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             var startTime2 = DxComponent.LogTimeCurrent;
             var xDocument = System.Xml.Linq.XDocument.Parse(content);
-            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Parse 'XDocument' from 'Content': {DxComponent.LogTokenTimeMicrosec}", startTime2);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Parse 'XDocument' from 'Content' ({content.Length} B): {DxComponent.LogTokenTimeMicrosec}", startTime2);
 
             var startTime3 = DxComponent.LogTimeCurrent;
             var form = _LoadFromDocument(xDocument, loaderContext);
@@ -104,18 +105,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         internal static DataFormatInfoForm LoadInfoFromFile(string fileName, out System.Xml.Linq.XDocument xDocument, bool logTime = false)
         {
             LoaderContext loaderContext = new LoaderContext() { IsLoadOnlyDocumentAttributes = true };
+            string name = System.IO.Path.GetFileName(fileName);
 
             var startTime1 = DxComponent.LogTimeCurrent;
             string content = System.IO.File.ReadAllText(fileName);
-            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'Content' from file: {DxComponent.LogTokenTimeMicrosec}", startTime1);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'Content' from file '{name}': {DxComponent.LogTokenTimeMicrosec}", startTime1);
 
             var startTime2 = DxComponent.LogTimeCurrent;
             xDocument = System.Xml.Linq.XDocument.Parse(content);
-            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Parse 'XDocument' from 'Content': {DxComponent.LogTokenTimeMicrosec}", startTime2);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Parse 'XDocument' from 'Content' ({content.Length} B): {DxComponent.LogTokenTimeMicrosec}", startTime2);
 
             var startTime3 = DxComponent.LogTimeCurrent;
             var form = _LoadFromDocument(xDocument, loaderContext);
-            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'DataFormatContainerForm' from 'XDocument': {DxComponent.LogTokenTimeMicrosec}", startTime3);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'DataFormatInfoForm' from 'XDocument': {DxComponent.LogTokenTimeMicrosec}", startTime3);
 
             return _CreateInfoForm(form);
         }
@@ -141,12 +143,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             LoaderContext loaderContext = new LoaderContext() { IsLoadOnlyDocumentAttributes = true };
 
             var startTime2 = DxComponent.LogTimeCurrent;
-             xDocument = System.Xml.Linq.XDocument.Parse(content);
-            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Parse 'XDocument' from 'Content': {DxComponent.LogTokenTimeMicrosec}", startTime2);
+            xDocument = System.Xml.Linq.XDocument.Parse(content);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Parse 'XDocument' from 'Content' ({content.Length} B): {DxComponent.LogTokenTimeMicrosec}", startTime2);
 
             var startTime3 = DxComponent.LogTimeCurrent;
             var form = _LoadFromDocument(xDocument, loaderContext);
-            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'DataFormatContainerForm' from 'XDocument': {DxComponent.LogTokenTimeMicrosec}", startTime3);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'DataFormatInfoForm' from 'XDocument': {DxComponent.LogTokenTimeMicrosec}", startTime3);
 
             return _CreateInfoForm(form);
         }
@@ -162,7 +164,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             var startTime3 = DxComponent.LogTimeCurrent;
             var form = _LoadFromDocument(xDocument, loaderContext);
-            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'DataFormatContainerForm' from 'XDocument': {DxComponent.LogTokenTimeMicrosec}", startTime3);
+            if (logTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'DataFormatInfoForm' from 'XDocument': {DxComponent.LogTokenTimeMicrosec}", startTime3);
 
             return _CreateInfoForm(form);
         }
