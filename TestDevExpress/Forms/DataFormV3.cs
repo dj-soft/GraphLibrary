@@ -185,7 +185,7 @@ namespace TestDevExpress.Forms
                 {
                     itemId++;
                     string relFile = System.IO.Path.GetFileName(file);
-                    DataRibbonItem fileItem = new DataRibbonItem() { ItemId = $"LoadFormFileOne_{itemId}", ImageName = iconXml1, Text = relFile, ToolTipTitle = "Načte obsah souboru", ToolTipText = file, Tag = file };
+                    DataRibbonItem fileItem = new DataRibbonItem() { ItemId = $"LoadFormFileOne_{itemId}", ImageName = iconXml2, Text = relFile, ToolTipTitle = "Načte obsah souboru", ToolTipText = file, Tag = file };
                     ribbonItems.Add(fileItem);
                 }
             }

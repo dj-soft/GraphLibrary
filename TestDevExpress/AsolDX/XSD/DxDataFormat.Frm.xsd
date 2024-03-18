@@ -68,8 +68,11 @@
             <xs:attribute name="Margins" type="xs:string">
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Vnitřní okraje uvnitř containeru: mezi vnější souřadnicí a prvním prvkem na souřadnici 0/0. Ve formě: All   nebo   Left,Top[,Right,Bottom].</xs:documentation></xs:annotation>
             </xs:attribute>
+			<xs:attribute name="ContextMenu" type="enum_bool">
+				<xs:annotation><xs:documentation xml:lang="cs-cz">Povolit kontextové menu</xs:documentation></xs:annotation>
+			</xs:attribute>
 
-        </xs:complexType>
+		</xs:complexType>
     </xs:element>
     
     
@@ -479,7 +482,7 @@
     
     <!--    Bázové třídy     -->
 
-    <!--    DataFormatTextControlBase - Bázová třída pro všechny samostatné controly s neměnným textem a ikonou - Label, Button, CheckBox, ...  -->
+    <!--    DataFormatTextControlBase - Bázová třída pro všechny samostatné controly s neměnným Textem a ikonou - Label, Button, CheckBox, ...  -->
     <xs:complexType name="type_base_text_control">
         <xs:complexContent>
             <xs:extension base="type_base_input_control">
@@ -502,7 +505,20 @@
         </xs:complexContent>
     </xs:complexType>
 
-    <!--    DataFormatInputControlBase - Bázová třída pro všechny samostatné interaktivní controly - TextBox, Button, CheckBox, ComboBox, ...  -->
+	<!--    DataFormatInputControlBase - Bázová třída pro všechny samostatné interaktivní controly, které mohou mít vedle políčka Label - TextBox, ComboBox, TokenEdit, ...  -->
+	<xs:complexType name="type_base_input_labeled_control">
+		<xs:complexContent>
+			<xs:extension base="type_base_input_control">
+				<xs:attribute name="Label" type="xs:string">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Text, popisující obsah políčka.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<!--    DataFormatInputControlBase - Bázová třída pro všechny samostatné interaktivní controly - TextBox, Button, CheckBox, ComboBox, ...  -->
     <xs:complexType name="type_base_input_control">
         <xs:complexContent>
             <xs:extension base="type_base_control">
