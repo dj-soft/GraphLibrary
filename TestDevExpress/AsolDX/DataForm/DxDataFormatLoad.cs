@@ -199,7 +199,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private static DataFormatContainerForm _FillContainerForm(System.Xml.Linq.XElement xElement, DataFormatContainerForm control, LoaderContext loaderContext)
         {
             if (control is null) control = new DataFormatContainerForm();
-            control.Style = ContainerStyle.Form;
+            control.Style = ContainerStyleType.Form;
 
             // Atributy:
             _FillBaseAttributes(xElement, control);
@@ -269,7 +269,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             // Výsledná instance:
             if (control is null) control = new DataFormatContainerPageSet();
-            control.Style = ContainerStyle.PageSet;
+            control.Style = ContainerStyleType.PageSet;
 
             // Atributy:
             _FillBaseAttributes(xElement, control);
@@ -299,7 +299,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             // Výsledná instance:
             if (control is null) control = new DataFormatContainerPage();
-            control.Style = ContainerStyle.Page;
+            control.Style = ContainerStyleType.Page;
 
             // Atributy:
             _FillBaseAttributes(xElement, control);
@@ -326,7 +326,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             // Výsledná instance:
             if (control is null) control = new DataFormatContainerPanel();
-            control.Style = ContainerStyle.Panel;
+            control.Style = ContainerStyleType.Panel;
 
             // Atributy:
             _FillBaseAttributes(xElement, control);
@@ -358,7 +358,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             // Výsledná instance:
             if (control is null) control = new DataFormatContainerPanel();
-            control.Style = ContainerStyle.Panel;
+            control.Style = ContainerStyleType.Panel;
 
             // Atributy:
             _FillBaseAttributes(xElement, control);
@@ -571,7 +571,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             if (target is DataFormatBaseSubControl subControl)
             {
-                subControl.State = _ReadAttributeEnum(xElement, "State", ItemState.Default);
+                subControl.State = _ReadAttributeEnum(xElement, "State", ControlStateType.Default);
                 subControl.ToolTipTitle = _ReadAttributeString(xElement, "ToolTipTitle", null);
                 subControl.ToolTipText = _ReadAttributeString(xElement, "ToolTipText", null);
                 subControl.Invisible = _ReadAttributeString(xElement, "Invisible", null);
@@ -584,7 +584,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 inputControl.Required = _ReadAttributeEnum(xElement, "Required", RequiredType.Default);
             }
-            if (target is DataFormatBaseTextControl textControl)
+            if (target is DataFormatBaseInputTextControl textControl)
             {
                 textControl.Text = _ReadAttributeString(xElement, "Text", null);
                 textControl.IconName = _ReadAttributeString(xElement, "IconName", null);
@@ -594,7 +594,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 subButton.Text = _ReadAttributeString(xElement, "Text", null);
                 subButton.IconName = _ReadAttributeString(xElement, "IconName", null);
-                subButton.ActionName = _ReadAttributeString(xElement, "ActionName", null);
+                subButton.ActionType = _ReadAttributeEnum(xElement, "ActionType", ButtonActionType.Default);
                 subButton.ActionData = _ReadAttributeString(xElement, "ActionData", null);
             }
         }

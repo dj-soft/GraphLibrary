@@ -109,7 +109,7 @@ SplitButton      A       A             A      A       A          A         A    
         /// </summary>
         public DataFormatContainerForm()
         {
-            this.Style = ContainerStyle.Form;
+            this.Style = ContainerStyleType.Form;
         }
         /// <summary>
         /// Namespace XML dokumentu
@@ -174,7 +174,7 @@ SplitButton      A       A             A      A       A          A         A    
         /// </summary>
         public DataFormatContainerPageSet()
         {
-            this.Style = ContainerStyle.PageSet;
+            this.Style = ContainerStyleType.PageSet;
         }
         /// <summary>
         /// Stránky na záložkách
@@ -191,7 +191,7 @@ SplitButton      A       A             A      A       A          A         A    
         /// </summary>
         public DataFormatContainerPage()
         {
-            this.Style = ContainerStyle.Page;
+            this.Style = ContainerStyleType.Page;
         }
         /// <summary>
         /// Text titulku záhlaví
@@ -217,7 +217,7 @@ SplitButton      A       A             A      A       A          A         A    
         /// </summary>
         public DataFormatContainerPanel() : base()
         {
-            this.Style = ContainerStyle.Panel;
+            this.Style = ContainerStyleType.Panel;
         }
     }
     /// <summary>
@@ -230,12 +230,12 @@ SplitButton      A       A             A      A       A          A         A    
         /// </summary>
         public DataFormatBaseContainer() : base()
         {
-            this.Style = ContainerStyle.None;
+            this.Style = ContainerStyleType.None;
         }
         /// <summary>
         /// Styl odstavce
         /// </summary>
-        public ContainerStyle Style { get; set; }
+        public ContainerStyleType Style { get; set; }
         /// <summary>
         /// Okraje = mezi krajem formuláře / Page / Panel a souřadnicí 0/0
         /// </summary>
@@ -276,7 +276,8 @@ SplitButton      A       A             A      A       A          A         A    
         protected override string DebugText { get { return $"{ControlType}; Name: '{Name}'; Text: '{Text}'"; } }
     }
     /// <summary>
-    /// DxDataForm : Title
+    /// DxDataForm : Title.<br/>
+    /// Odpovídá XSD typu <c>type_title</c>
     /// </summary>
     public class DataFormatControlTitle : DataFormatControlLabel
     {
@@ -293,9 +294,10 @@ SplitButton      A       A             A      A       A          A         A    
         public TitleStyleType Style { get; set; }
     }
     /// <summary>
-    /// DxDataForm : CheckBox
+    /// DxDataForm : CheckBox.<br/>
+    /// Odpovídá XSD typu <c>type_checkbox</c>
     /// </summary>
-    public class DataFormatControlCheckBox : DataFormatBaseTextControl
+    public class DataFormatControlCheckBox : DataFormatBaseInputTextControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
@@ -314,9 +316,10 @@ SplitButton      A       A             A      A       A          A         A    
         protected override string DebugText { get { return $"{ControlType}; Name: '{Name}'; Style: '{Style}'"; } }
     }
     /// <summary>
-    /// DxDataForm : Button
+    /// DxDataForm : Button.<br/>
+    /// Odpovídá XSD typu <c>type_button</c>
     /// </summary>
-    public class DataFormatControlButton : DataFormatBaseTextControl
+    public class DataFormatControlButton : DataFormatBaseInputTextControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
@@ -339,7 +342,8 @@ SplitButton      A       A             A      A       A          A         A    
         public string HotKey { get; set; }
     }
     /// <summary>
-    /// DxDataForm : DropDownButton
+    /// DxDataForm : DropDownButton.<br/>
+    /// Odpovídá XSD typu <c>type_drop_down_button</c>
     /// </summary>
     public class DataFormatControlDropDownButton : DataFormatControlButton
     {
@@ -358,7 +362,8 @@ SplitButton      A       A             A      A       A          A         A    
         public List<DataFormatSubButton> DropDownButtons { get; set; }
     }
     /// <summary>
-    /// DxDataForm : TextBox
+    /// DxDataForm : TextBox.<br/>
+    /// Odpovídá XSD typu <c>type_textbox</c>
     /// <para/>
     /// Tato třída přináší property <see cref="Alignment"/>, <see cref="EditMask"/>.
     /// </summary>
@@ -382,7 +387,8 @@ SplitButton      A       A             A      A       A          A         A    
         public ContentAlignmentType Alignment { get; set; }
     }
     /// <summary>
-    /// DxDataForm : TextBoxButton
+    /// DxDataForm : TextBoxButton.<br/>
+    /// Odpovídá XSD typu <c>type_textboxbutton</c>
     /// </summary>
     public class DataFormatControlTextBoxButton : DataFormatControlTextBox
     {
@@ -405,9 +411,14 @@ SplitButton      A       A             A      A       A          A         A    
         /// Výchozí hodnota je NULL.
         /// </summary>
         public List<DataFormatSubButton> RightButtons { get; set; }
+        /// <summary>
+        /// Viditelnost buttonů v textboxu v závislosti na aktivitě TextBoxu
+        /// </summary>
+        public ButtonsVisibilityType ButtonsVisibility { get; set; }
     }
     /// <summary>
-    /// DxDataForm : ComboBox
+    /// DxDataForm : ComboBox.<br/>
+    /// Odpovídá XSD typu <c>type_combobox</c>
     /// <para/>
     /// Tato třída přináší property 
     /// </summary>
@@ -422,20 +433,21 @@ SplitButton      A       A             A      A       A          A         A    
             this.Style = ComboBoxStyleType.Default;
         }
         /// <summary>
-        /// Styl zobrazení ComboBoxu: S možností psaní, Pouze výběr hodnot, Výběr včetně zobrazení ikony
+        /// Položky v nabídce
         /// </summary>
-        public ComboBoxStyleType Style { get; set; }
+        public List<DataFormatSubButton> ComboItems { get; set; }
         /// <summary>
         /// Název editačního stylu. Může být prázdné, pokud budou zadány prvky comboItem.
         /// </summary>
         public string EditStyleName { get; set; }
         /// <summary>
-        /// Položky v nabídce
+        /// Styl zobrazení ComboBoxu: S možností psaní, Pouze výběr hodnot, Výběr včetně zobrazení ikony
         /// </summary>
-        public List<DataFormatSubButton> ComboItems { get; set; }
+        public ComboBoxStyleType Style { get; set; }
     }
     /// <summary>
-    /// DxDataForm : SubButton = součást <see cref="ControlType.DropDownButton"/> i <see cref="ControlType.TextBoxButton"/>
+    /// DxDataForm : SubButton = součást <see cref="ControlType.DropDownButton"/> i <see cref="ControlType.TextBoxButton"/>.<br/>
+    /// Odpovídá XSD typu <c>type_subbutton</c>
     /// </summary>
     public class DataFormatSubButton : DataFormatBaseSubControl
     {
@@ -457,7 +469,7 @@ SplitButton      A       A             A      A       A          A         A    
         /// <summary>
         /// Akce na tomto sub-buttonu
         /// </summary>
-        public string ActionName { get; set; }
+        public ButtonActionType ActionType { get; set; }
         /// <summary>
         /// Data pro akci na tomto sub-buttonu
         /// </summary>
@@ -466,16 +478,17 @@ SplitButton      A       A             A      A       A          A         A    
     #endregion
     #region Bázové třídy Controlů
     /// <summary>
-    /// Bázová třída pro všechny samostatné controly s neměnným textem a ikonou - Label, Button, CheckBox, ...
+    /// Bázová třída pro všechny samostatné controly s neměnným textem a ikonou - Label, Button, CheckBox, ....<br/>
+    /// Odpovídá XSD typu <c>type_base_input_text_control</c>
     /// <para/>
     /// Tato třída přináší property <see cref="Text"/>,  <see cref="IconName"/> a <see cref="Alignment"/>.
     /// </summary>
-    public class DataFormatBaseTextControl : DataFormatBaseInputControl
+    public class DataFormatBaseInputTextControl : DataFormatBaseInputControl
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormatBaseTextControl() : base()
+        public DataFormatBaseInputTextControl() : base()
         {
             this.Alignment = ContentAlignmentType.Default;
         }
@@ -494,9 +507,40 @@ SplitButton      A       A             A      A       A          A         A    
         public ContentAlignmentType Alignment { get; set; }
     }
     /// <summary>
-    /// Bázová třída pro všechny samostatné interaktivní controly - TextBox, Button, CheckBox, ComboBox, ...
+    /// Bázová třída pro všechny samostatné interaktivní controly, které mohou mít vedle políčka Label - TextBox, ComboBox, TokenEdit, ...<br/>
+    /// Odpovídá XSD typu <c>type_base_input_labeled_control</c>
     /// <para/>
-    /// Tato třída přináší property <see cref="ControlType"/> a <see cref="Required"/>.
+    /// Tato třída přináší property <see cref="Label"/>, <see cref="LabelPosition"/> a <see cref="LabelWidth"/>.
+    /// </summary>
+    public class DataFormatBaseInputLabeledControl : DataFormatBaseInputControl
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DataFormatBaseInputLabeledControl() : base()
+        {
+            this.Label = null;
+            this.LabelPosition = LabelPositionType.Default;
+            this.LabelWidth = null;
+        }
+        /// <summary>
+        /// Text, popisující obsah políčka.
+        /// </summary>
+        public string Label { get; set; }
+        /// <summary>
+        /// Umístění a zarovnání popisku (Labelu) vzhledem k souřadnicích controlu
+        /// </summary>
+        public LabelPositionType LabelPosition { get; set; }
+        /// <summary>
+        /// Nejvyšší šířka prostoru pro Label
+        /// </summary>
+        public int? LabelWidth { get; set; }
+    }
+    /// <summary>
+    /// Bázová třída pro všechny samostatné interaktivní controly - TextBox, Button, CheckBox, ComboBox, ....<br/>
+    /// Odpovídá XSD typu <c>type_base_input_control</c>
+    /// <para/>
+    /// Tato třída přináší property <see cref="Required"/>.
     /// </summary>
     public class DataFormatBaseInputControl : DataFormatBaseControl
     {
@@ -514,7 +558,8 @@ SplitButton      A       A             A      A       A          A         A    
     }
     /// <summary>
     /// Bázová třída pro všechny samostatné controly bez ohledu na jejich vlastní interaktivitu - tedy Label, Picture, Panel; a dále i pro interaktivní controly: TextBox, Button, CheckBox, ComboBox, ...
-    /// Slouží i jako podklad pro Containery.
+    /// Slouží i jako podklad pro Containery.<br/>
+    /// Odpovídá XSD typu <c>type_base_control</c>
     /// <para/>
     /// Tato třída přináší souřadnice <see cref="Bounds"/>.
     /// </summary>
@@ -541,7 +586,8 @@ SplitButton      A       A             A      A       A          A         A    
         protected override string DebugText { get { return $"{ControlType}; Name: '{Name}'"; } }
     }
     /// <summary>
-    /// Bázová třída pro všechny controly - včetně subcontrolů (pro položky v ComboBoxu i SubButtony).
+    /// Bázová třída pro všechny controly - včetně subcontrolů (pro položky v ComboBoxu i SubButtony).<br/>
+    /// Odpovídá XSD typu <c>type_base_sub_control</c>
     /// <para/>
     /// Tato třída přináší property: <see cref="State"/>, výraz <see cref="Invisible"/> a texty pro ToolTip <see cref="ToolTipTitle"/> a <see cref="ToolTipText"/>.
     /// </summary>
@@ -552,12 +598,12 @@ SplitButton      A       A             A      A       A          A         A    
         /// </summary>
         public DataFormatBaseSubControl() : base()
         {
-            this.State = ItemState.Default;
+            this.State = ControlStateType.Default;
         }
         /// <summary>
         /// Stav bloku nebo prvku (viditelnost, editovatelnost)
         /// </summary>
-        public ItemState State { get; set; }
+        public ControlStateType State { get; set; }
         /// <summary>
         /// Titulek ToolTipu.
         /// </summary>
@@ -572,7 +618,8 @@ SplitButton      A       A             A      A       A          A         A    
         public string Invisible { get; set; }
     }
     /// <summary>
-    /// Bázová třída pro všechny prvky - controly i containery.
+    /// Bázová třída pro všechny prvky - controly i containery.<br/>
+    /// Odpovídá XSD typu <c>type_base</c>
     /// <para/>
     /// Tato třída přináší základní property: <see cref="Name"/>.
     /// </summary>
@@ -720,37 +767,157 @@ SplitButton      A       A             A      A       A          A         A    
         private bool IsAll { get { return (this.Left == this.Top && this.Top == this.Right && this.Right == this.Bottom); } }
     }
     /// <summary>
-    /// Styl jednoho bloku = odstavce
+    /// Verze formátu definice frm.xml
+    /// Odpovídá XSD typu <c>format_version_enum</c>
     /// </summary>
-    public enum ContainerStyle
+    public enum FormatVersionType
     {
         /// <summary>
-        /// Neurčeno
-        /// </summary>
-        None,
-        /// <summary>
-        /// Běžný vnitřní TAB (odstavec), může / nemusí mít titulek (podle přítomnosti textu <see cref="DataFormatBaseTextControl.Text"/>)
+        /// Default = Version1
         /// </summary>
         Default,
         /// <summary>
-        /// Vrcholový container, reprezentuje celý formulář
+        /// Version1 = Infragistic
         /// </summary>
-        Form,
+        Version1,
         /// <summary>
-        /// Sada stránek; její vnitřní prvky musí být stylu <see cref="ContainerStyle.Page"/>
+        /// Version2 = Infragistic
         /// </summary>
-        PageSet,
+        Version2,
         /// <summary>
-        /// Záhlaví stránky. Ignoruje souřadnice 
+        /// Version3 = Infragistic
         /// </summary>
-        Page,
+        Version3,
         /// <summary>
-        /// Běžný panel, jako <see cref="Default"/>
+        /// Version4 = DevExpress
         /// </summary>
-        Panel
+        Version4,
     }
     /// <summary>
-    /// Styl zobrazení Title řádku
+    /// Umístění a zarovnání popisku (Labelu) vzhledem k souřadnicích controlu.
+    /// Odpovídá XSD typu <c>label_position_enum</c>
+    /// </summary>
+    public enum LabelPositionType
+    {
+        /// <summary>
+        /// Default = Nikde = výchozí, anebo u konkrétního prvku = podle nastavení formuláře
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Nikde
+        /// </summary>
+        None,
+        /// <summary>
+        /// Vlevo před textem, písmo zarovnané doleva
+        /// </summary>
+        BeforeLeft,
+        /// <summary>
+        /// Vlevo před textem, písmo zarovnané doprava
+        /// </summary>
+        BeforeRight,
+        /// <summary>
+        /// Vpravo za textem, zarovnaný doleva (tam se typicky píšou jednotky, např. Kč, KWh atd)
+        /// </summary>
+        After,
+        /// <summary>
+        /// Nahoře nad textem, písmo zarovnané doleva
+        /// </summary>
+        Up,
+        /// <summary>
+        /// Dole pod textem, písmo zarovnané doleva
+        /// </summary>
+        Bottom
+    }
+    /// <summary>
+    /// Zarovnání obsahu do jeho daného prostoru v obou osách (X + Y).
+    /// Numerickými hodnotami se shoduje s enumem <see cref="AlignmentSideType"/>.
+    /// Odpovídá XSD typu <c>content_alignment_enum</c>
+    /// </summary>
+    [Flags]
+    public enum ContentAlignmentType
+    {
+        /// <summary>
+        /// Nahoře vlevo
+        /// </summary>
+        TopLeft = AlignmentSideType.VTop | AlignmentSideType.HLeft,
+        /// <summary>
+        /// Nahoře uprostřed
+        /// </summary>
+        TopCenter = AlignmentSideType.VTop | AlignmentSideType.HCenter,
+        /// <summary>
+        /// Nahoře vpravo
+        /// </summary>
+        TopRight = AlignmentSideType.VTop | AlignmentSideType.HRight,
+        /// <summary>
+        /// Svisle na střed, vlevo
+        /// </summary>
+        MiddleLeft = AlignmentSideType.VMiddle | AlignmentSideType.HLeft,
+        /// <summary>
+        /// Svisle na střed, uprostřed
+        /// </summary>
+        MiddleCenter = AlignmentSideType.VMiddle | AlignmentSideType.HCenter,
+        /// <summary>
+        /// Svisle na střed, vpravo
+        /// </summary>
+        MiddleRight = AlignmentSideType.VMiddle | AlignmentSideType.HRight,
+        /// <summary>
+        /// Dole vlevo
+        /// </summary>
+        BottomLeft = AlignmentSideType.VBottom | AlignmentSideType.HLeft,
+        /// <summary>
+        /// Dole na střed
+        /// </summary>
+        BottomCenter = AlignmentSideType.VBottom | AlignmentSideType.HCenter,
+        /// <summary>
+        /// Dole vpravo
+        /// </summary>
+        BottomRight = AlignmentSideType.VBottom | AlignmentSideType.HRight,
+
+        /// <summary>
+        /// Defaultně = Nahoře vlevo
+        /// </summary>
+        Default = TopLeft
+    }
+    /// <summary>
+    /// Zarovnání obsahu, jednotlivé osy a směry, bez kombinací. 
+    /// Numerickými hodnotami se shoduje s enumem <see cref="ContentAlignmentType"/>
+    /// Nemá odpovídající XSD typ.
+    /// </summary>
+    [Flags]
+    public enum AlignmentSideType
+    {
+        /// <summary>
+        /// Nezarovnáno
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Horizontálně: vlevo
+        /// </summary>
+        HLeft = 0b00000100,
+        /// <summary>
+        /// Horizontálně: uprostřed
+        /// </summary>
+        HCenter = 0b00000010,
+        /// <summary>
+        /// Horizontálně: vpravo
+        /// </summary>
+        HRight = 0b00000001,
+        /// <summary>
+        /// Vertikálně: nahoru
+        /// </summary>
+        VTop = 0b01000000,
+        /// <summary>
+        /// Vertikálně: na střed
+        /// </summary>
+        VMiddle = 0b00100000,
+        /// <summary>
+        /// Vertikálně: dole
+        /// </summary>
+        VBottom = 0b00010000
+    }
+    /// <summary>
+    /// Styl zobrazení Title řádku.
+    /// Odpovídá XSD typu <c>title_style_enum</c>
     /// </summary>
     public enum TitleStyleType
     {
@@ -776,33 +943,8 @@ SplitButton      A       A             A      A       A          A         A    
         TextWithLineAbove
     }
     /// <summary>
-    /// Styl zobrazení ComboBoxu
-    /// </summary>
-    public enum ComboBoxStyleType
-    {
-        /// <summary>
-        /// Default = List
-        /// </summary>
-        Default,
-        /// <summary>
-        /// Do políčka je možno vepisovat text, anebo je možno vybrat z nabídky. Nemá ikonu.
-        /// </summary>
-        ListEdit,
-        /// <summary>
-        /// Do políčka je možno pouze vybrat hodnotu z nabídky. Nemá ikonu.
-        /// </summary>
-        List,
-        /// <summary>
-        /// Do políčka je možno pouze vybrat hodnotu z nabídky. Zobrazuje ikonu i text.
-        /// </summary>
-        IconTextList,
-        /// <summary>
-        /// Do políčka je možno pouze vybrat hodnotu z nabídky. Zobrazuje pouze ikonu.
-        /// </summary>
-        IconList
-    }
-    /// <summary>
-    /// Styl zobrazení CheckBoxu
+    /// Styl zobrazení CheckBoxu.
+    /// Odpovídá XSD typu <c>checkbox_style_enum</c>
     /// </summary>
     public enum CheckBoxStyleType
     {
@@ -828,6 +970,87 @@ SplitButton      A       A             A      A       A          A         A    
         ToggleSwitch
     }
     /// <summary>
+    /// Styl zobrazení ComboBoxu.
+    /// Odpovídá XSD typu <c>combobox_style_enum</c>
+    /// </summary>
+    public enum ComboBoxStyleType
+    {
+        /// <summary>
+        /// Default = List
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Do políčka je možno vepisovat text, anebo je možno vybrat z nabídky. Nemá ikonu.
+        /// </summary>
+        ListEdit,
+        /// <summary>
+        /// Do políčka je možno pouze vybrat hodnotu z nabídky. Nemá ikonu.
+        /// </summary>
+        List,
+        /// <summary>
+        /// Do políčka je možno pouze vybrat hodnotu z nabídky. Zobrazuje ikonu i text.
+        /// </summary>
+        IconTextList,
+        /// <summary>
+        /// Do políčka je možno pouze vybrat hodnotu z nabídky. Zobrazuje pouze ikonu.
+        /// </summary>
+        IconList
+    }
+    /// <summary>
+    /// Styl viditelnosti buttonů v rámci prvku <see cref="DxRepositoryEditorTextBoxButton"/>.
+    /// Odpovídá XSD typu <c>buttons_visibility_enum</c>
+    /// </summary>
+    public enum ButtonsVisibilityType
+    {
+        /// <summary>
+        /// Defaultní = jen v aktivním prvku (Focus nebo MouseOn), vyjma stavu Disabled
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Jen v aktivním prvku (Focus nebo MouseOn), vyjma stavu Disabled
+        /// </summary>
+        OnlyActive,
+        /// <summary>
+        /// Viditelné vždy
+        /// </summary>
+        VisibleAlways,
+        /// <summary>
+        /// Neviditelné
+        /// </summary>
+        Invisible
+    }
+    /// <summary>
+    /// Akce, kterou button provede.
+    /// Odpovídá XSD typu <c>button_action_enum</c>
+    /// </summary>
+    public enum ButtonActionType
+    {
+        /// <summary>
+        /// Default = Click = Odešle kliknutí na server
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Click = Odešle kliknutí na server
+        /// </summary>
+        Click,
+        /// <summary>
+        /// Odešle Update dat na server
+        /// </summary>
+        Update,
+        /// <summary>
+        /// Ověří vyplněnost Required polí
+        /// </summary>
+        ClickCheckRequired,
+        /// <summary>
+        /// Spustí funkci, název funkce je v atributu ActionData
+        /// </summary>
+        RunFunction,
+        /// <summary>
+        /// Zavře okno, protože je zima a táhne nám na záda
+        /// </summary>
+        Close
+    }
+    /// <summary>
     /// Stav prvku. 
     /// Jde o Flags. Lze je sčítat z celé hierarchie containerů (OR), výsledek popisuje stav nejvyššího prvku.
     /// Tedy pokud jeden jediný prvek v hierarchii je <see cref="Invisible"/>, pak finální prvek je neviditelný.
@@ -835,12 +1058,16 @@ SplitButton      A       A             A      A       A          A         A    
     /// Pokud součet všech hodnot je <see cref="Default"/>, pak prvek je viditelný a editovatelný.
     /// </summary>
     [Flags]
-    public enum ItemState
+    public enum ControlStateType
     {
+        /// <summary>
+        /// Výchozí = Enabled + Visible + TabStop
+        /// </summary>
+        Default = 0,
         /// <summary>
         /// Prvek je viditelný a editovatelný, a TAB na něm zastavuje.
         /// </summary>
-        Default = 0,
+        Enabled = 0,
         /// <summary>
         /// Prvek je neviditelný.
         /// </summary>
@@ -866,6 +1093,66 @@ SplitButton      A       A             A      A       A          A         A    
         /// Lze tedy hierarchicky zakázat TabStop pro samotný prvek, nebo pro určitý jeho Parent (a tím zakázat TabStop pro všechny prvky v Parent containeru).
         /// </summary>
         TabSkip = 0x0008
+    }
+    /// <summary>
+    /// Styl jednoho bloku = odstavce
+    /// </summary>
+    public enum ContainerStyleType
+    {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None,
+        /// <summary>
+        /// Běžný vnitřní TAB (odstavec), může / nemusí mít titulek (podle přítomnosti textu <see cref="DataFormatBaseInputTextControl.Text"/>)
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Vrcholový container, reprezentuje celý formulář
+        /// </summary>
+        Form,
+        /// <summary>
+        /// Sada stránek; její vnitřní prvky musí být stylu <see cref="ContainerStyleType.Page"/>
+        /// </summary>
+        PageSet,
+        /// <summary>
+        /// Záhlaví stránky. Ignoruje souřadnice 
+        /// </summary>
+        Page,
+        /// <summary>
+        /// Běžný panel, jako <see cref="Default"/>
+        /// </summary>
+        Panel
+    }
+    /// <summary>
+    /// Povinnost vyplnění prvku (zadání neprázdné hodnoty)
+    /// </summary>
+    public enum RequiredType
+    {
+        /// <summary>
+        /// Běžná nepovinná hodnota
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None,
+        /// <summary>
+        /// Důležitá hodnota, ale nepovinná (Warning)
+        /// </summary>
+        Important,
+        /// <summary>
+        /// Povinná hodnota (Error)
+        /// </summary>
+        Required,
+        /// <summary>
+        /// Běžná nepovinná hodnota, zpětná kompatibilita
+        /// </summary>
+        False,
+        /// <summary>
+        /// Povinná hodnota (Error), zpětná kompatibilita
+        /// </summary>
+        True
     }
     /// <summary>
     /// Druh vstupního prvku
@@ -952,144 +1239,6 @@ SplitButton      A       A             A      A       A          A         A    
         /// HTML prohlížeč
         /// </summary>
         HtmlContent
-    }
-    /// <summary>
-    /// Povinnost vyplnění prvku (zadání neprázdné hodnoty)
-    /// </summary>
-    public enum RequiredType
-    {
-        /// <summary>
-        /// Neurčeno
-        /// </summary>
-        None,
-        /// <summary>
-        /// Běžná nepovinná hodnota
-        /// </summary>
-        Default,
-        /// <summary>
-        /// Důležitá hodnota, ale nepovinná
-        /// </summary>
-        Important,
-        /// <summary>
-        /// Povinná hodnota
-        /// </summary>
-        Required
-    }
-    /// <summary>
-    /// Zarovnání obsahu.
-    /// Shoduje se hodnotami s enumem <see cref="AlignmentSideType"/>
-    /// </summary>
-    public enum LabelPositionType
-    {
-        /// <summary>
-        /// Default = Nikde = výchozí
-        /// </summary>
-        Default,
-        /// <summary>
-        /// Nikde = výchozí
-        /// </summary>
-        None,
-        /// <summary>
-        /// Vlevo před textem
-        /// </summary>
-        Left,
-        /// <summary>
-        /// Vpravo
-        /// </summary>
-        Right,
-        /// <summary>
-        /// Nahoře nad textem
-        /// </summary>
-        Up,
-        /// <summary>
-        /// Dole pod textem
-        /// </summary>
-        Bottom
-    }
-    /// <summary>
-    /// Zarovnání obsahu.
-    /// Shoduje se hodnotami s enumem <see cref="AlignmentSideType"/>
-    /// </summary>
-    [Flags]
-    public enum ContentAlignmentType
-    {
-        /// <summary>
-        /// Nahoře vlevo
-        /// </summary>
-        TopLeft      = AlignmentSideType.VTop    | AlignmentSideType.HLeft,
-        /// <summary>
-        /// Nahoře uprostřed
-        /// </summary>
-        TopCenter    = AlignmentSideType.VTop    | AlignmentSideType.HCenter,
-        /// <summary>
-        /// Nahoře vpravo
-        /// </summary>
-        TopRight     = AlignmentSideType.VTop    | AlignmentSideType.HRight,
-        /// <summary>
-        /// Svisle na střed, vlevo
-        /// </summary>
-        MiddleLeft   = AlignmentSideType.VMiddle | AlignmentSideType.HLeft,
-        /// <summary>
-        /// Svisle na střed, uprostřed
-        /// </summary>
-        MiddleCenter = AlignmentSideType.VMiddle | AlignmentSideType.HCenter,
-        /// <summary>
-        /// Svisle na střed, vpravo
-        /// </summary>
-        MiddleRight  = AlignmentSideType.VMiddle | AlignmentSideType.HRight,
-        /// <summary>
-        /// Dole vlevo
-        /// </summary>
-        BottomLeft   = AlignmentSideType.VBottom | AlignmentSideType.HLeft,
-        /// <summary>
-        /// Dole na střed
-        /// </summary>
-        BottomCenter = AlignmentSideType.VBottom | AlignmentSideType.HCenter,
-        /// <summary>
-        /// Dole vpravo
-        /// </summary>
-        BottomRight  = AlignmentSideType.VBottom | AlignmentSideType.HRight,
-
-        /// <summary>
-        /// Defaultně = Nahoře vlevo
-        /// </summary>
-        Default      = TopLeft
-    }
-    /// <summary>
-    /// Zarovnání obsahu, jednotlivé strany. 
-    /// Shoduje se hodnotami s enumem <see cref="ContentAlignmentType"/>
-    /// </summary>
-    [Flags]
-    public enum AlignmentSideType
-    {
-        /// <summary>
-        /// Nezarovnáno
-        /// </summary>
-        None    = 0,
-        /// <summary>
-        /// Horizontálně: vlevo
-        /// </summary>
-        HLeft   = 0b00000100,
-        /// <summary>
-        /// Horizontálně: uprostřed
-        /// </summary>
-        HCenter = 0b00000010,
-        /// <summary>
-        /// Horizontálně: vpravo
-        /// </summary>
-        HRight  = 0b00000001,
-        /// <summary>
-        /// Vertikálně: nahoru
-        /// </summary>
-        VTop    = 0b01000000,
-        /// <summary>
-        /// Vertikálně: na střed
-        /// </summary>
-        VMiddle = 0b00100000,
-        /// <summary>
-        /// Vertikálně: dole
-        /// </summary>
-        VBottom = 0b00010000
     }
     #endregion
 }
