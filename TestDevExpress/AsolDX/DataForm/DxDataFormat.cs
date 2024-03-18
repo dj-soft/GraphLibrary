@@ -51,56 +51,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
 
     */
 
-
-    /*    DataFormat
-      - Reprezentuje definici vzhledu a chování DataFormu
-      - Odpovídá aktuální verzi formátu V4
-
-
-      Form => { TabContainer | }
-      - Tab:
-         .Style = { TabContainer, TabHeader,  }
-
-
-
-
-
-
-
-
-
-
-
-          Hierarchie uvnitř DataFormu
-      - 'DataFormat' je třída reprezentující komplexní formát obsahu DataFormu
-         - 'DataFormat' může být jednoduchý, pak v property 'Panel' obsahuje jednu instanci 'DataFormatFlowPanel', nezobrazuje záložky ale přímo obsah
-         - 'DataFormat' může obsahovat i sadu záložek, umístěnou v property 'Pages', ta v sobě obsahuje sadu stránek 'DataFormatPages'
-         -    Nikdy nesmí obsahovat obě najednou!
-      - Jedna stránka 'DataFormatPage' je potomkem 'DataFormatFlowPanel', proto má podobné chování; obsahuje navíc text a ikony pro záložku
-      - Panel 'DataFormatFlowPanel' může tedy být zobrazen jako single, anebo jako obsah jedné záložky
-      - Panel 'DataFormatFlowPanel' v sobě může obsahovat jednotlivé containery, které může umísťovat pod sebe nebo vedle sebe v závislosti na disponibilním prostoru a vlastnostech
-      - Jednotlivé prvky v 'DataFormatFlowPanel' jsou buď vnořené další 'DataFormatFlowPanel', anebo koncové Taby 'DataFormatTab'
-      - Prvky v 'DataFormatFlowPanel' si samy určí svoji velikost podle svého obsahu a dalších vlastností
-         a tím je následně určena i pozice jednotlivých prvků (tok obsahu dolů / dolů a pak doprava / zleva doprava a pak dolů / zalomení podle nastavení) => layout celé stránky
-      - Prvky 'DataFormatTab' obsahují buď jednotlivé controly 'DataFormatControl' anebo grupy controlů 'DataFormatGroup', 
-         oba typy prvků ale v rámci Tabu musí mít exaktně danou pozici (umístění i velikost), jejich velikost ani umístění se neurčuje nějakým výpočtem 
-          = to je princip FormatVersion4 !!
-      - Prvky 'DataFormatTab' tedy dokážou určit svoji velikost (Width a Height) = na základě velikosti svého obsahu a Padding a přítomnosti titulkového řádku a patkové linky;
-          - Tyto prvky mohou / nemusí mít určenou explicitní velikost
-          - Tyto prvky mohou mít určené vlastnosti pro řízení layoutu
-      - Prvky 'DataFormatFlowPanel' si poskládají svoje Child prvky do layoutu podle jejich rozměru, zásadně v řazení pod sebe (X = 0, Y = průběžně dolů);
-
-
-          Funkcionalita tříd
-      - Pouze obsahují data
-      - Třídy nemají uvnitř žádnou funkcionalitu
-      - Existuje třída DataFormatManager, která zajišťuje veškerou funkcionalitu okolo Formátu
-
-
-
-    */
-
-
     /*   Typy a vlastnosti
 
 
@@ -161,7 +111,6 @@ SplitButton      A       A             A      A       A          A         A    
         {
             this.Style = ContainerStyle.Form;
         }
-
         /// <summary>
         /// Namespace XML dokumentu
         /// </summary>
