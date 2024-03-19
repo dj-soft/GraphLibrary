@@ -2,11 +2,12 @@
 <template xmlns="http://tempuri.org/DxDataFormat.Frm.xsd" 
           FormatVersion="4"
           UseNorisClass="1161"
-          Messages="/app/lcs/Manufacturing/Forms/DwMfrFrm.msg.xml"
+          Messages="dw_common_messages.msg.xml"
+          DataSource="dw_sample_form.data.xml"
           MasterWidth="530" MasterHeight="320"
           TotalWidth="750" TotalHeight="520"  >
 
-    <panel Name="Panel1" Margins="12,6"  >
+    <panel Name="Panel1" Margins="12,6" BackColorName="Orange_front_protect" BackColorDark="LightBlue" >
         <label Name="info1_lbl" Bounds="14,2,150" Text="Popisek" ToolTipTitle="Nápověda" ToolTipText="Informace k tomuto prvku neexistuje" />
         <textbox Name="info1" Bounds="10,20,160" Required="True" State="SkipTab" />
         <label Name="info2_lbl" Bounds="184,2,150" Text="Informace" />
@@ -23,7 +24,11 @@
         
         <button Name="butOpen" HotKey="F8" Bounds="2,50,120,35" Text="Otevři..." ActionType="RunFunction" ActionData="Realizuj" ToolTipTitle="Otevřít dveře" ToolTipText="Přistoupit ku dveřím, stiskem kliky uvolnit a pak tahem otevřít..."/>
 
-        <textbox Name="45678" Bounds="120,75,180" LabelPosition="BeforeRight" Label="Popisek"/>
+        <textbox Name="c45678" Bounds="120,75,180" LabelPosition="BeforeRight" Label="Popisek"/>
+
+        <textboxbutton Name="tbb123" Bounds="120,100,180" LabelPosition="BeforeRight" Label="Volba:">
+            <rightButton Name="tbbr1" ActionType="Click" />
+        </textboxbutton>
         
         <panel Name="p1234" BackColorName="Blue_front_protect" >
             <label Name="aaa" Text="Vnitřní popisek"/>
@@ -39,7 +44,7 @@
             <textbox Name="Pocet01" Bounds="135,2,120" Required="True"/>
         </page>
     </pageset>
-    <panel Name="vvvv" BackColorName="User_12" BackColor="">
+    <panel Name="vvvv" BackColorName="User_12" BackColorLight="">
         <label Name="t3"/>
         <textboxbutton Name="tb1" ButtonsVisibility="Default">
             <leftButton Name="fff" Text=".." IconName="pic"/>

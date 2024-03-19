@@ -2,15 +2,15 @@
 <template xmlns="http://tempuri.org/DxDataFormat.Frm.xsd" 
           FormatVersion="4"
           UseNorisClass="12"
-          Messages="/app/lcs/Base/Forms/DwMfrFrm.msg.xml"
-          DataSource="/app/lcs/Base/Forms/dw_organizace_form.data.xml"
+          Messages="dw_common_messages.msg.xml"
+          DataSource="dw_organizace_form.data.xml"
           MasterWidth="530" MasterHeight="320"
           TotalWidth="750" TotalHeight="520"
           Margins="10,6"
 		  ContextMenu="True"
 		  >
 
-    <panel Name="panelName"  >
+    <panel Name="panelName" BackColorLight=""  >
         <title Name="nameTitle" Text="Základní data"/>
         <label Name="reference_subjektu_lbl" Bounds="14,2,150" Text="Reference" ToolTipTitle="Nápověda" ToolTipText="Informace k tomuto prvku neexistuje" />
         <textbox Name="reference_subjektu" Bounds="10,20,160" Required="True" />

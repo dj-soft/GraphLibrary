@@ -202,7 +202,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private static DataFormatContainerForm _FillContainerForm(System.Xml.Linq.XElement xElement, DataFormatContainerForm control, LoaderContext loaderContext)
         {
             if (control is null) control = new DataFormatContainerForm();
-            control.Style = ContainerStyleType.Form;
 
             // Atributy:
             _FillBaseAttributes(xElement, control);
@@ -228,12 +227,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var xContainers = xElement.Elements();
             foreach (var xContainer in xContainers)
             {
-                DataFormatBaseControl container = _CreateContainer(xContainer, loaderContext);
+                DataFormatBaseSubControl container = _CreateContainer(xContainer, loaderContext);
                 if (container != null)
                 {
-                    if (control.Controls is null)
-                        control.Controls = new List<DataFormatBaseControl>();
-                    control.Controls.Add(container);
+                    if (control.Childs is null)
+                        control.Childs = new List<DataFormatBaseSubControl>();
+                    control.Childs.Add(container);
                 }
             }
             return control;
@@ -243,7 +242,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement"></param>
         /// <param name="loaderContext">Průběžná data pro načítání obsahu</param>
-        private static DataFormatBaseControl _CreateContainer(System.Xml.Linq.XElement xElement, LoaderContext loaderContext)
+        private static DataFormatBaseContainer _CreateContainer(System.Xml.Linq.XElement xElement, LoaderContext loaderContext)
         {
             string elementName = xElement?.Name.LocalName.ToLower();          // pageset, panel, nestedpanel
             switch (elementName)
@@ -272,7 +271,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             // Výsledná instance:
             if (control is null) control = new DataFormatContainerPageSet();
-            control.Style = ContainerStyleType.PageSet;
 
             // Atributy:
             _FillBaseAttributes(xElement, control);
@@ -283,9 +281,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var page = _FillContainerPage(xPage, null, loaderContext);
                 if (page != null)
                 {
-                    if (control.Controls is null)
-                        control.Controls = new List<DataFormatBaseControl>();
-                    control.Controls.Add(page);
+                    if (control.Childs is null)
+                        control.Childs = new List<DataFormatBaseSubControl>();
+                    control.Childs.Add(page);
                 }
             }
 
@@ -302,7 +300,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             // Výsledná instance:
             if (control is null) control = new DataFormatContainerPage();
-            control.Style = ContainerStyleType.Page;
 
             // Atributy:
             _FillBaseAttributes(xElement, control);
@@ -329,7 +326,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             // Výsledná instance:
             if (control is null) control = new DataFormatContainerPanel();
-            control.Style = ContainerStyleType.Panel;
 
             // Atributy:
             _FillBaseAttributes(xElement, control);
@@ -341,10 +337,20 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 var xNestedDocument = System.Xml.Linq.XDocument.Parse(nestedContent);
                 var nestedTemplate = _LoadFromDocument(xNestedDocument, loaderContext);
-                if (nestedTemplate != null)
-                {   // Přenesu některé atributy a všechny prvky Items:
+                if (nestedTemplate != null && nestedTemplate.Tabs.OfType<DataFormatContainerPanel>().TryGetFirst(t => (t is not null), out var sourcePanel))
+                {   // Přenesu některé atributy:
+                    control.BackColorName = sourcePanel.BackColorName;
+                    control.BackColorLight = sourcePanel.BackColorLight;
+                    control.BackColorDark = sourcePanel.BackColorDark;
+                    control.Bounds = _CloneBoundsSize(sourcePanel.Bounds);
+                    control.Margins = _CloneMargins(sourcePanel.Margins);
+                    control.State = sourcePanel.State;
+                    control.Invisible = sourcePanel.Invisible;
+                    control.ToolTipTitle = sourcePanel.ToolTipTitle;
+                    control.ToolTipText = sourcePanel.ToolTipText;
 
-                    control.Controls.AddRange(nestedTemplate.Controls);
+                    // Přenesu všechny prvky Items:
+                    control.Childs.AddRange(nestedTemplate.Childs);
                 }
             }
 
@@ -361,13 +367,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             // Výsledná instance:
             if (control is null) control = new DataFormatContainerPanel();
-            control.Style = ContainerStyleType.Panel;
 
             // Atributy:
             _FillBaseAttributes(xElement, control);
             control.IconName = _ReadAttributeString(xElement, "IconName", null);
             control.Title = _ReadAttributeString(xElement, "Title", null);
             control.TitleStyle = _ReadAttributeEnum(xElement, "TitleStyle", TitleStyleType.Default);
+            control.CollapseState = _ReadAttributeEnum(xElement, "CollapseState", PanelCollapseState.Default);
 
             // Elementy = Controly:
             _LoadContainerControls(xElement, control, loaderContext);
@@ -391,9 +397,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     var item = _CreateItem(xItem, loaderContext);
                     if (item != null)
                     {
-                        if (container.Controls is null)
-                            container.Controls = new List<DataFormatBaseControl>();
-                        container.Controls.Add(item);
+                        if (container.Childs is null)
+                            container.Childs = new List<DataFormatBaseSubControl>();
+                        container.Childs.Add(item);
                     }
                 }
             }
@@ -409,7 +415,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xElement"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatBaseControl _CreateItem(System.Xml.Linq.XElement xElement, LoaderContext loaderContext)
+        private static DataFormatBaseSubControl _CreateItem(System.Xml.Linq.XElement xElement, LoaderContext loaderContext)
         {
             string elementName = xElement?.Name.LocalName.ToLower();          // label, textbox, textbox_button, button, combobox, ...,   pageset, panel, nestedpanel,
             switch (elementName)
@@ -431,7 +437,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private static DataFormatBaseControl _FillControlLabel(System.Xml.Linq.XElement xElement, DataFormatControlLabel control, LoaderContext loaderContext)
         {
-            control.ControlType = ControlType.Label;
             _FillBaseAttributes(xElement, control);
             control.Text = _ReadAttributeString(xElement, "Text", null);
             control.Alignment = _ReadAttributeEnum(xElement, "Alignment", ContentAlignmentType.Default);
@@ -439,7 +444,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private static DataFormatBaseControl _FillControlTitle(System.Xml.Linq.XElement xElement, DataFormatControlTitle control, LoaderContext loaderContext)
         {
-            control.ControlType = ControlType.Title;
             _FillBaseAttributes(xElement, control);
             control.IconName = _ReadAttributeString(xElement, "IconName", null);
             control.Title = _ReadAttributeString(xElement, "Title", null);
@@ -448,14 +452,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private static DataFormatBaseControl _FillControlCheckBox(System.Xml.Linq.XElement xElement, DataFormatControlCheckBox control, LoaderContext loaderContext)
         {
-            control.ControlType = ControlType.CheckBox;
             _FillBaseAttributes(xElement, control);
             control.Style = _ReadAttributeEnum(xElement, "Style", CheckBoxStyleType.Default);
             return control;
         }
         private static DataFormatBaseControl _FillControlButton(System.Xml.Linq.XElement xElement, DataFormatControlButton control, LoaderContext loaderContext)
         {
-            control.ControlType = ControlType.Button;
             _FillBaseAttributes(xElement, control);
             control.ActionType = _ReadAttributeEnum(xElement, "ActionType", ButtonActionType.Default);
             control.ActionData = _ReadAttributeString(xElement, "ActionData", null);
@@ -464,7 +466,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private static DataFormatBaseControl _FillControlDropDownButton(System.Xml.Linq.XElement xElement, DataFormatControlDropDownButton control, LoaderContext loaderContext)
         {
-            control.ControlType = ControlType.DropDownButton;
             _FillControlButton(xElement, control, loaderContext);
 
             // Elementy = Items:
@@ -476,7 +477,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     string elementName = xItem?.Name.LocalName;
                     if (String.Equals(elementName, "dropDownButton", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        var subButton = _FillControlSubButton(xElement, new DataFormatSubButton(), loaderContext);
+                        var subButton = _FillControlSubButton(xItem, new DataFormatSubButton(), loaderContext);
                         if (subButton != null)
                         {
                             if (control.DropDownButtons is null)
@@ -491,7 +492,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private static DataFormatBaseControl _FillControlTextBox(System.Xml.Linq.XElement xElement, DataFormatControlTextBox control, LoaderContext loaderContext)
         {
-            control.ControlType = ControlType.TextBox;
             _FillBaseAttributes(xElement, control);
             control.EditMask = _ReadAttributeString(xElement, "EditMask", null);
             control.Alignment = _ReadAttributeEnum(xElement, "Alignment", ContentAlignmentType.Default);
@@ -499,7 +499,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private static DataFormatBaseControl _FillControlTextBoxButton(System.Xml.Linq.XElement xElement, DataFormatControlTextBoxButton control, LoaderContext loaderContext)
         {
-            control.ControlType = ControlType.TextBoxButton;
             _FillControlTextBox(xElement, control, loaderContext);
             control.ButtonsVisibility = _ReadAttributeEnum(xElement, "ButtonsVisibility", ButtonsVisibilityType.Default);
 
@@ -512,7 +511,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     string elementName = xItem?.Name.LocalName;
                     if (String.Equals(elementName, "leftButton", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        var subButton = _FillControlSubButton(xElement, new DataFormatSubButton(), loaderContext);
+                        var subButton = _FillControlSubButton(xItem, new DataFormatSubButton(), loaderContext);
                         if (subButton != null)
                         {
                             if (control.LeftButtons is null)
@@ -522,7 +521,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     }
                     else if (String.Equals(elementName, "rightButton", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        var subButton = _FillControlSubButton(xElement, new DataFormatSubButton(), loaderContext);
+                        var subButton = _FillControlSubButton(xItem, new DataFormatSubButton(), loaderContext);
                         if (subButton != null)
                         {
                             if (control.RightButtons is null)
@@ -537,7 +536,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private static DataFormatBaseControl _FillControlComboBox(System.Xml.Linq.XElement xElement, DataFormatComboBox control, LoaderContext loaderContext)
         {
-            control.ControlType = ControlType.ComboListBox;
             _FillBaseAttributes(xElement, control);
             control.EditStyleName = _ReadAttributeString(xElement, "EditStyleName", null);
             control.Style = _ReadAttributeEnum(xElement, "Style", ComboBoxStyleType.Default);
@@ -551,7 +549,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     string elementName = xItem?.Name.LocalName;
                     if (String.Equals(elementName, "comboItem", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        var comboItem = _FillControlSubButton(xElement, new DataFormatSubButton(), loaderContext);
+                        var comboItem = _FillControlSubButton(xItem, new DataFormatSubButton(), loaderContext);
                         if (comboItem != null)
                         {
                             if (control.ComboItems is null)
@@ -622,8 +620,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (target is DataFormatBaseContainer container)
             {
                 container.BackColorName = _ReadAttributeString(xElement, "BackColorName", null);
-                container.BackColorLight = _ReadAttributeString(xElement, "BackColorLight", null);
-                container.BackColorDark = _ReadAttributeString(xElement, "BackColorDark", null);
+                container.BackColorLight = _ReadAttributeColorN(xElement, "BackColorLight", null);
+                container.BackColorDark = _ReadAttributeColorN(xElement, "BackColorDark", null);
                 container.Margins = _ReadAttributesMargin(xElement, "Margins", null);
             }
         }
@@ -656,6 +654,27 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 var xAttribute = xElement.Attribute(attributeName);
                 if (xAttribute != null && !String.IsNullOrEmpty(xAttribute.Value) && Int32.TryParse(xAttribute.Value, out var result)) value = result;
+            }
+            return value;
+        }
+        /// <summary>
+        /// V daném elementu najde atribut daného jména a vrátí jeho Color? podobu
+        /// </summary>
+        /// <param name="xElement"></param>
+        /// <param name="attributeName"></param>
+        /// <param name="defaultValue"></param>
+        private static System.Drawing.Color? _ReadAttributeColorN(System.Xml.Linq.XElement xElement, string attributeName, System.Drawing.Color? defaultValue)
+        {
+            System.Drawing.Color? value = defaultValue;
+            if (xElement.HasAttributes && !String.IsNullOrEmpty(attributeName))
+            {
+                var xAttribute = xElement.Attribute(attributeName);
+                if (xAttribute != null && !String.IsNullOrEmpty(xAttribute.Value))
+                {
+                    var color = (System.Drawing.Color)Convertor.StringToColor(xAttribute.Value);
+                    if (!color.IsEmpty)
+                        value = color;
+                }
             }
             return value;
         }
@@ -813,6 +832,47 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     result.Add(number);
             }
             return (result.Count > 0 ? result : null);
+        }
+
+        /// <summary>
+        /// Klonuje dodané souřadnice
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        private static Bounds _CloneBounds(Bounds bounds)
+        {
+            return (bounds is null ? null : new Bounds(bounds.Left, bounds.Top, bounds.Width, bounds.Height));
+        }
+        /// <summary>
+        /// Klonuje velikost z dodaných souřadnic
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        private static Bounds _CloneBoundsSize(Bounds bounds)
+        {
+            return (bounds is null ? null : new Bounds(null, null, bounds.Width, bounds.Height));
+        }
+        /// <summary>
+        /// Klonuje pozici z dodaných souřadnic
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        private static Bounds _CloneBoundsLocation(Bounds bounds)
+        {
+            return (bounds is null ? null : new Bounds(bounds.Left, bounds.Top, null, null));
+        }
+        /// <summary>
+        /// Klonuje dodané okraje
+        /// </summary>
+        /// <param name="margins"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        private static Margins _CloneMargins(Margins margins)
+        {
+            return (margins is null ? null : new Margins(margins.Left, margins.Top, margins.Right, margins.Bottom));
         }
         #endregion
         #region class LoaderContext

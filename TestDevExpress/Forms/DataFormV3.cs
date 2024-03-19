@@ -45,6 +45,8 @@ namespace TestDevExpress.Forms
         /// </summary>
         protected override void DxRibbonPrepare()
         {
+            PrepareClipboard();
+
             this.TestPainting = false;
 
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
@@ -102,7 +104,7 @@ namespace TestDevExpress.Forms
             addSampleButton(3144, "Table x 144 řádek", imageTest3);
             addSampleButton(3600, "Table x 600 řádek", imageTest3);
 
-
+            /*
 
             var page2 = new DataRibbonPage() { PageId = "Testy", PageText = "Ukázky" };
             var group21 = new DataRibbonGroup() { GroupId = "TestCombo", GroupText = "Combo boxy" };
@@ -147,13 +149,10 @@ namespace TestDevExpress.Forms
             page2.Groups.Add(group21);
             pages.Add(page2);
 
+            */
 
             this.DxRibbon.Clear();
             this.DxRibbon.AddPages(pages);
-
-
-
-
 
 
             this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
@@ -217,13 +216,15 @@ namespace TestDevExpress.Forms
                     break;
             }
         }
-
+        /// <summary>
+        /// Vrátí soupis položek do nabídky Ribbonu pro načítání XML souborů
+        /// </summary>
+        /// <returns></returns>
         private ListExt<IRibbonItem> _GetFrmXmlFileItems()
         {
             ListExt<IRibbonItem> ribbonItems = new ListExt<IRibbonItem>();
 
-            string iconXml1 = "images/xaf/templatesv2images/action_export_toxml.svg";
-            string iconXml2 = "svgimages/xaf/modeleditor_action_xml.svg";
+            string iconXml = "svgimages/xaf/modeleditor_action_xml.svg";
 
             string appPath = DxComponent.ApplicationPath;                           // C:\DavidPrac\GitRepo\dj-soft\GraphLibrary\TestDevExpress\bin 
             string projPath = System.IO.Path.GetDirectoryName(appPath);             // C:\DavidPrac\GitRepo\dj-soft\GraphLibrary\TestDevExpress
@@ -236,7 +237,7 @@ namespace TestDevExpress.Forms
                 {
                     itemId++;
                     string relFile = System.IO.Path.GetFileName(file);
-                    DataRibbonItem fileItem = new DataRibbonItem() { ItemId = $"LoadFormFileOne_{itemId}", ImageName = iconXml2, Text = relFile, ToolTipTitle = "Načte obsah souboru", ToolTipText = file, Tag = file };
+                    DataRibbonItem fileItem = new DataRibbonItem() { ItemId = $"LoadFormFileOne_{itemId}", ImageName = iconXml, Text = relFile, ToolTipTitle = "Načte obsah souboru", ToolTipText = file, Tag = file };
                     ribbonItems.Add(fileItem);
                 }
             }
@@ -405,6 +406,42 @@ namespace TestDevExpress.Forms
             }
 
             string loadNested(string name) { return null; }
+        }
+        /// <summary>
+        /// Do clipboardu připraví definici typu
+        /// </summary>
+        private void PrepareClipboard()
+        {
+            return;
+
+            StringBuilder sb = new StringBuilder();
+            // type header:
+            sb.AppendLine("    <xs:simpleType name=\"color_name_enum\">");
+            sb.AppendLine("        <xs:union memberTypes=\"xs:string\">");
+            sb.AppendLine("            <xs:simpleType>");
+            sb.AppendLine("                <xs:restriction base=\"xs:string\">");
+            sb.AppendLine("");
+
+            // type values:
+            var colorType = typeof(Color);
+            var properties = colorType.GetProperties().Where(p => p.CanRead && p.PropertyType == colorType && p.GetGetMethod().IsStatic).ToList();
+            properties.Sort((a, b) => String.Compare(a.Name, b.Name));
+            foreach (var property in properties)
+            {
+                var name = property.Name;
+                var value = property.GetValue(null) as Color?;
+                string rgb = "#" + value.Value.R.ToString("X2") + value.Value.G.ToString("X2") + value.Value.B.ToString("X2");
+                var line = $"                    <xs:enumeration value=\"{name}\"><xs:annotation><xs:documentation xml:lang=\"cs-cz\">RGB: {rgb}</xs:documentation></xs:annotation></xs:enumeration>";
+                sb.AppendLine(line);
+            }
+
+            // type footer:
+            sb.AppendLine("                </xs:restriction>");
+            sb.AppendLine("            </xs:simpleType>");
+            sb.AppendLine("        </xs:union>");
+            sb.AppendLine("    </xs:simpleType>");
+
+            Clipboard.SetText(sb.ToString());
         }
         /// <summary>
         /// Odebere DataForm
