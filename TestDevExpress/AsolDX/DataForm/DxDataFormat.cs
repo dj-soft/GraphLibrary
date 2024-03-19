@@ -208,7 +208,8 @@ SplitButton      A       A             A      A       A          A         A    
         public DataFormatBaseContainer[] Tabs { get { return this.Controls?.OfType<DataFormatBaseContainer>().ToArray(); } }
     }
     /// <summary>
-    /// Panel, může obsahovat controly i containery
+    /// Panel, může obsahovat controly i containery.<br/>
+    /// Odpovídá XSD typu <c>type_base_container</c>
     /// </summary>
     public class DataFormatContainerPanel : DataFormatBaseContainer
     {
@@ -219,9 +220,24 @@ SplitButton      A       A             A      A       A          A         A    
         {
             this.Style = ContainerStyleType.Panel;
         }
+
+        /// <summary>
+        /// Jméno ikony odstavce nebo prvku (v titulku stránky, v titulku odstavce, ikona Buttonu, atd).
+        /// Použití se liší podle typu prvku.
+        /// </summary>
+        public string IconName { get; set; }
+        /// <summary>
+        /// Text popisku
+        /// </summary>
+        public string Title { get; set; }
+        /// <summary>
+        /// Styl titulku.
+        /// </summary>
+        public TitleStyleType TitleStyle { get; set; }
     }
     /// <summary>
-    /// Panel, může obsahovat controly i containery
+    /// Základní třída pro containery.<br/>
+    /// Odpovídá XSD typu <c>type_base_container</c>
     /// </summary>
     public class DataFormatBaseContainer : DataFormatBaseControl
     {
@@ -237,6 +253,18 @@ SplitButton      A       A             A      A       A          A         A    
         /// </summary>
         public ContainerStyleType Style { get; set; }
         /// <summary>
+        /// Název barevného kalíšku barvy pozadí
+        /// </summary>
+        public string BackColorName { get; set; }
+        /// <summary>
+        /// Barva pozadí, zadaná explicitně pro světlé skiny: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd.
+        /// </summary>
+        public string BackColorLight { get; set; }
+        /// <summary>
+        /// Barva pozadí, zadaná explicitně pro tmavé skiny: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd.
+        /// </summary>
+        public string BackColorDark { get; set; }
+        /// <summary>
         /// Okraje = mezi krajem formuláře / Page / Panel a souřadnicí 0/0
         /// </summary>
         public Margins Margins { get; set; }
@@ -250,7 +278,8 @@ SplitButton      A       A             A      A       A          A         A    
     #endregion
     #region Konkrétní třídy Controlů
     /// <summary>
-    /// DxDataForm : Label
+    /// DxDataForm : Label.<br/>
+    /// Odpovídá XSD typu <c>type_label</c>
     /// </summary>
     public class DataFormatControlLabel : DataFormatBaseControl
     {
@@ -279,7 +308,7 @@ SplitButton      A       A             A      A       A          A         A    
     /// DxDataForm : Title.<br/>
     /// Odpovídá XSD typu <c>type_title</c>
     /// </summary>
-    public class DataFormatControlTitle : DataFormatControlLabel
+    public class DataFormatControlTitle : DataFormatBaseControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
@@ -289,9 +318,22 @@ SplitButton      A       A             A      A       A          A         A    
             this.ControlType = ControlType.Title;
         }
         /// <summary>
+        /// Jméno ikony odstavce nebo prvku (v titulku stránky, v titulku odstavce, ikona Buttonu, atd).
+        /// Použití se liší podle typu prvku.
+        /// </summary>
+        public string IconName { get; set; }
+        /// <summary>
+        /// Text popisku
+        /// </summary>
+        public string Title { get; set; }
+        /// <summary>
         /// Styl titulku.
         /// </summary>
         public TitleStyleType Style { get; set; }
+        /// <summary>
+        /// Zarovnání textu v rámci prostoru
+        /// </summary>
+        public ContentAlignmentType Alignment { get; set; }
     }
     /// <summary>
     /// DxDataForm : CheckBox.<br/>
@@ -331,7 +373,7 @@ SplitButton      A       A             A      A       A          A         A    
         /// <summary>
         /// Akce na tomto buttonu
         /// </summary>
-        public string ActionName { get; set; }
+        public ButtonActionType ActionType { get; set; }
         /// <summary>
         /// Data pro akci na tomto buttonu
         /// </summary>
@@ -716,6 +758,18 @@ SplitButton      A       A             A      A       A          A         A    
             this.Top = all;
             this.Right = all;
             this.Bottom = all;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="horizontal"></param>
+        /// <param name="vertical"></param>
+        public Margins(int horizontal, int vertical)
+        {
+            this.Left = horizontal;
+            this.Top = vertical;
+            this.Right = horizontal;
+            this.Bottom = vertical;
         }
         /// <summary>
         /// Konstruktor

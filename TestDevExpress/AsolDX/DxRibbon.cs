@@ -9618,6 +9618,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void ComboBox_ButtonPressed(object sender, DevExpress.XtraEditors.Controls.ButtonPressedEventArgs e)
         {
             DxComponent.LogAddLine(LogActivityKind.Ribbon, $"DxRibbonComboBox.ComboBox_ButtonPressed: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}; Button={e.Button.Kind}");
+
+            // Při stisknutí buttonu DropDown v situaci, kdy DropDown button není první button vpravo přímo za textem v ComboBoxu, 
+            //  se v DevExpress nativně neotevírá Popup. Nevím proč.
+            if (e.Button.Kind == DevExpress.XtraEditors.Controls.ButtonPredefines.DropDown && !__IsPopupOpen && this.Enabled && this.__ComboBox.Items.Count > 0)
+            {   // Takže pokud jde o button DropDown a není otevřen Popup, a přitom by být mohl:
+                //  pak získám živý editor ComboBoxEdit a otevřu jeho Popup:
+                if (this.GetActiveEditor() is DevExpress.XtraEditors.ComboBoxEdit comboBoxEdit)
+                    comboBoxEdit.ShowPopup();
+            }
         }
         private void ComboBox_ButtonClick(object sender, DevExpress.XtraEditors.Controls.ButtonPressedEventArgs e)
         {
@@ -9708,6 +9717,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // Items:
                 if (iRibbonItem.SubItems != null)
                 {
+                    comboBox.Items.Clear();
                     comboBox.Items.AddRange(iRibbonItem.SubItems.ToArray());
 
                     // SelectedItem:
@@ -9728,11 +9738,18 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
 
                     // Border:
-                    applyBorderStyle(iRibbonCombo.BorderStyle);
-              
+                    applyComboBorderStyle(iRibbonCombo.ComboBorderStyle);
+                    applyButtonsBorderStyle(iRibbonCombo.SubButtonsBorderStyle);
+
                     // Width:
-                    if (iRibbonCombo.Width.HasValue)
+                    if (iRibbonCombo.Width.HasValue && iRibbonCombo.Width.Value > 0)
                         this.Width = iRibbonCombo.Width.Value;       // Tohle jediné nastaví šířku cca přesně
+
+                    
+                    comboBox.NullValuePrompt = iRibbonCombo.NullValuePrompt;
+                    comboBox.ShowNullValuePrompt = DevExpress.XtraEditors.ShowNullValuePromptOptions.EmptyValue;
+
+                    comboBox.ShowDropDown = DevExpress.XtraEditors.Controls.ShowDropDown.SingleClick;
                 }
             }
 
@@ -9748,6 +9765,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 bool isLeft = (!String.IsNullOrEmpty(name) && name.Contains('<'));
                 if (isLeft) name = name.Replace("<", "");                      // Pokud v Name je znak < značí to umístění vlevo; a nebude součástí jména. Typicky se dává na začátek jména, např. <Clear
 
+                // Enabled:
+                bool isDisabled = (!String.IsNullOrEmpty(name) && name.Length > 1 && name.StartsWith("/"));
+                if (isDisabled) name = name.Substring(1);
+
                 // Zkratka pro jednoduché zadání např.: "DropDown"
                 if (String.IsNullOrEmpty(image)) image = name;
 
@@ -9759,7 +9780,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     Tag = name,
                     Caption = "",
                     Kind = kind,
-                    IsLeft = isLeft
+                    IsLeft = isLeft,
+                    Enabled = !isDisabled
                 };
                 if (!String.IsNullOrEmpty(toolTip))
                     dxButton.SuperTip = DxComponent.CreateDxSuperTip(toolTip, null);
@@ -9805,34 +9827,50 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return part;
             }
 
-            // Aplikuje styl borderu
-            void applyBorderStyle(DxBorderStyle border)
+            // Aplikuje styl borderu na ComboBox
+            void applyComboBorderStyle(DxBorderStyle border)
             {
                 switch (border)
                 {
                     case DxBorderStyle.None:
                         comboBox.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
-                        comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
                         comboBox.HighlightedItemStyle = DevExpress.XtraEditors.HighlightStyle.Skinned;
                         comboBox.HotTrackItems = true;
                         break;
                     case DxBorderStyle.HotFlat:
                         comboBox.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
-                        comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
                         comboBox.HighlightedItemStyle = DevExpress.XtraEditors.HighlightStyle.Skinned;
                         comboBox.HotTrackItems = true;
                         break;
                     case DxBorderStyle.Single:
                         comboBox.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple;
-                        comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple;
                         comboBox.HighlightedItemStyle = DevExpress.XtraEditors.HighlightStyle.Skinned;
                         comboBox.HotTrackItems = true;
                         break;
                     case DxBorderStyle.Style3D:
                         comboBox.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
-                        comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
                         comboBox.HighlightedItemStyle = DevExpress.XtraEditors.HighlightStyle.Skinned;
                         comboBox.HotTrackItems = true;
+                        break;
+                }
+            }
+            
+            // Aplikuje styl borderu na ButtonStyle
+            void applyButtonsBorderStyle(DxBorderStyle border)
+            {
+                switch (border)
+                {
+                    case DxBorderStyle.None:
+                        comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+                        break;
+                    case DxBorderStyle.HotFlat:
+                        comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
+                        break;
+                    case DxBorderStyle.Single:
+                        comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple;
+                        break;
+                    case DxBorderStyle.Style3D:
+                        comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
                         break;
                 }
             }
@@ -10833,18 +10871,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DataRibbonComboItem() : base()
         {
-            this.ItemType = RibbonItemType.ComboListBox;
-            BorderStyle = DxBorderStyle.None;
+            ItemType = RibbonItemType.ComboListBox;
+            ComboBorderStyle = DxBorderStyle.None;
+            SubButtonsBorderStyle = DxBorderStyle.HotFlat;
             SubButtons = null;
         }
         /// <summary>
+        /// Typ okraje celého ComboBoxu
+        /// </summary>
+        public DxBorderStyle ComboBorderStyle { get; set; }
+        /// <summary>
+        /// Typ okraje jednotlivých sub-buttonů v ComboBoxu
+        /// </summary>
+        public DxBorderStyle SubButtonsBorderStyle { get; set; }
+        /// <summary>
         /// Šířka prvku v pixelech
         /// </summary>
-        public override int? Width { get; set; }
+        public int? Width { get; set; }
         /// <summary>
-        /// Typ okraje
+        /// Text zobrazený při nevybraném žádném prvku
         /// </summary>
-        public override DxBorderStyle BorderStyle { get; set; }
+        public string NullValuePrompt { get; set; }
         /// <summary>
         /// SubButtony zobrazené vedle prvku (podporuje je zatím jen typ <see cref="RibbonItemType.ComboListBox"/>).
         /// Typicky tlačítko "+", třitečky, Clear, Search, Delete, a libovolné další.<br/>
@@ -10857,15 +10904,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Pokud zde bude null, pak bude ComboBox obsahovat standardní DropDown button (šipka dolů, rozbalující ComboBox).<br/>
         /// Pokud uživatel chce přidat DropDown button a poté i další svoje Buttony, pak na začátek stringu vloží definici <u><c>"DropDown"</c></u> (netřeba definovat Image); a pak za středníkem dává svoje buttony.<br/>
-        /// Pokud uživatel naplní definici a nebude v ní DropDown, pak prostě nebude zobrazen!
+        /// Pokud uživatel naplní definici a nebude v ní DropDown, pak prostě nebude zobrazen!<br/>
+        /// Pokud na začátku jména bude &lt; pak button bude vlevo, například: <![CDATA[Clear=Close;<Manager=pic_0/Menu/bigfilter]]> 
         /// </summary>
-        public override string SubButtons { get; set; }
+        public string SubButtons { get; set; }
     }
     /// <summary>
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd) nebo jako prvek ListBoxu nebo ComboBoxu
     /// </summary>
     [DebuggerDisplay("{DebugText}")]
-    public class DataRibbonItem : DataMenuItem, IRibbonItem, IRibbonComboItem
+    public class DataRibbonItem : DataMenuItem, IRibbonItem
     {
         /// <summary>
         /// Konstruktor
@@ -11101,30 +11149,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Výchozí hodnota je null.
         /// </summary>
         public new ListExt<IRibbonItem> SubItems { get; set; }
-        /// <summary>
-        /// Šířka prvku v pixelech, pro <see cref="RibbonItemType.ComboListBox"/>
-        /// </summary>
-        public virtual int? Width { get; set; }
-        /// <summary>
-        /// Typ okraje, pro <see cref="RibbonItemType.ComboListBox"/>
-        /// </summary>
-        public virtual DxBorderStyle BorderStyle { get; set; }
-        /// <summary>
-        /// SubButtony zobrazené vedle prvku (podporuje je zatím jen typ <see cref="RibbonItemType.ComboListBox"/>).
-        /// Typicky tlačítko "+", třitečky, Clear, Search, Delete, a libovolné další.<br/>
-        /// String má formu: "Name=Image[;Name=Image[;...]]<br/>
-        /// Kde Name = jméno buttonu, které se následně přidává ke jménu vlastního prvku (za tečku) po kliknutí na něj, když se volá aplikační server (MenuItemClick).
-        /// Jako název Image lze použít buď hodnotu z enumu <see cref="PredefinedButtonType"/>, anebo standardní jméno ikony v rámci systému.<br/>
-        /// Pořadí ve stringu definuje pořadí buttonů.
-        /// Například <see cref="SubButtons"/> <![CDATA[Clear=Close;Manager=pic_0/Menu/bigfilter]]> definuje dva buttony, 
-        /// první má význam "Zrušit" a vyvolá Command = "command.Clear", druhý má význam "Nabídni okno filtrů" (ikona pic_0/Menu/bigfilter) a vyvolá Command = "command.Manager"
-        /// <para/>
-        /// Pokud zde bude null, pak bude ComboBox obsahovat standardní DropDown button (šipka dolů, rozbalující ComboBox).<br/>
-        /// Pokud uživatel chce přidat DropDown button a poté i další svoje Buttony, pak na začátek stringu vloží definici <u><c>"DropDown"</c></u> (netřeba definovat Image); a pak za středníkem dává svoje buttony.<br/>
-        /// Pokud uživatel naplní definici a nebude v ní DropDown, pak prostě nebude zobrazen!
-        /// </summary>
-        public virtual string SubButtons { get; set; }
-
         /// <summary>
         /// Data pro RepositoryEditor
         /// </summary>
@@ -11377,9 +11401,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         int? Width { get; }
         /// <summary>
-        /// Typ okraje
+        /// Text zobrazený při nevybraném žádném prvku
         /// </summary>
-        DxBorderStyle BorderStyle { get; }
+        string NullValuePrompt { get; }
+        /// <summary>
+        /// Typ okraje celého ComboBoxu
+        /// </summary>
+        DxBorderStyle ComboBorderStyle { get; }
+        /// <summary>
+        /// Typ okraje jednotlivých sub-buttonů v ComboBoxu
+        /// </summary>
+        DxBorderStyle SubButtonsBorderStyle { get; }
         /// <summary>
         /// SubButtony zobrazené vedle prvku (podporuje je zatím jen typ <see cref="RibbonItemType.ComboListBox"/>).
         /// Typicky tlačítko "+", třitečky, Clear, Search, Delete, a libovolné další.<br/>

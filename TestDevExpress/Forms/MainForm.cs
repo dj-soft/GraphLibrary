@@ -5518,7 +5518,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             comboItem.ToolTipTitle = "ComboBox";
             comboItem.ToolTipText = "Měl by nabízet sadu prvků";
             comboItem.SubButtons = "DropDown;Ellipsis;Delete";
-            comboItem.BorderStyle = DxBorderStyle.None;
+            comboItem.ComboBorderStyle = DxBorderStyle.None;
+            comboItem.SubButtonsBorderStyle = DxBorderStyle.HotFlat;
             comboItem.Width = 280;
 
             comboItem.SubItems = new ListExt<IRibbonItem>();
@@ -5539,7 +5540,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             comboItem.ToolTipTitle = "ComboBox";
             comboItem.ToolTipText = "Měl by nabízet sadu prvků";
             comboItem.SubButtons = "DropDown;Ellipsis;OK";
-            comboItem.BorderStyle = DxBorderStyle.HotFlat;
+            comboItem.ComboBorderStyle = DxBorderStyle.HotFlat;
+            comboItem.SubButtonsBorderStyle = DxBorderStyle.HotFlat;
             comboItem.Width = 280;
 
             comboItem.SubItems = new ListExt<IRibbonItem>();
@@ -5560,7 +5562,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             comboItem.ToolTipTitle = "ComboBox";
             comboItem.ToolTipText = "Měl by nabízet sadu prvků";
             comboItem.SubButtons = "DropDown;Ellipsis;Plus";
-            comboItem.BorderStyle = DxBorderStyle.Style3D;
+            comboItem.ComboBorderStyle = DxBorderStyle.Style3D;
+            comboItem.SubButtonsBorderStyle = DxBorderStyle.Style3D;
             comboItem.Width = 280;
 
             comboItem.SubItems = new ListExt<IRibbonItem>();

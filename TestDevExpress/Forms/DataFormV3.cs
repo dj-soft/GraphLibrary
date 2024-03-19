@@ -102,8 +102,59 @@ namespace TestDevExpress.Forms
             addSampleButton(3144, "Table x 144 řádek", imageTest3);
             addSampleButton(3600, "Table x 600 řádek", imageTest3);
 
+
+
+            var page2 = new DataRibbonPage() { PageId = "Testy", PageText = "Ukázky" };
+            var group21 = new DataRibbonGroup() { GroupId = "TestCombo", GroupText = "Combo boxy" };
+
+            DxBorderStyle comboBorder = DxBorderStyle.None;
+            DxBorderStyle buttonBorder = DxBorderStyle.Single;
+
+            string imageApp1 = "svgimages/chart/charttype_area3d.svg";
+            string imageApp2 = "svgimages/chart/charttype_areastacked.svg";
+            string imageApp3 = "svgimages/chart/charttype_bar3dstacked.svg";
+            string imageApp4 = "svgimages/chart/charttype_doughnut3d.svg";
+
+            string imageClear = "images/xaf/templatesv2images/action_delete.svg";
+            string imageApp0 = "svgimages/business%20objects/bo_appearance.svg";
+
+            ListExt<IRibbonItem> items1 = new ListExt<IRibbonItem>();
+            items1.Add(new DataRibbonItem() { ItemId = "filt_111", Text = "111 Filtr pro nákupy" });
+            items1.Add(new DataRibbonItem() { ItemId = "filt_112", Text = "112 Filtr pro prodeje" });
+            items1.Add(new DataRibbonItem() { ItemId = "filt_113", Text = "113 Pro prezentaci" });
+            string subButtons1 = $"DropDown;/Clear={imageClear}:Zrušit filtr;<Manager={imageApp1}:F4: Otevře okno s nabídkou filtrů...";
+            var combo211 = new DataRibbonComboItem() { ItemId = "Combo211", Width = 210, ComboBorderStyle = comboBorder, SubButtonsBorderStyle = buttonBorder, NullValuePrompt = "filtr nezadán", SubItems = items1, SubButtons = subButtons1 };
+            group21.Items.Add(combo211);
+
+            ListExt<IRibbonItem> items2 = new ListExt<IRibbonItem>();
+            items2.Add(new DataRibbonItem() { ItemId = "temp_211", Text = "211 Šablona pro nákupčí" });
+            items2.Add(new DataRibbonItem() { ItemId = "temp_212", Text = "212 Šablona pro prodejce" });
+            items2.Add(new DataRibbonItem() { ItemId = "temp_213", Text = "213 Šablona pro prezentaci" });
+            string subButtons2 = $"DropDown;Clear={imageClear}:Zrušit šablonu;<Manager={imageApp2}:F5: Otevře okno s nabídkou šablon...";
+            //     subButtons2 = $"Clear={imageClear}:Zrušit šablonu;DropDown;<Manager={imageApp2}:F5: Otevře okno s nabídkou šablon...";
+            var combo212 = new DataRibbonComboItem() { ItemId = "Combo212", Width = 210, ComboBorderStyle = comboBorder, SubButtonsBorderStyle = buttonBorder, NullValuePrompt = "šablona nezadána", SubItems = items2, SubButtons = subButtons2 };
+            group21.Items.Add(combo212);
+
+            ListExt<IRibbonItem> items3 = new ListExt<IRibbonItem>();
+            items3.Add(new DataRibbonItem() { ItemId = "view_311", Text = "311 Pohled do minulosti" });
+            items3.Add(new DataRibbonItem() { ItemId = "view_312", Text = "312 Pohled do současnosti" });
+            items3.Add(new DataRibbonItem() { ItemId = "view_313", Text = "313 Pohled do budoucnosti" });
+            string subButtons3 = $"DropDown;Clear={imageClear}:Zrušit pohled;<Manager={imageApp3}:F7: Otevře okno s nabídkou pohledů...";
+            //     subButtons3 = $"<Manager={imageApp3}:F7: Otevře okno s nabídkou pohledů...;Clear={imageClear}:Zrušit pohled;DropDown";
+            var combo213 = new DataRibbonComboItem() { ItemId = "Combo213", Width = 210, ComboBorderStyle = comboBorder, SubButtonsBorderStyle = buttonBorder, NullValuePrompt = "pohled nezadán", SubItems = items3, SubButtons = subButtons3 };
+            group21.Items.Add(combo213);
+
+            page2.Groups.Add(group21);
+            pages.Add(page2);
+
+
             this.DxRibbon.Clear();
             this.DxRibbon.AddPages(pages);
+
+
+
+
+
 
             this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
 

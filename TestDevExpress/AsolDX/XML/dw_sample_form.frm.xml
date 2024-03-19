@@ -6,7 +6,7 @@
           MasterWidth="530" MasterHeight="320"
           TotalWidth="750" TotalHeight="520"  >
 
-    <panel Name="Panel1" >
+    <panel Name="Panel1" Margins="12,6"  >
         <label Name="info1_lbl" Bounds="14,2,150" Text="Popisek" ToolTipTitle="Nápověda" ToolTipText="Informace k tomuto prvku neexistuje" />
         <textbox Name="info1" Bounds="10,20,160" Required="True" State="SkipTab" />
         <label Name="info2_lbl" Bounds="184,2,150" Text="Informace" />
@@ -21,7 +21,9 @@
             <rightButton Name="dots" Text="..." />
         </textboxbutton>
         
-        <button Name="butOpen" HotKey="F8" Bounds="2,50,120,35" Text="Otevři..." ActionName="RunFunction" ActionData="aaa" ToolTipTitle="Otevřít dveře" ToolTipText="Přistoupit ku dveřím, stiskem kliky uvolnit a pak tahem otevřít..."/>
+        <button Name="butOpen" HotKey="F8" Bounds="2,50,120,35" Text="Otevři..." ActionType="RunFunction" ActionData="Realizuj" ToolTipTitle="Otevřít dveře" ToolTipText="Přistoupit ku dveřím, stiskem kliky uvolnit a pak tahem otevřít..."/>
+
+        <textbox Name="45678" Bounds="120,75,180" LabelPosition="BeforeRight" Label="Popisek"/>
         
         <panel Name="p1234" BackColorName="Blue_front_protect" >
             <label Name="aaa" Text="Vnitřní popisek"/>

@@ -152,10 +152,29 @@
         </xs:complexContent>
     </xs:complexType>
 
-    <!--    Panel                 -->
+    <!--    type_panel = DataFormatContainerPanel  -  Panel                 -->
     <xs:complexType name="type_panel">
         <xs:complexContent>
             <xs:extension base="type_base_container">
+
+                <xs:attribute name="IconName" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Název ikony. Zobrazují ji pouze některé prvky.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Title" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Pevný text prvku (text Labelu). Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+
+                <xs:attribute name="TitleStyle" type="title_style_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Styl titulku.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+
+
                 <xs:attribute name="Bounds" type="xs:string">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Souřadnice prvku v jednom políčku, v pořadí: X,Y,Width[,Height]. Alternativa hodnot X, Y, Width, Height.</xs:documentation>
@@ -203,7 +222,7 @@
         </xs:complexContent>
     </xs:complexType>
     
-    <!--    Container = základ pro Panel a pro Page            -->
+    <!--    type_base_container = DataFormatBaseContainer  -  Container = základ pro Panel a pro Page            -->
     <xs:complexType name="type_base_container">
         <xs:complexContent>
             <xs:extension base="type_base">
@@ -261,15 +280,19 @@
                         </xs:element>
                     </xs:choice>
                 </xs:sequence>
-
                 <xs:attribute name="BackColorName" type="color_cup_enum">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Barva pozadí, zadaná jako název kalíšku.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-                <xs:attribute name="BackColor" type="xs:string">
+                <xs:attribute name="BackColorLight" type="xs:string">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Barva pozadí, zadaná explicitně: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd. Tato barva nereaguje na změnu tmavého skinu.</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Barva pozadí, zadaná explicitně pro světlé skiny: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="BackColorDark" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Barva pozadí, zadaná explicitně pro tmavé skiny: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="Invisible" type="xs:string">
@@ -306,6 +329,11 @@
     <xs:complexType name="type_title">
         <xs:complexContent>
             <xs:extension base="type_label">
+                <xs:attribute name="IconName" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Název ikony. Zobrazují ji pouze některé prvky.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
                 <xs:attribute name="Style" type="title_style_enum">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Styl titulku.</xs:documentation>
