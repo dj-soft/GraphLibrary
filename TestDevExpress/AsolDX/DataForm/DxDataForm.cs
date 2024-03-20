@@ -13,6 +13,7 @@ using WinDraw = System.Drawing;
 using WinForm = System.Windows.Forms;
 
 using DxfData = Noris.Clients.Win.Components.AsolDX.DataForm.Data;
+using DxLData = Noris.Clients.Win.Components.AsolDX.DataForm.Layout;
 using Noris.Clients.Win.Components.AsolDX.DataForm.Data;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
@@ -21,7 +22,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// <summary>
     /// <see cref="DxDataForm"/> : koordinátor DataFormu - datová část, propojená s vizuálním DxDataFormPanel.
     /// Ttao třída řeší veškerá data, ale nejde o vizuální panel. Na ten je napojen.
-    /// Obsahuje kolekci řádků <see cref="DataFormRows"/> a deklaraci layoutu <see cref="DataFormLayoutSet"/>.
+    /// Obsahuje kolekci řádků <see cref="DataFormRows"/> a deklaraci layoutu <see cref="DxLData.LayoutContainer"/>.
     /// Obsahuje managera fyzických controlů (obdoba RepositoryEditorů) <see cref="DxRepositoryManager"/>
     /// </summary>
     internal class DxDataForm : IDisposable
@@ -42,7 +43,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Dispose
         /// </summary>
-        /// <param name="disposing"></param>
         public void Dispose()
         {
             _DisposeContent();
@@ -96,16 +96,20 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private DxDataFormPanel __DataFormPanel;
         #endregion
-        #region Formát DataFormu = *.frm.xml
+        #region Formát DfForm = načtený ze souboru *.frm.xml
         /// <summary>
         /// Zde je obsažena definice formátu dat v dataformu.
         /// </summary>
-        public Format.DfForm DataFormat 
+        public Format.DfForm DfForm
         {
-            get { return __DataFormat; }
-            set { }
+            get { return __DfForm; }
+            set { _SetDfForm(value); }
         }
-        private Format.DfForm __DataFormat;
+        private Format.DfForm __DfForm;
+        private void _SetDfForm(Format.DfForm dfForm)
+        { 
+        
+        }
         #endregion
         #region Datové řádky
         /// <summary>
@@ -140,21 +144,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Definice vzhledu pro jednotlivý řádek: popisuje panely, záložky, prvky ve vnořené hierarchické podobě.
         /// Z této definice se následně generují jednotlivé interaktivní prvky pro jednotlivý řádek.
         /// </summary>
-        internal DxfData.DataFormLayoutSet DataFormLayout { get { return __DataFormLayout; } }
+        internal DxLData.LayoutContainer DataFormLayout { get { return __DataFormLayout; } }
+        /// <summary>
+        /// Definice vzhledu pro jednotlivý řádek
+        /// </summary>
+        private DxLData.LayoutContainer __DataFormLayout;
         /// <summary>
         /// Inicializace dat layoutu
         /// </summary>
         private void _InitLayout()
         {
-            __DataFormLayout = new DxfData.DataFormLayoutSet(this);
+            __DataFormLayout = new DxLData.LayoutContainer(this);
             __DataFormLayout.CollectionChanged += _LayoutChanged;
             __Content = new DxfData.DataContent();
             PrepareDefaultContentValues();
         }
-        /// <summary>
-        /// Definice vzhledu pro jednotlivý řádek
-        /// </summary>
-        private DxfData.DataFormLayoutSet __DataFormLayout;
         /// <summary>
         /// Po změně definice layoutu (přidání, odebrání), nikoli po změně obsahu dat v prvku
         /// </summary>
@@ -236,7 +240,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Zajistí invalidaci hodnoty <see cref="ContentDesignSize"/>, podle parametru <paramref name="forceSize"/>:
         /// Pokud je true, pak se invaliduje vždy (používá se po změně řádků nebo layoutu); 
-        /// pokud je false pak se invaliduje jen tehdy, když uspořádání prvků je závislé na velikosti panelu (<see cref="DataFormLayoutSet.IsDesignSizeDependOnHostSize"/>.
+        /// pokud je false pak se invaliduje jen tehdy, když uspořádání prvků je závislé na velikosti panelu (<see cref="DxLData.LayoutContainer.IsDesignSizeDependOnHostSize"/>.
         /// </summary>
         /// <param name="forceSize">Invalidovat velikost: true = vždy / false = jen když vychází z rozměrů hostitele</param>
         /// <param name="runDraw">Po invalidaci vyvolat Draw</param>
@@ -712,7 +716,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Definice layoutu
         /// </summary>
-        internal DataFormLayoutItem LayoutItem { get { return Cell?.LayoutItem; } }
+        internal DxLData.LayoutControl LayoutItem { get { return Cell?.LayoutItem; } }
         /// <summary>
         /// Sloupec, kde došlo k události
         /// </summary>

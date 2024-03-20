@@ -12,6 +12,8 @@ using System.Text;
 using WinDraw = System.Drawing;
 using WinForm = System.Windows.Forms;
 
+using Noris.Clients.Win.Components.AsolDX.DataForm.Layout;
+
 namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
 {
     #region DataFormRows + DataFormRow : Kolekce a Data řádků
@@ -436,472 +438,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         #endregion
     }
     #endregion
-    #region DataFormLayoutSet + DataFormLayoutItem : Definice layoutu jednoho řádku (celá sada + jeden prvek). Layout je hierarchický.
-    /// <summary>
-    /// Sada definující layout DataFormu = jednotlivé prvky
-    /// </summary>
-    internal class DataFormLayoutSet : IList<DataFormLayoutItem>
-    {
-        #region Konstruktor a proměnné
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        internal DataFormLayoutSet(DxDataForm dataForm)
-        {
-            __DataForm = dataForm;
-            _InitItems();
-        }
-        /// <summary>
-        /// Vizualizace
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            return $"Count: {this.Count}; ItemType: '{(typeof(DataFormLayoutItem).FullName)}'";
-        }
-        /// <summary>
-        /// Datový základ DataFormu
-        /// </summary>
-        internal DxDataForm DataForm { get { return __DataForm; } } private DxDataForm __DataForm;
-        /// <summary>
-        /// Vizuální control <see cref="DxDataFormPanel"/> = virtuální hostitel obsahující Scrollbary a <see cref="DxDataFormContentPanel"/>
-        /// </summary>
-        internal DxDataFormPanel DataFormPanel { get { return __DataForm?.DataFormPanel; } }
-        /// <summary>
-        /// Panel obsahující data Dataformu
-        /// </summary>
-        internal DxDataFormContentPanel DataFormContent { get { return __DataForm?.DataFormContent; } }
-        /// <summary>
-        /// Zajistí vykreslení obsahu Dataformu
-        /// </summary>
-        internal void DataFormDraw() { DataFormContent?.Draw(); }
-        #endregion
-        #region Jednotlivé prvky definice
-        /// <summary>
-        /// Pole prvků definice
-        /// </summary>
-        internal IList<DataFormLayoutItem> Items { get { return __Items; } }
-        /// <summary>
-        /// Inicializace řádků
-        /// </summary>
-        private void _InitItems()
-        {
-            __Items = new ChildItems<DataFormLayoutSet, DataFormLayoutItem>(this);
-            __Items.CollectionChanged += _ItemsChanged;
-        }
-        /// <summary>
-        /// Po změně řádků
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ItemsChanged(object sender, EventArgs e)
-        {
-            _RunCollectionChanged();
-        }
-        /// <summary>
-        /// Zavolá metody <see cref="OnCollectionChanged(EventArgs)"/> a event <see cref="CollectionChanged"/>.
-        /// </summary>
-        private void _RunCollectionChanged()
-        {
-            this.InvalidateDesignSize();
-            this.InvalidateTabOrders();
-            var args = EventArgs.Empty;
-            OnCollectionChanged(args);
-            CollectionChanged?.Invoke(this, args);
-        }
-        /// <summary>
-        /// Obecná událost volaná poté, kdy se přidal nebo odebral prvek kolekce (Add/Remove).
-        /// </summary>
-        internal event EventHandler CollectionChanged;
-        /// <summary>
-        /// Metoda volaná poté, kdy se přidal nebo odebral prvek kolekce (Add/Remove).
-        /// </summary>
-        /// <param name="e"></param>
-        protected virtual void OnCollectionChanged(EventArgs e) { }
-        /// <summary>
-        /// Pole prvků definice
-        /// </summary>
-        private ChildItems<DataFormLayoutSet, DataFormLayoutItem> __Items;
-        #endregion
-        #region TabOrder: pořadí prvků
-        /// <summary>
-        /// Obsahuje soupis všech prků layoutu seřazený podle jejich pořadí TabOrder.
-        /// </summary>
-        public DataFormLayoutItem[] TabOrderItems;
-        /// <summary>
-        /// Invaliduje pole prvků uspořádaných dle jejich pořadí
-        /// </summary>
-        public void InvalidateTabOrders()
-        {
-            __TabOrderItems = null;
-        }
-
-        private DataFormLayoutItem[] __TabOrderItems;
-        #endregion
-        #region DesignSize : celková designová velikost prvků v této definici
-        /// <summary>
-        /// Designová velikost panelu hostitele = prostor viditelný v rámci fyzického controlu, přepočtený na designové pixely
-        /// </summary>
-        internal WinDraw.Size? HostDesignSize 
-        {
-            get { return __HostDesignSize; } 
-            set 
-            {
-                var oldValue = __HostDesignSize;
-                __HostDesignSize = value;
-                var newValue = __HostDesignSize;
-                if (oldValue != newValue && IsDesignSizeDependOnHostSize) { InvalidateDesignSize(); }
-            }
-        }
-        /// <summary>
-        /// Obsahuje true pokud zdejší <see cref="DesignSize"/> se může změnit poté, kdy se změní velikost <see cref="HostDesignSize"/>.
-        /// Tedy když implementujeme dynamické přeskupování obsahu podle dostupného prostoru.
-        /// </summary>
-        internal bool IsDesignSizeDependOnHostSize { get { return false; } }
-        /// <summary>
-        /// Okraje kolem definice jednoho řádku
-        /// </summary>
-        internal WinForm.Padding Padding { get { return __Padding; } set { __Padding = value; InvalidateDesignSize(); } }
-        /// <summary>
-        /// Sumární velikost definice pro jeden řádek. Validovaná hodnota.
-        /// </summary>
-        internal WinDraw.Size DesignSize { get { return _GetDesignSize(); } }
-        /// <summary>
-        /// Invaliduje velikost prostoru, vynutí tím budoucí přepočet <see cref="DesignSize"/>.
-        /// </summary>
-        protected void InvalidateDesignSize()
-        {
-            __DesignSize = null;
-        }
-        /// <summary>
-        /// [Vypočte a] vrátí velikost definice. Přidává vlastní Padding.
-        /// </summary>
-        /// <param name="force"></param>
-        /// <returns></returns>
-        private WinDraw.Size _GetDesignSize(bool force = false)
-        {
-            if (force || !__DesignSize.HasValue)
-                __DesignSize = _CalculateDesignSize();
-            return __DesignSize.Value;
-        }
-        /// <summary>
-        /// Vrátí hodnotu: Sumární velikost definice pro jeden řádek.
-        /// </summary>
-        private WinDraw.Size _CalculateDesignSize()
-        {
-            if (!this.HostDesignSize.HasValue) return WinDraw.Size.Empty;
-
-            var hostDesignSize = this.HostDesignSize.Value;
-            WinDraw.Rectangle parentBounds = new WinDraw.Rectangle(0, 0, hostDesignSize.Width, hostDesignSize.Height);
-
-            int left = 0;
-            int top = 0;
-            int right = 0;
-            int bottom = 0;
-            foreach (var item in __Items)
-                item.PrepareDesignSize(parentBounds, ref left, ref top, ref right, ref bottom);
-
-            var itemSize = new WinDraw.Size(right, bottom);
-            return itemSize.Add(this.Padding);
-        }
-        /// <summary>
-        /// Designová velikost panelu hostitele
-        /// </summary>
-        private WinDraw.Size? __HostDesignSize;
-        /// <summary>
-        /// Okraje uvnitř jednoho řádku okolo layoutu
-        /// </summary>
-        private WinForm.Padding __Padding;
-        /// <summary>
-        /// Sumární velikost definice pro jeden řádek. Úložiště.
-        /// </summary>
-        private WinDraw.Size? __DesignSize;
-        #endregion
-        #region AddRange a Store
-        /// <summary>
-        /// AddRange
-        /// </summary>
-        /// <param name="items"></param>
-        internal void AddRange(IEnumerable<DataFormLayoutItem> items)
-        {
-            __Items.AddRange(items);
-        }
-        /// <summary>
-        /// Store
-        /// </summary>
-        /// <param name="items"></param>
-        internal void Store(IEnumerable<DataFormLayoutItem> items)
-        {
-            __Items.Clear();
-            __Items.AddRange(items);
-        }
-        #endregion
-        #region IList
-        /// <summary>
-        /// Count
-        /// </summary>
-        public int Count => ((ICollection<DataFormLayoutItem>)__Items).Count;
-        /// <summary>
-        /// IsReadOnly
-        /// </summary>
-        public bool IsReadOnly => ((ICollection<DataFormLayoutItem>)__Items).IsReadOnly;
-        /// <summary>
-        /// this
-        /// </summary>
-        /// <param name="index"></param>
-        /// <returns></returns>
-        public DataFormLayoutItem this[int index] { get => ((IList<DataFormLayoutItem>)__Items)[index]; set => ((IList<DataFormLayoutItem>)__Items)[index] = value; }
-        /// <summary>
-        /// IndexOf
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public int IndexOf(DataFormLayoutItem item)
-        {
-            return ((IList<DataFormLayoutItem>)__Items).IndexOf(item);
-        }
-        /// <summary>
-        /// Insert
-        /// </summary>
-        /// <param name="index"></param>
-        /// <param name="item"></param>
-        public void Insert(int index, DataFormLayoutItem item)
-        {
-            ((IList<DataFormLayoutItem>)__Items).Insert(index, item);
-        }
-        /// <summary>
-        /// RemoveAt
-        /// </summary>
-        /// <param name="index"></param>
-        public void RemoveAt(int index)
-        {
-            ((IList<DataFormLayoutItem>)__Items).RemoveAt(index);
-        }
-        /// <summary>
-        /// Add
-        /// </summary>
-        /// <param name="item"></param>
-        public void Add(DataFormLayoutItem item)
-        {
-            ((ICollection<DataFormLayoutItem>)__Items).Add(item);
-        }
-        /// <summary>
-        /// Clear
-        /// </summary>
-        public void Clear()
-        {
-            ((ICollection<DataFormLayoutItem>)__Items).Clear();
-        }
-        /// <summary>
-        /// Contains
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public bool Contains(DataFormLayoutItem item)
-        {
-            return ((ICollection<DataFormLayoutItem>)__Items).Contains(item);
-        }
-        /// <summary>
-        /// CopyTo
-        /// </summary>
-        /// <param name="array"></param>
-        /// <param name="arrayIndex"></param>
-        public void CopyTo(DataFormLayoutItem[] array, int arrayIndex)
-        {
-            ((ICollection<DataFormLayoutItem>)__Items).CopyTo(array, arrayIndex);
-        }
-        /// <summary>
-        /// Remove
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public bool Remove(DataFormLayoutItem item)
-        {
-            return ((ICollection<DataFormLayoutItem>)__Items).Remove(item);
-        }
-        /// <summary>
-        /// GetEnumerator
-        /// </summary>
-        /// <returns></returns>
-        public IEnumerator<DataFormLayoutItem> GetEnumerator()
-        {
-            return ((IEnumerable<DataFormLayoutItem>)__Items).GetEnumerator();
-        }
-        /// <summary>
-        /// IEnumerable.GetEnumerator
-        /// </summary>
-        /// <returns></returns>
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return ((IEnumerable)__Items).GetEnumerator();
-        }
-        #endregion
-    }
-    /// <summary>
-    /// Definice jednoho prvku v layoutu. 
-    /// Může to být container i jednotlivý prvek.
-    /// Jde o ekvivalent "Column"
-    /// </summary>
-    internal class DataFormLayoutItem : IDataFormLayoutDesignItem, IChildOfParent<DataFormLayoutSet>
-    {
-        #region Konstruktor a fixní vlastnosti
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        internal DataFormLayoutItem()
-        {
-            __Content = new DataContent();
-            ColumnType = DxRepositoryEditorType.TextBox;
-            
-            IsVisible = true;
-        }
-        /// <summary>
-        /// Vizualizace
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            return $"{ColumnName}  [{ColumnType}]";
-        }
-        /// <summary>
-        /// Parent
-        /// </summary>
-        DataFormLayoutSet IChildOfParent<DataFormLayoutSet>.Parent { get { return __Parent; } set { __Parent = value; } } private DataFormLayoutSet __Parent;
-        /// <summary>
-        /// Panel dataformu
-        /// </summary>
-        internal DxDataFormPanel DataForm { get { return __Parent?.DataFormPanel; } }
-        /// <summary>
-        /// Jméno tohoto sloupce. K němu se dohledají další data a případné modifikace stylu v konkrétním řádku.
-        /// </summary>
-        internal string ColumnName { get; set; }
-        /// <summary>
-        /// Druh vstupního prvku
-        /// </summary>
-        internal DxRepositoryEditorType ColumnType { get; set; }
-        /// <summary>
-        /// Souřadnice definované pomocí vzdáleností / rozměrů, a tedy libovolně ukotvené.
-        /// Viz metoda <see cref="RectangleExt.GetBounds(WinDraw.Rectangle)"/>
-        /// </summary>
-        internal RectangleExt DesignBoundsExt { get; set; }
-        /// <summary>
-        /// Obsah řádků: obsahuje sloupce i jejich datové a popisné hodnoty.
-        /// Klíčem je název sloupce.
-        /// </summary>
-        internal DataContent Content { get { return __Content; } } private DataContent __Content;
-        #endregion
-        #region Předpřipravené hodnoty obecně dostupné, získávané z Content
-        /// <summary>
-        /// Label prvku = fixní text
-        /// </summary>
-        internal string Label
-        {
-            get { return ((TryGetContent<string>(DxDataFormProperty.Label, out var content)) ? content : null); }
-            set { SetContent(DxDataFormProperty.Label, value); }
-        }
-        /// <summary>
-        /// ToolTipText
-        /// </summary>
-        internal string ToolTipText
-        {
-            get { return ((TryGetContent<string>(DxDataFormProperty.ToolTipText, out var content)) ? content : null); }
-            set { SetContent(DxDataFormProperty.ToolTipText, value); }
-        }
-        /// <summary>
-        /// Label prvku = fixní text
-        /// </summary>
-        internal string IconName
-        {
-            get { return ((TryGetContent<string>(DxDataFormProperty.IconName, out var content)) ? content : null); }
-            set { SetContent(DxDataFormProperty.IconName, value); }
-        }
-        /// <summary>
-        /// Typ kurzoru, který bude aktivován po najetí myší na aktivní prvek
-        /// </summary>
-        internal CursorTypes? CursorTypeMouseOn
-        {
-            get { return ((TryGetContent<CursorTypes?>(DxDataFormProperty.CursorTypeMouseOn, out var content)) ? content : null); }
-            set { SetContent(DxDataFormProperty.CursorTypeMouseOn, value); }
-        }
-        /// <summary>
-        /// Prvek je viditelný?
-        /// </summary>
-        internal bool IsVisible
-        {
-            get { return ((TryGetContent<bool?>(DxDataFormProperty.IsVisible, out var content) && content.HasValue) ? content.Value : true); }
-            set { SetContent(DxDataFormProperty.IsVisible, (bool?)value); }
-        }
-        /// <summary>
-        /// Prvek je interaktvní?
-        /// </summary>
-        internal bool IsInteractive
-        {
-            get { return ((TryGetContent<bool?>(DxDataFormProperty.IsInteractive, out var content) && content.HasValue) ? content.Value : true); }
-            set { SetContent(DxDataFormProperty.IsInteractive, (bool?)value); }
-        }
-        #endregion
-        #region Metody pro získání dat o prvku (hodnota, vzhled, editační maska, font, barva, editační styl, ikona, buttony, atd...)
-        /// <summary>
-        /// Zkusí najít hodnotu požadované vlastnosti.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="property">Určení požadované vlastnosti (typ property)</param>
-        /// <param name="content"></param>
-        /// <returns></returns>
-        internal bool TryGetContent<T>(DxDataFormProperty property, out T content)
-        {
-            if (Content.TryGetContent(property, out content)) return true;
-            content = default;
-            return false;
-        }
-        /// <summary>
-        /// Uloží hodnotu požadované vlastnosti.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="property">Určení požadované vlastnosti (typ property)</param>
-        /// <param name="content"></param>
-        /// <returns></returns>
-        internal void SetContent<T>(DxDataFormProperty property, T content)
-        {
-            Content[property] = content;
-        }
-        #endregion
-        #region Výpočty DesignSize, tvorba konkrétních buněk DataFormCell
-        /// <summary>
-        /// Určí aktuální designovou souřadnici v prostoru daného parenta
-        /// </summary>
-        /// <param name="parentBounds"></param>
-        /// <param name="left"></param>
-        /// <param name="top"></param>
-        /// <param name="right"></param>
-        /// <param name="bottom"></param>
-        internal void PrepareDesignSize(WinDraw.Rectangle parentBounds, ref int left, ref int top, ref int right, ref int bottom)
-        {
-            var designBounds = this.DesignBoundsExt.GetBounds(parentBounds);
-            __CurrentDesignBounds = designBounds;
-            if (right < designBounds.Right) right = designBounds.Right;
-            if (bottom < designBounds.Bottom) bottom = designBounds.Bottom;
-        }
-        /// <summary>
-        /// Aktuální přidělená souřadnice v metodě <see cref="PrepareDesignSize(WinDraw.Rectangle, ref int, ref int, ref int, ref int)"/>
-        /// </summary>
-        private WinDraw.Rectangle __CurrentDesignBounds;
-        #endregion
-        #region IDataFormLayoutDesignItem
-        WinDraw.Rectangle IDataFormLayoutDesignItem.CurrentDesignBounds { get { return __CurrentDesignBounds; } }
-        #endregion
-    }
-    /// <summary>
-    /// Interface umožňující přístup na designová pracovní data prvku layoutu
-    /// </summary>
-    internal interface IDataFormLayoutDesignItem
-    {
-        /// <summary>
-        /// Aktuální designové souřadnice
-        /// </summary>
-        WinDraw.Rectangle CurrentDesignBounds { get; }
-    }
-    #endregion
     #region DataFormCell : jeden interaktivní prvek = Řádek × LayoutItem  (nikoliv Řádek × Sloupec)
     /// <summary>
     /// Reprezentuje jednu buňku = jeden fyzický prvek odpovídající konkrétnímu prvku layoutu na jednom konkrétním řádku
@@ -914,7 +450,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// </summary>
         /// <param name="row"></param>
         /// <param name="layoutItem"></param>
-        internal DataFormCell(DataFormRow row, DataFormLayoutItem layoutItem)
+        internal DataFormCell(DataFormRow row, LayoutControl layoutItem)
         {
             this.__Row = row;
             this.__LayoutItem = layoutItem;
@@ -931,7 +467,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             return $"ColumnName: {ColumnName}; State: {__InteractiveState}; Label: {Label}; Value: {Value}";
         }
         private DataFormRow __Row;
-        private DataFormLayoutItem __LayoutItem;
+        private LayoutControl __LayoutItem;
         private WinDraw.Rectangle __DesignBounds;
         private WinDraw.Rectangle __ControlBounds;
         private WinForm.Control __NativeControl;
@@ -946,7 +482,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         /// <summary>
         /// Definice layoutu
         /// </summary>
-        internal DataFormLayoutItem LayoutItem { get { return __LayoutItem; } }
+        internal LayoutControl LayoutItem { get { return __LayoutItem; } }
         /// <summary>
         /// Název sloupce
         /// </summary>
@@ -1174,7 +710,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
         DxInteractiveState IPaintItemData.InteractiveState { get { return this._InteractiveState; } set { this._InteractiveState = value; } }
         WinForm.Control IPaintItemData.NativeControl { get { return this.__NativeControl; } set { this.__NativeControl = value; } }
         DataFormRow IPaintItemData.Row { get { return __Row; } }
-        DataFormLayoutItem IPaintItemData.LayoutItem { get { return __LayoutItem; } }
+        LayoutControl IPaintItemData.LayoutItem { get { return __LayoutItem; } }
         bool IPaintItemData.TryGetContent<T>(DxDataFormProperty property, out T content) { return TryGetContent<T>(property, out content); }
         void IPaintItemData.SetContent<T>(DxDataFormProperty property, T value) { SetContent<T>(property, value); }
         void IPaintItemData.InvalidateCache() { _InvalidateCache(); }
@@ -1198,7 +734,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
     /// <summary>
     /// <see cref="DataContent"/> : Úložiště dat.<br/>
     /// Ukládá data libovolného datového typu. Klíčem je jméno sloupce (volitelně) a typ vlastnosti <see cref="DxDataFormProperty"/>.
-    /// Pokud vlastníkem tohoto objektu je konkrétní sloupec (<see cref="DataFormLayoutItem"/>), pak se v klíči nepoužívá jméno sloupce.
+    /// Pokud vlastníkem tohoto objektu je konkrétní sloupec (<see cref="LayoutControl"/>), pak se v klíči nepoužívá jméno sloupce.
     /// Pokud vlastníkem tohoto objektu je řádek, pak se jméno sloupce zadává.
     /// </summary>
     internal class DataContent

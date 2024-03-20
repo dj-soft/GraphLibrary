@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<template xmlns="http://tempuri.org/DxDataFormat.Frm.xsd"
+          FormatVersion="4"
+          UseNorisClass="1161"
+          Messages="dw_common_messages.msg.xml"
+          DataSource="dw_sample_form.data.xml"
+          MasterWidth="530" MasterHeight="320"
+          TotalWidth="750" TotalHeight="520"  >
+
+    <panel Name="nested_dph_panel" Width="650" Height="120" >
+        <textbox Name="dph0_zaklad" Bounds="200,0,120" EditMask="00.00" ToolTipText="Základ DPH"/>
+        <textbox Name="dph0_celkem" Bounds="500,0,120" EditMask="00.00"/>
+        <textbox Name="dph1_sazba" Bounds="150,30,40" EditMask="00.00"/>
+        <textbox Name="dph1_zaklad" Bounds="200,30,120" EditMask="00.00"/>
+        <textbox Name="dph1_sumdph" Bounds="350,30,120" EditMask="00.00"/>
+        <textbox Name="dph1_celkem" Bounds="500,30,120" EditMask="00.00"/>
+        <textbox Name="dph2_sazba" Bounds="150,60,40" EditMask="00.00"/>
+        <textbox Name="dph2_zaklad" Bounds="200,60,120" EditMask="00.00"/>
+        <textbox Name="dph2_sumdph" Bounds="350,60,120" EditMask="00.00"/>
+        <textbox Name="dph2_celkem" Bounds="500,60,120" EditMask="00.00"/>
+        <textbox Name="suma_zaklad" Bounds="200,90,120" EditMask="00.00" ToolTipText="Suma částky bez DPH" />
+        <textbox Name="suma_sumdph" Bounds="350,90,120" EditMask="00.00" ToolTipText="Suma daně DPH" />
+        <textbox Name="suma_celkem" Bounds="500,90,120" EditMask="00.00" ToolTipText="Suma celkové částky" />
+    </panel>
+</template>

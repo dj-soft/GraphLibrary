@@ -175,7 +175,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         private static DfInfoForm _CreateInfoForm(DfForm form)
         {
-            return new DfInfoForm() { XmlNamespace = form?.XmlNamespace, FormatVersion = form?.FormatVersion };
+            return new DfInfoForm() { XmlNamespace = form?.XmlNamespace, FormatVersion = form?.FormatVersion ?? FormatVersionType.Default };
         }
         #endregion
         #region Načítání obsahu - private tvorba containerů
@@ -206,7 +206,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Atributy:
             _FillBaseAttributes(xElement, control);
             control.XmlNamespace = _ReadAttributeString(xElement, "xmlns", null);
-            control.FormatVersion = _ReadAttributeString(xElement, "FormatVersion", null);
+            control.FormatVersion = _ReadAttributeEnum(xElement, "FormatVersion", FormatVersionType.Default, t => "Version" + t);
 
             // Rychlá odbočka?
             if (loaderContext.IsLoadOnlyDocumentAttributes) return control;
@@ -715,11 +715,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         /// <summary>
         /// V daném elementu najde atribut daného jména a vrátí jeho hodnotu převedenou do enumu <typeparamref name="TEnum"/>.
+        /// Optional dovolí modifikovat načtený text z atributu pomocí funkce <paramref name="modifier"/>.
         /// </summary>
         /// <param name="xElement"></param>
         /// <param name="attributeName"></param>
         /// <param name="defaultValue"></param>
-        private static TEnum _ReadAttributeEnum<TEnum>(System.Xml.Linq.XElement xElement, string attributeName, TEnum defaultValue) where TEnum : struct
+        /// <param name="modifier">Modifikátor načteného textu z XML před tím, než proběhne jeho TryParse na hodnotu enumu</param>
+        private static TEnum _ReadAttributeEnum<TEnum>(System.Xml.Linq.XElement xElement, string attributeName, TEnum defaultValue, Func<string, string> modifier = null) where TEnum : struct
         {
             TEnum value = defaultValue;
             if (xElement.HasAttributes && !String.IsNullOrEmpty(attributeName))
@@ -727,7 +729,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var xAttribute = xElement.Attribute(attributeName);
                 if (xAttribute != null && !String.IsNullOrEmpty(xAttribute.Value))
                 {
-                    if (Enum.TryParse<TEnum>(xAttribute.Value, true, out var result)) value = result;
+                    string text = xAttribute.Value;
+                    if (modifier != null) text = modifier(text);
+                    if (Enum.TryParse<TEnum>(text, true, out var result)) value = result;
                 }
             }
             return value;

@@ -8,7 +8,9 @@ using Noris.Clients.Win.Components.AsolDX;
 using WinDraw = System.Drawing;
 using DxDForm = Noris.Clients.Win.Components.AsolDX.DataForm;
 using DxDData = Noris.Clients.Win.Components.AsolDX.DataForm.Data;
+using DxLData = Noris.Clients.Win.Components.AsolDX.DataForm.Layout;
 using System.Drawing;
+using Noris.Clients.Win.Components.AsolDX.DataForm.Format;
 
 namespace TestDevExpress.Forms
 {
@@ -105,7 +107,7 @@ namespace TestDevExpress.Forms
             addSampleButton(3600, "Table x 600 řádek", imageTest3);
 
 
-
+            /*
             var page2 = new DataRibbonPage() { PageId = "Testy", PageText = "Ukázky" };
             var group21 = new DataRibbonGroup() { GroupId = "TestCombo", GroupText = "Combo boxy" };
 
@@ -181,10 +183,13 @@ namespace TestDevExpress.Forms
 
             pages.Add(page2);
 
+            */
 
             this.DxRibbon.Clear();
             this.DxRibbon.AddPages(pages);
 
+
+            // this.TestSvgDisable();
 
             this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
 
@@ -201,6 +206,52 @@ namespace TestDevExpress.Forms
                 });
             }
         }
+
+
+        private void TestSvgDisable()
+        {
+            string svgInpErr = @"<svg width=""32"" height=""32"" viewBox=""0 0 32 32"" fill=""none"" xmlns=""http://www.w3.org/2000/svg"">
+<path d=""M0.5 11.5H29.5V4.5H0.5V11.5Z"" fill=""#FFFFFF""/>
+<path d=""M0 4.5V11.5V12H0.5H29.5H30V11.5V4.5V4H29.5H0.5H0V4.5ZM29 5V11H1V5H29Z"" fill=""#383838""/>
+<path d=""M0.5 18.5H17.5V17.5H21.59L21.74 17.08L21.95 16.7L22.21 16.36L22.53 16.07L22.9 15.83L23.3 15.65L23.73 15.54L24.18 15.5H26.82L27.27 15.54L27.71 15.65L28.11 15.83L28.47 16.07L28.79 16.36L29.05 16.7L29.26 17.08L29.41 17.5H29.5V11.5H0.5V18.5Z"" fill=""#FFFFFF""/>
+<path d=""M0 11.5V18.5V19H0.5H17.5V18H1V12H29V16.63L29.05 16.7L29.26 17.08L29.41 17.5H30V11.5V11H29.5H0.5H0V11.5Z"" fill=""#383838""/>
+<path d=""M0.5 25.5H18.5V21.5H17.5V18.5H0.5V25.5Z"" fill=""#92CBEE""/>
+<path d=""M0 18.5V25.5V26H0.5H18.5V25H1V19H17.5V18H0.5H0V18.5Z"" fill=""#0964B0""/>
+<path d=""M29.135 31.5H21.866C21.115 31.5 20.501 30.886 20.501 30.135V19.5H30.501V30.135C30.5 30.886 29.886 31.5 29.135 31.5ZM32 19.5H19Z"" fill=""#FFFFFF""/>
+<path d=""M32 19.5H19M29.135 31.5H21.866C21.115 31.5 20.501 30.886 20.501 30.135V19.5H30.501V30.135C30.5 30.886 29.886 31.5 29.135 31.5Z"" stroke=""#383838"" stroke-miterlimit=""10""/>
+<path d=""M25.5 29V22ZM27.5 29V22ZM23.5 29V22Z"" fill=""#FFFFFF""/>
+<path d=""M25.5 29V22M27.5 29V22M23.5 29V22"" stroke=""#EE3D3B"" stroke-miterlimit=""10""/>
+<path d=""M23.5 19.5V18.183C23.5 17.806 23.806 17.5 24.183 17.5H26.818C27.195 17.5 27.501 17.806 27.501 18.183V19.5"" stroke=""#383838"" stroke-miterlimit=""10""/>
+</svg> 
+";
+
+            string svgInp = @"<svg width=""32"" height=""32"" viewBox=""0 0 32 32"" fill=""none"" xmlns=""http://www.w3.org/2000/svg"">
+  <g id=""main"">
+    <path d=""M0.5 11.5H29.5V4.5H0.5V11.5Z"" fill=""#FFFFFF""/>
+    <path d=""M0 4.5V11.5V12H0.5H29.5H30V11.5V4.5V4H29.5H0.5H0V4.5ZM29 5V11H1V5H29Z"" fill=""#383838""/>
+    <path d=""M0.5 18.5H17.5V17.5H21.59L21.74 17.08L21.95 16.7L22.21 16.36L22.53 16.07L22.9 15.83L23.3 15.65L23.73 15.54L24.18 15.5H26.82L27.27 15.54L27.71 15.65L28.11 15.83L28.47 16.07L28.79 16.36L29.05 16.7L29.26 17.08L29.41 17.5H29.5V11.5H0.5V18.5Z"" fill=""#FFFFFF""/>
+    <path d=""M0 11.5V18.5V19H0.5H17.5V18H1V12H29V16.63L29.05 16.7L29.26 17.08L29.41 17.5H30V11.5V11H29.5H0.5H0V11.5Z"" fill=""#383838""/>
+    <path d=""M0.5 25.5H18.5V21.5H17.5V18.5H0.5V25.5Z"" fill=""#92CBEE""/>
+    <path d=""M0 18.5V25.5V26H0.5H18.5V25H1V19H17.5V18H0.5H0V18.5Z"" fill=""#0964B0""/>
+    <path d=""M29.135 31.5H21.866C21.115 31.5 20.501 30.886 20.501 30.135V19.5H30.501V30.135C30.5 30.886 29.886 31.5 29.135 31.5ZM32 19.5H19Z"" fill=""#FFFFFF""/>
+    <path d=""M32 19.5H19M29.135 31.5H21.866C21.115 31.5 20.501 30.886 20.501 30.135V19.5H30.501V30.135C30.5 30.886 29.886 31.5 29.135 31.5Z"" stroke=""#383838"" stroke-miterlimit=""10""/>
+    <path d=""M25.5 29V22ZM27.5 29V22ZM23.5 29V22Z"" fill=""#FFFFFF""/>
+    <path d=""M25.5 29V22M27.5 29V22M23.5 29V22"" stroke=""#EE3D3B"" stroke-miterlimit=""10""/>
+    <path d=""M23.5 19.5V18.183C23.5 17.806 23.806 17.5 24.183 17.5H26.818C27.195 17.5 27.501 17.806 27.501 18.183V19.5"" stroke=""#383838"" stroke-miterlimit=""10""/>
+  </g>
+</svg>
+";
+
+            var modifier = new SvgImageModifier();
+            var svgLigDis = modifier.Convert(svgInp, DxSvgImagePaletteType.LightSkinDisabled, "itemdel-large.svg");
+            var svgDarDis = modifier.Convert(svgInp, DxSvgImagePaletteType.DarkSkinDisabled, "itemdel-large.svg");
+
+
+
+        }
+
+
+
         /// <summary>
         /// Kliknutí na Ribbon
         /// </summary>
@@ -240,7 +291,7 @@ namespace TestDevExpress.Forms
                     _ChangeDataInDataForm();
                     break;
                 case "LoadFormFileOne":
-                    _LoadFormFile(fileName);
+                    _LoadDataFrmXml(fileName);
                     break;
                 default:
                     var n = itemId;
@@ -377,7 +428,67 @@ namespace TestDevExpress.Forms
         private DevExpress.XtraBars.BarStaticItem _StatusItemTime;
         private DevExpress.XtraBars.BarStaticItem _StatusItemCurrent;
         #endregion
-        #region DataForm
+        #region DataForm načítaný ze souboru .frm.xml
+        /// <summary>
+        /// Načte definici ze souboru
+        /// </summary>
+        /// <param name="fileFrmXml"></param>
+        private void _LoadDataFrmXml(string fileFrmXml)
+        {
+            string pathFrmXml = null;
+            try
+            {
+                pathFrmXml = System.IO.Path.GetDirectoryName(fileFrmXml);
+                var dxInfo = DxDForm.DfTemplateLoader.LoadInfoFromFile(fileFrmXml, out var xDocument, true);
+                if (dxInfo.FormatVersion == FormatVersionType.Version4)
+                {
+                    var dfForm = DxDForm.DfTemplateLoader.LoadFromDocument(xDocument, loadNested, true);
+                    _ApplyDfForm(dfForm);
+                }
+                else
+                {
+                    DxComponent.ShowMessageWarning($"Zadaný dokument '{fileFrmXml}' nemá odpovídající FormatVersion='4', jde o '{dxInfo.FormatVersion}'.");
+                }
+            }
+            catch (Exception ex)
+            {
+                DxComponent.ShowMessageException(ex);
+            }
+
+            // Najde definici nested šablony a vrátí její obsah
+            string loadNested(string name)
+            {
+                string nestedFrmXml = (!String.IsNullOrEmpty(name) ? System.IO.Path.Combine(pathFrmXml, name) : null);
+                if (!System.IO.File.Exists(nestedFrmXml)) return null;
+                return System.IO.File.ReadAllText(nestedFrmXml);
+            }
+        }
+        /// <summary>
+        /// Vytvoří dataform pro dodaná data ve formátu <see cref="DfForm"/> = načtená ze souboru *.frm.xml
+        /// </summary>
+        /// <param name="dfForm"></param>
+        private void _ApplyDfForm(DfForm dfForm)
+        {
+            _RemoveDataForms();
+
+            __DataFormId++;
+            var dataFormPanel = new DxDForm.DxDataFormPanel() { Dock = DockStyle.Fill };
+            dataFormPanel.TestPainting = this.TestPainting;
+            dataFormPanel.GotFocus += DxDataForm_GotFocus;
+
+            dataFormPanel.DataForm.DfForm = dfForm;
+            dataFormPanel.DataForm.DataFormRows.Store(_CreateSampleRows(dfForm));
+
+            DxMainPanel.Controls.Add(dataFormPanel);
+
+            _DataFormSampleId = 0;
+            _DxDataFormV3 = dataFormPanel;
+
+            _RefreshTitle();
+            RefreshStatusCurrent(true);
+        }
+        #endregion
+        #region DataForm testovací ručně tvořený
         /// <summary>
         /// Přidá DataForm s daným obsahem
         /// </summary>
@@ -412,31 +523,6 @@ namespace TestDevExpress.Forms
 
             var rows = _DxDataFormV3.DataForm.DataFormRows;
 
-        }
-        /// <summary>
-        /// Načte definici ze souboru
-        /// </summary>
-        private void _LoadFormFile(string fileName)
-        {
-            try
-            {
-                var dxInfo = DxDForm.DfTemplateLoader.LoadInfoFromFile(fileName, out var xDocument, true);
-                if (dxInfo.FormatVersion == "4")
-                {
-                    var dxForm = DxDForm.DfTemplateLoader.LoadFromDocument(xDocument, loadNested, true);
-                    var x = 0;
-                }
-                else
-                {
-                    DxComponent.ShowMessageWarning($"Zadaný dokument '{fileName}' nemá odpovídající FormatVersion='4', jde o '{dxInfo.FormatVersion}'.");
-                }
-            }
-            catch(Exception ex) 
-            {
-                DxComponent.ShowMessageException(ex);
-            }
-
-            string loadNested(string name) { return null; }
         }
         /// <summary>
         /// Do clipboardu připraví definici typu
@@ -544,9 +630,9 @@ namespace TestDevExpress.Forms
         /// </summary>
         /// <param name="sampleId"></param>
         /// <returns></returns>
-        private List<DxDData.DataFormLayoutItem> _CreateSampleLayout(int sampleId)
+        private List<DxLData.LayoutControl> _CreateSampleLayout(int sampleId)
         {
-            var result = new List<DxDData.DataFormLayoutItem>();
+            var result = new List<DxLData.LayoutControl>();
 
             string[] chartTypes = new string[]
             {
@@ -669,13 +755,13 @@ namespace TestDevExpress.Forms
 
             return result;
 
-            void addItemPairT(string columnId, string labelText, DxDForm.DxRepositoryEditorType columnType, int top, ref int left, int width, int height, Action<DxDData.DataFormLayoutItem> modifier = null)
+            void addItemPairT(string columnId, string labelText, DxDForm.DxRepositoryEditorType columnType, int top, ref int left, int width, int height, Action<DxLData.LayoutControl> modifier = null)
             {
                 addItemLabel(columnId + ".label", labelText, left + 3, width - 8, null, top, 18, null, WinDraw.ContentAlignment.MiddleLeft);
                 addItemType(columnId, columnType, null, left, width, null, top + 18, height, null, modifier);
                 left = left + width + 8;
             }
-            void addItemPairL(string columnId, string labelText, DxDForm.DxRepositoryEditorType columnType, int top, ref int left, int width, int height, Action<DxDData.DataFormLayoutItem> modifier = null)
+            void addItemPairL(string columnId, string labelText, DxDForm.DxRepositoryEditorType columnType, int top, ref int left, int width, int height, Action<DxLData.LayoutControl> modifier = null)
             {
                 addItemLabel(columnId + ".label", labelText, left, 75, null, top + 2, 18, null, WinDraw.ContentAlignment.MiddleRight);
                 left += 80;
@@ -684,7 +770,7 @@ namespace TestDevExpress.Forms
             }
             void addItemLabel(string columnId, string labelText, int? left, int? width, int? right, int? top, int? height, int? bottom, WinDraw.ContentAlignment alignment)
             {
-                DxDData.DataFormLayoutItem item = new DxDData.DataFormLayoutItem()
+                DxLData.LayoutControl item = new DxLData.LayoutControl()
                 {
                     ColumnName = columnId,
                     ColumnType = DxDForm.DxRepositoryEditorType.Label,
@@ -694,9 +780,9 @@ namespace TestDevExpress.Forms
                 item.SetContent(DxDData.DxDataFormProperty.LabelAlignment, alignment);
                 result.Add(item);
             }
-            void addItemType(string columnId, DxDForm.DxRepositoryEditorType columnType, string text, int? left, int? width, int? right, int? top, int? height, int? bottom, Action<DxDData.DataFormLayoutItem> modifier = null)
+            void addItemType(string columnId, DxDForm.DxRepositoryEditorType columnType, string text, int? left, int? width, int? right, int? top, int? height, int? bottom, Action<DxLData.LayoutControl> modifier = null)
             {
-                DxDData.DataFormLayoutItem item = new DxDData.DataFormLayoutItem()
+                DxLData.LayoutControl item = new DxLData.LayoutControl()
                 {
                     ColumnName = columnId,
                     ColumnType = columnType,
@@ -799,6 +885,14 @@ namespace TestDevExpress.Forms
                 return Randomizer.GetSentences(4, 9, 12, 30);
             }
             
+        }
+
+
+        private List<DxDData.DataFormRow> _CreateSampleRows(DfForm dfForm)
+        {
+            var result = new List<DxDData.DataFormRow>();
+            result.Add(new DxDData.DataFormRow());
+            return result;
         }
         #endregion
     }

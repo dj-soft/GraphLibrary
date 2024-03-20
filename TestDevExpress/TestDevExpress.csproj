@@ -165,6 +165,7 @@
     <Compile Include="AsolDX\DataForm\DxDataFormPanel.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="AsolDX\DataForm\DxFormLayout.cs" />
     <Compile Include="AsolDX\DataForm\DxGraphics.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -368,7 +369,7 @@
       <SubType>Designer</SubType>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <None Include="AsolDX\XSD\DxDataFormat.Frm.xsd">
+    <None Include="AsolDX\XSD\DfDataFormat.Frm.xsd">
       <SubType>Designer</SubType>
     </None>
     <None Include="Properties\Settings.settings">
@@ -2451,6 +2452,7 @@
     <Content Include="AsolDX\XML\dw_doklad_V1_form.frm.xml" />
     <Content Include="AsolDX\XML\dw_organizace_form.frm.xml" />
     <Content Include="AsolDX\XML\dw_sample_form.frm.xml" />
+    <Content Include="AsolDX\XML\dw_nested_dph.frm.xml" />
     <Content Include="TestDevExpress.ico" />
     <None Include="_Icons\Nephrite_15.ico" />
     <None Include="_Icons\Nephrite_14.ico" />

@@ -10,6 +10,7 @@ using SysIO = System.IO;
 using WinDraw = System.Drawing;
 using WinForm = System.Windows.Forms;
 using DxDData = Noris.Clients.Win.Components.AsolDX.DataForm.Data;
+using DxLData = Noris.Clients.Win.Components.AsolDX.DataForm.Layout;
 using DxeEdit = DevExpress.XtraEditors;
 using DxeCont = DevExpress.XtraEditors.Controls;
 
@@ -1982,7 +1983,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Definice layoutu pro tuto buňku
         /// </summary>
-        DxDData.DataFormLayoutItem LayoutItem { get; }
+        DxLData.LayoutControl LayoutItem { get; }
         /// <summary>
         /// Zkusí najít hodnotu požadované vlastnosti.
         /// Hodnota se prioritně hledá v řádku (=specifická pro konkrétní řádek), a pokud tam není, pak se hledá v layoutu (defaultní hodnota).

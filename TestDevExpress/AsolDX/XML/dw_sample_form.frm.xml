@@ -49,10 +49,10 @@
         <textboxbutton Name="tb1" ButtonsVisibility="Default">
             <leftButton Name="fff" Text=".." IconName="pic"/>
         </textboxbutton>
-        <nestedpanel Name="nestedpanel1" NestedTemplate="app/lcs/manufacturing/forms/pricetable.frm.xml" X="0" Y="250"/>
+        <nestedpanel Name="pricetable" NestedTemplate="dw_pricetable.frm.xml" X="0" Y="250"/>
     </panel>
 
-    <nestedpanel Name="nestedpanel2" NestedTemplate="..."/>
+    <nestedpanel Name="nested_dph" Bounds="0,250" NestedTemplate="dw_nested_dph.frm.xml"/>
 
     
     

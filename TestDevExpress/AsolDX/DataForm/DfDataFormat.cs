@@ -54,8 +54,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
           Postup, jak přidat novou třídu  { třeba pro zadání controlu Piškvorky }:
           ------------------------------------------------------------------------
       - C#: deklarace - Najdi vhodného předka = jaké properties využijeme, abychom přidali jen nové { Je to Input, a chci Label, takže předkem bude DfBaseLabeledInputControl }
+        - Přidej nový typ controlu do enumu   public enum ControlType   dole v této třídě  { asi  Piskvorky }
         - Napiš zdejší třídu, nejspíš DfPiskvorky : DfBaseLabeledInputControl
-        - Přidej do ní její speciální vlastnosti, třeba definici vzhledu jako nějaký nový enum, třeba public PiskvorkyStyleType Style { get; set; }
+        - Přepiš její   public override ControlType ControlType { get { a vracej  svůj typ  ControlType.Piskvorky;  } }
+        - Přidej do své třídy její speciální vlastnosti, třeba definici vzhledu Piškvorek, jako nějaký nový enum, třeba public PiskvorkyStyleType Style { get; set; }
         - Nadefinuj ten enum PiskvorkyStyleType { Default, Konkrétní typy, ... }
       - XSD - Přejdi do XSD schematu
         - Přidej odpovídající typ { asi type_piskvorky }
@@ -108,7 +110,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// <summary>
         /// Formát tohoto souboru. Defaultní = 4
         /// </summary>
-        public string FormatVersion { get; set; }
+        public FormatVersionType FormatVersion { get; set; }
     }
     /// <summary>
     /// Celý DataForm
@@ -132,7 +134,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// <summary>
         /// Formát tohoto souboru. Defaultní = 4
         /// </summary>
-        public string FormatVersion { get; set; }
+        public FormatVersionType FormatVersion { get; set; }
         /// <summary>
         /// Šířka oblasti DataFormu (Master) (tedy bez dynamických vztahů a dolních záložek)
         /// </summary>

@@ -21,7 +21,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// <summary>
     /// <see cref="DxDataFormPanel"/> : vnější panel DataForm - virtuální container.
     /// Obsahuje vnitřní ContentPanel typu <see cref="DxDataFormContentPanel"/>, který reálně zobrazuje obsah (ve spolupráci s this třídou řeší scrollování i Zoom).
-    /// Obsahuje kolekci řádků <see cref="DataFormRows"/> a deklaraci layoutu <see cref="DataFormLayoutSet"/>.
+    /// Obsahuje kolekci řádků <see cref="DataFormRows"/> a deklaraci layoutu <see cref="LayoutContainer"/>.
     /// Obsahuje managera fyzických controlů (obdoba RepositoryEditorů) <see cref="DxRepositoryManager"/>
     /// </summary>
     internal class DxDataFormPanel : DxVirtualPanel
