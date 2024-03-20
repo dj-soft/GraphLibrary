@@ -159,8 +159,8 @@
     <Compile Include="AdapterTest.cs" />
     <Compile Include="AsolDX\DataForm\DxCollections.cs" />
     <Compile Include="AsolDX\DataForm\DxDataForm.cs" />
-    <Compile Include="AsolDX\DataForm\DxDataFormat.cs" />
-    <Compile Include="AsolDX\DataForm\DxDataFormatLoad.cs" />
+    <Compile Include="AsolDX\DataForm\DfDataFormat.cs" />
+    <Compile Include="AsolDX\DataForm\DfDataFormatLoad.cs" />
     <Compile Include="AsolDX\DataForm\DxDataFormData.cs" />
     <Compile Include="AsolDX\DataForm\DxDataFormPanel.cs">
       <SubType>Component</SubType>

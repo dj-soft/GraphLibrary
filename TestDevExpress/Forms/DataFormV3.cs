@@ -104,7 +104,7 @@ namespace TestDevExpress.Forms
             addSampleButton(3144, "Table x 144 řádek", imageTest3);
             addSampleButton(3600, "Table x 600 řádek", imageTest3);
 
-            /*
+
 
             var page2 = new DataRibbonPage() { PageId = "Testy", PageText = "Ukázky" };
             var group21 = new DataRibbonGroup() { GroupId = "TestCombo", GroupText = "Combo boxy" };
@@ -147,9 +147,40 @@ namespace TestDevExpress.Forms
             group21.Items.Add(combo213);
 
             page2.Groups.Add(group21);
+
+
+            var group22 = new DataRibbonGroup() { GroupId = "TestImageArray", GroupText = "SvgImageArrayInfo" };
+
+            // Základní obrázky:
+            string image1 = "images/xaf/templatesv2images/action_delete.svg";
+            string image2 = "svgimages/chart/charttype_doughnut3d.svg";
+
+            // Bitmapy nelze použít:
+            //   image1 = "devav/actions/close_32x32.png";
+            //   image2 = "devav/actions/delete_32x32.png";
+
+            // Kombinace základního image1 (100% velikost) + overlay image2 vpravo dole na 60%:
+            var image3Array = new Noris.WS.DataContracts.Desktop.Data.SvgImageArrayInfo(image1);
+            image3Array.Add(image2, ContentAlignment.BottomRight, 60);
+            string image3 = image3Array.Key;
+
+            // Kombinace základního image1 (vlevo nahoře 70% velikost) + overlay image2 vpravo dole na 60%:
+            var image4Array = new Noris.WS.DataContracts.Desktop.Data.SvgImageArrayInfo();
+            image4Array.Add(image1, ContentAlignment.TopLeft, 70);
+            image4Array.Add(image2, ContentAlignment.BottomRight, 60);
+            string image4 = image4Array.Key;
+
+            // Deklarace tlačítek Ribbonu:
+            group22.Items.Add(new DataRibbonItem() { ItemId = "CombiImage1", Text = "Image1", ImageName = image1 });
+            group22.Items.Add(new DataRibbonItem() { ItemId = "CombiImage2", Text = "Image2", ImageName = image2 });
+            group22.Items.Add(new DataRibbonItem() { ItemId = "CombiImage12a", Text = "Image12a", ImageName = image3 });
+            group22.Items.Add(new DataRibbonItem() { ItemId = "CombiImage12b", Text = "Image12b", ImageName = image4 });
+
+            page2.Groups.Add(group22);
+
+
             pages.Add(page2);
 
-            */
 
             this.DxRibbon.Clear();
             this.DxRibbon.AddPages(pages);
@@ -389,10 +420,10 @@ namespace TestDevExpress.Forms
         {
             try
             {
-                var dxInfo = DxDForm.DxDataFormatLoader.LoadInfoFromFile(fileName, out var xDocument, true);
+                var dxInfo = DxDForm.DfTemplateLoader.LoadInfoFromFile(fileName, out var xDocument, true);
                 if (dxInfo.FormatVersion == "4")
                 {
-                    var dxForm = DxDForm.DxDataFormatLoader.LoadFromDocument(xDocument, loadNested, true);
+                    var dxForm = DxDForm.DfTemplateLoader.LoadFromDocument(xDocument, loadNested, true);
                     var x = 0;
                 }
                 else

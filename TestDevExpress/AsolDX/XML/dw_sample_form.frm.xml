@@ -7,7 +7,7 @@
           MasterWidth="530" MasterHeight="320"
           TotalWidth="750" TotalHeight="520"  >
 
-    <panel Name="Panel1" Margins="12,6" BackColorName="Orange_front_protect" BackColorDark="LightBlue" >
+    <panel Name="Panel1" Margins="12,6" BackColorName="Orange_front_protect" BackColorDark="LightBlue" CollapseState="IsExpanded" >
         <label Name="info1_lbl" Bounds="14,2,150" Text="Popisek" ToolTipTitle="Nápověda" ToolTipText="Informace k tomuto prvku neexistuje" />
         <textbox Name="info1" Bounds="10,20,160" Required="True" State="SkipTab" />
         <label Name="info2_lbl" Bounds="184,2,150" Text="Informace" />

@@ -16,79 +16,90 @@ using WinForm = System.Windows.Forms;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
 {
-    /*    Deklarace dat  +  deklarace XSD  +  Načítací algoritmus
+    /*     INFORMACE :  Datové třídy  +  XSD Schema  +  Načítání dat;      POSTUP pro přidání nové třídy anebo nové vlastnosti.
+          Deklarace dat  +  deklarace XSD  +  Načítací algoritmus
      1. Struktury dat jsou deklarovány zde, nemají žádnou logiku, jde jen  o obálku na data
      2. V podstatě identické struktury jsou deklarovány v XSD suoboru - stejná hierarchie tříd, stejnojmenné property ve stejných třídách, stejné enumy a jejich hodnoty
      3. Existuje statická třída DxDataFormatLoader, která z XML dokumentu (zadaného podle XSD schematu) vytvoří a vrátí odpovídající struktury zdejších tříd (C#)
 
           Hierarchie tříd
      - Třídy pro data jsou uspořádány hierarchicky
-     - Bázová třída je DataFormatBase, nese pouze Name
+     - Bázová třída je DfBase, nese Name, State, ToolTip, Invisible
      - Z ní jsou postupně děděny třídy pro Controly i pro Containery
      - Obdobná hierarchie je i ve schematu XSD (i tam je použita dědičnost typů!)
 
       TŘÍDA                                                            ÚČEL                                   PROPERTIES
-    DataFormatBase                                                   Bázová                                 Name
-      +  DataFormatBaseSubControl                                    Pro SubControly bez souřadnic          State, ToolTip, Invisible
-           +  DataFormatSubButton                                    Pomocný SubButton, SubItem             Text, IconName, ActionName, ActionData
-           +  DataFormatBaseControl                                  Pro všechny Controly                   ControlType, Bounds
-                +  DataFormatControlLabel                            Label                                  Text, Alignment
-                |    +  DataFormatControlTitle                       Titulek                                Style
-                +  DataFormatBaseInputControl                        Obecný vstupní control                 Required
-                |    +  DataFormatBaseTextControl                    Vstupní control s textem               Text, IconName, Alignment
-                |    |    +  DataFormatControlCheckBox               Checkboxy více typů                    Style
-                |    |    +  DataFormatControlButton                 Samostatné tlačítko                    ActionName, ActionData, HotKey
-                |    |         +  DataFormatControlDropDownButton    Button s podnabídkou                   DropDownButtons
-                |    +  DataFormatControlTextBox                     Běžný TextBox                          EditMask, Alignment
-                |    |    +  DataFormatControlTextBoxButton          TextBox s tlačítky                     LeftButtons, RightButtons
-                |    +  DataFormatComboBox                           ComboBox různých stylů                 Style, EditStyleName, ComboItems
-                +  DataFormatBaseContainer                           Base pro containery                    Style, Margins, Controls
-                     +  DataFormatContainerPanel                     Běžný panel vč. Nested                 
-                     +  DataFormatContainerPage                      Stránka v PageSetu                     Title, IconName, Tabs
-                     +  DataFormatContainerPageSet                   Sada stránek / záložky                 Pages
-                     +  DataFormatContainerForm                      Kompletní formulář                     FormatVersion, MasterWidth, ..., Tabs
+    DfBase                                                 Bázová pro SubControly, Controly i Containery     Name, State, ToolTip, Invisible
+      +  DfSubTextItem                                     Pomocný SubTextItem                               Text, IconName
+      |    +  DfSubButton                                  Pomocný SubButton                                 ActionName, ActionData
+      +  DfBaseControl                                     Bázová pro všechny Controly                       ControlType, Bounds
+      |    +  DfLabel                                      Control Label                                     Text, Alignment
+      |    +  DfTitle                                      Control Title                                     IconName, Title, Style, Alignment
+      |    +  DfBaseInputControl                           Bázová pro všechny vstupní prvky                  Required
+      |         +  DfBaseLabeledInputControl               Bázová pro vstupní prvky s Labelem                Label, LabelPosition, LabelWidth
+      |         |    +  DfTextBox                          Control TextBox                                   EditMask, Alignment
+      |         |    |    + DfTextBoxButton                Control TextBox s Buttony                         LeftButtons, RightButtons, ButtonsVisibility
+      |         |    +  DfComboBox                         Control ComboBox                                  ComboItems, EditStyleName, Style
+      |         +  DfBaseInputTextControl                  Bázová pro prvky obsahující Text                  Text, IconName, Alignment
+      |              +  DfCheckBox                         Control CheckBox (a podobné)                      Style
+      |              +  DfButton                           Control Button                                    ActionType, ActionData, HotKey
+      |                   + DfDropDownButton               Control DropDown Button                           DropDownButtons
+      +  DfBaseContainer                                   Bázová pro containery                             BackColorName, BackColorLight, BackColorDark, Margins, Childs
+           +  DfPanel                                      Panel (s možností Collapse)                       Bounds, IconName, Title, TitleStyle, CollapseState
+           +  DfPage                                       Jedna stránka                                     Title, IconName
+           +  DfPageSet                                    Sada stránek                                      Bounds
+           +  DfForm                                       Celý formulář, sada vlastností Template           ... kupa ...
+
+
+          Postup, jak přidat novou třídu  { třeba pro zadání controlu Piškvorky }:
+          ------------------------------------------------------------------------
+      - C#: deklarace - Najdi vhodného předka = jaké properties využijeme, abychom přidali jen nové { Je to Input, a chci Label, takže předkem bude DfBaseLabeledInputControl }
+        - Napiš zdejší třídu, nejspíš DfPiskvorky : DfBaseLabeledInputControl
+        - Přidej do ní její speciální vlastnosti, třeba definici vzhledu jako nějaký nový enum, třeba public PiskvorkyStyleType Style { get; set; }
+        - Nadefinuj ten enum PiskvorkyStyleType { Default, Konkrétní typy, ... }
+      - XSD - Přejdi do XSD schematu
+        - Přidej odpovídající typ { asi type_piskvorky }
+        - Doplň jeho base typ { asi <xs:extension base="type_base_labeled_input_control"> }
+        - Přidej jeho atribut Style, typu odpovídajícího enumu  { piskvorky_style_enum }
+            - Dodržuj shodu jména property a atributu = je to vhodné pro čitelnost
+        - Nadeklaruj ten enum, podobně jako je deklarovaný každý jiný, například "checkbox_style_enum"
+            - Dodržuj shodu jména hodnoty enumu a jméno enumerace = nutné, na tom je založena načítací metoda _ReadAttributeEnum()
+        - Přidávej popisky  { <xs:annotation><xs:documentation xml:lang="cs-cz">Styl zobrazení Piškvorek</xs:documentation></xs:annotation>  }
+        - Zajisti, aby tento typ bylo možno přidat do panelu tak jako ostatní controly: 
+           - Najdi bázový container:  <xs:complexType name="type_base_container">
+           - Přidej do něj další možnost elementu  { asi: <xs:element name="piskvorky" type="type_piskvorky" minOccurs="0" maxOccurs="unbounded">  }
+      - Načítání - Přejdi do loaderu = třída DfTemplateLoader, a zajisti, že nový element bude možno použít:
+        - V metodě  private static DfBase _CreateItem(..)  přidej novou větev pro nový typ elementu
+            case "piskvorky": return _FillControlPiskvorky(xElement, new DfPiskvorky(), loaderContext);
+        - Vytvoř navrženou metodu  private static DfBaseControl _FillControlPiskvorky(..) obdobně jako jsou ostatní
+           - Nejdřív zavolej :       _FillBaseAttributes(xElement, control);             // Načte atributy bázových tříd (sám rozpozná, které to jsou)
+           - A potom načti svoje vlastní atributy:
+               control.Style = _ReadAttributeEnum(xElement, "Style", PiskvorkyStyleType.Default);
+      - A pak kompletně naprogramuj její zobrazování a interaktivitu (to je nad rámec tohoto úkolu)
+
+
+          Postup, jak přidat novou hodnotu (property) do existujícího controlu:
+          ---------------------------------------------------------------------
+      - Z předešlého návodu si vyber jen potřebné kroky:
+      - Najdi dotyčnou třídu v tomto souboru, například DfTextBox
+        - Přidej do ní její novou hodnotu (property), třeba definici stylu rámečku, plus přidej odpovídající enum
+      - Přejdi do XSD schematu
+        - A do odpovídajícího XSD typu controlu přidej nový atribut plus jeho typ
+        - Případně nadeklaruj typ (enumeration)
+      - Načítání - Přejdi do loaderu = třída DfTemplateLoader
+        - Najdi načítání dané třídy, například   private static DfBaseControl _FillControlTextBox(..)
+        - Přidej řádek pro načtené nové property vhodnou metodou
      
 
     */
 
-    /*   Typy a vlastnosti
-
-
-    CONTAINERY
-    ----------
-       Každý prvek má vlastnost: Name
-            Bounds   Title   Icon  BackColor  ToolTip  Invisible
-Form          -        -      A       A          -         -
-PageSet       A        -      -       -          -         A
-Page          -        A      A       A          A         A
-Panel         A        A      A       A          -         A
-
-
-    CONTROLY
-    --------
-       Každý prvek má vlastnosti: Name,  State,  ToolTip
-               Bounds  BackColor  Invisible  Text   FontType  TextColor  Icon   Action  SubItems  SubButtons
-SubItem          -       -             -      A       -          -         A
-SubButton        -       -             -      A       -          -         A       A
-Label            A       A             A      A       A          A         -
-TitleRow         A       A             A      A       A          A         -
-CheckBox         A       A             A      A       A          A         -
-TextBox          A       A             A      -       A          A         -
-TextBoxButton    A       A             A      -       A          A         -       -       -          A
-ComboBox         A       A             A      -       A          A         -       -       A
-Button           A       A             A      A       A          A         A       A
-SplitButton      A       A             A      A       A          A         A       A       -          A
-
-
-    */
-
-    // Shared : třídy pouze nesou data, nemají funkcinalitu. Poměrně dobře korespondují s XML schematem DxDataFormat.Frm
+    // Shared : třídy pouze nesou data, nemají funkcionalitu. Poměrně dobře korespondují s XML schematem DxDataFormat.Frm
 
     #region Konkrétní třídy Containerů
     /// <summary>
     /// Hlavičková informace o dokumentu: obsahuje pouze <see cref="XmlNamespace"/> a <see cref="FormatVersion"/>.
     /// </summary>
-    public class DataFormatInfoForm
+    public class DfInfoForm
     {
         /// <summary>
         /// Namespace XML dokumentu
@@ -102,12 +113,12 @@ SplitButton      A       A             A      A       A          A         A    
     /// <summary>
     /// Celý DataForm
     /// </summary>
-    public class DataFormatContainerForm : DataFormatBaseContainer
+    public class DfForm : DfBaseContainer
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormatContainerForm()
+        public DfForm()
         {
         }
         /// <summary>
@@ -165,7 +176,7 @@ SplitButton      A       A             A      A       A          A         A    
         /// <summary>
         /// Jednotlivé prvky - PageSet nebo Panely, vždy containery
         /// </summary>
-        public DataFormatBaseContainer[] Tabs { get { return this.Childs?.OfType<DataFormatBaseContainer>().ToArray(); } }
+        public DfBaseContainer[] Tabs { get { return this.Childs?.OfType<DfBaseContainer>().ToArray(); } }
         /// <summary>
         /// Debug text
         /// </summary>
@@ -174,12 +185,12 @@ SplitButton      A       A             A      A       A          A         A    
     /// <summary>
     /// Sada stránek = záložky
     /// </summary>
-    public class DataFormatContainerPageSet : DataFormatBaseContainer
+    public class DfPageSet : DfBaseContainer
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormatContainerPageSet()
+        public DfPageSet()
         {
         }
         /// <summary>
@@ -193,17 +204,17 @@ SplitButton      A       A             A      A       A          A         A    
         /// <summary>
         /// Stránky na záložkách
         /// </summary>
-        public DataFormatContainerPage[] Pages { get { return this.Childs?.OfType<DataFormatContainerPage>().ToArray(); } }
+        public DfPage[] Pages { get { return this.Childs?.OfType<DfPage>().ToArray(); } }
     }
     /// <summary>
     /// Jedna stránka = obsahuje další Panely (nebo i PageSet nebo Controly).
     /// </summary>
-    public class DataFormatContainerPage : DataFormatBaseContainer
+    public class DfPage : DfBaseContainer
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormatContainerPage()
+        public DfPage()
         {
         }
         /// <summary>
@@ -222,18 +233,18 @@ SplitButton      A       A             A      A       A          A         A    
         /// <summary>
         /// Jednotlivé prvky - PageSet nebo Panely, vždy containery
         /// </summary>
-        public DataFormatBaseContainer[] Tabs { get { return this.Childs?.OfType<DataFormatBaseContainer>().ToArray(); } }
+        public DfBaseContainer[] Tabs { get { return this.Childs?.OfType<DfBaseContainer>().ToArray(); } }
     }
     /// <summary>
     /// Panel, může obsahovat controly i containery.<br/>
     /// Odpovídá XSD typu <c>type_base_container</c>
     /// </summary>
-    public class DataFormatContainerPanel : DataFormatBaseContainer
+    public class DfPanel : DfBaseContainer
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormatContainerPanel() : base()
+        public DfPanel() : base()
         {
         }
         /// <summary>
@@ -266,12 +277,12 @@ SplitButton      A       A             A      A       A          A         A    
     /// Základní třída pro containery.<br/>
     /// Odpovídá XSD typu <c>type_base_container</c>
     /// </summary>
-    public class DataFormatBaseContainer : DataFormatBaseSubControl
+    public class DfBaseContainer : DfBase
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormatBaseContainer() : base()
+        public DfBaseContainer() : base()
         {
         }
         /// <summary>
@@ -297,14 +308,14 @@ SplitButton      A       A             A      A       A          A         A    
         /// <summary>
         /// Obsahuje všechny controly v tomto containeru i v jeho vnitřních containerech
         /// </summary>
-        public DataFormatBaseControl[] AllControls { get { return GetAllControls(); } }
+        public DfBaseControl[] AllControls { get { return GetAllControls(); } }
         /// <summary>
         /// Vrátí pole všech controlů v tomto containeru i v jeho vnitřních containerech.
         /// </summary>
         /// <returns></returns>
-        protected DataFormatBaseControl[] GetAllControls()
+        protected DfBaseControl[] GetAllControls()
         {
-            List<DataFormatBaseControl> result = new List<DataFormatBaseControl>();
+            List<DfBaseControl> result = new List<DfBaseControl>();
             AddAllControls(this, result);
             return result.ToArray();
         }
@@ -314,14 +325,14 @@ SplitButton      A       A             A      A       A          A         A    
         /// <param name="dataContainer"></param>
         /// <param name="result"></param>
         /// <exception cref="NotImplementedException"></exception>
-        protected static void AddAllControls(DataFormatBaseContainer dataContainer, List<DataFormatBaseControl> result)
+        protected static void AddAllControls(DfBaseContainer dataContainer, List<DfBaseControl> result)
         {
             if (dataContainer is null || dataContainer.Childs is null) return;
             foreach (var child in dataContainer.Childs) 
             {
-                if (child is DataFormatBaseContainer childContainer)
+                if (child is DfBaseContainer childContainer)
                     AddAllControls(childContainer, result);
-                else if (child is DataFormatBaseControl childControl)
+                else if (child is DfBaseControl childControl)
                     result.Add(childControl);
             }
         }
@@ -330,7 +341,7 @@ SplitButton      A       A             A      A       A          A         A    
         /// Mohou zde být i další Containery.
         /// Default = null.
         /// </summary>
-        public List<DataFormatBaseSubControl> Childs { get; set; }
+        public List<DfBase> Childs { get; set; }
         /// <summary>
         /// Debug text
         /// </summary>
@@ -342,12 +353,12 @@ SplitButton      A       A             A      A       A          A         A    
     /// DxDataForm : Label.<br/>
     /// Odpovídá XSD typu <c>type_label</c>
     /// </summary>
-    public class DataFormatControlLabel : DataFormatBaseControl
+    public class DfLabel : DfBaseControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
         /// </summary>
-        public DataFormatControlLabel() : base()
+        public DfLabel() : base()
         {
             this.Alignment = ContentAlignmentType.Default;
         }
@@ -372,14 +383,18 @@ SplitButton      A       A             A      A       A          A         A    
     /// DxDataForm : Title.<br/>
     /// Odpovídá XSD typu <c>type_title</c>
     /// </summary>
-    public class DataFormatControlTitle : DataFormatBaseControl
+    public class DfTitle : DfBaseControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
         /// </summary>
-        public DataFormatControlTitle() : base()
+        public DfTitle() : base()
         {
         }
+        /// <summary>
+        /// Druh vstupního prvku (Control).
+        /// </summary>
+        public override ControlType ControlType { get { return ControlType.Title; } }
         /// <summary>
         /// Jméno ikony odstavce nebo prvku (v titulku stránky, v titulku odstavce, ikona Buttonu, atd).
         /// Použití se liší podle typu prvku.
@@ -389,10 +404,6 @@ SplitButton      A       A             A      A       A          A         A    
         /// Text popisku
         /// </summary>
         public string Title { get; set; }
-        /// <summary>
-        /// Druh vstupního prvku (Control).
-        /// </summary>
-        public override ControlType ControlType { get { return ControlType.Title; } }
         /// <summary>
         /// Styl titulku.
         /// </summary>
@@ -410,12 +421,12 @@ SplitButton      A       A             A      A       A          A         A    
     /// DxDataForm : CheckBox.<br/>
     /// Odpovídá XSD typu <c>type_checkbox</c>
     /// </summary>
-    public class DataFormatControlCheckBox : DataFormatBaseInputTextControl
+    public class DfCheckBox : DfBaseInputTextControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
         /// </summary>
-        public DataFormatControlCheckBox() : base()
+        public DfCheckBox() : base()
         {
         }
         /// <summary>
@@ -435,12 +446,12 @@ SplitButton      A       A             A      A       A          A         A    
     /// DxDataForm : Button.<br/>
     /// Odpovídá XSD typu <c>type_button</c>
     /// </summary>
-    public class DataFormatControlButton : DataFormatBaseInputTextControl
+    public class DfButton : DfBaseInputTextControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
         /// </summary>
-        public DataFormatControlButton() : base()
+        public DfButton() : base()
         {
         }
         /// <summary>
@@ -464,12 +475,12 @@ SplitButton      A       A             A      A       A          A         A    
     /// DxDataForm : DropDownButton.<br/>
     /// Odpovídá XSD typu <c>type_drop_down_button</c>
     /// </summary>
-    public class DataFormatControlDropDownButton : DataFormatControlButton
+    public class DfDropDownButton : DfButton
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
         /// </summary>
-        public DataFormatControlDropDownButton() : base()
+        public DfDropDownButton() : base()
         {
             this.DropDownButtons = null;
         }
@@ -481,7 +492,7 @@ SplitButton      A       A             A      A       A          A         A    
         /// DropDown prvky na buttonu.
         /// Výchozí hodnota je NULL.
         /// </summary>
-        public List<DataFormatSubButton> DropDownButtons { get; set; }
+        public List<DfSubButton> DropDownButtons { get; set; }
     }
     /// <summary>
     /// DxDataForm : TextBox.<br/>
@@ -489,12 +500,12 @@ SplitButton      A       A             A      A       A          A         A    
     /// <para/>
     /// Tato třída přináší property <see cref="Alignment"/>, <see cref="EditMask"/>.
     /// </summary>
-    public class DataFormatControlTextBox : DataFormatBaseInputLabeledControl
+    public class DfTextBox : DfBaseLabeledInputControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
         /// </summary>
-        public DataFormatControlTextBox() : base()
+        public DfTextBox() : base()
         {
             this.Alignment = ContentAlignmentType.Default;
         }
@@ -515,12 +526,12 @@ SplitButton      A       A             A      A       A          A         A    
     /// DxDataForm : TextBoxButton.<br/>
     /// Odpovídá XSD typu <c>type_textboxbutton</c>
     /// </summary>
-    public class DataFormatControlTextBoxButton : DataFormatControlTextBox
+    public class DfTextBoxButton : DfTextBox
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
         /// </summary>
-        public DataFormatControlTextBoxButton() : base()
+        public DfTextBoxButton() : base()
         {
             this.LeftButtons = null;
             this.RightButtons = null;
@@ -533,12 +544,12 @@ SplitButton      A       A             A      A       A          A         A    
         /// Buttony na levé straně TextBoxu.
         /// Výchozí hodnota je NULL.
         /// </summary>
-        public List<DataFormatSubButton> LeftButtons { get; set; }
+        public List<DfSubButton> LeftButtons { get; set; }
         /// <summary>
         /// Buttony na levé straně TextBoxu.
         /// Výchozí hodnota je NULL.
         /// </summary>
-        public List<DataFormatSubButton> RightButtons { get; set; }
+        public List<DfSubButton> RightButtons { get; set; }
         /// <summary>
         /// Viditelnost buttonů v textboxu v závislosti na aktivitě TextBoxu
         /// </summary>
@@ -550,23 +561,23 @@ SplitButton      A       A             A      A       A          A         A    
     /// <para/>
     /// Tato třída přináší property 
     /// </summary>
-    public class DataFormatComboBox : DataFormatBaseInputLabeledControl
+    public class DfComboBox : DfBaseLabeledInputControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
         /// </summary>
-        public DataFormatComboBox() : base()
+        public DfComboBox() : base()
         {
             this.Style = ComboBoxStyleType.Default;
         }
         /// <summary>
         /// Druh vstupního prvku (Control).
         /// </summary>
-        public override ControlType ControlType { get { return ControlType.ComboListBox; } }
+        public override ControlType ControlType { get { return ControlType.ComboBox; } }
         /// <summary>
         /// Položky v nabídce
         /// </summary>
-        public List<DataFormatSubButton> ComboItems { get; set; }
+        public List<DfSubTextItem> ComboItems { get; set; }
         /// <summary>
         /// Název editačního stylu. Může být prázdné, pokud budou zadány prvky comboItem.
         /// </summary>
@@ -580,12 +591,33 @@ SplitButton      A       A             A      A       A          A         A    
     /// DxDataForm : SubButton = součást <see cref="ControlType.DropDownButton"/> i <see cref="ControlType.TextBoxButton"/>.<br/>
     /// Odpovídá XSD typu <c>type_subbutton</c>
     /// </summary>
-    public class DataFormatSubButton : DataFormatBaseSubControl
+    public class DfSubButton : DfSubTextItem
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
         /// </summary>
-        public DataFormatSubButton() : base()
+        public DfSubButton() : base()
+        {
+        }
+        /// <summary>
+        /// Akce na tomto sub-buttonu
+        /// </summary>
+        public SubButtonActionType ActionType { get; set; }
+        /// <summary>
+        /// Data pro akci na tomto sub-buttonu
+        /// </summary>
+        public string ActionData { get; set; }
+    }
+    /// <summary>
+    /// DxDataForm : DfSubTextItem = součást <see cref="ControlType.ComboBox"/>.<br/>
+    /// Odpovídá XSD typu <c>type_subtextitem</c>
+    /// </summary>
+    public class DfSubTextItem : DfBase
+    {
+        /// <summary>
+        /// Konstruktor, nastaví defaulty
+        /// </summary>
+        public DfSubTextItem() : base()
         {
         }
         /// <summary>
@@ -593,18 +625,10 @@ SplitButton      A       A             A      A       A          A         A    
         /// </summary>
         public string Text { get; set; }
         /// <summary>
-        /// Jméno ikony odstavce nebo prvku (v titulku stránky, v titulku odstavce, ikona Buttonu, atd).
+        /// Jméno ikony u textu.
         /// Použití se liší podle typu prvku.
         /// </summary>
         public string IconName { get; set; }
-        /// <summary>
-        /// Akce na tomto sub-buttonu
-        /// </summary>
-        public ButtonActionType ActionType { get; set; }
-        /// <summary>
-        /// Data pro akci na tomto sub-buttonu
-        /// </summary>
-        public string ActionData { get; set; }
     }
     #endregion
     #region Bázové třídy Controlů
@@ -614,12 +638,12 @@ SplitButton      A       A             A      A       A          A         A    
     /// <para/>
     /// Tato třída přináší property <see cref="Text"/>,  <see cref="IconName"/> a <see cref="Alignment"/>.
     /// </summary>
-    public class DataFormatBaseInputTextControl : DataFormatBaseInputControl
+    public class DfBaseInputTextControl : DfBaseInputControl
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormatBaseInputTextControl() : base()
+        public DfBaseInputTextControl() : base()
         {
             this.Alignment = ContentAlignmentType.Default;
         }
@@ -643,12 +667,12 @@ SplitButton      A       A             A      A       A          A         A    
     /// <para/>
     /// Tato třída přináší property <see cref="Label"/>, <see cref="LabelPosition"/> a <see cref="LabelWidth"/>.
     /// </summary>
-    public class DataFormatBaseInputLabeledControl : DataFormatBaseInputControl
+    public class DfBaseLabeledInputControl : DfBaseInputControl
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormatBaseInputLabeledControl() : base()
+        public DfBaseLabeledInputControl() : base()
         {
             this.Label = null;
             this.LabelPosition = LabelPositionType.Default;
@@ -677,12 +701,12 @@ SplitButton      A       A             A      A       A          A         A    
     /// <para/>
     /// Tato třída přináší property <see cref="Required"/>.
     /// </summary>
-    public class DataFormatBaseInputControl : DataFormatBaseControl
+    public class DfBaseInputControl : DfBaseControl
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormatBaseInputControl() : base()
+        public DfBaseInputControl() : base()
         {
             this.Required = RequiredType.Default;
         }
@@ -698,12 +722,12 @@ SplitButton      A       A             A      A       A          A         A    
     /// <para/>
     /// Tato třída přináší souřadnice <see cref="Bounds"/>.
     /// </summary>
-    public class DataFormatBaseControl : DataFormatBaseSubControl
+    public class DfBaseControl : DfBase
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormatBaseControl() : base()
+        public DfBaseControl() : base()
         {
         }
         /// <summary>
@@ -720,20 +744,25 @@ SplitButton      A       A             A      A       A          A         A    
         protected override string DebugText { get { return $"{ControlType}; Name: '{Name}'"; } }
     }
     /// <summary>
-    /// Bázová třída pro všechny controly - včetně subcontrolů (pro položky v ComboBoxu i SubButtony).<br/>
-    /// Odpovídá XSD typu <c>type_base_sub_control</c>
+    /// Bázová třída pro všechny prvky - controly i containery.<br/>
+    /// Odpovídá XSD typu <c>type_base</c>
     /// <para/>
-    /// Tato třída přináší property: <see cref="State"/>, výraz <see cref="Invisible"/> a texty pro ToolTip <see cref="ToolTipTitle"/> a <see cref="ToolTipText"/>.
+    /// Tato třída přináší základní property: <see cref="Name"/>.
     /// </summary>
-    public class DataFormatBaseSubControl : DataFormatBase
+    public class DfBase
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormatBaseSubControl() : base()
+        public DfBase()
         {
-            this.State = ControlStateType.Default;
         }
+        /// <summary>
+        /// Klíčové jméno prvku pro jeho jednoznačnou identifikaci.
+        /// Odstavce a prvky musí mít <see cref="Name"/> jednoznačné přes celý formulář = přes všechny záložky.
+        /// Subprvky (=položky editačního stylu) a subbuttony (tlačítka v <see cref="ControlType.TextBoxButton"/>) mají <see cref="Name"/> jednoznačné jen v rámci svého prvku.
+        /// </summary>
+        public string Name { get; set; }
         /// <summary>
         /// Stav bloku nebo prvku (viditelnost, editovatelnost)
         /// </summary>
@@ -750,27 +779,6 @@ SplitButton      A       A             A      A       A          A         A    
         /// Výraz určující Invisible
         /// </summary>
         public string Invisible { get; set; }
-    }
-    /// <summary>
-    /// Bázová třída pro všechny prvky - controly i containery.<br/>
-    /// Odpovídá XSD typu <c>type_base</c>
-    /// <para/>
-    /// Tato třída přináší základní property: <see cref="Name"/>.
-    /// </summary>
-    public class DataFormatBase
-    {
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        public DataFormatBase()
-        {
-        }
-        /// <summary>
-        /// Klíčové jméno prvku pro jeho jednoznačnou identifikaci.
-        /// Odstavce a prvky musí mít <see cref="Name"/> jednoznačné přes celý formulář = přes všechny záložky.
-        /// Subprvky (=položky editačního stylu) a subbuttony (tlačítka v <see cref="ControlType.TextBoxButton"/>) mají <see cref="Name"/> jednoznačné jen v rámci svého prvku.
-        /// </summary>
-        public string Name { get; set; }
         /// <summary>
         /// Vizualizace
         /// </summary>
@@ -1140,7 +1148,11 @@ SplitButton      A       A             A      A       A          A         A    
         /// <summary>
         /// Do políčka je možno pouze vybrat hodnotu z nabídky. Zobrazuje pouze ikonu.
         /// </summary>
-        IconList
+        IconList,
+        /// <summary>
+        /// Postup procesu - všechny hodnoty editačního stylu jsou zobrazeny, s jedna z nich je zvýrazněna
+        /// </summary>
+        BreadCrumb
     }
     /// <summary>
     /// Styl viditelnosti buttonů v rámci prvku <see cref="DxRepositoryEditorTextBoxButton"/>.
@@ -1197,6 +1209,45 @@ SplitButton      A       A             A      A       A          A         A    
         Close
     }
     /// <summary>
+    /// Akce, kterou button provede.<br/>
+    /// Odpovídá XSD typu <c>button_action_enum</c>
+    /// </summary>
+    public enum SubButtonActionType
+    {
+        /// <summary>
+        /// Default = Click = Odešle kliknutí na server
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Click = Odešle kliknutí na server
+        /// </summary>
+        Click,
+        /// <summary>
+        /// Otevře editor aktuální hodnoty (kalendář, Word, Kalkulačka), podle ActionData
+        /// </summary>
+        OpenEditor,
+        /// <summary>
+        /// Otevře FileDialog, podle ActionData
+        /// </summary>
+        FileDialog,
+        /// <summary>
+        /// Akce s Clipboardem, podle ActionData
+        /// </summary>
+        ClipboardAction,
+        /// <summary>
+        /// Akce se vztaženým záznamem
+        /// </summary>
+        RelationRecord,
+        /// <summary>
+        /// Akce se vztaženým dokumentem
+        /// </summary>
+        RelationDocument,
+        /// <summary>
+        /// 
+        /// </summary>
+        xxx
+    }
+    /// <summary>
     /// Stav prvku. 
     /// Jde o Flags. Lze je sčítat z celé hierarchie containerů (OR), výsledek popisuje stav nejvyššího prvku.
     /// Tedy pokud jeden jediný prvek v hierarchii je <see cref="Invisible"/>, pak finální prvek je neviditelný.
@@ -1250,7 +1301,7 @@ SplitButton      A       A             A      A       A          A         A    
         /// </summary>
         None,
         /// <summary>
-        /// Běžný vnitřní TAB (odstavec), může / nemusí mít titulek (podle přítomnosti textu <see cref="DataFormatBaseInputTextControl.Text"/>)
+        /// Běžný vnitřní TAB (odstavec), může / nemusí mít titulek (podle přítomnosti textu <see cref="DfBaseInputTextControl.Text"/>)
         /// </summary>
         Default,
         /// <summary>
@@ -1281,11 +1332,11 @@ SplitButton      A       A             A      A       A          A         A    
         /// </summary>
         Default,
         /// <summary>
-        /// Panel je ve standardní velikosti, ale uživatel jej může minimalizovat = přejde do stavu <see cref="IsCollapsed"/>
+        /// Panel je zobrazen ve standardní velikosti, ale uživatel jej může interaktivně minimalizovat = přejde do stavu <see cref="IsCollapsed"/>
         /// </summary>
         IsExpanded,
         /// <summary>
-        /// Panel je minimalizován, ale uživatel jej může rozbalit ve standardní velikosti = přejde do stavu <see cref="IsExpanded"/>
+        /// Panel je zobrazen jako minimalizovaný, ale uživatel jej může interaktivně rozbalit do standardní velikosti = přejde do stavu <see cref="IsExpanded"/>
         /// </summary>
         IsCollapsed
     }
@@ -1363,7 +1414,7 @@ SplitButton      A       A             A      A       A          A         A    
         /// <summary>
         /// ComboBox bez obrázků nebo s obrázky
         /// </summary>
-        ComboListBox,
+        ComboBox,
         /// <summary>
         /// Posouvací hodnota, jedna nebo dvě
         /// </summary>

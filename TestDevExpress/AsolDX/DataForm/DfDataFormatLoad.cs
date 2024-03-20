@@ -15,19 +15,19 @@ using Noris.Clients.Win.Components.AsolDX.DataForm.Format;
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
     /// <summary>
-    /// Třída, která načte XML soubor / stream obsahující <see cref="DataFormatContainerForm"/>, i rekurzivně (nested Tabs)
+    /// Třída, která načte XML soubor / stream obsahující <see cref="DfForm"/>, i rekurzivně (nested Tabs)
     /// </summary>
-    internal class DxDataFormatLoader
+    internal class DfTemplateLoader
     {
         #region Načítání obsahu a načítání Info - public rozhraní
         /// <summary>
-        /// Načte a vrátí <see cref="DataFormatContainerForm"/> ze zadaného souboru
+        /// Načte a vrátí <see cref="DfForm"/> ze zadaného souboru
         /// </summary>
         /// <param name="fileName"></param>
         /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména</param>
         /// <param name="logTime">Logovat časy?</param>
         /// <returns></returns>
-        internal static DataFormatContainerForm LoadFromFile(string fileName, Func<string, string> nestedLoader = null, bool logTime = false)
+        internal static DfForm LoadFromFile(string fileName, Func<string, string> nestedLoader = null, bool logTime = false)
         {
             LoaderContext loaderContext = new LoaderContext() { NestedLoader = nestedLoader };
             string name = System.IO.Path.GetFileName(fileName);
@@ -47,13 +47,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return form;
         }
         /// <summary>
-        /// Načte a vrátí <see cref="DataFormatContainerForm"/> ze zadané XML definice (=typicky obsah souboru)
+        /// Načte a vrátí <see cref="DfForm"/> ze zadané XML definice (=typicky obsah souboru)
         /// </summary>
         /// <param name="content"></param>
         /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména</param>
         /// <param name="logTime">Logovat časy?</param>
         /// <returns></returns>
-        internal static DataFormatContainerForm LoadFromContent(string content, Func<string, string> nestedLoader = null, bool logTime = false)
+        internal static DfForm LoadFromContent(string content, Func<string, string> nestedLoader = null, bool logTime = false)
         {
             LoaderContext loaderContext = new LoaderContext() { NestedLoader = nestedLoader };
 
@@ -68,13 +68,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return form;
         }
         /// <summary>
-        /// Načte a vrátí <see cref="DataFormatContainerForm"/> z dodaného <see cref="System.Xml.Linq.XDocument"/>
+        /// Načte a vrátí <see cref="DfForm"/> z dodaného <see cref="System.Xml.Linq.XDocument"/>
         /// </summary>
         /// <param name="xDocument"></param>
         /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména</param>
         /// <param name="logTime">Logovat časy?</param>
         /// <returns></returns>
-        internal static DataFormatContainerForm LoadFromDocument(System.Xml.Linq.XDocument xDocument, Func<string, string> nestedLoader = null, bool logTime = false)
+        internal static DfForm LoadFromDocument(System.Xml.Linq.XDocument xDocument, Func<string, string> nestedLoader = null, bool logTime = false)
         {
             LoaderContext loaderContext = new LoaderContext() { NestedLoader = nestedLoader };
 
@@ -86,23 +86,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
 
         /// <summary>
-        /// Načte a vrátí <see cref="DataFormatInfoForm"/> ze zadaného souboru
+        /// Načte a vrátí <see cref="DfInfoForm"/> ze zadaného souboru
         /// </summary>
         /// <param name="fileName"></param>
         /// <param name="logTime">Logovat časy?</param>
         /// <returns></returns>
-        internal static DataFormatInfoForm LoadInfoFromFile(string fileName, bool logTime = false)
+        internal static DfInfoForm LoadInfoFromFile(string fileName, bool logTime = false)
         {
             return LoadInfoFromFile(fileName, out var _, logTime);
         }
         /// <summary>
-        /// Načte a vrátí <see cref="DataFormatInfoForm"/> ze zadaného souboru
+        /// Načte a vrátí <see cref="DfInfoForm"/> ze zadaného souboru
         /// </summary>
         /// <param name="fileName"></param>
         /// <param name="xDocument"></param>
         /// <param name="logTime">Logovat časy?</param>
         /// <returns></returns>
-        internal static DataFormatInfoForm LoadInfoFromFile(string fileName, out System.Xml.Linq.XDocument xDocument, bool logTime = false)
+        internal static DfInfoForm LoadInfoFromFile(string fileName, out System.Xml.Linq.XDocument xDocument, bool logTime = false)
         {
             LoaderContext loaderContext = new LoaderContext() { IsLoadOnlyDocumentAttributes = true };
             string name = System.IO.Path.GetFileName(fileName);
@@ -122,23 +122,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return _CreateInfoForm(form);
         }
         /// <summary>
-        /// Načte a vrátí <see cref="DataFormatInfoForm"/> ze zadané XML definice (=typicky obsah souboru)
+        /// Načte a vrátí <see cref="DfInfoForm"/> ze zadané XML definice (=typicky obsah souboru)
         /// </summary>
         /// <param name="content"></param>
         /// <param name="logTime">Logovat časy?</param>
         /// <returns></returns>
-        internal static DataFormatInfoForm LoadInfoFromContent(string content, bool logTime = false)
+        internal static DfInfoForm LoadInfoFromContent(string content, bool logTime = false)
         {
             return LoadInfoFromFile(content, out var _, logTime);
         }
         /// <summary>
-        /// Načte a vrátí <see cref="DataFormatInfoForm"/> ze zadané XML definice (=typicky obsah souboru)
+        /// Načte a vrátí <see cref="DfInfoForm"/> ze zadané XML definice (=typicky obsah souboru)
         /// </summary>
         /// <param name="content"></param>
         /// <param name="xDocument"></param>
         /// <param name="logTime">Logovat časy?</param>
         /// <returns></returns>
-        internal static DataFormatInfoForm LoadInfoFromContent(string content, out System.Xml.Linq.XDocument xDocument, bool logTime = false)
+        internal static DfInfoForm LoadInfoFromContent(string content, out System.Xml.Linq.XDocument xDocument, bool logTime = false)
         {
             LoaderContext loaderContext = new LoaderContext() { IsLoadOnlyDocumentAttributes = true };
 
@@ -153,12 +153,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return _CreateInfoForm(form);
         }
         /// <summary>
-        /// Načte a vrátí <see cref="DataFormatInfoForm"/> z dodaného <see cref="System.Xml.Linq.XDocument"/>
+        /// Načte a vrátí <see cref="DfInfoForm"/> z dodaného <see cref="System.Xml.Linq.XDocument"/>
         /// </summary>
         /// <param name="xDocument"></param>
         /// <param name="logTime">Logovat časy?</param>
         /// <returns></returns>
-        internal static DataFormatInfoForm LoadInfoFromDocument(System.Xml.Linq.XDocument xDocument, bool logTime = false)
+        internal static DfInfoForm LoadInfoFromDocument(System.Xml.Linq.XDocument xDocument, bool logTime = false)
         {
             LoaderContext loaderContext = new LoaderContext() { IsLoadOnlyDocumentAttributes = true };
 
@@ -169,13 +169,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return _CreateInfoForm(form);
         }
         /// <summary>
-        /// Z dodaného kompletního <see cref="DataFormatContainerForm"/> vytvoří jednoduchý <see cref="DataFormatInfoForm"/>
+        /// Z dodaného kompletního <see cref="DfForm"/> vytvoří jednoduchý <see cref="DfInfoForm"/>
         /// </summary>
         /// <param name="form"></param>
         /// <returns></returns>
-        private static DataFormatInfoForm _CreateInfoForm(DataFormatContainerForm form)
+        private static DfInfoForm _CreateInfoForm(DfForm form)
         {
-            return new DataFormatInfoForm() { XmlNamespace = form?.XmlNamespace, FormatVersion = form?.FormatVersion };
+            return new DfInfoForm() { XmlNamespace = form?.XmlNamespace, FormatVersion = form?.FormatVersion };
         }
         #endregion
         #region Načítání obsahu - private tvorba containerů
@@ -183,12 +183,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         // Každá zdejší větev / metoda načte pouze property deklarované přímo pro danou třídu, nikoli pro její předky!
 
         /// <summary>
-        /// Načte a vrátí <see cref="DataFormatContainerForm"/> z dodaného <see cref="System.Xml.Linq.XDocument"/>
+        /// Načte a vrátí <see cref="DfForm"/> z dodaného <see cref="System.Xml.Linq.XDocument"/>
         /// </summary>
         /// <param name="xDocument"></param>
         /// <param name="loaderContext">Průběžná data pro načítání obsahu</param>
         /// <returns></returns>
-        private static DataFormatContainerForm _LoadFromDocument(System.Xml.Linq.XDocument xDocument, LoaderContext loaderContext)
+        private static DfForm _LoadFromDocument(System.Xml.Linq.XDocument xDocument, LoaderContext loaderContext)
         {
             return _FillContainerForm(xDocument.Root, null, loaderContext);
         }
@@ -199,9 +199,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="control"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatContainerForm _FillContainerForm(System.Xml.Linq.XElement xElement, DataFormatContainerForm control, LoaderContext loaderContext)
+        private static DfForm _FillContainerForm(System.Xml.Linq.XElement xElement, DfForm control, LoaderContext loaderContext)
         {
-            if (control is null) control = new DataFormatContainerForm();
+            if (control is null) control = new DfForm();
 
             // Atributy:
             _FillBaseAttributes(xElement, control);
@@ -227,11 +227,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var xContainers = xElement.Elements();
             foreach (var xContainer in xContainers)
             {
-                DataFormatBaseSubControl container = _CreateContainer(xContainer, loaderContext);
+                var container = _CreateContainer(xContainer, loaderContext);
                 if (container != null)
                 {
                     if (control.Childs is null)
-                        control.Childs = new List<DataFormatBaseSubControl>();
+                        control.Childs = new List<DfBase>();
                     control.Childs.Add(container);
                 }
             }
@@ -242,7 +242,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement"></param>
         /// <param name="loaderContext">Průběžná data pro načítání obsahu</param>
-        private static DataFormatBaseContainer _CreateContainer(System.Xml.Linq.XElement xElement, LoaderContext loaderContext)
+        private static DfBaseContainer _CreateContainer(System.Xml.Linq.XElement xElement, LoaderContext loaderContext)
         {
             string elementName = xElement?.Name.LocalName.ToLower();          // pageset, panel, nestedpanel
             switch (elementName)
@@ -263,14 +263,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="control"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatContainerPageSet _FillContainerPageSet(System.Xml.Linq.XElement xElement, DataFormatContainerPageSet control, LoaderContext loaderContext)
+        private static DfPageSet _FillContainerPageSet(System.Xml.Linq.XElement xElement, DfPageSet control, LoaderContext loaderContext)
         {
             // Záložkovník bez jednotlivých záložek neakceptuji:
             var xPages = xElement.Elements();
             if (xPages is null) return null;
 
             // Výsledná instance:
-            if (control is null) control = new DataFormatContainerPageSet();
+            if (control is null) control = new DfPageSet();
 
             // Atributy:
             _FillBaseAttributes(xElement, control);
@@ -282,7 +282,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (page != null)
                 {
                     if (control.Childs is null)
-                        control.Childs = new List<DataFormatBaseSubControl>();
+                        control.Childs = new List<DfBase>();
                     control.Childs.Add(page);
                 }
             }
@@ -296,10 +296,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="control"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatContainerPage _FillContainerPage(System.Xml.Linq.XElement xElement, DataFormatContainerPage control, LoaderContext loaderContext)
+        private static DfPage _FillContainerPage(System.Xml.Linq.XElement xElement, DfPage control, LoaderContext loaderContext)
         {
             // Výsledná instance:
-            if (control is null) control = new DataFormatContainerPage();
+            if (control is null) control = new DfPage();
 
             // Atributy:
             _FillBaseAttributes(xElement, control);
@@ -318,14 +318,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="control"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatContainerPanel _FillContainerNestedPanel(System.Xml.Linq.XElement xElement, DataFormatContainerPanel control, LoaderContext loaderContext)
+        private static DfPanel _FillContainerNestedPanel(System.Xml.Linq.XElement xElement, DfPanel control, LoaderContext loaderContext)
         {
             // Nested šablona:
             string nestedTemplateName = _ReadAttributeString(xElement, "NestedTemplate", "");
             if (String.IsNullOrEmpty(nestedTemplateName)) return null;
 
             // Výsledná instance:
-            if (control is null) control = new DataFormatContainerPanel();
+            if (control is null) control = new DfPanel();
 
             // Atributy:
             _FillBaseAttributes(xElement, control);
@@ -337,7 +337,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 var xNestedDocument = System.Xml.Linq.XDocument.Parse(nestedContent);
                 var nestedTemplate = _LoadFromDocument(xNestedDocument, loaderContext);
-                if (nestedTemplate != null && nestedTemplate.Tabs.OfType<DataFormatContainerPanel>().TryGetFirst(t => (t is not null), out var sourcePanel))
+                if (nestedTemplate != null && nestedTemplate.Tabs.OfType<DfPanel>().TryGetFirst(t => (t is not null), out var sourcePanel))
                 {   // Přenesu některé atributy:
                     control.BackColorName = sourcePanel.BackColorName;
                     control.BackColorLight = sourcePanel.BackColorLight;
@@ -363,10 +363,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="control"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatContainerPanel _FillContainerPanel(System.Xml.Linq.XElement xElement, DataFormatContainerPanel control, LoaderContext loaderContext)
+        private static DfPanel _FillContainerPanel(System.Xml.Linq.XElement xElement, DfPanel control, LoaderContext loaderContext)
         {
             // Výsledná instance:
-            if (control is null) control = new DataFormatContainerPanel();
+            if (control is null) control = new DfPanel();
 
             // Atributy:
             _FillBaseAttributes(xElement, control);
@@ -386,7 +386,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xElement"></param>
         /// <param name="container"></param>
         /// <param name="loaderContext"></param>
-        private static void _LoadContainerControls(System.Xml.Linq.XElement xElement, DataFormatBaseContainer container, LoaderContext loaderContext)
+        private static void _LoadContainerControls(System.Xml.Linq.XElement xElement, DfBaseContainer container, LoaderContext loaderContext)
         {
             // Elementy = Items:
             var xItems = xElement.Elements();
@@ -398,7 +398,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     if (item != null)
                     {
                         if (container.Childs is null)
-                            container.Childs = new List<DataFormatBaseSubControl>();
+                            container.Childs = new List<DfBase>();
                         container.Childs.Add(item);
                     }
                 }
@@ -415,19 +415,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xElement"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DataFormatBaseSubControl _CreateItem(System.Xml.Linq.XElement xElement, LoaderContext loaderContext)
+        private static DfBase _CreateItem(System.Xml.Linq.XElement xElement, LoaderContext loaderContext)
         {
             string elementName = xElement?.Name.LocalName.ToLower();          // label, textbox, textbox_button, button, combobox, ...,   pageset, panel, nestedpanel,
             switch (elementName)
             {
-                case "label": return _FillControlLabel(xElement, new DataFormatControlLabel(), loaderContext);
-                case "title": return _FillControlTitle(xElement, new DataFormatControlTitle(), loaderContext);
-                case "checkbox": return _FillControlCheckBox(xElement, new DataFormatControlCheckBox(), loaderContext);
-                case "button": return _FillControlButton(xElement, new DataFormatControlButton(), loaderContext);
-                case "dropdownbutton": return _FillControlDropDownButton(xElement, new DataFormatControlDropDownButton(), loaderContext);
-                case "textbox": return _FillControlTextBox(xElement, new DataFormatControlTextBox(), loaderContext);
-                case "textboxbutton": return _FillControlTextBoxButton(xElement, new DataFormatControlTextBoxButton(), loaderContext);
-                case "combobox": return _FillControlComboBox(xElement, new DataFormatComboBox(), loaderContext);
+                case "label": return _FillControlLabel(xElement, new DfLabel(), loaderContext);
+                case "title": return _FillControlTitle(xElement, new DfTitle(), loaderContext);
+                case "checkbox": return _FillControlCheckBox(xElement, new DfCheckBox(), loaderContext);
+                case "button": return _FillControlButton(xElement, new DfButton(), loaderContext);
+                case "dropdownbutton": return _FillControlDropDownButton(xElement, new DfDropDownButton(), loaderContext);
+                case "textbox": return _FillControlTextBox(xElement, new DfTextBox(), loaderContext);
+                case "textboxbutton": return _FillControlTextBoxButton(xElement, new DfTextBoxButton(), loaderContext);
+                case "combobox": return _FillControlComboBox(xElement, new DfComboBox(), loaderContext);
 
                 case "pageset": return _FillContainerPageSet(xElement, null, loaderContext);
                 case "panel": return _FillContainerPanel(xElement, null, loaderContext);
@@ -435,14 +435,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
             return null;
         }
-        private static DataFormatBaseControl _FillControlLabel(System.Xml.Linq.XElement xElement, DataFormatControlLabel control, LoaderContext loaderContext)
+        private static DfBaseControl _FillControlLabel(System.Xml.Linq.XElement xElement, DfLabel control, LoaderContext loaderContext)
         {
             _FillBaseAttributes(xElement, control);
             control.Text = _ReadAttributeString(xElement, "Text", null);
             control.Alignment = _ReadAttributeEnum(xElement, "Alignment", ContentAlignmentType.Default);
             return control;
         }
-        private static DataFormatBaseControl _FillControlTitle(System.Xml.Linq.XElement xElement, DataFormatControlTitle control, LoaderContext loaderContext)
+        private static DfBaseControl _FillControlTitle(System.Xml.Linq.XElement xElement, DfTitle control, LoaderContext loaderContext)
         {
             _FillBaseAttributes(xElement, control);
             control.IconName = _ReadAttributeString(xElement, "IconName", null);
@@ -450,13 +450,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             control.Style = _ReadAttributeEnum(xElement, "Style", TitleStyleType.Default);
             return control;
         }
-        private static DataFormatBaseControl _FillControlCheckBox(System.Xml.Linq.XElement xElement, DataFormatControlCheckBox control, LoaderContext loaderContext)
+        private static DfBaseControl _FillControlCheckBox(System.Xml.Linq.XElement xElement, DfCheckBox control, LoaderContext loaderContext)
         {
             _FillBaseAttributes(xElement, control);
             control.Style = _ReadAttributeEnum(xElement, "Style", CheckBoxStyleType.Default);
             return control;
         }
-        private static DataFormatBaseControl _FillControlButton(System.Xml.Linq.XElement xElement, DataFormatControlButton control, LoaderContext loaderContext)
+        private static DfBaseControl _FillControlButton(System.Xml.Linq.XElement xElement, DfButton control, LoaderContext loaderContext)
         {
             _FillBaseAttributes(xElement, control);
             control.ActionType = _ReadAttributeEnum(xElement, "ActionType", ButtonActionType.Default);
@@ -464,7 +464,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             control.HotKey = _ReadAttributeString(xElement, "HotKey", null);
             return control;
         }
-        private static DataFormatBaseControl _FillControlDropDownButton(System.Xml.Linq.XElement xElement, DataFormatControlDropDownButton control, LoaderContext loaderContext)
+        private static DfBaseControl _FillControlDropDownButton(System.Xml.Linq.XElement xElement, DfDropDownButton control, LoaderContext loaderContext)
         {
             _FillControlButton(xElement, control, loaderContext);
 
@@ -477,11 +477,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     string elementName = xItem?.Name.LocalName;
                     if (String.Equals(elementName, "dropDownButton", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        var subButton = _FillControlSubButton(xItem, new DataFormatSubButton(), loaderContext);
+                        var subButton = _FillControlSubButton(xItem, new DfSubButton(), loaderContext);
                         if (subButton != null)
                         {
                             if (control.DropDownButtons is null)
-                                control.DropDownButtons = new List<DataFormatSubButton>();
+                                control.DropDownButtons = new List<DfSubButton>();
                             control.DropDownButtons.Add(subButton);
                         }
                     }
@@ -490,14 +490,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             return control;
         }
-        private static DataFormatBaseControl _FillControlTextBox(System.Xml.Linq.XElement xElement, DataFormatControlTextBox control, LoaderContext loaderContext)
+        private static DfBaseControl _FillControlTextBox(System.Xml.Linq.XElement xElement, DfTextBox control, LoaderContext loaderContext)
         {
             _FillBaseAttributes(xElement, control);
             control.EditMask = _ReadAttributeString(xElement, "EditMask", null);
             control.Alignment = _ReadAttributeEnum(xElement, "Alignment", ContentAlignmentType.Default);
             return control;
         }
-        private static DataFormatBaseControl _FillControlTextBoxButton(System.Xml.Linq.XElement xElement, DataFormatControlTextBoxButton control, LoaderContext loaderContext)
+        private static DfBaseControl _FillControlTextBoxButton(System.Xml.Linq.XElement xElement, DfTextBoxButton control, LoaderContext loaderContext)
         {
             _FillControlTextBox(xElement, control, loaderContext);
             control.ButtonsVisibility = _ReadAttributeEnum(xElement, "ButtonsVisibility", ButtonsVisibilityType.Default);
@@ -511,21 +511,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     string elementName = xItem?.Name.LocalName;
                     if (String.Equals(elementName, "leftButton", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        var subButton = _FillControlSubButton(xItem, new DataFormatSubButton(), loaderContext);
+                        var subButton = _FillControlSubButton(xItem, new DfSubButton(), loaderContext);
                         if (subButton != null)
                         {
                             if (control.LeftButtons is null)
-                                control.LeftButtons = new List<DataFormatSubButton>();
+                                control.LeftButtons = new List<DfSubButton>();
                             control.LeftButtons.Add(subButton);
                         }
                     }
                     else if (String.Equals(elementName, "rightButton", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        var subButton = _FillControlSubButton(xItem, new DataFormatSubButton(), loaderContext);
+                        var subButton = _FillControlSubButton(xItem, new DfSubButton(), loaderContext);
                         if (subButton != null)
                         {
                             if (control.RightButtons is null)
-                                control.RightButtons = new List<DataFormatSubButton>();
+                                control.RightButtons = new List<DfSubButton>();
                             control.RightButtons.Add(subButton);
                         }
                     }
@@ -534,7 +534,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             return control;
         }
-        private static DataFormatBaseControl _FillControlComboBox(System.Xml.Linq.XElement xElement, DataFormatComboBox control, LoaderContext loaderContext)
+        private static DfBaseControl _FillControlComboBox(System.Xml.Linq.XElement xElement, DfComboBox control, LoaderContext loaderContext)
         {
             _FillBaseAttributes(xElement, control);
             control.EditStyleName = _ReadAttributeString(xElement, "EditStyleName", null);
@@ -549,11 +549,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     string elementName = xItem?.Name.LocalName;
                     if (String.Equals(elementName, "comboItem", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        var comboItem = _FillControlSubButton(xItem, new DataFormatSubButton(), loaderContext);
+                        var comboItem = _FillControlSubTextItem(xItem, new DfSubTextItem(), loaderContext);
                         if (comboItem != null)
                         {
                             if (control.ComboItems is null)
-                                control.ComboItems = new List<DataFormatSubButton>();
+                                control.ComboItems = new List<DfSubTextItem>();
                             control.ComboItems.Add(comboItem);
                         }
                     }
@@ -562,9 +562,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             return control;
         }
-        private static DataFormatSubButton _FillControlSubButton(System.Xml.Linq.XElement xElement, DataFormatSubButton control, LoaderContext loaderContext)
+        private static DfSubButton _FillControlSubButton(System.Xml.Linq.XElement xElement, DfSubButton control, LoaderContext loaderContext)
+        {
+            _FillControlSubTextItem(xElement, control, loaderContext);
+            control.ActionType = _ReadAttributeEnum(xElement, "ActionType", SubButtonActionType.Default);
+            control.ActionData = _ReadAttributeString(xElement, "ActionData", null);
+            return control;
+        }
+        private static DfSubTextItem _FillControlSubTextItem(System.Xml.Linq.XElement xElement, DfSubTextItem control, LoaderContext loaderContext)
         {
             _FillBaseAttributes(xElement, control);
+            control.Text = _ReadAttributeString(xElement, "Text", null);
+            control.IconName = _ReadAttributeString(xElement, "IconName", null);
             return control;
         }
         #endregion
@@ -573,51 +582,41 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Z dodaného <paramref name="xElement"/> načte hodnoty odpovídající cílovému typu,
         /// a vloží je do dodaného controlu <paramref name="target"/>.
         /// <para/>
-        /// Načítá hodnoty odpovídající třídám: <see cref="DataFormatBase"/>, <see cref="DataFormatBaseControl"/>, <see cref="DataFormatBaseInputControl"/>,
-        /// <see cref="DataFormatBaseInputTextControl"/>, <see cref="DataFormatBaseInputLabeledControl"/>, <see cref="DataFormatSubButton"/>, <see cref="DataFormatBaseContainer"/>.
+        /// Načítá hodnoty odpovídající třídám: <see cref="DfBase"/>, <see cref="DfBaseControl"/>, <see cref="DfBaseInputControl"/>,
+        /// <see cref="DfBaseInputTextControl"/>, <see cref="DfBaseLabeledInputControl"/>, <see cref="DfSubButton"/>, <see cref="DfBaseContainer"/>.
         /// </summary>
         /// <param name="xElement"></param>
         /// <param name="target"></param>
-        private static void _FillBaseAttributes(System.Xml.Linq.XElement xElement, DataFormatBase target)
+        private static void _FillBaseAttributes(System.Xml.Linq.XElement xElement, DfBase target)
         {
             // Každá zdejší větev / metoda načte pouze property deklarované přímo pro danou třídu, nikoli pro její předky!
             target.Name = _ReadAttributeString(xElement, "Name", null);
+            target.State = _ReadAttributeEnum(xElement, "State", ControlStateType.Default);
+            target.ToolTipTitle = _ReadAttributeString(xElement, "ToolTipTitle", null);
+            target.ToolTipText = _ReadAttributeString(xElement, "ToolTipText", null);
+            target.Invisible = _ReadAttributeString(xElement, "Invisible", null);
 
-            if (target is DataFormatBaseSubControl subControl)
-            {
-                subControl.State = _ReadAttributeEnum(xElement, "State", ControlStateType.Default);
-                subControl.ToolTipTitle = _ReadAttributeString(xElement, "ToolTipTitle", null);
-                subControl.ToolTipText = _ReadAttributeString(xElement, "ToolTipText", null);
-                subControl.Invisible = _ReadAttributeString(xElement, "Invisible", null);
-            }
-            if (target is DataFormatBaseControl control)
+            if (target is DfBaseControl control)
             {
                 control.Bounds = _ReadAttributeBounds(xElement, null);
             }
-            if (target is DataFormatBaseInputControl inputControl)
+            if (target is DfBaseInputControl inputControl)
             {
                 inputControl.Required = _ReadAttributeEnum(xElement, "Required", RequiredType.Default);
             }
-            if (target is DataFormatBaseInputTextControl textControl)
+            if (target is DfBaseInputTextControl textControl)
             {
                 textControl.Text = _ReadAttributeString(xElement, "Text", null);
                 textControl.IconName = _ReadAttributeString(xElement, "IconName", null);
                 textControl.Alignment = _ReadAttributeEnum(xElement, "Alignment", ContentAlignmentType.Default);
             }
-            if (target is DataFormatBaseInputLabeledControl labeledControl)
+            if (target is DfBaseLabeledInputControl labeledControl)
             {
                 labeledControl.Label = _ReadAttributeString(xElement, "Label", null);
                 labeledControl.LabelPosition = _ReadAttributeEnum(xElement, "LabelPosition", LabelPositionType.Default);
                 labeledControl.LabelWidth = _ReadAttributeInt32N(xElement, "LabelWidth", null);
             }
-            if (target is DataFormatSubButton subButton)
-            {
-                subButton.Text = _ReadAttributeString(xElement, "Text", null);
-                subButton.IconName = _ReadAttributeString(xElement, "IconName", null);
-                subButton.ActionType = _ReadAttributeEnum(xElement, "ActionType", ButtonActionType.Default);
-                subButton.ActionData = _ReadAttributeString(xElement, "ActionData", null);
-            }
-            if (target is DataFormatBaseContainer container)
+            if (target is DfBaseContainer container)
             {
                 container.BackColorName = _ReadAttributeString(xElement, "BackColorName", null);
                 container.BackColorLight = _ReadAttributeColorN(xElement, "BackColorLight", null);
@@ -877,7 +876,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
         #region class LoaderContext
         /// <summary>
-        /// Třída, zahrnující v sobě průběžná data pro načítání obsahu <see cref="DataFormatContainerForm"/> v metodách v <see cref="DxDataFormatLoader"/>
+        /// Třída, zahrnující v sobě průběžná data pro načítání obsahu <see cref="DfForm"/> v metodách v <see cref="DfTemplateLoader"/>
         /// </summary>
         private class LoaderContext
         {
@@ -886,7 +885,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             public Func<string, string> NestedLoader { get; set; }
             /// <summary>
-            /// Máme načíst pouze atributy dokumentu, pro detekci jeho hlavičky (<see cref="DataFormatContainerForm.XmlNamespace"/> a <see cref="DataFormatContainerForm.FormatVersion"/>)
+            /// Máme načíst pouze atributy dokumentu, pro detekci jeho hlavičky (<see cref="DfForm.XmlNamespace"/> a <see cref="DfForm.FormatVersion"/>)
             /// </summary>
             public bool IsLoadOnlyDocumentAttributes { get; set; }
         }
