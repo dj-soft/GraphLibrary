@@ -21,7 +21,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     #region DxDataForm : koordinátor DataFormu - datová část, propojená s vizuálním DxDataFormPanel
     /// <summary>
     /// <see cref="DxDataForm"/> : koordinátor DataFormu - datová část, propojená s vizuálním DxDataFormPanel.
-    /// Ttao třída řeší veškerá data, ale nejde o vizuální panel. Na ten je napojen.
+    /// Tato třída řeší veškerá data, ale nejde o vizuální panel. Na ten je napojen.
     /// Obsahuje kolekci řádků <see cref="DataFormRows"/> a deklaraci layoutu <see cref="DxLData.LayoutContainer"/>.
     /// Obsahuje managera fyzických controlů (obdoba RepositoryEditorů) <see cref="DxRepositoryManager"/>
     /// </summary>

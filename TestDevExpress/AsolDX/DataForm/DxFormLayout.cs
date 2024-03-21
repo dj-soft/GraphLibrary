@@ -20,6 +20,52 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Layout
 {
     #region DataFormLayoutSet + DataFormLayoutItem : Definice layoutu jednoho řádku (celá sada + jeden prvek). Layout je hierarchický.
     /// <summary>
+    /// Sada definující layout celého formuláře = všechny containery a jejich prvky, plus vlastnosti šablony z její hlavičky
+    /// </summary>
+    internal class LayoutForm : LayoutContainer
+    {
+        #region Konstruktor a proměnné
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        internal LayoutForm(DxDataForm dataForm, DfForm template)
+            : base(dataForm)
+        {
+            __DataForm = dataForm;
+            __Template = template;
+            // _InitItems();
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Count: {this.Count}; ItemType: '{(typeof(LayoutControl).FullName)}'";
+        }
+        /// <summary>
+        /// Datový základ DataFormu
+        /// </summary>
+        internal DxDataForm DataForm { get { return __DataForm; } } private DxDataForm __DataForm;
+        /// <summary>
+        /// Definice šablony
+        /// </summary>
+        internal DfForm Template { get { return __Template; } } private DfForm __Template;
+        /// <summary>
+        /// Vizuální control <see cref="DxDataFormPanel"/> = virtuální hostitel obsahující Scrollbary a <see cref="DxDataFormContentPanel"/>
+        /// </summary>
+        internal DxDataFormPanel DataFormPanel { get { return __DataForm?.DataFormPanel; } }
+        /// <summary>
+        /// Panel obsahující data Dataformu
+        /// </summary>
+        internal DxDataFormContentPanel DataFormContent { get { return __DataForm?.DataFormContent; } }
+        /// <summary>
+        /// Zajistí vykreslení obsahu Dataformu
+        /// </summary>
+        internal void DataFormDraw() { DataFormContent?.Draw(); }
+        #endregion
+    }
+    /// <summary>
     /// Sada definující layout DataFormu = jednotlivé prvky
     /// </summary>
     internal class LayoutContainer : IList<LayoutItem>
@@ -324,7 +370,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Layout
     /// Může to být container i jednotlivý prvek.
     /// Jde o ekvivalent "Column"
     /// </summary>
-    internal class LayoutControl : IDataFormLayoutDesignItem, IChildOfParent<LayoutContainer>
+    internal class LayoutControl : LayoutItem, IDataFormLayoutDesignItem, IChildOfParent<LayoutContainer>
     {
         #region Konstruktor a fixní vlastnosti
         /// <summary>
@@ -457,7 +503,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Layout
         /// <param name="top"></param>
         /// <param name="right"></param>
         /// <param name="bottom"></param>
-        internal void PrepareDesignSize(WinDraw.Rectangle parentBounds, ref int left, ref int top, ref int right, ref int bottom)
+        internal override void PrepareDesignSize(WinDraw.Rectangle parentBounds, ref int left, ref int top, ref int right, ref int bottom)
         {
             var designBounds = this.DesignBoundsExt.GetBounds(parentBounds);
             __CurrentDesignBounds = designBounds;
@@ -478,14 +524,31 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Layout
     /// Obsahuje prvky, které dovolují sestavit layout celého DataFormu.
     /// Podporuje hierarchické skládání DataFormu (vnořované containery) i jejich následné lineární zpracování.
     /// </summary>
-    internal class LayoutItem : IChildOfParent<LayoutContainer>
+    internal class LayoutItem : IChildOfParent<LayoutContainer>, IDataFormLayoutDesignItem
     {
         /// <summary>
         /// Parent
         /// </summary>
         LayoutContainer IChildOfParent<LayoutContainer>.Parent { get { return __Parent; } set { __Parent = value; } } private LayoutContainer __Parent;
-
-
+        /// <summary>
+        /// Aktuální designové souřadnice
+        /// </summary>
+        Rectangle IDataFormLayoutDesignItem.CurrentDesignBounds { get { return AbsoluteBounds ?? Rectangle.Empty; } }
+        /// <summary>
+        /// Určí aktuální designovou souřadnici v prostoru daného parenta
+        /// </summary>
+        /// <param name="parentBounds"></param>
+        /// <param name="left"></param>
+        /// <param name="top"></param>
+        /// <param name="right"></param>
+        /// <param name="bottom"></param>
+        internal virtual void PrepareDesignSize(WinDraw.Rectangle parentBounds, ref int left, ref int top, ref int right, ref int bottom)
+        {
+            //var designBounds = this.DesignBoundsExt.GetBounds(parentBounds);
+            //__CurrentDesignBounds = designBounds;
+            //if (right < designBounds.Right) right = designBounds.Right;
+            //if (bottom < designBounds.Bottom) bottom = designBounds.Bottom;
+        }
         /// <summary>
         /// Souřadnice prvku dané layoutem. Některé jednotlivé hodnoty nebo i celá souřadnice mohou být null.
         /// </summary>
@@ -521,7 +584,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Layout
         /// <summary>
         /// Aktuální designové souřadnice
         /// </summary>
-        WinDraw.Rectangle CurrentDesignBounds { get; }
+        Rectangle CurrentDesignBounds { get; }
     }
     #endregion
 }

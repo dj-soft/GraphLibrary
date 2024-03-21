@@ -266,8 +266,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private static DfPageSet _FillContainerPageSet(System.Xml.Linq.XElement xElement, DfPageSet control, LoaderContext loaderContext)
         {
             // Záložkovník bez jednotlivých záložek neakceptuji:
-            var xPages = xElement.Elements();
-            if (xPages is null) return null;
+            var xPanels = xElement.Elements();
+            if (xPanels is null) return null;
 
             // Výsledná instance:
             if (control is null) control = new DfPageSet();
@@ -276,40 +276,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _FillBaseAttributes(xElement, control);
 
             // Elementy:
-            foreach (var xPage in xPages)
+            foreach (var xPanel in xPanels)
             {
-                var page = _FillContainerPage(xPage, null, loaderContext);
-                if (page != null)
+                var panel = _FillContainerPanel(xPanel, null, loaderContext);
+                if (panel != null)
                 {
                     if (control.Childs is null)
                         control.Childs = new List<DfBase>();
-                    control.Childs.Add(page);
+                    control.Childs.Add(panel);
                 }
             }
 
             return ((control.Pages.Length > 0) ? control : null);
-        }
-        /// <summary>
-        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající Page, včetně jeho obsahu
-        /// </summary>
-        /// <param name="xElement"></param>
-        /// <param name="control"></param>
-        /// <param name="loaderContext"></param>
-        /// <returns></returns>
-        private static DfPage _FillContainerPage(System.Xml.Linq.XElement xElement, DfPage control, LoaderContext loaderContext)
-        {
-            // Výsledná instance:
-            if (control is null) control = new DfPage();
-
-            // Atributy:
-            _FillBaseAttributes(xElement, control);
-            control.Title = _ReadAttributeString(xElement, "Title", null);
-            control.IconName = _ReadAttributeString(xElement, "IconName", null);
-
-            // Elementy = Controly:
-            _LoadContainerControls(xElement, control, loaderContext);
-
-            return control;
         }
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající NestedPanel, včetně jeho obsahu
@@ -328,7 +306,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (control is null) control = new DfPanel();
 
             // Atributy:
-            _FillBaseAttributes(xElement, control);
+            _FillContainerPanelAttributes(xElement, control, loaderContext);
 
             // Obsah nested panelu:
             if (loaderContext.NestedLoader is null) throw new InvalidOperationException($"DataForm contains NestedTemplate '{nestedTemplateName}', but 'NestedLoader' is null.");
@@ -369,14 +347,33 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (control is null) control = new DfPanel();
 
             // Atributy:
+            _FillContainerPanelAttributes(xElement, control, loaderContext);
+
+            // Elementy = Controly:
+            _LoadContainerControls(xElement, control, loaderContext);
+
+            return control;
+        }
+        /// <summary>
+        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající Panel. Načítá pouze atribut, ale ne elementy.
+        /// Složí jak pro načtení standardního panelu, tak i pro deklaraci NestedPanelu. 
+        /// Pro NestedPanel se následně nenačítají jeho XElementy, ale načte se obsah Nested šablony (externě) a vloží se do jeho elementů.
+        /// </summary>
+        /// <param name="xElement"></param>
+        /// <param name="control"></param>
+        /// <param name="loaderContext"></param>
+        /// <returns></returns>
+        private static DfPanel _FillContainerPanelAttributes(System.Xml.Linq.XElement xElement, DfPanel control, LoaderContext loaderContext)
+        {
+            // Výsledná instance:
+            if (control is null) control = new DfPanel();
+
+            // Atributy:
             _FillBaseAttributes(xElement, control);
             control.IconName = _ReadAttributeString(xElement, "IconName", null);
             control.Title = _ReadAttributeString(xElement, "Title", null);
             control.TitleStyle = _ReadAttributeEnum(xElement, "TitleStyle", TitleStyleType.Default);
             control.CollapseState = _ReadAttributeEnum(xElement, "CollapseState", PanelCollapseState.Default);
-
-            // Elementy = Controly:
-            _LoadContainerControls(xElement, control, loaderContext);
 
             return control;
         }

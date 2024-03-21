@@ -15,7 +15,6 @@ using DevExpress.Utils;
 using DevExpress.Utils.Svg;
 
 using Noris.WS.DataContracts.Desktop.Data;
-using DevExpress.XtraRichEdit.Model;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -2421,11 +2420,12 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <param name="paletteType"></param>
         /// <param name="imageName"></param>
         /// <param name="targetSize"></param>
+        /// <param name="readableXmlFormat">Čitelný XML formát? default = false = úsporný formát</param>
         /// <returns></returns>
-        public byte[] Convert(byte[] content, DxSvgImagePaletteType paletteType, string imageName = null, Size? targetSize = null)
+        public byte[] Convert(byte[] content, DxSvgImagePaletteType paletteType, string imageName = null, Size? targetSize = null, bool readableXmlFormat = false)
         {
             string xmlTextInp = Encoding.UTF8.GetString(content);
-            string xmlTextOut = ConvertXml(xmlTextInp, paletteType, imageName, targetSize);
+            string xmlTextOut = ConvertXml(xmlTextInp, paletteType, imageName, targetSize, readableXmlFormat);
             return Encoding.UTF8.GetBytes(xmlTextOut);
         }
         /// <summary>
@@ -2435,10 +2435,11 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <param name="paletteType"></param>
         /// <param name="imageName"></param>
         /// <param name="targetSize"></param>
+        /// <param name="readableXmlFormat">Čitelný XML formát? default = false = úsporný formát</param>
         /// <returns></returns>
-        public string Convert(string xmlTextInp, DxSvgImagePaletteType paletteType, string imageName = null, Size? targetSize = null)
+        public string Convert(string xmlTextInp, DxSvgImagePaletteType paletteType, string imageName = null, Size? targetSize = null, bool readableXmlFormat = false)
         {
-            return ConvertXml(xmlTextInp, paletteType, imageName, targetSize);
+            return ConvertXml(xmlTextInp, paletteType, imageName, targetSize, readableXmlFormat);
         }
         #endregion
         #region Vlastní konverze
@@ -2449,11 +2450,13 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <param name="paletteType"></param>
         /// <param name="imageName"></param>
         /// <param name="targetSize"></param>
+        /// <param name="readableXmlFormat">Čitelný XML formát? default = false = úsporný formát</param>
         /// <returns></returns>
-        private string ConvertXml(string xmlText, DxSvgImagePaletteType paletteType, string imageName, Size? targetSize)
+        private string ConvertXml(string xmlText, DxSvgImagePaletteType paletteType, string imageName, Size? targetSize, bool readableXmlFormat)
         {
+            if (imageName is null) imageName = "";
             var palette = GetPalette(paletteType);
-            if (palette != null) xmlText = ConvertXmlColor(xmlText, paletteType, palette, imageName, targetSize);
+            if (palette != null) xmlText = ConvertXmlColor(xmlText, paletteType, palette, imageName, targetSize, readableXmlFormat);
             if (targetSize.HasValue) xmlText = ConvertXmlSize(xmlText, paletteType, palette, imageName, targetSize);
             return xmlText;
         }
@@ -2465,15 +2468,16 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <param name="palette"></param>
         /// <param name="imageName"></param>
         /// <param name="targetSize"></param>
+        /// <param name="readableXmlFormat">Čitelný XML formát? default = false = úsporný formát</param>
         /// <returns></returns>
-        private string ConvertXmlColor(string xmlText, DxSvgImagePaletteType paletteType, Palette palette, string imageName, Size? targetSize)
+        private string ConvertXmlColor(string xmlText, DxSvgImagePaletteType paletteType, Palette palette, string imageName, Size? targetSize, bool readableXmlFormat)
         {
             if (!palette.ContainsColorChanges) return xmlText;
 
             if (palette.ChangeSpecificColor)
                 xmlText = ConvertXmlColorSpecific(xmlText, palette, imageName);
             if (TextContainsAny(xmlText, "fill", "stroke") && TextContainsAny(xmlText, "path", "polygon", "rect", "circle", "polyline", "ellipse", "line"))
-                xmlText = ConvertXmlColorNodes(xmlText, palette, imageName);
+                xmlText = ConvertXmlColorNodes(xmlText, palette, imageName, readableXmlFormat);
 
             return xmlText;
         }
@@ -2590,19 +2594,26 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <param name="xmlText"></param>
         /// <param name="palette"></param>
         /// <param name="imageName"></param>
+        /// <param name="readableXmlFormat">Čitelný XML formát? default = false = úsporný formát</param>
         /// <returns></returns>
-        private string ConvertXmlColorNodes(string xmlText, Palette palette, string imageName)
+        private string ConvertXmlColorNodes(string xmlText, Palette palette, string imageName, bool readableXmlFormat)
         {
             var contentXmlDoc = new XmlDocument();
             contentXmlDoc.LoadXml(xmlText);
 
-            // Rekurzivní mapování prvků a jejich zpracování:
-            foreach (XmlNode childNode in contentXmlDoc.ChildNodes) 
-                _ProcessSvgNode(childNode, palette);
+            // Rekurzivní scanování prvků a jejich zpracování:
+            _ProcessSvgNodes(contentXmlDoc.ChildNodes, palette);
 
+            // Zápis výsledek do XML:
             using (var sw = new System.IO.StringWriter())
             using (var xw = new XmlTextWriter(sw))
             {
+                if (readableXmlFormat)
+                {
+                    xw.Formatting = Formatting.Indented;
+                    xw.Indentation = 2;
+                    xw.IndentChar = ' ';
+                }
                 contentXmlDoc.WriteTo(xw);
                 xmlText = sw.ToString();
             }
@@ -2611,33 +2622,15 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <summary>
         /// Zpracuje obecné nody v SVG
         /// </summary>
-        /// <param name="node"></param>
+        /// <param name="nodes"></param>
         /// <param name="palette"></param>
-        private void _ProcessSvgNode(XmlNode node, Palette palette)
+        private void _ProcessSvgNodes(XmlNodeList nodes, Palette palette)
         {
-            if (node.Name == "svg")
+            foreach (XmlNode node in nodes)
             {
-                foreach (XmlNode childNode in node.ChildNodes)
-                    if (childNode.Name == "g")
-                        _ProcessGNode(childNode, palette);
-            }
-        }
-        /// <summary>
-        /// Zpracuje nody G (grupa): buď rekurzivně do vnořené grupy, nebo do garfického nodu <see cref="_ProcessGraphicNode(XmlNode, Palette)"/>
-        /// </summary>
-        /// <param name="node"></param>
-        /// <param name="palette"></param>
-        private void _ProcessGNode(XmlNode node, Palette palette)
-        {
-            if (node.Name == "g")
-            {
-                foreach (XmlNode childNode in node.ChildNodes)
-                {
-                    if (childNode.Name == "g")
-                        _ProcessGNode(childNode, palette); //recursion
-                    else
-                        _ProcessGraphicNode(childNode, palette);
-                }
+                _ProcessSvgNodeAttributes(node, palette);
+                if (node.HasChildNodes)
+                    _ProcessSvgNodes(node.ChildNodes, palette);
             }
         }
         /// <summary>
@@ -2645,7 +2638,7 @@ M22,22H10v2H22v-2z " class="Black" />
         /// </summary>
         /// <param name="node"></param>
         /// <param name="palette"></param>
-        private void _ProcessGraphicNode(XmlNode node, Palette palette)
+        private void _ProcessSvgNodeAttributes(XmlNode node, Palette palette)
         {
             if (node.Name == "path" || node.Name == "polygon" || node.Name == "rect" || node.Name == "circle" || node.Name == "polyline" || node.Name == "ellipse" || node.Name == "line")
             {

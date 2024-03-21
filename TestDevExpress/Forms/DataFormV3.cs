@@ -85,9 +85,16 @@ namespace TestDevExpress.Forms
             groupSamples.Items.Add(new DataRibbonItem() { ItemId = "DataFormRemove", Text = "Remove DataForm", ToolTipText = "Zahodit DataForm a uvolnit jeho zdroje", ImageName = imageDataFormRemove, ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName, Checked = true });
             groupSamples.Items.Add(new DataRibbonItem() { ItemId = "ChangeData", Text = "Change Data", ToolTipText = "Změní obsah dat / stav Enabled v dataformu", ImageName = imageChangeData });
 
+            // frm.xml:
             string imageOpen = "svgimages/dashboards/open.svg";
             var openFileItems = _GetFrmXmlFileItems();
             groupSamples.Items.Add(new DataRibbonItem() { ItemId = "LoadFormFile", Text = "Load FormFile", ToolTipText = "Načte definici ze souboru", ImageName = imageOpen, ItemType = RibbonItemType.Menu, SubItems = openFileItems });
+
+            // WebBrowser testy:
+            string imageWeb = "svgimages/spreadsheet/functionsweb.svg";
+            ListExt<IRibbonItem> linkWebs = this._GetWebBrowseLinks();
+            groupSamples.Items.Add(new DataRibbonItem() { ItemId = "OpenWww", Text = "WebBrowser", ToolTipText = "Otevře WebBrowser se zvolenou adresou", ImageName = imageWeb, ItemType = RibbonItemType.Menu, SubItems = linkWebs });
+
 
             page.Groups.Add(groupSamples);
             string imageTest1 = "svgimages/xaf/actiongroup_easytestrecorder.svg";
@@ -243,9 +250,10 @@ namespace TestDevExpress.Forms
 ";
 
             var modifier = new SvgImageModifier();
-            var svgLigDis = modifier.Convert(svgInp, DxSvgImagePaletteType.LightSkinDisabled, "itemdel-large.svg");
-            var svgDarDis = modifier.Convert(svgInp, DxSvgImagePaletteType.DarkSkinDisabled, "itemdel-large.svg");
+            var svgLigDis = modifier.Convert(svgInpErr, DxSvgImagePaletteType.LightSkinDisabled, "itemdel-large.svg", readableXmlFormat: true);
+            var svgDarDis = modifier.Convert(svgInpErr, DxSvgImagePaletteType.DarkSkinDisabled, "itemdel-large.svg", readableXmlFormat: true);
 
+            int length = svgLigDis.Length;
 
 
         }
@@ -270,6 +278,16 @@ namespace TestDevExpress.Forms
                 itemId = "LoadFormFileOne";
                 fileName = tagText;
             }
+
+            string linkUrl = null;
+            if (itemId.StartsWith("OpenWeb") && e.Item.Tag is string urlText && !String.IsNullOrEmpty(urlText))
+            {
+                itemId = "OpenWeb";
+                linkUrl = urlText;
+            }
+
+            
+
             switch (itemId)
             {
                 case "StatusRefresh":
@@ -279,7 +297,7 @@ namespace TestDevExpress.Forms
                     this.TestPainting = e.Item?.Checked ?? false; 
                     break;
                 case "DataFormRemove":
-                    _RemoveDataForms();
+                    _RemoveMainControls();
                     break;
                 case "LogClear":
                     DxComponent.LogClear();
@@ -292,6 +310,9 @@ namespace TestDevExpress.Forms
                     break;
                 case "LoadFormFileOne":
                     _LoadDataFrmXml(fileName);
+                    break;
+                case "OpenWeb":
+                    _ShowWebBrowser(linkUrl);
                     break;
                 default:
                     var n = itemId;
@@ -326,6 +347,49 @@ namespace TestDevExpress.Forms
 
             return ribbonItems;
         }
+        #endregion
+        #region WebBrowser
+        private ListExt<IRibbonItem> _GetWebBrowseLinks()
+        {
+            int id = 0;
+            ListExt<IRibbonItem> linkWebs = new ListExt<IRibbonItem>()
+            {   // Nabídka položek do Ribbonu:
+                new DataRibbonItem() {ItemId = $"OpenWeb_{(++id)}", Text = "seznam.cz", Tag = "https://www.seznam.cz/"},
+                new DataRibbonItem() {ItemId = $"OpenWeb_{(++id)}", Text = "geo.content1", Tag = @"file://c:\DavidPrac\SeznamMapy\content01.html"},
+                new DataRibbonItem() {ItemId = $"OpenWeb_{(++id)}", Text = "mapy.cz", Tag = @"https://mapy.cz/"},
+                new DataRibbonItem() {ItemId = $"OpenWeb_{(++id)}", Text = "mapy: souřadnice HK", Tag = @"https://mapy.cz/dopravni?x=14.5802973&y=50.5311090&z=14"},
+                new DataRibbonItem() {ItemId = $"OpenWeb_{(++id)}", Text = "c-sharpcorner.com", Tag = @"https://www.c-sharpcorner.com/UploadFile/mahesh/webbrowser-control-in-C-Sharp-and-windows-forms/"},
+                new DataRibbonItem() {ItemId = $"OpenWeb_{(++id)}", Text = "Asseco.cz", Tag = "https://www.assecosolutions.cz/"},
+                new DataRibbonItem() {ItemId = $"OpenWeb_{(++id)}", Text = "giovannina", Tag = "https://giovannina-cz.blogspot.com/2023/10/fashion-royalty-trending-tulabelle-true.html"},
+                new DataRibbonItem() {ItemId = $"OpenWeb_{(++id)}", Text = "Zrušit", Tag = "null"}
+            };
+            return linkWebs;
+        }
+        private void _ShowWebBrowser(string linkUrl)
+        {
+            bool isCtrl = Control.ModifierKeys == Keys.Control;
+
+            _RemoveMainControls();
+            if (String.IsNullOrEmpty(linkUrl) || linkUrl == "null") return;
+
+            var webBrowser = new WebBrowser() { Dock = DockStyle.Fill };
+            webBrowser.Navigate(linkUrl);
+            webBrowser.ScriptErrorsSuppressed = !isCtrl;
+            webBrowser.DocumentCompleted += _WebBrowser_DocumentCompleted;
+            webBrowser.DocumentTitleChanged += _WebBrowser_DocumentTitleChanged;
+            webBrowser.Navigated += _WebBrowser_Navigated;
+            webBrowser.Navigating += _WebBrowser_Navigating;
+            webBrowser.StatusTextChanged += _WebBrowser_StatusTextChanged;
+
+            __WebBrowser = webBrowser;
+            DxMainPanel.Controls.Add(webBrowser);
+        }
+        private void _WebBrowser_StatusTextChanged(object sender, EventArgs e) { }
+        private void _WebBrowser_Navigating(object sender, WebBrowserNavigatingEventArgs e) { }
+        private void _WebBrowser_Navigated(object sender, WebBrowserNavigatedEventArgs e) { }
+        private void _WebBrowser_DocumentTitleChanged(object sender, EventArgs e) { }
+        private void _WebBrowser_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e) { }
+        private WebBrowser __WebBrowser;
         #endregion
         #region Status - proměnné, Zobrazení spotřeby paměti
         /// <summary>
@@ -469,7 +533,7 @@ namespace TestDevExpress.Forms
         /// <param name="dfForm"></param>
         private void _ApplyDfForm(DfForm dfForm)
         {
-            _RemoveDataForms();
+            _RemoveMainControls();
 
             __DataFormId++;
             var dataFormPanel = new DxDForm.DxDataFormPanel() { Dock = DockStyle.Fill };
@@ -495,7 +559,7 @@ namespace TestDevExpress.Forms
         /// <param name="sampleId"></param>
         private void _AddDataFormSample(int sampleId)
         {
-            _RemoveDataForms();
+            _RemoveMainControls();
 
             __DataFormId++;
             var dataFormPanel = new DxDForm.DxDataFormPanel() { Dock = DockStyle.Fill };
@@ -563,7 +627,7 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Odebere DataForm
         /// </summary>
-        private void _RemoveDataForms()
+        private void _RemoveMainControls()
         {
             var dataForm = _DxDataFormV3;
             if (dataForm != null)
@@ -572,12 +636,21 @@ namespace TestDevExpress.Forms
                     DxMainPanel.Controls.Remove(dataForm);
                 dataForm.GotFocus -= DxDataForm_GotFocus;
                 dataForm.Dispose();
-
             }
             _DxDataFormV3 = null;
             _DataFormSampleId = null;
             _DxShowTimeStart = null;
             _DxShowTimeSpan = null;
+
+
+            var webBrowse = __WebBrowser;
+            if (webBrowse != null)
+            {
+                if (DxMainPanel.Controls.Contains(webBrowse))
+                    DxMainPanel.Controls.Remove(webBrowse);
+                webBrowse.Dispose();
+            }
+            __WebBrowser = null;
 
             GCCollect();
             WinProcessInfoAfterShown = DxComponent.WinProcessInfo.GetCurent();

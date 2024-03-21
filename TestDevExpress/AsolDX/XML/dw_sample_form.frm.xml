@@ -35,15 +35,16 @@
         </panel>
     </panel>
 
-    <pageset Name="aaaa">
-        <page Name="page01" Title="Základní" IconName="pic/image">
+    <panelset Name="aaaa">
+		<panel Name="page01" Title="Základní" IconName="pic/image">
             
-        </page>
-        <page Name="page02" Title="Nastavení">
+        </panel>
+		<panel Name="page02" Title="Nastavení">
             <label Name="Pocet01l" Text="Počet kusů:" Alignment="MiddleRight" Bounds="10,2,120"/>
             <textbox Name="Pocet01" Bounds="135,2,120" Required="True"/>
-        </page>
-    </pageset>
+        </panel>
+    </panelset>
+	
     <panel Name="vvvv" BackColorName="User_12" BackColorLight="">
         <label Name="t3"/>
         <textboxbutton Name="tb1" ButtonsVisibility="Default">

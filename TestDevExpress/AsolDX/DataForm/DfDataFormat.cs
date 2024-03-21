@@ -47,7 +47,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
       +  DfBaseContainer                                   Bázová pro containery                             BackColorName, BackColorLight, BackColorDark, Margins, Childs
            +  DfPanel                                      Panel (s možností Collapse)                       Bounds, IconName, Title, TitleStyle, CollapseState
            +  DfPage                                       Jedna stránka                                     Title, IconName
-           +  DfPageSet                                    Sada stránek                                      Bounds
+           +  DfPanelSet                                   Sada stránek                                      Bounds
            +  DfForm                                       Celý formulář, sada vlastností Template           ... kupa ...
 
 
@@ -206,36 +206,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// <summary>
         /// Stránky na záložkách
         /// </summary>
-        public DfPage[] Pages { get { return this.Childs?.OfType<DfPage>().ToArray(); } }
-    }
-    /// <summary>
-    /// Jedna stránka = obsahuje další Panely (nebo i PageSet nebo Controly).
-    /// </summary>
-    public class DfPage : DfBaseContainer
-    {
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        public DfPage()
-        {
-        }
-        /// <summary>
-        /// Styl bloku
-        /// </summary>
-        public override ContainerStyleType Style { get { return ContainerStyleType.Page; } }
-        /// <summary>
-        /// Text titulku záhlaví
-        /// </summary>
-        public string Title { get; set; }
-        /// <summary>
-        /// Jméno ikony odstavce nebo prvku (v titulku stránky, v titulku odstavce, ikona Buttonu, atd).
-        /// Použití se liší podle typu prvku.
-        /// </summary>
-        public string IconName { get; set; }
-        /// <summary>
-        /// Jednotlivé prvky - PageSet nebo Panely, vždy containery
-        /// </summary>
-        public DfBaseContainer[] Tabs { get { return this.Childs?.OfType<DfBaseContainer>().ToArray(); } }
+        public DfPanel[] Pages { get { return this.Childs?.OfType<DfPanel>().ToArray(); } }
     }
     /// <summary>
     /// Panel, může obsahovat controly i containery.<br/>
@@ -255,6 +226,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         public override ContainerStyleType Style { get { return ContainerStyleType.Panel; } }
         /// <summary>
         /// Umístění prvku. Výchozí je null.
+        /// Pokud je panel umístěn na pozici Page v rámci <see cref="DfPageSet"/>, pak <see cref="Bounds"/> se ignoruje.
         /// </summary>
         public Bounds Bounds { get; set; }
         /// <summary>
@@ -266,6 +238,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         /// Text popisku
         /// </summary>
         public string Title { get; set; }
+        /// <summary>
+        /// Nested template = název šablony načtený z atributu type_nested_panel::NestedTemplate
+        /// </summary>
+        public string NestedTemplate { get; set; }
         /// <summary>
         /// Styl titulku.
         /// </summary>
@@ -602,11 +578,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Format
         {
         }
         /// <summary>
-        /// Akce na tomto sub-buttonu
+        /// Akce, kterou tento sub-button provede
         /// </summary>
         public SubButtonActionType ActionType { get; set; }
         /// <summary>
-        /// Data pro akci na tomto sub-buttonu
+        /// Data pro akci (název akce pro Clipboard, název editoru, atd)
         /// </summary>
         public string ActionData { get; set; }
     }

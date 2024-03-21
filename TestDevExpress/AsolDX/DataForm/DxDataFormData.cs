@@ -433,7 +433,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Data
             var dataFormContent = DataFormPanel.DataFormContent;
             var rowDesignPoint = this.RowDesignBounds.Location;
             var dataLayout = DataForm.DataFormLayout;
-            items.AddRange(dataLayout.Items.Select(l => new DataFormCell(this, l)));
+            items.AddRange(dataLayout.Items.Select(l => new DataFormCell(this, l as LayoutControl)));
         }
         #endregion
     }
