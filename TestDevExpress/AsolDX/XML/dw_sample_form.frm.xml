@@ -7,6 +7,45 @@
           MasterWidth="530" MasterHeight="320"
           TotalWidth="750" TotalHeight="520"  >
 
+	<panel Name="Pokus1" >
+		<button Name="ButtonOpen" ActionType="Click" Bounds="10,200,150,35" Text="Otevři !!!"  />
+		
+		
+	
+	</panel>
+
+
+	<panelset Name="">
+	    <panel Name="ggg" Title="Záložka A" ToolTipText="">
+			
+			<panel>
+				<label Name="" Bounds="" Invisible=""/>
+				<textbox Name="" LabelPosition="BeforeRight" Label="fm(MSG1002)" />
+				<textboxbutton>
+					<rightButton Name="" ActionType=""/>
+				</textboxbutton>
+				<label/>
+				<panel Name="odstavec" ></panel>
+			</panel>
+			
+		</panel>
+	</panelset>
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
     <panel Name="Panel1" Margins="12,6" BackColorName="Orange_front_protect" BackColorDark="LightBlue" CollapseState="IsExpanded" >
         <label Name="info1_lbl" Bounds="14,2,150" Text="Popisek" ToolTipTitle="Nápověda" ToolTipText="Informace k tomuto prvku neexistuje" />
         <textbox Name="info1" Bounds="10,20,160" Required="True" State="SkipTab" />

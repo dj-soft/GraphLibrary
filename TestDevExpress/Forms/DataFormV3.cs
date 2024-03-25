@@ -32,7 +32,7 @@ namespace TestDevExpress.Forms
         }
         private void _RefreshTitle()
         {
-            bool hasDataForm = (_DxDataFormV3 != null);
+            bool hasDataForm = (_DxDataFormPanel != null);
             string formId = (hasDataForm ? ":" + __DataFormId.ToString() : "");
             this.Text = $"DataForm V3 [{__CurrentId}{formId}]";
 
@@ -92,7 +92,7 @@ namespace TestDevExpress.Forms
 
             // WebBrowser testy:
             string imageWeb = "svgimages/spreadsheet/functionsweb.svg";
-            ListExt<IRibbonItem> linkWebs = this._GetWebBrowseLinks();
+            ListExt<IRibbonItem> linkWebs = this._GetBrowseLinks();
             groupSamples.Items.Add(new DataRibbonItem() { ItemId = "OpenWww", Text = "WebBrowser", ToolTipText = "Otevře WebBrowser se zvolenou adresou", ImageName = imageWeb, ItemType = RibbonItemType.Menu, SubItems = linkWebs });
 
 
@@ -259,7 +259,22 @@ namespace TestDevExpress.Forms
         }
 
 
+        /// <summary>
+        /// Odebere DataForm
+        /// </summary>
+        private void _RemoveMainControls()
+        {
+            _RemoveDxDataForm();
+            _RemoveWebBrowser();
+            _RemoveAntBrowser();
 
+
+            GCCollect();
+            WinProcessInfoAfterShown = DxComponent.WinProcessInfo.GetCurent();
+
+            _RefreshTitle();
+            RefreshStatusCurrent(false);
+        }
         /// <summary>
         /// Kliknutí na Ribbon
         /// </summary>
@@ -312,7 +327,7 @@ namespace TestDevExpress.Forms
                     _LoadDataFrmXml(fileName);
                     break;
                 case "OpenWeb":
-                    _ShowWebBrowser(linkUrl);
+                    _ShowBrowser(linkUrl);
                     break;
                 default:
                     var n = itemId;
@@ -349,7 +364,7 @@ namespace TestDevExpress.Forms
         }
         #endregion
         #region WebBrowser
-        private ListExt<IRibbonItem> _GetWebBrowseLinks()
+        private ListExt<IRibbonItem> _GetBrowseLinks()
         {
             int id = 0;
             ListExt<IRibbonItem> linkWebs = new ListExt<IRibbonItem>()
@@ -365,13 +380,17 @@ namespace TestDevExpress.Forms
             };
             return linkWebs;
         }
-        private void _ShowWebBrowser(string linkUrl)
+        private void _ShowBrowser(string linkUrl)
         {
             bool isCtrl = Control.ModifierKeys == Keys.Control;
-
             _RemoveMainControls();
             if (String.IsNullOrEmpty(linkUrl) || linkUrl == "null") return;
 
+            _ShowAntBrowser(linkUrl, isCtrl);
+            // _ShowWebBrowser(linkUrl, isCtrl);
+        }
+        private void _ShowWebBrowser(string linkUrl, bool isCtrl)
+        {
             var webBrowser = new WebBrowser() { Dock = DockStyle.Fill };
             webBrowser.Navigate(linkUrl);
             webBrowser.ScriptErrorsSuppressed = !isCtrl;
@@ -389,7 +408,48 @@ namespace TestDevExpress.Forms
         private void _WebBrowser_Navigated(object sender, WebBrowserNavigatedEventArgs e) { }
         private void _WebBrowser_DocumentTitleChanged(object sender, EventArgs e) { }
         private void _WebBrowser_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e) { }
+        private void _RemoveWebBrowser()
+        {
+            var webBrowse = __WebBrowser;
+            if (webBrowse != null)
+            {
+                if (DxMainPanel.Controls.Contains(webBrowse))
+                    DxMainPanel.Controls.Remove(webBrowse);
+                webBrowse.Dispose();
+            }
+            __WebBrowser = null;
+        }
         private WebBrowser __WebBrowser;
+
+
+        private void _ShowAntBrowser(string linkUrl, bool isCtrl)
+        {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(this.GetType());
+
+            AxAntViewAx.AxAntview antBrowser = new AxAntViewAx.AxAntview();
+
+            ((System.ComponentModel.ISupportInitialize)(antBrowser)).BeginInit();
+            antBrowser.Dock = DockStyle.Fill;
+            antBrowser.OcxState = null;         // vytvoří implicitní   ((System.Windows.Forms.AxHost.State)(resources.GetObject("__AntBrowser.OcxState")));
+            antBrowser.CreateWebView();
+            antBrowser.Navigate(linkUrl);
+            DxMainPanel.Controls.Add(antBrowser);
+            ((System.ComponentModel.ISupportInitialize)(antBrowser)).EndInit();
+
+            __AntBrowser = antBrowser;
+        }
+        private AxAntViewAx.AxAntview __AntBrowser;
+        private void _RemoveAntBrowser()
+        {
+            var antBrowser = __AntBrowser;
+            if (antBrowser != null)
+            {
+                if (DxMainPanel.Controls.Contains(antBrowser))
+                    DxMainPanel.Controls.Remove(antBrowser);
+                antBrowser.Dispose();
+            }
+            __AntBrowser = null;
+        }
         #endregion
         #region Status - proměnné, Zobrazení spotřeby paměti
         /// <summary>
@@ -546,7 +606,7 @@ namespace TestDevExpress.Forms
             DxMainPanel.Controls.Add(dataFormPanel);
 
             _DataFormSampleId = 0;
-            _DxDataFormV3 = dataFormPanel;
+            _DxDataFormPanel = dataFormPanel;
 
             _RefreshTitle();
             RefreshStatusCurrent(true);
@@ -572,7 +632,7 @@ namespace TestDevExpress.Forms
             DxMainPanel.Controls.Add(dataFormPanel);
 
             _DataFormSampleId = sampleId;
-            _DxDataFormV3 = dataFormPanel;
+            _DxDataFormPanel = dataFormPanel;
         
             _RefreshTitle();
             RefreshStatusCurrent(true);
@@ -583,9 +643,9 @@ namespace TestDevExpress.Forms
         private void _ChangeDataInDataForm()
         {
             var sampleId = _DataFormSampleId;
-            if (_DxDataFormV3 is null || !sampleId.HasValue) return;
+            if (_DxDataFormPanel is null || !sampleId.HasValue) return;
 
-            var rows = _DxDataFormV3.DataForm.DataFormRows;
+            var rows = _DxDataFormPanel.DataForm.DataFormRows;
 
         }
         /// <summary>
@@ -624,40 +684,6 @@ namespace TestDevExpress.Forms
 
             Clipboard.SetText(sb.ToString());
         }
-        /// <summary>
-        /// Odebere DataForm
-        /// </summary>
-        private void _RemoveMainControls()
-        {
-            var dataForm = _DxDataFormV3;
-            if (dataForm != null)
-            {
-                if (DxMainPanel.Controls.Contains(dataForm))
-                    DxMainPanel.Controls.Remove(dataForm);
-                dataForm.GotFocus -= DxDataForm_GotFocus;
-                dataForm.Dispose();
-            }
-            _DxDataFormV3 = null;
-            _DataFormSampleId = null;
-            _DxShowTimeStart = null;
-            _DxShowTimeSpan = null;
-
-
-            var webBrowse = __WebBrowser;
-            if (webBrowse != null)
-            {
-                if (DxMainPanel.Controls.Contains(webBrowse))
-                    DxMainPanel.Controls.Remove(webBrowse);
-                webBrowse.Dispose();
-            }
-            __WebBrowser = null;
-
-            GCCollect();
-            WinProcessInfoAfterShown = DxComponent.WinProcessInfo.GetCurent();
-
-            _RefreshTitle();
-            RefreshStatusCurrent(false);
-        }
         private void DxDataForm_GotFocus(object sender, EventArgs e)
         {
             if (!_DxShowTimeSpan.HasValue && _DxShowTimeStart.HasValue)
@@ -675,15 +701,33 @@ namespace TestDevExpress.Forms
             set 
             {
                 __TestPainting = value;
-                if (this._DxDataFormV3 != null)
-                    this._DxDataFormV3.TestPainting = value;
+                if (this._DxDataFormPanel != null)
+                    this._DxDataFormPanel.TestPainting = value;
             }
         }
         private bool __TestPainting;
         /// <summary>
+        /// Odebere DataForm <see cref="_DxDataFormPanel"/> pokud existuje
+        /// </summary>
+        private void _RemoveDxDataForm()
+        {
+            var dataForm = _DxDataFormPanel;
+            if (dataForm != null)
+            {
+                if (DxMainPanel.Controls.Contains(dataForm))
+                    DxMainPanel.Controls.Remove(dataForm);
+                dataForm.GotFocus -= DxDataForm_GotFocus;
+                dataForm.Dispose();
+                _DxDataFormPanel = null;
+            }
+            _DataFormSampleId = null;
+            _DxShowTimeStart = null;
+            _DxShowTimeSpan = null;
+        }
+        /// <summary>
         /// Instance dataformu
         /// </summary>
-        private DxDForm.DxDataFormPanel _DxDataFormV3;
+        private DxDForm.DxDataFormPanel _DxDataFormPanel;
         /// <summary>
         /// ID vzorku s daty, který je právě zobrazen. Null pokud není žádný.
         /// </summary>

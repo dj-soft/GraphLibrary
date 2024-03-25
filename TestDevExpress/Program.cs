@@ -17,6 +17,7 @@ namespace TestDevExpress
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+
             try
             {
                 DxComponent.Init();

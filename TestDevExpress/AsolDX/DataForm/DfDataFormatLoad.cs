@@ -327,8 +327,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     control.ToolTipTitle = sourcePanel.ToolTipTitle;
                     control.ToolTipText = sourcePanel.ToolTipText;
 
-                    // Přenesu všechny prvky Items:
-                    control.Childs.AddRange(nestedTemplate.Childs);
+                    // Přenesu všechny prvky Items z Nested do Control:
+                    if (nestedTemplate.Childs != null)
+                    {
+                        if (control.Childs is null) control.Childs = new List<DfBase>();
+                        control.Childs.AddRange(nestedTemplate.Childs);
+                    }
                 }
             }
 
