@@ -18,10 +18,12 @@
         </combobox>
         <label Name="info3_lbl" Bounds="14,47,150" Text="Další nabídka" />
         <combobox Name="info3" Bounds="10,65,160" EditStyleName="mfr_product_status" Style="IconTextList" />
-        <textboxbutton Name="button1" Bounds="180,47,120" >
-            <rightButton Name="dots" Text="..." />
+        <textboxbutton Name="Dokument1" Bounds="180,47,120" ToolTipTitle="Dokument" ToolTipText="Navázaná faktura" >
+            <rightButton Name="dots" ActionType="RelationDocument" />
         </textboxbutton>
-        
+
+        <checkbox Name=""/>
+
         <button Name="butOpen" HotKey="F8" Bounds="2,50,120,35" Text="Otevři..." ActionType="RunFunction" ActionData="Realizuj" ToolTipTitle="Otevřít dveře" ToolTipText="Přistoupit ku dveřím, stiskem kliky uvolnit a pak tahem otevřít..."/>
 
         <textbox Name="c45678" Bounds="120,75,180" LabelPosition="BeforeRight" Label="Popisek"/>
