@@ -10,7 +10,7 @@ using DxDForm = Noris.Clients.Win.Components.AsolDX.DataForm;
 using DxDData = Noris.Clients.Win.Components.AsolDX.DataForm.Data;
 using DxLData = Noris.Clients.Win.Components.AsolDX.DataForm.Layout;
 using System.Drawing;
-using Noris.Clients.Win.Components.AsolDX.DataForm.Format;
+using Noris.WS.DataContracts.DxForm;
 
 namespace TestDevExpress.Forms
 {

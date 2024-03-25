@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Noris.Clients.Win.Components.AsolDX;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -147,7 +148,7 @@ namespace TestDevExpress.Forms
         private void button2_Click(object sender, EventArgs e)
         {
             _PrepareAntView();
-            _AxAntView.Navigate(@"https://mapy.cz/dopravni?x=14.5802973&y=50.5311090&z=14");
+            _AxAntView.Navigate(@"https://mapy.cz/dopravni?l=0&x=15.8629028&y=50.2145999&z=17");        // https://mapy.cz/dopravni?x=14.5802973&y=50.5311090&z=14
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -157,6 +158,7 @@ namespace TestDevExpress.Forms
         }
         private void button4_Click(object sender, EventArgs e)
         {
+            _PrepareAntView();
             string html = @"<!DOCTYPE html>
 <html>
 <head>
@@ -194,13 +196,20 @@ m.addControl(sync);
             var errStatus = AntViewAx.TxWebErrorStatus.wesUnknown;
             _AxAntView.NavigateToStringSync(html, ref isSuccess, ref errStatus);
 
+
+            /*
+            var targetPdf = System.IO.Path.Combine(DxComponent.ApplicationPath, "AntViewImage.pdf");
+            _AxAntView.PrintToPdf(targetPdf, "pdf");
+
             var size = _AxAntView.Size;
             using (var bitmap = new Bitmap(size.Width, size.Height))
             {
                 var targetBounds = new Rectangle(0, 0, size.Width, size.Height);
+                var targetFile = System.IO.Path.Combine(DxComponent.ApplicationPath, "AntViewImage.png");
                 _AxAntView.DrawToBitmap(bitmap, targetBounds);
-                bitmap.Save(@"c:\DavidPrac\SeznamMapy\result.bmp", System.Drawing.Imaging.ImageFormat.Bmp);
+                bitmap.Save(targetFile, System.Drawing.Imaging.ImageFormat.Png);
             }
+            */
         }
 
         private void _PrepareAntView()
@@ -236,6 +245,7 @@ m.addControl(sync);
 
         private void _AxAntView_OnSourceChanged(object sender, AxAntViewAx.IAntViewEvents_OnSourceChangedEvent e)
         {
+            _RefreshUrl(_AxAntView.Source);
         }
 
         private void _AxAntView_OnFrameNavigationStarting(object sender, AxAntViewAx.IAntViewEvents_OnFrameNavigationStartingEvent e)
