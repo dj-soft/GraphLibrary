@@ -21,6 +21,9 @@ namespace TestDevExpress.Forms
     public class DataFormV3 : DxRibbonForm
     {
         #region Inicializace
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DataFormV3()
         {
             this.ImageName = "svgimages/spreadsheet/showcompactformpivottable.svg";
@@ -88,12 +91,12 @@ namespace TestDevExpress.Forms
             // frm.xml:
             string imageOpen = "svgimages/dashboards/open.svg";
             var openFileItems = _GetFrmXmlFileItems();
-            groupSamples.Items.Add(new DataRibbonItem() { ItemId = "LoadFormFile", Text = "Load FormFile", ToolTipText = "Načte definici ze souboru", ImageName = imageOpen, ItemType = RibbonItemType.Menu, SubItems = openFileItems });
+            groupSamples.Items.Add(new DataRibbonItem() { ItemId = "LoadFormFile", Text = "Load XML", ToolTipText = "Načte definici z XML souboru", ImageName = imageOpen, ItemType = RibbonItemType.Menu, SubItems = openFileItems });
 
             // WebBrowser testy:
-            string imageWeb = "svgimages/spreadsheet/functionsweb.svg";
-            ListExt<IRibbonItem> linkWebs = this._GetBrowseLinks();
-            groupSamples.Items.Add(new DataRibbonItem() { ItemId = "OpenWww", Text = "WebBrowser", ToolTipText = "Otevře WebBrowser se zvolenou adresou", ImageName = imageWeb, ItemType = RibbonItemType.Menu, SubItems = linkWebs });
+            //string imageWeb = "svgimages/spreadsheet/functionsweb.svg";
+            //ListExt<IRibbonItem> linkWebs = this._GetBrowseLinks();
+            //groupSamples.Items.Add(new DataRibbonItem() { ItemId = "OpenWww", Text = "WebBrowser", ToolTipText = "Otevře WebBrowser se zvolenou adresou", ImageName = imageWeb, ItemType = RibbonItemType.Menu, SubItems = linkWebs });
 
 
             page.Groups.Add(groupSamples);
@@ -102,17 +105,9 @@ namespace TestDevExpress.Forms
             string imageTest3 = "svgimages/spreadsheet/showtabularformpivottable.svg";
 
             // Na čísla Sample reagují metody _CreateSampleLayout() a _CreateSampleRows() !
-            addSampleButton(1001, "Form A x 1 řádek", imageTest1, true);
-            addSampleButton(1002, "Form A x 2 řádky", imageTest1);
-            addSampleButton(1060, "Form A x 60 řádků", imageTest1);
-            addSampleButton(2001, "Form B x 1 řádek", imageTest2, true);
-            addSampleButton(2024, "Form B x 24 řádků", imageTest2);
-            addSampleButton(2120, "Form B x 120 řádků", imageTest2);
-            addSampleButton(3001, "Table x 1 řádek", imageTest3, true);
-            addSampleButton(3036, "Table x 36 řádek", imageTest3);
-            addSampleButton(3144, "Table x 144 řádek", imageTest3);
-            addSampleButton(3600, "Table x 600 řádek", imageTest3);
-
+            addSampleButton("A", "Form A", imageTest1, 1, 2, 8, 32, 48);
+            addSampleButton("B", "Form B", imageTest2, 1, 2, 8, 12, 36);
+            addSampleButton("C", "Table C", imageTest3, 1, 4, 16, 32, 96, 256);
 
             /*
             var page2 = new DataRibbonPage() { PageId = "Testy", PageText = "Ukázky" };
@@ -200,16 +195,27 @@ namespace TestDevExpress.Forms
 
             this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
 
-            void addSampleButton(int sampleId, string text, string imageName, bool isFirstInGroup = false)
+            void addSampleButton(string layoutId, string text, string imageName, params int[] rowsCounts)
             {
+                var subItems = new ListExt<IRibbonItem>();
+                foreach (int rowsCount in rowsCounts)
+                {
+                    subItems.Add(new DataRibbonItem()
+                    {
+                        ItemId = $"CreateSample{layoutId}{rowsCount}",
+                        Text = $"Řádků: {rowsCount}",
+                        ItemType = RibbonItemType.Button
+                    });
+                }
+
                 groupSamples.Items.Add(new DataRibbonItem()
                 {
-                    ItemId = "CreateSample" + sampleId.ToString(),
+                    ItemId = $"CreateLayout{layoutId}",
                     Text = text,
                     ImageName = imageName,
-                    ItemType = RibbonItemType.CheckButton,
-                    RadioButtonGroupName = radioGroupName,
-                    ItemIsFirstInGroup = isFirstInGroup
+                    ItemType = RibbonItemType.Menu,
+                    SubItems = subItems,
+                    RadioButtonGroupName = radioGroupName
                 });
             }
         }
@@ -283,9 +289,13 @@ namespace TestDevExpress.Forms
         private void _DxRibbonControl_RibbonItemClick(object sender, DxRibbonItemClickArgs e)
         {
             var itemId = e.Item.ItemId;
-            int sampleId = 0;
-            if (itemId.StartsWith("CreateSample") && Int32.TryParse(itemId.Substring(12), out sampleId) && sampleId > 0)
+            string layoutId = null;
+            int sampleRows = 0;
+            if (itemId.StartsWith("CreateSample") && itemId.Length >= 14 && Int32.TryParse(itemId.Substring(13), out sampleRows) && sampleRows > 0)
+            {
+                layoutId = itemId.Substring(12, 1);              // "A" - "Z"
                 itemId = "CreateSample";
+            }
 
             string fileName = null;
             if (itemId.StartsWith("LoadFormFileOne_") && e.Item.Tag is string tagText && !String.IsNullOrEmpty(tagText))
@@ -300,8 +310,6 @@ namespace TestDevExpress.Forms
                 itemId = "OpenWeb";
                 linkUrl = urlText;
             }
-
-            
 
             switch (itemId)
             {
@@ -318,7 +326,7 @@ namespace TestDevExpress.Forms
                     DxComponent.LogClear();
                     break;
                 case "CreateSample":
-                    _AddDataFormSample(sampleId);
+                    _AddDataFormSample(layoutId, sampleRows);
                     break;
                 case "ChangeData":
                     _ChangeDataInDataForm();
@@ -364,6 +372,12 @@ namespace TestDevExpress.Forms
         }
         #endregion
         #region WebBrowser
+
+        void _ShowBrowser(string q) { }
+        void _RemoveWebBrowser() { }
+        void _RemoveAntBrowser() { }
+
+        /*
         private ListExt<IRibbonItem> _GetBrowseLinks()
         {
             int id = 0;
@@ -450,6 +464,7 @@ namespace TestDevExpress.Forms
             }
             __AntBrowser = null;
         }
+        */
         #endregion
         #region Status - proměnné, Zobrazení spotřeby paměti
         /// <summary>
@@ -605,7 +620,7 @@ namespace TestDevExpress.Forms
 
             DxMainPanel.Controls.Add(dataFormPanel);
 
-            _DataFormSampleId = 0;
+            _DataFormLayoutId = null;
             _DxDataFormPanel = dataFormPanel;
 
             _RefreshTitle();
@@ -616,8 +631,9 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Přidá DataForm s daným obsahem
         /// </summary>
-        /// <param name="sampleId"></param>
-        private void _AddDataFormSample(int sampleId)
+        /// <param name="layoutId"></param>
+        /// <param name="sampleRows"></param>
+        private void _AddDataFormSample(string layoutId, int sampleRows)
         {
             _RemoveMainControls();
 
@@ -626,12 +642,12 @@ namespace TestDevExpress.Forms
             dataFormPanel.TestPainting = this.TestPainting;
             dataFormPanel.GotFocus += DxDataForm_GotFocus;
 
-            dataFormPanel.DataForm.DataFormLayout.Store(_CreateSampleLayout(sampleId));
-            dataFormPanel.DataForm.DataFormRows.Store(_CreateSampleRows(sampleId));
+            dataFormPanel.DataForm.DataFormLayout.Store(_CreateSampleLayout(layoutId, sampleRows));
+            dataFormPanel.DataForm.DataFormRows.Store(_CreateSampleRows(layoutId, sampleRows));
 
             DxMainPanel.Controls.Add(dataFormPanel);
 
-            _DataFormSampleId = sampleId;
+            _DataFormLayoutId = layoutId;
             _DxDataFormPanel = dataFormPanel;
         
             _RefreshTitle();
@@ -642,8 +658,8 @@ namespace TestDevExpress.Forms
         /// </summary>
         private void _ChangeDataInDataForm()
         {
-            var sampleId = _DataFormSampleId;
-            if (_DxDataFormPanel is null || !sampleId.HasValue) return;
+            var sampleId = _DataFormLayoutId;
+            if (_DxDataFormPanel is null || sampleId is null) return;
 
             var rows = _DxDataFormPanel.DataForm.DataFormRows;
 
@@ -653,36 +669,37 @@ namespace TestDevExpress.Forms
         /// </summary>
         private void PrepareClipboard()
         {
-            return;
-
-            StringBuilder sb = new StringBuilder();
-            // type header:
-            sb.AppendLine("    <xs:simpleType name=\"color_name_enum\">");
-            sb.AppendLine("        <xs:union memberTypes=\"xs:string\">");
-            sb.AppendLine("            <xs:simpleType>");
-            sb.AppendLine("                <xs:restriction base=\"xs:string\">");
-            sb.AppendLine("");
-
-            // type values:
-            var colorType = typeof(Color);
-            var properties = colorType.GetProperties().Where(p => p.CanRead && p.PropertyType == colorType && p.GetGetMethod().IsStatic).ToList();
-            properties.Sort((a, b) => String.Compare(a.Name, b.Name));
-            foreach (var property in properties)
+            if (Control.ModifierKeys == Keys.Control)
             {
-                var name = property.Name;
-                var value = property.GetValue(null) as Color?;
-                string rgb = "#" + value.Value.R.ToString("X2") + value.Value.G.ToString("X2") + value.Value.B.ToString("X2");
-                var line = $"                    <xs:enumeration value=\"{name}\"><xs:annotation><xs:documentation xml:lang=\"cs-cz\">RGB: {rgb}</xs:documentation></xs:annotation></xs:enumeration>";
-                sb.AppendLine(line);
+                StringBuilder sb = new StringBuilder();
+                // type header:
+                sb.AppendLine("    <xs:simpleType name=\"color_name_enum\">");
+                sb.AppendLine("        <xs:union memberTypes=\"xs:string\">");
+                sb.AppendLine("            <xs:simpleType>");
+                sb.AppendLine("                <xs:restriction base=\"xs:string\">");
+                sb.AppendLine("");
+
+                // type values:
+                var colorType = typeof(Color);
+                var properties = colorType.GetProperties().Where(p => p.CanRead && p.PropertyType == colorType && p.GetGetMethod().IsStatic).ToList();
+                properties.Sort((a, b) => String.Compare(a.Name, b.Name));
+                foreach (var property in properties)
+                {
+                    var name = property.Name;
+                    var value = property.GetValue(null) as Color?;
+                    string rgb = "#" + value.Value.R.ToString("X2") + value.Value.G.ToString("X2") + value.Value.B.ToString("X2");
+                    var line = $"                    <xs:enumeration value=\"{name}\"><xs:annotation><xs:documentation xml:lang=\"cs-cz\">RGB: {rgb}</xs:documentation></xs:annotation></xs:enumeration>";
+                    sb.AppendLine(line);
+                }
+
+                // type footer:
+                sb.AppendLine("                </xs:restriction>");
+                sb.AppendLine("            </xs:simpleType>");
+                sb.AppendLine("        </xs:union>");
+                sb.AppendLine("    </xs:simpleType>");
+
+                Clipboard.SetText(sb.ToString());
             }
-
-            // type footer:
-            sb.AppendLine("                </xs:restriction>");
-            sb.AppendLine("            </xs:simpleType>");
-            sb.AppendLine("        </xs:union>");
-            sb.AppendLine("    </xs:simpleType>");
-
-            Clipboard.SetText(sb.ToString());
         }
         private void DxDataForm_GotFocus(object sender, EventArgs e)
         {
@@ -720,7 +737,7 @@ namespace TestDevExpress.Forms
                 dataForm.Dispose();
                 _DxDataFormPanel = null;
             }
-            _DataFormSampleId = null;
+            _DataFormLayoutId = null;
             _DxShowTimeStart = null;
             _DxShowTimeSpan = null;
         }
@@ -731,7 +748,7 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// ID vzorku s daty, který je právě zobrazen. Null pokud není žádný.
         /// </summary>
-        private int? _DataFormSampleId;
+        private string _DataFormLayoutId;
         /// <summary>
         /// Čas zahájení
         /// </summary>
@@ -745,9 +762,10 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Vytvoří a vrátí layout daného ID
         /// </summary>
-        /// <param name="sampleId"></param>
+        /// <param name="layoutId"></param>
+        /// <param name="sampleRows"></param>
         /// <returns></returns>
-        private List<DxLData.LayoutControl> _CreateSampleLayout(int sampleId)
+        private List<DxLData.LayoutControl> _CreateSampleLayout(string layoutId, int sampleRows)
         {
             var result = new List<DxLData.LayoutControl>();
 
@@ -765,14 +783,12 @@ namespace TestDevExpress.Forms
                 "svgimages/chart/charttype_pie3d.svg"
             };
 
-            int layoutId = (sampleId / 1000);
-            int rowsCount = (sampleId % 1000);
             int leftB = 14;
             int left, leftM, left3, topM;
             int top = 0;
             switch (layoutId)
             {
-                case 1:
+                case "A":
                     top = 18;
                     left = leftB;
                     addItemPairT("datum", "Datum:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 70, 20);
@@ -821,7 +837,7 @@ namespace TestDevExpress.Forms
                     left = leftM; top = topM;
                     addItemPairT("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.EditBox, top, ref left, 350, 198);
                     break;
-                case 2:
+                case "B":
                     top = 16;
                     left = leftB;
                     addItemPairL("datum", "Datum:", DxDForm.DxRepositoryEditorType.TextBox, top, ref left, 65, 20);
@@ -856,7 +872,7 @@ namespace TestDevExpress.Forms
                     left = 740;
                     addItemPairL("poznamka", "Poznámka:", DxDForm.DxRepositoryEditorType.EditBox, top, ref left, 350, 78);
                     break;
-                case 3:
+                case "C":
                     addItemType("id1", DxDForm.DxRepositoryEditorType.TextBox, null, 0, 75, null, 2, 20, null);
                     addItemType("id2", DxDForm.DxRepositoryEditorType.TextBox, null, 80, 40, null, 2, 20, null);
                     addItemType("id3", DxDForm.DxRepositoryEditorType.TextBox, null, 125, 40, null, 2, 20, null);
@@ -913,9 +929,10 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Vytvoří a vrátí jednotlivé řádky pro layout daného ID
         /// </summary>
-        /// <param name="sampleId"></param>
+        /// <param name="layoutId"></param>
+        /// <param name="sampleRows"></param>
         /// <returns></returns>
-        private List<DxDData.DataFormRow> _CreateSampleRows(int sampleId)
+        private List<DxDData.DataFormRow> _CreateSampleRows(string layoutId, int sampleRows)
         {
             Randomizer.ActiveWordBook = Randomizer.WordBookType.CampOfSaints;
 
@@ -923,21 +940,19 @@ namespace TestDevExpress.Forms
 
             Random rand = new Random();
 
-            int layoutId = (sampleId / 1000);
-            int rowsCount = (sampleId % 1000);
             string aSequence = "ABCDEFGHIJKLMNOPQRSTUVZ";
 
-            for (int r = 0; r < rowsCount; r++)
+            for (int r = 0; r < sampleRows; r++)
             {
                 switch (layoutId)
                 {
-                    case 1:
+                    case "A":
                         addRow(r, "datum;reference;nazev;pocet;cenacelk;filename;valuecombo;towncombo;poznamka", "{dr};Ref {ref};Název {ref};{rnd};{rnd};Dokument {rnd};{A};{A};{memoExt}");
                         break;
-                    case 2:
+                    case "B":
                         addRow(r, "datum;reference;document1;pocet;cena1;document2;document3;poznamka", "{dr};R{ref};Záznam {ref};{rnd};{rnd};{file};{file};{memo}");
                         break;
-                    case 3:
+                    case "C":
                         addRow(r, "id1;id2;id3;id4;id5;id7;id0", "{ref};VYR;SKL;Výroba {ref};Dne {dr};{t};{dr} ==> {rnd}");
                         break;
                 }
@@ -1008,6 +1023,10 @@ namespace TestDevExpress.Forms
         private List<DxDData.DataFormRow> _CreateSampleRows(DfForm dfForm)
         {
             var result = new List<DxDData.DataFormRow>();
+
+            int rowsCount = 1 + ((dfForm.UseNorisClass ?? 1) % 60);
+            var controls = dfForm.AllControls;
+
             result.Add(new DxDData.DataFormRow());
             return result;
         }

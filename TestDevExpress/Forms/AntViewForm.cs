@@ -47,43 +47,27 @@ namespace TestDevExpress.Forms
             this._UrlAdress = new TextBox();
 
             this.SuspendLayout();
-            // 
-            // button1
-            // 
-            this._Button1.Location = new System.Drawing.Point(12, 12);
-            this._Button1.Name = "button1";
-            this._Button1.Size = new System.Drawing.Size(176, 28);
+
+            this._Button1.Bounds = new Rectangle(12, 12, 176, 28);
             this._Button1.TabIndex = 1;
             this._Button1.Text = "Seznam.cz";
             this._Button1.UseVisualStyleBackColor = true;
             this._Button1.Click += new System.EventHandler(this.button1_Click);
-            // 
-            // button2
-            // 
-            this._Button2.Location = new System.Drawing.Point(194, 12);
-            this._Button2.Name = "button2";
-            this._Button2.Size = new System.Drawing.Size(176, 28);
+
+            this._Button2.Bounds = new Rectangle(194, 12, 176, 28);
             this._Button2.TabIndex = 2;
             this._Button2.Text = "mapa.cz";
             this._Button2.UseVisualStyleBackColor = true;
             this._Button2.Click += new System.EventHandler(this.button2_Click);
 
-            // 
-            // button3
-            // 
-            this._Button3.Location = new System.Drawing.Point(376, 12);
-            this._Button3.Name = "button3";
-            this._Button3.Size = new System.Drawing.Size(176, 28);
+
+            this._Button3.Bounds = new Rectangle(376, 12, 176, 28);
             this._Button3.TabIndex = 3;
             this._Button3.Text = "google.com";
             this._Button3.UseVisualStyleBackColor = true;
             this._Button3.Click += new System.EventHandler(this.button3_Click);
-            // 
-            // button4
-            // 
-            this._Button4.Location = new System.Drawing.Point(558, 12);
-            this._Button4.Name = "button4";
-            this._Button4.Size = new System.Drawing.Size(176, 28);
+
+            this._Button4.Bounds = new Rectangle(558, 12, 176, 28);
             this._Button4.TabIndex = 4;
             this._Button4.Text = "Mapa Nephrite";
             this._Button4.UseVisualStyleBackColor = true;
@@ -92,23 +76,17 @@ namespace TestDevExpress.Forms
             this._UrlAdress.Location = new Point(740, 14);
             this._UrlAdress.ReadOnly = true;
 
-            // 
-            // _EmptyForm
-            // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.AppWorkspace;
-            this.ClientSize = new System.Drawing.Size(800, 450);
             this.Controls.Add(this._Button4);
             this.Controls.Add(this._Button3);
             this.Controls.Add(this._Button2);
             this.Controls.Add(this._Button1);
             this.Controls.Add(this._UrlAdress);
 
-            this.Name = "_EmptyForm";
-            this.Text = "_EmptyForm";
+            this.Text = "AntView )MS Edge Browser)";
 
-            // this.Load += new System.EventHandler(this._EmptyForm_Load);
             this.SizeChanged += _AntViewForm_SizeChanged;
 
             this.ResumeLayout(false);
@@ -125,19 +103,14 @@ namespace TestDevExpress.Forms
         /// </summary>
         private System.ComponentModel.IContainer components = null;
 
+        private Button _Button1;
+        private Button _Button2;
+        private Button _Button3;
+        private Button _Button4;
+        private TextBox _UrlAdress;
         private AxAntViewAx.AxAntview _AxAntView;
-        private System.Windows.Forms.TextBox _UrlAdress;
-        private System.Windows.Forms.Button _Button1;
-        private System.Windows.Forms.Button _Button2;
-        private System.Windows.Forms.Button _Button3;
-        private System.Windows.Forms.Button _Button4;
         #endregion
 
-        private void _EmptyForm_Load(object sender, EventArgs e)
-        {
-            _PrepareAntView();
-            _AxAntView.Navigate("https://www.seznam.cz/");
-        }
 
         private void button1_Click(object sender, EventArgs e)
         {
@@ -224,7 +197,9 @@ m.addControl(sync);
             
             ((System.ComponentModel.ISupportInitialize)(this._AxAntView)).BeginInit();
             this.Controls.Add(this._AxAntView);
-            this._AxAntView.Anchor = System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right | System.Windows.Forms.AnchorStyles.Bottom;
+            // this._AxAntView.Anchor = System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right | System.Windows.Forms.AnchorStyles.Bottom;
+            // this._AxAntView.ParentDoubleBuffered = true;
+            // this._AxAntView.DoubleBuffered = true;
             this._AxAntView.Location = new System.Drawing.Point(12, 49);
             this._AxAntView.Name = "_AxAntView";
             this._AxAntView.OcxState = ((System.Windows.Forms.AxHost.State)(_Resources.GetObject("axAntview1.OcxState")));
@@ -245,23 +220,28 @@ m.addControl(sync);
 
         private void _AxAntView_OnSourceChanged(object sender, AxAntViewAx.IAntViewEvents_OnSourceChangedEvent e)
         {
+            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"AntView.OnSourceChanged: '{_AxAntView.Source}'");
             _RefreshUrl(_AxAntView.Source);
         }
 
         private void _AxAntView_OnFrameNavigationStarting(object sender, AxAntViewAx.IAntViewEvents_OnFrameNavigationStartingEvent e)
         {
+            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"AntView.OnFrameNavigationStarting: #{e.args.NavigationId}: '{e.args.URI}'");
         }
 
         private void _AxAntView_OnFrameNavigationCompleted(object sender, AxAntViewAx.IAntViewEvents_OnFrameNavigationCompletedEvent e)
         {
+            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"AntView.OnFrameNavigationCompleted: #{e.navigationId}");
         }
 
         private void _AxAntView_OnNavigationStarting(object sender, AxAntViewAx.IAntViewEvents_OnNavigationStartingEvent e)
         {
+            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"AntView.OnNavigationStarting: #{e.args.NavigationId}: '{e.args.URI}'");
             _RefreshUrl(e.args.URI);
         }
         private void _AxAntView_OnNavigationCompleted(object sender, AxAntViewAx.IAntViewEvents_OnNavigationCompletedEvent e)
         {
+            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"AntView.OnNavigationCompleted: '{_AxAntView.Source}'");
         }
 
         private void _RefreshUrl(string uri)
