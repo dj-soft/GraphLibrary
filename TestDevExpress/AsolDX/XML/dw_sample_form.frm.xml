@@ -7,158 +7,25 @@
           MasterWidth="530" MasterHeight="320"
           TotalWidth="750" TotalHeight="520"  >
 
-	<panel Name="Pokus1" >
-		<button Name="ButtonOpen" ActionType="Click" Bounds="10,200,150,35" Text="Otevři !!!"  />
-		
-		
-	
-	</panel>
-
-
-	<panelset Name="">
-	    <panel Name="ggg" Title="Záložka A" ToolTipText="">
-			
-			<panel>
-				<label Name="" Bounds="" Invisible=""/>
-				<textbox Name="" LabelPosition="BeforeRight" Label="fm(MSG1002)" />
-				<textboxbutton>
-					<rightButton Name="" ActionType=""/>
-				</textboxbutton>
-				<label/>
-				<panel Name="odstavec" ></panel>
-			</panel>
-			
-		</panel>
-	</panelset>
-
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-    <panel Name="Panel1" Margins="12,6" BackColorName="Orange_front_protect" BackColorDark="LightBlue" CollapseState="IsExpanded" >
-        <label Name="info1_lbl" Bounds="14,2,150" Text="Popisek" ToolTipTitle="Nápověda" ToolTipText="Informace k tomuto prvku neexistuje" />
-        <textbox Name="info1" Bounds="10,20,160" Required="True" State="SkipTab" />
-        <label Name="info2_lbl" Bounds="184,2,150" Text="Informace" />
-        <combobox Name="info2" Bounds="180,20,160" Style="IconTextList" >
-            <comboItem Name="Z" Text="Zahájeno" IconName="pic/status1"/>
-            <comboItem Name="U" Text="Ukončeno" IconName="pic/status2"/>
-            <comboItem Name="S" Text="Stornováno" IconName="pic/status3"/>
-        </combobox>
-        <label Name="info3_lbl" Bounds="14,47,150" Text="Další nabídka" />
-        <combobox Name="info3" Bounds="10,65,160" EditStyleName="mfr_product_status" Style="IconTextList" />
-        <textboxbutton Name="Dokument1" Bounds="180,47,120" ToolTipTitle="Dokument" ToolTipText="Navázaná faktura" >
-            <rightButton Name="dots" ActionType="RelationDocument" />
-        </textboxbutton>
-
-        <checkbox Name=""/>
-
-        <button Name="butOpen" HotKey="F8" Bounds="2,50,120,35" Text="Otevři..." ActionType="RunFunction" ActionData="Realizuj" ToolTipTitle="Otevřít dveře" ToolTipText="Přistoupit ku dveřím, stiskem kliky uvolnit a pak tahem otevřít..."/>
-
-        <textbox Name="c45678" Bounds="120,75,180" LabelPosition="BeforeRight" Label="Popisek"/>
-
-        <textboxbutton Name="tbb123" Bounds="120,100,180" LabelPosition="BeforeRight" Label="Volba:">
-            <rightButton Name="tbbr1" ActionType="Click" />
-        </textboxbutton>
-        
-        <panel Name="p1234" BackColorName="Blue_front_protect" >
-            <label Name="aaa" Text="Vnitřní popisek"/>
+    <page Name="page0" Title="Technologie" AutoLabelPosition="Up"  >
+        <panel Name="reference" Title="ZÁZNAM" IconName="printer" IsHeader="True" >
+            <combobox Name="status" Bounds="12,6,350,40" Style="BreadCrumb" LabelPosition="None" />
+            <textbox Name="reference_subjektu" Bounds="12,60,120" State="ReadOnly" />
+            <textbox Name="nazev_subjektu" Bounds="135,60,200" State="Enabled" Required="Required" />
+            <textbox Name="date_creation" Bounds="12,100,100" State="ReadOnly" />
+            <textbox Name="vytvoril_nazev" Bounds="115,100,220" State="ReadOnly" />
         </panel>
-    </panel>
-
-    <panelset Name="aaaa">
-		<panel Name="page01" Title="Základní" IconName="pic/image">
-            
+        <panel Name="tpv" Title="TECHNOLOGIE" IconName="constr_element">
+            <textbox Name="constr_element_refer" Bounds="12,20,120" />
+            <textbox Name="constr_element_nazev" Bounds="135,20,200" />
+            <textbox Name="a_operation_mod_refer" Bounds="12,60,120" />
+            <textbox Name="a_operation_mod_nazev" Bounds="135,60,200" />
         </panel>
-		<panel Name="page02" Title="Nastavení">
-            <label Name="Pocet01l" Text="Počet kusů:" Alignment="MiddleRight" Bounds="10,2,120"/>
-            <textbox Name="Pocet01" Bounds="135,2,120" Required="True"/>
+    </page>
+
+    <page Name="page1" Title="Plán a realita" AutoLabelPosition="Up">
+        <panel Name="mrp_plan">
+            <textbox Name="last_mrp_time" Bounds="12,20,100"/>
         </panel>
-    </panelset>
-	
-    <panel Name="vvvv" BackColorName="User_12" BackColorLight="">
-        <label Name="t3"/>
-        <textboxbutton Name="tb1" ButtonsVisibility="Default">
-            <leftButton Name="fff" Text=".." IconName="pic"/>
-        </textboxbutton>
-        <nestedpanel Name="pricetable" NestedTemplate="dw_pricetable.frm.xml" X="0" Y="250"/>
-    </panel>
-
-    <nestedpanel Name="nested_dph" Bounds="0,250" NestedTemplate="dw_nested_dph.frm.xml"/>
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    <!--  obsolete
-
-    <panel Name="tab_3b8b20f5-e861-46c0-8470-7488eb46ab06">
-        <column Name="date_validity" Width="150"></column>
-        <column Name="produce_me" Width="150" InputType="checkbox"></column>
-        <column Name="plan_me" InputType="checkbox"></column>
-        <column Name="reference_subjektu" Width="150" ColSpan="3"></column>
-        <column Name="constr_element_refer" Width="100%"></column>
-        <column Name="constr_element_nazev" Width="100%" ColSpan="2" LabelPos="None"></column>
-        <column Name="variation_refer" Label="fmr(1151,lcs.constr_element.variation,l)" Width="100%" RelationParams="r(8566)"></column>
-        <column Name="order_relation_refer" Label="fmr(1151,lcs.constr_element.order_relation,l)" Width="150" ColSpan="2" RelationParams="r(8565)"></column>
-        <column Name="plan_unit_s_refer" Width="150"></column>
-        <column Name="plan_unit_s_nazev" Width="300" ColSpan="2" LabelPos="None"></column>
-        <column Name="placeholder1" InputType="Placeholder"></column>
-
-        <label Name="t4" ></label>
-        <textbox Name="colname1" ></textbox>
-
-    </panel>
-    
-    <tab>
-        <column Name="weight" Width="150"></column>
-        <column Name="area" Width="150"></column>
-        <column EditMask="L10;D6;Z0;T0" Name="area_mu" Width="60" LabelPos="None"></column>
-        <column Name="fixed_number_of_defection" Width="100%"></column>
-        <column Name="defection_percent" Width="150" ColSpan="2"></column>
-        <column Name="drawing" Width="450" ColSpan="3"></column>
-        <column Name="document_version" Width="100%"></column>
-        <column Name="typ_dokumentace" Width="300" ColSpan="2"></column>
-        <column Name="user_att" Width="450" ColSpan="3"></column>
-        <column Name="note" Width="100%" InputType="textarea" ColSpan="3"></column>
-    </tab>
-    <tab TabPageLabel="fm(MSG10530)" RenderAs="DesignTabWithLabel">
-        <column Name="date_author" Width="150"></column>
-        <column Name="author_nazev" Width="300" ColSpan="2" LabelPos="None"></column>
-        <column Name="date_valid_structure" Width="100%"></column>
-        <column Name="valid_structure_nazev" Width="100%" ColSpan="2" LabelPos="None"></column>
-        <column Name="date_valid_operation" Width="100%"></column>
-        <column Name="valid_operation_nazev" Width="100%" ColSpan="2" LabelPos="None"></column>
-        <column Name="date_valid_norm" Width="100%"></column>
-        <column Name="valid_norm_nazev" Width="100%" ColSpan="2" LabelPos="None"></column>
-        <column Name="protocol_on_refer" Width="100%"></column>
-        <column Name="protocol_on_nazev" Width="100%" ColSpan="2" LabelPos="None"></column>
-        <column Name="datum_vzniku" Width="100%" EditStyle="datum_cas"></column>
-        <column Name="pachatel_nazev" Width="100%" ColSpan="2" LabelPos="None"></column>
-        <column Name="placeholder2" InputType="Placeholder"></column>
-    </tab>
-    
-    
-    -->
+    </page>
 </template>

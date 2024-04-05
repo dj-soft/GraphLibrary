@@ -11,6 +11,7 @@ using DxDData = Noris.Clients.Win.Components.AsolDX.DataForm.Data;
 using DxLData = Noris.Clients.Win.Components.AsolDX.DataForm.Layout;
 using System.Drawing;
 using Noris.WS.DataContracts.DxForm;
+using Noris.Clients.Win.Components.AsolDX.DataForm;
 
 namespace TestDevExpress.Forms
 {
@@ -1025,7 +1026,7 @@ namespace TestDevExpress.Forms
             var result = new List<DxDData.DataFormRow>();
 
             int rowsCount = 1 + ((dfForm.UseNorisClass ?? 1) % 60);
-            var controls = dfForm.AllControls;
+            var controls = DfTemplateLoader.GetAllControls(dfForm);
 
             result.Add(new DxDData.DataFormRow());
             return result;

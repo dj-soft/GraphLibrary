@@ -113,7 +113,9 @@ namespace Noris.WS.DataContracts.DxForm
         public FormatVersionType FormatVersion { get; set; }
     }
     /// <summary>
-    /// Celý DataForm
+    /// Celý DataForm. Obsahuje stránky <see cref="Pages"/> v počtu 0 až +Nnn.
+    /// <para/>
+    /// Odpovídá XSD typu: <c>template</c>
     /// </summary>
     public class DfForm : DfBaseContainer
     {
@@ -176,41 +178,57 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public LabelPositionType UdaLabelPosition { get; set; }
         /// <summary>
-        /// Jednotlivé prvky - PageSet nebo Panely, vždy containery
+        /// Jednotlivé prvky - stránky.
+        /// Default = null.
+        /// Pokud <see cref="DfForm"/> obsahuje pouze jednu stránku, pak se nezobrazuje horní záložkovník (TabHeaders).
         /// </summary>
-        public DfBaseContainer[] Tabs { get { return this.Childs?.OfType<DfBaseContainer>().ToArray(); } }
+        public List<DfPage> Pages { get; set; }
         /// <summary>
         /// Debug text
         /// </summary>
-        protected override string DebugText { get { return $"{Style}; Controls: {(Childs is null ? "NULL" : Childs.Count.ToString())}"; } }
+        protected override string DebugText { get { return $"{Style}; Pages: {(Pages is null ? "NULL" : Pages.Count.ToString())}"; } }
     }
     /// <summary>
-    /// Sada stránek = záložky
+    /// Stránka = jedna záložka. Obsahuje vnořené panely <see cref="DfPanel"/>.
+    /// Pokud <see cref="DfForm"/> obsahuje pouze jednu stránku <see cref="DfPage"/>, pak není zobrazen horní záložkovník (TabHeaders), ale obsah této stránky obsazuje celou plochu dataformu.
+    /// <para/>
+    /// Odpovídá XSD typu: <c>type_page</c>
     /// </summary>
-    public class DfPageSet : DfBaseContainer
+    public class DfPage : DfBaseContainer
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DfPageSet()
+        public DfPage() : base()
         {
         }
         /// <summary>
         /// Styl bloku
         /// </summary>
-        public override ContainerStyleType Style { get { return ContainerStyleType.PageSet; } }
+        public override ContainerStyleType Style { get { return ContainerStyleType.Page; } }
         /// <summary>
-        /// Umístění prvku. Výchozí je null.
+        /// Jméno ikony panelu, zobrazuje se vlevo v titulku.
         /// </summary>
-        public Bounds Bounds { get; set; }
+        public string IconName { get; set; }
         /// <summary>
-        /// Stránky na záložkách
+        /// Titulek panelu.
+        /// Zobrazuje se pouze u 
         /// </summary>
-        public DfPanel[] Pages { get { return this.Childs?.OfType<DfPanel>().ToArray(); } }
+        public string Title { get; set; }
+        /// <summary>
+        /// Panely na této stránce.
+        /// Default = null.
+        /// </summary>
+        public List<DfPanel> Panels { get; set; }
+        /// <summary>
+        /// Debug text
+        /// </summary>
+        protected override string DebugText { get { return $"{Style}; Panels: {(Panels is null ? "NULL" : Panels.Count.ToString())}"; } }
     }
     /// <summary>
-    /// Panel, může obsahovat controly i containery.<br/>
-    /// Odpovídá XSD typu <c>type_base_container</c>
+    /// Panel, může obsahovat jednotlivé controly i vnořené containery.
+    /// <para/>
+    /// Odpovídá XSD typu: <c>type_panel</c>
     /// </summary>
     public class DfPanel : DfBaseContainer
     {
@@ -225,34 +243,67 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public override ContainerStyleType Style { get { return ContainerStyleType.Panel; } }
         /// <summary>
+        /// Obsahuje true, pokud tento panel reprezentuje záhlaví. To může být vykresleno na každé záložce, vždy jako první horní panel, v šířce přes všechny sloupce.
+        /// </summary>
+        public bool IsHeader { get; set; }
+        /// <summary>
+        /// Název stránek (page), na kterých je záhlaví zobrazeno. Pouze pokud IsHeader je true. Pokud nebude HeaderOnPages zadáno, bude vykresleno pro všechny stránky.
+        /// </summary>
+        public string HeaderOnPages { get; set; }
+        /// <summary>
         /// Umístění prvku. Výchozí je null.
-        /// Pokud je panel umístěn na pozici Page v rámci <see cref="DfPageSet"/>, pak <see cref="Bounds"/> se ignoruje.
+        /// Pokud je panel umístěn přímo jako Child v nadřazené <see cref="DfPage"/>, pak se ignoruje umístění (Left a Top) dané v <see cref="Bounds"/>, akceptuje se jen Width a Height.
+        /// Pak jde o primární panely, a ty jsou typicky uživatelsky ovladatelné.
         /// </summary>
         public Bounds Bounds { get; set; }
         /// <summary>
-        /// Jméno ikony odstavce nebo prvku (v titulku stránky, v titulku odstavce, ikona Buttonu, atd).
-        /// Použití se liší podle typu prvku.
+        /// Jméno ikony panelu, zobrazuje se vlevo v titulku.
         /// </summary>
         public string IconName { get; set; }
         /// <summary>
-        /// Text popisku
+        /// Titulek panelu.
+        /// Zobrazuje se pouze u 
         /// </summary>
         public string Title { get; set; }
-        /// <summary>
-        /// Nested template = název šablony načtený z atributu type_nested_panel::NestedTemplate
-        /// </summary>
-        public string NestedTemplate { get; set; }
         /// <summary>
         /// Styl titulku.
         /// </summary>
         public TitleStyleType TitleStyle { get; set; }
         /// <summary>
+        /// Barva textu titulku, zadaná jako název kalíšku.
+        /// </summary>
+        public string TitleColorName { get; set; }
+        /// <summary>
+        /// Barva textu titulku, zadaná explicitně pro světlé skiny: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd.
+        /// </summary>
+        public System.Drawing.Color? TitleColorLight { get; set; }
+        /// <summary>
+        /// Barva textu titulku, zadaná explicitně pro tmavé skiny: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd.
+        /// </summary>
+        public System.Drawing.Color? TitleColorDark { get; set; }
+        /// <summary>
         /// Možnosti přeskupování panelu (Collapse / Expand)
         /// </summary>
         public PanelCollapseState CollapseState { get; set; }
+        /// <summary>
+        /// Controly v rámci tohoto Containeru.
+        /// Mohou zde být i další Containery.
+        /// Default = null.
+        /// </summary>
+        public List<DfBase> Childs { get; set; }
+        /// <summary>
+        /// Nested template = název šablony načtený z atributu type_nested_panel::NestedTemplate
+        /// </summary>
+        public string NestedTemplate { get; set; }
+        /// <summary>
+        /// Debug text
+        /// </summary>
+        protected override string DebugText { get { return $"{Style}; Childs: {(Childs is null ? "NULL" : Childs.Count.ToString())}"; } }
     }
     /// <summary>
     /// Základní třída pro containery.<br/>
+    /// Jejím úkolem je deklarovat vzhled pozadí containeru a okraje.
+    /// <para/>
     /// Odpovídá XSD typu <c>type_base_container</c>
     /// </summary>
     public class DfBaseContainer : DfBase
@@ -280,50 +331,17 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public System.Drawing.Color? BackColorDark { get; set; }
         /// <summary>
+        /// Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = <c>NULL</c>
+        /// </summary>
+        public LabelPositionType? AutoLabelPosition { get; set; }
+        /// <summary>
         /// Okraje = mezi krajem formuláře / Page / Panel a souřadnicí 0/0
         /// </summary>
         public Margins Margins { get; set; }
         /// <summary>
-        /// Obsahuje všechny controly v tomto containeru i v jeho vnitřních containerech
-        /// </summary>
-        public DfBaseControl[] AllControls { get { return GetAllControls(); } }
-        /// <summary>
-        /// Vrátí pole všech controlů v tomto containeru i v jeho vnitřních containerech.
-        /// </summary>
-        /// <returns></returns>
-        protected DfBaseControl[] GetAllControls()
-        {
-            List<DfBaseControl> result = new List<DfBaseControl>();
-            AddAllControls(this, result);
-            return result.ToArray();
-        }
-        /// <summary>
-        /// Přidá všechny controly z daného containeru do cílového pole. Rekurzivně i pro Child těchto continerů.
-        /// </summary>
-        /// <param name="dataContainer"></param>
-        /// <param name="result"></param>
-        /// <exception cref="NotImplementedException"></exception>
-        protected static void AddAllControls(DfBaseContainer dataContainer, List<DfBaseControl> result)
-        {
-            if (dataContainer is null || dataContainer.Childs is null) return;
-            foreach (var child in dataContainer.Childs) 
-            {
-                if (child is DfBaseContainer childContainer)
-                    AddAllControls(childContainer, result);
-                else if (child is DfBaseControl childControl)
-                    result.Add(childControl);
-            }
-        }
-        /// <summary>
-        /// Controly v rámci tohoto Containeru.
-        /// Mohou zde být i další Containery.
-        /// Default = null.
-        /// </summary>
-        public List<DfBase> Childs { get; set; }
-        /// <summary>
         /// Debug text
         /// </summary>
-        protected override string DebugText { get { return $"{Style}; Name: {Name}; Controls: {(Childs is null ? "NULL" : Childs.Count.ToString())}"; } }
+        protected override string DebugText { get { return $"{Style}; Name: {Name}"; } }
     }
     #endregion
     #region Konkrétní třídy Controlů
@@ -1133,7 +1151,7 @@ namespace Noris.WS.DataContracts.DxForm
         BreadCrumb
     }
     /// <summary>
-    /// Styl viditelnosti buttonů v rámci prvku <see cref="DxRepositoryEditorTextBoxButton"/>.
+    /// Styl viditelnosti buttonů v rámci prvku <see cref="DfTextBoxButton"/>.
     /// Odpovídá XSD typu <c>buttons_visibility_enum</c>
     /// </summary>
     public enum ButtonsVisibilityType
@@ -1286,10 +1304,6 @@ namespace Noris.WS.DataContracts.DxForm
         /// Vrcholový container, reprezentuje celý formulář
         /// </summary>
         Form,
-        /// <summary>
-        /// Sada stránek; její vnitřní prvky musí být stylu <see cref="ContainerStyleType.Page"/>
-        /// </summary>
-        PageSet,
         /// <summary>
         /// Záhlaví stránky. Ignoruje souřadnice 
         /// </summary>
