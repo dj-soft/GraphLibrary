@@ -255,7 +255,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             DfPage createImplicitPage()
             {
                 DfPage iPage = new DfPage();
-                iPage.Name = (new Guid()).ToString();
+                iPage.Name = Guid.NewGuid().ToString();
+                iPage.Panels = new List<DfPanel>();
                 if (control.Pages.Count == 0)
                     control.Pages.Add(iPage);
                 else

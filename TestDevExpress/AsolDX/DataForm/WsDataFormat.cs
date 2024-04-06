@@ -156,7 +156,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = <see cref="LabelPositionType.None"/>
         /// </summary>
-        public LabelPositionType AutoLabelPosition { get; set; }
+        public new LabelPositionType AutoLabelPosition { get; set; }
         /// <summary>
         /// Jméno souboru, z něhož bude načtena definice dat
         /// </summary>
@@ -186,7 +186,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Debug text
         /// </summary>
-        protected override string DebugText { get { return $"{Style}; Pages: {(Pages is null ? "NULL" : Pages.Count.ToString())}"; } }
+        protected override string DebugText { get { return $"{Style} '{Name}'; Pages: {(Pages is null ? "NULL" : Pages.Count.ToString())}"; } }
     }
     /// <summary>
     /// Stránka = jedna záložka. Obsahuje vnořené panely <see cref="DfPanel"/>.
@@ -223,7 +223,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Debug text
         /// </summary>
-        protected override string DebugText { get { return $"{Style}; Panels: {(Panels is null ? "NULL" : Panels.Count.ToString())}"; } }
+        protected override string DebugText { get { return $"{Style} '{Name}'; Panels: {(Panels is null ? "NULL" : Panels.Count.ToString())}"; } }
     }
     /// <summary>
     /// Panel, může obsahovat jednotlivé controly i vnořené containery.
@@ -298,7 +298,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Debug text
         /// </summary>
-        protected override string DebugText { get { return $"{Style}; Childs: {(Childs is null ? "NULL" : Childs.Count.ToString())}"; } }
+        protected override string DebugText { get { return $"{Style} '{Name}'; Childs: {(Childs is null ? "NULL" : Childs.Count.ToString())}"; } }
     }
     /// <summary>
     /// Základní třída pro containery.<br/>
