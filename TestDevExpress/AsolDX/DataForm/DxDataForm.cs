@@ -14,7 +14,7 @@ using WinForm = System.Windows.Forms;
 
 using DxfData = Noris.Clients.Win.Components.AsolDX.DataForm.Data;
 using DxLData = Noris.Clients.Win.Components.AsolDX.DataForm.Layout;
-using Noris.Clients.Win.Components.AsolDX.DataForm.Data;
+using Noris.WS.DataContracts.DxForm;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
@@ -100,13 +100,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Zde je obsažena definice formátu dat v dataformu.
         /// </summary>
-        public Format.DfForm DfForm
+        public DfForm DfForm
         {
             get { return __DfForm; }
             set { _SetDfForm(value); }
         }
-        private Format.DfForm __DfForm;
-        private void _SetDfForm(Format.DfForm dfForm)
+        private DfForm __DfForm;
+        private void _SetDfForm(DfForm dfForm)
         { 
         
         }
@@ -495,7 +495,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             switch (actionInfo.Action)
             {
-                case DxDataFormAction.KeyDown: _OnInteractiveActionKeyDown(actionInfo as DataFormKeyActionInfo); break;
+                case DxfData.DxDataFormAction.KeyDown: _OnInteractiveActionKeyDown(actionInfo as DataFormKeyActionInfo); break;
             }
         }
         /// <summary>
@@ -525,7 +525,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     }
     #endregion
     #region Podpůrné datové třídy
-    #region Argumenty DataFormActionInfo pro událost DxDataForm.OnInteractiveAction()
+    #region Argumenty DataForm*Action*Info pro události na DataFormu
     /// <summary>
     /// Data pro akce typu Změna hodnoty s možností Cancel
     /// </summary>
@@ -538,7 +538,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="action"></param>
         /// <param name="originalValue"></param>
         /// <param name="currentValue"></param>
-        internal DataFormValueChangingInfo(DataFormCell cell, DxDataFormAction action, object originalValue, object currentValue)
+        internal DataFormValueChangingInfo(DxfData.DataFormCell cell, DxfData.DxDataFormAction action, object originalValue, object currentValue)
             : base(cell, action, originalValue, currentValue)
         {
             this.Cancel = false;
@@ -560,7 +560,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="action"></param>
         /// <param name="originalValue"></param>
         /// <param name="currentValue"></param>
-        internal DataFormValueChangedInfo(DataFormCell cell, DxDataFormAction action, object originalValue, object currentValue)
+        internal DataFormValueChangedInfo(DxfData.DataFormCell cell, DxfData.DxDataFormAction action, object originalValue, object currentValue)
             : base(cell, action)
         {
             this.OriginalValue = originalValue;
@@ -594,7 +594,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="cell">Buňka, kde došlo k akci</param>
         /// <param name="action"></param>
         /// <param name="keyArgs"></param>
-        internal DataFormKeyActionInfo(DataFormCell cell, DxDataFormAction action, WinForm.KeyEventArgs keyArgs)
+        internal DataFormKeyActionInfo(DxfData.DataFormCell cell, DxfData.DxDataFormAction action, WinForm.KeyEventArgs keyArgs)
             : base(cell, action)
         {
             this.KeyArgs = keyArgs;
@@ -625,7 +625,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="modifierKeys"></param>
         /// <param name="mouseButtons"></param>
         /// <param name="mouseAbsoluteLocation"></param>
-        internal DataFormMouseActionInfo(DataFormCell cell, DxDataFormAction action, WinForm.Keys modifierKeys, WinForm.MouseButtons mouseButtons, WinDraw.Point mouseAbsoluteLocation)
+        internal DataFormMouseActionInfo(DxfData.DataFormCell cell, DxfData.DxDataFormAction action, WinForm.Keys modifierKeys, WinForm.MouseButtons mouseButtons, WinDraw.Point mouseAbsoluteLocation)
             : base(cell, action)
         {
             this.ModifierKeys = modifierKeys;
@@ -664,7 +664,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="cell">Buňka, kde došlo k akci</param>
         /// <param name="action"></param>
         /// <param name="itemName"></param>
-        internal DataFormItemNameInfo(DataFormCell cell, DxDataFormAction action, string itemName)
+        internal DataFormItemNameInfo(DxfData.DataFormCell cell, DxfData.DxDataFormAction action, string itemName)
             : base(cell, action)
         {
             this.ItemName = itemName;
@@ -692,7 +692,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="cell">Buňka, kde došlo k akci</param>
         /// <param name="action"></param>
-        internal DataFormActionInfo(DataFormCell cell, DxDataFormAction action)
+        internal DataFormActionInfo(DxfData.DataFormCell cell, DxfData.DxDataFormAction action)
         {
             this.Cell = cell;
             this.Action = action;
@@ -708,11 +708,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Buňka, kde došlo k akci
         /// </summary>
-        internal DataFormCell Cell { get; private set; }
+        internal DxfData.DataFormCell Cell { get; private set; }
         /// <summary>
         /// Řádek, kde došlo k události
         /// </summary>
-        internal DataFormRow Row { get { return Cell?.Row; } }
+        internal DxfData.DataFormRow Row { get { return Cell?.Row; } }
         /// <summary>
         /// Definice layoutu
         /// </summary>
@@ -724,7 +724,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Druh události
         /// </summary>
-        internal DxDataFormAction Action { get; private set; }
+        internal DxfData.DxDataFormAction Action { get; private set; }
     }
     #endregion
     #endregion
