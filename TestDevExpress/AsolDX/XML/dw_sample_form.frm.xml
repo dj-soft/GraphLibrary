@@ -20,7 +20,7 @@
 			
 			<panel>
 				<label Name="" Bounds="" Invisible=""/>
-				<textbox Name="" LabelPosition="BeforeRight" Label="fm(MSG1002)" />
+				<textbox Name="karta_refer" LabelPosition="BeforeRight" Label="fm(MSG1002)" />
 				<textboxbutton>
 					<rightButton Name="" ActionType=""/>
 				</textboxbutton>
