@@ -5,7 +5,7 @@
             Part of Helios Nephrite, proprietary software, (c) Asseco Solutions, a. s.
             DxDataFormat template schema.
             All rights reserved.
-        </xs:documentation>
+        .</xs:documentation>
     </xs:annotation>
 
     <!--    template = DfForm   -   Struktura souboru, definujícího vzhled celého DataFormu                  -->
@@ -16,60 +16,60 @@
                 <xs:choice minOccurs="0" maxOccurs="unbounded">
                     <xs:element name="page" type="type_page" minOccurs="0" maxOccurs="unbounded" >
                         <xs:annotation>
-                            <xs:documentation xml:lang="cs-cz">Jeden objekt s více záložkami (page)</xs:documentation>
+                            <xs:documentation xml:lang="cs-cz">Jeden objekt s více záložkami (page).</xs:documentation>
                         </xs:annotation>
                     </xs:element>
                     <xs:element name="panel" type="type_panel" minOccurs="0" maxOccurs="unbounded">
                         <xs:annotation>
-                            <xs:documentation xml:lang="cs-cz">Jeden kontejner, obsahující prvky anebo další kontejnery</xs:documentation>
+                            <xs:documentation xml:lang="cs-cz">Jeden kontejner, obsahující prvky anebo další kontejnery.</xs:documentation>
                         </xs:annotation>
                     </xs:element>
                     <xs:element name="nestedpanel" type="type_nested_panel" minOccurs="0" maxOccurs="unbounded">
                         <xs:annotation>
-                            <xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona</xs:documentation>
+                            <xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona.</xs:documentation>
                         </xs:annotation>
                     </xs:element>
                 </xs:choice>
             </xs:sequence>
 
             <xs:attribute name="FormatVersion" type="format_version_enum" default="4">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Formát tohoto souboru. Defaultní = 4</xs:documentation></xs:annotation>
+                <xs:annotation><xs:documentation xml:lang="cs-cz">Formát tohoto souboru. Defaultní = 4.</xs:documentation></xs:annotation>
             </xs:attribute>
             <xs:attribute name="MasterWidth" type="xs:int">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Šířka oblasti DataFormu (Master) (tedy bez dynamických vztahů a dolních záložek)</xs:documentation></xs:annotation>
+                <xs:annotation><xs:documentation xml:lang="cs-cz">Šířka oblasti DataFormu (Master) (tedy bez dynamických vztahů a dolních záložek).</xs:documentation></xs:annotation>
             </xs:attribute>
             <xs:attribute name="MasterHeight" type="xs:int">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Výška oblasti DataFormu (Master) (tedy bez dynamických vztahů a dolních záložek)</xs:documentation></xs:annotation>
+                <xs:annotation><xs:documentation xml:lang="cs-cz">Výška oblasti DataFormu (Master) (tedy bez dynamických vztahů a dolních záložek).</xs:documentation></xs:annotation>
             </xs:attribute>
             <xs:attribute name="TotalWidth" type="xs:int">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Celková šířka (tedy včetně dynamických vztahů a dolních záložek)</xs:documentation></xs:annotation>
+                <xs:annotation><xs:documentation xml:lang="cs-cz">Celková šířka (tedy včetně dynamických vztahů a dolních záložek).</xs:documentation></xs:annotation>
             </xs:attribute>
             <xs:attribute name="TotalHeight" type="xs:int">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Celková výška (tedy včetně dynamických vztahů a dolních záložek)</xs:documentation></xs:annotation>
+                <xs:annotation><xs:documentation xml:lang="cs-cz">Celková výška (tedy včetně dynamických vztahů a dolních záložek).</xs:documentation></xs:annotation>
             </xs:attribute>
             <xs:attribute name="AutoLabelPosition" type="label_position_enum" >
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = None</xs:documentation></xs:annotation>
+                <xs:annotation><xs:documentation xml:lang="cs-cz">Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = None.</xs:documentation></xs:annotation>
             </xs:attribute>
             <xs:attribute name="DataSource" type="xs:string">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Jméno souboru, z něhož bude načtena definice dat</xs:documentation></xs:annotation>
+                <xs:annotation><xs:documentation xml:lang="cs-cz">Jméno souboru, z něhož bude načtena definice dat.</xs:documentation></xs:annotation>
             </xs:attribute>
             <xs:attribute name="Messages" type="xs:string">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Jméno souboru, z něhož budou čteny překlady popisků a tooltipů</xs:documentation></xs:annotation>
+                <xs:annotation><xs:documentation xml:lang="cs-cz">Jméno souboru, z něhož budou čteny překlady popisků a tooltipů.</xs:documentation></xs:annotation>
             </xs:attribute>
             <xs:attribute name="UseNorisClass" type="xs:int">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Číslo třídy, pro kterou budou načteny popisky atributů a vztahů</xs:documentation></xs:annotation>
+                <xs:annotation><xs:documentation xml:lang="cs-cz">Číslo třídy, pro kterou budou načteny popisky atributů a vztahů.</xs:documentation></xs:annotation>
             </xs:attribute>
             <xs:attribute name="AddUda" type="bool_enum">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Automaticky přidat záložku pro UDA atributy a vztahy. Nezadáno = True</xs:documentation></xs:annotation>
+                <xs:annotation><xs:documentation xml:lang="cs-cz">Automaticky přidat záložku pro UDA atributy a vztahy. Nezadáno = True.</xs:documentation></xs:annotation>
             </xs:attribute>
             <xs:attribute name="UdaLabelPosition" type="label_position_enum">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Umístění labelů pro automaticky generované UDA atributy a vztahy. Defaultní = Top</xs:documentation></xs:annotation>
+                <xs:annotation><xs:documentation xml:lang="cs-cz">Umístění labelů pro automaticky generované UDA atributy a vztahy. Defaultní = Top.</xs:documentation></xs:annotation>
             </xs:attribute>
             <xs:attribute name="Margins" type="xs:string">
                 <xs:annotation><xs:documentation xml:lang="cs-cz">Vnitřní okraje uvnitř containeru: mezi vnější souřadnicí a prvním prvkem na souřadnici 0/0. Ve formě: All   nebo   Left,Top[,Right,Bottom].</xs:documentation></xs:annotation>
             </xs:attribute>
 			<xs:attribute name="ContextMenu" type="bool_enum">
-				<xs:annotation><xs:documentation xml:lang="cs-cz">Povolit kontextové menu</xs:documentation></xs:annotation>
+				<xs:annotation><xs:documentation xml:lang="cs-cz">Povolit kontextové menu.</xs:documentation></xs:annotation>
 			</xs:attribute>
 
 		</xs:complexType>
@@ -86,12 +86,12 @@
                     <xs:choice minOccurs="0" maxOccurs="unbounded">
                         <xs:element name="panel" type="type_panel" minOccurs="0" maxOccurs="unbounded" >
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Jeden panel uvnitř stránky, uživatelsky viditelný včetně titulku</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Jeden panel uvnitř stránky, uživatelsky viditelný včetně titulku.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                         <xs:element name="nestedpanel" type="type_nested_panel" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                     </xs:choice>
@@ -202,52 +202,52 @@
                     <xs:choice minOccurs="0" maxOccurs="unbounded">
                         <xs:element name="label" type="type_label" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Neinteraktivní textový popisek</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Neinteraktivní textový popisek.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                         <xs:element name="title" type="type_title" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Neinteraktivní titulkový prvek</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Neinteraktivní titulkový prvek.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                         <xs:element name="checkbox" type="type_checkbox" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Checkbox, zaškrtávátko, různé styly</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Checkbox, zaškrtávátko, různé styly.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                         <xs:element name="button" type="type_button" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Samostatné tlačítko</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Samostatné tlačítko.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                         <xs:element name="dropdownbutton" type="type_drop_down_button" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Samostatné tlačítko s přidaným DropDown menu pod-tlačítek</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Samostatné tlačítko s přidaným DropDown menu pod-tlačítek.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                         <xs:element name="textbox" type="type_textbox" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Vstupní textové políčko</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Vstupní textové políčko.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                         <xs:element name="textboxbutton" type="type_textboxbutton" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Vstupní textové políčko s buttony</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Vstupní textové políčko s buttony.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                         <xs:element name="combobox" type="type_combobox" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Rozbalovací nabídka typu ComboBox</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Rozbalovací nabídka typu ComboBox.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                         <xs:element name="panel" type="type_panel" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Vnořený panel</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Vnořený panel.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                         <xs:element name="nestedpanel" type="type_nested_panel" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                     </xs:choice>
@@ -357,7 +357,7 @@
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="AutoLabelPosition" type="label_position_enum" >
-                    <xs:annotation><xs:documentation xml:lang="cs-cz">Automaticky generovat labely atributů a vztahů v rámci tohoto containeru, jejich umístění. Defaultní = podle parenta</xs:documentation></xs:annotation>
+                    <xs:annotation><xs:documentation xml:lang="cs-cz">Automaticky generovat labely atributů a vztahů v rámci tohoto containeru, jejich umístění. Defaultní = podle parenta.</xs:documentation></xs:annotation>
                 </xs:attribute>
             </xs:extension>
         </xs:complexContent>
@@ -377,7 +377,7 @@
                 </xs:attribute>
                 <xs:attribute name="Alignment" type="content_alignment_enum">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Zarovnání obsahu (textu) v definovaném prostoru prvku</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Zarovnání obsahu (textu) v definovaném prostoru prvku.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>
@@ -408,7 +408,7 @@
             <xs:extension base="type_base_input_text_control">
                 <xs:attribute name="Style" type="checkbox_style_enum">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Styl zobrazení CheckBoxu</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Styl zobrazení CheckBoxu.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>
@@ -424,12 +424,12 @@
             <xs:extension base="type_base_input_text_control">
                 <xs:attribute name="ActionType" type="button_action_enum">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Akce, kterou button provede</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Akce, kterou button provede.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="ActionData" type="xs:string">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Data pro akci (název funkce, atd)</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Data pro akci (název funkce, atd).</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="HotKey" type="xs:string">
@@ -451,7 +451,7 @@
                 <xs:sequence minOccurs="0" maxOccurs="unbounded">
                     <xs:element name="dropDownButton" type="type_subbutton">
                         <xs:annotation>
-                            <xs:documentation xml:lang="cs-cz">Tlačítko v rozbalovacím menu DropDownButtonu</xs:documentation>
+                            <xs:documentation xml:lang="cs-cz">Tlačítko v rozbalovacím menu DropDownButtonu.</xs:documentation>
                         </xs:annotation>
                     </xs:element>
                 </xs:sequence>
@@ -465,12 +465,12 @@
             <xs:extension base="type_base_labeled_input_control">
                 <xs:attribute name="EditMask">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Editační maska</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Editační maska.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="Alignment" type="content_alignment_enum">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Zarovnání obsahu (textu) v definovaném prostoru prvku</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Zarovnání obsahu (textu) v definovaném prostoru prvku.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>
@@ -485,19 +485,19 @@
                     <xs:choice minOccurs="0" maxOccurs="unbounded">
                         <xs:element name="leftButton" type="type_subbutton">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Button zobrazený na levé straně TextBoxu</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Button zobrazený na levé straně TextBoxu.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                         <xs:element name="rightButton" type="type_subbutton">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Button zobrazený na pravé straně TextBoxu</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Button zobrazený na pravé straně TextBoxu.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                     </xs:choice>
                 </xs:sequence>
                 <xs:attribute name="ButtonsVisibility" type="buttons_visibility_enum">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Viditelnost buttonů v textboxu v závislosti na aktivitě TextBoxu</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Viditelnost buttonů v textboxu v závislosti na aktivitě TextBoxu.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>
@@ -511,7 +511,7 @@
                 <xs:sequence minOccurs="0" maxOccurs="unbounded">
                     <xs:element name="comboItem" type="type_subtextitem">
                         <xs:annotation>
-                            <xs:documentation xml:lang="cs-cz">Explicitně zadaný prvek v nabídce ComboBoxu</xs:documentation>
+                            <xs:documentation xml:lang="cs-cz">Explicitně zadaný prvek v nabídce ComboBoxu.</xs:documentation>
                         </xs:annotation>
                     </xs:element>
                 </xs:sequence>
@@ -522,7 +522,7 @@
                 </xs:attribute>
                 <xs:attribute name="Style" type="combobox_style_enum">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Styl zobrazení ComboBoxu: S možností psaní, Pouze výběr hodnot, Výběr včetně zobrazení ikony</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Styl zobrazení ComboBoxu: S možností psaní, Pouze výběr hodnot, Výběr včetně zobrazení ikony.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>
@@ -535,12 +535,12 @@
             <xs:extension base="type_subtextitem">
                 <xs:attribute name="ActionType" type="sub_button_action_enum">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Akce, kterou tento sub-button provede</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Akce, kterou tento sub-button provede.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="ActionData" type="xs:string">
                     <xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Data pro akci (název akce pro Clipboard, název editoru, atd)</xs:documentation>
+						<xs:documentation xml:lang="cs-cz">Data pro akci (název akce pro Clipboard, název editoru, atd).</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>
@@ -584,7 +584,7 @@
                 </xs:attribute>
                 <xs:attribute name="Alignment" type="content_alignment_enum">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Zarovnání obsahu (textu) v definovaném prostoru prvku</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Zarovnání obsahu (textu) v definovaném prostoru prvku.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>
@@ -602,12 +602,12 @@
 				</xs:attribute>
                 <xs:attribute name="LabelPosition" type="label_position_enum">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Umístění a zarovnání popisku (Labelu) vzhledem k souřadnicích controlu</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Umístění a zarovnání popisku (Labelu) vzhledem k souřadnicích controlu.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="LabelWidth" type="xs:int">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Nejvyšší šířka prostoru pro Label</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Nejvyšší šířka prostoru pro Label.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>
@@ -623,7 +623,12 @@
                         <xs:documentation xml:lang="cs-cz">Příznak povinného políčka. Povinné políčko je barevně zvýrazněné.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-            </xs:extension>
+				<xs:attribute name="ColumnName" type="xs:string">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Explicitně zadaný název sloupce (datového prvku), jehož data tento prvek zobrazuje. Běžně se nemusí zadávat, implicitně se data čtou a ukládají z/do datového sloupce se jménem podle atributu 'Name'. Pokud ale je třeba jeden atribut/vztah zobrazit na více místech formuláře, pak se pro tyto různé controly zadá různé 'Name' (musí být unikátní), a použije se pro ně shodné 'ColumnName'.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
         </xs:complexContent>
     </xs:complexType>
 
@@ -664,22 +669,22 @@
     <xs:complexType name="type_base">
         <xs:attribute name="Name" type="xs:string" use="required">
             <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Identifikátor prvku v DataFormu = jméno sloupce v načítaných datech. Pro panely a controly musí být jednoznačné v rámci DataFormu. Pro pomocné prvky (TextBoxButtony, ListItemy) musí být jednoznačné v rámci Owner prvku.</xs:documentation>
+                <xs:documentation xml:lang="cs-cz">Identifikátor prvku v DataFormu = odpovídá jménu sloupce v načítaných datech. Pro panely a controly musí být jednoznačné v rámci DataFormu. Pro pomocné prvky (TextBoxButtony, ListItemy) musí být jednoznačné v rámci Owner prvku. Pokud více controlů má zobrazovat data jednoho datového sloupce, použije se atribut 'ColumnName'.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
         <xs:attribute name="State" type="control_state_enum">
             <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Stav prvku (viditelnost, editovatelnost)</xs:documentation>
+                <xs:documentation xml:lang="cs-cz">Stav prvku (viditelnost, editovatelnost).</xs:documentation>
             </xs:annotation>
         </xs:attribute>
         <xs:attribute name="ToolTipTitle" type="xs:string">
             <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Titulek v okně ToolTip</xs:documentation>
+                <xs:documentation xml:lang="cs-cz">Titulek v okně ToolTip.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
         <xs:attribute name="ToolTipText" type="xs:string">
             <xs:annotation>
-                <xs:documentation xml:lang="cs-cz">Text v okně ToolTip</xs:documentation>
+                <xs:documentation xml:lang="cs-cz">Text v okně ToolTip.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
         <xs:attribute name="Invisible" type="xs:string">
@@ -696,7 +701,7 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="4" >
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">DataForm deklarovaný pro Nephrite</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">DataForm deklarovaný pro Nephrite.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="3" >
@@ -720,37 +725,37 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="Default" >
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Default = Nikde = výchozí, anebo u konkrétního prvku = podle nastavení formuláře</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Default = Nikde = výchozí, anebo u konkrétního prvku = podle nastavení formuláře.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="None" >
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Nikde</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Nikde.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="BeforeLeft" >
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Vlevo před textem, písmo zarovnané doleva</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Vlevo před textem, písmo zarovnané doleva.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="BeforeRight" >
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Vlevo před textem, písmo zarovnané doprava</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Vlevo před textem, písmo zarovnané doprava.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="After" >
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Vpravo za textem, zarovnaný doleva (tam se typicky píšou jednotky, např. Kč, KWh atd)</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Vpravo za textem, zarovnaný doleva (tam se typicky píšou jednotky, např. Kč, KWh atd).</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="Up" >
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Nahoře nad textem, písmo zarovnané doleva</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Nahoře nad textem, písmo zarovnané doleva.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="Bottom" >
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Dole pod textem, písmo zarovnané doleva</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Dole pod textem, písmo zarovnané doleva.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
         </xs:restriction>
@@ -854,22 +859,22 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="Default">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Defaultní = jen v aktivním prvku (Focus nebo MouseOn), vyjma stavu Disabled</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Defaultní = jen v aktivním prvku (Focus nebo MouseOn), vyjma stavu Disabled.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="OnlyActive">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Jen v aktivním prvku (Focus nebo MouseOn), vyjma stavu Disabled</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Jen v aktivním prvku (Focus nebo MouseOn), vyjma stavu Disabled.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="VisibleAlways">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Viditelné vždy</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Viditelné vždy.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="Invisible">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Neviditelné</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Neviditelné.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
         </xs:restriction>
@@ -878,27 +883,27 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="Click">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Odešle kliknutí na server</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Odešle kliknutí na server.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="Update">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Odešle Update dat na server</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Odešle Update dat na server.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="ClickCheckRequired">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Ověří vyplněnost Required polí</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Ověří vyplněnost Required polí.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="RunFunction">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Spustí funkci, název funkce je v atributu ActionData</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Spustí funkci, název funkce je v atributu ActionData.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="Close">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Zavře okno</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Zavře okno.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
         </xs:restriction>
@@ -907,32 +912,32 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="Click">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Odešle kliknutí na server</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Odešle kliknutí na server.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="OpenEditor">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Otevře editor aktuální hodnoty (kalendář, Word, Kalkulačka), podle ActionData</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Otevře editor aktuální hodnoty (kalendář, Word, Kalkulačka), podle ActionData.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="FileDialog">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Otevře FileDialog, podle ActionData</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Otevře FileDialog, podle ActionData.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="ClipboardAction">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Akce s Clipboardem, podle ActionData</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Akce s Clipboardem, podle ActionData.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="RelationRecord">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Akce se vztaženým záznamem</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Akce se vztaženým záznamem.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="RelationDocument">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Akce se vztaženým dokumentem</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Akce se vztaženým dokumentem.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
         </xs:restriction>
@@ -941,7 +946,7 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="Default">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Výchozí = Enabled + Visible + TabStop</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Výchozí = Enabled + Visible + TabStop.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="Enabled">
@@ -951,12 +956,12 @@
             </xs:enumeration>
             <xs:enumeration value="Invisible">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Prvek je neviditelný</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Prvek je neviditelný.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="ReadOnly">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Prvek je ReadOnly: lze do něj dát focus, ale nelze změnit jeho hodnotu. Na Button lze kliknout a provede akci. Kliknutí na CheckBox nezmění jeho stav. DateTime otevře kalendář, ale nezmění svoji hodnotu. Vztah otevře vztažený záznam. Atd</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Prvek je ReadOnly: lze do něj dát focus, ale nelze změnit jeho hodnotu. Na Button lze kliknout a provede akci. Kliknutí na CheckBox nezmění jeho stav. DateTime otevře kalendář, ale nezmění svoji hodnotu. Vztah otevře vztažený záznam. Atd.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="Disabled">
@@ -975,17 +980,17 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="Default">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Panel nelze minimalizovat, je ve standardní velikosti</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Panel nelze minimalizovat, je ve standardní velikosti.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="IsExpanded">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Panel je zobrazen ve standardní velikosti, ale uživatel jej může interaktivně minimalizovat = přejde do stavu IsCollapsed</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Panel je zobrazen ve standardní velikosti, ale uživatel jej může interaktivně minimalizovat = přejde do stavu IsCollapsed.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="IsCollapsed">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Panel je zobrazen jako minimalizovaný, ale uživatel jej může interaktivně rozbalit do standardní velikosti = přejde do stavu IsExpanded</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Panel je zobrazen jako minimalizovaný, ale uživatel jej může interaktivně rozbalit do standardní velikosti = přejde do stavu IsExpanded.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
         </xs:restriction>
@@ -994,32 +999,32 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="Default">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Běžná nepovinná hodnota</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Běžná nepovinná hodnota.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="None">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Neurčeno</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Neurčeno.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="Important">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Důležitá hodnota, ale nepovinná (Warning)</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Důležitá hodnota, ale nepovinná (Warning).</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="Required">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Povinná hodnota (Error)</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Povinná hodnota (Error).</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="False">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Běžná nepovinná hodnota, zpětná kompatibilita</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Běžná nepovinná hodnota, zpětná kompatibilita.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="True">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Povinná hodnota (Error), zpětná kompatibilita</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Povinná hodnota (Error), zpětná kompatibilita.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
         </xs:restriction>
@@ -1072,148 +1077,148 @@
         <xs:union memberTypes="xs:string">
             <xs:simpleType>
                 <xs:restriction base="xs:string">
-                    <xs:enumeration value="#B0B0E0"><xs:annotation><xs:documentation xml:lang="cs-cz">Zadejte barvu v RGB</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="AliceBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F0F8FF</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="AntiqueWhite"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FAEBD7</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Aqua"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #00FFFF</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Aquamarine"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #7FFFD4</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Azure"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F0FFFF</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Beige"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F5F5DC</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Bisque"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFE4C4</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Black"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #000000</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="BlanchedAlmond"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFEBCD</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Blue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #0000FF</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="BlueViolet"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #8A2BE2</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Brown"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #A52A2A</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="BurlyWood"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #DEB887</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="CadetBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #5F9EA0</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Coral"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FF7F50</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="CornflowerBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #6495ED</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Cornsilk"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFF8DC</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Crimson"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #DC143C</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Cyan"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #00FFFF</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DarkBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #00008B</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DarkCyan"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #008B8B</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DarkGoldenrod"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #B8860B</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DarkGray"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #A9A9A9</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DarkGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #006400</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DarkKhaki"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #BDB76B</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DarkMagenta"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #8B008B</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DarkOliveGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #556B2F</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DarkOrange"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FF8C00</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DarkOrchid"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #9932CC</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DarkRed"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #8B0000</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DarkSalmon"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #E9967A</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DarkSeaGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #8FBC8B</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DarkSlateBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #483D8B</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DarkSlateGray"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #2F4F4F</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DarkTurquoise"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #00CED1</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DarkViolet"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #9400D3</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DeepPink"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FF1493</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DeepSkyBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #00BFFF</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DimGray"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #696969</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="DodgerBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #1E90FF</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Firebrick"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #B22222</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="FloralWhite"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFFAF0</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="ForestGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #228B22</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Fuchsia"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FF00FF</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Gainsboro"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #DCDCDC</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="GhostWhite"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F8F8FF</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Gold"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFD700</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Goldenrod"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #DAA520</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Gray"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #808080</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Green"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #008000</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="GreenYellow"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #ADFF2F</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Honeydew"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F0FFF0</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="HotPink"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FF69B4</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Chartreuse"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #7FFF00</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Chocolate"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #D2691E</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="IndianRed"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #CD5C5C</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Indigo"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #4B0082</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Ivory"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFFFF0</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Khaki"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F0E68C</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Lavender"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #E6E6FA</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="LavenderBlush"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFF0F5</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="LawnGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #7CFC00</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="LemonChiffon"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFFACD</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="LightBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #ADD8E6</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="LightCoral"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F08080</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="LightCyan"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #E0FFFF</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="LightGoldenrodYellow"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FAFAD2</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="LightGray"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #D3D3D3</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="LightGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #90EE90</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="LightPink"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFB6C1</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="LightSalmon"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFA07A</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="LightSeaGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #20B2AA</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="LightSkyBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #87CEFA</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="LightSlateGray"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #778899</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="LightSteelBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #B0C4DE</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="LightYellow"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFFFE0</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Lime"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #00FF00</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="LimeGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #32CD32</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Linen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FAF0E6</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Magenta"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FF00FF</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Maroon"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #800000</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="MediumAquamarine"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #66CDAA</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="MediumBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #0000CD</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="MediumOrchid"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #BA55D3</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="MediumPurple"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #9370DB</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="MediumSeaGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #3CB371</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="MediumSlateBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #7B68EE</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="MediumSpringGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #00FA9A</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="MediumTurquoise"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #48D1CC</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="MediumVioletRed"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #C71585</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="MidnightBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #191970</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="MintCream"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F5FFFA</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="MistyRose"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFE4E1</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Moccasin"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFE4B5</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="NavajoWhite"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFDEAD</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Navy"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #000080</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="OldLace"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FDF5E6</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Olive"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #808000</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="OliveDrab"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #6B8E23</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Orange"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFA500</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="OrangeRed"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FF4500</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Orchid"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #DA70D6</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="PaleGoldenrod"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #EEE8AA</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="PaleGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #98FB98</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="PaleTurquoise"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #AFEEEE</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="PaleVioletRed"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #DB7093</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="PapayaWhip"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFEFD5</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="PeachPuff"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFDAB9</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Peru"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #CD853F</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Pink"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFC0CB</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Plum"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #DDA0DD</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="PowderBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #B0E0E6</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Purple"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #800080</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Red"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FF0000</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="RosyBrown"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #BC8F8F</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="RoyalBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #4169E1</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="SaddleBrown"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #8B4513</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Salmon"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FA8072</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="SandyBrown"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F4A460</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="SeaGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #2E8B57</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="SeaShell"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFF5EE</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Sienna"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #A0522D</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Silver"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #C0C0C0</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="SkyBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #87CEEB</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="SlateBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #6A5ACD</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="SlateGray"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #708090</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Snow"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFFAFA</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="SpringGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #00FF7F</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="SteelBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #4682B4</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Tan"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #D2B48C</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Teal"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #008080</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Thistle"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #D8BFD8</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Tomato"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FF6347</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Transparent"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFFFFF</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Turquoise"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #40E0D0</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Violet"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #EE82EE</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Wheat"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F5DEB3</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="White"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFFFFF</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="WhiteSmoke"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F5F5F5</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="Yellow"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFFF00</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="YellowGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #9ACD32</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="#B0B0E0"><xs:annotation><xs:documentation xml:lang="cs-cz">Zadejte barvu v RGB.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="AliceBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F0F8FF.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="AntiqueWhite"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FAEBD7.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Aqua"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #00FFFF.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Aquamarine"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #7FFFD4.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Azure"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F0FFFF.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Beige"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F5F5DC.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Bisque"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFE4C4.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Black"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #000000.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="BlanchedAlmond"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFEBCD.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Blue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #0000FF.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="BlueViolet"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #8A2BE2.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Brown"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #A52A2A.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="BurlyWood"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #DEB887.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="CadetBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #5F9EA0.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Coral"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FF7F50.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="CornflowerBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #6495ED.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Cornsilk"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFF8DC.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Crimson"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #DC143C.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Cyan"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #00FFFF.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DarkBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #00008B.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DarkCyan"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #008B8B.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DarkGoldenrod"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #B8860B.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DarkGray"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #A9A9A9.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DarkGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #006400.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DarkKhaki"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #BDB76B.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DarkMagenta"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #8B008B.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DarkOliveGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #556B2F.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DarkOrange"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FF8C00.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DarkOrchid"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #9932CC.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DarkRed"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #8B0000.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DarkSalmon"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #E9967A.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DarkSeaGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #8FBC8B.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DarkSlateBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #483D8B.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DarkSlateGray"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #2F4F4F.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DarkTurquoise"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #00CED1.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DarkViolet"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #9400D3.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DeepPink"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FF1493.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DeepSkyBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #00BFFF.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DimGray"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #696969.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="DodgerBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #1E90FF.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Firebrick"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #B22222.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="FloralWhite"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFFAF0.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="ForestGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #228B22.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Fuchsia"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FF00FF.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Gainsboro"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #DCDCDC.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="GhostWhite"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F8F8FF.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Gold"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFD700.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Goldenrod"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #DAA520.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Gray"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #808080.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Green"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #008000.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="GreenYellow"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #ADFF2F.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Honeydew"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F0FFF0.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="HotPink"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FF69B4.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Chartreuse"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #7FFF00.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Chocolate"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #D2691E.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="IndianRed"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #CD5C5C.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Indigo"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #4B0082.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Ivory"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFFFF0.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Khaki"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F0E68C.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Lavender"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #E6E6FA.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="LavenderBlush"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFF0F5.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="LawnGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #7CFC00.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="LemonChiffon"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFFACD.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="LightBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #ADD8E6.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="LightCoral"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F08080.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="LightCyan"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #E0FFFF.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="LightGoldenrodYellow"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FAFAD2.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="LightGray"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #D3D3D3.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="LightGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #90EE90.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="LightPink"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFB6C1.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="LightSalmon"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFA07A.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="LightSeaGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #20B2AA.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="LightSkyBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #87CEFA.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="LightSlateGray"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #778899.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="LightSteelBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #B0C4DE.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="LightYellow"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFFFE0.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Lime"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #00FF00.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="LimeGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #32CD32.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Linen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FAF0E6.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Magenta"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FF00FF.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Maroon"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #800000.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="MediumAquamarine"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #66CDAA.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="MediumBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #0000CD.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="MediumOrchid"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #BA55D3.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="MediumPurple"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #9370DB.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="MediumSeaGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #3CB371.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="MediumSlateBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #7B68EE.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="MediumSpringGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #00FA9A.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="MediumTurquoise"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #48D1CC.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="MediumVioletRed"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #C71585.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="MidnightBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #191970.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="MintCream"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F5FFFA.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="MistyRose"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFE4E1.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Moccasin"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFE4B5.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="NavajoWhite"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFDEAD.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Navy"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #000080.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="OldLace"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FDF5E6.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Olive"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #808000.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="OliveDrab"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #6B8E23.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Orange"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFA500.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="OrangeRed"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FF4500.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Orchid"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #DA70D6.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="PaleGoldenrod"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #EEE8AA.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="PaleGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #98FB98.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="PaleTurquoise"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #AFEEEE.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="PaleVioletRed"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #DB7093.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="PapayaWhip"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFEFD5.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="PeachPuff"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFDAB9.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Peru"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #CD853F.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Pink"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFC0CB.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Plum"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #DDA0DD.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="PowderBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #B0E0E6.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Purple"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #800080.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Red"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FF0000.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="RosyBrown"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #BC8F8F.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="RoyalBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #4169E1.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="SaddleBrown"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #8B4513.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Salmon"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FA8072.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="SandyBrown"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F4A460.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="SeaGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #2E8B57.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="SeaShell"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFF5EE.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Sienna"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #A0522D.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Silver"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #C0C0C0.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="SkyBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #87CEEB.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="SlateBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #6A5ACD.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="SlateGray"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #708090.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Snow"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFFAFA.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="SpringGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #00FF7F.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="SteelBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #4682B4.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Tan"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #D2B48C.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Teal"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #008080.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Thistle"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #D8BFD8.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Tomato"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FF6347.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Transparent"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFFFFF.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Turquoise"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #40E0D0.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Violet"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #EE82EE.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Wheat"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F5DEB3.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="White"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFFFFF.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="WhiteSmoke"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F5F5F5.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="Yellow"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FFFF00.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="YellowGreen"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #9ACD32.</xs:documentation></xs:annotation></xs:enumeration>
                 </xs:restriction>
             </xs:simpleType>
         </xs:union>

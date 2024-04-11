@@ -4496,8 +4496,58 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// StatusBar : Button
     /// </summary>
-    public class DxBarButtonItem : DevExpress.XtraBars.BarButtonItem
+    public class DxBarButtonItem : DevExpress.XtraBars.BarButtonItem, IBarItemCustomDrawing
     {
+        #region Konstruktory a Draw
+        public DxBarButtonItem() : base()
+        {
+            _Init();
+        }
+        public DxBarButtonItem(DevExpress.XtraBars.BarManager manager, string caption) : base(manager, caption)
+        {
+            _Init();
+        }
+        public DxBarButtonItem(DevExpress.XtraBars.BarManager manager, string caption, int imageIndex) : base(manager, caption, imageIndex)
+        {
+            _Init();
+        }
+        public DxBarButtonItem(DevExpress.XtraBars.BarManager manager, string caption, int imageIndex, DevExpress.XtraBars.BarShortcut shortcut) : base(manager, caption, imageIndex, shortcut)
+        {
+            _Init();
+        }
+        private void _Init()
+        {
+        }
+
+        void IBarItemCustomDrawing.CustomDraw(DevExpress.XtraBars.BarItemCustomDrawEventArgs e)
+        {
+            e.Draw();
+            if (this.Border != DevExpress.XtraEditors.Controls.BorderStyles.NoBorder)
+            {
+                var bounds = e.Bounds;
+                bounds.Width -= 1;
+                bounds.Height -= 1;
+
+
+
+
+                var ee = new StyleObjectInfoArgs(e.Cache, e.Bounds, this.ItemAppearance.Normal, ObjectState.Normal);
+                DevExpress.LookAndFeel.LookAndFeelPainterHelper.GetPainter(DevExpress.LookAndFeel.ActiveLookAndFeelStyle.Style3D).Button.DrawObject(ee);
+
+                e.Draw();
+
+
+                // DevExpress.LookAndFeel.LookAndFeelPainterHelper.GetPainter(DevExpress.LookAndFeel.ActiveLookAndFeelStyle.Style3D).Border.DrawObject(ee);
+
+
+
+                //  var pen = DxComponent.PaintGetPen(Color.FromArgb(160, 160, 190));
+                //  e.Graphics.DrawRectangle(pen, bounds);
+            }
+            e.Handled = true;
+        }
+
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -4532,6 +4582,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="defaultTitle"></param>
         public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
+    }
+
+    public interface IBarItemCustomDrawing
+    {
+        void CustomDraw(DevExpress.XtraBars.BarItemCustomDrawEventArgs e);
     }
     #endregion
     #region DxImagePickerListBox

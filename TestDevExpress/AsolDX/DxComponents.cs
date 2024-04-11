@@ -16,12 +16,17 @@ using System.Drawing;
 
 using DevExpress.Utils;
 using System.Drawing.Drawing2D;
+using DevExpress.Pdf.Native;
+using DevExpress.XtraPdfViewer;
 using DevExpress.XtraEditors;
+using DevExpress.XtraRichEdit.Layout;
 using WSXmlSerializer = Noris.WS.Parser.XmlSerializer;
+using System.Diagnostics;
 using DevExpress.Utils.Svg;
 using DevExpress.Utils.Design;
 using System.Globalization;
-using DevExpress.Drawing.Internal;
+using DevExpress.Utils.Filtering.Internal;
+using System.Diagnostics.Eventing.Reader;
 
 // using BAR = DevExpress.XtraBars;
 // using EDI = DevExpress.XtraEditors;
@@ -2679,6 +2684,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="text"></param>
         /// <param name="width"></param>
         /// <param name="height"></param>
+        /// <param name="borderStyles"></param>
         /// <param name="toolTipTitle"></param>
         /// <param name="toolTipText"></param>
         /// <param name="visible"></param>
@@ -2687,12 +2693,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static DxBarButtonItem CreateDxStatusButton(DevExpress.XtraBars.Ribbon.RibbonStatusBar statusBar = null, string text = null,
             int? width = null, int? height = null,
+            DevExpress.XtraEditors.Controls.BorderStyles? borderStyles = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, int? fontSizeDelta = null,
             DevExpress.XtraBars.ItemClickEventHandler clickHandler = null)
         {
             DxBarButtonItem button = new DxBarButtonItem();
+            button.ButtonStyle = DevExpress.XtraBars.BarButtonStyle.Default;
             if (text != null) button.Caption = text;
+            if (borderStyles.HasValue) button.Border = borderStyles.Value;
             button.SetToolTip(toolTipTitle, toolTipText, text);
             if (visible.HasValue) button.Visibility = (visible.Value ? DevExpress.XtraBars.BarItemVisibility.Always : DevExpress.XtraBars.BarItemVisibility.Never);
             if (fontSizeDelta.HasValue)
@@ -2714,6 +2723,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="text"></param>
         /// <param name="width"></param>
         /// <param name="height"></param>
+        /// <param name="borderStyles"></param>
         /// <param name="toolTipTitle"></param>
         /// <param name="toolTipText"></param>
         /// <param name="visible"></param>
@@ -2722,12 +2732,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static DxBarCheckItem CreateDxStatusCheckButton(DevExpress.XtraBars.Ribbon.RibbonStatusBar statusBar = null, string text = null,
             int? width = null, int? height = null,
+            DevExpress.XtraEditors.Controls.BorderStyles? borderStyles = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, int? fontSizeDelta = null,
             DevExpress.XtraBars.ItemClickEventHandler clickHandler = null)
         {
             DxBarCheckItem checkButton = new DxBarCheckItem();
             if (text != null) checkButton.Caption = text;
+            if (borderStyles.HasValue) checkButton.Border = borderStyles.Value;
             checkButton.SetToolTip(toolTipTitle, toolTipText, text);
             if (visible.HasValue) checkButton.Visibility = (visible.Value ? DevExpress.XtraBars.BarItemVisibility.Always : DevExpress.XtraBars.BarItemVisibility.Never);
             if (fontSizeDelta.HasValue)
@@ -4947,7 +4959,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="color"></param>
         /// <param name="alpha"></param>
         /// <returns></returns>
-        public static SolidBrush PaintGetSolidBrush(Color color, int? alpha) { return Instance._GetSolidBrush(color, alpha); }
+        public static SolidBrush PaintGetSolidBrush(Color color, int alpha) { return Instance._GetSolidBrush(Color.FromArgb(alpha, color)); }
         /// <summary>
         /// Okamžitě vrací Pen pro kreslení danou barvou. 
         /// Vrácený objekt Nesmí být Disposován!
@@ -4963,7 +4975,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="color"></param>
         /// <param name="alpha"></param>
         /// <returns></returns>
-        public static Pen PaintGetPen(Color color, int? alpha) { return Instance._GetPen(color, alpha); }
+        public static Pen PaintGetPen(Color color, int alpha) { return Instance._GetPen(Color.FromArgb(alpha, color)); }
         /// <summary>
         /// Okamžitě vrací SolidBrush dané barvy.
         /// Vrácený objekt Nesmí být Disposován!
@@ -6214,7 +6226,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        [Obsolete("Lepší bude metoda DxComponent.ConvertBool() se stejným významem", false)]
+        [Obsolete("Lepší bude metoda DxComponent.ConvertBool() se stejným významem", true)]
         public static DefaultBoolean Convert(bool? value)
         {
             return (value.HasValue ? (value.Value ? DefaultBoolean.True : DefaultBoolean.False) : DefaultBoolean.Default);
@@ -6224,7 +6236,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        [Obsolete("Lepší bude metoda DxComponent.ConvertBool() se stejným významem", false)]
+        [Obsolete("Lepší bude metoda DxComponent.ConvertBool() se stejným významem", true)]
         public static bool? Convert(DefaultBoolean value)
         {
             return (value == DefaultBoolean.True ? (bool?)true :
@@ -8151,6 +8163,9 @@ White
         [DefaultMessageText("Systémový prvek, nelze jej odebrat")]
         RibbonDirectQatItem,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Tento prvek není možno přidat na panel nástrojů Rychlý přístup")]
+        RibbonDisabledForQatItem,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Přidat na panel nástrojů Rychlý přístup")]
         RibbonAddToQat,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
@@ -8197,7 +8212,7 @@ White
         [DefaultMessageText("Došlo k chybě")]
         DialogFormTitlePrefix,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Ctrl+C: zkopírovat")]
+        [DefaultMessageText("Zkopírovat  [Ctrl+C]")]
         DialogFormCtrlCText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ctrl+C: zkopíruje všechny informace z okna do schránky Windows")]
@@ -8464,7 +8479,23 @@ White
         ApplicationName,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Obsah buňky ze sloupce «%0» vložen do schránky.")]
-        CopyBrowseCell
+        CopyBrowseCell,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Rok může být pouze číslo v rozmezí od 1753 do 9999.")]
+        TxtCalendarYearOutOfRange,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Zadané datum od je větší než datum do.")]
+        TxtCalendarStartDateIsHigherThanEndDate,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Nesprávně zadané datum.")]
+        TxtCalendarDateNotValid,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Zadané hodnota od je větší než hodnota do.")]
+        TxtNumberFirstNumberIsHigherThanSecond,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Nesprávně zadané číslo.")]
+        TxtNumberValueNotValid
+
 
 
         // Nové kódy přidej do Messages.xml v klientu!!!     Do AdapterTest.cs není nutno, tam se načítá hodnota atributu DefaultMessageText() !

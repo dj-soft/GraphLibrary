@@ -582,7 +582,7 @@ namespace TestDevExpress.Forms
                 var dxInfo = DxDForm.DfTemplateLoader.LoadInfoFromFile(fileFrmXml, out var xDocument, true);
                 if (dxInfo.FormatVersion == FormatVersionType.Version4)
                 {
-                    var dfForm = DxDForm.DfTemplateLoader.LoadFromDocument(xDocument, loadNested, true);
+                    var dfForm = DxDForm.DfTemplateLoader.LoadFromDocument(xDocument, loadNested, true, fileFrmXml);
                     _ApplyDfForm(dfForm);
                 }
                 else

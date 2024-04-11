@@ -29,7 +29,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         internal static DfForm LoadFromFile(string fileName, Func<string, string> nestedLoader = null, bool logTime = false)
         {
-            LoaderContext loaderContext = new LoaderContext() { NestedLoader = nestedLoader };
+            LoaderContext loaderContext = new LoaderContext() { NestedLoader = nestedLoader, FileName = fileName };
             string name = System.IO.Path.GetFileName(fileName);
 
             var startTime1 = DxComponent.LogTimeCurrent;
@@ -52,10 +52,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="content"></param>
         /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména</param>
         /// <param name="logTime">Logovat časy?</param>
+        /// <param name="fileName">Jméno souboru, pouze do atributu <see cref="DfForm.FileName"/></param>
         /// <returns></returns>
-        internal static DfForm LoadFromContent(string content, Func<string, string> nestedLoader = null, bool logTime = false)
+        internal static DfForm LoadFromContent(string content, Func<string, string> nestedLoader = null, bool logTime = false, string fileName = null)
         {
-            LoaderContext loaderContext = new LoaderContext() { NestedLoader = nestedLoader };
+            LoaderContext loaderContext = new LoaderContext() { NestedLoader = nestedLoader, FileName = fileName };
 
             var startTime2 = DxComponent.LogTimeCurrent;
             var xDocument = System.Xml.Linq.XDocument.Parse(content);
@@ -73,10 +74,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xDocument"></param>
         /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména</param>
         /// <param name="logTime">Logovat časy?</param>
+        /// <param name="fileName">Jméno souboru, pouze do atributu <see cref="DfForm.FileName"/></param>
         /// <returns></returns>
-        internal static DfForm LoadFromDocument(System.Xml.Linq.XDocument xDocument, Func<string, string> nestedLoader = null, bool logTime = false)
+        internal static DfForm LoadFromDocument(System.Xml.Linq.XDocument xDocument, Func<string, string> nestedLoader = null, bool logTime = false, string fileName = null)
         {
-            LoaderContext loaderContext = new LoaderContext() { NestedLoader = nestedLoader };
+            LoaderContext loaderContext = new LoaderContext() { NestedLoader = nestedLoader, FileName = fileName };
 
             var startTime3 = DxComponent.LogTimeCurrent;
             var form = _LoadFromDocument(xDocument, loaderContext);
@@ -104,7 +106,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         internal static DfInfoForm LoadInfoFromFile(string fileName, out System.Xml.Linq.XDocument xDocument, bool logTime = false)
         {
-            LoaderContext loaderContext = new LoaderContext() { IsLoadOnlyDocumentAttributes = true };
+            LoaderContext loaderContext = new LoaderContext() { IsLoadOnlyDocumentAttributes = true, FileName = fileName };
             string name = System.IO.Path.GetFileName(fileName);
 
             var startTime1 = DxComponent.LogTimeCurrent;
@@ -126,21 +128,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="content"></param>
         /// <param name="logTime">Logovat časy?</param>
+        /// <param name="fileName">Jméno souboru, pouze do atributu <see cref="DfForm.FileName"/></param>
         /// <returns></returns>
-        internal static DfInfoForm LoadInfoFromContent(string content, bool logTime = false)
+        internal static DfInfoForm LoadInfoFromContent(string content, bool logTime = false, string fileName = null)
         {
-            return LoadInfoFromFile(content, out var _, logTime);
+            return LoadInfoFromContent(content, out var _, logTime, fileName);
         }
         /// <summary>
         /// Načte a vrátí <see cref="DfInfoForm"/> ze zadané XML definice (=typicky obsah souboru)
         /// </summary>
         /// <param name="content"></param>
-        /// <param name="xDocument"></param>
+        /// <param name="xDocument">Out načtený dokument, usnadní budoucí načítání plného <see cref="DfForm"/> v metodě <see cref="LoadFromDocument(System.Xml.Linq.XDocument, Func{string, string}, bool, string)"/></param>
         /// <param name="logTime">Logovat časy?</param>
+        /// <param name="fileName">Jméno souboru, pouze do atributu <see cref="DfForm.FileName"/></param>
         /// <returns></returns>
-        internal static DfInfoForm LoadInfoFromContent(string content, out System.Xml.Linq.XDocument xDocument, bool logTime = false)
+        internal static DfInfoForm LoadInfoFromContent(string content, out System.Xml.Linq.XDocument xDocument, bool logTime = false, string fileName = null)
         {
-            LoaderContext loaderContext = new LoaderContext() { IsLoadOnlyDocumentAttributes = true };
+            LoaderContext loaderContext = new LoaderContext() { IsLoadOnlyDocumentAttributes = true, FileName = fileName };
 
             var startTime2 = DxComponent.LogTimeCurrent;
             xDocument = System.Xml.Linq.XDocument.Parse(content);
@@ -157,10 +161,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xDocument"></param>
         /// <param name="logTime">Logovat časy?</param>
+        /// <param name="fileName">Jméno souboru, pouze do atributu <see cref="DfForm.FileName"/></param>
         /// <returns></returns>
-        internal static DfInfoForm LoadInfoFromDocument(System.Xml.Linq.XDocument xDocument, bool logTime = false)
+        internal static DfInfoForm LoadInfoFromDocument(System.Xml.Linq.XDocument xDocument, bool logTime = false, string fileName = null)
         {
-            LoaderContext loaderContext = new LoaderContext() { IsLoadOnlyDocumentAttributes = true };
+            LoaderContext loaderContext = new LoaderContext() { IsLoadOnlyDocumentAttributes = true, FileName = fileName };
 
             var startTime3 = DxComponent.LogTimeCurrent;
             var form = _LoadFromDocument(xDocument, loaderContext);
@@ -210,6 +215,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             // Rychlá odbočka?
             if (loaderContext.IsLoadOnlyDocumentAttributes) return control;
+
+            // FileName (a Name, pokud není explicitně načteno) podle jména souboru:
+            control.FileName = loaderContext.FileName;
+            if (control.Name is null) control.Name = System.IO.Path.GetFileNameWithoutExtension(loaderContext.FileName ?? "");
 
             // Full Load:
             control.MasterWidth = _ReadAttributeInt32N(xElement, "MasterWidth");
@@ -970,6 +979,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Funkce, která vrátí stringový obsah nested šablony daného jména
             /// </summary>
             public Func<string, string> NestedLoader { get; set; }
+            /// <summary>
+            /// Jméno vstupního souboru
+            /// </summary>
+            public string FileName { get; set; }
             /// <summary>
             /// Máme načíst pouze atributy dokumentu, pro detekci jeho hlavičky (<see cref="DfForm.XmlNamespace"/> a <see cref="DfForm.FormatVersion"/>)
             /// </summary>

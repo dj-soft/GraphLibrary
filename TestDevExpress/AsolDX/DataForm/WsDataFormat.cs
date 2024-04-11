@@ -130,6 +130,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public override ContainerStyleType Style { get { return ContainerStyleType.Form; } }
         /// <summary>
+        /// Název souboru, který je načten
+        /// </summary>
+        public string FileName { get; set; }
+        /// <summary>
         /// Namespace XML dokumentu
         /// </summary>
         public string XmlNamespace { get; set; }
@@ -223,7 +227,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Debug text
         /// </summary>
-        protected override string DebugText { get { return $"{Style} '{Name}'; Panels: {(Panels is null ? "NULL" : Panels.Count.ToString())}"; } }
+        protected override string DebugText { get { return $"{Style} '{Name}'; Title: '{Title}'; Panels: {(Panels is null ? "NULL" : Panels.Count.ToString())}"; } }
     }
     /// <summary>
     /// Panel, může obsahovat jednotlivé controly i vnořené containery.
@@ -298,7 +302,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Debug text
         /// </summary>
-        protected override string DebugText { get { return $"{Style} '{Name}'; Childs: {(Childs is null ? "NULL" : Childs.Count.ToString())}"; } }
+        protected override string DebugText { get { return $"{Style} '{Name}'; Title: '{Title}'; Childs: {(Childs is null ? "NULL" : Childs.Count.ToString())}"; } }
     }
     /// <summary>
     /// Základní třída pro containery.<br/>
@@ -710,6 +714,12 @@ namespace Noris.WS.DataContracts.DxForm
         /// Povinnost vyplnění prvku
         /// </summary>
         public RequiredType Required { get; set; }
+        /// <summary>
+        /// Explicitně zadaný název sloupce (datového prvku), jehož data tento prvek zobrazuje. 
+        /// Běžně se nemusí zadávat, implicitně se data čtou a ukládají z/do datového sloupce se jménem podle atributu 'Name'. 
+        /// Pokud ale je třeba jeden atribut/vztah zobrazit na více místech formuláře, pak se pro tyto různé controly zadá různé 'Name' (musí být unikátní), a použije se pro ně shodné 'ColumnName'.
+        /// </summary>
+        public string ColumnName { get; set; }
     }
     /// <summary>
     /// Bázová třída pro všechny samostatné controly bez ohledu na jejich vlastní interaktivitu - tedy Label, Picture, Panel; a dále i pro interaktivní controly: TextBox, Button, CheckBox, ComboBox, ...
@@ -757,6 +767,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// Klíčové jméno prvku pro jeho jednoznačnou identifikaci.
         /// Odstavce a prvky musí mít <see cref="Name"/> jednoznačné přes celý formulář = přes všechny záložky.
         /// Subprvky (=položky editačního stylu) a subbuttony (tlačítka v <see cref="ControlType.TextBoxButton"/>) mají <see cref="Name"/> jednoznačné jen v rámci svého prvku.
+        /// Pokud více controlů má zobrazovat data jednoho datového sloupce, použije se atribut <see cref="DfBaseInputControl.ColumnName"/>.
         /// </summary>
         public string Name { get; set; }
         /// <summary>

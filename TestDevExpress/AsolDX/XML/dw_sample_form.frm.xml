@@ -5,19 +5,15 @@
           Messages="dw_common_messages.msg.xml"
           DataSource="dw_sample_form.data.xml"
           MasterWidth="530" MasterHeight="320"
-          TotalWidth="750" TotalHeight="520"  >
+          TotalWidth="750" TotalHeight="520"
+		  AutoLabelPosition="Up">
 
 	<panel Name="Pokus1" >
 		<button Name="ButtonOpen" ActionType="Click" Bounds="10,200,150,35" Text="Otevři !!!"  />
-		
-		
-	
 	</panel>
 
-
-	<panelset Name="">
+	<page Name="" Title="Záhlaví" >
 	    <panel Name="ggg" Title="Záložka A" ToolTipText="">
-			
 			<panel>
 				<label Name="" Bounds="" Invisible=""/>
 				<textbox Name="karta_refer" LabelPosition="BeforeRight" Label="fm(MSG1002)" />
@@ -27,24 +23,14 @@
 				<label/>
 				<panel Name="odstavec" ></panel>
 			</panel>
-			
+			<button Name=""/>
 		</panel>
-	</panelset>
-
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+		<panel CollapseState="Default" >
+			<textbox Bounds=""/>
+			<button Name="OpenUrl" Text="Otevři stránku"  />
+			<checkbox Name="checkbox" Bounds="200,20,200" Text="Povolený" />
+		</panel>
+	</page>
 	
     <panel Name="Panel1" Margins="12,6" BackColorName="Orange_front_protect" BackColorDark="LightBlue" CollapseState="IsExpanded" >
         <label Name="info1_lbl" Bounds="14,2,150" Text="Popisek" ToolTipTitle="Nápověda" ToolTipText="Informace k tomuto prvku neexistuje" />
@@ -65,7 +51,7 @@
 
         <button Name="butOpen" HotKey="F8" Bounds="2,50,120,35" Text="Otevři..." ActionType="RunFunction" ActionData="Realizuj" ToolTipTitle="Otevřít dveře" ToolTipText="Přistoupit ku dveřím, stiskem kliky uvolnit a pak tahem otevřít..."/>
 
-        <textbox Name="c45678" Bounds="120,75,180" LabelPosition="BeforeRight" Label="Popisek"/>
+        <textbox Name="c45678" Bounds="120,75,180" LabelPosition="BeforeRight" Label="Popisek" />
 
         <textboxbutton Name="tbb123" Bounds="120,100,180" LabelPosition="BeforeRight" Label="Volba:">
             <rightButton Name="tbbr1" ActionType="Click" />
@@ -76,15 +62,20 @@
         </panel>
     </panel>
 
-    <panelset Name="aaaa">
+	<panel Name="t02" >
+		<textbox Name="adress_street" LabelPosition="Up" LabelWidth="120" Bounds="40,20,160" />
+		
+	</panel>
+    <page Name="aaaa">
 		<panel Name="page01" Title="Základní" IconName="pic/image">
             
         </panel>
 		<panel Name="page02" Title="Nastavení">
             <label Name="Pocet01l" Text="Počet kusů:" Alignment="MiddleRight" Bounds="10,2,120"/>
             <textbox Name="Pocet01" Bounds="135,2,120" Required="True"/>
+			<textbox Name="karta_refer2" ColumnName="karta_refer" LabelPosition="BeforeRight" Label="fm(MSG1002)" State="ReadOnly" />
         </panel>
-    </panelset>
+    </page>
 	
     <panel Name="vvvv" BackColorName="User_12" BackColorLight="">
         <label Name="t3"/>

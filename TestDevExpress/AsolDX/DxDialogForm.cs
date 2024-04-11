@@ -344,26 +344,26 @@ namespace Noris.Clients.Win.Components
             var args = _DialogArgs;
             string copyOk = args.StatusBarCtrlCInfo;
             bool showCopyOk = _StatusBar.Visible && !String.IsNullOrEmpty(copyOk);
+            StringBuilder sb = (asImage ? null : new StringBuilder());
 
             if (!asImage)
             {   // Text
-                StringBuilder sb = new StringBuilder();
                 if (!String.IsNullOrEmpty(args.Title))
                 {
                     sb.AppendLine(args.Title);
                     sb.AppendLine("".PadRight(args.Title.Length, '='));
                 }
-                string text = CurrentMessageText;
-                if (CurrentMessageTextContainsHtml)
-                    text = ConvertFormat.HtmlToText(text, true);
-                sb.AppendLine(text);
 
+                addText(args.MessageText, args.MessageTextContainsHtml);
+                addText(args.AltMessageText, args.AltMessageTextContainsHtml);
+
+                sb.AppendLine();
                 string buttonsLine = "";
                 string buttonsText = "";
                 string space = "    ";
                 foreach (var button in args.Buttons)
                 {
-                    string buttonText = button.Text ?? "";
+                    string buttonText = (button.Text ?? "").Replace("&", "");
                     int length = buttonText.Length + 4;
                     buttonsLine += "".PadRight(length, '-') + space;
                     buttonsText += "[ " + buttonText + " ]" + space;
@@ -387,6 +387,18 @@ namespace Noris.Clients.Win.Components
                     if (showCopyOk) ShowStatus2(copyOk);
                 }
                 catch { }
+            }
+
+            // Přidá daný text...
+            void addText(string text, bool containsHtml)
+            {
+                if (!String.IsNullOrEmpty(text))
+                {
+                    sb.AppendLine();
+                    if (containsHtml)
+                        text = ConvertFormat.HtmlToText(text, true);
+                    sb.AppendLine(text);
+                }
             }
         }
         private void InputControl_MouseEnter(object sender, EventArgs e)
@@ -550,6 +562,10 @@ namespace Noris.Clients.Win.Components
         /// Výsledná hodnota dialogu
         /// </summary>
         public object DialogFormResult { get; private set; }
+        /// <summary>
+        /// Obsahuje true, pokud this formulář se disposuje nebo již je disposován
+        /// </summary>
+        protected bool FormIsDisposed {get { return this.Disposing || this.IsDisposed; } }
         #endregion
         #region Vytváření Controlů podle argumentu
         /// <summary>
@@ -660,12 +676,21 @@ namespace Noris.Clients.Win.Components
 
             var ribbon = new DevExpress.XtraBars.Ribbon.RibbonControl();                 // Musí existovat
             var status = new DevExpress.XtraBars.Ribbon.RibbonStatusBar() { Dock = DockStyle.Bottom, Ribbon = ribbon, Name = "_StatusBar" };
+            ribbon.CustomDrawItem += _Ribbon_CustomDrawItem;
             status.Visible = this.StatusBarVisible;
             _StatusBar = status;
             this.Controls.Add(status);
 
             // expander:
         }
+
+        private void _Ribbon_CustomDrawItem(object sender, DevExpress.XtraBars.BarItemCustomDrawEventArgs e)
+        {
+            var bItem = e.RibbonItemInfo.Item;
+            if (bItem != null && bItem is DevExpress.XtraBars.BarItemLink itemLink && itemLink.Item is IBarItemCustomDrawing cdr)
+                cdr.CustomDraw(e);
+        }
+
         /// <summary>
         /// Vytvoří ikonu
         /// </summary>
@@ -895,7 +920,7 @@ namespace Noris.Clients.Win.Components
             if (String.IsNullOrEmpty(text)) text = DxComponent.Localize(textCode);
             if (String.IsNullOrEmpty(toolTipText)) toolTipText = DxComponent.Localize(toolTipCode);
 
-            return DxComponent.CreateDxStatusCheckButton(_StatusBar, text, width, height, null, toolTipText, true, fontSizeDelta, clickHandler);
+            return DxComponent.CreateDxStatusCheckButton(_StatusBar, text, width, height, args.StatusBarButtonsBorderStyles, null, toolTipText, true, fontSizeDelta, clickHandler);
         }
         /// <summary>
         /// Přidá Button do StatusBaru
@@ -915,7 +940,7 @@ namespace Noris.Clients.Win.Components
             if (String.IsNullOrEmpty(text)) text = DxComponent.Localize(textCode);
             if (String.IsNullOrEmpty(toolTipText)) toolTipText = DxComponent.Localize(toolTipCode);
 
-            return DxComponent.CreateDxStatusButton(_StatusBar, text, width, height, null, toolTipText, true, fontSizeDelta, clickHandler);
+            return DxComponent.CreateDxStatusButton(_StatusBar, text, width, height, args.StatusBarButtonsBorderStyles, null, toolTipText, true, fontSizeDelta, clickHandler);
         }
         /// <summary>
         /// Vrátí <see cref="Icon"/> pro danou standardní ikonu. Poznámka: tento Enum nepokrývá všechny Systémové ikony.
@@ -1282,7 +1307,7 @@ namespace Noris.Clients.Win.Components
         /// <returns></returns>
         private Size GetTextPreferredSize(Size proposedSize, int? addSize = null)
         {
-            if (_MessageLabel == null) return proposedSize;
+            if (this.FormIsDisposed || _MessageLabel == null) return proposedSize;
 
             Size preferredSize = Size.Empty;
 
@@ -1324,6 +1349,7 @@ namespace Noris.Clients.Win.Components
         private void RefreshLayout()
         {
             if (_StandardPanel == null) return;
+            if (this.FormIsDisposed) return;
 
             DialogArgs args = _DialogArgs;
             if (args is null) return;
@@ -1535,6 +1561,8 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         private void ApplyLayoutMessage()
         {
+            if (this.FormIsDisposed) return;
+
             Size clientSize = _MessagePanel.ClientSize;
 
             // Změříme, kolik prostoru potřebuje Label k zobrazení v dané šířce, natěsno:
@@ -1603,6 +1631,8 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         private void ApplyLayoutInput()
         {
+            if (this.FormIsDisposed) return;
+
             Size clientSize = _InputPanel.ClientSize;
             Size controlSize = InputControlSize;
             int x, y, w, h;
@@ -1630,6 +1660,8 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         private void ApplyLayoutButtons()
         {
+            if (this.FormIsDisposed) return;
+
             _ButtonsTotalWidth = null;
             _ButtonsTotalHeight = null;
             DialogArgs args = _DialogArgs;
@@ -2003,6 +2035,7 @@ namespace Noris.Clients.Win.Components
             UserZoomRatio = 1f;
             DialogZoomRatio = DialogForm.DefaultDialogZoomRatio;
             StatusBarVisible = false;
+            StatusBarButtonsBorderStyles = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;        // UltraFlat: nemá border;  Default: nemá a je nižší;  Office2003: nemá;   Simple: nemá;  Style3D
             StatusBarCtrlCVisible = false;
             StatusBarCtrlCText = DxComponent.Localize(MsgCode.DialogFormCtrlCText);
             StatusBarCtrlCTooltip = DxComponent.Localize(MsgCode.DialogFormCtrlCToolTip);
@@ -2109,7 +2142,7 @@ namespace Noris.Clients.Win.Components
         public bool StatusBarAltMsgButtonVisible { get { return (StdMessageTextExists && AltMessageTextExists); } }
         /// <summary>
         /// Message okno může obsahovat alternativní text (<see cref="AltMessageText"/>). Pro jeho zobrazení je připraveno tlačítko ve statusbaru vlevo (dole).
-        /// Jeho defaultní text je dán hláškou <see cref="DialogForm.MsgCode_AltMsgButtonText"/> (typicky "Zobraz detaily"). V této property je možno text změnit.
+        /// Jeho defaultní text je dán hláškou <see cref="MsgCode.DialogFormAltMsgButtonText"/> (typicky "Zobraz detaily"). V této property je možno text změnit.
         /// Zdejší text je přímo zobrazen, bez lokalizace.
         /// </summary>
         public string StatusBarAltMsgButtonText { get; set; }
@@ -2121,7 +2154,7 @@ namespace Noris.Clients.Win.Components
         /// Message okno může obsahovat alternativní text (<see cref="AltMessageText"/>). Pro jeho zobrazení je připraveno tlačítko ve statusbaru vlevo (dole).
         /// Tlačítko má ve výchozím stavu text dle <see cref="StatusBarAltMsgButtonText"/> (typicky "Zobraz detaily").
         /// Po zobrazení alternativního textu zprávy (typicky detaily) se text tlačítka změní na zdejší text, typicky "Skryj detaily".
-        /// Jeho defaultní text je dán hláškou <see cref="DialogForm.MsgCode_StdMsgButtonText"/>, v této property je možno text změnit.
+        /// Jeho defaultní text je dán hláškou <see cref="MsgCode.DialogFormStdMsgButtonText"/>, v této property je možno text změnit.
         /// Zdejší text je přímo zobrazen, bez lokalizace.
         /// </summary>
         public string StatusBarStdMsgButtonText { get; set; }
@@ -2191,6 +2224,11 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         public bool StatusBarVisible { get; set; }
         /// <summary>
+        /// Styl borderu pro StatusBar buttony.
+        /// Default = <see cref="DevExpress.XtraEditors.Controls.BorderStyles.qqq"/>
+        /// </summary>
+        public DevExpress.XtraEditors.Controls.BorderStyles? StatusBarButtonsBorderStyles { get; set; }
+        /// <summary>
         /// Viditelnost buttonu "Ctrl+C = Copy" ve Statusbaru.
         /// Pokud zde bude true, ale v textu <see cref="StatusBarCtrlCText"/> bude prázdný string, pak se text tlačítka získá lokalizací textu "CtrlCText".
         /// Default = false, aplikace musí o zobrazení požádat.
@@ -2198,14 +2236,14 @@ namespace Noris.Clients.Win.Components
         public bool StatusBarCtrlCVisible { get; set; }
         /// <summary>
         /// StatusBar může obsahovat button "Ctrl+C = Copy". Jeho akce je fixní: Clipboard.Copy.
-        /// Ve výchozím stavu obsahuje lokalizovanou hlášku dle <see cref="DialogForm.MsgCode_CtrlCText"/>.
+        /// Ve výchozím stavu obsahuje lokalizovanou hlášku dle <see cref="MsgCode.DialogFormCtrlCText"/>.
         /// Viditelnost tlačítka řídí výhradně <see cref="StatusBarCtrlCVisible"/>.
         /// Zdejší text je přímo zobrazen, bez lokalizace.
         /// </summary>
         public string StatusBarCtrlCText { get; set; }
         /// <summary>
         /// Tooltip k <see cref="StatusBarCtrlCText"/>. 
-        /// Ve výchozím stavu obsahuje lokalizovanou hlášku dle <see cref="DialogForm.MsgCode_CtrlCTooltip"/>.
+        /// Ve výchozím stavu obsahuje lokalizovanou hlášku dle <see cref="MsgCode.DialogFormCtrlCToolTip"/>.
         /// </summary>
         public string StatusBarCtrlCTooltip { get; set; }
         /// <summary>
