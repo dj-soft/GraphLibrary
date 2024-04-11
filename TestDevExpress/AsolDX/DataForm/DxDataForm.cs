@@ -525,7 +525,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     }
     #endregion
     #region Podpůrné datové třídy
-    #region Argumenty DataFormActionInfo pro událost DxDataForm.OnInteractiveAction()
+    #region Argumenty DataForm*Action*Info pro události na DataFormu
     /// <summary>
     /// Data pro akce typu Změna hodnoty s možností Cancel
     /// </summary>
