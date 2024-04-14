@@ -20,6 +20,7 @@ using DevExpress.XtraBars.Controls;
 using DevExpress.Utils.Drawing;
 using DevExpress.Utils.Text;
 using DevExpress.XtraTab;
+using DevExpress.XtraEditors.Controls;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -4518,13 +4519,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _Init()
         {
         }
+        public override BorderStyles Border 
+        {
+            get { return base.Border; }
+            set { base.Border = value; }
+        }
+
+
+
 
         void IBarItemCustomDrawing.CustomDraw(DevExpress.XtraBars.BarItemCustomDrawEventArgs e)
         {
+            if (this.Border == DevExpress.XtraEditors.Controls.BorderStyles.NoBorder || this.Border == DevExpress.XtraEditors.Controls.BorderStyles.Default) return;
+            if (e.State != DevExpress.XtraBars.ViewInfo.BarLinkState.Normal) return;
+
+            var scs = DxComponent.SkinColorSet;
+            var qqq = DxComponent.GetSkinColor(SkinElementColor.RibbonSkins_ForeColorDisabledInTopQuickAccessToolbar);
+            this.ItemAppearance.Normal.BackColor = DxComponent.SkinColorSet.NamedControl ?? Color.AliceBlue;
+            return;
+            // Chceme vykreslit jen "Normálový" stav buttonu, který má border jiný než defaultní!
+
             e.Draw();
+
+            var ee = new StyleObjectInfoArgs(e.Cache, e.Bounds, this.ItemAppearance.Normal, ObjectState.Normal);
+            var bounds = e.Bounds;
+            DevExpress.Utils.Drawing.ButtonObjectPainter.DrawBounds(ee, bounds, SystemBrushes.ControlLight, SystemBrushes.ControlLightLight);
+     //       DevExpress.Utils.Drawing.ButtonObjectPainter.DrawObject(e.Cache, )
+
+
+            /*
+                e.Draw();
             if (this.Border != DevExpress.XtraEditors.Controls.BorderStyles.NoBorder)
             {
-                var bounds = e.Bounds;
                 bounds.Width -= 1;
                 bounds.Height -= 1;
 
@@ -4544,6 +4570,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 //  var pen = DxComponent.PaintGetPen(Color.FromArgb(160, 160, 190));
                 //  e.Graphics.DrawRectangle(pen, bounds);
             }
+
+            */
+
             e.Handled = true;
         }
 
