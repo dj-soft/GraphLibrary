@@ -59,6 +59,9 @@
     <Reference Include="DevExpress.Dialogs.v22.2.Core">
       <HintPath>..\..\DevExpressDll\DX22.2\DevExpress.Dialogs.v22.2.Core.dll</HintPath>
     </Reference>
+    <Reference Include="DevExpress.Docs.v22.2">
+      <HintPath>..\..\DevExpressDll\DX22.2\DevExpress.Docs.v22.2.dll</HintPath>
+    </Reference>
     <Reference Include="DevExpress.Drawing.v22.2">
       <HintPath>..\..\DevExpressDll\DX22.2\DevExpress.Drawing.v22.2.dll</HintPath>
     </Reference>

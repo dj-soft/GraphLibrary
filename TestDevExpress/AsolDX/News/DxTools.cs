@@ -713,7 +713,18 @@ namespace TestDevExpress.AsolDX.News
         #endregion
     }
     #endregion
+    #region Pdf
+    public class PdfPrinter
+    {
+        // DevExpress.Pdf.PdfDocumentProcessor pp = new DevExpress.Pdf.PdfDocumentProcessor();
 
+        // DevExpress.Pdf.PdfDocumentProcessor.Print();
+
+
+
+
+    }
+    #endregion
     #region Třídy ExpressionPart a patřičné potomstvo
     #region class ExpressionPartArgument : třída obsahující proměnnou hodnotu zadávanou uživatelem, typicky položku v okně parametrů
     /// <summary>

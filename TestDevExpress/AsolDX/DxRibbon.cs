@@ -1850,6 +1850,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Obsahuje true, pokud this instance <see cref="DxRibbonControl"/> anebo mergovaný Child ribbon (<see cref="MergedChildDxRibbon"/>) má mít otevřené nějaké menu.
+        /// Po dokončení procesu { UnMerge - Modify - Merge } by mělo být otevřeno!
+        /// Tato property se dívá do Child Ribbonů.
+        /// </summary>
+        protected bool NeedOpenMenu 
+        {
+            get 
+            {
+                if (NeedOpenMenuCurrent) return true;
+                if (this.MergedChildDxRibbon != null) return this.MergedChildDxRibbon.NeedOpenMenu;
+                return false;
+            }
+        }
+        /// <summary>
         /// Metoda zajistí otevření toho menu, které by mělo být otevřeno.
         /// Tato metoda vyhledá vhodný Child Ribbon v pořadí this (=Parent) - <see cref="MergedChildDxRibbon"/> - SubChild..., a vyvolá (rekurzivně) výkonnou metodu v patřičné instanci.
         /// </summary>
@@ -2346,7 +2360,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _UnMergeModifyMergeCurrentRibbon(() =>
                 {
                     if (clearCurrentContent) _ClearPagesContents();
-                    _AddPages(iRibbonPages, createMode, "Fill");
+                    _AddPages(iRibbonPages, true, createMode, "Fill");
                     if (clearCurrentContent) _RemoveVoidContainers();
                 }
                 ,true);
@@ -2448,7 +2462,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                     if (clearContent || addItems)
                     {
-                        AddQATUserListToRibbon();
+                        AddQATUserListToRibbon(null);
                     }
                 }, true, true);
             }
@@ -2466,9 +2480,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Přidá prvky do this Ribbonu z dodané kolekce, v daném režimu LazyLoad
         /// </summary>
         /// <param name="iRibbonPages"></param>
+        /// <param name="reloadQatToRibbon">Na závěr zavolat <see cref="AddQATUserListToRibbon()"/>?</param>
         /// <param name="createMode">Režim přidávání prvků</param>
         /// <param name="logText"></param>
-        private void _AddPages(IEnumerable<IRibbonPage> iRibbonPages, DxRibbonCreateContentMode createMode, string logText)
+        private void _AddPages(IEnumerable<IRibbonPage> iRibbonPages, bool reloadQatToRibbon, DxRibbonCreateContentMode createMode, string logText)
         {
             if (iRibbonPages is null) return;
 
@@ -2478,7 +2493,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             foreach (var iRibbonPage in list)
                 _AddPage(iRibbonPage, createMode, ref count);
 
-            AddQATUserListToRibbon();
+            if (reloadQatToRibbon) AddQATUserListToRibbon(null);
 
             if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $" === Ribbon {DebugName}: {logText} {list.Count} item[s]; Create: {count} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
@@ -2593,7 +2608,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (iRibbonObjects == null) return;
 
-            // Vstupní data roztřídím na: Page - Group - Items, a pak půjdu standardními postupy:
+            // Vstupní data roztřídím na: { Page | Group | Items }, a pak půjdu standardními postupy:
             List<IRibbonPage> iRibbonPages = new List<IRibbonPage>();
             List<IRibbonGroup> iRibbonGroups = new List<IRibbonGroup>();
             List<IRibbonItem> iRibbonItems = new List<IRibbonItem>();
@@ -2606,18 +2621,47 @@ namespace Noris.Clients.Win.Components.AsolDX
                     else if (iRibbonObject is IRibbonItem iRibbonItem) { if (!iRibbonItems.Contains(iRibbonItem)) iRibbonItems.Add(iRibbonItem); }
                 }
             }
-            if (iRibbonPages.Count == 0 && iRibbonGroups.Count == 0 && iRibbonItems.Count == 0) return;
-            if (iRibbonPages.Count == 0 && iRibbonGroups.Count == 0 && !NeedRefreshItems(iRibbonItems)) return;             // Zkratka
+            bool hasPages = (iRibbonPages.Count > 0);
+            bool hasGroups = (iRibbonGroups.Count > 0);
+            bool hasItems = (iRibbonItems.Count > 0);
+            if (!hasPages && !hasGroups)
+            {   // Když nemám stránky ani grupy, tak řeším jen jednotlivé Itemy:
+                if (!hasItems) return;                               // Itemy taky nejsou
+                if (!AnalyseRefreshItems(iRibbonItems, out var reFillItems, out var reCreateItems)) return;         // Itemy nepotřebují žádnou změnu
+
+                if (reFillItems != null)
+                {
+                    this._RefreshItems(reFillItems);
+                    if (NeedOpenMenu)
+                        DoOpenMenu();
+                }
+                if (reCreateItems is null) return;
+
+                // Do dalšího Refreshe pokračují jen ReCreate items:
+                iRibbonItems = reCreateItems;
+                hasItems = true; ;
+            }
 
             // Máme data, půjdeme dělat něco viditelného:
-            this.ParentOwner.RunInGui(() =>
+            bool refreshDirect = false; // !hasPages;
+            bool needInvoke = this.ParentOwner.InvokeRequired;
+            if (refreshDirect && !needInvoke)
+            {   // Přímý refresh (bez změn stránek)
+                _RefreshObjects(iRibbonPages, iRibbonGroups, iRibbonItems, true);
+                if (NeedOpenMenu)
+                    DoOpenMenu();
+            }
+            else
             {
-                _UnMergeModifyMergeCurrentRibbon(() =>
+                this.ParentOwner.RunInGui(() =>
                 {
-                    _RefreshObjects(iRibbonPages, iRibbonGroups, iRibbonItems);
-                }, true);
-                DoOpenMenu();
-            });
+                    _UnMergeModifyMergeCurrentRibbon(() =>
+                    {
+                        _RefreshObjects(iRibbonPages, iRibbonGroups, iRibbonItems, true);
+                    }, true);
+                    DoOpenMenu();
+                });
+            }
         }
         /// <summary>
         /// Znovu naplní stránky this Ribbonu specifikované v dodaných datech.
@@ -2639,7 +2683,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 _UnMergeModifyMergeCurrentRibbon(() =>
                 {
-                    _RefreshPages(iRibbonPages);
+                    _RefreshPages(iRibbonPages, true);
                 }, true);
             });
         }
@@ -2654,7 +2698,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 throw new ArgumentException($"DxRibbonControl.RefreshGroups() error: groups for refresh is null.");
             if (!iRibbonGroups.Any()) return;
 
-            _UnMergeModifyMergeCurrentRibbon(() => _RefreshGroups(iRibbonGroups), true);
+            _UnMergeModifyMergeCurrentRibbon(() => _RefreshGroups(iRibbonGroups, true), true);
         }
         /// <summary>
         /// Zajistí provedení refreshe dodané grupy (podle <see cref="IRibbonGroup.GroupId"/> v this Ribbonu.
@@ -2670,7 +2714,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!_TryGetDataForRefreshGroup(iRibbonGroup, out var dxGroup, out var dxPage)) return;
 
             // Podklady jsou OK, můžeme se pustit do větší akce (Unmerge - Akce - Merge):
-            _UnMergeModifyMergeCurrentRibbon(() => _RefreshGroup(iRibbonGroup, dxGroup, dxPage), true);
+            _UnMergeModifyMergeCurrentRibbon(() => _RefreshGroup(iRibbonGroup, dxGroup, dxPage, true), true);
         }
         /// <summary>
         /// Metoda zajistí, že bude nalezen každý daný prvek (pokud neexistuje, tak ale nebude vytvořen!);
@@ -2683,7 +2727,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         public void RefreshItems(IEnumerable<IRibbonItem> iRibbonItems)
         {
             if (iRibbonItems == null) return;
-            if (!NeedRefreshItems(iRibbonItems)) return;             // Zkratka
+            if (!AnalyseRefreshItems(iRibbonItems, out var reFillItems, out var reCreateItems)) return;             // Zkratka
+
+            if (reCreateItems is null)
+            {
+
+            }
+
 
             this.ParentOwner.RunInGui(() =>
             {
@@ -2707,7 +2757,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public void RefreshItem(IRibbonItem iRibbonItem, bool force = false, bool refreshInSite = false)
         {
             if (iRibbonItem == null) return;
-            if (!force && !NeedRefreshItem(iRibbonItem)) return;               // Zkratka
+            if (!force && GetRefreshModeForItem(iRibbonItem) == ItemRefreshType.None) return;               // Zkratka
 
             if (!refreshInSite)
             {   // UmMerge - Modify - Merge :
@@ -2756,44 +2806,54 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonPages"></param>
         /// <param name="iRibbonGroups"></param>
         /// <param name="iRibbonItems"></param>
-        private void _RefreshObjects(List<IRibbonPage> iRibbonPages, List<IRibbonGroup> iRibbonGroups, List<IRibbonItem> iRibbonItems)
+        /// <param name="reloadQatToRibbon">Na závěr zavolat <see cref="AddQATUserListToRibbon()"/>?</param>
+        private void _RefreshObjects(List<IRibbonPage> iRibbonPages, List<IRibbonGroup> iRibbonGroups, List<IRibbonItem> iRibbonItems, bool reloadQatToRibbon)
         {
-            if (iRibbonPages.Count > 0) _RefreshPages(iRibbonPages);
-            if (iRibbonGroups.Count > 0) _RefreshGroups(iRibbonGroups);
+            if (iRibbonPages.Count > 0) _RefreshPages(iRibbonPages, false);
+            if (iRibbonGroups.Count > 0) _RefreshGroups(iRibbonGroups, false);
             if (iRibbonItems.Count > 0) _RefreshItems(iRibbonItems);
+            if (reloadQatToRibbon) AddQATUserListToRibbon(null);
         }
         /// <summary>
         /// Provede refresh dodaných stránek. Provede se jedním chodem.
         /// Ribbon je unmergován.
         /// </summary>
         /// <param name="iRibbonPages"></param>
-        private void _RefreshPages(IEnumerable<IRibbonPage> iRibbonPages)
+        /// <param name="reloadQatToRibbon">Na závěr zavolat <see cref="AddQATUserListToRibbon()"/>?</param>
+        private void _RefreshPages(IEnumerable<IRibbonPage> iRibbonPages, bool reloadQatToRibbon)
         {
             if (this.IsDisposed) return;
             
             var reFillPages = _PrepareReFill(iRibbonPages, true);
             DxRibbonCreateContentMode createMode = DxRibbonCreateContentMode.CreateGroupsContent | DxRibbonCreateContentMode.CreateAllSubItems | DxRibbonCreateContentMode.RunningOnDemandFill;
-            _AddPages(iRibbonPages, createMode, "OnDemand");
+            _AddPages(iRibbonPages, false, createMode, "OnDemand");
             _RemoveVoidContainers(reFillPages);
             CheckLazyContentCurrentPage(true);
+            if (reloadQatToRibbon) AddQATUserListToRibbon(null);
         }
         /// <summary>
         /// Refresh sady skupin, data fyzické grupy jsou dodána, ribbon je unmergován.
         /// </summary>
         /// <param name="iRibbonGroups"></param>
-        private void _RefreshGroups(IEnumerable<IRibbonGroup> iRibbonGroups)
+        /// <param name="reloadQatToRibbon">Na závěr zavolat <see cref="AddQATUserListToRibbon()"/>?</param>
+        private void _RefreshGroups(IEnumerable<IRibbonGroup> iRibbonGroups, bool reloadQatToRibbon)
         {
             var startTime = DxComponent.LogTimeCurrent;
             int groupCount = 0;
             int itemCount = 0;
+            bool hasData = false;
             foreach (var iRibbonGroup in iRibbonGroups)
             {
                 if (iRibbonGroup is null) continue;
 
                 // Najdeme fyzická data pro provedení refreshe aktuální grupy, a pokud je to OK, pak provedeme Refresh:
                 if (_TryGetDataForRefreshGroup(iRibbonGroup, out var dxGroup, out var dxPage))
-                    _RefreshGroup(iRibbonGroup, dxGroup, dxPage);
+                {
+                    _RefreshGroup(iRibbonGroup, dxGroup, dxPage, false);
+                    hasData = true;
+                }
             }
+            if (hasData && reloadQatToRibbon) AddQATUserListToRibbon(null);
             if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $" === Ribbon {DebugName}: Refresh groups '{groupCount}', Items count: {itemCount}; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
         /// <summary>
@@ -2811,7 +2871,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Metoda zkusí najít fyzickou grupu pro refresh, a pokud ji nenajde, pak zkusí najít stránku pro vložení nové grupy (pokud je to zapotřebí).
         /// Nalezené prvky vkládá do out parametrů.
-        /// Vrací true = je třeba provést nějaký Refresh (ten zajistí metoda <see cref="_RefreshGroup(IRibbonGroup, DxRibbonGroup, DxRibbonPage)"/>),
+        /// Vrací true = je třeba provést nějaký Refresh (ten zajistí metoda <see cref="_RefreshGroup(IRibbonGroup, DxRibbonGroup, DxRibbonPage, bool)"/>),
         /// ať už je to Create / ReFill / Remove.
         /// Nebo vrátí false = grupa neexistuje, ale protože je požadováno její Remove, pak není potřeba provádět nic.
         /// <para/>
@@ -2844,14 +2904,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonGroup"></param>
         /// <param name="dxGroup"></param>
         /// <param name="dxPage">Stránka. Je dodána jen tehdy, když grupa <paramref name="dxGroup"/> dosud v Ribbonu neexistuje, v tom případě je ověřeno, že tato stránka existuje.</param>
-        private void _RefreshGroup(IRibbonGroup iRibbonGroup, DxRibbonGroup dxGroup, DxRibbonPage dxPage)
+        /// <param name="reloadQatToRibbon">Na závěr zavolat <see cref="AddQATUserListToRibbon()"/>?</param>
+        private void _RefreshGroup(IRibbonGroup iRibbonGroup, DxRibbonGroup dxGroup, DxRibbonPage dxPage, bool reloadQatToRibbon)
         {
             var startTime = DxComponent.LogTimeCurrent;
 
             DxRibbonCreateContentMode createMode = DxRibbonCreateContentMode.CreateGroupsContent | DxRibbonCreateContentMode.CreateAllSubItems | DxRibbonCreateContentMode.RunningOnDemandFill;
             int count = 0;
             ReloadGroup(iRibbonGroup, dxGroup, dxPage, createMode, ref count);
-            AddQATUserListToRibbon();
+
+            if (reloadQatToRibbon) AddQATUserListToRibbon(null);
 
             if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $" === Ribbon {DebugName}: Refresh group '{iRibbonGroup.GroupId}', Items count: {count}; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
@@ -2868,39 +2930,72 @@ namespace Noris.Clients.Win.Components.AsolDX
         #region NeedRefreshItem : detekuje potřebu provést Refresh prvku
         /// <summary>
         /// Vrátí true, pokud dodaná kolekce obsahuje přinejmenším jeden prvek, který reálně potřebuje provést Refresh.
-        /// To je tehdy, 
+        /// To je tehdy, když v aktuálním Ribbonu prvek není a má být, nebo je a nemá být, nebo je a obsahuje jiná data.
+        /// Metoda současně vytvoří dvě pole, 
+        /// kde první <paramref name="reFillItems"/> obsahuje prvky, které v Ribbonu existují a stačí je jen znovunaplnit a není třeba provádět Unmerge ribbonu.
+        /// Druhé out pole obsahuje prvky, které v Ribbonu neexistují nebo jsou v jiné grupě, pak je skutečně třeba provész Unmerge ribbonu a velký Refresh.
+        /// Out pole mohou být null, když do nich nebylo co uložit.
         /// </summary>
         /// <param name="iRibbonItems"></param>
+        /// <param name="reFillItems"></param>
+        /// <param name="reCreateItems"></param>
         /// <returns></returns>
-        private bool NeedRefreshItems(IEnumerable<IRibbonItem> iRibbonItems)
+        private bool AnalyseRefreshItems(IEnumerable<IRibbonItem> iRibbonItems, out List<IRibbonItem> reFillItems, out List<IRibbonItem> reCreateItems)
         {
-            if (iRibbonItems == null) return false;
-            return iRibbonItems.Any(i => NeedRefreshItem(i));        // Jakýkoli jeden prvek, který potřebuje Refresh, zajistí vrácení true = Refresh je nutný.
+            reFillItems = null;
+            reCreateItems = null;
+            bool needRefresh = false;
+            if (iRibbonItems != null)
+            {
+                foreach (var iRibbonItem in iRibbonItems)
+                {
+                    var mode = GetRefreshModeForItem(iRibbonItem);
+                    switch (mode)
+                    {
+                        case ItemRefreshType.ReCreate:
+                        case ItemRefreshType.Remove:
+                            if (reCreateItems is null) reCreateItems = new List<IRibbonItem>();
+                            reCreateItems.Add(iRibbonItem);
+                            needRefresh = true;
+                            break;
+                        case ItemRefreshType.ReFill:
+                            if (reFillItems is null) reFillItems = new List<IRibbonItem>();
+                            reFillItems.Add(iRibbonItem);
+                            needRefresh = true;
+                            break;
+                    }
+                }
+            }
+            return needRefresh;
         }
         /// <summary>
-        /// Vrátí true, pokud dodaný prvek reálně potřebuje provést Refresh. Tj. obsahuje jiná data, než jaká máme v GUI kolekci.
+        /// Vrátí režim refreshe pro daný prvek: pokud dodaný prvek reálně potřebuje provést Refresh. Tj. obsahuje jiná data, než jaká máme v GUI kolekci.
         /// To je tehdy, 
         /// </summary>
         /// <param name="iRibbonItem"></param>
         /// <returns></returns>
-        private bool NeedRefreshItem(IRibbonItem iRibbonItem)
+        private ItemRefreshType GetRefreshModeForItem(IRibbonItem iRibbonItem)
         {
-            if (iRibbonItem == null) return false;
+            if (iRibbonItem == null) return ItemRefreshType.None;
             var changeMode = iRibbonItem.ChangeMode;
             bool needExists = (changeMode == ContentChangeMode.Add || changeMode == ContentChangeMode.ReFill);
             if (TryGetIRibbonData(iRibbonItem.ItemId, out var iCurrentItem, out bool isValid))
             {   // Prvek existuje: Refresh je třeba, pokud prvek nemá existovat, anebo když aktuálně obsahuje jiná data než je nyní požadováno:
-                if (!needExists) return true;
-                if (!isValid) return true;                           // Nevalidní prvek je třeba refreshovat
-                if (Object.ReferenceEquals(iRibbonItem, iCurrentItem)) return true;      // Pokud dodaná instance (iRibbonItem) a zdejší instance (iCurrentItem) je totožná, pak Refresh je nutný - neboť nedokážu rozpoznat, jestli došlo ke změně. To dokážu jen pro dvě odlišné instance!
-                if (DataRibbonItem.HasEqualContent(iRibbonItem, iCurrentItem)) return false;       
-                return true;                                         // Výstup je true (Refresh) tehdy, když dva prvky (nově požadovaný a stávající) NEJSOU shodné!   Takhle je tu podmínka proto, abych na Equals mohl dát breakpoint...
+                if (!needExists) return ItemRefreshType.Remove;
+                if (!isValid) return ItemRefreshType.ReCreate;                                               // Nevalidní prvek je třeba refreshovat
+                if (Object.ReferenceEquals(iRibbonItem, iCurrentItem)) return ItemRefreshType.ReFill;        // Pokud dodaná instance (iRibbonItem) a zdejší instance (iCurrentItem) je totožná, pak Refresh je nutný - neboť nedokážu rozpoznat, jestli došlo ke změně. To dokážu jen pro dvě odlišné instance!
+                if (DataRibbonItem.HasEqualContent(iRibbonItem, iCurrentItem)) return ItemRefreshType.None;  // Shodný obsah => netřeba refresh.
+                return ItemRefreshType.ReFill;                                 // Neshodný obsah => ReFill tehdy, když dva prvky (nově požadovaný a stávající) NEJSOU shodné!   Takhle je tu podmínka proto, abych na Equals mohl dát breakpoint...
             }
             else
             {   // Prvek neexistuje: Refresh je třeba, pokud se prvek má vytvořit nebo upravit:
-                return needExists;
+                return ItemRefreshType.ReCreate;
             }
         }
+        /// <summary>
+        /// Jak zpracovat refresh prvku
+        /// </summary>
+        private enum ItemRefreshType { None, ReFill, ReCreate, Remove }
         #endregion
         #region LazyLoad page content : OnSelectedPageChanged => CheckLazyContent; OnDemand loading Page
         /// <summary>
@@ -3011,7 +3106,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vyvolá se při OnDemand načítání obsahu submenu v prvku.
         /// Načítání typicky probíhá v threadu na pozadí.
-        /// Po nějakém čase - když aplikace získá data, pak zavolá zdejší metodu <see cref="DxRibbonControl.RefreshItem(IRibbonItem, bool)"/>;
+        /// Po nějakém čase - když aplikace získá data, pak zavolá zdejší metodu <see cref="DxRibbonControl.RefreshItem(IRibbonItem, bool, bool)"/>;
         /// tato metoda zajistí zobrazení nově dodaných dat v daném prvku.
         /// </summary>
         public event EventHandler<TEventArgs<IRibbonItem>> ItemOnDemandLoad;
@@ -3087,7 +3182,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     foreach (var lazyPage in lazyPages)
                         _PrepareLazyLoadStaticPage(lazyPage, ref icnt);
                     itemCount = icnt;
-                    AddQATUserListToRibbon();
+                    AddQATUserListToRibbon(null);
                 }, true);
 
                 if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $" === Ribbon {DebugName}: CreateLazyStaticPages; Create: {pageCount} Pages; {itemCount} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
@@ -3659,7 +3754,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 PrepareBarItemTag(barItem, iRibbonItem, level, dxGroup);
 
                 // Prvek patří do QAT?
-                if (!ignoreQat && DefinedInQAT(iRibbonItem.ItemId))
+                if (!ignoreQat && DefinedInQAT(GetRibbonQATKey(iRibbonItem)))
                     this.AddBarItemToQATUserList(barItem, iRibbonItem);
             }
             return barItem;
@@ -4542,13 +4637,15 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 if (links.Length > 1 && screenPoint.HasValue)
                 {   // Pokud máme více linků, a máme uloženu souřadnici, kde by měl být aktivní prvek, zkusíme jej najít:
-                    var preferredLink = GetLinkAtPoint(screenPoint);
+                    var preferredLink = GetLinkAtPoint(links, screenPoint);
                     if (preferredLink != null)
+                        // Metoda GetLinkAtPoint() mohla vrátit instanci, která není v našem seznamu, protože může hledat v celém Ribbonu podle souřadnice!
+                        // Pokud tedy vrátila nějakou cizí (ne z našeho menu), tak ji raději zahodíme a použijeme nejnovější naši (za pár řádků dole):
                         link = links.FirstOrDefault(l => Object.ReferenceEquals(l, preferredLink));
                 }
 
                 if (link == null)
-                    link = links[0];
+                    link = links[links.Length - 1];
 
                 try
                 {
@@ -4566,12 +4663,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Tato metoda má na vstupu absolutní souřadnice (Screen) nebo null = převezme aktuální pozici myši.
         /// Metoda pracuje s ribbonem <see cref="TopRibbonControl"/>, protože ten je fyzicky zobrazen a na něm se (asi) kliklo na určitý prvek.
         /// </summary>
+        /// <param name="links"></param>
         /// <param name="screenPoint"></param>
         /// <returns></returns>
-        private DevExpress.XtraBars.BarItemLink GetLinkAtPoint(Point? screenPoint = null)
+        private DevExpress.XtraBars.BarItemLink GetLinkAtPoint(DevExpress.XtraBars.BarSubItemLink[] links, Point? screenPoint = null)
         {
+            var point = screenPoint ?? Control.MousePosition;
+
+            // Z Linků:
+            if (links != null && links.Length > 0)
+            {
+                if (links.TryGetFirst(l => l.ScreenBounds.Contains(point), out var link))
+                    return link;
+                return links[links.Length - 1];
+            }
+
+            // Z Ribbonu:
             var topRibbon = TopRibbonControl;
-            Point controlPoint = topRibbon.PointToClient(screenPoint ?? Control.MousePosition);
+            Point controlPoint = topRibbon.PointToClient(point);
             var hit = topRibbon.CalcHitInfo(controlPoint);
             return hit?.Item;
         }
@@ -5124,6 +5233,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Metoda vrátí platný QAT klíč, pro použití v Dictionary.
         /// Vrácený klíč není NULL, je Trim. Jsou odstraněny nepatřičné výskyty delimiteru. Není změněna velikost písmen.
         /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <returns></returns>
+        protected static string GetValidQATKey(IRibbonItem ribbonItem)
+        {
+            string itemId = GetRibbonQATKey(ribbonItem);
+            return DxQuickAccessToolbar.GetValidQATKey(itemId);
+        }
+        /// <summary>
+        /// Metoda vrátí QAT klíč pro daný prvek Ribbonu.
+        /// Vrácený klíč není NULL, ale může být "".
+        /// Neprošel metodou <see cref="DxQuickAccessToolbar.GetValidQATKey(string)"/>.
+        /// Pokud na výstupu je "", pak prvek nemá být přítomen v QAT Ribbonu.
+        /// Metoda vrátí buď <see cref="IRibbonItem.QatKey"/> (pokud není NULL), anebo základní <see cref="ITextItem.ItemId"/>.
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <returns></returns>
+        protected static string GetRibbonQATKey(IRibbonItem ribbonItem)
+        {
+            if (ribbonItem is null) return "";
+            if (ribbonItem.QatKey != null) return ribbonItem.QatKey;
+            return ribbonItem.ItemId ?? "";
+        }
+        /// <summary>
+        /// Metoda vrátí platný QAT klíč, pro použití v Dictionary.
+        /// Vrácený klíč není NULL, je Trim. Jsou odstraněny nepatřičné výskyty delimiteru. Není změněna velikost písmen.
+        /// </summary>
         /// <param name="itemId"></param>
         /// <returns></returns>
         protected static string GetValidQATKey(string itemId)
@@ -5151,25 +5286,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="force"></param>
         private void _SetQATUserItemKeys(bool refreshToolbar = false, bool force = false)
         {
-            var qatLocation = DxQuickAccessToolbar.QATLocation;
-            string[] qatItems = DxQuickAccessToolbar.QATItems;
-            string configValue = DxQuickAccessToolbar.ConfigValue;
-            if (qatItems == null) return;
+            string[] qatKeys = DxQuickAccessToolbar.QATItems;
+            if (qatKeys == null) return;
 
             // Lokální cache:
-            _QATLocalConfigValue = configValue;
+            _QATLocalConfigValue = DxQuickAccessToolbar.ConfigValue;
 
             // Zjistíme, zda nová data reálně povedou ke změně obsahu v this Ribbonu (tzn. zda reálně budeme odstraňovat / přidávat naše reálné prvky).
-            // Totiž, náš Ribbon nemusí fyzicky obsahovat ty prvky, které jsou přidané nebo odebrané.
-            // Pak nemá význam změnu provádět!
-            if (force || _ContainsRealChangeQatUserKeys(qatItems))
+            //   Totiž, náš Ribbon nemusí fyzicky obsahovat právě ty prvky, které jsou přidané nebo odebrané.
+            //   Pak nemá význam změnu provádět!
+            var qatBarItems = this.ItemsByQat;
+            if (force || _ContainsRealChangeQatUserKeys(qatKeys, qatBarItems))
                 // Pokud tedy dojde ke změně, pak se musíme unmergovat, změnit a zpět mergovat:
-                this._UnMergeModifyMergeCurrentRibbon(() => _SetQATUserItemKeysReal(qatItems, refreshToolbar), true);
+                this._UnMergeModifyMergeCurrentRibbon(() => _SetQATUserItemKeysReal(qatKeys, qatBarItems, refreshToolbar), true);
             else
                 // Nejde o vizuální změnu, v tom případě pouze aktualizujeme obsah v datových strukturách (_QATUserItems a _QATUserItemDict):
-                _SetQATUserItemKeysData(qatItems);
+                _SetQATUserItemKeysData(qatKeys);
 
             // Upravíme umístění QAT:
+            var qatLocation = DxQuickAccessToolbar.QATLocation;
             if (this.ToolbarLocation != qatLocation)
                 this.ToolbarLocation = qatLocation;
         }
@@ -5181,27 +5316,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Vrací true = jsou tu změny / false = beze změn.
         /// </summary>
+        /// <param name="qatKeys">Nově platné klíče prvků</param>
+        /// <param name="qatBarItems">Aktuálně přítomné BarItemy + RibbonItemy v this Ribbonu, klíčem je QatKey. Nesmí být null !!!</param>
         /// <returns></returns>
-        private bool _ContainsRealChangeQatUserKeys(string[] qatItems)
+        private bool _ContainsRealChangeQatUserKeys(string[] qatKeys, Dictionary<string, Tuple<BarItem, IRibbonItem>> qatBarItems)
         {
             Queue<QatItem> qatQueue = new Queue<QatItem>();          // Fronta prvků QAT User, které my reálně máme v QAT, v jejich aktuálním pořadí
             if (_QATUserItems != null)
                 _QATUserItems.Where(q => q.IsInQAT).ForEachExec(i => qatQueue.Enqueue(i));
 
-            // Tento algoritmus provede kontrolu, zda požadované prvky (qatItemKeys), jejich podmnožina reálně existující v this Ribbonu,
-            // je/není obsažena v reálném QAT v odpovídajícím pořadí.
+            // Tento algoritmus provede kontrolu, zda požadované prvky (qatKeys), jejich podmnožina reálně existující v this Ribbonu,
+            //   je/není obsažena v našem reálném QAT v odpovídajícím pořadí.
             // Vrátíme true = je reálná změna / false = bez reálné změny
-            foreach (string itemId in qatItems)
+            foreach (string qatKey in qatKeys)
             {
-                string key = GetValidQATKey(itemId);
+                string key = GetValidQATKey(qatKey);
                 if (key == "") continue;
-                if (this.Items[itemId] == null) continue;            // Prvek daného klíče v našem Ribbonu není, nemůžeme jej ani přidat ani odebrat - nejde o změnu.
+                if (!qatBarItems.TryGetValue(key, out var barData)) continue;  // Prvek daného klíče v našem Ribbonu není, nemůžeme jej ani přidat ani odebrat - nejde o změnu.
 
                 // a) Pokud požadovaný QAT prvek [itemId] v našem Ribbonu fyzicky máme:
                 //  => Měli bychom jej mít i v naší frontě viditelných prvků:
                 if (qatQueue.Count == 0) return true;                // Naše reálné QAT prvky už nic neobsahují => musíme prvek přidat, jde tedy o změnu
-                var qatItem = qatQueue.Dequeue();                    // Nějaký prvek tam máme, musí mát shodný klíč:
-                if (qatItem.Key != key) return true;                 // Ale ten prvek, který máme na této pozici, má jiný klíč - jde o změnu.
+                var qatItem = qatQueue.Dequeue();                              // Nějaký prvek tam máme, musí mít shodný klíč:
+                if (qatItem.QatKey != key) return true;                        // Ale ten prvek, který máme na této pozici, má jiný klíč - jde o změnu.
             }
 
             return (qatQueue.Count > 0);                             // Pokud v našem soupisu máme nějaké další prvky, musíme je odstranit - jde o změnu.
@@ -5210,33 +5347,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Ze zadaného stringu vytvoří struktury pro evidenci prvků pro toolbar QAT (pole <see cref="_QATUserItems"/> a <see cref="_QATUserItemDict"/>).
         /// Před tím zruší obsah fyzického QAT. Volitelně na konci znovu naplní fyzický QAT.
         /// </summary>
-        /// <param name="qatItems"></param>
+        /// <param name="qatKeys">Nově platné klíče prvků</param>
+        /// <param name="qatBarItems">Aktuálně přítomné BarItemy + RibbonItemy v this Ribbonu, klíčem je QatKey</param>
         /// <param name="refreshToolbar"></param>
-        private void _SetQATUserItemKeysReal(string[] qatItems, bool refreshToolbar = false)
+        private void _SetQATUserItemKeysReal(string[] qatKeys, Dictionary<string, Tuple<BarItem, IRibbonItem>> qatBarItems, bool refreshToolbar = false)
         {
             ResetQATUserItems();
 
-            foreach (string itemId in qatItems)
+            foreach (string qatKey in qatKeys)
             {
-                string key = GetValidQATKey(itemId);
+                string key = GetValidQATKey(qatKey);
                 if (key == "") continue;
                 if (_QATUserItemDict.ContainsKey(key)) continue;     // Duplicita na vstupu: ignorujeme
+
                 QatItem qatItem = new QatItem(this, key);
-                if (refreshToolbar)
+                if (refreshToolbar && qatBarItems != null && qatBarItems.TryGetValue(key, out var barData))
                 {
-                    qatItem.BarItem = this.Items[itemId];
-                    if (TryGetIRibbonData(qatItem.BarItem, out var _, out var iRibbonItem, out var iRibbonGroup))
-                    {
-                        qatItem.RibbonItem = iRibbonItem;
-                        qatItem.RibbonGroup = iRibbonGroup;
-                    }
+                    qatItem.BarItem = barData.Item1;
+                    qatItem.RibbonItem = barData.Item2;
+                    qatItem.RibbonGroup = barData.Item2.ParentGroup;
                 }
                 _QATUserItems.Add(qatItem);
                 _QATUserItemDict.Add(key, qatItem);
             }
 
             // Fyzická tvroba obsahu QAT:
-            if (refreshToolbar) AddQATUserListToRibbon();
+            if (refreshToolbar) AddQATUserListToRibbon(qatBarItems);
 
 
             //// Změna klíčů zdejšího proti veřejnému?
@@ -5248,16 +5384,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Naplní <see cref="_QATUserItems"/> a <see cref="_QATUserItemDict"/> ze stávajích instancí, v pořadí dle dodaného stringu
         /// </summary>
-        /// <param name="qatItems"></param>
-        private void _SetQATUserItemKeysData(string[] qatItems)
+        /// <param name="qatKeys"></param>
+        private void _SetQATUserItemKeysData(string[] qatKeys)
         {
             var oldDict = _QATUserItemDict;
             var newList = new List<QatItem>();
             var newDict = new Dictionary<string, QatItem>();
 
-            foreach (string itemId in qatItems)
+            foreach (string qatKey in qatKeys)
             {
-                string key = GetValidQATKey(itemId);
+                string key = GetValidQATKey(qatKey);
                 if (key == "") continue;
                 if (newDict.ContainsKey(key)) continue;              // Duplicita na vstupu: ignorujeme
                 bool oldExists = oldDict.TryGetValue(key, out var qatItem);
@@ -5283,6 +5419,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Po provedení UnMerge pro this Ribbon (kdy this je odmergovaný Child) si this Ribbon musí refreshovat svůj QAT ze společné základny.
         /// </summary>
         private bool _HasQATUserChangedItems;
+        /// <summary>
+        /// Dictionary obsahující aktuálně přítomné prvky Ribbonu <see cref="BarItem"/>, a jejich odpovídající data <see cref="IRibbonItem"/>,
+        /// a kde klíčem je jejich QatKey.
+        /// Získání této Dictionary není zadarmo, stojí nějaký čas, proto si výsledek pro opakované používání uložme.
+        /// Vychází ze s kolekce Items.
+        /// Pokud existuje více BarItemů s různým ItemId ale shodným QatKey, pak je zde ten první.
+        /// Pokud prvek Ribbonu nemá svůj <see cref="IRibbonItem"/>, pak zde není = nelze určit jeho QatKey.
+        /// </summary>
+        internal Dictionary<string, Tuple<BarItem, IRibbonItem>> ItemsByQat
+        {
+            get
+            {
+                var result = new Dictionary<string, Tuple<BarItem, IRibbonItem>>();
+                var barItems = this.Items;
+                var count = barItems.Count;
+                for (int i = 0; i < count; i++)
+                { 
+                    var barItem = barItems[i];
+                    if (_TryGetIRibbonData(barItem, out var qatKey, out var ribbonItem, out var _) && qatKey != null && !result.ContainsKey(qatKey))
+                        result.Add(qatKey, new Tuple<BarItem, IRibbonItem>(barItem, ribbonItem));
+                }
+                return result;
+            }
+        }
         #endregion
         #region Tvorba QAT na základě zadání z aplikace, podpora pro tvorbu QAT spojená s tvorbou prvků Ribbonu
         /// <summary>
@@ -5313,7 +5473,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         protected bool ContainsQAT(IRibbonItem iRibbonItem)
         {
-            return (ExistsAnyQat && iRibbonItem != null && (DefinedInQAT(iRibbonItem.ItemId) || (iRibbonItem.SubItems != null && iRibbonItem.SubItems.Any(s => ContainsQAT(s)))));
+            return (ExistsAnyQat && iRibbonItem != null && (DefinedInQAT(GetRibbonQATKey(iRibbonItem)) || (iRibbonItem.SubItems != null && iRibbonItem.SubItems.Any(s => ContainsQAT(s)))));
         }
         /// <summary>
         /// Vrátí true pokud daný klíč je obsažen v požadavku na prvky do QAT
@@ -5324,7 +5484,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!ExistsAnyQat) return false;
             string key = GetValidQATKey(itemId);
-            return _QATUserItemDict?.ContainsKey(key) ?? false;
+            return (!String.IsNullOrEmpty(key) && _QATUserItemDict != null && _QATUserItemDict.ContainsKey(key));
         }
         /// <summary>
         /// Obsahuje true, pokud aktuálně existuje alespoň jeden záznam QAT v poli <see cref="_QATUserItems"/>
@@ -5345,8 +5505,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void AddBarItemToQATUserList(DevExpress.XtraBars.BarItem barItem, IRibbonItem ribbonItem)
         {
             if (barItem == null || ribbonItem == null) return;
-            string key = GetValidQATKey(ribbonItem.ItemId);
-            if (!_QATUserItemDict.TryGetValue(key, out var qatItem)) return;       // Pro daný prvek Ribbonu nemáme záznam, že bychom měli přidat prvek do QAT.
+            string key = GetValidQATKey(ribbonItem);
+            if (String.IsNullOrEmpty(key) || !_QATUserItemDict.TryGetValue(key, out var qatItem)) return;       // Pro daný prvek Ribbonu nemáme záznam, že bychom měli přidat prvek do QAT.
             qatItem.BarItem = barItem;
             qatItem.RibbonItem = ribbonItem;
             qatItem.RibbonGroup = ribbonItem.ParentGroup;
@@ -5355,21 +5515,41 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Volá se na závěr přidávání dat do stránek: 
         /// do fyzického ToolBaru QAT (Quick Access Toolbar) vepíše všechny aktuálně přítomné prvky z <see cref="_QATUserItems"/>.
         /// </summary>
-        protected void AddQATUserListToRibbon()
+        /// <param name="qatBarItems">Aktuálně přítomné BarItemy + RibbonItemy v this Ribbonu, klíčem je QatKey. Smí být null.</param>
+        protected void AddQATUserListToRibbon(Dictionary<string, Tuple<BarItem, IRibbonItem>> qatBarItems)
         {
             var qatItems = _QATUserItems;
             if (qatItems == null || qatItems.Count == 0) return;
 
-            // Pokud v seznamu není žádný prvek, který potřebuje provést změnu, tak nebudu toolbarem mrkat:
+            // Index BarItemů s klíčem QytKey:
+            if (qatBarItems is null) qatBarItems = this.ItemsByQat;
+
+            // 1. Pro prvky, které mají být v QAT přítomny, ale nemám pro ně nalezený BarItem, jej zkusím najít:
+            //    K tomu může snadno dojít při částečném refreshi prvků
+            var searchItems = qatItems.Where(q => q.NeedSearchBarItem).ToArray();
+            foreach (var searchItem in searchItems)
+                searchItem.SearchForBarItem(qatBarItems);
+
+            // 2. Pokud v seznamu není žádný prvek, který potřebuje provést fyzickou změnu, tak nebudu toolbarem mrkat:
             if (!qatItems.Any(q => q.NeedChangeInQat)) return;
 
-            foreach (var qatItem in qatItems.Where(q => q.CanRemoveFromQat))
-                qatItem.RemoveBarItemLink();
+            // Máme tedy provést nějaké změny v Toolbaru. Nemohu pouze přidat nové potřebné prvky, protože bych nedodržel požadované pořadí prvků.
+            // (Pořadí je důležité, je dané pořadím v poli _QATUserItems, a když bych přidával jen ty nově vytvořené prvky, které dosud v QAT nebyly, přidaly by se na konec v nesprávním pořadí)
 
-            // Přidáme potřebné UserItems, a před první z nich volitelně přidáme oddělovač grupy (oddělí Direct a User prvky), pokud v Toolbaru něco zůstává:
-            bool isGroupBegin = (this.Toolbar.ItemLinks.Count > 0);
-            foreach (var qatItem in qatItems.Where(q => q.NeedAddToQat))
-                qatItem.AddLinkToQat(ref isGroupBegin);
+            // 3. Odeberu všechny QAT prvky, které odebrat lze (tj. mají BarLink):
+            var removeItems = qatItems.Where(q => q.CanRemoveFromQat).ToArray();
+            foreach (var removeItem in removeItems)
+                removeItem.RemoveBarItemLink(false, false);
+
+            // 4. Prvky, které mohou jít do QAT do něj reálně zařadím:
+            //     (Přidáme potřebné UserItems, a před první z nich volitelně přidáme oddělovač grupy (oddělí Direct a User prvky), pokud v Toolbaru něco zůstává)
+            var insertItems = qatItems.Where(q => q.NeedAddToQat).ToArray();
+            if (insertItems.Length > 0)
+            {
+                bool isGroupBegin = (this.Toolbar.ItemLinks.Count > 0);
+                foreach (var insertItem in insertItems)
+                    insertItem.AddLinkToQat(ref isGroupBegin);
+            }
         }
         #endregion
         #region Remove při smazání obsahu stránky DxRibbonPage.ClearContent()
@@ -5408,7 +5588,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void RemoveItemFromQat(IRibbonItem iRibbonItem)
         {
             if (iRibbonItem == null) return;
-            RemoveLinkFromQat(iRibbonItem.ItemId);
+            RemoveLinkFromQat(GetRibbonQATKey(iRibbonItem));
 
             // Rekurzivně jeho subpoložky (to může být i opakovaně):
             var items = iRibbonItem.SubItems;
@@ -5433,8 +5613,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void RemoveLinkFromQat(string itemId)
         {
             string key = GetValidQATKey(itemId);
-            if (key != null && this._QATUserItemDict.TryGetValue(key, out var qatItem))
-                qatItem.RemoveBarItemLink();
+            if (!String.IsNullOrEmpty(key) && this._QATUserItemDict.TryGetValue(key, out var qatItem))
+                qatItem.RemoveBarItemLink(false, true);
         }
         #endregion
         #region Uživatelská interaktivita - pozor, je nutno řešit odlišnosti pro mergované prvky
@@ -5466,20 +5646,31 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.CustomizationPopupMenuRefreshHandlers();                      // Právě jsem vygeneroval nové Popup menu, a chci i příště vyvolat tuhle metodu...
 
             // Připravit a aktivovat vlastní menu:
-            DevExpress.XtraBars.BarItemLink link = activeLink ?? GetLinkAtPoint(point);
+            DevExpress.XtraBars.BarItemLink link = activeLink ?? GetLinkAtPoint(null, point);
             bool isLink = (link != null);
+            bool hasItem = TryGetIRibbonData(link, out var _, out var ribbonItem, out var _, out var _);
+
             bool isQatDirectItem = isLink && _IsQATDirectItem(link);
-            bool isInUserQatItem = isLink && _IsInUserQatItem(link);
+            bool isAllowedForQat = isLink && _IsItemAllowedForQAT(ribbonItem);
+            bool isInUserQatItem = isLink && _IsInUserQatItem(ribbonItem);
             bool isQatAnyItem = isLink && _IsQATAnyItem(link);
 
             List<IMenuItem> items = new List<IMenuItem>();
             if (isQatDirectItem)
+                // Button je DIRECT (=zadaný v definici menu jako QAT Button):
                 items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonDirectQatItem}", Text = DxComponent.Localize(MsgCode.RibbonDirectQatItem), ImageName = "", Enabled = false });
-            else if (!isInUserQatItem)
-                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonAddToQat}", Text = DxComponent.Localize(MsgCode.RibbonAddToQat), ImageName = ImageName.DxRibbonQatMenuAdd, Tag = link, Enabled = isLink, ClickAction = CustomizationPopupMenu_ExecAdd });
+            else if (isAllowedForQat)
+            {   // Button smí být přítomen v QAT:
+                if (!isInUserQatItem)
+                    items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonAddToQat}", Text = DxComponent.Localize(MsgCode.RibbonAddToQat), ImageName = ImageName.DxRibbonQatMenuAdd, Tag = link, Enabled = isLink, ClickAction = CustomizationPopupMenu_ExecAdd });
+                else
+                    items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonRemoveFromQat}", Text = DxComponent.Localize(MsgCode.RibbonRemoveFromQat), ImageName = ImageName.DxRibbonQatMenuRemove, Tag = link, ClickAction = CustomizationPopupMenu_ExecRemove });
+            }
             else
-                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonRemoveFromQat}", Text = DxComponent.Localize(MsgCode.RibbonRemoveFromQat), ImageName = ImageName.DxRibbonQatMenuRemove, Tag = link, ClickAction = CustomizationPopupMenu_ExecRemove });
+                // Nelze přidat na QAT:
+                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonDisabledForQatItem}", Text = DxComponent.Localize(MsgCode.RibbonDisabledForQatItem), ImageName = "", Enabled = false });
 
+            // Pozice QAT:
             bool isAbove = (this.ToolbarLocation == RibbonQuickAccessToolbarLocation.Above || this.ToolbarLocation == RibbonQuickAccessToolbarLocation.Default);
             if (!isAbove)
                 items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonShowQatTop}", Text = DxComponent.Localize(MsgCode.RibbonShowQatTop), ImageName = ImageName.DxRibbonQatMenuMoveUp, ItemIsFirstInGroup = true, ClickAction = CustomizationPopupMenu_ExecMoveUp });
@@ -5582,15 +5773,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             return (this.Toolbar != null && this.Toolbar.ItemLinks.Contains(link));
         }
         /// <summary>
-        /// Vrátí true, pokud BarItem (na který se odkazuje dodaný Link) má svoji reprezentaci v UserQAT Toolbaru
+        /// Vrátí true, pokud daný prvek <see cref="IRibbonItem"/> obsahuje data, která je možno přidat do QAT
         /// </summary>
-        /// <param name="link"></param>
+        /// <param name="ribbonItem">Nalezený datový prvek</param>
         /// <returns></returns>
-        private bool _IsInUserQatItem(BarItemLink link)
+        private bool _IsItemAllowedForQAT(IRibbonItem ribbonItem)
         {
-            if (link is null) return false;
-            string itemId = link.Item.Name;
-            return DxQuickAccessToolbar.ContainsQATItem(itemId);
+            if (ribbonItem is null) return false;
+            string qatKey = GetValidQATKey(ribbonItem);
+            return (!String.IsNullOrEmpty(qatKey));
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný prvek <see cref="IRibbonItem"/> má svoji reprezentaci v UserQAT Toolbaru
+        /// </summary>
+        /// <param name="ribbonItem">Nalezený datový prvek</param>
+        /// <returns></returns>
+        private bool _IsInUserQatItem(IRibbonItem ribbonItem)
+        {
+            if (ribbonItem is null) return false;
+            string qatKey = GetValidQATKey(ribbonItem);
+            return DxQuickAccessToolbar.ContainsQATItem(qatKey);
         }
         /// <summary>
         /// Počet reálně zobrazených QAT prvků
@@ -5697,7 +5899,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _QATUserItems.Add(qatItem);
                 if (this.IsMergedIntoDxParent)
                     _HasQATUserChangedItems = true;
-                _RunQATItemKeysChanged(null, _QATUserItems.Select(q => q.Key).ToArray());
+                _RunQATItemKeysChanged(null, _QATUserItems.Select(q => q.QatKey).ToArray());
             }
         }
         /// <summary>
@@ -5715,12 +5917,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="link"></param>
         private void UserRemoveItemFromQat(DevExpress.XtraBars.BarItemLink link)
         {
-            if (TryGetIRibbonData(link, out var key, out var iRibbonItem, out var iRibbonGroup, out var ownerRibbon))
+            if (TryGetIRibbonData(link, out var qatKey, out var iRibbonItem, out var iRibbonGroup, out var ownerRibbon))
             {   // Našli jsme data o dodaném prvku? Předáme to k vyřešení do instance Owner Ribbonu!
                 //  - Totiž this může být nějaký Master Ribbon, do něhož je Mergován nějaký Slave Ribbon, a aktuální BarItem pochází z toho Slave Ribbonu.
                 //  - Pak i evidenci QAT a volání události QATItemKeysChanged musí proběhnout v té instanci Ribbonu, které se věc týká, a nikoli this, kde je věc jen hostována ve formě Merge.
                 if (this.CustomizationPopupMenu.Visible) CustomizationPopupMenu.HidePopup();
-                ownerRibbon.UserRemoveItemFromQat(link, key, iRibbonItem, iRibbonGroup);
+                ownerRibbon.UserRemoveItemFromQat(link, qatKey, iRibbonItem, iRibbonGroup);
             }
         }
         /// <summary>
@@ -5728,20 +5930,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Už víme, co to bylo, a je zajištěno, že zdejší instance (this) je majitelem daného prvku a je tedy odpovědná za evidenci QAT a vyvolání správného eventhandleru.
         /// </summary>
         /// <param name="link"></param>
-        /// <param name="key"></param>
+        /// <param name="qatKey"></param>
         /// <param name="iRibbonItem"></param>
         /// <param name="iRibbonGroup"></param>
-        private void UserRemoveItemFromQat(DevExpress.XtraBars.BarItemLink link, string key, IRibbonItem iRibbonItem, IRibbonGroup iRibbonGroup)
+        private void UserRemoveItemFromQat(DevExpress.XtraBars.BarItemLink link, string qatKey, IRibbonItem iRibbonItem, IRibbonGroup iRibbonGroup)
         {
             {   // Našli jsme data o dodaném prvku?
-                if (_QATUserItemDict.TryGetValue(key, out var qatItem))
+                if (_QATUserItemDict.TryGetValue(qatKey, out var qatItem))
                 {   // Známe => odebrat:
                     qatItem.Reset();
-                    _QATUserItemDict.Remove(key);
-                    _QATUserItems.RemoveAll(q => q.Key == key);
+                    _QATUserItemDict.Remove(qatKey);
+                    _QATUserItems.RemoveAll(q => q.QatKey == qatKey);
                     if (this.IsMergedIntoDxParent)
                         _HasQATUserChangedItems = true;
-                    _RunQATItemKeysChanged(null, _QATUserItems.Select(q => q.Key).ToArray());
+                    _RunQATItemKeysChanged(null, _QATUserItems.Select(q => q.QatKey).ToArray());
                 }
             }
         }
@@ -5801,28 +6003,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud se nezdaří, vrátí false.
         /// </summary>
         /// <param name="link"></param>
-        /// <param name="key"></param>
+        /// <param name="qatKey"></param>
         /// <param name="iRibbonItem"></param>
         /// <param name="iRibbonGroup"></param>
         /// <param name="ownerRibbon"></param>
         /// <returns></returns>
-        private bool TryGetIRibbonData(DevExpress.XtraBars.BarItemLink link, out string key, out IRibbonItem iRibbonItem, out IRibbonGroup iRibbonGroup, out DxRibbonControl ownerRibbon)
+        private bool TryGetIRibbonData(DevExpress.XtraBars.BarItemLink link, out string qatKey, out IRibbonItem iRibbonItem, out IRibbonGroup iRibbonGroup, out DxRibbonControl ownerRibbon)
         {
-            return TryGetIRibbonData(link?.Item, out key, out iRibbonItem, out iRibbonGroup, out ownerRibbon);
+            return TryGetIRibbonData(link?.Item, out qatKey, out iRibbonItem, out iRibbonGroup, out ownerRibbon);
         }
         /// <summary>
         /// Metoda pro dodaný BarItem najde jeho Tag, detekuje jeho typ a určí jeho Key, a najde i Ribbon, který prvek deklaroval, uloží typové výsledky a vrátí true.
         /// Pokud se nezdaří, vrátí false.
         /// </summary>
         /// <param name="barItem"></param>
-        /// <param name="key"></param>
+        /// <param name="qatKey"></param>
         /// <param name="iRibbonItem"></param>
         /// <param name="iRibbonGroup"></param>
         /// <param name="ownerRibbon"></param>
         /// <returns></returns>
-        private bool TryGetIRibbonData(DevExpress.XtraBars.BarItem barItem, out string key, out IRibbonItem iRibbonItem, out IRibbonGroup iRibbonGroup, out DxRibbonControl ownerRibbon)
+        private static bool TryGetIRibbonData(DevExpress.XtraBars.BarItem barItem, out string qatKey, out IRibbonItem iRibbonItem, out IRibbonGroup iRibbonGroup, out DxRibbonControl ownerRibbon)
         {
-            if (TryGetIRibbonData(barItem, out key, out iRibbonItem, out iRibbonGroup))
+            if (_TryGetIRibbonData(barItem, out qatKey, out iRibbonItem, out iRibbonGroup))
                 return (_TryGetDxRibbon(barItem, out ownerRibbon));
             ownerRibbon = null;
             return false;
@@ -5832,45 +6034,57 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud se nezdaří, vrátí false.
         /// </summary>
         /// <param name="barItem"></param>
-        /// <param name="key"></param>
+        /// <param name="qatKey"></param>
         /// <param name="iRibbonItem"></param>
         /// <param name="iRibbonGroup"></param>
         /// <returns></returns>
-        private bool TryGetIRibbonData(DevExpress.XtraBars.BarItem barItem, out string key, out IRibbonItem iRibbonItem, out IRibbonGroup iRibbonGroup)
+        private static bool _TryGetIRibbonData(DevExpress.XtraBars.BarItem barItem, out string qatKey, out IRibbonItem iRibbonItem, out IRibbonGroup iRibbonGroup)
         {
             if (barItem != null)
             {
                 object tag = barItem.Tag;
                 if (tag is BarItemTagInfo itemInfo)
                 {
-                    key = GetValidQATKey(itemInfo.Data.ItemId);
-                    iRibbonItem = itemInfo.Data;
-                    iRibbonGroup = itemInfo.Data.ParentGroup;
-                    return true;
+                    qatKey = GetValidQATKey(itemInfo.Data);
+                    if (!String.IsNullOrEmpty(qatKey))
+                    {
+                        iRibbonItem = itemInfo.Data;
+                        iRibbonGroup = itemInfo.Data.ParentGroup;
+                        return true;
+                    }
                 }
-                if (tag is IRibbonItem iItem)
+                else if (tag is IRibbonItem iItem)
                 {
-                    key = GetValidQATKey(iItem.ItemId);
-                    iRibbonItem = iItem;
-                    iRibbonGroup = iItem.ParentGroup;
-                    return true;
+                    qatKey = GetValidQATKey(iItem);
+                    if (!String.IsNullOrEmpty(qatKey))
+                    {
+                        iRibbonItem = iItem;
+                        iRibbonGroup = iItem.ParentGroup;
+                        return true;
+                    }
                 }
-                if (tag is IRibbonGroup iGroup)
+                else if (tag is IRibbonGroup iGroup)
                 {
-                    key = GetValidQATKey(iGroup.GroupId);
-                    iRibbonItem = null;
-                    iRibbonGroup = iGroup;
-                    return true;
+                    qatKey = GetValidQATKey(iGroup.GroupId);
+                    if (!String.IsNullOrEmpty(qatKey))
+                    {
+                        iRibbonItem = null;
+                        iRibbonGroup = iGroup;
+                        return true;
+                    }
                 }
-                if (tag is DxRibbonGroup dxGroup)
+                else if (tag is DxRibbonGroup dxGroup)
                 {
-                    key = GetValidQATKey(dxGroup.GroupId);
-                    iRibbonItem = null;
-                    iRibbonGroup = dxGroup.DataGroupLast;
-                    return true;
+                    qatKey = GetValidQATKey(dxGroup.GroupId);
+                    if (!String.IsNullOrEmpty(qatKey))
+                    {
+                        iRibbonItem = null;
+                        iRibbonGroup = dxGroup.DataGroupLast;
+                        return true;
+                    }
                 }
             }
-            key = null;
+            qatKey = null;
             iRibbonItem = null;
             iRibbonGroup = null;
             return false;
@@ -5918,7 +6132,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (_QATDirectItems is null) return null;
                 var allItems = _QATDirectItems.Select(q => q.RibbonItem).Flatten(i => i.SubItems);
-                return allItems.Select(t => t.Item2).CreateDictionary(i => GetValidQATKey(i.ItemId), true);
+                return allItems.Select(t => t.Item2).CreateDictionary(i => GetValidQATKey(i), true);
             }
         }
         /// <summary>
@@ -6008,7 +6222,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool _IsQATDirectOwnItem(IRibbonItem iRibbonItem)
         { 
             if (iRibbonItem is null || _QATDirectItems is null) return false;
-            var key = GetValidQATKey(iRibbonItem.ItemId);
+            var key = GetValidQATKey(iRibbonItem);
+            if (String.IsNullOrEmpty(key)) return false;
+
             var allQATItems = _QATDirectAllItemKeys;                 // _QATDirectAllItemKeys není null, pokud není null _QATDirectItems; a to jsme testovali.
             return allQATItems.ContainsKey(key);
         }
@@ -6021,7 +6237,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (qatItems == null) return;
             foreach (var qatItem in qatItems)
             {
-                qatItem.RemoveBarItemLink(true);
+                qatItem.RemoveBarItemLink(true, true);
                 qatItem.Dispose();
             }
             _QATDirectItems = null;
@@ -6067,8 +6283,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var result = form.ShowDialog(this.FindForm());
 
                 if (result == DialogResult.OK)
-                {
-                    var modifiedItems = qatPanel.ListBox.ListItems;
+                {   // V ListBoxu jsou prvky typované jako IMenuItem, ale protože jsem tam dával IRibbonItem, tak tam budou tito potomkové:
+                    var modifiedItems = qatPanel.ListBox.ListItems.OfType<IRibbonItem>().ToArray();
                     ChangeQatItems(currentItems, modifiedItems);
                 }    
             }     
@@ -6076,7 +6292,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Prvky QAT, které se budou zobrazovat v QatManageru
         /// </summary>
-        private IMenuItem[] QatManagerItems
+        private IRibbonItem[] QatManagerItems
         {
             get 
             {
@@ -6084,36 +6300,37 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var items = this.Toolbar.ItemLinks.Select(l => l.Item).ToArray();
 
                 // Pokud najdeme ikonu, která má prázdný text a/nebo ikonu, získáme ji z BarItemu:
-                List<IMenuItem> menuItems = new List<IMenuItem>();
+                var ribbonItems = new List<IRibbonItem>();
                 for (int i = 0; i < items.Length; i++)
                 {
                     var barItem = items[i];
                     if (barItem.Visibility == BarItemVisibility.Never) continue;
-                    if (!TryGetIRibbonData(barItem, out var _, out var iRibbonItem, out var _)) continue;
+                    if (!_TryGetIRibbonData(barItem, out var _, out var iRibbonItem, out var _)) continue;
 
-                    if (!DxQuickAccessToolbar.ContainsQATItem(iRibbonItem.ItemId)) continue;   // Toto není UserQAT, ale FixedQAT prvek!
+                    string qatKey = GetRibbonQATKey(iRibbonItem);
+                    if (!DxQuickAccessToolbar.ContainsQATItem(qatKey)) continue;            // Toto není UserQAT, ale FixedQAT prvek!
 
                     bool hasImage = (!String.IsNullOrEmpty(iRibbonItem.ImageName) || iRibbonItem.Image != null || iRibbonItem.SvgImage != null);
                     bool hasText = !String.IsNullOrEmpty(iRibbonItem.Text);
                     if (hasImage && hasText)
-                    {   // Běžný standardně definovaný MenuItem (IRibbonItem) s obrázkem i textem:
-                        menuItems.Add(iRibbonItem);
+                    {   // Běžný standardně definovaný IRibbonItem s obrázkem i textem:
+                        ribbonItems.Add(iRibbonItem);
                     }
                     else
                     {   // Tady jsou typicky DevExpress itemy (skin, paleta), tam nedefinujeme ani text, ani obrázek, protože Ribbon je zobrazuje proměnné:
                         // ... anebo deklarované prvky bez textu, pro ně se podíváme i do ToolTipu:
-                        DataMenuItem menuItem = DataMenuItem.CreateClone(iRibbonItem);
-                        if (!hasImage) { menuItem.Image = barItem.ImageOptions.Image; menuItem.SvgImage = barItem.ImageOptions.SvgImage; }
-                        if (!hasText) menuItem.Text = barItem.Caption;
-                        if (String.IsNullOrEmpty(menuItem.Text)) menuItem.Text = menuItem.ToolTipText;   // Když nenajdu text ani přímo v Buttonu, zkusím ještě ToolTip...
+                        var cloneItem = DataRibbonItem.CreateClone(iRibbonItem);
+                        if (!hasImage) { cloneItem.Image = barItem.ImageOptions.Image; cloneItem.SvgImage = barItem.ImageOptions.SvgImage; }
+                        if (!hasText) cloneItem.Text = barItem.Caption;
+                        if (String.IsNullOrEmpty(cloneItem.Text)) cloneItem.Text = cloneItem.ToolTipText;   // Když nenajdu text ani přímo v Buttonu, zkusím ještě ToolTip...
 
-                        hasImage = !String.IsNullOrEmpty(menuItem.ImageName) || menuItem.Image != null;
-                        hasText = !String.IsNullOrEmpty(menuItem.Text);
+                        hasImage = !String.IsNullOrEmpty(cloneItem.ImageName) || cloneItem.Image != null;
+                        hasText = !String.IsNullOrEmpty(cloneItem.Text);
                         if (hasImage || hasText)
-                            menuItems.Add(menuItem);
+                            ribbonItems.Add(cloneItem);
                     }
                 }
-                return menuItems.ToArray();
+                return ribbonItems.ToArray();
             }
         }
         /// <summary>
@@ -6122,11 +6339,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="currentItems"></param>
         /// <param name="modifiedItems"></param>
-        private void ChangeQatItems(IMenuItem[] currentItems, IMenuItem[] modifiedItems)
+        private void ChangeQatItems(IRibbonItem[] currentItems, IRibbonItem[] modifiedItems)
         {
-            // Z dodaných dat si vytáhneme jen jejich klíče:
-            var currentIds = currentItems.Select(i => i.ItemId).ToArray();
-            var modifiedIds = modifiedItems.Select(i => i.ItemId).ToArray();
+            // Z dodaných dat si vytáhneme jen jejich klíče QatKey:
+            var currentIds = currentItems.Select(i => GetRibbonQATKey(i)).ToArray();
+            var modifiedIds = modifiedItems.Select(i => GetRibbonQATKey(i)).ToArray();
             if (modifiedIds.Length > currentIds.Length)
                 throw new InvalidOperationException($"DxRibbonControl.ChangeQatItems() error: modifiedItems has more items than currentItems.");
 
@@ -6145,14 +6362,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 string currentId = currentIds[i];
                 ChangeQatInfo changeQat = new ChangeQatInfo()
                 {
-                    CurrentId = currentId,
+                    CurrentQatKey = currentId,
                     CurrentAllQatIndex = allQatItems.IndexOf(currentId),
                     IsDeleted = !modifiedIds.Any(m => m == currentId)
                 };
                 changeQats[i] = changeQat;
             }
 
-            // Do těch prvků pole changeQats, které nejsou určeny ke smazání, vepíšu ItemId nových prvků = tím zajistím uložení změn pořadí prvků:
+            // Do těch prvků pole changeQats, které nejsou určeny ke smazání, vepíšu QatKey nových prvků = tím zajistím uložení změn pořadí prvků:
             int index = 0;
             foreach (var modifiedId in modifiedIds)
             {
@@ -6192,19 +6409,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         private class ChangeQatInfo
         {
             /// <summary>
-            /// ItemId stávajícího prvku
+            /// QatKey stávajícího prvku
             /// </summary>
-            public string CurrentId;
+            public string CurrentQatKey;
             /// <summary>
-            /// Index stávajícího prvku ItemId v poli <see cref="DxQuickAccessToolbar.QATItems"/>
+            /// Index stávajícího prvku QatKey v poli <see cref="DxQuickAccessToolbar.QATItems"/>
             /// </summary>
             public int CurrentAllQatIndex;
             /// <summary>
-            /// Obsahuje true, když prvek s tímto ItemId (<see cref="CurrentId"/>) není přítomen v poli modifikovaný prvků = má být smazán
+            /// Obsahuje true, když prvek s tímto QatKey (<see cref="CurrentQatKey"/>) není přítomen v poli modifikovaný prvků = má být smazán
             /// </summary>
             public bool IsDeleted;
             /// <summary>
-            /// ItemId prvku, který bude na této pozici <see cref="CurrentAllQatIndex"/> po změně = po změně pořadí prvků
+            /// QatKey prvku, který bude na této pozici <see cref="CurrentAllQatIndex"/> po změně = po změně pořadí prvků
             /// </summary>
             public string ModifiedId;
             /// <summary>
@@ -6213,7 +6430,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <returns></returns>
             public override string ToString()
             {
-                return $"CurrentId: {CurrentId}, at index [{CurrentAllQatIndex}]; " + (IsDeleted ? "IsDeleted" : "ModifiedId: " + ModifiedId);
+                return $"CurrentId: {CurrentQatKey}, at index [{CurrentAllQatIndex}]; " + (IsDeleted ? "IsDeleted" : "ModifiedId: " + ModifiedId);
             }
         }
         #endregion
@@ -6227,11 +6444,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Konstruktor
             /// </summary>
             /// <param name="owner"></param>
-            /// <param name="key"></param>
-            public QatItem(DxRibbonControl owner, string key)
+            /// <param name="qatKey"></param>
+            public QatItem(DxRibbonControl owner, string qatKey)
             {
                 this._Owner = owner;
-                this._Key = key;
+                this._QatKey = qatKey;
             }
             /// <summary>
             /// Konstruktor pro existující <see cref="IRibbonItem"/>
@@ -6241,7 +6458,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="barItem"></param>
             /// <param name="barItemLink"></param>
             public QatItem(DxRibbonControl owner, IRibbonItem iRibbonItem, DevExpress.XtraBars.BarItem barItem, DevExpress.XtraBars.BarItemLink barItemLink)
-                : this(owner, iRibbonItem.ItemId)
+                : this(owner, GetRibbonQATKey(iRibbonItem))
             {
                 _BarItem = barItem;
                 _BarItemLink = barItemLink;
@@ -6251,13 +6468,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Konstruktor pro existující <see cref="IRibbonItem"/>
             /// </summary>
             /// <param name="owner"></param>
-            /// <param name="key"></param>
+            /// <param name="qatKey"></param>
             /// <param name="iRibbonItem"></param>
             /// <param name="iRibbonGroup"></param>
             /// <param name="barItem"></param>
             /// <param name="barItemLink"></param>
-            public QatItem(DxRibbonControl owner, string key, IRibbonItem iRibbonItem, IRibbonGroup iRibbonGroup, DevExpress.XtraBars.BarItem barItem, DevExpress.XtraBars.BarItemLink barItemLink)
-                : this(owner, key)
+            public QatItem(DxRibbonControl owner, string qatKey, IRibbonItem iRibbonItem, IRibbonGroup iRibbonGroup, DevExpress.XtraBars.BarItem barItem, DevExpress.XtraBars.BarItemLink barItemLink)
+                : this(owner, qatKey)
             {
                 _BarItem = barItem;
                 _BarItemLink = barItemLink;
@@ -6268,12 +6485,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Konstruktor pro existující <see cref="IRibbonGroup"/>
             /// </summary>
             /// <param name="owner"></param>
-            /// <param name="key"></param>
+            /// <param name="qatKey"></param>
             /// <param name="ribbonGroup"></param>
             /// <param name="barItem"></param>
             /// <param name="barItemLink"></param>
-            public QatItem(DxRibbonControl owner, string key, IRibbonGroup ribbonGroup, DevExpress.XtraBars.BarItem barItem, DevExpress.XtraBars.BarItemLink barItemLink)
-                : this(owner, key)
+            public QatItem(DxRibbonControl owner, string qatKey, IRibbonGroup ribbonGroup, DevExpress.XtraBars.BarItem barItem, DevExpress.XtraBars.BarItemLink barItemLink)
+                : this(owner, qatKey)
             {
                 _BarItem = barItem;
                 _BarItemLink = barItemLink;
@@ -6296,32 +6513,37 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <returns></returns>
             public override string ToString()
             {
-                string text = RibbonItem?.ItemId ?? _Key;
-                if (RibbonItem != null) text += $" = \"{RibbonItem.Text}\"";
+                string qatKey = DxRibbonControl.GetRibbonQATKey(RibbonItem);
+                string text = $"QatKey: '{qatKey ?? _QatKey}'";
+                if (RibbonItem != null) text += $"; Text: \"{RibbonItem.Text}\"";
 
                 if (_BarItem != null) text += "; BarItem exists";
                 if (_BarItemLink != null) text += "; BarLink exists";
 
                 if (NeedChangeInQat) text += "; NeedChangeInQat";
                 if (NeedAddToQat) text += "; NeedAddToQat";
-                if (CanRemoveFromQat) text += "; NeedRemoveFromQat";
+                if (CanRemoveFromQat) text += "; CanRemoveFromQat";
 
                 return text;
             }
             /// <summary>Vlastník = Ribbon</summary>
             private DxRibbonControl _Owner;
             /// <summary>Klíč</summary>
-            private string _Key;
+            private string _QatKey;
             /// <summary>
-            /// Obsahuje klíč prvku nebo grupy. Není null, neobsahuje TAB ani mezery na okrajích
+            /// Obsahuje klíč prvku nebo grupy. Není null, neobsahuje TAB ani mezery na okrajích.
+            /// Odpovídá <see cref="IRibbonItem.QatKey"/> pokud je zadáno not null, anebo <see cref="ITextItem.ItemId"/>.
             /// </summary>
-            public string Key { get { return _Key; } }
+            public string QatKey { get { return _QatKey; } }
             /// <summary>
-            /// Definice prvku Ribbonu
+            /// Datová definice prvku Ribbonu.
+            /// Zůstává zde uložen stále, i při Refreshi a Reloadu ribbonu. 
+            /// Pouze pokud uživatel aktivně odebere prvek z QAT panelu (pomocí kontextového menu), pak je odsud odebrán (nullován) metodou <see cref="Reset"/>.
             /// </summary>
             public IRibbonItem RibbonItem { get; internal set; }
             /// <summary>
             /// Fyzický objekt Ribbonu.
+            /// BarItem je prvek Ribbonu, a v případě potřeby (refreshe) je z instance QatItem odebrán.<br/>
             /// Setováním objektu do této property dojde k odstranění případně existujícího linku <see cref="BarItemLink"/> 
             /// (z fyzického ToolBaru, z paměti, z tohoto objektu).
             /// </summary>
@@ -6330,7 +6552,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 get { return _BarItem; }
                 set
                 {
-                    RemoveBarItemLink();
+                    RemoveBarItemLink(false, false);
                     _BarItem = value;
                 }
             }
@@ -6349,13 +6571,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 get { return _BarGroup; }
                 set
                 {
-                    RemoveBarItemLink();
+                    RemoveBarItemLink(false, false);
                     _BarGroup = value;
                 }
             }
             private DevExpress.XtraBars.Ribbon.RibbonPageGroup _BarGroup;
             /// <summary>
-            /// Link na Objekt Ribbonu
+            /// Link na object <see cref="BarItem"/> Ribbonu, tento Link je umístěn v QAT Toolbaru.
+            /// Je vytvářen a odebírán podle potřeby.
             /// </summary>
             public DevExpress.XtraBars.BarItemLink BarItemLink { get { return _BarItemLink; } }
             private DevExpress.XtraBars.BarItemLink _BarItemLink;
@@ -6371,6 +6594,20 @@ namespace Noris.Clients.Win.Components.AsolDX
                     bool hasItem = (this.BarItem != null || this.BarGroup != null);
                     bool hasLink = (this.BarItemLink != null);
                     return (hasItem != hasLink);
+                }
+            }
+            /// <summary>
+            /// Obsahuje true, pokud this prvek by měl být zobrazen v QAT (tedy má vložen datový prvek <see cref="RibbonItem"/>),
+            /// ale dosud nemá uloženou referenci na živý prvek Ribbonu v <see cref="BarItem"/>.
+            /// Pak by si měl dohledat tento <see cref="BarItem"/> pomocí metody <see cref="SearchForBarItem"/>.
+            /// </summary>
+            public bool NeedSearchBarItem
+            {
+                get
+                {
+                    bool hasData = (this.RibbonItem != null);
+                    bool hasItem = (this.BarItem != null || this.BarGroup != null);
+                    return (hasData && !hasItem);
                 }
             }
             /// <summary>
@@ -6408,12 +6645,38 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
             /// <summary>
+            /// Pokusí se dohledat živý BarItem v Ribbonu pro zde přítomný datový prvek <see cref="RibbonItem"/>.
+            /// </summary>
+            /// <param name="qatBarItems">Aktuálně přítomné BarItemy + RibbonItemy v this Ribbonu, klíčem je QatKey. Smí být null.</param>
+            public void SearchForBarItem(Dictionary<string, Tuple<BarItem, IRibbonItem>> qatBarItems)
+            {
+                if (!NeedSearchBarItem) return;
+
+                bool found = false;
+                if (qatBarItems != null)
+                {   // Hledáme v Dictionary podle QatKey:
+                    string qatKey = DxRibbonControl.GetValidQATKey(this.RibbonItem);
+                    if (!String.IsNullOrEmpty(qatKey) && qatBarItems.TryGetValue(qatKey, out var barItem))
+                    {   // Nalezený prvek obsahuje živou instanci BarItem:
+                        this.BarItem = barItem.Item1;
+                        found = true;
+                    }
+                }
+
+                if (!found)
+                {   // Hledáme podle RibbonItem.ItemId = BarItem.Name :
+                    string itemId = this.RibbonItem.ItemId;
+                    if (this._Owner.Items.TryGetFirst(b => b.Name == itemId, out var foundBarItem))
+                        this.BarItem = foundBarItem;
+                }
+            }
+            /// <summary>
             /// Metoda fyzicky přidá Link do QAT
             /// </summary>
             /// <param name="isGroupBegin">Nastavit v prvku BeginGroup = true?</param>
             public void AddLinkToQat(ref bool isGroupBegin)
             {
-                this.RemoveBarItemLink();
+                this.RemoveBarItemLink(false, false);
                 if (this.BarItem != null)
                 {
                     var link = _Owner.Toolbar.ItemLinks.Add(this.BarItem);
@@ -6429,26 +6692,52 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Metoda zajistí, že pokud tento prvek je zobrazen ve fyzickém QAT, pak z něj bude odebrán, Disposován a z tohoto objektu vynulován.
             /// </summary>
-            /// <param name="disposeBarItem">Volitelně disposovat i samotný prvek <see cref="BarItem"/></param>
-            public void RemoveBarItemLink(bool disposeBarItem = false)
+            /// <param name="removeBarItemFromRibbon">Volitelně odebrat samotný prvek <see cref="BarItem"/> z Ribbonu</param>
+            /// <param name="resetBarItem">Odebrat BarItem z tohoto objektu, tehdy když se už nebude příště generovat link do QAT (po Clear grupy)</param>
+            public void RemoveBarItemLink(bool removeBarItemFromRibbon, bool resetBarItem)
             {
-                string key = this.Key;
                 if (_Owner != null && _Owner.Toolbar != null && _Owner.Toolbar.ItemLinks.Count > 0)
-                {
-                    _Owner.Toolbar.ItemLinks.RemoveWhere<BarItemLink>(b => b.Item.Name == key);
+                {   // Pokud mám Ownera a jeho Toolbar, pak z Toolbaru odeberu Link na "náš" prvek:
+                    _Owner.Toolbar.ItemLinks.RemoveWhere<BarItemLink>(l => isCurrentLink(l));
                 }
+                this._BarItemLink = null;                  // Tím zajistím, že já (QatItem) budu vědět, že můj prvek není v QAT toolbaru
 
-                this._BarItemLink = null;
-
-                if (disposeBarItem)
-                {
+                if (removeBarItemFromRibbon)
+                {   // Vlastní BarItem má být odebrán a disposován?
                     var barItem = this.BarItem;
                     if (barItem != null)
                     {
                         if (_Owner.Items.Contains(barItem))
                             _Owner.Items.Remove(barItem);
-                        _BarItem = null;
                     }
+                }
+                if (resetBarItem)
+                    this._BarItem = null;                  // Tím zajistím, že já (QatItem) budu vědět, že ke mě se neváže žádný BarItem.
+
+
+                // Vrátí true, pokud dodaný testovací link (který pochází z _Owner.Toolbar.ItemLinks) odpovídá zdejšímu prvku.
+                bool isCurrentLink(BarItemLink testLink)
+                {
+                    // NULL odeberu:
+                    if (testLink is null) return true;
+
+                    // Pokud this eviduje Link, a toto je on, pak jej odeberu:
+                    var currentLink = this._BarItemLink;
+                    if (currentLink != null && Object.ReferenceEquals(currentLink, testLink)) return true;
+
+                    // Pokud this eviduje Item, a dodaný Link se odkazuje na něj, pak jej odeberu:
+                    var currentItem = this._BarItem;
+                    if (currentItem != null && Object.ReferenceEquals(currentItem, testLink.Item)) return true;
+
+                    // Z testovaného Linku získám jeho Item, z něj získám data a přečtu jejich QatKey a porovnám s naším Key:
+                    if (this._Owner.TryGetIRibbonData(testLink, out var _, out var ribbonItem, out var _, out var _))
+                    {
+                        var currentKey = this.QatKey;
+                        var testQatKey = GetRibbonQATKey(ribbonItem);
+                        if (String.Equals(currentKey, testQatKey, StringComparison.Ordinal)) return true;
+                    }
+
+                    return false;
                 }
             }
             /// <summary>
@@ -6457,7 +6746,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public void Reset()
             {
-                RemoveBarItemLink();
+                RemoveBarItemLink(false, true);
 
                 this._Owner = null;
                 this.RibbonItem = null;
@@ -6926,7 +7215,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonGroup"></param>
         /// <param name="definingRibbon"></param>
         /// <returns></returns>
-        private bool _TryGetIRibbonGroup(DevExpress.XtraBars.Ribbon.RibbonPageGroup group, out IRibbonGroup iRibbonGroup, out DxRibbonControl definingRibbon)
+        private static bool _TryGetIRibbonGroup(DevExpress.XtraBars.Ribbon.RibbonPageGroup group, out IRibbonGroup iRibbonGroup, out DxRibbonControl definingRibbon)
         {
             iRibbonGroup = null;
             definingRibbon = null;
@@ -6943,7 +7232,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="item"></param>
         /// <param name="iRibbonItem"></param>
         /// <returns></returns>
-        private bool _TryGetIRibbonItem(DevExpress.XtraBars.BarItem item, out IRibbonItem iRibbonItem)
+        private static bool _TryGetIRibbonItem(DevExpress.XtraBars.BarItem item, out IRibbonItem iRibbonItem)
         {
             iRibbonItem = null;
             if (item == null) return false;
@@ -6957,7 +7246,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="pages"></param>
         /// <param name="iRibbonPage"></param>
         /// <returns></returns>
-        private bool _TryGetIRibbonPage(IEnumerable<DevExpress.XtraBars.Ribbon.RibbonPage> pages, out IRibbonPage iRibbonPage)
+        private static bool _TryGetIRibbonPage(IEnumerable<DevExpress.XtraBars.Ribbon.RibbonPage> pages, out IRibbonPage iRibbonPage)
         {
             iRibbonPage = null;
             if (pages == null) return false;
@@ -6974,7 +7263,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="pages"></param>
         /// <param name="iRibbonGroup"></param>
         /// <returns></returns>
-        private bool _TryGetIRibbonGroup(IEnumerable<DevExpress.XtraBars.Ribbon.RibbonPage> pages, out IRibbonGroup iRibbonGroup)
+        private static bool _TryGetIRibbonGroup(IEnumerable<DevExpress.XtraBars.Ribbon.RibbonPage> pages, out IRibbonGroup iRibbonGroup)
         {
             iRibbonGroup = null;
             if (pages == null) return false;
@@ -6992,7 +7281,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="pages"></param>
         /// <param name="iRibbonItem"></param>
         /// <returns></returns>
-        private bool _TryGetIRibbonItem(IEnumerable<DevExpress.XtraBars.Ribbon.RibbonPage> pages, out IRibbonItem iRibbonItem)
+        private static bool _TryGetIRibbonItem(IEnumerable<DevExpress.XtraBars.Ribbon.RibbonPage> pages, out IRibbonItem iRibbonItem)
         {
             iRibbonItem = null;
             if (pages == null) return false;
@@ -7012,7 +7301,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="barItemLinks"></param>
         /// <param name="iRibbonItem"></param>
         /// <returns></returns>
-        private bool _TryGetIRibbonItem(IEnumerable<DevExpress.XtraBars.BarItemLink> barItemLinks, out IRibbonItem iRibbonItem)
+        private static bool _TryGetIRibbonItem(IEnumerable<DevExpress.XtraBars.BarItemLink> barItemLinks, out IRibbonItem iRibbonItem)
         {
             iRibbonItem = null;
             if (barItemLinks == null) return false;
@@ -7036,7 +7325,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="category"></param>
         /// <param name="definingRibbon"></param>
-        private bool _TryGetDxRibbon(DevExpress.XtraBars.Ribbon.RibbonPageCategory category, out DxRibbonControl definingRibbon)
+        private static bool _TryGetDxRibbon(DevExpress.XtraBars.Ribbon.RibbonPageCategory category, out DxRibbonControl definingRibbon)
         {
             definingRibbon = null;
             if (category == null) return false;
@@ -7050,7 +7339,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="group"></param>
         /// <param name="definingRibbon"></param>
-        private bool _TryGetDxRibbon(DevExpress.XtraBars.Ribbon.RibbonPageGroup group, out DxRibbonControl definingRibbon)
+        private static bool _TryGetDxRibbon(DevExpress.XtraBars.Ribbon.RibbonPageGroup group, out DxRibbonControl definingRibbon)
         {
             definingRibbon = null;
             if (group == null) return false;
@@ -7068,7 +7357,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="barItem"></param>
         /// <param name="definingRibbon"></param>
-        private bool _TryGetDxRibbon(DevExpress.XtraBars.BarItem barItem, out DxRibbonControl definingRibbon)
+        private static bool _TryGetDxRibbon(DevExpress.XtraBars.BarItem barItem, out DxRibbonControl definingRibbon)
         {
             if (barItem != null && (barItem.Manager is DevExpress.XtraBars.Ribbon.RibbonBarManager manager) && (manager.Ribbon is DxRibbonControl dxRibbonControl))
             {
@@ -7084,7 +7373,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="pages"></param>
         /// <returns></returns>
-        private DxRibbonControl _SearchRibbonInPages(IEnumerable<DevExpress.XtraBars.Ribbon.RibbonPage> pages)
+        private static DxRibbonControl _SearchRibbonInPages(IEnumerable<DevExpress.XtraBars.Ribbon.RibbonPage> pages)
         {
             var items = pages
                          .SelectMany(p => p.Groups)
@@ -7099,7 +7388,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="items"></param>
         /// <returns></returns>
-        private DxRibbonControl _SearchRibbonInItems(IEnumerable<DevExpress.XtraBars.BarItem> items)
+        private static DxRibbonControl _SearchRibbonInItems(IEnumerable<DevExpress.XtraBars.BarItem> items)
         {
             var ribbon = items
                          .Select(i => i.Manager)
@@ -8346,7 +8635,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public IRibbonPage PageData { get; private set; }
         /// <summary>
-        /// ID poslední aktivace této stránky. Při aktivaci stránky se volá metoda <see cref="OnActivate()"/>.
+        /// ID poslední aktivace této stránky. Při aktivaci stránky se volá metoda <see cref="OnActivate(bool)"/>.
         /// Slouží k určení stránky, která má být aktivní.
         /// </summary>
         public int ActivateTimeStamp { get; private set; }
@@ -10300,29 +10589,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vrátí jeden string obsahující serializované zadané údaje
         /// </summary>
         /// <param name="location"></param>
-        /// <param name="itemsId"></param>
+        /// <param name="qatKeys"></param>
         /// <param name="itemIds"></param>
         /// <param name="dictionary"></param>
         /// <returns></returns>
-        private static string _SerializeConfigValue(RibbonQuickAccessToolbarLocation location, IEnumerable<string> itemsId, List<string> itemIds = null, Dictionary<string, string> dictionary = null)
+        private static string _SerializeConfigValue(RibbonQuickAccessToolbarLocation location, IEnumerable<string> qatKeys, List<string> itemIds = null, Dictionary<string, string> dictionary = null)
         {
             bool addItems = (itemIds != null);
             StringBuilder sb = new StringBuilder();
             string del = QATItemKeysDelimiterChar.ToString();
             string loc = LocationPrefix + location.ToString();
             sb.Append(loc + del);
-            if (itemsId != null)
+            if (qatKeys != null)
             {
                 if (dictionary == null)
                     dictionary = new Dictionary<string, string>();
                 else if (dictionary.Count > 0)
                     dictionary.Clear();
 
-                foreach (var itemId in itemsId)
+                foreach (var qatKey in qatKeys)
                 {
-                    string key = GetValidQATKey(itemId);
+                    string key = GetValidQATKey(qatKey);
                     if (key.Length == 0 || dictionary.ContainsKey(key)) continue;
-                    dictionary.Add(key, itemId);
+                    dictionary.Add(key, qatKey);
                     sb.Append(key + del);
                     if (addItems) itemIds.Add(key);
                 }
@@ -10343,23 +10632,23 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             Dictionary<string, string> dictionary = new Dictionary<string, string>();
 
-            var items = configValue.Split(QATItemKeysDelimiterChar);
-            int count = items.Length;
+            var qatKeys = configValue.Split(QATItemKeysDelimiterChar);
+            int count = qatKeys.Length;
             string locationPrefix = LocationPrefix;
             for (int i = 0; i < count; i++)
             {
-                string item = items[i];
-                if (String.IsNullOrEmpty(item)) continue;
-                if (i == 0 && item.StartsWith(locationPrefix))
+                string qatKey = qatKeys[i];
+                if (String.IsNullOrEmpty(qatKey)) continue;
+                if (i == 0 && qatKey.StartsWith(locationPrefix))
                 {
-                    if ((Enum.TryParse<RibbonQuickAccessToolbarLocation>(item.Substring(locationPrefix.Length), out RibbonQuickAccessToolbarLocation loc)) && (loc == RibbonQuickAccessToolbarLocation.Above || loc == RibbonQuickAccessToolbarLocation.Below))
+                    if ((Enum.TryParse<RibbonQuickAccessToolbarLocation>(qatKey.Substring(locationPrefix.Length), out RibbonQuickAccessToolbarLocation loc)) && (loc == RibbonQuickAccessToolbarLocation.Above || loc == RibbonQuickAccessToolbarLocation.Below))
                         location = loc;
                 }
                 else
                 {
-                    string key = GetValidQATKey(item);
+                    string key = GetValidQATKey(qatKey);
                     if (key.Length > 0 && !dictionary.ContainsKey(key))
-                        dictionary.Add(key, item);
+                        dictionary.Add(key, qatKey);
                 }
             }
             qATItems = dictionary.Keys.ToArray();
@@ -10689,7 +10978,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Reálně uložené ID stránky
         /// </summary>
-        protected string _CategoryId;
+        private string _CategoryId;
         /// <summary>
         /// Režim pro vytvoření / refill / remove této grupy
         /// </summary>
@@ -10924,6 +11213,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.ItemType = RibbonItemType.Button;
             this.RibbonStyle = RibbonItemStyles.All;
             this.ItemPaintStyle = BarItemPaintStyle.CaptionGlyph;
+            this.QatKey = null;
             this.VisibleInSearchMenu = true;
         }
         /// <summary>
@@ -11136,6 +11426,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zobrazit v Search menu?
         /// </summary>
         public virtual bool VisibleInSearchMenu { get; set; }
+        /// <summary>
+        /// Explicitní klíč pro QAT (Quick Access Toolbar = Panel rychlého přístupu nad/pod Ribbonem). 
+        /// Pokud zde bude null, použije se jako default <see cref="ITextItem.ItemId"/> = výchozí stav.
+        /// Pokud zde bude prázdný string, pak tento prvek do QAT nelze přidat = nezobrazí nse odpovídající kontextové menu (nebo jeho položky).
+        /// A prvky dříve přidané (s původním klíčem) nebudou nově v QAT zobrazeny.
+        /// <para/>
+        /// Pokud zde bude explicitní string, potom do QAT bude použit tento klíč. 
+        /// Tímto způsobem je možno stabilně dostat do QAT taková tlačítka, jimž se dynamicky mění jejich ItemId.
+        /// Typicky: mějme funkci, která <u>není vybraná jako Oblíbená</u>. Taková funkce má ItemId = <c>MnBrwFunc#Zpracování#F:Z10177(10177):11</c>. <br/>
+        /// Přidělme jí ale <see cref="QatKey"/> = <c>MenuFunkce#F:10177</c>.<br/>
+        /// Pak ji uživatel přidá do QAT, tam bude mít nově klíč <c>MenuFunkce#F:10177</c> (namísto defaultního dle ItemId).<br/>
+        /// Dále ji uživatel v Nephrite zvolí jako Oblíbenou. Tím se přesune z grupy "Funkce:Zpracování" do grupy "Home:Funkce" a "Funkce:Oblíbené", tím se jí změní ItemId.
+        /// Pokud bude i nadále mít <see cref="QatKey"/> = <c>MenuFunkce#F:10177</c>, pak ji uživatel uvidí v QAT (jedenkrát, protože oba buttony mají shodné QatKey).<br/>
+        /// Pokud bychom neměli přidělen <see cref="QatKey"/>, pak by v daném postupu funkce z QAT zmizela, a uživatel by si ji tam mohl přidat dvakrát = ze dvou různých míst (Home, Funkce).
+        /// </summary>
+        public virtual string QatKey { get { return (__QatKey is null ? ItemId : __QatKey); } set { __QatKey = value; } } private string __QatKey;
         /// <summary>
         /// Přidané texty, podle kterých může být prvek vyhledán v Search menu. Texty jsou oddělené čárkou (comma-separated).
         /// </summary>
@@ -11499,6 +11805,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zobrazit v Search menu?
         /// </summary>
         bool VisibleInSearchMenu { get; }
+        /// <summary>
+        /// Explicitní klíč pro QAT. 
+        /// Pokud bude null, použije se jako default <see cref="ITextItem.ItemId"/>.
+        /// Pokud zde bude prázdný string, pak tento prvek do QAT nelze přidat.
+        /// </summary>
+        string QatKey { get; }
         /// <summary>
         /// Přidané texty, podle kterých může být prvek vyhledán v Search menu. Texty jsou oddělené čárkou (comma-separated).
         /// </summary>

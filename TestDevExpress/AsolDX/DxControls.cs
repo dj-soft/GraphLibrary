@@ -773,6 +773,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void FormPosition_FormClosed(object sender, FormClosedEventArgs e)
         {
+            string text = DxComponent.LogText;
+
             this.FormPositionOnChange(true);
         }
         /// <summary>
@@ -3372,10 +3374,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _BeforeShow(object sender, ToolTipControllerShowEventArgs e)
         {
-            if (__ActiveClientInfo != null && (__ActiveClientInfo.HasIClient || __ActiveClientInfo.HasIDynamicClient))
-                // Pokud se aktuálně pohybuji nad klientem, který poskytuje specifický ToolTip, pak defaultní Tooltip zruším:
+            if (!string.IsNullOrEmpty(e.ToolTip) && __ActiveClientInfo != null && __ActiveClientInfo.HasContentForSuperTip())
+            {
+                // Pokud se aktuálně pohybuji nad klientem, který poskytuje specifický ToolTip a má pro něj data (obsah), pak defaultní Tooltip zruším:
                 //  => případ DxGridu, který do ToolTipu posílá titulek ColumnHeaderu, když se mu nevejde zobrazit v celé šíři sloupce:
                 e.ToolTip = "";
+            }
         }
         #endregion
         #region Clients - klientské Controly: evidence, eventhandlery, vyhledání, předání ke konkrétní práci, dispose
@@ -3691,6 +3695,33 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 return DxToolTipChangeType.None;
             }
+
+            /// <summary>
+            /// Má control obsah pro SuperTip? Stejný způsob získání obsahu pro Super tip jako v <see cref="TryGetSuperTip"/>, ale neukládájí se žádné stavy.<br/>
+            /// Metoda vrací:<br/>
+            /// true = mám nějaké data pro SuperToolTip
+            /// false = nemám žádná data pro SuperToolTip.
+            /// </summary>
+            /// <returns></returns>
+            internal bool HasContentForSuperTip()
+            {//RMC 0071608 08.01.2024 BROWSE2e - začlenění 2
+                if (this.HasIDynamicClient)
+                {
+                    DxToolTipDynamicPrepareArgs args = new DxToolTipDynamicPrepareArgs();
+                    args.MouseLocation = this.MouseLocation;
+                    args.ToolTipChange = DxToolTipChangeType.NoToolTip;
+                    this.IDynamicClient.PrepareSuperTipForPoint(args);
+                    return args.ToolTipChange != DxToolTipChangeType.NoToolTip;
+                }
+                if (this.HasIClient)
+                {
+                    // Výměna a uložení nového globálního ToolTipu ze statického klienta:
+                    return this.IClient?.SuperTip != null;
+                }
+
+                return false;
+            }
+
             /// <summary>
             /// Je voláno při zhasínání ToolTipu, ať už jsou důvody jakékoli
             /// </summary>
@@ -3981,7 +4012,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// ToolTip byl zobrazen a měl by nyní svítit?
         /// </summary>
-        public bool IsHintShown { get { return __IsHintShown; } } private bool __IsHintShown;
+        public bool IsHintShown { get { return __IsHintShown; } }
+        private bool __IsHintShown;
         /// <summary>
         /// Počet milisekund, za které se rozsvítí ToolTip od zastavení myši, v aktuálním stavu.
         /// Obsahuje <see cref="HoverFirstMiliseconds"/> nebo <see cref="HoverNextMiliseconds"/>, podle toho, zda pro aktuální Control (Client) už byl / nebyl rozsvícen ToolTip.
@@ -4497,38 +4529,8 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// StatusBar : Button
     /// </summary>
-    public class DxBarButtonItem : DevExpress.XtraBars.BarButtonItem, IBarItemCustomDrawing
+    public class DxBarButtonItem : DevExpress.XtraBars.BarButtonItem
     {
-        #region IBarItemCustomDrawing
-        void IBarItemCustomDrawing.CustomDraw(DevExpress.XtraBars.BarItemCustomDrawEventArgs e)
-        {
-            DxBarButtonItem.CustomDrawButton(this, e);
-
-        }
-        internal static void CustomDrawButton(DevExpress.XtraBars.BarBaseButtonItem button, DevExpress.XtraBars.BarItemCustomDrawEventArgs e)
-        {
-            // Pokud je button v nějakém jiném stabu než klidovém, pak do kreslení nezasahujeme:
-            if (e.State != DevExpress.XtraBars.ViewInfo.BarLinkState.Normal) return;
-
-            // Pokud border je Default nebo NoBorder, pak nic specifického nekreslíme:
-            var border = button.Border;
-            if (border == BorderStyles.NoBorder || border == BorderStyles.Default) return;
-
-            // Vykreslíme jinou barvu pozadí a přes ni potom ikonu a text:
-            e.DrawBackground();
-            
-            Color backColor = Color.FromArgb(64, 96, 96, 160);
-            e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(backColor), e.Bounds);
-
-            //Color? backColor = DxComponent.SkinColorSet.NamedControl ?? DxComponent.SkinColorSet.NamedHotTrackedColor;
-            //if (backColor.HasValue) e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(Color.FromArgb(64, backColor.Value)), e.Bounds);
-            
-            e.DrawBorder();
-            e.DrawGlyph();
-            e.DrawText();
-            e.Handled = true;
-        }
-        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -4547,14 +4549,8 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// StatusBar : CheckItem
     /// </summary>
-    public class DxBarCheckItem : DevExpress.XtraBars.BarCheckItem, IBarItemCustomDrawing
+    public class DxBarCheckItem : DevExpress.XtraBars.BarCheckItem
     {
-        #region IBarItemCustomDrawing
-        void IBarItemCustomDrawing.CustomDraw(DevExpress.XtraBars.BarItemCustomDrawEventArgs e)
-        {
-            DxBarButtonItem.CustomDrawButton(this, e);
-        }
-        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
