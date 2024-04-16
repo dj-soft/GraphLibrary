@@ -724,15 +724,19 @@ namespace TestDevExpress.AsolDX.News
                 ppp.LoadDocument(pdfFile);
 
                 if (printArgs is null) printArgs = PrintArgs.Default;
-                var settings = new DevExpress.Pdf.PdfPrinterSettings();
-                settings.EnableLegacyPrinting = printArgs.EnableLegacyPrinting;
-                {
-                    PageOrientation = DevExpress.Pdf.PdfPrintPageOrientation.Portrait,
 
-                    PageNumbers = pageNumbers
-                };
-                settings.Settings.Copies = copies
-                ppp.Print(settings);
+                var sysSettings = new System.Drawing.Printing.PrinterSettings();
+                sysSettings.PrinterName =  printArgs.PrinterName;
+                sysSettings.Copies = printArgs.Copies;
+
+                var pdfSettings = new DevExpress.Pdf.PdfPrinterSettings(sysSettings);
+                pdfSettings.EnableLegacyPrinting = printArgs.EnableLegacyPrinting;
+                pdfSettings.PageOrientation = (printArgs.PageOrientation == PageOrientation.Portrait ? DevExpress.Pdf.PdfPrintPageOrientation.Portrait :
+                                           (printArgs.PageOrientation == PageOrientation.Landscape ? DevExpress.Pdf.PdfPrintPageOrientation.Landscape : DevExpress.Pdf.PdfPrintPageOrientation.Auto));
+
+                pdfSettings.PageNumbers = printArgs.PageNumbers;
+
+                ppp.Print(pdfSettings);
 
                 ppp.CloseDocument();
             }
@@ -740,10 +744,35 @@ namespace TestDevExpress.AsolDX.News
 
         public class PrintArgs
         {
-            public bool EnableLegacyPrinting {  get; set; }
+            public PrintArgs()
+            {
+                PrinterName = null;
+                EnableLegacyPrinting = false;
+                PageOrientation = PageOrientation.Auto;
+                Copies = 1;
+            }
+            public static PrintArgs Default { get { return new PrintArgs(); } }
             public string PrinterName { get; set; }
+            public bool EnableLegacyPrinting {  get; set; }
+            public int[] PageNumbers { get; set; }
+            public PageOrientation PageOrientation { get; set; }
+            public short Copies { get; set; }
         }
-
+        public enum PageOrientation
+        {
+            /// <summary>
+            /// The orientation is defined automatically to fit the page content to the specific paper type.
+            /// </summary>
+            Auto,
+            /// <summary>
+            /// Orientation of the document pages is portrait.
+            /// </summary>
+            Portrait,
+            /// <summary>
+            /// Orientation of the document pages is landscape.
+            /// </summary>
+            Landscape
+        }
     }
     #endregion
     #region Třídy ExpressionPart a patřičné potomstvo
