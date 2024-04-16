@@ -4576,7 +4576,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     public interface IBarItemCustomDrawing
     {
         /// <summary>
-        /// Umožní prvku jeho self-drawing
+        /// Umožní prvku jeho self-drawing.
         /// </summary>
         /// <param name="e"></param>
         void CustomDraw(DevExpress.XtraBars.BarItemCustomDrawEventArgs e);
