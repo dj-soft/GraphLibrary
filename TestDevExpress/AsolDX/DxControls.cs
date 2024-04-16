@@ -4499,83 +4499,35 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxBarButtonItem : DevExpress.XtraBars.BarButtonItem, IBarItemCustomDrawing
     {
-        #region Konstruktory a Draw
-        public DxBarButtonItem() : base()
-        {
-            _Init();
-        }
-        public DxBarButtonItem(DevExpress.XtraBars.BarManager manager, string caption) : base(manager, caption)
-        {
-            _Init();
-        }
-        public DxBarButtonItem(DevExpress.XtraBars.BarManager manager, string caption, int imageIndex) : base(manager, caption, imageIndex)
-        {
-            _Init();
-        }
-        public DxBarButtonItem(DevExpress.XtraBars.BarManager manager, string caption, int imageIndex, DevExpress.XtraBars.BarShortcut shortcut) : base(manager, caption, imageIndex, shortcut)
-        {
-            _Init();
-        }
-        private void _Init()
-        {
-        }
-        public override BorderStyles Border 
-        {
-            get { return base.Border; }
-            set { base.Border = value; }
-        }
-
-
-
-
+        #region IBarItemCustomDrawing
         void IBarItemCustomDrawing.CustomDraw(DevExpress.XtraBars.BarItemCustomDrawEventArgs e)
         {
-            if (this.Border == DevExpress.XtraEditors.Controls.BorderStyles.NoBorder || this.Border == DevExpress.XtraEditors.Controls.BorderStyles.Default) return;
+            DxBarButtonItem.CustomDrawButton(this, e);
+
+        }
+        internal static void CustomDrawButton(DevExpress.XtraBars.BarBaseButtonItem button, DevExpress.XtraBars.BarItemCustomDrawEventArgs e)
+        {
+            // Pokud je button v nějakém jiném stabu než klidovém, pak do kreslení nezasahujeme:
             if (e.State != DevExpress.XtraBars.ViewInfo.BarLinkState.Normal) return;
 
-            var scs = DxComponent.SkinColorSet;
-            var qqq = DxComponent.GetSkinColor(SkinElementColor.RibbonSkins_ForeColorDisabledInTopQuickAccessToolbar);
-            this.ItemAppearance.Normal.BackColor = DxComponent.SkinColorSet.NamedControl ?? Color.AliceBlue;
-            return;
-            // Chceme vykreslit jen "Normálový" stav buttonu, který má border jiný než defaultní!
+            // Pokud border je Default nebo NoBorder, pak nic specifického nekreslíme:
+            var border = button.Border;
+            if (border == BorderStyles.NoBorder || border == BorderStyles.Default) return;
 
-            e.Draw();
+            // Vykreslíme jinou barvu pozadí a přes ni potom ikonu a text:
+            e.DrawBackground();
+            
+            Color backColor = Color.FromArgb(64, 96, 96, 160);
+            e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(backColor), e.Bounds);
 
-            var ee = new StyleObjectInfoArgs(e.Cache, e.Bounds, this.ItemAppearance.Normal, ObjectState.Normal);
-            var bounds = e.Bounds;
-            DevExpress.Utils.Drawing.ButtonObjectPainter.DrawBounds(ee, bounds, SystemBrushes.ControlLight, SystemBrushes.ControlLightLight);
-     //       DevExpress.Utils.Drawing.ButtonObjectPainter.DrawObject(e.Cache, )
-
-
-            /*
-                e.Draw();
-            if (this.Border != DevExpress.XtraEditors.Controls.BorderStyles.NoBorder)
-            {
-                bounds.Width -= 1;
-                bounds.Height -= 1;
-
-
-
-
-                var ee = new StyleObjectInfoArgs(e.Cache, e.Bounds, this.ItemAppearance.Normal, ObjectState.Normal);
-                DevExpress.LookAndFeel.LookAndFeelPainterHelper.GetPainter(DevExpress.LookAndFeel.ActiveLookAndFeelStyle.Style3D).Button.DrawObject(ee);
-
-                e.Draw();
-
-
-                // DevExpress.LookAndFeel.LookAndFeelPainterHelper.GetPainter(DevExpress.LookAndFeel.ActiveLookAndFeelStyle.Style3D).Border.DrawObject(ee);
-
-
-
-                //  var pen = DxComponent.PaintGetPen(Color.FromArgb(160, 160, 190));
-                //  e.Graphics.DrawRectangle(pen, bounds);
-            }
-
-            */
-
+            //Color? backColor = DxComponent.SkinColorSet.NamedControl ?? DxComponent.SkinColorSet.NamedHotTrackedColor;
+            //if (backColor.HasValue) e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(Color.FromArgb(64, backColor.Value)), e.Bounds);
+            
+            e.DrawBorder();
+            e.DrawGlyph();
+            e.DrawText();
             e.Handled = true;
         }
-
         #endregion
         #region ToolTip
         /// <summary>
@@ -4595,8 +4547,14 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// StatusBar : CheckItem
     /// </summary>
-    public class DxBarCheckItem : DevExpress.XtraBars.BarCheckItem
+    public class DxBarCheckItem : DevExpress.XtraBars.BarCheckItem, IBarItemCustomDrawing
     {
+        #region IBarItemCustomDrawing
+        void IBarItemCustomDrawing.CustomDraw(DevExpress.XtraBars.BarItemCustomDrawEventArgs e)
+        {
+            DxBarButtonItem.CustomDrawButton(this, e);
+        }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -4612,9 +4570,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
     }
-
+    /// <summary>
+    /// Umožní prvku jeho self-drawing
+    /// </summary>
     public interface IBarItemCustomDrawing
     {
+        /// <summary>
+        /// Umožní prvku jeho self-drawing
+        /// </summary>
+        /// <param name="e"></param>
         void CustomDraw(DevExpress.XtraBars.BarItemCustomDrawEventArgs e);
     }
     #endregion

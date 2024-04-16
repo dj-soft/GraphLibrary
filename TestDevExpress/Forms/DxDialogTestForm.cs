@@ -21,7 +21,7 @@ namespace TestDevExpress.Forms
             // Přidej buttony, jejich Text je zobrazen uživateli a současně je klíčem do metody _Click:
             DxComponent.CreateDxSimpleButton(40, 20, 280, 37, this.DxMainPanel, "Dialog [ OK ]", _Click);
             DxComponent.CreateDxSimpleButton(40, 60, 280, 37, this.DxMainPanel, "Dialog [ OK ] / Center", _Click);
-            DxComponent.CreateDxSimpleButton(40, 100, 280, 37, this.DxMainPanel, "XXXX", _Click);
+            DxComponent.CreateDxSimpleButton(40, 100, 280, 37, this.DxMainPanel, "Dialog s detailem", _Click);
             DxComponent.CreateDxSimpleButton(40, 140, 280, 37, this.DxMainPanel, "XXXX", _Click);
             DxComponent.CreateDxSimpleButton(40, 180, 280, 37, this.DxMainPanel, "XXXX", _Click);
             DxComponent.CreateDxSimpleButton(40, 220, 280, 37, this.DxMainPanel, "XXXX", _Click);
@@ -33,6 +33,11 @@ namespace TestDevExpress.Forms
             if (string.IsNullOrEmpty(text)) return;
 
             DialogArgs dialogArgs = new DialogArgs() { SystemIcon = DialogSystemIcon.None };
+
+            string resourceCopy1 = "devav/actions/copy.svg";
+            string resourceCopy2 = "images/xaf/templatesv2images/action_copy.svg";
+            string resourceAltx1 = "svgimages/diagramicons/showprintpreview.svg";
+
             switch (text)
             {
                 case "Dialog [ OK ]":
@@ -40,9 +45,10 @@ namespace TestDevExpress.Forms
                     dialogArgs.SystemIcon = DialogSystemIcon.Information;
                     dialogArgs.PrepareButtons(DialogResult.OK);
                     dialogArgs.MessageText = Randomizer.GetSentences(4, 8, 3, 12);
+                    dialogArgs.StatusBarCtrlCImage = resourceCopy1;
                     break;
                 case "Dialog [ OK ] / Center":
-                    dialogArgs.Title = "Dialog [OK] Center";
+                    dialogArgs.Title = text;
                     dialogArgs.SystemIcon = DialogSystemIcon.Information;
                     dialogArgs.PrepareButtons(DialogResult.OK);
                     dialogArgs.MessageText = "Jistě, pane ministře.";
@@ -50,6 +56,16 @@ namespace TestDevExpress.Forms
                     dialogArgs.ButtonsAlignment = AlignContentToSide.Center;
                     dialogArgs.StatusBarCtrlCText = null;
                     dialogArgs.StatusBarVisible = false;
+                    break;
+                case "Dialog s detailem":
+                    dialogArgs.Title = text;
+                    dialogArgs.SystemIcon = DialogSystemIcon.Information;
+                    dialogArgs.PrepareButtons(DialogResult.OK);
+                    dialogArgs.MessageText = Randomizer.GetSentences(4, 8, 3, 12);
+                    dialogArgs.AltMessageText = Randomizer.GetSentences(4, 12, 12, 24);
+                    dialogArgs.ButtonsAlignment = AlignContentToSide.Begin;
+                    dialogArgs.StatusBarCtrlCImage = resourceCopy1;
+                    dialogArgs.StatusBarAltMsgButtonImage = resourceAltx1;
                     break;
             }
 

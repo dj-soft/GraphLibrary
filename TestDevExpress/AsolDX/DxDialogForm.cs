@@ -674,16 +674,18 @@ namespace Noris.Clients.Win.Components
             _StandardPanel = panel;
             this.Controls.Add(_StandardPanel);
 
-            var ribbon = new DevExpress.XtraBars.Ribbon.RibbonControl();                 // Musí existovat
+            var ribbon = new DevExpress.XtraBars.Ribbon.RibbonControl();                 // Musí existovat, jinak nefunguje StatusBar
             var status = new DevExpress.XtraBars.Ribbon.RibbonStatusBar() { Dock = DockStyle.Bottom, Ribbon = ribbon, Name = "_StatusBar" };
             ribbon.CustomDrawItem += _Ribbon_CustomDrawItem;
             status.Visible = this.StatusBarVisible;
             _StatusBar = status;
             this.Controls.Add(status);
-
-            // expander:
         }
-
+        /// <summary>
+        /// Podpora pro CustomDraw buttonu ve StatusBaru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _Ribbon_CustomDrawItem(object sender, DevExpress.XtraBars.BarItemCustomDrawEventArgs e)
         {
             var bItem = e.RibbonItemInfo.Item;
@@ -892,13 +894,13 @@ namespace Noris.Clients.Win.Components
             int fontSizeDelta = GetZoomDelta();
 
             if (this.ExistsBothText)
-                StatusAltTextCheckButton = AddStatusCheckButton(args, args.StatusBarAltMsgButtonText, MsgCode.DialogFormAltMsgButtonText, args.StatusBarAltMsgButtonTooltip, MsgCode.DialogFormAltMsgButtonToolTip, 78, 18, fontSizeDelta, StatusAltTextButton_ItemClick);
+                StatusAltTextCheckButton = AddStatusCheckButton(args, args.StatusBarAltMsgButtonText, MsgCode.DialogFormAltMsgButtonText, args.StatusBarAltMsgButtonTooltip, MsgCode.DialogFormAltMsgButtonToolTip, args.StatusBarAltMsgButtonImage, 78, 18, fontSizeDelta, StatusAltTextButton_ItemClick);
 
             StatusLabel1 = DxComponent.CreateDxStatusLabel(status, "", DevExpress.XtraBars.BarStaticItemSize.Spring, true, fontSizeDelta);
             StatusLabel2 = DxComponent.CreateDxStatusLabel(status, "", DevExpress.XtraBars.BarStaticItemSize.Content, false, fontSizeDelta);
 
             if (args.StatusBarCtrlCVisible || !String.IsNullOrEmpty(args.StatusBarCtrlCText))
-                StatusCopyButton = AddStatusButton(args, args.StatusBarCtrlCText, MsgCode.DialogFormCtrlCText, args.StatusBarCtrlCTooltip, MsgCode.DialogFormCtrlCToolTip, 78, 18, fontSizeDelta, StatusCopyButton_ItemClick);
+                StatusCopyButton = AddStatusButton(args, args.StatusBarCtrlCText, MsgCode.DialogFormCtrlCText, args.StatusBarCtrlCTooltip, MsgCode.DialogFormCtrlCToolTip, args.StatusBarCtrlCImage, 78, 18, fontSizeDelta, StatusCopyButton_ItemClick);
 
             RefreshAltMsgButtonText();
         }
@@ -910,17 +912,19 @@ namespace Noris.Clients.Win.Components
         /// <param name="textCode"></param>
         /// <param name="toolTipText"></param>
         /// <param name="toolTipCode"></param>
+        /// <param name="imageName"></param>
         /// <param name="width"></param>
         /// <param name="height"></param>
         /// <param name="fontSizeDelta"></param>
         /// <param name="clickHandler"></param>
         /// <returns></returns>
-        private DxBarCheckItem AddStatusCheckButton(DialogArgs args, string text, MsgCode textCode, string toolTipText, MsgCode toolTipCode, int width, int height, int fontSizeDelta, DevExpress.XtraBars.ItemClickEventHandler clickHandler)
+        private DxBarCheckItem AddStatusCheckButton(DialogArgs args, string text, MsgCode textCode, string toolTipText, MsgCode toolTipCode, string imageName, int width, int height, int fontSizeDelta, DevExpress.XtraBars.ItemClickEventHandler clickHandler)
         {
             if (String.IsNullOrEmpty(text)) text = DxComponent.Localize(textCode);
             if (String.IsNullOrEmpty(toolTipText)) toolTipText = DxComponent.Localize(toolTipCode);
 
-            return DxComponent.CreateDxStatusCheckButton(_StatusBar, text, width, height, args.StatusBarButtonsBorderStyles, null, toolTipText, true, fontSizeDelta, clickHandler);
+            var button = DxComponent.CreateDxStatusCheckButton(_StatusBar, text, width, height, args.StatusBarButtonsBorderStyles, null, toolTipText, true, fontSizeDelta, clickHandler);
+            return button;
         }
         /// <summary>
         /// Přidá Button do StatusBaru
@@ -930,17 +934,20 @@ namespace Noris.Clients.Win.Components
         /// <param name="textCode"></param>
         /// <param name="toolTipText"></param>
         /// <param name="toolTipCode"></param>
+        /// <param name="imageName"></param>
         /// <param name="width"></param>
         /// <param name="height"></param>
         /// <param name="fontSizeDelta"></param>
         /// <param name="clickHandler"></param>
         /// <returns></returns>
-        private DxBarButtonItem AddStatusButton(DialogArgs args, string text, MsgCode textCode, string toolTipText, MsgCode toolTipCode, int width, int height, int fontSizeDelta, DevExpress.XtraBars.ItemClickEventHandler clickHandler)
+        private DxBarButtonItem AddStatusButton(DialogArgs args, string text, MsgCode textCode, string toolTipText, MsgCode toolTipCode, string imageName, int width, int height, int fontSizeDelta, DevExpress.XtraBars.ItemClickEventHandler clickHandler)
         {
             if (String.IsNullOrEmpty(text)) text = DxComponent.Localize(textCode);
             if (String.IsNullOrEmpty(toolTipText)) toolTipText = DxComponent.Localize(toolTipCode);
 
-            return DxComponent.CreateDxStatusButton(_StatusBar, text, width, height, args.StatusBarButtonsBorderStyles, null, toolTipText, true, fontSizeDelta, clickHandler);
+            var button = DxComponent.CreateDxStatusButton(_StatusBar, text, width, height, args.StatusBarButtonsBorderStyles, null, toolTipText, true, fontSizeDelta, clickHandler);
+            DxComponent.ApplyImage(button.ImageOptions, imageName);
+            return button;
         }
         /// <summary>
         /// Vrátí <see cref="Icon"/> pro danou standardní ikonu. Poznámka: tento Enum nepokrývá všechny Systémové ikony.
@@ -2040,10 +2047,12 @@ namespace Noris.Clients.Win.Components
             StatusBarCtrlCText = DxComponent.Localize(MsgCode.DialogFormCtrlCText);
             StatusBarCtrlCTooltip = DxComponent.Localize(MsgCode.DialogFormCtrlCToolTip);
             StatusBarCtrlCInfo = DxComponent.Localize(MsgCode.DialogFormCtrlCInfo);
+            StatusBarCtrlCImage = null;
             StatusBarStdMsgButtonText = DxComponent.Localize(MsgCode.DialogFormStdMsgButtonText);
             StatusBarStdMsgButtonTooltip = DxComponent.Localize(MsgCode.DialogFormStdMsgButtonToolTip);
             StatusBarAltMsgButtonText = DxComponent.Localize(MsgCode.DialogFormAltMsgButtonText);
             StatusBarAltMsgButtonTooltip = DxComponent.Localize(MsgCode.DialogFormAltMsgButtonToolTip);
+            StatusBarAltMsgButtonImage = null;
             ButtonPanelDock = DialogForm.DefaultButtonDockSide;
             ButtonHeight = DialogForm.DefaultButtonHeight;
             ButtonsAlignment = DialogForm.DefaultButtonAlignment;
@@ -2151,6 +2160,10 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         public string StatusBarAltMsgButtonTooltip { get; set; }
         /// <summary>
+        /// ImageName pro StatusButton <see cref="StatusBarAltMsgButtonText"/>
+        /// </summary>
+        public string StatusBarAltMsgButtonImage { get; set; }
+        /// <summary>
         /// Message okno může obsahovat alternativní text (<see cref="AltMessageText"/>). Pro jeho zobrazení je připraveno tlačítko ve statusbaru vlevo (dole).
         /// Tlačítko má ve výchozím stavu text dle <see cref="StatusBarAltMsgButtonText"/> (typicky "Zobraz detaily").
         /// Po zobrazení alternativního textu zprávy (typicky detaily) se text tlačítka změní na zdejší text, typicky "Skryj detaily".
@@ -2225,7 +2238,7 @@ namespace Noris.Clients.Win.Components
         public bool StatusBarVisible { get; set; }
         /// <summary>
         /// Styl borderu pro StatusBar buttony.
-        /// Default = <see cref="DevExpress.XtraEditors.Controls.BorderStyles.qqq"/>
+        /// Default = <see cref="DevExpress.XtraEditors.Controls.BorderStyles.Default"/>
         /// </summary>
         public DevExpress.XtraEditors.Controls.BorderStyles? StatusBarButtonsBorderStyles { get; set; }
         /// <summary>
@@ -2251,6 +2264,10 @@ namespace Noris.Clients.Win.Components
         /// Pokud zde bude empty string, nebud ehláška zobrazena.
         /// </summary>
         public string StatusBarCtrlCInfo { get; set; }
+        /// <summary>
+        /// ImageName pro StatusButton <see cref="StatusBarCtrlCText"/>
+        /// </summary>
+        public string StatusBarCtrlCImage { get; set; }
         /// <summary>
         /// Výsledná hodnota dialogu v případě, kdy uživatel zavře okno dialogu křížkem
         /// </summary>
