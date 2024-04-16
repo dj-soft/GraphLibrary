@@ -2,6 +2,7 @@
 // Part of Helios Nephrite, proprietary software, (c) Asseco Solutions, a. s.
 // Redistribution and use in source and binary forms, with or without modification, 
 // is not permitted without valid contract with Asseco Solutions, a. s.
+using DevExpress.XtraRichEdit.Import.Doc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -716,12 +717,32 @@ namespace TestDevExpress.AsolDX.News
     #region Pdf
     public class PdfPrinter
     {
-        // DevExpress.Pdf.PdfDocumentProcessor pp = new DevExpress.Pdf.PdfDocumentProcessor();
+        public static void Print(string pdfFile, PrintArgs printArgs)
+        {
+            using (DevExpress.Pdf.PdfDocumentProcessor ppp = new DevExpress.Pdf.PdfDocumentProcessor())
+            {
+                ppp.LoadDocument(pdfFile);
 
-        // DevExpress.Pdf.PdfDocumentProcessor.Print();
+                if (printArgs is null) printArgs = PrintArgs.Default;
+                var settings = new DevExpress.Pdf.PdfPrinterSettings();
+                settings.EnableLegacyPrinting = printArgs.EnableLegacyPrinting;
+                {
+                    PageOrientation = DevExpress.Pdf.PdfPrintPageOrientation.Portrait,
 
+                    PageNumbers = pageNumbers
+                };
+                settings.Settings.Copies = copies
+                ppp.Print(settings);
 
+                ppp.CloseDocument();
+            }
+        }
 
+        public class PrintArgs
+        {
+            public bool EnableLegacyPrinting {  get; set; }
+            public string PrinterName { get; set; }
+        }
 
     }
     #endregion
