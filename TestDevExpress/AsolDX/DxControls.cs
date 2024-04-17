@@ -9675,7 +9675,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 processor.LoadDocument(pdfFile);
 
-                printArgs ??= PrintArgs.Default;
+                if (printArgs is null) printArgs = PrintArgs.Default;
                 var pdfSettings = printArgs.CreateSettings(processor.Document.Pages.Count);
                 processor.Print(pdfSettings);
 
@@ -9693,7 +9693,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 pdfViewer.LoadDocument(pdfFile);
 
-                printArgs ??= PrintArgs.Default;
+                if (printArgs is null) printArgs = PrintArgs.Default;
                 var pdfSettings = printArgs.CreateSettings(pdfViewer.PageCount);
 
                 pdfViewer.ShowPrintStatusDialog = false;
