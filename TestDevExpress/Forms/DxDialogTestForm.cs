@@ -77,7 +77,8 @@ namespace TestDevExpress.Forms
                     var pgnm = sett.PageNumbers;
 
                     string fileName = _GetRandomPdf();
-                    PdfPrinter.PrintWithProcess(fileName, pa);
+                    // PdfPrinter.PrintWithProcess(fileName, pa);
+                    PdfPrinter.PrintWithControl(fileName, pa);
 
                     break;
             }
@@ -94,7 +95,8 @@ namespace TestDevExpress.Forms
         {
             string fileName;
             if (tryGetRandomPdfFrom("D:\\TiskPDF\\", out fileName)) return fileName;
-            if (tryGetRandomPdfFrom("C:\\TiskPDF\\", out fileName)) return fileName;
+            if (tryGetRandomPdfFrom("C:\\DavidPriv\\PdfPrint\\2024Doc\\", out fileName)) return fileName;
+            if (tryGetRandomPdfFrom("C:\\DavidPriv\\PdfPrint\\2023\\", out fileName)) return fileName;
 
             return null;
 

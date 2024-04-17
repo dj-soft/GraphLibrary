@@ -9664,7 +9664,8 @@ namespace Noris.Clients.Win.Components.AsolDX
     public class PdfPrinter
     {
         /// <summary>
-        /// DirectPdfPrint ze souboru do zadané tiskárny, pomocí <see cref="DevExpress.Pdf.PdfDocumentProcessor"/>
+        /// DirectPdfPrint ze souboru na disku do zadané tiskárny, pomocí tiskového procesoru <see cref="DevExpress.Pdf.PdfDocumentProcessor"/>, který je nevizuální.
+        /// Režie s vytvořením procesoru je zanedbatelná vůči času LoadDocument a Print.
         /// </summary>
         /// <param name="pdfFile"></param>
         /// <param name="printArgs"></param>
@@ -9682,21 +9683,23 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// DirectPdfPrint ze souboru do zadané tiskárny, pomocí <see cref="DevExpress.Pdf.view"/>
+        /// DirectPdfPrint ze souboru na disku do zadané tiskárny, pomocí GUI controlu <see cref="DevExpress.XtraPdfViewer.PdfViewer"/>, který není zobrazován.
         /// </summary>
         /// <param name="pdfFile"></param>
         /// <param name="printArgs"></param>
         public static void PrintWithControl(string pdfFile, PrintArgs printArgs = null)
         {
-            using (DevExpress.Pdf.PdfDocumentProcessor ppp = new DevExpress.Pdf.PdfDocumentProcessor())
+            using (DevExpress.XtraPdfViewer.PdfViewer pdfViewer = new DevExpress.XtraPdfViewer.PdfViewer())
             {
-                ppp.LoadDocument(pdfFile);
+                pdfViewer.LoadDocument(pdfFile);
 
                 printArgs ??= PrintArgs.Default;
-                var pdfSettings = printArgs.CreateSettings(ppp.Document.Pages.Count);
-                ppp.Print(pdfSettings);
+                var pdfSettings = printArgs.CreateSettings(pdfViewer.PageCount);
 
-                ppp.CloseDocument();
+                pdfViewer.ShowPrintStatusDialog = false;
+                pdfViewer.Print(pdfSettings);
+
+                pdfViewer.CloseDocument();
             }
         }
         /// <summary>
