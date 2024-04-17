@@ -10021,7 +10021,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (subButtons is null) subButtons = "DropDown";
                     if (subButtons.Length > 0)
                     {
-                        var buttons = subButtons.Split(';');
+                        var buttons = DataSubButton.Deserialize(subButtons);
                         foreach (var button in buttons)
                             addComboButton(comboBox, button);
                     }
@@ -10034,7 +10034,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (iRibbonCombo.Width.HasValue && iRibbonCombo.Width.Value > 0)
                         this.Width = iRibbonCombo.Width.Value;       // Tohle jediné nastaví šířku cca přesně
 
-                    
+                    // Detaily:
                     comboBox.NullValuePrompt = iRibbonCombo.NullValuePrompt;
                     comboBox.ShowNullValuePrompt = DevExpress.XtraEditors.ShowNullValuePromptOptions.EmptyValue;
 
@@ -10043,11 +10043,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // Přidá daný button. Na pořadí záleží.
-            void addComboButton(DevExpress.XtraEditors.Repository.RepositoryItemComboBox combo, string button)
+            void addComboButton(DevExpress.XtraEditors.Repository.RepositoryItemComboBox combo, DataSubButton button)
             {
                 // Vstupní formát: "Name=Image:ToolTip
-                string name = getPart(ref button, '=');
-                string image = getPart(ref button, ':');
+                string name = getPartBefore(ref button, '=');
+                string image = getPartBefore(ref button, ':');
                 string toolTip = button;
 
                 // Umístění Vlevo?
@@ -10074,8 +10074,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 };
                 if (!String.IsNullOrEmpty(toolTip))
                     dxButton.SuperTip = DxComponent.CreateDxSuperTip(toolTip, null);
-                dxButton.Shortcut
-                DxBufferedGraphicPaintArgs.
+                dxButton.Shortcut = new KeyShortcut();
 
                 if (kind == DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph)
                     DxComponent.ApplyImage(dxButton.ImageOptions, image, sizeType: ResourceImageSizeType.Small);
@@ -10084,7 +10083,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // V dodaném textu najde delimiter. Vrací část před ním, a v parametru 'text' ponechá část za delimiterem.
-            string getPart(ref string text, char delimiter)
+            string getPartBefore(ref string text, char delimiter)
             {
                 if (String.IsNullOrEmpty(text)) return "";
                 int last = text.Length - 1;
@@ -10190,6 +10189,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case DevExpress.XtraEditors.Controls.ButtonPredefines.Redo: return PredefinedButtonType.Redo;
                 case DevExpress.XtraEditors.Controls.ButtonPredefines.Search: return PredefinedButtonType.Search;
                 case DevExpress.XtraEditors.Controls.ButtonPredefines.Clear: return PredefinedButtonType.Clear;
+                case DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph: return PredefinedButtonType.Glyph;
             }
             return PredefinedButtonType.None;
         }
@@ -11512,6 +11512,121 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxRibbonControl.RefreshIRibbonItem(this, false, refreshInSite);
         }
     }
+    /// <summary>
+    /// Data jednoho SubButtonu, a jeho de/serializace. Obecně použitelná třída.
+    /// </summary>
+    internal class DataSubButton
+    {
+        #region Data
+        /// <summary>
+        /// ID Buttonu
+        /// </summary>
+        public string ButtonId { get; set; }
+        /// <summary>
+        /// Předdefinovaný typ buttonu:
+        /// Tím se definuje druh chování (<see cref="PredefinedButtonType.DropDown"/>) a použití standardní ikony (kromě <see cref="PredefinedButtonType.Glyph"/>.
+        /// </summary>
+        public PredefinedButtonType ButtonType { get; set; }
+        /// <summary>
+        /// Název ikony
+        /// </summary>
+        public string ImageName { get; set; }
+        /// <summary>
+        /// Enabled
+        /// </summary>
+        public bool Enabled { get; set; }
+        /// <summary>
+        /// Umístěn vlevo od základního prvku
+        /// </summary>
+        public bool IsLeft { get; set; }
+        /// <summary>
+        /// ToolTip: titulek
+        /// </summary>
+        public string ToolTipTitle { get; set; }
+        /// <summary>
+        /// ToolTip: text
+        /// </summary>
+        public string ToolTipText { get; set; }
+        /// <summary>
+        /// HotKey
+        /// </summary>
+        public Keys? Shortcut { get; set; }
+        #endregion
+        #region De + Serializace
+        /// <summary>
+        /// Z dodaného textu vygeneruje (deserializuje) sadu buttonů.
+        /// Výstupem může být null.
+        /// </summary>
+        /// <param name="serial"></param>
+        /// <returns></returns>
+        public static DataSubButton[] Deserialize(string serial)
+        {
+            if (String.IsNullOrEmpty(serial)) return null;
+
+            List<DataSubButton> buttons = new List<DataSubButton>();
+
+
+            return buttons.ToArray();
+        }
+        /// <summary>
+        /// Z dodané kolekce buttonů vrátí jeden string
+        /// </summary>
+        /// <param name="buttons"></param>
+        /// <returns></returns>
+        public static string Serialize(IEnumerable<DataSubButton> buttons)
+        {
+            if (buttons is null) return null;
+
+            StringBuilder serial = new StringBuilder();
+            string buttonDelimiter = _ButtonDelimiter.ToString();
+            string buttonReplacement = ">";
+            string itemDelimiter = _ItemDelimiter.ToString();
+            string itemReplacement = "<";
+
+            // Buttony:
+            foreach (var but in buttons)
+                serializeOne(but);
+
+            return serial.ToString();
+
+            void serializeOne(DataSubButton button)
+            {
+                if (button is null) return;
+
+                // Oddělovač mezi prvky:
+                if (serial.Length > 0) serial.Append(buttonDelimiter);
+
+                // Sekvence dat:
+                append(button.ButtonId);
+                append(button.ButtonType.ToString());
+                append(button.ImageName);
+                append(button.Enabled ? "E" : "D");
+                append(button.IsLeft ? "L" : "R");
+                append(button.ToolTipTitle);
+                append(button.ToolTipText);
+                string shortcut = (button.Shortcut?.ToString() ?? "");
+                append(shortcut);
+            }
+            // Přidá daný text a itemDelimier
+            void append(string text)
+            {
+                text = getText(text);
+                serial.Append(text + itemDelimiter);
+            }
+
+            // Vrátí not null text, kde namísto funkčních delimiterů budu jejich neškodné náhrady
+            string getText(string text)
+            {
+                if (text is null) return "";
+                if (text.Contains(buttonDelimiter)) text = text.Replace(buttonDelimiter, buttonReplacement);
+                if (text.Contains(itemDelimiter)) text = text.Replace(itemDelimiter, itemReplacement);
+                return text;
+            }
+        }
+        private static char _ButtonDelimiter { get { return '»'; } }
+        private static char _ItemDelimiter { get { return '«'; } }
+        #endregion
+    }
     #endregion
     #region Interface IRibbonContent, IRibbonPage, IRibbonCategory, IRibbonGroup, IRibbonItem;  Enumy RibbonPageType, RibbonContentMode, RibbonItemStyles, BarItemPaintStyle, RibbonItemType.
     /// <summary>
@@ -12009,9 +12124,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Smazání
         /// </summary>
-        Clear = 0x8000
+        Clear = 0x8000, 
+        /// <summary>
+        /// Uživatelský obrázek
+        /// </summary>
+        Glyph = 0
     }
-
     /// <summary>
     /// Typ stránky
     /// </summary>
