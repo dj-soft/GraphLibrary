@@ -110,12 +110,49 @@ namespace TestDevExpress.Forms
             addSampleButton("B", "Form B", imageTest2, 1, 2, 8, 12, 36);
             addSampleButton("C", "Table C", imageTest3, 1, 4, 16, 32, 96, 256);
 
-            /*
+
+            _AddPageCombo(pages);
+
+
+            this.DxRibbon.Clear();
+            this.DxRibbon.AddPages(pages);
+
+
+            // this.TestSvgDisable();
+
+            this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
+
+            void addSampleButton(string layoutId, string text, string imageName, params int[] rowsCounts)
+            {
+                var subItems = new ListExt<IRibbonItem>();
+                foreach (int rowsCount in rowsCounts)
+                {
+                    subItems.Add(new DataRibbonItem()
+                    {
+                        ItemId = $"CreateSample{layoutId}{rowsCount}",
+                        Text = $"Řádků: {rowsCount}",
+                        ItemType = RibbonItemType.Button
+                    });
+                }
+
+                groupSamples.Items.Add(new DataRibbonItem()
+                {
+                    ItemId = $"CreateLayout{layoutId}",
+                    Text = text,
+                    ImageName = imageName,
+                    ItemType = RibbonItemType.Menu,
+                    SubItems = subItems,
+                    RadioButtonGroupName = radioGroupName
+                });
+            }
+        }
+        private void _AddPageCombo(List<DataRibbonPage> pages)
+        {
             var page2 = new DataRibbonPage() { PageId = "Testy", PageText = "Ukázky" };
             var group21 = new DataRibbonGroup() { GroupId = "TestCombo", GroupText = "Combo boxy" };
 
             DxBorderStyle comboBorder = DxBorderStyle.None;
-            DxBorderStyle buttonBorder = DxBorderStyle.Single;
+            DxBorderStyle buttonBorder = DxBorderStyle.None;
 
             string imageApp1 = "svgimages/chart/charttype_area3d.svg";
             string imageApp2 = "svgimages/chart/charttype_areastacked.svg";
@@ -185,42 +222,7 @@ namespace TestDevExpress.Forms
 
 
             pages.Add(page2);
-
-            */
-
-            this.DxRibbon.Clear();
-            this.DxRibbon.AddPages(pages);
-
-
-            // this.TestSvgDisable();
-
-            this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
-
-            void addSampleButton(string layoutId, string text, string imageName, params int[] rowsCounts)
-            {
-                var subItems = new ListExt<IRibbonItem>();
-                foreach (int rowsCount in rowsCounts)
-                {
-                    subItems.Add(new DataRibbonItem()
-                    {
-                        ItemId = $"CreateSample{layoutId}{rowsCount}",
-                        Text = $"Řádků: {rowsCount}",
-                        ItemType = RibbonItemType.Button
-                    });
-                }
-
-                groupSamples.Items.Add(new DataRibbonItem()
-                {
-                    ItemId = $"CreateLayout{layoutId}",
-                    Text = text,
-                    ImageName = imageName,
-                    ItemType = RibbonItemType.Menu,
-                    SubItems = subItems,
-                    RadioButtonGroupName = radioGroupName
-                });
-            }
         }
-
 
         private void TestSvgDisable()
         {

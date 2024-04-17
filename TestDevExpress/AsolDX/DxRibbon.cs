@@ -10074,6 +10074,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 };
                 if (!String.IsNullOrEmpty(toolTip))
                     dxButton.SuperTip = DxComponent.CreateDxSuperTip(toolTip, null);
+                dxButton.Shortcut
+                DxBufferedGraphicPaintArgs.
 
                 if (kind == DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph)
                     DxComponent.ApplyImage(dxButton.ImageOptions, image, sizeType: ResourceImageSizeType.Small);

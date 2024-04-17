@@ -9674,6 +9674,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             using (DevExpress.Pdf.PdfDocumentProcessor processor = new DevExpress.Pdf.PdfDocumentProcessor())
             {
                 processor.LoadDocument(pdfFile);
+                processor.Document.Title = System.IO.Path.GetFileNameWithoutExtension(pdfFile);
 
                 if (printArgs is null) printArgs = PrintArgs.Default;
                 var pdfSettings = printArgs.CreateSettings(processor.Document.Pages.Count);
@@ -9696,7 +9697,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (printArgs is null) printArgs = PrintArgs.Default;
                 var pdfSettings = printArgs.CreateSettings(pdfViewer.PageCount);
 
-                pdfViewer.ShowPrintStatusDialog = false;
+                pdfViewer.ShowPrintStatusDialog = printArgs.ShowPrintStatusDialog;
                 pdfViewer.Print(pdfSettings);
 
                 pdfViewer.CloseDocument();
@@ -9772,6 +9773,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 PageOrientation = PageOrientation.Auto;
                 ScaleMode = PrintScaleMode.ActualSize;
                 Scale = null;
+                ShowPrintStatusDialog = false;
             }
             /// <summary>
             /// Defaultní nastavení
@@ -9823,6 +9825,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Měřítko tisku pokud <see cref="ScaleMode"/> = <see cref="PrintScaleMode.CustomScale"/>, v procentech. Default = null odpovídá 100f = 100%
             /// </summary>
             public float? Scale { get; set; }
+            /// <summary>
+            /// Zobrazit PrintStatus okno v době tisku
+            /// </summary>
+            public bool ShowPrintStatusDialog { get; set; }
             /// <summary>
             /// Maximální počet kopií
             /// </summary>
