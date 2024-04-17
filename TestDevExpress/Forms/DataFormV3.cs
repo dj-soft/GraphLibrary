@@ -272,9 +272,6 @@ namespace TestDevExpress.Forms
         private void _RemoveMainControls()
         {
             _RemoveDxDataForm();
-            _RemoveWebBrowser();
-            _RemoveAntBrowser();
-
 
             GCCollect();
             WinProcessInfoAfterShown = DxComponent.WinProcessInfo.GetCurent();
@@ -335,9 +332,6 @@ namespace TestDevExpress.Forms
                 case "LoadFormFileOne":
                     _LoadDataFrmXml(fileName);
                     break;
-                case "OpenWeb":
-                    _ShowBrowser(linkUrl);
-                    break;
                 default:
                     var n = itemId;
                     break;
@@ -371,101 +365,6 @@ namespace TestDevExpress.Forms
 
             return ribbonItems;
         }
-        #endregion
-        #region WebBrowser
-
-        void _ShowBrowser(string q) { }
-        void _RemoveWebBrowser() { }
-        void _RemoveAntBrowser() { }
-
-        /*
-        private ListExt<IRibbonItem> _GetBrowseLinks()
-        {
-            int id = 0;
-            ListExt<IRibbonItem> linkWebs = new ListExt<IRibbonItem>()
-            {   // Nabídka položek do Ribbonu:
-                new DataRibbonItem() {ItemId = $"OpenWeb_{(++id)}", Text = "seznam.cz", Tag = "https://www.seznam.cz/"},
-                new DataRibbonItem() {ItemId = $"OpenWeb_{(++id)}", Text = "geo.content1", Tag = @"file://c:\DavidPrac\SeznamMapy\content01.html"},
-                new DataRibbonItem() {ItemId = $"OpenWeb_{(++id)}", Text = "mapy.cz", Tag = @"https://mapy.cz/"},
-                new DataRibbonItem() {ItemId = $"OpenWeb_{(++id)}", Text = "mapy: souřadnice HK", Tag = @"https://mapy.cz/dopravni?x=14.5802973&y=50.5311090&z=14"},
-                new DataRibbonItem() {ItemId = $"OpenWeb_{(++id)}", Text = "c-sharpcorner.com", Tag = @"https://www.c-sharpcorner.com/UploadFile/mahesh/webbrowser-control-in-C-Sharp-and-windows-forms/"},
-                new DataRibbonItem() {ItemId = $"OpenWeb_{(++id)}", Text = "Asseco.cz", Tag = "https://www.assecosolutions.cz/"},
-                new DataRibbonItem() {ItemId = $"OpenWeb_{(++id)}", Text = "giovannina", Tag = "https://giovannina-cz.blogspot.com/2023/10/fashion-royalty-trending-tulabelle-true.html"},
-                new DataRibbonItem() {ItemId = $"OpenWeb_{(++id)}", Text = "Zrušit", Tag = "null"}
-            };
-            return linkWebs;
-        }
-        private void _ShowBrowser(string linkUrl)
-        {
-            bool isCtrl = Control.ModifierKeys == Keys.Control;
-            _RemoveMainControls();
-            if (String.IsNullOrEmpty(linkUrl) || linkUrl == "null") return;
-
-            _ShowAntBrowser(linkUrl, isCtrl);
-            // _ShowWebBrowser(linkUrl, isCtrl);
-        }
-        private void _ShowWebBrowser(string linkUrl, bool isCtrl)
-        {
-            var webBrowser = new WebBrowser() { Dock = DockStyle.Fill };
-            webBrowser.Navigate(linkUrl);
-            webBrowser.ScriptErrorsSuppressed = !isCtrl;
-            webBrowser.DocumentCompleted += _WebBrowser_DocumentCompleted;
-            webBrowser.DocumentTitleChanged += _WebBrowser_DocumentTitleChanged;
-            webBrowser.Navigated += _WebBrowser_Navigated;
-            webBrowser.Navigating += _WebBrowser_Navigating;
-            webBrowser.StatusTextChanged += _WebBrowser_StatusTextChanged;
-
-            __WebBrowser = webBrowser;
-            DxMainPanel.Controls.Add(webBrowser);
-        }
-        private void _WebBrowser_StatusTextChanged(object sender, EventArgs e) { }
-        private void _WebBrowser_Navigating(object sender, WebBrowserNavigatingEventArgs e) { }
-        private void _WebBrowser_Navigated(object sender, WebBrowserNavigatedEventArgs e) { }
-        private void _WebBrowser_DocumentTitleChanged(object sender, EventArgs e) { }
-        private void _WebBrowser_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e) { }
-        private void _RemoveWebBrowser()
-        {
-            var webBrowse = __WebBrowser;
-            if (webBrowse != null)
-            {
-                if (DxMainPanel.Controls.Contains(webBrowse))
-                    DxMainPanel.Controls.Remove(webBrowse);
-                webBrowse.Dispose();
-            }
-            __WebBrowser = null;
-        }
-        private WebBrowser __WebBrowser;
-
-
-        private void _ShowAntBrowser(string linkUrl, bool isCtrl)
-        {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(this.GetType());
-
-            AxAntViewAx.AxAntview antBrowser = new AxAntViewAx.AxAntview();
-
-            ((System.ComponentModel.ISupportInitialize)(antBrowser)).BeginInit();
-            antBrowser.Dock = DockStyle.Fill;
-            antBrowser.OcxState = null;         // vytvoří implicitní   ((System.Windows.Forms.AxHost.State)(resources.GetObject("__AntBrowser.OcxState")));
-            antBrowser.CreateWebView();
-            antBrowser.Navigate(linkUrl);
-            DxMainPanel.Controls.Add(antBrowser);
-            ((System.ComponentModel.ISupportInitialize)(antBrowser)).EndInit();
-
-            __AntBrowser = antBrowser;
-        }
-        private AxAntViewAx.AxAntview __AntBrowser;
-        private void _RemoveAntBrowser()
-        {
-            var antBrowser = __AntBrowser;
-            if (antBrowser != null)
-            {
-                if (DxMainPanel.Controls.Contains(antBrowser))
-                    DxMainPanel.Controls.Remove(antBrowser);
-                antBrowser.Dispose();
-            }
-            __AntBrowser = null;
-        }
-        */
         #endregion
         #region Status - proměnné, Zobrazení spotřeby paměti
         /// <summary>

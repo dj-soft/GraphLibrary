@@ -111,19 +111,16 @@ namespace TestDevExpress.Forms
         private AxAntViewAx.AxAntview _AxAntView;
         #endregion
 
-
         private void button1_Click(object sender, EventArgs e)
         {
             _PrepareAntView();
             _AxAntView.Navigate("https://www.seznam.cz/");
         }
-
         private void button2_Click(object sender, EventArgs e)
         {
             _PrepareAntView();
             _AxAntView.Navigate(@"https://mapy.cz/dopravni?l=0&x=15.8629028&y=50.2145999&z=17");        // https://mapy.cz/dopravni?x=14.5802973&y=50.5311090&z=14
         }
-
         private void button3_Click(object sender, EventArgs e)
         {
             _PrepareAntView();
@@ -189,7 +186,7 @@ m.addControl(sync);
         {
             if (_AxAntView != null)
             {
-                _AxAntView.Dispose();
+                DxComponent.TryRun(() => _AxAntView.Dispose(), true);
                 _AxAntView = null;
             }
 
@@ -223,17 +220,14 @@ m.addControl(sync);
             DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"AntView.OnSourceChanged: '{_AxAntView.Source}'");
             _RefreshUrl(_AxAntView.Source);
         }
-
         private void _AxAntView_OnFrameNavigationStarting(object sender, AxAntViewAx.IAntViewEvents_OnFrameNavigationStartingEvent e)
         {
             DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"AntView.OnFrameNavigationStarting: #{e.args.NavigationId}: '{e.args.URI}'");
         }
-
         private void _AxAntView_OnFrameNavigationCompleted(object sender, AxAntViewAx.IAntViewEvents_OnFrameNavigationCompletedEvent e)
         {
             DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"AntView.OnFrameNavigationCompleted: #{e.navigationId}");
         }
-
         private void _AxAntView_OnNavigationStarting(object sender, AxAntViewAx.IAntViewEvents_OnNavigationStartingEvent e)
         {
             DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"AntView.OnNavigationStarting: #{e.args.NavigationId}: '{e.args.URI}'");
@@ -270,6 +264,5 @@ m.addControl(sync);
             this._UrlAdress.Width = w;
         }
         ComponentResourceManager _Resources;
-
     }
 }

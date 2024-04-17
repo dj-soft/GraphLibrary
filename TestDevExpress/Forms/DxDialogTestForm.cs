@@ -68,13 +68,16 @@ namespace TestDevExpress.Forms
                     dialogArgs.StatusBarAltMsgButtonImage = resourceAltx1;
                     break;
                 default:
-                    AsolDX.News.PdfPrinter.PrintArgs pa = new AsolDX.News.PdfPrinter.PrintArgs();
+                    var printers = PdfPrinter.InstalledPrinters;
+                    var defPrinter = PdfPrinter.DefaultPrinterName;
+
+                    var pa = new PdfPrinter.PrintArgs();
                     pa.PageRange = "-3, 5, 12 - 15,  21....25; 22, 48, 47-";
                     var sett = pa.CreateSettings(50);
                     var pgnm = sett.PageNumbers;
 
                     string fileName = _GetRandomPdf();
-                    AsolDX.News.PdfPrinter.PrintWithProcess(fileName, pa);
+                    PdfPrinter.PrintWithProcess(fileName, pa);
 
                     break;
             }

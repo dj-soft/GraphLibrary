@@ -4529,8 +4529,38 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// StatusBar : Button
     /// </summary>
-    public class DxBarButtonItem : DevExpress.XtraBars.BarButtonItem
+    public class DxBarButtonItem : DevExpress.XtraBars.BarButtonItem, IBarItemCustomDrawing
     {
+        #region IBarItemCustomDrawing
+        void IBarItemCustomDrawing.CustomDraw(DevExpress.XtraBars.BarItemCustomDrawEventArgs e)
+        {
+            DxBarButtonItem.CustomDrawButton(this, e);
+
+        }
+        internal static void CustomDrawButton(DevExpress.XtraBars.BarBaseButtonItem button, DevExpress.XtraBars.BarItemCustomDrawEventArgs e)
+        {
+            // Pokud je button v nějakém jiném stabu než klidovém, pak do kreslení nezasahujeme:
+            if (e.State != DevExpress.XtraBars.ViewInfo.BarLinkState.Normal) return;
+
+            // Pokud border je Default nebo NoBorder, pak nic specifického nekreslíme:
+            var border = button.Border;
+            if (border == BorderStyles.NoBorder || border == BorderStyles.Default) return;
+
+            // Vykreslíme jinou barvu pozadí a přes ni potom ikonu a text:
+            e.DrawBackground();
+
+            Color backColor = Color.FromArgb(64, 96, 96, 160);
+            e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(backColor), e.Bounds);
+
+            //Color? backColor = DxComponent.SkinColorSet.NamedControl ?? DxComponent.SkinColorSet.NamedHotTrackedColor;
+            //if (backColor.HasValue) e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(Color.FromArgb(64, backColor.Value)), e.Bounds);
+
+            e.DrawBorder();
+            e.DrawGlyph();
+            e.DrawText();
+            e.Handled = true;
+        }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -4549,8 +4579,14 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// StatusBar : CheckItem
     /// </summary>
-    public class DxBarCheckItem : DevExpress.XtraBars.BarCheckItem
+    public class DxBarCheckItem : DevExpress.XtraBars.BarCheckItem, IBarItemCustomDrawing
     {
+        #region IBarItemCustomDrawing
+        void IBarItemCustomDrawing.CustomDraw(DevExpress.XtraBars.BarItemCustomDrawEventArgs e)
+        {
+            DxBarButtonItem.CustomDrawButton(this, e);
+        }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -9619,6 +9655,343 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="state"></param>
         void DoRedoStep(object state);
+    }
+    #endregion
+    #region class PdfPrinter
+    /// <summary>
+    /// Support pro DirectPdfPrint
+    /// </summary>
+    public class PdfPrinter
+    {
+        /// <summary>
+        /// DirectPdfPrint ze souboru do zadané tiskárny, pomocí <see cref="DevExpress.Pdf.PdfDocumentProcessor"/>
+        /// </summary>
+        /// <param name="pdfFile"></param>
+        /// <param name="printArgs"></param>
+        public static void PrintWithProcess(string pdfFile, PrintArgs printArgs = null)
+        {
+            using (DevExpress.Pdf.PdfDocumentProcessor processor = new DevExpress.Pdf.PdfDocumentProcessor())
+            {
+                processor.LoadDocument(pdfFile);
+
+                printArgs ??= PrintArgs.Default;
+                var pdfSettings = printArgs.CreateSettings(processor.Document.Pages.Count);
+                processor.Print(pdfSettings);
+
+                processor.CloseDocument();
+            }
+        }
+        /// <summary>
+        /// DirectPdfPrint ze souboru do zadané tiskárny, pomocí <see cref="DevExpress.Pdf.view"/>
+        /// </summary>
+        /// <param name="pdfFile"></param>
+        /// <param name="printArgs"></param>
+        public static void PrintWithControl(string pdfFile, PrintArgs printArgs = null)
+        {
+            using (DevExpress.Pdf.PdfDocumentProcessor ppp = new DevExpress.Pdf.PdfDocumentProcessor())
+            {
+                ppp.LoadDocument(pdfFile);
+
+                printArgs ??= PrintArgs.Default;
+                var pdfSettings = printArgs.CreateSettings(ppp.Document.Pages.Count);
+                ppp.Print(pdfSettings);
+
+                ppp.CloseDocument();
+            }
+        }
+        /// <summary>
+        /// Instalované tiskárny
+        /// </summary>
+        public static string[] InstalledPrinters
+        {
+            get
+            {
+                var printers = System.Drawing.Printing.PrinterSettings.InstalledPrinters;
+                string[] result = new string[printers.Count];
+                printers.CopyTo(result, 0);
+                return result;
+
+                /*  Odvážnější řešení:
+                
+        ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Printer");
+
+        foreach (ManagementObject printer in searcher.Get())
+        {
+            string printerName = printer["Name"].ToString().ToLower();
+            Console.WriteLine("Printer :" + printerName);
+
+            PrintProps(printer, "Caption");
+            PrintProps(printer, "ExtendedPrinterStatus");
+            PrintProps(printer, "Availability");
+            PrintProps(printer, "Default");
+            PrintProps(printer, "DetectedErrorState");
+            PrintProps(printer, "ExtendedDetectedErrorState");
+            PrintProps(printer, "ExtendedPrinterStatus");
+            PrintProps(printer, "LastErrorCode");
+            PrintProps(printer, "PrinterState");
+            PrintProps(printer, "PrinterStatus");
+            PrintProps(printer, "Status");
+            PrintProps(printer, "WorkOffline");
+            PrintProps(printer, "Local");
+        }
+
+                */
+            }
+        }
+        /// <summary>
+        /// Defaultní tiskárna
+        /// </summary>
+        public static string DefaultPrinterName
+        {
+            get
+            {
+                var setting = new System.Drawing.Printing.PrinterSettings();
+                return setting.PrinterName;
+            }
+        }
+        /// <summary>
+        /// Třída argumentů pro tisk
+        /// </summary>
+        public class PrintArgs
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            public PrintArgs()
+            {
+                PrinterName = null;
+                Copies = 1;
+                Collate = false;
+                EnableLegacyPrinting = false;
+                PrintInGrayscale = false;
+                PageRange = null;
+                PageNumbers = null;
+                PageOrientation = PageOrientation.Auto;
+                ScaleMode = PrintScaleMode.ActualSize;
+                Scale = null;
+            }
+            /// <summary>
+            /// Defaultní nastavení
+            /// </summary>
+            public static PrintArgs Default { get { return new PrintArgs(); } }
+            /// <summary>
+            /// Jméno tiskárny; prázdné = výchozí systémová
+            /// </summary>
+            public string PrinterName { get; set; }
+            /// <summary>
+            /// Počet kopií, validní hodnota = 1 až 99
+            /// </summary>
+            public short Copies { get; set; }
+            /// <summary>
+            /// Gets or sets a value indicating whether the printed document is collated.
+            /// true if the printed document is collated; otherwise, false. The default is false.
+            /// </summary>
+            public bool Collate { get; set; }
+            /// <summary>
+            /// Gets or sets whether to enable the legacy printing engine.
+            /// true to use the old printing engine; otherwise - false.
+            /// </summary>
+            public bool EnableLegacyPrinting { get; set; }
+            /// <summary>
+            /// Gets or sets a value which indicates whether to print the document content in grayscale.
+            /// true to print a document content in grayscale; false the current printer settings are used.
+            /// </summary>
+            public bool PrintInGrayscale { get; set; }
+            /// <summary>
+            /// Rozsah tištěných stránek ve formě: "-3, 5, 12-15,  21..25; 22, 48, 47-"
+            /// (čárkou oddělené jednotlivé stránky nebo rozsahy, pomlčkou nebo dvojtečkou oddělené Min-Max rozsahy, mezery jsou optional.
+            /// </summary>
+            public string PageRange { get; set; }
+            /// <summary>
+            /// Explicitně zadaná čísla stránek k tisku. Pokud není null a má nějaký prvek, pak se převezme a poté se ignoruje <see cref="PageRange"/>.
+            /// </summary>
+            public int[] PageNumbers { get; set; }
+            /// <summary>
+            /// Specifies the orientation of pages to be printed.
+            /// A DevExpress.Pdf.PdfPrintPageOrientation value. The default value is DevExpress.Pdf.PdfPrintPageOrientation.Auto.
+            /// </summary>
+            public PageOrientation PageOrientation { get; set; }
+            /// <summary>
+            /// Specifies the page scale mode when a document is printing.
+            /// Default je <see cref="PrintScaleMode.ActualSize"/>.
+            /// </summary>
+            public PrintScaleMode ScaleMode { get; set; }
+            /// <summary>
+            /// Měřítko tisku pokud <see cref="ScaleMode"/> = <see cref="PrintScaleMode.CustomScale"/>, v procentech. Default = null odpovídá 100f = 100%
+            /// </summary>
+            public float? Scale { get; set; }
+            /// <summary>
+            /// Maximální počet kopií
+            /// </summary>
+            public const short MaxCopies = 99;
+            /// <summary>
+            /// Ze svých dat vytvoří a vrátí <see cref="DevExpress.Pdf.PdfPrinterSettings"/> pro zadaný počet stran.
+            /// Ten má vliv na hodnotu <see cref="DevExpress.Pdf.PdfPrinterSettings.PageNumbers"/>.
+            /// </summary>
+            /// <param name="pagesCount">Počet stran aktuálního dokumentu</param>
+            /// <returns></returns>
+            public DevExpress.Pdf.PdfPrinterSettings CreateSettings(int? pagesCount = null)
+            {
+                var sysSettings = new System.Drawing.Printing.PrinterSettings();
+                if (!String.IsNullOrEmpty(this.PrinterName)) sysSettings.PrinterName = this.PrinterName;
+                if (this.Copies > 0) sysSettings.Copies = (this.Copies <= MaxCopies ? this.Copies : MaxCopies);
+                sysSettings.Collate = this.Collate;
+
+                var pdfSettings = new DevExpress.Pdf.PdfPrinterSettings(sysSettings);
+                pdfSettings.EnableLegacyPrinting = this.EnableLegacyPrinting;
+                pdfSettings.PrintInGrayscale = this.PrintInGrayscale;
+
+                pdfSettings.PageNumbers = _GetPageNumbers(pagesCount, this.PageNumbers, this.PageRange);
+
+                pdfSettings.PageOrientation = (this.PageOrientation == PageOrientation.Portrait ? DevExpress.Pdf.PdfPrintPageOrientation.Portrait :
+                                              (this.PageOrientation == PageOrientation.Landscape ? DevExpress.Pdf.PdfPrintPageOrientation.Landscape : DevExpress.Pdf.PdfPrintPageOrientation.Auto));
+                pdfSettings.ScaleMode = (this.ScaleMode == PrintScaleMode.ActualSize ? DevExpress.Pdf.PdfPrintScaleMode.ActualSize :
+                                        (this.ScaleMode == PrintScaleMode.CustomScale ? DevExpress.Pdf.PdfPrintScaleMode.CustomScale : DevExpress.Pdf.PdfPrintScaleMode.Fit));
+                pdfSettings.Scale = ((this.ScaleMode == PrintScaleMode.CustomScale && this.Scale.HasValue && (this.Scale.Value != 0f && this.Scale.Value != 100f)) ? this.Scale.Value : 100f);
+
+                return pdfSettings;
+            }
+            /// <summary>
+            /// Vrátí pole, obsahující čísla stránek
+            /// </summary>
+            /// <param name="pagesCount"></param>
+            /// <param name="pageNumbers"></param>
+            /// <param name="pageRange"></param>
+            /// <returns></returns>
+            private static int[] _GetPageNumbers(int? pagesCount, int[] pageNumbers, string pageRange)
+            {
+                Dictionary<int, int> pages = new Dictionary<int, int>();
+                bool hasCount = (pagesCount.HasValue && pagesCount.Value > 0);
+                bool hasData = false;
+                if (pageNumbers != null)
+                {   // Exaktní seznam
+                    foreach (int pn in pageNumbers)
+                        addPage(pn);
+                }
+
+                else if (!String.IsNullOrEmpty(pageRange))
+                {   // User požadavek: "1-4, 5; 12, 20 ÷ 26;  30..33"
+
+                    // Odstraním mezery před a po pomlčce:  "20 - 25" => "20-25" :
+                    //  protože následně umožním oddělovat prvky i v mezeře: "1 2 25 40", a okolo znaku "-" by mi mezera vadila!
+                    // Současně nahradím znak  ÷  za jednotný znak  -
+                    while (pageRange.Contains("...")) pageRange = pageRange.Replace("...", "..");  // Z mnohonásobných teček udělám nakonec dvojtečku
+                    if (pageRange.Contains("..")) pageRange = pageRange.Replace("..", "-");        // A z dvojtečky udělám standardní pomlčku
+                    if (pageRange.Contains("÷")) pageRange = pageRange.Replace("÷", "-");          // Z  ÷  udělám standardní pomlčku
+                    while (pageRange.Contains(" -")) pageRange = pageRange.Replace(" -", "-");     // Pomlčky zbavím sousedních mezer
+                    while (pageRange.Contains("- ")) pageRange = pageRange.Replace("- ", "-");
+
+                    var parts = pageRange.Split(',', ';', ' ');
+                    foreach (var part in parts)
+                    {
+                        if (part.Length > 0)
+                        {
+                            if (part.Contains("-"))
+                                addRange(part);
+                            else
+                                addSingle(part);
+                        }
+                    }
+                }
+
+                if (!hasData) return null;
+
+                var list = pages.Keys.ToList();
+                list.Sort();
+                return list.ToArray();
+
+                // Přidá stránky v daném rozsahu "5-7"   nebo  "12-"   nebo  "-4"
+                void addRange(string text)
+                {   // Na vstupu je string, který obsahuje mezeru, a následující Split tedy vždy vytvoří nejméně dva prvky, i kdyby prázdné stringy...
+                    var minMax = text.Split('-');
+                    if (minMax.Length < 2)
+                    {
+                        addSingle(text);
+                        return;
+                    }
+                    bool hasMin = hasNumb(minMax[0], out var min);
+                    bool hasMax = hasNumb(minMax[1], out var max);
+                    if (hasMin && hasMax)
+                    {   //  "12-15"   =>   vepíšu zadané, včetně poslední
+                        for (int val = min; val <= max; val++)
+                            addPage(val);
+                    }
+                    else if (hasMin)
+                    {   // "12-"      =>   od zadané do poslední
+                        if (hasCount)
+                        {   // Od dané stránky do poslední:
+                            for (int val = min; val <= pagesCount.Value; val++)
+                                addPage(val);
+                        }
+                        else
+                        {   // Nevím, která je poslední: tak jen danou stránku
+                            addPage(min);
+                        }
+                    }
+                    else if (hasMax)
+                    {   // "-8"      =>   od první do zadané včetně
+                        for (int val = 1; val <= max; val++)
+                            addPage(val);
+                    }
+                }
+                // testuje zda daný text je číslo
+                bool hasNumb(string text, out int numb)
+                {
+                    if (!String.IsNullOrEmpty(text) && Int32.TryParse(text.Trim(), out numb)) return true;
+                    numb = 0;
+                    return false;
+                }
+                // přidá jednu stránku, pokud je zadané číslo
+                void addSingle(string text)
+                {
+                    if (Int32.TryParse(text, out var number))
+                        addPage(number);
+                }
+                // přidá číslo stránky, pokud je v platném rozsahu a pokud je to poprvé
+                void addPage(int pageNumber)
+                {
+                    if (pageNumber <= 0 || (hasCount && pageNumber > pagesCount.Value)) return;    // Záporné, 0 a větší než Count ignoruji
+                    if (!pages.ContainsKey(pageNumber)) pages.Add(pageNumber, pageNumber);         // Akceptuji jen první
+                    hasData = true;
+                }
+            }
+        }
+        /// <summary>
+        /// Lists the available document orientation modes.
+        /// </summary>
+        public enum PageOrientation
+        {
+            /// <summary>
+            /// The orientation is defined automatically to fit the page content to the specific paper type.
+            /// </summary>
+            Auto,
+            /// <summary>
+            /// Orientation of the document pages is portrait.
+            /// </summary>
+            Portrait,
+            /// <summary>
+            /// Orientation of the document pages is landscape.
+            /// </summary>
+            Landscape
+        }
+        /// <summary>
+        /// Lists the available document scale modes.
+        /// </summary>
+        public enum PrintScaleMode
+        {
+            /// <summary>
+            /// A printed page is scaled to fit a specific paper size.
+            /// </summary>
+            Fit,
+            /// <summary>
+            /// A printed page is not scaled.
+            /// </summary>
+            ActualSize,
+            /// <summary>
+            /// A printed page is scaled by a specified percentage scale factor.
+            /// </summary>
+            CustomScale
+        }
     }
     #endregion
     #region Enumy: LabelStyleType, RectangleSide, RectangleCorner, ...
