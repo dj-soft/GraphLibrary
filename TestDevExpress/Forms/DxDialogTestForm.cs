@@ -67,6 +67,16 @@ namespace TestDevExpress.Forms
                     dialogArgs.StatusBarCtrlCImage = resourceCopy1;
                     dialogArgs.StatusBarAltMsgButtonImage = resourceAltx1;
                     break;
+                default:
+                    AsolDX.News.PdfPrinter.PrintArgs pa = new AsolDX.News.PdfPrinter.PrintArgs();
+                    pa.PageRange = "-3, 5, 12 - 15,  21....25; 22, 48, 47-";
+                    var sett = pa.CreateSettings(50);
+                    var pgnm = sett.PageNumbers;
+
+                    string fileName = _GetRandomPdf();
+                    AsolDX.News.PdfPrinter.PrintWithProcess(fileName, pa);
+
+                    break;
             }
 
 
@@ -75,6 +85,29 @@ namespace TestDevExpress.Forms
                 dialogArgs.Owner = this;
                 var result = DialogForm.ShowDialog(dialogArgs);
 
+            }
+        }
+        private static string _GetRandomPdf()
+        {
+            string fileName;
+            if (tryGetRandomPdfFrom("D:\\TiskPDF\\", out fileName)) return fileName;
+            if (tryGetRandomPdfFrom("C:\\TiskPDF\\", out fileName)) return fileName;
+
+            return null;
+
+            bool tryGetRandomPdfFrom(string path, out string result)
+            {
+                if (System.IO.Directory.Exists(path))
+                {
+                    var files = System.IO.Directory.GetFiles(path, "*.pdf");
+                    if (files.Length > 0) 
+                    {
+                        result = Randomizer.GetItem(files);
+                        return true;
+                    }
+                }
+                result = null;
+                return false;
             }
         }
     }
