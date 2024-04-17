@@ -17,6 +17,7 @@ using DevExpress.Utils.Extensions;
 using DevExpress.XtraBars;
 using DevExpress.XtraBars.Ribbon;
 using XS = Noris.WS.Parser.XmlSerializer;
+using System.Web.UI.WebControls.WebParts;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -10045,76 +10046,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Přidá daný button. Na pořadí záleží.
             void addComboButton(DevExpress.XtraEditors.Repository.RepositoryItemComboBox combo, DataSubButton button)
             {
-                // Vstupní formát: "Name=Image:ToolTip
-                string name = getPartBefore(ref button, '=');
-                string image = getPartBefore(ref button, ':');
-                string toolTip = button;
+                if (button is null) return;
 
-                // Umístění Vlevo?
-                bool isLeft = (!String.IsNullOrEmpty(name) && name.Contains('<'));
-                if (isLeft) name = name.Replace("<", "");                      // Pokud v Name je znak < značí to umístění vlevo; a nebude součástí jména. Typicky se dává na začátek jména, např. <Clear
+                var dxButton = new DevExpress.XtraEditors.Controls.EditorButton();
+                dxButton.Tag = button;
+                dxButton.Kind = _ConvertButtonType(button.ButtonType);
+                dxButton.Caption = "";
+                dxButton.IsLeft = button.IsLeft;
+                dxButton.Enabled = button.Enabled;
+                dxButton.SuperTip = DxComponent.CreateDxSuperTip(button.ToolTipTitle, button.ToolTipText);
+                dxButton.Shortcut = (button.Shortcut.HasValue ? new KeyShortcut(button.Shortcut.Value) : null);
 
-                // Enabled:
-                bool isDisabled = (!String.IsNullOrEmpty(name) && name.Length > 1 && name.StartsWith("/"));
-                if (isDisabled) name = name.Substring(1);
-
-                // Zkratka pro jednoduché zadání např.: "DropDown"
-                if (String.IsNullOrEmpty(image)) image = name;
-
-                // Určení typu buttonu (Predefines):
-                var kind = (!String.IsNullOrEmpty(image) && Enum.TryParse<DevExpress.XtraEditors.Controls.ButtonPredefines>(image, false, out var predef)) ? predef : DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph;
-
-                var dxButton = new DevExpress.XtraEditors.Controls.EditorButton()
-                {
-                    Tag = name,
-                    Caption = "",
-                    Kind = kind,
-                    IsLeft = isLeft,
-                    Enabled = !isDisabled
-                };
-                if (!String.IsNullOrEmpty(toolTip))
-                    dxButton.SuperTip = DxComponent.CreateDxSuperTip(toolTip, null);
-                dxButton.Shortcut = new KeyShortcut();
-
-                if (kind == DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph)
-                    DxComponent.ApplyImage(dxButton.ImageOptions, image, sizeType: ResourceImageSizeType.Small);
+                if (button.ButtonType == PredefinedButtonType.Glyph)
+                    DxComponent.ApplyImage(dxButton.ImageOptions, button.ImageName, sizeType: ResourceImageSizeType.Small);
 
                 comboBox.Buttons.Add(dxButton);
-            }
-
-            // V dodaném textu najde delimiter. Vrací část před ním, a v parametru 'text' ponechá část za delimiterem.
-            string getPartBefore(ref string text, char delimiter)
-            {
-                if (String.IsNullOrEmpty(text)) return "";
-                int last = text.Length - 1;
-                int index = text.IndexOf(delimiter);
-                string part = "";
-                if (index < 0)
-                {   // Delimiter nenalezen
-                    part = text;
-                    text = "";
-                }
-                else if (index == 0)
-                {   // Delimiterem to začíná
-                    part = "";
-                    text = last > 0 ? text.Substring(index + 1) : "";
-                }
-                else if (index < last)
-                {   // Delimiter je uprostřed, není ale posledním znakem
-                    part = text.Substring(0, index);
-                    text = text.Substring(index + 1);
-                }
-                else if (index == last)
-                {   // Delimiter je na konci textu, za ním není nic
-                    part = text.Substring(0, index);
-                    text = "";
-                }
-                else
-                {   // Cože - ona je i jiná možnost?
-                    part = text;
-                    text = "";
-                }
-                return part;
             }
 
             // Aplikuje styl borderu na ComboBox
@@ -11518,6 +11464,11 @@ namespace Noris.Clients.Win.Components.AsolDX
     internal class DataSubButton
     {
         #region Data
+        public DataSubButton()
+        {
+            ButtonType = PredefinedButtonType.DropDown;
+            Enabled = true;
+        }
         /// <summary>
         /// ID Buttonu
         /// </summary>
@@ -11565,8 +11516,42 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             List<DataSubButton> buttons = new List<DataSubButton>();
 
+            if (!String.IsNullOrEmpty(serial))
+            {
+                var parts = serial.Split(_ButtonDelimiter);
+                foreach (string part in parts)
+                {
+                    var button = deserializeOne(part);
+                    if (button != null)
+                        buttons.Add(button);
+                }
+            }
 
             return buttons.ToArray();
+
+            // deserializuje z dodaného textu jeden button
+            DataSubButton deserializeOne(string text)
+            {
+                if (String.IsNullOrEmpty(text)) return null;
+                var items = text.Split(_ItemDelimiter);
+                int length = items.Length;
+                if (length < 2) return null;
+
+                DataSubButton button = new DataSubButton();
+                button.ButtonId = items[0];
+                button.ButtonType = Enum.TryParse<PredefinedButtonType>(items[1], true, out var bt) ? bt : PredefinedButtonType.DropDown;
+                button.ImageName = (length > 2 ? items[2] : null);
+                button.Enabled = (length > 3 ? items[3] : "E") != "D";
+                button.IsLeft = (length > 4 ? items[4] : "R") == "L";
+                button.ToolTipTitle = (length > 5 ? items[5] : null);
+                button.ToolTipText = (length > 6 ? items[6] : null);
+
+                string shortcut = (length > 7 ? items[7] : null);
+                if (!String.IsNullOrEmpty(shortcut) && Int32.TryParse(shortcut, out int keys))
+                    button.Shortcut = (Keys)keys;
+
+                return button;
+            }
         }
         /// <summary>
         /// Z dodané kolekce buttonů vrátí jeden string
@@ -11589,6 +11574,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return serial.ToString();
 
+            // Do serial přidá serializovaná data dodaného buttonu
             void serializeOne(DataSubButton button)
             {
                 if (button is null) return;
@@ -11604,8 +11590,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 append(button.IsLeft ? "L" : "R");
                 append(button.ToolTipTitle);
                 append(button.ToolTipText);
-                string shortcut = (button.Shortcut?.ToString() ?? "");
-                append(shortcut);
+                append(button.Shortcut.HasValue ? ((int)(button.Shortcut.Value)).ToString() : "");
             }
             // Přidá daný text a itemDelimier
             void append(string text)
@@ -11613,7 +11598,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 text = getText(text);
                 serial.Append(text + itemDelimiter);
             }
-
             // Vrátí not null text, kde namísto funkčních delimiterů budu jejich neškodné náhrady
             string getText(string text)
             {
@@ -12128,7 +12112,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Uživatelský obrázek
         /// </summary>
-        Glyph = 0
+        Glyph = 0x10000
     }
     /// <summary>
     /// Typ stránky

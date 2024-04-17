@@ -166,26 +166,48 @@ namespace TestDevExpress.Forms
             items1.Add(new DataRibbonItem() { ItemId = "filt_111", Text = "111 Filtr pro nákupy" });
             items1.Add(new DataRibbonItem() { ItemId = "filt_112", Text = "112 Filtr pro prodeje" });
             items1.Add(new DataRibbonItem() { ItemId = "filt_113", Text = "113 Pro prezentaci" });
-            string subButtons1 = $"DropDown;/Clear={imageClear}:Zrušit filtr;<Manager={imageApp1}:F4: Otevře okno s nabídkou filtrů...";
-            var combo211 = new DataRibbonComboItem() { ItemId = "Combo211", Width = 210, ComboBorderStyle = comboBorder, SubButtonsBorderStyle = buttonBorder, NullValuePrompt = "filtr nezadán", SubItems = items1, SubButtons = subButtons1 };
+
+            DataSubButton[] subButtons1 = new DataSubButton[]
+            {
+                new DataSubButton() { ButtonId = "DropDown", ButtonType = PredefinedButtonType.DropDown },
+                new DataSubButton() { ButtonId = "Clear", ButtonType = PredefinedButtonType.Clear, ToolTipTitle = "Zrušit filtr", ToolTipText = "Zruší aplikovaný filtr" },
+                new DataSubButton() { ButtonId = "Manager", ButtonType = PredefinedButtonType.Glyph, ImageName = imageApp2, IsLeft = true, ToolTipTitle = "Manager (F4)", ToolTipText = "Otevře okno s nabídkou filtrů", Shortcut = Keys.F4 }
+            };
+            // string subButtons1 = $"DropDown;/Clear={imageClear}:Zrušit filtr;<Manager={imageApp1}:F4: Otevře okno s nabídkou filtrů...";
+
+            var combo211 = new DataRibbonComboItem() { ItemId = "Combo211", Width = 210, ComboBorderStyle = comboBorder, SubButtonsBorderStyle = buttonBorder, NullValuePrompt = "filtr nezadán", SubItems = items1, SubButtons = DataSubButton.Serialize(subButtons1) };
             group21.Items.Add(combo211);
 
             ListExt<IRibbonItem> items2 = new ListExt<IRibbonItem>();
             items2.Add(new DataRibbonItem() { ItemId = "temp_211", Text = "211 Šablona pro nákupčí" });
             items2.Add(new DataRibbonItem() { ItemId = "temp_212", Text = "212 Šablona pro prodejce" });
             items2.Add(new DataRibbonItem() { ItemId = "temp_213", Text = "213 Šablona pro prezentaci" });
-            string subButtons2 = $"DropDown;Clear={imageClear}:Zrušit šablonu;<Manager={imageApp2}:F5: Otevře okno s nabídkou šablon...";
-            //     subButtons2 = $"Clear={imageClear}:Zrušit šablonu;DropDown;<Manager={imageApp2}:F5: Otevře okno s nabídkou šablon...";
-            var combo212 = new DataRibbonComboItem() { ItemId = "Combo212", Width = 210, ComboBorderStyle = comboBorder, SubButtonsBorderStyle = buttonBorder, NullValuePrompt = "šablona nezadána", SubItems = items2, SubButtons = subButtons2 };
+            DataSubButton[] subButtons2 = new DataSubButton[]
+            {
+                new DataSubButton() { ButtonId = "DropDown", ButtonType = PredefinedButtonType.DropDown },
+                new DataSubButton() { ButtonId = "Clear", ButtonType = PredefinedButtonType.Clear, ToolTipTitle = "Zrušit šablonu", ToolTipText = "Zruší aplikovanou šablonu a vrátí výchozí" },
+                new DataSubButton() { ButtonId = "Manager", ButtonType = PredefinedButtonType.Glyph, ImageName = imageApp2, IsLeft = true, ToolTipTitle = "Manager (F5)", ToolTipText = "Otevře okno s nabídkou šablon", Shortcut = Keys.F5 }
+            };
+            // string subButtons2 = $"DropDown;Clear={imageClear}:Zrušit šablonu;<Manager={imageApp2}:F5: Otevře okno s nabídkou šablon...";
+            //        subButtons2 = $"Clear={imageClear}:Zrušit šablonu;DropDown;<Manager={imageApp2}:F5: Otevře okno s nabídkou šablon...";
+
+            var combo212 = new DataRibbonComboItem() { ItemId = "Combo212", Width = 210, ComboBorderStyle = comboBorder, SubButtonsBorderStyle = buttonBorder, NullValuePrompt = "šablona nezadána", SubItems = items2, SubButtons = DataSubButton.Serialize(subButtons2) };
             group21.Items.Add(combo212);
 
             ListExt<IRibbonItem> items3 = new ListExt<IRibbonItem>();
             items3.Add(new DataRibbonItem() { ItemId = "view_311", Text = "311 Pohled do minulosti" });
             items3.Add(new DataRibbonItem() { ItemId = "view_312", Text = "312 Pohled do současnosti" });
             items3.Add(new DataRibbonItem() { ItemId = "view_313", Text = "313 Pohled do budoucnosti" });
-            string subButtons3 = $"DropDown;Clear={imageClear}:Zrušit pohled;<Manager={imageApp3}:F7: Otevře okno s nabídkou pohledů...";
-            //     subButtons3 = $"<Manager={imageApp3}:F7: Otevře okno s nabídkou pohledů...;Clear={imageClear}:Zrušit pohled;DropDown";
-            var combo213 = new DataRibbonComboItem() { ItemId = "Combo213", Width = 210, ComboBorderStyle = comboBorder, SubButtonsBorderStyle = buttonBorder, NullValuePrompt = "pohled nezadán", SubItems = items3, SubButtons = subButtons3 };
+            DataSubButton[] subButtons3 = new DataSubButton[]
+            {
+                new DataSubButton() { ButtonId = "DropDown", ButtonType = PredefinedButtonType.DropDown },
+                new DataSubButton() { ButtonId = "Clear", ButtonType = PredefinedButtonType.Clear, ToolTipTitle = "Zrušit pohled", ToolTipText = "Zruší aplikovaný pohled" },
+                new DataSubButton() { ButtonId = "Manager", ButtonType = PredefinedButtonType.Glyph, ImageName = imageApp2, IsLeft = true, ToolTipTitle = "Manager (F7)", ToolTipText = "Otevře okno s nabídkou pohledů", Shortcut = Keys.F7 }
+            };
+            // string subButtons3 = $"DropDown;Clear={imageClear}:Zrušit pohled;<Manager={imageApp3}:F7: Otevře okno s nabídkou pohledů...";
+            //        subButtons3 = $"<Manager={imageApp3}:F7: Otevře okno s nabídkou pohledů...;Clear={imageClear}:Zrušit pohled;DropDown";
+
+            var combo213 = new DataRibbonComboItem() { ItemId = "Combo213", Width = 210, ComboBorderStyle = comboBorder, SubButtonsBorderStyle = buttonBorder, NullValuePrompt = "pohled nezadán", SubItems = items3, SubButtons = DataSubButton.Serialize(subButtons3) };
             group21.Items.Add(combo213);
 
             page2.Groups.Add(group21);
