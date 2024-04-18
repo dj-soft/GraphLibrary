@@ -8240,7 +8240,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.Item = item;
             this.SubButtonName = subButtonName;
-            this.Area = DxRibbonItemClickArea.None;
+            this.Area = DxRibbonItemClickArea.SubButton;
         }
         /// <summary>
         /// Konstruktor
@@ -8313,13 +8313,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DevExpress.XtraEditors.Controls.EditorButton Button { get; private set; }
         /// <summary>
-        /// Druh buttonu
+        /// Definiční data SubButtonu 
         /// </summary>
-        public DevExpress.XtraEditors.Controls.ButtonPredefines Kind { get { return this.Button.Kind; } }
+        internal DataSubButton ButtonData { get { return this.Button?.Tag as DataSubButton; } }
         /// <summary>
         /// Name buttonu
         /// </summary>
-        public string ButtonName { get { return this.Button.Tag as string; } }
+        public string ButtonName { get { return this.ButtonData?.ButtonId; } }
     }
     /// <summary>
     /// Oblast Ribbonu, na které bylo na prvek kliknuto
@@ -8354,6 +8354,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Klávesová zkratka
         /// </summary>
         HotKey,
+        /// <summary>
+        /// SubButton
+        /// </summary>
+        SubButton,
         /// <summary>
         /// Hledáno a nelze určit
         /// </summary>
@@ -10023,8 +10027,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (subButtons.Length > 0)
                     {
                         var buttons = DataSubButton.Deserialize(subButtons);
-                        foreach (var button in buttons)
-                            addComboButton(comboBox, button);
+                        if (buttons != null)
+                        {
+                            foreach (var button in buttons)
+                                addComboButton(comboBox, button);
+                        }
                     }
 
                     // Border:
@@ -10048,17 +10055,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (button is null) return;
 
+                // Předdefinovaný button, nebo uživatelský obrázek?
+                var image = button.ImageName;
+                bool hasImage = !String.IsNullOrEmpty(image);
+                var kind = (hasImage ? DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph : _ConvertButtonType(button.ButtonType));
+
                 var dxButton = new DevExpress.XtraEditors.Controls.EditorButton();
                 dxButton.Tag = button;
-                dxButton.Kind = _ConvertButtonType(button.ButtonType);
+                dxButton.Kind = kind;
                 dxButton.Caption = "";
                 dxButton.IsLeft = button.IsLeft;
                 dxButton.Enabled = button.Enabled;
                 dxButton.SuperTip = DxComponent.CreateDxSuperTip(button.ToolTipTitle, button.ToolTipText);
                 dxButton.Shortcut = (button.Shortcut.HasValue ? new KeyShortcut(button.Shortcut.Value) : null);
 
-                if (button.ButtonType == PredefinedButtonType.Glyph)
-                    DxComponent.ApplyImage(dxButton.ImageOptions, button.ImageName, sizeType: ResourceImageSizeType.Small);
+                if (hasImage)
+                    DxComponent.ApplyImage(dxButton.ImageOptions, image, sizeType: ResourceImageSizeType.Small);
 
                 comboBox.Buttons.Add(dxButton);
             }
@@ -11475,7 +11487,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         public string ButtonId { get; set; }
         /// <summary>
         /// Předdefinovaný typ buttonu:
-        /// Tím se definuje druh chování (<see cref="PredefinedButtonType.DropDown"/>) a použití standardní ikony (kromě <see cref="PredefinedButtonType.Glyph"/>.
+        /// Tím se definuje druh chování (např. <see cref="PredefinedButtonType.DropDown"/>) a použití standardní ikony (kromě <see cref="PredefinedButtonType.Glyph"/>.
+        /// Default = <see cref="PredefinedButtonType.DropDown"/>.
         /// </summary>
         public PredefinedButtonType ButtonType { get; set; }
         /// <summary>
@@ -11483,7 +11496,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public string ImageName { get; set; }
         /// <summary>
-        /// Enabled
+        /// Enabled. Default = true.
         /// </summary>
         public bool Enabled { get; set; }
         /// <summary>

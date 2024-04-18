@@ -170,7 +170,7 @@ namespace TestDevExpress.Forms
             DataSubButton[] subButtons1 = new DataSubButton[]
             {
                 new DataSubButton() { ButtonId = "DropDown", ButtonType = PredefinedButtonType.DropDown },
-                new DataSubButton() { ButtonId = "Clear", ButtonType = PredefinedButtonType.Clear, ToolTipTitle = "Zrušit filtr", ToolTipText = "Zruší aplikovaný filtr" },
+                new DataSubButton() { ButtonId = "Clear", ButtonType = PredefinedButtonType.Clear, Enabled = false, ToolTipTitle = "Zrušit filtr", ToolTipText = "Zruší aplikovaný filtr" },
                 new DataSubButton() { ButtonId = "Manager", ButtonType = PredefinedButtonType.Glyph, ImageName = imageApp1, IsLeft = true, ToolTipTitle = "Manager (F4)", ToolTipText = "Otevře okno s nabídkou filtrů", Shortcut = Keys.F4 }
             };
             // string subButtons1 = $"DropDown;/Clear={imageClear}:Zrušit filtr;<Manager={imageApp1}:F4: Otevře okno s nabídkou filtrů...";
@@ -180,7 +180,7 @@ namespace TestDevExpress.Forms
 
             ListExt<IRibbonItem> items2 = new ListExt<IRibbonItem>();
             items2.Add(new DataRibbonItem() { ItemId = "temp_211", Text = "211 Šablona pro nákupčí" });
-            items2.Add(new DataRibbonItem() { ItemId = "temp_212", Text = "212 Šablona pro prodejce" });
+            items2.Add(new DataRibbonItem() { ItemId = "temp_212", Text = "212 Šablona pro prodejce", Checked = true });
             items2.Add(new DataRibbonItem() { ItemId = "temp_213", Text = "213 Šablona pro prezentaci" });
             DataSubButton[] subButtons2 = new DataSubButton[]
             {
@@ -197,7 +197,7 @@ namespace TestDevExpress.Forms
             ListExt<IRibbonItem> items3 = new ListExt<IRibbonItem>();
             items3.Add(new DataRibbonItem() { ItemId = "view_311", Text = "311 Pohled do minulosti" });
             items3.Add(new DataRibbonItem() { ItemId = "view_312", Text = "312 Pohled do současnosti" });
-            items3.Add(new DataRibbonItem() { ItemId = "view_313", Text = "313 Pohled do budoucnosti" });
+            items3.Add(new DataRibbonItem() { ItemId = "view_313", Text = "313 Pohled do budoucnosti", Checked = true });
             DataSubButton[] subButtons3 = new DataSubButton[]
             {
                 new DataSubButton() { ButtonId = "DropDown", ButtonType = PredefinedButtonType.DropDown },
