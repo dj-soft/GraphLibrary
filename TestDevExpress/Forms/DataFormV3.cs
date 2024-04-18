@@ -171,7 +171,7 @@ namespace TestDevExpress.Forms
             {
                 new DataSubButton() { ButtonId = "DropDown", ButtonType = PredefinedButtonType.DropDown },
                 new DataSubButton() { ButtonId = "Clear", ButtonType = PredefinedButtonType.Clear, ToolTipTitle = "Zrušit filtr", ToolTipText = "Zruší aplikovaný filtr" },
-                new DataSubButton() { ButtonId = "Manager", ButtonType = PredefinedButtonType.Glyph, ImageName = imageApp2, IsLeft = true, ToolTipTitle = "Manager (F4)", ToolTipText = "Otevře okno s nabídkou filtrů", Shortcut = Keys.F4 }
+                new DataSubButton() { ButtonId = "Manager", ButtonType = PredefinedButtonType.Glyph, ImageName = imageApp1, IsLeft = true, ToolTipTitle = "Manager (F4)", ToolTipText = "Otevře okno s nabídkou filtrů", Shortcut = Keys.F4 }
             };
             // string subButtons1 = $"DropDown;/Clear={imageClear}:Zrušit filtr;<Manager={imageApp1}:F4: Otevře okno s nabídkou filtrů...";
 
@@ -201,8 +201,8 @@ namespace TestDevExpress.Forms
             DataSubButton[] subButtons3 = new DataSubButton[]
             {
                 new DataSubButton() { ButtonId = "DropDown", ButtonType = PredefinedButtonType.DropDown },
-                new DataSubButton() { ButtonId = "Clear", ButtonType = PredefinedButtonType.Clear, ToolTipTitle = "Zrušit pohled", ToolTipText = "Zruší aplikovaný pohled" },
-                new DataSubButton() { ButtonId = "Manager", ButtonType = PredefinedButtonType.Glyph, ImageName = imageApp2, IsLeft = true, ToolTipTitle = "Manager (F7)", ToolTipText = "Otevře okno s nabídkou pohledů", Shortcut = Keys.F7 }
+                new DataSubButton() { ButtonId = "Clear", ButtonType = PredefinedButtonType.Close, ToolTipTitle = "Zrušit pohled", ToolTipText = "Zruší aplikovaný pohled" },
+                new DataSubButton() { ButtonId = "Manager", ButtonType = PredefinedButtonType.Glyph, ImageName = imageApp3, IsLeft = true, ToolTipTitle = "Manager (F7)", ToolTipText = "Otevře okno s nabídkou pohledů", Shortcut = Keys.F7 }
             };
             // string subButtons3 = $"DropDown;Clear={imageClear}:Zrušit pohled;<Manager={imageApp3}:F7: Otevře okno s nabídkou pohledů...";
             //        subButtons3 = $"<Manager={imageApp3}:F7: Otevře okno s nabídkou pohledů...;Clear={imageClear}:Zrušit pohled;DropDown";
