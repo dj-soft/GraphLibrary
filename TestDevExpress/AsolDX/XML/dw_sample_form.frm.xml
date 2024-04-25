@@ -12,20 +12,21 @@
 		<button Name="ButtonOpen" ActionType="Click" Bounds="10,200,150,35" Text="Otevři !!!"  />
 	</panel>
 
+	
 	<page Name="" Title="Záhlaví" >
-	    <panel Name="ggg" Title="Záložka A" ToolTipText="">
-			<panel>
+	    <panel Name="ggg" Title="Záložka A" ToolTipText="" ColumnWidths="50,350,100">
+			<panel Name="Subpanel1">
 				<label Name="" Bounds="" Invisible=""/>
 				<textbox Name="karta_refer" LabelPosition="BeforeRight" Label="fm(MSG1002)" />
-				<textboxbutton>
-					<rightButton Name="" ActionType=""/>
+				<textboxbutton Name="statusA" ColumnName="status">
+					<rightButton Name="" ActionType="Click"/>
 				</textboxbutton>
 				<label/>
 				<panel Name="odstavec" ></panel>
 			</panel>
 			<button Name=""/>
 		</panel>
-		<panel CollapseState="Default" >
+		<panel CollapseState="Default" Title="" >
 			<textbox Bounds=""/>
 			<button Name="OpenUrl" Text="Otevři stránku"  />
 			<checkbox Name="checkbox" Bounds="200,20,200" Text="Povolený" />
@@ -42,7 +43,7 @@
             <comboItem Name="S" Text="Stornováno" IconName="pic/status3"/>
         </combobox>
         <label Name="info3_lbl" Bounds="14,47,150" Text="Další nabídka" />
-        <combobox Name="info3" Bounds="10,65,160" EditStyleName="mfr_product_status" Style="IconTextList" />
+        <combobox Name="info3" ColumnName="" Bounds="10,65,160" EditStyleName="mfr_product_status" Style="IconTextList" />
         <textboxbutton Name="Dokument1" Bounds="180,47,120" ToolTipTitle="Dokument" ToolTipText="Navázaná faktura" >
             <rightButton Name="dots" ActionType="RelationDocument" />
         </textboxbutton>

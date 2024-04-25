@@ -101,7 +101,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// <summary>
     /// Hlavičková informace o dokumentu: obsahuje pouze <see cref="XmlNamespace"/> a <see cref="FormatVersion"/>.
     /// </summary>
-    public class DfInfoForm
+    internal class DfInfoForm
     {
         /// <summary>
         /// Namespace XML dokumentu
@@ -117,7 +117,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// <para/>
     /// Odpovídá XSD typu: <c>template</c>
     /// </summary>
-    public class DfForm : DfBaseContainer
+    internal class DfForm : DfBaseContainer
     {
         /// <summary>
         /// Konstruktor
@@ -198,7 +198,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// <para/>
     /// Odpovídá XSD typu: <c>type_page</c>
     /// </summary>
-    public class DfPage : DfBaseContainer
+    internal class DfPage : DfBaseContainer
     {
         /// <summary>
         /// Konstruktor
@@ -234,7 +234,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// <para/>
     /// Odpovídá XSD typu: <c>type_panel</c>
     /// </summary>
-    public class DfPanel : DfBaseContainer
+    internal class DfPanel : DfBaseContainer
     {
         /// <summary>
         /// Konstruktor
@@ -310,7 +310,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// <para/>
     /// Odpovídá XSD typu <c>type_base_container</c>
     /// </summary>
-    public class DfBaseContainer : DfBase
+    internal class DfBaseContainer : DfBase
     {
         /// <summary>
         /// Konstruktor
@@ -343,6 +343,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public Margins Margins { get; set; }
         /// <summary>
+        /// Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky).
+        /// </summary>
+        public string ColumnWidths { get; set; }
+        /// <summary>
         /// Debug text
         /// </summary>
         protected override string DebugText { get { return $"{Style}; Name: {Name}"; } }
@@ -353,7 +357,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// DxDataForm : Label.<br/>
     /// Odpovídá XSD typu <c>type_label</c>
     /// </summary>
-    public class DfLabel : DfBaseControl
+    internal class DfLabel : DfBaseControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
@@ -383,7 +387,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// DxDataForm : Title.<br/>
     /// Odpovídá XSD typu <c>type_title</c>
     /// </summary>
-    public class DfTitle : DfBaseControl
+    internal class DfTitle : DfBaseControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
@@ -421,7 +425,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// DxDataForm : CheckBox.<br/>
     /// Odpovídá XSD typu <c>type_checkbox</c>
     /// </summary>
-    public class DfCheckBox : DfBaseInputTextControl
+    internal class DfCheckBox : DfBaseInputTextControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
@@ -446,7 +450,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// DxDataForm : Button.<br/>
     /// Odpovídá XSD typu <c>type_button</c>
     /// </summary>
-    public class DfButton : DfBaseInputTextControl
+    internal class DfButton : DfBaseInputTextControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
@@ -475,7 +479,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// DxDataForm : DropDownButton.<br/>
     /// Odpovídá XSD typu <c>type_drop_down_button</c>
     /// </summary>
-    public class DfDropDownButton : DfButton
+    internal class DfDropDownButton : DfButton
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
@@ -500,7 +504,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// <para/>
     /// Tato třída přináší property <see cref="Alignment"/>, <see cref="EditMask"/>.
     /// </summary>
-    public class DfTextBox : DfBaseLabeledInputControl
+    internal class DfTextBox : DfBaseLabeledInputControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
@@ -526,7 +530,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// DxDataForm : TextBoxButton.<br/>
     /// Odpovídá XSD typu <c>type_textboxbutton</c>
     /// </summary>
-    public class DfTextBoxButton : DfTextBox
+    internal class DfTextBoxButton : DfTextBox
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
@@ -561,7 +565,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// <para/>
     /// Tato třída přináší property 
     /// </summary>
-    public class DfComboBox : DfBaseLabeledInputControl
+    internal class DfComboBox : DfBaseLabeledInputControl
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
@@ -591,7 +595,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// DxDataForm : SubButton = součást <see cref="ControlType.DropDownButton"/> i <see cref="ControlType.TextBoxButton"/>.<br/>
     /// Odpovídá XSD typu <c>type_subbutton</c>
     /// </summary>
-    public class DfSubButton : DfSubTextItem
+    internal class DfSubButton : DfSubTextItem
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
@@ -612,7 +616,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// DxDataForm : DfSubTextItem = součást <see cref="ControlType.ComboBox"/>.<br/>
     /// Odpovídá XSD typu <c>type_subtextitem</c>
     /// </summary>
-    public class DfSubTextItem : DfBase
+    internal class DfSubTextItem : DfBase
     {
         /// <summary>
         /// Konstruktor, nastaví defaulty
@@ -638,7 +642,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// <para/>
     /// Tato třída přináší property <see cref="Text"/>,  <see cref="IconName"/> a <see cref="Alignment"/>.
     /// </summary>
-    public class DfBaseInputTextControl : DfBaseInputControl
+    internal class DfBaseInputTextControl : DfBaseInputControl
     {
         /// <summary>
         /// Konstruktor
@@ -667,7 +671,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// <para/>
     /// Tato třída přináší property <see cref="Label"/>, <see cref="LabelPosition"/> a <see cref="LabelWidth"/>.
     /// </summary>
-    public class DfBaseLabeledInputControl : DfBaseInputControl
+    internal class DfBaseLabeledInputControl : DfBaseInputControl
     {
         /// <summary>
         /// Konstruktor
@@ -701,7 +705,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// <para/>
     /// Tato třída přináší property <see cref="Required"/>.
     /// </summary>
-    public class DfBaseInputControl : DfBaseControl
+    internal class DfBaseInputControl : DfBaseControl
     {
         /// <summary>
         /// Konstruktor
@@ -728,7 +732,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// <para/>
     /// Tato třída přináší souřadnice <see cref="Bounds"/>.
     /// </summary>
-    public class DfBaseControl : DfBase
+    internal class DfBaseControl : DfBase
     {
         /// <summary>
         /// Konstruktor
@@ -755,7 +759,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// <para/>
     /// Tato třída přináší základní property: <see cref="Name"/>.
     /// </summary>
-    public class DfBase
+    internal class DfBase
     {
         /// <summary>
         /// Konstruktor

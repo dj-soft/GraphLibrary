@@ -5,7 +5,7 @@
             Part of Helios Nephrite, proprietary software, (c) Asseco Solutions, a. s.
             DxDataFormat template schema.
             All rights reserved.
-        .</xs:documentation>
+        </xs:documentation>
     </xs:annotation>
 
     <!--    template = DfForm   -   Struktura souboru, definujícího vzhled celého DataFormu                  -->
@@ -71,7 +71,9 @@
 			<xs:attribute name="ContextMenu" type="bool_enum">
 				<xs:annotation><xs:documentation xml:lang="cs-cz">Povolit kontextové menu.</xs:documentation></xs:annotation>
 			</xs:attribute>
-
+			<xs:attribute name="ColumnWidths" type="xs:string">
+				<xs:annotation><xs:documentation xml:lang="cs-cz">Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky).</xs:documentation></xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
     </xs:element>
     
@@ -107,11 +109,16 @@
                         <xs:documentation xml:lang="cs-cz">Titulek záhlaví stránky. Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-            </xs:extension>
+				<xs:attribute name="ColumnWidths" type="xs:string">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky).</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
         </xs:complexContent>
     </xs:complexType>
 
-	<!--    type_nested_panel = DfPanel : NestedPanel = z hlediska DataFormu jde o Container, ale z hlediska zadávání o jednotlivý Control = nemá vnitřní prvky (elementy)   -->
+	<!--    type_nested_panel = NestedPanel = z hlediska DataFormu jde o Container, ale z hlediska zadávání o jednotlivý Control = nemá vnitřní prvky (elementy)   -->
 	<xs:complexType name="type_nested_panel">
 		<xs:complexContent>
 			<xs:extension base="type_base">
@@ -138,6 +145,11 @@
 				<xs:attribute name="CollapseState" type="panel_collapse_state_enum">
 					<xs:annotation>
 						<xs:documentation xml:lang="cs-cz">Možnosti přeskupování panelu (Collapse / Expand).</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="ColumnWidths" type="xs:string">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky).</xs:documentation>
 					</xs:annotation>
 				</xs:attribute>
 				<xs:attribute name="Bounds" type="xs:string">
@@ -270,7 +282,7 @@
                 </xs:attribute>
                 <xs:attribute name="Title" type="xs:string">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Pevný text prvku (text Labelu). Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Titulek panelu. Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="TitleStyle" type="title_style_enum">
@@ -298,7 +310,12 @@
                         <xs:documentation xml:lang="cs-cz">Možnosti přeskupování panelu (Collapse / Expand).</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-                <xs:attribute name="Bounds" type="xs:string">
+				<xs:attribute name="ColumnWidths" type="xs:string">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky).</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="Bounds" type="xs:string">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Souřadnice prvku v jednom políčku, v pořadí: X,Y,Width[,Height]. Alternativa hodnot X, Y, Width, Height.</xs:documentation>
                     </xs:annotation>
@@ -1223,5 +1240,4 @@
             </xs:simpleType>
         </xs:union>
     </xs:simpleType>
-    
 </xs:schema>

@@ -670,6 +670,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 container.BackColorLight = _ReadAttributeColorN(xElement, "BackColorLight");
                 container.BackColorDark = _ReadAttributeColorN(xElement, "BackColorDark");
                 container.Margins = _ReadAttributesMargin(xElement, "Margins", null);
+                container.ColumnWidths = _ReadAttributeString(xElement, "ColumnWidths", null);
                 container.AutoLabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "AutoLabelPosition");
             }
         }

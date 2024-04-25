@@ -18,7 +18,7 @@ namespace TestDevExpress.Forms
     /// <summary>
     /// Formulář pro měření spotřeby GDI handles
     /// </summary>
-    [RunFormInfo(groupText: "Tools", groupOrder: 100, buttonText: "Handles", buttonOrder: 210, buttonImage: "svgimages/dashboards/scatterchart.svg", buttonToolTip: "Otevře okno sledování GUI Handles")]
+    ///   [RunFormInfo(groupText: "Tools", groupOrder: 100, buttonText: "Handles", buttonOrder: 210, buttonImage: "svgimages/dashboards/scatterchart.svg", buttonToolTip: "Otevře okno sledování GUI Handles")]
     public class HandleScanForm : DxControlForm
     {
         /// <summary>

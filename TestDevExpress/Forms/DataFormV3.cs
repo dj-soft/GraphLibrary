@@ -18,7 +18,7 @@ namespace TestDevExpress.Forms
     /// <summary>
     /// Formulář pro testy komponenty <see cref="DxDataFormX"/>
     /// </summary>
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "DataForm 3", buttonOrder: 12, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře okno DataForm verze 3", tabViewToolTip: "Okno zobrazující nový DataForm")]
+    [RunFormInfo(groupText: "Testovací okna", buttonText: "DataForm", buttonOrder: 12, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře okno DataForm verze 3", tabViewToolTip: "Okno zobrazující nový DataForm")]
     public class DataFormV3 : DxRibbonForm
     {
         #region Inicializace
@@ -111,7 +111,7 @@ namespace TestDevExpress.Forms
             addSampleButton("C", "Table C", imageTest3, 1, 4, 16, 32, 96, 256);
 
 
-            _AddPageCombo(pages);
+            // _AddPageCombo(pages);
 
 
             this.DxRibbon.Clear();
