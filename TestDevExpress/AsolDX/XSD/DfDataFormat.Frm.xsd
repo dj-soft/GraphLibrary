@@ -12,21 +12,21 @@
     <xs:element name="template">
         <xs:complexType>
             <xs:sequence>
-                <!--    V šabloně se mohou střídat libovolně elementy page, a panel a nestedpanel          -->
+                <!--    V šabloně se mohou střídat libovolně elementy page a panel                           -->
                 <xs:choice minOccurs="0" maxOccurs="unbounded">
                     <xs:element name="page" type="type_page" minOccurs="0" maxOccurs="unbounded" >
                         <xs:annotation>
-                            <xs:documentation xml:lang="cs-cz">Jeden objekt s více záložkami (page).</xs:documentation>
+                            <xs:documentation xml:lang="cs-cz">Jeden objekt s více záložkami (page). Pokud v šabloně nebude definována žádná 'page', pak bude zobrazen formulář bez záložek. Stránka 'page' smí obsahovat pouze panely.</xs:documentation>
                         </xs:annotation>
                     </xs:element>
                     <xs:element name="panel" type="type_panel" minOccurs="0" maxOccurs="unbounded">
                         <xs:annotation>
-                            <xs:documentation xml:lang="cs-cz">Jeden kontejner, obsahující prvky anebo další kontejnery.</xs:documentation>
+                            <xs:documentation xml:lang="cs-cz">Jeden vizuální panel. Obsahuje jednotlivé prvky anebo vnořené grupy. Panel smí být umístěn buď v šabloně, anebo v konkrétní stránce 'page'.</xs:documentation>
                         </xs:annotation>
                     </xs:element>
-                    <xs:element name="nestedpanel" type="type_nested_panel" minOccurs="0" maxOccurs="unbounded">
+                    <xs:element name="nestedpanel" type="type_nested_group" minOccurs="0" maxOccurs="unbounded">
                         <xs:annotation>
-                            <xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona.</xs:documentation>
+                            <xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona (NestedTemplate).</xs:documentation>
                         </xs:annotation>
                     </xs:element>
                 </xs:choice>
@@ -83,7 +83,7 @@
     <!--    type_page = DfPage   -  jedna stránka                                                            -->
     <xs:complexType name="type_page">
         <xs:complexContent>
-            <xs:extension base="type_base_container">
+            <xs:extension base="type_base_area">
                 <xs:sequence>
                     <xs:choice minOccurs="0" maxOccurs="unbounded">
                         <xs:element name="panel" type="type_panel" minOccurs="0" maxOccurs="unbounded" >
@@ -91,9 +91,9 @@
                                 <xs:documentation xml:lang="cs-cz">Jeden panel uvnitř stránky, uživatelsky viditelný včetně titulku.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
-                        <xs:element name="nestedpanel" type="type_nested_panel" minOccurs="0" maxOccurs="unbounded">
+                        <xs:element name="nestedpanel" type="type_nested_group" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona.</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona (NestedTemplate).</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                     </xs:choice>
@@ -118,98 +118,116 @@
         </xs:complexContent>
     </xs:complexType>
 
-	<!--    type_nested_panel = NestedPanel = z hlediska DataFormu jde o Container, ale z hlediska zadávání o jednotlivý Control = nemá vnitřní prvky (elementy)   -->
-	<xs:complexType name="type_nested_panel">
-		<xs:complexContent>
-			<xs:extension base="type_base">
-				<xs:attribute name="NestedTemplate" type="xs:string" use="required">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Název souboru, který obsahuje definici vnořené šablony.</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
-				<xs:attribute name="IconName" type="xs:string">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Název ikony. Zobrazují ji pouze některé prvky.</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
-				<xs:attribute name="Title" type="xs:string">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Pevný text prvku (text Labelu). Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
-				<xs:attribute name="TitleStyle" type="title_style_enum">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Styl titulku.</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
-				<xs:attribute name="CollapseState" type="panel_collapse_state_enum">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Možnosti přeskupování panelu (Collapse / Expand).</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
-				<xs:attribute name="ColumnWidths" type="xs:string">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky).</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
-				<xs:attribute name="Bounds" type="xs:string">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Souřadnice prvku v jednom políčku, v pořadí: X,Y,Width[,Height]. Alternativa hodnot X, Y, Width, Height.</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
-				<xs:attribute name="X" type="xs:int">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
-				<xs:attribute name="Y" type="xs:int">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
-				<xs:attribute name="Width" type="xs:int">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
-				<xs:attribute name="Height" type="xs:int">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
-				<xs:attribute name="Margins" type="xs:string">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Vnitřní okraje uvnitř containeru: mezi vnější souřadnicí a prvním prvkem na souřadnici 0/0. Ve formě: All   nebo   Left,Top[,Right,Bottom].</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
-				<xs:attribute name="BackColorName" type="color_cup_enum">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Barva pozadí, zadaná jako název kalíšku.</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
-				<xs:attribute name="BackColorLight" type="color_name_enum">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Barva pozadí, zadaná explicitně pro světlé skiny: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd.</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
-				<xs:attribute name="BackColorDark" type="color_name_enum">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Barva pozadí, zadaná explicitně pro tmavé skiny: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd.</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
-				<xs:attribute name="Invisible" type="xs:string">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Výraz, při jehož splnění bude prvek neviditelný. Například: True (=neviditelný), pocet = 0 (pokud pocet bude 0, prvek bude neviditelný), ...</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
-			</xs:extension>
-		</xs:complexContent>
-	</xs:complexType>
-
 	<!--    type_panel = DfPanel  -  Panel                                                                   -->
     <xs:complexType name="type_panel">
         <xs:complexContent>
             <xs:extension base="type_base_container">
+                <xs:attribute name="IsHeader" type="bool_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Obsahuje true, pokud tento panel reprezentuje záhlaví. To může být vykresleno na každé záložce, vždy jako první horní panel, v šířce přes všechny sloupce.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="HeaderOnPages" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Název stránek (Page.Name), na kterých je toto záhlaví zobrazeno. Má význam pouze pokud IsHeader je true. Pokud nebude HeaderOnPages zadáno, bude vykresleno pro všechny stránky.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="IconName" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Název ikony. Zobrazují ji pouze některé prvky.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Title" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Titulek panelu. Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="TitleStyle" type="title_style_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Styl titulku.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="TitleColorName" type="color_cup_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Barva textu titulku, zadaná jako název kalíšku.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="TitleColorLight" type="color_name_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Barva textu titulku, zadaná explicitně pro světlé skiny: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="TitleColorDark" type="color_name_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Barva textu titulku, zadaná explicitně pro tmavé skiny: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="CollapseState" type="panel_collapse_state_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Možnosti přeskupování panelu (Collapse / Expand).</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!--    type_group = DfGroup  -  Grupa uvnitř Panelu, ale bez chování Panelu = nemá Collapsed a Title    -->
+    <xs:complexType name="type_group">
+        <xs:complexContent>
+            <xs:extension base="type_base_container">
+
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!--    type_nested_group = DfNestedGroup = z hlediska DataFormu jde o Container, ale z hlediska zadávání o jednotlivý Control = nemá vnitřní prvky (elementy)   -->
+    <xs:complexType name="type_nested_group">
+        <xs:complexContent>
+            <xs:extension base="type_base">
+                <xs:attribute name="NestedTemplate" type="xs:string" use="required">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Název souboru, který obsahuje definici vnořené šablony.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+
+                <xs:attribute name="Bounds" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Souřadnice prvku v jednom políčku, v pořadí: X,Y,Width[,Height]. Alternativa hodnot X, Y, Width, Height.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="X" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Y" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Width" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Height" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Invisible" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Výraz, při jehož splnění bude prvek neviditelný. Například: True (=neviditelný), pocet = 0 (pokud pocet bude 0, prvek bude neviditelný), ...</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!--    type_base_container = DfBaseContainer  -  Prostor obsahující controly = základ pro Panel a pro Group     -->
+    <xs:complexType name="type_base_container">
+        <xs:complexContent>
+            <xs:extension base="type_base_area">
                 <xs:sequence>
                     <xs:choice minOccurs="0" maxOccurs="unbounded">
                         <xs:element name="label" type="type_label" minOccurs="0" maxOccurs="unbounded">
@@ -252,69 +270,20 @@
                                 <xs:documentation xml:lang="cs-cz">Rozbalovací nabídka typu ComboBox.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
-                        <xs:element name="panel" type="type_panel" minOccurs="0" maxOccurs="unbounded">
+                        
+                        <xs:element name="group" type="type_group" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Vnořený panel.</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Vnořená skupina controlů.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
-                        <xs:element name="nestedpanel" type="type_nested_panel" minOccurs="0" maxOccurs="unbounded">
+                        <xs:element name="nestedgroup" type="type_nested_group" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona.</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Vnořená grupa, jejíž obsah definuje jiná šablona (NestedTemplate).</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                     </xs:choice>
                 </xs:sequence>
 
-                <xs:attribute name="IsHeader" type="bool_enum">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Obsahuje true, pokud tento panel reprezentuje záhlaví. To může být vykresleno na každé záložce, vždy jako první horní panel, v šířce přes všechny sloupce.</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-                <xs:attribute name="HeaderOnPages" type="xs:string">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Název stránek (page), na kterých je záhlaví zobrazeno. Pouze pokud IsHeader je true. Pokud nebude HeaderOnPages zadáno, bude vykresleno pro všechny stránky.</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-                <xs:attribute name="IconName" type="xs:string">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Název ikony. Zobrazují ji pouze některé prvky.</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-                <xs:attribute name="Title" type="xs:string">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Titulek panelu. Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-                <xs:attribute name="TitleStyle" type="title_style_enum">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Styl titulku.</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-                <xs:attribute name="TitleColorName" type="color_cup_enum">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Barva textu titulku, zadaná jako název kalíšku.</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-                <xs:attribute name="TitleColorLight" type="color_name_enum">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Barva textu titulku, zadaná explicitně pro světlé skiny: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd.</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-                <xs:attribute name="TitleColorDark" type="color_name_enum">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Barva textu titulku, zadaná explicitně pro tmavé skiny: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd.</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-                <xs:attribute name="CollapseState" type="panel_collapse_state_enum">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Možnosti přeskupování panelu (Collapse / Expand).</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-				<xs:attribute name="ColumnWidths" type="xs:string">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky).</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
 				<xs:attribute name="Bounds" type="xs:string">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Souřadnice prvku v jednom políčku, v pořadí: X,Y,Width[,Height]. Alternativa hodnot X, Y, Width, Height.</xs:documentation>
@@ -343,9 +312,9 @@
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
-
-    <!--    type_base_container = DfBaseContainer  -  Container = základ pro Panel a pro Page                -->
-    <xs:complexType name="type_base_container">
+    
+    <!--    type_base_area = DfBaseArea  -  Prostor s něčím uvnitř = základ pro Page, pro Panel a pro Group  -->
+    <xs:complexType name="type_base_area">
         <xs:complexContent>
             <xs:extension base="type_base">
                 <xs:attribute name="BackColorName" type="color_cup_enum">
@@ -363,6 +332,16 @@
                         <xs:documentation xml:lang="cs-cz">Barva pozadí, zadaná explicitně pro tmavé skiny: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
+                <xs:attribute name="BackImageName" type="xs:string" >
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Obrázek vykreslený na pozadí prostoru. Zadán má být jako jméno souboru.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="BackImagePosition" type="back_image_position_enum" >
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Pozice obrázku 'BackImageName' vzhledem k prostoru.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
                 <xs:attribute name="Invisible" type="xs:string">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Výraz, při jehož splnění bude prvek neviditelný. Například: True (=neviditelný), pocet = 0 (pokud pocet bude 0, prvek bude neviditelný), ...</xs:documentation>
@@ -371,6 +350,11 @@
                 <xs:attribute name="Margins" type="xs:string">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Vnitřní okraje uvnitř containeru: mezi vnější souřadnicí a prvním prvkem na souřadnici 0/0. Ve formě: All   nebo   Left,Top[,Right,Bottom].</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="ColumnWidths" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky).</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="AutoLabelPosition" type="label_position_enum" >
@@ -1239,5 +1223,64 @@
                 </xs:restriction>
             </xs:simpleType>
         </xs:union>
+    </xs:simpleType>
+    <xs:simpleType name="back_image_position_enum">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="None">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Obrázek nebude zobrazen.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TopLeft">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Obrázek bude vykreslen do levého horního rohu.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TopCenter">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Obrázek bude vykreslen k hornímu okraji na vodorovný střed.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TopRight">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Obrázek bude vykreslen do pravého horního rohu.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MiddleLeft">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Obrázek bude vykreslen do doleva, na svislý střed.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MiddleCenter">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Obrázek bude vykreslen přímo na střed oblasti.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MiddleRight">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Obrázek bude vykreslen doprava, na svislý střed .</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BottomLeft">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Obrázek bude vykreslen do levého dolního rohu.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BottomCenter">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Obrázek bude vykreslen ke spodnímu okraji na vodorovný střed.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BottomRight">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Obrázek bude vykreslen do pravého dolního rohu.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Tile">
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Obrázek se vykreslí na pozadí opakovaně velde sebe i pod sebou jako tapeta.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
     </xs:simpleType>
 </xs:schema>

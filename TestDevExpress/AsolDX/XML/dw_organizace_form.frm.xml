@@ -30,7 +30,10 @@
         </textboxbutton>
         
         <button Name="butOpen" HotKey="F8" Bounds="2,50,120,35" Text="Otevři..." ActionType="RunFunction" ActionData="realizuj" ToolTipTitle="Otevřít dveře" ToolTipText="Přistoupit ku dveřím, stiskem kliky uvolnit a pak tahem otevřít..."/>
-        
+
+        <group Name="p1234" ToolTipText="">
+            
+        </group>
         <panel Name="p1234" BackColorName="Blue_front_protect" >
             <label Name="aaa" Text="Vnitřní popisek"/>
         </panel>
