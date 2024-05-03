@@ -31,22 +31,19 @@
         
         <button Name="butOpen" HotKey="F8" Bounds="2,50,120,35" Text="Otevři..." ActionType="RunFunction" ActionData="realizuj" ToolTipTitle="Otevřít dveře" ToolTipText="Přistoupit ku dveřím, stiskem kliky uvolnit a pak tahem otevřít..."/>
 
-        <group Name="p1234" ToolTipText="">
-            
-        </group>
-        <panel Name="p1234" BackColorName="Blue_front_protect" >
+        <group Name="p1234" BackImageName="pic/wave_violet" >
             <label Name="aaa" Text="Vnitřní popisek"/>
-        </panel>
+        </group>
     </panel>
 
-	<panel Name="aaaa">
-        <panel Name="page01" Title="Základní" IconName="pic/image">
+	<panel Name="aaaa" Title="Nastavení">
+        <group Name="page01" >
             
-        </panel>
-		<panel Name="page02" Title="Nastavení">
+        </group>
+        <group Name="page02">
             <label Name="Pocet01l" Text="Počet kusů:" Alignment="MiddleRight" Bounds="10,2,120"/>
             <textbox Name="Pocet01" Bounds="135,2,120" Required="True"/>
-        </panel>
+        </group>
     </panel>
     
     <panel Name="vvvv" BackColorName="User_12" BackColorLight="LightCoral" >
@@ -54,7 +51,7 @@
         <textboxbutton Name="tb1" ButtonsVisibility="Default">
             <leftButton Name="fff" Text=".." IconName="pic"/>
         </textboxbutton>
-        <nestedpanel Name="nestedpanel1" NestedTemplate="app/lcs/manufacturing/forms/pricetable.frm.xml" X="0" Y="250"/>
+        <nestedgroup Name="nestedpanel1" NestedTemplate="app/lcs/manufacturing/forms/pricetable.frm.xml" X="0" Y="250"/>
     </panel>
 
     <nestedpanel Name="nestedpanel2" NestedTemplate="..."/>
