@@ -8,26 +8,26 @@
           TotalWidth="750" TotalHeight="520"
 		  AutoLabelPosition="Up">
 
-	<panel Name="Pokus1" >
+	<panel Name="Pokus1" IsHeader="True" >
 		<button Name="ButtonOpen" ActionType="Click" Bounds="10,200,150,35" Text="Otevři !!!"  />
 	</panel>
 
 	
 	<page Name="" Title="Záhlaví" >
 	    <panel Name="ggg" Title="Záložka A" ToolTipText="" ColumnWidths="50,350,100">
-			<panel Name="Subpanel1">
+			<group Name="Subpanel1">
 				<label Name="" Bounds="" Invisible=""/>
 				<textbox Name="karta_refer" LabelPosition="BeforeRight" Label="fm(MSG1002)" />
 				<textboxbutton Name="statusA" ColumnName="status">
 					<rightButton Name="" ActionType="Click"/>
 				</textboxbutton>
-				<label/>
-				<panel Name="odstavec" ></panel>
-			</panel>
+				<label Name="q777"/>
+                <group Name="odstavec" ></group>
+			</group>
 			<button Name=""/>
 		</panel>
-		<panel CollapseState="Default" Title="" >
-			<textbox Bounds=""/>
+		<panel Name="w444" CollapseState="Default" Title="" >
+			<textbox Name="e1122" Bounds=""/>
 			<button Name="OpenUrl" Text="Otevři stránku"  />
 			<checkbox Name="checkbox" Bounds="200,20,200" Text="Povolený" />
 		</panel>
@@ -57,10 +57,10 @@
         <textboxbutton Name="tbb123" Bounds="120,100,180" LabelPosition="BeforeRight" Label="Volba:">
             <rightButton Name="tbbr1" ActionType="Click" />
         </textboxbutton>
-        
-        <panel Name="p1234" BackColorName="Blue_front_protect" >
+
+        <group Name="p1234" BackColorName="Blue_front_protect" >
             <label Name="aaa" Text="Vnitřní popisek"/>
-        </panel>
+        </group>
     </panel>
 
 	<panel Name="t02" >
@@ -83,7 +83,7 @@
         <textboxbutton Name="tb1" ButtonsVisibility="Default">
             <leftButton Name="fff" Text=".." IconName="pic"/>
         </textboxbutton>
-        <nestedpanel Name="pricetable" NestedTemplate="dw_pricetable.frm.xml" X="0" Y="250"/>
+        <nestedgroup Name="pricetable" NestedTemplate="dw_pricetable.frm.xml" X="0" Y="250"/>
     </panel>
 
     <nestedpanel Name="nested_dph" Bounds="0,250" NestedTemplate="dw_nested_dph.frm.xml"/>

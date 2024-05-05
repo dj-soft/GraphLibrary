@@ -23,7 +23,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Načte a vrátí <see cref="DfForm"/> ze zadaného souboru
         /// </summary>
-        /// <param name="fileName"></param>
+        /// <param name="fileName">Plný název souboru na disku, včetně adresáře a přípony</param>
         /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména</param>
         /// <param name="logTime">Logovat časy?</param>
         /// <returns></returns>
@@ -49,10 +49,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Načte a vrátí <see cref="DfForm"/> ze zadané XML definice (=typicky obsah souboru)
         /// </summary>
-        /// <param name="content"></param>
+        /// <param name="content">Obsah souboru šablony předaný jako string</param>
         /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména</param>
         /// <param name="logTime">Logovat časy?</param>
-        /// <param name="fileName">Jméno souboru, pouze do atributu <see cref="DfForm.FileName"/></param>
+        /// <param name="fileName">Jméno souboru, pouze do atributu <see cref="DfForm.FileName"/> a pro chybové hlášky</param>
         /// <returns></returns>
         internal static DfForm LoadFromContent(string content, Func<string, string> nestedLoader = null, bool logTime = false, string fileName = null)
         {
@@ -71,10 +71,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Načte a vrátí <see cref="DfForm"/> z dodaného <see cref="System.Xml.Linq.XDocument"/>
         /// </summary>
-        /// <param name="xDocument"></param>
+        /// <param name="xDocument">Parsovaný XML dokument</param>
         /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména</param>
         /// <param name="logTime">Logovat časy?</param>
-        /// <param name="fileName">Jméno souboru, pouze do atributu <see cref="DfForm.FileName"/></param>
+        /// <param name="fileName">Jméno souboru, pouze do atributu <see cref="DfForm.FileName"/> a pro chybové hlášky</param>
         /// <returns></returns>
         internal static DfForm LoadFromDocument(System.Xml.Linq.XDocument xDocument, Func<string, string> nestedLoader = null, bool logTime = false, string fileName = null)
         {
@@ -88,9 +88,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
 
         /// <summary>
-        /// Načte a vrátí <see cref="DfInfoForm"/> ze zadaného souboru
+        /// Načte a vrátí instanci třídy <see cref="DfInfoForm"/> ze zadaného souboru - je to velice rychlá cesta pro načtení základních atributů 
+        /// <see cref="DfForm.XmlNamespace"/> a <see cref="DfForm.FormatVersion"/>.
         /// </summary>
-        /// <param name="fileName"></param>
+        /// <param name="fileName">Plný název souboru na disku, včetně adresáře a přípony</param>
         /// <param name="logTime">Logovat časy?</param>
         /// <returns></returns>
         internal static DfInfoForm LoadInfoFromFile(string fileName, bool logTime = false)
@@ -98,10 +99,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return LoadInfoFromFile(fileName, out var _, logTime);
         }
         /// <summary>
-        /// Načte a vrátí <see cref="DfInfoForm"/> ze zadaného souboru
+        /// Načte a vrátí <see cref="DfInfoForm"/> ze zadaného souboru - je to velice rychlá cesta pro načtení základních atributů 
+        /// <see cref="DfForm.XmlNamespace"/> a <see cref="DfForm.FormatVersion"/>.
         /// </summary>
-        /// <param name="fileName"></param>
-        /// <param name="xDocument"></param>
+        /// <param name="fileName">Plný název souboru na disku, včetně adresáře a přípony</param>
+        /// <param name="xDocument">Out načtený dokument, usnadní budoucí načítání plného <see cref="DfForm"/> v metodě <see cref="LoadFromDocument(System.Xml.Linq.XDocument, Func{string, string}, bool, string)"/></param>
         /// <param name="logTime">Logovat časy?</param>
         /// <returns></returns>
         internal static DfInfoForm LoadInfoFromFile(string fileName, out System.Xml.Linq.XDocument xDocument, bool logTime = false)
@@ -124,23 +126,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return _CreateInfoForm(form);
         }
         /// <summary>
-        /// Načte a vrátí <see cref="DfInfoForm"/> ze zadané XML definice (=typicky obsah souboru)
+        /// Načte a vrátí <see cref="DfInfoForm"/> ze zadané XML definice (=typicky obsah souboru) - je to velice rychlá cesta pro načtení základních atributů 
+        /// <see cref="DfForm.XmlNamespace"/> a <see cref="DfForm.FormatVersion"/>.
         /// </summary>
-        /// <param name="content"></param>
+        /// <param name="content">Obsah souboru šablony předaný jako string</param>
         /// <param name="logTime">Logovat časy?</param>
-        /// <param name="fileName">Jméno souboru, pouze do atributu <see cref="DfForm.FileName"/></param>
+        /// <param name="fileName">Jméno souboru, pouze do atributu <see cref="DfForm.FileName"/> a pro chybové hlášky</param>
         /// <returns></returns>
         internal static DfInfoForm LoadInfoFromContent(string content, bool logTime = false, string fileName = null)
         {
             return LoadInfoFromContent(content, out var _, logTime, fileName);
         }
         /// <summary>
-        /// Načte a vrátí <see cref="DfInfoForm"/> ze zadané XML definice (=typicky obsah souboru)
+        /// Načte a vrátí <see cref="DfInfoForm"/> ze zadané XML definice (=typicky obsah souboru) - je to velice rychlá cesta pro načtení základních atributů 
+        /// <see cref="DfForm.XmlNamespace"/> a <see cref="DfForm.FormatVersion"/>.
         /// </summary>
-        /// <param name="content"></param>
+        /// <param name="content">Obsah souboru šablony předaný jako string</param>
         /// <param name="xDocument">Out načtený dokument, usnadní budoucí načítání plného <see cref="DfForm"/> v metodě <see cref="LoadFromDocument(System.Xml.Linq.XDocument, Func{string, string}, bool, string)"/></param>
         /// <param name="logTime">Logovat časy?</param>
-        /// <param name="fileName">Jméno souboru, pouze do atributu <see cref="DfForm.FileName"/></param>
+        /// <param name="fileName">Jméno souboru, pouze do atributu <see cref="DfForm.FileName"/> a pro chybové hlášky</param>
         /// <returns></returns>
         internal static DfInfoForm LoadInfoFromContent(string content, out System.Xml.Linq.XDocument xDocument, bool logTime = false, string fileName = null)
         {
@@ -157,11 +161,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return _CreateInfoForm(form);
         }
         /// <summary>
-        /// Načte a vrátí <see cref="DfInfoForm"/> z dodaného <see cref="System.Xml.Linq.XDocument"/>
+        /// Načte a vrátí <see cref="DfInfoForm"/> z dodaného <see cref="System.Xml.Linq.XDocument"/> - je to velice rychlá cesta pro načtení základních atributů 
+        /// <see cref="DfForm.XmlNamespace"/> a <see cref="DfForm.FormatVersion"/>.
         /// </summary>
-        /// <param name="xDocument"></param>
+        /// <param name="xDocument">Parsovaný XML dokument</param>
         /// <param name="logTime">Logovat časy?</param>
-        /// <param name="fileName">Jméno souboru, pouze do atributu <see cref="DfForm.FileName"/></param>
+        /// <param name="fileName">Jméno souboru, pouze do atributu <see cref="DfForm.FileName"/> a pro chybové hlášky</param>
         /// <returns></returns>
         internal static DfInfoForm LoadInfoFromDocument(System.Xml.Linq.XDocument xDocument, bool logTime = false, string fileName = null)
         {
@@ -174,7 +179,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return _CreateInfoForm(form);
         }
         /// <summary>
-        /// Z dodaného kompletního <see cref="DfForm"/> vytvoří jednoduchý <see cref="DfInfoForm"/>
+        /// Z dodaného kompletního <see cref="DfForm"/> vytvoří jednoduchý <see cref="DfInfoForm"/>: přenese pouze základní atributy 
+        /// <see cref="DfForm.XmlNamespace"/> a <see cref="DfForm.FormatVersion"/>.
         /// </summary>
         /// <param name="form"></param>
         /// <returns></returns>
@@ -184,8 +190,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         #endregion
         #region Načítání obsahu - private tvorba containerů
-        
+
         // Každá zdejší větev / metoda načte pouze property deklarované přímo pro danou třídu, nikoli pro její předky!
+        // Třídy předků načítá metoda _FillBaseAttributes(xElement, control);
 
         /// <summary>
         /// Načte a vrátí <see cref="DfForm"/> z dodaného <see cref="System.Xml.Linq.XDocument"/>
@@ -229,8 +236,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             control.DataSource = _ReadAttributeString(xElement, "DataSource", null);
             control.Messages = _ReadAttributeString(xElement, "Messages", null);
             control.UseNorisClass = _ReadAttributeInt32N(xElement, "UseNorisClass");
-            control.AddUda = _ReadAttributeBoolN(xElement, "UseNorisClass");
+            control.AddUda = _ReadAttributeBoolN(xElement, "AddUda");
             control.UdaLabelPosition = _ReadAttributeEnum(xElement, "UdaLabelPosition", LabelPositionType.Up);
+            control.Margins = _ReadAttributesMargin(xElement, "Margins", null);
+            control.ContextMenu = _ReadAttributeBoolN(xElement, "ContextMenu");
+            control.ColumnWidths = _ReadAttributeString(xElement, "ColumnWidths", null);
 
             // Implicit Page: do ní se vkládají Panely, pokud jsou zadány přímo do Formu
             DfPage implicitPage = null;
@@ -239,7 +249,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var xContainers = xElement.Elements();
             foreach (var xContainer in xContainers)
             {
-                var container = _CreateContainer(xContainer, loaderContext);
+                var container = _CreateContainer(xContainer, loaderContext, "page", "panel", "nestedpanel");
                 if (container != null)
                 {
                     if (control.Pages is null) control.Pages = new List<DfPage>();
@@ -254,7 +264,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                             if (implicitPage is null) implicitPage = createImplicitPage();
                             implicitPage.Panels.Add(panel);
                             break;
+                        default:
+                            loaderContext.AddError($"Formulář '{loaderContext.FileName}' obsahuje element '{xContainer.Name}', který zde není očekáváván.");
+                            break;
                     }
+                }
+                else
+                {
+                    loaderContext.AddError($"Formulář '{loaderContext.FileName}' obsahuje element '{xContainer.Name}', který zde není očekáváván.");
                 }
             }
             return control;
@@ -274,14 +291,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         /// <summary>
-        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající kontejner (page, panel, nestedpanel), včetně jeho obsahu.
+        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající kontejner (page, panel, nestedpanel, group, nestedgroup), včetně jeho obsahua child prvků.
         /// Výstupem je tedy buď <see cref="DfPage"/> nebo <see cref="DfPanel"/> (nebo null).
         /// </summary>
         /// <param name="xElement"></param>
         /// <param name="loaderContext">Průběžná data pro načítání obsahu</param>
-        private static DfBaseContainer _CreateContainer(System.Xml.Linq.XElement xElement, LoaderContext loaderContext)
+        /// <param name="validNames">Očekávaná validní jména elementů. Pokud je zadáno, a je detekován jiný než daný element, vrátí se null.</param>
+        private static DfBaseContainer _CreateContainer(System.Xml.Linq.XElement xElement, LoaderContext loaderContext, params string[] validNames)
         {
-            string elementName = xElement?.Name.LocalName.ToLower();          // pageset, panel, nestedpanel
+            string elementName = _GetValidElementName(xElement);               // page, panel, nestedpanel, group, nestedgroup
+            if (String.IsNullOrEmpty(elementName)) return null;                // Nezadáno (?)
+            // Pokud je dodán seznam validních jmen elementů (přinejmenším 1 prvek), ale aktuální element neodpovídá žádnému povolenému jménu, pak skončím:
+            if (validNames != null && validNames.Length > 0 && !validNames.Any(v => String.Equals(v, elementName, StringComparison.OrdinalIgnoreCase))) return null;
             switch (elementName)
             {
                 case "page":
@@ -290,6 +311,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     return _FillContainerPanel(xElement, null, loaderContext);
                 case "nestedpanel":
                     return _FillContainerNestedPanel(xElement, null, loaderContext);
+                case "group":
+                    return _FillContainerGroup(xElement, null, loaderContext);
+                case "nestedgroup":
+                    return _FillContainerNestedGroup(xElement, null, loaderContext);
             }
             return null;
         }
@@ -302,10 +327,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         private static DfPage _FillContainerPage(System.Xml.Linq.XElement xElement, DfPage control, LoaderContext loaderContext)
         {
-            // Záložkovník bez jednotlivých záložek neakceptuji:
-            var xPanels = xElement.Elements();
-            if (xPanels is null) return null;
-
             // Výsledná instance:
             if (control is null) control = new DfPage();
 
@@ -314,14 +335,58 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             control.IconName = _ReadAttributeString(xElement, "IconName", null);
             control.Title = _ReadAttributeString(xElement, "Title", null);
 
-            // Elementy:
-            foreach (var xPanel in xPanels)
+            // Elementy = panely:
+            var xPanels = xElement.Elements();
+            if (xPanels != null)
             {
-                var panel = _FillContainerPanel(xPanel, null, loaderContext);
-                if (panel != null)
+                foreach (var xPanel in xPanels)
                 {
-                    if (control.Panels is null) control.Panels = new List<DfPanel>();
-                    control.Panels.Add(panel);
+                    var container = _CreateContainer(xPanel, loaderContext, "panel", "nestedpanel");
+                    if (container != null && container is DfPanel panel)
+                    {
+                        if (control.Panels is null) control.Panels = new List<DfPanel>();
+                        control.Panels.Add(panel);
+                    }
+                    else
+                    {
+                        loaderContext.AddError($"Stránka '{control.Name}' obsahuje element '{xPanel.Name}', který zde není očekáváván.");
+                    }
+                }
+            }
+
+            return control;
+        }
+        /// <summary>
+        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající Panel, včetně jeho obsahu
+        /// </summary>
+        /// <param name="xElement"></param>
+        /// <param name="control"></param>
+        /// <param name="loaderContext"></param>
+        /// <returns></returns>
+        private static DfPanel _FillContainerPanel(System.Xml.Linq.XElement xElement, DfPanel control, LoaderContext loaderContext)
+        {
+            // Výsledná instance:
+            if (control is null) control = new DfPanel();
+
+            // Atributy:
+            _FillContainerPanelAttributes(xElement, control, loaderContext);
+
+            // Elementy = Controly + Panely:
+            var xChilds = xElement.Elements();
+            if (xChilds != null)
+            {
+                foreach (var xChild in xChilds)
+                {
+                    var child = _CreateChildItem(xChild, loaderContext);
+                    if (child != null && (child is DfBaseControl || child is DfGroup))
+                    {   // Pouze Controly + Group
+                        if (control.Childs is null) control.Childs = new List<DfBase>();
+                        control.Childs.Add(child);
+                    }
+                    else
+                    {
+                        loaderContext.AddError($"Panel '{control.Name}' obsahuje element '{xChild.Name}', který zde není očekáváván.");
+                    }
                 }
             }
 
@@ -387,38 +452,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (nestPage is null || nestPage.Panels is null || nestPage.Panels.Count == 0) return null;
                 return nestPage.Panels[0];
             }
-        }
-        /// <summary>
-        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající Panel, včetně jeho obsahu
-        /// </summary>
-        /// <param name="xElement"></param>
-        /// <param name="control"></param>
-        /// <param name="loaderContext"></param>
-        /// <returns></returns>
-        private static DfPanel _FillContainerPanel(System.Xml.Linq.XElement xElement, DfPanel control, LoaderContext loaderContext)
-        {
-            // Výsledná instance:
-            if (control is null) control = new DfPanel();
-
-            // Atributy:
-            _FillContainerPanelAttributes(xElement, control, loaderContext);
-
-            // Elementy = Controly + Panely:
-            var xChilds = xElement.Elements();
-            if (xChilds != null)
-            {
-                foreach (var xChild in xChilds)
-                {
-                    var child = _CreateChildItem(xChild, loaderContext);
-                    if (child != null && (child is DfBaseControl || child is DfPanel))
-                    {   // Pouze Controly + Panel
-                        if (control.Childs is null) control.Childs = new List<DfBase>();
-                        control.Childs.Add(child);
-                    }
-                }
-            }
-
-            return control;
         }
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající Panel. Načítá pouze atribut, ale ne elementy.
@@ -928,7 +961,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
             return (result.Count > 0 ? result : null);
         }
-
+        /// <summary>
+        /// Vrátí lokální jméno elementu, Trim(), ToLower().
+        /// </summary>
+        /// <param name="xElement"></param>
+        /// <returns></returns>
+        private static string _GetValidElementName(System.Xml.Linq.XElement xElement)
+        {
+            return xElement?.Name.LocalName.Trim().ToLower() ?? "";
+        }
         /// <summary>
         /// Klonuje dodané souřadnice
         /// </summary>
@@ -981,13 +1022,42 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             public Func<string, string> NestedLoader { get; set; }
             /// <summary>
-            /// Jméno vstupního souboru
+            /// Jméno vstupního souboru, typicky plné včetně cesty
             /// </summary>
             public string FileName { get; set; }
+            /// <summary>
+            /// Holé jméno vstupního souboru, bez adresáře a bez přípony
+            /// </summary>
+            public string Name { get { return (!String.IsNullOrEmpty(this.FileName) ? System.IO.Path.GetFileNameWithoutExtension(this.FileName) : ""); } }
             /// <summary>
             /// Máme načíst pouze atributy dokumentu, pro detekci jeho hlavičky (<see cref="DfForm.XmlNamespace"/> a <see cref="DfForm.FormatVersion"/>)
             /// </summary>
             public bool IsLoadOnlyDocumentAttributes { get; set; }
+
+            /// <summary>
+            /// Přidá chybu, nalezenou v parsovaném souboru.
+            /// </summary>
+            /// <param name="message"></param>
+            public void AddError(string message)
+            {
+                if (!String.IsNullOrEmpty(message))
+                {
+                    __Errors ??= new StringBuilder();
+                    __Errors.AppendLine(message);
+                }
+            }
+            /// <summary>
+            /// Souhrn chyb, nalezených v parsovaném souboru.
+            /// </summary>
+            public string Errors { get { return __Errors?.ToString(); } }
+            /// <summary>
+            /// Obsahuje true, pokud jsou zachyceny nějaké chyby.
+            /// </summary>
+            public bool HasErrors { get { return (__Errors != null && __Errors.Length > 0); } }
+            /// <summary>
+            /// Souhrn chyb, výchozí je null
+            /// </summary>
+            private StringBuilder __Errors;
         }
         #endregion
         #region Servis nad daty: GetAllControls()

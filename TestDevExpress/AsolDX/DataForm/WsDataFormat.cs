@@ -255,12 +255,6 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public string HeaderOnPages { get; set; }
         /// <summary>
-        /// Umístění prvku. Výchozí je null.
-        /// Pokud je panel umístěn přímo jako Child v nadřazené <see cref="DfPage"/>, pak se ignoruje umístění (Left a Top) dané v <see cref="Bounds"/>, akceptuje se jen Width a Height.
-        /// Pak jde o primární panely, a ty jsou typicky uživatelsky ovladatelné.
-        /// </summary>
-        public Bounds Bounds { get; set; }
-        /// <summary>
         /// Jméno ikony panelu, zobrazuje se vlevo v titulku.
         /// </summary>
         public string IconName { get; set; }
@@ -290,27 +284,57 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public PanelCollapseState CollapseState { get; set; }
         /// <summary>
-        /// Controly v rámci tohoto Containeru.
-        /// Mohou zde být i další Containery.
-        /// Default = null.
-        /// </summary>
-        public List<DfBase> Childs { get; set; }
-        /// <summary>
-        /// Nested template = název šablony načtený z atributu type_nested_panel::NestedTemplate
-        /// </summary>
-        public string NestedTemplate { get; set; }
-        /// <summary>
         /// Debug text
         /// </summary>
         protected override string DebugText { get { return $"{Style} '{Name}'; Title: '{Title}'; Childs: {(Childs is null ? "NULL" : Childs.Count.ToString())}"; } }
     }
     /// <summary>
-    /// Základní třída pro containery.<br/>
+    /// Grupa uvnitř Panelu nebo uvnitř grupy, ale bez chování Panelu = nemá Collapsed a Title
+    /// <para/>
+    /// Odpovídá XSD typu: <c>type_group</c>
+    /// </summary>
+    internal class DfGroup : DfBaseContainer
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DfGroup() : base()
+        {
+        }
+    }
+    /// <summary>
+    /// Vnořený container, vložený do Panelu nebo Page. 
+    /// Z hlediska DataFormu jde o Container, ale z hlediska zadávání o jednotlivý Control = nemá vnitřní prvky (elementy). 
+    /// Pouze definuje svoji zdrojovou šablonu.
+    /// <para/>
+    /// Odpovídá XSD typu: <c>type_group</c>
+    /// </summary>
+    internal class DfNestedGroup : DfBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DfNestedGroup() : base()
+        {
+        }
+        /// <summary>
+        /// Nested template = název šablony načtený z atributu type_nested_panel::NestedTemplate
+        /// </summary>
+        public string NestedTemplate { get; set; }
+        /// <summary>
+        /// Umístění prvku. Výchozí je null.
+        /// Pokud je panel umístěn přímo jako Child v nadřazené <see cref="DfPage"/>, pak se ignoruje umístění (Left a Top) dané v <see cref="Bounds"/>, akceptuje se jen Width a Height.
+        /// Pak jde o primární panely, a ty jsou typicky uživatelsky ovladatelné.
+        /// </summary>
+        public Bounds Bounds { get; set; }
+    }
+    /// <summary>
+    /// Prostor obsahující controly = základ pro <see cref="DfPanel"/> a pro <see cref="DfGroup"/>.<br/>
     /// Jejím úkolem je deklarovat vzhled pozadí containeru a okraje.
     /// <para/>
     /// Odpovídá XSD typu <c>type_base_container</c>
     /// </summary>
-    internal class DfBaseContainer : DfBase
+    internal class DfBaseContainer : DfBaseArea
     {
         /// <summary>
         /// Konstruktor
@@ -319,9 +343,31 @@ namespace Noris.WS.DataContracts.DxForm
         {
         }
         /// <summary>
+        /// Controly v rámci tohoto Containeru.
+        /// Mohou zde být i další Containery.
+        /// Default = null.
+        /// </summary>
+        public List<DfBase> Childs { get; set; }
+        /// <summary>
+        /// Umístění prvku. Výchozí je null.
+        /// Pokud je panel umístěn přímo jako Child v nadřazené <see cref="DfPage"/>, pak se ignoruje umístění (Left a Top) dané v <see cref="Bounds"/>, akceptuje se jen Width a Height.
+        /// Pak jde o primární panely, a ty jsou typicky uživatelsky ovladatelné.
+        /// </summary>
+        public Bounds Bounds { get; set; }
+        /// <summary>
         /// Styl bloku
         /// </summary>
         public virtual ContainerStyleType Style { get { return ContainerStyleType.None; } }
+        /// <summary>
+        /// Debug text
+        /// </summary>
+        protected override string DebugText { get { return $"{Style}; Name: {Name}"; } }
+    }
+    /// <summary>
+    /// Prostor s něčím uvnitř = základ pro <see cref="DfPage"/>, pro <see cref="DfPanel"/> a pro <see cref="DfGroup"/>.
+    /// </summary>
+    internal class DfBaseArea : DfBase
+    {
         /// <summary>
         /// Název barevného kalíšku barvy pozadí
         /// </summary>
@@ -335,21 +381,29 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public System.Drawing.Color? BackColorDark { get; set; }
         /// <summary>
-        /// Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = <c>NULL</c>
+        /// Obrázek vykreslený na pozadí prostoru. Zadán má být jako jméno souboru.
         /// </summary>
-        public LabelPositionType? AutoLabelPosition { get; set; }
+        public string BackImageName { get; set; }
+        /// <summary>
+        /// Pozice obrázku <see cref="BackImageName"/> vzhledem k prostoru.
+        /// </summary>
+        public BackImagePositionTnum BackImagePosition { get; set; }
         /// <summary>
         /// Okraje = mezi krajem formuláře / Page / Panel a souřadnicí 0/0
         /// </summary>
         public Margins Margins { get; set; }
         /// <summary>
+        /// Povolit kontextové menu.
+        /// </summary>
+        public bool? ContextMenu { get; set; }
+        /// <summary>
         /// Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky).
         /// </summary>
         public string ColumnWidths { get; set; }
         /// <summary>
-        /// Debug text
+        /// Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = <c>NULL</c>
         /// </summary>
-        protected override string DebugText { get { return $"{Style}; Name: {Name}"; } }
+        public LabelPositionType? AutoLabelPosition { get; set; }
     }
     #endregion
     #region Konkrétní třídy Controlů
@@ -938,7 +992,7 @@ namespace Noris.WS.DataContracts.DxForm
     public enum FormatVersionType
     {
         /// <summary>
-        /// Default = Version1
+        /// Default = Version4
         /// </summary>
         Default,
         /// <summary>
@@ -1042,6 +1096,60 @@ namespace Noris.WS.DataContracts.DxForm
         /// Defaultně = Nahoře vlevo
         /// </summary>
         Default = TopLeft
+    }
+    /// <summary>
+    /// Umístění obrázku vzhledem k prostoru
+    /// </summary>
+    public enum BackImagePositionTnum
+    {
+        /// <summary>
+        /// Default = BottomRight: Obrázek bude vykreslen do pravého dolního rohu.
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Obrázek nebude zobrazen.
+        /// </summary>
+        None,
+        /// <summary>
+        /// Obrázek bude vykreslen do levého horního rohu.
+        /// </summary>
+        TopLeft,
+        /// <summary>
+        /// Obrázek bude vykreslen k hornímu okraji na vodorovný střed.
+        /// </summary>
+        TopCenter,
+        /// <summary>
+        /// Obrázek bude vykreslen do pravého horního rohu.
+        /// </summary>
+        TopRight,
+        /// <summary>
+        /// Obrázek bude vykreslen do doleva, na svislý střed.
+        /// </summary>
+        MiddleLeft,
+        /// <summary>
+        /// Obrázek bude vykreslen přímo na střed oblasti.
+        /// </summary>
+        MiddleCenter,
+        /// <summary>
+        /// Obrázek bude vykreslen doprava, na svislý střed.
+        /// </summary>
+        MiddleRight,
+        /// <summary>
+        /// Obrázek bude vykreslen do levého dolního rohu.
+        /// </summary>
+        BottomLeft,
+        /// <summary>
+        /// Obrázek bude vykreslen ke spodnímu okraji na vodorovný střed.
+        /// </summary>
+        BottomCenter,
+        /// <summary>
+        /// Obrázek bude vykreslen do pravého dolního rohu.
+        /// </summary>
+        BottomRight,
+        /// <summary>
+        /// Obrázek se vykreslí na pozadí opakovaně vedle sebe i pod sebou jako tapeta.
+        /// </summary>
+        Tile
     }
     /// <summary>
     /// Zarovnání obsahu, jednotlivé osy a směry, bez kombinací. 

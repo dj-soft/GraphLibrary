@@ -83,7 +83,7 @@
     <!--    type_page = DfPage   -  jedna stránka                                                            -->
     <xs:complexType name="type_page">
         <xs:complexContent>
-            <xs:extension base="type_base_area">
+            <xs:extension base="type_base_container">
                 <xs:sequence>
                     <xs:choice minOccurs="0" maxOccurs="unbounded">
                         <xs:element name="panel" type="type_panel" minOccurs="0" maxOccurs="unbounded" >
@@ -171,7 +171,7 @@
         </xs:complexContent>
     </xs:complexType>
 
-    <!--    type_group = DfGroup  -  Grupa uvnitř Panelu, ale bez chování Panelu = nemá Collapsed a Title    -->
+    <!--    type_group = DfGroup  -  Grupa uvnitř Panelu nebo uvnitř grupy, ale bez chování Panelu = nemá Collapsed a Title    -->
     <xs:complexType name="type_group">
         <xs:complexContent>
             <xs:extension base="type_base_container">
@@ -213,11 +213,6 @@
                 <xs:attribute name="Height" type="xs:int">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-                <xs:attribute name="Invisible" type="xs:string">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Výraz, při jehož splnění bude prvek neviditelný. Například: True (=neviditelný), pocet = 0 (pokud pocet bude 0, prvek bude neviditelný), ...</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>
@@ -340,11 +335,6 @@
                 <xs:attribute name="BackImagePosition" type="back_image_position_enum" >
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Pozice obrázku 'BackImageName' vzhledem k prostoru.</xs:documentation>
-                    </xs:annotation>
-                </xs:attribute>
-                <xs:attribute name="Invisible" type="xs:string">
-                    <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Výraz, při jehož splnění bude prvek neviditelný. Například: True (=neviditelný), pocet = 0 (pokud pocet bude 0, prvek bude neviditelný), ...</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="Margins" type="xs:string">
@@ -1258,7 +1248,7 @@
             </xs:enumeration>
             <xs:enumeration value="MiddleRight">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Obrázek bude vykreslen doprava, na svislý střed .</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Obrázek bude vykreslen doprava, na svislý střed.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="BottomLeft">
@@ -1278,7 +1268,7 @@
             </xs:enumeration>
             <xs:enumeration value="Tile">
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Obrázek se vykreslí na pozadí opakovaně velde sebe i pod sebou jako tapeta.</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Obrázek se vykreslí na pozadí opakovaně vedle sebe i pod sebou jako tapeta.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
         </xs:restriction>
