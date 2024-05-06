@@ -117,7 +117,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// <para/>
     /// Odpovídá XSD typu: <c>template</c>
     /// </summary>
-    internal class DfForm : DfBaseContainer
+    internal class DfForm : DfBaseArea
     {
         /// <summary>
         /// Konstruktor
@@ -181,6 +181,12 @@ namespace Noris.WS.DataContracts.DxForm
         /// Umístění labelů pro automaticky generované UDA atributy a vztahy. Defaultní = <see cref="LabelPositionType.Up"/>
         /// </summary>
         public LabelPositionType UdaLabelPosition { get; set; }
+
+        /// <summary>
+        /// Povolit kontextové menu.
+        /// </summary>
+        public bool? ContextMenu { get; set; }
+
         /// <summary>
         /// Jednotlivé prvky - stránky.
         /// Default = null.
@@ -198,7 +204,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// <para/>
     /// Odpovídá XSD typu: <c>type_page</c>
     /// </summary>
-    internal class DfPage : DfBaseContainer
+    internal class DfPage : DfBaseArea
     {
         /// <summary>
         /// Konstruktor
@@ -249,7 +255,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Obsahuje true, pokud tento panel reprezentuje záhlaví. To může být vykresleno na každé záložce, vždy jako první horní panel, v šířce přes všechny sloupce.
         /// </summary>
-        public bool IsHeader { get; set; }
+        public bool? IsHeader { get; set; }
         /// <summary>
         /// Název stránek (page), na kterých je záhlaví zobrazeno. Pouze pokud IsHeader je true. Pokud nebude HeaderOnPages zadáno, bude vykresleno pro všechny stránky.
         /// </summary>
@@ -266,7 +272,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Styl titulku.
         /// </summary>
-        public TitleStyleType TitleStyle { get; set; }
+        public TitleStyleType? TitleStyle { get; set; }
         /// <summary>
         /// Barva textu titulku, zadaná jako název kalíšku.
         /// </summary>
@@ -282,7 +288,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Možnosti přeskupování panelu (Collapse / Expand)
         /// </summary>
-        public PanelCollapseState CollapseState { get; set; }
+        public PanelCollapseState? CollapseState { get; set; }
         /// <summary>
         /// Debug text
         /// </summary>
@@ -303,11 +309,47 @@ namespace Noris.WS.DataContracts.DxForm
         }
     }
     /// <summary>
-    /// Vnořený container, vložený do Panelu nebo Page. 
-    /// Z hlediska DataFormu jde o Container, ale z hlediska zadávání o jednotlivý Control = nemá vnitřní prvky (elementy). 
+    /// Vnořený panel, vložený do Page.
+    /// Z hlediska deklarace DataFormu jde o prvek, který nemá mnoho svých vlastností, a nemá ani Child prvky.
     /// Pouze definuje svoji zdrojovou šablonu.
+    /// V procesu načítání deklarace je vyhledána a načtena odpovídající <see cref="NestedTemplate"/>, a v ní je nalezen první panel a ten je použit namísto tohoto Nested panelu.
+    /// Tedy panel z vnořené šablony se stane panelem v aktuální šabloně.
     /// <para/>
-    /// Odpovídá XSD typu: <c>type_group</c>
+    /// Odpovídá XSD typu: <c>type_nested_panel</c>
+    /// </summary>
+    internal class DfNestedPanel : DfBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DfNestedPanel() : base()
+        {
+        }
+        /// <summary>
+        /// Nested template = název šablony, ze které se načítá definice vnořeného panelu.
+        /// </summary>
+        public string NestedTemplate { get; set; }
+        /// <summary>
+        /// Jméno hledaného panelu v nested šabloně. Pokud není zadáno, vezme se první nalezený panel.
+        /// </summary>
+        public string NestedPanelName { get; set; }
+        /// <summary>
+        /// Obsahuje true, pokud tento panel reprezentuje záhlaví. To může být vykresleno na každé záložce, vždy jako první horní panel, v šířce přes všechny sloupce.
+        /// </summary>
+        public bool? IsHeader { get; set; }
+        /// <summary>
+        /// Název stránek (page), na kterých je záhlaví zobrazeno. Pouze pokud IsHeader je true. Pokud nebude HeaderOnPages zadáno, bude vykresleno pro všechny stránky.
+        /// </summary>
+        public string HeaderOnPages { get; set; }
+    }
+    /// <summary>
+    /// Vnořená grupa, vložená do Panelu nebo do Grupy.
+    /// Z hlediska deklarace DataFormu jde o prvek, který nemá mnoho svých vlastností, a nemá ani Child prvky.
+    /// Pouze definuje svoji zdrojovou šablonu.
+    /// V procesu načítání deklarace je vyhledána a načtena odpovídající <see cref="NestedTemplate"/>, a v ní je nalezena první grupa a ta je použita namísto této Nested grupy.
+    /// Tedy grupa z vnořené šablony se stane grupou v aktuální šabloně.
+    /// <para/>
+    /// Odpovídá XSD typu: <c>type_nested_group</c>
     /// </summary>
     internal class DfNestedGroup : DfBase
     {
@@ -318,9 +360,13 @@ namespace Noris.WS.DataContracts.DxForm
         {
         }
         /// <summary>
-        /// Nested template = název šablony načtený z atributu type_nested_panel::NestedTemplate
+        /// Nested template = název šablony, ze které se načítá definice vnořené grupy.
         /// </summary>
         public string NestedTemplate { get; set; }
+        /// <summary>
+        /// Jméno hledané grupy v nested šabloně. Pokud není zadáno, vezme se první nalezená grupa.
+        /// </summary>
+        public string NestedGroupName { get; set; }
         /// <summary>
         /// Umístění prvku. Výchozí je null.
         /// Pokud je panel umístěn přímo jako Child v nadřazené <see cref="DfPage"/>, pak se ignoruje umístění (Left a Top) dané v <see cref="Bounds"/>, akceptuje se jen Width a Height.
@@ -355,10 +401,6 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public Bounds Bounds { get; set; }
         /// <summary>
-        /// Styl bloku
-        /// </summary>
-        public virtual ContainerStyleType Style { get { return ContainerStyleType.None; } }
-        /// <summary>
         /// Debug text
         /// </summary>
         protected override string DebugText { get { return $"{Style}; Name: {Name}"; } }
@@ -368,6 +410,10 @@ namespace Noris.WS.DataContracts.DxForm
     /// </summary>
     internal class DfBaseArea : DfBase
     {
+        /// <summary>
+        /// Styl bloku
+        /// </summary>
+        public virtual ContainerStyleType Style { get { return ContainerStyleType.None; } }
         /// <summary>
         /// Název barevného kalíšku barvy pozadí
         /// </summary>
@@ -387,15 +433,11 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Pozice obrázku <see cref="BackImageName"/> vzhledem k prostoru.
         /// </summary>
-        public BackImagePositionTnum BackImagePosition { get; set; }
+        public BackImagePositionType BackImagePosition { get; set; }
         /// <summary>
         /// Okraje = mezi krajem formuláře / Page / Panel a souřadnicí 0/0
         /// </summary>
         public Margins Margins { get; set; }
-        /// <summary>
-        /// Povolit kontextové menu.
-        /// </summary>
-        public bool? ContextMenu { get; set; }
         /// <summary>
         /// Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky).
         /// </summary>
@@ -831,7 +873,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Stav bloku nebo prvku (viditelnost, editovatelnost)
         /// </summary>
-        public ControlStateType State { get; set; }
+        public ControlStateType? State { get; set; }
         /// <summary>
         /// Titulek ToolTipu.
         /// </summary>
@@ -1100,7 +1142,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// <summary>
     /// Umístění obrázku vzhledem k prostoru
     /// </summary>
-    public enum BackImagePositionTnum
+    public enum BackImagePositionType
     {
         /// <summary>
         /// Default = BottomRight: Obrázek bude vykreslen do pravého dolního rohu.
@@ -1434,7 +1476,11 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Běžný panel, jako <see cref="Default"/>
         /// </summary>
-        Panel
+        Panel,
+        /// <summary>
+        /// Grupa uvnitř panelu
+        /// </summary>
+        Group
     }
     /// <summary>
     /// Stav Collapsed panelu = stav a možnost jeho minimalizace a zvětšení na plnou velikost.<br/>

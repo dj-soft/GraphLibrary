@@ -24,7 +24,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Načte a vrátí <see cref="DfForm"/> ze zadaného souboru
         /// </summary>
         /// <param name="fileName">Plný název souboru na disku, včetně adresáře a přípony</param>
-        /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména</param>
+        /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména.<br/>
+        /// Pokud bude jako <paramref name="nestedLoader"/> předána hodnota null, a v šabloně bude detekován Nested prvek, pak dojde k chybě.<br/>
+        /// Loader bude volán s parametrem = jméno šablony (obsah atributu NestedTemplate), jeho úkolem je vrátit string = obsah požadované šablony (souboru).<br/>
+        /// Pokud loader požadovanou šablonu (soubor) nenajde, může sám loader ohlásit chybu. Anebo může vrátit null, pak bude Nested prvek ignorován.</param>
         /// <param name="logTime">Logovat časy?</param>
         /// <returns></returns>
         internal static DfForm LoadFromFile(string fileName, Func<string, string> nestedLoader = null, bool logTime = false)
@@ -50,7 +53,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Načte a vrátí <see cref="DfForm"/> ze zadané XML definice (=typicky obsah souboru)
         /// </summary>
         /// <param name="content">Obsah souboru šablony předaný jako string</param>
-        /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména</param>
+        /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména.<br/>
+        /// Pokud bude jako <paramref name="nestedLoader"/> předána hodnota null, a v šabloně bude detekován Nested prvek, pak dojde k chybě.<br/>
+        /// Loader bude volán s parametrem = jméno šablony (obsah atributu NestedTemplate), jeho úkolem je vrátit string = obsah požadované šablony (souboru).<br/>
+        /// Pokud loader požadovanou šablonu (soubor) nenajde, může sám loader ohlásit chybu. Anebo může vrátit null, pak bude Nested prvek ignorován.</param>
         /// <param name="logTime">Logovat časy?</param>
         /// <param name="fileName">Jméno souboru, pouze do atributu <see cref="DfForm.FileName"/> a pro chybové hlášky</param>
         /// <returns></returns>
@@ -72,7 +78,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Načte a vrátí <see cref="DfForm"/> z dodaného <see cref="System.Xml.Linq.XDocument"/>
         /// </summary>
         /// <param name="xDocument">Parsovaný XML dokument</param>
-        /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména</param>
+        /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména.<br/>
+        /// Pokud bude jako <paramref name="nestedLoader"/> předána hodnota null, a v šabloně bude detekován Nested prvek, pak dojde k chybě.<br/>
+        /// Loader bude volán s parametrem = jméno šablony (obsah atributu NestedTemplate), jeho úkolem je vrátit string = obsah požadované šablony (souboru).<br/>
+        /// Pokud loader požadovanou šablonu (soubor) nenajde, může sám loader ohlásit chybu. Anebo může vrátit null, pak bude Nested prvek ignorován.</param>
         /// <param name="logTime">Logovat časy?</param>
         /// <param name="fileName">Jméno souboru, pouze do atributu <see cref="DfForm.FileName"/> a pro chybové hlášky</param>
         /// <returns></returns>
@@ -245,11 +254,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Implicit Page: do ní se vkládají Panely, pokud jsou zadány přímo do Formu
             DfPage implicitPage = null;
 
-            // Elementy:
+            // Elementy = stránky (nebo přímo panely):
             var xContainers = xElement.Elements();
             foreach (var xContainer in xContainers)
             {
-                var container = _CreateContainer(xContainer, loaderContext, "page", "panel", "nestedpanel");
+                var container = _CreateArea(xContainer, loaderContext, "page", "panel", "nestedpanel");
                 if (container != null)
                 {
                     if (control.Pages is null) control.Pages = new List<DfPage>();
@@ -297,7 +306,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xElement"></param>
         /// <param name="loaderContext">Průběžná data pro načítání obsahu</param>
         /// <param name="validNames">Očekávaná validní jména elementů. Pokud je zadáno, a je detekován jiný než daný element, vrátí se null.</param>
-        private static DfBaseContainer _CreateContainer(System.Xml.Linq.XElement xElement, LoaderContext loaderContext, params string[] validNames)
+        private static DfBaseArea _CreateArea(System.Xml.Linq.XElement xElement, LoaderContext loaderContext, params string[] validNames)
         {
             string elementName = _GetValidElementName(xElement);               // page, panel, nestedpanel, group, nestedgroup
             if (String.IsNullOrEmpty(elementName)) return null;                // Nezadáno (?)
@@ -306,15 +315,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             switch (elementName)
             {
                 case "page":
-                    return _FillContainerPage(xElement, null, loaderContext);
+                    return _FillAreaPage(xElement, null, loaderContext);
                 case "panel":
-                    return _FillContainerPanel(xElement, null, loaderContext);
+                    return _FillAreaPanel(xElement, null, loaderContext);
                 case "nestedpanel":
-                    return _FillContainerNestedPanel(xElement, null, loaderContext);
+                    return _FillAreaNestedPanel(xElement, null, loaderContext);
                 case "group":
-                    return _FillContainerGroup(xElement, null, loaderContext);
+                    return _FillAreaGroup(xElement, null, loaderContext);
                 case "nestedgroup":
-                    return _FillContainerNestedGroup(xElement, null, loaderContext);
+                    return _FillAreaNestedGroup(xElement, null, loaderContext);
             }
             return null;
         }
@@ -322,200 +331,217 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>page</c>, včetně jeho obsahu (tj. atributy a child elementy).
         /// </summary>
         /// <param name="xElement"></param>
-        /// <param name="control"></param>
+        /// <param name="dfPage"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DfPage _FillContainerPage(System.Xml.Linq.XElement xElement, DfPage control, LoaderContext loaderContext)
+        private static DfPage _FillAreaPage(System.Xml.Linq.XElement xElement, DfPage dfPage, LoaderContext loaderContext)
         {
             // Výsledná instance:
-            if (control is null) control = new DfPage();
+            if (dfPage is null) dfPage = new DfPage();
 
             // Atributy:
-            _FillBaseAttributes(xElement, control);
-            control.IconName = _ReadAttributeString(xElement, "IconName", null);
-            control.Title = _ReadAttributeString(xElement, "Title", null);
+            _FillBaseAttributes(xElement, dfPage);
+            dfPage.IconName = _ReadAttributeString(xElement, "IconName", null);
+            dfPage.Title = _ReadAttributeString(xElement, "Title", null);
 
-            // Elementy = panely:
+            // Elementy = panely a nested panely:
             var xPanels = xElement.Elements();
             if (xPanels != null)
             {
                 foreach (var xPanel in xPanels)
                 {
-                    var container = _CreateContainer(xPanel, loaderContext, "panel", "nestedpanel");
+                    var container = _CreateArea(xPanel, loaderContext, "panel", "nestedpanel");
                     if (container != null && container is DfPanel panel)
                     {
-                        if (control.Panels is null) control.Panels = new List<DfPanel>();
-                        control.Panels.Add(panel);
+                        if (dfPage.Panels is null) dfPage.Panels = new List<DfPanel>();
+                        dfPage.Panels.Add(panel);
                     }
                     else
                     {
-                        loaderContext.AddError($"Stránka '{control.Name}' obsahuje element '{xPanel.Name}', který zde není očekáváván.");
+                        loaderContext.AddError($"Stránka '{dfPage.Name}' obsahuje element '{xPanel.Name}', který zde není očekáváván.");
                     }
                 }
             }
 
-            return control;
+            return dfPage;
         }
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>panel</c>, včetně jeho obsahu (tj. atributy a child elementy).
         /// </summary>
         /// <param name="xElement"></param>
-        /// <param name="control"></param>
+        /// <param name="dfPanel"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DfPanel _FillContainerPanel(System.Xml.Linq.XElement xElement, DfPanel control, LoaderContext loaderContext)
+        private static DfPanel _FillAreaPanel(System.Xml.Linq.XElement xElement, DfPanel dfPanel, LoaderContext loaderContext)
         {
             // Výsledná instance:
-            if (control is null) control = new DfPanel();
+            if (dfPanel is null) dfPanel = new DfPanel();
 
             // Atributy:
-            _FillContainerPanelAttributes(xElement, control, loaderContext);
+            _FillBaseAttributes(xElement, dfPanel);
+            dfPanel.IsHeader = _ReadAttributeBoolN(xElement, "IsHeader");
+            dfPanel.HeaderOnPages = _ReadAttributeString(xElement, "HeaderOnPages", null);
+            dfPanel.IconName = _ReadAttributeString(xElement, "IconName", null);
+            dfPanel.Title = _ReadAttributeString(xElement, "Title", null);
+            dfPanel.TitleStyle = _ReadAttributeEnumN<TitleStyleType>(xElement, "TitleStyle");
+            dfPanel.TitleColorName = _ReadAttributeString(xElement, "TitleColorName", null);
+            dfPanel.TitleColorLight = _ReadAttributeColorN(xElement, "TitleColorLight");
+            dfPanel.TitleColorDark = _ReadAttributeColorN(xElement, "TitleColorDark");
+            dfPanel.CollapseState = _ReadAttributeEnumN<PanelCollapseState>(xElement, "CollapseState");
 
-            // Elementy = Controly + Panely:
-            var xChilds = xElement.Elements();
-            if (xChilds != null)
-            {
-                foreach (var xChild in xChilds)
-                {
-                    var child = _CreateChildItem(xChild, loaderContext);
-                    if (child != null && (child is DfBaseControl || child is DfGroup))
-                    {   // Pouze Controly + Group
-                        if (control.Childs is null) control.Childs = new List<DfBase>();
-                        control.Childs.Add(child);
-                    }
-                    else
-                    {
-                        loaderContext.AddError($"Panel '{control.Name}' obsahuje element '{xChild.Name}', který zde není očekáváván.");
-                    }
-                }
-            }
+            // Elementy = Controly + Grupy:
+            _FillContainerChildElements(xElement, dfPanel, loaderContext);
 
-            return control;
+            return dfPanel;
         }
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>nestedpanel</c>, včetně jeho obsahu (tj. atributy a child elementy).
         /// </summary>
         /// <param name="xElement"></param>
-        /// <param name="control"></param>
+        /// <param name="dfPanelVoid"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DfPanel _FillContainerNestedPanel(System.Xml.Linq.XElement xElement, DfPanel control, LoaderContext loaderContext)
+        private static DfPanel _FillAreaNestedPanel(System.Xml.Linq.XElement xElement, DfPanel dfPanelVoid, LoaderContext loaderContext)
         {
+            // Instance DfNestedPanel slouží k načtení definice z aktuálního formuláře, ale nejde o výslednou instanci:
+            DfNestedPanel dfNestedPanel = new DfNestedPanel();
+
+            // Atributy:
+            _FillBaseAttributes(xElement, dfNestedPanel);
+            dfNestedPanel.NestedTemplate = _ReadAttributeString(xElement, "NestedTemplate", null);
+            dfNestedPanel.NestedPanelName = _ReadAttributeString(xElement, "NestedPanelName", null);
+            dfNestedPanel.IsHeader = _ReadAttributeBoolN(xElement, "IsHeader");
+            dfNestedPanel.HeaderOnPages = _ReadAttributeString(xElement, "HeaderOnPages", null);
+
             // Nested šablona:
-            string nestedTemplateName = _ReadAttributeString(xElement, "NestedTemplate", "");
-            if (String.IsNullOrEmpty(nestedTemplateName)) return null;
+            if (!_TryLoadNestedTemplate(dfNestedPanel.NestedTemplate, loaderContext, out DfForm dfNestedForm, $"NestedPanel '{dfNestedPanel.Name}'")) return null;
 
-            // Výsledná instance:
-            if (control is null) control = new DfPanel();
+            // Najde v načtené šabloně první panel DfPanel [kterýkoli nebo daného jména]:
+            if (trySearchForPanel(dfNestedForm, dfNestedPanel.NestedPanelName, out DfPanel dfPanel))
+            {   // Převezmeme něco z našeho NestedPanelu do výstupního DfPanel:
+                dfPanel.Name = dfNestedPanel.Name;
+                if (dfNestedPanel.State.HasValue) dfPanel.State = dfNestedPanel.State;
+                if (dfNestedPanel.ToolTipTitle != null) dfPanel.ToolTipTitle = dfNestedPanel.ToolTipTitle;
+                if (dfNestedPanel.ToolTipText != null) dfPanel.ToolTipText = dfNestedPanel.ToolTipText;
+                if (dfNestedPanel.Invisible != null) dfPanel.Invisible = dfNestedPanel.Invisible;
+                if (dfNestedPanel.IsHeader.HasValue) dfPanel.IsHeader = dfNestedPanel.IsHeader.Value;
+                if (dfNestedPanel.HeaderOnPages != null) dfPanel.HeaderOnPages = dfNestedPanel.HeaderOnPages;
+            }
+            return dfPanel;
 
-            // Atributy:
-            _FillContainerPanelAttributes(xElement, control, loaderContext);
 
-            // Obsah nested panelu získám s pomocí dodaného loaderu :
-            if (loaderContext.NestedLoader is null) throw new InvalidOperationException($"DataForm contains NestedTemplate '{nestedTemplateName}', but 'NestedLoader' is null.");
-            string nestedContent = loaderContext.NestedLoader(nestedTemplateName);
-            if (!String.IsNullOrEmpty(nestedContent))
+            // V daném formuláři najde první panel [daného jména]
+            bool trySearchForPanel(DfForm nestedForm, string panelName, out DfPanel panel)
             {
-                var xNestedDocument = System.Xml.Linq.XDocument.Parse(nestedContent);
-                var nestedPanel = getNestedPanel(_LoadFromDocument(xNestedDocument, loaderContext));
-                if (nestedPanel != null)
-                {   // Přenesu některé atributy:
-                    control.TitleColorName = nestedPanel.TitleColorName;
-                    control.TitleColorLight = nestedPanel.TitleColorLight;
-                    control.TitleColorDark = nestedPanel.TitleColorDark;
-                    control.BackColorName = nestedPanel.BackColorName;
-                    control.BackColorLight = nestedPanel.BackColorLight;
-                    control.BackColorDark = nestedPanel.BackColorDark;
-                    control.Bounds = _CloneBoundsSize(nestedPanel.Bounds);
-                    control.Margins = _CloneMargins(nestedPanel.Margins);
-                    control.State = nestedPanel.State;
-                    control.Invisible = nestedPanel.Invisible;
-                    control.ToolTipTitle = nestedPanel.ToolTipTitle;
-                    control.ToolTipText = nestedPanel.ToolTipText;
+                DfPanel foundPanel = null;
+                bool searchAny = String.IsNullOrEmpty(panelName);
 
-                    // Přenesu všechny prvky Items z Nested do Control:
-                    if (nestedPanel.Childs != null)
-                    {
-                        if (control.Childs is null) control.Childs = new List<DfBase>();
-                        control.Childs.AddRange(nestedPanel.Childs);
+                _ScanForm(nestedForm, i =>
+                {
+                    if (i is DfForm || i is DfPage) return ScanResultType.ScanInto;      // Formulář a jeho Page prohledávejme i dovnitř = hledáme Panel uvnitř stránky...
+                    if (i is DfPanel p)
+                    {   // Našli jsme panel: hledáme kterýkoli první, anebo konkrétní jméno?
+                        if (searchAny || (String.Equals(p.Name, panelName, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            if (foundPanel is null)                                      // Pojistka proti chybě ve scanneru
+                                foundPanel = p;
+                            return ScanResultType.End;                                   // Tady scanner skončí.
+                        }
+                        // Je to sice panel, ale ne ten, který hledáme:
+                        return ScanResultType.ScanNext;
                     }
-                }
+                    // Na vstupu je něco jiného: hledejme dál (ale ne dovnitř):
+                    return ScanResultType.ScanNext;
+                });
+
+                panel = foundPanel;
+                return (foundPanel != null);
             }
-
-            return control;
-
-            // Najde a vrátí první panel v daném formu
-            DfPanel getNestedPanel(DfForm nestForm)
-            {
-                if (nestForm is null || nestForm.Pages is null || nestForm.Pages.Count == 0) return null;
-                var nestPage = nestForm.Pages[0];
-                if (nestPage is null || nestPage.Panels is null || nestPage.Panels.Count == 0) return null;
-                return nestPage.Panels[0];
-            }
-        }
-        /// <summary>
-        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>panel</c>. Načítá pouze atribut, ale ne elementy.
-        /// Složí jak pro načtení standardního panelu, tak i pro deklaraci NestedPanelu. 
-        /// Pro NestedPanel se následně nenačítají jeho XElementy, ale načte se obsah Nested šablony (externě) a vloží se do jeho elementů.
-        /// </summary>
-        /// <param name="xElement"></param>
-        /// <param name="control"></param>
-        /// <param name="loaderContext"></param>
-        /// <returns></returns>
-        private static DfPanel _FillContainerPanelAttributes(System.Xml.Linq.XElement xElement, DfPanel control, LoaderContext loaderContext)
-        {
-            // Výsledná instance:
-            if (control is null) control = new DfPanel();
-
-            // Atributy:
-            _FillBaseAttributes(xElement, control);
-
-            control.IsHeader = _ReadAttributeBool(xElement, "IsHeader", false);
-            control.HeaderOnPages = _ReadAttributeString(xElement, "HeaderOnPages", null);
-
-            control.Bounds = _ReadAttributeBounds(xElement, null);
-            control.IconName = _ReadAttributeString(xElement, "IconName", null);
-            control.Title = _ReadAttributeString(xElement, "Title", null);
-            control.TitleStyle = _ReadAttributeEnum(xElement, "TitleStyle", TitleStyleType.Default);
-            control.TitleColorName = _ReadAttributeString(xElement, "TitleColorName", null);
-            control.TitleColorLight = _ReadAttributeColorN(xElement, "TitleColorLight");
-            control.TitleColorDark = _ReadAttributeColorN(xElement, "TitleColorDark");
-            control.CollapseState = _ReadAttributeEnum(xElement, "CollapseState", PanelCollapseState.Default);
-
-            return control;
         }
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>group</c>, včetně jeho obsahu (tj. atributy a child elementy).
         /// </summary>
         /// <param name="xElement"></param>
-        /// <param name="control"></param>
+        /// <param name="dfGroup"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DfGroup _FillContainerGroup(System.Xml.Linq.XElement xElement, DfGroup control, LoaderContext loaderContext)
+        private static DfGroup _FillAreaGroup(System.Xml.Linq.XElement xElement, DfGroup dfGroup, LoaderContext loaderContext)
         {
             // Výsledná instance:
-            if (control is null) control = new DfGroup();
+            if (dfGroup is null) dfGroup = new DfGroup();
 
             // Atributy:
-            _FillContainerGroupAttributes(xElement, control, loaderContext);
+            _FillBaseAttributes(xElement, dfGroup);
+            // Grupa nemá vlastní specifické atributy.
 
             // Elementy = Controly + Panely:
-            _FillContainerChildElements(xElement, control, loaderContext);
+            _FillContainerChildElements(xElement, dfGroup, loaderContext);
 
-
-            return control;
+            return dfGroup;
         }
-     
-
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>nestedgroup</c>, včetně jeho obsahu (tj. atributy a child elementy).
         /// </summary>
         /// <param name="xElement"></param>
-        /// <param name="control"></param>
+        /// <param name="dfGroupVoid"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DfGroup _FillContainerNestedGroup(System.Xml.Linq.XElement xElement, DfGroup control, LoaderContext loaderContext)
-        { }
+        private static DfGroup _FillAreaNestedGroup(System.Xml.Linq.XElement xElement, DfGroup dfGroupVoid, LoaderContext loaderContext)
+        {
+            // Instance DfNestedGroup slouží k načtení definice z aktuálního formuláře, ale nejde o výslednou instanci:
+            DfNestedGroup dfNestedGroup = new DfNestedGroup();
+
+            // Atributy:
+            _FillBaseAttributes(xElement, dfNestedGroup);
+            dfNestedGroup.NestedTemplate = _ReadAttributeString(xElement, "NestedTemplate", null);
+            dfNestedGroup.NestedGroupName = _ReadAttributeString(xElement, "NestedPanelName", null);
+            dfNestedGroup.Bounds = _ReadAttributeBounds(xElement, null);
+
+            // Nested šablona:
+            if (!_TryLoadNestedTemplate(dfNestedGroup.NestedTemplate, loaderContext, out DfForm dfNestedForm, $"NestedGroup '{dfNestedGroup.Name}'")) return null;
+
+            // Najde v načtené šabloně první panel DfPanel [kterýkoli nebo daného jména]:
+            if (trySearchForGroup(dfNestedForm, dfNestedGroup.NestedGroupName, out DfGroup dfGroup))
+            {   // Převezmeme něco z naší DfNestedGroup do výstupní DfGroup:
+                dfGroup.Name = dfNestedGroup.Name;
+
+                if (dfNestedGroup.State.HasValue) dfGroup.State = dfNestedGroup.State;
+                if (dfNestedGroup.ToolTipTitle != null) dfGroup.ToolTipTitle = dfNestedGroup.ToolTipTitle;
+                if (dfNestedGroup.ToolTipText != null) dfGroup.ToolTipText = dfNestedGroup.ToolTipText;
+                if (dfNestedGroup.Invisible != null) dfGroup.Invisible = dfNestedGroup.Invisible;
+                dfGroup.Bounds = dfNestedGroup.Bounds;
+            }
+            return dfGroup;
+
+
+            // V daném formuláři najde první grupu [daného jména]
+            bool trySearchForGroup(DfForm nestedForm, string groupName, out DfGroup group)
+            {
+                DfGroup foundGroup = null;
+                bool searchAny = String.IsNullOrEmpty(groupName);
+
+                _ScanForm(nestedForm, i =>
+                {
+                    if (i is DfForm || i is DfPage || i is DfPanel) return ScanResultType.ScanInto;          // Formulář a jeho Page a jejich Panel prohledávejme i dovnitř = hledáme Group uvnitř panelu...
+                    if (i is DfGroup g)
+                    {   // Našli jsme grupu: hledáme kteroukoli první, anebo konkrétní jméno?
+                        if (searchAny || (String.Equals(g.Name, groupName, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            if (foundGroup is null)                                      // Pojistka proti chybě ve scanneru
+                                foundGroup = g;
+                            return ScanResultType.End;                                   // Tady scanner skončí.
+                        }
+                        // Je to sice grupa, ale ne ta, kterou hledáme:
+                        return ScanResultType.ScanNext;
+                    }
+                    // Na vstupu je něco jiného: hledejme dál (ale ne dovnitř):
+                    return ScanResultType.ScanNext;
+                });
+
+                group = foundGroup;
+                return (foundGroup != null);
+            }
+        }
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>group</c>. Načítá pouze atribut, ale ne elementy.
         /// Složí jak pro načtení standardní grupy, tak i pro deklaraci NestedGroup.
@@ -525,18 +551,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="control"></param>
         /// <param name="loaderContext"></param>
         /// <returns></returns>
-        private static DfGroup _FillContainerGroupAttributes(System.Xml.Linq.XElement xElement, DfGroup control, LoaderContext loaderContext)
-        { }
+        private static DfGroup _FillAreaGroupAttributes(System.Xml.Linq.XElement xElement, DfGroup control, LoaderContext loaderContext)
+        {
+            // Výsledná instance:
+            if (control is null) control = new DfGroup();
+
+            // Atributy:
+            _FillBaseAttributes(xElement, control);
+            // Grupa nemá vlastní atributy.
+
+            return control;
+        }
         /// <summary>
         /// Z dat dodaného XElementu <paramref name="xElement"/> načte jeho Child elementy a vytvoří z nich Child controly které vloží do dodaného containeru <paramref name="control"/>.
         /// </summary>
         /// <param name="xElement"></param>
         /// <param name="control"></param>
         /// <param name="loaderContext"></param>
-        /// <exception cref="NotImplementedException"></exception>
         private static void _FillContainerChildElements(System.Xml.Linq.XElement xElement, DfBaseContainer control, LoaderContext loaderContext)
         {
-
             var xChilds = xElement.Elements();
             if (xChilds != null)
             {
@@ -550,12 +583,129 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     }
                     else
                     {
-                        loaderContext.AddError($"Group '{control.Name}' obsahuje element '{xChild.Name}', který zde není očekáváván.");
+                        loaderContext.AddError($"Container {control.GetType().Name} '{control.Name}' obsahuje element '{xChild.Name}', který zde není očekáváván.");
                     }
                 }
             }
         }
+        /// <summary>
+        /// Metoda zajistí načtení instance <see cref="DfForm"/> pro danou <paramref name="dfNestedForm"/>, s pomocí loader v <paramref name="loaderContext"/>.
+        /// </summary>
+        /// <param name="nestedTemplate"></param>
+        /// <param name="loaderContext"></param>
+        /// <param name="dfNestedForm"></param>
+        /// <param name="sourceInfo"></param>
+        /// <returns></returns>
+        private static bool _TryLoadNestedTemplate(string nestedTemplate, LoaderContext loaderContext, out DfForm dfNestedForm, string sourceInfo)
+        {
+            dfNestedForm = null;
 
+            // Jméno nested šablony:
+            if (String.IsNullOrEmpty(nestedTemplate))
+            {
+                loaderContext.AddError($"{sourceInfo} nemá zadanou šablonu 'NestedTemplate'.");
+                return false;
+            }
+
+            // Obsah nested panelu získám s pomocí dodaného loaderu :
+            if (loaderContext.NestedLoader is null)
+            {
+                loaderContext.AddError($"{sourceInfo} má zadanou šablonu 'NestedTemplate', ale není dodána metoda Loader, která by načetla její obsah. Není možno načíst obsah šablony.");
+                return false;
+            }
+            string nestedContent = loaderContext.NestedLoader(nestedTemplate);
+            if (String.IsNullOrEmpty(nestedContent))
+            {   // Prázdný obsah: pokud to loader vrátí, pak OK, je to legální cesta, jak zrušit Nested obsah:
+                return false;
+            }
+
+            // Ze stringu z obsahu Nested šablony získám celou šablonu:
+            var xNestedDocument = System.Xml.Linq.XDocument.Parse(nestedContent);
+            dfNestedForm = _LoadFromDocument(xNestedDocument, loaderContext);
+            return (dfNestedForm != null);
+        }
+        /// <summary>
+        /// Metoda postupně prochází celou hierarchii dodaného formuláře (šablony) <paramref name="dfForm"/>, a postupně každý prvek předává do dodaného <paramref name="scanner"/>.
+        /// Tento scanner detekuje typ konkrétního prvku, provede s ním svoji akci, a vrátí informaci, zda prohledávat i child prvky daného prvku, nebo nás childs nezajímají, ale hledat se má dál, anebo rovnou skončit.
+        /// </summary>
+        /// <param name="dfForm"></param>
+        /// <param name="scanner"></param>
+        private static void _ScanForm(DfForm dfForm, Func<DfBase, ScanResultType> scanner)
+        {
+            if (dfForm is null || scanner is null) return;                     // Nejsou data
+            ScanResultType result = scanner(dfForm);
+            if (result == ScanResultType.End) return;                          // Scanner odmítl samotný Form
+            if (dfForm.Pages is null || dfForm.Pages.Count == 0) return;       // Nejsou Pages
+
+            foreach (var page in dfForm.Pages)                                 // Projdi všechny stránky dané šablony
+            {
+                result = scanOneItem(page);                                    // Co s tou stránkou?
+                if (result == ScanResultType.End) return;
+                if (result == ScanResultType.ScanInto && page.Panels != null && page.Panels.Count > 0)
+                {
+                    foreach (var panel in page.Panels)                         // Projdi všechny panely dané stránky
+                    {
+                        result = scanOneItem(panel);                           // Co s tím panelem?
+                        if (result == ScanResultType.End) return;
+                        if (result == ScanResultType.ScanInto && panel.Childs != null && panel.Childs.Count > 0)
+                        {
+                            bool isEnd = scanItems(panel.Childs);
+                            if (isEnd) return;
+                        }
+                    }
+                }
+            }
+            // Určí výsledek scanování pro daný prvek
+            ScanResultType scanOneItem(DfBase item)
+            {
+                return (item is null ? ScanResultType.ScanNext : scanner(item));
+            }
+            // Scanuje prvky v dodané kolekci
+            bool scanItems(IEnumerable<DfBase> items)
+            {
+                if (items is null) return false;
+
+                foreach (var item in items)                                    // Projdi všechny prvky dané kolekce
+                {
+                    result = scanOneItem(item);                                // Co s tím prvkem?
+                    if (result == ScanResultType.End) return true;             // End daného prvku končí celý Scan
+                    if (result == ScanResultType.ScanInto)
+                    {   // Máme hledat i uvnitř... To už není tak triviální, záleží totiž na typu prvku...
+                        bool isEnd = scanSubItemsIn(item);
+                        if (isEnd) return true;
+                    }
+                }
+
+                return false;
+            }
+            // Scanuje subprvky daného prvku, podle konkrétního typu
+            bool scanSubItemsIn(DfBase parent)
+            {
+                switch (parent)
+                {
+                    case DfGroup group: return scanItems(group.Childs);
+                }
+                return false;
+            }
+        }
+        /// <summary>
+        /// Volba dalšího kroku při scanování obsahu
+        /// </summary>
+        private enum ScanResultType
+        {
+            /// <summary>
+            /// Pokud aktuální prvek má svoje SubPrvky, hledej i v nich...
+            /// </summary>
+            ScanInto,
+            /// <summary>
+            /// Ignoruj subprvky aktuálního prvku, a hledej další prvek v téže úrovni a pak v nadřízených
+            /// </summary>
+            ScanNext,
+            /// <summary>
+            /// Skonči hledání
+            /// </summary>
+            End
+        }
         #endregion
         #region Načítání obsahu - private tvorba jednotlivých controlů
 
@@ -573,6 +723,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             string elementName = xElement?.Name.LocalName.ToLower();          // label, textbox, textbox_button, button, combobox, ...,   !page, panel, nestedpanel,
             switch (elementName)
             {
+                // Controly:
                 case "label": return _FillControlLabel(xElement, new DfLabel(), loaderContext);
                 case "title": return _FillControlTitle(xElement, new DfTitle(), loaderContext);
                 case "checkbox": return _FillControlCheckBox(xElement, new DfCheckBox(), loaderContext);
@@ -582,9 +733,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 case "textboxbutton": return _FillControlTextBoxButton(xElement, new DfTextBoxButton(), loaderContext);
                 case "combobox": return _FillControlComboBox(xElement, new DfComboBox(), loaderContext);
 
-                // case "page": return _FillContainerPage(xElement, null, loaderContext);        // Page jako Item nepodporujeme. Nemůže být uložena jako Child v Panelu.
-                case "panel": return _FillContainerPanel(xElement, null, loaderContext);
-                case "nestedpanel": return _FillContainerNestedPanel(xElement, null, loaderContext);
+                // SubContainery = grupy:
+                case "group": return _FillAreaGroup(xElement, null, loaderContext);
+                case "nestedgroup": return _FillAreaNestedGroup(xElement, null, loaderContext);
             }
             return null;
         }
@@ -736,19 +887,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// a vloží je do dodaného controlu <paramref name="target"/>.
         /// <para/>
         /// Načítá hodnoty odpovídající třídám: <see cref="DfBase"/>, <see cref="DfBaseControl"/>, <see cref="DfBaseInputControl"/>,
-        /// <see cref="DfBaseInputTextControl"/>, <see cref="DfBaseLabeledInputControl"/>, <see cref="DfSubButton"/>, <see cref="DfBaseContainer"/>.
+        /// <see cref="DfBaseInputTextControl"/>, <see cref="DfBaseLabeledInputControl"/>, <see cref="DfSubButton"/>.<br/>
+        /// Dále načítá hodnoty pro třídy containerů: <see cref="DfBaseArea"/>, <see cref="DfBaseContainer"/>.
         /// </summary>
         /// <param name="xElement"></param>
         /// <param name="target"></param>
         private static void _FillBaseAttributes(System.Xml.Linq.XElement xElement, DfBase target)
         {
             // Každá zdejší větev / metoda načte pouze property deklarované přímo pro danou třídu, nikoli pro její předky!
+
+            // DfBase:
             target.Name = _ReadAttributeString(xElement, "Name", null);
-            target.State = _ReadAttributeEnum(xElement, "State", ControlStateType.Default);
+            target.State = _ReadAttributeEnumN<ControlStateType>(xElement, "State");
             target.ToolTipTitle = _ReadAttributeString(xElement, "ToolTipTitle", null);
             target.ToolTipText = _ReadAttributeString(xElement, "ToolTipText", null);
             target.Invisible = _ReadAttributeString(xElement, "Invisible", null);
 
+            // Potomci směrem k Controlům:
             if (target is DfBaseControl control)
             {
                 control.Bounds = _ReadAttributeBounds(xElement, null);
@@ -769,14 +924,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 labeledControl.LabelPosition = _ReadAttributeEnum(xElement, "LabelPosition", LabelPositionType.Default);
                 labeledControl.LabelWidth = _ReadAttributeInt32N(xElement, "LabelWidth");
             }
+
+            // Potomci směrem k Containerům:
+            if (target is DfBaseArea area)
+            {
+                area.BackColorName = _ReadAttributeString(xElement, "BackColorName", null);
+                area.BackColorLight = _ReadAttributeColorN(xElement, "BackColorLight");
+                area.BackColorDark = _ReadAttributeColorN(xElement, "BackColorDark");
+                area.BackImageName = _ReadAttributeString(xElement, "BackImageName", null);
+                area.BackImagePosition = _ReadAttributeEnum(xElement, "BackImagePosition", BackImagePositionType.Default);
+                area.Margins = _ReadAttributesMargin(xElement, "Margins", null);
+                area.ContextMenu = _ReadAttributeBoolN(xElement, "ContextMenu");
+                area.ColumnWidths = _ReadAttributeString(xElement, "ColumnWidths", null);
+                area.AutoLabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "AutoLabelPosition");
+            }
             if (target is DfBaseContainer container)
             {
-                container.BackColorName = _ReadAttributeString(xElement, "BackColorName", null);
-                container.BackColorLight = _ReadAttributeColorN(xElement, "BackColorLight");
-                container.BackColorDark = _ReadAttributeColorN(xElement, "BackColorDark");
-                container.Margins = _ReadAttributesMargin(xElement, "Margins", null);
-                container.ColumnWidths = _ReadAttributeString(xElement, "ColumnWidths", null);
-                container.AutoLabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "AutoLabelPosition");
+                container.Bounds = _ReadAttributeBounds(xElement, null);
             }
         }
         /// <summary>
@@ -1090,7 +1254,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private class LoaderContext
         {
             /// <summary>
-            /// Funkce, která vrátí stringový obsah nested šablony daného jména
+            /// Funkce, která vrátí stringový obsah nested šablony daného jména.<br/>
+            /// Pokud bude jako <see cref="NestedLoader"/> předána hodnota null, a v šabloně bude detekován Nested prvek, pak dojde k chybě.<br/>
+            /// Loader bude volán s parametrem = jméno šablony (obsah atributu NestedTemplate), jeho úkolem je vrátit string = obsah požadované šablony (souboru).<br/>
+            /// Pokud loader požadovanou šablonu (soubor) nenajde, může sám loader ohlásit chybu. Anebo může vrátit null, pak bude Nested prvek ignorován.
             /// </summary>
             public Func<string, string> NestedLoader { get; set; }
             /// <summary>
@@ -1198,6 +1365,30 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 case DfPanel panel: _AddAllControls(panel, result); break;
             }
         }
+        #endregion
+        #region Hierarchie tříd a jejich vlastnosti
+        /*
+
+        DfBase                                  Name    State   ToolTip     Invisible
+          DfBaseControl
+            DfBaseInputControl
+              DfBaseInputTextControl
+              DfBaseLabeledInputControl
+            DfLabel
+            DfTitle
+          DfSubTextItem
+            DfSubButton
+          DfBaseArea
+            DfForm
+            DfPage
+            DfBaseContainer
+              DfGroup
+              DfPanel
+          DfNestedGroup
+          DfNestedPanel
+
+
+        */
         #endregion
     }
 }

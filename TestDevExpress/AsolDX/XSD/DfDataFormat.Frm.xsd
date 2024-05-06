@@ -9,7 +9,7 @@
     </xs:annotation>
 
     <!--    template = DfForm   -   Struktura souboru, definujícího vzhled celého DataFormu                  -->
-    <xs:element name="template">
+    <xs:element name="template" >
         <xs:complexType>
             <xs:sequence>
                 <!--    V šabloně se mohou střídat libovolně elementy page a panel                           -->
@@ -24,11 +24,11 @@
                             <xs:documentation xml:lang="cs-cz">Jeden vizuální panel. Obsahuje jednotlivé prvky anebo vnořené grupy. Panel smí být umístěn buď v šabloně, anebo v konkrétní stránce 'page'.</xs:documentation>
                         </xs:annotation>
                     </xs:element>
-                    <xs:element name="nestedpanel" type="type_nested_group" minOccurs="0" maxOccurs="unbounded">
-                        <xs:annotation>
-                            <xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona (NestedTemplate).</xs:documentation>
-                        </xs:annotation>
-                    </xs:element>
+					<xs:element name="nestedpanel" type="type_nested_panel" minOccurs="0" maxOccurs="unbounded">
+						<xs:annotation>
+							<xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona (NestedTemplate).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
                 </xs:choice>
             </xs:sequence>
 
@@ -91,7 +91,7 @@
                                 <xs:documentation xml:lang="cs-cz">Jeden panel uvnitř stránky, uživatelsky viditelný včetně titulku.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
-                        <xs:element name="nestedpanel" type="type_nested_group" minOccurs="0" maxOccurs="unbounded">
+                        <xs:element name="nestedpanel" type="type_nested_panel" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
                                 <xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona (NestedTemplate).</xs:documentation>
                             </xs:annotation>
@@ -171,7 +171,35 @@
         </xs:complexContent>
     </xs:complexType>
 
-    <!--    type_group = DfGroup  -  Grupa uvnitř Panelu nebo uvnitř grupy, ale bez chování Panelu = nemá Collapsed a Title    -->
+	<!--    type_nested_panel = DfNestedPanel = Vnořený panel, vložený do Page.   -->
+	<xs:complexType name="type_nested_panel">
+		<xs:complexContent>
+			<xs:extension base="type_base">
+				<xs:attribute name="NestedTemplate" type="xs:string" use="required">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Název souboru, který obsahuje definici vnořené šablony.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="NestedPanelName" type="xs:string" use="required">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Jméno hledaného panelu v nested šabloně. Pokud není zadáno, vezme se první nalezený panel.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="IsHeader" type="bool_enum">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Obsahuje true, pokud tento panel reprezentuje záhlaví. To může být vykresleno na každé záložce, vždy jako první horní panel, v šířce přes všechny sloupce.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="HeaderOnPages" type="xs:string">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Název stránek (Page.Name), na kterých je toto záhlaví zobrazeno. Má význam pouze pokud IsHeader je true. Pokud nebude HeaderOnPages zadáno, bude vykresleno pro všechny stránky.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<!--    type_group = DfGroup  -  Grupa uvnitř Panelu nebo uvnitř grupy, ale bez chování Panelu = nemá Collapsed a Title    -->
     <xs:complexType name="type_group">
         <xs:complexContent>
             <xs:extension base="type_base_container">
@@ -189,8 +217,12 @@
                         <xs:documentation xml:lang="cs-cz">Název souboru, který obsahuje definici vnořené šablony.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-
-                <xs:attribute name="Bounds" type="xs:string">
+				<xs:attribute name="NestedGroupName" type="xs:string" use="required">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Jméno hledané grupy v nested šabloně. Pokud není zadáno, vezme se první nalezená grupa.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="Bounds" type="xs:string">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Souřadnice prvku v jednom políčku, v pořadí: X,Y,Width[,Height]. Alternativa hodnot X, Y, Width, Height.</xs:documentation>
                     </xs:annotation>
