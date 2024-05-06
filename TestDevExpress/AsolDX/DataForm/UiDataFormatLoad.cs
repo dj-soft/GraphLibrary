@@ -319,7 +319,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return null;
         }
         /// <summary>
-        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající PageSet, včetně jeho obsahu
+        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>page</c>, včetně jeho obsahu (tj. atributy a child elementy).
         /// </summary>
         /// <param name="xElement"></param>
         /// <param name="control"></param>
@@ -357,7 +357,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return control;
         }
         /// <summary>
-        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající Panel, včetně jeho obsahu
+        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>panel</c>, včetně jeho obsahu (tj. atributy a child elementy).
         /// </summary>
         /// <param name="xElement"></param>
         /// <param name="control"></param>
@@ -393,7 +393,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return control;
         }
         /// <summary>
-        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající NestedPanel, včetně jeho obsahu
+        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>nestedpanel</c>, včetně jeho obsahu (tj. atributy a child elementy).
         /// </summary>
         /// <param name="xElement"></param>
         /// <param name="control"></param>
@@ -454,7 +454,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         /// <summary>
-        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající Panel. Načítá pouze atribut, ale ne elementy.
+        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>panel</c>. Načítá pouze atribut, ale ne elementy.
         /// Složí jak pro načtení standardního panelu, tak i pro deklaraci NestedPanelu. 
         /// Pro NestedPanel se následně nenačítají jeho XElementy, ale načte se obsah Nested šablony (externě) a vloží se do jeho elementů.
         /// </summary>
@@ -484,6 +484,78 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             return control;
         }
+        /// <summary>
+        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>group</c>, včetně jeho obsahu (tj. atributy a child elementy).
+        /// </summary>
+        /// <param name="xElement"></param>
+        /// <param name="control"></param>
+        /// <param name="loaderContext"></param>
+        /// <returns></returns>
+        private static DfGroup _FillContainerGroup(System.Xml.Linq.XElement xElement, DfGroup control, LoaderContext loaderContext)
+        {
+            // Výsledná instance:
+            if (control is null) control = new DfGroup();
+
+            // Atributy:
+            _FillContainerGroupAttributes(xElement, control, loaderContext);
+
+            // Elementy = Controly + Panely:
+            _FillContainerChildElements(xElement, control, loaderContext);
+
+
+            return control;
+        }
+     
+
+        /// <summary>
+        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>nestedgroup</c>, včetně jeho obsahu (tj. atributy a child elementy).
+        /// </summary>
+        /// <param name="xElement"></param>
+        /// <param name="control"></param>
+        /// <param name="loaderContext"></param>
+        /// <returns></returns>
+        private static DfGroup _FillContainerNestedGroup(System.Xml.Linq.XElement xElement, DfGroup control, LoaderContext loaderContext)
+        { }
+        /// <summary>
+        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>group</c>. Načítá pouze atribut, ale ne elementy.
+        /// Složí jak pro načtení standardní grupy, tak i pro deklaraci NestedGroup.
+        /// Pro NestedGroup se následně nenačítají jeho XElementy, ale načte se obsah Nested šablony (externě) a vloží se do jeho elementů.
+        /// </summary>
+        /// <param name="xElement"></param>
+        /// <param name="control"></param>
+        /// <param name="loaderContext"></param>
+        /// <returns></returns>
+        private static DfGroup _FillContainerGroupAttributes(System.Xml.Linq.XElement xElement, DfGroup control, LoaderContext loaderContext)
+        { }
+        /// <summary>
+        /// Z dat dodaného XElementu <paramref name="xElement"/> načte jeho Child elementy a vytvoří z nich Child controly které vloží do dodaného containeru <paramref name="control"/>.
+        /// </summary>
+        /// <param name="xElement"></param>
+        /// <param name="control"></param>
+        /// <param name="loaderContext"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private static void _FillContainerChildElements(System.Xml.Linq.XElement xElement, DfBaseContainer control, LoaderContext loaderContext)
+        {
+
+            var xChilds = xElement.Elements();
+            if (xChilds != null)
+            {
+                foreach (var xChild in xChilds)
+                {
+                    var child = _CreateChildItem(xChild, loaderContext);
+                    if (child != null && (child is DfBaseControl || child is DfGroup))
+                    {   // Pouze Controly + Group
+                        if (control.Childs is null) control.Childs = new List<DfBase>();
+                        control.Childs.Add(child);
+                    }
+                    else
+                    {
+                        loaderContext.AddError($"Group '{control.Name}' obsahuje element '{xChild.Name}', který zde není očekáváván.");
+                    }
+                }
+            }
+        }
+
         #endregion
         #region Načítání obsahu - private tvorba jednotlivých controlů
 
