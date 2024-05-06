@@ -1,19 +1,30 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <template xmlns="http://tempuri.org/DxDataFormat.Frm.xsd" 
           FormatVersion="4"
-          UseNorisClass="1161"
+          UseNorisClass="65"
           Messages="dw_common_messages.msg.xml"
           DataSource="dw_sample_form.data.xml"
+		  AutoLabelPosition="Up"
           MasterWidth="530" MasterHeight="320"
           TotalWidth="750" TotalHeight="520"
-		  AutoLabelPosition="Up">
-
-	<panel Name="Pokus1" IsHeader="True" >
-		<button Name="ButtonOpen" ActionType="Click" Bounds="10,200,150,35" Text="Otevři !!!"  />
-	</panel>
+		  AddUda="True" UdaLabelPosition="Up" >
 
 	
-	<page Name="" Title="Záhlaví" >
+	
+	<page Name="page1" Title="Odběratel" >
+		
+	    <panel Name="commondata" IsHeader="True" ColumnWidths="150,350" Title="Základní data" >
+		    <textbox Name="reference_subjektu" State="ReadOnly" Width="150" />
+		    <textbox Name="nazev_subjektu" State="ReadOnly" Width="350" />
+		    <stepprogress Name="status" ColSpan="2" >
+			    <step Name="P" Text="Zadáno" IconName="pic/prepared"/>
+			    <step Name="R" Text="Realizováno" IconName="pic/realized"/>
+			    <step Name="U" Text="Zaúčtováno" IconName="pic/accounted"/>
+		        <step Name="S" Text="Stornováno" IconName="pic/cancelled"/>
+		    </stepprogress>
+		    <button Name="ButtonOpen" ActionType="Click" Bounds="10,200,150,35" Text="Otevři !!!"  />
+	    </panel>
+			
 	    <panel Name="ggg" Title="Záložka A" ToolTipText="" ColumnWidths="50,350,100">
 			<group Name="Subpanel1">
 				<label Name="" Bounds="" Invisible=""/>
@@ -33,61 +44,63 @@
 		</panel>
 	</page>
 	
-    <panel Name="Panel1" Margins="12,6" BackColorName="Orange_front_protect" BackColorDark="LightBlue" CollapseState="IsExpanded" >
-        <label Name="info1_lbl" Bounds="14,2,150" Text="Popisek" ToolTipTitle="Nápověda" ToolTipText="Informace k tomuto prvku neexistuje" />
-        <textbox Name="info1" Bounds="10,20,160" Required="True" State="SkipTab" />
-        <label Name="info2_lbl" Bounds="184,2,150" Text="Informace" />
-        <combobox Name="info2" Bounds="180,20,160" Style="IconTextList" >
-            <comboItem Name="Z" Text="Zahájeno" IconName="pic/status1"/>
-            <comboItem Name="U" Text="Ukončeno" IconName="pic/status2"/>
-            <comboItem Name="S" Text="Stornováno" IconName="pic/status3"/>
-        </combobox>
-        <label Name="info3_lbl" Bounds="14,47,150" Text="Další nabídka" />
-        <combobox Name="info3" ColumnName="" Bounds="10,65,160" EditStyleName="mfr_product_status" Style="IconTextList" />
-        <textboxbutton Name="Dokument1" Bounds="180,47,120" ToolTipTitle="Dokument" ToolTipText="Navázaná faktura" >
-            <rightButton Name="dots" ActionType="RelationDocument" />
-        </textboxbutton>
+	<page Name="page2" Title="Finanční úřad" >
+	
+        <panel Name="Panel1" Title="Datumy" Margins="12,6" BackColorName="Orange_front_protect" BackColorDark="LightBlue" CollapseState="IsExpanded" >
+            <label Name="info1_lbl" Bounds="14,2,150" Text="Popisek" ToolTipTitle="Nápověda" ToolTipText="Informace k tomuto prvku neexistuje" />
+            <textbox Name="info1" Bounds="10,20,160" Required="True" State="SkipTab" />
+            <label Name="info2_lbl" Bounds="184,2,150" Text="Informace" />
+            <combobox Name="info2" Bounds="180,20,160" Style="IconTextList" >
+                <comboItem Name="Z" Text="Zahájeno" IconName="pic/status1"/>
+                <comboItem Name="U" Text="Ukončeno" IconName="pic/status2"/>
+                <comboItem Name="S" Text="Stornováno" IconName="pic/status3"/>
+            </combobox>
+            <label Name="info3_lbl" Bounds="14,47,150" Text="Další nabídka" />
+            <combobox Name="info3" ColumnName="" Bounds="10,65,160" EditStyleName="mfr_product_status" Style="IconTextList" />
+            <textboxbutton Name="Dokument1" Bounds="180,47,120" ToolTipTitle="Dokument" ToolTipText="Navázaná faktura" >
+                <rightButton Name="dots" ActionType="RelationDocument" />
+            </textboxbutton>
 
-        <checkbox Name=""/>
+            <checkbox Name=""/>
 
-        <button Name="butOpen" HotKey="F8" Bounds="2,50,120,35" Text="Otevři..." ActionType="RunFunction" ActionData="Realizuj" ToolTipTitle="Otevřít dveře" ToolTipText="Přistoupit ku dveřím, stiskem kliky uvolnit a pak tahem otevřít..."/>
+            <button Name="butOpen" HotKey="F8" Bounds="2,50,120,35" Text="Otevři..." ActionType="RunFunction" ActionData="Realizuj" ToolTipTitle="Otevřít dveře" ToolTipText="Přistoupit ku dveřím, stiskem kliky uvolnit a pak tahem otevřít..."/>
 
-        <textbox Name="c45678" Bounds="120,75,180" LabelPosition="BeforeRight" Label="Popisek" />
+            <textbox Name="c45678" Bounds="120,75,180" LabelPosition="BeforeRight" Label="Popisek" />
 
-        <textboxbutton Name="tbb123" Bounds="120,100,180" LabelPosition="BeforeRight" Label="Volba:">
-            <rightButton Name="tbbr1" ActionType="Click" />
-        </textboxbutton>
+            <textboxbutton Name="tbb123" Bounds="120,100,180" LabelPosition="BeforeRight" Label="Volba:">
+                <rightButton Name="tbbr1" ActionType="Click" />
+            </textboxbutton>
 
-        <group Name="p1234" BackColorName="Blue_front_protect" >
-            <label Name="aaa" Text="Vnitřní popisek"/>
-        </group>
-    </panel>
+            <group Name="p1234" BackColorName="Blue_front_protect" >
+                <label Name="aaa" Text="Vnitřní popisek"/>
+            </group>
+        </panel>
 
-	<panel Name="t02" >
-		<textbox Name="adress_street" LabelPosition="Up" LabelWidth="120" Bounds="40,20,160" />
+	    <panel Name="t02" Title="Částky" >
+		    <textbox Name="adress_street" LabelPosition="Up" LabelWidth="120" Bounds="40,20,160" />
+	    </panel>
 		
-	</panel>
-    <page Name="aaaa">
-		<panel Name="page01" Title="Základní" IconName="pic/image">
+        <nestedpanel Name="nested_dph" NestedTemplate="dw_nested_dph.frm.xml" NestedPanelName="dph"/>
+	</page>
+		
+    <page Name="page3" Title="Dodání a převzetí">
+		<panel Name="dodav" Title="Fyzické dodání" IconName="pic/image">
             
         </panel>
-		<panel Name="page02" Title="Nastavení">
+		<panel Name="reklamace" Title="Reklamace">
             <label Name="Pocet01l" Text="Počet kusů:" Alignment="MiddleRight" Bounds="10,2,120"/>
             <textbox Name="Pocet01" Bounds="135,2,120" Required="True"/>
 			<textbox Name="karta_refer2" ColumnName="karta_refer" LabelPosition="BeforeRight" Label="fm(MSG1002)" State="ReadOnly" />
         </panel>
-    </page>
 	
-    <panel Name="vvvv" BackColorName="User_12" BackColorLight="">
-        <label Name="t3"/>
-        <textboxbutton Name="tb1" ButtonsVisibility="Default">
-            <leftButton Name="fff" Text=".." IconName="pic"/>
-        </textboxbutton>
-        <nestedgroup Name="pricetable" NestedTemplate="dw_pricetable.frm.xml" X="0" Y="250"/>
-    </panel>
-
-    <nestedpanel Name="nested_dph" Bounds="0,250" NestedTemplate="dw_nested_dph.frm.xml"/>
-
+        <panel Name="vvvv" BackColorName="User_12" BackColorLight="">
+            <label Name="t3"/>
+            <textboxbutton Name="tb1" ButtonsVisibility="Default">
+                <leftButton Name="fff" Text=".." IconName="pic"/>
+            </textboxbutton>
+            <nestedgroup Name="pricetable" NestedTemplate="dw_pricetable.frm.xml" X="0" Y="250"/>
+        </panel>
+    </page>
     
     
     

@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<template xmlns="http://tempuri.org/DxDataFormat.Frm.xsd" 
+
+<template xmlns="http://tempuri.org/DxDataFormat.Frm.xsd"
           FormatVersion="4"
           UseNorisClass="12"
           Messages="dw_common_messages.msg.xml"

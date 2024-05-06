@@ -845,6 +845,14 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public Bounds Bounds { get; set; }
         /// <summary>
+        /// Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
+        /// </summary>
+        public int? ColIndex { get; set; }
+        /// <summary>
+        /// Počet sloupců, které prvek obsazuje v FlowLayoutu. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
+        /// </summary>
+        public int? ColSpan { get; set; }
+        /// <summary>
         /// Debug text
         /// </summary>
         protected override string DebugText { get { return $"{ControlType}; Name: '{Name}'"; } }

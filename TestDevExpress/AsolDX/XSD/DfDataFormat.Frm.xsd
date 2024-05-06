@@ -8,82 +8,124 @@
         </xs:documentation>
     </xs:annotation>
 
-    <!--    template = DfForm   -   Struktura souboru, definujícího vzhled celého DataFormu                  -->
-    <xs:element name="template" >
-        <xs:complexType>
-            <xs:sequence>
-                <!--    V šabloně se mohou střídat libovolně elementy page a panel                           -->
-                <xs:choice minOccurs="0" maxOccurs="unbounded">
-                    <xs:element name="page" type="type_page" minOccurs="0" maxOccurs="unbounded" >
-                        <xs:annotation>
-                            <xs:documentation xml:lang="cs-cz">Jeden objekt s více záložkami (page). Pokud v šabloně nebude definována žádná 'page', pak bude zobrazen formulář bez záložek. Stránka 'page' smí obsahovat pouze panely.</xs:documentation>
-                        </xs:annotation>
-                    </xs:element>
-                    <xs:element name="panel" type="type_panel" minOccurs="0" maxOccurs="unbounded">
-                        <xs:annotation>
-                            <xs:documentation xml:lang="cs-cz">Jeden vizuální panel. Obsahuje jednotlivé prvky anebo vnořené grupy. Panel smí být umístěn buď v šabloně, anebo v konkrétní stránce 'page'.</xs:documentation>
-                        </xs:annotation>
-                    </xs:element>
-					<xs:element name="nestedpanel" type="type_nested_panel" minOccurs="0" maxOccurs="unbounded">
-						<xs:annotation>
-							<xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona (NestedTemplate).</xs:documentation>
-						</xs:annotation>
-					</xs:element>
-                </xs:choice>
-            </xs:sequence>
+	<!--    ROOT ELEMENT šablony                                                                             -->
+	<xs:element name="template" type="type_form" >
+		<xs:annotation>
+			<xs:documentation xml:lang="cs-cz">Definice celé šablony (formuláře). Může obsahovat jednotlivé stránky (page) anebo panely (panel). Pokud v šabloně nebude definována žádná 'page', pak bude zobrazen formulář bez záložek.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
 
-            <xs:attribute name="FormatVersion" type="format_version_enum" default="4">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Formát tohoto souboru. Defaultní = 4.</xs:documentation></xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="MasterWidth" type="xs:int">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Šířka oblasti DataFormu (Master) (tedy bez dynamických vztahů a dolních záložek).</xs:documentation></xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="MasterHeight" type="xs:int">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Výška oblasti DataFormu (Master) (tedy bez dynamických vztahů a dolních záložek).</xs:documentation></xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="TotalWidth" type="xs:int">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Celková šířka (tedy včetně dynamických vztahů a dolních záložek).</xs:documentation></xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="TotalHeight" type="xs:int">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Celková výška (tedy včetně dynamických vztahů a dolních záložek).</xs:documentation></xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="AutoLabelPosition" type="label_position_enum" >
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = None.</xs:documentation></xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="DataSource" type="xs:string">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Jméno souboru, z něhož bude načtena definice dat.</xs:documentation></xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="Messages" type="xs:string">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Jméno souboru, z něhož budou čteny překlady popisků a tooltipů.</xs:documentation></xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="UseNorisClass" type="xs:int">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Číslo třídy, pro kterou budou načteny popisky atributů a vztahů.</xs:documentation></xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="AddUda" type="bool_enum">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Automaticky přidat záložku pro UDA atributy a vztahy. Nezadáno = True.</xs:documentation></xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="UdaLabelPosition" type="label_position_enum">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Umístění labelů pro automaticky generované UDA atributy a vztahy. Defaultní = Top.</xs:documentation></xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="Margins" type="xs:string">
-                <xs:annotation><xs:documentation xml:lang="cs-cz">Vnitřní okraje uvnitř containeru: mezi vnější souřadnicí a prvním prvkem na souřadnici 0/0. Ve formě: All   nebo   Left,Top[,Right,Bottom].</xs:documentation></xs:annotation>
-            </xs:attribute>
-			<xs:attribute name="ContextMenu" type="bool_enum">
-				<xs:annotation><xs:documentation xml:lang="cs-cz">Povolit kontextové menu.</xs:documentation></xs:annotation>
-			</xs:attribute>
-			<xs:attribute name="ColumnWidths" type="xs:string">
-				<xs:annotation><xs:documentation xml:lang="cs-cz">Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky).</xs:documentation></xs:annotation>
-			</xs:attribute>
-		</xs:complexType>
-    </xs:element>
-    
     
     <!--    DEFINICE KONTEJNERŮ                                                                              -->
 
-    <!--    type_page = DfPage   -  jedna stránka                                                            -->
+	<!--    type_form = DfForm   -  celá šablona                                                             -->
+	<xs:complexType name="type_form">
+		<xs:complexContent>
+			<xs:extension base="type_base_area">
+				<xs:sequence>
+					<!--    V šabloně se mohou střídat libovolně elementy page a panel a nestedpanel         -->
+					<xs:choice minOccurs="0" maxOccurs="unbounded">
+						<xs:element name="page" type="type_page" minOccurs="0" maxOccurs="unbounded" >
+							<xs:annotation>
+								<xs:documentation xml:lang="cs-cz">Jeden objekt s více záložkami (page). Pokud v šabloně nebude definována žádná 'page', pak bude zobrazen formulář bez záložek. Stránka 'page' smí obsahovat pouze panely.</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="panel" type="type_panel" minOccurs="0" maxOccurs="unbounded">
+							<xs:annotation>
+								<xs:documentation xml:lang="cs-cz">Jeden vizuální panel. Obsahuje jednotlivé prvky anebo vnořené grupy. Panel smí být umístěn buď v šabloně, anebo v konkrétní stránce 'page'.</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="nestedpanel" type="type_nested_panel" minOccurs="0" maxOccurs="unbounded">
+							<xs:annotation>
+								<xs:documentation xml:lang="cs-cz">Vnořený panel, jehož obsah definuje jiná šablona (NestedTemplate).</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+					</xs:choice>
+				</xs:sequence>
+
+				<xs:attribute name="Name" type="xs:string">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Identifikátor šablony není povinný.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="FormatVersion" type="format_version_enum" default="4">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Formát tohoto souboru. Defaultní = 4.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="MasterWidth" type="xs:int">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Šířka vlastní oblasti DataFormu = Master (tedy bez dynamických vztahů).</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="MasterHeight" type="xs:int">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Výška vlastní oblasti DataFormu = Master (tedy bez dolních záložek).</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="TotalWidth" type="xs:int">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Celková šířka okna (tedy včetně dynamických vztahů).</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="TotalHeight" type="xs:int">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Celková výška okna (tedy včetně dolních záložek).</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="AutoLabelPosition" type="label_position_enum" >
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = None.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="DataSource" type="xs:string">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Jméno souboru, z něhož bude načtena definice dat.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="Messages" type="xs:string">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Jméno souboru, z něhož budou čteny překlady popisků a tooltipů.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="UseNorisClass" type="xs:int">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Číslo třídy, pro kterou budou načteny popisky atributů a vztahů.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="AddUda" type="bool_enum">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Automaticky přidat záložku pro UDA atributy a vztahy. Nezadáno = True.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="UdaLabelPosition" type="label_position_enum">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Umístění labelů pro automaticky generované UDA atributy a vztahy. Defaultní = Top.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="Margins" type="xs:string">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Vnitřní okraje uvnitř containeru: mezi vnější souřadnicí a prvním prvkem na souřadnici 0/0. Ve formě: All   nebo   Left,Top[,Right,Bottom].</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="ContextMenu" type="bool_enum">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Povolit kontextové menu.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="ColumnWidths" type="xs:string">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky).</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<!--    type_page = DfPage   -  jedna stránka                                                            -->
     <xs:complexType name="type_page">
         <xs:complexContent>
-            <xs:extension base="type_base_container">
+            <xs:extension base="type_base_area">
                 <xs:sequence>
                     <xs:choice minOccurs="0" maxOccurs="unbounded">
                         <xs:element name="panel" type="type_panel" minOccurs="0" maxOccurs="unbounded" >
@@ -180,7 +222,7 @@
 						<xs:documentation xml:lang="cs-cz">Název souboru, který obsahuje definici vnořené šablony.</xs:documentation>
 					</xs:annotation>
 				</xs:attribute>
-				<xs:attribute name="NestedPanelName" type="xs:string" use="required">
+				<xs:attribute name="NestedPanelName" type="xs:string">
 					<xs:annotation>
 						<xs:documentation xml:lang="cs-cz">Jméno hledaného panelu v nested šabloně. Pokud není zadáno, vezme se první nalezený panel.</xs:documentation>
 					</xs:annotation>
@@ -217,7 +259,7 @@
                         <xs:documentation xml:lang="cs-cz">Název souboru, který obsahuje definici vnořené šablony.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-				<xs:attribute name="NestedGroupName" type="xs:string" use="required">
+				<xs:attribute name="NestedGroupName" type="xs:string">
 					<xs:annotation>
 						<xs:documentation xml:lang="cs-cz">Jméno hledané grupy v nested šabloně. Pokud není zadáno, vezme se první nalezená grupa.</xs:documentation>
 					</xs:annotation>
@@ -297,8 +339,13 @@
                                 <xs:documentation xml:lang="cs-cz">Rozbalovací nabídka typu ComboBox.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
-                        
-                        <xs:element name="group" type="type_group" minOccurs="0" maxOccurs="unbounded">
+						<xs:element name="stepprogress" type="type_stepprogress" minOccurs="0" maxOccurs="unbounded">
+							<xs:annotation>
+								<xs:documentation xml:lang="cs-cz">StepProgressBar: postupné kroky procesu.</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						
+						<xs:element name="group" type="type_group" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
                                 <xs:documentation xml:lang="cs-cz">Vnořená skupina controlů.</xs:documentation>
                             </xs:annotation>
@@ -527,7 +574,29 @@
         </xs:complexContent>
     </xs:complexType>
 
-    <!--    type_combobox = DfComboBox  -  ComboBox obyčejný                                                 -->
+	<!--    type_stepprogress = DfStepProgress  -  StepProgress Bar = postupné kroky procesu                 -->
+	<xs:complexType name="type_stepprogress">
+		<xs:complexContent>
+			<xs:extension base="type_base_control">
+				<xs:sequence>
+					<xs:choice minOccurs="0" maxOccurs="unbounded">
+						<xs:element name="step" type="type_subtextitem">
+							<xs:annotation>
+								<xs:documentation xml:lang="cs-cz">Jednotlivý krok v progresu, jeho statická vizualizace.</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+					</xs:choice>
+				</xs:sequence>
+				<xs:attribute name="EditStyleName" type="xs:string">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Název editačního stylu. Může být prázdné, pokud budou zadány prvky 'step'.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<!--    type_combobox = DfComboBox  -  ComboBox obyčejný                                                 -->
     <xs:complexType name="type_combobox">
         <xs:complexContent>
             <xs:extension base="type_base_labeled_input_control">
@@ -684,6 +753,16 @@
                         <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Často je ignorována, pokud prvek má výšku danou přirozeně. Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
+				<xs:attribute name="ColIndex" type="xs:int">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="ColSpan" type="xs:int">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Počet sloupců, které prvek obsazuje v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
