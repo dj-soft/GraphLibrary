@@ -457,7 +457,12 @@
     <!--    type_title = DfTitle  -  Titulkový řádek uvnitř Panelu                                           -->
     <xs:complexType name="type_title">
         <xs:complexContent>
-            <xs:extension base="type_label">
+            <xs:extension base="type_base_control">
+                <xs:attribute name="Text" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Pevný text prvku = text titulku. Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
                 <xs:attribute name="IconName" type="xs:string">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Název ikony. Zobrazují ji pouze některé prvky.</xs:documentation>
@@ -466,6 +471,11 @@
                 <xs:attribute name="Style" type="title_style_enum">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Styl titulku.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Alignment" type="content_alignment_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Zarovnání obsahu (titulku) v definovaném prostoru prvku.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>

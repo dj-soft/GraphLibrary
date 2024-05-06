@@ -69,7 +69,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             var startTime = DxComponent.LogTimeCurrent;
             var dfForm = _FillAreaDfForm(xElement, null, args, onlyInfo);
-            if (args.LogLoadingTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'DfForm' from 'XDocument': {DxComponent.LogTokenTimeMicrosec}", startTime);
+            if (args.LogLoadingTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load '{(onlyInfo ? "DfInfo" : "DfForm")}' from 'XDocument': {DxComponent.LogTokenTimeMicrosec}", startTime);
 
             return dfForm;
         }
@@ -140,12 +140,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             dfForm.MasterHeight = _ReadAttributeInt32N(xElement, "MasterHeight");
             dfForm.TotalWidth = _ReadAttributeInt32N(xElement, "TotalWidth");
             dfForm.TotalHeight = _ReadAttributeInt32N(xElement, "TotalHeight");
-            dfForm.AutoLabelPosition = _ReadAttributeEnum(xElement, "AutoLabelPosition", LabelPositionType.None);
+            dfForm.AutoLabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "AutoLabelPosition");
             dfForm.DataSource = _ReadAttributeString(xElement, "DataSource", null);
             dfForm.Messages = _ReadAttributeString(xElement, "Messages", null);
             dfForm.UseNorisClass = _ReadAttributeInt32N(xElement, "UseNorisClass");
             dfForm.AddUda = _ReadAttributeBoolN(xElement, "AddUda");
-            dfForm.UdaLabelPosition = _ReadAttributeEnum(xElement, "UdaLabelPosition", LabelPositionType.Up);
+            dfForm.UdaLabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "UdaLabelPosition");
             dfForm.Margins = _ReadAttributesMargin(xElement, "Margins", null);
             dfForm.ContextMenu = _ReadAttributeBoolN(xElement, "ContextMenu");
             dfForm.ColumnWidths = _ReadAttributeString(xElement, "ColumnWidths", null);
@@ -654,7 +654,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _FillBaseAttributes(xElement, control);
             control.Text = _ReadAttributeString(xElement, "Text", null);
-            control.Alignment = _ReadAttributeEnum(xElement, "Alignment", ContentAlignmentType.Default);
+            control.Alignment = _ReadAttributeEnumN<ContentAlignmentType>(xElement, "Alignment");
             return control;
         }
         private static DfBaseControl _FillControlTitle(System.Xml.Linq.XElement xElement, DfTitle control, DfTemplateArgs args)
@@ -662,19 +662,20 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _FillBaseAttributes(xElement, control);
             control.IconName = _ReadAttributeString(xElement, "IconName", null);
             control.Title = _ReadAttributeString(xElement, "Title", null);
-            control.Style = _ReadAttributeEnum(xElement, "Style", TitleStyleType.Default);
+            control.Style = _ReadAttributeEnumN<TitleStyleType>(xElement, "Style");
+            control.Alignment = _ReadAttributeEnumN<ContentAlignmentType>(xElement, "Alignment");
             return control;
         }
         private static DfBaseControl _FillControlCheckBox(System.Xml.Linq.XElement xElement, DfCheckBox control, DfTemplateArgs args)
         {
             _FillBaseAttributes(xElement, control);
-            control.Style = _ReadAttributeEnum(xElement, "Style", CheckBoxStyleType.Default);
+            control.Style = _ReadAttributeEnumN<CheckBoxStyleType>(xElement, "Style");
             return control;
         }
         private static DfBaseControl _FillControlButton(System.Xml.Linq.XElement xElement, DfButton control, DfTemplateArgs args)
         {
             _FillBaseAttributes(xElement, control);
-            control.ActionType = _ReadAttributeEnum(xElement, "ActionType", ButtonActionType.Default);
+            control.ActionType = _ReadAttributeEnumN<ButtonActionType>(xElement, "ActionType");
             control.ActionData = _ReadAttributeString(xElement, "ActionData", null);
             control.HotKey = _ReadAttributeString(xElement, "HotKey", null);
             return control;
@@ -709,13 +710,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _FillBaseAttributes(xElement, control);
             control.EditMask = _ReadAttributeString(xElement, "EditMask", null);
-            control.Alignment = _ReadAttributeEnum(xElement, "Alignment", ContentAlignmentType.Default);
+            control.Alignment = _ReadAttributeEnumN<ContentAlignmentType>(xElement, "Alignment");
             return control;
         }
         private static DfBaseControl _FillControlTextBoxButton(System.Xml.Linq.XElement xElement, DfTextBoxButton control, DfTemplateArgs args)
         {
             _FillControlTextBox(xElement, control, args);
-            control.ButtonsVisibility = _ReadAttributeEnum(xElement, "ButtonsVisibility", ButtonsVisibilityType.Default);
+            control.ButtonsVisibility = _ReadAttributeEnumN<ButtonsVisibilityType>(xElement, "ButtonsVisibility");
 
             // Elementy = SubButtons:
             var xItems = xElement.Elements();
@@ -753,7 +754,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _FillBaseAttributes(xElement, control);
             control.EditStyleName = _ReadAttributeString(xElement, "EditStyleName", null);
-            control.Style = _ReadAttributeEnum(xElement, "Style", ComboBoxStyleType.Default);
+            control.Style = _ReadAttributeEnumN<ComboBoxStyleType>(xElement, "Style");
 
             // Elementy = SubButtons:
             var xItems = xElement.Elements();
@@ -780,7 +781,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private static DfSubButton _FillControlSubButton(System.Xml.Linq.XElement xElement, DfSubButton control, DfTemplateArgs args)
         {
             _FillControlSubTextItem(xElement, control, args);
-            control.ActionType = _ReadAttributeEnum(xElement, "ActionType", SubButtonActionType.Default);
+            control.ActionType = _ReadAttributeEnumN<SubButtonActionType>(xElement, "ActionType");
             control.ActionData = _ReadAttributeString(xElement, "ActionData", null);
             return control;
         }
@@ -823,18 +824,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
             if (target is DfBaseInputControl inputControl)
             {
-                inputControl.Required = _ReadAttributeEnum(xElement, "Required", RequiredType.Default);
+                inputControl.Required = _ReadAttributeEnumN<RequiredType>(xElement, "Required");
             }
             if (target is DfBaseInputTextControl textControl)
             {
                 textControl.Text = _ReadAttributeString(xElement, "Text", null);
                 textControl.IconName = _ReadAttributeString(xElement, "IconName", null);
-                textControl.Alignment = _ReadAttributeEnum(xElement, "Alignment", ContentAlignmentType.Default);
+                textControl.Alignment = _ReadAttributeEnumN<ContentAlignmentType>(xElement, "Alignment");
             }
             if (target is DfBaseLabeledInputControl labeledControl)
             {
                 labeledControl.Label = _ReadAttributeString(xElement, "Label", null);
-                labeledControl.LabelPosition = _ReadAttributeEnum(xElement, "LabelPosition", LabelPositionType.Default);
+                labeledControl.LabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPosition");
                 labeledControl.LabelWidth = _ReadAttributeInt32N(xElement, "LabelWidth");
             }
 
@@ -845,7 +846,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 area.BackColorLight = _ReadAttributeColorN(xElement, "BackColorLight");
                 area.BackColorDark = _ReadAttributeColorN(xElement, "BackColorDark");
                 area.BackImageName = _ReadAttributeString(xElement, "BackImageName", null);
-                area.BackImagePosition = _ReadAttributeEnum(xElement, "BackImagePosition", BackImagePositionType.Default);
+                area.BackImagePosition = _ReadAttributeEnumN<BackImagePositionType>(xElement, "BackImagePosition");
                 area.Margins = _ReadAttributesMargin(xElement, "Margins", null);
                 area.ColumnWidths = _ReadAttributeString(xElement, "ColumnWidths", null);
                 area.AutoLabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "AutoLabelPosition");
@@ -1303,6 +1304,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         */
         #endregion
     }
+    #region Argumenty pro načítání dat šablony
     /// <summary>
     /// Data pro načtení šablony DataFormu
     /// </summary>
@@ -1335,7 +1337,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Souhrn chyb, nalezených v parsovaném souboru.
         /// </summary>
         public string LoadingErrors { get { return __Errors?.ToString(); } }
-
         /// <summary>
         /// Přidá chybu, nalezenou v parsovaném souboru.
         /// </summary>
@@ -1379,4 +1380,5 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return nestedArgs;
         }
     }
+    #endregion
 }

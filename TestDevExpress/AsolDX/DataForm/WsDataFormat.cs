@@ -158,10 +158,6 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public int? TotalHeight { get; set; }
         /// <summary>
-        /// Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = <see cref="LabelPositionType.None"/>
-        /// </summary>
-        public new LabelPositionType AutoLabelPosition { get; set; }
-        /// <summary>
         /// Jméno souboru, z něhož bude načtena definice dat
         /// </summary>
         public string DataSource { get; set; }
@@ -180,13 +176,11 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Umístění labelů pro automaticky generované UDA atributy a vztahy. Defaultní = <see cref="LabelPositionType.Up"/>
         /// </summary>
-        public LabelPositionType UdaLabelPosition { get; set; }
-
+        public LabelPositionType? UdaLabelPosition { get; set; }
         /// <summary>
         /// Povolit kontextové menu.
         /// </summary>
         public bool? ContextMenu { get; set; }
-
         /// <summary>
         /// Jednotlivé prvky - stránky.
         /// Default = null.
@@ -433,7 +427,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Pozice obrázku <see cref="BackImageName"/> vzhledem k prostoru.
         /// </summary>
-        public BackImagePositionType BackImagePosition { get; set; }
+        public BackImagePositionType? BackImagePosition { get; set; }
         /// <summary>
         /// Okraje = mezi krajem formuláře / Page / Panel a souřadnicí 0/0
         /// </summary>
@@ -460,20 +454,19 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public DfLabel() : base()
         {
-            this.Alignment = ContentAlignmentType.Default;
         }
         /// <summary>
         /// Druh vstupního prvku (Control).
         /// </summary>
         public override ControlType ControlType { get { return ControlType.Label; } }
         /// <summary>
-        /// Text popisku
+        /// Pevný text prvku (text Labelu). Může obsahovat formátovací funkce fm(), fmr(), fmdr().
         /// </summary>
         public string Text { get; set; }
         /// <summary>
         /// Zarovnání textu v rámci prostoru
         /// </summary>
-        public ContentAlignmentType Alignment { get; set; }
+        public ContentAlignmentType? Alignment { get; set; }
         /// <summary>
         /// Debug text
         /// </summary>
@@ -501,17 +494,17 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public string IconName { get; set; }
         /// <summary>
-        /// Text popisku
+        /// Pevný text prvku = text titulku. Může obsahovat formátovací funkce fm(), fmr(), fmdr().
         /// </summary>
         public string Title { get; set; }
         /// <summary>
         /// Styl titulku.
         /// </summary>
-        public TitleStyleType Style { get; set; }
+        public TitleStyleType? Style { get; set; }
         /// <summary>
-        /// Zarovnání textu v rámci prostoru
+        /// Zarovnání obsahu (titulku) v definovaném prostoru prvku.
         /// </summary>
-        public ContentAlignmentType Alignment { get; set; }
+        public ContentAlignmentType? Alignment { get; set; }
         /// <summary>
         /// Debug text
         /// </summary>
@@ -536,7 +529,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Styl vizualizace CheckBoxu
         /// </summary>
-        public CheckBoxStyleType Style { get; set; }
+        public CheckBoxStyleType? Style { get; set; }
         /// <summary>
         /// Debug text
         /// </summary>
@@ -561,7 +554,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Akce na tomto buttonu
         /// </summary>
-        public ButtonActionType ActionType { get; set; }
+        public ButtonActionType? ActionType { get; set; }
         /// <summary>
         /// Data pro akci na tomto buttonu
         /// </summary>
@@ -607,7 +600,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public DfTextBox() : base()
         {
-            this.Alignment = ContentAlignmentType.Default;
+            this.Alignment = null;
         }
         /// <summary>
         /// Druh vstupního prvku (Control).
@@ -620,7 +613,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Zarovnání textu v rámci prostoru
         /// </summary>
-        public ContentAlignmentType Alignment { get; set; }
+        public ContentAlignmentType? Alignment { get; set; }
     }
     /// <summary>
     /// DxDataForm : TextBoxButton.<br/>
@@ -653,7 +646,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Viditelnost buttonů v textboxu v závislosti na aktivitě TextBoxu
         /// </summary>
-        public ButtonsVisibilityType ButtonsVisibility { get; set; }
+        public ButtonsVisibilityType? ButtonsVisibility { get; set; }
     }
     /// <summary>
     /// DxDataForm : ComboBox.<br/>
@@ -668,7 +661,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public DfComboBox() : base()
         {
-            this.Style = ComboBoxStyleType.Default;
+            this.Style = null;
         }
         /// <summary>
         /// Druh vstupního prvku (Control).
@@ -685,7 +678,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Styl zobrazení ComboBoxu: S možností psaní, Pouze výběr hodnot, Výběr včetně zobrazení ikony
         /// </summary>
-        public ComboBoxStyleType Style { get; set; }
+        public ComboBoxStyleType? Style { get; set; }
     }
     /// <summary>
     /// DxDataForm : SubButton = součást <see cref="ControlType.DropDownButton"/> i <see cref="ControlType.TextBoxButton"/>.<br/>
@@ -702,7 +695,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Akce, kterou tento sub-button provede
         /// </summary>
-        public SubButtonActionType ActionType { get; set; }
+        public SubButtonActionType? ActionType { get; set; }
         /// <summary>
         /// Data pro akci (název akce pro Clipboard, název editoru, atd)
         /// </summary>
@@ -759,7 +752,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Zarovnání textu v rámci prostoru
         /// </summary>
-        public ContentAlignmentType Alignment { get; set; }
+        public ContentAlignmentType? Alignment { get; set; }
     }
     /// <summary>
     /// Bázová třída pro všechny samostatné interaktivní controly, které mohou mít vedle políčka Label - TextBox, ComboBox, TokenEdit, ...<br/>
@@ -785,7 +778,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Umístění a zarovnání popisku (Labelu) vzhledem k souřadnicích controlu
         /// </summary>
-        public LabelPositionType LabelPosition { get; set; }
+        public LabelPositionType? LabelPosition { get; set; }
         /// <summary>
         /// Nejvyšší šířka prostoru pro Label
         /// </summary>
@@ -813,7 +806,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Povinnost vyplnění prvku
         /// </summary>
-        public RequiredType Required { get; set; }
+        public RequiredType? Required { get; set; }
         /// <summary>
         /// Explicitně zadaný název sloupce (datového prvku), jehož data tento prvek zobrazuje. 
         /// Běžně se nemusí zadávat, implicitně se data čtou a ukládají z/do datového sloupce se jménem podle atributu 'Name'. 
