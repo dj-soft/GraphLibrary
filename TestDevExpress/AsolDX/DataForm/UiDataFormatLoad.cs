@@ -45,7 +45,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             return form;
         }
-
+        /// <summary>
+        /// Načte a vrátí <see cref="DfInfoForm"/> ze zadaného souboru
+        /// </summary>
+        /// <returns></returns>
+        internal static DfInfoForm LoadInfo(DfTemplateArgs args)
+        {
+        }
         /// <summary>
         /// Načte a vrátí <see cref="DfForm"/> ze zadaného souboru
         /// </summary>
@@ -1440,22 +1446,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Obsah souboru šablony předaný jako string
         /// </summary>
         public string TemplateContent { get; set; }
-
+        /// <summary>
+        /// Parsovaný XML dokument
+        /// </summary>
         public System.Xml.Linq.XDocument TemplateDocument { get; set; }
-
-        public Func<string, string> NestedTemplateLoader { get; set; }
-
-        public bool LogLoadingTime { get; set; }
-
-        public string LoadingErrors { get; set; }
-
-        /// <param name="fileName">Plný název souboru na disku, včetně adresáře a přípony</param>
-        /// <param name="nestedLoader">Funkce, která vrátí stringový obsah nested šablony daného jména.<br/>
-        /// Pokud bude jako <paramref name="nestedLoader"/> předána hodnota null, a v šabloně bude detekován Nested prvek, pak dojde k chybě.<br/>
+        /// <summary>
+        /// Funkce, která vrátí stringový obsah nested šablony daného jména.<br/>
+        /// Pokud bude jako <see cref="NestedTemplateLoader"/> předána hodnota null, a v šabloně bude detekován Nested prvek, pak dojde k chybě.<br/>
         /// Loader bude volán s parametrem = jméno šablony (obsah atributu NestedTemplate), jeho úkolem je vrátit string = obsah požadované šablony (souboru).<br/>
-        /// Pokud loader požadovanou šablonu (soubor) nenajde, může sám loader ohlásit chybu. Anebo může vrátit null, pak bude Nested prvek ignorován.</param>
-        /// <param name="logTime">Logovat časy?</param>
-
-
+        /// Pokud loader požadovanou šablonu (soubor) nenajde, může sám loader ohlásit chybu. Anebo může vrátit null, pak bude Nested prvek ignorován.
+        /// </summary>
+        public Func<string, string> NestedTemplateLoader { get; set; }
+        /// <summary>
+        /// Logovat časy načítání
+        /// </summary>
+        public bool LogLoadingTime { get; set; }
+        /// <summary>
+        /// Souhrn chyb, nalezených v dokumentu
+        /// </summary>
+        public string LoadingErrors { get; set; }
     }
 }
