@@ -987,7 +987,7 @@ namespace Djs.Tools.WebDownloader.Download
             while (path.Length >= 2 && path.Contains(@"\\"))
                 path = path.Replace(@"\\", @"\");
             if (!String.IsNullOrEmpty(rootPath))
-                path = Path.Combine(rootPath, path);
+                path = Path.Combine(rootPath.Trim(), path);
             return path;
         }
         /// <summary>
@@ -1176,7 +1176,7 @@ namespace Djs.Tools.WebDownloader.Download
             this._TargetDirLbl.Bounds = new Rectangle(x + DesignLabelOffsetX, y, 320, labelHeight);
             y += labelDistanceY;
             this._TargetDirTxt.Bounds = new Rectangle(x, y, r - x - DesignSmallButtonWidth - 0, textHeight);
-            this._TargetDirBtn.Bounds = new Rectangle(r - DesignSmallButtonWidth, y, DesignSmallButtonWidth, textHeight);
+            this._TargetDirBtn.Bounds = new Rectangle(r - DesignSmallButtonWidth, y - 1, DesignSmallButtonWidth, textHeight + 2);
             y += textDistanceY;
 
             // Tři buttony pro Pause/Stop/Run v místě ActiveButton:
@@ -1241,15 +1241,11 @@ namespace Djs.Tools.WebDownloader.Download
         private void _TargetDirTxt_TextChanged(object sender, EventArgs e)
         {
             OnTargetPathChanged();
+            TargetPathChanged?.Invoke(this, EventArgs.Empty);
         }
-        protected virtual void OnTargetPathChanged()
-        {
-            if (TargetPathChanged != null)
-                TargetPathChanged(this, EventArgs.Empty);
-        }
+        protected virtual void OnTargetPathChanged() { }
         protected static int DesignWebGridHeight { get { return 160; } }
         protected static int DesignWebGridHeightMin { get { return 45; } }
-        protected static int DesignSmallButtonWidth { get { return 28; } }
 
         private WebLabel _TargetDirLbl;
         private WebText _TargetDirTxt;
@@ -1428,6 +1424,26 @@ namespace Djs.Tools.WebDownloader.Download
         {
             this.WebDownload.Start(webAdress, TargetPath);
         }
+        /// <summary>
+        /// Dá Pauzu ve stahování
+        /// </summary>
+        /// <param name="webAdress"></param>
+        public void DownloadPause()
+        {
+            this.WebDownload.DownloadPause();
+        }
+        /// <summary>
+        /// Dá Pauzu ve stahování
+        /// </summary>
+        /// <param name="webAdress"></param>
+        public void DownloadResume()
+        {
+            this.WebDownload.DownloadResume();
+        }
+        /// <summary>
+        /// Stav downloadu
+        /// </summary>
+        public WorkingState DownloadState { get { return this.WebDownload.State; } }
         /// <summary>
         /// Cílový Root adresář
         /// </summary>

@@ -24,6 +24,8 @@ namespace Djs.Tools.WebDownloader.UI
                     sample = clipText;
             }
             this._ToolbarInit();
+
+            this._DirCleanInit(this.TabPageCleanDir);
             this._SamplePanel.SampleText = sample;
             this._SamplePanel.Parse += new EventHandler(_SamplePanel_Parse);
             this._AdressPanel.Preview += new EventHandler(_AdressPanel_Preview);
@@ -31,6 +33,7 @@ namespace Djs.Tools.WebDownloader.UI
             this._DownloadPanel.StartClick += new EventHandler(_DownloadPanel_StartClick);
             this.Activated += new EventHandler(MainForm_Activated);
             this.Disposed += new EventHandler(MainForm_Disposed);
+            Microsoft.Win32.SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
         }
         protected override void OnShown(EventArgs e)
         {
@@ -43,11 +46,13 @@ namespace Djs.Tools.WebDownloader.UI
         }
         void MainForm_Disposed(object sender, EventArgs e)
         {
+            Microsoft.Win32.SystemEvents.PowerModeChanged -= SystemEvents_PowerModeChanged;
             App.MainForm = null;
         }
         void _SamplePanel_Parse(object sender, EventArgs e)
         {
             this._AdressPanel.Parse(this._SamplePanel.SampleText);
+            _DirCleanReloadPath();
         }
         void _AdressPanel_Preview(object sender, EventArgs e)
         {
@@ -62,12 +67,48 @@ namespace Djs.Tools.WebDownloader.UI
         private void _DownloadPanel_TargetPathChanged(object sender, EventArgs e)
         {
             App.Config.SaveToPath = TargetPath;
+            _DirCleanReloadPath();
         }
         void _DownloadPanel_StartClick(object sender, EventArgs e)
         {
             this._DownloadPanel.Start(this._AdressPanel.WebAdress);
         }
         internal string TargetPath { get { return this._DownloadPanel.TargetPath; } set { this._DownloadPanel.TargetPath = value; } }
+        #endregion
+        #region SystemEvents.PowerModeChanged: Sleep => Pause
+
+        private void SystemEvents_PowerModeChanged(object sender, Microsoft.Win32.PowerModeChangedEventArgs e)
+        {
+            switch (e.Mode)
+            {
+                case Microsoft.Win32.PowerModes.Suspend:
+                    this.DownloadSysPowerPause();
+                    break;
+                case Microsoft.Win32.PowerModes.Resume:
+                    this.DownloadSysPowerResume();
+                    break;
+
+            }
+        }
+        private void DownloadSysPowerPause()
+        {
+            this.DownloadSysPowerRunning = false;
+            if (this._DownloadPanel.DownloadState == WorkingState.Working)
+            {
+                this._DownloadPanel.DownloadPause();
+                this.DownloadSysPowerRunning = true;
+            }
+        }
+        private void DownloadSysPowerResume()
+        {
+            if (this.DownloadSysPowerRunning)
+            {
+                this._DownloadPanel.DownloadResume();
+                this.DownloadSysPowerRunning = false;
+            }
+        }
+        private bool DownloadSysPowerRunning;
+
         #endregion
         #region Práce s toolbarem
         private void _ToolbarInit()
@@ -105,46 +146,28 @@ namespace Djs.Tools.WebDownloader.UI
                     break;
             }
         }
-        private void _DirectoryCleanBtn_Click(object sender, EventArgs e)
+        #endregion
+        #region DirClean
+        private void _DirCleanInit(Control parent)
+        {
+            this._DirCleanPanel = new DirCleanPanel() { Dock = DockStyle.Fill };
+            parent.Controls.Add(this._DirCleanPanel);
+        }
+        /// <summary>
+        /// Z údajů na stránce Download určí cílový adresář a umístí jej do stránky Úklid
+        /// </summary>
+        private void _DirCleanReloadPath()
         {
             string currUrl = this._AdressPanel.WebAdress.Text;                // Aktuální konkrétní adresa URL
             string path = Download.DownloadItem.CreateRootPath(currUrl, this.TargetPath);
-
-            path = @"f:\WebPages\NudesPuri";
-            path = @"f:\WebPages\2017\Nudes Puri\www.nudespuri.com";
-            if (Clipboard.ContainsText())
-            {
-                string clip = Clipboard.GetText();
-                if (!String.IsNullOrEmpty(clip) && clip.Length < 300)
-                {
-                    clip = clip.Trim();
-                    if (System.IO.Directory.Exists(clip))
-                        path = clip;
-                }
-            }
-
-
-            DirClean dirClean = new DirClean() { DirectoryToClean = path, DeleteFileSmallerThan = 1200, HasMoveToResultDir = true };
-            dirClean.TestOnly = true;
-            dirClean.Progress += DirClean_Progress;
-            dirClean.Start();
-            return;
-
-            using (var cleanForm = new DirCleanForm())
-            {
-                cleanForm.ShowDialog(this);
-            }
+            _DirCleanPanel.CleanPath = path;
         }
+        private DirCleanPanel _DirCleanPanel;
 
-        private void DirClean_Progress(object sender, DirCleanProgressArgs e)
-        {
-            if (this.InvokeRequired) this.BeginInvoke(new Action<DirCleanProgressArgs>(RunPogress), e);
-            else RunPogress(e);
-        }
-        private void RunPogress(DirCleanProgressArgs args)
-        {
 
-        }
+
+
+
         private Image GetImage(bool value, Image image)
         {
             return (value ? image : null);

@@ -50,14 +50,13 @@
             this._ToolSaveAuto = new System.Windows.Forms.ToolStripMenuItem();
             this._ToolSaveOnDownload = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
-            this._DirectoryCleanBtn = new System.Windows.Forms.ToolStripButton();
             this._MainSpl = new System.Windows.Forms.SplitContainer();
             this._InputSpl = new System.Windows.Forms.SplitContainer();
             this._SamplePanel = new Djs.Tools.WebDownloader.Download.WebSamplePanel();
             this._AdressPanel = new Djs.Tools.WebDownloader.Download.WebAdressPanel();
             this._DownloadPanel = new Djs.Tools.WebDownloader.Download.WebDownloadPanel();
             this.MainTabControl = new System.Windows.Forms.TabControl();
-            this.TagbPageDownloader = new System.Windows.Forms.TabPage();
+            this.TabPageDownloader = new System.Windows.Forms.TabPage();
             this.TabPageCleanDir = new System.Windows.Forms.TabPage();
             this.ImageList = new System.Windows.Forms.ImageList(this.components);
             this._StatusStrip.SuspendLayout();
@@ -71,7 +70,7 @@
             this._InputSpl.Panel2.SuspendLayout();
             this._InputSpl.SuspendLayout();
             this.MainTabControl.SuspendLayout();
-            this.TagbPageDownloader.SuspendLayout();
+            this.TabPageDownloader.SuspendLayout();
             this.SuspendLayout();
             // 
             // _StatusStrip
@@ -100,8 +99,7 @@
             this._ToolDeleteBtn,
             this.toolStripSeparator1,
             this._SaveButton,
-            this.toolStripSeparator3,
-            this._DirectoryCleanBtn});
+            this.toolStripSeparator3});
             this._ToolStrip.Location = new System.Drawing.Point(0, 0);
             this._ToolStrip.Name = "_ToolStrip";
             this._ToolStrip.RenderMode = System.Windows.Forms.ToolStripRenderMode.Professional;
@@ -243,15 +241,6 @@
             this.toolStripSeparator3.Name = "toolStripSeparator3";
             this.toolStripSeparator3.Size = new System.Drawing.Size(6, 31);
             // 
-            // _DirectoryCleanBtn
-            // 
-            this._DirectoryCleanBtn.Image = global::Djs.Tools.WebDownloader.Properties.Resources.edit_clear_2;
-            this._DirectoryCleanBtn.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this._DirectoryCleanBtn.Name = "_DirectoryCleanBtn";
-            this._DirectoryCleanBtn.Size = new System.Drawing.Size(127, 28);
-            this._DirectoryCleanBtn.Text = "Čištění adresáře...";
-            this._DirectoryCleanBtn.Click += new System.EventHandler(this._DirectoryCleanBtn_Click);
-            // 
             // _MainSpl
             // 
             this._MainSpl.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -328,7 +317,7 @@
             // MainTabControl
             // 
             this.MainTabControl.Appearance = System.Windows.Forms.TabAppearance.FlatButtons;
-            this.MainTabControl.Controls.Add(this.TagbPageDownloader);
+            this.MainTabControl.Controls.Add(this.TabPageDownloader);
             this.MainTabControl.Controls.Add(this.TabPageCleanDir);
             this.MainTabControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.MainTabControl.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
@@ -342,15 +331,15 @@
             // 
             // TagbPageDownloader
             // 
-            this.TagbPageDownloader.Controls.Add(this._MainSpl);
-            this.TagbPageDownloader.ImageKey = "download-later.png";
-            this.TagbPageDownloader.Location = new System.Drawing.Point(4, 36);
-            this.TagbPageDownloader.Name = "TagbPageDownloader";
-            this.TagbPageDownloader.Padding = new System.Windows.Forms.Padding(3);
-            this.TagbPageDownloader.Size = new System.Drawing.Size(1376, 651);
-            this.TagbPageDownloader.TabIndex = 0;
-            this.TagbPageDownloader.Text = "Download";
-            this.TagbPageDownloader.UseVisualStyleBackColor = true;
+            this.TabPageDownloader.Controls.Add(this._MainSpl);
+            this.TabPageDownloader.ImageKey = "download-later.png";
+            this.TabPageDownloader.Location = new System.Drawing.Point(4, 36);
+            this.TabPageDownloader.Name = "TabPageDownloader";
+            this.TabPageDownloader.Padding = new System.Windows.Forms.Padding(3);
+            this.TabPageDownloader.Size = new System.Drawing.Size(1376, 651);
+            this.TabPageDownloader.TabIndex = 0;
+            this.TabPageDownloader.Text = "Download";
+            this.TabPageDownloader.UseVisualStyleBackColor = true;
             // 
             // TabPageCleanDir
             // 
@@ -395,7 +384,7 @@
             ((System.ComponentModel.ISupportInitialize)(this._InputSpl)).EndInit();
             this._InputSpl.ResumeLayout(false);
             this.MainTabControl.ResumeLayout(false);
-            this.TagbPageDownloader.ResumeLayout(false);
+            this.TabPageDownloader.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -428,9 +417,8 @@
         private System.Windows.Forms.ToolStripButton _ToolDeleteBtn;
         private System.Windows.Forms.ToolStripStatusLabel _StatusInfoLabel;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
-        private System.Windows.Forms.ToolStripButton _DirectoryCleanBtn;
         private System.Windows.Forms.TabControl MainTabControl;
-        private System.Windows.Forms.TabPage TagbPageDownloader;
+        private System.Windows.Forms.TabPage TabPageDownloader;
         private System.Windows.Forms.TabPage TabPageCleanDir;
         private System.Windows.Forms.ImageList ImageList;
     }

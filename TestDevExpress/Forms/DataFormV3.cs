@@ -507,6 +507,8 @@ namespace TestDevExpress.Forms
                 if (dxInfo.FormatVersion == FormatVersionType.Version4)
                 {
                     var dfForm = DxDForm.DfTemplateLoader.LoadTemplate(args);
+                    if (args.HasErrors)
+                        DxComponent.ShowMessageWarning($"Zadaný dokument '{fileFrmXml}' obsahuje chyby:\r\n{args.LoadingErrors}");
                     _ApplyDfForm(dfForm);
                 }
                 else
@@ -519,11 +521,11 @@ namespace TestDevExpress.Forms
                 DxComponent.ShowMessageException(ex);
             }
 
-            // Najde definici nested šablony a vrátí její obsah
+            // Najde definici nested šablony (v adresáři kde je šablona) a vrátí její obsah
             string loadNested(string name)
             {
                 string nestedFrmXml = (!String.IsNullOrEmpty(name) ? System.IO.Path.Combine(pathFrmXml, name) : null);
-                if (!System.IO.File.Exists(nestedFrmXml)) return null;
+                if (!System.IO.File.Exists(nestedFrmXml)) return null;         // Neexistující nested šablona
                 return System.IO.File.ReadAllText(nestedFrmXml);
             }
         }

@@ -42,6 +42,7 @@
 			<button Name="OpenUrl" Text="Otevři stránku"  />
 			<checkbox Name="checkbox" Bounds="200,20,200" Text="Povolený" />
 		</panel>
+        <nestedpanel Name="nest1" NestedTemplate="dw_nested_dph.frm.xml" NestedPanelName="zkouska"/>
 	</page>
 	
 	<page Name="page2" Title="Finanční úřad" >

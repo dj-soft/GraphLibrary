@@ -486,6 +486,7 @@ namespace Djs.Tools.WebDownloader.Download
         protected static int DesignButtonLeft { get { return DesignPanelWidth - DesignContentLeft - DesignButtonWidth; } }
         protected static int DesignButtonWidth { get { return 165; } }
         protected static int DesignButtonHeight { get { return 45; } }
+        protected static int DesignSmallButtonWidth { get { return 28; } }
         /// <summary>AnchorStyles: Top</summary>
         protected static AnchorStyles AnchT { get { return AnchorStyles.Top; } }
         /// <summary>AnchorStyles: Top + Left</summary>

@@ -155,31 +155,28 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             // Elementy = stránky (nebo přímo panely):
             var xContainers = xElement.Elements();
-            foreach (var xContainer in xContainers)
+            if (xContainers != null)
             {
-                var container = _CreateArea(xContainer, args, "page", "panel", "nestedpanel");
-                if (container != null)
+                string sourceInfo = $"Formulář '{dfForm.Name}'";
+                foreach (var xContainer in xContainers)
                 {
-                    if (dfForm.Pages is null) dfForm.Pages = new List<DfPage>();
-                    switch (container)
+                    var container = _CreateArea(xContainer, sourceInfo, args, "page", "panel", "nestedpanel");
+                    if (container != null)
                     {
-                        case DfPage page:
-                            dfForm.Pages.Add(page); 
-                            break;
-                        case DfPanel panel:
-                            // Pokud je v rámci DfForm (=template) zadán přímo Panel (pro jednoduchost to umožníme), 
-                            //  pak jej vložím do implicitPage = ta bude první v seznamu stránek:
-                            if (implicitPage is null) implicitPage = createImplicitPage();
-                            implicitPage.Panels.Add(panel);
-                            break;
-                        default:
-                            args.AddError($"Formulář '{dfForm.Name}' obsahuje element '{xContainer.Name}', který zde není očekáváván.");
-                            break;
+                        if (dfForm.Pages is null) dfForm.Pages = new List<DfPage>();
+                        switch (container)
+                        {
+                            case DfPage page:
+                                dfForm.Pages.Add(page);
+                                break;
+                            case DfPanel panel:
+                                // Pokud je v rámci DfForm (=template) zadán přímo Panel (pro jednoduchost to umožňujeme), 
+                                //  pak jej vložím do implicitPage = ta bude první v seznamu stránek:
+                                if (implicitPage is null) implicitPage = createImplicitPage();
+                                implicitPage.Panels.Add(panel);
+                                break;
+                        }
                     }
-                }
-                else
-                {
-                    args.AddError($"Formulář '{dfForm.Name}' obsahuje element '{xContainer.Name}', který zde není očekáváván.");
                 }
             }
             return dfForm;
@@ -199,34 +196,33 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         /// <summary>
-        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající kontejner (page, panel, nestedpanel, group, nestedgroup), včetně jeho obsahua child prvků.
+        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající kontejner (page, panel, nestedpanel, group, nestedgroup), včetně jeho obsahu a child prvků.
         /// Výstupem je tedy buď <see cref="DfPage"/> nebo <see cref="DfPanel"/> (nebo null).
+        /// Pokud je výstupem null, pak informace o chybě je již zanesena do <paramref name="args"/>, kam se uvádí i zdroj = <paramref name="sourceInfo"/>.
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
+        /// <param name="sourceInfo">Informace o zdrojovém místě, do chybové informace. Typicky: "Formulář 'Jméno'" nebo "Stránka 'Name01'".</param>
         /// <param name="args">Průběžná data pro načítání obsahu</param>
         /// <param name="validNames">Očekávaná validní jména elementů. Pokud je zadáno, a je detekován jiný než daný element, vrátí se null.</param>
-        private static DfBaseArea _CreateArea(System.Xml.Linq.XElement xElement, DfTemplateArgs args, params string[] validNames)
+        private static DfBaseArea _CreateArea(System.Xml.Linq.XElement xElement, string sourceInfo, DfTemplateArgs args, params string[] validNames)
         {
             string elementName = _GetValidElementName(xElement);               // page, panel, nestedpanel, group, nestedgroup
             if (String.IsNullOrEmpty(elementName)) return null;                // Nezadáno (?)
             // Pokud je dodán seznam validních jmen elementů (přinejmenším 1 prvek), ale aktuální element neodpovídá žádnému povolenému jménu, pak skončím:
             if (validNames != null && validNames.Length > 0 && !validNames.Any(v => String.Equals(v, elementName, StringComparison.OrdinalIgnoreCase)))
             {
+                args.AddError($"{sourceInfo} obsahuje prvek '{elementName}', který není přípustný.");
                 return null;
             }
             switch (elementName)
             {
-                case "page":
-                    return _FillAreaPage(xElement, null, args);
-                case "panel":
-                    return _FillAreaPanel(xElement, null, args);
-                case "nestedpanel":
-                    return _FillAreaNestedPanel(xElement, null, args);
-                case "group":
-                    return _FillAreaGroup(xElement, null, args);
-                case "nestedgroup":
-                    return _FillAreaNestedGroup(xElement, null, args);
+                case "page": return _FillAreaPage(xElement, null, args);
+                case "panel": return _FillAreaPanel(xElement, null, args);
+                case "nestedpanel": return _FillAreaNestedPanel(xElement, null, args);
+                case "group": return _FillAreaGroup(xElement, null, args);
+                case "nestedgroup": return _FillAreaNestedGroup(xElement, null, args);
             }
+            args.AddError($"{sourceInfo} obsahuje prvek '{elementName}', který zde není očekáváván.");
             return null;
         }
         /// <summary>
@@ -250,17 +246,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var xPanels = xElement.Elements();
             if (xPanels != null)
             {
+                string sourceInfo = $"Stránka '{dfPage.Name}'";
                 foreach (var xPanel in xPanels)
                 {
-                    var container = _CreateArea(xPanel, args, "panel", "nestedpanel");
+                    var container = _CreateArea(xPanel, sourceInfo, args, "panel", "nestedpanel");
                     if (container != null && container is DfPanel panel)
                     {
                         if (dfPage.Panels is null) dfPage.Panels = new List<DfPanel>();
                         dfPage.Panels.Add(panel);
-                    }
-                    else
-                    {
-                        args.AddError($"Stránka '{dfPage.Name}' obsahuje element '{xPanel.Name}', který zde není očekáváván.");
                     }
                 }
             }
@@ -453,26 +446,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         /// <summary>
-        /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>group</c>. Načítá pouze atribut, ale ne elementy.
-        /// Složí jak pro načtení standardní grupy, tak i pro deklaraci NestedGroup.
-        /// Pro NestedGroup se následně nenačítají jeho XElementy, ale načte se obsah Nested šablony (externě) a vloží se do jeho elementů.
-        /// </summary>
-        /// <param name="xElement"></param>
-        /// <param name="control"></param>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        private static DfGroup _FillAreaGroupAttributes(System.Xml.Linq.XElement xElement, DfGroup control, DfTemplateArgs args)
-        {
-            // Výsledná instance:
-            if (control is null) control = new DfGroup();
-
-            // Atributy:
-            _FillBaseAttributes(xElement, control);
-            // Grupa nemá vlastní atributy.
-
-            return control;
-        }
-        /// <summary>
         /// Z dat dodaného XElementu <paramref name="xElement"/> načte jeho Child elementy a vytvoří z nich Child controly které vloží do dodaného containeru <paramref name="control"/>.
         /// </summary>
         /// <param name="xElement"></param>
@@ -483,17 +456,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var xChilds = xElement.Elements();
             if (xChilds != null)
             {
+                string sourceInfo = $"Container {control.GetType().Name} '{control.Name}'";
                 foreach (var xChild in xChilds)
                 {
-                    var child = _CreateChildItem(xChild, args);
+                    var child = _CreateChildItem(xChild, sourceInfo, args);
                     if (child != null && (child is DfBaseControl || child is DfGroup))
                     {   // Pouze Controly + Group
                         if (control.Childs is null) control.Childs = new List<DfBase>();
                         control.Childs.Add(child);
-                    }
-                    else
-                    {
-                        args.AddError($"Container {control.GetType().Name} '{control.Name}' obsahuje element '{_GetValidElementName(xChild)}', který je neznámý, nebo zde není očekáváván.");
                     }
                 }
             }
@@ -526,6 +496,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             string nestedContent = args.NestedTemplateLoader(nestedTemplate);
             if (String.IsNullOrEmpty(nestedContent))
             {   // Prázdný obsah: pokud to loader vrátí, pak OK, je to legální cesta, jak zrušit Nested obsah:
+                args.AddError($"{sourceInfo} má zadanou šablonu 'NestedTemplate' = '{nestedTemplate}', ale její obsah nelze načíst.");
                 return false;
             }
 
@@ -624,14 +595,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající Item, včetně jeho obsahu.
-        /// Může to být některý Control, anebo Panel (včetně NestedPanel).
+        /// Může to být některý Control, anebo grupa (včetně NestedGroup). Nikoli Panel. Výstupem může být null.
+        /// Pokud je výstupem null, pak informace o chybě je již zanesena do <paramref name="args"/>, kam se uvádí i zdroj = <paramref name="sourceInfo"/>.
         /// </summary>
-        /// <param name="xElement"></param>
-        /// <param name="args"></param>
+        /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
+        /// <param name="sourceInfo">Informace o zdrojovém místě, do chybové informace. Typicky: "Formulář 'Jméno'" nebo "Stránka 'Name01'".</param>
+        /// <param name="args">Průběžná data pro načítání obsahu</param>
+        /// <param name="validNames">Očekávaná validní jména elementů. Pokud je zadáno, a je detekován jiný než daný element, vrátí se null.</param>
         /// <returns></returns>
-        private static DfBase _CreateChildItem(System.Xml.Linq.XElement xElement, DfTemplateArgs args)
+        private static DfBase _CreateChildItem(System.Xml.Linq.XElement xElement, string sourceInfo, DfTemplateArgs args, params string[] validNames)
         {
-            string elementName = _GetValidElementName(xElement);          // label, textbox, textbox_button, button, combobox, ...,   !page, panel, nestedpanel,
+            string elementName = _GetValidElementName(xElement);               // label, textbox, textbox_button, button, combobox, ...,   !page, panel, nestedpanel,
+            if (String.IsNullOrEmpty(elementName)) return null;                // Nezadáno (?)
+            // Pokud je dodán seznam validních jmen elementů (přinejmenším 1 prvek), ale aktuální element neodpovídá žádnému povolenému jménu, pak skončím:
+            if (validNames != null && validNames.Length > 0 && !validNames.Any(v => String.Equals(v, elementName, StringComparison.OrdinalIgnoreCase)))
+            {
+                args.AddError($"{sourceInfo} obsahuje prvek '{elementName}', který není přípustný.");
+                return null;
+            }
             switch (elementName)
             {
                 // Controly:
@@ -648,6 +629,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 case "group": return _FillAreaGroup(xElement, null, args);
                 case "nestedgroup": return _FillAreaNestedGroup(xElement, null, args);
             }
+            args.AddError($"{sourceInfo} obsahuje prvek '{elementName}', který zde není očekáváván.");
             return null;
         }
         private static DfBaseControl _FillControlLabel(System.Xml.Linq.XElement xElement, DfLabel control, DfTemplateArgs args)

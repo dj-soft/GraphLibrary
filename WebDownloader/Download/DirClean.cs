@@ -22,9 +22,9 @@ namespace Djs.Tools.WebDownloader.Download
         /// </summary>
         public DirClean()
         {
-            DeleteFileMask = "*.htm;*.html;*.tmp;*.css;*.js;*.xml;*thumb*.*;hts-cache";
-            DeleteFileSmallerThan = 18000;
-            DirectoryResult = _ResultPathDefault;
+            DeleteFileMask = DefaultDeleteFileMask;
+            DeleteFileSmallerThan = DefaultDeleteFileSmallerThan;
+            DirectoryResult = DefaultDirectoryResult;
             HasMoveToResultDir = true;
             HasDeleteEmptyDirs = true;
             TestOnly = true;
@@ -50,8 +50,14 @@ namespace Djs.Tools.WebDownloader.Download
         public string DirectoryToClean { get; set; }
         public bool RemoveDuplicities { get; set; }
         public string DirectoryResult { get; set; }
+        /// <summary>
+        /// Výchozí jméno pro result adresář
+        /// </summary>
+        public static string DefaultDirectoryResult { get { return "_AllFiles"; } }
         public string DeleteFileMask { get; set; }
+        public static string DefaultDeleteFileMask { get { return "*.htm;*.html;*.tmp;*.css;*.js;*.xml;*thumb*.*;hts-cache"; } }
         public int DeleteFileSmallerThan { get; set; }
+        public static int DefaultDeleteFileSmallerThan { get { return 1500; } }
         public bool HasMoveToResultDir { get; set; }
         public bool HasDeleteEmptyDirs { get; set; }
         public int ResultPathFileCount { get; set; }
@@ -491,7 +497,7 @@ namespace Djs.Tools.WebDownloader.Download
             _MoveToResultPath = HasMoveToResultDir;
 
             string resultPath = DirectoryResult;
-            if (String.IsNullOrEmpty(resultPath)) resultPath = _ResultPathDefault;                           // Nezadaný výstupní adresář: použije se defaultní název
+            if (String.IsNullOrEmpty(resultPath)) resultPath = DefaultDirectoryResult;                           // Nezadaný výstupní adresář: použije se defaultní název
             resultPath = resultPath.Trim();
             if (!IO.Path.IsPathRooted(resultPath)) resultPath = IO.Path.Combine(_InputPath, resultPath);     // Výstupní adresář může být dán absolutní nebo relativní
             _ResultPath = _AddPathDelimiterToEnd(resultPath);
@@ -591,10 +597,6 @@ namespace Djs.Tools.WebDownloader.Download
         /// Argumenty a data pro progress
         /// </summary>
         private DirCleanProgressArgs _ProgressArgs;
-        /// <summary>
-        /// Výchozí jméno pro result adresář
-        /// </summary>
-        private static string _ResultPathDefault { get { return "___Results"; } }
         #endregion
     }
     #region class DirCleanProgressArgs : ata pro zobrazení progresu DirClean
@@ -640,7 +642,6 @@ namespace Djs.Tools.WebDownloader.Download
     }
     #endregion
     #region UI
-    /*
     public class DirCleanPanel : WebActionPanel
     {
         #region Konstrukce
@@ -663,39 +664,123 @@ namespace Djs.Tools.WebDownloader.Download
             int textDistanceY = DesignTextSpaceY;
             int textLabelOffset = DesignTextToLabelOffsetY;
 
-            this._TargetDirLbl = new WebLabel("Cílový adresář:", new Rectangle(x + DesignLabelOffsetX, y, 320, labelHeight), ref tabIndex) { TextAlign = ContentAlignment.MiddleLeft };
+            this._CleanPathLbl = new WebLabel("Adresář pro úklid:", new Rectangle(x + DesignLabelOffsetX, y, 320, labelHeight), ref tabIndex) { TextAlign = ContentAlignment.MiddleLeft };
             y += labelDistanceY;
-            this._TargetDirTxt = new WebText(new Rectangle(x, y, r - x - DesignSmallButtonWidth - 0, textHeight), ref tabIndex) { Enabled = true, TextAlign = HorizontalAlignment.Left }; ;
-            this._TargetDirTxt.TextChanged += _TargetDirTxt_TextChanged;
-            this._TargetDirBtn = new WebButton("...", new Rectangle(r - DesignSmallButtonWidth, y, DesignSmallButtonWidth, textHeight), ref tabIndex);
-            this._TargetDirBtn.Click += _TargetDirBtn_Click;
+            this._CleanPathTxt = new WebText(new Rectangle(x, y, r - x - DesignSmallButtonWidth - 0, textHeight), ref tabIndex) { Enabled = true, TextAlign = HorizontalAlignment.Left }; ;
+            this._CleanPathTxt.TextChanged += _CleanPathTxt_TextChanged;
+            this._CleanPathBtn = new WebButton("...", new Rectangle(r - DesignSmallButtonWidth, y, DesignSmallButtonWidth, textHeight), ref tabIndex);
+            this._CleanPathBtn.Click += _CleanPathBtn_Click;
             y += textDistanceY;
+
+            this.Controls.Add(this._CleanPathLbl);
+            this.Controls.Add(this._CleanPathTxt);
+            this.Controls.Add(this._CleanPathBtn);
 
             this.CreateActionButton("UKLIDIT", ref tabIndex);
 
 
 
 
-            this.ShowButtonByState();
-
-            ((System.ComponentModel.ISupportInitialize)(this._AutoEndTxt)).EndInit();
+            // this.ShowButtonByState();
 
             this.ResumeLayout(false);
         }
         protected override void RecalcLayout()
         {
             base.RecalcLayout();
+
+            int x = DesignContentLeft;
+            int y = DesignContentTop;
+            int r = CurrentContentRight;
+            int b = CurrentContentBottom;
+            int labelHeight = DesignLabelHeight;
+            int labelDistanceY = DesignLabelSpaceY;
+            int textHeight = DesignTextHeight;
+            int textDistanceY = DesignTextSpaceY;
+            int textLabelOffset = DesignTextToLabelOffsetY;
+
+            this._CleanPathLbl.Bounds = new Rectangle(x + DesignLabelOffsetX, y, 320, labelHeight);
+            y += labelDistanceY;
+            this._CleanPathTxt.Bounds = new Rectangle(x, y, r - x - DesignSmallButtonWidth - 0, textHeight);
+            this._CleanPathBtn.Bounds = new Rectangle(r - DesignSmallButtonWidth, y - 1, DesignSmallButtonWidth, textHeight + 2);
+            y += textDistanceY;
+
         }
+        /// <summary>
+        /// Událost po změně hodnoty v <see cref="_CleanPathTxt"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _CleanPathTxt_TextChanged(object sender, EventArgs args)
+        {
+            OnCleanPathChanged();
+            CleanPathChanged?.Invoke(this, EventArgs.Empty);
+        }
+        protected virtual void OnCleanPathChanged() { }
+        private void _CleanPathBtn_Click(object sender, EventArgs args)
+        {
+            string path = CleanPath;
+            using (var fb = new FolderBrowserDialog())
+            {
+                if (!String.IsNullOrEmpty(path) && System.IO.Directory.Exists(path))
+                    fb.SelectedPath = path;
+                fb.Description = "Adresář pro provedení úklidu:";
+                fb.RootFolder = Environment.SpecialFolder.MyComputer;
+                fb.ShowNewFolderButton = true;
+                var result = fb.ShowDialog(this.FindForm());
+                if (result == DialogResult.OK)
+                    CleanPath = fb.SelectedPath;
+            }
+        }
+        private WebLabel _CleanPathLbl;
+        private WebText _CleanPathTxt;
+        private WebButton _CleanPathBtn;
         #endregion
-        #region Data
+        #region Vizuální hodnoty
+        /// <summary>
+        /// Cílový adresář pro čištění
+        /// </summary>
+        public string CleanPath { get { return this._CleanPathTxt.Text; } set { this._CleanPathTxt.Text = value; } }
+        /// <summary>
+        /// Událost po změně <see cref="CleanPath"/>
+        /// </summary>
+        public event EventHandler CleanPathChanged;
+
+        #endregion
+        #region Data a akce
         private void DataInit()
         {
-            this.WebDownload = new WebDownload();
-            this.WebDownload.StateChanged += WebDownload_StateChanged;
-            this.WebDownload.DownloadProgress += WebDownload_DownloadProgress;
+            this.DirClean = new DirClean();
+            this.DirClean.StateChanged += DirClean_StateChanged;
+            this.DirClean.Progress += DirClean_Progress;
         }
+        protected override void OnActionButton()
+        {
+            var dirClean = this.DirClean;
+            if (dirClean.IsWorking)
+            {
+                Dialogs.Warning("Nelze nastartovat úklid, dosud běží.");
+                return;
+            }
+
+            dirClean.DirectoryToClean = CleanPath;
+            dirClean.DeleteFileSmallerThan = 1200;
+            dirClean.DeleteFileMask = DirClean.DefaultDeleteFileMask;
+            dirClean.DeleteFileSmallerThan = DirClean.DefaultDeleteFileSmallerThan;
+            dirClean.HasMoveToResultDir = true;
+            dirClean.TestOnly = false;
+            dirClean.Start();
+        }
+        private void DirClean_Progress(object sender, DirCleanProgressArgs e)
+        {
+        }
+
+        private void DirClean_StateChanged(object sender, WorkingStateChangedArgs args)
+        {
+        }
+
+        private DirClean DirClean;
         #endregion
     }
-    */
     #endregion
 }
