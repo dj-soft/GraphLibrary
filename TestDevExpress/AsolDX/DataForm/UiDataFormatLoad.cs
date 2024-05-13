@@ -51,6 +51,224 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return new DfInfoForm() { XmlNamespace = form?.XmlNamespace, FormatVersion = form?.FormatVersion ?? FormatVersionType.Default };
         }
         #endregion
+        #region Enumerace prvků formuláře
+        /// <summary>
+        /// Metoda vyvolá danou akci pro každou stránku
+        /// </summary>
+        /// <param name="dfForm">Formulář</param>
+        /// <param name="scanAction">Akce provedená pro každou stránku</param>
+        public static void ScanPages(DfForm dfForm, Action<DfPage> scanAction)
+        {
+            _ScanForm(dfForm, i =>
+            {
+                switch (i)
+                {
+                    case DfForm form:
+                        return ScanResultType.ScanInto;
+                    case DfPage page:
+                        scanAction(page);
+                        return ScanResultType.ScanNext;
+                    default:
+                        return ScanResultType.ScanNext;
+                }
+            });
+        }
+        /// <summary>
+        /// Metoda vyvolá danou akci pro každý panel na kterékoli stránce
+        /// </summary>
+        /// <param name="dfForm">Formulář</param>
+        /// <param name="scanAction">Akce provedená pro každý panel</param>
+        public static void ScanPanels(DfForm dfForm, Action<DfPanel> scanAction)
+        {
+            _ScanForm(dfForm, i =>
+            {
+                switch (i)
+                {
+                    case DfForm form:
+                    case DfPage page:
+                        return ScanResultType.ScanInto;
+                    case DfPanel panel:
+                        scanAction(panel);
+                        return ScanResultType.ScanNext;
+                    default:
+                        return ScanResultType.ScanNext;
+                }
+            });
+        }
+        /// <summary>
+        /// Metoda vyvolá danou akci pro každý control na kterékoli stránce a panelu a grupě
+        /// </summary>
+        /// <param name="dfForm">Formulář</param>
+        /// <param name="scanAction">Akce provedená pro každý control</param>
+        public static void ScanControls(DfForm dfForm, Action<DfBaseControl> scanAction)
+        {
+            _ScanForm(dfForm, i =>
+            {
+                switch (i)
+                {
+                    case DfForm form:
+                    case DfPage page:
+                    case DfPanel panel:
+                    case DfGroup group:
+                        return ScanResultType.ScanInto;
+                    case DfBaseControl control:
+                        scanAction(control);
+                        return ScanResultType.ScanNext;
+                    default:
+                        return ScanResultType.ScanNext;
+                }
+            });
+        }
+        /// <summary>
+        /// Metoda postupně prochází celou hierarchii dodaného formuláře (šablony) <paramref name="dfForm"/>, a postupně každý prvek předává do dodaného <paramref name="scanner"/>.
+        /// Tento scanner detekuje typ konkrétního prvku, provede s ním svoji akci, a vrátí informaci, zda prohledávat i child prvky daného prvku, nebo nás childs nezajímají, ale hledat se má dál, anebo rovnou skončit.
+        /// </summary>
+        /// <param name="dfForm"></param>
+        /// <param name="scanner"></param>
+        private static void _ScanForm(DfForm dfForm, Func<DfBase, ScanResultType> scanner)
+        {
+            if (dfForm is null || scanner is null) return;                     // Nejsou data
+            ScanResultType result = scanOneItem(dfForm);
+            if (result == ScanResultType.End) return;                          // Scanner odmítl samotný Form
+            if (dfForm.Pages is null || dfForm.Pages.Count == 0) return;       // Nejsou Pages
+
+            foreach (var page in dfForm.Pages)                                 // Projdi všechny stránky dané šablony
+            {
+                result = scanOneItem(page);                                    // Co s tou stránkou?
+                if (result == ScanResultType.End) return;
+                if (result == ScanResultType.ScanInto && page.Panels != null && page.Panels.Count > 0)
+                {
+                    foreach (var panel in page.Panels)                         // Projdi všechny panely dané stránky
+                    {
+                        result = scanOneItem(panel);                           // Co s tím panelem?
+                        if (result == ScanResultType.End) return;
+                        if (result == ScanResultType.ScanInto && panel.Childs != null && panel.Childs.Count > 0)
+                        {
+                            bool isEnd = scanItems(panel.Childs);
+                            if (isEnd) return;
+                        }
+                    }
+                }
+            }
+            // Určí výsledek scanování pro daný prvek
+            ScanResultType scanOneItem(DfBase item)
+            {
+                return (item is null ? ScanResultType.ScanNext : scanner(item));
+            }
+            // Scanuje prvky v dodané kolekci
+            bool scanItems(IEnumerable<DfBase> items)
+            {
+                if (items is null) return false;
+
+                foreach (var item in items)                                    // Projdi všechny prvky dané kolekce
+                {
+                    result = scanOneItem(item);                                // Co s tím prvkem?
+                    if (result == ScanResultType.End) return true;             // End daného prvku končí celý Scan
+                    if (result == ScanResultType.ScanInto)
+                    {   // Máme hledat i uvnitř... To už není tak triviální, záleží totiž na typu prvku...
+                        bool isEnd = scanSubItemsIn(item);
+                        if (isEnd) return true;
+                    }
+                }
+
+                return false;
+            }
+            // Scanuje subprvky daného prvku, podle konkrétního typu
+            bool scanSubItemsIn(DfBase parent)
+            {
+                switch (parent)
+                {
+                    case DfGroup group: return scanItems(group.Childs);
+                }
+                return false;
+            }
+        }
+        /// <summary>
+        /// Volba dalšího kroku při scanování obsahu
+        /// </summary>
+        private enum ScanResultType
+        {
+            /// <summary>
+            /// Pokud aktuální prvek má svoje SubPrvky, hledej i v nich...
+            /// </summary>
+            ScanInto,
+            /// <summary>
+            /// Ignoruj subprvky aktuálního prvku, a hledej další prvek v téže úrovni a pak v nadřízených
+            /// </summary>
+            ScanNext,
+            /// <summary>
+            /// Skonči hledání
+            /// </summary>
+            End
+        }
+        #endregion
+        #region Servis nad daty: GetAllControls()
+        internal static DfBaseControl[] GetAllControls(DfForm form)
+        {
+            List<DfBaseControl> result = new List<DfBaseControl>();
+            _AddAllControls(form, result);
+            return result.ToArray();
+        }
+        internal static DfBaseControl[] GetAllControls(DfPage page)
+        {
+            List<DfBaseControl> result = new List<DfBaseControl>();
+            _AddAllControls(page, result);
+            return result.ToArray();
+        }
+        internal static DfBaseControl[] GetAllControls(DfPanel panel)
+        {
+            List<DfBaseControl> result = new List<DfBaseControl>();
+            _AddAllControls(panel, result);
+            return result.ToArray();
+        }
+        /// <summary>
+        /// Přidá všechny controly z daného formu. Rekurzivně i pro Child těchto continerů.
+        /// </summary>
+        /// <param name="form"></param>
+        /// <param name="result"></param>
+        private static void _AddAllControls(DfForm form, List<DfBaseControl> result)
+        {
+            var pages = form?.Pages;
+            if (pages != null)
+                pages.ForEach(p => _AddAllControls(p, result));
+        }
+        /// <summary>
+        /// Přidá všechny controly z dané stránky. Rekurzivně i pro Child těchto continerů.
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="result"></param>
+        private static void _AddAllControls(DfPage page, List<DfBaseControl> result)
+        {
+            var panels = page?.Panels;
+            if (panels != null)
+                panels.ForEach(p => _AddAllControls(p, result));
+        }
+        /// <summary>
+        /// Přidá všechny controly z daného panelu. Rekurzivně i pro Child těchto continerů.
+        /// </summary>
+        /// <param name="panel"></param>
+        /// <param name="result"></param>
+        private static void _AddAllControls(DfPanel panel, List<DfBaseControl> result)
+        {
+            var childs = panel?.Childs;
+            if (childs != null)
+                childs.ForEach(p => _AddAllControls(p, result));
+        }
+        /// <summary>
+        /// Přidá všechny controly pro daný prvek.. Rekurzivně i pro Child těchto continerů.
+        /// </summary>
+        /// <param name="child"></param>
+        /// <param name="result"></param>
+        private static void _AddAllControls(DfBase child, List<DfBaseControl> result)
+        {
+            switch (child)
+            {
+                case DfBaseControl control: result.Add(control); break;
+                case DfPage page: _AddAllControls(page, result); break;
+                case DfPanel panel: _AddAllControls(panel, result); break;
+            }
+        }
+        #endregion
         #region Načítání obsahu - private tvorba containerů
 
         // Každá zdejší větev / metoda načte pouze property deklarované přímo pro danou třídu, nikoli pro její předky!
@@ -505,88 +723,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var nestedArgs = args.CreateNestedArgs(null, nestedContent, null);
             dfNestedForm = _LoadDfForm(nestedArgs, false);
             return (dfNestedForm != null);
-        }
-        /// <summary>
-        /// Metoda postupně prochází celou hierarchii dodaného formuláře (šablony) <paramref name="dfForm"/>, a postupně každý prvek předává do dodaného <paramref name="scanner"/>.
-        /// Tento scanner detekuje typ konkrétního prvku, provede s ním svoji akci, a vrátí informaci, zda prohledávat i child prvky daného prvku, nebo nás childs nezajímají, ale hledat se má dál, anebo rovnou skončit.
-        /// </summary>
-        /// <param name="dfForm"></param>
-        /// <param name="scanner"></param>
-        private static void _ScanForm(DfForm dfForm, Func<DfBase, ScanResultType> scanner)
-        {
-            if (dfForm is null || scanner is null) return;                     // Nejsou data
-            ScanResultType result = scanner(dfForm);
-            if (result == ScanResultType.End) return;                          // Scanner odmítl samotný Form
-            if (dfForm.Pages is null || dfForm.Pages.Count == 0) return;       // Nejsou Pages
-
-            foreach (var page in dfForm.Pages)                                 // Projdi všechny stránky dané šablony
-            {
-                result = scanOneItem(page);                                    // Co s tou stránkou?
-                if (result == ScanResultType.End) return;
-                if (result == ScanResultType.ScanInto && page.Panels != null && page.Panels.Count > 0)
-                {
-                    foreach (var panel in page.Panels)                         // Projdi všechny panely dané stránky
-                    {
-                        result = scanOneItem(panel);                           // Co s tím panelem?
-                        if (result == ScanResultType.End) return;
-                        if (result == ScanResultType.ScanInto && panel.Childs != null && panel.Childs.Count > 0)
-                        {
-                            bool isEnd = scanItems(panel.Childs);
-                            if (isEnd) return;
-                        }
-                    }
-                }
-            }
-            // Určí výsledek scanování pro daný prvek
-            ScanResultType scanOneItem(DfBase item)
-            {
-                return (item is null ? ScanResultType.ScanNext : scanner(item));
-            }
-            // Scanuje prvky v dodané kolekci
-            bool scanItems(IEnumerable<DfBase> items)
-            {
-                if (items is null) return false;
-
-                foreach (var item in items)                                    // Projdi všechny prvky dané kolekce
-                {
-                    result = scanOneItem(item);                                // Co s tím prvkem?
-                    if (result == ScanResultType.End) return true;             // End daného prvku končí celý Scan
-                    if (result == ScanResultType.ScanInto)
-                    {   // Máme hledat i uvnitř... To už není tak triviální, záleží totiž na typu prvku...
-                        bool isEnd = scanSubItemsIn(item);
-                        if (isEnd) return true;
-                    }
-                }
-
-                return false;
-            }
-            // Scanuje subprvky daného prvku, podle konkrétního typu
-            bool scanSubItemsIn(DfBase parent)
-            {
-                switch (parent)
-                {
-                    case DfGroup group: return scanItems(group.Childs);
-                }
-                return false;
-            }
-        }
-        /// <summary>
-        /// Volba dalšího kroku při scanování obsahu
-        /// </summary>
-        private enum ScanResultType
-        {
-            /// <summary>
-            /// Pokud aktuální prvek má svoje SubPrvky, hledej i v nich...
-            /// </summary>
-            ScanInto,
-            /// <summary>
-            /// Ignoruj subprvky aktuálního prvku, a hledej další prvek v téže úrovni a pak v nadřízených
-            /// </summary>
-            ScanNext,
-            /// <summary>
-            /// Skonči hledání
-            /// </summary>
-            End
         }
         #endregion
         #region Načítání obsahu - private tvorba jednotlivých controlů
@@ -1194,73 +1330,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             private StringBuilder __Errors;
         }
         #endregion
-        #region Servis nad daty: GetAllControls()
-        internal static DfBaseControl[] GetAllControls(DfForm form)
-        {
-            List<DfBaseControl> result = new List<DfBaseControl>();
-            _AddAllControls(form, result);
-            return result.ToArray();
-        }
-        internal static DfBaseControl[] GetAllControls(DfPage page)
-        {
-            List<DfBaseControl> result = new List<DfBaseControl>();
-            _AddAllControls(page, result);
-            return result.ToArray();
-        }
-        internal static DfBaseControl[] GetAllControls(DfPanel panel)
-        {
-            List<DfBaseControl> result = new List<DfBaseControl>();
-            _AddAllControls(panel, result);
-            return result.ToArray();
-        }
-        /// <summary>
-        /// Přidá všechny controly z daného formu. Rekurzivně i pro Child těchto continerů.
-        /// </summary>
-        /// <param name="form"></param>
-        /// <param name="result"></param>
-        private static void _AddAllControls(DfForm form, List<DfBaseControl> result)
-        {
-            var pages = form?.Pages;
-            if (pages != null)
-                pages.ForEach(p => _AddAllControls(p, result));
-        }
-        /// <summary>
-        /// Přidá všechny controly z dané stránky. Rekurzivně i pro Child těchto continerů.
-        /// </summary>
-        /// <param name="page"></param>
-        /// <param name="result"></param>
-        private static void _AddAllControls(DfPage page, List<DfBaseControl> result)
-        {
-            var panels = page?.Panels;
-            if (panels != null)
-                panels.ForEach(p => _AddAllControls(p, result));
-        }
-        /// <summary>
-        /// Přidá všechny controly z daného panelu. Rekurzivně i pro Child těchto continerů.
-        /// </summary>
-        /// <param name="panel"></param>
-        /// <param name="result"></param>
-        private static void _AddAllControls(DfPanel panel, List<DfBaseControl> result)
-        {
-            var childs = panel?.Childs;
-            if (childs != null)
-                childs.ForEach(p => _AddAllControls(p, result));
-        }
-        /// <summary>
-        /// Přidá všechny controly pro daný prvek.. Rekurzivně i pro Child těchto continerů.
-        /// </summary>
-        /// <param name="child"></param>
-        /// <param name="result"></param>
-        private static void _AddAllControls(DfBase child, List<DfBaseControl> result)
-        {
-            switch(child)
-            {
-                case DfBaseControl control: result.Add(control); break;
-                case DfPage page: _AddAllControls(page, result); break;
-                case DfPanel panel: _AddAllControls(panel, result); break;
-            }
-        }
-        #endregion
         #region Hierarchie tříd a jejich vlastnosti
         /*
 
@@ -1285,6 +1354,96 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
         */
         #endregion
+    }
+    /// <summary>
+    /// Třída, která vypočítá layout celého formuláře = všech jeho stránek a panelů.
+    /// Layout = rozmístění prvků v rámci panelů, a velikost vlastních panelů.
+    /// Neprovádí se ale umístění panelů do stránek, to už závisí i na rozměru fyzického controlu, to provádí klientský DataForm.
+    /// </summary>
+    internal static class DfTemplateLayout
+    {
+        internal static void CreateLayout(DfForm dfForm)
+        {
+            _CreateLayout(dfForm);
+        }
+
+        private static void _CreateLayout(DfForm dfForm)
+        {
+            if (dfForm != null && dfForm.Pages != null)
+            {
+                LayoutStyle styleForm = new LayoutStyle(dfForm);
+                foreach (var dfPage in dfForm.Pages)
+                {
+                    if (dfPage != null && dfPage.Panels != null)
+                    {
+                        LayoutStyle stylePage = new LayoutStyle(dfPage, styleForm);
+                        foreach (var dfPanel in dfPage.Panels)
+                        {
+                            if (dfPanel != null && dfPanel.Childs != null)
+                            {
+                                LayoutStyle stylePanel = new LayoutStyle(dfPanel, stylePage);
+
+                                _CreateLayoutPanel(dfPanel, stylePanel);
+                            }
+                            else
+                            {
+                                _CreateLayoutPanelVoid(dfPanel);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        private static void _CreateLayoutPanelVoid(DfBaseContainer dfContainer)
+        {
+            dfContainer.
+        }
+        private static void _CreateLayoutPanel(DfBaseContainer dfContainer, LayoutStyle styleContainer)
+        {
+            // Nejprve vyřeším vnořené grupy, tím určím jejich velikost:
+            foreach (var childContainer in dfContainer.Childs.OfType<DfBaseContainer>())
+            { }
+
+            // Pak umístím fixně definované prvky = ty, které mají danou souřadnici X/Y; přitom střádám MaxY:
+
+            // Nyní rozmístím plovoucí prvky = legacy layout daný do sloupců:
+
+
+
+        }
+
+        private class LayoutStyle
+        {
+            public LayoutStyle()
+            {
+                this.ColumnWidths = null;
+                this.AutoLabelPosition = LabelPositionType.None;
+                this.Margins = null;
+            }
+            public LayoutStyle(string columnWidths, LabelPositionType autoLabelPosition, Margins margins) 
+            {
+                this.ColumnWidths = columnWidths;
+                this.AutoLabelPosition = autoLabelPosition;
+                this.Margins = margins;
+            }
+            public LayoutStyle(DfBaseArea dfArea)
+            {
+                this.ColumnWidths = dfArea.ColumnWidths;
+                this.AutoLabelPosition = dfArea.AutoLabelPosition ?? LabelPositionType.None;
+                this.Margins = dfArea.Margins;
+            }
+            public LayoutStyle(DfBaseArea dfArea, LayoutStyle styleParent)
+            {
+                this.ColumnWidths = dfArea.ColumnWidths != null ? dfArea.ColumnWidths : styleParent.ColumnWidths;
+                this.AutoLabelPosition = dfArea.AutoLabelPosition.HasValue ? dfArea.AutoLabelPosition.Value : styleParent.AutoLabelPosition;
+                this.Margins = dfArea.Margins != null ? dfArea.Margins : styleParent.Margins;
+            }
+
+            public string ColumnWidths { get; set; }
+            public LabelPositionType AutoLabelPosition { get; set; }
+            public Margins Margins { get; set; }
+
+        }
     }
     #region Argumenty pro načítání dat šablony
     /// <summary>

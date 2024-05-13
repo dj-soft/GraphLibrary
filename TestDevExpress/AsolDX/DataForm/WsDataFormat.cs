@@ -394,6 +394,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// Pak jde o primární panely, a ty jsou typicky uživatelsky ovladatelné.
         /// </summary>
         public Bounds Bounds { get; set; }
+        public ContainerSize DesignSize
         /// <summary>
         /// Debug text
         /// </summary>
@@ -755,7 +756,8 @@ namespace Noris.WS.DataContracts.DxForm
         public ContentAlignmentType? Alignment { get; set; }
     }
     /// <summary>
-    /// Bázová třída pro všechny samostatné interaktivní controly, které mohou mít vedle políčka Label - TextBox, ComboBox, TokenEdit, ...<br/>
+    /// Bázová třída pro všechny samostatné interaktivní controly, které mohou mít vedle vlastního prvku (Control) i prvek typu Label.
+    /// Typicky jde o: TextBox, ComboBox, TokenEdit, atd ...<br/>
     /// Odpovídá XSD typu <c>type_base_input_labeled_control</c>
     /// <para/>
     /// Tato třída přináší property <see cref="Label"/>, <see cref="LabelPosition"/> a <see cref="LabelWidth"/>.
@@ -783,6 +785,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// Nejvyšší šířka prostoru pro Label
         /// </summary>
         public int? LabelWidth { get; set; }
+        /// <summary>
+        /// Souřadnice labelu
+        /// </summary>
+        public ControlBounds LabelDesignBounds { get; set; }
         /// <summary>
         /// Debug text
         /// </summary>
@@ -845,6 +851,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// Počet sloupců, které prvek obsazuje v FlowLayoutu. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
         /// </summary>
         public int? ColSpan { get; set; }
+        /// <summary>
+        /// Souřadnice samotného vstupního prvku
+        /// </summary>
+        public ControlBounds ControlDesignBounds { get; set; }
         /// <summary>
         /// Debug text
         /// </summary>
@@ -946,6 +956,90 @@ namespace Noris.WS.DataContracts.DxForm
         /// Height
         /// </summary>
         public int? Height { get; set; }
+    }
+    /// <summary>
+    /// Pozice a velikost controlu
+    /// </summary>
+    public sealed class ControlBounds
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public ControlBounds() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="top"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        public ControlBounds(int left, int top, int width, int height)
+        {
+            this.Left = left;
+            this.Top = top;
+            this.Width = width;
+            this.Height = height;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Left: {Left}; Top: {Top}; Width: {Width}; Height: {Height}";
+        }
+        /// <summary>
+        /// Left
+        /// </summary>
+        public int Left { get; set; }
+        /// <summary>
+        /// Top
+        /// </summary>
+        public int Top { get; set; }
+        /// <summary>
+        /// Width
+        /// </summary>
+        public int Width { get; set; }
+        /// <summary>
+        /// Height
+        /// </summary>
+        public int Height { get; set; }
+    }
+    /// <summary>
+    /// Velikost kontejneru
+    /// </summary>
+    public sealed class ContainerSize
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public ContainerSize() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="clientWidth"></param>
+        /// <param name="clientHeight"></param>
+        public ContainerSize(int clientWidth, int clientHeight)
+        {
+            this.ClientWidth = clientWidth;
+            this.ClientHeight = clientHeight;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"ClientWidth: {ClientWidth}; ClientHeight: {ClientHeight}";
+        }
+        /// <summary>
+        /// ClientWidth = šířka vnitřního prostoru, kde jsou umístěny controly
+        /// </summary>
+        public int ClientWidth { get; set; }
+        /// <summary>
+        /// ClientHeight = výška vnitřního prostoru, kde jsou umístěny controly
+        /// </summary>
+        public int ClientHeight { get; set; }
     }
     /// <summary>
     /// Okraje

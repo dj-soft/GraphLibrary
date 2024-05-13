@@ -507,6 +507,7 @@ namespace TestDevExpress.Forms
                 if (dxInfo.FormatVersion == FormatVersionType.Version4)
                 {
                     var dfForm = DxDForm.DfTemplateLoader.LoadTemplate(args);
+                    DxDForm.DfTemplateLayout.CreateLayout(dfForm);
                     if (args.HasErrors)
                         DxComponent.ShowMessageWarning($"Zadaný dokument '{fileFrmXml}' obsahuje chyby:\r\n{args.LoadingErrors}");
                     _ApplyDfForm(dfForm);
