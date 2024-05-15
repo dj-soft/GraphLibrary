@@ -301,6 +301,16 @@ namespace Noris.WS.DataContracts.DxForm
         public DfGroup() : base()
         {
         }
+
+        /// <summary>
+        /// Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
+        /// </summary>
+        public int? ColIndex { get; set; }
+        /// <summary>
+        /// Počet sloupců, které prvek obsazuje v FlowLayoutu. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
+        /// </summary>
+        public int? ColSpan { get; set; }
+
     }
     /// <summary>
     /// Vnořený panel, vložený do Page.
@@ -394,7 +404,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// Pak jde o primární panely, a ty jsou typicky uživatelsky ovladatelné.
         /// </summary>
         public Bounds Bounds { get; set; }
-        public ContainerSize DesignSize
+        public ContainerSize DesignSize { get; set; }
         /// <summary>
         /// Debug text
         /// </summary>
@@ -434,7 +444,13 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public Margins Margins { get; set; }
         /// <summary>
-        /// Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky).
+        /// Počet sloupců layoutu. Šířka sloupců se určí podle reálného obsahu (maximum šířky prvků).
+        /// Při zadání <see cref="ColumnsCount"/> se již nezadává <see cref="ColumnWidths"/>.
+        /// </summary>
+        public int? ColumnsCount { get; set; }
+        /// <summary>
+        /// Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky). 
+        /// Při zadání <see cref="ColumnWidths"/> se již nezadává <see cref="ColumnsCount"/>.
         /// </summary>
         public string ColumnWidths { get; set; }
         /// <summary>
@@ -1025,6 +1041,20 @@ namespace Noris.WS.DataContracts.DxForm
             this.ClientHeight = clientHeight;
         }
         /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="clientWidth"></param>
+        /// <param name="clientHeight"></param>
+        /// <param name="containerHeight"></param>
+        /// <param name="containerWidth"></param>
+        public ContainerSize(int clientWidth, int clientHeight, int containerWidth, int containerHeight)
+        {
+            this.ClientWidth = clientWidth;
+            this.ClientHeight = clientHeight;
+            this.ContainerWidth = containerWidth;
+            this.ContainerHeight = containerHeight;
+        }
+        /// <summary>
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
@@ -1033,13 +1063,21 @@ namespace Noris.WS.DataContracts.DxForm
             return $"ClientWidth: {ClientWidth}; ClientHeight: {ClientHeight}";
         }
         /// <summary>
-        /// ClientWidth = šířka vnitřního prostoru, kde jsou umístěny controly
+        /// <see cref="ClientWidth"/>: šířka vnitřního prostoru, kde jsou umístěny controly
         /// </summary>
         public int ClientWidth { get; set; }
         /// <summary>
-        /// ClientHeight = výška vnitřního prostoru, kde jsou umístěny controly
+        /// <see cref="ClientHeight"/>: výška vnitřního prostoru, kde jsou umístěny controly
         /// </summary>
         public int ClientHeight { get; set; }
+        /// <summary>
+        /// <see cref="ContainerWidth"/>: šířka vnějšího prostoru, který obsazuje container
+        /// </summary>
+        public int ContainerWidth { get; set; }
+        /// <summary>
+        /// <see cref="ContainerHeight"/>: výška vnějšího prostoru, který obsazuje container
+        /// </summary>
+        public int ContainerHeight { get; set; }
     }
     /// <summary>
     /// Okraje

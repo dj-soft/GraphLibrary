@@ -421,9 +421,14 @@
                         <xs:documentation xml:lang="cs-cz">Vnitřní okraje uvnitř containeru: mezi vnější souřadnicí a prvním prvkem na souřadnici 0/0. Ve formě: All   nebo   Left,Top[,Right,Bottom].</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
+                <xs:attribute name="ColumnsCount" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Počet sloupců layoutu. Šířka sloupců se určí podle reálného obsahu (maximum šířky prvků). Při zadání 'ColumnsCount' se již nezadává 'ColumnWidths'.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
                 <xs:attribute name="ColumnWidths" type="xs:string">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky).</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky). Při zadání 'ColumnWidths' se již nezadává 'ColumnsCount'.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="AutoLabelPosition" type="label_position_enum" >

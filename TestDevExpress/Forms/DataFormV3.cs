@@ -502,7 +502,7 @@ namespace TestDevExpress.Forms
             try
             {
                 pathFrmXml = System.IO.Path.GetDirectoryName(fileFrmXml);
-                var args = new DfTemplateArgs() { TemplateFileName = fileFrmXml, NestedTemplateLoader = loadNested, LogLoadingTime = true };
+                var args = new DfTemplateLoadArgs() { TemplateFileName = fileFrmXml, NestedTemplateLoader = loadNested, LogLoadingTime = true };
                 var dxInfo = DxDForm.DfTemplateLoader.LoadInfo(args);
                 if (dxInfo.FormatVersion == FormatVersionType.Version4)
                 {
