@@ -502,14 +502,15 @@ namespace TestDevExpress.Forms
             try
             {
                 pathFrmXml = System.IO.Path.GetDirectoryName(fileFrmXml);
-                var args = new DfTemplateLoadArgs() { TemplateFileName = fileFrmXml, NestedTemplateLoader = loadNested, LogLoadingTime = true };
-                var dxInfo = DxDForm.DfTemplateLoader.LoadInfo(args);
+                var loadingArgs = new DfTemplateLoadArgs() { TemplateFileName = fileFrmXml, NestedTemplateLoader = loadNested, LogLoadingTime = true };
+                var dxInfo = DxDForm.DfTemplateLoader.LoadInfo(loadingArgs);
                 if (dxInfo.FormatVersion == FormatVersionType.Version4)
                 {
-                    var dfForm = DxDForm.DfTemplateLoader.LoadTemplate(args);
-                    DxDForm.DfTemplateLayout.CreateLayout(dfForm);
-                    if (args.HasErrors)
-                        DxComponent.ShowMessageWarning($"Zadaný dokument '{fileFrmXml}' obsahuje chyby:\r\n{args.LoadingErrors}");
+                    var dfForm = DxDForm.DfTemplateLoader.LoadTemplate(loadingArgs);
+                    var layoutArgs = new DfTemplateLayoutArgs() { DataForm = dfForm };
+                    DxDForm.DfTemplateLayout.CreateLayout(layoutArgs);
+                    if (loadingArgs.HasErrors)
+                        DxComponent.ShowMessageWarning($"Zadaný dokument '{fileFrmXml}' obsahuje chyby:\r\n{loadingArgs.LoadingErrors}");
                     _ApplyDfForm(dfForm);
                 }
                 else
