@@ -1383,16 +1383,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var dfForm = args.DataForm;
             if (dfForm != null && dfForm.Pages != null)
             {
-                LayoutStyle styleForm = new LayoutStyle(dfForm);
+                StyleInfo styleForm = new StyleInfo(dfForm);
                 foreach (var dfPage in dfForm.Pages)
                 {
                     if (dfPage != null && dfPage.Panels != null)
                     {
-                        LayoutStyle stylePage = new LayoutStyle(dfPage, styleForm);
+                        StyleInfo stylePage = new StyleInfo(dfPage, styleForm);
                         foreach (var dfPanel in dfPage.Panels)
                         {   // Pro panel budu počítat rozmístění vnitřních prvků a následně i rozměry panelu
-                            LayoutStyle stylePanel = new LayoutStyle(dfPanel, stylePage);
-                            _CreateLayoutContainer(args, dfPanel, stylePanel);
+                            StyleInfo stylePanel = new StyleInfo(dfPanel, stylePage);
+                            _CreateLayoutPanel(args, dfPanel, stylePanel);
                         }
                     }
                 }
@@ -1402,11 +1402,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Sestaví fyzický layout pro prvky v daném containeru, určí velikost containeru
         /// </summary>
         /// <param name="args">Data a parametry pro tvorbu layoutu</param>
-        /// <param name="dfContainer"></param>
+        /// <param name="dfPanel"></param>
         /// <param name="styleContainer"></param>
-        private static void _CreateLayoutContainer(DfTemplateLayoutArgs args, DfBaseContainer dfContainer, LayoutStyle styleContainer)
+        private static void _CreateLayoutPanel(DfTemplateLayoutArgs args, DfPanel dfPanel, StyleInfo styleContainer)
         {
-            if (dfContainer is null) return;
+            if (dfPanel is null) return;
+
+            var itemCont = ItemInfo.CreateRoot(dfPanel, args);
+            itemCont.CreateChilds();
 
             if (dfContainer.Childs is null || dfContainer.Childs.Count == 0)
             {   // Prázdný container:
@@ -1427,14 +1430,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Nejprve vyřeším vnořené grupy, tím určím jejich (vnitřní a vnější) velikost:
             foreach (var containerChild in containerChilds)
             {
-                LayoutStyle childStyle = new LayoutStyle(containerChild, styleContainer);
-                _CreateLayoutContainer(args, containerChild, childStyle);
+                StyleInfo childStyle = new StyleInfo(containerChild, styleContainer);
+                _CreateLayoutPanel(args, containerChild, childStyle);
             }
 
             // Pole obsahující sloupce pro tento container, vycházejíc z 'styleContainer.ColumnWidths' a 'styleContainer.ColumnWidths':
             var columns = ColumnInfo.CreateColumns(styleContainer);
 
-            styleContainer.ColumnWidths
 
 
             // Nejprve umístím fixně definované prvky = tj. ty, které mají danou souřadnici X/Y; přitom střádám MaxY:
@@ -1500,15 +1502,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
 
 
-
-
         /// <summary>
         /// Vrátí velikost containeru, který nemá žádné vnitřní prvky.
         /// </summary>
         /// <param name="dfContainer">Container. Může deklarovat svoji velikost.</param>
         /// <param name="containerStyle">Styl pro container včetně stylů zděděných. Může deklarovat okraje.</param>
         /// <returns></returns>
-        private static ContainerSize GetEmptyDesignSize(DfBaseContainer dfContainer, LayoutStyle containerStyle)
+        private static ContainerSize GetEmptyDesignSize(DfBaseContainer dfContainer, StyleInfo containerStyle)
         {
             return new ContainerSize(0, 0, 0, 0);
         }
@@ -1520,58 +1520,144 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="maxX"></param>
         /// <param name="maxY"></param>
         /// <returns></returns>
-        private static ContainerSize GetDesignSize(DfBaseContainer dfContainer, LayoutStyle containerStyle, int maxX, int maxY)
+        private static ContainerSize GetDesignSize(DfBaseContainer dfContainer, StyleInfo containerStyle, int maxX, int maxY)
         {
             return new ContainerSize(0, 0, 0, 0);
         }
+        #region class LayoutStyle
         /// <summary>
         /// Styl pro jeden container
         /// </summary>
-        private class LayoutStyle
+        private class StyleInfo
         {
-            public LayoutStyle()
+            public StyleInfo()
             {
                 this.ColumnsCount = 0;
                 this.ColumnWidths = null;
                 this.AutoLabelPosition = LabelPositionType.None;
                 this.Margins = null;
             }
-            public LayoutStyle(int? columnsCount, string columnWidths, LabelPositionType autoLabelPosition, Margins margins) 
+            public StyleInfo(int? columnsCount, string columnWidths, LabelPositionType autoLabelPosition, Margins margins) 
             {
                 this.ColumnsCount = columnsCount;
                 this.ColumnWidths = columnWidths;
                 this.AutoLabelPosition = autoLabelPosition;
                 this.Margins = margins;
             }
-            public LayoutStyle(DfBaseArea dfArea)
+            public StyleInfo(DfBaseArea dfArea)
             {
                 this.ColumnsCount = dfArea.ColumnsCount;
                 this.ColumnWidths = dfArea.ColumnWidths;
                 this.AutoLabelPosition = dfArea.AutoLabelPosition ?? LabelPositionType.None;
                 this.Margins = dfArea.Margins;
             }
-            public LayoutStyle(DfBaseArea dfArea, LayoutStyle styleParent)
+            public StyleInfo(DfBaseArea dfArea, StyleInfo styleParent)
             {
                 this.ColumnsCount = (dfArea.ColumnsCount.HasValue ? dfArea.ColumnsCount : styleParent.ColumnsCount);
                 this.ColumnWidths = dfArea.ColumnWidths != null ? dfArea.ColumnWidths : styleParent.ColumnWidths;
                 this.AutoLabelPosition = dfArea.AutoLabelPosition.HasValue ? dfArea.AutoLabelPosition.Value : styleParent.AutoLabelPosition;
                 this.Margins = dfArea.Margins != null ? dfArea.Margins : styleParent.Margins;
             }
-
-            public int? ColumnsCount { get; set; }
-            public string ColumnWidths { get; set; }
-            public LabelPositionType AutoLabelPosition { get; set; }
+            /// <summary>
+            /// Počet sloupců layoutu. Šířka sloupců se určí podle reálného obsahu (maximum šířky prvků).
+            /// Při zadání <see cref="ColumnsCount"/> se již nezadává <see cref="ColumnWidths"/>.
+            /// </summary>
+            public int? ColumnsCount { get; private set; }
+            /// <summary>
+            /// Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky). 
+            /// Při zadání <see cref="ColumnWidths"/> se již nezadává <see cref="ColumnsCount"/>.
+            /// </summary>
+            public string ColumnWidths { get; private set; }
+            /// <summary>
+            /// Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = <c>NULL</c>
+            /// </summary>
+            public LabelPositionType AutoLabelPosition { get; private set; }
             public Margins Margins { get; set; }
         }
+        #endregion
+        #region class ColumnInfo
+        /// <summary>
+        /// Průběžná data o layoutu jednoho sloupce
+        /// </summary>
         private class ColumnInfo
         {
-            public static ColumnInfo[] CreateColumns(LayoutStyle layoutStyle)
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
             {
+                return $"Index: {Index}; LeftLabelWidth: '{LeftLabelWidth}'; ControlWidth: '{ControlWidth}'; RighLabelWidth: '{RighLabelWidth}'";
+            }
+            /// <summary>
+            /// Vytvoří sadu prvků <see cref="ColumnInfo"/> pro daný styl
+            /// </summary>
+            /// <param name="layoutStyle"></param>
+            /// <returns></returns>
+            public static ColumnInfo[] CreateColumns(StyleInfo layoutStyle)
+            {
+                List<ColumnInfo> columns = new List<ColumnInfo>();
+
+                // Konkrétní šířky:
                 if (layoutStyle.ColumnWidths != null)
                 {
-                    DfBaseInputControl ic;
-                    DfBaseControl d;
-                    d.col
+                    var columnWidths = layoutStyle.ColumnWidths;
+                    var cols = columnWidths.Split(';');
+                    int count = cols.Length;
+                    for (int i = 0; i < count; i++)
+                    {
+                        parseCol(cols[i], out int? lblW, out int? ctrW, out int? lbrW);
+                        columns.Add(new ColumnInfo() { Index = i, LeftLabelDefinedWidth = lblW, ControlDefinedWidth = ctrW, RightLabelDefinedWidth = lbrW });
+                    }
+                }
+
+                // Prostě jen počet sloupců, bez deklarované šířky:
+                if (columns.Count == 0)
+                {
+                    if (layoutStyle.ColumnsCount.HasValue && layoutStyle.ColumnsCount.Value > 0)
+                    {
+                        int count = layoutStyle.ColumnsCount.Value;
+                        for (int i = 0; i < count; i++)
+                            columns.Add(new ColumnInfo() { Index = i });
+                    }
+                }
+
+                return columns.ToArray();
+
+                // Parsuje text "10,20,30" na tři číslice
+                void parseCol(string text, out int? lblW, out int? ctrW, out int? lbrW)
+                {
+                    lblW = null;
+                    ctrW = null;
+                    lbrW = null;
+
+                    if (!String.IsNullOrEmpty(text))
+                    {
+                        var cells = text.Split(',');
+                        int count = cells.Length;
+                        if (count == 1)
+                        {
+                            ctrW = parseInt(cells[0]);
+                        }
+                        else if (count == 2)
+                        {
+                            lblW = parseInt(cells[0]);
+                            ctrW = parseInt(cells[1]);
+                        }
+                        else if (count >= 3)
+                        {
+                            lblW = parseInt(cells[0]);
+                            ctrW = parseInt(cells[1]);
+                            lbrW = parseInt(cells[2]);
+                        }
+                    }
+                }
+                // Parsuje text na číslo
+                int? parseInt(string text)
+                {
+                    if (String.IsNullOrEmpty(text)) return null;
+                    if (!Int32.TryParse(text.Trim(), out var number)) return null;
+                    return (number < 0 ? -1 : number);
                 }
             }
             /// <summary>
@@ -1579,13 +1665,98 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             public int Index { get; set; }
             /// <summary>
-            /// Šířka labelu vlevo od controlu, maximální nalezená hodnota (null = žádný)
+            /// Šířka labelu vlevo od controlu, explicitně zadaná hodnota v deklaraci (null = nezadáno)
             /// </summary>
-            public int? LeftLabelWidth { get; set; }
-            public int? ControlWidth { get; set; }
-            public int? ControlWidth { get; set; }
+            public int? LeftLabelDefinedWidth { get; private set; }
+            /// <summary>
+            /// Šířka labelu vlevo od controlu, maximální nalezená hodnota (null = žádný prvek)
+            /// </summary>
+            public int? LeftLabelMaximalWidth { get; set; }
+            /// <summary>
+            /// Šířka sloupce, kde je umístěn control, explicitně zadaná hodnota v deklaraci (null = nezadáno)
+            /// </summary>
+            public int? ControlDefinedWidth { get; private set; }
+            /// <summary>
+            /// Šířka sloupce, kde je umístěn control, explicitně zadaná hodnota v deklaraci (null = nezadáno)
+            /// </summary>
+            public int? ControlMaximalWidth { get; set; }
+            /// <summary>
+            /// Šířka labelu vpravo od controlu, explicitně zadaná hodnota v deklaraci (null = nezadáno)
+            /// </summary>
+            public int? RightLabelDefinedWidth { get; private set; }
+            /// <summary>
+            /// Šířka labelu vpravo od controlu, maximální nalezená hodnota (null = žádný prvek)
+            /// </summary>
+            public int? RightLabelMaximalWidth { get; set; }
 
+            /// <summary>
+            /// Šířka prostoru Label vlevo
+            /// </summary>
+            public int? LeftLabelWidth { get { return LeftLabelDefinedWidth ?? LeftLabelMaximalWidth; } }
+            /// <summary>
+            /// Šířka prostoru Control
+            /// </summary>
+            public int? ControlWidth { get { return ControlDefinedWidth ?? ControlMaximalWidth; } }
+            /// <summary>
+            /// Šířka prostoru Label vpravo
+            /// </summary>
+            public int? RighLabelWidth { get { return RightLabelDefinedWidth ?? RightLabelMaximalWidth; } }
+
+            /// <summary>
+            /// Pozice Left pro prostor Labelu vlevo
+            /// </summary>
+            public int? ColumnLeftLabelLeft { get; set; }
+            /// <summary>
+            /// Pozice Left pro prostor Controlu
+            /// </summary>
+            public int? ColumnControlLeft { get; set; }
+            /// <summary>
+            /// Pozice Left pro prostor Labelu vpravo
+            /// </summary>
+            public int? ColumnRightLabelLeft { get; set; }
+            /// <summary>
+            /// Pozice Right pro prostor celého columnu = zde přesně začíná další sloupec
+            /// </summary>
+            public int? ColumnRight { get; set; }
         }
+        #endregion
+        #region class ItemInfo
+        private class ItemInfo
+        {
+            internal static ItemInfo CreateRoot(DfBase dfItem, DfTemplateLayoutArgs dfArgs)
+            {
+                return new ItemInfo(dfItem, null, dfArgs);
+            }
+            private ItemInfo(DfBase dfItem, DfBase dfParent, DfTemplateLayoutArgs dfArgs)
+            {
+                __DfItem = dfItem;
+                __DfParent = dfParent;
+                __DfArgs = dfArgs;
+            }
+            private DfBase __DfItem;
+            private DfBase __DfParent;
+            private DfTemplateLayoutArgs __DfArgs;
+            private List<ItemInfo> __Childs;
+
+            internal IEnumerable<DfBase> DfChilds
+            {
+                get
+                {
+                    if (__DfItem is DfBaseContainer dfContainer) return dfContainer.Childs;
+                    return null;
+                }
+            }
+
+            internal void CreateChilds()
+            {
+                if (__DfItem is DfBaseContainer dfContainer)
+                {
+                    var dfChilds = dfContainer.Childs;
+
+                }
+            }
+        }
+        #endregion
     }
     #region class DfTemplateLoadArgs : Argumenty pro načítání dat šablony
     /// <summary>

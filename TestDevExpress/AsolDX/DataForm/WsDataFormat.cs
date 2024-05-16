@@ -449,7 +449,9 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public int? ColumnsCount { get; set; }
         /// <summary>
-        /// Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky). 
+        /// Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150;350;100 (deklaruje tři sloupce dané šířky).
+        /// Sloupce mohou deklarovat i šířku pro label umístěný před controlem, pak se použije čárka: "100,150; 120,300; 80,100" (deklaruje tři sloupce s danou šířkou labelu a šířkou controlu).
+        /// Mezery jsou ignorovány.
         /// Při zadání <see cref="ColumnWidths"/> se již nezadává <see cref="ColumnsCount"/>.
         /// </summary>
         public string ColumnWidths { get; set; }

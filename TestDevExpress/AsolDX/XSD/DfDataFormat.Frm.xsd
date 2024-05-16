@@ -113,11 +113,6 @@
 						<xs:documentation xml:lang="cs-cz">Povolit kontextové menu.</xs:documentation>
 					</xs:annotation>
 				</xs:attribute>
-				<xs:attribute name="ColumnWidths" type="xs:string">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky).</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
 			</xs:extension>
 		</xs:complexContent>
 	</xs:complexType>
@@ -151,11 +146,6 @@
                         <xs:documentation xml:lang="cs-cz">Titulek záhlaví stránky. Může obsahovat formátovací funkce fm(), fmr(), fmdr().</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-				<xs:attribute name="ColumnWidths" type="xs:string">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky).</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
 			</xs:extension>
         </xs:complexContent>
     </xs:complexType>
@@ -423,12 +413,20 @@
                 </xs:attribute>
                 <xs:attribute name="ColumnsCount" type="xs:int">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Počet sloupců layoutu. Šířka sloupců se určí podle reálného obsahu (maximum šířky prvků). Při zadání 'ColumnsCount' se již nezadává 'ColumnWidths'.</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">
+                            Počet sloupců layoutu. Šířka sloupců se určí podle reálného obsahu (maximum šířky prvků). 
+                            Při zadání 'ColumnsCount' se již nezadává 'ColumnWidths'.
+                        </xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="ColumnWidths" type="xs:string">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky). Při zadání 'ColumnWidths' se již nezadává 'ColumnsCount'.</xs:documentation>
+						<xs:documentation xml:lang="cs-cz">
+                            Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150;350;100 (deklaruje tři sloupce dané šířky).
+                            Sloupce mohou deklarovat i šířku pro label umístěný před controlem, pak se použije čárka: "100,150; 120,300; 80,100" (deklaruje tři sloupce s danou šířkou labelu a šířkou controlu).
+                            Mezery jsou ignorovány.
+                            Při zadání 'ColumnWidths' se již nezadává 'ColumnsCount'.
+                        </xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="AutoLabelPosition" type="label_position_enum" >
@@ -770,7 +768,7 @@
                 </xs:attribute>
 				<xs:attribute name="ColIndex" type="xs:int">
 					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.</xs:documentation>
 					</xs:annotation>
 				</xs:attribute>
 				<xs:attribute name="ColSpan" type="xs:int">
