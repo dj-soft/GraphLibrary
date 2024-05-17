@@ -737,7 +737,7 @@
         </xs:complexContent>
     </xs:complexType>
 
-    <!--    type_base_control = DfBaseControl - Bázová třída pro všechny samostatné controly bez ohledu na jejich vlastní interaktivitu - tedy Label, Picture, Panel; a dále i pro interaktivní controly: TextBox, Button, CheckBox, ComboBox, ... Slouží i jako podklad pro Containery.  -->
+    <!--    type_base_control = DfBaseControl - Bázová třída pro všechny samostatné controly bez ohledu na jejich vlastní interaktivitu - tedy Label, Picture, Panel; a dále i pro interaktivní controly: TextBox, Button, CheckBox, ComboBox, ... Neslouží jako podklad pro Containery! Ty se odvozují od 'DfBase' a 'DfBaseArea'.  -->
     <xs:complexType name="type_base_control">
         <xs:complexContent>
             <xs:extension base="type_base">

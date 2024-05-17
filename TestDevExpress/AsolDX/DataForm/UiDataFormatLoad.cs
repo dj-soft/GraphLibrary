@@ -9,7 +9,8 @@ using System.Linq;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-
+using DevExpress.Utils.Commands;
+using DevExpress.Utils.Drawing;
 using Noris.WS.DataContracts.DxForm;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
@@ -1403,14 +1404,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="args">Data a parametry pro tvorbu layoutu</param>
         /// <param name="dfPanel"></param>
-        /// <param name="styleContainer"></param>
+        /// <param name="styleContainer">Styl pro daný panel. Panel si jej sám nevytvoří, protože musí mít k dispozici styl parenta (dědičnost pro implicitní hodnoty!)</param>
         private static void _CreateLayoutPanel(DfTemplateLayoutArgs args, DfPanel dfPanel, StyleInfo styleContainer)
         {
             if (dfPanel is null) return;
 
-            var itemCont = ItemInfo.CreateRoot(dfPanel, args);
-            itemCont.CreateChilds();
+            var itemCont = ItemInfo.CreateRoot(dfPanel, args, styleContainer);
 
+
+
+            /*
             if (dfContainer.Childs is null || dfContainer.Childs.Count == 0)
             {   // Prázdný container:
                 dfContainer.DesignSize = GetEmptyDesignSize(dfContainer, styleContainer);
@@ -1451,6 +1454,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             // Určí velikost containeru:
             dfContainer.DesignSize = GetDesignSize(dfContainer, styleContainer, maxX, maxY);
+
+            */
         }
 
         private static object _CreateColumns(DfTemplateLayoutArgs args)
@@ -1723,36 +1728,145 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #region class ItemInfo
         private class ItemInfo
         {
-            internal static ItemInfo CreateRoot(DfBase dfItem, DfTemplateLayoutArgs dfArgs)
+            /// <summary>
+            /// Vytvoří Root prvek, a sučasně v něm najde Containery a vytvoří rekurzivně celou strukturu
+            /// </summary>
+            /// <param name="dfItem"></param>
+            /// <param name="dfArgs"></param>
+            /// <param name="style">Styl pro daný panel. Panel si jej sám nevytvoří, protože musí mít k dispozici styl parenta (dědičnost pro implicitní hodnoty!)</param>
+            /// <returns></returns>
+            internal static ItemInfo CreateRoot(DfBase dfItem, DfTemplateLayoutArgs dfArgs, StyleInfo style)
             {
-                return new ItemInfo(dfItem, null, dfArgs);
+                var rootItem = new ItemInfo(dfItem, null, dfArgs, style);
+                rootItem.CreateChilds();
+                return rootItem;
+
             }
-            private ItemInfo(DfBase dfItem, DfBase dfParent, DfTemplateLayoutArgs dfArgs)
+            /// <summary>
+            /// Privátní konstruktor
+            /// </summary>
+            /// <param name="dfItem"></param>
+            /// <param name="parent"></param>
+            /// <param name="dfArgs"></param>
+            /// <param name="style"></param>
+            private ItemInfo(DfBase dfItem, ItemInfo parent, DfTemplateLayoutArgs dfArgs, StyleInfo style)
             {
                 __DfItem = dfItem;
-                __DfParent = dfParent;
+                __Parent = parent;
                 __DfArgs = dfArgs;
+                __Style = style;
             }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return this.FullPath;
+            }
+            /// <summary>
+            /// Definiční prvek = načtený z XML šablony (panel, grupa, control...)
+            /// </summary>
             private DfBase __DfItem;
-            private DfBase __DfParent;
+            /// <summary>
+            /// Náš parent
+            /// </summary>
+            private ItemInfo __Parent;
+            /// <summary>
+            /// Vstupní argumenty celého formu
+            /// </summary>
             private DfTemplateLayoutArgs __DfArgs;
+            /// <summary>
+            /// Styl pro tento kontejner.
+            /// Container si styl sám nevytvoří, protože musí mít k dispozici styl parenta (dědičnost pro implicitní hodnoty!).
+            /// Jednotlivé controly zde mají null, najdou si styl ve svém parentu.
+            /// </summary>
+            private StyleInfo __Style;
+            /// <summary>
+            /// Prvky mých Childs
+            /// </summary>
             private List<ItemInfo> __Childs;
 
-            internal IEnumerable<DfBase> DfChilds
+            /// <summary>
+            /// Root prvek. Zde nikdy není null: pokud this je Root, pak zde je this.
+            /// </summary>
+            internal ItemInfo Root { get { return (__Parent?.Root ?? this); } }
+            /// <summary>
+            /// Parent prvek. Může být null.
+            /// </summary>
+            internal ItemInfo Parent { get { return __Parent; } }
+            /// <summary>
+            /// Obsahuje true, pokud this je Root
+            /// </summary>
+            internal bool IsRoot { get { return (__Parent is null); } }
+            /// <summary>
+            /// Argumenty pro layout šablony = obshaují Form a další data.
+            /// </summary>
+            internal DfTemplateLayoutArgs LayoutArgs { get { return Root.__DfArgs; } }
+            /// <summary>
+            /// Plná cesta od Root přes jeho Child až ke mě = typy prvků oddělené dvojtečkou
+            /// </summary>
+            internal string FullPath 
             {
-                get
+                get 
                 {
-                    if (__DfItem is DfBaseContainer dfContainer) return dfContainer.Childs;
-                    return null;
+                    var type = __DfItem.GetType().Name;
+                    var name = __DfItem.Name;
+                    var text = type + (!String.IsNullOrEmpty(name) ? $"='{name}'" : "");
+
+                    var parent = __Parent;
+                    return (parent != null ? parent.FullPath + " => " : "") + text;
                 }
             }
+            /// <summary>
+            /// Prvek reprezentuje container (panel, grupa)
+            /// </summary>
+            internal bool IsContainer { get { return (__DfItem is DfBaseContainer); } }
+            /// <summary>
+            /// Prvek reprezentuje samostatný control
+            /// </summary>
+            internal bool IsControl { get { return (__DfItem is DfBaseControl); } }
+            /// <summary>
+            /// Všechny Child prvky (controly + grupy).
+            /// Všechny je třeba umístit
+            /// </summary>
+            internal ItemInfo[] Childs { get { return __Childs?.ToArray(); } }
+            /// <summary>
+            /// Obsahuje true, pokud máme nějaké <see cref="Childs"/>.
+            /// </summary>
+            internal bool HasChilds { get { return (this.__Childs != null && this.__Childs.Count > 0); } }
 
+            /// <summary>
+            /// Pokud this obsahuje container <see cref="DfBaseContainer"/>, pak projde jeho <see cref="DfBaseContainer.Childs"/>
+            /// a pro každý z nich vytvoří svůj <see cref="Childs"/> prvek své vlastní třídy a korektně jej naváže.
+            /// Pokud tento Child prvek je container, pak vyvolá tuto metodu rekurzivně i pro něj.
+            /// </summary>
             internal void CreateChilds()
             {
-                if (__DfItem is DfBaseContainer dfContainer)
+                if (__DfItem is DfBaseContainer dfContainer && dfContainer.Childs != null)
                 {
+                    __Childs = new List<ItemInfo>();
                     var dfChilds = dfContainer.Childs;
-
+                    foreach (var dfChild in dfChilds)
+                    {
+                        if (dfChild != null)
+                        {
+                            // a) Container (tj. Group)?
+                            if (dfChild is DfBaseContainer dfChildContainer)
+                            {
+                                StyleInfo childStyle = new StyleInfo(dfChildContainer, this.__Style);
+                                ItemInfo childContainer = new ItemInfo(dfChild, this, null, childStyle);
+                                __Childs.Add(childContainer);
+                                childContainer.CreateChilds();
+                            }
+                            // b) Control
+                            else if (dfChild is DfBaseControl dfChildControl)
+                            {
+                                ItemInfo childControl = new ItemInfo(dfChild, this, null, null);
+                                __Childs.Add(childControl);
+                            }
+                        }
+                    }
                 }
             }
         }

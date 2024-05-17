@@ -301,7 +301,10 @@ namespace Noris.WS.DataContracts.DxForm
         public DfGroup() : base()
         {
         }
-
+        /// <summary>
+        /// Styl bloku
+        /// </summary>
+        public override ContainerStyleType Style { get { return ContainerStyleType.Group; } }
         /// <summary>
         /// Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
         /// </summary>
@@ -840,7 +843,7 @@ namespace Noris.WS.DataContracts.DxForm
     }
     /// <summary>
     /// Bázová třída pro všechny samostatné controly bez ohledu na jejich vlastní interaktivitu - tedy Label, Picture, Panel; a dále i pro interaktivní controly: TextBox, Button, CheckBox, ComboBox, ...
-    /// Slouží i jako podklad pro Containery.<br/>
+    /// Neslouží jako podklad pro Containery! Ty se odvozují od <see cref="DfBase"/> a <see cref="DfBaseArea"/>.<br/>
     /// Odpovídá XSD typu <c>type_base_control</c>
     /// <para/>
     /// Tato třída přináší souřadnice <see cref="Bounds"/>.
