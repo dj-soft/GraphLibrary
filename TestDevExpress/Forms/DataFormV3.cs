@@ -19,7 +19,7 @@ namespace TestDevExpress.Forms
     /// Formulář pro testy komponenty <see cref="DxDataFormX"/>
     /// </summary>
     [RunFormInfo(groupText: "Testovací okna", buttonText: "DataForm", buttonOrder: 12, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře okno DataForm verze 3", tabViewToolTip: "Okno zobrazující nový DataForm")]
-    public class DataFormV3 : DxRibbonForm
+    public class DataFormV3 : DxRibbonForm, IControlInfoSource
     {
         #region Inicializace
         /// <summary>
@@ -507,10 +507,10 @@ namespace TestDevExpress.Forms
                 if (dxInfo.FormatVersion == FormatVersionType.Version4)
                 {
                     var dfForm = DxDForm.DfTemplateLoader.LoadTemplate(loadingArgs);
-                    var layoutArgs = new DfTemplateLayoutArgs() { DataForm = dfForm };
+                    var layoutArgs = new DfTemplateLayoutArgs() { DataForm = dfForm, Errors = loadingArgs.Errors, InfoSource = this };
                     DxDForm.DfTemplateLayout.CreateLayout(layoutArgs);
-                    if (loadingArgs.HasErrors)
-                        DxComponent.ShowMessageWarning($"Zadaný dokument '{fileFrmXml}' obsahuje chyby:\r\n{loadingArgs.LoadingErrors}");
+                    if (layoutArgs.HasErrors)              // Zde jsou i chyby sdílené z procesu Loading
+                        DxComponent.ShowMessageWarning($"Zadaný dokument '{fileFrmXml}' obsahuje chyby:\r\n{loadingArgs.ErrorsText}");
                     _ApplyDfForm(dfForm);
                 }
                 else
@@ -958,6 +958,12 @@ namespace TestDevExpress.Forms
 
             result.Add(new DxDData.DataFormRow());
             return result;
+        }
+        #endregion
+        #region IControlInfoSource
+        void IControlInfoSource.ValidateControlInfo(Noris.Clients.Win.Components.AsolDX.DataForm.ControlInfo controlInfo)
+        {
+
         }
         #endregion
     }

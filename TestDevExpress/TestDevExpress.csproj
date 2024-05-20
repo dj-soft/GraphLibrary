@@ -162,6 +162,7 @@
     <Compile Include="AdapterTest.cs" />
     <Compile Include="AsolDX\DataForm\DxCollections.cs" />
     <Compile Include="AsolDX\DataForm\DxDataForm.cs" />
+    <Compile Include="AsolDX\DataForm\UiDataFormatLayout.cs" />
     <Compile Include="AsolDX\DataForm\WsDataFormat.cs" />
     <Compile Include="AsolDX\DataForm\UiDataFormatLoad.cs" />
     <Compile Include="AsolDX\DataForm\DxDataFormData.cs" />
