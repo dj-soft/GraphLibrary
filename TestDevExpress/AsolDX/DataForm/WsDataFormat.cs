@@ -407,6 +407,13 @@ namespace Noris.WS.DataContracts.DxForm
         /// Pak jde o primární panely, a ty jsou typicky uživatelsky ovladatelné.
         /// </summary>
         public Bounds Bounds { get; set; }
+        /// <summary>
+        /// Souřadnice bodu, kde začíná rozmísťování prvků, které nemají zadanou exaktní souřadnici X, Y. Výchozí je "0,0". Zadává se ve formě: "X,Y".
+        /// </summary>
+        public Location FlowLayoutOrigin { get; set; }
+        /// <summary>
+        /// Velikost tohoto conatineru, určená výpočtem.
+        /// </summary>
         public ContainerSize DesignSize { get; set; }
         /// <summary>
         /// Debug text
@@ -608,6 +615,24 @@ namespace Noris.WS.DataContracts.DxForm
         /// Výchozí hodnota je NULL.
         /// </summary>
         public List<DfSubButton> DropDownButtons { get; set; }
+    }
+    /// <summary>
+    /// DxDataForm : EditBox.<br/>
+    /// Odpovídá XSD typu <c>type_editbox</c>
+    /// <para/>
+    /// </summary>
+    internal class DfEditBox : DfBaseLabeledInputControl
+    {
+        /// <summary>
+        /// Konstruktor, nastaví defaulty
+        /// </summary>
+        public DfEditBox() : base()
+        {
+        }
+        /// <summary>
+        /// Druh vstupního prvku (Control).
+        /// </summary>
+        public override ControlType ControlType { get { return ControlType.EditBox; } }
     }
     /// <summary>
     /// DxDataForm : TextBox.<br/>
@@ -861,6 +886,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public virtual ControlType ControlType { get { return ControlType.None; } }
         /// <summary>
+        /// Styl controlu (název, styl písma, velikost, barva popisku, barva textu a pozadí, atd)
+        /// </summary>
+        public DfControlStyle ControlStyle { get; set; }
+        /// <summary>
         /// Umístění prvku. Výchozí je null.
         /// </summary>
         public Bounds Bounds { get; set; }
@@ -946,7 +975,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <param name="top"></param>
         /// <param name="width"></param>
         /// <param name="height"></param>
-        public Bounds(int? left, int? top, int? width, int?height)
+        public Bounds(int? left, int? top, int? width, int? height)
         {
             this.Left = left;
             this.Top = top;
@@ -977,6 +1006,32 @@ namespace Noris.WS.DataContracts.DxForm
         /// Height
         /// </summary>
         public int? Height { get; set; }
+    }
+    /// <summary>
+    /// Styl pro control, typicky kalíšek. Budeme podporovat i rozšířený způsob zadání stylu.
+    /// </summary>
+    public sealed class DfControlStyle
+    {
+        /// <summary>
+        /// Název kalíšku = definuje parametry stylu
+        /// </summary>
+        public string StyleName { get; set; }
+        /// <summary>
+        /// Styl písma pro control
+        /// </summary>
+        public FontStyleType? ControlFontStyle { get; set; }
+        /// <summary>
+        /// Změna velikosti písma proti defaultnímu, pro control
+        /// </summary>
+        public float? ControlFontSizeDelta { get; set; }
+        /// <summary>
+        /// Styl písma pro label u controlu
+        /// </summary>
+        public FontStyleType? LabelFontStyle { get; set; }
+        /// <summary>
+        /// Změna velikosti písma proti defaultnímu, pro label u controlu
+        /// </summary>
+        public float? LabelFontSizeDelta { get; set; }
     }
     /// <summary>
     /// Pozice a velikost controlu
@@ -1083,6 +1138,78 @@ namespace Noris.WS.DataContracts.DxForm
         /// <see cref="ContainerHeight"/>: výška vnějšího prostoru, který obsazuje container
         /// </summary>
         public int ContainerHeight { get; set; }
+    }
+    /// <summary>
+    /// Umístění
+    /// </summary>
+    public sealed class Location
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public Location() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="top"></param>
+        public Location(int? left, int? top)
+        {
+            this.Left = left;
+            this.Top = top;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Left: {Left}; Top: {Top}";
+        }
+        /// <summary>
+        /// Left
+        /// </summary>
+        public int? Left { get; set; }
+        /// <summary>
+        /// Top
+        /// </summary>
+        public int? Top { get; set; }
+    }
+    /// <summary>
+    /// Umístění
+    /// </summary>
+    public sealed class Size
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public Size() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        public Size(int? width, int? height)
+        {
+            this.Width = width;
+            this.Height = height;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Width: {Width}; Height: {Height}";
+        }
+        /// <summary>
+        /// Width
+        /// </summary>
+        public int? Width { get; set; }
+        /// <summary>
+        /// Height
+        /// </summary>
+        public int? Height { get; set; }
     }
     /// <summary>
     /// Okraje
@@ -1226,6 +1353,29 @@ namespace Noris.WS.DataContracts.DxForm
         /// Dole pod textem, písmo zarovnané doleva
         /// </summary>
         Bottom
+    }
+    /// <summary>
+    /// Styl písma
+    /// </summary>
+    [Flags]
+    public enum FontStyleType
+    {
+        /// <summary>
+        /// Standardní
+        /// </summary>
+        Regular = 0,
+        /// <summary>
+        /// Bold
+        /// </summary>
+        Bold = 0x01,
+        /// <summary>
+        /// Italic
+        /// </summary>
+        Italic = 0x02,
+        /// <summary>
+        /// Underlined
+        /// </summary>
+        Underlined = 0x04
     }
     /// <summary>
     /// Zarovnání obsahu do jeho daného prostoru v obou osách (X + Y).

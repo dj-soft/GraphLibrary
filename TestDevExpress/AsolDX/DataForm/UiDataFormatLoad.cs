@@ -6,11 +6,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Text;
-using System.Threading.Tasks;
-using DevExpress.Utils.Commands;
-using DevExpress.Utils.Drawing;
+
 using Noris.WS.DataContracts.DxForm;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
@@ -332,7 +329,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <see cref="DfForm"/>.
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
         /// <param name="dfForm"></param>
         /// <param name="args"></param>
         /// <param name="onlyInfo"></param>
@@ -448,7 +445,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>page</c>, včetně jeho obsahu (tj. atributy a child elementy).
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
         /// <param name="dfPage"></param>
         /// <param name="args"></param>
         /// <returns></returns>
@@ -483,7 +480,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>panel</c>, včetně jeho obsahu (tj. atributy a child elementy).
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
         /// <param name="dfPanel"></param>
         /// <param name="args"></param>
         /// <returns></returns>
@@ -512,7 +509,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>nestedpanel</c>, včetně jeho obsahu (tj. atributy a child elementy).
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
         /// <param name="dfPanelVoid"></param>
         /// <param name="args"></param>
         /// <returns></returns>
@@ -580,7 +577,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>group</c>, včetně jeho obsahu (tj. atributy a child elementy).
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
         /// <param name="dfGroup"></param>
         /// <param name="args"></param>
         /// <returns></returns>
@@ -601,7 +598,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <c>nestedgroup</c>, včetně jeho obsahu (tj. atributy a child elementy).
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
         /// <param name="dfGroupVoid"></param>
         /// <param name="args"></param>
         /// <returns></returns>
@@ -668,7 +665,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Z dat dodaného XElementu <paramref name="xElement"/> načte jeho Child elementy a vytvoří z nich Child controly které vloží do dodaného containeru <paramref name="control"/>.
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, z jehož Child elementů se mají načítat Child controly</param>
         /// <param name="control"></param>
         /// <param name="args"></param>
         private static void _FillContainerChildElements(System.Xml.Linq.XElement xElement, DfBaseContainer control, DfTemplateLoadArgs args)
@@ -922,7 +919,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <see cref="DfBaseInputTextControl"/>, <see cref="DfBaseLabeledInputControl"/>, <see cref="DfSubButton"/>.<br/>
         /// Dále načítá hodnoty pro třídy containerů: <see cref="DfBaseArea"/>, <see cref="DfBaseContainer"/>.
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, z něhož se mají načítat atributy</param>
         /// <param name="target"></param>
         private static void _FillBaseAttributes(System.Xml.Linq.XElement xElement, DfBase target)
         {
@@ -930,7 +927,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             // DfBase:
             target.Name = _ReadAttributeString(xElement, "Name", null);
-            target.State = _ReadAttributeEnumN<ControlStateType>(xElement, "State");
+            target.State = _ReadAttributeControlState(xElement, ControlStateType.Default);
             target.ToolTipTitle = _ReadAttributeString(xElement, "ToolTipTitle", null);
             target.ToolTipText = _ReadAttributeString(xElement, "ToolTipText", null);
             target.Invisible = _ReadAttributeString(xElement, "Invisible", null);
@@ -938,6 +935,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Potomci směrem k Controlům:
             if (target is DfBaseControl control)
             {
+                control.ControlStyle = _ReadAttributeStyle(xElement, null);
                 control.Bounds = _ReadAttributeBounds(xElement, null);
                 control.ColIndex = _ReadAttributeInt32N(xElement, "ColIndex");
                 control.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
@@ -975,12 +973,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (target is DfBaseContainer container)
             {
                 container.Bounds = _ReadAttributeBounds(xElement, null);
+                container.FlowLayoutOrigin = _ReadAttributesLocation(xElement, "FlowLayoutOrigin", null);
             }
         }
         /// <summary>
         /// V daném elementu najde atribut daného jména a vrátí jeho String podobu
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
         /// <param name="defaultValue"></param>
         private static string _ReadAttributeString(System.Xml.Linq.XElement xElement, string attributeName, string defaultValue)
@@ -994,9 +993,35 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return value;
         }
         /// <summary>
+        /// Načte stav prvku <see cref="ControlStateType"/> z atributu 'State' anebo jej složí z atributů ''
+        /// </summary>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
+        private static ControlStateType _ReadAttributeControlState(System.Xml.Linq.XElement xElement, ControlStateType defaultValue)
+        {
+            // Pokud je deklarován atribut 'State', pak načtu jeho hodnotu:
+            var state = _ReadAttributeEnumN<ControlStateType>(xElement, "State");
+            if (state.HasValue) return state.Value;
+
+            // Nemáme 'State': vyhledám jednotlivé Boolean atributy a stav složím:
+            bool isInvisible = _ReadAttributeBoolX(xElement, "Invisible");
+            bool isReadOnly = _ReadAttributeBoolX(xElement, "ReadOnly");
+            bool isDisabled = _ReadAttributeBoolX(xElement, "Disabled");
+            bool isTabStop = _ReadAttributeBoolX(xElement, "TabStop", true, true);       // Pokud tam nebude tento atribut, pak se předpokládá, že TabStop je true. Pouze explicitní 'TabStop = "False"' mě vrátí false!
+
+            // Složíme výsledek:
+            state = ControlStateType.Enabled
+                 | (isInvisible ? ControlStateType.Invisible : ControlStateType.Default)
+                 | (isReadOnly ? ControlStateType.ReadOnly : ControlStateType.Default)
+                 | (isDisabled ? ControlStateType.Disabled : ControlStateType.Default)
+                 | (isTabStop ? ControlStateType.Default : ControlStateType.TabSkip);    // TabStop => Default, NonTabStop = TabSkip!
+            return state.Value;
+        }
+        /// <summary>
         /// V daném elementu najde atribut daného jména a vrátí jeho Int32 podobu
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
         /// <param name="defaultValue"></param>
         private static int _ReadAttributeInt32(System.Xml.Linq.XElement xElement, string attributeName, int defaultValue)
@@ -1007,7 +1032,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// V daném elementu najde atribut daného jména a vrátí jeho Int32 podobu
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
         private static int? _ReadAttributeInt32N(System.Xml.Linq.XElement xElement, string attributeName)
         {
@@ -1022,7 +1047,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// V daném elementu najde atribut daného jména a vrátí jeho Color? podobu
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
         /// <param name="defaultValue"></param>
         private static System.Drawing.Color _ReadAttributeColor(System.Xml.Linq.XElement xElement, string attributeName, System.Drawing.Color defaultValue)
@@ -1033,7 +1058,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// V daném elementu najde atribut daného jména a vrátí jeho Color? podobu
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
         private static System.Drawing.Color? _ReadAttributeColorN(System.Xml.Linq.XElement xElement, string attributeName)
         {
@@ -1053,7 +1078,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// V daném elementu najde atribut daného jména a vrátí jeho Boolean podobu
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
         /// <param name="defaultValue"></param>
         private static bool _ReadAttributeBool(System.Xml.Linq.XElement xElement, string attributeName, bool defaultValue)
@@ -1064,7 +1089,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// V daném elementu najde atribut daného jména a vrátí jeho Boolean? podobu
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
         private static bool? _ReadAttributeBoolN(System.Xml.Linq.XElement xElement, string attributeName)
         {
@@ -1074,33 +1099,75 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var xAttribute = xElement.Attribute(attributeName);
                 if (xAttribute != null && !String.IsNullOrEmpty(xAttribute.Value))
                 {
-                    string text = xAttribute.Value.Trim().ToLower();
-                    switch (text)
-                    {
-                        case "0":
-                        case "f":
-                        case "false":
-                        case "n":
-                        case "ne":
-                            value = false;
-                            break;
-                        case "1":
-                        case "t":
-                        case "true":
-                        case "a":
-                        case "ano":
-                            value = true;
-                            break;
-                    }
+                    var booln = _ConvertTextToBoolN(xAttribute.Value);
+                    if (booln.HasValue) return booln.Value;
                 }
             }
             return value;
         }
         /// <summary>
+        /// V daném elementu najde atribut daného jména:
+        /// Pokud neexistuje, pak vrátí hodnotu <paramref name="defaultValueNotExists"/> (defaultní false).
+        /// Pokud atribut existuje, a nemá hodnotu, pak vrátí <paramref name="defaultValueNotValue"/>.
+        /// Pokud má hodnotu, pak ji konvertuje na boolean a vrátí.
+        /// </summary>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
+        /// <param name="attributeName"></param>
+        /// <param name="defaultValueNotExists">Vrácená hodnota, pokud atribut neexistuje</param>
+        /// <param name="defaultValueNotValue">Vrácená hodnota, pokud atribut existuje - ale nemá zadanou žádnou hodnotu (nebo má, ale není platná)</param>
+        private static bool _ReadAttributeBoolX(System.Xml.Linq.XElement xElement, string attributeName, bool defaultValueNotExists = false, bool defaultValueNotValue = true)
+        {
+            if (String.IsNullOrEmpty(attributeName)) return defaultValueNotExists;
+            if (xElement.HasAttributes)
+            {   // Máme atributy
+                var xAttribute = xElement.Attribute(attributeName);
+                if (xAttribute != null)
+                {   // Hledaný atribut existuje:
+                    var booln = _ConvertTextToBoolN(xAttribute.Value);
+                    // A má nějakou rozumnou hodnotu:
+                    if (booln.HasValue) return booln.Value;
+                    // Atribut existuje, ale nemá rozpozonatelnou hodnotu (nebo nemá žádnou):
+                    return defaultValueNotValue;
+                }
+            }
+            // Atribut neexistuje:
+            return defaultValueNotExists;
+        }
+        /// <summary>
+        /// Vrací true nebo false podle obsahu dodaného textu. Může vrátit null, když text je jiný.
+        /// </summary>
+        /// <param name="text">Dodaný text</param>
+        private static bool? _ConvertTextToBoolN(string text)
+        {
+            if (!String.IsNullOrEmpty(text))
+            {
+                text = text.Trim().ToLower();
+                switch (text)
+                {
+                    case "0":
+                    case "f":
+                    case "false":
+                    case "n":
+                    case "ne":
+                    case "no":
+                        return false;
+                    case "1":
+                    case "t":
+                    case "true":
+                    case "a":
+                    case "ano":
+                    case "y":
+                    case "yes":
+                        return true;
+                }
+            }
+            return null;
+        }
+        /// <summary>
         /// V daném elementu najde atribut daného jména a vrátí jeho hodnotu převedenou do enumu <typeparamref name="TEnum"/>.
         /// Optional dovolí modifikovat načtený text z atributu pomocí funkce <paramref name="modifier"/>.
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
         /// <param name="defaultValue"></param>
         /// <param name="modifier">Modifikátor načteného textu z XML před tím, než proběhne jeho TryParse na hodnotu enumu</param>
@@ -1113,7 +1180,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// V daném elementu najde atribut daného jména a vrátí jeho hodnotu převedenou do enumu <typeparamref name="TEnum"/>.
         /// Optional dovolí modifikovat načtený text z atributu pomocí funkce <paramref name="modifier"/>.
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
         /// <param name="modifier">Modifikátor načteného textu z XML před tím, než proběhne jeho TryParse na hodnotu enumu</param>
         private static TEnum? _ReadAttributeEnumN<TEnum>(System.Xml.Linq.XElement xElement, string attributeName, Func<string, string> modifier = null) where TEnum : struct
@@ -1132,9 +1199,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return value;
         }
         /// <summary>
-        /// Z dodaného <paramref name="xElement"/> načte hodnoty odpovídající souřadnicím prvku a vrátí je.
+        /// Z dodaného <paramref name="xElement"/> načte styl prvku z atributu 'StyleName' nebo z elementu 'style'
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        private static DfControlStyle _ReadAttributeStyle(System.Xml.Linq.XElement xElement, DfControlStyle defaultValue)
+        {
+            string styleName = _ReadAttributeString(xElement, "StyleName", null);
+            if (!String.IsNullOrEmpty(styleName)) return new DfControlStyle() { StyleName = styleName };
+            return defaultValue;
+        }
+        /// <summary>
+        /// Z dodaného <paramref name="xElement"/> načte hodnoty odpovídající souřadnicím prvku <see cref="Bounds"/> a vrátí je.
+        /// </summary>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="defaultValue"></param>
         private static Bounds _ReadAttributeBounds(System.Xml.Linq.XElement xElement, Bounds defaultValue)
         {
@@ -1143,12 +1223,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var textBounds = _ReadAttributeString(xElement, "Bounds", null);
             if (!String.IsNullOrEmpty(textBounds))
             {
-                var numbers = _SplitAndParseInt32(textBounds);
-                if (numbers != null && numbers.Count >= 2)
+                var numbers = _SplitAndParseInt32N(textBounds);
+                if (numbers != null && numbers.Count >= 1)
                 {
                     int cnt = numbers.Count;
                     left = numbers[0];
-                    top = numbers[1];
+                    top = (cnt >= 2 ? numbers[1] : null);
                     width = (cnt >= 3 ? numbers[2] : null);
                     height = (cnt >= 4 ? numbers[3] : null);
                     return new Bounds(left, top, width, height);
@@ -1164,9 +1244,31 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return defaultValue;
         }
         /// <summary>
+        /// Z dodaného <paramref name="xElement"/> načte hodnoty odpovídající souřadnicím <see cref="Location"/> ze zadaného prvku a vrátí je.
+        /// </summary>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
+        /// <param name="attributeName"></param>
+        /// <param name="defaultValue"></param>
+        private static Location _ReadAttributesLocation(System.Xml.Linq.XElement xElement, string attributeName, Location defaultValue)
+        {
+            var textMargins = _ReadAttributeString(xElement, attributeName, null);
+            if (!String.IsNullOrEmpty(textMargins))
+            {
+                var numbers = _SplitAndParseInt32N(textMargins);
+                if (numbers != null && numbers.Count >= 1)
+                {
+                    int cnt = numbers.Count;
+                    int? left = numbers[0];
+                    int? top = (cnt >= 2 ? numbers[1] : null);
+                    if (cnt == 2) return new Location(left, top);
+                }
+            }
+            return defaultValue;
+        }
+        /// <summary>
         /// Z dodaného <paramref name="xElement"/> načte hodnoty odpovídající souřadnicím prvku a vrátí je.
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
         /// <param name="defaultValue"></param>
         private static Margins _ReadAttributesMargin(System.Xml.Linq.XElement xElement, string attributeName, Margins defaultValue)
@@ -1223,7 +1325,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             // Rozdělím text nalezeným oddělovačem a převedu jednotlivé prvky na číslice:
             var items = (splitter != '\0') ? text.Split(splitter) : new string[] { text };      // Pokud jsem nenašel oddělovač, nebudu text rozdělovat a vezmu jej jako celek
-            List<int> result = new List<int>();
+            var result = new List<int>();
             foreach ( var item in items ) 
             {
                 if (!String.IsNullOrEmpty(item) && Int32.TryParse(item.Trim().Replace(",", "."), out var number))
@@ -1232,9 +1334,51 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return (result.Count > 0 ? result : null);
         }
         /// <summary>
+        /// Rozdělí dodaný string <paramref name="text"/> v místě daných oddělovačů <paramref name="splitters"/> a převede prvky na čísla Int?.
+        /// Oddělovač jsou dodány jako jeden string (default = ";, "), ale chápou se jako sada znaků.
+        /// Pokud je dodáno více znaků oddělovačů, pak se najde ten první z nich, který je v textu přítomen.<para/>
+        /// Např. pro text = <c>"125,4; 200"</c> a oddělovače <c>";, "</c> bude nalezen první přítomný oddělovač <c>';'</c> a v jeho místě bude rozdělen vstupní text. Nikoliv v místě znaku <c>','</c>.
+        /// <br/>
+        /// Pokud na vstupu je prázdný string, vrátí null.
+        /// <br/>
+        /// Pokud ale na vstupu bude string, který obsahuje mezi oddělovači něco nenumerického, bude na tom místě vrácenou NULL.
+        /// Tedy pro vstup <c>NULL</c> bude vráceno pole s jedním prvekm NULL, 
+        /// pro vstup<c>"4,,250"</c> bude vráceno pole se 3 prvky: 3, NULL, 250; atd.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="splitters"></param>
+        /// <returns></returns>
+        private static List<int?> _SplitAndParseInt32N(string text, string splitters = ";, ")
+        {
+            if (String.IsNullOrEmpty(text) || String.IsNullOrEmpty(splitters)) return null;
+
+            // Najdu ten oddělovač, který první je přítomen v zadaném textu:
+            char splitter = '\0';
+            foreach (var spl in splitters)
+            {
+                if (text.Contains(spl.ToString()))
+                {
+                    splitter = spl;
+                    break;
+                }
+            }
+
+            // Rozdělím text nalezeným oddělovačem a převedu jednotlivé prvky na číslice:
+            var items = (splitter != '\0') ? text.Split(splitter) : new string[] { text };      // Pokud jsem nenašel oddělovač, nebudu text rozdělovat a vezmu jej jako celek
+            var result = new List<int?>();
+            foreach (var item in items)
+            {
+                if (!String.IsNullOrEmpty(item) && Int32.TryParse(item.Trim().Replace(",", "."), out var number))
+                    result.Add(number);
+                else
+                    result.Add(null);
+            }
+            return result;
+        }
+        /// <summary>
         /// Vrátí lokální jméno elementu, Trim(), ToLower().
         /// </summary>
-        /// <param name="xElement"></param>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <returns></returns>
         private static string _GetValidElementName(System.Xml.Linq.XElement xElement)
         {
@@ -1379,6 +1523,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="args">Data a parametry pro tvorbu layoutu</param>
         private static void _CreateLayout(DfTemplateLayoutArgs args)
         {
+            if (args is null) throw new ArgumentNullException($"DataForm.DfTemplateLayout.CreateLayout() : args is null.");
+            if (args.DataForm is null) throw new ArgumentNullException($"DataForm.DfTemplateLayout.CreateLayout() : DataForm is null.");
+            if (args.InfoSource is null) throw new ArgumentNullException($"DataForm.DfTemplateLayout.CreateLayout() : InfoSource is null.");
+
             // Pro Parent objekty (Form, Page, Panel) nepočítám jejich souřadnice = ty je nemají.
             // Ale střádám si jejich hierarchicky definovaný styl (LayoutStyle), který následně používám pro tvorbu layoutu uvnitř panelu:
             var dfForm = args.DataForm;
@@ -1393,12 +1541,43 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         foreach (var dfPanel in dfPage.Panels)
                         {   // Pro panel budu počítat rozmístění vnitřních prvků a následně i rozměry panelu
                             StyleInfo stylePanel = new StyleInfo(dfPanel, stylePage);
-                            _CreateLayoutPanel(args, dfPanel, stylePanel);
+                            using (var panelItem = ItemInfo.CreateRoot(dfPanel, args, stylePanel))
+                            {
+                                panelItem.ProcessPanel();
+                                panelItem.SearchForToolTips();
+                                panelItem.SetChildRelativeBound();
+                                panelItem.SetAbsoluteBound();
+                            }
                         }
                     }
                 }
             }
         }
+
+        /// <summary>
+        /// Metoda vrátí defaultní velikost pro prvek, bez znalosti systému
+        /// </summary>
+        /// <param name="columnName"></param>
+        /// <param name="controlType"></param>
+        /// <param name="controlStyle"></param>
+        /// <returns></returns>
+        private static Size GetDefaultSizeForAttribute(string columnName, ControlType controlType, FontStyleType controlStyle)
+        {
+            switch (controlType)
+            {
+                case ControlType.Button: return new Size(200, 35);
+                case ControlType.BarCode: return new Size(96, 96);
+                case ControlType.Image: return new Size(96, 96);
+                case ControlType.EditBox: return new Size(250, 96);
+                default:
+                    string name = (columnName ?? "").Trim().ToLower();
+                    if (name.EndsWith("_refer")) return new Size(120, 20);
+                    if (name.EndsWith("_nazev")) return new Size(250, 20);
+                    break;
+            }
+            return new Size(150, 20);
+        }
+
         /// <summary>
         /// Sestaví fyzický layout pro prvky v daném containeru, určí velikost containeru
         /// </summary>
@@ -1409,9 +1588,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (dfPanel is null) return;
 
-            var itemCont = ItemInfo.CreateRoot(dfPanel, args, styleContainer);
-
-
+            using (var rootItem = ItemInfo.CreateRoot(dfPanel, args, styleContainer))
+            {
+                rootItem.SetChildRelativeBound();
+                rootItem.SetAbsoluteBound();
+            }
 
             /*
             if (dfContainer.Childs is null || dfContainer.Childs.Count == 0)
@@ -1456,12 +1637,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             dfContainer.DesignSize = GetDesignSize(dfContainer, styleContainer, maxX, maxY);
 
             */
-        }
-
-        private static object _CreateColumns(DfTemplateLayoutArgs args)
-        {
-
-            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -1529,9 +1704,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             return new ContainerSize(0, 0, 0, 0);
         }
-        #region class LayoutStyle
+        #region class LayoutStyle : Styl vzhledu pro jeden container, podporuje dědičnost
         /// <summary>
-        /// Styl pro jeden container
+        /// Styl vzhledu pro jeden container, podporuje dědičnost
         /// </summary>
         private class StyleInfo
         {
@@ -1580,7 +1755,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             public Margins Margins { get; set; }
         }
         #endregion
-        #region class ColumnInfo
+        #region class ColumnInfo : Průběžná data o layoutu jednoho sloupce
         /// <summary>
         /// Průběžná data o layoutu jednoho sloupce
         /// </summary>
@@ -1595,7 +1770,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 return $"Index: {Index}; LeftLabelWidth: '{LeftLabelWidth}'; ControlWidth: '{ControlWidth}'; RighLabelWidth: '{RighLabelWidth}'";
             }
             /// <summary>
-            /// Vytvoří sadu prvků <see cref="ColumnInfo"/> pro daný styl
+            /// Vytvoří sadu prvků <see cref="ColumnInfo"/> pro daný styl.
+            /// Pokud není dodán styl, anebo ten neobsahuje nic o sloupcích, pak vrátí pole s jedním defaultním sloupcem.
             /// </summary>
             /// <param name="layoutStyle"></param>
             /// <returns></returns>
@@ -1603,31 +1779,39 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 List<ColumnInfo> columns = new List<ColumnInfo>();
 
-                // Konkrétní šířky:
-                if (layoutStyle.ColumnWidths != null)
-                {
-                    var columnWidths = layoutStyle.ColumnWidths;
-                    var cols = columnWidths.Split(';');
-                    int count = cols.Length;
-                    for (int i = 0; i < count; i++)
-                    {
-                        parseCol(cols[i], out int? lblW, out int? ctrW, out int? lbrW);
-                        columns.Add(new ColumnInfo() { Index = i, LeftLabelDefinedWidth = lblW, ControlDefinedWidth = ctrW, RightLabelDefinedWidth = lbrW });
+                // Nějak dané šířky:
+                if (layoutStyle != null)
+                {   // Podle definovaného stylu:
+                    if (layoutStyle.ColumnWidths != null)
+                    {   // Explicitní šířky:
+                        var columnWidths = layoutStyle.ColumnWidths;
+                        var cols = columnWidths.Split(';');
+                        int count = cols.Length;
+                        for (int i = 0; i < count; i++)
+                        {
+                            parseCol(cols[i], out int? lblW, out int? ctrW, out int? lbrW);
+                            columns.Add(new ColumnInfo() { Index = i, LeftLabelDefinedWidth = lblW, ControlDefinedWidth = ctrW, RightLabelDefinedWidth = lbrW });
+                        }
+                    }
+
+                    if (columns.Count == 0)
+                    {   // Prostě jen počet sloupců, bez deklarované šířky:
+                        if (layoutStyle.ColumnsCount.HasValue && layoutStyle.ColumnsCount.Value > 0)
+                        {
+                            int count = layoutStyle.ColumnsCount.Value;
+                            for (int i = 0; i < count; i++)
+                                columns.Add(new ColumnInfo() { Index = i });
+                        }
                     }
                 }
 
-                // Prostě jen počet sloupců, bez deklarované šířky:
                 if (columns.Count == 0)
-                {
-                    if (layoutStyle.ColumnsCount.HasValue && layoutStyle.ColumnsCount.Value > 0)
-                    {
-                        int count = layoutStyle.ColumnsCount.Value;
-                        for (int i = 0; i < count; i++)
-                            columns.Add(new ColumnInfo() { Index = i });
-                    }
+                {   // Jediný (defaultní) sloupec, bez deklarované šířky:
+                    columns.Add(new ColumnInfo() { Index = 0 });
                 }
 
                 return columns.ToArray();
+
 
                 // Parsuje text "10,20,30" na tři číslice
                 void parseCol(string text, out int? lblW, out int? ctrW, out int? lbrW)
@@ -1725,9 +1909,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             public int? ColumnRight { get; set; }
         }
         #endregion
-        #region class ItemInfo
-        private class ItemInfo
+        #region class ItemInfo : Dočasná pracovní a výkonná schránka na jednotlivý prvek layoutu
+        /// <summary>
+        /// Dočasná pracovní a výkonná schránka na jednotlivý prvek layoutu (panel, grupa, control), v procesu určování layoutu prvků v rámci panelu.
+        /// <para/>
+        /// Uvnitř panelu jsou prvky rozmístěny fixně = jsou dané designerem formuláře. 
+        /// Ale rozmístění sousedních panelů na DataFormu je více v rukou uživatele / pohledu / velikosti monitoru atd.
+        /// </summary>
+        private class ItemInfo : IDisposable
         {
+            #region Konstrukce, Dispose, základní stromové vlastnosti, Childs a jejich tvorba
             /// <summary>
             /// Vytvoří Root prvek, a sučasně v něm najde Containery a vytvoří rekurzivně celou strukturu
             /// </summary>
@@ -1738,10 +1929,41 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             internal static ItemInfo CreateRoot(DfBase dfItem, DfTemplateLayoutArgs dfArgs, StyleInfo style)
             {
                 var rootItem = new ItemInfo(dfItem, null, dfArgs, style);
-                rootItem.CreateChilds();
-                rootItem.CalculateSize();
-                rootItem.SetAbsoluteBound();
+                rootItem._CreateChilds();
                 return rootItem;
+            }
+            /// <summary>
+            /// Pokud this obsahuje container <see cref="DfBaseContainer"/>, pak projde jeho <see cref="DfBaseContainer.Childs"/>
+            /// a pro každý z nich vytvoří svůj <see cref="_Childs"/> prvek své vlastní třídy a korektně jej naváže.
+            /// Pokud tento Child prvek je container, pak vyvolá tuto metodu rekurzivně i pro něj.
+            /// </summary>
+            private void _CreateChilds()
+            {
+                if (__DfItem is DfBaseContainer dfContainer && dfContainer.Childs != null)
+                {
+                    __Childs = new List<ItemInfo>();
+                    var dfChilds = dfContainer.Childs;
+                    foreach (var dfChild in dfChilds)
+                    {
+                        if (dfChild != null)
+                        {
+                            // a) Container (tj. Group)?
+                            if (dfChild is DfBaseContainer dfChildContainer)
+                            {
+                                StyleInfo childStyle = new StyleInfo(dfChildContainer, this.__Style);
+                                ItemInfo childContainer = new ItemInfo(dfChild, this, null, childStyle);
+                                __Childs.Add(childContainer);
+                                childContainer._CreateChilds();
+                            }
+                            // b) Control
+                            else if (dfChild is DfBaseControl dfChildControl)
+                            {
+                                ItemInfo childControl = new ItemInfo(dfChild, this, null, null);
+                                __Childs.Add(childControl);
+                            }
+                        }
+                    }
+                }
             }
             /// <summary>
             /// Privátní konstruktor
@@ -1756,6 +1978,35 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 __Parent = parent;
                 __DfArgs = dfArgs;
                 __Style = style;
+                __Childs = null;
+                _PrepareData();
+            }
+            /// <summary>
+            /// Připraví si trvalá data
+            /// </summary>
+            private void _PrepareData()
+            {
+                string columnName = __DfItem.Name;
+                if (__DfItem is DfBaseInputControl inputControl)
+                {
+                    if (!String.IsNullOrEmpty(inputControl.ColumnName)) columnName = inputControl.ColumnName;
+                }
+                __ColumnName = columnName;
+
+
+            }
+        
+            /// <summary>
+            /// Dispose
+            /// </summary>
+            public void Dispose()
+            {
+                __Childs?.ForEach(i => i?.Dispose());
+                this.Reset();
+                __DfItem = null;
+                __Parent = null;
+                __DfArgs = null;
+                __Style = null;
             }
             /// <summary>
             /// Vizualizace
@@ -1763,8 +2014,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <returns></returns>
             public override string ToString()
             {
-                return this.FullPath;
+                return this._FullPath;
             }
+            /// <summary>
+            /// Jméno sloupce (nebo jméno prvku)
+            /// </summary>
+            private string __ColumnName;
+
             /// <summary>
             /// Definiční prvek = načtený z XML šablony (panel, grupa, control...)
             /// </summary>
@@ -1784,30 +2040,35 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private StyleInfo __Style;
             /// <summary>
-            /// Prvky mých Childs
+            /// Prvky mých Childs. Výchozí stav je null (většina prvků jsou Controly, které nemají Childs). Lze testovat <see cref="_HasChilds"/>.
             /// </summary>
             private List<ItemInfo> __Childs;
 
             /// <summary>
             /// Root prvek. Zde nikdy není null: pokud this je Root, pak zde je this.
             /// </summary>
-            internal ItemInfo Root { get { return (__Parent?.Root ?? this); } }
+            private ItemInfo _Root { get { return (__Parent?._Root ?? this); } }
             /// <summary>
             /// Parent prvek. Může být null.
             /// </summary>
-            internal ItemInfo Parent { get { return __Parent; } }
+            private ItemInfo _Parent { get { return __Parent; } }
             /// <summary>
             /// Obsahuje true, pokud this je Root
             /// </summary>
-            internal bool IsRoot { get { return (__Parent is null); } }
+            private bool _IsRoot { get { return (__Parent is null); } }
             /// <summary>
             /// Argumenty pro layout šablony = obshaují Form a další data.
             /// </summary>
-            internal DfTemplateLayoutArgs LayoutArgs { get { return Root.__DfArgs; } }
+            private DfTemplateLayoutArgs _LayoutArgs { get { return _Root.__DfArgs; } }
+            /// <summary>
+            /// Objekt, který je zdrojem dalších dat pro dataform ze strany systému.
+            /// Například vyhledá popisný text pro datový control daného jména, určí velikost textu s daným obsahem a daným stylem, atd...
+            /// </summary>
+            private IControlInfoSource _InfoSource { get { return _LayoutArgs.InfoSource; } }
             /// <summary>
             /// Plná cesta od Root přes jeho Child až ke mě = typy prvků oddělené dvojtečkou
             /// </summary>
-            internal string FullPath 
+            private string _FullPath 
             {
                 get 
                 {
@@ -1816,60 +2077,209 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     var text = type + (!String.IsNullOrEmpty(name) ? $"='{name}'" : "");
 
                     var parent = __Parent;
-                    return (parent != null ? parent.FullPath + " => " : "") + text;
+                    return (parent != null ? parent._FullPath + " => " : "") + text;
                 }
             }
             /// <summary>
             /// Prvek reprezentuje container (panel, grupa)
             /// </summary>
-            internal bool IsContainer { get { return (__DfItem is DfBaseContainer); } }
+            private bool _IsContainer { get { return (__DfItem is DfBaseContainer); } }
             /// <summary>
-            /// Prvek reprezentuje samostatný control
+            /// Prvek reprezentuje samostatný control: pak <see cref="__DfItem"/> je potomkem <see cref="DfBaseControl"/>.
             /// </summary>
-            internal bool IsControl { get { return (__DfItem is DfBaseControl); } }
+            private bool _IsControl { get { return (__DfItem is DfBaseControl); } }
             /// <summary>
             /// Všechny Child prvky (controly + grupy).
             /// Všechny je třeba umístit
             /// </summary>
-            internal ItemInfo[] Childs { get { return __Childs?.ToArray(); } }
+            private ItemInfo[] _Childs { get { return __Childs?.ToArray(); } }
             /// <summary>
-            /// Obsahuje true, pokud máme nějaké <see cref="Childs"/>.
+            /// Obsahuje true, pokud máme nějaké <see cref="_Childs"/> (tj. pole <see cref="__Childs"/> není null a obsahuje alespoň jeden prvek).
             /// </summary>
-            internal bool HasChilds { get { return (this.__Childs != null && this.__Childs.Count > 0); } }
-
+            private bool _HasChilds { get { return (this.__Childs != null && this.__Childs.Count > 0); } }
+            #endregion
+            #region Zpracování layoutu panelu
             /// <summary>
-            /// Pokud this obsahuje container <see cref="DfBaseContainer"/>, pak projde jeho <see cref="DfBaseContainer.Childs"/>
-            /// a pro každý z nich vytvoří svůj <see cref="Childs"/> prvek své vlastní třídy a korektně jej naváže.
-            /// Pokud tento Child prvek je container, pak vyvolá tuto metodu rekurzivně i pro něj.
+            /// Zajistí plné zpracování this containeru, rekurzivně jeho Child containerů a zdejších Controlů.
             /// </summary>
-            internal void CreateChilds()
+            internal void ProcessPanel()
             {
-                if (__DfItem is DfBaseContainer dfContainer && dfContainer.Childs != null)
+                _ProcessContainer();
+            }
+            /// <summary>
+            /// Zajistí plné zpracování this containeru, rekurzivně jeho Child containerů a zdejších Controlů.
+            /// </summary>
+            private void _ProcessContainer()
+            { 
+                if (this._HasChilds)
                 {
-                    __Childs = new List<ItemInfo>();
-                    var dfChilds = dfContainer.Childs;
-                    foreach (var dfChild in dfChilds)
+                    var childs = this.__Childs;
+
+                    // Přípravná fáze, jejím výsledkem jsou určené velikosti Child Containerů a Controlů:
+                    foreach (var item in childs)
                     {
-                        if (dfChild != null)
+                        if (item._IsContainer)
+                            item._ProcessContainer();                          // Child je Container, ať si projde tuto metodu rekurzivně sám
+                        else if (item._IsControl)
+                            item._PrepareForControl(__DfItem as DfBaseControl);
+                    }
+
+                    // Rozmístění našich Child prvků (zde se Child Containery již řeší jako rovnocenné s Controly, neřešíme už rekurzi):
+
+
+                }
+            }
+            /// <summary>
+            /// Provede přípravné kroky před tvorbou layoutu pro daný control,
+            /// Prázdný string zadaný v XML je platná definice = nechci ToolTip.
+            /// </summary>
+            /// <param name="baseControl"></param>
+            /// <exception cref="NotImplementedException"></exception>
+            private void _PrepareForControl(DfBaseControl baseControl)
+            {
+                //  Tato metoda zajistí doplnění vlastností controlu pro ty hodnoty, které nejsou explicitně zadané v šabloně, na základě dat dodaných z jádra pro konkrétní atribut dané třídy
+                // Velikost controlu
+                // MainLabel - text, velikost (nikoli konkrétní pozice)
+                // Tooltip
+                // Překlady textů z formátovacách stringů : "fm(MSG001)" => "Reference", atd  (pro labely, pro tooltipy)
+
+                //  Využijeme strukturu pro data, kterou naplníme známými hodnotami z formuláře, a pošleme do systému k doplnění těch chybějících hodnot:
+                __ControlData = new ControlInfo();
+
+
+
+
+
+
+                bool hasTipTitle = (baseControl.ToolTipTitle != null);         // Prázdný string zadaný v XML je platná definice = nechci ToolTip.
+                bool hasTipText = (baseControl.ToolTipText != null);
+                if (!(hasTipTitle && hasTipText))
+                {
+                    var toolTip = this._InfoSource.GetToolTipForAttribute(__ColumnName);
+                    if (!hasTipTitle) baseControl.ToolTipTitle = toolTip.Title;
+                    if (!hasTipText) baseControl.ToolTipTitle = toolTip.Text;
+                }
+            }
+            #endregion
+            #region Určení relativní souřadnice každého prvku
+            /// <summary>
+            /// Metoda určí relativní souřadnice svých Child prvků. Nakonec určí i svoji velikost na základě velikosti a pozice Child prvků.
+            /// Container může mít svoje souřadnice i exaktně určené (pokud je to grupa).
+            /// </summary>
+            internal void SetChildRelativeBound()
+            {
+                if (this._HasChilds)
+                {
+                    var childs = this.__Childs;
+                    // Určím velikost každé Child buňky:
+                    foreach (var item in childs)
+                    {
+                        if (item._IsContainer)
+                            item.SetChildRelativeBound();                      // Child je Container, ať si projde tuto metodu rekurzivně sám
+                        else if (item._IsControl)
+                            item._SetBaseControlSizes(__DfItem as DfBaseControl);
+                    }
+
+                    // Určím sloupce mého layoutu a zařadím moje Child prvky do těchto sloupců:
+                    var columns = ColumnInfo.CreateColumns(this.__Style);
+
+                    //  * Pokud prvek nemá určené ani X ani Y, pak je volně plovoucí;
+                    //  * Pokud prvek má zadané X, pak spadá do aktuálního řádku Y, ale na danou souřadnici;
+                    //  * Pokud prvek má určené obě X i Y, pak jej umístím na jeho místo i kdyby na dané souřadnici už něco bylo (to je odpovědnost autora);
+
+
+                }
+
+                // Určím velikost mojí jako containeru:
+
+            }
+            #endregion
+            #region Určení velikosti this controlu = jeden prvek (atribut)
+            /// <summary>
+            /// Metoda určí velikost zdejšího controlu, potomek <see cref="DfBaseControl"/>.
+            /// </summary>
+            private void _SetBaseControlSizes(DfBaseControl baseControl)
+            {
+                // Jméno [nebo jméno sloupce] a jeho styl:
+                string columnName = __ColumnName;
+                string styleName = baseControl.ControlStyle?.StyleName;
+                FontStyleType controlStyle = FontStyleType.Regular; 
+
+                // Vlastní control, jeho velikost:
+                var designBounds = baseControl.Bounds;
+                int? controlWidth = designBounds?.Width;
+                int? controlHeight = designBounds?.Height;
+                bool hasWidth = (controlWidth.HasValue && controlWidth.Value >= 0);
+                bool hasHeight = (controlHeight.HasValue && controlHeight.Value >= 0);
+
+                // Pokud nemám zadanou šířku nebo výšku:
+                if (!(hasWidth && hasHeight))
+                {
+                    // Zeptáme se zdroje, zda pro daný control určí velikost podle jména a typu atributu:
+                    var size = this._InfoSource.GetSizeForAttribute(columnName, baseControl.ControlType, controlStyle);
+                    if (!hasWidth)
+                    {
+                        controlWidth = size?.Width;
+                        hasWidth = (controlWidth.HasValue && controlWidth.Value >= 0);
+                    }
+
+                    if (!hasHeight)
+                    {
+                        controlHeight = size?.Height;
+                        hasHeight = (controlHeight.HasValue && controlHeight.Value >= 0);
+                    }
+
+                    // Pokud nemám zadanou šířku nebo výšku ani poté:
+                    if (!(hasWidth && hasHeight))
+                    {
+                        // Zeptáme se generické metody, jakou velikost bude mít control:
+                        size = DfTemplateLayout.GetDefaultSizeForAttribute(columnName, baseControl.ControlType, controlStyle);
+                        if (!hasWidth)
                         {
-                            // a) Container (tj. Group)?
-                            if (dfChild is DfBaseContainer dfChildContainer)
-                            {
-                                StyleInfo childStyle = new StyleInfo(dfChildContainer, this.__Style);
-                                ItemInfo childContainer = new ItemInfo(dfChild, this, null, childStyle);
-                                __Childs.Add(childContainer);
-                                childContainer.CreateChilds();
-                            }
-                            // b) Control
-                            else if (dfChild is DfBaseControl dfChildControl)
-                            {
-                                ItemInfo childControl = new ItemInfo(dfChild, this, null, null);
-                                __Childs.Add(childControl);
-                            }
+                            controlWidth = size?.Width;
+                            hasWidth = (controlWidth.HasValue && controlWidth.Value >= 0);
+                        }
+
+                        if (!hasHeight)
+                        {
+                            controlHeight = size?.Height;
+                            hasHeight = (controlHeight.HasValue && controlHeight.Value >= 0);
                         }
                     }
                 }
+                this._ControlSize = new Size(controlWidth, controlHeight);
+
+
+                // Control může být i s automatickým labelem:
+                if (baseControl is DfBaseLabeledInputControl labeledControl)
+                    _SetLabeledControlSizes(labeledControl, columnName);
             }
+            /// <summary>
+            /// Metoda určí velikost a pozici zdejšího controlu s labelem, potomek <see cref="DfBaseLabeledInputControl"/>.
+            /// </summary>
+            /// <param name="labeledControl"></param>
+            /// <param name="columnName"></param>
+            private void _SetLabeledControlSizes(DfBaseLabeledInputControl labeledControl, string columnName)
+            {
+                LabelPositionType labelPosition = labeledControl.LabelPosition ?? this.__Style.AutoLabelPosition;
+                string mainLabel = labeledControl.Label;
+                bool hasLabel = !String.IsNullOrEmpty(mainLabel);
+                if (!hasLabel && labelPosition == LabelPositionType.None) return;        // Pokud nemám dán svůj label, a pozice labelu je None, pak Main label řešit nebudu.
+
+
+            }
+
+
+            private Size _ControlSize { get; set; }
+            private Size _MainLabelSize { get; set; }
+            private Size _SuffixLabelSize { get; set; }
+            #endregion
+            #region Určení absolutní souřadnice každého prvku
+            internal void SetAbsoluteBound()
+            { }
+            #endregion
+            internal void Reset()
+            { }
         }
         #endregion
     }
@@ -1950,9 +2360,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
     }
     #endregion
-    #region class DfTemplateLayoutArgs : Data pro rozmístění prvků šablony DataFOrmu
+    #region class DfTemplateLayoutArgs : Data pro algoritmy rozmístění prvků šablony DataFormu
     /// <summary>
-    /// Data pro rozmístění prvků šablony DataFOrmu
+    /// Data pro algoritmy rozmístění prvků šablony DataFormu
     /// </summary>
     internal class DfTemplateLayoutArgs
     {
@@ -1961,9 +2371,85 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public DfForm DataForm { get; set; }
         /// <summary>
-        /// Funkce, která pro určitý sloupec (dané jméno) vrátí informace pro control (šířka, atd)
+        /// Objekt, který je zdrojem dalších dat pro dataform ze strany systému.
+        /// Například vyhledá popisný text pro datový control daného jména, určí velikost textu s daným obsahem a daným stylem, atd...
         /// </summary>
-        public Func<string, string, int?> ControlInfoCalculator { get; set; }
+        public IControlInfoSource InfoSource { get; set; }
+    }
+    #endregion
+    #region interface IControlInfoSource : Předpis rozhraní pro toho, kdo bude poskytovat informace o atributech a o rozměrech textů pro DataForm
+    /// <summary>
+    /// Předpis rozhraní pro toho, kdo bude poskytovat informace o atributech a o rozměrech textů pro DataForm.
+    /// </summary>
+    internal interface IControlInfoSource
+    {
+        /// <summary>
+        /// Vrátí hlavní label pro daný atribut (daný jménem sloupce).
+        /// </summary>
+        /// <param name="columnName">Jméno sloupce definované v šabloně</param>
+        /// <returns></returns>
+        void GetMainLabelForAttribute(ControlInfo controlInfo);
+        /// <summary>
+        /// Vrátí suffix label pro daný atribut (daný jménem sloupce).
+        /// Suffix je vypsán vpravo, typicky: Kč, km, m2, kg.... Nejběžnější výsledek je null.
+        /// </summary>
+        /// <param name="columnName">Jméno sloupce definované v šabloně</param>
+        /// <returns></returns>
+        string GetSuffixLabelForAttribute(string columnName);
+        /// <summary>
+        /// Vrátí velikost pro atribut pro sloupec daného jména.
+        /// </summary>
+        /// <param name="columnName">Jméno sloupce definované v šabloně</param>
+        /// <param name="controlType">Typ controlu</param>
+        /// <param name="fontStyle">Styl písma. Vliv velikosti písma si řeší interně.</param>
+        /// <returns></returns>
+        Size GetSizeForAttribute(string columnName, ControlType controlType, FontStyleType fontStyle);
+        /// <summary>
+        /// Vrátí velikost pro popisek s daným textem.
+        /// </summary>
+        /// <param name="text">Text popisku</param>
+        /// <param name="fontStyle">Styl písma. Vliv velikosti písma si řeší interně.</param>
+        /// <returns></returns>
+        Size GetSizeForText(string text, FontStyleType fontStyle);
+        ToolTipInfo GetToolTipForAttribute(string columnName);
+    }
+    /// <summary>
+    /// Data popisující control v rámci DataFormu
+    /// </summary>
+    internal class ControlInfo
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="columnName"></param>
+        public ControlInfo(string name, string columnName)
+        {
+            Name = name;
+            ColumnName = columnName;
+        }
+        /// <summary>
+        /// Jméno prvku
+        /// </summary>
+        public string Name { get; private set; }
+        /// <summary>
+        /// Jméno sloupce
+        /// </summary>
+        public string ColumnName { get; private set; }
+        public string ControlText { get; set; }
+        public string LabelMainText { get; set; }
+        public string LabelSuffixText { get; set; }
+        /// <summary>
+        /// Titulek ToolTipu
+        /// </summary>
+        public string ToolTipTitle { get; set; }
+        /// <summary>
+        /// Text ToolTipu
+        /// </summary>
+        public string ToolTipText { get; set; }
+
+        public int? ControlWidth { get; set; }
+        public int? ControlHeight { get; set; }
     }
     #endregion
 }

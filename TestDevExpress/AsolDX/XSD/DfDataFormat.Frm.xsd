@@ -319,7 +319,12 @@
                                 <xs:documentation xml:lang="cs-cz">Vstupní textové políčko.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
-                        <xs:element name="textboxbutton" type="type_textboxbutton" minOccurs="0" maxOccurs="unbounded">
+						<xs:element name="editbox" type="type_editbox" minOccurs="0" maxOccurs="unbounded">
+							<xs:annotation>
+								<xs:documentation xml:lang="cs-cz">Vstupní editorové políčko (editace většího obsahu: poznámka atd).</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="textboxbutton" type="type_textboxbutton" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
                                 <xs:documentation xml:lang="cs-cz">Vstupní textové políčko s buttony.</xs:documentation>
                             </xs:annotation>
@@ -373,7 +378,12 @@
                         <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-            </xs:extension>
+				<xs:attribute name="FlowLayoutOrigin" type="xs:string">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Souřadnice bodu, kde začíná rozmísťování prvků, které nemají zadanou exaktní souřadnici X,Y. Výchozí je "0,0". Zadává se ve formě: "X,Y".</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
         </xs:complexContent>
     </xs:complexType>
     
@@ -560,7 +570,15 @@
         </xs:complexContent>        
     </xs:complexType>
 
-    <!--    type_textboxbutton = DfTextBoxButton  -  TextBox s možností přidat malá tlačítka vpravo / vlevo  -->
+	<!--    type_textbox = DfEditBox  -  Editor většího textu (Poznámka atd)                                -->
+	<xs:complexType name="type_editbox">
+		<xs:complexContent>
+			<xs:extension base="type_base_labeled_input_control">
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<!--    type_textboxbutton = DfTextBoxButton  -  TextBox s možností přidat malá tlačítka vpravo / vlevo  -->
     <xs:complexType name="type_textboxbutton">
         <xs:complexContent>
             <xs:extension base="type_textbox">
@@ -741,7 +759,12 @@
     <xs:complexType name="type_base_control">
         <xs:complexContent>
             <xs:extension base="type_base">
-                <xs:attribute name="Bounds" type="xs:string">
+				<xs:attribute name="StyleName" type="color_cup_enum">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Název stylu (jméno kalíšku), který určuje vzhled tohoto prvku.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="Bounds" type="xs:string">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Souřadnice prvku v jednom políčku, v pořadí: X,Y,Width[,Height]. Alternativa hodnot X, Y, Width, Height.</xs:documentation>
                     </xs:annotation>
@@ -1154,15 +1177,6 @@
         <xs:union memberTypes="xs:string">
             <xs:simpleType>
                 <xs:restriction base="xs:string">
-                    <xs:enumeration value="User_1" />
-                    <xs:enumeration value="User_2" />
-                    <xs:enumeration value="User_3" />
-                    <xs:enumeration value="User_4" />
-                    <xs:enumeration value="User_5" />
-                    <xs:enumeration value="User_6" />
-                    <xs:enumeration value="User_7" />
-                    <xs:enumeration value="User_8" />
-                    <xs:enumeration value="User_9" />
                     <xs:enumeration value="GoodValue" />
                     <xs:enumeration value="BetterValue" />
                     <xs:enumeration value="ExcellentValue" />
@@ -1175,7 +1189,16 @@
                     <xs:enumeration value="Warning" />
                     <xs:enumeration value="Error" />
                     <xs:enumeration value="Warning" />
-                    <xs:enumeration value="Red_front_normal" />
+					<xs:enumeration value="User_1" />
+					<xs:enumeration value="User_2" />
+					<xs:enumeration value="User_3" />
+					<xs:enumeration value="User_4" />
+					<xs:enumeration value="User_5" />
+					<xs:enumeration value="User_6" />
+					<xs:enumeration value="User_7" />
+					<xs:enumeration value="User_8" />
+					<xs:enumeration value="User_9" />
+					<xs:enumeration value="Red_front_normal" />
                     <xs:enumeration value="Red_front_protect" />
                     <xs:enumeration value="Green_front_normal" />
                     <xs:enumeration value="Green_front_protect" />
@@ -1184,16 +1207,15 @@
                     <xs:enumeration value="Blue_front_normal" />
                     <xs:enumeration value="Blue_front_protect" />
                     <xs:enumeration value="Black_label_front_bold" />
-                </xs:restriction>
-            </xs:simpleType>
-        </xs:union>
-    </xs:simpleType>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:union>
+	</xs:simpleType>
     <xs:simpleType name="color_name_enum">
         <xs:union memberTypes="xs:string">
             <xs:simpleType>
                 <xs:restriction base="xs:string">
-                    <xs:enumeration value="#B0B0E0"><xs:annotation><xs:documentation xml:lang="cs-cz">Zadejte barvu v RGB.</xs:documentation></xs:annotation></xs:enumeration>
-                    <xs:enumeration value="AliceBlue"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #F0F8FF.</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="User_1"><xs:annotation><xs:documentation xml:lang="cs-cz">User 1</xs:documentation></xs:annotation></xs:enumeration>
                     <xs:enumeration value="AntiqueWhite"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FAEBD7.</xs:documentation></xs:annotation></xs:enumeration>
                     <xs:enumeration value="Aqua"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #00FFFF.</xs:documentation></xs:annotation></xs:enumeration>
                     <xs:enumeration value="Aquamarine"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #7FFFD4.</xs:documentation></xs:annotation></xs:enumeration>
