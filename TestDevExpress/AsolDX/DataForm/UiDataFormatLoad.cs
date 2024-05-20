@@ -1739,8 +1739,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 var rootItem = new ItemInfo(dfItem, null, dfArgs, style);
                 rootItem.CreateChilds();
+                rootItem.CalculateSize();
+                rootItem.SetAbsoluteBound();
                 return rootItem;
-
             }
             /// <summary>
             /// Privátní konstruktor
