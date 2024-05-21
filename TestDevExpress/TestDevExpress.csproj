@@ -2469,6 +2469,7 @@
     <Content Include="AsolDX\XML\dw_organizace_form.frm.xml" />
     <Content Include="AsolDX\XML\dw_sample_form.frm.xml" />
     <Content Include="AsolDX\XML\dw_nested_dph.frm.xml" />
+    <Content Include="AsolDX\XML\dw_simple_1.frm.xml" />
     <Content Include="TestDevExpress.ico" />
     <None Include="_Icons\Nephrite_15.ico" />
     <None Include="_Icons\Nephrite_14.ico" />

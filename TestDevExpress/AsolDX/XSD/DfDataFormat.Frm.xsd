@@ -235,7 +235,16 @@
     <xs:complexType name="type_group">
         <xs:complexContent>
             <xs:extension base="type_base_container">
-
+                <xs:attribute name="ColIndex" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="ColSpan" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Počet sloupců, které prvek obsazuje v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
@@ -259,6 +268,11 @@
                         <xs:documentation xml:lang="cs-cz">Souřadnice prvku v jednom políčku, v pořadí: X,Y,Width[,Height]. Alternativa hodnot X, Y, Width, Height.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
+                <xs:attribute name="Size" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Velikost prvku v jednom políčku, v pořadí: Width,Height. Alternativa hodnot Bounds, Width, Height.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
                 <xs:attribute name="X" type="xs:int">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
@@ -277,6 +291,16 @@
                 <xs:attribute name="Height" type="xs:int">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="ColIndex" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="ColSpan" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Počet sloupců, které prvek obsazuje v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>
@@ -356,6 +380,11 @@
 				<xs:attribute name="Bounds" type="xs:string">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Souřadnice prvku v jednom políčku, v pořadí: X,Y,Width[,Height]. Alternativa hodnot X, Y, Width, Height.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Size" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Velikost prvku v jednom políčku, v pořadí: Width,Height. Alternativa hodnot Bounds, Width, Height.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="X" type="xs:int">
@@ -767,6 +796,11 @@
 				<xs:attribute name="Bounds" type="xs:string">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Souřadnice prvku v jednom políčku, v pořadí: X,Y,Width[,Height]. Alternativa hodnot X, Y, Width, Height.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Size" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Velikost prvku v jednom políčku, v pořadí: Width,Height. Alternativa hodnot Bounds, Width, Height.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="X" type="xs:int">

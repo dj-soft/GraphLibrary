@@ -313,7 +313,6 @@ namespace Noris.WS.DataContracts.DxForm
         /// Počet sloupců, které prvek obsazuje v FlowLayoutu. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
         /// </summary>
         public int? ColSpan { get; set; }
-
     }
     /// <summary>
     /// Vnořený panel, vložený do Page.
@@ -380,6 +379,14 @@ namespace Noris.WS.DataContracts.DxForm
         /// Pak jde o primární panely, a ty jsou typicky uživatelsky ovladatelné.
         /// </summary>
         public Bounds Bounds { get; set; }
+        /// <summary>
+        /// Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
+        /// </summary>
+        public int? ColIndex { get; set; }
+        /// <summary>
+        /// Počet sloupců, které prvek obsazuje v FlowLayoutu. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
+        /// </summary>
+        public int? ColSpan { get; set; }
     }
     /// <summary>
     /// Prostor obsahující controly = základ pro <see cref="DfPanel"/> a pro <see cref="DfGroup"/>.<br/>

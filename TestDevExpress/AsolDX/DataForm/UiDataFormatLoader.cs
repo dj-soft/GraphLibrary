@@ -588,7 +588,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             // Atributy:
             _FillBaseAttributes(xElement, dfGroup);
-            // Grupa nemá vlastní specifické atributy.
+            dfGroup.ColIndex = _ReadAttributeInt32N(xElement, "ColIndex");
+            dfGroup.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
 
             // Elementy = Controly + Panely:
             _FillContainerChildElements(xElement, dfGroup, args);
@@ -612,6 +613,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             dfNestedGroup.NestedTemplate = _ReadAttributeString(xElement, "NestedTemplate", null);
             dfNestedGroup.NestedGroupName = _ReadAttributeString(xElement, "NestedPanelName", null);
             dfNestedGroup.Bounds = _ReadAttributeBounds(xElement, null);
+            dfNestedGroup.ColIndex = _ReadAttributeInt32N(xElement, "ColIndex");
+            dfNestedGroup.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
 
             // Nested šablona:
             if (!_TryLoadNestedTemplate(dfNestedGroup.NestedTemplate, args, out DfForm dfNestedForm, $"NestedGroup '{dfNestedGroup.Name}'")) return null;
@@ -626,6 +629,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (dfNestedGroup.ToolTipText != null) dfGroup.ToolTipText = dfNestedGroup.ToolTipText;
                 if (dfNestedGroup.Invisible != null) dfGroup.Invisible = dfNestedGroup.Invisible;
                 dfGroup.Bounds = dfNestedGroup.Bounds;
+                dfGroup.ColIndex = dfNestedGroup.ColIndex;
+                dfGroup.ColSpan = dfNestedGroup.ColSpan;
             }
             else
             {
@@ -757,6 +762,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 case "button": return _FillControlButton(xElement, new DfButton(), args);
                 case "dropdownbutton": return _FillControlDropDownButton(xElement, new DfDropDownButton(), args);
                 case "textbox": return _FillControlTextBox(xElement, new DfTextBox(), args);
+                case "editbox": return _FillControlEditBox(xElement, new DfEditBox(), args);
                 case "textboxbutton": return _FillControlTextBoxButton(xElement, new DfTextBoxButton(), args);
                 case "combobox": return _FillControlComboBox(xElement, new DfComboBox(), args);
 
@@ -828,6 +834,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _FillBaseAttributes(xElement, control);
             control.EditMask = _ReadAttributeString(xElement, "EditMask", null);
             control.Alignment = _ReadAttributeEnumN<ContentAlignmentType>(xElement, "Alignment");
+            return control;
+        }
+        private static DfBaseControl _FillControlEditBox(System.Xml.Linq.XElement xElement, DfEditBox control, DfTemplateLoadArgs args)
+        {
+            _FillBaseAttributes(xElement, control);
             return control;
         }
         private static DfBaseControl _FillControlTextBoxButton(System.Xml.Linq.XElement xElement, DfTextBoxButton control, DfTemplateLoadArgs args)
@@ -1220,6 +1231,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             int? left, top, width, height;
 
+            Bounds bounds = defaultValue;
+            bool hasBounds = false;
+
+            // Celý Bounds:
             var textBounds = _ReadAttributeString(xElement, "Bounds", null);
             if (!String.IsNullOrEmpty(textBounds))
             {
@@ -1231,17 +1246,53 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     top = (cnt >= 2 ? numbers[1] : null);
                     width = (cnt >= 3 ? numbers[2] : null);
                     height = (cnt >= 4 ? numbers[3] : null);
-                    return new Bounds(left, top, width, height);
+                    bounds = new Bounds(left, top, width, height);
+                    hasBounds = true;
+                    if (cnt >= 3) return bounds;           // Pokud byly zadány hodnoty alespoň X,Y,Width: tak už nebudeme řešit ani Size ani jednotlivé souřadnice.
                 }
             }
 
+            // Size:
+            var textSize = _ReadAttributeString(xElement, "Size", null);
+            if (!String.IsNullOrEmpty(textSize))
+            {
+                var numbers = _SplitAndParseInt32N(textSize);
+                if (numbers != null && numbers.Count >= 1)
+                {
+                    int cnt = numbers.Count;
+                    width = numbers[0];
+                    height = (cnt >= 2 ? numbers[1] : null);
+                    if (hasBounds)
+                    {   // Pokud byl nalezen element Bounds s alespoň jedním prvkem (viz výše), tak zde doplním jeho Size a je hotovo:
+                        bounds.Width = width;
+                        bounds.Height = height;
+                        return bounds;
+                    }
+                    // Element Bounds nemáme, máme jen Size:
+                    bounds = new Bounds(null, null, width, height);
+                    // Projdeme dál, možná najdeme X a Y?
+                    hasBounds = true;
+                }
+            }
+
+            // Jednotlivé hodnoty:
             left = _ReadAttributeInt32N(xElement, "X");
             top = _ReadAttributeInt32N(xElement, "Y");
             width = _ReadAttributeInt32N(xElement, "Width");
             height = _ReadAttributeInt32N(xElement, "Height");
-            if (left.HasValue || top.HasValue || width.HasValue || height.HasValue) return new Bounds(left, top, width, height);
+            bool hasDimension = (left.HasValue || top.HasValue || width.HasValue || height.HasValue);
+            if (!hasDimension) return bounds;              // Pokud nemáme žádnou jednotkovou dimenzi, pak vrátím bounds v současném stavu (může tam být defaultValue).
 
-            return defaultValue;
+            // Máme nějakou dimenzi, musíme mít i cílovou instanci 'bounds', abychom měli nalezenou dimenzi kam dát:
+            if (!hasBounds)
+                bounds = new Bounds();
+
+            if (left.HasValue) bounds.Left = left;
+            if (top.HasValue) bounds.Top = top;
+            if (width.HasValue) bounds.Width = width;
+            if (height.HasValue) bounds.Height = height;
+
+            return bounds;
         }
         /// <summary>
         /// Z dodaného <paramref name="xElement"/> načte hodnoty odpovídající souřadnicím <see cref="Location"/> ze zadaného prvku a vrátí je.

@@ -13,11 +13,13 @@
 	
 	
 	<page Name="page1" Title="Odběratel" >
-        <panel Name="first" BackImagePosition="BottomRight" BackImageName="pic/back/corner-gray" IsHeader="True" >
-            <nestedgroup Name="nested001" NestedTemplate="app/lcs/mfr/forms/product_prices"/>
-            <textbox Name="Www" ColumnName="state" LabelPosition="Bottom"/>
-            <button Name="aaa"/>
-            
+        <panel Name="first" BackImagePosition="BottomRight" BackImageName="pic/back/corner-gray" IsHeader="True" ColumnsCount="2" >
+            <nestedgroup Name="nested001" NestedTemplate="app/lcs/mfr/forms/product_prices" ColSpan="2"/>
+            <textbox Name="Www" ColumnName="state" LabelPosition="Bottom" Width="160"/>
+            <button Name="aaa" Size="200,30" />
+            <label Name="title1" Text="Postupné přidávání dat" ColSpan="2"/>
+            <textbox Name="Vpravo" ColIndex="1" Width="80"/>
+            <editbox Name="note" ColSpan="2" Size="350,40" />
         </panel>
                
 	    <panel Name="commondata" IsHeader="True" ColumnWidths="150,350" Title="Základní data" >

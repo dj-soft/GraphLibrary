@@ -279,7 +279,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <returns></returns>
             public override string ToString()
             {
-                return $"Index: {Index}; LeftLabelWidth: '{LeftLabelWidth}'; ControlWidth: '{ControlWidth}'; RighLabelWidth: '{RighLabelWidth}'";
+                return $"Index: {Index}; LeftLabelWidth: '{LeftLabelWidth}'; ControlWidth: '{ControlWidth}'; RightLabelWidth: '{RighLabelWidth}'";
             }
             /// <summary>
             /// Dispose
@@ -595,6 +595,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private ItemInfo _Parent { get { return __Parent; } }
             /// <summary>
+            /// Styl pro tento prvek. Pokud this je container, pak má definován svůj vlastní styl (<see cref="__Style"/>).
+            /// Pokud jej nemá (typicky proto, že jde o Control), pak zde vrací aktuální styl ze svého Parenta.
+            /// </summary>
+            private StyleInfo _CurrentStyle { get { return __Style ?? __Parent?._CurrentStyle; } }
+            /// <summary>
             /// Obsahuje true, pokud this je Root
             /// </summary>
             private bool _IsRoot { get { return (__Parent is null); } }
@@ -603,6 +608,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Zde není nikdy null.
             /// </summary>
             private DfTemplateLayoutArgs _LayoutArgs { get { return _Root.__DfArgs; } }
+            /// <summary>
+            /// Celý formulář
+            /// </summary>
+            private DfForm _DfForm { get { return _LayoutArgs.DataForm; } }
             /// <summary>
             /// Objekt, který je zdrojem dalších dat pro dataform ze strany systému.
             /// Například vyhledá popisný text pro datový control daného jména, určí velikost textu s daným obsahem a daným stylem, atd...
@@ -617,7 +626,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 {
                     var type = __DfItem.GetType().Name;
                     var name = __DfItem.Name;
-                    var text = type + (!String.IsNullOrEmpty(name) ? $"='{name}'" : "");
+                    var text = type + (!String.IsNullOrEmpty(name) ? $" '{name}'" : "");
 
                     var parent = __Parent;
                     return (parent != null ? parent._FullPath + " => " : "") + text;
@@ -781,12 +790,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     _PrepareChilds();            // Příprava: Containery kompletně (rekurzivně), a poté všechny prvky: doplnění aplikačních dat a měření primární velikosti
                     _SetChildsFlowPositions();   // Rozmístění našich Child prvků (zde se Child Containery již řeší jako rovnocenné s Controly, neřešíme už rekurzi)
                     _CalculateColumns();         // 
-
                     _PrepareRelativeBounds();
-
                 }
 
-                this._ControlSize = new Size(0, 0);
             }
             /// <summary>
             /// Připraví data Childs: kompletní příprava Containeru, a prvotní příprava pro pozicování Group + Control
@@ -849,7 +855,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.__ColSpan = baseControl.ColSpan;
 
                 //  Využijeme strukturu pro data, kterou naplníme známými hodnotami z formuláře, a pošleme do systému k doplnění těch chybějících hodnot:
-                var itemData = new ControlInfo(__DfArgs.DataForm, __Name, __ColumnName, baseControl.ControlType);
+                var itemData = new ControlInfo(_DfForm, __Name, __ColumnName, baseControl.ControlType);
                 __ControlData = itemData;
 
                 // Bázové informace:
@@ -864,7 +870,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var labeledInputControl = baseControl as DfBaseLabeledInputControl;
                 if (labeledInputControl != null)
                 {
-                    itemData.LabelPosition = labeledInputControl.LabelPosition ?? __Style.AutoLabelPosition;
+                    itemData.LabelPosition = labeledInputControl.LabelPosition ?? _CurrentStyle.AutoLabelPosition;
                     itemData.MainLabelText = labeledInputControl.Label;
                     itemData.MainLabelWidth = labeledInputControl.LabelWidth;
                 }
@@ -888,8 +894,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private void _SetChildsFlowPositions()
             {
-                // Všechny moje Childs: pokud je Absolute, pak jen nastavím příznak __LayoutMode;
-                //  zde řeším Flow prvky = zařazuji do sloupců, a napočítávám Max hodnoty jejich sloupců:
+                // Všechny moje Childs: 
+                //  pokud konkrétní Child má definovanou pozici (X,Y), pak mu jen nastavím příznak __LayoutMode = Fixed;
+                //  zde řeším Flow prvky (takové, co nemají X,Y) = zařazuji je do layoutových sloupců, a napočítávám Max hodnoty jejich sloupců:
                 this.__LayoutColumns = ColumnInfo.CreateColumns(this.__Style);
                 int columnsCount = this.__LayoutColumns.Length;
                 int rowIndex = 0;
@@ -948,9 +955,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Projde Flow prvky, které zabírají na šířku více než jeden sloupec (ColSpan větší než 1) a jejich šířky promítne do odpovídajících sloupců.
             /// </summary>
             private void _CalculateColumns()
-            { }
+            {
+                var childs = this.__Childs;
+                foreach (var item in childs)
+                {
+                    var itemData = item.__ControlData;
+                    if (item.__LayoutMode == LayoutModeType.Flow && item.__LayoutEndColumnIndex.Value > item.__LayoutBeginColumnIndex.Value)
+                    {   // Prvek je typu Float, a má ColSpan > 1:
+
+                        
+                    }
+                }
+            }
             /// <summary>
             /// Projde všechny prvky a přidělí jim konkrétní relativní souřadnice = v rámci jejich Parenta.
+            /// Současně určí svoji vnitřní velikost (this ke container).
             /// </summary>
             private void _PrepareRelativeBounds()
             { }
@@ -960,7 +979,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Tato metoda je vyvolána pro prvek typu Panel.
             /// </summary>
             private void _PreparePanelAbsoluteBounds()
-            { }
+            {
+
+                this._ControlSize = new Size(0, 0);
+            }
 
             /// <summary>
             /// Všechny svoje Child prvky umístí na konkrétní souřadnici.

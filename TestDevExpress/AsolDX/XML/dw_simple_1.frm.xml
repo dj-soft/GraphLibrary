@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<template xmlns="http://tempuri.org/DxDataFormat.Frm.xsd"
+          FormatVersion="4"
+          UseNorisClass="65"
+          Messages="dw_common_messages.msg.xml"
+          DataSource="dw_sample_form.data.xml"
+		  AutoLabelPosition="Up"
+          MasterWidth="530" MasterHeight="320"
+          TotalWidth="750" TotalHeight="520"
+		  AddUda="True" UdaLabelPosition="Up"
+          ColumnWidths="200;300;100" >
+
+    <panel Name="simple1" Title="Jednoduchý" ColumnsCount="2" >
+        <textbox Name="reference_subjektu"/>
+        <textbox Name="nazev_subjektu"/>
+        <textbox Name="dodavatel_refer"/>
+        <textbox Name="dodavatel_nazev"/>
+    </panel>
+</template>
