@@ -13,7 +13,13 @@
 	
 	
 	<page Name="page1" Title="Odběratel" >
-		
+        <panel Name="first" BackImagePosition="BottomRight" BackImageName="pic/back/corner-gray" IsHeader="True" >
+            <nestedgroup Name="nested001" NestedTemplate="app/lcs/mfr/forms/product_prices"/>
+            <textbox Name="Www" ColumnName="state" LabelPosition="Bottom"/>
+            <button Name="aaa"/>
+            
+        </panel>
+               
 	    <panel Name="commondata" IsHeader="True" ColumnWidths="150,350" Title="Základní data" >
 		    <textbox Name="reference_subjektu" State="ReadOnly" Width="150" />
 		    <textbox Name="nazev_subjektu" State="ReadOnly" Width="350" />

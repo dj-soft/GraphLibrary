@@ -164,7 +164,7 @@
     <Compile Include="AsolDX\DataForm\DxDataForm.cs" />
     <Compile Include="AsolDX\DataForm\UiDataFormatLayout.cs" />
     <Compile Include="AsolDX\DataForm\WsDataFormat.cs" />
-    <Compile Include="AsolDX\DataForm\UiDataFormatLoad.cs" />
+    <Compile Include="AsolDX\DataForm\UiDataFormatLoader.cs" />
     <Compile Include="AsolDX\DataForm\DxDataFormData.cs" />
     <Compile Include="AsolDX\DataForm\DxDataFormPanel.cs">
       <SubType>Component</SubType>
