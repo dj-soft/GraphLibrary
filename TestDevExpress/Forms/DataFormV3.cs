@@ -337,6 +337,7 @@ namespace TestDevExpress.Forms
             {
                 case "StatusRefresh":
                     RefreshStatusCurrent(true);
+                    TestDevExpress.AsolDX.News.FontSizes.CreateTable();
                     break;
                 case "TestDrawing":
                     this.TestPainting = e.Item?.Checked ?? false; 
@@ -502,12 +503,12 @@ namespace TestDevExpress.Forms
             try
             {
                 pathFrmXml = System.IO.Path.GetDirectoryName(fileFrmXml);
-                var loadingArgs = new DfTemplateLoadArgs() { TemplateFileName = fileFrmXml, NestedTemplateLoader = loadNested, LogLoadingTime = true };
+                var loadingArgs = new DfTemplateLoadArgs() { TemplateFileName = fileFrmXml, NestedTemplateLoader = loadNested, LogTime = true };
                 var dxInfo = DxDForm.DfTemplateLoader.LoadInfo(loadingArgs);
                 if (dxInfo.FormatVersion == FormatVersionType.Version4)
                 {
                     var dfForm = DxDForm.DfTemplateLoader.LoadTemplate(loadingArgs);
-                    var layoutArgs = new DfTemplateLayoutArgs() { DataForm = dfForm, Errors = loadingArgs.Errors, InfoSource = this };
+                    var layoutArgs = new DfTemplateLayoutArgs() { DataForm = dfForm, Errors = loadingArgs.Errors, LogTime = true, InfoSource = this };
                     DxDForm.DfTemplateLayout.CreateLayout(layoutArgs);
                     if (layoutArgs.HasErrors)              // Zde jsou i chyby sdílené z procesu Loading
                         DxComponent.ShowMessageWarning($"Zadaný dokument '{fileFrmXml}' obsahuje chyby:\r\n{loadingArgs.ErrorsText}");
@@ -963,7 +964,26 @@ namespace TestDevExpress.Forms
         #region IControlInfoSource
         void IControlInfoSource.ValidateControlInfo(Noris.Clients.Win.Components.AsolDX.DataForm.ControlInfo controlInfo)
         {
-
+            var name = controlInfo.ColumnName ?? "".Trim().ToLower();
+            if (!controlInfo.ControlWidth.HasValue) controlInfo.ControlWidth = _GetControlWidth(controlInfo, name);
+            if (String.IsNullOrEmpty(controlInfo.MainLabelText)) controlInfo.MainLabelText = _GetMainLabelText(controlInfo, name);
+        }
+        private int? _GetControlWidth(ControlInfo controlInfo, string name)
+        {
+            if (name == "reference_subjektu" || name.EndsWith("_refer")) return 120;
+            if (name == "nazev_subjektu" || name.EndsWith("_nazev")) return 250;
+            return 100;
+        }
+        private string _GetMainLabelText(ControlInfo controlInfo, string name)
+        {
+            switch (name)
+            {
+                case "reference_subjektu": return "Reference";
+                case "nazev_subjektu": return "Název";
+                case "dodavatel_refer": return "Dodavatel";
+                case "dodavatel_nazev": return "Dodavatel, název";
+            }
+            return null;
         }
         #endregion
     }

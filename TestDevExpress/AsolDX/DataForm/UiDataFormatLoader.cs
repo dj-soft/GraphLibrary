@@ -285,7 +285,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             var startTime = DxComponent.LogTimeCurrent;
             var dfForm = _FillAreaDfForm(xElement, null, args, onlyInfo);
-            if (args.LogLoadingTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load '{(onlyInfo ? "DfInfo" : "DfForm")}' from 'XDocument': {DxComponent.LogTokenTimeMicrosec}", startTime);
+            if (args.LogTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load '{(onlyInfo ? "DfInfo" : "DfForm")}' from 'XDocument': {DxComponent.LogTokenTimeMicrosec}", startTime);
 
             return dfForm;
         }
@@ -313,7 +313,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
                 var startTime = DxComponent.LogTimeCurrent;
                 args.TemplateContent = System.IO.File.ReadAllText(args.TemplateFileName);
-                if (args.LogLoadingTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'Content' from file '{System.IO.Path.GetFileName(args.TemplateFileName)}': {DxComponent.LogTokenTimeMicrosec}", startTime);
+                if (args.LogTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load 'Content' from file '{System.IO.Path.GetFileName(args.TemplateFileName)}': {DxComponent.LogTokenTimeMicrosec}", startTime);
             }
 
             // Nemáme parsovaný XDocument, ale máme stringový obsah => budeme jej parsovat do TemplateDocument:
@@ -321,7 +321,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 var startTime = DxComponent.LogTimeCurrent;
                 args.TemplateDocument = System.Xml.Linq.XDocument.Parse(args.TemplateContent);
-                if (args.LogLoadingTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Parse 'XDocument' from 'Content' ({args.TemplateContent.Length} B):': {DxComponent.LogTokenTimeMicrosec}", startTime);
+                if (args.LogTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Parse 'XDocument' from 'Content' ({args.TemplateContent.Length} B):': {DxComponent.LogTokenTimeMicrosec}", startTime);
             }
 
             return args.TemplateDocument?.Root;
@@ -1579,10 +1579,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public Func<string, string> NestedTemplateLoader { get; set; }
         /// <summary>
-        /// Logovat časy načítání
-        /// </summary>
-        public bool LogLoadingTime { get; set; }
-        /// <summary>
         /// Vygeneruje a vrátí argument pro nested šablonu: fyzicky jiný dokument, ale společná metoda <see cref="NestedTemplateLoader"/> a evidence chyb.
         /// </summary>
         /// <param name="nestedFile"></param>
@@ -1606,6 +1602,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// </summary>
     internal class DfProcessArgs
     {
+        /// <summary>
+        /// Logovat časy načítání
+        /// </summary>
+        public bool LogTime { get; set; }
         /// <summary>
         /// Obsahuje true, pokud jsou zachyceny nějaké chyby.
         /// </summary>

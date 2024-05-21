@@ -19,6 +19,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// </summary>
     internal static class DfTemplateLayout
     {
+        #region Tvorba layoutu formuláře i jednotlivých panelů
+
         /// <summary>
         /// Vytvoří layout jednotlivých panelů, určí jejich velikost.
         /// </summary>
@@ -39,6 +41,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             // Pro Parent objekty (Form, Page, Panel) nepočítám jejich souřadnice = ty je nemají.
             // Ale střádám si jejich hierarchicky definovaný styl (LayoutStyle), který následně používám pro tvorbu layoutu uvnitř panelu:
+            var startTime = DxComponent.LogTimeCurrent;
             var dfForm = args.DataForm;
             if (dfForm != null && dfForm.Pages != null)
             {
@@ -59,37 +62,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     }
                 }
             }
+            if (args.LogTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Create Layout: {DxComponent.LogTokenTimeMicrosec}", startTime);
         }
-
-        /// <summary>
-        /// Validuje (prověří a doplní) informace o konkrétním controlu.
-        /// </summary>
-        /// <param name="controlInfo">Data o controlu</param>
-        /// <returns></returns>
-        private static void ValidateControlInfo(ControlInfo controlInfo)
-        {
-            switch (controlInfo.ControlType)
-            {
-                case ControlType.Button: setControlSize(200, 35); break;
-                case ControlType.BarCode: setControlSize(96, 96); break;
-                case ControlType.Image: setControlSize(96, 96); break;
-                case ControlType.EditBox: setControlSize(250, 96); break;
-                default:
-                    string name = (controlInfo.ColumnName ?? "").Trim().ToLower();
-                    if (name.EndsWith("_refer")) setControlSize(120, 20); 
-                    if (name.EndsWith("_nazev")) setControlSize(250, 20);
-                    break;
-            }
-            
-
-            // Vloží ControlSize
-            void setControlSize(int width, int height)
-            {
-                if (!controlInfo.ControlWidth.HasValue) controlInfo.ControlWidth = width;
-                if (!controlInfo.ControlHeight.HasValue) controlInfo.ControlHeight = height;
-            }
-        }
-
         /// <summary>
         /// Sestaví fyzický layout pro prvky v daném containeru, určí velikost containeru
         /// </summary>
@@ -216,6 +190,44 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             return new ContainerSize(0, 0, 0, 0);
         }
+        #endregion
+        #region Implicitní určení hodnot do dataformu (velikosti controlů, velikosti textu)
+        /// <summary>
+        /// Validuje (prověří a doplní) informace o konkrétním controlu.
+        /// </summary>
+        /// <param name="itemData">Data o controlu</param>
+        /// <returns></returns>
+        internal static void ValidateControlInfo(ControlInfo itemData)
+        {
+            _ValidateControlSize(itemData);
+            // _ValidateLabelSize(itemData);
+        }
+        private static void _ValidateControlSize(ControlInfo itemData)
+        {
+            switch (itemData.ControlType)
+            {
+                case ControlType.Label: setControlSize(200, 18); break;
+                case ControlType.Button: setControlSize(200, 35); break;
+                case ControlType.BarCode: setControlSize(96, 96); break;
+                case ControlType.Image: setControlSize(96, 96); break;
+                case ControlType.EditBox: setControlSize(250, 96); break;
+                default:
+                    string name = (itemData.ColumnName ?? "").Trim().ToLower();
+                    if (name.EndsWith("_refer")) setControlSize(120, 20);
+                    if (name.EndsWith("_nazev")) setControlSize(250, 20);
+                    break;
+            }
+
+
+            // Vloží ControlSize
+            void setControlSize(int width, int height)
+            {
+                if (!itemData.ControlWidth.HasValue) itemData.ControlWidth = width;
+                if (!itemData.ControlHeight.HasValue) itemData.ControlHeight = height;
+            }
+        }
+
+        #endregion
         #region class LayoutStyle : Styl vzhledu pro jeden container, podporuje dědičnost
         /// <summary>
         /// Styl vzhledu pro jeden container, podporuje dědičnost
@@ -245,8 +257,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
             public StyleInfo(DfBaseArea dfArea, StyleInfo styleParent)
             {
-                this.ColumnsCount = (dfArea.ColumnsCount.HasValue ? dfArea.ColumnsCount : styleParent.ColumnsCount);
-                this.ColumnWidths = dfArea.ColumnWidths != null ? dfArea.ColumnWidths : styleParent.ColumnWidths;
+                // Sloupce (ColumnsCount a ColumnWidths):
+                //  - Pokud aktuální 'dfArea' přináší nějaké informace v jedné (nebo v obou) proměnné ('ColumnWidths' nebo 'ColumnsCount'), pak se převezme z dfArea a nikoli z Parenta.
+                //  - Nelze kombinovat jednu hodnotu z aktuálního 'dfArea' a druhou z 'styleParent'!
+                if (dfArea != null && ((dfArea.ColumnsCount.HasValue && dfArea.ColumnsCount.Value > 0) || (!String.IsNullOrEmpty(dfArea.ColumnWidths))))
+                {   // Obě hodnoty z aktuálního 'dfArea':
+                    this.ColumnsCount = dfArea.ColumnsCount;
+                    this.ColumnWidths = dfArea.ColumnWidths;
+                }
+                else if (styleParent != null)
+                {   // Obě hodnoty z parenta:
+                    this.ColumnsCount = styleParent.ColumnsCount;
+                    this.ColumnWidths = styleParent.ColumnWidths;
+                }
+
+                // Ostatní hodnoty jsou "jednomístné" a lze je dědit jednoduše:
                 this.AutoLabelPosition = dfArea.AutoLabelPosition.HasValue ? dfArea.AutoLabelPosition.Value : styleParent.AutoLabelPosition;
                 this.Margins = dfArea.Margins != null ? dfArea.Margins : styleParent.Margins;
             }
@@ -777,8 +802,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             internal void ProcessPanel()
             {
-                _ProcessContainer();
-                _PreparePanelAbsoluteBounds();
+                _ProcessContainer();             // Zpracuje this container, a rekurzivně jeho Child containery etc
+                _PreparePanelAbsoluteBounds();   // Naplní absolutní souřadnice do všech (i vnořených) prvků
             }
             /// <summary>
             /// Zajistí plné zpracování this containeru, rekurzivně jeho Child containerů a zdejších Controlů.
@@ -789,10 +814,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 {
                     _PrepareChilds();            // Příprava: Containery kompletně (rekurzivně), a poté všechny prvky: doplnění aplikačních dat a měření primární velikosti
                     _SetChildsFlowPositions();   // Rozmístění našich Child prvků (zde se Child Containery již řeší jako rovnocenné s Controly, neřešíme už rekurzi)
-                    _CalculateColumns();         // 
-                    _PrepareRelativeBounds();
+                    _CalculateSpanColumns();     // Dopočítá šířky pro Span sloupce
+                    _PrepareRelativeBounds();    // Určí relativní souřadnice všech Child prvků
                 }
-
             }
             /// <summary>
             /// Připraví data Childs: kompletní příprava Containeru, a prvotní příprava pro pozicování Group + Control
@@ -829,8 +853,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.__ColSpan = dfGroup.ColSpan;
 
                 //  Využijeme strukturu pro data, kterou naplníme známými hodnotami z formuláře, a pošleme do systému k doplnění těch chybějících hodnot:
-                var itemData = new ControlInfo(__DfArgs.DataForm, __Name, __Name, ControlType.None);
-                __ControlData = itemData;
+                var itemData = new ControlInfo(_DfForm, __Name, __Name, ControlType.None);
+                this.__ControlData = itemData;
 
                 // Label u grupy???
             }
@@ -856,7 +880,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
                 //  Využijeme strukturu pro data, kterou naplníme známými hodnotami z formuláře, a pošleme do systému k doplnění těch chybějících hodnot:
                 var itemData = new ControlInfo(_DfForm, __Name, __ColumnName, baseControl.ControlType);
-                __ControlData = itemData;
+                this.__ControlData = itemData;
 
                 // Bázové informace:
                 itemData.ControlStyle = baseControl.ControlStyle;
@@ -876,8 +900,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
 
                 // Validace externí (tj. aplikační kód) a lokální (defaultní):
-                this._LayoutArgs.InfoSource.ValidateControlInfo(__ControlData);
-                DfTemplateLayout.ValidateControlInfo(__ControlData);
+                this._LayoutArgs.InfoSource.ValidateControlInfo(itemData);
+                DfTemplateLayout.ValidateControlInfo(itemData);
 
                 // Převezmeme výsledky:
                 this._ControlSize = new Size(itemData.ControlWidth, itemData.ControlHeight);
@@ -942,8 +966,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         item.__LayoutEndColumnIndex = itemNextColumnIndex - 1;
 
                         // Pokud prvek obsazuje právě jeden sloupec layoutu, pak by měl do svého sloupce započítat svoje šířky:
-                        if (itemColSpan == 1)
-                            this.__LayoutColumns[itemBeginColumnIndex].AcceptItemSingleWidth(item);
+                        bool isSingleCOlumn = (itemColSpan == 1);
+                        this.__LayoutColumns[itemBeginColumnIndex].AcceptItemSingleWidth(item);
 
                         // Počáteční sloupec pro další prvek:
                         //  Pokud 'columnIndex' bude rovno 'columnsCount', pak pro nějbližší další prvek přeskočíme na nový řádek (až to bude potřeba).
@@ -954,7 +978,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <summary>
             /// Projde Flow prvky, které zabírají na šířku více než jeden sloupec (ColSpan větší než 1) a jejich šířky promítne do odpovídajících sloupců.
             /// </summary>
-            private void _CalculateColumns()
+            private void _CalculateSpanColumns()
             {
                 var childs = this.__Childs;
                 foreach (var item in childs)
