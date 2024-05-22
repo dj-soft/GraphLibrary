@@ -1300,6 +1300,20 @@ namespace Noris.WS.DataContracts.DxForm
         private bool IsAll { get { return (this.Left == this.Top && this.Top == this.Right && this.Right == this.Bottom); } }
     }
     /// <summary>
+    /// Informace o stylu písma
+    /// </summary>
+    public class DfFontInfo
+    {
+        /// <summary>
+        /// Styl (tučné, kurzíva, obyčejné)
+        /// </summary>
+        public FontStyleType? Style { get; set; }
+        /// <summary>
+        /// Rozdíl velikosti písma jako koeficient: null = 1f = default = beze změny; hodnoty větší než 1 zvětšují písmo (1.25f = +25% proti defaultu, 0.80f = -20% proti defaultu)
+        /// </summary>
+        public float? SizeRatio { get; set; }
+    }
+    /// <summary>
     /// Verze formátu definice frm.xml
     /// Odpovídá XSD typu <c>format_version_enum</c>
     /// </summary>

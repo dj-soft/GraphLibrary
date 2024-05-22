@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
+using DevExpress.XtraCharts;
 using Noris.WS.DataContracts.DxForm;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
@@ -200,33 +200,93 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         internal static void ValidateControlInfo(ControlInfo itemData)
         {
             _ValidateControlSize(itemData);
-            // _ValidateLabelSize(itemData);
+            _ValidateLabelSize(itemData);
         }
+        /// <summary>
+        /// Validuje (tzn. naplní prázdné hodnoty) velikost Controlu podle jeho typu, obsahu a fontu
+        /// </summary>
+        /// <param name="itemData"></param>
         private static void _ValidateControlSize(ControlInfo itemData)
         {
+            bool hasWidth = itemData.ControlWidth.HasValue;
+            bool hasHeight = itemData.ControlHeight.HasValue;
+            if (hasWidth && hasHeight) return;                                 // Rozměry máme, není co řešit.
+
             switch (itemData.ControlType)
             {
-                case ControlType.Label: setControlSize(200, 18); break;
-                case ControlType.Button: setControlSize(200, 35); break;
+                case ControlType.Label: setControlTextSize(20, 3); break;
+                case ControlType.Button: setControlTextSize(40, 12); break;
                 case ControlType.BarCode: setControlSize(96, 96); break;
                 case ControlType.Image: setControlSize(96, 96); break;
                 case ControlType.EditBox: setControlSize(250, 96); break;
                 default:
                     string name = (itemData.ColumnName ?? "").Trim().ToLower();
-                    if (name.EndsWith("_refer")) setControlSize(120, 20);
-                    if (name.EndsWith("_nazev")) setControlSize(250, 20);
+                    if (name == "reference_subjektu" || name.EndsWith("_refer")) setControlSize(120, 20);
+                    else if (name == "nazev_subjektu" || name.EndsWith("_nazev")) setControlSize(250, 20);
+                    else setControlSize(160, 20);
                     break;
             }
 
-
-            // Vloží ControlSize
+            // Změří aktuální text itemData.ControlText (výška a šířka podle fontu itemData.ControlFont), přidá definovaný přídavek a výsledné rozměry vloží do ControlWidth a ControlHeight
+            void setControlTextSize(int addWidth, int addHeight)
+            {
+                string text = itemData.ControlText;
+                int width = TextDimension.GetTextWidth(text, itemData.ControlFont) + addWidth;
+                int height = TextDimension.GetFontHeight(itemData.ControlFont) + addHeight;
+                setControlSize(width, height);
+            }
+            // Vloží dodané hodnoty do ControlWidth a ControlHeight, pokud tam nejsou
             void setControlSize(int width, int height)
             {
-                if (!itemData.ControlWidth.HasValue) itemData.ControlWidth = width;
-                if (!itemData.ControlHeight.HasValue) itemData.ControlHeight = height;
+                if (!hasWidth) itemData.ControlWidth = width;
+                if (!hasHeight) itemData.ControlHeight = height;
             }
         }
+        /// <summary>
+        /// Validuje (tzn. naplní prázdné hodnoty) velikost labelu Main a Suffix
+        /// </summary>
+        /// <param name="itemData"></param>
+        private static void _ValidateLabelSize(ControlInfo itemData)
+        {
+            if (itemData.LabelPosition != LabelPositionType.None && CheckTextSize(itemData.MainLabelText, itemData.MainLabelFont, itemData.MainLabelWidth, itemData.MainLabelHeight, out var mainWidth, out var mainHeight))
+            {   // Main label existuje a je třeba aktualizovat některý rozměr:
+                if (mainWidth.HasValue) itemData.MainLabelWidth = mainWidth.Value;
+                if (mainHeight.HasValue) itemData.MainLabelHeight = mainHeight.Value;
+            }
+            if (CheckTextSize(itemData.SuffixLabelText, itemData.SuffixLabelFont, itemData.SuffixLabelWidth, itemData.SuffixLabelHeight, out var sufWidth, out var sufHeight))
+            {   // Suffix label existuje a je třeba aktualizovat některý jeho rozměr:
+                if (sufWidth.HasValue) itemData.SuffixLabelWidth = sufWidth.Value;
+                if (sufHeight.HasValue) itemData.SuffixLabelHeight = sufHeight.Value;
+            }
+        }
+        /// <summary>
+        /// Metoda ověří zadání šířky a výšky pro daný text
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="fontInfo"></param>
+        /// <param name="inpWidth"></param>
+        /// <param name="inpHeight"></param>
+        /// <param name="outWidth"></param>
+        /// <param name="outHeight"></param>
+        /// <returns></returns>
+        internal static bool CheckTextSize(string text, DfFontInfo fontInfo, int? inpWidth, int? inpHeight, out int? outWidth, out int? outHeight)
+        {
+            outWidth = null;
+            outHeight = null;
+            if (String.IsNullOrEmpty(text)) return false;                      // Není zadán text
 
+            bool hasWidth = inpWidth.HasValue;
+            bool hasHeight = inpHeight.HasValue;
+            if (hasWidth && hasHeight) return false;                           // Rozměry jsou plně určeny, není co řešit (i záporná čísla jsou akceptovaná)
+
+            // Šířka:
+            if (!hasWidth) outWidth = TextDimension.GetTextWidth(text, fontInfo);
+
+            // Výška:
+            if (!hasHeight) outHeight = TextDimension.GetFontHeight(fontInfo);
+
+            return true;
+        }
         #endregion
         #region class LayoutStyle : Styl vzhledu pro jeden container, podporuje dědičnost
         /// <summary>
@@ -899,6 +959,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     itemData.MainLabelWidth = labeledInputControl.LabelWidth;
                 }
 
+                var inputTextControl = baseControl as DfBaseInputTextControl;
+                if (inputTextControl != null)
+                {
+                    itemData.ControlText = inputTextControl.Text;
+                }
+
                 // Validace externí (tj. aplikační kód) a lokální (defaultní):
                 this._LayoutArgs.InfoSource.ValidateControlInfo(itemData);
                 DfTemplateLayout.ValidateControlInfo(itemData);
@@ -908,7 +974,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (itemData.LabelPosition != LabelPositionType.None && !String.IsNullOrEmpty(itemData.MainLabelText))
                     this._MainLabelSize = new Size(itemData.MainLabelWidth, itemData.MainLabelHeight);
                 if (!String.IsNullOrEmpty(itemData.SuffixLabelText))
-                    this._SuffixLabelSize = new Size(itemData.SuffixLabelWidth, itemData.MainLabelHeight);
+                    this._SuffixLabelSize = new Size(itemData.SuffixLabelWidth, itemData.SuffixLabelHeight);
 
             }
             /// <summary>
@@ -1034,39 +1100,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // Všechny moje Childs, jejich pozice absolutní anebo jejich zařazení do layoutu:
             }
 
-            #endregion
-            #region Určení relativní souřadnice každého prvku
-            /// <summary>
-            /// Metoda určí relativní souřadnice svých Child prvků. Nakonec určí i svoji velikost na základě velikosti a pozice Child prvků.
-            /// Container může mít svoje souřadnice i exaktně určené (pokud je to grupa).
-            /// </summary>
-            internal void SetChildRelativeBound()
-            {
-                //if (this._HasChilds)
-                //{
-                //    var childs = this.__Childs;
-                //    // Určím velikost každé Child buňky:
-                //    foreach (var item in childs)
-                //    {
-                //        if (item._IsContainer)
-                //            item.SetChildRelativeBound();                      // Child je Container, ať si projde tuto metodu rekurzivně sám
-                //        else if (item._IsControl)
-                //            item._SetBaseControlSizes(__DfItem as DfBaseControl);
-                //    }
-
-                //    // Určím sloupce mého layoutu a zařadím moje Child prvky do těchto sloupců:
-                //    var columns = ColumnInfo.CreateColumns(this.__Style);
-
-                //    //  * Pokud prvek nemá určené ani X ani Y, pak je volně plovoucí;
-                //    //  * Pokud prvek má zadané X, pak spadá do aktuálního řádku Y, ale na danou souřadnici;
-                //    //  * Pokud prvek má určené obě X i Y, pak jej umístím na jeho místo i kdyby na dané souřadnici už něco bylo (to je odpovědnost autora);
-
-
-                //}
-
-                // Určím velikost mojí jako containeru:
-
-            }
             #endregion
             #region Určení velikosti this controlu = jeden prvek (atribut)
             /// <summary>
@@ -1221,7 +1254,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public ControlType ControlType { get; private set; }
         /// <summary>
-        /// Fixní text v prvku, typicky v buttonu, v Checkboxu atd
+        /// Styl písma pro text controlu
+        /// </summary>
+        public DfFontInfo ControlFont { get; set; }
+        /// <summary>
+        /// Fixní text v prvku, typicky v buttonu, v Checkboxu, Title, Label atd
         /// </summary>
         public string ControlText { get; set; }
         /// <summary>
@@ -1233,11 +1270,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public LabelPositionType LabelPosition { get; set; }
         /// <summary>
+        /// Styl písma pro main label
+        /// </summary>
+        public DfFontInfo MainLabelFont { get; set; }
+        /// <summary>
         /// Text hlavního labelu.
         /// Pokud je null, pak není ve formuláři definováno. Pokud je "", je tím definováno 'Bez labelu'.
         /// V existující definici mohou být přítomny formátovací funkce: "fm(xxx)", "fmr(xxx)". Přípravná funkce to má vyřešit.
         /// </summary>
         public string MainLabelText { get; set; }
+        /// <summary>
+        /// Styl písma pro suffix label
+        /// </summary>
+        public DfFontInfo SuffixLabelFont { get; set; }
         /// <summary>
         /// Text suffix labelu. Jde o popisek vpravo od vstpního prvku, typicky obsahuje název jednotky (ks, Kč, $, kg, ...).
         /// Pokud je null, pak není ve formuláři definováno. Pokud je "", je tím definováno 'Bez labelu'.
@@ -1286,6 +1331,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Pokud je hodnota uvedená ve formuláři, jde uvedena zde.
         /// </summary>
         public int? SuffixLabelWidth { get; set; }
+        /// <summary>
+        /// Výška labelu <see cref="SuffixLabelText"/> ve standardních pixelech. 
+        /// Pokud je null, pak není ve formuláři definováno, a přípravná funkce má rozměr určit. 
+        /// Pokud je hodnota uvedená ve formuláři, jde uvedena zde.
+        /// </summary>
+        public int? SuffixLabelHeight { get; set; }
     }
     /// <summary>
     /// Režim layoutu
@@ -1295,6 +1346,37 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         None,
         Fixed,
         Flow
+    }
+    #endregion
+    #region class TextDimension : měřítko textu a fontu
+    /// <summary>
+    /// Třída, která změří velikost konkrétního textu v daném fontu.
+    /// </summary>
+    internal class TextDimension
+    {
+        /// <summary>
+        /// Vrátí výšku daného fontu = počet pixelů pro jednořádkový text labelu.
+        /// </summary>
+        /// <param name="fontInfo"></param>
+        /// <returns></returns>
+        internal static int GetFontHeight(DfFontInfo fontInfo = null)
+        {
+            #warning TODO 
+            return 14;
+        }
+        /// <summary>
+        /// Vrátí šířku daného textu v daném fontu = počet pixelů pro jednořádkový text labelu.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="fontInfo"></param>
+        /// <returns></returns>
+        internal static int GetTextWidth(string text, DfFontInfo fontInfo = null)
+        {
+            if (String.IsNullOrEmpty(text)) return 0;
+
+            #warning TODO 
+            return text.Length * 8;
+        }
     }
     #endregion
 }
