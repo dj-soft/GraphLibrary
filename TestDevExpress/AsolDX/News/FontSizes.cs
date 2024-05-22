@@ -38,8 +38,8 @@ namespace TestDevExpress.AsolDX.News
             //  Vznikne tedy tabulka: 0:znak pro jednotlivé, a znakA:znakB pro dvojznaky
 
 
+            // Vygeneruji řetězec obsahující sadu znaků 32 - 720:
             StringBuilder sb = new StringBuilder();
-
             for (int c = 32; c < 720; c++)
             {
                 string s = ((char)c).ToString();
@@ -50,9 +50,13 @@ namespace TestDevExpress.AsolDX.News
             string csstr = sb.ToString();
             string cscod = "   string ci = @\"" + csstr + "\";";
 
+            // Vstupní (obsahuje všechny znaky) a odpovídající výstupní řetězec (obsahuje nondiakritické znaky ze základního rozsahu):
             string ci = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~¡¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņŇňŉŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶŷŸŹźŻżŽžſƀƁƂƃƄƅƆƇƈƉƊƋƌƍƎƏƐƑƒƓƔƕƖƗƘƙƚƛƜƝƞƟƠơƢƣƤƥƦƧƨƩƪƫƬƭƮƯưƱƲƳƴƵƶƷƸƹƺƻƼƽƾƿǀǁǂǃǄǅǆǇǈǉǊǋǌǍǎǏǐǑǒǓǔǕǖǗǘǙǚǛǜǝǞǟǠǡǢǣǤǥǦǧǨǩǪǫǬǭǮǯǰǱǲǳǴǵǶǷǸǹǺǻǼǽǾǿȀȁȂȃȄȅȆȇȈȉȊȋȌȍȎȏȐȑȒȓȔȕȖȗȘșȚțȜȝȞȟȠȡȢȣȤȥȦȧȨȩȪȫȬȭȮȯȰȱȲȳ";
             string co = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~¡¢£¤¥¦§¨©a«-aaaaaaaaaaaaaaXXXcAAAAAAACEEEEIIIIDNOOOOOxOUUUUYabaaaaaaeceeeeiiiionooooo-ouuuuubyAaAaAaCcCcCcCcDdDdEeEeEeEeEeGgGgGgGgHhhhIiIiIiIiIiujJjKkkLlLlLlLlLlNnNnNnnNnOoOoOoEeRrRrRrSsSsSsSsTtTtTtUuUuUuUuUuUuWwYyYZzZzZzFbbBbBbcCcDdAaOEeEFfGYMlIKklAWNnOOoMmPpRSsEltTtTUuUuYyZz33ee255spIIIIxxxxxxxxxAaIiOoUuUuUuUuUuaAaAaEeGgGgKkOoOo33jwwwGghDNnAaAaOoAaAaEeEeIiIiOoOoRrRrUuUuSsTtSsHhNdooZzAaEeOoOoOoOoYy";
             
+
+
+
             var values = new Dictionary<int, Info>();
             using (Bitmap bmp = new Bitmap(256, 256, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
             {
