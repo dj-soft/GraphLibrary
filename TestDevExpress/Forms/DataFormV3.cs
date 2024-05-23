@@ -337,7 +337,7 @@ namespace TestDevExpress.Forms
             {
                 case "StatusRefresh":
                     RefreshStatusCurrent(true);
-                    TestDevExpress.AsolDX.News.FontSizes.CreateTable();
+                    // TestDevExpress.AsolDX.News.FontSizes.CreateTable();
                     break;
                 case "TestDrawing":
                     this.TestPainting = e.Item?.Checked ?? false; 

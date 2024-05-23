@@ -237,7 +237,7 @@
             <xs:extension base="type_base_container">
                 <xs:attribute name="ColIndex" type="xs:int">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'. První sloupec má index 0. Zadáním indexu sloupce lze povinně přeskočit některé columny, anebo přeskočit na další řádek.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="ColSpan" type="xs:int">
@@ -295,7 +295,7 @@
                 </xs:attribute>
                 <xs:attribute name="ColIndex" type="xs:int">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'. První sloupec má index 0. Zadáním indexu sloupce lze povinně přeskočit některé columny, anebo přeskočit na další řádek.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="ColSpan" type="xs:int">
@@ -848,7 +848,7 @@
                 </xs:attribute>
 				<xs:attribute name="ColIndex" type="xs:int">
 					<xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'. První sloupec má index 0. Zadáním indexu sloupce lze povinně přeskočit některé columny, anebo přeskočit na další řádek.</xs:documentation>
 					</xs:annotation>
 				</xs:attribute>
 				<xs:attribute name="ColSpan" type="xs:int">

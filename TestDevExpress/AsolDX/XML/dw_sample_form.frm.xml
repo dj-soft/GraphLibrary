@@ -13,6 +13,17 @@
 	
 	
 	<page Name="page1" Title="Odběratel" >
+
+        <panel Name="middle3" Title="FlowLayout 1" ColumnsCount="2" AutoLabelPosition="None" >
+            <textbox Name="popisek1" ColSpan="2" />
+            <textbox Name="cena1" />
+            <textbox Name="popisek2" ColSpan="2"  />
+            <textbox Name="cena2" ColIndex="1" />
+        </panel>
+
+
+
+
         <panel Name="first" BackImagePosition="BottomRight" BackImageName="pic/back/corner-gray" IsHeader="True" ColumnsCount="2" >
             <nestedgroup Name="nested001" NestedTemplate="app/lcs/mfr/forms/product_prices" ColSpan="2"/>
             <textbox Name="Www" ColumnName="state" LabelPosition="Bottom" Width="160"/>
