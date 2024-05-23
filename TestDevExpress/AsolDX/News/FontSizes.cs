@@ -474,7 +474,9 @@ namespace TestDevExpress.AsolDX.News
         private const int CharCode2 = 565;
         #endregion
         #region Testy
-
+        /// <summary>
+        /// Provede testy
+        /// </summary>
         internal static void Test()
         {
             StringBuilder sb = new StringBuilder();
@@ -518,6 +520,12 @@ namespace TestDevExpress.AsolDX.News
             }
 
             sb.AppendLine($"  Rozptyl vypočítaných výsledků (Calculated) vůči změřeným (Measured): {ratioMin:F3} ÷ {ratioMax:F3}.");
+
+            var w1 = _GetTextWidth("Datum:");
+            var w2 = _GetTextWidth("Reference:");
+            var w3 = _GetTextWidth("Výběr města:");
+            var w4 = _GetTextWidth("Cena cel.:");
+
 
 
             void testOne(Graphics gr, Font fR, Font fB, StringFormat sf)
