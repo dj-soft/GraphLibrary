@@ -30,6 +30,7 @@
 		<textbox Name="kontakt_refer" LabelWidth="420" Label="Dodavatel zboží, které je zde fakturováno:" />
 		<textbox Name="kontakt_nazev" LabelPosition="None"/>
 		<button Name="open_contact" Bounds="380,0,60,50" Text="MSG001" ToolTipTitle="TIT001" ToolTipText="TIP001" IconName="pic/open_mail"/>
+        <image Name="Obrazek" Bounds="" ImageName="pic/open_mail"/>
 	</panel>
 
 	<panel Name="maxim1" Title="Neobyčejný" ColumnWidths="120;250" AutoLabelPosition="Up" BackColorLight="#662211" BackColorDark="#220804" BackImageName="pic/back/angle_violet" >

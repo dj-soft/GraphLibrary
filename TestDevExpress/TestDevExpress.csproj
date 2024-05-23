@@ -385,6 +385,7 @@
       <SubType>Designer</SubType>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <Content Include="AsolDX\XML\dw_simple_2.frm.xml" />
     <None Include="AsolDX\XSD\DfDataFormat.Frm.xsd">
       <SubType>Designer</SubType>
     </None>

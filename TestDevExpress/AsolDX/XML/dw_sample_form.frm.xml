@@ -16,9 +16,9 @@
 
         <panel Name="middle3" Title="FlowLayout 1" ColumnsCount="2" AutoLabelPosition="None" >
             <textbox Name="popisek1" ColSpan="2" />
-            <textbox Name="cena1" />
+            <textbox Name="cena1" Width="250" />
             <textbox Name="popisek2" ColSpan="2"  />
-            <textbox Name="cena2" ColIndex="1" />
+            <textbox Name="cena2" Width="120" ColIndex="1" />
         </panel>
 
 

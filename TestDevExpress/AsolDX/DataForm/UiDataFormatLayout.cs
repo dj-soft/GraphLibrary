@@ -292,7 +292,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Styl vzhledu pro jeden container, podporuje dědičnost
         /// </summary>
-        private class StyleInfo
+        internal class StyleInfo
         {
             public StyleInfo()
             {
@@ -359,8 +359,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Průběžná data o layoutu jednoho sloupce
         /// </summary>
-        private class ColumnInfo : IDisposable
+        internal class ColumnInfo : IDisposable
         {
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="index"></param>
+            /// <param name="leftLabelDefinedWidth"></param>
+            /// <param name="controlDefinedWidth"></param>
+            /// <param name="rightLabelDefinedWidth"></param>
+            public ColumnInfo(int index, int? leftLabelDefinedWidth, int? controlDefinedWidth, int? rightLabelDefinedWidth)
+            {
+                Index = index;
+                LeftLabelDefinedWidth = leftLabelDefinedWidth;
+                ControlDefinedWidth = controlDefinedWidth;
+                RightLabelDefinedWidth = rightLabelDefinedWidth;
+            }
             /// <summary>
             /// Vizualizace
             /// </summary>
@@ -376,13 +390,95 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
 
             }
+            private static int? _GetMax(int? value1, int? value2)
+            {
+                bool has1 = value1.HasValue;
+                bool has2 = value2.HasValue;
+                if (has1 && has2) return (value1.Value > value2.Value ? value1.Value : value2.Value);
+                if (has1) return value1;
+                if (has2) return value2;
+                return null;
+            }
+            private int? __LeftLabelMaximalWidth;
+            private int? __ControlMaximalWidth;
+            private int? __RightLabelMaximalWidth;
+
+            /// <summary>
+            /// Index sloupce
+            /// </summary>
+            public int Index { get; set; }
+            /// <summary>
+            /// Šířka labelu vlevo od controlu, explicitně zadaná hodnota v deklaraci (null = nezadáno)
+            /// </summary>
+            public int? LeftLabelDefinedWidth { get; private set; }
+            /// <summary>
+            /// Šířka labelu vlevo od controlu, maximální nalezená hodnota (null = žádný prvek).
+            /// Setování hodnoty: střádá se Max dodaná hodnota.
+            /// </summary>
+            public int? LeftLabelMaximalWidth { get { return __LeftLabelMaximalWidth; } set { __LeftLabelMaximalWidth = _GetMax(__LeftLabelMaximalWidth, value); } }
+            /// <summary>
+            /// Šířka sloupce, kde je umístěn control, explicitně zadaná hodnota v deklaraci (null = nezadáno)
+            /// </summary>
+            public int? ControlDefinedWidth { get; private set; }
+            /// <summary>
+            /// Šířka sloupce, kde je umístěn control, explicitně zadaná hodnota v deklaraci (null = nezadáno).
+            /// Setování hodnoty: střádá se Max dodaná hodnota.
+            /// </summary>
+            public int? ControlMaximalWidth { get { return __ControlMaximalWidth; } set { __ControlMaximalWidth = _GetMax(__ControlMaximalWidth, value); } }
+            /// <summary>
+            /// Šířka labelu vpravo od controlu, explicitně zadaná hodnota v deklaraci (null = nezadáno)
+            /// </summary>
+            public int? RightLabelDefinedWidth { get; private set; }
+            /// <summary>
+            /// Šířka labelu vpravo od controlu, maximální nalezená hodnota (null = žádný prvek).
+            /// Setování hodnoty: střádá se Max dodaná hodnota.
+            /// </summary>
+            public int? RightLabelMaximalWidth { get { return __RightLabelMaximalWidth; } set { __RightLabelMaximalWidth = _GetMax(__RightLabelMaximalWidth, value); } }
+
+            /// <summary>
+            /// Šířka prostoru Label vlevo
+            /// </summary>
+            public int? LeftLabelWidth { get { return LeftLabelDefinedWidth ?? LeftLabelMaximalWidth; } }
+            /// <summary>
+            /// Šířka prostoru Control
+            /// </summary>
+            public int? ControlWidth { get { return ControlDefinedWidth ?? ControlMaximalWidth; } }
+            /// <summary>
+            /// Šířka prostoru Label vpravo
+            /// </summary>
+            public int? RighLabelWidth { get { return RightLabelDefinedWidth ?? RightLabelMaximalWidth; } }
+
+            /// <summary>
+            /// Pozice Left pro prostor Labelu vlevo
+            /// </summary>
+            public int? ColumnLeftLabelLeft { get; private set; }
+            /// <summary>
+            /// Pozice Left pro prostor Controlu
+            /// </summary>
+            public int? ColumnControlLeft { get; private set; }
+            /// <summary>
+            /// Pozice Left pro prostor Labelu vpravo
+            /// </summary>
+            public int? ColumnRightLabelLeft { get; private set; }
+            /// <summary>
+            /// Pozice Right pro prostor celého columnu = zde přesně začíná další sloupec
+            /// </summary>
+            public int? ColumnRight { get; private set; }
+        }
+        /// <summary>
+        /// Pole sloupců <see cref="ColumnInfo"/>. 
+        /// Obsahuje logiku pro zpracování.
+        /// </summary>
+        internal class ColumnsArray : IDisposable
+        {
+            #region Tvorba (parsování) a konstruktor a Dispose
             /// <summary>
             /// Vytvoří sadu prvků <see cref="ColumnInfo"/> pro daný styl.
             /// Pokud není dodán styl, anebo ten neobsahuje nic o sloupcích, pak vrátí pole s jedním defaultním sloupcem.
             /// </summary>
             /// <param name="layoutStyle"></param>
             /// <returns></returns>
-            public static ColumnInfo[] CreateColumns(StyleInfo layoutStyle)
+            internal static ColumnsArray CreateColumns(StyleInfo layoutStyle)
             {
                 List<ColumnInfo> columns = new List<ColumnInfo>();
 
@@ -397,7 +493,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         for (int i = 0; i < count; i++)
                         {
                             parseCol(cols[i], out int? lblW, out int? ctrW, out int? lbrW);
-                            columns.Add(new ColumnInfo() { Index = i, LeftLabelDefinedWidth = lblW, ControlDefinedWidth = ctrW, RightLabelDefinedWidth = lbrW });
+                            columns.Add(new ColumnInfo(i, lblW, ctrW, lbrW));
                         }
                     }
 
@@ -407,17 +503,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         {
                             int count = layoutStyle.ColumnsCount.Value;
                             for (int i = 0; i < count; i++)
-                                columns.Add(new ColumnInfo() { Index = i });
+                                columns.Add(new ColumnInfo(i, null, null, null));
                         }
                     }
                 }
 
                 if (columns.Count == 0)
                 {   // Jediný (defaultní) sloupec, bez deklarované šířky:
-                    columns.Add(new ColumnInfo() { Index = 0 });
+                    columns.Add(new ColumnInfo(0, null, null, null));
                 }
 
-                return columns.ToArray();
+                return new ColumnsArray(columns.ToArray());
 
 
                 // Parsuje text "10,20,30" na tři číslice
@@ -457,104 +553,70 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
             }
             /// <summary>
-            /// Index sloupce
+            /// Konstruktor
             /// </summary>
-            public int Index { get; set; }
+            /// <param name="columns"></param>
+            private ColumnsArray(ColumnInfo[] columns)
+            {
+                __Columns = columns;
+            }
             /// <summary>
-            /// Šířka labelu vlevo od controlu, explicitně zadaná hodnota v deklaraci (null = nezadáno)
+            /// Sloupce
             /// </summary>
-            public int? LeftLabelDefinedWidth { get; private set; }
+            private ColumnInfo[] __Columns;
             /// <summary>
-            /// Šířka labelu vlevo od controlu, maximální nalezená hodnota (null = žádný prvek)
+            /// Dispose
             /// </summary>
-            public int? LeftLabelMaximalWidth { get; private set; }
+            public void Dispose()
+            {
+                foreach (var column in __Columns)
+                    column.Dispose();
+                __Columns = null;
+            }
+            #endregion
+            #region Public prvky
             /// <summary>
-            /// Šířka sloupce, kde je umístěn control, explicitně zadaná hodnota v deklaraci (null = nezadáno)
+            /// Sloupce
             /// </summary>
-            public int? ControlDefinedWidth { get; private set; }
+            internal ColumnInfo[] Columns { get { return __Columns; } }
             /// <summary>
-            /// Šířka sloupce, kde je umístěn control, explicitně zadaná hodnota v deklaraci (null = nezadáno)
+            /// Počet
             /// </summary>
-            public int? ControlMaximalWidth { get; private set; }
-            /// <summary>
-            /// Šířka labelu vpravo od controlu, explicitně zadaná hodnota v deklaraci (null = nezadáno)
-            /// </summary>
-            public int? RightLabelDefinedWidth { get; private set; }
-            /// <summary>
-            /// Šířka labelu vpravo od controlu, maximální nalezená hodnota (null = žádný prvek)
-            /// </summary>
-            public int? RightLabelMaximalWidth { get; private set; }
-
-            /// <summary>
-            /// Šířka prostoru Label vlevo
-            /// </summary>
-            public int? LeftLabelWidth { get { return LeftLabelDefinedWidth ?? LeftLabelMaximalWidth; } }
-            /// <summary>
-            /// Šířka prostoru Control
-            /// </summary>
-            public int? ControlWidth { get { return ControlDefinedWidth ?? ControlMaximalWidth; } }
-            /// <summary>
-            /// Šířka prostoru Label vpravo
-            /// </summary>
-            public int? RighLabelWidth { get { return RightLabelDefinedWidth ?? RightLabelMaximalWidth; } }
-
-            /// <summary>
-            /// Pozice Left pro prostor Labelu vlevo
-            /// </summary>
-            public int? ColumnLeftLabelLeft { get; private set; }
-            /// <summary>
-            /// Pozice Left pro prostor Controlu
-            /// </summary>
-            public int? ColumnControlLeft { get; private set; }
-            /// <summary>
-            /// Pozice Left pro prostor Labelu vpravo
-            /// </summary>
-            public int? ColumnRightLabelLeft { get; private set; }
-            /// <summary>
-            /// Pozice Right pro prostor celého columnu = zde přesně začíná další sloupec
-            /// </summary>
-            public int? ColumnRight { get; private set; }
-
+            internal int Count { get { return __Columns.Length; } }
+            #endregion
+            #region Zpracování prvků do sloupců
             /// <summary>
             /// Akceptuje šířky controlu, Main a Suffix labelu z dodaného prvku do zdejších hodnot pro tento sloupec.
+            /// Šířku pro Control akceptuje jen pro sloupce, jejichž ColSpan == 1.
             /// Volá se tehdy, když dodaný prvek má ColSpan = 1 a tedy jeho rozměry přímo ovlivňují jeden konkrétní sloupec.
             /// </summary>
             /// <param name="item"></param>
-            internal void AcceptItemSingleWidth(ItemInfo item)
+            internal void AcceptWidthSingle(ItemInfo item)
             {
-                if (item != null && item.LayoutColumnBeginIndex.HasValue && item.LayoutColumnEndIndex.HasValue && item.LayoutColumnBeginIndex.Value < item.LayoutColumnEndIndex.Value)
-                {   // ColSpan = 1 !!!
-                    var itemData = item.ControlData;
+                if (!(item.FlowColumnBeginIndex.HasValue && item.FlowColumnEndIndex.HasValue))
+                    throw new InvalidOperationException($"ColumnsArray.AcceptWidthSingle() cannot be called when 'item.FlowColumnBeginIndex' or 'item.FlowColumnEndIndex' is null.");
 
-                    // Vlastní control:
-                    if (itemData.ControlWidth.HasValue)
-                        this.ControlMaximalWidth = getMaxWidth(this.ControlMaximalWidth, itemData.ControlWidth);
+                var itemData = item.ControlData;
 
-                    // Main Label:
-                    if (!String.IsNullOrEmpty(itemData.MainLabelText) && itemData.MainLabelWidth.HasValue)
-                    {
-                        if (itemData.LabelPosition == LabelPositionType.BeforeLeft || itemData.LabelPosition == LabelPositionType.BeforeRight)
-                            // Vlevo:
-                            this.LeftLabelMaximalWidth = getMaxWidth(this.LeftLabelMaximalWidth, itemData.MainLabelWidth);
-                        else if (itemData.LabelPosition == LabelPositionType.Up || itemData.LabelPosition == LabelPositionType.Bottom)
-                            // Nad/Pod controlem:
-                            this.ControlMaximalWidth = getMaxWidth(this.ControlMaximalWidth, itemData.MainLabelWidth);
-                    }
-
-                    // Suffix Label:
-                    if (!String.IsNullOrEmpty(itemData.SuffixLabelText) && itemData.SuffixLabelWidth.HasValue)
-                        this.RightLabelMaximalWidth = getMaxWidth(this.RightLabelMaximalWidth, itemData.SuffixLabelWidth);
-                }
-
-                // Vrátí Max(Width) z těch, co nejsou null.
-                int? getMaxWidth(int? currentWidth, int? itemWidth)
+                // Šířku MainLabel akceptujeme tehdy, když je text i velikost uveden, a pozice je Before:
+                // Akceptujeme ji do sloupce FlowColumnBeginIndex:
+                if (itemData.MainLabelWidth.HasValue && !String.IsNullOrEmpty(itemData.MainLabelText))
                 {
-                    if (currentWidth.HasValue && itemWidth.HasValue) return (currentWidth.Value > itemWidth.Value ? currentWidth.Value : itemWidth.Value);
-                    if (currentWidth.HasValue) return currentWidth;
-                    if (itemWidth.HasValue) return itemWidth;
-                    return null;
+                    if (itemData.LabelPosition == LabelPositionType.BeforeLeft || itemData.LabelPosition == LabelPositionType.BeforeRight)
+                        this.__Columns[item.FlowColumnBeginIndex.Value].LeftLabelMaximalWidth = itemData.MainLabelWidth;
                 }
+
+                // Šířku Controlu akceptujeme tehdy, když dodaný prvek ji má uvedenou, a jeho ColSpan = 1.
+                // Akceptujeme ji do sloupce FlowColumnBeginIndex (stejný jako FlowColumnEndIndex)
+                if (itemData.ControlWidth.HasValue && item.FlowColSpan.Value == 1)
+                    this.__Columns[item.FlowColumnBeginIndex.Value].ControlMaximalWidth = itemData.ControlWidth;
+
+                // Šířku SuffixLabel akceptujeme tehdy, když je text i velikost uveden:
+                // Akceptujeme ji do sloupce FlowColumnEndIndex:
+                if (itemData.SuffixLabelWidth.HasValue && !String.IsNullOrEmpty(itemData.SuffixLabelText))
+                    this.__Columns[item.FlowColumnEndIndex.Value].RightLabelMaximalWidth = itemData.SuffixLabelWidth;
             }
+            #endregion
         }
         #endregion
         #region class ItemInfo : Dočasná pracovní a výkonná schránka na jednotlivý prvek layoutu
@@ -564,7 +626,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Uvnitř panelu jsou prvky rozmístěny fixně = jsou dané designerem formuláře. 
         /// Ale rozmístění sousedních panelů na DataFormu je více v rukou uživatele / pohledu / velikosti monitoru atd.
         /// </summary>
-        private class ItemInfo : IDisposable
+        internal class ItemInfo : IDisposable
         {
             #region Konstrukce, Dispose, základní stromové vlastnosti, Childs a jejich tvorba
             /// <summary>
@@ -647,7 +709,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <returns></returns>
             public override string ToString()
             {
-                return this._FullPath;
+                return this._Text;
             }
             /// <summary>
             /// Definiční prvek = načtený z XML šablony (panel, grupa, control...)
@@ -705,6 +767,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Například vyhledá popisný text pro datový control daného jména, určí velikost textu s daným obsahem a daným stylem, atd...
             /// </summary>
             private IControlInfoSource _InfoSource { get { return _LayoutArgs.InfoSource; } }
+            /// <summary>
+            /// Plná cesta a informace od Root přes jeho Child až ke mě = typy prvků oddělené šipkou.
+            /// </summary>
+            private string _Text
+            {
+                get
+                {
+                    var type = __DfItem.GetType().Name;
+                    var name = __DfItem.Name;
+                    var text = type + (!String.IsNullOrEmpty(name) ? $" '{name}'" : "");
+                    if (this.LayoutMode == LayoutModeType.Flow)
+                        text += $"; Flow Row: {FlowRowIndex}; ColIndex: {FlowColumnBeginIndex}; ColSpan: {FlowColSpan}";
+
+                    var parent = __Parent;
+                    return (parent != null ? parent._Text + " => " : "") + text;
+                }
+            }
             /// <summary>
             /// Plná cesta od Root přes jeho Child až ke mě = typy prvků oddělené šipkou.
             /// </summary>
@@ -779,16 +858,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 __Bounds = null;
                 __ColIndex = null;
                 __ColSpan = null;
-                __LayoutRowIndex = null;
-                __LayoutColumnBeginIndex = null;
-                __LayoutColumnEndIndex = null;
+                __FlowRowIndex = null;
+                __FlowColumnBeginIndex = null;
+                __FlowColumnEndIndex = null;
                 __LayoutMode = LayoutModeType.None;
-                if (__LayoutColumns != null)
-                {
-                    foreach (var column in __LayoutColumns)
-                        column.Dispose();
-                    __LayoutColumns = null;
-                }
+                __LayoutColumns?.Dispose();
                 __ControlData = null;
             }
             /// <summary>
@@ -816,43 +890,50 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <summary>
             /// Index řádku, na kterém se reálně nachází prvek v režimu FlowLayout.
             /// </summary>
-            private int? __LayoutRowIndex;
+            private int? __FlowRowIndex;
             /// <summary>
             /// Index sloupce, na kterém reálně začíná v režimu FlowLayout.
             /// </summary>
-            private int? __LayoutColumnBeginIndex;
+            private int? __FlowColumnBeginIndex;
             /// <summary>
             /// Index sloupce, na kterém reálně končí v režimu FlowLayout.
             /// </summary>
-            private int? __LayoutColumnEndIndex;
+            private int? __FlowColumnEndIndex;
 
             /// <summary>
             /// Režim layoutu
             /// </summary>
             private LayoutModeType __LayoutMode;
             /// <summary>
-            /// Sloupce pro FlowLayout pro Child prvky tohoto containeru
+            /// Sloupce pro FlowLayout pro Child prvky tohoto containeru. U controlu je null.
             /// </summary>
-            private ColumnInfo[] __LayoutColumns;
+            private ColumnsArray __LayoutColumns;
             /// <summary>
             /// Sada dat shrnutá z heterogenních prvků do konstantní struktury, pracovní pro výpočty layoutu.
             /// Jsou sdílená i s volající metodou = struktura obsahující definiční data, která může doplňovat aplikační vrstva (label, rozměry, editační styl, atd)
             /// </summary>
             private ControlInfo __ControlData;
 
-
+            /// <summary>
+            /// Režim layoutu
+            /// </summary>
+            internal LayoutModeType LayoutMode { get { return __LayoutMode; } }
             /// <summary>
             /// Index řádku, na kterém se reálně nachází prvek v režimu FlowLayout.
             /// </summary>
-            internal int? LayoutRowIndex { get { return __LayoutRowIndex; } }
+            internal int? FlowRowIndex { get { return __FlowRowIndex; } }
             /// <summary>
             /// Index sloupce, na kterém reálně začíná v režimu FlowLayout.
             /// </summary>
-            internal int? LayoutColumnBeginIndex { get { return __LayoutColumnBeginIndex; } }
+            internal int? FlowColumnBeginIndex { get { return __FlowColumnBeginIndex; } }
             /// <summary>
             /// Index sloupce, na kterém reálně končí v režimu FlowLayout.
             /// </summary>
-            internal int? LayoutColumnEndIndex { get { return __LayoutColumnEndIndex; } }
+            internal int? FlowColumnEndIndex { get { return __FlowColumnEndIndex; } }
+            /// <summary>
+            /// Počet sloupců obsazených tímto prvkem ve FlowLayoutu; null pokud jde o Fixed layout.
+            /// </summary>
+            internal int? FlowColSpan { get { return ((__FlowColumnBeginIndex.HasValue && __FlowColumnEndIndex.HasValue) ? (int?)(__FlowColumnEndIndex.Value - __FlowColumnBeginIndex.Value + 1) : (int?)null); } }
             /// <summary>
             /// Sada dat shrnutá z heterogenních prvků do konstantní struktury, pracovní pro výpočty layoutu.
             /// Jsou sdílená i s volající metodou = struktura obsahující definiční data, která může doplňovat aplikační vrstva (label, rozměry, editační styl, atd)
@@ -948,7 +1029,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // Bázové informace:
                 itemData.ControlStyle = baseControl.ControlStyle;
                 itemData.LabelPosition = LabelPositionType.None;
-                itemData.ControlWidth = baseControl.Bounds?.Width;
+                itemData.ControlBounds = baseControl.Bounds;
                 itemData.ControlHeight = baseControl.Bounds?.Height;
                 itemData.ToolTipTitle = baseControl.ToolTipTitle;
                 itemData.ToolTipText = baseControl.ToolTipText;
@@ -990,8 +1071,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // Všechny moje Childs: 
                 //  pokud konkrétní Child má definovanou pozici (X,Y), pak mu jen nastavím příznak __LayoutMode = Fixed;
                 //  zde řeším Flow prvky (takové, co nemají X,Y) = zařazuji je do layoutových sloupců, a napočítávám Max hodnoty jejich sloupců:
-                this.__LayoutColumns = ColumnInfo.CreateColumns(this.__Style);
-                int columnsCount = this.__LayoutColumns.Length;
+                this.__LayoutColumns = ColumnsArray.CreateColumns(this.__Style);
+                int columnsCount = this.__LayoutColumns.Count;
                 int rowIndex = 0;
                 int colIndex = 0;
                 var childs = this.__Childs;
@@ -1005,39 +1086,95 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     else
                     {   // Flow mode:
                         item._PrepareMeForFlowLayout(ref rowIndex, ref colIndex, columnsCount);
-                        this.__LayoutColumns[item.__LayoutColumnBeginIndex.Value].AcceptItemSingleWidth(item);
+                        this.__LayoutColumns.AcceptWidthSingle(item);
                     }
                 }
             }
-
+            /// <summary>
+            /// Připraví mě (this) pro Fixed Layout
+            /// </summary>
             private void _PrepareMeForFixedLayout()
             {
                 this.__LayoutMode = LayoutModeType.Fixed;
             }
-
+            /// <summary>
+            /// Připraví mě (this) pro Flow Layout: určí moje indexy sloupců <see cref="FlowColumnBeginIndex"/> a <see cref="FlowColumnEndIndex"/> 
+            /// a index řádku <see cref="FlowRowIndex"/>.
+            /// </summary>
+            /// <param name="rowIndex"></param>
+            /// <param name="colIndex"></param>
+            /// <param name="columnsCount"></param>
             private void _PrepareMeForFlowLayout(ref int rowIndex, ref int colIndex, int columnsCount)
             {
                 this.__LayoutMode = LayoutModeType.Flow;
 
                 // Index začátku sloupce pro prvek je buď explicitní, nebo průběžný:
-                //  Explicitní akceptuji 0 a vyšší, i když by byl zadaný větší než MaxCount:
+                //  Explicitní akceptuji 0 a vyšší, i když by byl zadaný větší než MaxCount (to zajistí přeskok na nový řádek):
                 int? itemColIndex = ((this.__ColIndex.HasValue && this.__ColIndex.Value >= 0) ? this.__ColIndex : null);    // Exaktně zadaný ColIndex
                 int itemColSpan = (this.__ColSpan.HasValue && this.__ColSpan.Value > 1 ? this.__ColSpan.Value : 1);         // ColSpan, 1 nebo exaktně zadaný (více)
                 int columnBeginIndex = itemColIndex ?? colIndex;                                                            // Exaktně zadaný nebo průběžný ColIndex
-                int columnNextIndex = columnBeginIndex + itemColSpan;
+                int columnNextIndex = columnBeginIndex + itemColSpan;                    // Next column = ten, kde začne příští Item.
 
-                if (columnBeginIndex >= columnsCount)
-                {   // Pokud target překročí existující sloupce, pak jdu na další řádek a na index 0:
-                    //  Pokud někdo explicitně definuje 3 sloupce, a pak dá ColIndex = 10, pak je to pokyn pro Nový řádek a sloupec 0:
-                    //  Pokud běžně překročím na další sloupec za počet sloupců, stejně tak jdu na další řádek a na index 0:
-                    columnBeginIndex = 0;
-                    rowIndex++;
+                if (columnNextIndex > columnsCount)
+                {   // Pokud (můj počátek + moje šířka = NextIndex) přesáhne Count, znamená to že se vpravo nevejdu a budu to muset nějak řešit:
+                    if (!itemColIndex.HasValue)
+                    {   // Když NEMÁME exaktně zadaný index počátku (ColIndex) = pak prostě navazujeme na předešlou pozici a přetekli jsme za konec:
+                        if (columnBeginIndex < columnsCount)
+                        {   // Náš začátek je v existujícím sloupci => tak pouze zmenšíme ColSpan tak, abychom se vešli:
+                            itemColSpan = columnsCount - columnBeginIndex;
+                            columnNextIndex = columnBeginIndex + itemColSpan;
+                        }
+                        else
+                        {   // Už náš začátek je na/za koncem sloupců => přejedeme na sloupec 0 na následující řádek (protože volně tečeme na další řádek na sloupec 0):
+                            goNextRow(0, ref colIndex, ref rowIndex);
+                            columnBeginIndex = colIndex;                                 // columnBeginIndex bude 0
+                            columnNextIndex = columnBeginIndex + itemColSpan;            // Next column = ten, kde začne příští Item.
+                            if (columnNextIndex > columnsCount)
+                            {   // Již jen upravím ColSpan:
+                                itemColSpan = columnsCount - columnBeginIndex;
+                                columnNextIndex = columnBeginIndex + itemColSpan;
+                            }
+                        }
+                    }
+                    else
+                    {   // Když MÁME exaktně zadaný index počátku (ColIndex):
+                        if (itemColIndex.Value >= columnsCount)
+                        {   // Exaktně zadaný počátek je za koncovým sloupcem (moc velký index) => Jdu na sloupec 0 dalšího řádku:
+                            goNextRow(0, ref colIndex, ref rowIndex);
+                            columnBeginIndex = colIndex;                                 // columnBeginIndex bude 0
+                        }
+                        else if (itemColIndex.Value >= colIndex && itemColSpan > 1)
+                        {   // Exaktně zadaný počátek prvku je v reálném prostoru (0 až Last) a vejdeme se za dosavadní sloupec (colIndex) => Problém je v šířce sloupce (itemColSpan):
+                            // Zmenšíme 'itemColSpan' tak, aby prvek končil v posledním sloupci, a neměníme řádek:
+                            itemColSpan = columnsCount - itemColIndex.Value;
+                        }
+                        else
+                        {   // Exaktně zadaný počátek prvku je v reálném prostoru, ale je před koncem dosavadního prvku = kolidujeme s ním => přejdeme na nový řádek na exaktní sloupec:
+                            goNextRow(itemColIndex.Value, ref colIndex, ref rowIndex);
+                            columnBeginIndex = colIndex;                                 // columnBeginIndex bude itemColIndex skrze colIndex (v metodě goNextRow)
+                        }
+                        // Po korekcích columnBeginIndex a itemColSpan přepočteme columnNextIndex a případně upravíme itemColSpan a columnNextIndex:
+                        columnNextIndex = columnBeginIndex + itemColSpan;                // Next column = ten, kde začne příští Item.
+                        if (columnNextIndex > columnsCount)
+                        {   // Již jen upravím ColSpan:
+                            itemColSpan = columnsCount - columnBeginIndex;
+                            columnNextIndex = columnBeginIndex + itemColSpan;
+                        }
+                    }
                 }
                 else if (columnBeginIndex < colIndex)
-                {   // Pokud target je menší než aktuální sloupec (tedy je dán explicitně), pak jdu na další řádek, ale target sloupec ponechám (protože je menší než 'columnsCount'):
-                    //  Pokud někdo explicitně definuje 3 sloupce, a je na sloupci 0, pak může dát pak ColIndex = 2  =>  a tak skočí na poslední sloupec a vynechá prosto sloupce 1,
+                {   // Pokud target je menší než aktuální sloupec (tedy je dán explicitně atributem 'ColIndex'), pak jdu na další řádek, ale target sloupec pokud možno ponechám (protože je menší než 'columnsCount'):
+                    //  Pokud někdo explicitně definuje 3 sloupce, a je na sloupci 0, pak může dát pak ColIndex = 2  =>  a tak skočí na poslední sloupec a vynechá prostě sloupce 1,
                     //  anebo je na sloupci 1 a dá ColIndex = 1  =>  tak skočí na další řádek a vepíše prvek do (téhož) sloupce 1:
-                    rowIndex++;
+                    if (columnBeginIndex < columnsCount)
+                    {   // Zadaný ColIndex je v reálném prostoru existujících sloupců:
+                        rowIndex++;
+                    }
+                    else
+                    {   // Zadaný ColIndex je za posledním sloupcem => jdeme na následující řádek, na sloupec 0:
+                        goNextRow(0, ref colIndex, ref rowIndex);
+                        columnBeginIndex = colIndex;                                 // columnBeginIndex bude 0
+                    }
                 }
 
                 // Index Next sloupce je dán indexem Begin + jeho ColSpan (default 1), s ohledem na celkový počet sloupců:
@@ -1045,19 +1182,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (columnNextIndex > columnsCount) columnNextIndex = columnsCount;
 
                 // Umístění aktuálního prvku:
-                this.__LayoutRowIndex = rowIndex;
-                this.__LayoutColumnBeginIndex = columnBeginIndex;
-                this.__LayoutColumnEndIndex = columnNextIndex - 1;
-
-                // Pokud prvek obsazuje právě jeden sloupec layoutu, pak by měl do svého sloupce započítat svoje šířky:
-                // bool isSingleCOlumn = (itemColSpan == 1);
-                // ?? this.__LayoutColumns[itemBeginColumnIndex].AcceptItemSingleWidth(item);
+                this.__FlowRowIndex = rowIndex;
+                this.__FlowColumnBeginIndex = columnBeginIndex;
+                this.__FlowColumnEndIndex = columnNextIndex - 1;
 
                 // Počáteční sloupec pro další prvek:
                 //  Pokud 'colIndex' bude v next prvku rovno 'columnsCount', pak pro nějbližší další prvek přeskočíme na nový řádek (až to bude potřeba).
                 colIndex = columnNextIndex;
-            }
 
+
+                // Pokud stávající 'colIdx' (='colIndex') je větší než 0, pak posune řádek rowIdx (='rowIndex'). Nastaví 'colIdx' = 'itmColIdx'.
+                void goNextRow(int itmColIdx, ref int colIdx, ref int rowIdx)
+                {
+                    if (colIdx > 0)
+                        rowIdx++;
+                    colIdx = itmColIdx;
+                }
+            }
             /// <summary>
             /// Projde Flow prvky, které zabírají na šířku více než jeden sloupec (ColSpan větší než 1) a jejich šířky promítne do odpovídajících sloupců.
             /// </summary>
@@ -1067,7 +1208,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 foreach (var item in childs)
                 {
                     var itemData = item.__ControlData;
-                    if (item.__LayoutMode == LayoutModeType.Flow && item.__LayoutColumnEndIndex.Value > item.__LayoutColumnBeginIndex.Value)
+                    if (item.LayoutMode == LayoutModeType.Flow && (item.FlowColSpan ?? 0) > 1)
                     {   // Prvek je typu Float, a má ColSpan > 1:
 
                         
@@ -1319,17 +1460,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public string ToolTipText { get; set; }
         /// <summary>
-        /// Šířka controlu ve standardních pixelech. 
-        /// Pokud je null, pak není ve formuláři definováno, a přípravná funkce má rozměr určit. 
-        /// Pokud je hodnota uvedená ve formuláři, jde uvedena zde.
+        /// Souřadnice controlu exaktně zadaná přímo v frm.xml, zde se nemodifikuje.
+        /// Pokud je zde null, pak není ve formuláři definováno, 
+        /// a přípravná funkce má rozměr určit a vložit do <see cref="ControlWidth"/> a <see cref="ControlHeight"/>.
         /// </summary>
-        public int? ControlWidth { get; set; }
+        public Bounds ControlBounds { get; set; }
+        /// <summary>
+        /// Šířka controlu ve standardních pixelech.
+        /// Při čtení je zde hodnota zadaná do této property, anebo načtená z <see cref="ControlBounds"/>.
+        /// Po zadání hodnoty zde bude tato zadaná hodnota čtena, bez ohledu na obsah <see cref="ControlBounds"/>.
+        /// Lze vepsat null, pak zde bude pouze hodnota z z <see cref="ControlBounds"/> (anebo null).
+        /// </summary>
+        public int? ControlWidth { get { return __ControlWidth ?? ControlBounds?.Width; } set { __ControlWidth = value; } } private int? __ControlWidth;
         /// <summary>
         /// Výška controlu ve standardních pixelech. 
-        /// Pokud je null, pak není ve formuláři definováno, a přípravná funkce má rozměr určit. 
-        /// Pokud je hodnota uvedená ve formuláři, jde uvedena zde.
+        /// Při čtení je zde hodnota zadaná do této property, anebo načtená z <see cref="ControlBounds"/>.
+        /// Po zadání hodnoty zde bude tato zadaná hodnota čtena, bez ohledu na obsah <see cref="ControlBounds"/>.
+        /// Lze vepsat null, pak zde bude pouze hodnota z z <see cref="ControlBounds"/> (anebo null).
         /// </summary>
-        public int? ControlHeight { get; set; }
+        public int? ControlHeight { get { return __ControlHeight ?? ControlBounds?.Height; } set { __ControlHeight = value; } } private int? __ControlHeight;
         /// <summary>
         /// Šířka labelu <see cref="MainLabelText"/> ve standardních pixelech. 
         /// Pokud je null, pak není ve formuláři definováno, a přípravná funkce má rozměr určit. 

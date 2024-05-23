@@ -965,8 +965,9 @@ namespace TestDevExpress.Forms
         void IControlInfoSource.ValidateControlInfo(Noris.Clients.Win.Components.AsolDX.DataForm.ControlInfo controlInfo)
         {
             var name = controlInfo.ColumnName ?? "".Trim().ToLower();
+
             if (!controlInfo.ControlWidth.HasValue) controlInfo.ControlWidth = _GetControlWidth(controlInfo, name);
-            if (String.IsNullOrEmpty(controlInfo.MainLabelText)) controlInfo.MainLabelText = _GetMainLabelText(controlInfo, name);
+            if (String.IsNullOrEmpty(controlInfo.MainLabelText) && controlInfo.LabelPosition != LabelPositionType.None) controlInfo.MainLabelText = _GetMainLabelText(controlInfo, name);
         }
         private int? _GetControlWidth(ControlInfo controlInfo, string name)
         {
