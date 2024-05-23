@@ -350,7 +350,7 @@
 						</xs:element>
 						<xs:element name="textboxbutton" type="type_textboxbutton" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
-                                <xs:documentation xml:lang="cs-cz">Vstupní textové políčko s buttony.</xs:documentation>
+                                <xs:documentation xml:lang="cs-cz">Vstupní textové políčko s buttony. Buttony se zadávají jako vnořený element jména 'rightButton' nebo 'leftButton'.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
                         <xs:element name="combobox" type="type_combobox" minOccurs="0" maxOccurs="unbounded">
@@ -358,6 +358,11 @@
                                 <xs:documentation xml:lang="cs-cz">Rozbalovací nabídka typu ComboBox.</xs:documentation>
                             </xs:annotation>
                         </xs:element>
+						<xs:element name="image" type="type_image" minOccurs="0" maxOccurs="unbounded">
+							<xs:annotation>
+								<xs:documentation xml:lang="cs-cz">Obrázek. Obsah obrázku může být zadán jako text v atributu 'ImageName', nebo jako přímá binární data v atributu 'ImageData' nebo bude jeho obsah dodán v datovém sloupci.</xs:documentation>
+							</xs:annotation>
+						</xs:element>
 						<xs:element name="stepprogress" type="type_stepprogress" minOccurs="0" maxOccurs="unbounded">
 							<xs:annotation>
 								<xs:documentation xml:lang="cs-cz">StepProgressBar: postupné kroky procesu.</xs:documentation>
@@ -633,6 +638,24 @@
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
+
+	<!--    type_image = DfImage  -  Zobrazovač obrázku (fotografie)                                         -->
+	<xs:complexType name="type_image">
+		<xs:complexContent>
+			<xs:extension base="type_base_labeled_input_control">
+				<xs:attribute name="ImageName" type="xs:string">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Jméno obrázku. Obrázek bude vyhledán mezi ikonami (tedy 'pic/images/obrazek').</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="ImageData" type="xs:string">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Konstantní obsah obrázku dodaný ze serveru ve formě Base64.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
 
 	<!--    type_stepprogress = DfStepProgress  -  StepProgress Bar = postupné kroky procesu                 -->
 	<xs:complexType name="type_stepprogress">
@@ -1249,7 +1272,7 @@
         <xs:union memberTypes="xs:string">
             <xs:simpleType>
                 <xs:restriction base="xs:string">
-                    <xs:enumeration value="User_1"><xs:annotation><xs:documentation xml:lang="cs-cz">User 1</xs:documentation></xs:annotation></xs:enumeration>
+                    <xs:enumeration value="#RRGGBB"><xs:annotation><xs:documentation xml:lang="cs-cz">Explicitně definovaná barva v (hexa)RGB, kde #000000 je černá, #CC000 červená, atd</xs:documentation></xs:annotation></xs:enumeration>
                     <xs:enumeration value="AntiqueWhite"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #FAEBD7.</xs:documentation></xs:annotation></xs:enumeration>
                     <xs:enumeration value="Aqua"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #00FFFF.</xs:documentation></xs:annotation></xs:enumeration>
                     <xs:enumeration value="Aquamarine"><xs:annotation><xs:documentation xml:lang="cs-cz">RGB: #7FFFD4.</xs:documentation></xs:annotation></xs:enumeration>
