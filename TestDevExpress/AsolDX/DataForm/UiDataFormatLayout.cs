@@ -400,6 +400,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 return null;
             }
             private int? __LeftLabelMaximalWidth;
+            private int? __ControlBoundsMaximalWidth;
             private int? __ControlMaximalWidth;
             private int? __RightLabelMaximalWidth;
 
@@ -417,11 +418,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             public int? LeftLabelMaximalWidth { get { return __LeftLabelMaximalWidth; } set { __LeftLabelMaximalWidth = _GetMax(__LeftLabelMaximalWidth, value); } }
             /// <summary>
-            /// Šířka sloupce, kde je umístěn control, explicitně zadaná hodnota v deklaraci (null = nezadáno)
+            /// Šířka sloupce, kde je umístěn control, explicitně zadaná hodnota v deklaraci sloupce v containeru (null = nezadáno)
             /// </summary>
             public int? ControlDefinedWidth { get; private set; }
             /// <summary>
-            /// Šířka sloupce, kde je umístěn control, explicitně zadaná hodnota v deklaraci (null = nezadáno).
+            /// Šířka sloupce, kde je umístěn control, explicitně zadaná hodnota v deklaraci jednotlivého prvku, maximální hodnota (null = nezadáno).
+            /// Setování hodnoty: střádá se Max dodaná hodnota.
+            /// </summary>
+            public int? ControlBoundsMaximalWidth { get { return __ControlBoundsMaximalWidth; } set { __ControlBoundsMaximalWidth = _GetMax(__ControlBoundsMaximalWidth, value); } }
+            /// <summary>
+            /// Šířka sloupce, kde je umístěn control, dopočtená hodnota podle typu prvku a jeho názvu, maximální hodnota (null = nezadáno).
             /// Setování hodnoty: střádá se Max dodaná hodnota.
             /// </summary>
             public int? ControlMaximalWidth { get { return __ControlMaximalWidth; } set { __ControlMaximalWidth = _GetMax(__ControlMaximalWidth, value); } }
@@ -588,7 +594,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <summary>
             /// Akceptuje šířky controlu, Main a Suffix labelu z dodaného prvku do zdejších hodnot pro tento sloupec.
             /// Šířku pro Control akceptuje jen pro sloupce, jejichž ColSpan == 1.
-            /// Volá se tehdy, když dodaný prvek má ColSpan = 1 a tedy jeho rozměry přímo ovlivňují jeden konkrétní sloupec.
             /// </summary>
             /// <param name="item"></param>
             internal void AcceptWidthSingle(ItemInfo item)
@@ -608,8 +613,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
                 // Šířku Controlu akceptujeme tehdy, když dodaný prvek ji má uvedenou, a jeho ColSpan = 1.
                 // Akceptujeme ji do sloupce FlowColumnBeginIndex (stejný jako FlowColumnEndIndex)
-                if (itemData.ControlWidth.HasValue && item.FlowColSpan.Value == 1)
-                    this.__Columns[item.FlowColumnBeginIndex.Value].ControlMaximalWidth = itemData.ControlWidth;
+                if (item.FlowColSpan.Value == 1)
+                {
+                    // Šířka zadaná přímo do prvku:
+                    var boundsWidth = itemData.ControlBounds?.Width;
+                    if (boundsWidth.HasValue)
+                        this.__Columns[item.FlowColumnBeginIndex.Value].ControlBoundsMaximalWidth = boundsWidth;
+
+                    // Šířka controlu určená interně podle jeho názvu a typu:
+                    var controlWidth = itemData.ControlWidth;
+                    if (controlWidth.HasValue)
+                        this.__Columns[item.FlowColumnBeginIndex.Value].ControlMaximalWidth = controlWidth;
+                }
 
                 // Šířku SuffixLabel akceptujeme tehdy, když je text i velikost uveden:
                 // Akceptujeme ji do sloupce FlowColumnEndIndex:
@@ -1467,15 +1482,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         public Bounds ControlBounds { get; set; }
         /// <summary>
         /// Šířka controlu ve standardních pixelech.
-        /// Při čtení je zde hodnota zadaná do této property, anebo načtená z <see cref="ControlBounds"/>.
-        /// Po zadání hodnoty zde bude tato zadaná hodnota čtena, bez ohledu na obsah <see cref="ControlBounds"/>.
+        /// Při čtení je zde čtena hodnota zadaná přímo do této property, anebo načtená z <see cref="ControlBounds"/>.
+        /// Po zadání NotNull hodnoty zde bude tato zadaná hodnota čtena, bez ohledu na obsah <see cref="ControlBounds"/>.
         /// Lze vepsat null, pak zde bude pouze hodnota z z <see cref="ControlBounds"/> (anebo null).
         /// </summary>
         public int? ControlWidth { get { return __ControlWidth ?? ControlBounds?.Width; } set { __ControlWidth = value; } } private int? __ControlWidth;
         /// <summary>
         /// Výška controlu ve standardních pixelech. 
-        /// Při čtení je zde hodnota zadaná do této property, anebo načtená z <see cref="ControlBounds"/>.
-        /// Po zadání hodnoty zde bude tato zadaná hodnota čtena, bez ohledu na obsah <see cref="ControlBounds"/>.
+        /// Při čtení je zde čtena hodnota zadaná přímo do této property, anebo načtená z <see cref="ControlBounds"/>.
+        /// Po zadání NotNull hodnoty zde bude tato zadaná hodnota čtena, bez ohledu na obsah <see cref="ControlBounds"/>.
         /// Lze vepsat null, pak zde bude pouze hodnota z z <see cref="ControlBounds"/> (anebo null).
         /// </summary>
         public int? ControlHeight { get { return __ControlHeight ?? ControlBounds?.Height; } set { __ControlHeight = value; } } private int? __ControlHeight;
