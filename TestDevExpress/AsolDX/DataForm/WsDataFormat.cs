@@ -980,9 +980,35 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         /// <param name="left"></param>
         /// <param name="top"></param>
+        public Bounds(Int32? left, Int32? top)
+        {
+            this.Left = left;
+            this.Top = top;
+            this.Width = null;
+            this.Height = null;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="top"></param>
         /// <param name="width"></param>
         /// <param name="height"></param>
-        public Bounds(int? left, int? top, int? width, int? height)
+        public Bounds(Int32? left, Int32? top, Int32? width, Int32? height)
+        {
+            this.Left = left;
+            this.Top = top;
+            this.Width = width.HasValue ? new Int32PP(width.Value, false) : null;
+            this.Height = height;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="top"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        public Bounds(Int32? left, Int32? top, Int32PP? width, Int32? height)
         {
             this.Left = left;
             this.Top = top;
@@ -1000,19 +1026,104 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Left
         /// </summary>
-        public int? Left { get; set; }
+        public Int32? Left { get; set; }
         /// <summary>
         /// Top
         /// </summary>
-        public int? Top { get; set; }
+        public Int32? Top { get; set; }
         /// <summary>
         /// Width
         /// </summary>
-        public int? Width { get; set; }
+        public Int32PP? Width { get; set; }
         /// <summary>
         /// Height
         /// </summary>
-        public int? Height { get; set; }
+        public Int32? Height { get; set; }
+    }
+    /// <summary>
+    /// Hodnota typu Int32 <see cref="Value"/> s příznakem <see cref="IsPercent"/>, zda jde o procenta.
+    /// </summary>
+    public struct Int32PP
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="value"></param>
+        public Int32PP(int value)
+        {
+            this.Value = value;
+            this.IsPercent = false;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="isPercent"></param>
+        public Int32PP(int value, bool isPercent)
+        {
+            this.Value = value;
+            this.IsPercent = isPercent;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"{Value}{(IsPercent ? "%" : "")}";
+        }
+        /// <summary>
+        /// Hodnota
+        /// </summary>
+        public int Value { get; set; }
+        /// <summary>
+        /// Jde o procento?
+        /// </summary>
+        public bool IsPercent { get; set; }
+        /// <summary>
+        /// Hashcode
+        /// </summary>
+        /// <returns></returns>
+        public override int GetHashCode()
+        {
+            return this.Value.GetHashCode() ^ (IsPercent ? 0x40000000 : 0);
+        }
+        /// <summary>
+        /// Vrací Equals
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public override bool Equals(object obj)
+        {
+            return base.Equals(obj);
+        }
+        /// <summary>
+        /// Vrací Equals
+        /// </summary>
+        /// <param name="value1"></param>
+        /// <param name="value2"></param>
+        /// <returns></returns>
+        private static bool _IsEquals(Int32PP value1, Int32PP value2)
+        {
+            return (value1.Value == value2.Value) && (value1.IsPercent = value2.IsPercent);
+        }
+        /// <summary>
+        /// Parsuje dodaný text na hodnotu <see cref="Int32PP"/>.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static bool TryParse(string text, out Int32PP value)
+        {
+            value = default(Int32PP);
+            if (String.IsNullOrEmpty(text)) return false;
+            bool isPercent = text.Contains("%");
+            if (isPercent) text = text.Replace("%", "");
+            int number = 0;
+            if (String.IsNullOrEmpty(text) || !Int32.TryParse(text, out number)) return false;
+            value = new Int32PP(number, isPercent);
+            return true;
+        }
     }
     /// <summary>
     /// Styl pro control, typicky kalíšek. Budeme podporovat i rozšířený způsob zadání stylu.

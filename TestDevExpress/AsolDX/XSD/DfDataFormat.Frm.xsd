@@ -283,9 +283,9 @@
                         <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-                <xs:attribute name="Width" type="xs:int">
+                <xs:attribute name="Width" type="xs:string">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds. Pouze do atributu Width lze zadat šířku v % z celkové šířky vyhrazeného sloupce. To platí pouze pro umístění do FlowLayout, nikoli FixedLayout.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="Height" type="xs:int">
@@ -402,9 +402,9 @@
                         <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-                <xs:attribute name="Width" type="xs:int">
+                <xs:attribute name="Width" type="xs:string">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds. Pouze do atributu Width lze zadat šířku v % z celkové šířky vyhrazeného sloupce. To platí pouze pro umístění do FlowLayout, nikoli FixedLayout.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="Height" type="xs:int">
@@ -836,9 +836,9 @@
                         <xs:documentation xml:lang="cs-cz">Souřadnice X prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-                <xs:attribute name="Width" type="xs:int">
+                <xs:attribute name="Width" type="xs:string">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Šířka prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds. Pouze do atributu Width lze zadat šířku v % z celkové šířky vyhrazeného sloupce. To platí pouze pro umístění do FlowLayout, nikoli FixedLayout.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="Height" type="xs:int">
