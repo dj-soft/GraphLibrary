@@ -473,6 +473,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public string ColumnWidths { get; set; }
         /// <summary>
+        /// Volný prostor mezi dvěma sousedními sloupci (vnitřní Margin)
+        /// </summary>
+        public int? ColumnsDistance { get; set; }
+        /// <summary>
         /// Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = <c>NULL</c>
         /// </summary>
         public LabelPositionType? AutoLabelPosition { get; set; }
@@ -998,7 +1002,7 @@ namespace Noris.WS.DataContracts.DxForm
         {
             this.Left = left;
             this.Top = top;
-            this.Width = width.HasValue ? new Int32PP(width.Value, false) : null;
+            this.Width = width.HasValue ? new Int32P(width.Value, false) : null;
             this.Height = height;
         }
         /// <summary>
@@ -1008,7 +1012,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <param name="top"></param>
         /// <param name="width"></param>
         /// <param name="height"></param>
-        public Bounds(Int32? left, Int32? top, Int32PP? width, Int32? height)
+        public Bounds(Int32? left, Int32? top, Int32P? width, Int32? height)
         {
             this.Left = left;
             this.Top = top;
@@ -1032,61 +1036,74 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public Int32? Top { get; set; }
         /// <summary>
-        /// Width
+        /// Width: může být zadána hodnota absolutní, nebo procentuální. Viz příznak <see cref="Int32P.IsPercent"/>.
+        /// Může zde být null.
         /// </summary>
-        public Int32PP? Width { get; set; }
+        public Int32P? Width { get; set; }
         /// <summary>
         /// Height
         /// </summary>
         public Int32? Height { get; set; }
     }
     /// <summary>
-    /// Hodnota typu Int32 <see cref="Value"/> s příznakem <see cref="IsPercent"/>, zda jde o procenta.
+    /// Hodnota typu Int32 <see cref="Number"/> s příznakem <see cref="IsPercent"/>, zda jde o procenta.
     /// </summary>
-    public struct Int32PP
+    public struct Int32P : IEquatable<Int32P>
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="value"></param>
-        public Int32PP(int value)
+        /// <param name="number"></param>
+        public Int32P(int number)
         {
-            this.Value = value;
-            this.IsPercent = false;
+            this.__Number = number;
+            this.__IsPercent = false;
         }
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name="number"></param>
         /// <param name="isPercent"></param>
-        public Int32PP(int value, bool isPercent)
+        public Int32P(int number, bool isPercent)
         {
-            this.Value = value;
-            this.IsPercent = isPercent;
+            this.__Number = number;
+            this.__IsPercent = isPercent;
         }
+        /// <summary>
+        /// Počet
+        /// </summary>
+        private int __Number;
+        /// <summary>
+        /// Příznak procent (true) / hodnoty (false)
+        /// </summary>
+        private bool __IsPercent;
         /// <summary>
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
         public override string ToString()
         {
-            return $"{Value}{(IsPercent ? "%" : "")}";
+            return $"{Number}{(IsPercent ? "%" : "")}";
         }
         /// <summary>
         /// Hodnota
         /// </summary>
-        public int Value { get; set; }
+        public int Number { get { return __Number; } set { __Number = value; } }
+        /// <summary>
+        /// Jde o pixel?
+        /// </summary>
+        public bool IsPixel { get { return !__IsPercent; } set { __IsPercent = !value; } }
         /// <summary>
         /// Jde o procento?
         /// </summary>
-        public bool IsPercent { get; set; }
+        public bool IsPercent { get { return __IsPercent; } set { __IsPercent = value; } }
         /// <summary>
         /// Hashcode
         /// </summary>
         /// <returns></returns>
         public override int GetHashCode()
         {
-            return this.Value.GetHashCode() ^ (IsPercent ? 0x40000000 : 0);
+            return this.Number.GetHashCode() ^ (IsPercent ? 0x40000000 : 0);
         }
         /// <summary>
         /// Vrací Equals
@@ -1095,7 +1112,9 @@ namespace Noris.WS.DataContracts.DxForm
         /// <returns></returns>
         public override bool Equals(object obj)
         {
-            return base.Equals(obj);
+            if (obj is null) return false;
+            if (!(obj is Int32P)) return false;
+            return _IsEquals(this, (Int32P)obj);
         }
         /// <summary>
         /// Vrací Equals
@@ -1103,26 +1122,36 @@ namespace Noris.WS.DataContracts.DxForm
         /// <param name="value1"></param>
         /// <param name="value2"></param>
         /// <returns></returns>
-        private static bool _IsEquals(Int32PP value1, Int32PP value2)
+        private static bool _IsEquals(Int32P value1, Int32P value2)
         {
-            return (value1.Value == value2.Value) && (value1.IsPercent = value2.IsPercent);
+            return (value1.Number == value2.Number) && (value1.IsPercent = value2.IsPercent);
         }
         /// <summary>
-        /// Parsuje dodaný text na hodnotu <see cref="Int32PP"/>.
+        /// Parsuje dodaný text na hodnotu <see cref="Int32P"/>.
         /// </summary>
         /// <param name="text"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static bool TryParse(string text, out Int32PP value)
+        public static bool TryParse(string text, out Int32P value)
         {
-            value = default(Int32PP);
+            value = default(Int32P);
             if (String.IsNullOrEmpty(text)) return false;
             bool isPercent = text.Contains("%");
             if (isPercent) text = text.Replace("%", "");
             int number = 0;
             if (String.IsNullOrEmpty(text) || !Int32.TryParse(text, out number)) return false;
-            value = new Int32PP(number, isPercent);
+            value = new Int32P(number, isPercent);
             return true;
+        }
+        /// <summary>
+        /// Shodnost s jinou instancí
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        bool IEquatable<Int32P>.Equals(Int32P other)
+        {
+            return _IsEquals(this, other);
         }
     }
     /// <summary>

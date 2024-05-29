@@ -337,6 +337,7 @@ namespace TestDevExpress.Forms
             {
                 case "StatusRefresh":
                     RefreshStatusCurrent(true);
+                    // _GTTest();
                     // TestDevExpress.AsolDX.News.FontSizes.CreateTable();
                     break;
                 case "TestDrawing":
@@ -964,12 +965,15 @@ namespace TestDevExpress.Forms
         #region IControlInfoSource
         void IControlInfoSource.ValidateControlInfo(Noris.Clients.Win.Components.AsolDX.DataForm.ControlInfo controlInfo)
         {
-            var name = controlInfo.ColumnName ?? "".Trim().ToLower();
+            var name = (controlInfo.ColumnName ?? "").Trim().ToLower();
 
-            if (!controlInfo.ControlWidth.HasValue) controlInfo.ControlWidth = _GetControlWidth(controlInfo, name);
-            if (String.IsNullOrEmpty(controlInfo.MainLabelText) && controlInfo.LabelPosition != LabelPositionType.None) controlInfo.MainLabelText = _GetMainLabelText(controlInfo, name);
+            if (!controlInfo.ControlBoundsHasWidth) 
+                controlInfo.ControlDefaultWidth = _GetDefaultControlWidth(controlInfo, name);
+
+            if (String.IsNullOrEmpty(controlInfo.MainLabelText) && controlInfo.LabelPosition != LabelPositionType.None) 
+                controlInfo.MainLabelText = _GetMainLabelText(controlInfo, name);
         }
-        private int? _GetControlWidth(ControlInfo controlInfo, string name)
+        private int? _GetDefaultControlWidth(ControlInfo controlInfo, string name)
         {
             if (name == "reference_subjektu" || name.EndsWith("_refer")) return 120;
             if (name == "nazev_subjektu" || name.EndsWith("_nazev")) return 250;
@@ -985,6 +989,65 @@ namespace TestDevExpress.Forms
                 case "dodavatel_nazev": return "Dodavatel, název";
             }
             return null;
+        }
+        #endregion
+
+
+        #region GoogleTranslate
+        private async Task _GTTest()
+        {
+            var uri = new Uri("https://google-translate1.p.rapidapi.com/language/translate/v2/detect");
+            var client = new System.Net.Http.HttpClient();
+            var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, uri);
+            request.Headers.Add("x-rapidapi-key", "9bdb47cfeamsh9bfd0af2f336b9fp1e6651jsnedcd58f527ba");
+            request.Headers.Add("x-rapidapi-host", "google-translate1.p.rapidapi.com");
+            request.Content = new System.Net.Http.StringContent("{\"q\":\"English is hard, but detectably so\"}")
+            {
+                Headers = { ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json") }
+            };
+
+            using (var response = await client.SendAsync(request))
+            {
+                // response.EnsureSuccessStatusCode();
+                var status = response.StatusCode;
+                var body = await response.Content.ReadAsStringAsync();
+                Console.WriteLine(body);
+            }
+
+
+            /*   Google:
+Použit účet David.Janacek @ google.com
+https://rapidapi.com/googlecloud/api/google-translate1/playground/apiendpoint_7dc1fa13-4c56-4b07-9199-4033d27d5c6b
+Key:    9bdb47cfeamsh9bfd0af2f336b9fp1e6651jsnedcd58f527ba
+
+            #C code:
+using System.Net.Http.Headers;
+var client = new HttpClient();
+var request = new HttpRequestMessage
+{
+	Method = HttpMethod.Post,
+	RequestUri = new Uri("https://google-translate1.p.rapidapi.com/language/translate/v2/detect"),
+	Headers =
+	{
+		{ "x-rapidapi-key", "9bdb47cfeamsh9bfd0af2f336b9fp1e6651jsnedcd58f527ba" },
+		{ "x-rapidapi-host", "google-translate1.p.rapidapi.com" },
+	},
+	Content = new StringContent("{\"q\":\"English is hard, but detectably so\"}")
+	{
+		Headers =
+		{
+			ContentType = new MediaTypeHeaderValue("application/json")
+		}
+	}
+};
+using (var response = await client.SendAsync(request))
+{
+	response.EnsureSuccessStatusCode();
+	var body = await response.Content.ReadAsStringAsync();
+	Console.WriteLine(body);
+}
+
+            */
         }
         #endregion
     }

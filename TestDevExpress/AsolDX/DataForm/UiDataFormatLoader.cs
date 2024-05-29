@@ -1060,13 +1060,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
-        private static Int32PP? _ReadAttributeInt32PPN(System.Xml.Linq.XElement xElement, string attributeName)
+        private static Int32P? _ReadAttributeInt32PN(System.Xml.Linq.XElement xElement, string attributeName)
         {
-            Int32PP? value = null;
+            Int32P? value = null;
             if (xElement.HasAttributes && !String.IsNullOrEmpty(attributeName))
             {
                 var xAttribute = xElement.Attribute(attributeName);
-                if (xAttribute != null && !String.IsNullOrEmpty(xAttribute.Value) && Int32PP.TryParse(xAttribute.Value, out var result)) value = result;
+                if (xAttribute != null && !String.IsNullOrEmpty(xAttribute.Value) && Int32P.TryParse(xAttribute.Value, out var result)) value = result;
             }
             return value;
         }
@@ -1245,7 +1245,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private static Bounds _ReadAttributeBounds(System.Xml.Linq.XElement xElement, Bounds defaultValue)
         {
             Int32? left, top, width, height;
-            Int32PP? widthPP;
+            Int32P? widthP;
 
             Bounds bounds = defaultValue;
             bool hasBounds = false;
@@ -1280,7 +1280,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     height = (cnt >= 2 ? numbers[1] : null);
                     if (hasBounds)
                     {   // Pokud byl nalezen element Bounds s alespoň jedním prvkem (viz výše), tak zde doplním jeho Size a je hotovo:
-                        bounds.Width = (width.HasValue ? new Int32PP(width.Value) : null);
+                        bounds.Width = (width.HasValue ? new Int32P(width.Value) : null);
                         bounds.Height = height;
                         return bounds;
                     }
@@ -1294,9 +1294,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Jednotlivé hodnoty:
             left = _ReadAttributeInt32N(xElement, "X");
             top = _ReadAttributeInt32N(xElement, "Y");
-            widthPP = _ReadAttributeInt32PPN(xElement, "Width");
+            widthP = _ReadAttributeInt32PN(xElement, "Width");
             height = _ReadAttributeInt32N(xElement, "Height");
-            bool hasDimension = (left.HasValue || top.HasValue || widthPP.HasValue || height.HasValue);
+            bool hasDimension = (left.HasValue || top.HasValue || widthP.HasValue || height.HasValue);
             if (!hasDimension) return bounds;              // Pokud nemáme žádnou jednotkovou dimenzi, pak vrátím bounds v současném stavu (může tam být defaultValue).
 
             // Máme nějakou dimenzi, musíme mít i cílovou instanci 'bounds', abychom měli nalezenou dimenzi kam dát:
@@ -1305,7 +1305,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             if (left.HasValue) bounds.Left = left;
             if (top.HasValue) bounds.Top = top;
-            if (widthPP.HasValue) bounds.Width = widthPP;
+            if (widthP.HasValue) bounds.Width = widthP;
             if (height.HasValue) bounds.Height = height;
 
             return bounds;
