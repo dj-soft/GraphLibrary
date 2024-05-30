@@ -10,7 +10,7 @@
 		  AddUda="True" UdaLabelPosition="Up"
           ColumnWidths="200;300;100" >
 
-    <panel Name="simple1" Title="Jednoduchý" ColumnsCount="2" AutoLabelPosition="Up" >
+    <panel Name="simple1" Title="Jednoduchý" ColumnsCount="2" AutoLabelPosition="Up" ColumnsDistance="12" >
         <textbox Name="adresa1" ColSpan="2" Width="100%" />
         <textbox Name="adresa2" ColSpan="2" Width="400" />
         <textbox Name="reference_subjektu"/>

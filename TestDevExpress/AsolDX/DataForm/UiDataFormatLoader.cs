@@ -366,6 +366,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             dfForm.ContextMenu = _ReadAttributeBoolN(xElement, "ContextMenu");
             dfForm.ColumnsCount = _ReadAttributeInt32N(xElement, "ColumnsCount");
             dfForm.ColumnWidths = _ReadAttributeString(xElement, "ColumnWidths", null);
+            dfForm.ColumnsDistance = _ReadAttributeInt32N(xElement, "ColumnsDistance");
 
             // Implicit Page: do ní se vkládají Panely, pokud jsou zadány přímo do Formu
             DfPage implicitPage = null;
@@ -979,6 +980,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 area.Margins = _ReadAttributesMargin(xElement, "Margins", null);
                 area.ColumnsCount = _ReadAttributeInt32N(xElement, "ColumnsCount");
                 area.ColumnWidths = _ReadAttributeString(xElement, "ColumnWidths", null);
+                area.ColumnsDistance = _ReadAttributeInt32N(xElement, "ColumnsDistance");
                 area.AutoLabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "AutoLabelPosition");
             }
             if (target is DfBaseContainer container)

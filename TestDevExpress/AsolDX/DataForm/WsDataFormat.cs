@@ -473,7 +473,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public string ColumnWidths { get; set; }
         /// <summary>
-        /// Volný prostor mezi dvěma sousedními sloupci (vnitřní Margin)
+        /// Volný prostor v pixelech mezi dvěma sousedními sloupci (vnitřní Margin). Nezadáno = sloupce navazují těsně vedle sebe.
         /// </summary>
         public int? ColumnsDistance { get; set; }
         /// <summary>

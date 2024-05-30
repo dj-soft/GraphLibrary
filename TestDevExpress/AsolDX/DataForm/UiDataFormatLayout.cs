@@ -738,7 +738,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
 
 
-                // Výběr prvků ke zpracování v první fázi
+                // Výběr prvků ke zpracování v první fázi: vybere nezpracované Flow prvky s ColSpan > 1,
+                //  které mají zadanou svoji šířku v pixelech přímo v Frm.xml, anebo ji zadanou neměly a je určená jejich defaultní šířka.
+                // Pro takové prvky bychom v první fázi měli zajistit dostatečnou šířku sloupců tak, aby se tam vešly.
                 bool filter1(ItemInfo item)
                 {
                     return (item.LayoutMode == LayoutModeType.Flow

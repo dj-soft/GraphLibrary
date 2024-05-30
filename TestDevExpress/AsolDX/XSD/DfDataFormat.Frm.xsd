@@ -473,6 +473,13 @@
                         </xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
+                <xs:attribute name="ColumnsDistance" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">
+                            Volný prostor v pixelech mezi dvěma sousedními sloupci (vnitřní Margin). Nezadáno = sloupce navazují těsně vedle sebe.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
                 <xs:attribute name="AutoLabelPosition" type="label_position_enum" >
                     <xs:annotation><xs:documentation xml:lang="cs-cz">Automaticky generovat labely atributů a vztahů v rámci tohoto containeru, jejich umístění. Defaultní = podle parenta.</xs:documentation></xs:annotation>
                 </xs:attribute>
