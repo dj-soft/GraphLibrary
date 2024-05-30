@@ -313,6 +313,11 @@ namespace Noris.WS.DataContracts.DxForm
         /// Počet sloupců, které prvek obsazuje v FlowLayoutu. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
         /// </summary>
         public int? ColSpan { get; set; }
+        /// <summary>
+        /// Počet řádků, které prvek obsazuje v FlowLayoutu. Ten se použije, pokud prvky nemají exaktně dané souřadnice.
+        /// </summary>
+        public int? RowSpan { get; set; }
+
     }
     /// <summary>
     /// Vnořený panel, vložený do Page.
@@ -799,7 +804,7 @@ namespace Noris.WS.DataContracts.DxForm
             this.Alignment = ContentAlignmentType.Default;
         }
         /// <summary>
-        /// Text popisku controlu
+        /// Text popisku uvnitř controlu = text v Buttonu, text v CheckBoxu
         /// </summary>
         public string Text { get; set; }
         /// <summary>
@@ -842,6 +847,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// Nejvyšší šířka prostoru pro Label
         /// </summary>
         public int? LabelWidth { get; set; }
+        /// <summary>
+        /// Styl pro Label (název, styl písma, velikost, barva popisku, barva textu a pozadí, atd)
+        /// </summary>
+        public DfControlStyle LabelStyle { get; set; }
         /// <summary>
         /// Souřadnice labelu
         /// </summary>
@@ -912,6 +921,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// Počet sloupců, které prvek obsazuje v FlowLayoutu. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
         /// </summary>
         public int? ColSpan { get; set; }
+        /// <summary>
+        /// Počet řádků, které prvek obsazuje v FlowLayoutu. Ten se použije, pokud prvky nemají exaktně dané souřadnice.
+        /// </summary>
+        public int? RowSpan { get; set; }
         /// <summary>
         /// Souřadnice samotného vstupního prvku
         /// </summary>
@@ -1097,6 +1110,14 @@ namespace Noris.WS.DataContracts.DxForm
         /// Jde o procento?
         /// </summary>
         public bool IsPercent { get { return __IsPercent; } set { __IsPercent = value; } }
+        /// <summary>
+        /// Číslo, pokud je v pixelech, jinak null
+        /// </summary>
+        public int? NumberPixel { get { return (!__IsPercent ? (int?)Number : (int?)null); } }
+        /// <summary>
+        /// Číslo, pokud je v procentech, jinak null
+        /// </summary>
+        public int? NumberPercent { get { return (__IsPercent ? (int?)Number : (int?)null); } }
         /// <summary>
         /// Hashcode
         /// </summary>

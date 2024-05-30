@@ -963,23 +963,24 @@ namespace TestDevExpress.Forms
         }
         #endregion
         #region IControlInfoSource
-        void IControlInfoSource.ValidateControlInfo(Noris.Clients.Win.Components.AsolDX.DataForm.ControlInfo controlInfo)
+        void IControlInfoSource.ValidateControlInfo(IDataFormItem controlInfo)
         {
             var name = (controlInfo.ColumnName ?? "").Trim().ToLower();
 
-            if (!controlInfo.ControlBoundsHasWidth) 
-                controlInfo.ControlDefaultWidth = _GetDefaultControlWidth(controlInfo, name);
+            bool hasWidth = (controlInfo.DesignWidthPixel.HasValue || controlInfo.DesignWidthPercent.HasValue);
+            if (!hasWidth)
+                controlInfo.ImplicitControlWidth = _GetDefaultControlWidth(controlInfo, name);
 
-            if (String.IsNullOrEmpty(controlInfo.MainLabelText) && controlInfo.LabelPosition != LabelPositionType.None) 
+            if (String.IsNullOrEmpty(controlInfo.MainLabelText) && controlInfo.LabelPosition != LabelPositionType.None && controlInfo.MainLabelWidth.HasValue)
                 controlInfo.MainLabelText = _GetMainLabelText(controlInfo, name);
         }
-        private int? _GetDefaultControlWidth(ControlInfo controlInfo, string name)
+        private int? _GetDefaultControlWidth(IDataFormItem controlInfo, string name)
         {
             if (name == "reference_subjektu" || name.EndsWith("_refer")) return 120;
             if (name == "nazev_subjektu" || name.EndsWith("_nazev")) return 250;
             return 100;
         }
-        private string _GetMainLabelText(ControlInfo controlInfo, string name)
+        private string _GetMainLabelText(IDataFormItem controlInfo, string name)
         {
             switch (name)
             {
