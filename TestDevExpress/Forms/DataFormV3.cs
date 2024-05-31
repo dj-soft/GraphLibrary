@@ -971,7 +971,7 @@ namespace TestDevExpress.Forms
             if (!hasWidth)
                 controlInfo.ImplicitControlWidth = _GetDefaultControlWidth(controlInfo, name);
 
-            if (String.IsNullOrEmpty(controlInfo.MainLabelText) && controlInfo.LabelPosition != LabelPositionType.None && controlInfo.MainLabelWidth.HasValue)
+            if (String.IsNullOrEmpty(controlInfo.MainLabelText) && controlInfo.LabelPosition != LabelPositionType.None)
                 controlInfo.MainLabelText = _GetMainLabelText(controlInfo, name);
         }
         private int? _GetDefaultControlWidth(IDataFormItem controlInfo, string name)
@@ -989,7 +989,7 @@ namespace TestDevExpress.Forms
                 case "dodavatel_refer": return "Dodavatel";
                 case "dodavatel_nazev": return "Dodavatel, název";
             }
-            return null;
+            return name;
         }
         #endregion
 

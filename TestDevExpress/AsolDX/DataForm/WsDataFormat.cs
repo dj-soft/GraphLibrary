@@ -392,6 +392,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// Počet sloupců, které prvek obsazuje v FlowLayoutu. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
         /// </summary>
         public int? ColSpan { get; set; }
+        /// <summary>
+        /// Počet řádků, které prvek obsazuje v FlowLayoutu. Ten se použije, pokud prvky nemají exaktně dané souřadnice.
+        /// </summary>
+        public int? RowSpan { get; set; }
     }
     /// <summary>
     /// Prostor obsahující controly = základ pro <see cref="DfPanel"/> a pro <see cref="DfGroup"/>.<br/>

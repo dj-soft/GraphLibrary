@@ -245,6 +245,11 @@
                         <xs:documentation xml:lang="cs-cz">Počet sloupců, které prvek obsazuje v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
+                <xs:attribute name="RowSpan" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Počet řádků, které prvek obsazuje v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
@@ -301,6 +306,11 @@
                 <xs:attribute name="ColSpan" type="xs:int">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Počet sloupců, které prvek obsazuje v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="RowSpan" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Počet řádků, které prvek obsazuje v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>
@@ -863,6 +873,11 @@
 						<xs:documentation xml:lang="cs-cz">Počet sloupců, které prvek obsazuje v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.</xs:documentation>
 					</xs:annotation>
 				</xs:attribute>
+                <xs:attribute name="RowSpan" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Počet řádků, které prvek obsazuje v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
