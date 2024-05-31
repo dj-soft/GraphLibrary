@@ -10,51 +10,12 @@
 		  AddUda="True" UdaLabelPosition="Up"
           ColumnWidths="200;300;100" >
 
-    <panel Name="basic" Title="Jednoduchý" ColumnsCount="2" AutoLabelPosition="Up" ColumnsDistance="12" >
-        <textbox Name="adresa1" ColSpan="2" Width="100%" />
-        <textbox Name="adresa2" ColSpan="2" Width="400" />
-        <textbox Name="reference_subjektu"/>
-        <textbox Name="nazev_subjektu"/>
+    <panel Name="simple1" Title="Jednoduchý" ColumnsCount="2" AutoLabelPosition="Up" >
+        <textbox Name="poznamka" ColSpan="2" Width="500"/>
+        <textbox Name="reference_subjektu" Width="150"/>
+        <textbox Name="nazev_subjektu" />
         <textbox Name="dodavatel_refer"/>
         <textbox Name="dodavatel_nazev"/>
     </panel>
-
-    <panel Name="cross" Title="jinjang" ColumnsCount="3" AutoLabelPosition="Up" >
-        <textbox Name="row0col01" ColSpan="2" Width="300"/>
-        <textbox Name="row01col2" RowSpan="2" Width="150"/>
-        <textbox Name="row12col0" RowSpan="2" Width="150" />
-        <textbox Name="row2col12" ColSpan="2" Width="300" />
-        <textbox Name="row3col1" ColIndex="1" />
-        <textbox Name="row4col0" ColIndex="0" />
-        <textbox Name="row4col2" ColIndex="2" />
-    </panel>
-
-    <panel Name="primitive" Title="Primitivní" ColumnsCount="2" AutoLabelPosition="Up" >
-		<textbox Name="reference_subjektu3" ColumnName="reference_subjektu" Width="120" Label="Číslo faktury"/>
-		<textbox Name="nazev_subjektu3" ColumnName="nazev_subjektu" Width="300" Label="Variabilní symbol"/>
-		<textbox Name="odberatel_refer3" LabelWidth="420" Label="Cílový odběratel zboží, které je zde fakturováno:" />
-		<textbox Name="odberatel_nazev3" LabelPosition="None"/>
-	</panel>
-
-	<panel Name="middle2" Title="Zajímavý" ColumnWidths="120;250" AutoLabelPosition="Up" >
-		<textbox Name="reference_subjektu4" ColumnName="reference_subjektu" Width="120" Label="Číslo faktury"/>
-		<textbox Name="nazev_subjektu4" ColumnName="nazev_subjektu" Width="300" Label="Variabilní symbol"/>
-		<textbox Name="kontakt_refer" LabelWidth="420" Label="Dodavatel zboží, které je zde fakturováno:" />
-		<textbox Name="kontakt_nazev" LabelPosition="None"/>
-        <textbox Name="adresa1" ColSpan="2" Width="100%" />
-        <textbox Name="adresa2" ColSpan="2" Width="400" />
-        <button Name="open_contact" Bounds="380,0,60,50" Text="MSG001" ToolTipTitle="TIT001" ToolTipText="TIP001" IconName="pic/open_mail"/>
-        <image Name="Obrazek" Bounds="" ImageName="pic/open_mail"/>
-	</panel>
-
-	<panel Name="maxim1" Title="Neobyčejný" ColumnWidths="120;250" AutoLabelPosition="Up" BackColorLight="#662211" BackColorDark="#220804" BackImageName="pic/back/angle_violet" >
-		<textboxbutton Name="dokument" ColumnName="reference_subjektu" Label="Scan faktury" Bounds="25,30,400,20">
-			<rightButton Name="open_doc" IconName="pic/opendoc"/>
-			<rightButton Name="open_rec" IconName="pic/openrec"/>
-		</textboxbutton>
-		<image Name="logo" ImageName="pic/images/logo01" Bounds="25,60,320,240"/>
-	</panel>
-
-
-
+    
 </template>

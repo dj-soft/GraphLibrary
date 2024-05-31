@@ -592,6 +592,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             dfGroup.ColIndex = _ReadAttributeInt32N(xElement, "ColIndex");
             dfGroup.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
             dfGroup.RowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
+            dfGroup.HPosition = _ReadAttributeEnumN<PositionType>(xElement, "HPosition");
 
             // Elementy = Controly + Panely:
             _FillContainerChildElements(xElement, dfGroup, args);
@@ -618,6 +619,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             dfNestedGroup.ColIndex = _ReadAttributeInt32N(xElement, "ColIndex");
             dfNestedGroup.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
             dfNestedGroup.RowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
+            dfNestedGroup.HPosition = _ReadAttributeEnumN<PositionType>(xElement, "HPosition");
 
             // Nested šablona:
             if (!_TryLoadNestedTemplate(dfNestedGroup.NestedTemplate, args, out DfForm dfNestedForm, $"NestedGroup '{dfNestedGroup.Name}'")) return null;
@@ -635,6 +637,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 dfGroup.ColIndex = dfNestedGroup.ColIndex;
                 dfGroup.ColSpan = dfNestedGroup.ColSpan;
                 dfGroup.RowSpan = dfNestedGroup.RowSpan;
+                dfGroup.HPosition = dfNestedGroup.HPosition;
             }
             else
             {
@@ -955,6 +958,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 control.ColIndex = _ReadAttributeInt32N(xElement, "ColIndex");
                 control.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
                 control.RowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
+                control.HPosition = _ReadAttributeEnumN<PositionType>(xElement, "HPosition");
             }
             if (target is DfBaseInputControl inputControl)
             {

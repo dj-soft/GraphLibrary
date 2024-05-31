@@ -317,7 +317,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// Počet řádků, které prvek obsazuje v FlowLayoutu. Ten se použije, pokud prvky nemají exaktně dané souřadnice.
         /// </summary>
         public int? RowSpan { get; set; }
-
+        /// <summary>
+        /// Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu v rámci controlu.
+        /// </summary>
+        public PositionType? HPosition { get; set; }
     }
     /// <summary>
     /// Vnořený panel, vložený do Page.
@@ -396,6 +399,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// Počet řádků, které prvek obsazuje v FlowLayoutu. Ten se použije, pokud prvky nemají exaktně dané souřadnice.
         /// </summary>
         public int? RowSpan { get; set; }
+        /// <summary>
+        /// Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu v rámci controlu.
+        /// </summary>
+        public PositionType? HPosition { get; set; }
     }
     /// <summary>
     /// Prostor obsahující controly = základ pro <see cref="DfPanel"/> a pro <see cref="DfGroup"/>.<br/>
@@ -929,6 +936,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// Počet řádků, které prvek obsazuje v FlowLayoutu. Ten se použije, pokud prvky nemají exaktně dané souřadnice.
         /// </summary>
         public int? RowSpan { get; set; }
+        /// <summary>
+        /// Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu v rámci controlu.
+        /// </summary>
+        public PositionType? HPosition { get; set; }
         /// <summary>
         /// Souřadnice samotného vstupního prvku
         /// </summary>
@@ -1612,6 +1623,29 @@ namespace Noris.WS.DataContracts.DxForm
         /// Defaultně = Nahoře vlevo
         /// </summary>
         Default = TopLeft
+    }
+    /// <summary>
+    /// Umístění prvku vodorovně v rámci sloupce/řádku v případě, kdy šířka/výška prvku je menší než šířka sloupce/řádku.
+    /// Řeší tedy zarovnání controlu ve sloupci/řádku, nikoli zarovnání obsahu v rámci controlu.
+    /// </summary>
+    public enum PositionType
+    {
+        /// <summary>
+        /// Default = <see cref="Begin"/>.
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Vodorovně: Doleva; Svisle: Nahoru.
+        /// </summary>
+        Begin,
+        /// <summary>
+        /// Na střed.
+        /// </summary>
+        Center,
+        /// <summary>
+        /// Vodorovně: Doprava; Svisle: Dolů.
+        /// </summary>
+        End
     }
     /// <summary>
     /// Umístění obrázku vzhledem k prostoru

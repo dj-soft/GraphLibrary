@@ -250,6 +250,11 @@
                         <xs:documentation xml:lang="cs-cz">Počet řádků, které prvek obsazuje v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
+                <xs:attribute name="HPosition" type="position_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu v rámci controlu.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
@@ -311,6 +316,11 @@
                 <xs:attribute name="RowSpan" type="xs:int">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Počet řádků, které prvek obsazuje v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="HPosition" type="position_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu v rámci controlu.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>
@@ -878,6 +888,11 @@
                         <xs:documentation xml:lang="cs-cz">Počet řádků, které prvek obsazuje v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
+                <xs:attribute name="HPosition" type="position_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu v rámci controlu.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
@@ -988,6 +1003,30 @@
             <xs:enumeration value="BottomLeft" />
             <xs:enumeration value="BottomCenter" />
             <xs:enumeration value="BottomRight" />
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="position_enum">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Default" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Default = Begin.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Begin" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Vodorovně: Doleva; Svisle: Nahoru.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Center" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Na střed.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="End" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Vodorovně: Doprava; Svisle: Dolů.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
         </xs:restriction>
     </xs:simpleType>
     <xs:simpleType name="title_style_enum">
