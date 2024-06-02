@@ -12,14 +12,14 @@ using System.Windows.Forms;
 namespace TestDevExpress.Forms
 {
     /// <summary>
-    /// Web viewer typu AntView
+    /// Web viewer typu MS WebView2
     /// </summary>
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "Ant View", buttonOrder: 70, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře AntView prohlížeč (MS Edge based)", tabViewToolTip: "AntView Browser")]
-    public partial class AntViewForm : Form
+    [RunFormInfo(groupText: "Testovací okna", buttonText: "MS WebView2", buttonOrder: 71, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře MS WebView2 prohlížeč (MS Edge based)", tabViewToolTip: "WebView2 Browser")]
+    internal class WebView2Form : Form
     {
         #region Konstrukce
 
-        public AntViewForm()
+        public WebView2Form()
         {
             InitializeComponent();
         }
@@ -41,7 +41,7 @@ namespace TestDevExpress.Forms
         /// </summary>
         private void InitializeComponent()
         {
-            _Resources = new System.ComponentModel.ComponentResourceManager(typeof(AntViewForm));
+            _Resources = new System.ComponentModel.ComponentResourceManager(typeof(WebView2Form));
 
             this._Button1 = new Button();
             this._Button2 = new Button();
@@ -64,7 +64,6 @@ namespace TestDevExpress.Forms
             this._Button2.UseVisualStyleBackColor = true;
             this._Button2.Click += new System.EventHandler(this.button2_Click);
 
-
             this._Button3.Bounds = new Rectangle(376, 12, 176, 28);
             this._Button3.TabIndex = 3;
             this._Button3.Text = "google.com";
@@ -85,10 +84,11 @@ namespace TestDevExpress.Forms
             this._ButtonGo.Text = "=>";
             this._ButtonGo.UseVisualStyleBackColor = true;
             this._ButtonGo.Click += new System.EventHandler(this.buttonGo_Click);
-       
+
+
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.AppWorkspace;
+            this.BackColor = SystemColors.AppWorkspace;
             this.Controls.Add(this._Button1);
             this.Controls.Add(this._Button2);
             this.Controls.Add(this._Button3);
@@ -96,28 +96,28 @@ namespace TestDevExpress.Forms
             this.Controls.Add(this._UrlAdress);
             this.Controls.Add(this._ButtonGo);
 
-            this.Text = "AntView (MS Edge Browser)";
+            this.Text = "MS WebView2 (MS Edge Browser)";
 
             this.SizeChanged += _Form_SizeChanged;
 
             this.ResumeLayout(false);
-
         }
         private void _Form_SizeChanged(object sender, EventArgs e)
         {
             _DoLayout();
         }
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+        ComponentResourceManager _Resources;
+
         private Button _Button1;
         private Button _Button2;
         private Button _Button3;
         private Button _Button4;
         private TextBox _UrlAdress;
         private Button _ButtonGo;
-        /// <summary>
-        /// Required designer variable.
-        /// </summary>
-        private System.ComponentModel.IContainer components = null;
-        ComponentResourceManager _Resources;
         #endregion
         #region Buttony a jejich události
         private void button1_Click(object sender, EventArgs e)
@@ -209,7 +209,7 @@ m.addControl(sync);
         private string _NavigatedUri;
         #endregion
         #region Konkrétní WView
-        private AxAntViewAx.AxAntview _WView;
+        private Microsoft.Web.WebView2.WinForms.WebView2 _WView;
         private void _PrepareWView()
         {
             if (_WView != null)
@@ -218,57 +218,62 @@ m.addControl(sync);
                 _WView = null;
             }
 
-            this._WView = new AxAntViewAx.AxAntview();
-            
+            this._WView = new Microsoft.Web.WebView2.WinForms.WebView2();
+
             ((System.ComponentModel.ISupportInitialize)(this._WView)).BeginInit();
             this.Controls.Add(this._WView);
-            // this._AxAntView.Anchor = System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right | System.Windows.Forms.AnchorStyles.Bottom;
-            // this._AxAntView.ParentDoubleBuffered = true;
-            // this._AxAntView.DoubleBuffered = true;
             this._WView.Location = new System.Drawing.Point(12, 49);
-            this._WView.Name = "_AxAntView";
-            this._WView.OcxState = ((AxHost.State)(_Resources.GetObject("axAntview1.OcxState")));
+            this._WView.Name = "_WebView2";
             this._WView.Size = new System.Drawing.Size(776, 389);
             this._WView.TabIndex = 0;
+
+            /*
             this._WView.OnNavigationStarting += _AxAntView_OnNavigationStarting;
             this._WView.OnFrameNavigationStarting += _AxAntView_OnFrameNavigationStarting;
             this._WView.OnFrameNavigationCompleted += _AxAntView_OnFrameNavigationCompleted;
             this._WView.OnNavigationCompleted += _AxAntView_OnNavigationCompleted;
             this._WView.OnSourceChanged += _AxAntView_OnSourceChanged;
-
-            var ddl = this._WView.DemoDaysLeft;
-
+            */
             ((System.ComponentModel.ISupportInitialize)(this._WView)).EndInit();
 
             _DoLayout();
+
+            this._WView.CoreWebView2InitializationCompleted += _CoreWebView2InitializationCompleted;
+
         }
+
+        private void _CoreWebView2InitializationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2InitializationCompletedEventArgs e)
+        {
+            this._WView.CoreWebView2.SourceChanged += _WebView2_SourceChanged;
+            this._WView.CoreWebView2.StatusBarTextChanged += CoreWebView2_StatusBarTextChanged;
+        }
+
         private void _DoNavigate(string source, bool asAsync = false)
         {
+            if (String.IsNullOrEmpty(source)) return;
+
             if (!asAsync)
             {
-                _WView.Navigate(source);
+                _WView.Source = new Uri(source);
             }
             else
-            {
-                bool isSuccess = true;
-                var errStatus = AntViewAx.TxWebErrorStatus.wesUnknown;
-                _WView.NavigateToStringSync(source, ref isSuccess, ref errStatus);
-            }
+            { }
 
-            /*
-            var targetPdf = System.IO.Path.Combine(DxComponent.ApplicationPath, "AntViewImage.pdf");
-            _AxAntView.PrintToPdf(targetPdf, "pdf");
-
-            var size = _AxAntView.Size;
-            using (var bitmap = new Bitmap(size.Width, size.Height))
-            {
-                var targetBounds = new Rectangle(0, 0, size.Width, size.Height);
-                var targetFile = System.IO.Path.Combine(DxComponent.ApplicationPath, "AntViewImage.png");
-                _AxAntView.DrawToBitmap(bitmap, targetBounds);
-                bitmap.Save(targetFile, System.Drawing.Imaging.ImageFormat.Png);
-            }
-            */
         }
+
+
+        private void _WebView2_SourceChanged(object sender, Microsoft.Web.WebView2.Core.CoreWebView2SourceChangedEventArgs e)
+        {
+            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"WebView2.SourceChanged: '{_WView.Source.ToString()}'");
+            _RefreshUrl(_WView.Source.ToString());
+        }
+
+        private void CoreWebView2_StatusBarTextChanged(object sender, object e)
+        {
+            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"WebView2.StatusBarTextChanged: '{_WView.CoreWebView2.StatusBarText}'");
+        }
+
+        /*
         private void _AxAntView_OnSourceChanged(object sender, AxAntViewAx.IAntViewEvents_OnSourceChangedEvent e)
         {
             DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"AntView.OnSourceChanged: '{_WView.Source}'");
@@ -291,6 +296,7 @@ m.addControl(sync);
         {
             DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"AntView.OnNavigationCompleted: '{_WView.Source}'");
         }
+        */
         #endregion
     }
 }

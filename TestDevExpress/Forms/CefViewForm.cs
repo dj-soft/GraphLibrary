@@ -14,12 +14,12 @@ namespace TestDevExpress.Forms
     /// <summary>
     /// Web viewer typu AntView
     /// </summary>
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "Ant View", buttonOrder: 70, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře AntView prohlížeč (MS Edge based)", tabViewToolTip: "AntView Browser")]
-    public partial class AntViewForm : Form
+    [RunFormInfo(groupText: "Testovací okna", buttonText: "Cef View", buttonOrder: 72, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře CefView prohlížeč (MS Edge based)", tabViewToolTip: "CefView Browser")]
+    public partial class CefViewForm : Form
     {
         #region Konstrukce
 
-        public AntViewForm()
+        public CefViewForm()
         {
             InitializeComponent();
         }
@@ -85,7 +85,7 @@ namespace TestDevExpress.Forms
             this._ButtonGo.Text = "=>";
             this._ButtonGo.UseVisualStyleBackColor = true;
             this._ButtonGo.Click += new System.EventHandler(this.buttonGo_Click);
-       
+
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.AppWorkspace;
@@ -209,7 +209,7 @@ m.addControl(sync);
         private string _NavigatedUri;
         #endregion
         #region Konkrétní WView
-        private AxAntViewAx.AxAntview _WView;
+        private CefSharp.WinForms.Host.ChromiumHostControl _WView;
         private void _PrepareWView()
         {
             if (_WView != null)
@@ -218,18 +218,20 @@ m.addControl(sync);
                 _WView = null;
             }
 
-            this._WView = new AxAntViewAx.AxAntview();
-            
-            ((System.ComponentModel.ISupportInitialize)(this._WView)).BeginInit();
+            this._WView = new CefSharp.WinForms.Host.ChromiumHostControl();
+
+            // ((System.ComponentModel.ISupportInitialize)(this._WView)).BeginInit();
+
             this.Controls.Add(this._WView);
             // this._AxAntView.Anchor = System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right | System.Windows.Forms.AnchorStyles.Bottom;
             // this._AxAntView.ParentDoubleBuffered = true;
             // this._AxAntView.DoubleBuffered = true;
             this._WView.Location = new System.Drawing.Point(12, 49);
             this._WView.Name = "_AxAntView";
-            this._WView.OcxState = ((AxHost.State)(_Resources.GetObject("axAntview1.OcxState")));
             this._WView.Size = new System.Drawing.Size(776, 389);
             this._WView.TabIndex = 0;
+
+            /*
             this._WView.OnNavigationStarting += _AxAntView_OnNavigationStarting;
             this._WView.OnFrameNavigationStarting += _AxAntView_OnFrameNavigationStarting;
             this._WView.OnFrameNavigationCompleted += _AxAntView_OnFrameNavigationCompleted;
@@ -237,8 +239,9 @@ m.addControl(sync);
             this._WView.OnSourceChanged += _AxAntView_OnSourceChanged;
 
             var ddl = this._WView.DemoDaysLeft;
+            */
 
-            ((System.ComponentModel.ISupportInitialize)(this._WView)).EndInit();
+            // ((System.ComponentModel.ISupportInitialize)(this._WView)).EndInit();
 
             _DoLayout();
         }
@@ -246,13 +249,10 @@ m.addControl(sync);
         {
             if (!asAsync)
             {
-                _WView.Navigate(source);
+                _WView.LoadUrl(source);
             }
             else
             {
-                bool isSuccess = true;
-                var errStatus = AntViewAx.TxWebErrorStatus.wesUnknown;
-                _WView.NavigateToStringSync(source, ref isSuccess, ref errStatus);
             }
 
             /*
@@ -269,6 +269,10 @@ m.addControl(sync);
             }
             */
         }
+
+
+
+        /*
         private void _AxAntView_OnSourceChanged(object sender, AxAntViewAx.IAntViewEvents_OnSourceChangedEvent e)
         {
             DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"AntView.OnSourceChanged: '{_WView.Source}'");
@@ -291,6 +295,8 @@ m.addControl(sync);
         {
             DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"AntView.OnNavigationCompleted: '{_WView.Source}'");
         }
+        */
         #endregion
     }
 }
+
