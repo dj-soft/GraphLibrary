@@ -212,12 +212,21 @@ m.addControl(sync);
         private Microsoft.Web.WebView2.WinForms.WebView2 _WView;
         private void _PrepareWView()
         {
-            if (_WView != null)
+            if (_WView != null && Control.ModifierKeys == Keys.Control)
             {
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.Dispose...");
                 DxComponent.TryRun(() => _WView.Dispose(), true);
                 _WView = null;
             }
 
+            if (this._WView != null)
+            {
+                _DoLayout();
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.Exists.");
+                return;
+            }
+
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.Creating new instance...");
             this._WView = new Microsoft.Web.WebView2.WinForms.WebView2();
 
             ((System.ComponentModel.ISupportInitialize)(this._WView)).BeginInit();
@@ -238,63 +247,95 @@ m.addControl(sync);
 
             _DoLayout();
 
+            this.__SourceAsync = null;
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.EnsureCoreWebView2Async...");
             this._WView.CoreWebView2InitializationCompleted += _CoreWebView2InitializationCompleted;
-
+            var task =  this._WView.EnsureCoreWebView2Async();
+            task.Wait(2000);
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.EnsureCoreWebView2Async Wait done; Status: '{task.Status}'");
         }
 
         private void _CoreWebView2InitializationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2InitializationCompletedEventArgs e)
         {
-            this._WView.CoreWebView2.SourceChanged += _WebView2_SourceChanged;
-            this._WView.CoreWebView2.StatusBarTextChanged += CoreWebView2_StatusBarTextChanged;
+            if (this._WView.CoreWebView2 is null)
+            {
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.CoreWebView2InitializationCompleted: IS NULL!");
+
+                // this._WView.Reload();
+            }
+            if (this._WView.CoreWebView2 != null)
+            {
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.CoreWebView2InitializationCompleted: Set eventhandlers...");
+
+                this._WView.CoreWebView2.SourceChanged += _WebView2_SourceChanged;
+                this._WView.CoreWebView2.StatusBarTextChanged += CoreWebView2_StatusBarTextChanged;
+
+                if (!String.IsNullOrEmpty(__SourceAsync))
+                {
+                    DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.CoreWebView2InitializationCompleted: Run Lazy DoNavigate to '{__SourceAsync}'.");
+                    _DoNavigate(__SourceAsync);
+                }
+            }
         }
 
         private void _DoNavigate(string source, bool asAsync = false)
         {
             if (String.IsNullOrEmpty(source)) return;
 
-            if (!asAsync)
+            if (this._WView.CoreWebView2 is null)
             {
-                _WView.Source = new Uri(source);
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.DoNavigate: IS NULL => EnsureCoreWebView2Async...");
+                this._WView.EnsureCoreWebView2Async();
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.DoNavigate: IS NULL => Delayed (to '{source}').");
+                __SourceAsync = source;
             }
             else
-            { }
-
+            {
+                __SourceAsync = null;
+                if (!asAsync)
+                {
+                    DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.DoNavigate Now to '{source}'...");
+                    _WView.Source = new Uri(source);
+                }
+                else
+                { }
+            }
         }
-
+        private string __SourceAsync;
 
         private void _WebView2_SourceChanged(object sender, Microsoft.Web.WebView2.Core.CoreWebView2SourceChangedEventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"WebView2.SourceChanged: '{_WView.Source.ToString()}'");
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.SourceChanged: '{_WView.Source.ToString()}'");
             _RefreshUrl(_WView.Source.ToString());
         }
 
         private void CoreWebView2_StatusBarTextChanged(object sender, object e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"WebView2.StatusBarTextChanged: '{_WView.CoreWebView2.StatusBarText}'");
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.StatusBarTextChanged: '{_WView.CoreWebView2.StatusBarText}'");
         }
 
         /*
         private void _AxAntView_OnSourceChanged(object sender, AxAntViewAx.IAntViewEvents_OnSourceChangedEvent e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"AntView.OnSourceChanged: '{_WView.Source}'");
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"AntView.OnSourceChanged: '{_WView.Source}'");
             _RefreshUrl(_WView.Source);
         }
         private void _AxAntView_OnFrameNavigationStarting(object sender, AxAntViewAx.IAntViewEvents_OnFrameNavigationStartingEvent e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"AntView.OnFrameNavigationStarting: #{e.args.NavigationId}: '{e.args.URI}'");
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"AntView.OnFrameNavigationStarting: #{e.args.NavigationId}: '{e.args.URI}'");
         }
         private void _AxAntView_OnFrameNavigationCompleted(object sender, AxAntViewAx.IAntViewEvents_OnFrameNavigationCompletedEvent e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"AntView.OnFrameNavigationCompleted: #{e.navigationId}");
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"AntView.OnFrameNavigationCompleted: #{e.navigationId}");
         }
         private void _AxAntView_OnNavigationStarting(object sender, AxAntViewAx.IAntViewEvents_OnNavigationStartingEvent e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"AntView.OnNavigationStarting: #{e.args.NavigationId}: '{e.args.URI}'");
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"AntView.OnNavigationStarting: #{e.args.NavigationId}: '{e.args.URI}'");
             _RefreshUrl(e.args.URI);
         }
         private void _AxAntView_OnNavigationCompleted(object sender, AxAntViewAx.IAntViewEvents_OnNavigationCompletedEvent e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DataFormEvents, $"AntView.OnNavigationCompleted: '{_WView.Source}'");
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"AntView.OnNavigationCompleted: '{_WView.Source}'");
         }
         */
         #endregion

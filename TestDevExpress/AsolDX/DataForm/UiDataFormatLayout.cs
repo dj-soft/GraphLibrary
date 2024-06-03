@@ -1703,100 +1703,108 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _ProcessControlMultiSpan()
         {
             // Sečtu počet prvků Items, které nemají akceptovánu šířku a výšku. Pokud je jich nula, není co řešit a končím;
-            // Dál jdu ve "vlnách" (počínaje 0 a ++), kde "jedna vlna" řeší takové prvky, 
-            //   které v dané ose (X/Y) mají právě tolik svých dimenzí, které dosud nemají určenou šířku/výšku typu Bounds nebo Implicit;
-            // V rámci této akce daný prvek určí svoji velikost a proti tomu velikost z dimenzí
+            getNonProcessedCounts(out int nonProcessedWidths, out int nonProcessedHeights);
+            if (nonProcessedWidths == 0 && nonProcessedHeights == 0) return;
 
-
-
-            // Projdu každý sloupec a každý řádek, najdu jeho vhodné prvky (které mají Span v dané ose > 1),
-            // a pokud má prvek svůj rozměr daný v pixelech a přitom existuje jediná dimenze v rámci dimenzí pokrytých prvkem, pak do této dimenze vepíše potřebnou šířku.
             int colCnt = _ColumnsCount;
             int rowCnt = _RowsCount;
             int itmCnt = _ItemsCount;
 
-            int nonProcessCnt = getCount();
-            if (nonProcessCnt == 0) return;
-
-            for (int c = 0; c < colCnt; c++)
-                processColumn(c);
-            for (int r = 0; r < rowCnt; r++)
-                processRow(r);
-
-
-            // Vrátí počet prvků, které dosud nemají zajištěnou šířku / výšku pro control
-            int getCount()
-            {
-                return __Items.Count(i => !(i.AcceptedWidth && i.AcceptedHeight));
-            }
-            // Zpracuje jeden Column
-            void processColumn(int colIdx)
-            {
-                var column = __Columns[colIdx];
-                for (int r = 0; r < rowCnt; r++)
+            // Dál jdu ve "vlnách" 'q' (počínaje 0 a ++), kde "jedna vlna" řeší takové prvky, 
+            //   které v dané ose (X/Y) mají právě tolik svých dimenzí, které dosud nemají určenou šířku/výšku typu Bounds nebo Implicit;
+            // V rámci této akce daný prvek porovná svoji velikost proti velikosti z jemu odpovídajících dimenzí (sloupce / řádky) pro Control,
+            // a případně si prvek zajistí potřebný prostor.
+            int q = 0;
+            for (int t = 0; t < 120; t++)
+            {   // t je pouze timeout bez dalšího významu. Klíčový význam má hodnota 'q'.
+                // Řešíme jednotlivé prvky, které řešit potřebují:
+                int procWidth = 0;
+                int procHeight = 0;
+                for (int i = 0; i < itmCnt; i++)
                 {
-                    var item = __Cells[r][colIdx];
-                    if (item != null)
-                        processColumnItem(column, item);
+                    var item = __Items[i];
+                    if (nonProcessedWidths > 0 && processItemWidth(item, q))
+                        procWidth++;
+                    if (nonProcessedHeights > 0 && processItemHeight(item, q))
+                        procHeight++;
+                }
+
+                // Jak to dopadlo:
+                getNonProcessedCounts(out int currNPW, out int currNPH);
+                // Všechno je hotovo:
+                if (currNPW == 0 && currNPH == 0) return;
+
+                // Pokud jsme v aktuální vlně 'q' nedokázali nic vyřešit tedy když aktuální počet nevyřešených prvků je stejný jako před tím), pak navýšíme hodnotu vlny o +1:
+                if (currNPW < nonProcessedWidths || currNPH < nonProcessedHeights)
+                {   // Počet nevyřešených se změnil (snížil): zapamatujeme si nový počet a zkusíme ve stejné vlně další cyklus:
+                    nonProcessedWidths = currNPW;
+                    nonProcessedHeights = currNPH;
+                }
+                else
+                {   // Pokud jsme v aktuální vlně 'q' nedokázali nic vyřešit (tedy když aktuální počet nevyřešených prvků je stejný jako před tím), pak navýšíme hodnotu vlny o +1:
+                    // Tím umožníme, že v dalším cyklu se pro jeden prvek může řešit více nejistých dimenzí než nyní.
+                    //  Číslo vlny říká, kolik např. sloupců bez stanovené šířky můžeme zpracovat v jednom algoritmu.
+                    q++;
                 }
             }
-            // Zpracuje jeden Item, pouze Control, z hlediska jeho sloupce, ColSpan = 1, nikoliv šířka v procentech:
-            void processColumnItem(LineInfo column, IFlowLayoutItem item)
+
+            // Zpracuje jeden prvek z pohledu šířky
+            bool processItemWidth(IFlowLayoutItem item, int qWave)
             {
+                if (!needProcessWidth(item)) return false;                     // Není nutno
+
                 int begin = item.FlowColBeginIndex.Value;
                 int end = item.FlowColEndIndex.Value;
-                if (begin < end && begin <= column.Index && end >= column.Index && !item.DesignWidthPercent.HasValue)
-                {   // Tento prvek má ColSpan > 1 a nachází se na řešeném sloupci
-                    var size = _GetControlSizeSum(__Columns, begin, end, LineInfo.ControlSizeType.MaxBounds);
-                }
-            }
-            void processRow(int rowIdx)
-            {
 
-            }
-            // 
-            int? getControlMultiSize(List<LineInfo> lines, int begin, int end, LineInfo.ControlSizeType sizeType, int maxUndefinedCount, out LineInfo lastLine, out List<LineInfo> foundUndefinedLines)
-            {
-                // Významy velikostí v dimenzi, jejich MultiSpan a to, co z dimenze sčítáme do výsledného Controlu:
-                // Control, který je MultiSpan, do sebe zahrnuje tyto velikosti z dimenzí, na kterých se nachází:
-                //   Z ne-první dimenze            : prostor LabelBefore
-                //   Z každé dimenze               : prostor Control
-                //   Z ne-poslední dimenze         : prostor LabelAfter + DistanceAfter
-                //  +------------------ Dimension Begin -------------------+------------------ Dimension Inner -------------------+------------------- Dimension End  -------------------+
-                //  |  LabelBefore    Control   LabelAfter  DistanceAfter  |  LabelBefore    Control   LabelAfter  DistanceAfter  |  LabelBefore    Control   LabelAfter  DistanceAfter  |
-                //  |                |-------------------------------------------------- Size 3x MultiSpan ------------------------------------------------|                             |
-                //  |                |---------------------- Size 2x MultiSpan ---------------------|                                                                                    |
-                //  |                                                                       |---------------------- Size 2x MultiSpan ---------------------|                             |
-                //  |                |-------|                                                                                                                                           |
-                //  +--------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+                LineInfo.ControlSizeType sizeType = (item.DesignWidthPixel.HasValue ? LineInfo.ControlSizeType.MaxBounds : item.ImplicitControlWidth.HasValue ? LineInfo.ControlSizeType.MaxImplicit : LineInfo.ControlSizeType.None);
+                if (sizeType == LineInfo.ControlSizeType.None) return false;   // Není nutno
 
-                lastLine = null;
-                foundUndefinedLines = null;
-                int size = 0;
-                int undefinedCount = 0;
-                for (int i = begin; i <= end; i++)
-                {
-                    var line = lines[i];
-                    if (i > begin) size += line.LabelBeforeSize;          // Prostor před Controlem zahrnujeme počínaje od druhé dimenze
-                    var controlSize = line.GetControlSize(sizeType);      // Samotný Control beru vždy, v daném typu (Bounds / Implicit)
-                    if (controlSize.HasValue)
-                    {
-                        size += controlSize.Value;
-                    }
-                    else
-                    {   // Aktuální dimenze (line) nemá určen rozměr požadovaného typu! Co s tím?
-                        undefinedCount++;                                 // Počítám, kolik nedefinovaných dimenzí pokrývá aktuální prvek
-                        if (undefinedCount > maxUndefinedCount)           // Pokud přesáhnu povolený počet, skončím a vrátím null:
-                            return null;
-                        // Nějaké nedefinované dimenze jsou povoleny, budu je střádat do výsledku:
-                        if (foundUndefinedLines is null)
-                            foundUndefinedLines = new List<LineInfo>();
-                        foundUndefinedLines.Add(line);
-                        qqq;
-                    }
-                    if (i < end) size += line.LabelAfterSize + line.DistanceAfterSize;   // Prostor za Controlem zahrnujeme do dimenzí před tou poslední
-                }
-                return size;
+                var columnsControlSize = _GetControlSizeSum(__Columns, begin, end, sizeType, qWave, out var lastColumn, out var notColumns);
+                if (!columnsControlSize.HasValue) return false;                // V dané vlně v dimenzích (sloupce) tohoto prvku nenajdu takovou dimenzi, do které bych vložil jeho rozměr...
+
+                // Mám součet dimenzí (šířky sloupců pro Control) a mám i moji šířku. Měl bych najít i 
+                // 
+
+                item.AcceptedWidth = true;
+                return true;
+            }
+            // Zpracuje jeden prvek z pohledu výšky
+            bool processItemHeight(IFlowLayoutItem item, int qWave)
+            {
+                if (!needProcessHeight(item)) return false;                    // Není nutno
+
+                int begin = item.FlowRowBeginIndex.Value;
+                int end = item.FlowRowEndIndex.Value;
+
+                LineInfo.ControlSizeType sizeType = (item.DesignHeightPixel.HasValue ? LineInfo.ControlSizeType.MaxBounds : item.ImplicitControlHeight.HasValue ? LineInfo.ControlSizeType.MaxImplicit : LineInfo.ControlSizeType.None);
+                if (sizeType == LineInfo.ControlSizeType.None) return false;   // Není nutno
+
+                var rowsControlSize = _GetControlSizeSum(__Rows, begin, end, sizeType, qWave, out var lastColumn, out var notColumns);
+                if (!rowsControlSize.HasValue) return false;                // V dané vlně v dimenzích (sloupce) tohoto prvku nenajdu takovou dimenzi, do které bych vložil jeho rozměr...
+
+
+
+
+
+                item.AcceptedHeight = true;
+                return true;
+            }
+           
+            // Vrátí počet prvků, které mají zadanou velikost pro control, a dosud pro ni nemají zajištěnou šířku / výšku
+            void getNonProcessedCounts(out int npw, out int nph)
+            {
+                npw = __Items.Count(i => needProcessWidth(i));                 // Pokud mám exaktně zadanou šířku, nebo ji mám určenou, ale nemám ji akceptovanou
+                nph = __Items.Count(i => needProcessHeight(i));                //  dtto pro šířku
+            }
+            // Vrátí true pro prvek, který je třeba pracovat z hlediska šířky: má definovanou šířku (DesignWidthPixel nebo ImplicitControlWidth), ale nemá ji zpracovanou (AcceptedWidth)
+            bool needProcessWidth(IFlowLayoutItem item)
+            {
+                return ((item.DesignWidthPixel.HasValue || item.ImplicitControlWidth.HasValue) && !item.AcceptedWidth);
+            }
+            // Vrátí true pro prvek, který je třeba pracovat z hlediska výšky: má definovanou výšku (DesignHeightPixel nebo ImplicitControlHeight), ale nemá ji zpracovanou (AcceptedHeight)
+            bool needProcessHeight(IFlowLayoutItem item)
+            {
+                return ((item.DesignHeightPixel.HasValue || item.ImplicitControlHeight.HasValue) && !item.AcceptedHeight);
             }
         }
         /// <summary>
@@ -1834,7 +1842,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             for (int i = begin; i <= end; i++)
             {
                 var line = lines[i];
+                lastLine = line;
+
                 if (i > begin) size += line.LabelBeforeSize;          // Prostor před Controlem zahrnujeme počínaje od druhé dimenze
+                
                 var controlSize = line.GetControlSize(sizeType);      // Samotný Control beru vždy, v daném typu (Bounds / Implicit)
                 if (controlSize.HasValue)
                 {
@@ -1849,8 +1860,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     if (foundUndefinedLines is null)
                         foundUndefinedLines = new List<LineInfo>();
                     foundUndefinedLines.Add(line);
-                    qqq;
                 }
+
                 if (i < end) size += line.LabelAfterSize + line.DistanceAfterSize;   // Prostor za Controlem zahrnujeme do dimenzí před tou poslední
             }
             return size;
