@@ -1703,12 +1703,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _ProcessControlMultiSpan()
         {
             // Sečtu počet prvků Items, které nemají akceptovánu šířku a výšku. Pokud je jich nula, není co řešit a končím;
-            getNonProcessedCounts(out int nonProcessedWidths, out int nonProcessedHeights);
-            if (nonProcessedWidths == 0 && nonProcessedHeights == 0) return;
+            var processWidthItems = __Items.Where(i => needProcessWidth(i)).ToList();
+            var processHeightItems = __Items.Where(i => needProcessHeight(i)).ToList();
+            if (processWidthItems.Count == 0 && processHeightItems.Count == 0) return;
 
-            int colCnt = _ColumnsCount;
-            int rowCnt = _RowsCount;
-            int itmCnt = _ItemsCount;
+            processWidthItems.Sort(compareX);
+            processHeightItems.Sort(compareY);
 
             // Dál jdu ve "vlnách" 'q' (počínaje 0 a ++), kde "jedna vlna" řeší takové prvky, 
             //   které v dané ose (X/Y) mají právě tolik svých dimenzí, které dosud nemají určenou šířku/výšku typu Bounds nebo Implicit;
@@ -1717,35 +1717,41 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int q = 0;
             for (int t = 0; t < 120; t++)
             {   // t je pouze timeout bez dalšího významu. Klíčový význam má hodnota 'q'.
-                // Řešíme jednotlivé prvky, které řešit potřebují:
-                int procWidth = 0;
-                int procHeight = 0;
-                for (int i = 0; i < itmCnt; i++)
+
+                // Řeším prvky, které dosud nemají akceptovaný rozměr v některé ose:
+                bool isAcceptedWidth = false;
+                for (int w = 0; w < processWidthItems.Count; w++)
                 {
-                    var item = __Items[i];
-                    if (nonProcessedWidths > 0 && processItemWidth(item, q))
-                        procWidth++;
-                    if (nonProcessedHeights > 0 && processItemHeight(item, q))
-                        procHeight++;
+                    if (processItemWidth(processWidthItems[w], q))
+                    {   // 
+                        processWidthItems.RemoveAt(w);
+                        w--;
+                        isAcceptedWidth = true;
+                    }
                 }
 
-                // Jak to dopadlo:
-                getNonProcessedCounts(out int currNPW, out int currNPH);
-                // Všechno je hotovo:
-                if (currNPW == 0 && currNPH == 0) return;
 
-                // Pokud jsme v aktuální vlně 'q' nedokázali nic vyřešit tedy když aktuální počet nevyřešených prvků je stejný jako před tím), pak navýšíme hodnotu vlny o +1:
-                if (currNPW < nonProcessedWidths || currNPH < nonProcessedHeights)
-                {   // Počet nevyřešených se změnil (snížil): zapamatujeme si nový počet a zkusíme ve stejné vlně další cyklus:
-                    nonProcessedWidths = currNPW;
-                    nonProcessedHeights = currNPH;
+                bool isAcceptedHeight = false;
+                for (int h = 0; h < processHeightItems.Count; h++)
+                {
+                    if (processItemHeight(processHeightItems[h], q))
+                    {
+                        processHeightItems.RemoveAt(h);
+                        h--;
+                        isAcceptedHeight = true;
+                    }
                 }
-                else
-                {   // Pokud jsme v aktuální vlně 'q' nedokázali nic vyřešit (tedy když aktuální počet nevyřešených prvků je stejný jako před tím), pak navýšíme hodnotu vlny o +1:
-                    // Tím umožníme, že v dalším cyklu se pro jeden prvek může řešit více nejistých dimenzí než nyní.
-                    //  Číslo vlny říká, kolik např. sloupců bez stanovené šířky můžeme zpracovat v jednom algoritmu.
-                    q++;
-                }
+
+                //  Jak to dopadlo:
+                
+                // Všechno je vyřešeno? Končíme:
+                if (processWidthItems.Count == 0 && processHeightItems.Count == 0) return;
+
+                // Něco je vyřešeno? Dáme si to ještě jednou se stejnou hladinou 'q', třeba vyřešíme i další dimenzi:
+                if (isAcceptedWidth || isAcceptedHeight) continue;
+
+                // Ani jeden prvek není vyřešen? Navýšíme q a pojedeme to ještě jednou, tentokrát budeme řešit více nedefinovaných dimenzí pro jeden prvek:
+                q++;
             }
 
             // Zpracuje jeden prvek z pohledu šířky
@@ -1756,14 +1762,43 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 int begin = item.FlowColBeginIndex.Value;
                 int end = item.FlowColEndIndex.Value;
 
+                // Hodnota sizeType má vliv na to, zda vůbec budu hledat SizeSum (pokud já nemám rozměr Design nebo Implicit, tak hledat nemusím), a kam ji pak ukládat.
                 LineInfo.ControlSizeType sizeType = (item.DesignWidthPixel.HasValue ? LineInfo.ControlSizeType.MaxBounds : item.ImplicitControlWidth.HasValue ? LineInfo.ControlSizeType.MaxImplicit : LineInfo.ControlSizeType.None);
                 if (sizeType == LineInfo.ControlSizeType.None) return false;   // Není nutno
 
-                var columnsControlSize = _GetControlSizeSum(__Columns, begin, end, sizeType, qWave, out var lastColumn, out var notColumns);
-                if (!columnsControlSize.HasValue) return false;                // V dané vlně v dimenzích (sloupce) tohoto prvku nenajdu takovou dimenzi, do které bych vložil jeho rozměr...
+                // Určovat hodnotu controlSizeSum budu v režimu BoundsOrImplicit.
+                var sumType = LineInfo.ControlSizeType.BoundsOrImplicit;
+                var controlSizeSum = _GetControlSizeSum(__Columns, begin, end, sumType, qWave, out var lastColumn, out var notColumns);
+                if (lastColumn is null || !controlSizeSum.HasValue) return false;                    // V dané vlně v dimenzích (sloupce) tohoto prvku nenajdu takovou dimenzi, do které bych vložil jeho rozměr...
 
-                // Mám součet dimenzí (šířky sloupců pro Control) a mám i moji šířku. Měl bych najít i 
-                // 
+                // Mám součet dimenzí (šířky sloupců pro Control) a mám i moji šířku. 
+                // Máme i informace o sloupcích (lastCOlumn a notColumns). Co s tím?
+                //  - pokud notColumns je null (=> všechny sloupce mají definovanou velikost), 
+                //     pak máme v lastColumn ten sloupec, kam případně navýšíme jeho rozměr kvůli našemu prvku. Jeho velikost je v controlSizeSum obsažena.
+                //  - pokud notColumns něco obsahuje, jde o ty sloupce, jejichž šířka nebyla započtena do controlSizeSum
+                if (notColumns is null)
+                {   // Všechny dimenze (=sloupce) našeho prvku mají nějak určen rozměr (=šířku) controlu v režimu BoundsOrImplicit.
+                    // Pokud výsledný prostor pro control je menší než prvek potřebuje, tak zvětšíme poslední sloupec:
+                    int sizeItem = item.DesignWidthPixel ?? item.ImplicitControlWidth ?? 0;
+                    int sizeAdd = sizeItem - controlSizeSum.Value;
+                    if (sizeAdd > 0)
+                    {
+                        int sizeLast = lastColumn.GetControlSize(sumType).Value + sizeAdd;
+                        if (sizeType == LineInfo.ControlSizeType.MaxBounds)
+                            lastColumn.ControlBoundsMaximalSize = sizeLast;
+                        else
+                            lastColumn.ControlImplicitMaximalSize = sizeLast;
+                    }
+                    item.AcceptedWidth = true;
+                }
+                else
+                {   // Našli jsme nějaké dimenze (sloupce) bez velikosti; 
+                    //  Určíme tedy, kolik z našeho prvku potřebujeme do sloupců rozmístit (nezáporné), rozdělíme na počet sloupců a vepíšeme do všech:
+
+
+
+                    item.AcceptedWidth = true;
+                }
 
                 item.AcceptedWidth = true;
                 return true;
@@ -1776,11 +1811,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 int begin = item.FlowRowBeginIndex.Value;
                 int end = item.FlowRowEndIndex.Value;
 
+                // Hodnota sizeType má vliv na to, zda vůbec budu hledat SizeSum (pokud já nemám rozměr Design nebo Implicit, tak hledat nemusím), a kam ji pak ukládat.
                 LineInfo.ControlSizeType sizeType = (item.DesignHeightPixel.HasValue ? LineInfo.ControlSizeType.MaxBounds : item.ImplicitControlHeight.HasValue ? LineInfo.ControlSizeType.MaxImplicit : LineInfo.ControlSizeType.None);
                 if (sizeType == LineInfo.ControlSizeType.None) return false;   // Není nutno
-
-                var rowsControlSize = _GetControlSizeSum(__Rows, begin, end, sizeType, qWave, out var lastColumn, out var notColumns);
-                if (!rowsControlSize.HasValue) return false;                // V dané vlně v dimenzích (sloupce) tohoto prvku nenajdu takovou dimenzi, do které bych vložil jeho rozměr...
+                
+                // Určovat hodnotu controlSizeSum budu v režimu BoundsOrImplicit.
+                var sumType = LineInfo.ControlSizeType.BoundsOrImplicit;
+                var controlSizeSum = _GetControlSizeSum(__Rows, begin, end, sumType, qWave, out var lastColumn, out var notColumns);
+                if (!controlSizeSum.HasValue) return false;                    // V dané vlně v dimenzích (řádky) tohoto prvku nenajdu takovou dimenzi, do které bych vložil jeho rozměr...
 
 
 
@@ -1788,13 +1826,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
                 item.AcceptedHeight = true;
                 return true;
-            }
-           
-            // Vrátí počet prvků, které mají zadanou velikost pro control, a dosud pro ni nemají zajištěnou šířku / výšku
-            void getNonProcessedCounts(out int npw, out int nph)
-            {
-                npw = __Items.Count(i => needProcessWidth(i));                 // Pokud mám exaktně zadanou šířku, nebo ji mám určenou, ale nemám ji akceptovanou
-                nph = __Items.Count(i => needProcessHeight(i));                //  dtto pro šířku
             }
             // Vrátí true pro prvek, který je třeba pracovat z hlediska šířky: má definovanou šířku (DesignWidthPixel nebo ImplicitControlWidth), ale nemá ji zpracovanou (AcceptedWidth)
             bool needProcessWidth(IFlowLayoutItem item)
@@ -1805,6 +1836,20 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             bool needProcessHeight(IFlowLayoutItem item)
             {
                 return ((item.DesignHeightPixel.HasValue || item.ImplicitControlHeight.HasValue) && !item.AcceptedHeight);
+            }
+            // Porovná dva prvky IFlowLayoutItem podle hodnoty FlowColEndIndex ASC = prvky zleva
+            int compareX(IFlowLayoutItem a, IFlowLayoutItem b)
+            {
+                int ax = a.FlowColEndIndex ?? 0;
+                int bx = b.FlowColEndIndex ?? 0;
+                return ax.CompareTo(bx);
+            }
+            // Porovná dva prvky IFlowLayoutItem podle hodnoty FlowRowEndIndex ASC = prvky shora
+            int compareY(IFlowLayoutItem a, IFlowLayoutItem b)
+            {
+                int ay = a.FlowRowEndIndex ?? 0;
+                int by = b.FlowRowEndIndex ?? 0;
+                return ay.CompareTo(by);
             }
         }
         /// <summary>
@@ -2205,7 +2250,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     case ControlSizeType.MaxBounds: return ControlBoundsMaximalSize;
                     case ControlSizeType.MaxImplicit: return ControlImplicitMaximalSize;
                     case ControlSizeType.DesignOrBounds: return ControlDesignSize ?? ControlBoundsMaximalSize;
+                    case ControlSizeType.BoundsOrImplicit: return ControlBoundsMaximalSize ?? ControlImplicitMaximalSize;
                     case ControlSizeType.Final:
+                        // Priority pro Final: 1. Design (pokud je dán), 2. Maximum z (BoundsMax nebo ImplicitMax), 3. výchozí pro dimenzi (záchranná konstanta).
                         var itemSize = _GetMax(ControlBoundsMaximalSize, ControlImplicitMaximalSize);
                         return ControlDesignSize ?? itemSize ?? ControlImplicitSize ?? 0;
                 }
@@ -2236,6 +2283,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 /// Z designu (ze záhlaví) anebo když tam není, tak z prvků, exaktně zadané (jako atribut Width / Height). Neřeší <see cref="MaxImplicit"/> ani <see cref="LineInfo.ControlImplicitSize"/>.
                 /// </summary>
                 DesignOrBounds,
+                /// <summary>
+                /// Z prvků s definovaným rozměrem Bounds, anebo z implicitního rozměru = tedy z některých konkrétních prvků.
+                /// Neřeší Design rozměr (ColumnWidths) ani Výchozí rozměr.
+                /// </summary>
+                BoundsOrImplicit,
                 /// <summary>
                 /// Finálně určená pro výsledný layout.
                 /// </summary>
