@@ -1747,15 +1747,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 int end = item.FlowColEndIndex.Value;
                 if (begin < end && begin <= column.Index && end >= column.Index && !item.DesignWidthPercent.HasValue)
                 {   // Tento prvek má ColSpan > 1 a nachází se na řešeném sloupci
-                    var size = getControlMultiSize(__Columns, begin, end, LineInfo.ControlSizeType.MaxBounds);
+                    var size = _GetControlSizeSum(__Columns, begin, end, LineInfo.ControlSizeType.MaxBounds);
                 }
             }
             void processRow(int rowIdx)
             {
 
             }
-            // Z prvků v daném směru (lines: Columns nebo Rows) sečte a vrátí aktuální velikost pro control v daném rozmezí (begin až end)
-            int? getControlMultiSize(List<LineInfo> lines, int begin, int end, LineInfo.ControlSizeType sizeType, int maxUndefinedCount, out List<LineInfo> foundUndefinedLines)
+            // 
+            int? getControlMultiSize(List<LineInfo> lines, int begin, int end, LineInfo.ControlSizeType sizeType, int maxUndefinedCount, out LineInfo lastLine, out List<LineInfo> foundUndefinedLines)
             {
                 // Významy velikostí v dimenzi, jejich MultiSpan a to, co z dimenze sčítáme do výsledného Controlu:
                 // Control, který je MultiSpan, do sebe zahrnuje tyto velikosti z dimenzí, na kterých se nachází:
@@ -1770,6 +1770,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 //  |                |-------|                                                                                                                                           |
                 //  +--------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
+                lastLine = null;
                 foundUndefinedLines = null;
                 int size = 0;
                 int undefinedCount = 0;
@@ -1787,7 +1788,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         undefinedCount++;                                 // Počítám, kolik nedefinovaných dimenzí pokrývá aktuální prvek
                         if (undefinedCount > maxUndefinedCount)           // Pokud přesáhnu povolený počet, skončím a vrátím null:
                             return null;
-                        // Nějaké nedefinované dimenze jsou povoleny, budu je střádat:
+                        // Nějaké nedefinované dimenze jsou povoleny, budu je střádat do výsledku:
                         if (foundUndefinedLines is null)
                             foundUndefinedLines = new List<LineInfo>();
                         foundUndefinedLines.Add(line);
@@ -1797,6 +1798,62 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
                 return size;
             }
+        }
+        /// <summary>
+        /// Metoda z prvků v daném směru (parametr <paramref name="lastLine"/>: Columns nebo Rows) sečte a vrátí aktuální velikost pro control v daném rozmezí (begin až end).
+        /// Pokud je zadaný rozsah <paramref name="begin"/> až <paramref name="end"/> větší (zahrnuje více dimenzí), pak výsledná suma zahrnuje nejen velikost pro Control,
+        /// ale i velikosti <see cref="LineInfo.LabelAfterSize"/> a <see cref="LineInfo.DistanceAfterSize"/>, a z další dimenze <see cref="LineInfo.LabelBeforeSize"/>.
+        /// </summary>
+        /// <param name="lines"></param>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="maxUndefinedCount"></param>
+        /// <param name="lastLine"></param>
+        /// <param name="foundUndefinedLines"></param>
+        /// <returns></returns>
+        private int? _GetControlSizeSum(List<LineInfo> lines, int begin, int end, LineInfo.ControlSizeType sizeType, int maxUndefinedCount, out LineInfo lastLine, out List<LineInfo> foundUndefinedLines)
+        {
+            // Významy velikostí v dimenzi, jejich MultiSpan a to, co z dimenze sčítáme do výsledného Controlu:
+            // Control, který je MultiSpan, do sebe zahrnuje tyto velikosti z dimenzí, na kterých se nachází:
+            //   Z ne-první dimenze            : prostor LabelBefore
+            //   Z každé dimenze               : prostor Control
+            //   Z ne-poslední dimenze         : prostor LabelAfter + DistanceAfter
+            //  +------------------ Dimension Begin -------------------+------------------ Dimension Inner -------------------+------------------- Dimension End  -------------------+
+            //  |  LabelBefore    Control   LabelAfter  DistanceAfter  |  LabelBefore    Control   LabelAfter  DistanceAfter  |  LabelBefore    Control   LabelAfter  DistanceAfter  |
+            //  |                |-------------------------------------------------- Size 3x MultiSpan ------------------------------------------------|                             |
+            //  |                |---------------------- Size 2x MultiSpan ---------------------|                                                                                    |
+            //  |                                                                       |---------------------- Size 2x MultiSpan ---------------------|                             |
+            //  |                |-------|                                                                                                                                           |
+            //  +--------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+            lastLine = null;
+            foundUndefinedLines = null;
+            int size = 0;
+            int undefinedCount = 0;
+            for (int i = begin; i <= end; i++)
+            {
+                var line = lines[i];
+                if (i > begin) size += line.LabelBeforeSize;          // Prostor před Controlem zahrnujeme počínaje od druhé dimenze
+                var controlSize = line.GetControlSize(sizeType);      // Samotný Control beru vždy, v daném typu (Bounds / Implicit)
+                if (controlSize.HasValue)
+                {
+                    size += controlSize.Value;
+                }
+                else
+                {   // Aktuální dimenze (line) nemá určen rozměr požadovaného typu! Co s tím?
+                    undefinedCount++;                                 // Počítám, kolik nedefinovaných dimenzí pokrývá aktuální prvek
+                    if (undefinedCount > maxUndefinedCount)           // Pokud přesáhnu povolený počet, skončím a vrátím null:
+                        return null;
+                    // Nějaké nedefinované dimenze jsou povoleny, budu je střádat do výsledku:
+                    if (foundUndefinedLines is null)
+                        foundUndefinedLines = new List<LineInfo>();
+                    foundUndefinedLines.Add(line);
+                    qqq;
+                }
+                if (i < end) size += line.LabelAfterSize + line.DistanceAfterSize;   // Prostor za Controlem zahrnujeme do dimenzí před tou poslední
+            }
+            return size;
         }
         /// <summary>
         /// Do jednotlivých sloupců vloží jejich konkrétní souřadnici na základě výchozí souřadnice dané jako <paramref name="origin"/>.
