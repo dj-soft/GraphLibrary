@@ -174,7 +174,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public bool? AddUda { get; set; }
         /// <summary>
-        /// Umístění labelů pro automaticky generované UDA atributy a vztahy. Defaultní = <see cref="LabelPositionType.Up"/>
+        /// Umístění labelů pro automaticky generované UDA atributy a vztahy. Defaultní = <see cref="LabelPositionType.Top"/>
         /// </summary>
         public LabelPositionType? UdaLabelPosition { get; set; }
         /// <summary>
@@ -318,9 +318,9 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public int? RowSpan { get; set; }
         /// <summary>
-        /// Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu v rámci controlu.
+        /// Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu (textu) v rámci controlu.
         /// </summary>
-        public PositionType? HPosition { get; set; }
+        public HPositionType? HPosition { get; set; }
     }
     /// <summary>
     /// Vnořený panel, vložený do Page.
@@ -400,9 +400,9 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public int? RowSpan { get; set; }
         /// <summary>
-        /// Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu v rámci controlu.
+        /// Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu (textu) v rámci controlu.
         /// </summary>
-        public PositionType? HPosition { get; set; }
+        public HPositionType? HPosition { get; set; }
     }
     /// <summary>
     /// Prostor obsahující controly = základ pro <see cref="DfPanel"/> a pro <see cref="DfGroup"/>.<br/>
@@ -499,6 +499,23 @@ namespace Noris.WS.DataContracts.DxForm
     }
     #endregion
     #region Konkrétní třídy Controlů
+    /// <summary>
+    /// DxDataForm : PlaceHolder.<br/>
+    /// Odpovídá XSD typu <c>type_base_control</c>, ale použitý v elementu <c>placeholder</c>
+    /// </summary>
+    internal class DfPlaceHolder : DfBaseControl
+    {
+        /// <summary>
+        /// Konstruktor, nastaví defaulty
+        /// </summary>
+        public DfPlaceHolder() : base()
+        {
+        }
+        /// <summary>
+        /// Druh vstupního prvku (Control).
+        /// </summary>
+        public override ControlType ControlType { get { return ControlType.PlaceHolder; } }
+    }
     /// <summary>
     /// DxDataForm : Label.<br/>
     /// Odpovídá XSD typu <c>type_label</c>
@@ -726,7 +743,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// DxDataForm : ComboBox.<br/>
     /// Odpovídá XSD typu <c>type_combobox</c>
     /// <para/>
-    /// Tato třída přináší property 
+    /// Tato třída přináší property <see cref="ComboItems"/>, <see cref="EditStyleName"/>, <see cref="Style"/>.
     /// </summary>
     internal class DfComboBox : DfBaseLabeledInputControl
     {
@@ -753,6 +770,60 @@ namespace Noris.WS.DataContracts.DxForm
         /// Styl zobrazení ComboBoxu: S možností psaní, Pouze výběr hodnot, Výběr včetně zobrazení ikony
         /// </summary>
         public ComboBoxStyleType? Style { get; set; }
+    }
+    /// <summary>
+    /// DxDataForm : DfImage.<br/>
+    /// Odpovídá XSD typu <c>type_image</c>
+    /// <para/>
+    /// Tato třída přináší property <see cref="ImageName"/>, <see cref="ImageData"/>.
+    /// </summary>
+    internal class DfImage : DfBaseLabeledInputControl
+    {
+        /// <summary>
+        /// Konstruktor, nastaví defaulty
+        /// </summary>
+        public DfImage() : base()
+        {
+        }
+        /// <summary>
+        /// Druh vstupního prvku (Control).
+        /// </summary>
+        public override ControlType ControlType { get { return ControlType.Image; } }
+        /// <summary>
+        /// Jméno obrázku. Obrázek bude vyhledán mezi ikonami (tedy 'pic/images/obrazek').
+        /// </summary>
+        public string ImageName { get; set; }
+        /// <summary>
+        /// Konstantní obsah obrázku dodaný ze serveru ve formě Base64.
+        /// </summary>
+        public byte[] ImageData { get; set; }
+    }
+    /// <summary>
+    /// DxDataForm : DfStepProgress.<br/>
+    /// Odpovídá XSD typu <c>type_stepprogress</c>
+    /// <para/>
+    /// Tato třída přináší property <see cref="Steps"/>, <see cref="EditStyleName"/>.
+    /// </summary>
+    internal class DfStepProgress : DfBaseLabeledInputControl
+    {
+        /// <summary>
+        /// Konstruktor, nastaví defaulty
+        /// </summary>
+        public DfStepProgress() : base()
+        {
+        }
+        /// <summary>
+        /// Druh vstupního prvku (Control).
+        /// </summary>
+        public override ControlType ControlType { get { return ControlType.StepProgressBar; } }
+        /// <summary>
+        /// Jednotlivý krok v progresu, jeho statická vizualizace.
+        /// </summary>
+        public List<DfSubTextItem> Steps { get; set; }
+        /// <summary>
+        /// Název editačního stylu. Může být prázdné, pokud budou zadány prvky 'step'
+        /// </summary>
+        public string EditStyleName { get; set; }
     }
     /// <summary>
     /// DxDataForm : SubButton = součást <see cref="ControlType.DropDownButton"/> i <see cref="ControlType.TextBoxButton"/>.<br/>
@@ -937,9 +1008,13 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public int? RowSpan { get; set; }
         /// <summary>
-        /// Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu v rámci controlu.
+        /// Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu (textu) v rámci controlu.
         /// </summary>
-        public PositionType? HPosition { get; set; }
+        public HPositionType? HPosition { get; set; }
+        /// <summary>
+        /// Rozšíření controlu do okolního prostoru pro labely, pokud labely nejsou použity
+        /// </summary>
+        public ExpandControlType? ExpandControl { get; set; }
         /// <summary>
         /// Souřadnice samotného vstupního prvku
         /// </summary>
@@ -1545,7 +1620,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Nahoře nad textem, písmo zarovnané doleva
         /// </summary>
-        Up,
+        Top,
         /// <summary>
         /// Dole pod textem, písmo zarovnané doleva
         /// </summary>
@@ -1625,27 +1700,92 @@ namespace Noris.WS.DataContracts.DxForm
         Default = TopLeft
     }
     /// <summary>
-    /// Umístění prvku vodorovně v rámci sloupce/řádku v případě, kdy šířka/výška prvku je menší než šířka sloupce/řádku.
-    /// Řeší tedy zarovnání controlu ve sloupci/řádku, nikoli zarovnání obsahu v rámci controlu.
+    /// Umístění prvku vodorovně (Horizontálně) v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce.
+    /// Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu (textu) v rámci controlu.
     /// </summary>
-    public enum PositionType
+    public enum HPositionType
     {
         /// <summary>
-        /// Default = <see cref="Begin"/>.
+        /// Default = <see cref="Left"/>.
         /// </summary>
         Default,
         /// <summary>
-        /// Vodorovně: Doleva; Svisle: Nahoru.
+        /// Doleva.
         /// </summary>
-        Begin,
+        Left,
         /// <summary>
         /// Na střed.
         /// </summary>
         Center,
         /// <summary>
-        /// Vodorovně: Doprava; Svisle: Dolů.
+        /// Doprava.
         /// </summary>
-        End
+        Right
+    }
+    /// <summary>
+    /// Umístění prvku svisle (Vertikálně) v rámci řádku v případě, kdy výška prvku je menší než výška řádku.
+    /// Řeší tedy zarovnání controlu v řádku, nikoli zarovnání obsahu (textu) v rámci controlu.
+    /// </summary>
+    public enum VPositionType
+    {
+        /// <summary>
+        /// Default = <see cref="Top"/>.
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Nahoru
+        /// </summary>
+        Top,
+        /// <summary>
+        /// Na střed.
+        /// </summary>
+        Center,
+        /// <summary>
+        /// Dolů.
+        /// </summary>
+        Bottom
+    }
+    /// <summary>
+    /// Rozšíření vlastního controlu do míst, kde je nevyužitý prostor protože tam není label
+    /// </summary>
+    public enum ExpandControlType
+    {
+        /// <summary>
+        /// Default = <see cref="None"/>
+        /// </summary>
+        Default = None,
+        /// <summary>
+        /// Žádné rozšíření, využije standardní prostor pro Control
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Doleva, pokud vlevo není Label
+        /// </summary>
+        Left = 0x01,
+        /// <summary>
+        /// Nahoru, pokud nahoře není Label
+        /// </summary>
+        Top = 0x02,
+        /// <summary>
+        /// Doprava, pokud vpravo není Label
+        /// </summary>
+        Right = 0x04,
+        /// <summary>
+        /// Dolů, pokud dole není Label
+        /// </summary>
+        Bottom = 0x08,
+        /// <summary>
+        /// Vlevo i vpravo
+        /// </summary>
+        FullWidth = Left | Right,
+        /// <summary>
+        /// Nahoru i dolů
+        /// </summary>
+        FullHeight = Top | Bottom,
+        /// <summary>
+        /// Celý prostor, kde nejsou labely
+        /// </summary>
+        All = FullWidth | FullHeight
     }
     /// <summary>
     /// Umístění obrázku vzhledem k prostoru
@@ -2048,6 +2188,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// Žádný prvek
         /// </summary>
         None,
+        /// <summary>
+        /// Jen obsazený prostor, typicky jako vyhrazený prostor ve FlowLayoutu pro následné umístění controlu s danými Bounds
+        /// </summary>
+        PlaceHolder,
         /// <summary>
         /// Label
         /// </summary>

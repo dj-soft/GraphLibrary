@@ -250,9 +250,9 @@
                         <xs:documentation xml:lang="cs-cz">Počet řádků, které prvek obsazuje v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-                <xs:attribute name="HPosition" type="position_enum">
+                <xs:attribute name="HPosition" type="hposition_enum">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu v rámci controlu.</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu (textu) v rámci controlu.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>
@@ -318,9 +318,9 @@
                         <xs:documentation xml:lang="cs-cz">Počet řádků, které prvek obsazuje v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-                <xs:attribute name="HPosition" type="position_enum">
+                <xs:attribute name="HPosition" type="hposition_enum">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu v rámci controlu.</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu (textu) v rámci controlu.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>
@@ -333,6 +333,11 @@
             <xs:extension base="type_base_area">
                 <xs:sequence>
                     <xs:choice minOccurs="0" maxOccurs="unbounded">
+                        <xs:element name="placeholder" type="type_base_control" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="cs-cz">Jen obsazený prostor, typicky jako vyhrazený prostor ve FlowLayoutu pro následné umístění controlu s danými Bounds.</xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
                         <xs:element name="label" type="type_label" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
                                 <xs:documentation xml:lang="cs-cz">Neinteraktivní textový popisek.</xs:documentation>
@@ -888,9 +893,14 @@
                         <xs:documentation xml:lang="cs-cz">Počet řádků, které prvek obsazuje v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-                <xs:attribute name="HPosition" type="position_enum">
+                <xs:attribute name="HPosition" type="hposition_enum">
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu v rámci controlu.</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu (textu) v rámci controlu.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="ExpandControl" type="expand_control_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Rozšíření controlu do okolního prostoru pro labely, pokud labely nejsou použity.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
             </xs:extension>
@@ -980,7 +990,7 @@
                     <xs:documentation xml:lang="cs-cz">Vpravo za textem, zarovnaný doleva (tam se typicky píšou jednotky, např. Kč, KWh atd).</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
-            <xs:enumeration value="Up" >
+            <xs:enumeration value="Top" >
                 <xs:annotation>
                     <xs:documentation xml:lang="cs-cz">Nahoře nad textem, písmo zarovnané doleva.</xs:documentation>
                 </xs:annotation>
@@ -1005,16 +1015,16 @@
             <xs:enumeration value="BottomRight" />
         </xs:restriction>
     </xs:simpleType>
-    <xs:simpleType name="position_enum">
+    <xs:simpleType name="hposition_enum">
         <xs:restriction base="xs:string">
             <xs:enumeration value="Default" >
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Default = Begin.</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Default = Left.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
-            <xs:enumeration value="Begin" >
+            <xs:enumeration value="Left" >
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Vodorovně: Doleva; Svisle: Nahoru.</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Doleva.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="Center" >
@@ -1022,9 +1032,82 @@
                     <xs:documentation xml:lang="cs-cz">Na střed.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
-            <xs:enumeration value="End" >
+            <xs:enumeration value="Right" >
                 <xs:annotation>
-                    <xs:documentation xml:lang="cs-cz">Vodorovně: Doprava; Svisle: Dolů.</xs:documentation>
+                    <xs:documentation xml:lang="cs-cz">Doprava.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="vposition_enum">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Default" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Default = Top.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Top" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Nahoru.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Center" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Na střed.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Bottom" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Dolů.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="expand_control_enum">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Default" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Default = None.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="None" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Žádné rozšíření, využije standardní prostor pro Control.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Left" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Doleva, pokud vlevo není Label.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Top" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Nahoru, pokud nahoře není Label.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Right" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Doprava, pokud vpravo není Label.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Bottom" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Dolů, pokud dole není Label.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="FullWidth" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Vlevo i vpravo.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="FullHeight" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Nahoru i dolů.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="All" >
+                <xs:annotation>
+                    <xs:documentation xml:lang="cs-cz">Celý prostor, kde nejsou labely.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
         </xs:restriction>

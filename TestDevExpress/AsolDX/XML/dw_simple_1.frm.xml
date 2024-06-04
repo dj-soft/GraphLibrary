@@ -4,17 +4,17 @@
           UseNorisClass="65"
           Messages="dw_common_messages.msg.xml"
           DataSource="dw_sample_form.data.xml"
-		  AutoLabelPosition="Up"
+		  AutoLabelPosition="Top"
           MasterWidth="530" MasterHeight="320"
           TotalWidth="750" TotalHeight="520"
-		  AddUda="True" UdaLabelPosition="Up"
+		  AddUda="True" UdaLabelPosition="Top"
           ColumnWidths="200;300;100" >
 
-    <panel Name="simple1" Title="Jednoduchý" ColumnsCount="2" AutoLabelPosition="Up" >
+    <panel Name="simple1" Title="Jednoduchý" ColumnsCount="2" AutoLabelPosition="Top" >
         <textbox Name="poznamka" ColSpan="2" Width="500"/>
         <textbox Name="reference_subjektu" Width="150"/>
         <textbox Name="nazev_subjektu" />
-        <textbox Name="dodavatel_refer"/>
+        <textbox Name="dodavatel_refer" HPosition="Right"/>
         <textbox Name="dodavatel_nazev"/>
     </panel>
     

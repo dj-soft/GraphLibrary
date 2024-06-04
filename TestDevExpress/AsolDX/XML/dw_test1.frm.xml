@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<template xmlns="http://tempuri.org/DxDataFormat.Frm.xsd"
+          FormatVersion="4"
+          UseNorisClass="65"
+          Messages="dw_common_messages.msg.xml"
+          DataSource="dw_sample_form.data.xml"
+		  AutoLabelPosition="Top"
+          MasterWidth="530" MasterHeight="320"
+          TotalWidth="750" TotalHeight="520"
+		  AddUda="True" UdaLabelPosition="Top"
+          ColumnWidths="200;300;100" >
+
+    <panel Name="test3" Title="pavel 4col" ColumnsCount="5" AutoLabelPosition="Up" >
+        <textbox Name="pkrefer1a" Width="150"/>
+        <textbox Name="pknazev1b" Width="250"/>
+        <image Name="pkimage1c" RowSpan="3" Width="120"/>
+        <image Name="pkimage1d" RowSpan="2" Width="150"/>
+        <image Name="pkimage1e" RowSpan="2" Width="150"/>
+
+        <textbox Name="pkrefer2a" />
+        <textbox Name="pknazev2b" />
+
+        <textbox Name="pkpozn3ab" ColSpan="2"/>
+        <textbox Name="pkinfo3de" ColSpan="2" />
+
+        <textbox Name="pkpozn4abcde" ColSpan="5"/>
+    </panel>
+
+</template>

@@ -592,7 +592,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             dfGroup.ColIndex = _ReadAttributeInt32N(xElement, "ColIndex");
             dfGroup.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
             dfGroup.RowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
-            dfGroup.HPosition = _ReadAttributeEnumN<PositionType>(xElement, "HPosition");
+            dfGroup.HPosition = _ReadAttributeEnumN<HPositionType>(xElement, "HPosition");
 
             // Elementy = Controly + Panely:
             _FillContainerChildElements(xElement, dfGroup, args);
@@ -619,7 +619,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             dfNestedGroup.ColIndex = _ReadAttributeInt32N(xElement, "ColIndex");
             dfNestedGroup.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
             dfNestedGroup.RowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
-            dfNestedGroup.HPosition = _ReadAttributeEnumN<PositionType>(xElement, "HPosition");
+            dfNestedGroup.HPosition = _ReadAttributeEnumN<HPositionType>(xElement, "HPosition");
 
             // Nested šablona:
             if (!_TryLoadNestedTemplate(dfNestedGroup.NestedTemplate, args, out DfForm dfNestedForm, $"NestedGroup '{dfNestedGroup.Name}'")) return null;
@@ -763,6 +763,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             switch (elementName)
             {
                 // Controly:
+                case "placeholder":  return _FillControlPlaceHolder(xElement, new DfPlaceHolder(), args);
                 case "label": return _FillControlLabel(xElement, new DfLabel(), args);
                 case "title": return _FillControlTitle(xElement, new DfTitle(), args);
                 case "checkbox": return _FillControlCheckBox(xElement, new DfCheckBox(), args);
@@ -772,6 +773,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 case "editbox": return _FillControlEditBox(xElement, new DfEditBox(), args);
                 case "textboxbutton": return _FillControlTextBoxButton(xElement, new DfTextBoxButton(), args);
                 case "combobox": return _FillControlComboBox(xElement, new DfComboBox(), args);
+                case "image": return _FillControlImage(xElement, new DfImage(), args);
+                case "stepprogress": return _FillControlStepProgress(xElement, new DfStepProgress(), args);
 
                 // SubContainery = grupy:
                 case "group": return _FillAreaGroup(xElement, null, args);
@@ -779,6 +782,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
             args.AddError($"{sourceInfo} obsahuje prvek '{elementName}', který zde není očekáváván.");
             return null;
+        }
+        private static DfBaseControl _FillControlPlaceHolder(System.Xml.Linq.XElement xElement, DfPlaceHolder control, DfTemplateLoadArgs args)
+        {
+            _FillBaseAttributes(xElement, control);
+            return control;
         }
         private static DfBaseControl _FillControlLabel(System.Xml.Linq.XElement xElement, DfLabel control, DfTemplateLoadArgs args)
         {
@@ -813,27 +821,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private static DfBaseControl _FillControlDropDownButton(System.Xml.Linq.XElement xElement, DfDropDownButton control, DfTemplateLoadArgs args)
         {
             _FillControlButton(xElement, control, args);
-
-            // Elementy = Items:
-            var xItems = xElement.Elements();
-            if (xItems != null)
-            {
-                foreach (var xItem in xItems)
-                {
-                    string elementName = xItem?.Name.LocalName;
-                    if (String.Equals(elementName, "dropDownButton", StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        var subButton = _FillControlSubButton(xItem, new DfSubButton(), args);
-                        if (subButton != null)
-                        {
-                            if (control.DropDownButtons is null)
-                                control.DropDownButtons = new List<DfSubButton>();
-                            control.DropDownButtons.Add(subButton);
-                        }
-                    }
-                }
-            }
-
+            control.DropDownButtons = _LoadSubButtons(xElement, "dropDownButton", args);
             return control;
         }
         private static DfBaseControl _FillControlTextBox(System.Xml.Linq.XElement xElement, DfTextBox control, DfTemplateLoadArgs args)
@@ -852,37 +840,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _FillControlTextBox(xElement, control, args);
             control.ButtonsVisibility = _ReadAttributeEnumN<ButtonsVisibilityType>(xElement, "ButtonsVisibility");
-
-            // Elementy = SubButtons:
-            var xItems = xElement.Elements();
-            if (xItems != null)
-            {
-                foreach (var xItem in xItems)
-                {
-                    string elementName = xItem?.Name.LocalName;
-                    if (String.Equals(elementName, "leftButton", StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        var subButton = _FillControlSubButton(xItem, new DfSubButton(), args);
-                        if (subButton != null)
-                        {
-                            if (control.LeftButtons is null)
-                                control.LeftButtons = new List<DfSubButton>();
-                            control.LeftButtons.Add(subButton);
-                        }
-                    }
-                    else if (String.Equals(elementName, "rightButton", StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        var subButton = _FillControlSubButton(xItem, new DfSubButton(), args);
-                        if (subButton != null)
-                        {
-                            if (control.RightButtons is null)
-                                control.RightButtons = new List<DfSubButton>();
-                            control.RightButtons.Add(subButton);
-                        }
-                    }
-                }
-            }
-
+            control.LeftButtons = _LoadSubButtons(xElement, "leftButton", args);
+            control.RightButtons = _LoadSubButtons(xElement, "rightButton", args);
             return control;
         }
         private static DfBaseControl _FillControlComboBox(System.Xml.Linq.XElement xElement, DfComboBox control, DfTemplateLoadArgs args)
@@ -890,29 +849,74 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _FillBaseAttributes(xElement, control);
             control.EditStyleName = _ReadAttributeString(xElement, "EditStyleName", null);
             control.Style = _ReadAttributeEnumN<ComboBoxStyleType>(xElement, "Style");
+            control.ComboItems = _LoadSubTextItems(xElement, "comboItem", args);
+            return control;
+        }
+        private static DfBaseControl _FillControlImage(System.Xml.Linq.XElement xElement, DfImage control, DfTemplateLoadArgs args)
+        {
+            _FillBaseAttributes(xElement, control);
+            control.ImageName = _ReadAttributeString(xElement, "ImageName", null);
+            control.ImageData = _ReadAttributeBytes(xElement, "ImageData", null);
+            return control;
+        }
+        private static DfBaseControl _FillControlStepProgress(System.Xml.Linq.XElement xElement, DfStepProgress control, DfTemplateLoadArgs args)
+        {
+            _FillBaseAttributes(xElement, control);
+            control.EditStyleName = _ReadAttributeString(xElement, "EditStyleName", null);
 
-            // Elementy = SubButtons:
+            return control;
+        }
+        private static List<DfSubButton> _LoadSubButtons(System.Xml.Linq.XElement xElement, string loadElementName, DfTemplateLoadArgs args)
+        {
+            List<DfSubButton> subButtons = null;
+
             var xItems = xElement.Elements();
             if (xItems != null)
             {
                 foreach (var xItem in xItems)
                 {
                     string elementName = xItem?.Name.LocalName;
-                    if (String.Equals(elementName, "comboItem", StringComparison.InvariantCultureIgnoreCase))
+                    if (String.Equals(elementName, loadElementName, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        var comboItem = _FillControlSubTextItem(xItem, new DfSubTextItem(), args);
-                        if (comboItem != null)
+                        var subButton = _FillControlSubButton(xItem, new DfSubButton(), args);
+                        if (subButton != null)
                         {
-                            if (control.ComboItems is null)
-                                control.ComboItems = new List<DfSubTextItem>();
-                            control.ComboItems.Add(comboItem);
+                            if (subButtons is null)
+                                subButtons = new List<DfSubButton>();
+                            subButtons.Add(subButton);
                         }
                     }
                 }
             }
 
-            return control;
+            return subButtons;
         }
+        private static List<DfSubTextItem> _LoadSubTextItems(System.Xml.Linq.XElement xElement, string loadElementName, DfTemplateLoadArgs args)
+        {
+            List<DfSubTextItem> subTextItems = null;
+
+            var xItems = xElement.Elements();
+            if (xItems != null)
+            {
+                foreach (var xItem in xItems)
+                {
+                    string elementName = xItem?.Name.LocalName;
+                    if (String.Equals(elementName, loadElementName, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        var subTextItem = _FillControlSubTextItem(xItem, new DfSubTextItem(), args);
+                        if (subTextItem != null)
+                        {
+                            if (subTextItems is null)
+                                subTextItems = new List<DfSubTextItem>();
+                            subTextItems.Add(subTextItem);
+                        }
+                    }
+                }
+            }
+
+            return subTextItems;
+        }
+
         private static DfSubButton _FillControlSubButton(System.Xml.Linq.XElement xElement, DfSubButton control, DfTemplateLoadArgs args)
         {
             _FillControlSubTextItem(xElement, control, args);
@@ -958,7 +962,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 control.ColIndex = _ReadAttributeInt32N(xElement, "ColIndex");
                 control.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
                 control.RowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
-                control.HPosition = _ReadAttributeEnumN<PositionType>(xElement, "HPosition");
+                control.HPosition = _ReadAttributeEnumN<HPositionType>(xElement, "HPosition");
+                control.ExpandControl = _ReadAttributeEnumN<ExpandControlType>(xElement, "ExpandControl"); 
             }
             if (target is DfBaseInputControl inputControl)
             {
@@ -1010,6 +1015,29 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 var xAttribute = xElement.Attribute(attributeName);
                 if (xAttribute != null) value = xAttribute.Value;
+            }
+            return value;
+        }
+        /// <summary>
+        /// V daném elementu najde atribut daného jména a vrátí jeho byte[] podobu konvertovanou ze stringu pomocí Base64
+        /// </summary>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
+        /// <param name="attributeName"></param>
+        /// <param name="defaultValue"></param>
+        private static byte[] _ReadAttributeBytes(System.Xml.Linq.XElement xElement, string attributeName, byte[] defaultValue)
+        {
+            byte[] value = defaultValue;
+            if (xElement.HasAttributes && !String.IsNullOrEmpty(attributeName))
+            {
+                var xAttribute = xElement.Attribute(attributeName);
+                if (xAttribute != null)
+                {
+                    var text = xAttribute.Value;
+                    if (!String.IsNullOrEmpty(text))
+                    {
+                        value = Convert.FromBase64String(text);
+                    }
+                }
             }
             return value;
         }
@@ -1133,10 +1161,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (xElement.HasAttributes && !String.IsNullOrEmpty(attributeName))
             {
                 var xAttribute = xElement.Attribute(attributeName);
-                if (xAttribute != null && !String.IsNullOrEmpty(xAttribute.Value))
+                if (xAttribute != null)
                 {
-                    var booln = _ConvertTextToBoolN(xAttribute.Value);
-                    if (booln.HasValue) return booln.Value;
+                    if (String.IsNullOrEmpty(xAttribute.Value))
+                    {   // Hledaný atribut existuje:
+                        var booln = _ConvertTextToBoolN(xAttribute.Value);
+                        if (booln.HasValue) return booln.Value;
+                    }
                 }
             }
             return value;
@@ -1162,7 +1193,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     var booln = _ConvertTextToBoolN(xAttribute.Value);
                     // A má nějakou rozumnou hodnotu:
                     if (booln.HasValue) return booln.Value;
-                    // Atribut existuje, ale nemá rozpozonatelnou hodnotu (nebo nemá žádnou):
+                    // Atribut existuje, ale nemá rozpoznatelnou hodnotu (nebo nemá žádnou):
                     return defaultValueNotValue;
                 }
             }
