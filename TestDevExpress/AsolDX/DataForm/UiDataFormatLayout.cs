@@ -1222,8 +1222,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __Rows = new List<LineInfo>();
             __Cells = new List<IFlowLayoutItem[]>();
             __Items = new List<IFlowLayoutItem>();
+            __Style = layoutStyle;
 
-            _PrepareColumns(layoutStyle);
+            _PrepareColumns();
         }
         /// <summary>
         /// Vizualizace
@@ -1252,15 +1253,40 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Jednotlivé prvky
         /// </summary>
         private List<IFlowLayoutItem> __Items;
-        private int __ColumnsDistance;
-        private int __ColumnImplicitSize;
-        private int __RowImplicitSize;
         /// <summary>
-        /// Metoda zajistí existenci sloupců v <see cref="__Columns"/> podle požadavků z <paramref name="layoutStyle"/>.
+        /// Styl panelu, definuje konstantní vlastnosti layoutu
         /// </summary>
-        /// <param name="layoutStyle">Definice stylu</param>
-        private void _PrepareColumns(DfTemplateLayout.StyleInfo layoutStyle)
+        private DfTemplateLayout.StyleInfo __Style;
+        /// <summary>
+        /// Oddělovací vzdálenost mezi sloupci
+        /// </summary>
+        private int _ColumnsDistance { get { return (__Style?.ColumnsDistance ?? 0); } }
+        /// <summary>
+        /// Výchozí šířka sloupce, pokud nebude jinak určeno
+        /// </summary>
+        private int _ColumnImplicitSize { get { return 50; } }
+        /// <summary>
+        /// Výchozí výška sloupce, pokud nebude jinak určeno
+        /// </summary>
+        private int _RowImplicitSize { get { return 20; } }
+        /// <summary>
+        /// Posunutí Main Labelu umístěného Top, na ose X, oproti souřadnici X vlastního Controlu.
+        /// Kladná hodnota posune doprava.
+        /// Může být záporné, pak bude label předsazen vlevo před Controlem.
+        /// </summary>
+        private int _TopLabelOffsetX { get { return 3; } }
+        /// <summary>
+        /// Posunutí Main Labelu umístěného Bottom, na ose X, oproti souřadnici X vlastního Controlu.
+        /// Kladná hodnota posune doprava.
+        /// Může být záporné, pak bude label předsazen vlevo před Controlem.
+        /// </summary>
+        private int _BottomLabelOffsetX { get { return 3; } }
+        /// <summary>
+        /// Metoda zajistí existenci sloupců v <see cref="__Columns"/> podle požadavků z <see cref="__Style"/>.
+        /// </summary>
+        private void _PrepareColumns()
         {
+            DfTemplateLayout.StyleInfo layoutStyle = __Style;
             // Nějak dané šířky:
             if (layoutStyle != null)
             {   // Podle definovaného stylu:
@@ -1292,13 +1318,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 __Columns.Add(new LineInfo(this, AxisType.X, 0, null, null, null));
             }
 
-            __ColumnsDistance = layoutStyle?.ColumnsDistance ?? 0;
-            __ColumnImplicitSize = 50;
-            __RowImplicitSize = 20;
-
-
-        // Parsuje text "10,20,30" na tři číslice
-        void parseCol(string text, out int? lblW, out int? ctrW, out int? lbrW)
+            // Parsuje text "10,20,30" na tři číslice
+            void parseCol(string text, out int? lblW, out int? ctrW, out int? lbrW)
             {
                 lblW = null;
                 ctrW = null;
@@ -1602,9 +1623,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
                         case LabelPositionType.Up:
                             processLabelSize(item, __Rows, item.FlowRowBeginIndex, item.ImplicitMainLabelHeight, true);
+                            if (this._TopLabelOffsetX < 0)
+                                // Máme Label v pozici Top, a jeho X-offset je záporný (tedy Label je nad Controlem, a začíná o něco vlevo).
+                                // Musím zajistit, aby v prostoru LabelBefore (vlevo od controlu) byl dostatek místa pro tento offset:
+                                processLabelSize(item, __Columns, item.FlowColBeginIndex, -this._TopLabelOffsetX, true);
                             break;
                         case LabelPositionType.Bottom:
                             processLabelSize(item, __Rows, item.FlowRowEndIndex, item.ImplicitMainLabelHeight, false);
+                            if (this._BottomLabelOffsetX < 0)
+                                // Máme Label v pozici Bottom, a jeho X-offset je záporný (tedy Label je pod Controlem, a začíná o něco vlevo).
+                                // Musím zajistit, aby v prostoru LabelBefore (vlevo od controlu) byl dostatek místa pro tento offset:
+                                processLabelSize(item, __Columns, item.FlowColBeginIndex, -this._BottomLabelOffsetX, true);
                             break;
 
                         case LabelPositionType.After:
@@ -1718,12 +1747,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             for (int t = 0; t < 120; t++)
             {   // t je pouze timeout bez dalšího významu. Klíčový význam má hodnota 'q'.
 
-                // Řeším prvky, které dosud nemají akceptovaný rozměr v některé ose:
+                // Řeším prvky, které dosud nemají akceptovaný rozměr v některé ose (v poli processWidthItems a processHeightItems):
                 bool isAcceptedWidth = false;
                 for (int w = 0; w < processWidthItems.Count; w++)
                 {
                     if (processItemWidth(processWidthItems[w], q))
-                    {   // 
+                    {   // Pro tento prvek se podařilo zajistit dostatečnou šířku v odpovídajících sloupcích:
                         processWidthItems.RemoveAt(w);
                         w--;
                         isAcceptedWidth = true;
@@ -1735,7 +1764,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 for (int h = 0; h < processHeightItems.Count; h++)
                 {
                     if (processItemHeight(processHeightItems[h], q))
-                    {
+                    {   // Pro tento prvek se podařilo zajistit dostatečnou výšku v odpovídajících řádcích:
                         processHeightItems.RemoveAt(h);
                         h--;
                         isAcceptedHeight = true;
@@ -1747,11 +1776,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // Všechno je vyřešeno? Končíme:
                 if (processWidthItems.Count == 0 && processHeightItems.Count == 0) return;
 
-                // Něco je vyřešeno? Dáme si to ještě jednou se stejnou hladinou 'q', třeba vyřešíme i další dimenzi:
-                if (isAcceptedWidth || isAcceptedHeight) continue;
-
-                // Ani jeden prvek není vyřešen? Navýšíme q a pojedeme to ještě jednou, tentokrát budeme řešit více nedefinovaných dimenzí pro jeden prvek:
-                q++;
+                // Něco se podařilo vyřešit? Dáme si to ještě jednou - se stejnou hladinou 'q', třeba vyřešíme i další prvek, protože se opře o nyní vypočtenou dimenzi:
+                // Nebo: Ani jeden prvek není vyřešen? Pak navýšíme q a pojedeme to ještě jednou, tentokrát budeme řešit více nedefinovaných dimenzí pro jeden prvek:
+                if (!(isAcceptedWidth || isAcceptedHeight))
+                    q++;
             }
 
             // Zpracuje jeden prvek z pohledu šířky
@@ -1771,36 +1799,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var controlSizeSum = _GetControlSizeSum(__Columns, begin, end, sumType, qWave, out var lastColumn, out var notColumns);
                 if (lastColumn is null || !controlSizeSum.HasValue) return false;                    // V dané vlně v dimenzích (sloupce) tohoto prvku nenajdu takovou dimenzi, do které bych vložil jeho rozměr...
 
-                // Mám součet dimenzí (šířky sloupců pro Control) a mám i moji šířku. 
-                // Máme i informace o sloupcích (lastCOlumn a notColumns). Co s tím?
-                //  - pokud notColumns je null (=> všechny sloupce mají definovanou velikost), 
-                //     pak máme v lastColumn ten sloupec, kam případně navýšíme jeho rozměr kvůli našemu prvku. Jeho velikost je v controlSizeSum obsažena.
-                //  - pokud notColumns něco obsahuje, jde o ty sloupce, jejichž šířka nebyla započtena do controlSizeSum
-                if (notColumns is null)
-                {   // Všechny dimenze (=sloupce) našeho prvku mají nějak určen rozměr (=šířku) controlu v režimu BoundsOrImplicit.
-                    // Pokud výsledný prostor pro control je menší než prvek potřebuje, tak zvětšíme poslední sloupec:
-                    int sizeItem = item.DesignWidthPixel ?? item.ImplicitControlWidth ?? 0;
-                    int sizeAdd = sizeItem - controlSizeSum.Value;
-                    if (sizeAdd > 0)
-                    {
-                        int sizeLast = lastColumn.GetControlSize(sumType).Value + sizeAdd;
-                        if (sizeType == LineInfo.ControlSizeType.MaxBounds)
-                            lastColumn.ControlBoundsMaximalSize = sizeLast;
-                        else
-                            lastColumn.ControlImplicitMaximalSize = sizeLast;
-                    }
-                    item.AcceptedWidth = true;
-                }
-                else
-                {   // Našli jsme nějaké dimenze (sloupce) bez velikosti; 
-                    //  Určíme tedy, kolik z našeho prvku potřebujeme do sloupců rozmístit (nezáporné), rozdělíme na počet sloupců a vepíšeme do všech:
-
-
-
-                    item.AcceptedWidth = true;
-                }
-
+                // Obousměrné zpracování (Columns i Rows):
+                int sizeItem = item.DesignWidthPixel ?? item.ImplicitControlWidth ?? 0;
+                processItemAny(sizeItem, controlSizeSum.Value, sizeType, sumType, lastColumn, notColumns);
                 item.AcceptedWidth = true;
+
                 return true;
             }
             // Zpracuje jeden prvek z pohledu výšky
@@ -1817,15 +1820,58 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 
                 // Určovat hodnotu controlSizeSum budu v režimu BoundsOrImplicit.
                 var sumType = LineInfo.ControlSizeType.BoundsOrImplicit;
-                var controlSizeSum = _GetControlSizeSum(__Rows, begin, end, sumType, qWave, out var lastColumn, out var notColumns);
+                var controlSizeSum = _GetControlSizeSum(__Rows, begin, end, sumType, qWave, out var lastRow, out var notRows);
                 if (!controlSizeSum.HasValue) return false;                    // V dané vlně v dimenzích (řádky) tohoto prvku nenajdu takovou dimenzi, do které bych vložil jeho rozměr...
 
-
-
-
-
+                // Obousměrné zpracování (Columns i Rows):
+                int sizeItem = item.DesignHeightPixel ?? item.ImplicitControlHeight ?? 0;
+                processItemAny(sizeItem, controlSizeSum.Value, sizeType, sumType, lastRow, notRows);
                 item.AcceptedHeight = true;
+
                 return true;
+            }
+            // Zpracuje jeden prvek = zajistí přidání velikosti do potřebné dimenze
+            void processItemAny(int itemControlSize, int linesControlSumSize, LineInfo.ControlSizeType sizeType, LineInfo.ControlSizeType sumType, LineInfo lastLine, List<LineInfo> notLines)
+            {
+                // Mám šířku / výšku jednoho konkrétního controlu 'itemControlSize'. 
+                // Mám součet dimenzí (šířky sloupců nebo výšky řádků pro Control) = 'linesControlSumSize'.
+                // Máme i informace o dimenzích:
+                //  poslední dimenze (sloupec / řádek) pro konkrétní prvek = 'lastLine';
+                //  dimenze (sloupce / řádky) bez určeného rozměru 'notLines'.
+                int sizeAdd = itemControlSize - linesControlSumSize;
+                if (sizeAdd > 0)
+                {   // Pokud náš prvek Control (sizeItem) je širší/vyšší, než prostor pro Controly v odpovídajících sloupcích/řádcích (linesControlSumSize),
+                    //  máme tedy kladnou hodnotu 'sizeAdd', kterou musíme do některého sloupce/sloupců/řádku/řádků přidat, aby se náš prvek správně vešel.
+                    int notCount = notLines?.Count ?? 0;
+                    if (notCount == 0)
+                    {   //  - pokud notLines je null nebo prázdné (=> všechny sloupce/řádky mají definovanou velikost), 
+                        //     pak máme v lastLine ten (poslední) sloupec/řádek, kam případně navýšíme jeho rozměr kvůli našemu prvku = aby se vešel. 
+                        //     Velikost této dimenze lastLine je v linesControlSumSize již započtena.
+                        // Všechny dimenze (=sloupce/řádky) našeho prvku mají nějak určen rozměr (=šířku/výšku) controlu v režimu BoundsOrImplicit.
+                        // A protože výsledný sumární prostor pro control je menší, než náš prvek potřebuje, tak zvětšíme poslední dimenzi:
+                        int sizeLast = lastLine.GetControlSize(sumType).Value + sizeAdd;
+                        if (sizeType == LineInfo.ControlSizeType.MaxBounds)
+                            lastLine.ControlBoundsMaximalSize = sizeLast;
+                        else
+                            lastLine.ControlImplicitMaximalSize = sizeLast;
+                    }
+                    else
+                    {   // Našli jsme nějaké dimenze (sloupce/řádky) bez velikosti (jsou v notLines); 
+                        //  a víme, jak velký prostor pro náš prvek ještě potřebujeme alokovat ve sloupcích/řádcích (sizeAdd).
+                        // (Dimenze přítomné v notLines nemají dosud určenou šířku/výšku, proto nebudu jejich rozměr zjišťovat).
+                        //  Rovnoměrně rozpočítám velikost 'sizeAdd' do počtu sloupců 'notLines' a tento podíl do nich jednotlivě vložím:
+                        //  Poznámka: případné labely okolo controlů a mezery mezi sloupci/řádky jsou v 'linesControlSumSize' započteny, a to i pro dimenze 'notLines'.
+                        var sizes = getSizes(sizeAdd, notCount);
+                        for (int ni = 0; ni < notCount; ni++)
+                        {
+                            var notLine = notLines[ni];
+                            if (sizeType == LineInfo.ControlSizeType.MaxBounds)
+                                notLine.ControlBoundsMaximalSize = sizes[ni];
+                            else
+                                notLine.ControlImplicitMaximalSize = sizes[ni];
+                        }
+                    }
+                }
             }
             // Vrátí true pro prvek, který je třeba pracovat z hlediska šířky: má definovanou šířku (DesignWidthPixel nebo ImplicitControlWidth), ale nemá ji zpracovanou (AcceptedWidth)
             bool needProcessWidth(IFlowLayoutItem item)
@@ -1850,6 +1896,31 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 int ay = a.FlowRowEndIndex ?? 0;
                 int by = b.FlowRowEndIndex ?? 0;
                 return ay.CompareTo(by);
+            }
+            // Metoda vrátí pole, obsahující danou velikost 'sizeSum' rozdělenou na daný počet podílů 'count', včetně správného zaokrouhlování.
+            int[] getSizes(int sizeSum, int count)
+            {
+                if (count <= 0) throw new ArgumentException($"DfFlowLayoutInfo._ProcessControlMultiSpan.getSize() fail: count = '{count}'");
+
+                var positions = new int[count];
+                var total = (double)sizeSum;
+                var divider = (double)count;
+                for (int p = 1; p <= count; p++)                                              // Příklady pro sizeSum = 217 a count = 3
+                {
+                    double position = (p < count) ? (total * (double)p / divider) : total;    // Float pozice: 72.333333; 144.666667; 217
+                    positions[p - 1] = (int)Math.Round(position, 0);                          // Int zaokrouhlené pozice: 72; 145; 217
+                }
+
+                var sizes = new int[count];
+                int lastP = 0;                             // Minulá pozice
+                for (int p = 0; p < count; p++)
+                {
+                    int position = positions[p];           // Postupně projdu pozice 72; 145; 217
+                    sizes[p] = position - lastP;           // Určím vzdálenost aktuální pozice (position) od minulé (lastP): 72; 73; 72
+                    lastP = position;                      // Výchozí pozice pro další krok
+                }
+
+                return sizes;
             }
         }
         /// <summary>
@@ -2367,7 +2438,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         private int GetControlImplicitSize(AxisType axis)
         {
-            return (axis == AxisType.X ? this.__ColumnImplicitSize : this.__RowImplicitSize);
+            return (axis == AxisType.X ? this._ColumnImplicitSize : this._RowImplicitSize);
         }
         /// <summary>
         /// Vrátí velikost prostoru mezi sloupci (pro <paramref name="axis"/> == <see cref="AxisType.X"/>) nebo mezi řádky (pro <paramref name="axis"/> == <see cref="AxisType.Y"/>)
@@ -2376,7 +2447,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         private int GetDistanceSize(AxisType axis)
         {
-            return (axis == AxisType.X ? this.__ColumnsDistance : 0);
+            return (axis == AxisType.X ? this._ColumnsDistance : 0);
         }
         /// <summary>
         /// Osa X nebo Y
