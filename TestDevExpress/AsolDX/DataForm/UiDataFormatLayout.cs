@@ -902,6 +902,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private int? __FlowRowEndIndex;
             /// <summary>
+            /// Výsledná souřadnice MainLabel v rámci parenta
+            /// </summary>
+            private Bounds __MainLabelBounds;
+            /// <summary>
+            /// Výsledná souřadnice Controlu v rámci parenta
+            /// </summary>
+            private Bounds __ControlBounds;
+            /// <summary>
+            /// Výsledná souřadnice SuffixLabel v rámci parenta
+            /// </summary>
+            private Bounds __SuffixLabelBounds;
+            /// <summary>
             /// Algoritmus FlowLayout pro prvek zajistil potřebnou šířku
             /// </summary>
             private bool __AcceptedWidth;
@@ -948,6 +960,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int? IFlowLayoutItem.FlowColEndIndex { get { return __FlowColEndIndex; } set { __FlowColEndIndex = value; } }
             int? IFlowLayoutItem.FlowRowBeginIndex { get { return __FlowRowBeginIndex; } set { __FlowRowBeginIndex = value; } }
             int? IFlowLayoutItem.FlowRowEndIndex { get { return __FlowRowEndIndex; } set { __FlowRowEndIndex = value; } }
+
+            /// <summary>
+            /// Výsledná souřadnice MainLabel v rámci parenta
+            /// </summary>
+            Bounds IFlowLayoutItem.MainLabelBounds;
+            /// <summary>
+            /// Výsledná souřadnice Controlu v rámci parenta
+            /// </summary>
+            Bounds IFlowLayoutItem.ControlBounds { get; set; }
+            /// <summary>
+            /// Výsledná souřadnice SuffixLabel v rámci parenta
+            /// </summary>
+            Bounds IFlowLayoutItem.SuffixLabelBounds { get; set; }
+
+
             bool IFlowLayoutItem.AcceptedWidth { get { return __AcceptedWidth; } set { __AcceptedWidth = value; } }
             bool IFlowLayoutItem.AcceptedHeight { get { return __AcceptedHeight; } set { __AcceptedHeight = value; } }
 
@@ -1587,9 +1614,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _ProcessLabels();
             _ProcessControlSingleSpan();
             _ProcessControlMultiSpan();
-            return _ProcessPositions(origin);
+            _ProcessDimensions(origin, out var end);
+            _ProcessItemsBounds();
+            return end;
         }
-
         /// <summary>
         /// Resetuje hodnoty ve sloupcích a řádcích
         /// </summary>
@@ -1985,23 +2013,74 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Do jednotlivých sloupců vloží jejich konkrétní souřadnici na základě výchozí souřadnice dané jako <paramref name="origin"/>.
         /// Současně s tím určí výslednou souřadnici konce prostoru FlowLayoutu, a tu vrátí.
+        /// Vypočítá i souřadnice jednotlivých svých Itemů (konkrétní souřadnice pro Control, MainLabel i SuffixLabel), tyto souřadnice ukládá do Itemu.
         /// </summary>
         /// <param name="origin"></param>
+        /// <param name="end"></param>
         /// <returns></returns>
-        private Location _ProcessPositions(Location origin)
+        private void _ProcessDimensions(Location origin, out Location end)
         {
-            var right = processPositions(__Columns, origin?.Left);
-            var bottom = processPositions(__Rows, origin?.Top);
-            return new Location(right, bottom);
+            var right = processDimension(__Columns, origin?.Left);
+            var bottom = processDimension(__Rows, origin?.Top);
+            end = new Location(right, bottom);
 
             // Zpracuje dodanou serii dimenzí (Column / Row): postupně do dimenzí vepíše dodaný begin a inkrementuje jej do další dimenze...
-            int processPositions(List<LineInfo> lines, int? begin)
+            int processDimension(List<LineInfo> lines, int? begin)
             {
                 int position = begin ?? 0;
                 int last = lines.Count - 1;
                 for (int l = 0; l <= last; l++)
                     position = lines[l].Finish(position, (l == last));
                 return position;
+            }
+        }
+        /// <summary>
+        /// Do jednotlivých prvků vloží jejich konkrétní souřadnici na základě souřadnic jejich dimenzí (sloupce, řádky).
+        /// </summary>
+        private void _ProcessItemsBounds()
+        {
+            // Zpracuje všechny prvky
+            foreach (var i in __Items)
+            {
+                if (i.MainLabelExists) processItemMainLabel(i);
+                processItemControl(i);
+                if (i.SuffixLabelExists) processItemSuffixLabel(i);
+            }
+
+            /*   Sloupce a řádky, ColSpan a RowSpan, souřadnice labelů a controlů
+
+            - MainLabel může být umístěn Up, Left, Bottom, Right
+
+            */
+
+            // Zpracuje souřadnici pro MainLabel
+            void processItemMainLabel(IFlowLayoutItem item)
+            {
+                int x, y, w, h;
+                var labelPos = item.LabelPosition;
+                switch (labelPos)
+                {
+                    case LabelPositionType.BeforeLeft:
+                    case LabelPositionType.BeforeRight:
+                        x = __Columns[item.FlowColBeginIndex.Value].LabelBeforeBegin.Value;
+                        y = __Rows[item.FlowRowBeginIndex.Value].ControlBegin.Value;
+                        w = __Columns[item.FlowColBeginIndex.Value].LabelBeforeSize;
+                        h = __Rows[item.FlowRowBeginIndex.Value].ControlSize;
+                        break;
+                }
+                item.MainLabelBounds
+
+
+
+            }
+            // Zpracuje souřadnici pro Control
+            void processItemControl(IFlowLayoutItem item)
+            {
+
+            }
+            // Zpracuje souřadnici pro SuffixLabel
+            void processItemSuffixLabel(IFlowLayoutItem item)
+            {
             }
         }
 
@@ -2655,6 +2734,20 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Poslední řádek, kde se prvek nachzí
         /// </summary>
         int? FlowRowEndIndex { get; set; }
+
+        /// <summary>
+        /// Výsledná souřadnice MainLabel v rámci parenta
+        /// </summary>
+        Bounds MainLabelBounds { get; set; }
+        /// <summary>
+        /// Výsledná souřadnice Controlu v rámci parenta
+        /// </summary>
+        Bounds ControlBounds { get; set; }
+        /// <summary>
+        /// Výsledná souřadnice SuffixLabel v rámci parenta
+        /// </summary>
+        Bounds SuffixLabelBounds { get; set; }
+
         /// <summary>
         /// Algoritmus FlowLayout pro prvek zajistil potřebnou šířku
         /// </summary>
