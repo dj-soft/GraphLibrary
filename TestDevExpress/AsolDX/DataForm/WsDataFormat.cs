@@ -388,6 +388,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public Bounds Bounds { get; set; }
         /// <summary>
+        /// Jméno prvku 'Name', který určuje souřadnice pro zdejší prvek, pokud ten je umístěn fixně = má definované souřadnice 'X' a 'Y'.
+        /// </summary>
+        public string ParentBounds { get; set; }
+        /// <summary>
         /// Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
         /// </summary>
         public int? ColIndex { get; set; }
@@ -431,6 +435,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public Bounds Bounds { get; set; }
         /// <summary>
+        /// Jméno prvku 'Name', který určuje souřadnice pro zdejší prvek, pokud ten je umístěn fixně = má definované souřadnice 'X' a 'Y'.
+        /// </summary>
+        public string ParentBounds { get; set; }
+        /// <summary>
         /// Souřadnice bodu, kde začíná rozmísťování prvků, které nemají zadanou exaktní souřadnici X, Y. Výchozí je "0,0". Zadává se ve formě: "X,Y".
         /// </summary>
         public Location FlowLayoutOrigin { get; set; }
@@ -473,9 +481,17 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public BackImagePositionType? BackImagePosition { get; set; }
         /// <summary>
+        /// Souřadnice počátku Flow prostoru
+        /// </summary>
+        public Location FlowAreaBegin { get; set; }
+        /// <summary>
         /// Okraje = mezi krajem formuláře / Page / Panel a souřadnicí 0/0
         /// </summary>
         public Margins Margins { get; set; }
+        /// <summary>
+        /// Odstupy mezi MainLabelem a Controlem, nebo SuffixLabelem a Controlem, v rámci jedné buňky (jeden prvek). Uplatní se, pouze pokud daný label existuje.
+        /// </summary>
+        public Margins ControlMargins { get; set; }
         /// <summary>
         /// Počet sloupců layoutu. Šířka sloupců se určí podle reálného obsahu (maximum šířky prvků).
         /// Při zadání <see cref="ColumnsCount"/> se již nezadává <see cref="ColumnWidths"/>.
@@ -492,6 +508,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// Volný prostor v pixelech mezi dvěma sousedními sloupci (vnitřní Margin). Nezadáno = sloupce navazují těsně vedle sebe.
         /// </summary>
         public int? ColumnsDistance { get; set; }
+        /// <summary>
+        /// Volný prostor v pixelech mezi dvěma sousedními řádky (vnitřní Margin). Nezadáno = řádky navazují těsně vedle sebe.
+        /// </summary>
+        public int? RowsDistance { get; set; }
         /// <summary>
         /// Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = <c>NULL</c>
         /// </summary>
@@ -993,8 +1013,17 @@ namespace Noris.WS.DataContracts.DxForm
         public DfControlStyle ControlStyle { get; set; }
         /// <summary>
         /// Umístění prvku. Výchozí je null.
+        /// <para/>
+        /// Pokud má prvek zadané souřadnice X a Y, pak je umístěn na požadované souřadnice = je Fixní, a není umisťován do sloupců a řádků plovoucího layoutu (FlowLayout).
+        /// Souřadnice se vztahují k parentu (panel nebo grupa), ve kterém je prvek definován jako jeho Child element.
+        /// Je možno ale zadat atribut 'ParentBounds' a do něj uvést jméno jiného sousedního prvku, který je umístěn do FlowLayoutu.
+        /// Pak budou souřadnice 'Bounds' zdejšího prvku umístěny relativně do souřadnic daného Parent prvku.
         /// </summary>
         public Bounds Bounds { get; set; }
+        /// <summary>
+        /// Jméno prvku 'Name', který určuje souřadnice pro zdejší prvek, pokud ten je umístěn fixně = má definované souřadnice 'X' a 'Y'.
+        /// </summary>
+        public string ParentBounds { get; set; }
         /// <summary>
         /// Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
         /// </summary>
@@ -1011,6 +1040,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu (textu) v rámci controlu.
         /// </summary>
         public HPositionType? HPosition { get; set; }
+        /// <summary>
+        /// Umístění prvku svislé v rámci řádku v případě, kdy výška prvku je menší než výška sloupce. Řeší tedy zarovnání controlu v řádku, nikoli zarovnání obsahu (textu) v rámci controlu.
+        /// </summary>
+        public VPositionType? VPosition { get; set; }
         /// <summary>
         /// Rozšíření controlu do okolního prostoru pro labely, pokud labely nejsou použity
         /// </summary>
@@ -1106,7 +1139,7 @@ namespace Noris.WS.DataContracts.DxForm
             this.Left = left;
             this.Top = top;
             this.Width = width.HasValue ? new Int32P(width.Value, false) : null;
-            this.Height = height;
+            this.Height = height.HasValue ? new Int32P(height.Value, false) : null;
         }
         /// <summary>
         /// Konstruktor
@@ -1115,12 +1148,23 @@ namespace Noris.WS.DataContracts.DxForm
         /// <param name="top"></param>
         /// <param name="width"></param>
         /// <param name="height"></param>
-        public Bounds(Int32? left, Int32? top, Int32P? width, Int32? height)
+        public Bounds(Int32? left, Int32? top, Int32P? width, Int32P? height)
         {
             this.Left = left;
             this.Top = top;
             this.Width = width;
             this.Height = height;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="source"></param>
+        public Bounds(Bounds source)
+        {
+            this.Left = source?.Left;
+            this.Top = source?.Top;
+            this.Width = source?.Width;
+            this.Height = source?.Height;
         }
         /// <summary>
         /// Vizualizace
@@ -1129,6 +1173,46 @@ namespace Noris.WS.DataContracts.DxForm
         public override string ToString()
         {
             return $"Left: {Left}; Top: {Top}; Width: {Width}; Height: {Height}";
+        }
+        /// <summary>
+        /// Obsahuje true, když žádná souřadnice není naplněna (všechny jsou null).
+        /// </summary>
+        public bool IsEmpty { get { return !(this.Left.HasValue || this.Top.HasValue || this.Width.HasValue || this.Height.HasValue); } }
+        /// <summary>
+        /// Je určena souřadnice <see cref="Left"/> i <see cref="Top"/>
+        /// </summary>
+        public bool HasLocation { get { return this.Left.HasValue && this.Top.HasValue; } }
+        /// <summary>
+        /// Je určena souřadnice <see cref="Width"/> i <see cref="Height"/>
+        /// </summary>
+        public bool HasSize { get { return this.Width.HasValue && this.Height.HasValue; } }
+        /// <summary>
+        /// Uloží do sebe dodané hodnoty. Pokud bude dodáno null, uloží jej jako hodnotu (nepřeskočí ji).
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="top"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        public void Fill(Int32? left, Int32? top, Int32? width, Int32? height)
+        {
+            this.Left = left;
+            this.Top = top;
+            this.Width = width.HasValue ? new Int32P(width.Value, false) : null;
+            this.Height = height.HasValue ? new Int32P(height.Value, false) : null;
+        }
+        /// <summary>
+        /// Uloží do sebe dodané hodnoty. Pokud bude dodáno null, uloží jej jako hodnotu (nepřeskočí ji).
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="top"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        public void Fill(Int32? left, Int32? top, Int32P? width, Int32P? height)
+        {
+            this.Left = left;
+            this.Top = top;
+            this.Width = width;
+            this.Height = height;
         }
         /// <summary>
         /// Left
@@ -1146,150 +1230,15 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Height
         /// </summary>
-        public Int32? Height { get; set; }
-    }
-    /// <summary>
-    /// Hodnota typu Int32 <see cref="Number"/> s příznakem <see cref="IsPercent"/>, zda jde o procenta.
-    /// </summary>
-    public struct Int32P : IEquatable<Int32P>
-    {
+        public Int32P? Height { get; set; }
         /// <summary>
-        /// Konstruktor
+        /// Right (pouze pokud <see cref="Left"/> má hodnotu, <see cref="Width"/> má hodnotu, a tato je pixelová)
         /// </summary>
-        /// <param name="number"></param>
-        public Int32P(int number)
-        {
-            this.__Number = number;
-            this.__IsPercent = false;
-        }
+        public int? Right { get { var l = Left; var w = Width; return ((l.HasValue && w.HasValue && w.Value.IsPixel) ? (int?)(l.Value + w.Value.NumberPixel.Value) : (int?)null); } }
         /// <summary>
-        /// Konstruktor
+        /// Bottom (pouze pokud <see cref="Top"/> má hodnotu, <see cref="Height"/> má hodnotu, a tato je pixelová)
         /// </summary>
-        /// <param name="number"></param>
-        /// <param name="isPercent"></param>
-        public Int32P(int number, bool isPercent)
-        {
-            this.__Number = number;
-            this.__IsPercent = isPercent;
-        }
-        /// <summary>
-        /// Počet
-        /// </summary>
-        private int __Number;
-        /// <summary>
-        /// Příznak procent (true) / hodnoty (false)
-        /// </summary>
-        private bool __IsPercent;
-        /// <summary>
-        /// Vizualizace
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            return $"{Number}{(IsPercent ? "%" : "")}";
-        }
-        /// <summary>
-        /// Hodnota
-        /// </summary>
-        public int Number { get { return __Number; } set { __Number = value; } }
-        /// <summary>
-        /// Jde o pixel?
-        /// </summary>
-        public bool IsPixel { get { return !__IsPercent; } set { __IsPercent = !value; } }
-        /// <summary>
-        /// Jde o procento?
-        /// </summary>
-        public bool IsPercent { get { return __IsPercent; } set { __IsPercent = value; } }
-        /// <summary>
-        /// Číslo, pokud je v pixelech, jinak null
-        /// </summary>
-        public int? NumberPixel { get { return (!__IsPercent ? (int?)Number : (int?)null); } }
-        /// <summary>
-        /// Číslo, pokud je v procentech, jinak null
-        /// </summary>
-        public int? NumberPercent { get { return (__IsPercent ? (int?)Number : (int?)null); } }
-        /// <summary>
-        /// Hashcode
-        /// </summary>
-        /// <returns></returns>
-        public override int GetHashCode()
-        {
-            return this.Number.GetHashCode() ^ (IsPercent ? 0x40000000 : 0);
-        }
-        /// <summary>
-        /// Vrací Equals
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
-        public override bool Equals(object obj)
-        {
-            if (obj is null) return false;
-            if (!(obj is Int32P)) return false;
-            return _IsEquals(this, (Int32P)obj);
-        }
-        /// <summary>
-        /// Vrací Equals
-        /// </summary>
-        /// <param name="value1"></param>
-        /// <param name="value2"></param>
-        /// <returns></returns>
-        private static bool _IsEquals(Int32P value1, Int32P value2)
-        {
-            return (value1.Number == value2.Number) && (value1.IsPercent = value2.IsPercent);
-        }
-        /// <summary>
-        /// Parsuje dodaný text na hodnotu <see cref="Int32P"/>.
-        /// </summary>
-        /// <param name="text"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static bool TryParse(string text, out Int32P value)
-        {
-            value = default(Int32P);
-            if (String.IsNullOrEmpty(text)) return false;
-            bool isPercent = text.Contains("%");
-            if (isPercent) text = text.Replace("%", "");
-            int number = 0;
-            if (String.IsNullOrEmpty(text) || !Int32.TryParse(text, out number)) return false;
-            value = new Int32P(number, isPercent);
-            return true;
-        }
-        /// <summary>
-        /// Shodnost s jinou instancí
-        /// </summary>
-        /// <param name="other"></param>
-        /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
-        bool IEquatable<Int32P>.Equals(Int32P other)
-        {
-            return _IsEquals(this, other);
-        }
-    }
-    /// <summary>
-    /// Styl pro control, typicky kalíšek. Budeme podporovat i rozšířený způsob zadání stylu.
-    /// </summary>
-    public sealed class DfControlStyle
-    {
-        /// <summary>
-        /// Název kalíšku = definuje parametry stylu
-        /// </summary>
-        public string StyleName { get; set; }
-        /// <summary>
-        /// Styl písma pro control
-        /// </summary>
-        public FontStyleType? ControlFontStyle { get; set; }
-        /// <summary>
-        /// Změna velikosti písma proti defaultnímu, pro control
-        /// </summary>
-        public float? ControlFontSizeDelta { get; set; }
-        /// <summary>
-        /// Styl písma pro label u controlu
-        /// </summary>
-        public FontStyleType? LabelFontStyle { get; set; }
-        /// <summary>
-        /// Změna velikosti písma proti defaultnímu, pro label u controlu
-        /// </summary>
-        public float? LabelFontSizeDelta { get; set; }
+        public int? Bottom { get { var t = Top; var h = Height; return ((t.HasValue && h.HasValue && h.Value.IsPixel) ? (int?)(t.Value + h.Value.NumberPixel.Value) : (int?)null); } }
     }
     /// <summary>
     /// Pozice a velikost controlu
@@ -1425,6 +1374,10 @@ namespace Noris.WS.DataContracts.DxForm
             return $"Left: {Left}; Top: {Top}";
         }
         /// <summary>
+        /// Obsahuje true, když žádná souřadnice není naplněna (všechny jsou null).
+        /// </summary>
+        public bool IsEmpty { get { return !(this.Left.HasValue || this.Top.HasValue); } }
+        /// <summary>
         /// Left
         /// </summary>
         public int? Left { get; set; }
@@ -1461,6 +1414,10 @@ namespace Noris.WS.DataContracts.DxForm
             return $"Width: {Width}; Height: {Height}";
         }
         /// <summary>
+        /// Obsahuje true, když žádná souřadnice není naplněna (všechny jsou null).
+        /// </summary>
+        public bool IsEmpty { get { return !(this.Width.HasValue || this.Height.HasValue); } }
+        /// <summary>
         /// Width
         /// </summary>
         public int? Width { get; set; }
@@ -1468,6 +1425,153 @@ namespace Noris.WS.DataContracts.DxForm
         /// Height
         /// </summary>
         public int? Height { get; set; }
+    }
+    /// <summary>
+    /// Hodnota typu Int32 <see cref="Number"/> s příznakem <see cref="IsPercent"/>, zda jde o procenta.
+    /// </summary>
+    public struct Int32P : IEquatable<Int32P>
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="number"></param>
+        public Int32P(int number)
+        {
+            this.__Number = number;
+            this.__IsPercent = false;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="number"></param>
+        /// <param name="isPercent"></param>
+        public Int32P(int number, bool isPercent)
+        {
+            this.__Number = number;
+            this.__IsPercent = isPercent;
+        }
+        /// <summary>
+        /// Prázdný prvek
+        /// </summary>
+        public static Int32P Empty { get { return new Int32P(0); } }
+        /// <summary>
+        /// Počet
+        /// </summary>
+        private int __Number;
+        /// <summary>
+        /// Příznak procent (true) / hodnoty (false)
+        /// </summary>
+        private bool __IsPercent;
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"{Number}{(IsPercent ? "%" : "")}";
+        }
+        /// <summary>
+        /// Hodnota
+        /// </summary>
+        public int Number { get { return __Number; } set { __Number = value; } }
+        /// <summary>
+        /// Jde o pixel?
+        /// </summary>
+        public bool IsPixel { get { return !__IsPercent; } set { __IsPercent = !value; } }
+        /// <summary>
+        /// Jde o procento?
+        /// </summary>
+        public bool IsPercent { get { return __IsPercent; } set { __IsPercent = value; } }
+        /// <summary>
+        /// Číslo, pokud je v pixelech, jinak null
+        /// </summary>
+        public int? NumberPixel { get { return (!__IsPercent ? (int?)Number : (int?)null); } }
+        /// <summary>
+        /// Číslo, pokud je v procentech, jinak null
+        /// </summary>
+        public int? NumberPercent { get { return (__IsPercent ? (int?)Number : (int?)null); } }
+        /// <summary>
+        /// Hashcode
+        /// </summary>
+        /// <returns></returns>
+        public override int GetHashCode()
+        {
+            return this.Number.GetHashCode() ^ (IsPercent ? 0x40000000 : 0);
+        }
+        /// <summary>
+        /// Vrací Equals
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public override bool Equals(object obj)
+        {
+            if (obj is null) return false;
+            if (!(obj is Int32P)) return false;
+            return _IsEquals(this, (Int32P)obj);
+        }
+        /// <summary>
+        /// Vrací Equals
+        /// </summary>
+        /// <param name="value1"></param>
+        /// <param name="value2"></param>
+        /// <returns></returns>
+        private static bool _IsEquals(Int32P value1, Int32P value2)
+        {
+            return (value1.Number == value2.Number) && (value1.IsPercent = value2.IsPercent);
+        }
+        /// <summary>
+        /// Parsuje dodaný text na hodnotu <see cref="Int32P"/>.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static bool TryParse(string text, out Int32P value)
+        {
+            value = default(Int32P);
+            if (String.IsNullOrEmpty(text)) return false;
+            bool isPercent = text.Contains("%");
+            if (isPercent) text = text.Replace("%", "");
+            int number = 0;
+            if (String.IsNullOrEmpty(text) || !Int32.TryParse(text, out number)) return false;
+            value = new Int32P(number, isPercent);
+            return true;
+        }
+        /// <summary>
+        /// Shodnost s jinou instancí
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        bool IEquatable<Int32P>.Equals(Int32P other)
+        {
+            return _IsEquals(this, other);
+        }
+    }
+    /// <summary>
+    /// Styl pro control, typicky kalíšek. Budeme podporovat i rozšířený způsob zadání stylu.
+    /// </summary>
+    public sealed class DfControlStyle
+    {
+        /// <summary>
+        /// Název kalíšku = definuje parametry stylu
+        /// </summary>
+        public string StyleName { get; set; }
+        /// <summary>
+        /// Styl písma pro control
+        /// </summary>
+        public FontStyleType? ControlFontStyle { get; set; }
+        /// <summary>
+        /// Změna velikosti písma proti defaultnímu, pro control
+        /// </summary>
+        public float? ControlFontSizeDelta { get; set; }
+        /// <summary>
+        /// Styl písma pro label u controlu
+        /// </summary>
+        public FontStyleType? LabelFontStyle { get; set; }
+        /// <summary>
+        /// Změna velikosti písma proti defaultnímu, pro label u controlu
+        /// </summary>
+        public float? LabelFontSizeDelta { get; set; }
     }
     /// <summary>
     /// Okraje
@@ -1514,6 +1618,17 @@ namespace Noris.WS.DataContracts.DxForm
             this.Top = top;
             this.Right = right;
             this.Bottom = bottom;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="source"></param>
+        public Margins(Margins source)
+        {
+            this.Left = source?.Left ?? 0;
+            this.Top = source?.Top ?? 0;
+            this.Right = source?.Right?? 0;
+            this.Bottom = source?.Bottom ?? 0;
         }
         /// <summary>
         /// Vizualizace

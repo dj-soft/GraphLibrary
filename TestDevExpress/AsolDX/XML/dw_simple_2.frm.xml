@@ -33,6 +33,7 @@
         <image Name="row01col2" RowSpan="2" Width="150" Height="50"/>
         <image Name="row12col0" RowSpan="2" Width="150" Height="50"/>
         <textbox Name="row2col12" ColSpan="2" Width="300" />
+        <placeholder Name="p1" ColSpan="3" Height="6"/>
         <textbox Name="row3col1" ColIndex="1" />
         <textbox Name="row4col0" ColIndex="0" />
         <textbox Name="row4col2" ColIndex="2" />

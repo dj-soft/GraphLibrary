@@ -356,17 +356,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             dfForm.MasterHeight = _ReadAttributeInt32N(xElement, "MasterHeight");
             dfForm.TotalWidth = _ReadAttributeInt32N(xElement, "TotalWidth");
             dfForm.TotalHeight = _ReadAttributeInt32N(xElement, "TotalHeight");
-            dfForm.AutoLabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "AutoLabelPosition");
             dfForm.DataSource = _ReadAttributeString(xElement, "DataSource", null);
             dfForm.Messages = _ReadAttributeString(xElement, "Messages", null);
             dfForm.UseNorisClass = _ReadAttributeInt32N(xElement, "UseNorisClass");
             dfForm.AddUda = _ReadAttributeBoolN(xElement, "AddUda");
-            dfForm.UdaLabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "UdaLabelPosition");
-            dfForm.Margins = _ReadAttributesMargin(xElement, "Margins", null);
+            dfForm.UdaLabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "UdaLabelPosition", _FixLabelPosition);
             dfForm.ContextMenu = _ReadAttributeBoolN(xElement, "ContextMenu");
-            dfForm.ColumnsCount = _ReadAttributeInt32N(xElement, "ColumnsCount");
-            dfForm.ColumnWidths = _ReadAttributeString(xElement, "ColumnWidths", null);
-            dfForm.ColumnsDistance = _ReadAttributeInt32N(xElement, "ColumnsDistance");
 
             // Implicit Page: do ní se vkládají Panely, pokud jsou zadány přímo do Formu
             DfPage implicitPage = null;
@@ -616,6 +611,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             dfNestedGroup.NestedTemplate = _ReadAttributeString(xElement, "NestedTemplate", null);
             dfNestedGroup.NestedGroupName = _ReadAttributeString(xElement, "NestedPanelName", null);
             dfNestedGroup.Bounds = _ReadAttributeBounds(xElement, null);
+            dfNestedGroup.ParentBounds = _ReadAttributeString(xElement, "ParentBounds", null);
             dfNestedGroup.ColIndex = _ReadAttributeInt32N(xElement, "ColIndex");
             dfNestedGroup.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
             dfNestedGroup.RowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
@@ -634,6 +630,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (dfNestedGroup.ToolTipText != null) dfGroup.ToolTipText = dfNestedGroup.ToolTipText;
                 if (dfNestedGroup.Invisible != null) dfGroup.Invisible = dfNestedGroup.Invisible;
                 dfGroup.Bounds = dfNestedGroup.Bounds;
+                dfGroup.ParentBounds = dfNestedGroup.ParentBounds;
                 dfGroup.ColIndex = dfNestedGroup.ColIndex;
                 dfGroup.ColSpan = dfNestedGroup.ColSpan;
                 dfGroup.RowSpan = dfNestedGroup.RowSpan;
@@ -959,10 +956,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 control.ControlStyle = _ReadAttributeStyle(xElement, null);
                 control.Bounds = _ReadAttributeBounds(xElement, null);
+                control.ParentBounds = _ReadAttributeString(xElement, "ParentBounds", null);
                 control.ColIndex = _ReadAttributeInt32N(xElement, "ColIndex");
                 control.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
                 control.RowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
                 control.HPosition = _ReadAttributeEnumN<HPositionType>(xElement, "HPosition");
+                control.VPosition = _ReadAttributeEnumN<VPositionType>(xElement, "VPosition");
                 control.ExpandControl = _ReadAttributeEnumN<ExpandControlType>(xElement, "ExpandControl"); 
             }
             if (target is DfBaseInputControl inputControl)
@@ -978,7 +977,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (target is DfBaseLabeledInputControl labeledControl)
             {
                 labeledControl.Label = _ReadAttributeString(xElement, "Label", null);
-                labeledControl.LabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPosition");
+                labeledControl.LabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPosition", _FixLabelPosition);
                 labeledControl.LabelWidth = _ReadAttributeInt32N(xElement, "LabelWidth");
             }
 
@@ -990,15 +989,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 area.BackColorDark = _ReadAttributeColorN(xElement, "BackColorDark");
                 area.BackImageName = _ReadAttributeString(xElement, "BackImageName", null);
                 area.BackImagePosition = _ReadAttributeEnumN<BackImagePositionType>(xElement, "BackImagePosition");
-                area.Margins = _ReadAttributesMargin(xElement, "Margins", null);
                 area.ColumnsCount = _ReadAttributeInt32N(xElement, "ColumnsCount");
                 area.ColumnWidths = _ReadAttributeString(xElement, "ColumnWidths", null);
+                area.AutoLabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "AutoLabelPosition", _FixLabelPosition);
+                area.Margins = _ReadAttributesMargin(xElement, "Margins", null);
+                area.ControlMargins = _ReadAttributesMargin(xElement, "ControlMargins", null);
                 area.ColumnsDistance = _ReadAttributeInt32N(xElement, "ColumnsDistance");
-                area.AutoLabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "AutoLabelPosition");
+                area.RowsDistance = _ReadAttributeInt32N(xElement, "RowsDistance");
             }
             if (target is DfBaseContainer container)
             {
                 container.Bounds = _ReadAttributeBounds(xElement, null);
+                container.ParentBounds = _ReadAttributeString(xElement, "ParentBounds", null);
                 container.FlowLayoutOrigin = _ReadAttributesLocation(xElement, "FlowLayoutOrigin", null);
             }
         }
@@ -1260,7 +1262,42 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 {
                     string text = xAttribute.Value;
                     if (modifier != null) text = modifier(text);
-                    if (Enum.TryParse<TEnum>(text, true, out var result)) value = result;
+                    if (!String.IsNullOrEmpty(text))
+                    {
+                        if (Enum.TryParse<TEnum>(text, true, out var result))
+                        {   // Jednoduchý výsledek je rychle:
+                            value = result;
+                        }
+                        else
+                        {   // Nepodařilo se parsovat: pokud v textu je nějaký oddělovač, a pokud enum má Flags, tak budu hodnoty sčítat:
+                            var delimiters = " ,;+|".ToCharArray();            // Tyto znaky mohou oddělovat jednotlivé hodnoty: "Invisible, TabSkip"
+                            if (text.IndexOfAny(delimiters) > 0)
+                            {   // Pokud enum má příznak [Flags], tak rozeberu text a parsuji po částech:
+                                var typeCustAttributes = typeof(TEnum).GetCustomAttributes(typeof(System.FlagsAttribute), true);
+                                if (typeCustAttributes.Length > 0)
+                                {
+                                    int? numbers = null;
+                                    var parts = text.Split(delimiters);        // text je například "Invisible,TabSkip"
+                                    foreach (var part in parts)                // zpracuji postupně: "Invisible", "TabSkip"
+                                    {
+                                        string item = part.Trim();
+                                        if (modifier != null) item = modifier(item);
+                                        if (item.Length > 0 && Enum.TryParse<TEnum>(item, true, out var partResult))
+                                        {   // Mám hodnotu enumu, například ControlStateType.Invisible
+                                            string numValue = Enum.Format(typeof(TEnum), partResult, "D");   // Vrátí string, obsahující decimální hodnotu nalezené jednotkové hodnoty Flags enumu
+                                            if (Int32.TryParse(numValue, out var numValueResult))            // Pro ControlStateType.Invisible bude numValueResult = "1"
+                                            {   
+                                                if (!numbers.HasValue) numbers = 0;
+                                                numbers = numbers.Value | numValueResult;                    // Sčítám numerické hodnoty
+                                            }
+                                        }
+                                    }
+                                    if (numbers.HasValue)
+                                        value = (TEnum)Enum.ToObject(typeof(TEnum), numbers.Value);          // Konvertuji int na enum
+                                }
+                            }
+                        }
+                    }
                 }
             }
             return value;
@@ -1285,71 +1322,87 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="defaultValue"></param>
         private static Bounds _ReadAttributeBounds(System.Xml.Linq.XElement xElement, Bounds defaultValue)
         {
-            Int32? left, top, width, height;
-            Int32P? widthP;
-
-            Bounds bounds = defaultValue;
-            bool hasBounds = false;
+            Bounds bounds = null;
 
             // Celý Bounds:
             var textBounds = _ReadAttributeString(xElement, "Bounds", null);
             if (!String.IsNullOrEmpty(textBounds))
             {
-                var numbers = _SplitAndParseInt32N(textBounds);
-                if (numbers != null && numbers.Count >= 1)
+                var items = _SplitText(textBounds);
+                if (items != null && items.Length >= 2)
                 {
-                    int cnt = numbers.Count;
-                    left = numbers[0];
-                    top = (cnt >= 2 ? numbers[1] : null);
-                    width = (cnt >= 3 ? numbers[2] : null);
-                    height = (cnt >= 4 ? numbers[3] : null);
-                    bounds = new Bounds(left, top, width, height);
-                    hasBounds = true;
-                    if (cnt >= 3) return bounds;           // Pokud byly zadány hodnoty alespoň X,Y,Width: tak už nebudeme řešit ani Size ani jednotlivé souřadnice.
+                    if (bounds is null) bounds = new Bounds();
+                    bounds.Left = _ParseInt32N(items[0]);
+                    bounds.Top = _ParseInt32N(items[1]);
+                    if (items.Length >= 3) bounds.Width = _ParseInt32PN(items[2]);
+                    if (items.Length >= 4) bounds.Height = _ParseInt32PN(items[3]);
+                    if (bounds.HasLocation && bounds.HasSize) return bounds;
                 }
             }
 
-            // Size:
+            // Location
+            var textLocation = _ReadAttributeString(xElement, "Location", null);
+            if (!String.IsNullOrEmpty(textLocation))
+            {
+                var items = _SplitText(textLocation);
+                if (items != null && items.Length >= 2)
+                {
+                    if (bounds is null) bounds = new Bounds();
+                    bounds.Left = _ParseInt32N(items[0]);
+                    bounds.Top = _ParseInt32N(items[1]);
+                    if (bounds.HasLocation && bounds.HasSize) return bounds;
+                }
+            }
+
+            // Size
             var textSize = _ReadAttributeString(xElement, "Size", null);
             if (!String.IsNullOrEmpty(textSize))
             {
-                var numbers = _SplitAndParseInt32N(textSize);
-                if (numbers != null && numbers.Count >= 1)
+                var items = _SplitText(textSize);
+                if (items != null && items.Length >= 2)
                 {
-                    int cnt = numbers.Count;
-                    width = numbers[0];
-                    height = (cnt >= 2 ? numbers[1] : null);
-                    if (hasBounds)
-                    {   // Pokud byl nalezen element Bounds s alespoň jedním prvkem (viz výše), tak zde doplním jeho Size a je hotovo:
-                        bounds.Width = (width.HasValue ? new Int32P(width.Value) : null);
-                        bounds.Height = height;
-                        return bounds;
-                    }
-                    // Element Bounds nemáme, máme jen Size:
-                    bounds = new Bounds(null, null, width, height);
-                    // Projdeme dál, možná najdeme X a Y?
-                    hasBounds = true;
+                    if (bounds is null) bounds = new Bounds();
+                    bounds.Width = _ParseInt32PN(items[0]);
+                    bounds.Height = _ParseInt32PN(items[1]);
+                    if (bounds.HasLocation && bounds.HasSize) return bounds;
                 }
             }
 
-            // Jednotlivé hodnoty:
-            left = _ReadAttributeInt32N(xElement, "X");
-            top = _ReadAttributeInt32N(xElement, "Y");
-            widthP = _ReadAttributeInt32PN(xElement, "Width");
-            height = _ReadAttributeInt32N(xElement, "Height");
-            bool hasDimension = (left.HasValue || top.HasValue || widthP.HasValue || height.HasValue);
-            if (!hasDimension) return bounds;              // Pokud nemáme žádnou jednotkovou dimenzi, pak vrátím bounds v současném stavu (může tam být defaultValue).
+            // jednotlivé hodnoty:
+            var textX = _ReadAttributeString(xElement, "X", null);
+            if (!String.IsNullOrEmpty(textX))
+            {
+                if (bounds is null) bounds = new Bounds();
+                bounds.Left = _ParseInt32N(textX);
+                if (bounds.HasLocation && bounds.HasSize) return bounds;
+            }
 
-            // Máme nějakou dimenzi, musíme mít i cílovou instanci 'bounds', abychom měli nalezenou dimenzi kam dát:
-            if (!hasBounds)
-                bounds = new Bounds();
+            var textY = _ReadAttributeString(xElement, "Y", null);
+            if (!String.IsNullOrEmpty(textY))
+            {
+                if (bounds is null) bounds = new Bounds();
+                bounds.Top = _ParseInt32N(textY);
+                if (bounds.HasLocation && bounds.HasSize) return bounds;
+            }
 
-            if (left.HasValue) bounds.Left = left;
-            if (top.HasValue) bounds.Top = top;
-            if (widthP.HasValue) bounds.Width = widthP;
-            if (height.HasValue) bounds.Height = height;
+            var textWidth = _ReadAttributeString(xElement, "Width", null);
+            if (!String.IsNullOrEmpty(textWidth))
+            {
+                if (bounds is null) bounds = new Bounds();
+                bounds.Width = _ParseInt32PN(textWidth);
+                if (bounds.HasLocation && bounds.HasSize) return bounds;
+            }
 
-            return bounds;
+            var textHeight = _ReadAttributeString(xElement, "Height", null);
+            if (!String.IsNullOrEmpty(textHeight))
+            {
+                if (bounds is null) bounds = new Bounds();
+                bounds.Height = _ParseInt32PN(textHeight);
+                if (bounds.HasLocation && bounds.HasSize) return bounds;
+            }
+
+            if (bounds != null && !bounds.IsEmpty) return bounds;
+            return defaultValue;
         }
         /// <summary>
         /// Z dodaného <paramref name="xElement"/> načte hodnoty odpovídající souřadnicím <see cref="Location"/> ze zadaného prvku a vrátí je.
@@ -1416,30 +1469,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="text"></param>
         /// <param name="splitters"></param>
         /// <returns></returns>
-        private static List<int> _SplitAndParseInt32(string text, string splitters = ";, ")
+        private static List<Int32> _SplitAndParseInt32(string text, string splitters = ";, ")
         {
-            if (String.IsNullOrEmpty(text) || String.IsNullOrEmpty(splitters)) return null;
-
-            // Najdu ten oddělovač, který první je přítomen v zadaném textu:
-            char splitter = '\0';
-            foreach (var spl in splitters) 
-            {
-                if (text.Contains(spl.ToString()))
-                {
-                    splitter = spl;
-                    break;
-                }
-            }
-
-            // Rozdělím text nalezeným oddělovačem a převedu jednotlivé prvky na číslice:
-            var items = (splitter != '\0') ? text.Split(splitter) : new string[] { text };      // Pokud jsem nenašel oddělovač, nebudu text rozdělovat a vezmu jej jako celek
-            var result = new List<int>();
-            foreach ( var item in items ) 
-            {
-                if (!String.IsNullOrEmpty(item) && Int32.TryParse(item.Trim().Replace(",", "."), out var number))
-                    result.Add(number);
-            }
-            return (result.Count > 0 ? result : null);
+            var items = _SplitText(text, splitters);
+            return _ConvertItems<Int32>(items, t => 
+            { 
+                if (!String.IsNullOrEmpty(t) && Int32.TryParse(t, out var n))
+                    return new Tuple<bool, Int32>(true, n);
+                return new Tuple<bool, Int32>(false, 0); 
+            });
         }
         /// <summary>
         /// Rozdělí dodaný string <paramref name="text"/> v místě daných oddělovačů <paramref name="splitters"/> a převede prvky na čísla Int?.
@@ -1456,7 +1494,75 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="text"></param>
         /// <param name="splitters"></param>
         /// <returns></returns>
-        private static List<int?> _SplitAndParseInt32N(string text, string splitters = ";, ")
+        private static List<Int32?> _SplitAndParseInt32N(string text, string splitters = ";, ")
+        {
+            var items = _SplitText(text, splitters);
+            return _ConvertItems<Int32?>(items, t => 
+            {
+                if (!String.IsNullOrEmpty(t) && Int32.TryParse(t, out var n))
+                    return new Tuple<bool, Int32?>(true, n);
+                return new Tuple<bool, Int32?>(true, null);
+            });
+        }
+        /// <summary>
+        /// Pokusí se parsovat dodaný text na Int32, nebo vrátí null
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        private static Int32? _ParseInt32N(string text)
+        {
+            if (!String.IsNullOrEmpty(text) && Int32.TryParse(text, out var n))
+                return n;
+            return null;
+        }
+        /// <summary>
+        /// Rozdělí dodaný string <paramref name="text"/> v místě daných oddělovačů <paramref name="splitters"/> a převede prvky na čísla Int?.
+        /// Oddělovač jsou dodány jako jeden string (default = ";, "), ale chápou se jako sada znaků.
+        /// Pokud je dodáno více znaků oddělovačů, pak se najde ten první z nich, který je v textu přítomen.<para/>
+        /// Např. pro text = <c>"125,4; 200"</c> a oddělovače <c>";, "</c> bude nalezen první přítomný oddělovač <c>';'</c> a v jeho místě bude rozdělen vstupní text. Nikoliv v místě znaku <c>','</c>.
+        /// <br/>
+        /// Pokud na vstupu je prázdný string, vrátí null.
+        /// <br/>
+        /// Pokud ale na vstupu bude string, který obsahuje mezi oddělovači něco nenumerického, bude na tom místě vrácenou NULL.
+        /// Tedy pro vstup <c>NULL</c> bude vráceno pole s jedním prvekm NULL, 
+        /// pro vstup<c>"4,,250"</c> bude vráceno pole se 3 prvky: 3, NULL, 250; atd.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="splitters"></param>
+        /// <returns></returns>
+        private static List<Int32P?> _SplitAndParseInt32PN(string text, string splitters = ";, ")
+        {
+            var items = _SplitText(text, splitters);
+            return _ConvertItems<Int32P?>(items, t =>
+            {
+                if (!String.IsNullOrEmpty(t) && Int32P.TryParse(t, out var n))
+                    return new Tuple<bool, Int32P?>(true, n);
+                return new Tuple<bool, Int32P?>(true, null);
+            });
+        }
+        /// <summary>
+        /// Pokusí se parsovat dodaný text na Int32P, nebo vrátí null
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        private static Int32P? _ParseInt32PN(string text)
+        {
+            if (!String.IsNullOrEmpty(text) && Int32P.TryParse(text, out var n))
+                return n;
+            return null;
+        }
+        /// <summary>
+        /// Rozdělí dodaný string <paramref name="text"/> v místě daných oddělovačů <paramref name="splitters"/> a vrátí nalezené prvky jako String.
+        /// Oddělovač jsou dodány jako jeden string (default = ";, "), ale chápou se jako sada znaků.
+        /// Pokud je dodáno více znaků oddělovačů, pak se najde ten první z nich, který je v textu přítomen.<para/>
+        /// Např. pro text = <c>"125,4; 200"</c> a oddělovače <c>";, "</c> bude nalezen první přítomný oddělovač <c>';'</c> a v jeho místě bude rozdělen vstupní text. Nikoliv v místě znaku <c>','</c>.<br/>
+        /// Pokud na vstupu je prázdný string, vrátí null.<br/>
+        /// Pokud na vstupu je neprázdný string, ale neobsahuje žádný oddělovač, je vráceno pole s jedním stringem.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="splitters"></param>
+        /// <returns></returns>
+        private static string[] _SplitText(string text, string splitters = ";, ")
         {
             if (String.IsNullOrEmpty(text) || String.IsNullOrEmpty(splitters)) return null;
 
@@ -1471,17 +1577,29 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
             }
 
-            // Rozdělím text nalezeným oddělovačem a převedu jednotlivé prvky na číslice:
+            // Rozdělím text nalezeným oddělovačem:
             var items = (splitter != '\0') ? text.Split(splitter) : new string[] { text };      // Pokud jsem nenašel oddělovač, nebudu text rozdělovat a vezmu jej jako celek
-            var result = new List<int?>();
+            return items;
+        }
+        /// <summary>
+        /// Dodané texty konvertuje daným konvertorem do výsledného typu, a vrací pole validních výsledků.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="parser"></param>
+        /// <returns></returns>
+        private static List<T> _ConvertItems<T>(string[] items, Func<string, Tuple<bool, T>> parser)
+        {
+            if (items is null) return null;
+
+            var result = new List<T>();
             foreach (var item in items)
             {
-                if (!String.IsNullOrEmpty(item) && Int32.TryParse(item.Trim().Replace(",", "."), out var number))
-                    result.Add(number);
-                else
-                    result.Add(null);
+                var parsed = parser(item);
+                if (parsed.Item1)
+                    result.Add(parsed.Item2);
             }
-            return result;
+            return (result.Count > 0 ? result : null);
         }
         /// <summary>
         /// Vrátí lokální jméno elementu, Trim(), ToLower().
@@ -1531,6 +1649,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private static Margins _CloneMargins(Margins margins)
         {
             return (margins is null ? null : new Margins(margins.Left, margins.Top, margins.Right, margins.Bottom));
+        }
+        /// <summary>
+        /// Umožní korigovat zadanou hodnotu do atributu typu <see cref="LabelPositionType"/>.
+        /// Reprezentuje příklad, jak průběžně změnit názvy položek enumů:
+        /// Pokud například v původním kódu existovala hodnota "Up", která byla poté v enumu přejmenována na "Top",
+        /// tak existuje řada formulářů (XML dokumentyú, které stále obsahují hodnotu "Up", kterou sice XML editor nyní podtrhává jako vadnou,
+        /// ale musíme ji umět načíst => převést text z "Up" na "Top"...
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private static string _FixLabelPosition(string value)
+        {
+            string key = (value ?? "").Trim().ToLower();
+            return key switch
+            {   // Ze staré hodnoty na aktuální:
+                "up" => "Top",
+                _ => value,
+            };
         }
         #endregion
         #region class DfTemplateArgs

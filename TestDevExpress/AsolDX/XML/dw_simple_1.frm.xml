@@ -14,6 +14,7 @@
         <textbox Name="poznamka" ColSpan="2" Width="500"/>
         <textbox Name="reference_subjektu" Width="150"/>
         <textbox Name="nazev_subjektu" />
+        <placeholder Name="place1" Height="12" ColSpan="2"/>
         <textbox Name="dodavatel_refer" HPosition="Right"/>
         <textbox Name="dodavatel_nazev"/>
     </panel>

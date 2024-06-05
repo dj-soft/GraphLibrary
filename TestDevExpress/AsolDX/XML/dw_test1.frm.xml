@@ -10,20 +10,22 @@
 		  AddUda="True" UdaLabelPosition="Top"
           ColumnWidths="200;300;100" >
 
-    <panel Name="test3" Title="pavel 4col" ColumnsCount="5" AutoLabelPosition="Up" >
-        <textbox Name="pkrefer1a" Width="150"/>
-        <textbox Name="pknazev1b" Width="250"/>
-        <image Name="pkimage1c" RowSpan="3" Width="120"/>
-        <image Name="pkimage1d" RowSpan="2" Width="150"/>
-        <image Name="pkimage1e" RowSpan="2" Width="150"/>
+    <panel Name="test3" Title="pavel 4col" ColumnsCount="5" AutoLabelPosition="BeforeRight" >
+        <textbox Name="pkrefer1a" Width="150" State="Invisible,TabSkip"/>
+        <textbox Name="pknazev1b" Width="250" LabelPosition="None"/>
+        <image Name="pkimage1c" RowSpan="3" Width="120" Height="100%" LabelPosition="None" />
+        <placeholder Name="pkplace1d" RowSpan="2" Width="200" Height="100%" />
+        <image Name="pkimage1e" RowSpan="2" Width="150" Height="100%" LabelPosition="None" />
 
         <textbox Name="pkrefer2a" />
-        <textbox Name="pknazev2b" />
+        <textbox Name="pknazev2b" LabelPosition="None" />
 
         <textbox Name="pkpozn3ab" ColSpan="2"/>
         <textbox Name="pkinfo3de" ColSpan="2" />
 
-        <textbox Name="pkpozn4abcde" ColSpan="5"/>
+        <editbox Name="pkpozn4abcde" ColSpan="5" LabelPosition="Top" ExpandControl="Left" Height="80"/>
+
+        <button Name="InPlace" Bounds="3,3,60,30" ParentBounds="pkplace1d" Text="ButtOn" />
     </panel>
 
 </template>

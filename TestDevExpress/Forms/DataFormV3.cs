@@ -965,31 +965,55 @@ namespace TestDevExpress.Forms
         #region IControlInfoSource
         void IControlInfoSource.ValidateControlInfo(IDataFormItem controlInfo)
         {
+            // Tady mám šanci doplnit takové informace o prvku, které autor šablony (frm.xml) explicitně nezadal.
+            // Typicky:  
+            //   - rozměry (šířka / výška: Optimal / Minimal)
+            //   - labely (jejich text a rozměry)
+            //   - tooltipy
+            //   - editační styl, položky stylu, maska, atd...
+
             var name = (controlInfo.ColumnName ?? "").Trim().ToLower();
 
             bool hasWidth = (controlInfo.DesignWidthPixel.HasValue || controlInfo.DesignWidthPercent.HasValue);
             if (!hasWidth)
-                controlInfo.ImplicitControlWidth = _GetDefaultControlWidth(controlInfo, name);
+            {
+                var width = _GetDefaultControlWidth(controlInfo, name);
+                if (width.HasValue)
+                {
+                    if (width.Value > 0)
+                        controlInfo.ImplicitControlOptimalWidth = width.Value;
+                    else if (width.Value < 0)
+                        controlInfo.ImplicitControlMinimalWidth = -width.Value;
+                }
+            }
 
             if (String.IsNullOrEmpty(controlInfo.MainLabelText) && controlInfo.LabelPosition != LabelPositionType.None)
                 controlInfo.MainLabelText = _GetMainLabelText(controlInfo, name);
         }
+        /// <summary>
+        /// Vrátí vhodnou šířku pro prvek.
+        /// Pokud vrátí kladné číslo, je to optimální šířka = tu bude prvek mít přesně.
+        /// Pokud vrátí záporné číslo, je to minimální šířka = tu si prvek vyžádá, ale pokud bude prostor větší, pak bude mít prvek 100% šířky aktuálního sloupce.
+        /// </summary>
+        /// <param name="controlInfo"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
         private int? _GetDefaultControlWidth(IDataFormItem controlInfo, string name)
         {
             if (name == "reference_subjektu" || name.EndsWith("_refer")) return 120;
             if (name == "nazev_subjektu" || name.EndsWith("_nazev")) return 250;
-            return 100;
+            return -75;                // Přinejmenším 75 pixelů, nebo klidně 100%.
         }
         private string _GetMainLabelText(IDataFormItem controlInfo, string name)
         {
             switch (name)
             {
-                case "reference_subjektu": return "Reference";
-                case "nazev_subjektu": return "Název";
-                case "dodavatel_refer": return "Dodavatel";
-                case "dodavatel_nazev": return "Dodavatel, název";
+                case "reference_subjektu": return "Reference:";
+                case "nazev_subjektu": return "Název:";
+                case "dodavatel_refer": return "Dodavatel:";
+                case "dodavatel_nazev": return "Dodavatel, název:";
             }
-            return name;
+            return name + ":";
         }
         #endregion
 
