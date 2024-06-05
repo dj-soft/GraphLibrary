@@ -996,6 +996,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 area.ControlMargins = _ReadAttributesMargin(xElement, "ControlMargins", null);
                 area.ColumnsDistance = _ReadAttributeInt32N(xElement, "ColumnsDistance");
                 area.RowsDistance = _ReadAttributeInt32N(xElement, "RowsDistance");
+                area.TopLabelOffsetX = _ReadAttributeInt32N(xElement, "TopLabelOffsetX");
+                area.BottomLabelOffsetX = _ReadAttributeInt32N(xElement, "BottomLabelOffsetX");
             }
             if (target is DfBaseContainer container)
             {
@@ -1266,9 +1268,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     {
                         if (Enum.TryParse<TEnum>(text, true, out var result))
                         {   // Jednoduchý výsledek je rychle:
+                            // Poznámka: tato metoda umí řešit i Flags enumy, které jsou v textu zadané například "Invisible, TabSkip"
+                            //  - pokud jsou správně definované jednotkové texty ("TabSkip"),
+                            //  - pak správně parsuje i složený text a jeho výsledek!
                             value = result;
                         }
-                        else
+                        else 
                         {   // Nepodařilo se parsovat: pokud v textu je nějaký oddělovač, a pokud enum má Flags, tak budu hodnoty sčítat:
                             var delimiters = " ,;+|".ToCharArray();            // Tyto znaky mohou oddělovat jednotlivé hodnoty: "Invisible, TabSkip"
                             if (text.IndexOfAny(delimiters) > 0)

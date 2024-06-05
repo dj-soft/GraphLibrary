@@ -512,6 +512,25 @@
                         </xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
+
+                <xs:attribute name="TopLabelOffsetX" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">
+                            Posunutí Main Labelu umístěného Top, na ose X, oproti souřadnici X vlastního Controlu.
+                            Kladná hodnota posune doprava.
+                            Může být záporné, pak bude label předsazen vlevo před Controlem.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="BottomLabelOffsetX" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">
+                            Posunutí Main Labelu umístěného Bottom, na ose X, oproti souřadnici X vlastního Controlu.
+                            Kladná hodnota posune doprava.
+                            Může být záporné, pak bude label předsazen vlevo před Controlem.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

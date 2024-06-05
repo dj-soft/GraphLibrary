@@ -10,7 +10,7 @@
 		  AddUda="True" UdaLabelPosition="Top"
           ColumnWidths="200;300;100" >
 
-    <panel Name="test3" Title="pavel 4col" ColumnsCount="5" AutoLabelPosition="BeforeRight" >
+    <panel Name="test3" Title="pavel 4col" ColumnsCount="5" AutoLabelPosition="BeforeRight" ColumnsDistance="4" RowsDistance="2" ControlMargins="2,1" TopLabelOffsetX="-18" >
         <textbox Name="pkrefer1a" Width="150" State="Invisible,TabSkip"/>
         <textbox Name="pknazev1b" Width="250" LabelPosition="None"/>
         <image Name="pkimage1c" RowSpan="3" Width="120" Height="100%" LabelPosition="None" />

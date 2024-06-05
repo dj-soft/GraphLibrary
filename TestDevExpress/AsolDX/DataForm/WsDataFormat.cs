@@ -4,6 +4,7 @@
 // is not permitted without valid contract with Asseco Solutions, a. s.
 
 using DevExpress.Data.Helpers;
+using DevExpress.XtraRichEdit.API.Native;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -512,6 +513,18 @@ namespace Noris.WS.DataContracts.DxForm
         /// Volný prostor v pixelech mezi dvěma sousedními řádky (vnitřní Margin). Nezadáno = řádky navazují těsně vedle sebe.
         /// </summary>
         public int? RowsDistance { get; set; }
+        /// <summary>
+        /// Posunutí Main Labelu umístěného Top, na ose X, oproti souřadnici X vlastního Controlu.
+        /// Kladná hodnota posune doprava.
+        /// Může být záporné, pak bude label předsazen vlevo před Controlem.
+        /// </summary>
+        public int? TopLabelOffsetX { get; set; }
+        /// <summary>
+        /// Posunutí Main Labelu umístěného Bottom, na ose X, oproti souřadnici X vlastního Controlu.
+        /// Kladná hodnota posune doprava.
+        /// Může být záporné, pak bude label předsazen vlevo před Controlem.
+        /// </summary>
+        public int? BottomLabelOffsetX { get; set; }
         /// <summary>
         /// Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = <c>NULL</c>
         /// </summary>
@@ -1287,6 +1300,14 @@ namespace Noris.WS.DataContracts.DxForm
         /// Height
         /// </summary>
         public int Height { get; set; }
+        /// <summary>
+        /// Right
+        /// </summary>
+        public int Right { get { return Left + Width; } }
+        /// <summary>
+        /// Height
+        /// </summary>
+        public int Bottom { get { return Top + Height; } }
     }
     /// <summary>
     /// Velikost kontejneru

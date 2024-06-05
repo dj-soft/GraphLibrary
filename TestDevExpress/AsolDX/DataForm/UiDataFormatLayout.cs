@@ -364,8 +364,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.ControlMargins = null;
                 this.ColumnsDistance = 0;
                 this.RowsDistance = 0;
+                this.TopLabelOffsetX = 3;
+                this.BottomLabelOffsetX = 3;
             }
-            public StyleInfo(int? columnsCount, string columnWidths, Location flowAreaBegin, Margins controlMargins, LabelPositionType autoLabelPosition, Margins margins, int columnsDistance, int rowsDistance)
+            public StyleInfo(int? columnsCount, string columnWidths, Location flowAreaBegin, Margins controlMargins, LabelPositionType autoLabelPosition, Margins margins, int columnsDistance, int rowsDistance, int topLabelOffsetX, int bottomLabelOffsetX)
             {
                 this.ColumnsCount = columnsCount;
                 this.ColumnWidths = columnWidths;
@@ -375,6 +377,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.ControlMargins = controlMargins;
                 this.ColumnsDistance = columnsDistance;
                 this.RowsDistance = rowsDistance;
+                this.TopLabelOffsetX = topLabelOffsetX;
+                this.BottomLabelOffsetX = bottomLabelOffsetX;
             }
             public StyleInfo(DfBaseArea dfArea)
             {
@@ -386,6 +390,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.ControlMargins = dfArea.ControlMargins;
                 this.ColumnsDistance = dfArea.ColumnsDistance ?? 0;
                 this.RowsDistance = dfArea.RowsDistance ?? 0;
+                this.TopLabelOffsetX = dfArea.TopLabelOffsetX ?? 3;
+                this.BottomLabelOffsetX = dfArea.BottomLabelOffsetX ?? 3;
             }
             public StyleInfo(DfBaseArea dfArea, StyleInfo styleParent)
             {
@@ -413,6 +419,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.ControlMargins = dfArea.ControlMargins ?? styleParent.ControlMargins;
                 this.ColumnsDistance = dfArea.ColumnsDistance.HasValue ? dfArea.ColumnsDistance.Value : styleParent.ColumnsDistance;
                 this.RowsDistance = dfArea.RowsDistance.HasValue? dfArea.RowsDistance.Value : styleParent.RowsDistance;
+                this.TopLabelOffsetX = dfArea.TopLabelOffsetX.HasValue ? dfArea.TopLabelOffsetX.Value : styleParent.TopLabelOffsetX;
+                this.BottomLabelOffsetX = dfArea.BottomLabelOffsetX.HasValue ? dfArea.BottomLabelOffsetX.Value : styleParent.BottomLabelOffsetX;
             }
             /// <summary>
             /// Počet sloupců layoutu. Šířka sloupců se určí podle reálného obsahu (maximum šířky prvků).
@@ -448,6 +456,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Volný prostor mezi dvěma sousedními řádky (vnitřní Margin)
             /// </summary>
             public int RowsDistance { get; private set; }
+            /// <summary>
+            /// Posunutí Main Labelu umístěného Top, na ose X, oproti souřadnici X vlastního Controlu.
+            /// Kladná hodnota posune doprava.
+            /// Může být záporné, pak bude label předsazen vlevo před Controlem.
+            /// </summary>
+            public int TopLabelOffsetX { get; private set; }
+            /// <summary>
+            /// Posunutí Main Labelu umístěného Bottom, na ose X, oproti souřadnici X vlastního Controlu.
+            /// Kladná hodnota posune doprava.
+            /// Může být záporné, pak bude label předsazen vlevo před Controlem.
+            /// </summary>
+            public int BottomLabelOffsetX { get; private set; }
         }
         #endregion
         #region class ItemInfo : Dočasná pracovní a výkonná schránka na jednotlivý prvek layoutu, existuje jen po dobu výpočtu layoutu. Má tři tváře: Prvek/Container; Spolupráce s aplikací na doplnění hodnot; Spolupráce s FlowLayout na umístění do mřížky
@@ -1019,11 +1039,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <summary>
             /// Výsledná souřadnice celé buňky
             /// </summary>
-            private Bounds __CellBounds;
+            private ControlBounds __CellBounds;
             /// <summary>
             /// Výsledná souřadnice MainLabel v rámci parenta
             /// </summary>
-            private Bounds __MainLabelBounds;
+            private ControlBounds __MainLabelBounds;
             /// <summary>
             /// Zarovnání textu MainLabel v prostoru <see cref="__MainLabelBounds"/>
             /// </summary>
@@ -1031,11 +1051,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <summary>
             /// Výsledná souřadnice Controlu v rámci parenta
             /// </summary>
-            private Bounds __ControlBounds;
+            private ControlBounds __ControlBounds;
             /// <summary>
             /// Výsledná souřadnice SuffixLabel v rámci parenta
             /// </summary>
-            private Bounds __SuffixLabelBounds;
+            private ControlBounds __SuffixLabelBounds;
             /// <summary>
             /// Zarovnání textu SuffixLabel v prostoru <see cref="__SuffixLabelBounds"/>
             /// </summary>
@@ -1094,11 +1114,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int? IFlowLayoutItem.FlowColEndIndex { get { return __FlowColEndIndex; } set { __FlowColEndIndex = value; } }
             int? IFlowLayoutItem.FlowRowBeginIndex { get { return __FlowRowBeginIndex; } set { __FlowRowBeginIndex = value; } }
             int? IFlowLayoutItem.FlowRowEndIndex { get { return __FlowRowEndIndex; } set { __FlowRowEndIndex = value; } }
-            Bounds IFlowLayoutItem.CellBounds { get { return __CellBounds; } set { __CellBounds = value; } }
-            Bounds IFlowLayoutItem.MainLabelBounds { get { return __MainLabelBounds; } set { __MainLabelBounds = value; } }
+            ControlBounds IFlowLayoutItem.CellBounds { get { return __CellBounds; } set { __CellBounds = value; } }
+            ControlBounds IFlowLayoutItem.MainLabelBounds { get { return __MainLabelBounds; } set { __MainLabelBounds = value; } }
             ContentAlignmentType? IFlowLayoutItem.MainLabelAlignment { get { return __MainLabelAlignment; } set { __MainLabelAlignment = value; } }
-            Bounds IFlowLayoutItem.ControlBounds { get { return __ControlBounds; } set { __ControlBounds = value; } }
-            Bounds IFlowLayoutItem.SuffixLabelBounds { get { return __SuffixLabelBounds; } set { __SuffixLabelBounds = value; } }
+            ControlBounds IFlowLayoutItem.ControlBounds { get { return __ControlBounds; } set { __ControlBounds = value; } }
+            ControlBounds IFlowLayoutItem.SuffixLabelBounds { get { return __SuffixLabelBounds; } set { __SuffixLabelBounds = value; } }
             ContentAlignmentType? IFlowLayoutItem.SuffixLabelAlignment { get { return __SuffixLabelAlignment; } set { __SuffixLabelAlignment = value; } }
             bool IFlowLayoutItem.AcceptedWidth { get { return __AcceptedWidth; } set { __AcceptedWidth = value; } }
             bool IFlowLayoutItem.AcceptedHeight { get { return __AcceptedHeight; } set { __AcceptedHeight = value; } }
@@ -1381,7 +1401,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     }
                 }
                 // Vykreslí Label včetně podkladu
-                void drawLabel(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, string text, Bounds bounds, ContentAlignmentType alignment)
+                void drawLabel(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, string text, ControlBounds bounds, ContentAlignmentType alignment)
                 {
                     var r = getRectangle(bounds);
 
@@ -1404,7 +1424,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     graphics.DrawString(text, font, brush, point.X, point.Y);        // Vlastní text MainLabel                
                 }
                 // Vykreslí Control včetně podkladu
-                void drawControl(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, string text, Bounds bounds, ContentAlignmentType alignment)
+                void drawControl(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, string text, ControlBounds bounds, ContentAlignmentType alignment)
                 {
                     var r = getRectangle(bounds);
                     using (var path = getControlPathRound(r))
@@ -1445,7 +1465,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     int t = rectangle.Top;
                     int r = rectangle.Right - 1;
                     int b = rectangle.Bottom - 1;
-                    int q = 2;
                     var path = new System.Drawing.Drawing2D.GraphicsPath();
                     path.AddPolygon(new System.Drawing.PointF[]
                     {
@@ -1483,9 +1502,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     return path;
                 }
                 // Konvertuje Bounds na Drawing.Rectangle
-                System.Drawing.Rectangle getRectangle(Bounds bounds)
+                System.Drawing.Rectangle getRectangle(ControlBounds bounds)
                 {
-                    return new System.Drawing.Rectangle(bounds.Left.Value, bounds.Top.Value, bounds.Width.Value.NumberPixel.Value, bounds.Height.Value.NumberPixel.Value);
+                    return new System.Drawing.Rectangle(bounds.Left, bounds.Top, bounds.Width, bounds.Height);
                 }
                 // Vrátí souřadnice textu tak, aby byl zarovnán
                 System.Drawing.PointF alignText(System.Drawing.Rectangle area, System.Drawing.SizeF content, ContentAlignmentType alignment)
@@ -1706,7 +1725,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __Cells = null;
         }
         #endregion
-        #region Informace o stylu
+        #region Informace o stylu celé grupy (StyleInfo), jeho načtení a odpovídající proměnné
         /// <summary>
         /// Načte / určí výchozí hodnoty na základě daného stylu
         /// </summary>
@@ -1718,12 +1737,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __FlowBounds.Left = style.FlowAreaBegin?.Left;
             __FlowBounds.Top = style.FlowAreaBegin?.Top;
             __ControlMargins = new Margins(style.ControlMargins);
-            __ColumnsDistance = style.ColumnsDistance;
-            __RowsDistance = style.RowsDistance;
+            __ColumnsDistance = (style.ColumnsDistance >= 0 ? style.ColumnsDistance : 0);
+            __RowsDistance = (style.RowsDistance >= 0 ? style.RowsDistance : 0);
             __ColumnImplicitSize = 50;
             __RowImplicitSize = 20;
-            __TopLabelOffsetX = 3;
-            __BottomLabelOffsetX = 3;
+            __TopLabelOffsetX = style.TopLabelOffsetX;
+            __BottomLabelOffsetX = style.BottomLabelOffsetX;
         }
         /// <summary>
         /// Styl panelu, definuje konstantní vlastnosti layoutu
@@ -1766,7 +1785,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private int __BottomLabelOffsetX;
         #endregion
-        #region Tvorba FlowLayoutu pro konkrétní prvky
+        #region Veškerý proces tvorby layoutu: výpočty velikostí řádků a sloupců, určení souřadnic pro jednotlivé buňky a jejich prvky
         /// <summary>
         /// Metoda resetuje celý svůj prostor. 
         /// Následně se volá metoda <see cref="AddFlowItem(IFlowLayoutItem)"/> pro jednotlivé prvky layoutu.
@@ -2369,10 +2388,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 int b = __Rows[item.FlowRowEndIndex.Value].CurrentEnd.Value;
                 int w = r - l;
                 int h = b - t;
-                item.CellBounds = new Bounds(l, t, w, h);
+                item.CellBounds = new ControlBounds(l, t, w, h);
             }
             // Zpracuje souřadnici pro Control
-            Bounds processItemControl(IFlowLayoutItem item, UsedAreaType labelUsedAreas)
+            ControlBounds processItemControl(IFlowLayoutItem item, UsedAreaType labelUsedAreas)
             {
                 // Které prostory může Control využít? Bude expandovat do některých sousedních prostorů, pokud jsou volné?
                 var itemExpand = item.DesignExpandControl ?? ExpandControlType.None;
@@ -2385,6 +2404,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
                 // Souřadnice zvolené oblasti, určené pro umístění Controlu:
                 int l = expLeft ? __Columns[item.FlowColBeginIndex.Value].LabelBeforeBegin.Value : __Columns[item.FlowColBeginIndex.Value].ControlBegin.Value;
+                if (expLeft) l = correctExpandedControlLeftByOffset(item, l);
                 int t = expTop ? __Rows[item.FlowRowBeginIndex.Value].LabelBeforeBegin.Value : __Rows[item.FlowRowBeginIndex.Value].ControlBegin.Value;
                 int r = expRight ? __Columns[item.FlowColEndIndex.Value].LabelAfterEnd.Value : __Columns[item.FlowColEndIndex.Value].ControlEnd.Value;
                 int b = expBottom ? __Rows[item.FlowRowEndIndex.Value].LabelAfterEnd.Value : __Rows[item.FlowRowEndIndex.Value].ControlEnd.Value;
@@ -2429,7 +2449,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     ct = getControlBegin(t, h, ch, vPos == VPositionType.Center, vPos == VPositionType.Bottom);
                 }
 
-                var bounds = new Bounds(cl, ct, cw, ch);
+                var bounds = new ControlBounds(cl, ct, cw, ch);
                 item.ControlBounds = bounds;
                 return bounds;
             }
@@ -2445,8 +2465,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
                 return controlBegin;
             }
+            // Koriguje souřadnici Control.Left v situaci, kdy je Expanded doleva, tedy začíná na souřadnici Cell.Left, a současně by byl Label umístěný Top nebo Bottom a odpovídající Offset záporný...
+            int correctExpandedControlLeftByOffset(IFlowLayoutItem item, int left)
+            {
+                int offset = 0;
+                var labelPos = item.MainLabelExists ? item.LabelPosition : LabelPositionType.None;
+                switch (labelPos)
+                {
+                    case LabelPositionType.Top:
+                        offset = __TopLabelOffsetX;
+                        break;
+                    case LabelPositionType.Bottom:
+                        offset = __BottomLabelOffsetX;
+                        break;
+                }
+                return ((offset >= 0) ? left : left - offset);
+            }
             // Zpracuje souřadnici pro MainLabel
-            void processItemMainLabel(IFlowLayoutItem item, Bounds controlBounds, bool relativeToControl)
+            void processItemMainLabel(IFlowLayoutItem item, ControlBounds controlBounds, bool relativeToControl)
             {
                 int l, w, r, t, h, b;
                 var labelPos = item.LabelPosition;
@@ -2458,7 +2494,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         r = __Columns[item.FlowColBeginIndex.Value].LabelBeforeEnd.Value;
                         t = __Rows[item.FlowRowBeginIndex.Value].ControlBegin.Value;
                         h = __Rows[item.FlowRowBeginIndex.Value].ControlSize;
-                        item.MainLabelBounds = new Bounds(l, t, (r - l), h);
+                        item.MainLabelBounds = new ControlBounds(l, t, (r - l), h);
                         item.MainLabelAlignment = (labelPos == LabelPositionType.BeforeLeft ? ContentAlignmentType.MiddleLeft : (labelPos == LabelPositionType.BeforeRight ? ContentAlignmentType.MiddleRight : ContentAlignmentType.MiddleCenter));
                         break;
                     case LabelPositionType.After:
@@ -2466,14 +2502,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         w = __Columns[item.FlowColEndIndex.Value].LabelAfterSize;
                         t = __Rows[item.FlowRowBeginIndex.Value].ControlBegin.Value;
                         h = __Rows[item.FlowRowBeginIndex.Value].ControlSize;
-                        item.MainLabelBounds = new Bounds(l, t, w, h);
+                        item.MainLabelBounds = new ControlBounds(l, t, w, h);
                         item.MainLabelAlignment = ContentAlignmentType.MiddleLeft;
                         break;
                     case LabelPositionType.Top:
                         if (relativeToControl && controlBounds != null)
                         {
-                            l = controlBounds.Left.Value + __TopLabelOffsetX;
-                            r = controlBounds.Right.Value;
+                            l = controlBounds.Left + __TopLabelOffsetX;
+                            r = controlBounds.Right;
                         }
                         else
                         {
@@ -2482,14 +2518,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         }
                         t = __Rows[item.FlowRowBeginIndex.Value].LabelBeforeBegin.Value;
                         b = __Rows[item.FlowRowBeginIndex.Value].LabelBeforeEnd.Value;
-                        item.MainLabelBounds = new Bounds(l, t, (r - l), (b - t));
+                        item.MainLabelBounds = new ControlBounds(l, t, (r - l), (b - t));
                         item.MainLabelAlignment = ContentAlignmentType.BottomLeft;
                         break;
                     case LabelPositionType.Bottom:
                         if (relativeToControl && controlBounds != null)
                         {
-                            l = controlBounds.Left.Value + __TopLabelOffsetX;
-                            r = controlBounds.Right.Value;
+                            l = controlBounds.Left + __TopLabelOffsetX;
+                            r = controlBounds.Right;
                         }
                         else
                         {
@@ -2498,19 +2534,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         }
                         t = __Rows[item.FlowRowEndIndex.Value].LabelAfterBegin.Value;
                         b = __Rows[item.FlowRowEndIndex.Value].LabelAfterEnd.Value;
-                        item.MainLabelBounds = new Bounds(l, t, (r - l), (b - t));
+                        item.MainLabelBounds = new ControlBounds(l, t, (r - l), (b - t));
                         item.MainLabelAlignment = ContentAlignmentType.TopLeft;
                         break;
                 }
             }
             // Zpracuje souřadnici pro SuffixLabel
-            void processItemSuffixLabel(IFlowLayoutItem item, Bounds controlBounds, bool relativeToControl)
+            void processItemSuffixLabel(IFlowLayoutItem item, ControlBounds controlBounds, bool relativeToControl)
             {
                 int l = __Columns[item.FlowColEndIndex.Value].LabelAfterBegin.Value;
                 int w = __Columns[item.FlowColEndIndex.Value].LabelAfterSize;
                 int t = __Rows[item.FlowRowBeginIndex.Value].ControlBegin.Value;
                 int h = __Rows[item.FlowRowBeginIndex.Value].ControlSize;
-                item.SuffixLabelBounds = new Bounds(l, t, w, h);
+                item.SuffixLabelBounds = new ControlBounds(l, t, w, h);
                 item.SuffixLabelAlignment = ContentAlignmentType.MiddleLeft;
             }
         }
@@ -3275,11 +3311,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Výsledná souřadnice celé buňky
         /// </summary>
-        Bounds CellBounds { get; set; }
+        ControlBounds CellBounds { get; set; }
         /// <summary>
         /// Výsledná souřadnice MainLabel v rámci parenta
         /// </summary>
-        Bounds MainLabelBounds { get; set; }
+        ControlBounds MainLabelBounds { get; set; }
         /// <summary>
         /// Zarovnání textu MainLabel v prostoru <see cref="MainLabelBounds"/>
         /// </summary>
@@ -3287,11 +3323,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Výsledná souřadnice Controlu v rámci parenta
         /// </summary>
-        Bounds ControlBounds { get; set; }
+        ControlBounds ControlBounds { get; set; }
         /// <summary>
         /// Výsledná souřadnice SuffixLabel v rámci parenta
         /// </summary>
-        Bounds SuffixLabelBounds { get; set; }
+        ControlBounds SuffixLabelBounds { get; set; }
         /// <summary>
         /// Zarovnání textu SuffixLabel v prostoru <see cref="SuffixLabelBounds"/>
         /// </summary>
