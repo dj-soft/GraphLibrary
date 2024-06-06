@@ -935,7 +935,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// a vloží je do dodaného controlu <paramref name="target"/>.
         /// <para/>
         /// Načítá hodnoty odpovídající třídám: <see cref="DfBase"/>, <see cref="DfBaseControl"/>, <see cref="DfBaseInputControl"/>,
-        /// <see cref="DfBaseInputTextControl"/>, <see cref="DfBaseLabeledInputControl"/>, <see cref="DfSubButton"/>.<br/>
+        /// <see cref="DfBaseInputTextControl"/>, <see cref="DfBaseLabeledInputControl"/>, <see cref="DfSubTextItem"/>, <see cref="DfSubButton"/>.<br/>
         /// Dále načítá hodnoty pro třídy containerů: <see cref="DfBaseArea"/>, <see cref="DfBaseContainer"/>.
         /// </summary>
         /// <param name="xElement">Element, z něhož se mají načítat atributy</param>
@@ -967,6 +967,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (target is DfBaseInputControl inputControl)
             {
                 inputControl.Required = _ReadAttributeEnumN<RequiredType>(xElement, "Required");
+                inputControl.ColumnName = _ReadAttributeString(xElement, "ColumnName", null);
+                inputControl.TabIndex = _ReadAttributeInt32N(xElement, "TabIndex");
             }
             if (target is DfBaseInputTextControl textControl)
             {
@@ -980,6 +982,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 labeledControl.LabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPosition", _FixLabelPosition);
                 labeledControl.LabelWidth = _ReadAttributeInt32N(xElement, "LabelWidth");
                 labeledControl.SuffixLabel = _ReadAttributeString(xElement, "SuffixLabel", null);
+            }
+            if (target is DfSubTextItem subTextItem)
+            {
+                subTextItem.Text = _ReadAttributeString(xElement, "Text", null);
+                subTextItem.IconName = _ReadAttributeString(xElement, "IconName", null);
+            }
+            if (target is DfSubButton subButton)
+            {
+                subButton.ActionType = _ReadAttributeEnumN<SubButtonActionType>(xElement, "ActionType");
+                subButton.ActionData = _ReadAttributeString(xElement, "ActionData", null);
             }
 
             // Potomci směrem k Containerům:

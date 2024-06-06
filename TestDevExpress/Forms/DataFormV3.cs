@@ -509,7 +509,7 @@ namespace TestDevExpress.Forms
                 if (dxInfo.FormatVersion == FormatVersionType.Version4)
                 {
                     var dfForm = DxDForm.DfTemplateLoader.LoadTemplate(loadingArgs);
-                    var layoutArgs = new DfTemplateLayoutArgs() { DataForm = dfForm, Errors = loadingArgs.Errors, LogTime = true, InfoSource = this };
+                    var layoutArgs = new DfTemplateLayoutArgs() { DataForm = dfForm, Errors = loadingArgs.Errors, LogTime = true, InfoSource = this, SaveDebugImages = true };
                     DxDForm.DfTemplateLayout.CreateLayout(layoutArgs);
                     if (layoutArgs.HasErrors)              // Zde jsou i chyby sdílené z procesu Loading
                         DxComponent.ShowMessageWarning($"Zadaný dokument '{fileFrmXml}' obsahuje chyby:\r\n{loadingArgs.ErrorsText}");

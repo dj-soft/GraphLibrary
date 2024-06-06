@@ -10,22 +10,24 @@
 		  AddUda="True" UdaLabelPosition="Top"
           ColumnWidths="200;300;100" >
 
-    <panel Name="test3" Title="pavel 4col" ColumnsCount="5" AutoLabelPosition="BeforeRight" ColumnsDistance="0" RowsDistance="0" ControlMargins="1,1" TopLabelOffsetX="12" >
-        <textbox Name="pkrefer1a" Width="150" State="Invisible,TabSkip"/>
-        <textbox Name="pknazev1b" Width="250" LabelPosition="None"/>
-        <image Name="pkimage1c" RowSpan="3" Width="120" Height="100%" LabelPosition="None" />
-        <placeholder Name="pkplace1d" RowSpan="2" Width="200" Height="100%" />
-        <image Name="pkimage1e" RowSpan="2" Width="150" Height="100%" LabelPosition="None" />
+    <panel Name="panel1" Title="Test 1" ColumnsCount="5" AutoLabelPosition="None" ColumnsDistance="0" RowsDistance="0" ControlMargins="1,1" TopLabelOffsetX="6" >
+		<textbox Name="r0c0" Width="150" />
+		<textbox Name="r0c1" Width="150" />
+		<textbox Name="r0c2" Width="150" />
+		<textbox Name="r0c3" Width="150" />
+		<textbox Name="r0c4" Width="150" />
+		<textbox Name="r1c0" />
+		<placeholder Name="place1" RowSpan="3" ColSpan="3" />
+		<textbox Name="r1c4" />
+		<textbox Name="r2c0" />
+		<textbox Name="r2c4" />
+		<textbox Name="r3c0" />
+		<textbox Name="r3c4" />
+		<textbox Name="r4c0" />
+		<textbox Name="r4c123" ColSpan="3" />
+		<textbox Name="r4c4"/>
 
-        <textbox Name="pkrefer2a" />
-        <textbox Name="pknazev2b" LabelPosition="None" />
-
-        <textbox Name="pkpozn3ab" ColSpan="2"/>
-        <textbox Name="pkinfo3de" ColSpan="2" />
-
-        <editbox Name="pkpozn4abcde" ColSpan="5" LabelPosition="Top" ExpandControl="Left" Height="80"/>
-
-        <button Name="InPlace" Bounds="3,3,60,30" ParentBounds="pkplace1d" Text="ButtOn" />
+		<button Name="inbutton" ParentBounds="place1"/>
     </panel>
 
 </template>

@@ -39,7 +39,7 @@
         <textbox Name="row4col2" ColIndex="2" />
     </panel>
 
-    <panel Name="test3" Title="pavel" ColumnsCount="3" AutoLabelPosition="Up" >
+    <panel Name="test4" Title="pavel" ColumnsCount="3" AutoLabelPosition="Up" >
         <textbox Name="pkrefer1" Width="150"/>
         <textbox Name="pknazev1" Width="250"/>
         <textbox Name="pkimage1" RowSpan="3" Width="120"/>
@@ -48,7 +48,7 @@
         <textbox Name="pkpozn3" ColSpan="2"/>
     </panel>
 
-    <panel Name="test3" Title="pavel 4col" ColumnsCount="5" AutoLabelPosition="Up" >
+    <panel Name="test5" Title="pavel 4col" ColumnsCount="5" AutoLabelPosition="Up" >
         <textbox Name="pkrefer1a" Width="150"/>
         <textbox Name="pknazev1b" Width="250"/>
         <image Name="pkimage1c" RowSpan="3" Width="120"/>
@@ -64,7 +64,7 @@
         <textbox Name="pkpozn4abcde" ColSpan="5"/>
     </panel>
 
-    <panel Name="middle2" Title="Zajímavý" ColumnWidths="120;250" AutoLabelPosition="Up" >
+    <panel Name="test6" Title="Zajímavý" ColumnWidths="120;250" AutoLabelPosition="Up" >
         <textbox Name="reference_subjektu4" ColumnName="reference_subjektu" Width="120" Label="Číslo faktury"/>
         <textbox Name="nazev_subjektu4" ColumnName="nazev_subjektu" Width="300" Label="Variabilní symbol"/>
         <textbox Name="kontakt_refer" LabelWidth="420" Label="Dodavatel zboží, které je zde fakturováno:" />
@@ -75,7 +75,7 @@
         <image Name="Obrazek" Bounds="" ImageName="pic/open_mail"/>
     </panel>
 
-    <panel Name="maxim1" Title="Neobyčejný" ColumnWidths="120;250" AutoLabelPosition="Up" BackColorLight="#662211" BackColorDark="#220804" BackImageName="pic/back/angle_violet" >
+    <panel Name="test7" Title="Neobyčejný" ColumnWidths="120;250" AutoLabelPosition="Up" BackColorLight="#662211" BackColorDark="#220804" BackImageName="pic/back/angle_violet" >
         <textboxbutton Name="dokument" ColumnName="reference_subjektu" Label="Scan faktury" Bounds="25,30,400,20">
             <rightButton Name="open_doc" IconName="pic/opendoc"/>
             <rightButton Name="open_rec" IconName="pic/openrec"/>
@@ -83,7 +83,23 @@
         <image Name="logo" ImageName="pic/images/logo01" Bounds="25,60,320,240"/>
     </panel>
 
+	<panel Name="test8" Title="Test zajímavý" ColumnsCount="5" AutoLabelPosition="BeforeRight" ColumnsDistance="0" RowsDistance="0" ControlMargins="1,1" TopLabelOffsetX="6" >
+		<button Name="InPlace" Bounds="3,3,100%,100%" ParentBounds="pkplace1d" Text="ButtOn" ExpandControl="All" />
 
+		<textbox Name="pkrefer1a" Width="150" State="Invisible,TabSkip"/>
+		<textbox Name="pknazev1b" Width="250" LabelPosition="None"/>
+		<image Name="pkimage1c" RowSpan="3" Width="120" Height="100%" LabelPosition="None" />
+		<placeholder Name="pkplace1d" RowSpan="2" Width="200" Height="100%" />
+		<image Name="pkimage1e" RowSpan="2" Width="150" Height="100%" LabelPosition="None" />
+
+		<textbox Name="pkrefer2a" ColumnName="dodav_refer" TabIndex="12" />
+		<textbox Name="pknazev2b" LabelPosition="None" TabIndex="15" />
+
+		<textbox Name="pkpozn3ab" ColSpan="2"/>
+		<textbox Name="pkinfo3de" ColSpan="2" />
+
+		<editbox Name="pkpozn4abcde" ColSpan="5" LabelPosition="Top" ExpandControl="Left" Height="80"/>
+	</panel>
 
 
 </template>

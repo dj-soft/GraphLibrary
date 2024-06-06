@@ -863,6 +863,11 @@
 						<xs:documentation xml:lang="cs-cz">Explicitně zadaný název sloupce (datového prvku), jehož data tento prvek zobrazuje. Běžně se nemusí zadávat, implicitně se data čtou a ukládají z/do datového sloupce se jménem podle atributu 'Name'. Pokud ale je třeba jeden atribut/vztah zobrazit na více místech formuláře, pak se pro tyto různé controly zadá různé 'Name' (musí být unikátní), a použije se pro ně shodné 'ColumnName'.</xs:documentation>
 					</xs:annotation>
 				</xs:attribute>
+				<xs:attribute name="TabIndex" type="xs:int">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Pořadí prvku při procházení pomocí Tab.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
 			</xs:extension>
         </xs:complexContent>
     </xs:complexType>

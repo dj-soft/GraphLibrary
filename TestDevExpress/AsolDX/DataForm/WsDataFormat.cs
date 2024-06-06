@@ -1004,6 +1004,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// Pokud ale je třeba jeden atribut/vztah zobrazit na více místech formuláře, pak se pro tyto různé controly zadá různé 'Name' (musí být unikátní), a použije se pro ně shodné 'ColumnName'.
         /// </summary>
         public string ColumnName { get; set; }
+        /// <summary>
+        /// Pořadí prvku při procházení pomocí Tab.
+        /// </summary>
+        public int? TabIndex { get; set; }
     }
     /// <summary>
     /// Bázová třída pro všechny samostatné controly bez ohledu na jejich vlastní interaktivitu - tedy Label, Picture, Panel; a dále i pro interaktivní controly: TextBox, Button, CheckBox, ComboBox, ...

@@ -598,10 +598,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private ItemInfo _Root { get { return (__Parent?._Root ?? this); } }
             /// <summary>
-            /// Parent prvek. Může být null.
-            /// </summary>
-            private ItemInfo _Parent { get { return __Parent; } }
-            /// <summary>
             /// Styl pro tento prvek. Pokud this je container, pak má definován svůj vlastní styl (<see cref="__Style"/>).
             /// Pokud jej nemá (typicky proto, že jde o Control), pak zde vrací aktuální styl ze svého Parenta.
             /// </summary>
@@ -634,7 +630,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     var type = __DfItem.GetType().Name;
                     var name = __DfItem.Name;
                     var text = type + (!String.IsNullOrEmpty(name) ? $" '{name}'" : "");
-                    if (this.LayoutMode == LayoutModeType.Flow)
+                    if (this.__LayoutMode == LayoutModeType.Flow)
                     {
                         text += $"; Flow [ RowIndex: {__FlowRowBeginIndex}";
                         if (__RowSpan.HasValue && __RowSpan.Value > 1)
@@ -983,28 +979,20 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int? IDataFormItem.ImplicitSuffixLabelHeight { get { return __ImplicitSuffixLabelHeight; } set { __ImplicitSuffixLabelHeight = value; } }
             #endregion
 
-            /// <summary>
-            /// Obsahuje true u prvku, jehož Bounds určují režim Fixed souřadnice, prvek sám se tedy neúčastní FlowLayoutu
-            /// </summary>
             internal bool IsBoundsFixedMode { get { return DfTemplateLayout.IsBoundsFixedMode(__Bounds); } }
-            /// <summary>
-            /// Obsahuje true u prvku, který je <see cref="IsBoundsFixedMode"/> a navíc má zadaný Parent prvek, který definuje jeho Parent souřadnice.
-            /// Tedy tento prvek má zadané svoje explicitní souřadnice <see cref="DfBaseControl.Bounds"/>, 
-            /// a má zadané jméno prvku <see cref="DfBaseControl.ParentBounds"/>, které odkazuje na jiný prvek - typicky PlaceHolder, 
-            /// a jehož souřadnice představují "Parent" prostor pro zzdejší Fixed prvek.
-            /// </summary>
             internal bool IsRelativeFixedMode { get { return IsBoundsFixedMode && !String.IsNullOrEmpty(__ParentBounds); } }
-            /// <summary>
-            /// Režim layoutu
-            /// </summary>
-            internal LayoutModeType LayoutMode { get { return __LayoutMode; } }
             #endregion
             #region Další data o prvku - primárně pro IFlowLayoutItem
             /// <summary>
             /// Inicializuje data pro Flow layout
             /// </summary>
             private void _InitFlow()
-            { }
+            {
+                bool isFixedAbsolute = DfTemplateLayout.IsBoundsFixedMode(__Bounds);
+                bool isFixedToParent = !String.IsNullOrEmpty(__ParentBounds);
+                __LayoutMode = (isFixedToParent ? LayoutModeType.FixedRelative :
+                               (isFixedAbsolute ? LayoutModeType.FixedAbsolute : LayoutModeType.Flow));
+            }
             /// <summary>
             /// Resetuje data pro Flow layout
             /// </summary>
@@ -1015,7 +1003,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 __FlowColEndIndex = null;
                 __AcceptedWidth = false;
                 __AcceptedHeight = false;
-                __LayoutMode = LayoutModeType.None;
             }
             /// <summary>
             /// Režim layoutu
@@ -1069,15 +1056,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Algoritmus FlowLayout pro prvek zajistil potřebnou výšku
             /// </summary>
             private bool __AcceptedHeight;
-
-            /// <summary>
-            /// Index sloupce, na kterém reálně začíná v režimu FlowLayout.
-            /// </summary>
-            internal int? FlowColumnBeginIndex { get { return __FlowColBeginIndex; } }
-            /// <summary>
-            /// Index sloupce, na kterém reálně končí v režimu FlowLayout.
-            /// </summary>
-            internal int? FlowColumnEndIndex { get { return __FlowColEndIndex; } }
 
             #region IFlowLayoutItem : implementace
             // Designové, čerpané z frm.xml:
@@ -1144,8 +1122,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             internal void ProcessPanel()
             {
+                var args = this._LayoutArgs;
+                var startTime = DxComponent.LogTimeCurrent;
                 _ProcessContainer();             // Zpracuje this container, a rekurzivně jeho Child containery etc
                 _PreparePanelAbsoluteBounds();   // Naplní absolutní souřadnice do všech (i vnořených) prvků
+                if (args.LogTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Layout panel '{__Name}': {DxComponent.LogTokenTimeMicrosec}", startTime);
+
+                if (args.SaveDebugImages) _CreateImageFile();
             }
             /// <summary>
             /// Zajistí plné zpracování this containeru, rekurzivně jeho Child containerů a zdejších Controlů.
@@ -1223,8 +1206,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
                 // Rozdělím Child prvky na Fixed a Flow:
                 var allDictionary = new Dictionary<string, ItemInfo>();
-                var fixedItems = new List<ItemInfo>();
                 var floatItems = new List<ItemInfo>();
+                var fixedRelativeItems = new List<ItemInfo>();
+                var fixedAbsoluteItems = new List<ItemInfo>();
 
                 var childs = this.__Childs;
                 foreach (var item in childs)
@@ -1233,17 +1217,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     if (key != null && !allDictionary.ContainsKey(key))
                         allDictionary.Add(key, item);
 
-                    if (item.IsBoundsFixedMode)
-                    {   // Fixed mode:
-                        // Ten má svoje souřadnice fixně definované, a použije je bez dalších úprav na samém konci tvorby layoutu.
-                        item.__LayoutMode = LayoutModeType.Fixed;
-                        fixedItems.Add(item);
-                    }
-                    else
-                    {   // Flow mode:
-                        // Zpracujeme pomocí FlowLayoutu:
-                        item.__LayoutMode = LayoutModeType.Flow;
-                        floatItems.Add(item);
+                    switch (item.__LayoutMode)
+                    {
+                        case LayoutModeType.Flow:
+                            floatItems.Add(item); break;
+                        case LayoutModeType.FixedRelative:
+                            fixedRelativeItems.Add(item); break;
+                        case LayoutModeType.FixedAbsolute:
+                            fixedAbsoluteItems.Add(item); break;
                     }
                 }
 
@@ -1258,30 +1239,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         flowLayout.ProcessFlowItems();
                         this.__FlowLayoutBounds = flowLayout.FlowLayoutBounds;
 
-                        // var text = flowLayout.MapOfCellsAscii;
-
-                        // Nyní mohu získat souřadnice určené na základě FlowLayoutu 
-                        //  pro takové FixedItems, které chtějí být umístěny relativně do některého konkrétního FlowLayout prvku (typicky do PlaceHolderu):
-                        foreach (var fixedItem in fixedItems.Where(i => i.IsRelativeFixedMode))
-                            flowLayout.SearchParentBounds(fixedItem, fixedItem.__ParentBounds);
+                        // Nyní mohu získat souřadnice, určené na základě FlowLayoutu pro prvky typu FixedRelative:
+                        foreach (var relativeItem in fixedRelativeItems)
+                            relativeItem.__CellBounds = flowLayout.SearchParentBounds(relativeItem.__ParentBounds);
                     }
                 }
 
-                // Pokud existují Fixed items, pak nyní umožním jejich dopočty:
-                if (fixedItems.Count > 0)
+                // Dořeším prvky FixedRelative:
+                foreach (var relativeItem in fixedRelativeItems)
                 {
-                    foreach (var fixedItem in fixedItems)
+                    if (relativeItem.__CellBounds != null)
                     {
-                        if (fixedItem.__CellBounds != null)
-                        {
-                            var cellBounds = fixedItem.__CellBounds;
-                            fixedItem.__ControlBounds = new ControlBounds(cellBounds.ControlLeft, cellBounds.ControlTop, cellBounds.ControlWidth, cellBounds.ControlHeight);
-                            fixedItem.__ControlExists = true;
-                        }
+                        relativeItem.__ControlExists = true;
+                        DfFlowLayoutInfo.ProcessInnerItemBounds(relativeItem, __Style);
                     }
                 }
 
-                var image = _CreateImageFile();
+                // Dořeším prvky FixedAbsolute:
+                foreach (var absoluteItem in fixedAbsoluteItems)
+                { }
             }
 
             /// <summary>
@@ -1325,18 +1301,34 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <returns></returns>
             private string _CreateImageFile()
             {
+                var startTime = DxComponent.LogTimeCurrent;
+
                 string file = null;
+
+                var args = this._LayoutArgs;
+                string dfName = args.DataForm.FileName;
+                dfName = (!String.IsNullOrEmpty(dfName) ? System.IO.Path.GetFileNameWithoutExtension(dfName) : "dataform");      // dw_simple.frm.xml   =>   dw_simple.frm
+                if (dfName.Contains(".")) dfName = System.IO.Path.GetFileNameWithoutExtension(dfName);                           // dw_simple.frm       =>   dw_simple
+                string id = dfName + "_" + this.__Name;
+
                 using (var image = _CreateImage())
                 {
                     if (image != null)
                     {
                         string cnt = ((__ImageCounter++) % 1000).ToString("000");
-                        string name = $"ItemLayout_{DateTime.Now:yyyyMMdd_HHmmss}_{cnt}.png";
+                        string name = $"ItemLayout_{id}_{DateTime.Now:yyyyMMdd_HHmmss}_{cnt}.png";
                         string path = System.IO.Path.GetTempPath();
                         file = System.IO.Path.Combine(path, name);
                         image.Save(file, System.Drawing.Imaging.ImageFormat.Png);
                     }
                 }
+
+                if (file != null)
+                {
+                    if (args.DebugImages is null) args.DebugImages = new List<string>();
+                    args.DebugImages.Add(file);
+                }
+                if (args.LogTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Save Debug image for panel '{__Name}': {DxComponent.LogTokenTimeMicrosec}", startTime);
                 return file;
             }
             /// <summary>
@@ -2003,17 +1995,54 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _ProcessItemsBounds();
         }
         /// <summary>
-        /// Pro zadaný Fixed prvek najde jeho Parenta a vepíše jeho souřadnice do daného prvku.
+        /// Metoda vyhledá zdejší evidovaný Floated prvek (ten je definován dodaným jménem <paramref name="parentName"/>), a vrátí jeho souřadnice celé buňky (<see cref="CellMatrixInfo"/>).
+        /// Volající typiky tuto souřadnici umístí do <see cref="IFlowLayoutItem.CellBounds"/> jiného prvku, který může následně pozicovat v rámci daného prostoru.
+        /// <para/>
+        /// Tato metoda tedy musí být vyvolaná až po vložení všech FlowLayout prvků metodou <see cref="AddFlowItem(IFlowLayoutItem)"/>, a po zpracování celého Flow layoutu metodou <see cref="ProcessFlowItems"/>.
+        /// <para/>
+        /// Typické použití: kostru Panelu v rámci DataFormu tvoří Floated prvky (standardní plovoucí layoutu: buňky, sloupce, ColSpan, RowSpan, atd).
+        /// Designer v rámci tohoto layoutu vyhradí určitou část (lze použít ColSpan i RowSpan) pro nějaký Fixed prvek: vloží tedy do layoutu <c>PlaceHolder</c> jako Floated prvek, 
+        /// a následně může zvolené Fixed prvky umístit dovnitř vytvořeného prostoru (lze do jednoho <c>PlaceHolder</c> vkládat více prvků, typicky relativně k jeho velikosti).
         /// </summary>
-        /// <param name="layoutItem"></param>
         /// <param name="parentName"></param>
-        public void SearchParentBounds(IFlowLayoutItem layoutItem, string parentName)
+        public CellMatrixInfo SearchParentBounds(string parentName)
         {
             string key = DfTemplateLayout.GetItemKey(parentName);
-            if (key != null && this.__ItemsDict.TryGetValue(key, out var parentItem))
-            {
-                layoutItem.CellBounds = parentItem.CellBounds;
-            }
+            if (key != null && this.__ItemsDict.TryGetValue(key, out var parentItem)) return parentItem.CellBounds;
+            return null;
+        }
+        /// <summary>
+        /// Metoda určí a uloží do prvku <see cref="IFlowLayoutItem"/> <paramref name="item"/> souřadnice pro MainLabel, pro Control a pro SuffixLabel podle standardních pravidel.
+        /// Metoda je používána pro běžné prvky FlowLayoutu, a i pro prvky, které mají Fixed layout, ale chtějí se částečně umístit do okolního FlowLayoutu pomocí Parenta = <c>PlaceHolder</c>.
+        /// </summary>
+        /// <param name="item">Prvek, do kterého chceme vypočítat souřadnice</param>
+        /// <param name="layoutStyle">Definice stylu obsahuje v sobě potřebné hodnoty</param>
+        public static void ProcessInnerItemBounds(IFlowLayoutItem item, DfTemplateLayout.StyleInfo layoutStyle)
+        {
+            if (item is null) throw new ArgumentNullException($"DfFlowLayoutInfo.ProcessInnerItemBounds fail: item is null.");
+            if (item.CellBounds is null) throw new ArgumentNullException($"DfFlowLayoutInfo.ProcessInnerItemBounds fail: item.CellBounds is null.");
+            if (layoutStyle is null) throw new ArgumentNullException($"DfFlowLayoutInfo.ProcessInnerItemBounds fail: layoutStyle is null.");
+
+            bool labelsRelativeToControl = true;
+            int topLabelOffsetX = layoutStyle.TopLabelOffsetX;
+            int bottomLabelOffsetX = layoutStyle.BottomLabelOffsetX;
+
+            _ProcessInnerItemBounds(item, labelsRelativeToControl, topLabelOffsetX, bottomLabelOffsetX);
+        }
+        /// <summary>
+        /// Metoda určí a uloží do prvku <see cref="IFlowLayoutItem"/> <paramref name="item"/> souřadnice pro MainLabel, pro Control a pro SuffixLabel podle standardních pravidel.
+        /// Metoda je používána pro běžné prvky FlowLayoutu, a i pro prvky, které mají Fixed layout, ale chtějí se částečně umístit do okolního FlowLayoutu pomocí Parenta = <c>PlaceHolder</c>.
+        /// </summary>
+        /// <param name="item">Prvek, do kterého chceme vypočítat souřadnice</param>
+        /// <param name="labelsRelativeToControl">Příznak, že labely chceme umísťovat přiměřeně k prostoru controlu (true) / exaktně do mřížky okolních prvků (false)</param>
+        /// <param name="topLabelOffsetX">Offset X pro labely umístěné Top</param>
+        /// <param name="bottomLabelOffsetX">Offset X pro labely umístěné Bottom</param>
+        public static void ProcessInnerItemBounds(IFlowLayoutItem item, bool labelsRelativeToControl, int topLabelOffsetX, int bottomLabelOffsetX)
+        {
+            if (item is null) throw new ArgumentNullException($"DfFlowLayoutInfo.ProcessInnerItemBounds fail: item is null.");
+            if (item.CellBounds is null) throw new ArgumentNullException($"DfFlowLayoutInfo.ProcessInnerItemBounds fail: item.CellBounds is null.");
+
+            _ProcessInnerItemBounds(item, labelsRelativeToControl, topLabelOffsetX, bottomLabelOffsetX);
         }
         /// <summary>
         /// Resetuje hodnoty ve sloupcích a řádcích
@@ -2381,25 +2410,34 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void _ProcessItemsBounds()
         {
-            bool labelsRelativeToControl = __LabelsRelativeToControl;
             // Zpracuje všechny prvky:
             foreach (var i in __Items)
             {
-                processItemCell(i);
+                i.CellBounds = new CellMatrixInfo(__Columns[i.FlowColBeginIndex.Value], __Columns[i.FlowColEndIndex.Value], __Rows[i.FlowRowBeginIndex.Value], __Rows[i.FlowRowEndIndex.Value]);
+                _ProcessInnerItemBounds(i, __LabelsRelativeToControl, __TopLabelOffsetX, __BottomLabelOffsetX);
+            }
+        }
+        /// <summary>
+        /// Metoda určí a uloží do prvku <see cref="IFlowLayoutItem"/> <paramref name="item"/> souřadnice pro MainLabel, pro Control a pro SuffixLabel podle standardních pravidel.
+        /// Metoda je používána pro běžné prvky FlowLayoutu, a i pro prvky, které mají Fixed layout, ale chtějí se částečně umístit do okolního FlowLayoutu pomocí Parenta = <c>PlaceHolder</c>.
+        /// </summary>
+        /// <param name="item">Prvek, do kterého chceme vypočítat souřadnice</param>
+        /// <param name="labelsRelativeToControl">Příznak, že labely chceme umísťovat přiměřeně k prostoru controlu (true) / exaktně do mřížky okolních prvků (false)</param>
+        /// <param name="topLabelOffsetX">Offset X pro labely umístěné Top</param>
+        /// <param name="bottomLabelOffsetX">Offset X pro labely umístěné Bottom</param>
+        private static void _ProcessInnerItemBounds(IFlowLayoutItem item, bool labelsRelativeToControl, int topLabelOffsetX, int bottomLabelOffsetX)
+        {
+            // Sekvence:
+            var mainLabelArea = getMainLabelArea();
+            var suffixLabelArea = getSuffixLabelArea(mainLabelArea);
+            var controlBounds = processItemControl(mainLabelArea | suffixLabelArea);
+            if (mainLabelArea != UsedAreaType.None) processItemMainLabel(controlBounds);
+            if (suffixLabelArea != UsedAreaType.None) processItemSuffixLabel(controlBounds);
+            // hotovo.
 
-                var mainLabelArea = getMainLabelArea(i);
-                var suffixLabelArea = getSuffixLabelArea(i, mainLabelArea);
-                var controlBounds = processItemControl(i, mainLabelArea | suffixLabelArea);
-                if (mainLabelArea != UsedAreaType.None) processItemMainLabel(i, controlBounds, labelsRelativeToControl);
-                if (suffixLabelArea != UsedAreaType.None) processItemSuffixLabel(i, controlBounds, labelsRelativeToControl);
-            }
-            // Do prvku vepíše souřadnice celé buňky
-            void processItemCell(IFlowLayoutItem item)
-            {
-                item.CellBounds = new CellMatrixInfo(__Columns[item.FlowColBeginIndex.Value], __Columns[item.FlowColEndIndex.Value], __Rows[item.FlowRowBeginIndex.Value], __Rows[item.FlowRowEndIndex.Value]);
-            }
+
             // Metoda zjistí, která oblast buňky bude obsazena Main Labelem.
-            UsedAreaType getMainLabelArea(IFlowLayoutItem item)
+            UsedAreaType getMainLabelArea()
             {   // Pokud MainLabel existuje, tak podle jeho pozice:
                 var labelPos = item.MainLabelExists ? item.LabelPosition : LabelPositionType.None;
                 switch (labelPos)
@@ -2413,12 +2451,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 return UsedAreaType.None;
             }
             // Metoda zjistí, která oblast buňky bude obsazena Suffix Labelem.
-            UsedAreaType getSuffixLabelArea(IFlowLayoutItem item, UsedAreaType mainLabelArea)
+            UsedAreaType getSuffixLabelArea(UsedAreaType mainLabelArea)
             {   // Poud SuffixLabel existuje 
                 return (item.SuffixLabelExists && mainLabelArea != UsedAreaType.Right ? UsedAreaType.Right : UsedAreaType.None);
             }
             // Zpracuje souřadnici pro Control
-            ControlBounds processItemControl(IFlowLayoutItem item, UsedAreaType labelUsedAreas)
+            ControlBounds processItemControl(UsedAreaType labelUsedAreas)
             {
                 // Které prostory může Control využít? Bude expandovat do některých sousedních prostorů, pokud jsou volné?
                 var itemExpand = item.DesignExpandControl ?? ExpandControlType.None;
@@ -2431,7 +2469,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
                 // Souřadnice zvolené oblasti, určené pro umístění Controlu:
                 var cellBounds = item.CellBounds;
-                int l = expLeft ? correctExpandedControlLeftByOffset(item, cellBounds.LeftLabelLeft) : cellBounds.ControlLeft;
+                int l = expLeft ? correctExpandedControlLeftByOffset(cellBounds.LeftLabelLeft) : cellBounds.ControlLeft;
                 int t = expTop ? cellBounds.TopLabelTop : cellBounds.ControlTop;
                 int r = expRight ? cellBounds.RightLabelRight : cellBounds.ControlRight;
                 int b = expBottom ? cellBounds.BottomLabelBottom : cellBounds.ControlBottom;
@@ -2495,17 +2533,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Koriguje souřadnici Control.Left v situaci, kdy je Expanded doleva, tedy Control začíná přímo na samé na souřadnici Cell.Left, 
             //  a současně pokud by byl MainLabel umístěný Top nebo Bottom a odpovídající TopLabelOffsetX / BottomLabelOffsetX by byl záporný,
             //  pak musíme posunout Left Controlu doprava tak, aby předsunutý MainLabel začínal na pozici Left = 0!
-            int correctExpandedControlLeftByOffset(IFlowLayoutItem item, int left)
+            int correctExpandedControlLeftByOffset(int left)
             {
                 int shift = 0;
                 var labelPos = item.MainLabelExists ? item.LabelPosition : LabelPositionType.None;
                 switch (labelPos)
                 {   // Pokud MainLabel bude Nahoře nebo Dole, pak musím vzít do úvahy i OffsetX pro tento Label:
                     case LabelPositionType.Top:
-                        shift = -__TopLabelOffsetX;
+                        shift = -topLabelOffsetX;
                         break;
                     case LabelPositionType.Bottom:
-                        shift = -__BottomLabelOffsetX;
+                        shift = -bottomLabelOffsetX;
                         break;
                 }
                 // Pokud nalezený shift bude kladný (=záporný offset), pak to znamená, že Label bude předsunutý doleva o (shift) pixelů.
@@ -2514,11 +2552,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 return ((shift > 0) ? left + shift : left);
             }
             // Zpracuje souřadnici pro MainLabel
-            void processItemMainLabel(IFlowLayoutItem item, ControlBounds controlBounds, bool relativeToControl)
+            void processItemMainLabel(ControlBounds controlBounds)
             {
                 var cellBounds = item.CellBounds;
+                bool relativeToControl = labelsRelativeToControl && controlBounds != null;
                 if (relativeToControl && controlBounds is null) relativeToControl = false;
-                int l, w, r, t, h, b;
+                int l, r, t, b;
                 var labelPos = item.LabelPosition;
                 switch (labelPos)
                 {
@@ -2540,7 +2579,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         item.MainLabelAlignment = ContentAlignmentType.MiddleLeft;
                         break;
                     case LabelPositionType.Top:
-                        l = (relativeToControl ? controlBounds.Left : cellBounds.ControlLeft) + __TopLabelOffsetX;
+                        l = (relativeToControl ? controlBounds.Left : cellBounds.ControlLeft) + topLabelOffsetX;
                         r = (relativeToControl ? controlBounds.Right : cellBounds.ControlRight);
                         t = cellBounds.TopLabelTop;
                         b = cellBounds.TopLabelBottom;
@@ -2548,7 +2587,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         item.MainLabelAlignment = ContentAlignmentType.BottomLeft;
                         break;
                     case LabelPositionType.Bottom:
-                        l = (relativeToControl ? controlBounds.Left : cellBounds.ControlLeft) + __BottomLabelOffsetX;
+                        l = (relativeToControl ? controlBounds.Left : cellBounds.ControlLeft) + bottomLabelOffsetX;
                         r = (relativeToControl ? controlBounds.Right : cellBounds.ControlRight);
                         t = cellBounds.BottomLabelTop;
                         b = cellBounds.BottomLabelBottom;
@@ -2558,11 +2597,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
             }
             // Zpracuje souřadnici pro SuffixLabel
-            void processItemSuffixLabel(IFlowLayoutItem item, ControlBounds controlBounds, bool relativeToControl)
+            void processItemSuffixLabel(ControlBounds controlBounds)
             {
+                bool relativeToControl = labelsRelativeToControl && controlBounds != null;
                 var cellBounds = item.CellBounds;
                 if (relativeToControl && controlBounds is null) relativeToControl = false;
-                int l, w, r, t, h, b;
+                int l, r, t, b;
                 l = (relativeToControl ? controlBounds.Right + cellBounds.MarginControlRight : cellBounds.RightLabelLeft);
                 r = cellBounds.RightLabelRight;
                 t = cellBounds.ControlTop;
@@ -3756,9 +3796,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// </summary>
     internal enum LayoutModeType
     {
+        /// <summary>
+        /// Neurčeno, bere se jako <see cref="Flow"/>
+        /// </summary>
         None,
-        Fixed,
-        Flow
+        /// <summary>
+        /// Flow = umisťuje se do postupně vznikající mřížky s pevně daným počtem sloupců
+        /// </summary>
+        Flow,
+        /// <summary>
+        /// Fixní, relativně k některému prvku v režimu <see cref="Flow"/>, jehož jméno 'Name' je dáno v <see cref="DfBaseControl.ParentBounds"/>
+        /// </summary>
+        FixedRelative,
+        /// <summary>
+        /// Fixní s přesně danými souřadnicemi X,Y vzhledem k parent containeru
+        /// </summary>
+        FixedAbsolute
     }
     #endregion
     #region class DfTemplateLayoutArgs : Data pro algoritmy rozmístění prvků šablony DataFormu
@@ -3776,6 +3829,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Například vyhledá popisný text pro datový control daného jména, určí velikost textu s daným obsahem a daným stylem, atd...
         /// </summary>
         public IControlInfoSource InfoSource { get; set; }
+        /// <summary>
+        /// Mají se ukládat Debug obrázky? Pak budou jejich jména uložena v <see cref="DebugImages"/>
+        /// </summary>
+        public bool SaveDebugImages { get; set; }
+        /// <summary>
+        /// Debug obrázky, pokud <see cref="SaveDebugImages"/> je true
+        /// </summary>
+        public List<string> DebugImages { get; set; }
     }
     #endregion
     #region class TextDimension : měřítko textu a fontu
