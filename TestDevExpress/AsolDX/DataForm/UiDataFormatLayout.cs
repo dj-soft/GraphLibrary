@@ -313,7 +313,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="bounds"></param>
         /// <returns></returns>
-        internal static bool IsBoundsFixedMode(Bounds bounds)
+        internal static bool IsBoundsFixed(Bounds bounds)
         {
             return (bounds != null && bounds.Left.HasValue && bounds.Top.HasValue);
         }
@@ -979,7 +979,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int? IDataFormItem.ImplicitSuffixLabelHeight { get { return __ImplicitSuffixLabelHeight; } set { __ImplicitSuffixLabelHeight = value; } }
             #endregion
 
-            internal bool IsBoundsFixedMode { get { return DfTemplateLayout.IsBoundsFixedMode(__Bounds); } }
+            internal bool IsBoundsFixedMode { get { return DfTemplateLayout.IsBoundsFixed(__Bounds); } }
             internal bool IsRelativeFixedMode { get { return IsBoundsFixedMode && !String.IsNullOrEmpty(__ParentBounds); } }
             #endregion
             #region Další data o prvku - primárně pro IFlowLayoutItem
@@ -988,10 +988,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private void _InitFlow()
             {
-                bool isFixedAbsolute = DfTemplateLayout.IsBoundsFixedMode(__Bounds);
+                bool isBoundsFixed = DfTemplateLayout.IsBoundsFixed(__Bounds);
                 bool isFixedToParent = !String.IsNullOrEmpty(__ParentBounds);
-                __LayoutMode = (isFixedToParent ? LayoutModeType.FixedRelative :
-                               (isFixedAbsolute ? LayoutModeType.FixedAbsolute : LayoutModeType.Flow));
+                __LayoutMode = (isBoundsFixed && !isFixedToParent ? LayoutModeType.FixedAbsolute :
+                               (isBoundsFixed && isFixedToParent ? LayoutModeType.BoundsInParent :
+                               (!isBoundsFixed && isFixedToParent ? LayoutModeType.FlowInParent :
+                               LayoutModeType.Flow)));
             }
             /// <summary>
             /// Resetuje data pro Flow layout
@@ -1204,10 +1206,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 //  pokud konkrétní Child má definovanou pozici (X,Y), pak mu jen nastavím příznak __LayoutMode = Fixed;
                 //  zde řeším Flow prvky (takové, co nemají X,Y) = zařazuji je do layoutových sloupců, a napočítávám Max hodnoty jejich sloupců:
 
-                // Rozdělím Child prvky na Fixed a Flow:
+                // Rozdělím Child prvky do oddělených seznamů podle kategorie:
                 var allDictionary = new Dictionary<string, ItemInfo>();
-                var floatItems = new List<ItemInfo>();
-                var fixedRelativeItems = new List<ItemInfo>();
+                var flowItems = new List<ItemInfo>();
+                var flowInParentItems = new List<ItemInfo>();
+                var boundsInParentItems = new List<ItemInfo>();
                 var fixedAbsoluteItems = new List<ItemInfo>();
 
                 var childs = this.__Childs;
@@ -1220,33 +1223,37 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     switch (item.__LayoutMode)
                     {
                         case LayoutModeType.Flow:
-                            floatItems.Add(item); break;
-                        case LayoutModeType.FixedRelative:
-                            fixedRelativeItems.Add(item); break;
+                            flowItems.Add(item); break;
+                        case LayoutModeType.FlowInParent:
+                            flowInParentItems.Add(item); break;
+                        case LayoutModeType.BoundsInParent:
+                            boundsInParentItems.Add(item); break;
                         case LayoutModeType.FixedAbsolute:
                             fixedAbsoluteItems.Add(item); break;
                     }
                 }
 
                 // Pokud existují Flow items, vytvořím si FlowLayout = manager pro jejich rozmisťování:
-                if (floatItems.Count > 0)
+                if (flowItems.Count > 0)
                 {
                     using (var flowLayout = new DfFlowLayoutInfo(__Style))
                     {
                         flowLayout.Reset();
-                        foreach (var flowItem in floatItems)
+                        foreach (var flowItem in flowItems)
                             flowLayout.AddFlowItem(flowItem);
                         flowLayout.ProcessFlowItems();
                         this.__FlowLayoutBounds = flowLayout.FlowLayoutBounds;
 
                         // Nyní mohu získat souřadnice, určené na základě FlowLayoutu pro prvky typu FixedRelative:
-                        foreach (var relativeItem in fixedRelativeItems)
-                            relativeItem.__CellBounds = flowLayout.SearchParentBounds(relativeItem.__ParentBounds);
+                        foreach (var flowInParentItem in flowInParentItems)
+                            flowInParentItem.__CellBounds = flowLayout.SearchParentBounds(flowInParentItem.__ParentBounds);
+                        foreach (var boundsInParentItem in boundsInParentItems)
+                            boundsInParentItem.__CellBounds = flowLayout.SearchParentBounds(boundsInParentItem.__ParentBounds);
                     }
                 }
 
                 // Dořeším prvky FixedRelative:
-                foreach (var relativeItem in fixedRelativeItems)
+                foreach (var relativeItem in boundsInParentItems)
                 {
                     if (relativeItem.__CellBounds != null)
                     {
@@ -3801,15 +3808,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         None,
         /// <summary>
-        /// Flow = umisťuje se do postupně vznikající mřížky s pevně daným počtem sloupců
+        /// <see cref="Flow"/> = umisťuje se do postupně vznikající mřížky s pevně daným počtem sloupců. 
+        /// Mřížka určuje i rozložení Labelu a Controlu uvnitř buňky.
         /// </summary>
         Flow,
         /// <summary>
-        /// Fixní, relativně k některému prvku v režimu <see cref="Flow"/>, jehož jméno 'Name' je dáno v <see cref="DfBaseControl.ParentBounds"/>
+        /// <see cref="FlowInParent"/> = sám není součástí FlowLayoutu, ale využívá existující Parent buňku FlowLayoutu pro svoje umístění.
+        /// Parent buňka je specifikována jejím jménem, odkázaným z <see cref="DfBaseControl.ParentBounds"/>.
+        /// Uvnitř buňky je prvek umístěn zcela identicky, jako by byl součástí FlowLayoutu.
+        /// Lze tak do jedné buňky vložit střídavě více prvků a řídit jejich Visible.
         /// </summary>
-        FixedRelative,
+        FlowInParent,
         /// <summary>
-        /// Fixní s přesně danými souřadnicemi X,Y vzhledem k parent containeru
+        /// <see cref="BoundsInParent"/> = sám není součástí FlowLayoutu, ale využívá existující Parent buňku FlowLayoutu pro svoje umístění.
+        /// Parent buňka je specifikována jejím jménem, odkázaným z <see cref="DfBaseControl.ParentBounds"/>.
+        /// V rámci dané buňky je pak umístěn na základě svých Bounds.
+        /// </summary>
+        BoundsInParent,
+        /// <summary>
+        /// <see cref="FixedAbsolute"/> Fixní s přesně danými souřadnicemi X,Y vzhledem k parent containeru. Bez vztahu k FlowLayoutu.
         /// </summary>
         FixedAbsolute
     }
