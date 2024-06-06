@@ -11,12 +11,12 @@
           ColumnWidths="200;300;100" >
 
     <panel Name="simple1" Title="Jednoduchý" ColumnsCount="2" AutoLabelPosition="Top" >
-        <textbox Name="poznamka" ColSpan="2" Width="500"/>
+        <textbox Name="poznamka" ColSpan="2" Width="100%" ExpandControl="FullWidth"/>
         <textbox Name="reference_subjektu" Width="150"/>
-        <textbox Name="nazev_subjektu" />
+        <textbox Name="nazev_subjektu" Width="350"/>
         <placeholder Name="place1" Height="12" ColSpan="2"/>
         <textbox Name="dodavatel_refer" HPosition="Right"/>
-        <textbox Name="dodavatel_nazev"/>
+        <textbox Name="dodavatel_nazev" SuffixLabel="ks"/>
     </panel>
     
 </template>

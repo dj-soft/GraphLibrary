@@ -979,6 +979,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 labeledControl.Label = _ReadAttributeString(xElement, "Label", null);
                 labeledControl.LabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPosition", _FixLabelPosition);
                 labeledControl.LabelWidth = _ReadAttributeInt32N(xElement, "LabelWidth");
+                labeledControl.SuffixLabel = _ReadAttributeString(xElement, "SuffixLabel", null);
             }
 
             // Potomci směrem k Containerům:

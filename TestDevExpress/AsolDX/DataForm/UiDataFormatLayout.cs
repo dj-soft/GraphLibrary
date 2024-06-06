@@ -763,6 +763,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     this.__MainLabelText = labeledInputControl.Label;
                     this.__MainLabelWidth = labeledInputControl.LabelWidth;
                     this.__MainLabelStyle = labeledInputControl.LabelStyle;
+                    this.__SuffixLabelText = labeledInputControl.SuffixLabel;
                 }
 
                 if (dfControl is DfBaseInputTextControl inputTextControl)
@@ -1039,7 +1040,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <summary>
             /// Výsledná souřadnice celé buňky
             /// </summary>
-            private ControlBounds __CellBounds;
+            private CellMatrixInfo __CellBounds;
             /// <summary>
             /// Výsledná souřadnice MainLabel v rámci parenta
             /// </summary>
@@ -1114,7 +1115,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int? IFlowLayoutItem.FlowColEndIndex { get { return __FlowColEndIndex; } set { __FlowColEndIndex = value; } }
             int? IFlowLayoutItem.FlowRowBeginIndex { get { return __FlowRowBeginIndex; } set { __FlowRowBeginIndex = value; } }
             int? IFlowLayoutItem.FlowRowEndIndex { get { return __FlowRowEndIndex; } set { __FlowRowEndIndex = value; } }
-            ControlBounds IFlowLayoutItem.CellBounds { get { return __CellBounds; } set { __CellBounds = value; } }
+            CellMatrixInfo IFlowLayoutItem.CellBounds { get { return __CellBounds; } set { __CellBounds = value; } }
             ControlBounds IFlowLayoutItem.MainLabelBounds { get { return __MainLabelBounds; } set { __MainLabelBounds = value; } }
             ContentAlignmentType? IFlowLayoutItem.MainLabelAlignment { get { return __MainLabelAlignment; } set { __MainLabelAlignment = value; } }
             ControlBounds IFlowLayoutItem.ControlBounds { get { return __ControlBounds; } set { __ControlBounds = value; } }
@@ -1254,7 +1255,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         flowLayout.Reset();
                         foreach (var flowItem in floatItems)
                             flowLayout.AddFlowItem(flowItem);
-                        flowLayout.Finish();
+                        flowLayout.ProcessFlowItems();
                         this.__FlowLayoutBounds = flowLayout.FlowLayoutBounds;
 
                         // var text = flowLayout.MapOfCellsAscii;
@@ -1271,8 +1272,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 {
                     foreach (var fixedItem in fixedItems)
                     {
-                        fixedItem.__ControlBounds = fixedItem.__CellBounds;
-                        fixedItem.__ControlExists = (fixedItem.__ControlBounds != null);
+                        if (fixedItem.__CellBounds != null)
+                        {
+                            var cellBounds = fixedItem.__CellBounds;
+                            fixedItem.__ControlBounds = new ControlBounds(cellBounds.ControlLeft, cellBounds.ControlTop, cellBounds.ControlWidth, cellBounds.ControlHeight);
+                            fixedItem.__ControlExists = true;
+                        }
                     }
                 }
 
@@ -1310,7 +1315,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             internal void SetAbsoluteBound()
             { }
             #endregion
-            #region Vytvoření Image reprezentující aktuální stav layoutu
+
+            #region Vizualizace PixelLayoutu (vytvoření Image, reprezentující aktuální stav layoutu)
             /// <summary>
             /// Z prvků layoutu vygeneruje bitmapu v měřítku 1:1, respektující rozměry a obsah containeru.
             /// Uloží ji do souboru do Temp adresáře.
@@ -1658,6 +1664,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 __Columns.Add(new LineInfo(this, AxisType.X, 0, null, null, null));
             }
 
+            // Pokud styl předepisuje defaultní umístění labelu Top nebo Bottom a na odpovídající straně je definován OffsetX záporný => ten se poté umísťuje do prostoru vlevo od Controlu, tedy do Columns.LabelBefore,
+            //  pak tento offset vepíšu do všech sloupců jako defaultní.
+            var labelPos = __AutoLabelPosition;
+            int labelOffset = (labelPos == LabelPositionType.Top ? -__TopLabelOffsetX : (labelPos == LabelPositionType.Bottom ? -__BottomLabelOffsetX : 0));
+            if (labelOffset > 0)
+            {   // Načítali jsme záporný offset odpovídající defaultní pozici MainLabelu; pokud labelOffset bude kladné (ted výchozí je záporné = předsazené doleva), pak tento offset vepíšu do všech sloupců jako 'LabelBeforeMaximalSize'.
+                // Tím zajistím, že prostor LabelBefore (ve sloupcích má význam: "Nalevo od controlu") bude dostatečně veliký pro offset labelů.
+                // Dělám to předem (nyní) - i když dosud nevím, zda reálně budou některé prvky mít takový Label (Exists a reálně umístěný jako Top nebo Bottom);
+                //   důvod: takováto definice (LabelPos + záporný Offset) míří na celkový design panelů, a je naším cílem mít design shodný pro všechny panely, i když v určitém jednom panelu zrovna nebude žádný control mít takový label...
+                foreach (var col in __Columns)
+                    col.LabelBeforeMaximalSize = labelOffset;
+            }
+
             // Parsuje text "10,20,30" na tři číslice
             void parseCol(string text, out int? lblW, out int? ctrW, out int? lbrW)
             {
@@ -1693,7 +1712,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (!Int32.TryParse(text.Trim(), out var number)) return null;
                 return (number < 0 ? -1 : number);
             }
-
         }
         /// <summary>
         /// Počet sloupců je dán pevně už na začátku.
@@ -1737,12 +1755,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __FlowBounds.Left = style.FlowAreaBegin?.Left;
             __FlowBounds.Top = style.FlowAreaBegin?.Top;
             __ControlMargins = new Margins(style.ControlMargins);
+            __AutoLabelPosition = style.AutoLabelPosition;
             __ColumnsDistance = (style.ColumnsDistance >= 0 ? style.ColumnsDistance : 0);
             __RowsDistance = (style.RowsDistance >= 0 ? style.RowsDistance : 0);
             __ColumnImplicitSize = 50;
             __RowImplicitSize = 20;
             __TopLabelOffsetX = style.TopLabelOffsetX;
             __BottomLabelOffsetX = style.BottomLabelOffsetX;
+            __LabelsRelativeToControl = true;
         }
         /// <summary>
         /// Styl panelu, definuje konstantní vlastnosti layoutu
@@ -1756,6 +1776,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Odstupy mezi jakýmkoli Labelem a Controlem, uplatní se pouze pokud label existuje. Není null.
         /// </summary>
         private Margins __ControlMargins;
+        /// <summary>
+        /// Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = <c>NULL</c>
+        /// </summary>
+        private LabelPositionType __AutoLabelPosition;
         /// <summary>
         /// Oddělovací vzdálenost mezi sloupci
         /// </summary>
@@ -1784,12 +1808,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Může být záporné, pak bude label předsazen vlevo před Controlem.
         /// </summary>
         private int __BottomLabelOffsetX;
+        /// <summary>
+        /// true = Umisťovat labely relativně vůči Controlu / false = dávat je striktně podle mřížky. 
+        /// Projeví se to u controlů, které mají např. menší šířku, než okolní controly ve sloupci, a control bude zarovnán HPosition = Right, 
+        /// pak jeho Label by měl být spíš umístěn k levé hraně Controlu (obzvlášť label na pozici Top, Bottom, BeforeRight).
+        /// Rovněž má vliv na SufixLabel, který takto bude umístěn přímo vpravo vedle Controlu, a ne do sloupce s ostatními labely.
+        /// </summary>
+        private bool __LabelsRelativeToControl;
         #endregion
         #region Veškerý proces tvorby layoutu: výpočty velikostí řádků a sloupců, určení souřadnic pro jednotlivé buňky a jejich prvky
         /// <summary>
         /// Metoda resetuje celý svůj prostor. 
         /// Následně se volá metoda <see cref="AddFlowItem(IFlowLayoutItem)"/> pro jednotlivé prvky layoutu.
-        /// Na závěr se volá metoda <see cref="Finish()"/> pro dopočtení souřadnic sloupců a řádků.
+        /// Na závěr se volá metoda <see cref="ProcessFlowItems()"/> pro dopočtení souřadnic sloupců a řádků.
         /// </summary>
         public void Reset()
         {
@@ -1962,7 +1993,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Souřadnice vepíše do prvků.
         /// Výchozí souřadnice je definovaná stylem dodaným do konstruktoru, jeho hodnotou <see cref="DfTemplateLayout.StyleInfo.FlowAreaBegin"/>.
         /// </summary>
-        public void Finish()
+        public void ProcessFlowItems()
         {
             _ProcessReset();
             _ProcessLabels();
@@ -2350,15 +2381,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void _ProcessItemsBounds()
         {
-            // Zpracuje všechny prvky
+            bool labelsRelativeToControl = __LabelsRelativeToControl;
+            // Zpracuje všechny prvky:
             foreach (var i in __Items)
             {
+                processItemCell(i);
+
                 var mainLabelArea = getMainLabelArea(i);
                 var suffixLabelArea = getSuffixLabelArea(i, mainLabelArea);
-                processItemCell(i);
                 var controlBounds = processItemControl(i, mainLabelArea | suffixLabelArea);
-                if (mainLabelArea != UsedAreaType.None) processItemMainLabel(i, controlBounds, true);
-                if (suffixLabelArea != UsedAreaType.None) processItemSuffixLabel(i, controlBounds, true);
+                if (mainLabelArea != UsedAreaType.None) processItemMainLabel(i, controlBounds, labelsRelativeToControl);
+                if (suffixLabelArea != UsedAreaType.None) processItemSuffixLabel(i, controlBounds, labelsRelativeToControl);
+            }
+            // Do prvku vepíše souřadnice celé buňky
+            void processItemCell(IFlowLayoutItem item)
+            {
+                item.CellBounds = new CellMatrixInfo(__Columns[item.FlowColBeginIndex.Value], __Columns[item.FlowColEndIndex.Value], __Rows[item.FlowRowBeginIndex.Value], __Rows[item.FlowRowEndIndex.Value]);
             }
             // Metoda zjistí, která oblast buňky bude obsazena Main Labelem.
             UsedAreaType getMainLabelArea(IFlowLayoutItem item)
@@ -2379,17 +2417,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {   // Poud SuffixLabel existuje 
                 return (item.SuffixLabelExists && mainLabelArea != UsedAreaType.Right ? UsedAreaType.Right : UsedAreaType.None);
             }
-            // Do prvku vepíše souřadnice celé buňky
-            void processItemCell(IFlowLayoutItem item)
-            {
-                int l = __Columns[item.FlowColBeginIndex.Value].CurrentBegin.Value;
-                int t = __Rows[item.FlowRowBeginIndex.Value].CurrentBegin.Value;
-                int r = __Columns[item.FlowColEndIndex.Value].CurrentEnd.Value;
-                int b = __Rows[item.FlowRowEndIndex.Value].CurrentEnd.Value;
-                int w = r - l;
-                int h = b - t;
-                item.CellBounds = new ControlBounds(l, t, w, h);
-            }
             // Zpracuje souřadnici pro Control
             ControlBounds processItemControl(IFlowLayoutItem item, UsedAreaType labelUsedAreas)
             {
@@ -2403,11 +2430,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 bool expBottom = itemExpand.HasFlag(ExpandControlType.Bottom) && !labelUsedAreas.HasFlag(UsedAreaType.Bottom);
 
                 // Souřadnice zvolené oblasti, určené pro umístění Controlu:
-                int l = expLeft ? __Columns[item.FlowColBeginIndex.Value].LabelBeforeBegin.Value : __Columns[item.FlowColBeginIndex.Value].ControlBegin.Value;
-                if (expLeft) l = correctExpandedControlLeftByOffset(item, l);
-                int t = expTop ? __Rows[item.FlowRowBeginIndex.Value].LabelBeforeBegin.Value : __Rows[item.FlowRowBeginIndex.Value].ControlBegin.Value;
-                int r = expRight ? __Columns[item.FlowColEndIndex.Value].LabelAfterEnd.Value : __Columns[item.FlowColEndIndex.Value].ControlEnd.Value;
-                int b = expBottom ? __Rows[item.FlowRowEndIndex.Value].LabelAfterEnd.Value : __Rows[item.FlowRowEndIndex.Value].ControlEnd.Value;
+                var cellBounds = item.CellBounds;
+                int l = expLeft ? correctExpandedControlLeftByOffset(item, cellBounds.LeftLabelLeft) : cellBounds.ControlLeft;
+                int t = expTop ? cellBounds.TopLabelTop : cellBounds.ControlTop;
+                int r = expRight ? cellBounds.RightLabelRight : cellBounds.ControlRight;
+                int b = expBottom ? cellBounds.BottomLabelBottom : cellBounds.ControlBottom;
                 int w = r - l;
                 int h = b - t;
 
@@ -2420,7 +2447,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 //    to je velikost "doporučená" - a má tedy charakter zadaného rozměru do Bounds.Width / Height.
                 //    Tedy pokud je zadaná, pak ji prvek bude mít.
 
-                // Jak bude prostor využit:
+                // Jak bude prostor využit z hlediska zadaných dimenzí controlu
                 // ControlWidth:
                 int cw = w;
                 if (item.DesignWidthPixel.HasValue) cw = item.DesignWidthPixel.Value;                                  // Designer zadal do frm.xml hodnotu 'Width="85"'
@@ -2470,72 +2497,61 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             //  pak musíme posunout Left Controlu doprava tak, aby předsunutý MainLabel začínal na pozici Left = 0!
             int correctExpandedControlLeftByOffset(IFlowLayoutItem item, int left)
             {
-                int offset = 0;
+                int shift = 0;
                 var labelPos = item.MainLabelExists ? item.LabelPosition : LabelPositionType.None;
                 switch (labelPos)
-                {
+                {   // Pokud MainLabel bude Nahoře nebo Dole, pak musím vzít do úvahy i OffsetX pro tento Label:
                     case LabelPositionType.Top:
-                        offset = __TopLabelOffsetX;
+                        shift = -__TopLabelOffsetX;
                         break;
                     case LabelPositionType.Bottom:
-                        offset = __BottomLabelOffsetX;
+                        shift = -__BottomLabelOffsetX;
                         break;
                 }
-                return ((offset >= 0) ? left : left - offset);       // Kladný (a 0) offset je OK, ale pokud je záporný, tak Left Controlu posunu doprava (odečtu záporný ofset = přičtu).
+                // Pokud nalezený shift bude kladný (=záporný offset), pak to znamená, že Label bude předsunutý doleva o (shift) pixelů.
+                // A protože tato metoda běží tehdy, když Control je expandovaný doleva (tedy vlevo až na začátek buňky), a má "před ním" být předsazený Label,
+                //  pak Label bude umístěn na pozici 'left' (na začátku buňky) a Control bude posunut doprava o tento 'shift':
+                return ((shift > 0) ? left + shift : left);
             }
             // Zpracuje souřadnici pro MainLabel
             void processItemMainLabel(IFlowLayoutItem item, ControlBounds controlBounds, bool relativeToControl)
             {
+                var cellBounds = item.CellBounds;
+                if (relativeToControl && controlBounds is null) relativeToControl = false;
                 int l, w, r, t, h, b;
                 var labelPos = item.LabelPosition;
                 switch (labelPos)
                 {
                     case LabelPositionType.BeforeLeft:
                     case LabelPositionType.BeforeRight:
-                        l = __Columns[item.FlowColBeginIndex.Value].LabelBeforeBegin.Value;
-                        r = __Columns[item.FlowColBeginIndex.Value].LabelBeforeEnd.Value;
-                        t = __Rows[item.FlowRowBeginIndex.Value].ControlBegin.Value;
-                        h = __Rows[item.FlowRowBeginIndex.Value].ControlSize;
-                        item.MainLabelBounds = new ControlBounds(l, t, (r - l), h);
+                        l = cellBounds.LeftLabelLeft;
+                        r = (relativeToControl ? controlBounds.Left - cellBounds.MarginControlLeft : cellBounds.LeftLabelRight);
+                        t = cellBounds.ControlTop;
+                        b = cellBounds.ControlFirstBottom;
+                        item.MainLabelBounds = new ControlBounds(l, t, (r - l), (b - t));
                         item.MainLabelAlignment = (labelPos == LabelPositionType.BeforeLeft ? ContentAlignmentType.MiddleLeft : (labelPos == LabelPositionType.BeforeRight ? ContentAlignmentType.MiddleRight : ContentAlignmentType.MiddleCenter));
                         break;
                     case LabelPositionType.After:
-                        l = __Columns[item.FlowColEndIndex.Value].LabelAfterBegin.Value;
-                        w = __Columns[item.FlowColEndIndex.Value].LabelAfterSize;
-                        t = __Rows[item.FlowRowBeginIndex.Value].ControlBegin.Value;
-                        h = __Rows[item.FlowRowBeginIndex.Value].ControlSize;
-                        item.MainLabelBounds = new ControlBounds(l, t, w, h);
+                        l = (relativeToControl ? controlBounds.Right + cellBounds.MarginControlRight : cellBounds.RightLabelLeft);
+                        r = cellBounds.RightLabelRight;
+                        t = cellBounds.ControlTop;
+                        b = cellBounds.ControlFirstBottom;
+                        item.MainLabelBounds = new ControlBounds(l, t, (r - l), (b - t));
                         item.MainLabelAlignment = ContentAlignmentType.MiddleLeft;
                         break;
                     case LabelPositionType.Top:
-                        if (relativeToControl && controlBounds != null)
-                        {
-                            l = controlBounds.Left + __TopLabelOffsetX;
-                            r = controlBounds.Right;
-                        }
-                        else
-                        {
-                            l = __Columns[item.FlowColBeginIndex.Value].ControlBegin.Value + __TopLabelOffsetX;
-                            r = __Columns[item.FlowColEndIndex.Value].ControlEnd.Value;
-                        }
-                        t = __Rows[item.FlowRowBeginIndex.Value].LabelBeforeBegin.Value;
-                        b = __Rows[item.FlowRowBeginIndex.Value].LabelBeforeEnd.Value;
+                        l = (relativeToControl ? controlBounds.Left : cellBounds.ControlLeft) + __TopLabelOffsetX;
+                        r = (relativeToControl ? controlBounds.Right : cellBounds.ControlRight);
+                        t = cellBounds.TopLabelTop;
+                        b = cellBounds.TopLabelBottom;
                         item.MainLabelBounds = new ControlBounds(l, t, (r - l), (b - t));
                         item.MainLabelAlignment = ContentAlignmentType.BottomLeft;
                         break;
                     case LabelPositionType.Bottom:
-                        if (relativeToControl && controlBounds != null)
-                        {
-                            l = controlBounds.Left + __TopLabelOffsetX;
-                            r = controlBounds.Right;
-                        }
-                        else
-                        {
-                            l = __Columns[item.FlowColBeginIndex.Value].ControlBegin.Value + __BottomLabelOffsetX;
-                            r = __Columns[item.FlowColEndIndex.Value].ControlEnd.Value;
-                        }
-                        t = __Rows[item.FlowRowEndIndex.Value].LabelAfterBegin.Value;
-                        b = __Rows[item.FlowRowEndIndex.Value].LabelAfterEnd.Value;
+                        l = (relativeToControl ? controlBounds.Left : cellBounds.ControlLeft) + __BottomLabelOffsetX;
+                        r = (relativeToControl ? controlBounds.Right : cellBounds.ControlRight);
+                        t = cellBounds.BottomLabelTop;
+                        b = cellBounds.BottomLabelBottom;
                         item.MainLabelBounds = new ControlBounds(l, t, (r - l), (b - t));
                         item.MainLabelAlignment = ContentAlignmentType.TopLeft;
                         break;
@@ -2544,11 +2560,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Zpracuje souřadnici pro SuffixLabel
             void processItemSuffixLabel(IFlowLayoutItem item, ControlBounds controlBounds, bool relativeToControl)
             {
-                int l = __Columns[item.FlowColEndIndex.Value].LabelAfterBegin.Value;
-                int w = __Columns[item.FlowColEndIndex.Value].LabelAfterSize;
-                int t = __Rows[item.FlowRowBeginIndex.Value].ControlBegin.Value;
-                int h = __Rows[item.FlowRowBeginIndex.Value].ControlSize;
-                item.SuffixLabelBounds = new ControlBounds(l, t, w, h);
+                var cellBounds = item.CellBounds;
+                if (relativeToControl && controlBounds is null) relativeToControl = false;
+                int l, w, r, t, h, b;
+                l = (relativeToControl ? controlBounds.Right + cellBounds.MarginControlRight : cellBounds.RightLabelLeft);
+                r = cellBounds.RightLabelRight;
+                t = cellBounds.ControlTop;
+                b = cellBounds.ControlFirstBottom;
+                item.SuffixLabelBounds = new ControlBounds(l, t, (r - l), (b - t));
                 item.SuffixLabelAlignment = ContentAlignmentType.MiddleLeft;
             }
         }
@@ -2868,7 +2887,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             /// <summary>
             /// Obsahuje true pokud tato dimenze (konkrétní sloupec nebo řádek) obsahuje nějaký prvek.
-            /// Nastavuje se v procesu <see cref="DfFlowLayoutInfo.Finish()"/> v podprocesu <see cref="DfFlowLayoutInfo._ProcessControlSingleSpan()"/>.
+            /// Nastavuje se v procesu <see cref="DfFlowLayoutInfo.ProcessFlowItems()"/> v podprocesu <see cref="DfFlowLayoutInfo._ProcessControlSingleSpan()"/>.
             /// Sloupce mohou existovat i bez prvku (výjimečně), řádky nikdy = všechny řádky mají nějaký prvek (protože neumíme přeskočit volný řádek).<br/>
             /// Lze nastavit na true, ale nelze vrátit z true na false.
             /// </summary>
@@ -3313,7 +3332,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Výsledná souřadnice celé buňky
         /// </summary>
-        ControlBounds CellBounds { get; set; }
+        CellMatrixInfo CellBounds { get; set; }
         /// <summary>
         /// Výsledná souřadnice MainLabel v rámci parenta
         /// </summary>
@@ -3348,6 +3367,223 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Neresetuje designové hodnoty.
         /// </summary>
         void Reset();
+    }
+    #endregion
+    #region class CellMatrixInfo : popisuje veškeré souřadnice v jednom prvku FlowLayoutu (kde začínají a končí labely, a kde control)
+    /// <summary>
+    /// <see cref="CellMatrixInfo"/> : popisuje veškeré souřadnice v jednom prvku FlowLayoutu (kde začínají a končí labely, a kde control)
+    /// </summary>
+    internal class CellMatrixInfo
+    {
+        #region Konstruktory a proměnné
+        /// <summary>
+        /// Konstruktor pro sadu sloupců
+        /// </summary>
+        /// <param name="columnBegin"></param>
+        /// <param name="columnEnd"></param>
+        /// <param name="rowBegin"></param>
+        /// <param name="rowEnd"></param>
+        internal CellMatrixInfo(DfFlowLayoutInfo.LineInfo columnBegin, DfFlowLayoutInfo.LineInfo columnEnd, DfFlowLayoutInfo.LineInfo rowBegin, DfFlowLayoutInfo.LineInfo rowEnd)
+        {
+            __Data = new int[2, 7];
+
+            __Data[X, CellBegin] = columnBegin.CurrentBegin.Value;
+            __Data[X, LabelBeforeEnd] = columnBegin.LabelBeforeEnd.Value;
+            __Data[X, ControlBegin] = columnBegin.ControlBegin.Value;
+            __Data[X, ControlFirstEnd] = columnBegin.ControlEnd.Value;
+            __Data[X, ControlEnd] = columnEnd.ControlEnd.Value;
+            __Data[X, LabelAfterBegin] = columnEnd.LabelAfterBegin.Value;
+            __Data[X, CellEnd] = columnEnd.CurrentEnd.Value;
+
+            __Data[Y, CellBegin] = rowBegin.CurrentBegin.Value;
+            __Data[Y, LabelBeforeEnd] = rowBegin.LabelBeforeEnd.Value;
+            __Data[Y, ControlBegin] = rowBegin.ControlBegin.Value;
+            __Data[Y, ControlFirstEnd] = rowBegin.ControlEnd.Value;
+            __Data[Y, ControlEnd] = rowEnd.ControlEnd.Value;
+            __Data[Y, LabelAfterBegin] = rowEnd.LabelAfterBegin.Value;
+            __Data[Y, CellEnd] = rowEnd.CurrentEnd.Value;
+        }
+        /// <summary>
+        /// Konstruktor pro exaktní hodnoty
+        /// </summary>
+        /// <param name="labelLeftX"></param>
+        /// <param name="labelLeftR"></param>
+        /// <param name="controlX"></param>
+        /// <param name="controlFirstR"></param>
+        /// <param name="controlR"></param>
+        /// <param name="labelRightX"></param>
+        /// <param name="labelRightR"></param>
+        /// <param name="labelTopY"></param>
+        /// <param name="labelTopB"></param>
+        /// <param name="controlT"></param>
+        /// <param name="controlFirstB"></param>
+        /// <param name="controlB"></param>
+        /// <param name="labelBottomT"></param>
+        /// <param name="labelBottomB"></param>
+        internal CellMatrixInfo(int labelLeftX, int labelLeftR, int controlX, int controlFirstR, int controlR, int labelRightX, int labelRightR, int labelTopY, int labelTopB, int controlT, int controlFirstB, int controlB, int labelBottomT, int labelBottomB)
+        {
+            __Data = new int[2, 6];
+
+            __Data[X, CellBegin] = labelLeftX;
+            __Data[X, LabelBeforeEnd] = labelLeftR;
+            __Data[X, ControlBegin] = controlX;
+            __Data[X, ControlFirstEnd] = controlFirstR;
+            __Data[X, ControlEnd] = controlR;
+            __Data[X, LabelAfterBegin] = labelRightX;
+            __Data[X, CellEnd] = labelRightR;
+
+            __Data[Y,CellBegin] = labelTopY;
+            __Data[Y,LabelBeforeEnd] = labelTopB;
+            __Data[Y, ControlBegin] = controlT;
+            __Data[Y, ControlFirstEnd] = controlFirstB;
+            __Data[Y, ControlEnd] = controlB;
+            __Data[Y, LabelAfterBegin] = labelBottomT;
+            __Data[Y, CellEnd] = labelBottomB;
+        }
+        /// <summary>
+        /// Pole souřadnic. <br/>
+        /// První index: 0 = osa X,  1 = osa Y.<br/>
+        /// Druhý index: 0 = začátek buňky = začátek labelu před (Vlevo/Nahoře),  1 = konec labelu před,  2 = začátek Controlu,  3 = konec Controlu,  4 = začátek labelu za (Vpravo/Dole),   5 = konec labelu za = konec buňky.
+        /// </summary>
+        private int[,] __Data;
+
+        private const int X = 0;
+        private const int Y = 1;
+        private const int CellBegin = 0;
+        private const int LabelBeforeBegin = 0;
+        private const int LabelBeforeEnd = 1;
+        private const int ControlBegin = 2;
+        private const int ControlFirstEnd = 3;
+        private const int ControlEnd = 4;
+        private const int LabelAfterBegin = 5;
+        private const int LabelAfterEnd = 6;
+        private const int CellEnd = 6;
+        #endregion
+        #region Public data
+        /// <summary>
+        /// Celá buňka, souřadnice Left
+        /// </summary>
+        public int CellLeft { get { return __Data[X, CellBegin]; } }
+        /// <summary>
+        /// Label vlevo, souřadnice Left
+        /// </summary>
+        public int LeftLabelLeft { get { return __Data[X, LabelBeforeBegin]; } }
+        /// <summary>
+        /// Label vlevo, souřadnice Right
+        /// </summary>
+        public int LeftLabelRight { get { return __Data[X, LabelBeforeEnd]; } }
+        /// <summary>
+        /// Label vlevo, velikost Width
+        /// </summary>
+        public int LeftLabelWidth { get { return __Data[X, LabelBeforeEnd] - __Data[X, LabelBeforeBegin]; } }
+        /// <summary>
+        /// Vlastní Control, souřadnice Left
+        /// </summary>
+        public int ControlLeft { get { return __Data[X, ControlBegin]; } }
+        /// <summary>
+        /// Vlastní Control, souřadnice Right prvního columnu - má smysl pro prvky, které mají ColSpan větší než 1
+        /// </summary>
+        public int ControlFirstRight { get { return __Data[X, ControlFirstEnd]; } }
+        /// <summary>
+        /// Vlastní Control, souřadnice Right
+        /// </summary>
+        public int ControlRight { get { return __Data[X, ControlEnd]; } }
+        /// <summary>
+        /// Vlastní Control, velikost Width
+        /// </summary>
+        public int ControlWidth { get { return __Data[X, ControlEnd] - __Data[X, ControlBegin]; } }
+        /// <summary>
+        /// Label vpravo, souřadnice Left
+        /// </summary>
+        public int RightLabelLeft { get { return __Data[X, LabelAfterBegin]; } }
+        /// <summary>
+        /// Label vpravo, souřadnice Right
+        /// </summary>
+        public int RightLabelRight { get { return __Data[X, LabelAfterEnd]; } }
+        /// <summary>
+        /// Label vpravo, velikost Width
+        /// </summary>
+        public int RightLabelWidth { get { return __Data[X, LabelAfterEnd] - __Data[X, LabelAfterBegin]; } }
+        /// <summary>
+        /// Celá buňka, souřadnice Right
+        /// </summary>
+        public int CellRight { get { return __Data[X, CellEnd]; } }
+        /// <summary>
+        /// Celá buňka, velikost Width
+        /// </summary>
+        public int CellWidth { get { return __Data[X, CellEnd] - __Data[X, CellBegin]; } }
+
+        /// <summary>
+        /// Celá buňka, souřadnice Top
+        /// </summary>
+        public int CellTop { get { return __Data[Y, CellBegin]; } }
+        /// <summary>
+        /// Label nahoře, souřadnice Top
+        /// </summary>
+        public int TopLabelTop { get { return __Data[Y, LabelBeforeBegin]; } }
+        /// <summary>
+        /// Label nahoře, souřadnice Bottom
+        /// </summary>
+        public int TopLabelBottom { get { return __Data[Y, LabelBeforeEnd];; } }
+        /// <summary>
+        /// Label nahoře, velikost Height
+        /// </summary>
+        public int TopLabelHeight { get { return __Data[Y, LabelBeforeEnd] - __Data[Y, LabelBeforeBegin]; } }
+        /// <summary>
+        /// Vlastní Control, souřadnice Top
+        /// </summary>
+        public int ControlTop { get { return __Data[Y, ControlBegin]; } }
+        /// <summary>
+        /// Vlastní Control, souřadnice Bottom prvního řádku - má smysl pro prvky, které mají RowSpan větší než 1 (toto je Bottom pro Labely umístěné Vlevo a Vpravo)
+        /// </summary>
+        public int ControlFirstBottom { get { return __Data[Y, ControlFirstEnd]; } }
+        /// <summary>
+        /// Vlastní Control, souřadnice Bottom
+        /// </summary>
+        public int ControlBottom { get { return __Data[Y, ControlEnd]; } }
+        /// <summary>
+        /// Vlastní Control, velikost Height
+        /// </summary>
+        public int ControlHeight { get { return __Data[Y, ControlEnd] - __Data[Y, ControlBegin]; } }
+        /// <summary>
+        /// Label dole, souřadnice Top
+        /// </summary>
+        public int BottomLabelTop { get { return __Data[Y, LabelAfterBegin]; } }
+        /// <summary>
+        /// Label dole, souřadnice Bottom
+        /// </summary>
+        public int BottomLabelBottom { get { return __Data[Y, LabelAfterEnd]; } }
+        /// <summary>
+        /// Label dole, velikost Height
+        /// </summary>
+        public int BottomLabelHeight { get { return __Data[Y, LabelAfterEnd] - __Data[Y, LabelAfterBegin]; } }
+        /// <summary>
+        /// Celá buňka, souřadnice Bottom
+        /// </summary>
+        public int CellBottom { get { return __Data[Y, CellEnd]; } }
+        /// <summary>
+        /// Celá buňka, velikost Height
+        /// </summary>
+        public int CellHeight { get { return __Data[Y, CellEnd] - __Data[Y, CellBegin]; } }
+
+        /// <summary>
+        /// Okraj vlevo od controlu, za LeftLabel
+        /// </summary>
+        public int MarginControlLeft { get { return __Data[X, ControlBegin] - __Data[X, LabelBeforeEnd]; } }
+        /// <summary>
+        /// Okraj nahoře od controlu, pod TopLabel
+        /// </summary>
+        public int MarginControlTop { get { return __Data[Y, ControlBegin] - __Data[Y, LabelBeforeEnd]; } }
+        /// <summary>
+        /// Okraj vpravo od controlu, před RightLabel
+        /// </summary>
+        public int MarginControlRight { get { return __Data[X, LabelAfterBegin] - __Data[X, ControlEnd]; } }
+        /// <summary>
+        /// Okraj dole od controlu, před BottomLabel
+        /// </summary>
+        public int MarginControlBottom { get { return __Data[Y, LabelAfterBegin] - __Data[Y, ControlEnd]; } }
+
+        #endregion
     }
     #endregion
     #endregion

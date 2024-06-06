@@ -840,7 +840,12 @@
                         <xs:documentation xml:lang="cs-cz">Nejvyšší šířka prostoru pro Label.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-            </xs:extension>
+				<xs:attribute name="SuffixLabel" type="xs:string">
+					<xs:annotation>
+						<xs:documentation xml:lang="cs-cz">Text, popisující typicky jednotky / dodatečnou informaci, uvádí se vpravo za controlem. Má být spíš kratší.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
 		</xs:complexContent>
 	</xs:complexType>
 

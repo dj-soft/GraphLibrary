@@ -963,6 +963,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public int? LabelWidth { get; set; }
         /// <summary>
+        /// Text, popisující typicky jednotky / dodatečnou informaci, uvádí se vpravo za controlem. Má být spíš kratší.
+        /// </summary>
+        public string SuffixLabel { get; set; }
+        /// <summary>
         /// Styl pro Label (název, styl písma, velikost, barva popisku, barva textu a pozadí, atd)
         /// </summary>
         public DfControlStyle LabelStyle { get; set; }
