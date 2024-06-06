@@ -2465,7 +2465,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
                 return controlBegin;
             }
-            // Koriguje souřadnici Control.Left v situaci, kdy je Expanded doleva, tedy začíná na souřadnici Cell.Left, a současně by byl Label umístěný Top nebo Bottom a odpovídající Offset záporný...
+            // Koriguje souřadnici Control.Left v situaci, kdy je Expanded doleva, tedy Control začíná přímo na samé na souřadnici Cell.Left, 
+            //  a současně pokud by byl MainLabel umístěný Top nebo Bottom a odpovídající TopLabelOffsetX / BottomLabelOffsetX by byl záporný,
+            //  pak musíme posunout Left Controlu doprava tak, aby předsunutý MainLabel začínal na pozici Left = 0!
             int correctExpandedControlLeftByOffset(IFlowLayoutItem item, int left)
             {
                 int offset = 0;
@@ -2479,7 +2481,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         offset = __BottomLabelOffsetX;
                         break;
                 }
-                return ((offset >= 0) ? left : left - offset);
+                return ((offset >= 0) ? left : left - offset);       // Kladný (a 0) offset je OK, ale pokud je záporný, tak Left Controlu posunu doprava (odečtu záporný ofset = přičtu).
             }
             // Zpracuje souřadnici pro MainLabel
             void processItemMainLabel(IFlowLayoutItem item, ControlBounds controlBounds, bool relativeToControl)
