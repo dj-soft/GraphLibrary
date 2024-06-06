@@ -1141,8 +1141,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 {
                     _PrepareChilds();            // Příprava: Containery kompletně (rekurzivně), a poté všechny prvky: doplnění aplikačních dat a měření primární velikosti
                     _PositionChilds();           // Kvalifikuje Child prvky na Fixed a Flow; a pro Flow prvky vyřeší jejich rozmístění (souřadnice) pomocí FlowLayoutu. Poté řeší Fixed prvky.
-
-                    _PrepareRelativeBounds();    // Určí relativní souřadnice všech Child prvků, včetně procentuální šířky Width, opírající se o šířku sloupců
                 }
             }
             /// <summary>
@@ -1252,30 +1250,26 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     }
                 }
 
-                // Dořeším prvky FixedRelative:
-                foreach (var relativeItem in boundsInParentItems)
+                // Dořeším prvky FlowInParent:
+                foreach (var flowInParentItem in flowInParentItems)
                 {
-                    if (relativeItem.__CellBounds != null)
+                    if (flowInParentItem.__CellBounds != null)
                     {
-                        relativeItem.__ControlExists = true;
-                        DfFlowLayoutInfo.ProcessInnerItemBounds(relativeItem, __Style);
+                        flowInParentItem.__ControlExists = true;
+                        DfFlowLayoutInfo.ProcessInnerItemBounds(flowInParentItem, __Style);
                     }
                 }
-
-                // Dořeším prvky FixedAbsolute:
-                foreach (var absoluteItem in fixedAbsoluteItems)
+                foreach (var boundsInParentItem in boundsInParentItems)
+                {
+                    if (boundsInParentItem.__CellBounds != null)
+                    {
+                        boundsInParentItem.__ControlExists = true;
+                        DfFlowLayoutInfo.ProcessInnerItemBounds(boundsInParentItem, __Style);
+                    }
+                }
+                foreach (var fixedAbsoluteItem in fixedAbsoluteItems)
                 { }
             }
-
-            /// <summary>
-            /// Projde všechny prvky a přidělí jim konkrétní relativní souřadnice = v rámci jejich Parenta.
-            /// Včetně určení šířky controlu, dané procentuální šířkou Width, opírající se o šířku sloupců.
-            /// Včetně určení pozice controlu, Main i Suffix labelu.
-            /// Včetně akceptování Alignment controlu uvnitř buňky.
-            /// Současně určí svoji vnitřní velikost (this ke container).
-            /// </summary>
-            private void _PrepareRelativeBounds()
-            { }
             /// <summary>
             /// Projde všechny prvky a přidělí jim konkrétní absolutní souřadnice = v rámci Root panelu.
             /// Tato metoda je vyvolána pro prvek typu Panel.
