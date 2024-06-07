@@ -1335,18 +1335,29 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     string key = processItem._ParentBoundsKey;
                     if (bounds != null && key != null && allDictionary.TryGetValue(key, out var parentItem) && parentItem.__CellMatrix != null)
                     {
-                        var x = parentItem.__CellMatrix.ControlLeft;           // Souřadnice počátku Controlu v Parent buňce
-                        var y = parentItem.__CellMatrix.ControlTop;
+                        var parentBounds = parentItem.__CellMatrix.GetBounds(processItem.__ExpandControl);  // Souřadnice Controlu v Parent buňce, volitelně Expanded
+                        int pl = parentBounds.Left;
+                        int pt = parentBounds.Top;
 
-                        int l = bounds.Left ?? 0;                              // Zadané souřadnice aktuálního prvku jsou relativní k Parent buňce
+                        int l = bounds.Left ?? 0;                                        // Zadané souřadnice aktuálního prvku jsou relativní k Parent buňce
                         int t = bounds.Top ?? 0;
-                        int w = bounds.Width?.NumberPixel ?? 100;
-                        int h = bounds.Height?.NumberPixel ?? 20;
-                        var controlBounds = new ControlBounds(x + l, y + t, w, h);       // Posunu souřadnice prvku (l,t) o souřadnice parenta (x,y)
+                        int w = getSize(bounds.Width, parentBounds.Width, 100);          // Pixely nebo procenta z Parent velikosti
+                        int h = getSize(bounds.Height, parentBounds.Height, 20); 
+                        var controlBounds = new ControlBounds(pl + l, pt + t, w, h);     // Posunu souřadnice prvku (l,t) o souřadnice parenta (x,y)
 
                         DfFlowLayoutInfo.ProcessFixedItemBounds(processItem, controlBounds, __Style);
                         addItemBoundsToSize(processItem, contentSize);
                     }
+                }
+                // Vrátí velikost 'currSize': pokud je v pixelech, pak přímo; pokud je v procentech, pak vůči 'parentSize'; a pokud není, pak 'defaultSize'
+                int getSize(Int32P? currSize, int parentSize, int defaultSize)
+                {
+                    if (currSize.HasValue)
+                    {
+                        if (currSize.Value.IsPixel) return currSize.Value.NumberPixel.Value;
+                        if (currSize.Value.IsPercent) return (int)Math.Round(((double)(parentSize * currSize.Value.NumberPercent.Value) / 100d), 0);
+                    }
+                    return defaultSize;
                 }
                 // Zpracuje prvek v režimu FixedAbsolute
                 void processFixedAbsoluteItem(ItemInfo processItem, Size contentSize, Dictionary<string, ItemInfo> allDictionary)
@@ -3853,7 +3864,26 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Okraj dole od controlu, před BottomLabel
         /// </summary>
         public int MarginControlBottom { get { return __Data[Y, LabelAfterBegin] - __Data[Y, ControlEnd]; } }
-
+        #endregion
+        #region Získání Bounds podle požadavku
+        /// <summary>
+        /// Vrátí souřadnice z matrixu, primárně controlové, volitelně expandované
+        /// </summary>
+        /// <param name="expandControl"></param>
+        /// <returns></returns>
+        internal ControlBounds GetBounds(ExpandControlType? expandControl = null)
+        {
+            var expand = expandControl ?? ExpandControlType.None;
+            var expL = expand.HasFlag(ExpandControlType.Left);
+            var expT = expand.HasFlag(ExpandControlType.Top);
+            var expR = expand.HasFlag(ExpandControlType.Right);
+            var expB = expand.HasFlag(ExpandControlType.Bottom);
+            int l = expL ? this.CellLeft : this.ControlLeft;
+            int t = expT ? this.CellTop : this.ControlTop;
+            int r = expR ? this.CellRight : this.ControlRight;
+            int b = expB ? this.CellBottom : this.ControlBottom;
+            return new ControlBounds(l, t, (r - l), (b - t));
+        }
         #endregion
     }
     #endregion

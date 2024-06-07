@@ -10,35 +10,23 @@
 		  AddUda="True" UdaLabelPosition="Top"
           ColumnWidths="200;300;100" >
 
-    <panel Name="panel1" Title="Test 1" ColumnsCount="5" AutoLabelPosition="None"  Margins="9,6" ControlMargins="1,1" FlowAreaBegin="0,34" >
+    <panel Name="test08" Title="Test zajímavý" ColumnsCount="5" AutoLabelPosition="BeforeRight" ColumnsDistance="0" RowsDistance="0" ControlMargins="1,1" TopLabelOffsetX="6" >
         
-        <label Name="Titulek" Bounds="10,0,730,30" Text="Titulek" />
-        
-		<textbox Name="r0c0" Width="150" />
-		<textbox Name="r0c1" Width="150" />
-		<textbox Name="r0c2" Width="150" />
-		<textbox Name="r0c3" Width="150" />
-		<textbox Name="r0c4" Width="150" />
-        
-		<textbox Name="r1c0" />
-		<placeholder Name="place1" RowSpan="3" ColSpan="3" />
-		<textbox Name="r1c4" />
-        
-		<textbox Name="r2c0" />
-		<textbox Name="r2c4" />
-        
-		<textbox Name="r3c0" />
-		<textbox Name="r3c4" />
-        
-		<textbox Name="r4c0" />
-		<textbox Name="r4c123" ColSpan="3" />
-		<textbox Name="r4c4"/>
+        <button Name="InPlace" Bounds="6,3,100%,100%" ParentBounds="pkplace1d" Text="ButtOn" ExpandControl="All" />
 
-		<button Name="inbutton" Size="430,50" HPosition="Center" VPosition="Center" ParentBounds="place1"/>
+        <textbox Name="pkrefer1a" Width="150" State="TabSkip"/>
+        <textbox Name="pknazev1b" Width="250" LabelPosition="None"/>
+        <image Name="pkimage1c" RowSpan="3" Width="120" Height="100%" LabelPosition="None" />
+        <placeholder Name="pkplace1d" RowSpan="2" Width="200" Height="100%" />
+        <image Name="pkimage1e" RowSpan="2" Width="150" Height="100%" LabelPosition="None" />
 
-        <button Name="outbutton1" Bounds="32,138,213,40" Text="Velké tlačítko 1" />
-        <button Name="outbutton2" Bounds="269,138,212,40" Text="Velké tlačítko 2" />
-        <button Name="outbutton3" Bounds="505,138,213,40" Text="Velké tlačítko 3" />
+        <textbox Name="pkrefer2a" ColumnName="dodav_refer" TabIndex="12" />
+        <textbox Name="pknazev2b" LabelPosition="None" TabIndex="15" />
+
+        <textbox Name="pkpozn3ab" ColSpan="2"/>
+        <textbox Name="pkinfo3de" ColSpan="2" />
+
+        <editbox Name="pkpozn4abcde" ColSpan="5" LabelPosition="Top" ExpandControl="Left" Height="80"/>
     </panel>
 
 </template>
