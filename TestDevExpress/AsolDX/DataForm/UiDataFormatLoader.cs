@@ -819,6 +819,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             control.ActionType = _ReadAttributeEnumN<ButtonActionType>(xElement, "ActionType");
             control.ActionData = _ReadAttributeString(xElement, "ActionData", null);
             control.HotKey = _ReadAttributeString(xElement, "HotKey", null);
+            control.IconPosition = _ReadAttributeEnumN<IconPositionType>(xElement, "IconPosition");
             return control;
         }
         private static DfBaseControl _FillControlDropDownButton(System.Xml.Linq.XElement xElement, DfDropDownButton control, DfTemplateLoadArgs args)

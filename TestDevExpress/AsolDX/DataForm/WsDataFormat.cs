@@ -683,6 +683,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// Klávesová zkratka
         /// </summary>
         public string HotKey { get; set; }
+        /// <summary>
+        /// Umístění ikony vzhledem k textu.
+        /// </summary>
+        public IconPositionType? IconPosition { get; set; }
     }
     /// <summary>
     /// DxDataForm : DropDownButton.<br/>
@@ -2178,6 +2182,40 @@ namespace Noris.WS.DataContracts.DxForm
         /// Zavře okno, protože je zima a táhne nám na záda
         /// </summary>
         Close
+    }
+    /// <summary>
+    /// Umístění ikony vzhledem k textu v rámci Buttonu
+    /// </summary>
+    public enum IconPositionType
+    {
+        /// <summary>
+        /// Defaultní = Left = ikona je vlevo před textem.
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Ikona není zobrazena.
+        /// </summary>
+        None,
+        /// <summary>
+        /// Ikona je vlevo před textem.
+        /// </summary>
+        Left,
+        /// <summary>
+        /// Ikona je nahoře and textem.
+        /// </summary>
+        Top,
+        /// <summary>
+        /// Ikona je vpravo za textem.
+        /// </summary>
+        Right,
+        /// <summary>
+        /// Ikona je dole pod textem.
+        /// </summary>
+        Bottom,
+        /// <summary>
+        /// Je zobrazena pouze ikona bez textu.
+        /// </summary>
+        IconOnly
     }
     /// <summary>
     /// Akce, kterou button provede.<br/>

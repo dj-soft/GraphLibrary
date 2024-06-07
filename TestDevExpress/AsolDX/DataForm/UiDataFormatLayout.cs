@@ -1170,7 +1170,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 _ProcessContainer();             // Zpracuje this container, a rekurzivně jeho Child containery etc
                 _PreparePanelAbsoluteBounds();   // Naplní absolutní souřadnice do všech (i vnořených) prvků
                 if (args.LogTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Layout panel '{__Name}': {DxComponent.LogTokenTimeMicrosec}", startTime);
-
                 if (args.SaveDebugImages) _CreateImageFile();
             }
             /// <summary>
@@ -1331,7 +1330,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
                 // Zpracuje prvek v režimu BoundsInParent
                 void processBoundsInParentItem(ItemInfo processItem, Size contentSize, Dictionary<string, ItemInfo> allDictionary)
-                { }
+                {
+                    var bounds = processItem.__Bounds;
+                    string key = processItem._ParentBoundsKey;
+                    if (bounds != null && key != null && allDictionary.TryGetValue(key, out var parentItem) && parentItem.__CellMatrix != null)
+                    {
+                        var x = parentItem.__CellMatrix.ControlLeft;           // Souřadnice počátku Controlu v Parent buňce
+                        var y = parentItem.__CellMatrix.ControlTop;
+
+                        int l = bounds.Left ?? 0;                              // Zadané souřadnice aktuálního prvku jsou relativní k Parent buňce
+                        int t = bounds.Top ?? 0;
+                        int w = bounds.Width?.NumberPixel ?? 100;
+                        int h = bounds.Height?.NumberPixel ?? 20;
+                        var controlBounds = new ControlBounds(x + l, y + t, w, h);       // Posunu souřadnice prvku (l,t) o souřadnice parenta (x,y)
+
+                        DfFlowLayoutInfo.ProcessFixedItemBounds(processItem, controlBounds, __Style);
+                        addItemBoundsToSize(processItem, contentSize);
+                    }
+                }
                 // Zpracuje prvek v režimu FixedAbsolute
                 void processFixedAbsoluteItem(ItemInfo processItem, Size contentSize, Dictionary<string, ItemInfo> allDictionary)
                 {
@@ -1414,21 +1430,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     }
                 }
             }
-
             /// <summary>
-            /// Projde všechny prvky a přidělí jim konkrétní absolutní souřadnice = v rámci Root panelu.
-            /// Tato metoda je vyvolána pro prvek typu Panel.
+            /// Velikost obsahu včetně Margins
             /// </summary>
-            private void _PreparePanelAbsoluteBounds()
-            {
-            }
-
-            /// <summary>
-            /// Finální souřadnice prostoru FlowLayout. Může být null, pokud this prvek nemá žádné FlowLayout child prvky.
-            /// </summary>
-            public Bounds FlowLayoutBounds { get { return __FlowLayoutBounds; } } private Bounds __FlowLayoutBounds;
-
-
             private Size __ContentSize;
             #endregion
 
@@ -1438,6 +1442,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             #region Určení absolutní souřadnice každého prvku
             internal void SetAbsoluteBound()
             { }
+
+            /// <summary>
+            /// Projde všechny prvky a přidělí jim konkrétní absolutní souřadnice = v rámci Root panelu.
+            /// Tato metoda je vyvolána pro prvek typu Panel.
+            /// </summary>
+            private void _PreparePanelAbsoluteBounds()
+            {
+            }
             #endregion
 
             #region Vizualizace PixelLayoutu (vytvoření Image, reprezentující aktuální stav layoutu)
@@ -1457,15 +1469,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 string dfName = args.DataForm.FileName;
                 dfName = (!String.IsNullOrEmpty(dfName) ? System.IO.Path.GetFileNameWithoutExtension(dfName) : "dataform");      // dw_simple.frm.xml   =>   dw_simple.frm
                 if (dfName.Contains(".")) dfName = System.IO.Path.GetFileNameWithoutExtension(dfName);                           // dw_simple.frm       =>   dw_simple
-                string id = dfName + "_" + this.__Name;
 
                 using (var image = _CreateImage())
                 {
                     if (image != null)
                     {
                         string cnt = ((__ImageCounter++) % 1000).ToString("000");
-                        string name = $"ItemLayout_{id}_{DateTime.Now:yyyyMMdd_HHmmss}_{cnt}.png";
+                        string dateId = $"{DateTime.Now:yyyyMMdd_HHmmss}_{cnt}";
+                        string itemId = dfName + "_" + this.__Name;
+                        string name = $"ItemLayout_{itemId}_{dateId}.png";
                         string path = System.IO.Path.GetTempPath();
+                        if (!String.IsNullOrEmpty(args.DebugImagePath))
+                        {
+                            path = System.IO.Path.Combine(path, args.DebugImagePath.Trim());
+                            if (!System.IO.Directory.Exists(path))
+                                System.IO.Directory.CreateDirectory(path);
+                        }
                         file = System.IO.Path.Combine(path, name);
                         image.Save(file, System.Drawing.Imaging.ImageFormat.Png);
                     }
@@ -1493,10 +1512,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (width <= 0 || height <= 0) return null;
 
                 // Definujeme barvy pro prvky:
-                var workspaceColor = System.Drawing.Color.FromArgb(255, 178, 178, 178);
+                var workspaceColor = System.Drawing.Color.FromArgb(255, 206, 206, 206);
 
-                var labelBorderColor = System.Drawing.Color.FromArgb(255, 160, 170, 165);
-                var labelBackColor = System.Drawing.Color.FromArgb(255, 216, 216, 222);
+                var labelBorderColor = System.Drawing.Color.FromArgb(255, 178, 191, 198);
+                var labelBackColor = System.Drawing.Color.FromArgb(255, 221, 221, 224);
                 var labelTextColor = System.Drawing.Color.FromArgb(255, 80, 64, 80);
 
                 var controlBorderColor = System.Drawing.Color.FromArgb(255, 80, 80, 86);
@@ -2844,6 +2863,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         r = (relativeToControl ? controlBounds.Right : cellMatrix.ControlRight);
                         t = cellMatrix.TopLabelTop;
                         b = cellMatrix.TopLabelBottom;
+                        if (item.DesignLabelWidth.HasValue && item.DesignLabelWidth.Value >= 0)
+                            r = l + item.DesignLabelWidth.Value;
                         item.MainLabelBounds = new ControlBounds(l, t, (r - l), (b - t));
                         item.MainLabelAlignment = ContentAlignmentType.BottomLeft;
                         break;
@@ -2852,6 +2873,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         r = (relativeToControl ? controlBounds.Right : cellMatrix.ControlRight);
                         t = cellMatrix.BottomLabelTop;
                         b = cellMatrix.BottomLabelBottom;
+                        if (item.DesignLabelWidth.HasValue && item.DesignLabelWidth.Value >= 0)
+                            r = l + item.DesignLabelWidth.Value;
                         item.MainLabelBounds = new ControlBounds(l, t, (r - l), (b - t));
                         item.MainLabelAlignment = ContentAlignmentType.TopLeft;
                         break;
@@ -3500,11 +3523,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         int? DesignHeightPercent { get; }
         /// <summary>
-        /// Exaktně daná šířka labelu v pixelech
+        /// Exaktně daná šířka Main labelu v pixelech
         /// </summary>
         int? DesignLabelWidth { get; }
         /// <summary>
-        /// Pozice implicitního Main labelu
+        /// Pozice Main labelu
         /// </summary>
         LabelPositionType LabelPosition { get; }
         /// <summary>
@@ -4022,8 +4045,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         FlowInParent,
         /// <summary>
         /// <see cref="BoundsInParent"/> = sám není součástí FlowLayoutu, ale využívá existující Parent buňku FlowLayoutu pro svoje umístění.
-        /// Parent buňka je specifikována jejím jménem, odkázaným z <see cref="DfBaseControl.ParentBounds"/>.
-        /// V rámci dané buňky je pak umístěn na základě svých Bounds.
+        /// Parent buňka je specifikována jejím jménem, odkázaným z <see cref="DfBaseControl.ParentBounds"/>.<br/>
+        /// V rámci dané buňky je pak umístěn na základě svých Bounds. 
+        /// Využívá tedy souřadnici odkázanou buňku, z ní načte její vnitřní souřadnice, určí počátek prostoru pro Control a ten použije jako bod 0/0,
+        /// k němu přičte svoje zadané souřadnice Bounds a na výsledné místo se umístí. Může se tedy umístit i mimo prostor zadané buňky.
         /// </summary>
         BoundsInParent,
         /// <summary>
@@ -4052,6 +4077,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public bool SaveDebugImages { get; set; }
         /// <summary>
+        /// Podadresář pro DebugImages v rámci Windows Temp adresáře
+        /// </summary>
+        public string DebugImagePath { get; set; }
+        /// <summary>
         /// Debug obrázky, pokud <see cref="SaveDebugImages"/> je true
         /// </summary>
         public List<string> DebugImages { get; set; }
@@ -4071,7 +4100,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         internal static int GetFontHeight(DfFontInfo fontInfo = null)
         {
             var height = _GetTextHeight(fontInfo?.SizeRatio);
-            return _GetDefaultSize(height);
+            return _GetDefaultSize(height, DefaultFontHeightRatio, DefaultFontHeightAdd);
         }
         /// <summary>
         /// Vrátí šířku daného textu v daném fontu = počet pixelů pro jednořádkový text labelu.
@@ -4085,21 +4114,27 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             bool isBold = (fontInfo != null && fontInfo.Style.HasValue && fontInfo.Style.Value.HasFlag(FontStyleType.Bold));
             var width = _GetTextWidth(text, isBold, fontInfo?.SizeRatio);
-            return _GetDefaultSize(width);
+            return _GetDefaultSize(width, DefaultFontWidthRatio, DefaultFontWidthAdd);
         }
         /// <summary>
         /// Vrátí dodanou velikost převedenou na aktuální výchozí velikost fontu 
         /// </summary>
         /// <param name="size"></param>
+        /// <param name="ratio"></param>
+        /// <param name="add"></param>
         /// <returns></returns>
-        private static int _GetDefaultSize(float size)
+        private static int _GetDefaultSize(float size, float ratio, float add)
         {
-            return (int)(Math.Ceiling(size * DefaultFontEmSize / _FontEmSize));
+            return (int)(Math.Ceiling((size * ratio * DefaultFontEmSize / _FontEmSize) + add));
         }
         /// <summary>
         /// Standardní velikost fontu
         /// </summary>
         internal const float DefaultFontEmSize = 8.25f;
+        internal const float DefaultFontHeightRatio = 0.66667f;
+        internal const float DefaultFontHeightAdd = 2.00f;
+        internal const float DefaultFontWidthRatio = 0.66667f;
+        internal const float DefaultFontWidthAdd = 2.00f;
         #region Private metody : tyto metody obsahují mnoho konstantních dat, která nejsou zadaná programátorem, ale vygenerovaná specifickým kódem - viz aplikace TestDevExpress, třída TestDevExpress.AsolDX.News.FontSizes
         /// <summary>
         /// Metoda vrátí vstupní text, v němž budou diakritické znaky a znaky neběžné nahrazeny běžnými.<br/>
