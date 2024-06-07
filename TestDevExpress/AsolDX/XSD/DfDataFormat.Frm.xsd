@@ -427,11 +427,6 @@
                         <xs:documentation xml:lang="cs-cz">Výška prvku, ve Standardních pixelech (Zoom=100%). Je možné zadat souřadnice do jednoho atributu Bounds.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-				<xs:attribute name="FlowLayoutOrigin" type="xs:string">
-					<xs:annotation>
-						<xs:documentation xml:lang="cs-cz">Souřadnice bodu, kde začíná rozmísťování prvků, které nemají zadanou exaktní souřadnici X,Y. Výchozí je "0,0". Zadává se ve formě: "X,Y".</xs:documentation>
-					</xs:annotation>
-				</xs:attribute>
 			</xs:extension>
         </xs:complexContent>
     </xs:complexType>
@@ -463,6 +458,15 @@
                 <xs:attribute name="BackImagePosition" type="back_image_position_enum" >
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">Pozice obrázku 'BackImageName' vzhledem k prostoru.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="FlowAreaBegin" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">
+                            Souřadnice bodu, kde začíná rozmísťování běžných prvků, které nemají zadanou svoji exaktní souřadnici X,Y.
+                            Výchozí je "0,0". Zadává se ve formě: "X,Y".
+                            Touto hodnotou lze např. ponechat horní (nebo levou) část prázdnou, pro umístění prvků se zadanými souřadnicemi.
+                        </xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="ColumnsCount" type="xs:int">
@@ -512,7 +516,6 @@
                         </xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-
                 <xs:attribute name="TopLabelOffsetX" type="xs:int">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">

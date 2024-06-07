@@ -10,6 +10,19 @@
 		  AddUda="True" UdaLabelPosition="Top"
           ColumnWidths="200;300;100" >
 
+
+    <panel Name="test06" Title="Zajímavý" ColumnWidths="120;250" AutoLabelPosition="Up" >
+        <textbox Name="reference_subjektu4" ColumnName="reference_subjektu" Width="120" Label="Číslo faktury"/>
+        <textbox Name="nazev_subjektu4" ColumnName="nazev_subjektu" Width="300" Label="Variabilní symbol"/>
+        <textbox Name="kontakt_refer" LabelWidth="420" Label="Dodavatel zboží, které je zde fakturováno:" />
+        <textbox Name="kontakt_nazev" LabelPosition="None"/>
+        <textbox Name="adresa1" ColSpan="2" Width="100%" />
+        <textbox Name="adresa2" ColSpan="2" Width="400" />
+        <button Name="open_contact" Bounds="380,0,60,50" Text="MSG001" ToolTipTitle="TIT001" ToolTipText="TIP001" IconName="pic/open_mail"/>
+        <image Name="Obrazek" Bounds="" ImageName="pic/open_mail"/>
+    </panel>
+    
+    
     <panel Name="simple1" Title="Jednoduchý" ColumnsCount="2" AutoLabelPosition="Top" >
         <textbox Name="poznamka" ColSpan="2" Width="100%" ExpandControl="FullWidth"/>
         <textbox Name="reference_subjektu" Width="150"/>

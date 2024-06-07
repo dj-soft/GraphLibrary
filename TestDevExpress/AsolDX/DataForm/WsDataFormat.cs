@@ -129,7 +129,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Styl bloku
         /// </summary>
-        public override ContainerStyleType Style { get { return ContainerStyleType.Form; } }
+        public override ContainerType AreaType { get { return ContainerType.Form; } }
         /// <summary>
         /// Název souboru, který je načten
         /// </summary>
@@ -191,7 +191,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Debug text
         /// </summary>
-        protected override string DebugText { get { return $"{Style} '{Name}'; Pages: {(Pages is null ? "NULL" : Pages.Count.ToString())}"; } }
+        protected override string DebugText { get { return $"{AreaType} '{Name}'; Pages: {(Pages is null ? "NULL" : Pages.Count.ToString())}"; } }
     }
     /// <summary>
     /// Stránka = jedna záložka. Obsahuje vnořené panely <see cref="DfPanel"/>.
@@ -210,7 +210,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Styl bloku
         /// </summary>
-        public override ContainerStyleType Style { get { return ContainerStyleType.Page; } }
+        public override ContainerType AreaType { get { return ContainerType.Page; } }
         /// <summary>
         /// Jméno ikony panelu, zobrazuje se vlevo v titulku.
         /// </summary>
@@ -228,7 +228,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Debug text
         /// </summary>
-        protected override string DebugText { get { return $"{Style} '{Name}'; Title: '{Title}'; Panels: {(Panels is null ? "NULL" : Panels.Count.ToString())}"; } }
+        protected override string DebugText { get { return $"{AreaType} '{Name}'; Title: '{Title}'; Panels: {(Panels is null ? "NULL" : Panels.Count.ToString())}"; } }
     }
     /// <summary>
     /// Panel, může obsahovat jednotlivé controly i vnořené containery.
@@ -246,7 +246,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Styl bloku
         /// </summary>
-        public override ContainerStyleType Style { get { return ContainerStyleType.Panel; } }
+        public override ContainerType AreaType { get { return ContainerType.Panel; } }
         /// <summary>
         /// Obsahuje true, pokud tento panel reprezentuje záhlaví. To může být vykresleno na každé záložce, vždy jako první horní panel, v šířce přes všechny sloupce.
         /// </summary>
@@ -287,7 +287,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Debug text
         /// </summary>
-        protected override string DebugText { get { return $"{Style} '{Name}'; Title: '{Title}'; Childs: {(Childs is null ? "NULL" : Childs.Count.ToString())}"; } }
+        protected override string DebugText { get { return $"{AreaType} '{Name}'; Title: '{Title}'; Childs: {(Childs is null ? "NULL" : Childs.Count.ToString())}"; } }
     }
     /// <summary>
     /// Grupa uvnitř Panelu nebo uvnitř grupy, ale bez chování Panelu = nemá Collapsed a Title
@@ -305,7 +305,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Styl bloku
         /// </summary>
-        public override ContainerStyleType Style { get { return ContainerStyleType.Group; } }
+        public override ContainerType AreaType { get { return ContainerType.Group; } }
         /// <summary>
         /// Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
         /// </summary>
@@ -322,6 +322,14 @@ namespace Noris.WS.DataContracts.DxForm
         /// Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu (textu) v rámci controlu.
         /// </summary>
         public HPositionType? HPosition { get; set; }
+        /// <summary>
+        /// Umístění prvku svislé v rámci řádku v případě, kdy výška prvku je menší než výška sloupce. Řeší tedy zarovnání controlu v řádku, nikoli zarovnání obsahu (textu) v rámci controlu.
+        /// </summary>
+        public VPositionType? VPosition { get; set; }
+        /// <summary>
+        /// Rozšíření controlu do okolního prostoru pro labely, pokud labely nejsou použity
+        /// </summary>
+        public ExpandControlType? ExpandControl { get; set; }
     }
     /// <summary>
     /// Vnořený panel, vložený do Page.
@@ -408,6 +416,14 @@ namespace Noris.WS.DataContracts.DxForm
         /// Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu (textu) v rámci controlu.
         /// </summary>
         public HPositionType? HPosition { get; set; }
+        /// <summary>
+        /// Umístění prvku svislé v rámci řádku v případě, kdy výška prvku je menší než výška sloupce. Řeší tedy zarovnání controlu v řádku, nikoli zarovnání obsahu (textu) v rámci controlu.
+        /// </summary>
+        public VPositionType? VPosition { get; set; }
+        /// <summary>
+        /// Rozšíření controlu do okolního prostoru pro labely, pokud labely nejsou použity
+        /// </summary>
+        public ExpandControlType? ExpandControl { get; set; }
     }
     /// <summary>
     /// Prostor obsahující controly = základ pro <see cref="DfPanel"/> a pro <see cref="DfGroup"/>.<br/>
@@ -440,17 +456,13 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public string ParentBounds { get; set; }
         /// <summary>
-        /// Souřadnice bodu, kde začíná rozmísťování prvků, které nemají zadanou exaktní souřadnici X, Y. Výchozí je "0,0". Zadává se ve formě: "X,Y".
-        /// </summary>
-        public Location FlowLayoutOrigin { get; set; }
-        /// <summary>
-        /// Velikost tohoto conatineru, určená výpočtem.
+        /// Velikost tohoto containeru, určená výpočtem.
         /// </summary>
         public ContainerSize DesignSize { get; set; }
         /// <summary>
         /// Debug text
         /// </summary>
-        protected override string DebugText { get { return $"{Style}; Name: {Name}"; } }
+        protected override string DebugText { get { return $"{AreaType}; Name: {Name}"; } }
     }
     /// <summary>
     /// Prostor s něčím uvnitř = základ pro <see cref="DfPage"/>, pro <see cref="DfPanel"/> a pro <see cref="DfGroup"/>.
@@ -460,7 +472,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Styl bloku
         /// </summary>
-        public virtual ContainerStyleType Style { get { return ContainerStyleType.None; } }
+        public virtual ContainerType AreaType { get { return ContainerType.None; } }
         /// <summary>
         /// Název barevného kalíšku barvy pozadí
         /// </summary>
@@ -482,7 +494,9 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public BackImagePositionType? BackImagePosition { get; set; }
         /// <summary>
-        /// Souřadnice počátku Flow prostoru
+        /// Souřadnice bodu, kde začíná rozmísťování běžných prvků, které nemají zadanou svoji exaktní souřadnici X,Y. 
+        /// Výchozí je "0,0". Zadává se ve formě: "X,Y".
+        /// Touto hodnotou lze např.ponechat horní (nebo levou) část prázdnou, pro umístění prvků se zadanými souřadnicemi.
         /// </summary>
         public Location FlowAreaBegin { get; set; }
         /// <summary>
@@ -1670,6 +1684,10 @@ namespace Noris.WS.DataContracts.DxForm
             return $"Left: {Left}; Top: {Top}; Right: {Right}; Bottom: {Bottom}";
         }
         /// <summary>
+        /// Prázdná instance
+        /// </summary>
+        public static Margins Empty { get { return new Margins(); } }
+        /// <summary>
         /// Okraj vlevo
         /// </summary>
         public int Left { get; set; }
@@ -1690,7 +1708,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         private bool IsEmpty { get { return (this.Left == 0 && this.Top == 0 && this.Right == 0 && this.Bottom == 0); } }
         /// <summary>
-        /// Je všud stejný = všechny hodnoty jsou stejné
+        /// Je všude stejný = všechny hodnoty jsou stejné (i <see cref="IsEmpty"/> prvek má <see cref="IsAll"/> == true)
         /// </summary>
         private bool IsAll { get { return (this.Left == this.Top && this.Top == this.Right && this.Right == this.Bottom); } }
     }
@@ -2245,9 +2263,9 @@ namespace Noris.WS.DataContracts.DxForm
         TabSkip = 0x0008
     }
     /// <summary>
-    /// Styl jednoho bloku = odstavce
+    /// Druh containeru
     /// </summary>
-    public enum ContainerStyleType
+    public enum ContainerType
     {
         /// <summary>
         /// Neurčeno

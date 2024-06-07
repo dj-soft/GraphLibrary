@@ -10,24 +10,35 @@
 		  AddUda="True" UdaLabelPosition="Top"
           ColumnWidths="200;300;100" >
 
-    <panel Name="panel1" Title="Test 1" ColumnsCount="5" AutoLabelPosition="None" ColumnsDistance="0" RowsDistance="0" ControlMargins="1,1" TopLabelOffsetX="6" >
+    <panel Name="panel1" Title="Test 1" ColumnsCount="5" AutoLabelPosition="None"  Margins="9,6" ControlMargins="1,1" FlowAreaBegin="0,34" >
+        
+        <label Name="Titulek" Bounds="10,0,730,30" Text="Titulek" />
+        
 		<textbox Name="r0c0" Width="150" />
 		<textbox Name="r0c1" Width="150" />
 		<textbox Name="r0c2" Width="150" />
 		<textbox Name="r0c3" Width="150" />
 		<textbox Name="r0c4" Width="150" />
+        
 		<textbox Name="r1c0" />
 		<placeholder Name="place1" RowSpan="3" ColSpan="3" />
 		<textbox Name="r1c4" />
+        
 		<textbox Name="r2c0" />
 		<textbox Name="r2c4" />
+        
 		<textbox Name="r3c0" />
 		<textbox Name="r3c4" />
+        
 		<textbox Name="r4c0" />
 		<textbox Name="r4c123" ColSpan="3" />
 		<textbox Name="r4c4"/>
 
-		<button Name="inbutton" ParentBounds="place1"/>
+		<button Name="inbutton" Size="430,50" HPosition="Center" VPosition="Center" ParentBounds="place1"/>
+
+        <button Name="outbutton1" Bounds="32,138,213,40" Text="Velké tlačítko 1" />
+        <button Name="outbutton2" Bounds="269,138,212,40" Text="Velké tlačítko 2" />
+        <button Name="outbutton3" Bounds="505,138,213,40" Text="Velké tlačítko 3" />
     </panel>
 
 </template>

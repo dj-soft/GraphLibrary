@@ -11,7 +11,7 @@
           ColumnWidths="200;300;100" >
 
 
-    <panel Name="test1" Title="Primitivní" ColumnsCount="2" AutoLabelPosition="Up" >
+    <panel Name="test01" Title="Primitivní" ColumnsCount="2" AutoLabelPosition="Up" >
         <textbox Name="reference_subjektu3" ColumnName="reference_subjektu" Width="120" Label="Číslo faktury"/>
         <textbox Name="nazev_subjektu3" ColumnName="nazev_subjektu" Width="300" Label="Variabilní symbol"/>
         <textbox Name="odberatel_refer3" LabelWidth="420" Label="Cílový odběratel zboží, které je zde fakturováno:" />
@@ -19,7 +19,7 @@
     </panel>
 
 
-    <panel Name="test2" Title="Jednoduchý" ColumnsCount="2" AutoLabelPosition="Up" ColumnsDistance="12" >
+    <panel Name="test02" Title="Jednoduchý" ColumnsCount="2" AutoLabelPosition="Up" ColumnsDistance="12" >
         <textbox Name="adresa1" ColSpan="2" Width="100%" />
         <textbox Name="adresa2" ColSpan="2" Width="400" />
         <textbox Name="reference_subjektu"/>
@@ -28,7 +28,7 @@
         <textbox Name="dodavatel_nazev"/>
     </panel>
 
-    <panel Name="test3" Title="jinjang" ColumnsCount="3" AutoLabelPosition="None" >
+    <panel Name="test03" Title="jinjang" ColumnsCount="3" AutoLabelPosition="None" >
         <textbox Name="row0col01" ColSpan="2" Width="300"/>
         <image Name="row01col2" RowSpan="2" Width="150" Height="50"/>
         <image Name="row12col0" RowSpan="2" Width="150" Height="50"/>
@@ -39,7 +39,7 @@
         <textbox Name="row4col2" ColIndex="2" />
     </panel>
 
-    <panel Name="test4" Title="pavel" ColumnsCount="3" AutoLabelPosition="Up" >
+    <panel Name="test04" Title="pavel" ColumnsCount="3" AutoLabelPosition="Up" >
         <textbox Name="pkrefer1" Width="150"/>
         <textbox Name="pknazev1" Width="250"/>
         <textbox Name="pkimage1" RowSpan="3" Width="120"/>
@@ -48,7 +48,7 @@
         <textbox Name="pkpozn3" ColSpan="2"/>
     </panel>
 
-    <panel Name="test5" Title="pavel 4col" ColumnsCount="5" AutoLabelPosition="Up" >
+    <panel Name="test05" Title="pavel 4col" ColumnsCount="5" AutoLabelPosition="Up" >
         <textbox Name="pkrefer1a" Width="150"/>
         <textbox Name="pknazev1b" Width="250"/>
         <image Name="pkimage1c" RowSpan="3" Width="120"/>
@@ -64,7 +64,7 @@
         <textbox Name="pkpozn4abcde" ColSpan="5"/>
     </panel>
 
-    <panel Name="test6" Title="Zajímavý" ColumnWidths="120;250" AutoLabelPosition="Up" >
+    <panel Name="test06" Title="Zajímavý" ColumnWidths="120;250" AutoLabelPosition="Up" >
         <textbox Name="reference_subjektu4" ColumnName="reference_subjektu" Width="120" Label="Číslo faktury"/>
         <textbox Name="nazev_subjektu4" ColumnName="nazev_subjektu" Width="300" Label="Variabilní symbol"/>
         <textbox Name="kontakt_refer" LabelWidth="420" Label="Dodavatel zboží, které je zde fakturováno:" />
@@ -75,7 +75,7 @@
         <image Name="Obrazek" Bounds="" ImageName="pic/open_mail"/>
     </panel>
 
-    <panel Name="test7" Title="Neobyčejný" ColumnWidths="120;250" AutoLabelPosition="Up" BackColorLight="#662211" BackColorDark="#220804" BackImageName="pic/back/angle_violet" >
+    <panel Name="test07" Title="Neobyčejný" ColumnWidths="120;250" AutoLabelPosition="Up" BackColorLight="#662211" BackColorDark="#220804" BackImageName="pic/back/angle_violet" >
         <textboxbutton Name="dokument" ColumnName="reference_subjektu" Label="Scan faktury" Bounds="25,30,400,20">
             <rightButton Name="open_doc" IconName="pic/opendoc"/>
             <rightButton Name="open_rec" IconName="pic/openrec"/>
@@ -83,7 +83,7 @@
         <image Name="logo" ImageName="pic/images/logo01" Bounds="25,60,320,240"/>
     </panel>
 
-	<panel Name="test8" Title="Test zajímavý" ColumnsCount="5" AutoLabelPosition="BeforeRight" ColumnsDistance="0" RowsDistance="0" ControlMargins="1,1" TopLabelOffsetX="6" >
+	<panel Name="test08" Title="Test zajímavý" ColumnsCount="5" AutoLabelPosition="BeforeRight" ColumnsDistance="0" RowsDistance="0" ControlMargins="1,1" TopLabelOffsetX="6" >
 		<button Name="InPlace" Bounds="3,3,100%,100%" ParentBounds="pkplace1d" Text="ButtOn" ExpandControl="All" />
 
 		<textbox Name="pkrefer1a" Width="150" State="Invisible,TabSkip"/>
@@ -101,5 +101,65 @@
 		<editbox Name="pkpozn4abcde" ColSpan="5" LabelPosition="Top" ExpandControl="Left" Height="80"/>
 	</panel>
 
+    <panel Name="panel09" Title="Test 1" ColumnsCount="5" AutoLabelPosition="None" ColumnsDistance="0" RowsDistance="0" Margins="9,6" ControlMargins="1,1" TopLabelOffsetX="6" FlowAreaBegin="0,40" >
 
+        <label Name="Titulek" Bounds="10,5,730,30" Text="Titulek" />
+
+        <textbox Name="r0c0" Width="150" />
+        <textbox Name="r0c1" Width="150" />
+        <textbox Name="r0c2" Width="150" />
+        <textbox Name="r0c3" Width="150" />
+        <textbox Name="r0c4" Width="150" />
+
+        <textbox Name="r1c0" />
+        <placeholder Name="place1" RowSpan="3" ColSpan="3" />
+        <textbox Name="r1c4" />
+
+        <textbox Name="r2c0" />
+        <textbox Name="r2c4" />
+
+        <textbox Name="r3c0" />
+        <textbox Name="r3c4" />
+
+        <textbox Name="r4c0" />
+        <textbox Name="r4c123" ColSpan="3" />
+        <textbox Name="r4c4"/>
+
+        <button Name="inbutton" Size="430,50" HPosition="Center" VPosition="Center" ParentBounds="place1"/>
+
+        <button Name="outbutton1" Bounds="32,160,213,40" Text="Velké tlačítko 1" />
+        <button Name="outbutton2" Bounds="269,160,212,40" Text="Velké tlačítko 2" />
+        <button Name="outbutton3" Bounds="505,160,213,40" Text="Velké tlačítko 3" />
+    </panel>
+
+    <panel Name="panel10" Title="Test 1" ColumnsCount="5" AutoLabelPosition="None"  Margins="9,6" ControlMargins="1,1" FlowAreaBegin="0,34" >
+
+        <label Name="Titulek" Bounds="10,0,730,30" Text="Titulek" />
+
+        <textbox Name="r0c0" Width="150" />
+        <textbox Name="r0c1" Width="150" />
+        <textbox Name="r0c2" Width="150" />
+        <textbox Name="r0c3" Width="150" />
+        <textbox Name="r0c4" Width="150" />
+
+        <textbox Name="r1c0" />
+        <placeholder Name="place1" RowSpan="3" ColSpan="3" />
+        <textbox Name="r1c4" />
+
+        <textbox Name="r2c0" />
+        <textbox Name="r2c4" />
+
+        <textbox Name="r3c0" />
+        <textbox Name="r3c4" />
+
+        <textbox Name="r4c0" />
+        <textbox Name="r4c123" ColSpan="3" />
+        <textbox Name="r4c4"/>
+
+        <button Name="inbutton" Size="430,50" HPosition="Center" VPosition="Center" ParentBounds="place1"/>
+
+        <button Name="outbutton1" Bounds="32,138,213,40" Text="Velké tlačítko 1" />
+        <button Name="outbutton2" Bounds="269,138,212,40" Text="Velké tlačítko 2" />
+        <button Name="outbutton3" Bounds="505,138,213,40" Text="Velké tlačítko 3" />
+    </panel>
 </template>

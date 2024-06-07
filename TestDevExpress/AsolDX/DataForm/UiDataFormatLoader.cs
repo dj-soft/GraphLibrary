@@ -588,6 +588,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             dfGroup.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
             dfGroup.RowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
             dfGroup.HPosition = _ReadAttributeEnumN<HPositionType>(xElement, "HPosition");
+            dfGroup.VPosition = _ReadAttributeEnumN<VPositionType>(xElement, "VPosition");
+            dfGroup.ExpandControl = _ReadAttributeEnumN<ExpandControlType>(xElement, "ExpandControl");
 
             // Elementy = Controly + Panely:
             _FillContainerChildElements(xElement, dfGroup, args);
@@ -616,6 +618,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             dfNestedGroup.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
             dfNestedGroup.RowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
             dfNestedGroup.HPosition = _ReadAttributeEnumN<HPositionType>(xElement, "HPosition");
+            dfNestedGroup.VPosition = _ReadAttributeEnumN<VPositionType>(xElement, "VPosition");
+            dfNestedGroup.ExpandControl = _ReadAttributeEnumN<ExpandControlType>(xElement, "ExpandControl");
 
             // Nested šablona:
             if (!_TryLoadNestedTemplate(dfNestedGroup.NestedTemplate, args, out DfForm dfNestedForm, $"NestedGroup '{dfNestedGroup.Name}'")) return null;
@@ -635,6 +639,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 dfGroup.ColSpan = dfNestedGroup.ColSpan;
                 dfGroup.RowSpan = dfNestedGroup.RowSpan;
                 dfGroup.HPosition = dfNestedGroup.HPosition;
+                dfGroup.VPosition = dfNestedGroup.VPosition;
+                dfGroup.ExpandControl = dfNestedGroup.ExpandControl;
             }
             else
             {
@@ -1002,6 +1008,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 area.BackColorDark = _ReadAttributeColorN(xElement, "BackColorDark");
                 area.BackImageName = _ReadAttributeString(xElement, "BackImageName", null);
                 area.BackImagePosition = _ReadAttributeEnumN<BackImagePositionType>(xElement, "BackImagePosition");
+                area.FlowAreaBegin = _ReadAttributesLocation(xElement, "FlowAreaBegin", null);
                 area.ColumnsCount = _ReadAttributeInt32N(xElement, "ColumnsCount");
                 area.ColumnWidths = _ReadAttributeString(xElement, "ColumnWidths", null);
                 area.AutoLabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "AutoLabelPosition", _FixLabelPosition);
@@ -1016,7 +1023,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 container.Bounds = _ReadAttributeBounds(xElement, null);
                 container.ParentBounds = _ReadAttributeString(xElement, "ParentBounds", null);
-                container.FlowLayoutOrigin = _ReadAttributesLocation(xElement, "FlowLayoutOrigin", null);
             }
         }
         /// <summary>
