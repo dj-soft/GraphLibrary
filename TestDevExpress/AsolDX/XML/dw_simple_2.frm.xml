@@ -169,4 +169,14 @@
         <button Name="outbutton3" Bounds="505,138,213,40" Text="Velké tlačítko 3" />
     </panel>
 
+    <panel Name="test11" Title="test04" ColumnsCount="3" AutoLabelPosition="Top" TopLabelOffsetX="-15" Margins="4,4" >
+        <textbox Name="pkrefer1" Width="150"/>
+        <textbox Name="pknazev1" Width="250"/>
+        <image Name="pkimage1" RowSpan="3" Width="120" Height="100%" ExpandControl="All" LabelPosition="None" />
+        <textbox Name="pkrefer2" />
+        <textbox Name="pknazev2" />
+        <textbox Name="pkpozn3" ColSpan="2"/>
+    </panel>
+
+
 </template>

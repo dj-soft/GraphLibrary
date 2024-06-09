@@ -10,23 +10,14 @@
 		  AddUda="True" UdaLabelPosition="Top"
           ColumnWidths="200;300;100" >
 
-    <panel Name="test08" Title="Test zajímavý" ColumnsCount="5" AutoLabelPosition="BeforeRight" ColumnsDistance="0" RowsDistance="0" ControlMargins="1,1" TopLabelOffsetX="6" >
-        
-        <button Name="InPlace" Bounds="6,3,100%,100%" ParentBounds="pkplace1d" Text="ButtOn" ExpandControl="All" />
-
-        <textbox Name="pkrefer1a" Width="150" State="TabSkip"/>
-        <textbox Name="pknazev1b" Width="250" LabelPosition="None"/>
-        <image Name="pkimage1c" RowSpan="3" Width="120" Height="100%" LabelPosition="None" />
-        <placeholder Name="pkplace1d" RowSpan="2" Width="200" Height="100%" />
-        <image Name="pkimage1e" RowSpan="2" Width="150" Height="100%" LabelPosition="None" />
-
-        <textbox Name="pkrefer2a" ColumnName="dodav_refer" TabIndex="12" />
-        <textbox Name="pknazev2b" LabelPosition="None" TabIndex="15" />
-
-        <textbox Name="pkpozn3ab" ColSpan="2"/>
-        <textbox Name="pkinfo3de" ColSpan="2" />
-
-        <editbox Name="pkpozn4abcde" ColSpan="5" LabelPosition="Top" ExpandControl="Left" Height="80"/>
-    </panel>
-
+<panel Name="test05" Title="test04" ColumnsCount="3" AutoLabelPosition="None" Margins="4,4" >
+    <label Name="title" Text="Fotografie zaměstnance" Bounds="0,0,460,22" />
+    <image Name="fotografie" Label="Fotografie" Bounds="0,26,336,240" />
+    <button Name="open" Text="Otevřít" Bounds="340,26,120,28" />
+    <button Name="clear" Text="Vymazat" Bounds="340,66,120,28" />
+    <button Name="save" Text="Uložit" Bounds="340,106,120,28" />
+    <button Name="flip" Text="Otočit" Bounds="340,146,120,28" />
+    <button Name="Close" Text="Zavřít" Bounds="340,238,120,28" />
+</panel>
+    
 </template>
