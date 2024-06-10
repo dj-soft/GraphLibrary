@@ -178,5 +178,14 @@
         <textbox Name="pkpozn3" ColSpan="2"/>
     </panel>
 
+    <panel Name="test12" Title="Absolute bounds" ColumnsCount="3" AutoLabelPosition="None" Margins="4,4" >
+        <label Name="title" Text="Fotografie zaměstnance" Bounds="0,0,460,22" />
+        <image Name="fotografie" Label="Fotografie" Bounds="0,26,336,240" />
+        <button Name="open" Text="Otevřít" Bounds="340,26,120,28" />
+        <button Name="clear" Text="Vymazat" Bounds="340,66,120,28" />
+        <button Name="save" Text="Uložit" Bounds="340,106,120,28" />
+        <button Name="flip" Text="Otočit" Bounds="340,146,120,28" />
+        <button Name="Close" Text="Zavřít" Bounds="340,238,120,28" />
+    </panel>
 
 </template>

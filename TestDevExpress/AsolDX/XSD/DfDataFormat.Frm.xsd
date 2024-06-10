@@ -245,6 +245,31 @@
                         <xs:documentation xml:lang="cs-cz">Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu (textu) v rámci controlu.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
+                <xs:attribute name="VPosition" type="vposition_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Umístění prvku svislé v rámci řádku v případě, kdy výška prvku je menší než výška sloupce. Řeší tedy zarovnání controlu v řádku, nikoli zarovnání obsahu (textu) v rámci controlu.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="ExpandControl" type="expand_control_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Rozšíření controlu do okolního prostoru pro labely, pokud labely nejsou použity.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Label" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Text, popisující obsah políčka.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="LabelPosition" type="label_position_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Umístění a zarovnání popisku (Labelu) vzhledem k souřadnicích controlu.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="LabelWidth" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Nejvyšší šířka prostoru pro Label.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
@@ -313,6 +338,32 @@
                         <xs:documentation xml:lang="cs-cz">Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu (textu) v rámci controlu.</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
+                <xs:attribute name="VPosition" type="vposition_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Umístění prvku svislé v rámci řádku v případě, kdy výška prvku je menší než výška sloupce. Řeší tedy zarovnání controlu v řádku, nikoli zarovnání obsahu (textu) v rámci controlu.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="ExpandControl" type="expand_control_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Rozšíření controlu do okolního prostoru pro labely, pokud labely nejsou použity.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="Label" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Text, popisující obsah políčka.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="LabelPosition" type="label_position_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Umístění a zarovnání popisku (Labelu) vzhledem k souřadnicích controlu.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="LabelWidth" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">Nejvyšší šířka prostoru pro Label.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

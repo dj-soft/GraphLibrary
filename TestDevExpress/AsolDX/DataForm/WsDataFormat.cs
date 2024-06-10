@@ -330,6 +330,26 @@ namespace Noris.WS.DataContracts.DxForm
         /// Rozšíření controlu do okolního prostoru pro labely, pokud labely nejsou použity
         /// </summary>
         public ExpandControlType? ExpandControl { get; set; }
+        /// <summary>
+        /// Text, popisující obsah políčka.
+        /// </summary>
+        public string Label { get; set; }
+        /// <summary>
+        /// Umístění a zarovnání popisku (Labelu) vzhledem k souřadnicích controlu
+        /// </summary>
+        public LabelPositionType? LabelPosition { get; set; }
+        /// <summary>
+        /// Nejvyšší šířka prostoru pro Label
+        /// </summary>
+        public int? LabelWidth { get; set; }
+        /// <summary>
+        /// Styl pro Label (název, styl písma, velikost, barva popisku, barva textu a pozadí, atd)
+        /// </summary>
+        public DfControlStyle LabelStyle { get; set; }
+        /// <summary>
+        /// Souřadnice labelu
+        /// </summary>
+        public ControlBounds LabelDesignBounds { get; set; }
     }
     /// <summary>
     /// Vnořený panel, vložený do Page.
@@ -424,6 +444,26 @@ namespace Noris.WS.DataContracts.DxForm
         /// Rozšíření controlu do okolního prostoru pro labely, pokud labely nejsou použity
         /// </summary>
         public ExpandControlType? ExpandControl { get; set; }
+        /// <summary>
+        /// Text, popisující obsah políčka.
+        /// </summary>
+        public string Label { get; set; }
+        /// <summary>
+        /// Umístění a zarovnání popisku (Labelu) vzhledem k souřadnicích controlu
+        /// </summary>
+        public LabelPositionType? LabelPosition { get; set; }
+        /// <summary>
+        /// Nejvyšší šířka prostoru pro Label
+        /// </summary>
+        public int? LabelWidth { get; set; }
+        /// <summary>
+        /// Styl pro Label (název, styl písma, velikost, barva popisku, barva textu a pozadí, atd)
+        /// </summary>
+        public DfControlStyle LabelStyle { get; set; }
+        /// <summary>
+        /// Souřadnice labelu
+        /// </summary>
+        public ControlBounds LabelDesignBounds { get; set; }
     }
     /// <summary>
     /// Prostor obsahující controly = základ pro <see cref="DfPanel"/> a pro <see cref="DfGroup"/>.<br/>

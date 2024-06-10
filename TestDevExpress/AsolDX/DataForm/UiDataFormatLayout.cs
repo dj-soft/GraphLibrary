@@ -367,6 +367,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.RowsDistance = 0;
                 this.TopLabelOffsetX = 3;
                 this.BottomLabelOffsetX = 3;
+
+                this._Validate();
             }
             public StyleInfo(ContainerType areaType, int? columnsCount, string columnWidths, Location flowAreaBegin, Margins controlMargins, LabelPositionType autoLabelPosition, Margins margins, int columnsDistance, int rowsDistance, int topLabelOffsetX, int bottomLabelOffsetX)
             {
@@ -381,6 +383,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.RowsDistance = rowsDistance;
                 this.TopLabelOffsetX = topLabelOffsetX;
                 this.BottomLabelOffsetX = bottomLabelOffsetX;
+
+                this._Validate();
             }
             public StyleInfo(DfBaseArea dfArea)
             {
@@ -395,6 +399,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.RowsDistance = dfArea.RowsDistance ?? 0;
                 this.TopLabelOffsetX = dfArea.TopLabelOffsetX ?? 3;
                 this.BottomLabelOffsetX = dfArea.BottomLabelOffsetX ?? 3;
+
+                this._Validate();
             }
             public StyleInfo(DfBaseArea dfArea, StyleInfo styleParent)
             {
@@ -420,7 +426,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
                 // Některé hodnoty se dědí jen pro určité druhy containerů, ale třeba do grupy se z vyšších stylů nedědí:
                 bool isGroup = (this.CurrentAreaType == ContainerType.Group);
-                this.Margins = dfArea.Margins != null ? dfArea.Margins : (isGroup ? Margins.Empty : styleParent.Margins);
+                this.Margins = dfArea.Margins != null ? dfArea.Margins : (isGroup ? null : styleParent.Margins);
 
                 // Ostatní hodnoty jsou "jednomístné" a lze je dědit jednoduše:
                 this.AutoLabelPosition = dfArea.AutoLabelPosition.HasValue ? dfArea.AutoLabelPosition.Value : styleParent.AutoLabelPosition;
@@ -429,6 +435,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.RowsDistance = dfArea.RowsDistance.HasValue? dfArea.RowsDistance.Value : styleParent.RowsDistance;
                 this.TopLabelOffsetX = dfArea.TopLabelOffsetX.HasValue ? dfArea.TopLabelOffsetX.Value : styleParent.TopLabelOffsetX;
                 this.BottomLabelOffsetX = dfArea.BottomLabelOffsetX.HasValue ? dfArea.BottomLabelOffsetX.Value : styleParent.BottomLabelOffsetX;
+
+                this._Validate();
+            }
+            /// <summary>
+            /// Validace hodnot
+            /// </summary>
+            private void _Validate()
+            {
+                if (Margins is null) Margins = Margins.Empty;
+                if (ControlMargins is null) ControlMargins = Margins.Empty;
             }
             /// <summary>
             /// Druh containeru načtený v this instanci, pochází z dodaného <see cref="DfBaseArea.AreaType"/>.
@@ -760,9 +776,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.__HPosition = dfGroup.HPosition;
                 this.__VPosition = dfGroup.VPosition;
                 this.__ExpandControl = dfGroup.ExpandControl;
-                this.__LabelPosition = LabelPositionType.None;
+                this.__LabelPosition = dfGroup.LabelPosition ?? _CurrentStyle.AutoLabelPosition;
+                this.__MainLabelText = dfGroup.Label;
+                this.__MainLabelWidth = dfGroup.LabelWidth;
+                this.__MainLabelStyle = dfGroup.LabelStyle;
                 this.__ControlType = ControlType.None;
                 this.__ControlExists = true;
+
+                _RefreshData();
             }
             /// <summary>
             /// Inicializace vlastních dat tohoto prvku pro prvek typu Control.
@@ -2693,7 +2714,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (layoutStyle is null) throw new ArgumentNullException($"DfFlowLayoutInfo.ProcessFixedItemBounds fail: layoutStyle is null.");
             int topLabelOffsetX = layoutStyle.TopLabelOffsetX;
             int bottomLabelOffsetX = layoutStyle.BottomLabelOffsetX;
-            _ProcessFixedItemBounds(item, controlBounds, topLabelOffsetX, bottomLabelOffsetX);
+            var margins = layoutStyle.ControlMargins;
+            _ProcessFixedItemBounds(item, controlBounds, topLabelOffsetX, bottomLabelOffsetX, margins);
         }
         /// <summary>
         /// Metoda určí a uloží do prvku <see cref="IFlowLayoutItem"/> <paramref name="item"/> souřadnice pro MainLabel, pro Control a pro SuffixLabel podle dodané souřadnice pro Control.
@@ -2702,11 +2724,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="controlBounds">Oblast pro Control</param>
         /// <param name="topLabelOffsetX">Offset X pro labely umístěné Top</param>
         /// <param name="bottomLabelOffsetX">Offset X pro labely umístěné Bottom</param>
-        public static void ProcessFixedItemBounds(IFlowLayoutItem item, ControlBounds controlBounds, int topLabelOffsetX, int bottomLabelOffsetX)
+        /// <param name="margins">Okraje kolem controlu vzhledem k labelům</param>
+        public static void ProcessFixedItemBounds(IFlowLayoutItem item, ControlBounds controlBounds, int topLabelOffsetX, int bottomLabelOffsetX, Margins margins)
         {
             if (item is null) throw new ArgumentNullException($"DfFlowLayoutInfo.ProcessFixedItemBounds fail: item is null.");
             if (controlBounds is null) throw new ArgumentNullException($"DfFlowLayoutInfo.ProcessFixedItemBounds fail: controlBounds is null.");
-            _ProcessFixedItemBounds(item, controlBounds, topLabelOffsetX, bottomLabelOffsetX);
+            _ProcessFixedItemBounds(item, controlBounds, topLabelOffsetX, bottomLabelOffsetX, margins);
         }
         /// <summary>
         /// Metoda určí a uloží do prvku <see cref="IFlowLayoutItem"/> <paramref name="item"/> souřadnice pro MainLabel, pro Control a pro SuffixLabel podle standardních pravidel.
@@ -2913,24 +2936,75 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="controlBounds">Oblast pro Control</param>
         /// <param name="topLabelOffsetX">Offset X pro labely umístěné Top</param>
         /// <param name="bottomLabelOffsetX">Offset X pro labely umístěné Bottom</param>
-        private static void _ProcessFixedItemBounds(IFlowLayoutItem item, ControlBounds controlBounds, int topLabelOffsetX, int bottomLabelOffsetX)
+        /// <param name="margins">Okraje kolem controlu vzhledem k labelům</param>
+        private static void _ProcessFixedItemBounds(IFlowLayoutItem item, ControlBounds controlBounds, int topLabelOffsetX, int bottomLabelOffsetX, Margins margins)
         {
             if (item.ControlExists)
                 item.ControlBounds = controlBounds;
 
             if (item.MainLabelExists)
-                item.MainLabelBounds = getMainLabelBounds();
+                processMainLabelBounds();
 
             if (item.SuffixLabelExists)
-                item.SuffixLabelBounds = getSuffixLabelBounds();
+                processSuffixLabelBounds();
 
-            ControlBounds getMainLabelBounds()
+
+            // Vyřeší souřadnici pro MainLabel
+            void processMainLabelBounds()
             {
-                return null;
+                if (controlBounds is null) return;
+                var labelPos = item.LabelPosition;
+                if (labelPos == LabelPositionType.None) return;
+                item.MainLabelBounds = getLabelBounds(labelPos, item.DesignLabelWidth ?? item.ImplicitMainLabelWidth, item.ImplicitMainLabelHeight, out var labelAlignment);
+                item.MainLabelAlignment = labelAlignment;
             }
-
-            ControlBounds getSuffixLabelBounds()
+            // Vyřeší souřadnici pro SuffixLabel
+            void processSuffixLabelBounds()
             {
+                if (controlBounds is null) return;
+                var labelPos = item.LabelPosition;
+                if (item.MainLabelExists && labelPos == LabelPositionType.After) return;           // Pokud existuje Main label a ten je After, tak tam neůže být Suffix Label
+                item.SuffixLabelBounds = getLabelBounds(labelPos, item.ImplicitSuffixLabelWidth, item.ImplicitSuffixLabelHeight, out var labelAlignment);
+            }
+            // Určí a vrátí souřadnici pro dané umístění
+            ControlBounds getLabelBounds(LabelPositionType labelPos, int? width, int? height, out ContentAlignmentType labelAlignment)
+            {
+                labelAlignment = ContentAlignmentType.Default;
+                if (!width.HasValue || width.Value <= 0 || !height.HasValue || height.Value <= 0) return null;
+
+                int l, r, t, b;
+                switch (labelPos)
+                {
+                    case LabelPositionType.BeforeLeft:
+                    case LabelPositionType.BeforeRight:
+                        r = controlBounds.Left - margins.Left;
+                        l = r - width.Value;
+                        t = controlBounds.Top;
+                        b = t + height.Value;
+                        labelAlignment = (labelPos == LabelPositionType.BeforeLeft ? ContentAlignmentType.MiddleLeft : (labelPos == LabelPositionType.BeforeRight ? ContentAlignmentType.MiddleRight : ContentAlignmentType.MiddleCenter));
+                        return new ControlBounds(l, t, (r - l), (b - t));
+                    case LabelPositionType.After:
+                        l = controlBounds.Right + margins.Right;
+                        r = l + width.Value;
+                        t = controlBounds.Top;
+                        b = t + height.Value;
+                        labelAlignment = ContentAlignmentType.MiddleLeft;
+                        return new ControlBounds(l, t, (r - l), (b - t));
+                    case LabelPositionType.Top:
+                        l = controlBounds.Left + topLabelOffsetX;
+                        r = controlBounds.Right;
+                        b = controlBounds.Top - margins.Top;
+                        t = b - height.Value;
+                        labelAlignment = ContentAlignmentType.BottomLeft;
+                        return new ControlBounds(l, t, (r - l), (b - t));
+                    case LabelPositionType.Bottom:
+                        l = controlBounds.Left + bottomLabelOffsetX;
+                        r = controlBounds.Right;
+                        t = controlBounds.Bottom + margins.Bottom;
+                        b = t + height.Value;
+                        labelAlignment = ContentAlignmentType.TopLeft;
+                        return new ControlBounds(l, t, (r - l), (b - t));
+                }
                 return null;
             }
         }

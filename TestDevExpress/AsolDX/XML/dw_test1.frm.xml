@@ -10,9 +10,9 @@
 		  AddUda="True" UdaLabelPosition="Top"
           ColumnWidths="200;300;100" >
 
-<panel Name="test05" Title="test04" ColumnsCount="3" AutoLabelPosition="None" Margins="4,4" >
+<panel Name="test05" Title="test04" ColumnsCount="3" AutoLabelPosition="Top" Margins="4,4" >
     <label Name="title" Text="Fotografie zaměstnance" Bounds="0,0,460,22" />
-    <image Name="fotografie" Label="Fotografie" Bounds="0,26,336,240" />
+    <image Name="fotografie" Label="Fotografie" Bounds="0,46,336,220" LabelPosition="Top" />
     <button Name="open" Text="Otevřít" Bounds="340,26,120,28" />
     <button Name="clear" Text="Vymazat" Bounds="340,66,120,28" />
     <button Name="save" Text="Uložit" Bounds="340,106,120,28" />

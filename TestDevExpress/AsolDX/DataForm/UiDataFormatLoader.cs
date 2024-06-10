@@ -590,6 +590,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             dfGroup.HPosition = _ReadAttributeEnumN<HPositionType>(xElement, "HPosition");
             dfGroup.VPosition = _ReadAttributeEnumN<VPositionType>(xElement, "VPosition");
             dfGroup.ExpandControl = _ReadAttributeEnumN<ExpandControlType>(xElement, "ExpandControl");
+            dfGroup.Label = _ReadAttributeString(xElement, "Label", null);
+            dfGroup.LabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPosition", _FixLabelPosition);
+            dfGroup.LabelWidth = _ReadAttributeInt32N(xElement, "LabelWidth");
 
             // Elementy = Controly + Panely:
             _FillContainerChildElements(xElement, dfGroup, args);
@@ -620,6 +623,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             dfNestedGroup.HPosition = _ReadAttributeEnumN<HPositionType>(xElement, "HPosition");
             dfNestedGroup.VPosition = _ReadAttributeEnumN<VPositionType>(xElement, "VPosition");
             dfNestedGroup.ExpandControl = _ReadAttributeEnumN<ExpandControlType>(xElement, "ExpandControl");
+            dfNestedGroup.Label = _ReadAttributeString(xElement, "Label", null);
+            dfNestedGroup.LabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPosition", _FixLabelPosition);
+            dfNestedGroup.LabelWidth = _ReadAttributeInt32N(xElement, "LabelWidth");
 
             // Nested šablona:
             if (!_TryLoadNestedTemplate(dfNestedGroup.NestedTemplate, args, out DfForm dfNestedForm, $"NestedGroup '{dfNestedGroup.Name}'")) return null;
@@ -641,6 +647,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 dfGroup.HPosition = dfNestedGroup.HPosition;
                 dfGroup.VPosition = dfNestedGroup.VPosition;
                 dfGroup.ExpandControl = dfNestedGroup.ExpandControl;
+                dfGroup.Label = dfNestedGroup.Label;
+                dfGroup.LabelPosition = dfNestedGroup.LabelPosition;
+                dfGroup.LabelWidth = dfNestedGroup.LabelWidth;
             }
             else
             {
@@ -920,7 +929,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             return subTextItems;
         }
-
         private static DfSubButton _FillControlSubButton(System.Xml.Linq.XElement xElement, DfSubButton control, DfTemplateLoadArgs args)
         {
             _FillControlSubTextItem(xElement, control, args);
