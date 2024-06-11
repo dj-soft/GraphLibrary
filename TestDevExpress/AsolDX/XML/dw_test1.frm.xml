@@ -10,14 +10,19 @@
 		  AddUda="True" UdaLabelPosition="Top"
           ColumnWidths="200;300;100" >
 
-<panel Name="test05" Title="test04" ColumnsCount="3" AutoLabelPosition="Top" Margins="4,4" >
-    <label Name="title" Text="Fotografie zaměstnance" Bounds="0,0,460,22" />
-    <image Name="fotografie" Label="Fotografie" Bounds="0,46,336,220" LabelPosition="Top" />
-    <button Name="open" Text="Otevřít" Bounds="340,26,120,28" />
-    <button Name="clear" Text="Vymazat" Bounds="340,66,120,28" />
-    <button Name="save" Text="Uložit" Bounds="340,106,120,28" />
-    <button Name="flip" Text="Otočit" Bounds="340,146,120,28" />
-    <button Name="Close" Text="Zavřít" Bounds="340,238,120,28" />
-</panel>
-    
+    <panel Name="test12" Title="test04" ColumnsCount="3" AutoLabelPosition="Top" TopLabelOffsetX="6" Margins="4,4" >
+        <textbox Name="sklad_refer" Width="150"/>
+        <textbox Name="sklad_nazev" Width="250"/>
+        <textbox Name="sklad_osoba" Width="350"/>
+        <group Name ="adresa" ColSpan="3" Label="Adresa:" ColumnsCount="4" AutoLabelPosition="None" >
+            <textbox Name="Ulice" />
+            <textbox Name="čp."/>
+            <textbox Name="PSČ"/>
+            <textbox Name="Obec"/>
+        </group>
+        <textbox Name="organizace_refer" />
+        <textbox Name="organizace_nazev" />
+        <textbox Name="organizace_osoba" />
+    </panel>
+
 </template>

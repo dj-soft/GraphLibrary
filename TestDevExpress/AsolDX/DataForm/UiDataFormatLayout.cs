@@ -539,7 +539,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                             // a) Container (tj. Group)?
                             if (dfChild is DfBaseContainer dfChildContainer)
                             {
-                                StyleInfo childStyle = new StyleInfo(dfChildContainer, this.__Style);
+                                StyleInfo childStyle = new StyleInfo(dfChildContainer, this.__ChildStyle);
                                 ItemInfo childContainer = new ItemInfo(dfChild, this, null, childStyle);
                                 __Childs.Add(childContainer);
                                 childContainer._CreateChilds();
@@ -566,7 +566,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 __DfItem = dfItem;
                 __Parent = parent;
                 __DfArgs = dfArgs;
-                __Style = style;
+                __ChildStyle = style;
                 __Childs = null;
 
                 _InitData();
@@ -583,7 +583,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 __DfItem = null;
                 __Parent = null;
                 __DfArgs = null;
-                __Style = null;
+                __ChildStyle = null;
             }
             /// <summary>
             /// Vizualizace
@@ -612,7 +612,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Container si styl sám nevytvoří, protože musí mít k dispozici styl parenta (dědičnost pro implicitní hodnoty!).
             /// Jednotlivé controly zde mají null, najdou si styl ve svém parentu.
             /// </summary>
-            private StyleInfo __Style;
+            private StyleInfo __ChildStyle;
             /// <summary>
             /// Prvky mých Childs. Výchozí stav je null (většina prvků jsou Controly, které nemají Childs). Lze testovat <see cref="_HasChilds"/>.
             /// </summary>
@@ -622,10 +622,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private ItemInfo _Root { get { return (__Parent?._Root ?? this); } }
             /// <summary>
-            /// Styl pro tento prvek. Pokud this je container, pak má definován svůj vlastní styl (<see cref="__Style"/>).
+            /// Styl pro Child prvky tohoto containeru. Pokud this je container, pak má definován svůj vlastní styl (<see cref="__ChildStyle"/>).
             /// Pokud jej nemá (typicky proto, že jde o Control), pak zde vrací aktuální styl ze svého Parenta.
             /// </summary>
-            private StyleInfo _CurrentStyle { get { return __Style ?? __Parent?._CurrentStyle; } }
+            private StyleInfo _CurrentStyle { get { return __ChildStyle ?? __Parent?._CurrentStyle; } }
+            /// <summary>
+            /// Styl pocházející z parenta. pro tento prvek. Pokud this je container, pak má definován svůj vlastní styl (<see cref="__ChildStyle"/>).
+            /// Pokud jej nemá (typicky proto, že jde o Control), pak zde vrací aktuální styl ze svého Parenta.
+            /// </summary>
+            private StyleInfo _ParentStyle { get { return __Parent?._CurrentStyle; } }
             /// <summary>
             /// Obsahuje true, pokud this je Root
             /// </summary>
@@ -717,7 +722,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             #endregion
             #region Další data o prvku - primárně pro interface IDataFormItem
             /// <summary>
-            /// Je voláno na konci konstruktoru, když jsou uloženy základní proměnné <see cref="__DfItem"/>, <see cref="__Parent"/>, <see cref="__DfArgs"/>, <see cref="__Style"/>. Aktuálně neřešíme Childs, <see cref="__Childs"/> je null a dosud nebyly enumerovány.<br/>
+            /// Je voláno na konci konstruktoru, když jsou uloženy základní proměnné <see cref="__DfItem"/>, <see cref="__Parent"/>, <see cref="__DfArgs"/>, <see cref="__ChildStyle"/>. Aktuálně neřešíme Childs, <see cref="__Childs"/> je null a dosud nebyly enumerovány.<br/>
             /// Připraví si trvalá data: vyhodnotí svůj zdroj (grupa / control) a opíše si z něj jeho specifické hodnoty do zdejších proměnných. Ani zde se neřeší Childs, pouze aktuální prvek <see cref="__DfItem"/> v jeho konkrétní formě.
             /// </summary>
             private void _InitData()
@@ -757,7 +762,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.__HPosition = null;
                 this.__VPosition = null;
                 this.__ExpandControl = null;
-                this.__LabelPosition = LabelPositionType.None;
+                this.__LabelPosition = null;
                 this.__ControlType = ControlType.None;
                 this.__ControlExists = true;
             }
@@ -776,7 +781,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.__HPosition = dfGroup.HPosition;
                 this.__VPosition = dfGroup.VPosition;
                 this.__ExpandControl = dfGroup.ExpandControl;
-                this.__LabelPosition = dfGroup.LabelPosition ?? _CurrentStyle.AutoLabelPosition;
+                this.__LabelPosition = dfGroup.LabelPosition;
                 this.__MainLabelText = dfGroup.Label;
                 this.__MainLabelWidth = dfGroup.LabelWidth;
                 this.__MainLabelStyle = dfGroup.LabelStyle;
@@ -808,7 +813,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // Specifické informace podle druhu controlu::
                 if (dfControl is DfBaseLabeledInputControl labeledInputControl)
                 {   // Label vedle Controlu:
-                    this.__LabelPosition = labeledInputControl.LabelPosition ?? _CurrentStyle.AutoLabelPosition;
+                    this.__LabelPosition = labeledInputControl.LabelPosition;
                     this.__MainLabelText = labeledInputControl.Label;
                     this.__MainLabelWidth = labeledInputControl.LabelWidth;
                     this.__MainLabelStyle = labeledInputControl.LabelStyle;
@@ -828,9 +833,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private void _RefreshData()
             {
-                this.__MainLabelExists = (!String.IsNullOrEmpty(__MainLabelText) && (__LabelPosition == LabelPositionType.BeforeLeft || __LabelPosition == LabelPositionType.BeforeRight || __LabelPosition == LabelPositionType.Top || __LabelPosition == LabelPositionType.Bottom || __LabelPosition == LabelPositionType.BeforeRight));
+                LabelPositionType lPos = __LabelPosition ?? _ParentStyle.AutoLabelPosition;
+                this.__ValidLabelPosition = lPos;
+                this.__MainLabelExists = (!String.IsNullOrEmpty(__MainLabelText) && (lPos == LabelPositionType.BeforeLeft || lPos == LabelPositionType.BeforeRight || lPos == LabelPositionType.Top || lPos == LabelPositionType.Bottom || lPos == LabelPositionType.BeforeRight));
                 this.__ControlExists = !(this.__ControlType == ControlType.None || this.__ControlType == ControlType.PlaceHolder);
-                this.__SuffixLabelExists = (!String.IsNullOrEmpty(__SuffixLabelText) && __LabelPosition != LabelPositionType.BeforeRight);
+                this.__SuffixLabelExists = (!String.IsNullOrEmpty(__SuffixLabelText) && __LabelPosition != LabelPositionType.After);
             }
             /// <summary>
             /// Zahodí veškerá data
@@ -845,7 +852,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 __RowSpan = null;
                 __HPosition = null;
                 __ExpandControl = null;
-                __LabelPosition = LabelPositionType.None;
+                __LabelPosition = null;
                 __ControlType = ControlType.None;
                 __ControlStyle = null;
                 __ToolTipTitle = null;
@@ -907,9 +914,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private ExpandControlType? __ExpandControl;
             /// <summary>
-            /// Umístění a zarovnání popisku (Labelu) vzhledem k souřadnicích controlu
+            /// Umístění a zarovnání popisku (Main Labelu) vzhledem k souřadnicích controlu, zadané k prvku (nebo null)
             /// </summary>
-            private LabelPositionType __LabelPosition;
+            private LabelPositionType? __LabelPosition;
+            /// <summary>
+            /// Umístění a zarovnání popisku (Main Labelu) vzhledem k souřadnicích controlu, validované (není null)
+            /// </summary>
+            private LabelPositionType __ValidLabelPosition;
             /// <summary>
             /// Typ prvku
             /// </summary>
@@ -1024,7 +1035,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int? IDataFormItem.DesignHeightPixel { get { return __Bounds?.Height?.NumberPixel; } }
             int? IDataFormItem.DesignHeightPercent { get { return __Bounds?.Height?.NumberPercent; } }
             int? IDataFormItem.DesignLabelWidth { get { return __MainLabelWidth; } }
-            LabelPositionType IDataFormItem.LabelPosition { get { return __LabelPosition; } }
+            LabelPositionType IDataFormItem.LabelPosition { get { return __ValidLabelPosition; } }
             bool IDataFormItem.MainLabelExists { get { return __MainLabelExists ; } }
             bool IDataFormItem.ControlExists { get { return __ControlExists; } }
             bool IDataFormItem.SuffixLabelExists { get { return __SuffixLabelExists; } }
@@ -1146,7 +1157,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int? IFlowLayoutItem.DesignHeightPixel { get { return __Bounds?.Height?.NumberPixel; } }
             int? IFlowLayoutItem.DesignHeightPercent { get { return __Bounds?.Height?.NumberPercent; } }
             int? IFlowLayoutItem.DesignLabelWidth { get { return __MainLabelWidth; } }
-            LabelPositionType IFlowLayoutItem.LabelPosition { get { return __LabelPosition; } }
+            LabelPositionType IFlowLayoutItem.LabelPosition { get { return __ValidLabelPosition; } }
             bool IFlowLayoutItem.MainLabelExists { get { return __MainLabelExists; } }
             bool IFlowLayoutItem.ControlExists { get { return __ControlExists; } }
             bool IFlowLayoutItem.SuffixLabelExists { get { return __SuffixLabelExists; } }
@@ -1204,6 +1215,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     _PositionChilds();           // Kvalifikuje Child prvky na Fixed a Flow; a pro Flow prvky vyřeší jejich rozmístění (souřadnice) pomocí FlowLayoutu. Poté řeší Fixed prvky.
                 }
                 _ProcessMargins();               // Zpracuje Margins tohoto containeru = navýší všechny interní souřadnice svých prvků a upraví svoji velikost
+                _ProcessContentSize();
             }
             /// <summary>
             /// Připraví data Childs: kompletní příprava Containeru, a prvotní příprava pro pozicování Group + Control
@@ -1217,8 +1229,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     if (item._IsGroup)
                     {   // Grupa si nyní kompletně připraví layout pro svoje Child prvky.
                         // A poté při tvorbě našeho layoutu s ním budeme zacházet jako s obyčejným prvkem.
-                        item._ProcessContainer();                          // Child je Grupa = Container, ať si projde tuto metodu rekurzivně sám
                         item._PrepareMeForGroup(item._DfGroup);
+                        item._ProcessContainer();                          // Child je Grupa = Container, ať si projde tuto metodu rekurzivně sám
                     }
                     else if (item._IsControl)
                     {
@@ -1233,7 +1245,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <exception cref="NotImplementedException"></exception>
             private void _PrepareMeForGroup(DfGroup dfGroup)
             {
-                // Měl bych opsat výsledky z tvorby layoutu grupy do this prvku... je to třeba?
+                // Implicitní validace controlu řeší výhradně Main a Suffix Labely, jejich rozměr:
+                DfTemplateLayout.ValidateControlInfo(this);
+                _RefreshData();
             }
             /// <summary>
             /// Provede přípravné kroky před tvorbou layoutu pro daný control.
@@ -1288,7 +1302,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 {
                     otherItems = null;
 
-                    using (var flowLayout = new DfFlowLayoutInfo(__Style))
+                    using (var flowLayout = new DfFlowLayoutInfo(__ChildStyle))
                     {
                         flowLayout.Reset();
                         foreach (var item in items)
@@ -1345,7 +1359,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     {
                         processItem.__CellMatrix = parentItem.__CellMatrix;
                         processItem.__ControlExists = true;
-                        DfFlowLayoutInfo.ProcessInnerItemBounds(processItem, __Style);
+                        DfFlowLayoutInfo.ProcessInnerItemBounds(processItem, __ChildStyle);
                         addItemBoundsToSize(processItem, contentSize);
                     }
                 }
@@ -1366,7 +1380,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         int h = getSize(bounds.Height, parentBounds.Height, 20); 
                         var controlBounds = new ControlBounds(pl + l, pt + t, w, h);     // Posunu souřadnice prvku (l,t) o souřadnice parenta (x,y)
 
-                        DfFlowLayoutInfo.ProcessFixedItemBounds(processItem, controlBounds, __Style);
+                        DfFlowLayoutInfo.ProcessFixedItemBounds(processItem, controlBounds, __ChildStyle);
                         addItemBoundsToSize(processItem, contentSize);
                     }
                 }
@@ -1392,7 +1406,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         int h = bounds.Height?.NumberPixel ?? 20;
                         var controlBounds = new ControlBounds(l, t, w, h);
 
-                        DfFlowLayoutInfo.ProcessFixedItemBounds(processItem, controlBounds, __Style);
+                        DfFlowLayoutInfo.ProcessFixedItemBounds(processItem, controlBounds, __ChildStyle);
                         addItemBoundsToSize(processItem, contentSize);
                     }
                 }
@@ -1416,7 +1430,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private void _ProcessMargins()
             {
-                var margins = __Style.Margins;
+                var margins = __ChildStyle.Margins;
                 // Distance Left, Top, Right, Bottom:
                 int dl = margins?.Left ?? 0;
                 if (dl < 0) dl = 0;
@@ -1461,6 +1475,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         bounds.Top = bounds.Top + dt;
                     }
                 }
+            }
+
+            private void _ProcessContentSize()
+            {
+                var size = this.__ContentSize;
+
+                this.__ImplicitControlMinimalWidth = size?.Width;
+                this.__ImplicitControlMinimalHeight = size?.Height;
             }
             /// <summary>
             /// Velikost obsahu včetně Margins
@@ -4032,7 +4054,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         DfFontInfo SuffixLabelFont { get; }
         /// <summary>
-        /// Text suffix labelu. Jde o popisek vpravo od vstpního prvku, typicky obsahuje název jednotky (ks, Kč, $, kg, ...).
+        /// Text suffix labelu. Jde o popisek vpravo od vstupního prvku, typicky obsahuje název jednotky (ks, Kč, $, kg, ...).
         /// Pokud je null, pak není ve formuláři definováno. Pokud je "", je tím definováno 'Bez labelu'.
         /// V existující definici mohou být přítomny formátovací funkce: "fm(xxx)", "fmr(xxx)". Přípravná funkce to má vyřešit.
         /// </summary>
