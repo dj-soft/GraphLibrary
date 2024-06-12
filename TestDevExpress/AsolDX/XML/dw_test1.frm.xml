@@ -10,19 +10,12 @@
 		  AddUda="True" UdaLabelPosition="Top"
           ColumnWidths="200;300;100" >
 
-    <panel Name="test12" Title="test04" ColumnsCount="3" AutoLabelPosition="Top" TopLabelOffsetX="6" Margins="4,4" >
-        <textbox Name="sklad_refer" Width="150"/>
-        <textbox Name="sklad_nazev" Width="250"/>
-        <textbox Name="sklad_osoba" Width="350"/>
-        <group Name ="adresa" ColSpan="3" Label="Adresa:" ColumnsCount="4" AutoLabelPosition="None" >
-            <textbox Name="Ulice" />
-            <textbox Name="čp."/>
-            <textbox Name="PSČ"/>
-            <textbox Name="Obec"/>
-        </group>
-        <textbox Name="organizace_refer" />
-        <textbox Name="organizace_nazev" />
-        <textbox Name="organizace_osoba" />
+    <panel Name="test15a" Title="Test LabelsRelativeToControl" ColumnsCount="2" AutoLabelPosition="BeforeRight" LabelsRelativeToControl="False"
+                    Margins="4,4" ColumnsDistance="3" RowsDistance="3" >
+        <textbox Name="sklad_refer" />
+        <textbox Name="sklad_nazev" />
+        <textbox Name="pocet" Label="Počet:" Width="40" HPosition="Center"/>
+        <textbox Name="cena" Label="Cena:" Width="90" HPosition="Right"/>
     </panel>
 
 </template>

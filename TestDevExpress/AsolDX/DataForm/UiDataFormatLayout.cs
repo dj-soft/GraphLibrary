@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using DevExpress.XtraCharts;
 using DevExpress.XtraEditors;
+using DevExpress.XtraPdfViewer.Commands;
 using DevExpress.XtraRichEdit.Layout;
 using Noris.WS.DataContracts.DxForm;
 
@@ -367,10 +368,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.RowsDistance = 0;
                 this.TopLabelOffsetX = 3;
                 this.BottomLabelOffsetX = 3;
+                this.LabelsRelativeToControl = true;
 
                 this._Validate();
             }
-            public StyleInfo(ContainerType areaType, int? columnsCount, string columnWidths, Location flowAreaBegin, Margins controlMargins, LabelPositionType autoLabelPosition, Margins margins, int columnsDistance, int rowsDistance, int topLabelOffsetX, int bottomLabelOffsetX)
+            public StyleInfo(ContainerType areaType, int? columnsCount, string columnWidths, Location flowAreaBegin, Margins controlMargins, LabelPositionType autoLabelPosition, Margins margins, int columnsDistance, int rowsDistance, int topLabelOffsetX, int bottomLabelOffsetX, bool labelsRelativeToControl)
             {
                 this.CurrentAreaType = areaType;
                 this.ColumnsCount = columnsCount;
@@ -383,6 +385,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.RowsDistance = rowsDistance;
                 this.TopLabelOffsetX = topLabelOffsetX;
                 this.BottomLabelOffsetX = bottomLabelOffsetX;
+                this.LabelsRelativeToControl = labelsRelativeToControl;
 
                 this._Validate();
             }
@@ -399,6 +402,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.RowsDistance = dfArea.RowsDistance ?? 0;
                 this.TopLabelOffsetX = dfArea.TopLabelOffsetX ?? 3;
                 this.BottomLabelOffsetX = dfArea.BottomLabelOffsetX ?? 3;
+                this.LabelsRelativeToControl = dfArea.LabelsRelativeToControl ?? true;
 
                 this._Validate();
             }
@@ -435,6 +439,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.RowsDistance = dfArea.RowsDistance.HasValue? dfArea.RowsDistance.Value : styleParent.RowsDistance;
                 this.TopLabelOffsetX = dfArea.TopLabelOffsetX.HasValue ? dfArea.TopLabelOffsetX.Value : styleParent.TopLabelOffsetX;
                 this.BottomLabelOffsetX = dfArea.BottomLabelOffsetX.HasValue ? dfArea.BottomLabelOffsetX.Value : styleParent.BottomLabelOffsetX;
+                this.LabelsRelativeToControl = dfArea.LabelsRelativeToControl.HasValue ? dfArea.LabelsRelativeToControl.Value : styleParent.LabelsRelativeToControl;
 
                 this._Validate();
             }
@@ -496,6 +501,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Může být záporné, pak bude label předsazen vlevo před Controlem.
             /// </summary>
             public int BottomLabelOffsetX { get; private set; }
+            /// <summary>
+            /// Labely budou umísťovány : true = pokud možno k controlu / false = vždy do gridu
+            /// </summary>
+            public bool LabelsRelativeToControl { get; private set; }
         }
         #endregion
         #region class ItemInfo : Dočasná pracovní a výkonná schránka na jednotlivý prvek layoutu, existuje jen po dobu výpočtu layoutu. Má tři tváře: Prvek/Container; Spolupráce s aplikací na doplnění hodnot; Spolupráce s FlowLayout na umístění do mřížky
@@ -698,7 +707,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private DfBaseContainer _DfContainer { get { return (__DfItem as DfBaseContainer); } }
             /// <summary>
-            /// Prvek reprezentuje grupu
+            /// Prvek reprezentuje grupu?
             /// </summary>
             private bool _IsGroup { get { return (__DfItem is DfGroup); } }
             /// <summary>
@@ -709,6 +718,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Prvek reprezentuje samostatný control: pak <see cref="__DfItem"/> je potomkem <see cref="DfBaseControl"/>.
             /// </summary>
             private bool _IsControl { get { return (__DfItem is DfBaseControl); } }
+            /// <summary>
+            /// Podkladový control
+            /// </summary>
             private DfBaseControl _DfControl { get { return (__DfItem as DfBaseControl); } }
             /// <summary>
             /// Všechny Child prvky (controly + grupy).
@@ -719,6 +731,57 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Obsahuje true, pokud máme nějaké <see cref="_Childs"/> (tj. pole <see cref="__Childs"/> není null a obsahuje alespoň jeden prvek).
             /// </summary>
             private bool _HasChilds { get { return (this.__Childs != null && this.__Childs.Count > 0); } }
+            /// <summary>
+            /// Obsahuje všechny Child prvky = linearizované pole Child prvků, kde je vložen i Container, a po něm i všechny jeho Child prvky, rekurzivně.
+            /// </summary>
+            private ItemInfo[] _AllChildItems
+            {
+                get
+                {
+                    List<ItemInfo> allChilds = new List<ItemInfo>();
+                    _AddAllChilds(this, allChilds, true);
+                    return allChilds.ToArray();
+                }
+            }
+            /// <summary>
+            /// Obsahuje všechny Child controly = linearizované pole Child prvků, kde namísto Child containeru jsou vloženy Controly v něm obsažené.
+            /// </summary>
+            private ItemInfo[] _AllChildControls
+            { 
+                get
+                {
+                    List<ItemInfo> allChilds = new List<ItemInfo>();
+                    _AddAllChilds(this, allChilds, false);
+                    return allChilds.ToArray();
+                }
+            }
+            /// <summary>
+            /// Za prvek <paramref name="container"/> (který by měl být typu 'kontejner') přidá jeho Child prvky typu Control do vznikajícího pole <paramref name="allChildsTarget"/>.
+            /// Pokud child prvek je typu Container, pak jej nepřidává, ale vyvolá rekurzivně tuto metodu pro něj = přidají se tak na místo containeru jeho jednotlivé Child prvky.
+            /// </summary>
+            /// <param name="container"></param>
+            /// <param name="allChildsTarget"></param>
+            /// <param name="addContainersItem"></param>
+            private static void _AddAllChilds(ItemInfo container, List<ItemInfo> allChildsTarget, bool addContainersItem)
+            {
+                var childs = container.__Childs;
+                if (childs != null)
+                {
+                    foreach (var child in childs)
+                    {
+                        if (child != null)
+                        {
+                            if (child._IsControl)
+                                allChildsTarget.Add(child);
+                            else if (child._IsContainer && addContainersItem)
+                                allChildsTarget.Add(child);
+
+                            if (child._HasChilds)
+                                _AddAllChilds(child, allChildsTarget, addContainersItem);
+                        }
+                    }
+                }
+            }
             #endregion
             #region Další data o prvku - primárně pro interface IDataFormItem
             /// <summary>
@@ -763,6 +826,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.__VPosition = null;
                 this.__ExpandControl = null;
                 this.__LabelPosition = null;
+                this.__ContainerType = ContainerType.Panel;
                 this.__ControlType = ControlType.None;
                 this.__ControlExists = true;
             }
@@ -785,6 +849,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.__MainLabelText = dfGroup.Label;
                 this.__MainLabelWidth = dfGroup.LabelWidth;
                 this.__MainLabelStyle = dfGroup.LabelStyle;
+                this.__ContainerType = ContainerType.Group;
                 this.__ControlType = ControlType.None;
                 this.__ControlExists = true;
 
@@ -805,6 +870,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.__VPosition = dfControl.VPosition;
                 this.__ExpandControl = dfControl.ExpandControl;
                 this.__LabelPosition = LabelPositionType.None;
+                this.__ContainerType = ContainerType.None;
                 this.__ControlType = dfControl.ControlType;
                 this.__ControlStyle = dfControl.ControlStyle;
                 this.__ToolTipTitle = dfControl.ToolTipTitle;
@@ -836,7 +902,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 LabelPositionType lPos = __LabelPosition ?? _ParentStyle.AutoLabelPosition;
                 this.__ValidLabelPosition = lPos;
                 this.__MainLabelExists = (!String.IsNullOrEmpty(__MainLabelText) && (lPos == LabelPositionType.BeforeLeft || lPos == LabelPositionType.BeforeRight || lPos == LabelPositionType.Top || lPos == LabelPositionType.Bottom || lPos == LabelPositionType.BeforeRight));
-                this.__ControlExists = !(this.__ControlType == ControlType.None || this.__ControlType == ControlType.PlaceHolder);
+                this.__ControlExists = (this.__ContainerType == ContainerType.Panel || this.__ContainerType == ContainerType.Group) || !(this.__ControlType == ControlType.None || this.__ControlType == ControlType.PlaceHolder);
                 this.__SuffixLabelExists = (!String.IsNullOrEmpty(__SuffixLabelText) && __LabelPosition != LabelPositionType.After);
             }
             /// <summary>
@@ -921,6 +987,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Umístění a zarovnání popisku (Main Labelu) vzhledem k souřadnicích controlu, validované (není null)
             /// </summary>
             private LabelPositionType __ValidLabelPosition;
+            /// <summary>
+            /// Typ containeru
+            /// </summary>
+            private ContainerType __ContainerType;
             /// <summary>
             /// Typ prvku
             /// </summary>
@@ -1302,7 +1372,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 {
                     otherItems = null;
 
-                    using (var flowLayout = new DfFlowLayoutInfo(__ChildStyle))
+                    using (var flowLayout = new DfFlowLayoutInfo(__ChildStyle, this.__DfItem.Name))
                     {
                         flowLayout.Reset();
                         foreach (var item in items)
@@ -1476,36 +1546,83 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     }
                 }
             }
-
+            /// <summary>
+            /// Určí velikost <see cref="__ImplicitControlMinimalWidth"/> a <see cref="__ImplicitControlMinimalHeight"/> podle již existující <see cref="__ContentSize"/>.
+            /// Tento algoritmus tedy přenese reálnou velikost obsahu z Containeru (kde <see cref="__ContentSize"/> je určena jako prostor vnitřních prvků) 
+            /// do vnějších hodnot, které popisují tento prvek navenek (tedy ve vyšším containeru se bude při tvorbě jeho layoutu rezervovat patřičný prostor pro grupu a její obsah).
+            /// </summary>
             private void _ProcessContentSize()
             {
                 var size = this.__ContentSize;
+                this.__ImplicitControlOptimalWidth = size?.Width;
+                this.__ImplicitControlOptimalHeight = size?.Height;
 
-                this.__ImplicitControlMinimalWidth = size?.Width;
-                this.__ImplicitControlMinimalHeight = size?.Height;
+                //  this.__ImplicitControlMinimalWidth = size?.Width;
+                //  this.__ImplicitControlMinimalHeight = size?.Height;
             }
             /// <summary>
             /// Velikost obsahu včetně Margins
             /// </summary>
             private Size __ContentSize;
             #endregion
-
-            #region Určení velikosti this controlu = jeden prvek (atribut)
-
-            #endregion
             #region Určení absolutní souřadnice každého prvku
-            internal void SetAbsoluteBound()
-            { }
-
             /// <summary>
             /// Projde všechny prvky a přidělí jim konkrétní absolutní souřadnice = v rámci Root panelu.
-            /// Tato metoda je vyvolána pro prvek typu Panel.
+            /// Tato metoda je vyvolána pro prvek typu Panel. 
+            /// <para/>
+            /// Smí být vyvolána pouze jedenkrát, protože reálně posunuje souřadnice prvků. Opakované volání by je posunulo znovu.
             /// </summary>
             private void _PreparePanelAbsoluteBounds()
             {
+                _PrepareContainerAbsoluteBounds(this, 0, 0);
+            }
+            /// <summary>
+            /// Projde svoje prvky a posune souřadnice controlu a labelů o danou hodnotu.
+            /// Pokud najde container, posune jeho souřadnice a zajistí rekurzivní posun i pro jeho prvky.
+            /// Souřadnice vnořených containerů pak budou absolutní vzhledem k Root panelu.
+            /// </summary>
+            /// <param name="container"></param>
+            /// <param name="addX"></param>
+            /// <param name="addY"></param>
+            private static void _PrepareContainerAbsoluteBounds(ItemInfo container, int addX, int addY)
+            {
+                var childs = container.__Childs;
+                if (childs != null)
+                {
+                    foreach (var child in childs)
+                    {
+                        if (child != null)
+                        {
+                            prepareAbsoluteBounds(child, addX, addY);
+                            if (child._HasChilds)
+                            {
+                                int nextX = child.__ControlBounds.Left;
+                                int nextY = child.__ControlBounds.Top;
+                                _PrepareContainerAbsoluteBounds(child, nextX, nextY);
+                            }
+                        }
+                    }
+                }
+
+                void prepareAbsoluteBounds(ItemInfo item, int dx, int dy)
+                {
+                    if (dx != 0 || dy != 0)
+                    {
+                        prepareAbsoluteBoundsOne(item.__ControlBounds, dx, dy);
+                        prepareAbsoluteBoundsOne(item.__MainLabelBounds, dx, dy);
+                        prepareAbsoluteBoundsOne(item.__SuffixLabelBounds, dx, dy);
+                    }
+                }
+                void prepareAbsoluteBoundsOne(ControlBounds bounds, int dx, int dy)
+                {
+                    if (bounds != null)
+                    {
+                        bounds.Left = bounds.Left + dx;
+                        bounds.Top = bounds.Top + dy;
+                    }
+                }
             }
             #endregion
-
             #region Vizualizace PixelLayoutu (vytvoření Image, reprezentující aktuální stav layoutu)
             /// <summary>
             /// Z prvků layoutu vygeneruje bitmapu v měřítku 1:1, respektující rozměry a obsah containeru.
@@ -1586,7 +1703,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 {
                     graphics.Clear(workspaceColor);
 
-                    var childs = this.__Childs;
+                    var childs = this._AllChildItems;
                     foreach (var i in childs)
                         drawItem(i, graphics, brush, pen, stringFormat);
                 }
@@ -1599,22 +1716,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     var iFlow = item as IFlowLayoutItem;
                     var iData = item as IDataFormItem;
 
-                    // Main Label
+                    // Main Label:
                     if (iFlow.MainLabelExists && iFlow.MainLabelBounds != null)
                     {
                         var alignment = iFlow.MainLabelAlignment ?? ContentAlignmentType.MiddleLeft;
                         drawLabel(graphics, brush, pen, stringFormat, iData.MainLabelText, iFlow.MainLabelBounds, alignment);
                     }
 
-                    // Suffix Label
+                    // Suffix Label:
                     if (iFlow.SuffixLabelExists && iFlow.SuffixLabelBounds != null)
                     {
                         var alignment = iFlow.SuffixLabelAlignment ?? ContentAlignmentType.MiddleLeft;
                         drawLabel(graphics, brush, pen, stringFormat, iData.SuffixLabelText, iFlow.SuffixLabelBounds, alignment);
                     }
 
-                    // Control:
-                    if (iFlow.ControlExists && iFlow.ControlBounds != null)
+                    // Control (nikoliv Container):
+                    if (item._IsControl && iFlow.ControlExists && iFlow.ControlBounds != null)
                     {
                         var alignment = ContentAlignmentType.MiddleCenter;
                         drawControl(graphics, brush, pen, stringFormat, iData.Name, iFlow.ControlBounds, alignment);
@@ -1796,10 +1913,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Konstruktor pro deklaraci z daného stylu (smí být null)
         /// </summary>
         /// <param name="layoutStyle"></param>
-        public DfFlowLayoutInfo(DfTemplateLayout.StyleInfo layoutStyle)
+        /// <param name="sourceId">ID zdroje do chybové hlášky</param>
+        public DfFlowLayoutInfo(DfTemplateLayout.StyleInfo layoutStyle, string sourceId)
         {
             if (layoutStyle is null) throw new ArgumentNullException($"DfFlowLayoutInfo ctor fail: 'layoutStyle' is null.");
 
+            __SourceId = sourceId;
             __Columns = new List<LineInfo>();
             __Rows = new List<LineInfo>();
             __Cells = new List<IFlowLayoutItem[]>();
@@ -1818,6 +1937,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             return MapOfCellsAscii;
         }
+        /// <summary>
+        /// ID zdroje do chybové hlášky
+        /// </summary>
+        private string __SourceId;
         /// <summary>
         /// Definice šířek sloupců
         /// </summary>
@@ -1976,7 +2099,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __RowImplicitSize = 20;
             __TopLabelOffsetX = style.TopLabelOffsetX;
             __BottomLabelOffsetX = style.BottomLabelOffsetX;
-            __LabelsRelativeToControl = true;
+            __LabelsRelativeToControl = style.LabelsRelativeToControl;
         }
         /// <summary>
         /// Styl panelu, definuje konstantní vlastnosti layoutu
@@ -2176,7 +2299,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
                 this.__Items.Add(layoutItem);
                 string key = DfTemplateLayout.GetItemKey(layoutItem.Name);
-                if (key != null) this.__ItemsDict.Add(key, layoutItem);
+                if (key != null)
+                {
+                    if (this.__ItemsDict.ContainsKey(key))
+                        throw new ArgumentException($"Item with key '{key}' is duplicite in container '{__SourceId}'");
+                    this.__ItemsDict.Add(key, layoutItem);
+                }
 
                 layoutItem.FlowRowBeginIndex = top;
                 layoutItem.FlowRowEndIndex = bottom - 1;

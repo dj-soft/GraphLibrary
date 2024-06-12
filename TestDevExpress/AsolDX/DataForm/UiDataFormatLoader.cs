@@ -1027,6 +1027,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 area.RowsDistance = _ReadAttributeInt32N(xElement, "RowsDistance");
                 area.TopLabelOffsetX = _ReadAttributeInt32N(xElement, "TopLabelOffsetX");
                 area.BottomLabelOffsetX = _ReadAttributeInt32N(xElement, "BottomLabelOffsetX");
+                area.LabelsRelativeToControl = _ReadAttributeBoolNX(xElement, "LabelsRelativeToControl", null, true);
             }
             if (target is DfBaseContainer container)
             {
@@ -1232,6 +1233,35 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Atribut neexistuje:
             return defaultValueNotExists;
         }
+        /// <summary>
+        /// V daném elementu najde atribut daného jména:
+        /// Pokud neexistuje, pak vrátí hodnotu <paramref name="defaultValueNotExists"/> (defaultní null).
+        /// Pokud atribut existuje, a nemá hodnotu, pak vrátí <paramref name="defaultValueNotValue"/> (defaultně true).
+        /// Pokud má hodnotu, pak ji konvertuje na boolean a vrátí.
+        /// </summary>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
+        /// <param name="attributeName"></param>
+        /// <param name="defaultValueNotExists">Vrácená hodnota, pokud atribut neexistuje</param>
+        /// <param name="defaultValueNotValue">Vrácená hodnota, pokud atribut existuje - ale nemá zadanou žádnou hodnotu (nebo má, ale není platná)</param>
+        private static bool? _ReadAttributeBoolNX(System.Xml.Linq.XElement xElement, string attributeName, bool? defaultValueNotExists = null, bool? defaultValueNotValue = true)
+        {
+            if (String.IsNullOrEmpty(attributeName)) return defaultValueNotExists;
+            if (xElement.HasAttributes)
+            {   // Máme atributy
+                var xAttribute = xElement.Attribute(attributeName);
+                if (xAttribute != null)
+                {   // Hledaný atribut existuje:
+                    var booln = _ConvertTextToBoolN(xAttribute.Value);
+                    // A má nějakou rozumnou hodnotu:
+                    if (booln.HasValue) return booln.Value;
+                    // Atribut existuje, ale nemá rozpoznatelnou hodnotu (nebo nemá žádnou):
+                    return defaultValueNotValue;
+                }
+            }
+            // Atribut neexistuje:
+            return defaultValueNotExists;
+        }
+
         /// <summary>
         /// Vrací true nebo false podle obsahu dodaného textu. Může vrátit null, když text je jiný.
         /// </summary>

@@ -585,6 +585,17 @@
                         </xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
+                <xs:attribute name="LabelsRelativeToControl" type="bool_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">
+                            Detailní nastavení pro umístění Labelu k Controlu:
+                            true = těsně k controlu (Pokud Control bude menší než odpovídající sloupec, pak Label bude umístěn u hrany controlu, nikoli sloupce) / 
+                            false = vždy do gridu (Labely vždy pod sebou, i když control bude vzdálenější) / 
+                            null = default = true.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

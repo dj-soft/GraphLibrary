@@ -1008,16 +1008,123 @@ namespace TestDevExpress.Forms
         {
             switch (name)
             {
+                case "cislo_subjektu": return "Subjekt:";
+                case "cislo_nonsubjektu": return "Nonsubjekt:";
                 case "reference_subjektu": return "Reference:";
                 case "nazev_subjektu": return "Název:";
-                case "dodavatel_refer": return "Dodavatel:";
-                case "dodavatel_nazev": return "Dodavatel, název:";
             }
+
+            if (splitRelation(name, out string relname, out string atrname))
+            {
+                string result = "";
+                switch (atrname)
+                {
+                    case "refer":
+                        result = "Číslo ";
+                        break;
+                    case "nazev":
+                        result = "Název ";
+                        break;
+                    case "osoba":
+                        result = "Správce ";
+                        break;
+                }
+
+                switch (relname)
+                {
+                    case "sklad":
+                        result += "skladu";
+                        break;
+                    case "dodav":
+                        result += "dodavatele";
+                        break;
+                    case "odber":
+                    case "odberat":
+                    case "odberatel":
+                        result += "odběratele";
+                        break;
+                    case "org":
+                    case "organ":
+                    case "organizace":
+                        result += "organizace";
+                        break;
+
+                    case "fd":
+                    case "fv":
+                        result += "faktury";
+                        break;
+
+                    case "ucdok":
+                    case "uc_dok":
+                        result += "úč.dokladu";
+                        break;
+
+                    case "dok":
+                    case "dokl":
+                    case "doklad":
+                        result += "dokladu";
+                        break;
+
+                    case "prij":
+                    case "prijem":
+                    case "prijemka":
+                        result += "příjemky";
+                        break;
+                    case "vyd":
+                    case "vydej":
+                    case "vydejka":
+                        result += "výdejky";
+                        break;
+                    case "obj":
+                    case "objed":
+                    case "objednavka":
+                        result += "objednávky";
+                        break;
+                    case "pop":
+                    case "popt":
+                    case "poptavka":
+                        result += "poptávky";
+                        break;
+                    case "prev":
+                    case "prevod":
+                    case "prevodka":
+                        result += "převodky";
+                        break;
+
+                    case "po":
+                    case "product_order":
+                        result += "výr.příkazu";
+                        break;
+                    case "zam":
+                        result += "zaměstnance";
+                        break;
+                    case "utv":
+                    case "utvar":
+                        result += "útvaru";
+                        break;
+
+                }
+                return result + ":";
+            }
+           
+            // implicitně:
             return name + ":";
+
+            // split jména do vztahu a suffixu  "organizace_nazev"   =>  "organizace", "nazev"
+            bool splitRelation(string n, out string rn, out string an)
+            {
+                if (n.Length >= 7 && (n.EndsWith("_refer") || n.EndsWith("_nazev") || n.EndsWith("_osoba")))
+                {
+                    rn = n.Substring(0, n.Length - 6);
+                    an = n.Substring(n.Length - 5);
+                    return true;
+                }
+                rn = null;
+                an = null;
+                return true;
+            }
         }
         #endregion
-
-
         #region GoogleTranslate
         private async Task _GTTest()
         {

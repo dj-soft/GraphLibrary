@@ -544,6 +544,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public Margins Margins { get; set; }
         /// <summary>
+        /// Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = <c>NULL</c>
+        /// </summary>
+        public LabelPositionType? AutoLabelPosition { get; set; }
+        /// <summary>
         /// Odstupy mezi MainLabelem a Controlem, nebo SuffixLabelem a Controlem, v rámci jedné buňky (jeden prvek). Uplatní se, pouze pokud daný label existuje.
         /// </summary>
         public Margins ControlMargins { get; set; }
@@ -580,9 +584,9 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public int? BottomLabelOffsetX { get; set; }
         /// <summary>
-        /// Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = <c>NULL</c>
+        /// Labely budou umísťovány : true = pokud možno k controlu / false = vždy do gridu / null = default = true
         /// </summary>
-        public LabelPositionType? AutoLabelPosition { get; set; }
+        public bool? LabelsRelativeToControl { get; set; }
     }
     #endregion
     #region Konkrétní třídy Controlů
