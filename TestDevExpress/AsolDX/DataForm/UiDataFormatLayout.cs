@@ -309,34 +309,34 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return true;
         }
         /// <summary>
-        /// Vrátí true, pokud dané souřadnice prvku (<see cref="Bounds"/>) určují pevnou = fixní pozici v layoutu (vrací true), nebo plovoucí (false).
-        /// Aby pozice byla fixní, pak musí být souřadnice zadaná a musí mít dané hodnoty <see cref="Bounds.Left"/> a <see cref="Bounds.Top"/>.
+        /// Vrátí true, pokud dané souřadnice prvku (<see cref="DesignBounds"/>) určují pevnou = fixní pozici v layoutu (vrací true), nebo plovoucí (false).
+        /// Aby pozice byla fixní, pak musí být souřadnice zadaná a musí mít dané hodnoty <see cref="DesignBounds.Left"/> a <see cref="DesignBounds.Top"/>.
         /// </summary>
-        /// <param name="bounds"></param>
+        /// <param name="designBounds"></param>
         /// <returns></returns>
-        internal static bool IsBoundsFixed(Bounds bounds)
+        internal static bool IsBoundsFixed(DesignBounds designBounds)
         {
-            return (bounds != null && bounds.Left.HasValue && bounds.Top.HasValue);
+            return (designBounds != null && designBounds.Left.HasValue && designBounds.Top.HasValue);
         }
         /// <summary>
-        /// Vrátí true, pokud dané souřadnice prvku (<see cref="Bounds"/>) určují šířku prvku, tedy není třeba ji určovat podle typu a obsahu prvku.
-        /// Tedy souřadnice je zadaná a má naplněnou <see cref="Bounds.Width"/>, ať už v pixelech, nebo v procentech.
+        /// Vrátí true, pokud dané souřadnice prvku (<see cref="DesignBounds"/>) určují šířku prvku, tedy není třeba ji určovat podle typu a obsahu prvku.
+        /// Tedy souřadnice je zadaná a má naplněnou <see cref="DesignBounds.Width"/>, ať už v pixelech, nebo v procentech.
         /// </summary>
-        /// <param name="bounds"></param>
+        /// <param name="designBounds"></param>
         /// <returns></returns>
-        internal static bool HasBoundsWidth(Bounds bounds)
+        internal static bool HasBoundsWidth(DesignBounds designBounds)
         {
-            return (bounds != null && bounds.Width.HasValue);
+            return (designBounds != null && designBounds.Width.HasValue);
         }
         /// <summary>
-        /// Vrátí true, pokud dané souřadnice prvku (<see cref="Bounds"/>) určují výšku prvku, tedy není třeba ji určovat podle typu a obsahu prvku.
-        /// Tedy souřadnice je zadaná a má naplněnou <see cref="Bounds.Height"/> (ta je zatím pouze v pixelech).
+        /// Vrátí true, pokud dané souřadnice prvku (<see cref="DesignBounds"/>) určují výšku prvku, tedy není třeba ji určovat podle typu a obsahu prvku.
+        /// Tedy souřadnice je zadaná a má naplněnou <see cref="DesignBounds.Height"/> (ta je zatím pouze v pixelech).
         /// </summary>
-        /// <param name="bounds"></param>
+        /// <param name="designBounds"></param>
         /// <returns></returns>
-        internal static bool HasBoundsHeight(Bounds bounds)
+        internal static bool HasBoundsHeight(DesignBounds designBounds)
         {
-            return (bounds != null && bounds.Height.HasValue);
+            return (designBounds != null && designBounds.Height.HasValue);
         }
         /// <summary>
         /// Vrátí klíč pro dané Name. Trim, Lower. Pro NULL vrací NULL.
@@ -817,7 +817,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <param name="dfPanel"></param>
             private void _InitDataPanel(DfPanel dfPanel)
             {
-                this.__Bounds = dfPanel.Bounds;
+                this.__DesignBounds = dfPanel.DesignBounds;
                 this.__ParentBoundsName = null;
                 this.__ColIndex = null;
                 this.__ColSpan = null;
@@ -837,8 +837,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <param name="dfGroup"></param>
             private void _InitDataGroup(DfGroup dfGroup)
             {
-                this.__Bounds = dfGroup.Bounds;
-                this.__ParentBoundsName = dfGroup.ParentBounds;
+                this.__DesignBounds = dfGroup.DesignBounds;
+                this.__ParentBoundsName = dfGroup.ParentBoundsName;
                 this.__ColIndex = dfGroup.ColIndex;
                 this.__ColSpan = dfGroup.ColSpan;
                 this.__RowSpan = dfGroup.RowSpan;
@@ -861,8 +861,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <param name="dfControl"></param>
             private void _InitDataControl(DfBaseControl dfControl)
             {
-                this.__Bounds = dfControl.Bounds;
-                this.__ParentBoundsName = dfControl.ParentBounds;
+                this.__DesignBounds = dfControl.DesignBounds;
+                this.__ParentBoundsName = dfControl.ParentBoundsName;
                 this.__ColIndex = dfControl.ColIndex;
                 this.__ColSpan = dfControl.ColSpan;
                 this.__RowSpan = dfControl.RowSpan;
@@ -912,7 +912,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 __Name = null;
                 __ColumnName = null;
-                __Bounds = null;
+                __DesignBounds = null;
                 __ColIndex = null;
                 __ColSpan = null;
                 __RowSpan = null;
@@ -946,7 +946,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <summary>
             /// Umístění prvku. Výchozí je null.
             /// </summary>
-            private Bounds __Bounds;
+            private DesignBounds __DesignBounds;
             /// <summary>
             /// Jméno prvku 'Name', který určuje souřadnice pro zdejší prvek, pokud ten je umístěn fixně = má definované souřadnice 'X' a 'Y'.
             /// </summary>
@@ -1100,10 +1100,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             string IDataFormItem.ToolTipTitle { get { return __ToolTipTitle; } set { __ToolTipTitle = value; } }
             string IDataFormItem.ToolTipText { get { return __ToolTipText; } set { __ToolTipText = value; } }
 
-            int? IDataFormItem.DesignWidthPixel { get { return __Bounds?.Width?.NumberPixel; } }
-            int? IDataFormItem.DesignWidthPercent { get { return __Bounds?.Width?.NumberPercent; } }
-            int? IDataFormItem.DesignHeightPixel { get { return __Bounds?.Height?.NumberPixel; } }
-            int? IDataFormItem.DesignHeightPercent { get { return __Bounds?.Height?.NumberPercent; } }
+            int? IDataFormItem.DesignWidthPixel { get { return __DesignBounds?.Width?.NumberPixel; } }
+            int? IDataFormItem.DesignWidthPercent { get { return __DesignBounds?.Width?.NumberPercent; } }
+            int? IDataFormItem.DesignHeightPixel { get { return __DesignBounds?.Height?.NumberPixel; } }
+            int? IDataFormItem.DesignHeightPercent { get { return __DesignBounds?.Height?.NumberPercent; } }
             int? IDataFormItem.DesignLabelWidth { get { return __MainLabelWidth; } }
             LabelPositionType IDataFormItem.LabelPosition { get { return __ValidLabelPosition; } }
             bool IDataFormItem.MainLabelExists { get { return __MainLabelExists ; } }
@@ -1127,7 +1127,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private void _InitFlow()
             {
-                bool isBoundsFixed = DfTemplateLayout.IsBoundsFixed(__Bounds);
+                bool isBoundsFixed = DfTemplateLayout.IsBoundsFixed(__DesignBounds);
                 bool isFixedToParent = !String.IsNullOrEmpty(__ParentBoundsName);
                 __LayoutMode = (isBoundsFixed && !isFixedToParent ? LayoutModeType.FixedAbsolute :
                                (isBoundsFixed && isFixedToParent ? LayoutModeType.BoundsInParent :
@@ -1222,10 +1222,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             HPositionType? IFlowLayoutItem.DesignHPosition { get { return __HPosition; } }
             VPositionType? IFlowLayoutItem.DesignVPosition { get { return __VPosition; } }
             ExpandControlType? IFlowLayoutItem.DesignExpandControl { get { return __ExpandControl; } }
-            int? IFlowLayoutItem.DesignWidthPixel { get { return __Bounds?.Width?.NumberPixel; } }
-            int? IFlowLayoutItem.DesignWidthPercent { get { return __Bounds?.Width?.NumberPercent; } }
-            int? IFlowLayoutItem.DesignHeightPixel { get { return __Bounds?.Height?.NumberPixel; } }
-            int? IFlowLayoutItem.DesignHeightPercent { get { return __Bounds?.Height?.NumberPercent; } }
+            int? IFlowLayoutItem.DesignWidthPixel { get { return __DesignBounds?.Width?.NumberPixel; } }
+            int? IFlowLayoutItem.DesignWidthPercent { get { return __DesignBounds?.Width?.NumberPercent; } }
+            int? IFlowLayoutItem.DesignHeightPixel { get { return __DesignBounds?.Height?.NumberPixel; } }
+            int? IFlowLayoutItem.DesignHeightPercent { get { return __DesignBounds?.Height?.NumberPercent; } }
             int? IFlowLayoutItem.DesignLabelWidth { get { return __MainLabelWidth; } }
             LabelPositionType IFlowLayoutItem.LabelPosition { get { return __ValidLabelPosition; } }
             bool IFlowLayoutItem.MainLabelExists { get { return __MainLabelExists; } }
@@ -1269,23 +1269,26 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 var args = this._LayoutArgs;
                 var startTime = DxComponent.LogTimeCurrent;
-                _ProcessContainer();             // Zpracuje this container, a rekurzivně jeho Child containery etc
+                var guideLines = _ProcessContainer(args.DebugImagesWithGuideLines);      // Zpracuje this container, a rekurzivně jeho Child containery etc
                 _PreparePanelAbsoluteBounds();   // Naplní absolutní souřadnice do všech (i vnořených) prvků
                 if (args.LogTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Layout panel '{__Name}': {DxComponent.LogTokenTimeMicrosec}", startTime);
-                if (args.SaveDebugImages) _CreateImageFile();
+                if (args.SaveDebugImages) _CreateImageFile(guideLines);
             }
             /// <summary>
             /// Zajistí plné zpracování this containeru, rekurzivně jeho Child containerů a zdejších Controlů.
             /// </summary>
-            private void _ProcessContainer()
+            /// <param name="takeGuideLines">Získat GuideLines?</param>
+            private FlowGuideLine[] _ProcessContainer(bool takeGuideLines)
             {
+                FlowGuideLine[] guideLines = null;
                 if (_HasChilds)
                 {
-                    _PrepareChilds();            // Příprava: Containery kompletně (rekurzivně), a poté všechny prvky: doplnění aplikačních dat a měření primární velikosti
-                    _PositionChilds();           // Kvalifikuje Child prvky na Fixed a Flow; a pro Flow prvky vyřeší jejich rozmístění (souřadnice) pomocí FlowLayoutu. Poté řeší Fixed prvky.
+                    _PrepareChilds();                                // Příprava: Containery kompletně (rekurzivně), a poté všechny prvky: doplnění aplikačních dat a měření primární velikosti
+                    guideLines = _PositionChilds(takeGuideLines);    // Kvalifikuje Child prvky na Fixed a Flow; a pro Flow prvky vyřeší jejich rozmístění (souřadnice) pomocí FlowLayoutu. Poté řeší Fixed prvky.
                 }
-                _ProcessMargins();               // Zpracuje Margins tohoto containeru = navýší všechny interní souřadnice svých prvků a upraví svoji velikost
+                _ProcessMargins(guideLines);                         // Zpracuje Margins tohoto containeru = navýší všechny interní souřadnice svých prvků a upraví svoji velikost
                 _ProcessContentSize();
+                return guideLines;
             }
             /// <summary>
             /// Připraví data Childs: kompletní příprava Containeru, a prvotní příprava pro pozicování Group + Control
@@ -1300,7 +1303,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     {   // Grupa si nyní kompletně připraví layout pro svoje Child prvky.
                         // A poté při tvorbě našeho layoutu s ním budeme zacházet jako s obyčejným prvkem.
                         item._PrepareMeForGroup(item._DfGroup);
-                        item._ProcessContainer();                          // Child je Grupa = Container, ať si projde tuto metodu rekurzivně sám
+                        item._ProcessContainer(false);                         // Child je Grupa = Container, ať si projde tuto metodu rekurzivně sám
                     }
                     else if (item._IsControl)
                     {
@@ -1344,11 +1347,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Pro Flow prvky určí jejich pozici v matici: LayoutBeginRowIndex, LayoutBeginColumnIndex, LayoutEndColumnIndex.
             /// Pro jednosloupcový prvek typu Flow započítá jeho šířky (Label, Control) do jemu odpovídajícího sloupce.
             /// </summary>
-            private void _PositionChilds()
+            /// <param name="takeGuideLines">Získat GuideLines?</param>
+            private FlowGuideLine[] _PositionChilds(bool takeGuideLines)
             {
+                FlowGuideLine[] guideLines = null;
                 this.__ContentSize = null;
                 var childs = this.__Childs;
-                if (childs.Count == 0) return;                                 // Není co dělat...
+                if (childs.Count == 0) return guideLines;                      // Není co dělat...
 
                 // Flow prvky a ty ostatní:
                 List<ItemInfo> processItems = null;                            // Prvky pro další zpracování layoutu (Non Flow)
@@ -1365,6 +1370,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
                 // Finální velikost:
                 __ContentSize = contentSize;
+
+                return guideLines;
 
 
                 // Z dodaného pole všech prvků (které obsahuje alespoň jeden v režimu Flow) vytvoří FlowLayout, vrátí jeho pozici, a určí prvky pro další zpracování NonFlow
@@ -1387,6 +1394,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                             }
                         }
                         flowLayout.ProcessFlowItems();
+                        if (takeGuideLines) guideLines = flowLayout.CreateGuideLines();
+
                         addBoundsToSize(flowLayout.FlowLayoutBounds, contentSize);
                     }
                 }
@@ -1436,7 +1445,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // Zpracuje prvek v režimu BoundsInParent
                 void processBoundsInParentItem(ItemInfo processItem, Size contentSize, Dictionary<string, ItemInfo> allDictionary)
                 {
-                    var bounds = processItem.__Bounds;
+                    var bounds = processItem.__DesignBounds;
                     string key = processItem._ParentBoundsKey;
                     if (bounds != null && key != null && allDictionary.TryGetValue(key, out var parentItem) && parentItem.__CellMatrix != null)
                     {
@@ -1467,7 +1476,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // Zpracuje prvek v režimu FixedAbsolute
                 void processFixedAbsoluteItem(ItemInfo processItem, Size contentSize, Dictionary<string, ItemInfo> allDictionary)
                 {
-                    var bounds = processItem.__Bounds;
+                    var bounds = processItem.__DesignBounds;
                     if (bounds != null)
                     {
                         int l = bounds.Left ?? 0;
@@ -1498,7 +1507,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <summary>
             /// Zpracuje Margins tohoto containeru = navýší všechny interní souřadnice svých prvků a upraví svoji velikost
             /// </summary>
-            private void _ProcessMargins()
+            /// <param name="guideLines">Vodiící linky</param>
+            private void _ProcessMargins(FlowGuideLine[] guideLines)
             {
                 var margins = __ChildStyle.Margins;
                 // Distance Left, Top, Right, Bottom:
@@ -1517,6 +1527,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 {
                     foreach (var item in childs)
                         processMargins(item);
+                }
+
+                // Posunu guideLines, pokud je důvod:
+                if (guideLines != null && (dl > 0 || dt > 0))
+                {
+                    foreach (var guideLine in guideLines)
+                        guideLine.AddMargin(guideLine.Axis == AxisType.X ? dl : dt);
                 }
 
                 // Zvětším velikost obsahu celého containeru, pokud je důvod:
@@ -1629,8 +1646,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Uloží ji do souboru do Temp adresáře.
             /// Plné jméno souboru vrátí.
             /// </summary>
+            /// <param name="guideLines">Vodiící linky</param>
             /// <returns></returns>
-            private string _CreateImageFile()
+            private string _CreateImageFile(FlowGuideLine[] guideLines)
             {
                 var startTime = DxComponent.LogTimeCurrent;
 
@@ -1641,7 +1659,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 dfName = (!String.IsNullOrEmpty(dfName) ? System.IO.Path.GetFileNameWithoutExtension(dfName) : "dataform");      // dw_simple.frm.xml   =>   dw_simple.frm
                 if (dfName.Contains(".")) dfName = System.IO.Path.GetFileNameWithoutExtension(dfName);                           // dw_simple.frm       =>   dw_simple
 
-                using (var image = _CreateImage())
+                using (var image = _CreateImage(guideLines))
                 {
                     if (image != null)
                     {
@@ -1672,8 +1690,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <summary>
             /// Z prvků layoutu vygeneruje bitmapu v měřítku 1:1, respektující rozměry a obsah containeru.
             /// </summary>
+            /// <param name="guideLines">Vodiící linky</param>
             /// <returns></returns>
-            private System.Drawing.Image _CreateImage()
+            private System.Drawing.Image _CreateImage(FlowGuideLine[] guideLines)
             {
                 // Kreslit, či nekreslit? - to je, oč tu běží...
                 var size = this.__ContentSize;
@@ -1694,6 +1713,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var controlTextColor1 = System.Drawing.Color.FromArgb(190, 96, 96, 96);
                 var controlTextColor2 = System.Drawing.Color.FromArgb(255, 32, 32, 32);
 
+                var guideLineCellColor = System.Drawing.Color.FromArgb(220, 160, 100, 160);
+                var guideLineControlColor = System.Drawing.Color.FromArgb(220, 180, 110, 180);
+                var guideLineLabelColor = System.Drawing.Color.FromArgb(220, 200, 120, 200);
+
                 // Image a grafické nástroje, jimiž postupně vykreslíme jednotlivé prvky:
                 var image = new System.Drawing.Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
                 using (var graphics = System.Drawing.Graphics.FromImage(image))
@@ -1706,6 +1729,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     var childs = this._AllChildItems;
                     foreach (var i in childs)
                         drawItem(i, graphics, brush, pen, stringFormat);
+
+                    if (guideLines != null)
+                    {
+                        foreach (var guideLine in guideLines)
+                            drawLine(guideLine, graphics, brush, pen);
+                    }
                 }
                 return image;
 
@@ -1782,6 +1811,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     graphics.DrawString(text, font, brush, point.X + 0.60f, point.Y);        // Text uprostřed Controlu, 2x ...
                     brush.Color = controlTextColor2;
                     graphics.DrawString(text, font, brush, point.X, point.Y - 0.60f, stringFormat);
+                }
+                // Vykreslí jednu GuideLine
+                void drawLine(FlowGuideLine guideLine, System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen)
+                {
+                    bool isCell = guideLine.LineType.HasFlag(GuideLineType.Cell);
+                    bool isControl = guideLine.LineType.HasFlag(GuideLineType.Control);
+                    bool isLabel = guideLine.LineType.HasFlag(GuideLineType.LabelBefore) || guideLine.LineType.HasFlag(GuideLineType.LabelAfter);
+
+                    pen.Color = (isCell ? guideLineCellColor : (isControl ? guideLineControlColor : guideLineLabelColor));
+                    pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dot;
+                    
+                    if (guideLine.Axis == AxisType.X)
+                        graphics.DrawLine(pen, guideLine.Position, 0, guideLine.Position, height);
+                    else
+                        graphics.DrawLine(pen, 0, guideLine.Position, width, guideLine.Position);
                 }
                 // Nasetuje grafiku pro texty
                 void graphicsForText(System.Drawing.Graphics graphics)
@@ -2088,7 +2132,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             var style = __Style;
 
-            __FlowBounds = new Bounds();
+            __FlowBounds = new DesignBounds();
             __FlowBounds.Left = style.FlowAreaBegin?.Left;
             __FlowBounds.Top = style.FlowAreaBegin?.Top;
             __ControlMargins = new Margins(style.ControlMargins);
@@ -2108,7 +2152,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Oblast FlowLayoutu od prvního do posledního sloupce a řádku. Není null, ale ve výchozím stavu nemusí mít zadané konkrétní souřadnice.
         /// </summary>
-        private Bounds __FlowBounds;
+        private DesignBounds __FlowBounds;
         /// <summary>
         /// Odstupy mezi jakýmkoli Labelem a Controlem, uplatní se pouze pokud label existuje. Není null.
         /// </summary>
@@ -2344,6 +2388,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _ProcessControlMultiSpan();
             _ProcessDimensions();
             _ProcessItemsBounds();
+        }
+        /// <summary>
+        /// Metoda vytvoří a vrátí pole vodících linek <see cref="FlowGuideLine"/>
+        /// </summary>
+        /// <returns></returns>
+        public FlowGuideLine[] CreateGuideLines()
+        {
+            return _CreateGuideLines();
         }
         /// <summary>
         /// Metoda vyhledá zdejší evidovaný Floated prvek (ten je definován dodaným jménem <paramref name="parentName"/>), a vrátí jeho souřadnice celé buňky (<see cref="CellMatrixInfo"/>).
@@ -2733,6 +2785,63 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 i.CellMatrix = new CellMatrixInfo(__Columns[i.FlowColBeginIndex.Value], __Columns[i.FlowColEndIndex.Value], __Rows[i.FlowRowBeginIndex.Value], __Rows[i.FlowRowEndIndex.Value]);
                 _ProcessInnerItemBounds(i, __LabelsRelativeToControl, __TopLabelOffsetX, __BottomLabelOffsetX);
+            }
+        }
+        /// <summary>
+        /// Metoda vytvoří a vrátí pole vodících linek <see cref="FlowGuideLine"/>
+        /// </summary>
+        /// <returns></returns>
+        private FlowGuideLine[] _CreateGuideLines()
+        {
+            List<FlowGuideLine> guideLines = new List<FlowGuideLine>();
+            addLines(__Columns);
+            addLines(__Rows);
+            return guideLines.ToArray();
+
+            void addLines(List<LineInfo> lines)
+            {
+                int prevEnd = -1;
+                int last = lines.Count - 1;
+                for (int i = 0; i <= last; i++)
+                {
+                    var line = lines[i];
+                    var axis = line.Axis;
+
+                    int cellBegin = line.CurrentBegin.Value;
+                    int labelBeforeBegin = line.LabelBeforeBegin.Value;
+                    int labelBeforeEnd = line.LabelBeforeEnd.Value - 1;
+                    int controlBegin = line.ControlBegin.Value;
+                    int controlEnd = line.ControlEnd.Value - 1;
+                    int labelAfterBegin = line.LabelAfterBegin.Value;
+                    int labelAfterEnd = line.LabelAfterEnd.Value - 1;
+                    int cellEnd = line.CurrentEnd.Value - 1;
+
+                    if (cellBegin > prevEnd)
+                        guideLines.Add(new FlowGuideLine(cellBegin, axis, GuideLineType.CellBegin));
+
+                    if (labelBeforeBegin > cellBegin && labelBeforeBegin < controlBegin)
+                        guideLines.Add(new FlowGuideLine(labelBeforeBegin, axis, GuideLineType.LabelBeforeBegin));
+
+                    if (labelBeforeEnd > labelBeforeBegin && labelBeforeEnd < controlBegin)
+                        guideLines.Add(new FlowGuideLine(labelBeforeEnd, axis, GuideLineType.LabelBeforeEnd));
+
+                    if (controlBegin > cellBegin)
+                        guideLines.Add(new FlowGuideLine(controlBegin, axis, GuideLineType.ControlBegin));
+
+                    if (controlEnd > controlBegin && controlEnd < cellEnd)
+                        guideLines.Add(new FlowGuideLine(controlEnd, axis, GuideLineType.ControlEnd));
+
+                    if (labelAfterBegin > controlEnd && labelAfterBegin < cellEnd)
+                        guideLines.Add(new FlowGuideLine(labelAfterBegin, axis, GuideLineType.LabelAfterBegin));
+
+                    if (labelAfterEnd > labelAfterBegin && labelAfterEnd < cellEnd)
+                        guideLines.Add(new FlowGuideLine(labelAfterEnd, axis, GuideLineType.LabelAfterEnd));
+
+                    if (cellEnd > cellBegin)
+                        guideLines.Add(new FlowGuideLine(cellEnd, axis, GuideLineType.CellEnd));
+
+                    prevEnd = cellEnd;
+                }
             }
         }
         /// <summary>
@@ -3371,6 +3480,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             #endregion
             #region Public hodnoty : velikosti pracovní, výsledné; pozice
             /// <summary>
+            /// Typ osy X nebo Y
+            /// </summary>
+            public AxisType Axis { get { return __Axis; } }
+            /// <summary>
             /// Index prvku v sekvenci; číslo sloupce/řádku, počínaje 0
             /// </summary>
             public int Index { get { return __Index; } }
@@ -3681,20 +3794,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private int GetDistanceSize(AxisType axis)
         {
             return (axis == AxisType.X ? this.__ColumnsDistance : this.__RowsDistance);
-        }
-        /// <summary>
-        /// Osa X nebo Y
-        /// </summary>
-        internal enum AxisType 
-        {
-            /// <summary>
-            /// Osa X, vodorovná: na ní se pohybují sloupce, řeší se jejich Width (šířka)
-            /// </summary>
-            X,
-            /// <summary>
-            /// Osa Y, svislá: na ní se pohybují řádky, řeší se jejich Height (výška)
-            /// </summary>
-            Y
         }
         #endregion
     }
@@ -4111,6 +4210,100 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
     }
     #endregion
+    #region class FlowGuideLines : Jedna vodící linka
+    /// <summary>
+    /// Jedna vodící linka
+    /// </summary>
+    internal class FlowGuideLine
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="position"></param>
+        /// <param name="axis"></param>
+        /// <param name="lineType"></param>
+        internal FlowGuideLine(int position, AxisType axis, GuideLineType lineType)
+        {
+            Position = position;
+            Axis = axis;
+            LineType = lineType;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Axis '{Axis}': {Position} px; '{LineType}'.";
+        }
+        /// <summary>
+        /// Posune svoji pozici o daný Margin
+        /// </summary>
+        /// <param name="margin"></param>
+        public void AddMargin(int margin)
+        {
+            this.Position += margin;
+        }
+        /// <summary>
+        /// Pozice v pixelech od Top nebo Left, 0 = první viditelný pixel
+        /// </summary>
+        public int Position { get; private set; }
+        /// <summary>
+        /// Směr osy X nebo Y
+        /// </summary>
+        public AxisType Axis { get; private set; }
+        /// <summary>
+        /// Typ linky
+        /// </summary>
+        public GuideLineType LineType { get; private set; }
+    }
+    #endregion
+    #region Enumy
+    /// <summary>
+    /// Osa X nebo Y
+    /// </summary>
+    internal enum AxisType
+    {
+        /// <summary>
+        /// Osa X, vodorovná: na ní se pohybují sloupce, řeší se jejich Width (šířka)
+        /// </summary>
+        X,
+        /// <summary>
+        /// Osa Y, svislá: na ní se pohybují řádky, řeší se jejich Height (výška)
+        /// </summary>
+        Y
+    }
+    /// <summary>
+    /// Typ vodící linie
+    /// </summary>
+    [Flags]
+    internal enum GuideLineType
+    {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None = 0,
+
+        Cell = 0x0001,
+        LabelBefore = 0x0002,
+        Control = 0x0004,
+        LabelAfter = 0x0008,
+        Begin = 0x1000,
+        End = 0x2000,
+
+        /// <summary>
+        /// Začátek buňky
+        /// </summary>
+        CellBegin = Cell | Begin,
+        LabelBeforeBegin = LabelBefore | Begin,
+        LabelBeforeEnd = LabelBefore | End,
+        LabelAfterBegin = LabelAfter | Begin,
+        LabelAfterEnd = LabelAfter | End,
+        ControlBegin = Control | Begin,
+        ControlEnd = Control | End,
+        CellEnd = Cell | End
+    }
+    #endregion
     #endregion
     #region interface IControlInfoSource + IDataFormItem : Předpis rozhraní pro toho, kdo bude poskytovat informace o atributech a o rozměrech textů pro DataForm; rozhraní prvku DataFormu
     /// <summary>
@@ -4292,14 +4485,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         Flow,
         /// <summary>
         /// <see cref="FlowInParent"/> = sám není součástí FlowLayoutu, ale využívá existující Parent buňku FlowLayoutu pro svoje umístění.
-        /// Parent buňka je specifikována jejím jménem, odkázaným z <see cref="DfBaseControl.ParentBounds"/>.
+        /// Parent buňka je specifikována jejím jménem, odkázaným z <see cref="DfBaseControl.ParentBoundsName"/>.
         /// Uvnitř buňky je prvek umístěn zcela identicky, jako by byl součástí FlowLayoutu.
         /// Lze tak do jedné buňky vložit střídavě více prvků a řídit jejich Visible.
         /// </summary>
         FlowInParent,
         /// <summary>
         /// <see cref="BoundsInParent"/> = sám není součástí FlowLayoutu, ale využívá existující Parent buňku FlowLayoutu pro svoje umístění.
-        /// Parent buňka je specifikována jejím jménem, odkázaným z <see cref="DfBaseControl.ParentBounds"/>.<br/>
+        /// Parent buňka je specifikována jejím jménem, odkázaným z <see cref="DfBaseControl.ParentBoundsName"/>.<br/>
         /// V rámci dané buňky je pak umístěn na základě svých Bounds. 
         /// Využívá tedy souřadnici odkázanou buňku, z ní načte její vnitřní souřadnice, určí počátek prostoru pro Control a ten použije jako bod 0/0,
         /// k němu přičte svoje zadané souřadnice Bounds a na výsledné místo se umístí. Může se tedy umístit i mimo prostor zadané buňky.
@@ -4330,6 +4523,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Mají se ukládat Debug obrázky? Pak budou jejich jména uložena v <see cref="DebugImages"/>
         /// </summary>
         public bool SaveDebugImages { get; set; }
+        /// <summary>
+        /// Do Debug obrázku vykreslovat i vodící linky?
+        /// </summary>
+        public bool DebugImagesWithGuideLines { get; set; }
         /// <summary>
         /// Podadresář pro DebugImages v rámci Windows Temp adresáře
         /// </summary>

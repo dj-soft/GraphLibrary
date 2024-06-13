@@ -615,8 +615,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _FillBaseAttributes(xElement, dfNestedGroup);
             dfNestedGroup.NestedTemplate = _ReadAttributeString(xElement, "NestedTemplate", null);
             dfNestedGroup.NestedGroupName = _ReadAttributeString(xElement, "NestedPanelName", null);
-            dfNestedGroup.Bounds = _ReadAttributeBounds(xElement, null);
-            dfNestedGroup.ParentBounds = _ReadAttributeString(xElement, "ParentBounds", null);
+            dfNestedGroup.DesignBounds = _ReadAttributeBounds(xElement, null);
+            dfNestedGroup.ParentBoundsName = _ReadAttributeString(xElement, "ParentBoundsName", null);
             dfNestedGroup.ColIndex = _ReadAttributeInt32N(xElement, "ColIndex");
             dfNestedGroup.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
             dfNestedGroup.RowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
@@ -639,8 +639,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (dfNestedGroup.ToolTipTitle != null) dfGroup.ToolTipTitle = dfNestedGroup.ToolTipTitle;
                 if (dfNestedGroup.ToolTipText != null) dfGroup.ToolTipText = dfNestedGroup.ToolTipText;
                 if (dfNestedGroup.Invisible != null) dfGroup.Invisible = dfNestedGroup.Invisible;
-                dfGroup.Bounds = dfNestedGroup.Bounds;
-                dfGroup.ParentBounds = dfNestedGroup.ParentBounds;
+                dfGroup.DesignBounds = dfNestedGroup.DesignBounds;
+                dfGroup.ParentBoundsName = dfNestedGroup.ParentBoundsName;
                 dfGroup.ColIndex = dfNestedGroup.ColIndex;
                 dfGroup.ColSpan = dfNestedGroup.ColSpan;
                 dfGroup.RowSpan = dfNestedGroup.RowSpan;
@@ -970,8 +970,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (target is DfBaseControl control)
             {
                 control.ControlStyle = _ReadAttributeStyle(xElement, null);
-                control.Bounds = _ReadAttributeBounds(xElement, null);
-                control.ParentBounds = _ReadAttributeString(xElement, "ParentBounds", null);
+                control.DesignBounds = _ReadAttributeBounds(xElement, null);
+                control.ParentBoundsName = _ReadAttributeString(xElement, "ParentBoundsName", null);
                 control.ColIndex = _ReadAttributeInt32N(xElement, "ColIndex");
                 control.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
                 control.RowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
@@ -1031,8 +1031,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
             if (target is DfBaseContainer container)
             {
-                container.Bounds = _ReadAttributeBounds(xElement, null);
-                container.ParentBounds = _ReadAttributeString(xElement, "ParentBounds", null);
+                container.DesignBounds = _ReadAttributeBounds(xElement, null);
+                container.ParentBoundsName = _ReadAttributeString(xElement, "ParentBoundsName", null);
             }
         }
         /// <summary>
@@ -1379,13 +1379,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return defaultValue;
         }
         /// <summary>
-        /// Z dodaného <paramref name="xElement"/> načte hodnoty odpovídající souřadnicím prvku <see cref="Bounds"/> a vrátí je.
+        /// Z dodaného <paramref name="xElement"/> načte hodnoty odpovídající souřadnicím prvku <see cref="DesignBounds"/> a vrátí je.
         /// </summary>
         /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="defaultValue"></param>
-        private static Bounds _ReadAttributeBounds(System.Xml.Linq.XElement xElement, Bounds defaultValue)
+        private static DesignBounds _ReadAttributeBounds(System.Xml.Linq.XElement xElement, DesignBounds defaultValue)
         {
-            Bounds bounds = null;
+            DesignBounds designBounds = null;
 
             // Celý Bounds:
             var textBounds = _ReadAttributeString(xElement, "Bounds", null);
@@ -1394,12 +1394,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var items = _SplitText(textBounds);
                 if (items != null && items.Length >= 2)
                 {
-                    if (bounds is null) bounds = new Bounds();
-                    bounds.Left = _ParseInt32N(items[0]);
-                    bounds.Top = _ParseInt32N(items[1]);
-                    if (items.Length >= 3) bounds.Width = _ParseInt32PN(items[2]);
-                    if (items.Length >= 4) bounds.Height = _ParseInt32PN(items[3]);
-                    if (bounds.HasLocation && bounds.HasSize) return bounds;
+                    if (designBounds is null) designBounds = new DesignBounds();
+                    designBounds.Left = _ParseInt32N(items[0]);
+                    designBounds.Top = _ParseInt32N(items[1]);
+                    if (items.Length >= 3) designBounds.Width = _ParseInt32PN(items[2]);
+                    if (items.Length >= 4) designBounds.Height = _ParseInt32PN(items[3]);
+                    if (designBounds.HasLocation && designBounds.HasSize) return designBounds;
                 }
             }
 
@@ -1410,10 +1410,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var items = _SplitText(textLocation);
                 if (items != null && items.Length >= 2)
                 {
-                    if (bounds is null) bounds = new Bounds();
-                    bounds.Left = _ParseInt32N(items[0]);
-                    bounds.Top = _ParseInt32N(items[1]);
-                    if (bounds.HasLocation && bounds.HasSize) return bounds;
+                    if (designBounds is null) designBounds = new DesignBounds();
+                    designBounds.Left = _ParseInt32N(items[0]);
+                    designBounds.Top = _ParseInt32N(items[1]);
+                    if (designBounds.HasLocation && designBounds.HasSize) return designBounds;
                 }
             }
 
@@ -1424,10 +1424,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var items = _SplitText(textSize);
                 if (items != null && items.Length >= 2)
                 {
-                    if (bounds is null) bounds = new Bounds();
-                    bounds.Width = _ParseInt32PN(items[0]);
-                    bounds.Height = _ParseInt32PN(items[1]);
-                    if (bounds.HasLocation && bounds.HasSize) return bounds;
+                    if (designBounds is null) designBounds = new DesignBounds();
+                    designBounds.Width = _ParseInt32PN(items[0]);
+                    designBounds.Height = _ParseInt32PN(items[1]);
+                    if (designBounds.HasLocation && designBounds.HasSize) return designBounds;
                 }
             }
 
@@ -1435,36 +1435,36 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var textX = _ReadAttributeString(xElement, "X", null);
             if (!String.IsNullOrEmpty(textX))
             {
-                if (bounds is null) bounds = new Bounds();
-                bounds.Left = _ParseInt32N(textX);
-                if (bounds.HasLocation && bounds.HasSize) return bounds;
+                if (designBounds is null) designBounds = new DesignBounds();
+                designBounds.Left = _ParseInt32N(textX);
+                if (designBounds.HasLocation && designBounds.HasSize) return designBounds;
             }
 
             var textY = _ReadAttributeString(xElement, "Y", null);
             if (!String.IsNullOrEmpty(textY))
             {
-                if (bounds is null) bounds = new Bounds();
-                bounds.Top = _ParseInt32N(textY);
-                if (bounds.HasLocation && bounds.HasSize) return bounds;
+                if (designBounds is null) designBounds = new DesignBounds();
+                designBounds.Top = _ParseInt32N(textY);
+                if (designBounds.HasLocation && designBounds.HasSize) return designBounds;
             }
 
             var textWidth = _ReadAttributeString(xElement, "Width", null);
             if (!String.IsNullOrEmpty(textWidth))
             {
-                if (bounds is null) bounds = new Bounds();
-                bounds.Width = _ParseInt32PN(textWidth);
-                if (bounds.HasLocation && bounds.HasSize) return bounds;
+                if (designBounds is null) designBounds = new DesignBounds();
+                designBounds.Width = _ParseInt32PN(textWidth);
+                if (designBounds.HasLocation && designBounds.HasSize) return designBounds;
             }
 
             var textHeight = _ReadAttributeString(xElement, "Height", null);
             if (!String.IsNullOrEmpty(textHeight))
             {
-                if (bounds is null) bounds = new Bounds();
-                bounds.Height = _ParseInt32PN(textHeight);
-                if (bounds.HasLocation && bounds.HasSize) return bounds;
+                if (designBounds is null) designBounds = new DesignBounds();
+                designBounds.Height = _ParseInt32PN(textHeight);
+                if (designBounds.HasLocation && designBounds.HasSize) return designBounds;
             }
 
-            if (bounds != null && !bounds.IsEmpty) return bounds;
+            if (designBounds != null && !designBounds.IsEmpty) return designBounds;
             return defaultValue;
         }
         /// <summary>
@@ -1676,32 +1676,32 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Klonuje dodané souřadnice
         /// </summary>
-        /// <param name="bounds"></param>
+        /// <param name="designBounds"></param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
-        private static Bounds _CloneBounds(Bounds bounds)
+        private static DesignBounds _CloneBounds(DesignBounds designBounds)
         {
-            return (bounds is null ? null : new Bounds(bounds.Left, bounds.Top, bounds.Width, bounds.Height));
+            return (designBounds is null ? null : new DesignBounds(designBounds.Left, designBounds.Top, designBounds.Width, designBounds.Height));
         }
         /// <summary>
         /// Klonuje velikost z dodaných souřadnic
         /// </summary>
-        /// <param name="bounds"></param>
+        /// <param name="designBounds"></param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
-        private static Bounds _CloneBoundsSize(Bounds bounds)
+        private static DesignBounds _CloneBoundsSize(DesignBounds designBounds)
         {
-            return (bounds is null ? null : new Bounds(null, null, bounds.Width, bounds.Height));
+            return (designBounds is null ? null : new DesignBounds(null, null, designBounds.Width, designBounds.Height));
         }
         /// <summary>
         /// Klonuje pozici z dodaných souřadnic
         /// </summary>
-        /// <param name="bounds"></param>
+        /// <param name="designBounds"></param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
-        private static Bounds _CloneBoundsLocation(Bounds bounds)
+        private static DesignBounds _CloneBoundsLocation(DesignBounds designBounds)
         {
-            return (bounds is null ? null : new Bounds(bounds.Left, bounds.Top));
+            return (designBounds is null ? null : new DesignBounds(designBounds.Left, designBounds.Top));
         }
         /// <summary>
         /// Klonuje dodané okraje

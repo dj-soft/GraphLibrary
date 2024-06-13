@@ -10,12 +10,14 @@
 		  AddUda="True" UdaLabelPosition="Top"
           ColumnWidths="200;300;100" >
 
-    <panel Name="test15a" Title="Test LabelsRelativeToControl" ColumnsCount="2" AutoLabelPosition="BeforeRight" LabelsRelativeToControl="False"
-                    Margins="4,4" ColumnsDistance="3" RowsDistance="3" >
-        <textbox Name="sklad_refer" />
-        <textbox Name="sklad_nazev" />
-        <textbox Name="pocet" Label="Počet:" Width="40" HPosition="Center"/>
-        <textbox Name="cena" Label="Cena:" Width="90" HPosition="Right"/>
+
+    <panel Name="test11" Title="test04" ColumnsCount="3" AutoLabelPosition="Top" TopLabelOffsetX="-15" Margins="4,4" >
+        <textbox Name="pkrefer1" Width="150"/>
+        <textbox Name="pknazev1" Width="250"/>
+        <image Name="pkimage1" RowSpan="3" Width="120" Height="100%" ExpandControl="All" LabelPosition="None" />
+        <textbox Name="pkrefer2" />
+        <textbox Name="pknazev2" />
+        <textbox Name="pkpozn3" ColSpan="2"/>
     </panel>
 
 </template>

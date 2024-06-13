@@ -957,15 +957,15 @@
                             Souřadnice prvku v jednom políčku, v pořadí: X,Y,Width[,Height]. Alternativa hodnot X, Y, Width, Height.
                             Pokud má prvek zadané souřadnice X a Y, pak je umístěn na požadované souřadnice = je Fixní, a není umisťován do sloupců a řádků plovoucího layoutu (FlowLayout).
                             Souřadnice se vztahují k parentu (panel nebo grupa), ve kterém je prvek definován jako jeho Child element.
-                            Je možno ale zadat atribut 'ParentBounds' a do něj uvést jméno jiného sousedního prvku, který je umístěn do FlowLayoutu. 
+                            Je možno ale zadat atribut 'ParentBoundsName' a do něj uvést jméno jiného sousedního prvku, který je umístěn do FlowLayoutu.
                             Pak budou souřadnice 'Bounds' zdejšího prvku umístěny relativně do souřadnic daného Parent prvku.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
-                <xs:attribute name="ParentBounds" type="xs:string">
+                <xs:attribute name="ParentBoundsName" type="xs:string">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">
-                            Jméno prvku 'Name', který určuje souřadnice pro zdejší prvek, pokud ten je umístěn fixně = má definované souřadnice 'X' a 'Y'.
+                            Jméno prvku (jeho 'Name'), který určuje výchozí souřadnice pro zdejší prvek, pokud ten je umístěn fixně = má definované souřadnice 'X' a 'Y'.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:attribute>

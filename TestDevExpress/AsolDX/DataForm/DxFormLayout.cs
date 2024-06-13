@@ -552,7 +552,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm.Layout
         /// <summary>
         /// Souřadnice prvku dané layoutem. Některé jednotlivé hodnoty nebo i celá souřadnice mohou být null.
         /// </summary>
-        public Bounds LayoutBounds { get; set; }
+        public DesignBounds LayoutBounds { get; set; }
         /// <summary>
         /// Souřadnice prvku relativní ke svému parentu, dopočítané, a víceméně neměnné, vždy validní
         /// </summary>

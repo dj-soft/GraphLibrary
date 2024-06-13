@@ -412,14 +412,14 @@ namespace Noris.WS.DataContracts.DxForm
         public string NestedGroupName { get; set; }
         /// <summary>
         /// Umístění prvku. Výchozí je null.
-        /// Pokud je panel umístěn přímo jako Child v nadřazené <see cref="DfPage"/>, pak se ignoruje umístění (Left a Top) dané v <see cref="Bounds"/>, akceptuje se jen Width a Height.
+        /// Pokud je panel umístěn přímo jako Child v nadřazené <see cref="DfPage"/>, pak se ignoruje umístění (Left a Top) dané v <see cref="DesignBounds"/>, akceptuje se jen Width a Height.
         /// Pak jde o primární panely, a ty jsou typicky uživatelsky ovladatelné.
         /// </summary>
-        public Bounds Bounds { get; set; }
+        public DesignBounds DesignBounds { get; set; }
         /// <summary>
         /// Jméno prvku 'Name', který určuje souřadnice pro zdejší prvek, pokud ten je umístěn fixně = má definované souřadnice 'X' a 'Y'.
         /// </summary>
-        public string ParentBounds { get; set; }
+        public string ParentBoundsName { get; set; }
         /// <summary>
         /// Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
         /// </summary>
@@ -487,14 +487,14 @@ namespace Noris.WS.DataContracts.DxForm
         public List<DfBase> Childs { get; set; }
         /// <summary>
         /// Umístění prvku. Výchozí je null.
-        /// Pokud je panel umístěn přímo jako Child v nadřazené <see cref="DfPage"/>, pak se ignoruje umístění (Left a Top) dané v <see cref="Bounds"/>, akceptuje se jen Width a Height.
+        /// Pokud je panel umístěn přímo jako Child v nadřazené <see cref="DfPage"/>, pak se ignoruje umístění (Left a Top) dané v <see cref="DesignBounds"/>, akceptuje se jen Width a Height.
         /// Pak jde o primární panely, a ty jsou typicky uživatelsky ovladatelné.
         /// </summary>
-        public Bounds Bounds { get; set; }
+        public DesignBounds DesignBounds { get; set; }
         /// <summary>
         /// Jméno prvku 'Name', který určuje souřadnice pro zdejší prvek, pokud ten je umístěn fixně = má definované souřadnice 'X' a 'Y'.
         /// </summary>
-        public string ParentBounds { get; set; }
+        public string ParentBoundsName { get; set; }
         /// <summary>
         /// Velikost tohoto containeru, určená výpočtem.
         /// </summary>
@@ -1076,7 +1076,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// Neslouží jako podklad pro Containery! Ty se odvozují od <see cref="DfBase"/> a <see cref="DfBaseArea"/>.<br/>
     /// Odpovídá XSD typu <c>type_base_control</c>
     /// <para/>
-    /// Tato třída přináší souřadnice <see cref="Bounds"/>.
+    /// Tato třída přináší souřadnice <see cref="DesignBounds"/>.
     /// </summary>
     internal class DfBaseControl : DfBase
     {
@@ -1099,14 +1099,14 @@ namespace Noris.WS.DataContracts.DxForm
         /// <para/>
         /// Pokud má prvek zadané souřadnice X a Y, pak je umístěn na požadované souřadnice = je Fixní, a není umisťován do sloupců a řádků plovoucího layoutu (FlowLayout).
         /// Souřadnice se vztahují k parentu (panel nebo grupa), ve kterém je prvek definován jako jeho Child element.
-        /// Je možno ale zadat atribut 'ParentBounds' a do něj uvést jméno jiného sousedního prvku, který je umístěn do FlowLayoutu.
+        /// Je možno ale zadat atribut 'ParentBoundsName' a do něj uvést jméno jiného sousedního prvku, který je umístěn do FlowLayoutu.
         /// Pak budou souřadnice 'Bounds' zdejšího prvku umístěny relativně do souřadnic daného Parent prvku.
         /// </summary>
-        public Bounds Bounds { get; set; }
+        public DesignBounds DesignBounds { get; set; }
         /// <summary>
         /// Jméno prvku 'Name', který určuje souřadnice pro zdejší prvek, pokud ten je umístěn fixně = má definované souřadnice 'X' a 'Y'.
         /// </summary>
-        public string ParentBounds { get; set; }
+        public string ParentBoundsName { get; set; }
         /// <summary>
         /// Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
         /// </summary>
@@ -1192,18 +1192,18 @@ namespace Noris.WS.DataContracts.DxForm
     /// <summary>
     /// Souřadnice
     /// </summary>
-    public sealed class Bounds
+    public sealed class DesignBounds
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public Bounds() { }
+        public DesignBounds() { }
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="left"></param>
         /// <param name="top"></param>
-        public Bounds(Int32? left, Int32? top)
+        public DesignBounds(Int32? left, Int32? top)
         {
             this.Left = left;
             this.Top = top;
@@ -1217,7 +1217,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <param name="top"></param>
         /// <param name="width"></param>
         /// <param name="height"></param>
-        public Bounds(Int32? left, Int32? top, Int32? width, Int32? height)
+        public DesignBounds(Int32? left, Int32? top, Int32? width, Int32? height)
         {
             this.Left = left;
             this.Top = top;
@@ -1231,7 +1231,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <param name="top"></param>
         /// <param name="width"></param>
         /// <param name="height"></param>
-        public Bounds(Int32? left, Int32? top, Int32P? width, Int32P? height)
+        public DesignBounds(Int32? left, Int32? top, Int32P? width, Int32P? height)
         {
             this.Left = left;
             this.Top = top;
@@ -1242,7 +1242,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// Konstruktor
         /// </summary>
         /// <param name="source"></param>
-        public Bounds(Bounds source)
+        public DesignBounds(DesignBounds source)
         {
             this.Left = source?.Left;
             this.Top = source?.Top;

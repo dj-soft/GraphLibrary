@@ -509,7 +509,17 @@ namespace TestDevExpress.Forms
                 if (dxInfo.FormatVersion == FormatVersionType.Version4)
                 {
                     var dfForm = DxDForm.DfTemplateLoader.LoadTemplate(loadingArgs);
-                    var layoutArgs = new DfTemplateLayoutArgs() { DataForm = dfForm, Errors = loadingArgs.Errors, LogTime = true, InfoSource = this, SaveDebugImages = true, DebugImagePath = "AsolLayouts" };
+                    var layoutArgs = new DfTemplateLayoutArgs()
+                    {
+                        DataForm = dfForm,
+                        Errors = loadingArgs.Errors,
+                        LogTime = true,
+                        InfoSource = this,
+                        SaveDebugImages = true,
+                        DebugImagesWithGuideLines = true,
+                        DebugImagePath = "AsolLayouts"
+                    };
+
                     DxDForm.DfTemplateLayout.CreateLayout(layoutArgs);
                     if (layoutArgs.HasErrors)              // Zde jsou i chyby sdílené z procesu Loading
                         DxComponent.ShowMessageWarning($"Zadaný dokument '{fileFrmXml}' obsahuje chyby:\r\n{loadingArgs.ErrorsText}");
@@ -1028,6 +1038,9 @@ namespace TestDevExpress.Forms
                     case "osoba":
                         result = "Správce ";
                         break;
+                    default:
+                        result = atrname + " ";
+                        break;
                 }
 
                 switch (relname)
@@ -1103,6 +1116,10 @@ namespace TestDevExpress.Forms
                         result += "útvaru";
                         break;
 
+                    default:
+                        result += relname;
+                        break;
+
                 }
                 return result + ":";
             }
@@ -1121,7 +1138,7 @@ namespace TestDevExpress.Forms
                 }
                 rn = null;
                 an = null;
-                return true;
+                return false;
             }
         }
         #endregion

@@ -18,7 +18,7 @@
         <textbox Name="kontakt_nazev" LabelPosition="None"/>
         <textbox Name="adresa1" ColSpan="2" Width="400" />
         <textbox Name="adresa2" LabelPosition="None" ColSpan="2" Width="400" />
-        <button Name="open_contact" ParentBounds="adresa2" Bounds="405,-30,78,50" IconName="pic/mail" IconPosition="IconOnly" />
+        <button Name="open_contact" ParentBoundsName="adresa2" Bounds="405,-30,78,50" IconName="pic/mail" IconPosition="IconOnly" />
     </panel>
     
 </template>
