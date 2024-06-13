@@ -1713,9 +1713,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var controlTextColor1 = System.Drawing.Color.FromArgb(190, 96, 96, 96);
                 var controlTextColor2 = System.Drawing.Color.FromArgb(255, 32, 32, 32);
 
-                var guideLineCellColor = System.Drawing.Color.FromArgb(220, 160, 100, 160);
-                var guideLineControlColor = System.Drawing.Color.FromArgb(220, 180, 110, 180);
-                var guideLineLabelColor = System.Drawing.Color.FromArgb(220, 200, 120, 200);
+                var guideLineCellColor = System.Drawing.Color.FromArgb(230, 140, 120, 140);
+                var guideLineControlColor = System.Drawing.Color.FromArgb(230, 160, 160, 80);
+                var guideLineLabelColor = System.Drawing.Color.FromArgb(230, 180, 190, 180);
 
                 // Image a grafické nástroje, jimiž postupně vykreslíme jednotlivé prvky:
                 var image = new System.Drawing.Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -2796,6 +2796,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             List<FlowGuideLine> guideLines = new List<FlowGuideLine>();
             addLines(__Columns);
             addLines(__Rows);
+            guideLines.Sort(FlowGuideLine.CompareByLineType);
             return guideLines.ToArray();
 
             void addLines(List<LineInfo> lines)
@@ -4227,6 +4228,27 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             Position = position;
             Axis = axis;
             LineType = lineType;
+        }
+        /// <summary>
+        /// Komparátor
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        internal static int CompareByLineType(FlowGuideLine a, FlowGuideLine b)
+        {
+            int al = getLevel(a.LineType);
+            int bl = getLevel(b.LineType);
+            return (al.CompareTo(bl));
+
+            int getLevel(GuideLineType lt)
+            {
+                if (lt.HasFlag(GuideLineType.Cell)) return 10;
+                if (lt.HasFlag(GuideLineType.Control)) return 8;
+                if (lt.HasFlag(GuideLineType.LabelBefore)) return 6;
+                if (lt.HasFlag(GuideLineType.LabelAfter)) return 6;
+                return 0;
+            }
         }
         /// <summary>
         /// Vizualizace

@@ -11,12 +11,12 @@
           ColumnWidths="200;300;100" >
 
 
-    <panel Name="test11" Title="test04" ColumnsCount="3" AutoLabelPosition="Top" TopLabelOffsetX="-15" Margins="4,4" >
+    <panel Name="test11" Title="test04" ColumnsCount="3" AutoLabelPosition="Top" TopLabelOffsetX="-15" Margins="4,4" ColumnsDistance="5" RowsDistance="3" ControlMargins="2" >
         <textbox Name="pkrefer1" Width="150"/>
         <textbox Name="pknazev1" Width="250"/>
         <image Name="pkimage1" RowSpan="3" Width="120" Height="100%" ExpandControl="All" LabelPosition="None" />
         <textbox Name="pkrefer2" />
-        <textbox Name="pknazev2" />
+        <textbox Name="pknazev2" Width="180" HPosition="Right" />
         <textbox Name="pkpozn3" ColSpan="2"/>
     </panel>
 
