@@ -1,76 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<template xmlns="http://tempuri.org/DxDataFormat.Frm.xsd" 
+<template xmlns="http://tempuri.org/DataForm.Frm.xsd" 
           FormatVersion="1"
           UseNorisClass="12"
           Messages="/app/lcs/Base/Forms/DwMfrFrm.msg.xml"
           DataSource="/app/lcs/Base/Forms/dw_organizace_form.data.xml"
           MasterWidth="530" MasterHeight="320"
-          TotalWidth="750" TotalHeight="520"
-          Margins="10,6">
+          TotalWidth="750" TotalHeight="520" >
 
-    <panel Name="panelName"  >
-        <title Name="nameTitle" Text="Základní data"/>
-        <label Name="reference_subjektu_lbl" Bounds="14,2,150" Text="Reference" ToolTipTitle="Nápověda" ToolTipText="Informace k tomuto prvku neexistuje" />
-        <textbox Name="reference_subjektu" Bounds="10,20,160" Required="True" />
-        <label Name="nazev_subjektu_lbl" Bounds="184,2,150" Text="Název" />
-        <textbox Name="reference_subjektu" Bounds="180,20,220" Required="True" />
-        
-        
-        <combobox Name="info2" Bounds="180,20,160" Style="IconTextList" >
-            <comboItem Name="Z" Text="Zahájeno" IconName="pic/status1"/>
-            <comboItem Name="U" Text="Ukončeno" IconName="pic/status2"/>
-            <comboItem Name="S" Text="Stornováno" IconName="pic/status3"/>
-        </combobox>
-        <label Name="info3_lbl" Bounds="14,47,150" Text="Další nabídka" />
-        <combobox Name="info3" Bounds="10,65,160" EditStyleName="mfr_product_status" Style="IconTextList" />
-        <textboxbutton Name="button1" Bounds="180,47,120" >
-            <rightButton Name="dots" Text="..." />
-        </textboxbutton>
-        
-        <button Name="butOpen" HotKey="F8" Bounds="2,50,120,35" Text="Otevři..." ActionName="RunFunction" ActionData="aaa" ToolTipTitle="Otevřít dveře" ToolTipText="Přistoupit ku dveřím, stiskem kliky uvolnit a pak tahem otevřít..."/>
-        
-        <panel Name="p1234" BackColorName="Blue_front_protect" >
-            <label Name="aaa" Text="Vnitřní popisek"/>
-        </panel>
-    </panel>
-
-    <pageset Name="aaaa">
-        <page Name="page01" Title="Základní" IconName="pic/image">
-            
-        </page>
-        <page Name="page02" Title="Nastavení">
-            <label Name="Pocet01l" Text="Počet kusů:" Alignment="MiddleRight" Bounds="10,2,120"/>
-            <textbox Name="Pocet01" Bounds="135,2,120" Required="True"/>
-        </page>
-    </pageset>
-    <panel Name="vvvv" BackColorName="User_12" BackColor="">
-        <label Name="t3"/>
-        <textboxbutton Name="tb1" ButtonsVisibility="Default">
-            <leftButton Name="fff" Text=".." IconName="pic"/>
-        </textboxbutton>
-        <nestedpanel Name="nestedpanel1" NestedTemplate="app/lcs/manufacturing/forms/pricetable.frm.xml" X="0" Y="250"/>
-    </panel>
-
-    <nestedpanel Name="nestedpanel2" NestedTemplate="..."/>
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    <!--  obsolete
-
-    <panel Name="tab_3b8b20f5-e861-46c0-8470-7488eb46ab06">
+    <tab Name="tab_3b8b20f5-e861-46c0-8470-7488eb46ab06">
         <column Name="date_validity" Width="150"></column>
         <column Name="produce_me" Width="150" InputType="checkbox"></column>
         <column Name="plan_me" InputType="checkbox"></column>
@@ -82,12 +19,7 @@
         <column Name="plan_unit_s_refer" Width="150"></column>
         <column Name="plan_unit_s_nazev" Width="300" ColSpan="2" LabelPos="None"></column>
         <column Name="placeholder1" InputType="Placeholder"></column>
-
-        <label Name="t4" ></label>
-        <textbox Name="colname1" ></textbox>
-
-    </panel>
-    
+    </tab>
     <tab>
         <column Name="weight" Width="150"></column>
         <column Name="area" Width="150"></column>
@@ -116,6 +48,4 @@
         <column Name="placeholder2" InputType="Placeholder"></column>
     </tab>
     
-    
-    -->
 </template>

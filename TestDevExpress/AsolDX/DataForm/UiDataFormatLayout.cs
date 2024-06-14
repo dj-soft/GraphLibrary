@@ -3996,7 +3996,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Algoritmus FlowLayout pro prvek zajistil potřebnou výšku
         /// </summary>
         bool AcceptedHeight { get; set; }
-
         /// <summary>
         /// Resetuje výsledné hodnoty FlowLayoutu. Volá se na začátku finalizace layoutu jako první metoda.
         /// Neresetuje designové hodnoty. Neresetuje umístění do Matrixu. Resetuje to co souvisí s pixely.
@@ -4363,6 +4362,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     internal interface IControlInfoSource
     {
         /// <summary>
+        /// Funkce, která vrátí stringový obsah nested šablony daného jména.<br/>
+        /// Funkce bude volána s parametrem = jméno šablony (obsah atributu NestedTemplate), jeho úkolem je vrátit string = obsah požadované šablony (souboru).<br/>
+        /// Pokud funkce požadovanou šablonu (soubor) nenajde, může sama ohlásit chybu. Anebo může vrátit null, pak bude Nested prvek ignorován.
+        /// </summary>
+        /// <param name="templateName"></param>
+        /// <returns></returns>
+        string NestedTemplateContentLoad(string templateName);
+        /// <summary>
         /// Validuje (prověří a doplní) informace o konkrétním controlu.
         /// </summary>
         /// <param name="controlInfo">Data o controlu</param>
@@ -4565,11 +4572,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Dataform, jehož layout vzniká
         /// </summary>
         public DfForm DataForm { get; set; }
-        /// <summary>
-        /// Objekt, který je zdrojem dalších dat pro dataform ze strany systému.
-        /// Například vyhledá popisný text pro datový control daného jména, určí velikost textu s daným obsahem a daným stylem, atd...
-        /// </summary>
-        public IControlInfoSource InfoSource { get; set; }
         /// <summary>
         /// Mají se ukládat Debug obrázky? Pak budou jejich jména uložena v <see cref="DebugImages"/>
         /// </summary>

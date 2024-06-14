@@ -411,7 +411,15 @@
       <SubType>Designer</SubType>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <Content Include="AsolDX\XML\dw_faktura_dosla_config.frm.xml" />
+    <Content Include="AsolDX\XML\dw_faktura_dosla_hlavicka_form.data.xml" />
+    <Content Include="AsolDX\XML\dw_faktura_dosla_hlavicka_form.E5.frm.xml" />
+    <Content Include="AsolDX\XML\dw_faktura_dosla_hlavicka_form.msg.xml" />
+    <Content Include="AsolDX\XML\dw_faktura_dosla_image_V1.png" />
     <Content Include="AsolDX\XML\dw_simple_2.frm.xml" />
+    <None Include="AsolDX\XSD\DataForm.Frm.xsd">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="AsolDX\XSD\DfDataFormat.Frm.xsd">
       <SubType>Designer</SubType>
     </None>
@@ -2500,6 +2508,8 @@
     <Content Include="AsolDX\XML\dw_nested_dph.frm.xml" />
     <Content Include="AsolDX\XML\dw_simple_1.frm.xml" />
     <Content Include="AsolDX\XML\dw_test1.frm.xml" />
+    <Content Include="AsolDX\XML\nested_sazbova_tabulka_fv3.E5.frm.xml" />
+    <Content Include="AsolDX\XML\nested_sazbova_tabulka_fv3.msg.xml" />
     <Content Include="TestDevExpress.ico" />
     <None Include="_Icons\Nephrite_15.ico" />
     <None Include="_Icons\Nephrite_14.ico" />

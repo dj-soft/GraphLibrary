@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<template FormatVersion="3" DataSource="dw_faktura_dosla_hlavicka_form.data.xml"
+          TotalWidth="984" TotalHeight="598" MasterWidth="754" MasterHeight="398"
+          TableColumns="2" LabelPos="Up" DefaultLastRowColumnWidth="auto"
+          xmlns="http://tempuri.org/DataForm.Frm.xsd">
+
+  <!-- Hlavička -->
+  <tab TabPageLabel="fm(MSG017)" FirstLeftColumnAlignMode="Tab" TableColumns="4">
+    <column Name="stav_procesu" InputType="select" DDLBEditor="Breadcrumb" EditStyle="stav_procesu_fd" LabelPos="None" Width="100%" Height="40" ColSpan="3" />
+    <column Name="stav_uhrazenosti" LabelPos="None" ReadOnly="True" AlignValue="Center" />
+      
+    <column Name="reference_subjektu" Width="200" />
+    <column Name="nazev_subjektu" Width="227" AttrShortName="False" />
+    <column Name="variabilni_symbol" Width="100" AttrShortName="False" />
+    <column Name="parovaci_znak" />
+  </tab>
+
+  <!-- Odběratel -->
+  <tab TabPageLabel="fmr(cn,lcs.faktura_dosla_hlavicka.organizace,l)" RenderAs="DesignTabWithLabel" TableColumns="5">
+    <column Name="organizace_nazev" Width="200" />
+    <column Name="organizace_refer" Width="77" LabelPos="None" />
+    <column Name="organizace_nazpor" Width="150" Label="fm(MSG001):" />
+    <column Name="ico" Width="100" Relation="1" Label="fm(MSG002):" />
+    <column Name="dic_nazev" />
+
+    <column Name="expozitura_nazev" Width="200" />
+    <column Name="expozitura_refer" Width="77" LabelPos="None" />
+    <column Name="cislo_bankovni_spojeni_refer" Width="150" RelationAddName="True" />
+    <column Name="cislo_bankovni_spojeni_nazev" Width="100" LabelPos="None" ReadOnly="True" />
+    <column Name="dic_vlastni_nazev" />
+
+    <column Name="company_id_nazev" Width="200" />
+    <column Name="company_id_refer" Width="77" LabelPos="None" />
+  </tab>
+
+  <!-- Datumové údaje -->
+  <tab TabPageLabel="fm(MSG038)" RenderAs="DesignTabWithLabel" TableColumns="9">
+    <column Name="datum_porizeni" Width="82" SetEmptyStringIsNull="True" />
+    <column Name="datum_duzp" Width="82" SetEmptyStringIsNull="True" />
+    <column Name="datum_splatnosti" Width="80" SetEmptyStringIsNull="True" />
+    <column Name="datum_pripadu" Width="85" SetEmptyStringIsNull="True" />
+    <column Name="mesic_dph" Width="72" Invisible="False" EditStyle="#dynamic#" Label="fm(MSG007):" />
+    <column Name="popis2" Width="10" Expr="'/'" InputType="string" LabelPos="None" Invisible="False"/>
+    <column Name="rok_dph" Width="61" LabelPos="None" Invisible="False" EditStyle="#dynamic#" />
+    <column Name="placeholder_ddp" InputType="Placeholder" Width="12" />
+    <column Name="dod_dan_prizn" InputType="checkbox" LabelPos="Left" Label="fm(MSG053):" />
+
+    <column Name="odpocet_dph_pri_uhrade" InputType="checkbox" LabelPos="Left" Invisible="iif (Noris.LCS.Base.Globals.IsLegislationSK(), False, True)" ColSpan="8" Align="Right" />
+    <column Name="nasledne_kh" InputType="checkbox" LabelPos="Left" />
+  </tab>
+  <tab/>
+
+  <!-- Sazbová tabulka -->
+  <tab NestedTemplate="/app/lcs/PrimaryVATDocument/Forms/nested_sazbova_tabulka_fv3" />
+  <tab/>
+
+  <!-- Záloha, dobropis, úhrady -->
+  <tab Name="sumarizace" TableColumns="6"> 
+    <column Name="zaloha" Width="108" ReadOnly="True" />
+    <column Name="dobropis" Width="108" ReadOnly="True" />
+
+    <column Name="uhrazeno" Width="108" ReadOnly="True" />
+    <column Name="odcerpano" Width="108" ReadOnly="True" />
+
+    <column Name="zbyva_uhradit" Width="108" ReadOnly="True" />
+    <column Name="k_dispozici" ReadOnly="True" />
+  </tab>
+  <tab TableColumns="6" Name="sumarizace_mena">
+    <column Name="zaloha_mena" Width="108" ReadOnly="True" />
+    <column Name="dobropis_mena" Width="108" ReadOnly="True" />
+
+    <column Name="uhrazeno_mena" Width="108" ReadOnly="True" />
+    <column Name="odcerpano_mena" Width="108" ReadOnly="True" />
+
+    <column Name="zbyva_uhradit_mena" Width="108" ReadOnly="True" />
+    <column Name="k_dispozici_mena" ReadOnly="True" />
+  </tab>
+  <tab/>
+
+  <!-- Organizace2, Expozitura 2 -->
+  <tab TableColumns="4">
+    <column Name="organizace2_nazev" Width="216" />
+    <column Name="organizace2_refer" Width="108" LabelPos="None" />
+    <column Name="expozitura2_nazev" Width="216" AttrShortName="False" />
+    <column Name="expozitura2_refer" LabelPos="None" />
+  </tab>
+  <tab/>
+
+  <!-- Samovymereni -->
+  <tab>
+    <column Name="samovymereni" InputType="checkbox" LabelPos="Right" />
+  </tab>
+  <tab/>
+
+  <!-- *************************************************************************** -->
+  <!-- Ceny a úhrady -->
+  <tab TabPageLabel="fm(MSG018)" TableColumns="5">
+    <column InputType="group" Name="group_castka_pp">
+      <groupcolumn Name="castka_pp" Width="150" ReadOnly="True" />
+      <groupcolumn Name="castka_pp_mena" Width="150" ReadOnly="True" />
+    </column>
+    <column Name="typ_uhrady" Width="150" RegisterItemChange="True" />
+    <column Name="typ_uhrady_jiny" Protect="not(typ_uhrady = 'J' or typ_uhrady = '' or typ_uhrady is null)" ColSpan="3" />
+
+    <column Name="pozastaven_pp" Width="150" ReadOnly="True" />
+    <column Name="stav_pp" Width="150" ReadOnly="True" />
+    <column Name="datum_splatno_pp" Width="100" ReadOnly="True" />
+    <column Name="datum_posledni_platby" Width="100" ReadOnly="True" />
+    <column Name="prodleni" Width="100" ReadOnly="True" />
+
+    <column Name="cislo_ban_spoj_vlastni_pp_refer" Width="100%" ColSpan="2" />
+    <column Name="cislo_ban_spoj_vlastni_pp_nazev" Width="100%" ReadOnly="True" LabelPos="None" />
+    <column Name="stav_slozenky" Width="100" ReadOnly="True" />
+    <column Name="datum_sazby_dph" />
+  </tab>
+  <tab/>
+
+  <!-- Symboly -->
+  <tab TableColumns="2">
+    <column Name="specificky_symbol" Width="150" AttrShortName="False" />
+    <column Name="konstantni_symbol" Width="150" AttrShortName="False" />
+  </tab>
+
+  <!-- Skonto -->
+  <tab TableColumns="4" RenderAs="DesignTabWithLabel" TabPageLabel="fm(MSG003)">
+    <column Name="typ_skonta" Width="150" AttrShortName="False" />
+    <column Name="cislo_penal_fce_refer" Width="150" />
+    <column InputType="group" Name="group_castka_skonto" Width="150">
+      <groupcolumn Name="castka_skonto" Width="150" />
+      <groupcolumn Name="castka_skonto_mena" Width="150" />
+    </column>
+    <column InputType="group" Name="group_castka_rozdil" Width="auto">
+      <groupcolumn Name="castka_rozdil" Label="fm(MSG006)" Expr="isnull(cena_celkem,0) - isnull(zaloha,0) + isnull(castka_skonto,0)" ExprType="Decimal" EditMask="L10;D2;Z1;T1" />
+      <groupcolumn Name="castka_rozdil_mena" Label="fm(MSG016)" Expr="isnull(cena_celkem_mena,0) - isnull(zaloha_mena,0) + isnull(castka_skonto_mena,0)" InputType="number" ExprType="Decimal" EditMask="L10;D2;Z1;T1" />
+    </column>
+  </tab>
+
+  <!-- Upomínání -->
+  <tab TabPageLabel="fm(MSG004)" RenderAs="DesignTabWithLabel" TableColumns="4">
+    <column Name="proces_upominani" InputType="checkbox" Width="150" />
+    <column Name="parametry_upominani_refer" Width="150" />
+    <column Name="datum_upominky" Width="150" ReadOnly="True" SetEmptyStringIsNull="True" />
+    <column Name="poradi_nejvyssi_upominky" ReadOnly="True" />
+  </tab>
+
+  <!-- Sankce -->
+  <tab TabPageLabel="fm(MSG005)" RenderAs="DesignTabWithLabel" TableColumns="4">
+    <column Name="proces_sankci" InputType="checkbox" Width="150" AttrShortName="False" />
+    <column Name="predpis_sankci_refer" Width="150" />
+    <column Name="datum_sankce" Width="150" ReadOnly="True" SetEmptyStringIsNull="True" />
+    <column Name="placeholder_ds" InputType="Placeholder" />
+  </tab>
+
+  <!-- Rabaty -->
+  <tab TabPageLabel="fm(MSG039)" RenderAs="DesignTabWithLabel">
+    <column Name="rabat_hlavicka" Width="150" ReadOnly="True" />
+    <column Name="pocet_celkem" Width="150" ReadOnly="True" />
+  </tab>
+
+  <!-- Náhradní plnění -->
+  <tab TabPageLabel="fm(MSG027)" RenderAs="DesignTabWithLabel">
+    <column Name="stav_nahradniho_plneni" Width="150" RegisterItemChange="True" />
+    <column Name="castka_nahradniho_plneni" Width="150" Protect="not(isnull(stav_nahradniho_plneni, 0) = 1)" />
+  </tab>
+  <tab/>
+
+  <!-- *************************************************************************** -->
+  <!-- Účtování -->
+  <tab TabPageLabel="fm(MSG019)" TableColumns="4" >
+    <column Name="stav" Width="100" ReadOnly="True"  AttrShortName="False" />
+    <column Name="stav_zauctovani" Width="145" ReadOnly="True" />
+    <column Name="vytvoren_ud" Width="145" AttrShortName="False" ReadOnly="True" />
+    <column Name="pouzaverkova_operace" InputType="checkbox" Width="145" />
+  </tab>
+
+  <!-- Účetní dimenze -->
+  <tab TabPageLabel="fm(MSG040)" RenderAs="DesignTabWithLabel">
+    <column Name="utvar_refer" Width="100" />
+    <column Name="utvar_nazev" LabelPos="None" />
+
+    <column Name="obchodni_pripad_refer" Width="100%" />
+    <column Name="obchodni_pripad_nazev" LabelPos="None" />
+
+    <column Name="aktivita_refer" Width="100%" />
+    <column Name="aktivita_nazev" LabelPos="None" />
+  </tab>
+
+  <!-- Účty / kontace -->
+  <tab TabPageLabel="fm(MSG041)" RenderAs="DesignTabWithLabel">
+    <column Name="kontace_refer" Width="100" />
+    <column Name="kontace_nazev" LabelPos="None" ColSpan="4" />
+    <column Name="placeholder_ko" InputType="Placeholder" />
+  </tab>
+
+  <tab TableColumns="3">
+    <column Name="ucet_organizace_label" InputType="label" Width="100" Label="fmr(cn,lcs.faktura_dosla_hlavicka.ucet_organizace,l):" LabelToolTip="fmhr(cn,lcs.faktura_dosla_hlavicka.ucet_organizace)"/>
+    <column Name="ucet_organizace_refer" Width="145" LabelPos="None" />
+    <column Name="ucet_organizace_nazev" LabelPos="None" />
+
+    <column Name="ucet_zaklad1_label" InputType="label" Width="100%" Label="fmr(cn,lcs.faktura_dosla_hlavicka.ucet_zaklad1,l):" LabelToolTip="fmhr(cn,lcs.faktura_dosla_hlavicka.ucet_zaklad1)" />
+    <column Name="ucet_zaklad1_refer" Width="100%" LabelPos="None" />
+    <column Name="ucet_zaklad1_nazev" LabelPos="None" />
+
+    <column Name="ucet_zaklad2_label" InputType="label" Width="100%" Label="fmr(cn,lcs.faktura_dosla_hlavicka.ucet_zaklad2,l):" LabelToolTip="fmhr(cn,lcs.faktura_dosla_hlavicka.ucet_zaklad2)" />
+    <column Name="ucet_zaklad2_refer" Width="100%" LabelPos="None" />
+    <column Name="ucet_zaklad2_nazev" LabelPos="None" />
+
+    <column Name="ucet_zaklad3_label" InputType="label" Width="100%" Label="fmr(cn,lcs.faktura_dosla_hlavicka.ucet_zaklad3,l):" LabelToolTip="fmhr(cn,lcs.faktura_dosla_hlavicka.ucet_zaklad3)" />
+    <column Name="ucet_zaklad3_refer" Width="100%" LabelPos="None" />
+    <column Name="ucet_zaklad3_nazev" LabelPos="None" />
+
+    <column Name="ucet_zaklad4_label" InputType="label" Width="100%" Label="fmr(cn,lcs.faktura_dosla_hlavicka.ucet_zaklad4,l)" LabelToolTip="fmhr(cn,lcs.faktura_dosla_hlavicka.ucet_zaklad4)" />
+    <column Name="ucet_zaklad4_refer" Width="100%" LabelPos="None" />
+    <column Name="ucet_zaklad4_nazev" LabelPos="None" />
+  </tab>
+
+  <!-- Časové rozlišení  -->
+  <tab TabPageLabel="fm(MSG042)" RenderAs="DesignTabWithLabel" TableColumns="3">
+    <column Name="casove_rozliseni" InputType="checkbox" Width="100" />
+    <column Name="obdobi_od" Width="72" AttrShortName="False" />
+    <column Name="obdobi_do" Width="73" />
+  </tab>
+
+
+  <!-- Ostatní účetní okruhy -->
+  <tab TabPageLabel="fm(MSG050)" RenderAs="DesignTabWithLabel" TableColumns="4">
+    <column Name="nastaveni_uctovani_okruhu_refer" Width="100" />
+    <column Name="uctovat_tuz_okruh" Width="145" AttrShortName="False" />
+    <column Name="povolit_modifikaci_okruhu" Width="145" AttrShortName="False" />
+    <column Name="ostatni_okruhy_zauctovany" ReadOnly="True" AttrShortName="False" />
+  </tab>
+  <tab/>
+
+  <tab TableColumns="4">
+    <column Name="diskont_k_prepoctu" Protect="1" Invisible="isnull(diskont_k_prepoctu,'')=''" />
+    <column Name="placeholder_dkp" InputType="Placeholder" ColSpan="3" />
+  </tab>
+
+  <!-- *************************************************************************** -->
+  <!-- Sklad -->
+  <tab TabPageLabel="fm(MSG020)" TableColumns="3">
+    <column Name="sklad_refer" Width="134" />
+    <column Name="typ_ceny_refer" Width="134" />
+    <column Name="datum_intrastat" Width="134" />
+
+    <column Name="druh_prepravy_refer" Width="100%" />
+    <column Name="druh_prepravy_nazev" LabelPos="None" ColSpan="3" />
+  </tab>
+
+  <tab TabPageLabel="fm(MSG008)" RenderAs="DesignTabWithLabel" TableColumns="4">
+    <column Name="likvidovano" Width="134" ReadOnly="True" />
+    <column Name="likvidovano_mena" Width="134" ReadOnly="True" />
+    <column Name="zbyva_likvidovat" Width="133" ReadOnly="True" />
+    <column Name="zbyva_likvidovat_mena" Width="133" ReadOnly="True" />
+    
+    <column Name="delivery_note" Width="134" Relation="1" RelationParams="C(210),C(802)"/>
+  </tab>
+
+  <!-- Generovani JSD do systému Helios CLA -->
+  <tab TabPageLabel="fm(MSG009)" RenderAs="DesignTabWithLabel" TableColumns="2">
+    <column Name="id_jcd_v_claiq" ReadOnly="True" ColSpan="2" />
+
+    <column Name="zpus_dopravy_refer" Width="134" />
+    <column Name="zpus_dopravy_nazev" LabelPos="None" />
+
+    <column Name="zpus_dopr_doplnek" ColSpan="2" />
+
+    <column Name="dod_podm_refer" Width="134" />
+    <column Name="dod_podm_nazev" LabelPos="None" />
+
+    <column Name="dod_podm_doplnek" ColSpan="2" />
+
+    <column Name="netto" Width="134" />
+    <column Name="brutto" Width="134" />
+  </tab>
+  <tab/>
+
+  <!-- *************************************************************************** -->
+  <!-- Ostatní -->
+  <tab TabPageLabel="fm(MSG021)" TableColumns="1">
+    <!-- Poznámka -->
+    <column Name="poznamka" Width="534" Height="100" InputType="textarea" />
+  </tab>
+
+  <!-- Zpracování -->
+  <tab TabPageLabel="fm(MSG051)" RenderAs="DesignTabWithLabel">
+    <column Name="zavedl_nazev" Width="409" ReadOnly="True" />
+    <column Name="datum_vzniku" ReadOnly="True" />
+
+    <column Name="likvidoval_nazev" Width="100%" ReadOnly="True" />
+    <column Name="datum_likvidace" ReadOnly="True" />
+
+    <column Name="odmitnul_nazev" Width="100%" ReadOnly="True" />
+    <column Name="datum_odmitnuti" ReadOnly="True" />
+
+    <column Name="pripravoval_nazev" Width="100%" ReadOnly="True" />
+    <column Name="datum_pripraveni" ReadOnly="True" />
+
+    <column Name="schvaloval_nazev" Width="100%" ReadOnly="True" />
+    <column Name="datum_schvaleni" ReadOnly="True" />
+
+    <column Name="vratil_nazev" Width="100%" ReadOnly="True" />
+    <column Name="datum_vraceni" ReadOnly="True" />
+
+    <column Name="predzauctoval_nazev" Width="100%" ReadOnly="True" />
+    <column Name="datum_predzauctovani" ReadOnly="True" />
+
+    <column Name="zauctoval_nazev" Width="100%" ReadOnly="True" />
+    <column Name="datum_zauctovani" ReadOnly="True" />
+
+    <column Name="stornoval_nazev" Width="100%" ReadOnly="True" />
+    <column Name="datum_stornovani" ReadOnly="True" />
+  </tab>
+  <tab/>
+  <tab>
+    <column Name="stav_likvidace" Width="134" ReadOnly="True" />
+  </tab>
+  <tab/>
+
+  <!-- *************************************************************************** -->
+  <!-- EDI -->
+  <tab Name="edi" TabPageLabel="fm(MSG022)" TableColumns="1">
+    <column Name="edi_stav" EditStyle="edi_stav_dokladu" Label="fm(MSG023):" ReadOnly="True" />
+    <column Name="edi_aperak" EditStyle="hodnoty_semaforu" Label="fm(MSG024):" ReadOnly="True" />
+    <column Name="edi_aperak_chyba" InputType="textarea" LabelPos="None" Width="534" Height="50" ReadOnly="True" />
+    <column Name="edi_contrl" EditStyle="hodnoty_semaforu" Label="fm(MSG025):" ReadOnly="True" />
+    <column Name="edi_contrl_chyba" InputType="textarea" LabelPos="None" Height="50" ReadOnly="True" />
+    <column Name="edi_comdis" EditStyle="hodnoty_semaforu" Label="fm(MSG026):" ReadOnly="True" />
+    <column Name="edi_comdis_chyba" InputType="textarea" LabelPos="None" Height="50" ReadOnly="True" />
+  </tab>
+  <tab/>
+</template>

@@ -1,0 +1,244 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<messages xmlns="http://tempuri.org/Msg.xsd">
+  <mess Code="MSG001">
+    <text LangID="CZ" Value="Typ dod." Help="" />
+    <text LangID="EN" Value="Suppl.type" Help="" />
+    <text LangID="de" Value="Lieferart" />
+    <text LangID="SK" Value="Typ dod." Help="" />
+  </mess>
+  <mess Code="MSG002">
+    <text LangID="CZ" Value="IČO" Help="" />
+    <text LangID="EN" Value="CRN" Help="" />
+    <text LangID="de" Value="Id.Nr." />
+    <text LangID="SK" Value="IČO" Help="" />
+  </mess>
+  <mess Code="MSG003">
+    <text LangID="CZ" Value="Skonto" Help="" />
+    <text LangID="EN" Value="Discount" Help="" />
+    <text LangID="de" Value="Skonto" />
+    <text LangID="SK" Value="Skonto" Help="" />
+  </mess>
+  <mess Code="MSG004">
+    <text LangID="CZ" Value="Upomínání" Help="" />
+    <text LangID="EN" Value="reminders" Help="" />
+    <text LangID="de" Value="Mahnwesen" />
+    <text LangID="SK" Value="Upomínanie" Help="" />
+  </mess>
+  <mess Code="MSG005">
+    <text LangID="CZ" Value="Sankce" Help="" />
+    <text LangID="EN" Value="sanction" Help="" />
+    <text LangID="de" Value="Verzungszinsen" />
+    <text LangID="SK" Value="Sankcie" Help="" />
+  </mess>
+  <mess Code="MSG006">
+    <text LangID="CZ" Value="Po skontu" Help="" />
+    <text LangID="EN" Value="After disc." Help="" />
+    <text LangID="de" Value="Nach dem Skonto" />
+    <text LangID="SK" Value="Po skonte" Help="" />
+  </mess>
+  <mess Code="MSG007">
+    <text LangID="CZ" Value="Období DPH" Help="" />
+    <text LangID="EN" Value="VAT period" Help="" />
+    <text LangID="de" Value="USt-Zeitraum" />
+    <text LangID="SK" Value="Obdobie DPH" Help="" />
+  </mess>
+  <mess Code="MSG008">
+    <text LangID="CZ" Value="Likvidace skladových dokladů" Help="" />
+    <text LangID="EN" Value="Clearance of warehouse documents" Help="" />
+    <text LangID="de" Value="Firmenkonto" />
+    <text LangID="SK" Value="Likvidácia skladových dokladov" Help="" />
+  </mess>
+  <mess Code="MSG009">
+    <text LangID="CZ" Value="Generování JSD do systému Helios CLA" Help="" />
+    <text LangID="EN" Value="Generating Customs Declaration Document into the Helios CLA system" Help="" />
+    <text LangID="de" Value="Generieren von Zollanmeldungen ins Programm Helios CLA" />
+    <text LangID="SK" Value="Generovanie JCD do systému Helios CLA" Help="" />
+  </mess>
+  <mess Code="MSG013">
+    <text LangID="CZ" Value="Popis účtu" Help="" />
+    <text LangID="EN" Value="Acc.descript." Help="" />
+    <text LangID="de" Value="Kontobeschr." />
+    <text LangID="SK" Value="Opis účtu" Help="" />
+  </mess>
+  <mess Code="MSG014">
+    <text LangID="CZ" Value="Spec. s." Help="" />
+    <text LangID="EN" Value="Spec. s." Help="" />
+    <text LangID="de" Value="Spec. S." />
+    <text LangID="SK" Value="Spec. s." Help="" />
+  </mess>
+  <mess Code="MSG015">
+    <text LangID="CZ" Value="PI" Help="" />
+    <text LangID="SK" Value="PI" Help="" />
+    <text LangID="EN" Value="PI" Help="" />
+  </mess>
+  <mess Code="MSG016">
+    <text LangID="CZ" Value="Po skontu měna" Help="" />
+    <text LangID="EN" Value="After discount currency" Help="" />
+    <text LangID="SK" Value="Po skontu mena" Help="" />
+  </mess>
+  <mess Code="MSG017">
+    <text LangID="CZ" Value="Hlavička" Help="" />
+    <text LangID="EN" Value="Header" Help="" />
+    <text LangID="SK" Value="Hlavička" Help="" />
+  </mess>
+  <mess Code="MSG018">
+    <text LangID="CZ" Value="Ceny a úhrady" Help="" />
+    <text LangID="EN" Value="Prices and payments" Help="" />
+    <text LangID="SK" Value="Ceny a úhrady" Help="" />
+  </mess>
+  <mess Code="MSG019">
+    <text LangID="CZ" Value="Účtování" Help="" />
+    <text LangID="EN" Value="Accounting" Help="" />
+    <text LangID="SK" Value="Účtovanie" Help="" />
+  </mess>
+  <mess Code="MSG020">
+    <text LangID="CZ" Value="Sklad" Help="" />
+    <text LangID="EN" Value="Warehouse" Help="" />
+    <text LangID="SK" Value="Sklad" Help="" />
+  </mess>
+  <mess Code="MSG021">
+    <text LangID="CZ" Value="Ostatní" Help="" />
+    <text LangID="EN" Value="Others" Help="" />
+    <text LangID="SK" Value="Ostatné" Help="" />
+  </mess>
+  <mess Code="MSG022">
+    <text LangID="CZ" Value="EDI" Help="" />
+    <text LangID="EN" Value="EDI" Help="" />
+    <text LangID="SK" Value="EDI" Help="" />
+  </mess>
+  <mess Code="MSG023">
+    <text LangID="CZ" Value="Stav EDI" Help="" />
+    <text LangID="EN" Value="EDI state" Help="" />
+    <text LangID="SK" Value="Stav EDI" Help="" />
+  </mess>
+  <mess Code="MSG024">
+    <text LangID="CZ" Value="APERAK" Help="" />
+    <text LangID="EN" Value="APERAK" Help="" />
+    <text LangID="SK" Value="APERAK" Help="" />
+  </mess>
+  <mess Code="MSG025">
+    <text LangID="CZ" Value="CONTRL" Help="" />
+    <text LangID="EN" Value="CONTRL" Help="" />
+    <text LangID="SK" Value="CONTRL" Help="" />
+  </mess>
+  <mess Code="MSG026">
+    <text LangID="CZ" Value="COMDIS" Help="" />
+    <text LangID="EN" Value="COMDIS" Help="" />
+    <text LangID="SK" Value="COMDIS" Help="" />
+  </mess>
+  <mess Code="MSG027">
+    <text LangID="CZ" Value="Náhradní plnění" Help="" />
+    <text LangID="EN" Value="Compensation for not employing people with disabilities" Help="" />
+    <text LangID="SK" Value="Náhradné plnenie" Help="" />
+  </mess>
+  <mess Code="MSG028">
+    <text LangID="CZ" Value="Faktura" Help="" />
+    <text LangID="EN" Value="Invoice" Help="" />
+    <text LangID="SK" Value="FAKTÚRA" Help="" />
+  </mess>
+  <mess Code="MSG029">
+    <text LangID="CZ" Value="Stav faktury" Help="" />
+    <text LangID="EN" Value="Invoice state" Help="" />
+    <text LangID="SK" Value="Stav faktúry" Help="" />
+  </mess>
+  <mess Code="MSG030">
+    <text LangID="CZ" Value="Stav uhrazenosti" Help="" />
+    <text LangID="EN" Value="Payment balance" Help="" />
+    <text LangID="SK" Value="Stav uhradenosti" Help="" />
+  </mess>
+  <mess Code="MSG031">
+    <text LangID="CZ" Value="Dodavatel" Help="" />
+    <text LangID="EN" Value="Supplier" Help="" />
+    <text LangID="SK" Value="Dodávateľ" Help="" />
+  </mess>
+  <mess Code="MSG032">
+    <text LangID="CZ" Value="Datumy a období" Help="" />
+    <text LangID="EN" Value="Dates and periods" Help="" />
+    <text LangID="SK" Value="Dátumy a obdobie" Help="" />
+  </mess>
+  <mess Code="MSG033">
+    <text LangID="CZ" Value="Měna, ve které jsou zobrazeny částky ve formuláři (U dokladu v cizí měně nemusí být shodná s měnou dokladu - viz přepínač měny)." Help="" />
+    <text LangID="EN" Value="Currency in which the amounts in the form are displayed (in foreign-currency documents it may not be identical with the document currency - see currency switch)." Help="" />
+    <text LangID="SK" Value="Mena, v ktorej sú zobrazené čiastky vo formulári (U dokladu v cudzej mene nemusí byť zhodná s menou dokladu - pozri prepínač meny)." Help="" />
+  </mess>
+  <mess Code="MSG034">
+    <text LangID="CZ" Value="Expozitura" Help="" />
+    <text LangID="EN" Value="Branch Office" Help="" />
+    <text LangID="SK" Value="Expozitúra" Help="" />
+  </mess>
+  <mess Code="MSG035">
+    <text LangID="CZ" Value="Cena celkem" Help="" />
+    <text LangID="EN" Value="Total price" Help="" />
+    <text LangID="SK" Value="Cena celkovo" Help="" />
+  </mess>
+  <mess Code="MSG036">
+    <text LangID="CZ" Value="Cena celkem měna" Help="" />
+    <text LangID="EN" Value="Total price currency" Help="" />
+    <text LangID="SK" Value="Cena celkovo mena" Help="" />
+  </mess>
+  <mess Code="MSG037">
+    <text LangID="CZ" Value="Měna:" Help="" />
+    <text LangID="EN" Value="Currency:" Help="" />
+    <text LangID="SK" Value="Mena:" Help="" />
+  </mess>
+  <mess Code="MSG038">
+    <text LangID="CZ" Value="Datumové údaje" Help="" />
+    <text LangID="EN" Value="Dates" Help="" />
+    <text LangID="SK" Value="Dátumové údaje" Help="" />
+  </mess>
+  <mess Code="MSG039">
+    <text LangID="CZ" Value="Rabaty" Help="" />
+    <text LangID="EN" Value="Rebate" Help="" />
+    <text LangID="SK" Value="Rabat" Help="" />
+  </mess>
+  <mess Code="MSG040">
+    <text LangID="CZ" Value="Účetní dimenze" Help="" />
+    <text LangID="EN" Value="Accounting dimension" Help="" />
+    <text LangID="SK" Value="Účtovná dimenzia" Help="" />
+  </mess>
+  <mess Code="MSG041">
+    <text LangID="CZ" Value="Účty / kontace" Help="" />
+    <text LangID="EN" Value="Accounts/account codes" Help="" />
+    <text LangID="SK" Value="Účty / kontácie" Help="" />
+  </mess>
+  <mess Code="MSG042">
+    <text LangID="CZ" Value="Časové rozlišení" Help="" />
+    <text LangID="EN" Value="Deferrals and accruals" Help="" />
+    <text LangID="SK" Value="Časové rozlíšenie" Help="" />
+  </mess>
+  <mess Code="MSG050">
+    <text LangID="CZ" Value="Ostatní účetní okruhy" Help="" />
+    <text LangID="EN" Value="Other accounting circuits" Help="" />
+    <text LangID="SK" Value="Ostatné účtovné okruhy" Help="" />
+  </mess>
+  <mess Code="MSG051">
+    <text LangID="CZ" Value="Zpracování" Help="" />
+    <text LangID="EN" Value="Processing" Help="" />
+    <text LangID="SK" Value="Spracovanie" Help="" />
+  </mess>
+  <mess Code="MSG052">
+    <text LangID="CZ" Value="Dohadná položka" Help="" />
+    <text LangID="EN" Value="Estimated assets and liabilities" Help="" />
+    <text LangID="SK" Value="Dohadná položka" Help="" />
+  </mess>
+  <mess Code="MSG053">
+    <text LangID="CZ" Value="Dodatečné daň. přiznání" Help="" />
+    <text LangID="EN" Value="Additional tax return" Help="" />
+    <text LangID="SK" Value="Dodatočné daň. priznanie" Help="" />
+  </mess>
+  <mess Code="MSG054">
+    <text LangID="CZ" Value="Datum ověření" Help="" />
+    <text LangID="EN" Value="Date of verification" Help="" />
+    <text LangID="SK" Value="Dátum overeenia" Help="" />
+  </mess>
+  <mess Code="MSG055">
+    <text LangID="CZ" Value="Datum posledního ověření spolehlivosti plátce DPH" Help="" />
+    <text LangID="EN" Value="Date of last verification of the VAT reliability" Help="" />
+    <text LangID="SK" Value="Dátum posledného overenia spoľahlivosti platcu DPH" Help="" />
+  </mess>
+  <mess Code="MSG056">
+    <text LangID="CZ" Value="Název" Help="" />
+    <text LangID="EN" Value="Name" Help="" />
+    <text LangID="SK" Value="Názov" Help="" />
+  </mess>
+</messages>

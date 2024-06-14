@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<template TotalWidth="500" TotalHeight="598" MasterWidth="500" MasterHeight="598" TableColumns="1" xmlns="http://tempuri.org/DataForm.Frm.xsd" >
+
+    <!-- - - - - - - - - - Zalozka Predvyplneni - - - - - - - - - -->
+    <tab TabPageLabel="fm(MSG001)" />
+
+    <!-- Datum porizeni -->
+    <tab TabPageLabel="fm(MSG002)" RenderAs="DesignTabWithLabel">
+        <column Name="datum_porizeni" Width="100%" RegisterItemChange="True" />
+        <column Name="datum_porizeni_fix" Width="69" Protect="datum_porizeni &lt;&gt; 'F'" />
+        <column Name="faktor_duzp" Width="69" />
+        <column Name="faktor_splatno" Width="69" />
+        <column Name="menit_datum_splatnosti" InputType="checkbox" />
+        <column Name="faktor_splatno_sml" InputType="checkbox" />
+        <column Name="datum_splatnosti_odvozovat_od" Width="100%" />
+    </tab>
+
+    <!-- Kurs. listek a cizi mena -->
+    <tab TabPageLabel="fm(MSG003)" RenderAs="DesignTabWithLabel">
+        <column Name="typ_kurs_vyber" Width="150" />
+        <column Name="typ_kursu" Width="150" EditStyle="#dynamic#" />
+        <column Name="kod_meny" Width="69" EditStyle="#dynamic#" />
+        <!--<column Name="uhrada_tuz_mena" InputType="checkbox" Align="Right" /> JD 45939 PP50 - REM -->
+    </tab>
+
+    <!-- Kody DPH -->
+    <tab TabPageLabel="fm(MSG004)" RenderAs="DesignTabWithLabel" TableColumns="3">
+        <column Name="kod_dph1" Width="70" Relation="1" />
+        <column Name="sazba1" Width="50" ReadOnly="True" EditStyle="editmaskmena" />
+        <column Name="ucet_1_refer" Width="85" />
+
+        <column Name="kod_dph2" Width="70" Relation="1" />
+        <column Name="sazba2" Width="50" ReadOnly="True" EditStyle="editmaskmena" />
+        <column Name="ucet_2_refer" Width="85" />
+
+        <column Name="kod_dph3" Width="70" Relation="1" />
+        <column Name="sazba3" Width="50" ReadOnly="True" EditStyle="editmaskmena" />
+        <column Name="ucet_3_refer" Width="85" />
+
+        <column Name="kod_dph4" Width="70" Relation="1" />
+        <column Name="sazba4" Width="50" ReadOnly="True" EditStyle="editmaskmena" />
+        <column Name="ucet_4_refer" Width="85" />
+    </tab>
+
+    <!-- Ostatni -->
+    <tab TabPageLabel="fm(MSG005)" RenderAs="DesignTabWithLabel" TableColumns="2">
+        <column Name="typ_faktury" Width="auto" RegisterItemChange="True" ColSpan="2" />
+        <column Name="zpusob_uct_zal_fak" Width="auto" Invisible="typ_faktury &lt;&gt; 'Z'" ColSpan="2" />
+        <column Name="prenos_variabilni_symbol" Width="auto" ColSpan="2" />
+        <column Name="do_vs_prenaset_znaky" InputType="checkbox" Label="fm(MSG023)" ColSpan="2" />
+        <column Name="cislo_bankovni_spojeni_refer" Width="154" />
+        <column Name="cislo_bankovni_spojeni_nazev" Width="auto" LabelPos="None" />
+        <column Name="typ_uhrady" Width="auto" ColSpan="2" />
+        <column Name="konstantni_symbol" ColSpan="2" />
+        <column Name="samovymereni" InputType="checkbox" ColSpan="2" />
+        <column Name="poradac_samovymereni_nazpor" Width="auto" RelationParams="c(1175)" ColSpan="2" />
+        <column Name="kontrola_diagramu" InputType="checkbox" ColSpan="2" />
+        <column Name="cislo_penal_fce_refer" Width="auto" Label="fm(MSG024)" ColSpan="2" />
+        <column Name="auto_aktualizace_fakturace_za" Width="auto" ColSpan="2" />
+        <column Name="fakturace_objednavek" InputType="checkbox" ColSpan="2" />
+        <column Name="company_id_refer" Width="Auto" />
+        <column Name="company_id_nazev" LabelPos="None" Width="Auto" />
+        <column Name="implicitni_poradac_prefak" InputType="checkbox" Protect="company_id is null" RegisterItemChange="True" />
+    </tab>
+
+    <!-- Organizace -->
+    <tab TabPageLabel="fm(MSG029)" RenderAs="DesignTabWithLabel">
+        <column Name="organizace_nazpor" Width="auto" RelationParams="r(1007)" Label="fm(MSG030):" />
+        <column Name="pouzit_dod_odb_parametry" InputType="checkbox" />
+    </tab>
+
+    <!-- Typy expozitur -->
+    <tab TabPageLabel="fm(MSG006)" RenderAs="DesignTabWithLabel">
+        <column Name="typ_expozitury_organizace" Width="auto" EditStyle="#dynamic#" />
+        <column Name="typ_expozitury_organizace2" Width="auto" EditStyle="#dynamic#" />
+    </tab>
+
+    <!-- Ucty -->
+    <tab TabPageLabel="fm(MSG007)" RenderAs="DesignTabWithLabel">
+        <column Name="ucet_organizace_refer" Width="auto" />
+    </tab>
+
+    <!-- Karta casoveho rozliseni -->
+    <tab TabPageLabel="fm(MSG008)" RenderAs="DesignTabWithLabel">
+        <column Name="tvorba_karty_cas_rozliseni" Width="auto" />
+        <column Name="cp_karta_nazpor" Width="auto" RelationParams="C(652)" />
+    </tab>
+
+    <!-- Vytvareni danovych dokladu ze zaloh -->
+    <!-- HRS.NET 17907 -->
+    <tab TabPageLabel="fm(MSG021)" RenderAs="DesignTabWithLabel">
+        <column Name="poradac_dan_dokladu_nazpor" Width="auto" RelationParams="C(46)" />
+    </tab>
+
+    <!-- Intrastat -->
+    <tab TabPageLabel="fm(MSG022)" RenderAs="DesignTabWithLabel">
+        <column Name="datum_intrastat" Width="auto" />
+        <column Name="vytvaret_intrastat_pri_ulozeni" InputType="checkbox" />
+        <column Name="poradac_intrastat_prijeti_nazpor" Width="auto" RelationParams="C(1198)" />
+    </tab>
+
+    <!-- Danovy doklad EU -->
+    <tab TabPageLabel="fm(MSG027)" RenderAs="DesignTabWithLabel">
+        <column Name="generovat_dan_doklad_eu" InputType="checkbox" />
+    </tab>
+    <tab/>
+
+    <!-- Vystavení splátek faktur -->
+    <!-- JD 21665 -->
+    <!-- JR.NET 19241 -->
+    <tab>
+        <column Name="label_splatky" InputType="label" Label="fm(MSG026)" FontAndColor="'GroupLabel'" />
+        <column Name="automaticke_vystaveni_splatky" InputType="checkbox" />
+        <column Name="splatky_faktur_nazpor" Width="auto"  RelationParams="C(545)" />
+    </tab>    
+
+    <!-- - - - - - - - - - Zalozka Uctovani - - - - - - - - - -->
+    <tab TabPageLabel="fm(MSG009)" />
+
+    <!-- Uctovani -->
+    <tab TabPageLabel="fm(MSG010)" RenderAs="DesignTabWithLabel" TableColumns="2">
+        <column Name="datum_pripadu" Width="auto" RegisterItemChange="True" ColSpan="2" />
+        <column Name="datum_pripadu_fix" Width="100" Protect="isnull(datum_pripadu,'X') &lt;&gt; 'F'" ColSpan="2" />
+        <column Name="obdobi_dph" Width="auto" ColSpan="2" />
+        <column Name="kontace_refer" Width="100" />
+        <column Name="kontace_nazev" Width="auto" LabelPos="None" />
+        <column Name="kontace_obec_sbornik_nazpor" RelationParams="C(15)" Width="auto" ColSpan="2" />
+    </tab>
+
+    <!-- Stornovani -->
+    <tab TabPageLabel="fm(MSG037)" RenderAs="DesignTabWithLabel">
+        <column Name="poradac_interni_doklady_nazpor" Width="auto" RelationParams="C(33)" />
+        <column Name="poradac_dle_id_storno" Width="auto" />
+        <column Name="typ_storna" Width="auto" />
+        <column Name="zauctovat_storno" InputType="checkbox" Align="Right" />
+        <column Name="storno_kontrola_pp" InputType="checkbox" Align="Right" />
+    </tab>
+
+    <!-- Parovani zaloh a dobropisu -->
+    <tab TabPageLabel="fm(MSG012)" RenderAs="DesignTabWithLabel">
+        <column Name="poradac_interni_doklady_zalohy_nazpor" Width="auto" RelationParams="C(33)" />
+        <column Name="poradac_dle_id_zaloh" Width="auto" />
+        <column Name="typ_preuctovani_dph" Width="auto" />
+        <column Name="zdroj_kurzu_pro_zuct_zaloh" Width="auto" />
+        <column Name="zdroj_castek_pro_rozepisovani" Width="auto" />
+        <column Name="zauctovat_zalohu" InputType="checkbox" Align="Right" />
+        <column Name="zauctovat_dobropis" InputType="checkbox" Align="Right" />
+    </tab>
+
+    <!-- Zpracovani zaloh -->
+    <tab TabPageLabel="fm(MSG025)" RenderAs="DesignTabWithLabel" >
+        <column Name="poradac_id_zprac_zaloh_nazpor" Width="auto" RelationParams="C(33)" Protect="not (typ_faktury = 'Z')" />
+        <column Name="zauctovat_zpr_zalohu" InputType="checkbox" Protect="not (typ_faktury = 'Z')" />
+    </tab>
+
+    <!-- Predzauctovani -->
+    <tab TabPageLabel="fm(MSG013)" RenderAs="DesignTabWithLabel" TableColumns="2" >
+        <column Name="predzauctovani" InputType="checkbox" ColSpan="2" />
+        <column Name="kontace_predzauctovani_refer" Width="100" />
+        <column Name="kontace_predzauctovani_nazev" Width="150" LabelPos="None" />
+        <column Name="preuctovani_predzauctovani" InputType="checkbox" ColSpan="2" />
+        <column Name="zauctovat_preuctovani_predzauct" InputType="checkbox" ColSpan="2" />
+        <column Name="poradac_id_preuctovani_nazpor" Width="auto" RelationParams="C(33)" ColSpan="2" />
+    </tab>
+
+    <!-- Ostatni ucetni okruhy -->
+    <tab TabPageLabel="fm(MSG028)" RenderAs="DesignTabWithLabel">
+        <column Name="nastaveni_uctovani_okruhu_refer" Width="auto" />
+        <column Name="uctovat_tuz_okruh" Label="fm(175,uctovat_tuz_okruh,l):" Width="auto" />
+    </tab>
+    <tab/>
+
+    <!-- ID DPH při úhradě -->
+    <tab>
+        <column Name="label_id_dph_pri_uhrade" InputType="label" Label="fm(MSG031)" FontAndColor="'GroupLabel'" />
+        <column Name="poradac_id_dph_pri_uhrade_nazpor" Width="auto" RelationParams="C(33)" Label="fm(MSG032)" />
+        <column Name="poradac_dle_id_dph_pri_uhrade" Width="auto" Label="fm(MSG033)" />        
+        <column Name="zauctovat_id_dph_pri_uhrade" InputType="checkbox" Label="fm(MSG034)" />        
+    </tab>
+
+    <!-- - - - - - - - - - Zalozka Plat. prikazy - - - - - - - - - -->
+    <tab TabPageLabel="fm(MSG014)" />
+
+    <!-- Variabilni symboly -->
+    <tab TabPageLabel="fm(MSG015)" RenderAs="DesignTabWithLabel">
+        <column Name="pp_var_symbol" Width="auto" />
+        <column Name="pp_var_symbol2" Width="auto" />
+        <column Name="zjistovat_spolehlivost_platce_dph" />
+        <column Name="tvrda_kontrola" InputType="checkbox" />
+        <column Name="kontrolovat_platce_dph_sk" Label="fm(MSG036)" InputType="checkbox" />
+    </tab>
+    <tab/>
+
+    <!-- - - - - - - - - - Zalozka Prepocty - - - - - - - - - -->
+    <tab TabPageLabel="fm(MSG016)" />
+
+    <!-- Vypocet DPH -->
+    <tab TabPageLabel="fm(MSG017)" RenderAs="DesignTabWithLabel" TableColumns="2" >
+        <!--<column Name="zaokrouhleni_dan_polozky" InputType="checkbox" /> JD 0063509 REM-->
+        <!--<column Name="zaokrouhleni_dan_celkem" InputType="checkbox" /> JD 0063509 REM-->
+        <!--<column Name="zaokrouhleni_dan_jen_tuz_mena" InputType="checkbox" /> JD 0063509 REM-->
+        <column Name="zkraceny_dan_doklad" InputType="checkbox" RegisterItemChange="True" ColSpan="2" />
+        <column Name="prepocet_dph_hlavicka" InputType="checkbox" ColSpan="2" />
+        <column Name="kontrola_castky_dph" InputType="checkbox" RegisterItemChange="True" />
+        <column Name="kontrola_castky_dph_limit" Width="auto" Protect="kontrola_castky_dph='N'" />
+    </tab>
+
+    <!-- Vypocet cen -->
+    <tab TabPageLabel="fm(MSG018)" RenderAs="DesignTabWithLabel">
+        <column Name="aktualizovat_ceny_zdroj" InputType="checkbox" />
+        <column Name="prepocet_cena_jedn" InputType="checkbox" />
+        <column Name="vychozi_cena_zaklad" InputType="checkbox" RegisterItemChange="True" />
+        <column Name="aktualizovat_hlavicku" Width="auto" />
+        <column Name="aktualizovat_ceny_zdroj_prep" Width="auto" />
+        <column Name="spotrebni_dan_v_cene_jedn" Width="auto" />
+        <column Name="recyklacni_prispevek_v_cene_jedn" InputType="checkbox" />
+        <column Name="dph_v_cene_jedn" InputType="checkbox" />
+        <column Name="prepocet_castek_meny" InputType="checkbox" />
+        <column Name="zobrazit_obe_meny" InputType="checkbox" />
+        <column Name="prepocet_cen_zbozi" Width="auto" />
+        <column Name="text1" Label="fm(MSG020)" InputType="label" Align="Left" />
+        <column Name="zaokrouhlovat_cenu_celkem" InputType="checkbox" RegisterItemChange="True" />
+        <column Name="zaokrouhleni_radix" Width="auto" EditMask="L14;D6;T0;Z0" Protect="zaokrouhlovat_cenu_celkem='N'" />
+        <column Name="zaokrouhleni_smer" Width="auto" Protect="zaokrouhlovat_cenu_celkem='N'" />
+    </tab>
+
+    <!-- Rabaty -->
+    <tab TabPageLabel="fm(MSG019)" RenderAs="DesignTabWithLabel">
+        <column Name="rabat_na_cenu_zaklad" InputType="checkbox" Protect="  vychozi_cena_zaklad ='A'" />
+        <column Name="rabaty_za_skupiny_polozek" Width="auto" Label="fm(cn,rabaty_za_skupiny_polozek,l):" Protect="isnull(rabaty_za_skupiny_polozek,'N')='N' and isnull(prep_rab_polozka_kusy,'N')='N' and isnull(prep_rab_polozka_castky,'N')='N'" RegisterItemChange="True" />
+        <column Name="prep_rab_polozka_kusy" InputType="checkbox" RegisterItemChange="True" />
+        <column Name="prep_rab_polozka_castky" InputType="checkbox" RegisterItemChange="True" />
+        <column Name="prep_rab_polozka_expirace" InputType="checkbox" />
+        <column Name="prepocet_rabatu_na_pol_splatno" InputType="checkbox" />
+        <column Name="prep_rab_polozka_mj" InputType="checkbox" />
+        <column Name="prep_rab_hlavicka_kusy" InputType="checkbox" />
+        <column Name="prep_rab_hlavicka_castky" InputType="checkbox" />
+        <column Name="prep_rab_hlavicka_expirace" InputType="checkbox" />
+        <column Name="prepocet_rabatu_na_hl_splatno" InputType="checkbox" />
+        <column Name="prep_rab_hlavicka_hotove" InputType="checkbox" />
+        <column Name="aplikovat_rabaty_v_poradi" />
+        <column Name="kumulovat_rabaty" Width="auto" RegisterItemChange="True" />
+        <column Name="kumulace_rabatu_ruznych_typu" Width="auto" />
+        <column Name="rabat_maximalni_priorita" InputType="checkbox" />
+        <!--REM Mar 35343:  Protect="kumulovat_rabaty='0'" -->
+        <column Name="kumulovat_rabaty_dle_priority" Width="auto" Protect="not(isnull(kumulovat_rabaty,'0')='0')" AttrShortName="False" />
+        <column Name="rabaty_v_mene" InputType="checkbox" />
+        <column Name="hl_pol_rabaty_nezavisle" InputType="checkbox" Label="fm(cn,hl_pol_rabaty_nezavisle,l)" />
+    </tab>
+    <tab/>
+
+    <!-- - - - - - - - - - Záložka Práce s položkami - - - - - - - - - -->
+    <tab TabPageLabel="fm(MSG035)" />
+
+    <tab>
+      <column Name="prenos_pol_vztahu" />
+      <column Name="automaticky_novy_radek_atribut_nazev" Width="auto" Protect="ISNULL(automaticky_novy_radek_vztah,0)>0" />
+      <column Name="automaticky_novy_radek_vztah_nazev" Width="auto" Protect="ISNULL(automaticky_novy_radek_atribut,0)>0" />
+    </tab>
+    <tab/>
+</template>

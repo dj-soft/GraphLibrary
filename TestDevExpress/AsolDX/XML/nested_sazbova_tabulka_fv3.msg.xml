@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<messages xmlns="http://tempuri.org/Msg.xsd">
+  <mess Code="MSG000">
+    <text LangID="CZ" Value="Automatické přepočítávání částek na formuláři:" Help="" />
+    <text LangID="SK" Value="Automatické prepočítavanie čiastok na formulári:" Help="" />
+    <text LangID="EN" Value="Automatic recalculation of amounts in the form:" Help="" />
+  </mess>
+  <mess Code="MSG007">
+    <text LangID="CZ" Value="Měna:" Help="" />
+    <text LangID="SK" Value="Mena:" Help="" />
+    <text LangID="EN" Value="Currency:" Help="" />
+  </mess>
+  <mess Code="MSG008">
+    <text LangID="CZ" Value="/" Help="" />
+    <text LangID="SK" Value="/" Help="" />
+    <text LangID="EN" Value="/" Help="" />
+  </mess>
+  <mess Code="MSG009">
+    <text LangID="CZ" Value="Kód:" Help="" />
+    <text LangID="SK" Value="Kód:" Help="" />
+    <text LangID="EN" Value="Code:" Help="" />
+  </mess>
+  <mess Code="MSG010">
+    <text LangID="CZ" Value="Sazba:" Help="" />
+    <text LangID="SK" Value="Sadzba:" Help="" />
+    <text LangID="EN" Value="Rate:" Help="" />
+  </mess>
+  <mess Code="MSG011">
+    <text LangID="CZ" Value="Základ:" Help="" />
+    <text LangID="SK" Value="Základ:" Help="" />
+    <text LangID="EN" Value="Base:" Help="" />
+  </mess>
+  <mess Code="MSG012">
+    <text LangID="CZ" Value="DPH:" Help="" />
+    <text LangID="SK" Value="DPH:" Help="" />
+    <text LangID="EN" Value="VAT:" Help="" />
+  </mess>
+  <mess Code="MSG013">
+    <text LangID="CZ" Value="Celkem:" Help="" />
+    <text LangID="SK" Value="Celkovo:" Help="" />
+    <text LangID="EN" Value="In total:" Help="" />
+  </mess>
+  <mess Code="MSG014">
+    <text LangID="CZ" Value="Kurz:" Help="" />
+    <text LangID="EN" Value="Exchange rate:" Help="" />
+    <text LangID="SK" Value="Kurz:" Help="" />
+  </mess>
+</messages>

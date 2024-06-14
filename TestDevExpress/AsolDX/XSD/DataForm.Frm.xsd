@@ -1,0 +1,621 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="DataForm.Frm" targetNamespace="http://tempuri.org/DataForm.Frm.xsd" elementFormDefault="qualified" xmlns="http://tempuri.org/DataForm.Frm.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:annotation>
+    <xs:documentation xml:lang="en">
+			DataForm template schema.
+			Copyright 2002. All rights reserved.
+		</xs:documentation>
+  </xs:annotation>
+  <!-- main structure -->
+  <xs:element name="template">
+    <xs:complexType>
+      <xs:sequence> 
+        <xs:element name="tab" type="tab_e" minOccurs="0" maxOccurs="unbounded" />
+      </xs:sequence>
+      <xs:attribute name="Type">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="EditBrowse" />
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      
+      <!-- only for EditBrowse+ -->
+      <xs:attribute name="AllowPaging" type="bool" />
+      <!-- STR0026461 -->
+      <!--Comma separated locations of the splitters, in pixels, from the left edge.-->
+      <xs:attribute name="SplitterHorizontalDistances" type="xs:string" />
+      <!--Locations of the columns in each horizontal scrollbar (vertical region) in the xmlstring format, eg: "0='column_name' 1='column_name2'" -->
+      <xs:attribute name="RegionHorizontalScrollPosition" type="xs:string" />
+      <!--Comma separated locations of the splitters, in pixels, from the top edge.-->
+      <xs:attribute name="SplitterVerticalDistances" type="xs:string" />
+      <!--Locations of the rows in each vertical scrollbar (horizontal region) in the xmlstring format, eg: "0='row_number1' 1='row_number2'".  The first row is 0. -->
+      <xs:attribute name="RegionVerticalScrollPosition" type="xs:string" />
+      <!-- only for EditBrowse- -->
+      
+      <xs:attribute name="TotalWidth" type="xs:int" />
+      <xs:attribute name="TotalHeight" type="xs:int" />
+      <xs:attribute name="MasterWidth" type="xs:int" />
+      <xs:attribute name="MasterHeight" type="xs:int" />
+      <xs:attribute name="LabelPos" type="pos" />
+      <xs:attribute name="TableColumns" type="xs:int" />
+      <xs:attribute name="AddUda" type="bool" />
+      <!-- //STR0066205 - 2020.08.31 - Rozdílné zobrazování UDA atributů: -->
+      <xs:attribute name="AutoUdaLablePos" type="pos" />
+      <xs:attribute name="DataSource" type="xs:string" />
+      <xs:attribute name="Messages" type="xs:string" />
+      <!--if the row > 0: it renders time input on demand -->
+      <xs:attribute name="NullEvaluateAs" type="bool" />
+      <xs:attribute name="UseNorisClass" type="xs:int" />
+      <!-- NrsClassNumber for finding atribute property from repository. ClassNumber is getting from NrsClass instance but if it is not set (e.g dynamic page) then this property is used.  -->
+      <!-- event OnContextMenu -->
+      <xs:attribute name="ContextMenu" type="bool" />
+      <xs:attribute name="RenderDTonDemand" type="bool" />
+      <xs:attribute name="CSS" type="xs:string" />
+      <xs:attribute name="FormatVersion" type="xs:int" default="1" />  <!--//DAVID.CHARVAT 0038832 22.06.2011 Podpora RowSpan ve form.šabloně-->
+      <xs:attribute name="DefaultLastRowColumnWidth" type="xs:string" />  <!--//STR0050534 - 2015.07.09 - možnost zarovnání na formu Auto-->
+      <xs:attribute name="FirstLeftColumnAlignMode" type="TFirstLeftColumnAlignMode"></xs:attribute> <!-- //DCH 0059369 03.07.2018 Formuláře - zarovnání 1.sloupce doleva -->
+    </xs:complexType>
+  </xs:element>
+  <!-- complex types -->
+    
+    
+  <xs:complexType name="tab_e">
+    <xs:sequence>
+      <xs:element name="column" type="column_e" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <!-- STR0059251+ -->
+    <xs:attribute name="Name" type="xs:string" />
+    <xs:attribute name="Invisible" type="xs:string" />
+    <!-- STR0059251- -->
+
+    <xs:attribute name="TableColumns" type="xs:int" />
+    <xs:attribute name="LabelPos" type="pos" />
+    <xs:attribute name="NestedTemplate" type="xs:string" />
+    <xs:attribute name="TabPageLabel" type="xs:string" />
+    <xs:attribute name="Width" type="xs:string" />
+    <!-- align whole table -->
+    <xs:attribute name="Align" type="leftrightcenter" />
+    <xs:attribute name="UDA" type="bool" />
+    <xs:attribute name="NoBorder" type="bool" />
+    <xs:attribute name="AdvancedSettings" type="bool" />
+    <xs:attribute name="RenderAs">
+        <xs:simpleType>
+            <xs:restriction base="xs:string">
+                <xs:enumeration value="TabPage"/>
+                <xs:enumeration value="DesignTab"/>
+                <xs:enumeration value="DesignTabWithLabel"/>
+            </xs:restriction>
+        </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="DefaultLastRowColumnWidth" type="xs:string" /> <!--//STR0050534 - 2015.07.09 - možnost zarovnání na formu Auto-->
+    <xs:attribute name="FirstLeftColumnAlignMode" type="TFirstLeftColumnAlignMode"></xs:attribute>  <!-- //DCH 0059369 03.07.2018 Formuláře - zarovnání 1.sloupce doleva -->
+  </xs:complexType>
+  <xs:complexType name="column_e">
+    <xs:sequence>
+      <xs:element name="groupcolumn" type="column_e1" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attributeGroup ref="column_attr" />
+  </xs:complexType>
+  <xs:complexType name="column_e1">
+    <xs:attributeGroup ref="column_attr" />
+  </xs:complexType>
+  <xs:attributeGroup name="column_attr">
+    <xs:attribute name="TabIndex" type="xs:int" />
+    <!-- <0, =0, >0 -->
+    <xs:attribute name="EditMask">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="L10;D2;Z1;T1">
+            <!-- "L10;D2;Z1;T1" -->
+            <xs:annotation>
+              <xs:documentation>"NN NNN NNN.NN"</xs:documentation>
+            </xs:annotation>
+          </xs:enumeration>
+          <xs:enumeration value="L10;D2;Z1;T0">
+            <!-- "L10;D2;Z1;T0" -->
+            <xs:annotation>
+              <xs:documentation>"NNNNNNNN.NN"</xs:documentation>
+            </xs:annotation>
+          </xs:enumeration>
+          <xs:enumeration value="t">
+            <!-- "12:10" -->
+            <xs:annotation>
+              <xs:documentation>"12:10"</xs:documentation>
+            </xs:annotation>
+          </xs:enumeration>
+          <xs:enumeration value="d">
+            <!-- "15.3.2003" -->
+            <xs:annotation>
+              <xs:documentation>"15.3.2003"</xs:documentation>
+            </xs:annotation>
+          </xs:enumeration>
+          <xs:enumeration value="g">
+            <!-- "15.3.2003 12:10" -->
+            <xs:annotation>
+              <xs:documentation>"15.3.2003 12:10"</xs:documentation>
+            </xs:annotation>
+          </xs:enumeration>
+          <xs:enumeration value="T">
+            <!-- "12:10:45" -->
+            <xs:annotation>
+              <xs:documentation>"12:10:45"</xs:documentation>
+            </xs:annotation>
+          </xs:enumeration>
+          <xs:enumeration value="n">
+            <!-- "2003"-->
+            <xs:annotation>
+              <xs:documentation>"2003"</xs:documentation>
+            </xs:annotation>
+          </xs:enumeration>
+          <xs:enumeration value="N">
+            <!-- "3.2003" -->
+            <xs:annotation>
+              <xs:documentation>"3.2003"</xs:documentation>
+            </xs:annotation>
+          </xs:enumeration>
+          <xs:enumeration value="G">
+            <!-- "15.3.2003 12:10:45" -->
+            <xs:annotation>
+              <xs:documentation>"15.3.2003 12:10:45"</xs:documentation>
+            </xs:annotation>
+          </xs:enumeration>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="InputWindow" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>"Dynamicka stranka (struktura: "AssemblyName;FullObjectName") vydedena z NrsInputWindow, ktera slouzi pro vyplneni pole (napr. strukturovana tlf. cisla)"</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="CurrencyDisplay" type="bool" />
+    <xs:attribute name="MaxLength" type="xs:int" />
+    <xs:attribute name="Name" type="xs:string" />
+    <xs:attribute name="Label" type="xs:string" />
+    <!-- STR0028914 - 2008.07.08 - doplněn LabelToolTip-->
+    <xs:attribute name="LabelToolTip" type="xs:string" />
+    <!-- STR0062778 - 2019.07.30 - doplněn LabelToolTipHide-->
+    <xs:attribute name="LabelToolTipHide" type="xs:string" />
+    <xs:attribute name="Width" type="xs:string" />
+    <xs:attribute name="Height" type="xs:int" />
+    <xs:attribute name="Required" type="bool" />
+    <xs:attribute name="Invisible" type="xs:string" />
+    <xs:attribute name="ReadOnly" type="bool" />
+    <xs:attribute name="InputType">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="text" />
+          <xs:enumeration value="checkbox" />
+          <xs:enumeration value="radiobutton" />
+          <xs:enumeration value="string" />
+          <xs:enumeration value="dynamic" />
+          <xs:enumeration value="date" />
+          <xs:enumeration value="time" />
+          <xs:enumeration value="datetime" />
+          <xs:enumeration value="textarea" />
+          <xs:enumeration value="select" />
+          <xs:enumeration value="password" />
+          <xs:enumeration value="number" />
+          <xs:enumeration value="label" />
+          <xs:enumeration value="group" />
+          <xs:enumeration value="button" />
+          <xs:enumeration value="picturelistbox" />
+          <xs:enumeration value="file" />
+          <xs:enumeration value="calendar" />
+          <xs:enumeration value="picture" />
+          <xs:enumeration value="htmltext" />
+          <xs:enumeration value="AidcCode" />
+          <!-- //DCH 0053400 12.08.2016 -->
+          <xs:enumeration value="color" />
+          <!--DCH za MEJ 14.4.2015 Podpora pro mapy, typ zobrazeni Geography -->
+          <xs:enumeration value="Geography" />
+          <!-- //DCH 0054852 06.03.2017 PercentageBar na formulářích -->
+          <xs:enumeration value="PercentageBar"/>
+          <!-- // ALE0056547 15.9.2017 - podpora pro zobrazení kalkulačky -->
+          <xs:enumeration value="calculator" />
+          <!-- //STR0061496 - 2019.03.06 - InputType="Placeholder" -->
+          <xs:enumeration value="Placeholder"  />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    
+    <!-- STR0049948 - 2015.04.16 - rozšíření input typu "text" o možnost kolorovat text -->
+    <xs:attribute name="SyntaxHighlightingType">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="Sql" />
+          <xs:enumeration value="Xml" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+
+    <xs:attribute name="AidcCodeType">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="Codabar" />
+          <xs:enumeration value="Code11" />
+          <xs:enumeration value="EAN13" />
+          <xs:enumeration value="EAN8" />
+          <xs:enumeration value="UPC_A" />
+          <xs:enumeration value="UPC_E" />
+          <xs:enumeration value="Standard2of5" />
+          <xs:enumeration value="Industrial2of5" />
+          <xs:enumeration value="Interleaved2of5" />
+          <xs:enumeration value="ITF14" />
+          <xs:enumeration value="Code39" />
+          <xs:enumeration value="Code39Ext" />
+          <xs:enumeration value="Code128" />
+          <xs:enumeration value="Code128A" />
+          <xs:enumeration value="Code128B" />
+          <xs:enumeration value="Code128C" />
+          <xs:enumeration value="Pharmacode" />
+          <xs:enumeration value="Pdf417" />
+          <xs:enumeration value="QrCode" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="AidcCodeSettings" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="cs-cz">
+          Další nastavení AIDC kódu. Toto nastavení je vždy závislé na typu kódu v atributu AidcCodeType. Možnosti nastavení odpovídají možnostem dle https://forum.helios.eu/green/doc/cs/index.php?title=QR_k%C3%B3dy,_%C4%8D%C3%A1rov%C3%A9_k%C3%B3dy
+          Zadává se ve formě: klíč1=hodnota1; klíč2=hodnota2; atd. Například pro kód PDF417 lze zadat pevnou šířku kódu 7 slov a úroveň korekce chyb = 3 následujícím způsobem: "FixedWidth=7; ErrorLevel=3".
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="PercentageBarSettings" type="xs:string">
+      <!-- //DCH 0054852 06.03.2017 ProgressBary na formulářích -->
+      <xs:annotation>
+        <xs:documentation xml:lang="cs-cz">
+          Další nastavení pro input type PercentageBar. Může být nastaveno chování procentuálního teploměru. Hodnoty jsou zapsány jako "klíč:hodnota|klíč2:hodnota"
+          Možné klíče a jejich hodnoty jsou k dispozici v dokumentaci: https://public.helios.eu/green/doc/cs/index.php?title=%C5%A0ablony_pro_formul%C3%A1%C5%99e_-_popis#InputType_PercentageBar
+          Mezi nejpoužívánější klíče jsou:
+          * WithLabel:true/false který říká zda bude hodnota procenta zobrazena v teploměru.
+          * RawValueAsPercentage:true/false Pokud je true pak je hodnota již přepočítaná na hodnotu 0-100%, pokud je false pak se očekává, že hodnota je 0.00-1.00 a control si dělá přepočet na procenta.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="ButtonAction">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="Click" />
+          <!-- default -->
+          <!--<xs:enumeration value="OpenFile" />-->
+          <xs:enumeration value="Update" />
+          <xs:enumeration value="Close" />
+          <!-- //DCH 0059598 31.07.2018 Spouštění funkcí tlačítky na formuláři  -->
+          <xs:enumeration value="RunFunction" />
+          <!-- //STR0060162 - 2018.10.12 - doplnění akce ClickCheckRequired: při stisku tlačítka zkontroluje required sloupce obdobně jako akce 'Update'  -->
+          <xs:enumeration value="ClickCheckRequired" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    
+    <!-- //DCH 0059598 31.07.2018 Spouštění funkcí tlačítky na formuláři -->
+    <xs:attribute name="ButtonFunction" type="xs:string" use="optional"/>
+    
+    <!-- //STR0064265 - 2020.01.20 Tlačítko ve formuláři -ikona místo textu -->
+    <xs:attribute name="ButtonFunctionLabelType" use="optional">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="Text" />
+          <xs:enumeration value="Icon" />
+          <xs:enumeration value="IconText" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="Values" type="xs:string" />
+    <xs:attribute name="Expr" type="xs:string" />
+    <xs:attribute name="ExprType">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="String" />
+          <xs:enumeration value="Int32" />
+          <xs:enumeration value="DateTime" />
+          <xs:enumeration value="Decimal" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="EditStyle" type="xs:string" />
+    <xs:attribute name="EditStyleViewMode">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="Text" />
+          <xs:enumeration value="Icon" />
+          <xs:enumeration value="IconText" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="Protect" type="xs:string" />
+    <xs:attribute name="HtmlEdit" type="bool">
+      <xs:annotation>
+        <xs:documentation xml:lang="cs-cz">
+          OBSOLETE - use InputType=htmltext
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="Relation">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="0" />
+          <xs:enumeration value="1" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="HtmlStyle" type="xs:string" />
+    <xs:attribute name="ColSpan" type="xs:int" default="1" />
+    <!--//DAVID.CHARVAT 0038832 22.06.2011 Podpora RowSpan ve form.šabloně-->
+    <xs:attribute name="RowSpan" type="xs:int" default="1" />
+    <xs:attribute name="LabelPos" type="pos" />
+    <xs:attribute name="Align" type="leftright" />
+    <xs:attribute name="AlignValue" type="leftright" />
+    <xs:attribute name="RegisterItemChange" type="bool" />
+    <xs:attribute name="RegisterDblClick" type="bool" />
+    <xs:attribute name="BoxCols" type="xs:string" />
+    <xs:attribute name="BoxRows" type="xs:string" />
+    <xs:attribute name="BoxStyle" type="xs:string" />
+    <xs:attribute name="AttrShortName" type="bool" />
+    <xs:attribute name="RelationParams" type="xs:string" />
+    <xs:attribute name="RelationAddName" type="bool" />
+    <xs:attribute name="RenderAs" type="RenderAs1" />
+    <xs:attribute name="SetEmptyStringIsNull" type="bool" />
+    <!--DCH 0052507 19.04.2016-->
+    <xs:attribute name="MaxDropDownItems" type="xs:int" default="12" use="optional"></xs:attribute>
+    <!-- add break line after this item -->
+    <xs:attribute name="Break" type="bool" />
+    <!-- only for InputType=button -->
+    <xs:attribute name="Default" type="bool">
+      <xs:annotation>
+        <xs:documentation xml:lang="cs-cz">
+          OBSOLETE - use dynamicPage template.DefaultControl
+          Pouze pokud je InputType=Button. Tento atribut určuje výchozí tlačítko (fokusované po startu).
+          Jeho úlohu přebral atribut na dynamické stránce se jménem DefaultControl.
+          Tento atribut bude pravděpodobně odstraněn do verze BETA43
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="AllowUserChangeInvisibility" default="Auto">
+      <!--DCH 0036675-->
+      <xs:annotation>
+        <xs:documentation xml:lang="cs-cz">
+          Příznak, zda je viditelnost řiditelná uživatelem. Výchozí hodnota je "Auto"
+        </xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="Auto">
+            <xs:annotation>
+              <xs:documentation xml:lang="cs-cz">
+                Hodnotu Auto (je výchozí) interpretuje klient a musí reagovat na dynamickou změnu viditelnosti sloupce/buněk vyvolanou aplikačním kódem.
+              </xs:documentation>
+            </xs:annotation>
+          </xs:enumeration>
+          <xs:enumeration value="True">
+            <xs:annotation>
+              <xs:documentation xml:lang="cs-cz">
+                Hodnotu True uživatel bude moci v klientské aplikaci měnit neviditelnost sloupce.
+              </xs:documentation>
+            </xs:annotation>
+          </xs:enumeration>
+          <xs:enumeration value="False">
+            <xs:annotation>
+              <xs:documentation xml:lang="cs-cz">
+                Hodnotu False uživatel nemůže měnit v klientské aplikaci neviditelnost sloupce.
+              </xs:documentation>
+            </xs:annotation>
+          </xs:enumeration>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <!-- only for InputType=calendar -->
+    <xs:attribute name="OneMonthOnly" type="bool" />
+    <xs:attribute name="NoBorder" type="bool" />
+    <!-- so far only for DDLB!!! -->
+    <xs:attribute name="RadioTextAlign">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="right" />
+          <xs:enumeration value="rightDown" />
+          <xs:enumeration value="left" />
+          <xs:enumeration value="leftDown" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="TextAreaOverflow">
+      <!-- Sets or retrieves a value indicating how to manage the content of the object when the content exceeds the height or width of the object. -->
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="auto" />
+          <!-- default: Content is clipped and scrolling is added only when necessary -->
+          <xs:enumeration value="hidden" />
+          <!-- Content that exceeds the dimensions of the object is not shown. -->
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="FontAndColor">
+      <!-- Sets Font and colors - cups (kalíšky barev pro attributy). Může obsahovat výraz, jehož výsledkem musí být jedna z uvedených hodnot -->
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="'User_1'" />
+          <xs:enumeration value="'User_2'" />
+          <xs:enumeration value="'User_3'" />
+          <xs:enumeration value="'User_4'" />
+          <xs:enumeration value="'User_5'" />
+          <xs:enumeration value="'User_6'" />
+          <xs:enumeration value="'User_7'" />
+          <xs:enumeration value="'User_8'" />
+          <xs:enumeration value="'User_9'" />
+          <xs:enumeration value="'GoodValue'" />
+          <xs:enumeration value="'BetterValue'" />
+          <xs:enumeration value="'ExcellentValue'" />
+          <xs:enumeration value="'BadValue'" />
+          <xs:enumeration value="'WorseValue'" />
+          <xs:enumeration value="'AwfulValue'" />
+          <xs:enumeration value="'ToProcess'" />
+          <xs:enumeration value="'InProcess'" />
+          <xs:enumeration value="'Success'" />
+          <xs:enumeration value="'Warning'" />
+          <xs:enumeration value="'Error'" />
+          <xs:enumeration value="'Warning'" />
+          <xs:enumeration value="'Red_front_normal'" />
+          <xs:enumeration value="'Red_front_protect'" />
+          <xs:enumeration value="'Green_front_normal'" />
+          <xs:enumeration value="'Green_front_protect'" />
+          <xs:enumeration value="'Orange_front_normal'" />
+          <xs:enumeration value="'Orange_front_protect'" />
+          <xs:enumeration value="'Blue_front_normal'" />
+          <xs:enumeration value="'Blue_front_protect'" />
+          <xs:enumeration value="'Black_label_front_bold'" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <!--STR0023248 2006.12.06 - Doplňková maska pro vstup dat do polí typu DDLB, Date, DateTime, Time, Number. (např = "[:*:]") -->
+    <xs:attribute name="AcceptPromptFormatMask" type="xs:string" />
+
+    <!--//STR0044621 - 2013.05.21 - doplnění vlastností - Image: obrázek na tlačítku-->
+    <xs:attribute name="Image" type="xs:string" />
+    <!--//STR0044621 - 2013.05.21 - doplnění vlastností - ToolTip: tooltip nad buňkou/hodnotou/tlačítkem -->
+    <xs:attribute name="ToolTip" type="xs:string" />
+
+    <!--//STR0050594 - 2015.07.16 - doplnění vlastností - LinkType: Přímo na formuláři lze definovat typ odkazu -> pro rozkliknutí uvedeného typu odkazu (email, url). Rozšiřuje InputType="text" a InputType="textarea" -->
+    <xs:attribute name="LinkType" >
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="email" />
+          <xs:enumeration value="phone" />
+          <xs:enumeration value="url" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+
+
+    <!-- //DCH 0054246 02.12.2016 -->
+    <xs:attribute name="AllowExtendedEditor" type="bool" default="True">
+      <xs:annotation>
+        <xs:documentation xml:lang="cs-cz">
+          Nastavení se aplikuje na políčko typu TextArea. Hodnota určuje zda je dovoleno otevřít rozšířující editor při dvojkliku na políčko typu TextArea. Hodnota False znamená, že na políčku není automatický rozšuřující editor.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+
+    <!-- //STR0058109 - 2018.02.20 -->
+    <xs:attribute name="SuppressReadOnlyFromDataForm" type="bool" use="optional" />
+
+    <!-- //DCH 0059196 19.06.2018 Grafické zobrazení stavu/procesu - jádro -->
+    <xs:attribute name="DDLBEditor" >
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="Combobox" />
+          <xs:enumeration value="Breadcrumb" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+
+
+    <!--//STR0066820 - 2020.11.09 - Zrušeno, partner nepoužíval -->
+    <!--//STR0050594 - 2015.07.16 - doplnění vlastnosti - MobileDefaultValue : implicitní hodnota pro daný sloupec. Používá se v mobilním klientovi v případě off-line režimu. 
+    <xs:attribute name="MobileDefaultValue" type="xs:string" >
+      <xs:annotation>
+        <xs:documentation xml:lang="cs-cz">
+          Používá se pouze v mobilním klientovi
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>-->
+
+
+    <!--//STR0066820 - 2020.11.09 - FormBuilder a Mobile atributy pro Aldor-->
+    <xs:attribute name="MobileDefault" type="xs:string" >
+      <xs:annotation>
+        <xs:documentation xml:lang="cs-cz">
+          Používá se pouze v mobilním klientovi
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="MobileLocation" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="cs-cz">
+          Používá se pouze v mobilním klientovi
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="MobileBarcode" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="cs-cz">
+          Používá se pouze v mobilním klientovi
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="MobileBarcodeSearch" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="cs-cz">
+          Používá se pouze v mobilním klientovi
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="MobileValidation" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="cs-cz">
+          Používá se pouze v mobilním klientovi
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="MobileDefaultSort" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="cs-cz">
+          Používá se pouze v mobilním klientovi
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="ExtendedAttributes" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="cs-cz">
+          Atribut slouží pro vývojáře třetích stran. Do tohoto atributu lze zadat libovolný obsah. Jádro aplikace ani FormBuilder s ním nepracuje a slouží jen pro vývojáře třetích stran v případě, kdy potřebují rozšířit vlastnosti konkrétního sloupce formuláře o vlastní nastavení.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+
+    <!-- //STR0069975 - 2021.011.25 - doplnění možnosti zadat filter pro InputType="file" -->
+    <xs:attribute name="FileFilter" type="xs:string" />
+
+
+
+  </xs:attributeGroup>
+  <!-- simple types -->
+  <xs:simpleType name="pos">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Left" />
+      <xs:enumeration value="Up" />
+      <xs:enumeration value="None" />
+      <xs:enumeration value="Right" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="leftright">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Left" />
+      <xs:enumeration value="Right" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="leftrightcenter">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Left" />
+      <xs:enumeration value="Right" />
+      <xs:enumeration value="Center" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="bool">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="True" />
+      <xs:enumeration value="False" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="RenderAs1">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="string" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="TFirstLeftColumnAlignMode">
+      <xs:restriction base="xs:string">
+          <xs:enumeration value="Tab"></xs:enumeration>
+          <xs:enumeration value="Template"></xs:enumeration>
+      </xs:restriction>
+  </xs:simpleType>
+</xs:schema>

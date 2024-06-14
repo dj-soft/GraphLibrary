@@ -500,26 +500,34 @@ namespace TestDevExpress.Forms
         /// <param name="fileFrmXml"></param>
         private void _LoadDataFrmXml(string fileFrmXml)
         {
-            string pathFrmXml = null;
             try
             {
-                pathFrmXml = System.IO.Path.GetDirectoryName(fileFrmXml);
-                var loadingArgs = new DfTemplateLoadArgs() { TemplateFileName = fileFrmXml, NestedTemplateLoader = loadNested, LogTime = true };
-                var dxInfo = DxDForm.DfTemplateLoader.LoadInfo(loadingArgs);
-                if (dxInfo.FormatVersion == FormatVersionType.Version4)
+                __FrmXmlPath = System.IO.Path.GetDirectoryName(fileFrmXml);
+                var loadingArgs = new DfTemplateLoadArgs()
                 {
+                    TemplateFileName = fileFrmXml,
+                    InfoSource = this,
+                    LogTime = true
+                };
+                var dxInfo = DxDForm.DfTemplateLoader.LoadInfo(loadingArgs);
+                bool isV1 = (dxInfo.FormatVersion == FormatVersionType.Version1 || dxInfo.FormatVersion == FormatVersionType.Version2 || dxInfo.FormatVersion == FormatVersionType.Version3);
+                bool isV4 = (dxInfo.FormatVersion == FormatVersionType.Version4);
+                if (isV1 || isV4)
+                {
+                    // Načíst kompletní obsah šablony:
                     var dfForm = DxDForm.DfTemplateLoader.LoadTemplate(loadingArgs);
+
+                    // Vytvořit layout:
                     var layoutArgs = new DfTemplateLayoutArgs()
                     {
                         DataForm = dfForm,
+                        InfoSource = this,
                         Errors = loadingArgs.Errors,
                         LogTime = true,
-                        InfoSource = this,
                         SaveDebugImages = true,
                         DebugImagesWithGuideLines = true,
                         DebugImagePath = "AsolLayouts"
                     };
-
                     DxDForm.DfTemplateLayout.CreateLayout(layoutArgs);
                     if (layoutArgs.HasErrors)              // Zde jsou i chyby sdílené z procesu Loading
                         DxComponent.ShowMessageWarning($"Zadaný dokument '{fileFrmXml}' obsahuje chyby:\r\n{loadingArgs.ErrorsText}");
@@ -535,13 +543,6 @@ namespace TestDevExpress.Forms
                 DxComponent.ShowMessageException(ex);
             }
 
-            // Najde definici nested šablony (v adresáři kde je šablona) a vrátí její obsah
-            string loadNested(string name)
-            {
-                string nestedFrmXml = (!String.IsNullOrEmpty(name) ? System.IO.Path.Combine(pathFrmXml, name) : null);
-                if (!System.IO.File.Exists(nestedFrmXml)) return null;         // Neexistující nested šablona
-                return System.IO.File.ReadAllText(nestedFrmXml);
-            }
         }
         /// <summary>
         /// Vytvoří dataform pro dodaná data ve formátu <see cref="DfForm"/> = načtená ze souboru *.frm.xml
@@ -567,6 +568,8 @@ namespace TestDevExpress.Forms
             _RefreshTitle();
             RefreshStatusCurrent(true);
         }
+
+        private string __FrmXmlPath;
         #endregion
         #region DataForm testovací ručně tvořený
         /// <summary>
@@ -973,6 +976,15 @@ namespace TestDevExpress.Forms
         }
         #endregion
         #region IControlInfoSource
+
+
+        string IControlInfoSource.NestedTemplateContentLoad(string templateName)
+        {
+            string nestedFrmXml = (!String.IsNullOrEmpty(templateName) ? System.IO.Path.Combine(__FrmXmlPath, templateName) : null);
+            if (!System.IO.File.Exists(nestedFrmXml)) return null;         // Neexistující nested šablona
+            return System.IO.File.ReadAllText(nestedFrmXml);
+        }
+
         void IControlInfoSource.ValidateControlInfo(IDataFormItem controlInfo)
         {
             // Tady mám šanci doplnit takové informace o prvku, které autor šablony (frm.xml) explicitně nezadal.

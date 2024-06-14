@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data Description="MasterTable" xmlns="http://tempuri.org/DataForm.Data.xsd" >
+    <select>
+        <sqlsyntax>
+            execute lcs.nsp_retrieve_faktura_dosla
+        </sqlsyntax>
+    </select>
+
+    <update>
+      SELECT cislo_subjektu,reference_subjektu,nazev_subjektu,cislo_poradace,organizace,cislo_bankovni_spojeni,
+      cena_celkem,zaokrouhleni_celkem,datum_porizeni,datum_duzp,datum_splatnosti,konstantni_symbol,kod_meny,
+      jednotka_kursu,kurs,sazba1,zaklad1,dan1,sazba2,zaklad2,dan2,sazba3,zaklad3,dan3,variabilni_symbol,stav,
+      poznamka,zavedl,likvidoval,datum_likvidace,schvaloval,datum_schvaleni,datum_zauctovani,datum_vraceni,
+      pripravoval,zauctoval,vratil,datum_pripraveni,kontace,organizace_cispor,zaloha,typ_uhrady,typ_skonta,
+      cislo_penal_fce,castka_skonto,stav_pp,datum_splatno_pp,castka_pp,castka_pp_mena,cislo_ban_spoj_vlastni_pp,
+      switch_mena,cena_celkem_mena,zaokrouhleni_celkem_mena,zaklad1_mena,dan1_mena,zaklad2_mena,dan2_mena,
+      zaklad3_mena,dan3_mena,zaloha_mena,castka_skonto_mena,stornoval,datum_stornovani,organizace2,expozitura,
+      expozitura2,utvar,obchodni_pripad,pocet_celkem,aktivita,typ_ceny,sklad,kod_dph1,kod_dph2,kod_dph3,
+      datum_kurzu,prepocet_eur,ucet_organizace,ucet_zaklad1,ucet_zaklad2,ucet_zaklad3,
+      dobropis,dobropis_mena,datum_odmitnuti,odmitnul,pozastaven_pp,stav_likvidace,
+      datum_predzauctovani,predzauctoval,mesic_dph,rok_dph,datum_pripadu,stav_slozenky,dod_dan_prizn,
+      kod_dph4,sazba4,zaklad4,dan4,zaklad4_mena,dan4_mena,ucet_zaklad4,id_jcd_v_claiq,zpus_dopr_doplnek,
+      dod_podm_doplnek,zpus_dopravy,dod_podm,netto,brutto,poradi_nejvyssi_upominky,datum_sankce,
+      datum_upominky,predpis_sankci,parametry_upominani,proces_sankci,proces_upominani,obdobi_od,obdobi_do,
+      casove_rozliseni,samovymereni,dic,dic_vlastni,datum_intrastat,nastaveni_uctovani_okruhu,uctovat_tuz_okruh,
+      ostatni_okruhy_zauctovany,povolit_modifikaci_okruhu,stav_zauctovani,specificky_symbol,typ_uhrady_jiny,kod_tuz_mena,
+      druh_prepravy,rzp_skladba,rzp_prostredky_blokoval,datum_blokace_rzp_prostredku,cislo_jednaci,parovaci_znak,vytvoren_ud,
+      odpocet_dph_pri_uhrade,company_id,stav_nahradniho_plneni,castka_nahradniho_plneni,groupovat_polozky,pouzaverkova_operace,
+      datum_sazby_dph,delivery_note,stav_schvalovani,record_period,nasledne_kh 
+      FROM lcs.faktura_dosla_hlavicka
+    </update>
+    <arguments>
+        <argument Type="number" Name="cislo_sub"/>
+    </arguments>
+</data>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Sazbová tabulka s kódy DPH -->
+<template FormatVersion="3" TableColumns="1" Messages="/app/lcs/PrimaryVATDocument/Forms/nested_sazbova_tabulka"
+          DefaultLastRowColumnWidth="auto" xmlns="http://tempuri.org/DataForm.Frm.xsd" >
+  
+  <!-- Měna -->
+  <tab TabPageLabel="fm(MSG023)" RenderAs="DesignTabWithLabel" TableColumns="9">    
+    <column Name="switch_mena" InputType="checkbox" Label="fm(MSG015)" ToolTip="fm(MSG021)" LabelPos="Right" />    
+    <column Name="datum_kurzu" InputType="date" LabelPos="Left" SetEmptyStringIsNull="True" />
+    <column Name="kod_meny" Width="66" LabelPos="Left" EditStyle="#dynamic#" />
+    <column Name="jednotka_kursu" Width="50" LabelPos="None" />
+    <column Name="nest_sazb_tab_label1" Width="14" Expr="'/'" InputType="string" LabelPos="None" LabelToolTipHide="true" />
+    <column Name="kurs" Width="100" LabelPos="None" Relation="1" />
+    <column Name="placeholder_aut" InputType="Placeholder" Width="24" LabelToolTipHide="True" />
+    <column Name="automat" InputType="checkbox" Label="fm(MSG024):" LabelPos="Left" LabelToolTip="fm(MSG019)" Align="Right" ReadOnly="True" />
+  </tab>
+  <tab/>
+  
+  <!-- Sazbová tabulka -->
+  <tab TableColumns="5" LabelPos="None">
+    <column Name="nest_sazb_tab_label2" Width="80" Expr="'fm(MSG009)'" InputType="string" />
+    <column Name="nest_sazb_tab_label3" Width="80" Expr="'fm(MSG010)'" InputType="string" />
+    <column Name="nest_sazb_tab_label4" Width="164" Expr="'fm(MSG011)'" InputType="string" />
+    <column Name="nest_sazb_tab_label5" Width="164" Expr="'fm(MSG012)'" InputType="string" />
+    <column Name="nest_sazb_tab_label6" Width="164" Expr="'fm(MSG013)'" InputType="string" />
+    
+    <column Name="kod_dph1" Width="80" Relation="1" />
+    <column Name="sazba1" Width="80" ReadOnly="True" EditStyle="#dynamic#" EditMask="L4;D2;T0;Z1"/>
+    <column InputType="group" Name="group_zaklad1" >
+      <groupcolumn Name="zaklad1" Width="164" />
+      <groupcolumn Name="zaklad1_mena" Width="164" />
+    </column>
+    <column InputType="group" Name="group_dan1" >
+      <groupcolumn Name="dan1" Width="164" />
+      <groupcolumn Name="dan1_mena" Width="164" />
+    </column>
+    <column InputType="group" Name="group_celkem1">
+      <groupcolumn Name="celkem1" Width="164" InputType="number" EditStyle="editmaskmena" />
+      <groupcolumn Name="celkem1_mena" Width="164" InputType="number" EditStyle="editmaskmena" />
+    </column>
+
+    <column Name="kod_dph2" Width="80" Relation="1" />
+    <column Name="sazba2" Width="80" ReadOnly="True" EditStyle="#dynamic#" EditMask="L4;D2;T0;Z1" />
+    <column InputType="group" Name="group_zaklad2" >
+      <groupcolumn Name="zaklad2" Width="164" />
+      <groupcolumn Name="zaklad2_mena" Width="164" />
+    </column>
+    <column InputType="group" Name="group_dan2" >
+      <groupcolumn Name="dan2" Width="164" />
+      <groupcolumn Name="dan2_mena" Width="164" />
+    </column>
+    <column InputType="group" Name="group_celkem2" >
+      <groupcolumn Name="celkem2" Width="164" InputType="number" EditStyle="editmaskmena" />
+      <groupcolumn Name="celkem2_mena" Width="164" InputType="number" EditStyle="editmaskmena" />
+    </column>
+
+    <column Name="kod_dph3" Width="80" Relation="1" />
+    <column Name="sazba3" Width="80" ReadOnly="True" EditStyle="#dynamic#" EditMask="L4;D2;T0;Z1" />
+    <column InputType="group" Name="group_zaklad3" >
+      <groupcolumn Name="zaklad3" Width="164" />
+      <groupcolumn Name="zaklad3_mena" Width="164" />
+    </column>
+    <column InputType="group" Name="group_dan3" >
+      <groupcolumn Name="dan3" Width="164" />
+      <groupcolumn Name="dan3_mena" Width="164" />
+    </column>
+    <column InputType="group" Name="group_celkem3" >
+      <groupcolumn Name="celkem3_mena" Width="164" InputType="number" EditStyle="editmaskmena" />
+      <groupcolumn Name="celkem3" Width="164" InputType="number" EditStyle="editmaskmena" />
+    </column>
+
+    <column Name="kod_dph4" Width="80" Relation="1" />
+    <column Name="sazba4" Width="80" ReadOnly="True" EditStyle="#dynamic#" EditMask="L4;D2;T0;Z1"/>
+    <column InputType="group" Name="group_zaklad4" >
+      <groupcolumn Name="zaklad4" Width="164" />
+      <groupcolumn Name="zaklad4_mena" Width="164" />
+    </column>
+    <column InputType="group" Name="group_dan4" >
+      <groupcolumn Name="dan4" Width="164" />
+      <groupcolumn Name="dan4_mena" Width="164" />
+    </column>
+    <column InputType="group" Name="group_celkem4" >
+      <groupcolumn Name="celkem4" Width="164" InputType="number" EditStyle="editmaskmena" />
+      <groupcolumn Name="celkem4_mena" Width="164" InputType="number" EditStyle="editmaskmena" />
+    </column>
+
+    <!-- Zaokrouhlení a sumy -->
+    <column InputType="group" Name="group_zaokrouhl_celkem" LabelPos="Left" Align="Right" ColSpan="3">
+      <groupcolumn Name="zaokrouhleni_celkem" Width="108" LabelPos="Left" Align="Right" />
+      <groupcolumn Name="zaokrouhleni_celkem_mena" Width="108" LabelPos="Left" Align="Right" />
+    </column>
+    <column Name="cena_celkem" Width="164" ColSpan="2" LabelPos="Left" Align="Right" />
+    <column Name="cena_celkem_mena" Width="164" ColSpan="5" LabelPos="Left" Align="Right" />
+  </tab>
+</template>
