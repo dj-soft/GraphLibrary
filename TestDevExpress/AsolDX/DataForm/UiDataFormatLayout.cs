@@ -654,11 +654,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private DfForm _DfForm { get { return _LayoutArgs.DataForm; } }
             /// <summary>
-            /// Objekt, který je zdrojem dalších dat pro dataform ze strany systému.
-            /// Například vyhledá popisný text pro datový control daného jména, určí velikost textu s daným obsahem a daným stylem, atd...
-            /// </summary>
-            private IControlInfoSource _InfoSource { get { return _LayoutArgs.InfoSource; } }
-            /// <summary>
             /// Plná cesta a informace od Root přes jeho Child až ke mě = typy prvků oddělené šipkou.
             /// </summary>
             private string _Text
@@ -722,6 +717,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Podkladový control
             /// </summary>
             private DfBaseControl _DfControl { get { return (__DfItem as DfBaseControl); } }
+            /// <summary>
+            /// Stav prvku
+            /// </summary>
+            private ControlStateType? _ControlState { get { return __DfItem.State; } }
+            /// <summary>
+            /// Stav prvku obsahuje příznak <see cref="ControlStateType.Absent"/>
+            /// </summary>
+            private bool _IsAbsent { get { var state = __DfItem.State; return state.HasValue && state.Value.HasFlag(ControlStateType.Absent); } }
             /// <summary>
             /// Všechny Child prvky (controly + grupy).
             /// Všechny je třeba umístit
@@ -1214,6 +1217,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             #region IFlowLayoutItem : implementace
             // Designové, čerpané z frm.xml:
             string IFlowLayoutItem.Name { get { return __Name; } }
+            bool IFlowLayoutItem.IsAbsent { get { return _IsAbsent; } }
             bool IFlowLayoutItem.IsFlowMode { get { return (__LayoutMode == LayoutModeType.Flow); } }
             string IFlowLayoutItem.Text { get { return __Name; } }
             int? IFlowLayoutItem.DesignColIndex { get { return __ColIndex; } }
@@ -1259,7 +1263,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             void IFlowLayoutItem.ResetFlowFinalResults() { this._ResetFlowFinalResults(); }
 
             #endregion
-
             #endregion
             #region Zpracování layoutu panelu
             /// <summary>
@@ -1358,7 +1361,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // Flow prvky a ty ostatní:
                 List<ItemInfo> processItems = null;                            // Prvky pro další zpracování layoutu (Non Flow)
                 Size contentSize = new Size();
-                if (childs.Any(i => i.__LayoutMode == LayoutModeType.Flow))
+                if (childs.Any(i => i.__LayoutMode == LayoutModeType.Flow && !i._IsAbsent))
                     // Pokud mám nějaké FlowItems, pak prvky LayoutModeType.Flow zpracuji a ostatní prvky dám do pole processItems:
                     processFlowItems(childs, contentSize, out processItems);
                 else
@@ -1385,10 +1388,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         foreach (var item in items)
                         {
                             if (item.__LayoutMode == LayoutModeType.Flow)
-                                // Flow prvek zpracuji:
-                                flowLayout.AddFlowItem(item);
+                            {   // Flow prvek zpracuji (pokud není Absent):
+                                if (!item._IsAbsent)
+                                    flowLayout.AddFlowItem(item);
+                            }
                             else
-                            {   // Prvek jiného typu odložím do těch ostatních, zpracují se poté
+                            {   // Prvek jiného typu new Flow odložím do seznamu ostatních prvků, a zpracují se poté:
                                 if (otherItems is null) otherItems = new List<ItemInfo>();
                                 otherItems.Add(item);
                             }
@@ -1713,9 +1718,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var controlTextColor1 = System.Drawing.Color.FromArgb(190, 96, 96, 96);
                 var controlTextColor2 = System.Drawing.Color.FromArgb(255, 32, 32, 32);
 
-                var guideLineCellColor = System.Drawing.Color.FromArgb(230, 140, 120, 140);
-                var guideLineControlColor = System.Drawing.Color.FromArgb(230, 160, 160, 80);
-                var guideLineLabelColor = System.Drawing.Color.FromArgb(230, 180, 190, 180);
+                var guideLineCellColor = System.Drawing.Color.FromArgb(200, 200, 40, 60);
+                var guideLineControlColor = System.Drawing.Color.FromArgb(200, 40, 200, 60);
+                var guideLineLabelColor = System.Drawing.Color.FromArgb(200, 190, 180, 40); 
 
                 // Image a grafické nástroje, jimiž postupně vykreslíme jednotlivé prvky:
                 var image = new System.Drawing.Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -1732,8 +1737,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
                     if (guideLines != null)
                     {
+                        graphicsForRectangles(graphics);
                         foreach (var guideLine in guideLines)
-                            drawLine(guideLine, graphics, brush, pen);
+                            drawGuideLine(guideLine, graphics, brush, pen);
                     }
                 }
                 return image;
@@ -1813,15 +1819,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     graphics.DrawString(text, font, brush, point.X, point.Y - 0.60f, stringFormat);
                 }
                 // Vykreslí jednu GuideLine
-                void drawLine(FlowGuideLine guideLine, System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen)
+                void drawGuideLine(FlowGuideLine guideLine, System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen)
                 {
                     bool isCell = guideLine.LineType.HasFlag(GuideLineType.Cell);
                     bool isControl = guideLine.LineType.HasFlag(GuideLineType.Control);
                     bool isLabel = guideLine.LineType.HasFlag(GuideLineType.LabelBefore) || guideLine.LineType.HasFlag(GuideLineType.LabelAfter);
 
                     pen.Color = (isCell ? guideLineCellColor : (isControl ? guideLineControlColor : guideLineLabelColor));
+                    pen.Width = 1f;
                     pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dot;
-                    
+                    pen.DashCap = System.Drawing.Drawing2D.DashCap.Round;
+
                     if (guideLine.Axis == AxisType.X)
                         graphics.DrawLine(pen, guideLine.Position, 0, guideLine.Position, height);
                     else
@@ -2220,6 +2228,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <exception cref="InvalidOperationException"></exception>
         public void AddFlowItem(IFlowLayoutItem layoutItem)
         {
+            if (layoutItem is null || layoutItem.IsAbsent) return;
+
             int columnsCount = _ColumnsCount;
             bool isFixedColumn = false;
             int firstColumn = 0;
@@ -2428,6 +2438,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void _ProcessLabels()
         {
+            // Pokud Label má definován offset (pro Top a Bottom pozice), a ten je záporný, značí to předsunutí labelu doleva od controlu.
+            // Například __TopLabelOffsetX = -15  =>  Label v pozici Nad controlem bude nahoře, a bude začínat o 15px vlevo od začátku controlu.
+            // Pokud ale současně mám __ControlMargins definující okraj 2px mezi labelem vlevo a controlem, pak o tyto 2px zmenším LabelOffset, 
+            //  protože pozice Left Labelu se měří od okraje Left Controlu bez tohoto Margins.
+            int shiftTopLabel = (this.__TopLabelOffsetX < 0 ? -this.__TopLabelOffsetX : 0);
+            int shiftBottomLabel = (this.__BottomLabelOffsetX < 0 ? -this.__BottomLabelOffsetX : 0);
+            int margin = this.__ControlMargins?.Left ?? 0;
+            if (margin > 0)
+            {   // Kladný 'shift' znamená předsunutí Labelu doleva před Control o daný počet pixelů:
+                // Prostor pro LabelBefore budeme rezervovat menší, o Margin mezi Labelem a Controlem:
+                shiftTopLabel -= margin;
+                shiftBottomLabel -= margin;
+            }
+
+            // Všechny prvky zpracují svoje labely:
             __Items.ForEach(i => processLabel(i));
 
             // Zpracuje labely daného prvku do sloupců a řádků, kam patří
@@ -2447,17 +2472,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
                         case LabelPositionType.Top:
                             processLabelSize(item, __Rows, item.FlowRowBeginIndex, item.ImplicitMainLabelHeight, true);
-                            if (this.__TopLabelOffsetX < 0)
+                            if (shiftTopLabel > 0)
                                 // Máme Label v pozici Top, a jeho X-offset je záporný (tedy Label je nad Controlem, a začíná o něco vlevo).
                                 // Musím zajistit, aby v prostoru LabelBefore (vlevo od controlu) byl dostatek místa pro tento offset:
-                                processLabelSize(item, __Columns, item.FlowColBeginIndex, -this.__TopLabelOffsetX, true);
+                                processLabelSize(item, __Columns, item.FlowColBeginIndex, shiftTopLabel, true);
                             break;
                         case LabelPositionType.Bottom:
                             processLabelSize(item, __Rows, item.FlowRowEndIndex, item.ImplicitMainLabelHeight, false);
-                            if (this.__BottomLabelOffsetX < 0)
+                            if (shiftBottomLabel > 0)
                                 // Máme Label v pozici Bottom, a jeho X-offset je záporný (tedy Label je pod Controlem, a začíná o něco vlevo).
                                 // Musím zajistit, aby v prostoru LabelBefore (vlevo od controlu) byl dostatek místa pro tento offset:
-                                processLabelSize(item, __Columns, item.FlowColBeginIndex, -this.__BottomLabelOffsetX, true);
+                                processLabelSize(item, __Columns, item.FlowColBeginIndex, shiftBottomLabel, true);
                             break;
 
                         case LabelPositionType.After:
@@ -3809,6 +3834,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Jméno z atributu Name
         /// </summary>
         string Name { get; }
+        /// <summary>
+        /// Příznak, že s prvkem se vůbec nemá počítat při tvorbě layoutu (jeho stav obsahuje <see cref="ControlStateType.Absent"/>).
+        /// </summary>
+        bool IsAbsent { get; }
         /// <summary>
         /// Prvek bude řešen ve FlowLayout
         /// </summary>

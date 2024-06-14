@@ -2301,10 +2301,10 @@ namespace Noris.WS.DataContracts.DxForm
         xxx
     }
     /// <summary>
-    /// Stav prvku. 
+    /// Stav prvku.<br/>
     /// Jde o Flags. Lze je sčítat z celé hierarchie containerů (OR), výsledek popisuje stav nejvyššího prvku.
-    /// Tedy pokud jeden jediný prvek v hierarchii je <see cref="Invisible"/>, pak finální prvek je neviditelný.
-    /// Obdobně <see cref="Disabled"/> nebo <see cref="ReadOnly"/>.
+    /// Tedy pokud jeden jediný prvek v hierarchii Parentů je <see cref="Invisible"/>, pak finální prvek je neviditelný.
+    /// Obdobně <see cref="Disabled"/> nebo <see cref="ReadOnly"/>.<br/>
     /// Pokud součet všech hodnot je <see cref="Default"/>, pak prvek je viditelný a editovatelný.
     /// </summary>
     [Flags]
@@ -2319,7 +2319,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         Enabled = 0,
         /// <summary>
-        /// Prvek je neviditelný.
+        /// Prvek je neviditelný. 
+        /// Nicméně v prostoru FlowLayout má vyhrazené svoje místo = jen je v tom místě prázdno.
+        /// <para/>
+        /// Jiné chování má stav <see cref="Absent"/>, kdy prvek ani není zařazen do FlowLayoutu.
         /// </summary>
         Invisible = 0x0001,
         /// <summary>
@@ -2339,10 +2342,19 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         Disabled = 0x0004,
         /// <summary>
+        /// Prvek je nepřítomný.
+        /// Tedy jednak není vidět, a druhak není zařazen do FlowLayout. Neobsazuje tedy místo ve sloupci.
+        /// Pokud bude tvořen FlowLayout se třemi sloupci, a budou přítomny čtyři prvky A,B,C,D; a prvek C bude mít nastaveno <see cref="Absent"/>, 
+        /// pak řádek v layoutu budou tvořit tři prvky vedle sebe: A,B,D.
+        /// <para/>
+        /// Jiné chování má stav <see cref="Invisible"/>, kdy prvek je zařazen do FlowLayoutu, ale uživatel na jeho místě vidí prázdný prostor.
+        /// </summary>
+        Absent = 0x0008,
+        /// <summary>
         /// Pokud je tento příznak aktivní, pak tento prvek je přeskakován při pohybu klávesnicí (jeho TabStop je false).
         /// Lze tedy hierarchicky zakázat TabStop pro samotný prvek, nebo pro určitý jeho Parent (a tím zakázat TabStop pro všechny prvky v Parent containeru).
         /// </summary>
-        TabSkip = 0x0008
+        TabSkip = 0x0100
     }
     /// <summary>
     /// Druh containeru
