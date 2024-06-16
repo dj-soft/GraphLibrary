@@ -977,7 +977,10 @@ namespace TestDevExpress.Forms
         #endregion
         #region IControlInfoSource
 
-
+        string IControlInfoSource.TranslateText(string formText, string name, string columnName, Noris.WS.DataContracts.DxForm.DfForm form)
+        {
+            return formText;
+        }
         string IControlInfoSource.NestedTemplateContentLoad(string templateName)
         {
             string nestedFrmXml = (!String.IsNullOrEmpty(templateName) ? System.IO.Path.Combine(__FrmXmlPath, templateName) : null);

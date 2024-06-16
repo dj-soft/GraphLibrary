@@ -608,6 +608,40 @@ namespace Noris.WS.DataContracts.DxForm
         public override ControlType ControlType { get { return ControlType.PlaceHolder; } }
     }
     /// <summary>
+    /// DxDataForm : Vodorovná linka.<br/>
+    /// Odpovídá XSD typu <c>type_hline</c>.
+    /// </summary>
+    internal class DfHLine : DfLine
+    {
+        /// <summary>
+        /// Konstruktor, nastaví defaulty
+        /// </summary>
+        public DfHLine() : base()
+        {
+        }
+        /// <summary>
+        /// Druh vstupního prvku (Control).
+        /// </summary>
+        public override ControlType ControlType { get { return ControlType.HLine; } }
+    }
+    /// <summary>
+    /// DxDataForm : Svislá linka.<br/>
+    /// Odpovídá XSD typu <c>type_vline</c>.
+    /// </summary>
+    internal class DfVLine : DfLine
+    {
+        /// <summary>
+        /// Konstruktor, nastaví defaulty
+        /// </summary>
+        public DfVLine() : base()
+        {
+        }
+        /// <summary>
+        /// Druh vstupního prvku (Control).
+        /// </summary>
+        public override ControlType ControlType { get { return ControlType.VLine; } }
+    }
+    /// <summary>
     /// DxDataForm : Label.<br/>
     /// Odpovídá XSD typu <c>type_label</c>
     /// </summary>
@@ -1070,6 +1104,20 @@ namespace Noris.WS.DataContracts.DxForm
         /// Pořadí prvku při procházení pomocí Tab.
         /// </summary>
         public int? TabIndex { get; set; }
+    }
+    /// <summary>
+    /// Linie, čára, border atd
+    /// </summary>
+    internal class DfLine : DfBaseControl
+    {
+        /// <summary>
+        /// Barva linky, zadaná explicitně pro světlé skiny: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd.
+        /// </summary>
+        public System.Drawing.Color? LineColorLight { get; set; }
+        /// <summary>
+        /// Barva linky, zadaná explicitně pro tmavé skiny: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd.
+        /// </summary>
+        public System.Drawing.Color? LineColorDark { get; set; }
     }
     /// <summary>
     /// Bázová třída pro všechny samostatné controly bez ohledu na jejich vlastní interaktivitu - tedy Label, Picture, Panel; a dále i pro interaktivní controly: TextBox, Button, CheckBox, ComboBox, ...
@@ -2298,7 +2346,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// 
         /// </summary>
-        xxx
+        Another
     }
     /// <summary>
     /// Stav prvku.<br/>
@@ -2448,6 +2496,14 @@ namespace Noris.WS.DataContracts.DxForm
         /// Jen obsazený prostor, typicky jako vyhrazený prostor ve FlowLayoutu pro následné umístění controlu s danými Bounds
         /// </summary>
         PlaceHolder,
+        /// <summary>
+        /// Vodorovná linka
+        /// </summary>
+        HLine,
+        /// <summary>
+        /// Svislá linka
+        /// </summary>
+        VLine,
         /// <summary>
         /// Label
         /// </summary>

@@ -1788,12 +1788,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         graphics.DrawPath(pen, path);                                // Border okolo prostoru pro MainLabel
                     }
 
-                    var font = System.Drawing.SystemFonts.DefaultFont;
-                    var size = graphics.MeasureString(text, font, r.Width);
-                    var point = alignText(r, size, alignment);
-                    brush.Color = labelTextColor;
-                    graphicsForText(graphics);
-                    graphics.DrawString(text, font, brush, point.X, point.Y, stringFormat);        // Vlastní text MainLabel / SuffixLabel
+                    if (isValidBounds(bounds))
+                    {
+                        var font = System.Drawing.SystemFonts.DefaultFont;
+                        var size = graphics.MeasureString(text, font, r.Width);
+                        var point = alignText(r, size, alignment);
+                        brush.Color = labelTextColor;
+                        graphicsForText(graphics);
+                        graphics.DrawString(text, font, brush, point.X, point.Y, stringFormat);        // Vlastní text MainLabel / SuffixLabel
+                    }
                 }
                 // Vykreslí Control včetně podkladu
                 void drawControl(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, string text, ControlBounds bounds, ContentAlignmentType alignment)
@@ -1810,13 +1813,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         graphics.DrawPath(pen, path);                                // Border okolo prostoru pro Controlem
                     }
 
-                    var font = System.Drawing.SystemFonts.DefaultFont;
-                    var size = graphics.MeasureString(text, font, r.Width, stringFormat);
-                    var point = alignText(r, size, alignment);
-                    brush.Color = controlTextColor1;
-                    graphics.DrawString(text, font, brush, point.X + 0.60f, point.Y);        // Text uprostřed Controlu, 2x ...
-                    brush.Color = controlTextColor2;
-                    graphics.DrawString(text, font, brush, point.X, point.Y - 0.60f, stringFormat);
+                    if (isValidBounds(bounds))
+                    {
+                        var font = System.Drawing.SystemFonts.DefaultFont;
+                        var size = graphics.MeasureString(text, font, r.Width, stringFormat);
+                        var point = alignText(r, size, alignment);
+                        brush.Color = controlTextColor1;
+                        graphics.DrawString(text, font, brush, point.X + 0.60f, point.Y);        // Text uprostřed Controlu, 2x ...
+                        brush.Color = controlTextColor2;
+                        graphics.DrawString(text, font, brush, point.X, point.Y - 0.60f, stringFormat);
+                    }
+                }
+                // Vrátí true, pokud do daných 'bounds' lze něco vepsat
+                bool isValidBounds(ControlBounds bounds)
+                {
+                    return (bounds != null && bounds.Width >= 10 && bounds.Height >= 15);
                 }
                 // Vykreslí jednu GuideLine
                 void drawGuideLine(FlowGuideLine guideLine, System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen)
@@ -4361,6 +4372,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// </summary>
     internal interface IControlInfoSource
     {
+        /// <summary>
+        /// Metoda má vrátit přeložený anebo vyplněný text
+        /// </summary>
+        /// <param name="formText"></param>
+        /// <param name="name"></param>
+        /// <param name="columnName"></param>
+        /// <param name="form"></param>
+        /// <returns></returns>
+        string TranslateText(string formText, string name, string columnName, DfForm form);
         /// <summary>
         /// Funkce, která vrátí stringový obsah nested šablony daného jména.<br/>
         /// Funkce bude volána s parametrem = jméno šablony (obsah atributu NestedTemplate), jeho úkolem je vrátit string = obsah požadované šablony (souboru).<br/>

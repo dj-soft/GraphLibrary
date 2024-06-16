@@ -342,6 +342,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Specifické Atributy:
             dfForm.XmlNamespace = _ReadAttributeString(xElement, "xmlns", null);
             dfForm.FormatVersion = _ReadAttributeEnum(xElement, "FormatVersion", FormatVersionType.Default, t => "Version" + t);
+            args.Form = dfForm;
 
             // Rychlá odbočka?
             if (onlyInfo) return dfForm;
@@ -373,7 +374,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private static DfForm _FillAreaDfFormV4(System.Xml.Linq.XElement xElement, DfForm dfForm, DfTemplateLoadArgs args)
         {
             // Základní Atributy:
-            _FillBaseAttributes(xElement, dfForm);
+            _FillBaseAttributes(xElement, dfForm, args);
 
             // Atributy třídy DfForm:
             dfForm.MasterWidth = _ReadAttributeInt32N(xElement, "MasterWidth");
@@ -475,9 +476,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (dfPage is null) dfPage = new DfPage();
 
             // Atributy:
-            _FillBaseAttributes(xElement, dfPage);
+            _FillBaseAttributes(xElement, dfPage, args);
             dfPage.IconName = _ReadAttributeString(xElement, "IconName", null);
-            dfPage.Title = _ReadAttributeString(xElement, "Title", null);
+            dfPage.Title = _ReadAttributeUserText(xElement, "Title", null, null, args);
 
             // Elementy = panely a nested panely:
             var xPanels = xElement.Elements();
@@ -510,11 +511,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (dfPanel is null) dfPanel = new DfPanel();
 
             // Atributy:
-            _FillBaseAttributes(xElement, dfPanel);
+            _FillBaseAttributes(xElement, dfPanel, args);
             dfPanel.IsHeader = _ReadAttributeBoolN(xElement, "IsHeader");
             dfPanel.HeaderOnPages = _ReadAttributeString(xElement, "HeaderOnPages", null);
             dfPanel.IconName = _ReadAttributeString(xElement, "IconName", null);
-            dfPanel.Title = _ReadAttributeString(xElement, "Title", null);
+            dfPanel.Title = _ReadAttributeUserText(xElement, "Title", null, null, args);
             dfPanel.TitleStyle = _ReadAttributeEnumN<TitleStyleType>(xElement, "TitleStyle");
             dfPanel.TitleColorName = _ReadAttributeString(xElement, "TitleColorName", null);
             dfPanel.TitleColorLight = _ReadAttributeColorN(xElement, "TitleColorLight");
@@ -539,7 +540,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             DfNestedPanel dfNestedPanel = new DfNestedPanel();
 
             // Atributy:
-            _FillBaseAttributes(xElement, dfNestedPanel);
+            _FillBaseAttributes(xElement, dfNestedPanel, args);
             dfNestedPanel.NestedTemplate = _ReadAttributeString(xElement, "NestedTemplate", null);
             dfNestedPanel.NestedPanelName = _ReadAttributeString(xElement, "NestedPanelName", null);
             dfNestedPanel.IsHeader = _ReadAttributeBoolN(xElement, "IsHeader");
@@ -607,14 +608,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (dfGroup is null) dfGroup = new DfGroup();
 
             // Atributy:
-            _FillBaseAttributes(xElement, dfGroup);
+            _FillBaseAttributes(xElement, dfGroup, args);
             dfGroup.ColIndex = _ReadAttributeInt32N(xElement, "ColIndex");
             dfGroup.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
             dfGroup.RowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
             dfGroup.HPosition = _ReadAttributeEnumN<HPositionType>(xElement, "HPosition");
             dfGroup.VPosition = _ReadAttributeEnumN<VPositionType>(xElement, "VPosition");
             dfGroup.ExpandControl = _ReadAttributeEnumN<ExpandControlType>(xElement, "ExpandControl");
-            dfGroup.Label = _ReadAttributeString(xElement, "Label", null);
+            dfGroup.Label = _ReadAttributeUserText(xElement, "Label", null, null, args);
             dfGroup.LabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPosition", _FixLabelPosition);
             dfGroup.LabelWidth = _ReadAttributeInt32N(xElement, "LabelWidth");
 
@@ -636,7 +637,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             DfNestedGroup dfNestedGroup = new DfNestedGroup();
 
             // Atributy:
-            _FillBaseAttributes(xElement, dfNestedGroup);
+            _FillBaseAttributes(xElement, dfNestedGroup, args);
             dfNestedGroup.NestedTemplate = _ReadAttributeString(xElement, "NestedTemplate", null);
             dfNestedGroup.NestedGroupName = _ReadAttributeString(xElement, "NestedPanelName", null);
             dfNestedGroup.DesignBounds = _ReadAttributeBounds(xElement, null);
@@ -647,7 +648,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             dfNestedGroup.HPosition = _ReadAttributeEnumN<HPositionType>(xElement, "HPosition");
             dfNestedGroup.VPosition = _ReadAttributeEnumN<VPositionType>(xElement, "VPosition");
             dfNestedGroup.ExpandControl = _ReadAttributeEnumN<ExpandControlType>(xElement, "ExpandControl");
-            dfNestedGroup.Label = _ReadAttributeString(xElement, "Label", null);
+            dfNestedGroup.Label = _ReadAttributeUserText(xElement, "Label", null, null, args);
             dfNestedGroup.LabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPosition", _FixLabelPosition);
             dfNestedGroup.LabelWidth = _ReadAttributeInt32N(xElement, "LabelWidth");
 
@@ -800,6 +801,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 // Controly:
                 case "placeholder":  return _FillControlPlaceHolder(xElement, new DfPlaceHolder(), args);
+                case "hline": return _FillControlHLine(xElement, new DfHLine(), args);
+                case "vline": return _FillControlVLine(xElement, new DfVLine(), args);
                 case "label": return _FillControlLabel(xElement, new DfLabel(), args);
                 case "title": return _FillControlTitle(xElement, new DfTitle(), args);
                 case "checkbox": return _FillControlCheckBox(xElement, new DfCheckBox(), args);
@@ -821,19 +824,29 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private static DfBaseControl _FillControlPlaceHolder(System.Xml.Linq.XElement xElement, DfPlaceHolder control, DfTemplateLoadArgs args)
         {
-            _FillBaseAttributes(xElement, control);
+            _FillBaseAttributes(xElement, control, args);
+            return control;
+        }
+        private static DfHLine _FillControlHLine(System.Xml.Linq.XElement xElement, DfHLine control, DfTemplateLoadArgs args)
+        {
+            _FillBaseAttributes(xElement, control, args);
+            return control;
+        }
+        private static DfVLine _FillControlVLine(System.Xml.Linq.XElement xElement, DfVLine control, DfTemplateLoadArgs args)
+        {
+            _FillBaseAttributes(xElement, control, args);
             return control;
         }
         private static DfBaseControl _FillControlLabel(System.Xml.Linq.XElement xElement, DfLabel control, DfTemplateLoadArgs args)
         {
-            _FillBaseAttributes(xElement, control);
+            _FillBaseAttributes(xElement, control, args);
             control.Text = _ReadAttributeString(xElement, "Text", null);
             control.Alignment = _ReadAttributeEnumN<ContentAlignmentType>(xElement, "Alignment");
             return control;
         }
         private static DfBaseControl _FillControlTitle(System.Xml.Linq.XElement xElement, DfTitle control, DfTemplateLoadArgs args)
         {
-            _FillBaseAttributes(xElement, control);
+            _FillBaseAttributes(xElement, control, args);
             control.IconName = _ReadAttributeString(xElement, "IconName", null);
             control.Title = _ReadAttributeString(xElement, "Title", null);
             control.Style = _ReadAttributeEnumN<TitleStyleType>(xElement, "Style");
@@ -842,13 +855,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private static DfBaseControl _FillControlCheckBox(System.Xml.Linq.XElement xElement, DfCheckBox control, DfTemplateLoadArgs args)
         {
-            _FillBaseAttributes(xElement, control);
+            _FillBaseAttributes(xElement, control, args);
             control.Style = _ReadAttributeEnumN<CheckBoxStyleType>(xElement, "Style");
             return control;
         }
         private static DfBaseControl _FillControlButton(System.Xml.Linq.XElement xElement, DfButton control, DfTemplateLoadArgs args)
         {
-            _FillBaseAttributes(xElement, control);
+            _FillBaseAttributes(xElement, control, args);
             control.ActionType = _ReadAttributeEnumN<ButtonActionType>(xElement, "ActionType");
             control.ActionData = _ReadAttributeString(xElement, "ActionData", null);
             control.HotKey = _ReadAttributeString(xElement, "HotKey", null);
@@ -863,14 +876,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private static DfBaseControl _FillControlTextBox(System.Xml.Linq.XElement xElement, DfTextBox control, DfTemplateLoadArgs args)
         {
-            _FillBaseAttributes(xElement, control);
+            _FillBaseAttributes(xElement, control, args);
             control.EditMask = _ReadAttributeString(xElement, "EditMask", null);
             control.Alignment = _ReadAttributeEnumN<ContentAlignmentType>(xElement, "Alignment");
             return control;
         }
         private static DfBaseControl _FillControlEditBox(System.Xml.Linq.XElement xElement, DfEditBox control, DfTemplateLoadArgs args)
         {
-            _FillBaseAttributes(xElement, control);
+            _FillBaseAttributes(xElement, control, args);
             return control;
         }
         private static DfBaseControl _FillControlTextBoxButton(System.Xml.Linq.XElement xElement, DfTextBoxButton control, DfTemplateLoadArgs args)
@@ -883,7 +896,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private static DfBaseControl _FillControlComboBox(System.Xml.Linq.XElement xElement, DfComboBox control, DfTemplateLoadArgs args)
         {
-            _FillBaseAttributes(xElement, control);
+            _FillBaseAttributes(xElement, control, args);
             control.EditStyleName = _ReadAttributeString(xElement, "EditStyleName", null);
             control.Style = _ReadAttributeEnumN<ComboBoxStyleType>(xElement, "Style");
             control.ComboItems = _LoadSubTextItems(xElement, "comboItem", args);
@@ -891,14 +904,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private static DfBaseControl _FillControlImage(System.Xml.Linq.XElement xElement, DfImage control, DfTemplateLoadArgs args)
         {
-            _FillBaseAttributes(xElement, control);
+            _FillBaseAttributes(xElement, control, args);
             control.ImageName = _ReadAttributeString(xElement, "ImageName", null);
             control.ImageData = _ReadAttributeBytes(xElement, "ImageData", null);
             return control;
         }
         private static DfBaseControl _FillControlStepProgress(System.Xml.Linq.XElement xElement, DfStepProgress control, DfTemplateLoadArgs args)
         {
-            _FillBaseAttributes(xElement, control);
+            _FillBaseAttributes(xElement, control, args);
             control.EditStyleName = _ReadAttributeString(xElement, "EditStyleName", null);
 
             return control;
@@ -962,7 +975,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private static DfSubTextItem _FillControlSubTextItem(System.Xml.Linq.XElement xElement, DfSubTextItem control, DfTemplateLoadArgs args)
         {
-            _FillBaseAttributes(xElement, control);
+            _FillBaseAttributes(xElement, control, args);
             control.Text = _ReadAttributeString(xElement, "Text", null);
             control.IconName = _ReadAttributeString(xElement, "IconName", null);
             return control;
@@ -1120,17 +1133,20 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Dále načítá hodnoty pro třídy containerů: <see cref="DfBaseArea"/>, <see cref="DfBaseContainer"/>.
         /// </summary>
         /// <param name="xElement">Element, z něhož se mají načítat atributy</param>
-        /// <param name="target"></param>
-        private static void _FillBaseAttributes(System.Xml.Linq.XElement xElement, DfBase target)
+        /// <param name="target">Cílový prvek</param>
+        /// <param name="args">Argumenty načítání</param>
+        private static void _FillBaseAttributes(System.Xml.Linq.XElement xElement, DfBase target, DfTemplateLoadArgs args)
         {
             // Každá zdejší větev / metoda načte pouze property deklarované přímo pro danou třídu, nikoli pro její předky!
+            string name = null;
+            string columnName = null;
 
             // DfBase:
-            target.Name = _ReadAttributeString(xElement, "Name", null);
+            name = _ReadAttributeString(xElement, "Name", null);
+            target.Name = name;
             target.State = _ReadAttributeControlState(xElement, ControlStateType.Default);
-            target.ToolTipTitle = _ReadAttributeString(xElement, "ToolTipTitle", null);
-            target.ToolTipText = _ReadAttributeString(xElement, "ToolTipText", null);
             target.Invisible = _ReadAttributeString(xElement, "Invisible", null);
+            // Atributy 'ToolTipTitle' a 'ToolTipText' načtu později, až budou k dispozici hodnoty 'name' (už máme) a 'columnName' (jen pro DfBaseInputControl) ...
 
             // Potomci směrem k Controlům:
             if (target is DfBaseControl control)
@@ -1145,28 +1161,40 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 control.VPosition = _ReadAttributeEnumN<VPositionType>(xElement, "VPosition");
                 control.ExpandControl = _ReadAttributeEnumN<ExpandControlType>(xElement, "ExpandControl"); 
             }
+            if (target is DfLine line)
+            {
+                line.LineColorLight = _ReadAttributeColorN(xElement, "LineColorLight");
+                line.LineColorDark = _ReadAttributeColorN(xElement, "LineColorDark");
+            }
             if (target is DfBaseInputControl inputControl)
             {
+                columnName = _ReadAttributeString(xElement, "ColumnName", null);
+                inputControl.ColumnName = columnName;
                 inputControl.Required = _ReadAttributeEnumN<RequiredType>(xElement, "Required");
-                inputControl.ColumnName = _ReadAttributeString(xElement, "ColumnName", null);
                 inputControl.TabIndex = _ReadAttributeInt32N(xElement, "TabIndex");
             }
+
+            // Nyní mám k dispozici hodnoty 'name' a 'columnName'; nyní mohu načítat texty přeložené pro konkrétní prvek:
+            target.ToolTipTitle = _ReadAttributeUserText(xElement, "ToolTipTitle", name, columnName, args);
+            target.ToolTipText = _ReadAttributeUserText(xElement, "ToolTipText", name, columnName, args);
+
+
             if (target is DfBaseInputTextControl textControl)
             {
-                textControl.Text = _ReadAttributeString(xElement, "Text", null);
+                textControl.Text = _ReadAttributeUserText(xElement, "Text", name, columnName, args);
                 textControl.IconName = _ReadAttributeString(xElement, "IconName", null);
                 textControl.Alignment = _ReadAttributeEnumN<ContentAlignmentType>(xElement, "Alignment");
             }
             if (target is DfBaseLabeledInputControl labeledControl)
             {
-                labeledControl.Label = _ReadAttributeString(xElement, "Label", null);
+                labeledControl.Label = _ReadAttributeUserText(xElement, "Label", name, columnName, args);
                 labeledControl.LabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPosition", _FixLabelPosition);
                 labeledControl.LabelWidth = _ReadAttributeInt32N(xElement, "LabelWidth");
-                labeledControl.SuffixLabel = _ReadAttributeString(xElement, "SuffixLabel", null);
+                labeledControl.SuffixLabel = _ReadAttributeUserText(xElement, "SuffixLabel", name, columnName, args);
             }
             if (target is DfSubTextItem subTextItem)
             {
-                subTextItem.Text = _ReadAttributeString(xElement, "Text", null);
+                subTextItem.Text = _ReadAttributeUserText(xElement, "Text", name, columnName, args);
                 subTextItem.IconName = _ReadAttributeString(xElement, "IconName", null);
             }
             if (target is DfSubButton subButton)
@@ -1200,6 +1228,20 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 container.DesignBounds = _ReadAttributeBounds(xElement, null);
                 container.ParentBoundsName = _ReadAttributeString(xElement, "ParentBoundsName", null);
             }
+        }
+        /// <summary>
+        /// Vrátí text načtený z daného atributu, přeložený do aktuálního jazyka
+        /// </summary>
+        /// <param name="xElement"></param>
+        /// <param name="attributeName"></param>
+        /// <param name="name"></param>
+        /// <param name="columnName"></param>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        private static string _ReadAttributeUserText(System.Xml.Linq.XElement xElement, string attributeName, string name, string columnName, DfTemplateLoadArgs args)
+        {
+            string text = _ReadAttributeString(xElement, attributeName, null);
+            return args.InfoSource.TranslateText(text, name, columnName, args.Form);
         }
         /// <summary>
         /// V daném elementu najde atribut daného jména a vrátí jeho String podobu
@@ -1993,6 +2035,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Parsovaný XML dokument
         /// </summary>
         public System.Xml.Linq.XDocument TemplateDocument { get; set; }
+        /// <summary>
+        /// Vznikající formulář = načtený obsah frm.xml
+        /// </summary>
+        public DfForm Form { get; set; }
         /// <summary>
         /// Vygeneruje a vrátí argument pro nested šablonu: fyzicky jiný dokument, ale společná metoda <see cref="NestedTemplateLoader"/> a evidence chyb.
         /// </summary>

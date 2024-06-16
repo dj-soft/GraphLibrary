@@ -374,9 +374,23 @@
             <xs:extension base="type_base_area">
                 <xs:sequence>
                     <xs:choice minOccurs="0" maxOccurs="unbounded">
-                        <xs:element name="placeholder" type="type_base_control" minOccurs="0" maxOccurs="unbounded">
+                        <xs:element name="placeholder" type="type_placeholder" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
                                 <xs:documentation xml:lang="cs-cz">Jen obsazený prostor, typicky jako vyhrazený prostor ve FlowLayoutu pro následné umístění controlu s danými Bounds.</xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                        <xs:element name="hline" type="type_hline" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="cs-cz">
+                                    Vodorovná linka v místě prvku, slouží k vizuálnímu oddělení logických bloků uvnitř jednoho containeru
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                        <xs:element name="vline" type="type_vline" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="cs-cz">
+                                    Svislá linka v místě prvku, slouží k vizuálnímu oddělení logických bloků uvnitř jednoho containeru
+                                </xs:documentation>
                             </xs:annotation>
                         </xs:element>
                         <xs:element name="label" type="type_label" minOccurs="0" maxOccurs="unbounded">
@@ -603,7 +617,53 @@
     
     <!--    DEFINICE JEDNOTLIVÝCH FINÁLNÍCH CONTROLŮ                                                         -->
 
-    <!--    type_title = DfLabel  -  Label                                                                   -->
+    <!--    type_placeholder = DfPlaceHolder  -  jen obsadí prostor                                          -->
+    <xs:complexType name="type_placeholder">
+        <xs:complexContent>
+            <xs:extension base="type_base_control">
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!--    type_hline = DfHLine  -  vodorovná linka                                                         -->
+    <xs:complexType name="type_hline">
+        <xs:complexContent>
+            <xs:extension base="type_line">
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!--    type_vline = DfVLine  -  svislá linka                                                            -->
+    <xs:complexType name="type_vline">
+        <xs:complexContent>
+            <xs:extension base="type_line">
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!--    type_line = DfLine  -  obecná linka, předek pro type_hline a type_vline                          -->
+    <xs:complexType name="type_line">
+        <xs:complexContent>
+            <xs:extension base="type_base_control">
+                <xs:attribute name="LineColorLight" type="color_name_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">
+                            Barva linky, zadaná explicitně pro světlé skiny: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="LineColorDark" type="color_name_enum">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">
+                            Barva linky, zadaná explicitně pro tmavé skiny: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!--    type_label = DfLabel  -  Label                                                                   -->
     <xs:complexType name="type_label">
         <xs:complexContent>
             <xs:extension base="type_base_control">
