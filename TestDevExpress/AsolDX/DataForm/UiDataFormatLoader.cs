@@ -1209,7 +1209,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="context">Průběžná data pro načítání obsahu</param>
         private static DfBase _CreateChildItemFromColumnIG(XElement xElement, string sourceInfo, DfContext context)
         {
-            // Načtu obecně platné atributy:
+            // Načtu obecně platné atributy, deklarované v DataForm.Frm.xsd :
             var name = _ReadAttributeString(xElement, "Name", null);
             var tabIndex = _ReadAttributeInt32N(xElement, "TabIndex");
             var editMask = _ReadAttributeString(xElement, "EditMask", null);
@@ -1224,28 +1224,28 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var required = _ReadAttributeBoolN(xElement, "Required");
             var invisible = _ReadAttributeString(xElement, "Invisible", null);
             var readOnly = _ReadAttributeBoolN(xElement, "ReadOnly");
-            var inputType = _ReadAttributeString(xElement, "InputType", null);
-            var syntaxHighlightingType = _ReadAttributeString(xElement, "SyntaxHighlightingType", null);  // Sql, Xml
-            var aidcCodeType = _ReadAttributeString(xElement, "AidcCodeType", null);
+            var inputType = _ReadAttributeString(xElement, "InputType", null);                               // text / checkbox / radiobutton / string / dynamic / date / time / datetime / textarea / select / password / number / label / group / button / picturelistbox / file / calendar / picture / htmltext / AidcCode / color / Geography / PercentageBar / calculator / Placeholder
+            var syntaxHighlightingType = _ReadAttributeString(xElement, "SyntaxHighlightingType", null);     // Sql / Xml
+            var aidcCodeType = _ReadAttributeString(xElement, "AidcCodeType", null);                         // Codabar / Code11 / DataMatrix / EAN13 / EAN8 / ....
             var aidcCodeSettings = _ReadAttributeString(xElement, "AidcCodeSettings", null);
             var percentageBarSettings = _ReadAttributeString(xElement, "PercentageBarSettings", null);
-            var buttonAction = _ReadAttributeString(xElement, "ButtonAction", null);               // Click, Update, Close, RunFunction, ClickCheckRequired
+            var buttonAction = _ReadAttributeString(xElement, "ButtonAction", null);                         // Click / Update / Close / RunFunction / ClickCheckRequired
             var buttonFunction = _ReadAttributeString(xElement, "ButtonFunction", null);
-            var buttonFunctionLabelType = _ReadAttributeString(xElement, "ButtonFunctionLabelType", null);       // Text, Icon, IconText
+            var buttonFunctionLabelType = _ReadAttributeString(xElement, "ButtonFunctionLabelType", null);   // Text / Icon / IconText
             var values = _ReadAttributeString(xElement, "Values", null);
             var expr = _ReadAttributeString(xElement, "Expr", null);
-            var exprType = _ReadAttributeString(xElement, "ExprType", null);                      // String, Int32, DateTime, Decimal
+            var exprType = _ReadAttributeString(xElement, "ExprType", null);                                 // String / Int32 / DateTime / Decimal
             var editStyle = _ReadAttributeString(xElement, "EditStyle", null);
-            var editStyleViewMode = _ReadAttributeString(xElement, "EditStyleViewMode", null);    // Text, Icon, IconText
+            var editStyleViewMode = _ReadAttributeString(xElement, "EditStyleViewMode", null);               // Text / Icon / IconText
             var protect = _ReadAttributeString(xElement, "Protect", null);
             var htmlEdit = _ReadAttributeBoolN(xElement, "HtmlEdit");
-            var relation = _ReadAttributeBoolN(xElement, "Relation");                      // 0, 1
+            var relation = _ReadAttributeBoolN(xElement, "Relation");                                        // 0 / 1
             var htmlStyle = _ReadAttributeString(xElement, "HtmlStyle", null);
             var colSpan = _ReadAttributeInt32N(xElement, "ColSpan");
             var rowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
-            var labelPos = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPos", _ConvertIGLabelPos);        // type 'pos'
-            var align = _ReadAttributeString(xElement, "Align", null);
-            var alignValue = _ReadAttributeString(xElement, "AlignValue", null);
+            var labelPos = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPos", _ConvertIGLabelPos);                // type 'pos'         : Left / Up / None / Right
+            var align = _ReadAttributeEnumN<ContentAlignmentType>(xElement, "Align", _ConvertIGLabelLeftRight);             // type 'leftright'   : Left / Right
+            var alignValue = _ReadAttributeEnumN<ContentAlignmentType>(xElement, "AlignValue", _ConvertIGLabelLeftRight);   // type 'leftright'   : Left / Right
             var registerItemChange = _ReadAttributeBoolN(xElement, "RegisterItemChange");
             var registerDblClick = _ReadAttributeBoolN(xElement, "RegisterDblClick");
             var boxCols = _ReadAttributeString(xElement, "BoxCols", null);
@@ -1254,7 +1254,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var attrShortName = _ReadAttributeBoolN(xElement, "AttrShortName");
             var relationParams = _ReadAttributeString(xElement, "RelationParams", null);
             var relationAddName = _ReadAttributeBoolN(xElement, "RelationAddName");
-            var renderAs = _ReadAttributeString(xElement, "RenderAs", null);
+            var renderAs = _ReadAttributeString(xElement, "RenderAs", null);                                 // enum, ale string = bez omezení...
             var setEmptyStringIsNull = _ReadAttributeBoolN(xElement, "SetEmptyStringIsNull");
             var maxDropDownItems = _ReadAttributeInt32N(xElement, "MaxDropDownItems");
             var isBreak = _ReadAttributeBoolN(xElement, "Break");
@@ -1264,9 +1264,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var radioTextAlign = _ReadAttributeString(xElement, "RadioTextAlign", null);
             var textAreaOverflow = _ReadAttributeString(xElement, "TextAreaOverflow", null);
             var fontAndColor = _ReadAttributeString(xElement, "FontAndColor", null);
-            var xxxxxx = _ReadAttributeString(xElement, "xxxxxxxxxxxx", null);
-
-
+            var acceptPromptFormatMask = _ReadAttributeString(xElement, "AcceptPromptFormatMask", null);
+            var image = _ReadAttributeString(xElement, "Image", null);
+            var toolTip = _ReadAttributeString(xElement, "ToolTip", null);
+            var linkType = _ReadAttributeString(xElement, "LinkType", null);                                 // email / phone / url
+            var allowExtendedEditor = _ReadAttributeBoolN(xElement, "AllowExtendedEditor");
+            var suppressReadOnlyFromDataForm = _ReadAttributeBoolN(xElement, "SuppressReadOnlyFromDataForm");
+            var dDLBEditor = _ReadAttributeString(xElement, "DDLBEditor", null);                             // Combobox / Breadcrumb
+            var extendedAttributes = _ReadAttributeString(xElement, "ExtendedAttributes", null);
+            var fileFilter = _ReadAttributeString(xElement, "FileFilter", null);
 
 
 
@@ -1310,7 +1316,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
 
         /// <summary>
-        /// Konvertuje text zadaný jako Value pro atribut LabelPos (type 'pos') ve verzi IG, do textu enumu LabelPositionType
+        /// Konvertuje text zadaný jako Value pro atribut LabelPos (type 'pos') ve verzi IG, do textu enumu <see cref="LabelPositionType"/>
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
@@ -1330,7 +1336,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return value;
         }
         /// <summary>
-        /// Konvertuje text zadaný jako Value pro atribut Align (type 'leftrightcenter') ve verzi IG, do textu enumu HPositionType
+        /// Konvertuje text zadaný jako Value pro atribut Align (type 'leftright') ve verzi IG, do textu enumu <see cref="ContentAlignmentType"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private static string _ConvertIGLabelLeftRight(string value)
+        {
+            if (!String.IsNullOrEmpty(value))
+            {
+                string key = value.Trim().ToLower();
+                switch (key)
+                {
+                    case "left": return nameof(ContentAlignmentType.MiddleLeft);
+                    case "right": return nameof(ContentAlignmentType.MiddleRight);
+                }
+            }
+            return value;
+        }
+        /// <summary>
+        /// Konvertuje text zadaný jako Value pro atribut Align (type 'leftrightcenter') ve verzi IG, do textu enumu <see cref="HPositionType"/>
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
