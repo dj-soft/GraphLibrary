@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Xml.Linq;
 using DevExpress.XtraEditors.Repository;
 using Noris.WS.DataContracts.DxForm;
 
@@ -1011,13 +1012,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             DfPage currentPage = null;
 
             // Elementy = jednotlivé Taby, budeme je teprve klasifikovat:
-            var xContainers = xElement.Elements();
-            if (xContainers != null)
+            var xTabs = xElement.Elements();
+            if (xTabs != null)
             {
                 string sourceInfo = $"Formulář '{dfForm.Name}'";
-                foreach (var xContainer in xContainers)
+                foreach (var xTab in xTabs)
                 {
-                    var container = _CreateAreaV1(xContainer, sourceInfo, args, "tab", "nestedtab");
+                    var tabType = getTabType(xTab);
+                    qqq;
+                    // vhodně zařadíme do struktury:
+
+                    var container = _CreateAreaV1(xTab, sourceInfo, args, "tab", "nestedtab");
                     if (container != null)
                     {
                         if (dfForm.Pages is null) dfForm.Pages = new List<DfPage>();
@@ -1039,6 +1044,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
             return dfForm;
 
+            // Určí, jaký druh Tabu je v XElementu
+            FormTabType getTabType(XElement xTab)
+            {
+                // Načteme pár identifikačních informací, abychom poznali, jaký druh TABu máme zpracovat:
+                string tabPageLabel = _ReadAttributeString(xTab, "TabPageLabel", null);  // Titulek pro DfPage anebo DfPanel
+                string renderAs = _ReadAttributeString(xTab, "RenderAs", null);          // Pokud je tady "DesignTabWithLabel", pak je to DfPanel (máme titulek)
+                bool isEmptyTab = !xTab.HasElements && !xTab.HasAttributes;              // Jde o element   <tab/>   tedy vodorovná oddělovací linka, nejspíš za nějakým datovým Tabem
+
+                if (isEmptyTab) return FormTabType.HLine;                                // tab bez dalšího obsahu = čára
+
+                if (!String.IsNullOrEmpty(tabPageLabel))
+                {
+                    if (String.Equals(renderAs, "DesignTabWithLabel", StringComparison.OrdinalIgnoreCase)) 
+                        return FormTabType.Panel;                                        // "DesignTabWithLabel" => Panel
+                    return FormTabType.Page;                                             // Začátek nové záložky = Page
+                }
+
+                return FormTabType.Group;                                                // tab bez titulku = grupa
+            }
 
             // Vytvoří new instanci DfPage jako "Implicitní stránku", přidá ji jako stránku [0] do control.Pages a vrátí ji
             DfPage createImplicitPage()
@@ -1052,6 +1076,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     dfForm.Pages.Insert(0, iPage);
                 return iPage;
             }
+        }
+        /// <summary>
+        /// Druh Tabu = jeho konverze na prvek Df
+        /// </summary>
+        private enum FormTabType
+        {
+            None,
+            Page,
+            Panel,
+            Group,
+            HLine
         }
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> formátu V1 - V3 načte a vrátí odpovídající kontejner (tab, nestedtab), včetně jeho obsahu a child prvků.
