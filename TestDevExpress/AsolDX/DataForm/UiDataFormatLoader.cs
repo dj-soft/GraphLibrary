@@ -1240,6 +1240,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         private static string _ReadAttributeUserText(System.Xml.Linq.XElement xElement, string attributeName, string name, string columnName, DfTemplateLoadArgs args)
         {
+            zrušit;
+            nahradit celkovým zpracováním jednoho controlu a předáním args;
             string text = _ReadAttributeString(xElement, attributeName, null);
             return args.InfoSource.TranslateText(text, name, columnName, args.Form);
         }
