@@ -496,6 +496,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public string ParentBoundsName { get; set; }
         /// <summary>
+        /// Tento container reprezentuje UDA atributy?
+        /// </summary>
+        public bool? IsUDA { get; set; }
+        /// <summary>
         /// Velikost tohoto containeru, určená výpočtem.
         /// </summary>
         public ContainerSize DesignSize { get; set; }
@@ -1043,7 +1047,7 @@ namespace Noris.WS.DataContracts.DxForm
         public DfBaseLabeledInputControl() : base()
         {
             this.Label = null;
-            this.LabelPosition = LabelPositionType.Default;
+            this.LabelPosition = null;
             this.LabelWidth = null;
         }
         /// <summary>
@@ -1685,6 +1689,16 @@ namespace Noris.WS.DataContracts.DxForm
         {
             return _IsEquals(this, other);
         }
+        /// <summary>
+        /// Automatická konverze z Int32 na Pixel
+        /// </summary>
+        /// <param name="number"></param>
+        public static implicit operator Int32P(int number) { return new Int32P(number, false); }
+        /// <summary>
+        /// Automatická konverze z Float na Percent
+        /// </summary>
+        /// <param name="percent"></param>
+        public static implicit operator Int32P(float percent) { return new Int32P((int)percent, true); }
     }
     /// <summary>
     /// Styl pro control, typicky kalíšek. Budeme podporovat i rozšířený způsob zadání stylu.
@@ -2146,6 +2160,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// Defaultní = TextWithLineBottom.
         /// </summary>
         Default,
+        /// <summary>
+        /// Bez titulku
+        /// </summary>
+        NoTitle,
         /// <summary>
         /// Pouze výrazný text, bez linky.
         /// </summary>

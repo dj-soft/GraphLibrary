@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Xml.Linq;
@@ -276,31 +277,34 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Z dodaných dat <paramref name="args"/> načte a vrátí odpovídající <see cref="DfForm"/>, volitelně včetně jeho obsahu podle <paramref name="onlyInfo"/>.
         /// </summary>
-        /// <param name="args"></param>
+        /// <param name="args">Parametry pro načítání obsahu</param>
         /// <param name="onlyInfo"></param>
         /// <returns></returns>
         private static DfForm _LoadDfForm(DfTemplateLoadArgs args, bool onlyInfo)
         {
-            System.Xml.Linq.XElement xElement = _LoadRootXElement(args);
+            DfContext context = new DfContext(args, onlyInfo);
+            XElement xElement = _LoadRootXElement(context);
             if (xElement is null) return null;
 
             var startTime = DxComponent.LogTimeCurrent;
-            var dfForm = _FillAreaDfForm(xElement, null, args, onlyInfo);
+            var dfForm = _FillAreaDfForm(xElement, null, context);
             if (args.LogTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Load '{(onlyInfo ? "DfInfo" : "DfForm")}' from 'XDocument': {DxComponent.LogTokenTimeMicrosec}", startTime);
 
             return dfForm;
         }
         /// <summary>
-        /// Z dodaných podkladů, definujících šablonu (<paramref name="args"/>), načte a vrátí Root element <see cref="System.Xml.Linq.XElement"/>.
+        /// Z dodaných podkladů, definujících šablonu (<paramref name="args"/>), načte a vrátí Root element <see cref="XElement"/>.
         /// </summary>
-        /// <param name="args"></param>
+        /// <param name="context">Průběžná data pro načítání obsahu</param>
         /// <returns></returns>
-        private static System.Xml.Linq.XElement _LoadRootXElement(DfTemplateLoadArgs args)
+        private static XElement _LoadRootXElement(DfContext context)
         {
+            var args = context.LoadArgs;
+
             // Pokud není zadáno nic, co by určilo šablonu:
             if (args.TemplateDocument is null && String.IsNullOrEmpty(args.TemplateContent) && String.IsNullOrEmpty(args.TemplateFileName))
             {
-                args.AddError($"Pro načtení formuláře nejsou předaná žádná data (DfTemplateArgs: TemplateFileName, TemplateContent, TemplateDocument jsou prázdné).");
+                context.AddError($"Pro načtení formuláře nejsou předaná žádná data (DfTemplateArgs: TemplateFileName, TemplateContent, TemplateDocument jsou prázdné).");
                 return null;
             }
 
@@ -309,7 +313,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {   // Načteme soubor, pokud existuje:
                 if (!System.IO.File.Exists(args.TemplateFileName)) 
                 {
-                    args.AddError($"Pro načtení formuláře je dodán název souboru '{args.TemplateFileName}', ten ale neexistuje.");
+                    context.AddError($"Pro načtení formuláře je dodán název souboru '{args.TemplateFileName}', ten ale neexistuje.");
                     return null;
                 }
                 var startTime = DxComponent.LogTimeCurrent;
@@ -321,7 +325,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (args.TemplateDocument is null && !String.IsNullOrEmpty(args.TemplateContent))
             {
                 var startTime = DxComponent.LogTimeCurrent;
-                args.TemplateDocument = System.Xml.Linq.XDocument.Parse(args.TemplateContent);
+                args.TemplateDocument = XDocument.Parse(args.TemplateContent);
                 if (args.LogTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Parse 'XDocument' from 'Content' ({args.TemplateContent.Length} B):': {DxComponent.LogTokenTimeMicrosec}", startTime);
             }
 
@@ -332,10 +336,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
         /// <param name="dfForm"></param>
-        /// <param name="args"></param>
-        /// <param name="onlyInfo"></param>
+        /// <param name="context">Průběžná data pro načítání obsahu</param>
         /// <returns></returns>
-        private static DfForm _FillAreaDfForm(System.Xml.Linq.XElement xElement, DfForm dfForm, DfTemplateLoadArgs args, bool onlyInfo)
+        private static DfForm _FillAreaDfForm(XElement xElement, DfForm dfForm, DfContext context)
         {
             if (xElement is null) return null;
             if (dfForm is null) dfForm = new DfForm();
@@ -343,25 +346,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Specifické Atributy:
             dfForm.XmlNamespace = _ReadAttributeString(xElement, "xmlns", null);
             dfForm.FormatVersion = _ReadAttributeEnum(xElement, "FormatVersion", FormatVersionType.Default, t => "Version" + t);
-            args.Form = dfForm;
-
-            // Rychlá odbočka?
-            if (onlyInfo) return dfForm;
+            context.Form = dfForm;
+           
+            // Rychlá odbočka, pokud nám stačí jen Namespace a FormatVersion?
+            if (context.OnlyInfo) return dfForm;
 
             // FileName (a Name, pokud není explicitně načteno) podle jména souboru:
-            dfForm.FileName = args.TemplateFileName;
-            if (dfForm.Name is null && !String.IsNullOrEmpty(args.TemplateFileName)) dfForm.Name = System.IO.Path.GetFileNameWithoutExtension(args.TemplateFileName ?? "");
+            dfForm.FileName = context.LoadArgs.TemplateFileName;
+            if (dfForm.Name is null && !String.IsNullOrEmpty(context.LoadArgs.TemplateFileName)) dfForm.Name = System.IO.Path.GetFileNameWithoutExtension(context.LoadArgs.TemplateFileName ?? "");
 
             switch (dfForm.FormatVersion)
             {
                 case FormatVersionType.Version1:
                 case FormatVersionType.Version2:
                 case FormatVersionType.Version3:
-                    return _FillAreaDfFormV1(xElement, dfForm, args);
+                    return _FillAreaDfFormIG(xElement, dfForm, context);
                 case FormatVersionType.Version4:
                 case FormatVersionType.Default:
                 default:
-                    return _FillAreaDfFormV4(xElement, dfForm, args);
+                    return _FillAreaDfFormDX(xElement, dfForm, context);
             }
         }
         /// <summary>
@@ -370,12 +373,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
         /// <param name="dfForm"></param>
-        /// <param name="args"></param>
+        /// <param name="context">Průběžná data pro načítání obsahu</param>
         /// <returns></returns>
-        private static DfForm _FillAreaDfFormV4(System.Xml.Linq.XElement xElement, DfForm dfForm, DfTemplateLoadArgs args)
+        private static DfForm _FillAreaDfFormDX(XElement xElement, DfForm dfForm, DfContext context)
         {
             // Základní Atributy:
-            _FillBaseAttributes(xElement, dfForm, args);
+            _FillBaseAttributes(xElement, dfForm, context);
 
             // Atributy třídy DfForm:
             dfForm.MasterWidth = _ReadAttributeInt32N(xElement, "MasterWidth");
@@ -399,7 +402,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 string sourceInfo = $"Formulář '{dfForm.Name}'";
                 foreach (var xContainer in xContainers)
                 {
-                    var container = _CreateArea(xContainer, sourceInfo, args, "page", "panel", "nestedpanel");
+                    var container = _CreateArea(xContainer, sourceInfo, context, "page", "panel", "nestedpanel");
                     if (container != null)
                     {
                         if (dfForm.Pages is null) dfForm.Pages = new List<DfPage>();
@@ -437,31 +440,31 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající kontejner (page, panel, nestedpanel, group, nestedgroup), včetně jeho obsahu a child prvků.
         /// Výstupem je tedy buď <see cref="DfPage"/> nebo <see cref="DfPanel"/> (nebo null).
-        /// Pokud je výstupem null, pak informace o chybě je již zanesena do <paramref name="args"/>, kam se uvádí i zdroj = <paramref name="sourceInfo"/>.
+        /// Pokud je výstupem null, pak informace o chybě je již zanesena do <paramref name="context"/>, kam se uvádí i zdroj = <paramref name="sourceInfo"/>.
         /// </summary>
         /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
         /// <param name="sourceInfo">Informace o zdrojovém místě, do chybové informace. Typicky: "Formulář 'Jméno'" nebo "Stránka 'Name01'".</param>
-        /// <param name="args">Průběžná data pro načítání obsahu</param>
+        /// <param name="context">Průběžná data pro načítání obsahu</param>
         /// <param name="validNames">Očekávaná validní jména elementů. Pokud je zadáno, a je detekován jiný než daný element, vrátí se null.</param>
-        private static DfBaseArea _CreateArea(System.Xml.Linq.XElement xElement, string sourceInfo, DfTemplateLoadArgs args, params string[] validNames)
+        private static DfBaseArea _CreateArea(XElement xElement, string sourceInfo, DfContext context, params string[] validNames)
         {
             string elementName = _GetValidElementName(xElement);               // page, panel, nestedpanel, group, nestedgroup
             if (String.IsNullOrEmpty(elementName)) return null;                // Nezadáno (?)
             // Pokud je dodán seznam validních jmen elementů (přinejmenším 1 prvek), ale aktuální element neodpovídá žádnému povolenému jménu, pak skončím:
             if (validNames != null && validNames.Length > 0 && !validNames.Any(v => String.Equals(v, elementName, StringComparison.OrdinalIgnoreCase)))
             {
-                args.AddError($"{sourceInfo} obsahuje prvek '{elementName}', který není přípustný.");
+                context.AddError($"{sourceInfo} obsahuje prvek '{elementName}', který není přípustný.");
                 return null;
             }
             switch (elementName)
             {
-                case "page": return _FillAreaPage(xElement, null, args);
-                case "panel": return _FillAreaPanel(xElement, null, args);
-                case "nestedpanel": return _FillAreaNestedPanel(xElement, null, args);
-                case "group": return _FillAreaGroup(xElement, null, args);
-                case "nestedgroup": return _FillAreaNestedGroup(xElement, null, args);
+                case "page": return _FillAreaPage(xElement, null, context);
+                case "panel": return _FillAreaPanel(xElement, null, context);
+                case "nestedpanel": return _FillAreaNestedPanel(xElement, null, context);
+                case "group": return _FillAreaGroup(xElement, null, context);
+                case "nestedgroup": return _FillAreaNestedGroup(xElement, null, context);
             }
-            args.AddError($"{sourceInfo} obsahuje prvek '{elementName}', který zde není očekáváván.");
+            context.AddError($"{sourceInfo} obsahuje prvek '{elementName}', který zde není očekáváván.");
             return null;
         }
         /// <summary>
@@ -469,17 +472,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
         /// <param name="dfPage"></param>
-        /// <param name="args"></param>
+        /// <param name="context">Průběžná data pro načítání obsahu</param>
         /// <returns></returns>
-        private static DfPage _FillAreaPage(System.Xml.Linq.XElement xElement, DfPage dfPage, DfTemplateLoadArgs args)
+        private static DfPage _FillAreaPage(XElement xElement, DfPage dfPage, DfContext context)
         {
             // Výsledná instance:
             if (dfPage is null) dfPage = new DfPage();
 
             // Atributy:
-            _FillBaseAttributes(xElement, dfPage, args);
+            _FillBaseAttributes(xElement, dfPage, context);
             dfPage.IconName = _ReadAttributeString(xElement, "IconName", null);
-            dfPage.Title = _ReadAttributeUserText(xElement, "Title", null, null, args);
+            dfPage.Title = _ReadAttributeUserText(xElement, "Title", null, null, context);
 
             // Elementy = panely a nested panely:
             var xPanels = xElement.Elements();
@@ -488,7 +491,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 string sourceInfo = $"Stránka '{dfPage.Name}'";
                 foreach (var xPanel in xPanels)
                 {
-                    var container = _CreateArea(xPanel, sourceInfo, args, "panel", "nestedpanel");
+                    var container = _CreateArea(xPanel, sourceInfo, context, "panel", "nestedpanel");
                     if (container != null && container is DfPanel panel)
                     {
                         if (dfPage.Panels is null) dfPage.Panels = new List<DfPanel>();
@@ -504,19 +507,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
         /// <param name="dfPanel"></param>
-        /// <param name="args"></param>
+        /// <param name="context">Průběžná data pro načítání obsahu</param>
         /// <returns></returns>
-        private static DfPanel _FillAreaPanel(System.Xml.Linq.XElement xElement, DfPanel dfPanel, DfTemplateLoadArgs args)
+        private static DfPanel _FillAreaPanel(XElement xElement, DfPanel dfPanel, DfContext context)
         {
             // Výsledná instance:
             if (dfPanel is null) dfPanel = new DfPanel();
 
             // Atributy:
-            _FillBaseAttributes(xElement, dfPanel, args);
+            _FillBaseAttributes(xElement, dfPanel, context);
             dfPanel.IsHeader = _ReadAttributeBoolN(xElement, "IsHeader");
             dfPanel.HeaderOnPages = _ReadAttributeString(xElement, "HeaderOnPages", null);
             dfPanel.IconName = _ReadAttributeString(xElement, "IconName", null);
-            dfPanel.Title = _ReadAttributeUserText(xElement, "Title", null, null, args);
+            dfPanel.Title = _ReadAttributeUserText(xElement, "Title", null, null, context);
             dfPanel.TitleStyle = _ReadAttributeEnumN<TitleStyleType>(xElement, "TitleStyle");
             dfPanel.TitleColorName = _ReadAttributeString(xElement, "TitleColorName", null);
             dfPanel.TitleColorLight = _ReadAttributeColorN(xElement, "TitleColorLight");
@@ -524,7 +527,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             dfPanel.CollapseState = _ReadAttributeEnumN<PanelCollapseState>(xElement, "CollapseState");
 
             // Elementy = Controly + Grupy:
-            _FillContainerChildElements(xElement, dfPanel, args);
+            _FillContainerChildElements(xElement, dfPanel, context);
 
             return dfPanel;
         }
@@ -533,22 +536,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
         /// <param name="dfPanelVoid"></param>
-        /// <param name="args"></param>
+        /// <param name="context">Průběžná data pro načítání obsahu</param>
         /// <returns></returns>
-        private static DfPanel _FillAreaNestedPanel(System.Xml.Linq.XElement xElement, DfPanel dfPanelVoid, DfTemplateLoadArgs args)
+        private static DfPanel _FillAreaNestedPanel(XElement xElement, DfPanel dfPanelVoid, DfContext context)
         {
             // Instance DfNestedPanel slouží k načtení definice z aktuálního formuláře, ale nejde o výslednou instanci:
             DfNestedPanel dfNestedPanel = new DfNestedPanel();
 
             // Atributy:
-            _FillBaseAttributes(xElement, dfNestedPanel, args);
+            _FillBaseAttributes(xElement, dfNestedPanel, context);
             dfNestedPanel.NestedTemplate = _ReadAttributeString(xElement, "NestedTemplate", null);
             dfNestedPanel.NestedPanelName = _ReadAttributeString(xElement, "NestedPanelName", null);
             dfNestedPanel.IsHeader = _ReadAttributeBoolN(xElement, "IsHeader");
             dfNestedPanel.HeaderOnPages = _ReadAttributeString(xElement, "HeaderOnPages", null);
 
             // Nested šablona:
-            if (!_TryLoadNestedTemplate(dfNestedPanel.NestedTemplate, args, out DfForm dfNestedForm, $"NestedPanel '{dfNestedPanel.Name}'")) return null;
+            if (!_TryLoadNestedTemplate(dfNestedPanel.NestedTemplate, context, out DfForm dfNestedForm, $"NestedPanel '{dfNestedPanel.Name}'")) return null;
 
             // Najde v načtené šabloně první panel DfPanel [kterýkoli nebo daného jména]:
             if (trySearchForPanel(dfNestedForm, dfNestedPanel.NestedPanelName, out DfPanel dfPanel))
@@ -563,7 +566,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
             else
             {
-                args.AddError($"Požadovaný NestedPanel '{dfNestedPanel.NestedPanelName}' nebyl v nested šabloně '{dfNestedPanel.NestedTemplate}' nalezen.");
+                context.AddError($"Požadovaný NestedPanel '{dfNestedPanel.NestedPanelName}' nebyl v nested šabloně '{dfNestedPanel.NestedTemplate}' nalezen.");
             }
             return dfPanel;
 
@@ -601,27 +604,27 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
         /// <param name="dfGroup"></param>
-        /// <param name="args"></param>
+        /// <param name="context">Průběžná data pro načítání obsahu</param>
         /// <returns></returns>
-        private static DfGroup _FillAreaGroup(System.Xml.Linq.XElement xElement, DfGroup dfGroup, DfTemplateLoadArgs args)
+        private static DfGroup _FillAreaGroup(XElement xElement, DfGroup dfGroup, DfContext context)
         {
             // Výsledná instance:
             if (dfGroup is null) dfGroup = new DfGroup();
 
             // Atributy:
-            _FillBaseAttributes(xElement, dfGroup, args);
+            _FillBaseAttributes(xElement, dfGroup, context);
             dfGroup.ColIndex = _ReadAttributeInt32N(xElement, "ColIndex");
             dfGroup.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
             dfGroup.RowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
             dfGroup.HPosition = _ReadAttributeEnumN<HPositionType>(xElement, "HPosition");
             dfGroup.VPosition = _ReadAttributeEnumN<VPositionType>(xElement, "VPosition");
             dfGroup.ExpandControl = _ReadAttributeEnumN<ExpandControlType>(xElement, "ExpandControl");
-            dfGroup.Label = _ReadAttributeUserText(xElement, "Label", null, null, args);
+            dfGroup.Label = _ReadAttributeUserText(xElement, "Label", null, null, context);
             dfGroup.LabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPosition", _FixLabelPosition);
             dfGroup.LabelWidth = _ReadAttributeInt32N(xElement, "LabelWidth");
 
             // Elementy = Controly + Panely:
-            _FillContainerChildElements(xElement, dfGroup, args);
+            _FillContainerChildElements(xElement, dfGroup, context);
 
             return dfGroup;
         }
@@ -630,15 +633,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
         /// <param name="dfGroupVoid"></param>
-        /// <param name="args"></param>
+        /// <param name="context">Průběžná data pro načítání obsahu</param>
         /// <returns></returns>
-        private static DfGroup _FillAreaNestedGroup(System.Xml.Linq.XElement xElement, DfGroup dfGroupVoid, DfTemplateLoadArgs args)
+        private static DfGroup _FillAreaNestedGroup(XElement xElement, DfGroup dfGroupVoid, DfContext context)
         {
             // Instance DfNestedGroup slouží k načtení definice z aktuálního formuláře, ale nejde o výslednou instanci:
             DfNestedGroup dfNestedGroup = new DfNestedGroup();
 
             // Atributy:
-            _FillBaseAttributes(xElement, dfNestedGroup, args);
+            _FillBaseAttributes(xElement, dfNestedGroup, context);
             dfNestedGroup.NestedTemplate = _ReadAttributeString(xElement, "NestedTemplate", null);
             dfNestedGroup.NestedGroupName = _ReadAttributeString(xElement, "NestedPanelName", null);
             dfNestedGroup.DesignBounds = _ReadAttributeBounds(xElement, null);
@@ -649,12 +652,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             dfNestedGroup.HPosition = _ReadAttributeEnumN<HPositionType>(xElement, "HPosition");
             dfNestedGroup.VPosition = _ReadAttributeEnumN<VPositionType>(xElement, "VPosition");
             dfNestedGroup.ExpandControl = _ReadAttributeEnumN<ExpandControlType>(xElement, "ExpandControl");
-            dfNestedGroup.Label = _ReadAttributeUserText(xElement, "Label", null, null, args);
+            dfNestedGroup.Label = _ReadAttributeUserText(xElement, "Label", null, null, context);
             dfNestedGroup.LabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPosition", _FixLabelPosition);
             dfNestedGroup.LabelWidth = _ReadAttributeInt32N(xElement, "LabelWidth");
 
             // Nested šablona:
-            if (!_TryLoadNestedTemplate(dfNestedGroup.NestedTemplate, args, out DfForm dfNestedForm, $"NestedGroup '{dfNestedGroup.Name}'")) return null;
+            if (!_TryLoadNestedTemplate(dfNestedGroup.NestedTemplate, context, out DfForm dfNestedForm, $"NestedGroup '{dfNestedGroup.Name}'")) return null;
 
             // Najde v načtené šabloně první panel DfPanel [kterýkoli nebo daného jména]:
             if (trySearchForGroup(dfNestedForm, dfNestedGroup.NestedGroupName, out DfGroup dfGroup))
@@ -679,7 +682,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
             else
             {
-                args.AddError($"Požadovaná NestedGroup '{dfNestedGroup.NestedGroupName}' nebyla v nested šabloně '{dfNestedGroup.NestedTemplate}' nalezena.");
+                context.AddError($"Požadovaná NestedGroup '{dfNestedGroup.NestedGroupName}' nebyla v nested šabloně '{dfNestedGroup.NestedTemplate}' nalezena.");
             }
             return dfGroup;
 
@@ -717,8 +720,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement">Element, z jehož Child elementů se mají načítat Child controly</param>
         /// <param name="control"></param>
-        /// <param name="args"></param>
-        private static void _FillContainerChildElements(System.Xml.Linq.XElement xElement, DfBaseContainer control, DfTemplateLoadArgs args)
+        /// <param name="context">Průběžná data pro načítání obsahu</param>
+        private static void _FillContainerChildElements(XElement xElement, DfBaseContainer control, DfContext context)
         {
             var xChilds = xElement.Elements();
             if (xChilds != null)
@@ -726,7 +729,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 string sourceInfo = $"Container {control.GetType().Name} '{control.Name}'";
                 foreach (var xChild in xChilds)
                 {
-                    var child = _CreateChildItem(xChild, sourceInfo, args);
+                    var child = _CreateChildItem(xChild, sourceInfo, context);
                     if (child != null && (child is DfBaseControl || child is DfGroup))
                     {   // Pouze Controly + Group
                         if (control.Childs is null) control.Childs = new List<DfBase>();
@@ -736,40 +739,39 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         /// <summary>
-        /// Metoda zajistí načtení instance <see cref="DfForm"/> pro danou <paramref name="dfNestedForm"/>, s pomocí loader v <paramref name="args"/>.
+        /// Metoda zajistí načtení instance <see cref="DfForm"/> pro danou <paramref name="dfNestedForm"/>, s pomocí loader v <paramref name="context"/>.
         /// </summary>
         /// <param name="nestedTemplate"></param>
-        /// <param name="args"></param>
+        /// <param name="context">Průběžná data pro načítání obsahu</param>
         /// <param name="dfNestedForm"></param>
         /// <param name="sourceInfo"></param>
         /// <returns></returns>
-        private static bool _TryLoadNestedTemplate(string nestedTemplate, DfTemplateLoadArgs args, out DfForm dfNestedForm, string sourceInfo)
+        private static bool _TryLoadNestedTemplate(string nestedTemplate, DfContext context, out DfForm dfNestedForm, string sourceInfo)
         {
             dfNestedForm = null;
 
             // Jméno nested šablony:
             if (String.IsNullOrEmpty(nestedTemplate))
             {
-                args.AddError($"{sourceInfo} nemá zadanou šablonu 'NestedTemplate'.");
+                context.AddError($"{sourceInfo} nemá zadanou šablonu 'NestedTemplate'.");
                 return false;
             }
 
             // Obsah nested panelu získám s pomocí dodaného loaderu :
-            if (args.InfoSource is null)
+            if (context.LoadArgs.InfoSource is null)
             {
-                args.AddError($"{sourceInfo} má zadanou šablonu 'NestedTemplate', ale není dodána metoda Loader, která by načetla její obsah. Není možno načíst obsah šablony.");
+                context.AddError($"{sourceInfo} má zadanou šablonu 'NestedTemplate', ale není dodána metoda Loader, která by načetla její obsah. Není možno načíst obsah šablony.");
                 return false;
             }
-            string nestedContent = args.InfoSource.NestedTemplateContentLoad(nestedTemplate);
+            string nestedContent = context.LoadArgs.InfoSource.NestedTemplateContentLoad(nestedTemplate);
             if (String.IsNullOrEmpty(nestedContent))
             {   // Prázdný obsah: pokud to loader vrátí, pak OK, je to legální cesta, jak zrušit Nested obsah:
-                args.AddError($"{sourceInfo} má zadanou šablonu 'NestedTemplate' = '{nestedTemplate}', ale její obsah nelze načíst.");
+                context.AddError($"{sourceInfo} má zadanou šablonu 'NestedTemplate' = '{nestedTemplate}', ale její obsah nelze načíst.");
                 return false;
             }
 
             // Ze stringu 'nestedContent' (obsahuje Nested šablonu) získám celou šablonu = nested DfForm:
-            // var xNestedDocument = System.Xml.Linq.XDocument.Parse(nestedContent);
-            var nestedArgs = args.CreateNestedArgs(null, nestedContent, null);
+            var nestedArgs = context.LoadArgs.CreateNestedArgs(null, nestedContent, null);
             dfNestedForm = _LoadDfForm(nestedArgs, false);
             return (dfNestedForm != null);
         }
@@ -781,143 +783,143 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající Item, včetně jeho obsahu.
         /// Může to být některý Control, anebo grupa (včetně NestedGroup). Nikoli Panel. Výstupem může být null.
-        /// Pokud je výstupem null, pak informace o chybě je již zanesena do <paramref name="args"/>, kam se uvádí i zdroj = <paramref name="sourceInfo"/>.
+        /// Pokud je výstupem null, pak informace o chybě je již zanesena do <paramref name="context"/>, kam se uvádí i zdroj = <paramref name="sourceInfo"/>.
         /// </summary>
         /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
         /// <param name="sourceInfo">Informace o zdrojovém místě, do chybové informace. Typicky: "Formulář 'Jméno'" nebo "Stránka 'Name01'".</param>
-        /// <param name="args">Průběžná data pro načítání obsahu</param>
+        /// <param name="context">Průběžná data pro načítání obsahu</param>
         /// <param name="validNames">Očekávaná validní jména elementů. Pokud je zadáno, a je detekován jiný než daný element, vrátí se null.</param>
         /// <returns></returns>
-        private static DfBase _CreateChildItem(System.Xml.Linq.XElement xElement, string sourceInfo, DfTemplateLoadArgs args, params string[] validNames)
+        private static DfBase _CreateChildItem(XElement xElement, string sourceInfo, DfContext context, params string[] validNames)
         {
             string elementName = _GetValidElementName(xElement);               // label, textbox, textbox_button, button, combobox, ...,   !page, panel, nestedpanel,
             if (String.IsNullOrEmpty(elementName)) return null;                // Nezadáno (?)
             // Pokud je dodán seznam validních jmen elementů (přinejmenším 1 prvek), ale aktuální element neodpovídá žádnému povolenému jménu, pak skončím:
             if (validNames != null && validNames.Length > 0 && !validNames.Any(v => String.Equals(v, elementName, StringComparison.OrdinalIgnoreCase)))
             {
-                args.AddError($"{sourceInfo} obsahuje prvek '{elementName}', který není přípustný.");
+                context.AddError($"{sourceInfo} obsahuje prvek '{elementName}', který není přípustný.");
                 return null;
             }
             switch (elementName)
             {
                 // Controly:
-                case "placeholder":  return _FillControlPlaceHolder(xElement, new DfPlaceHolder(), args);
-                case "hline": return _FillControlHLine(xElement, new DfHLine(), args);
-                case "vline": return _FillControlVLine(xElement, new DfVLine(), args);
-                case "label": return _FillControlLabel(xElement, new DfLabel(), args);
-                case "title": return _FillControlTitle(xElement, new DfTitle(), args);
-                case "checkbox": return _FillControlCheckBox(xElement, new DfCheckBox(), args);
-                case "button": return _FillControlButton(xElement, new DfButton(), args);
-                case "dropdownbutton": return _FillControlDropDownButton(xElement, new DfDropDownButton(), args);
-                case "textbox": return _FillControlTextBox(xElement, new DfTextBox(), args);
-                case "editbox": return _FillControlEditBox(xElement, new DfEditBox(), args);
-                case "textboxbutton": return _FillControlTextBoxButton(xElement, new DfTextBoxButton(), args);
-                case "combobox": return _FillControlComboBox(xElement, new DfComboBox(), args);
-                case "image": return _FillControlImage(xElement, new DfImage(), args);
-                case "stepprogress": return _FillControlStepProgress(xElement, new DfStepProgress(), args);
+                case "placeholder":  return _FillControlPlaceHolder(xElement, new DfPlaceHolder(), context);
+                case "hline": return _FillControlHLine(xElement, new DfHLine(), context);
+                case "vline": return _FillControlVLine(xElement, new DfVLine(), context);
+                case "label": return _FillControlLabel(xElement, new DfLabel(), context);
+                case "title": return _FillControlTitle(xElement, new DfTitle(), context);
+                case "checkbox": return _FillControlCheckBox(xElement, new DfCheckBox(), context);
+                case "button": return _FillControlButton(xElement, new DfButton(), context);
+                case "dropdownbutton": return _FillControlDropDownButton(xElement, new DfDropDownButton(), context);
+                case "textbox": return _FillControlTextBox(xElement, new DfTextBox(), context);
+                case "editbox": return _FillControlEditBox(xElement, new DfEditBox(), context);
+                case "textboxbutton": return _FillControlTextBoxButton(xElement, new DfTextBoxButton(), context);
+                case "combobox": return _FillControlComboBox(xElement, new DfComboBox(), context);
+                case "image": return _FillControlImage(xElement, new DfImage(), context);
+                case "stepprogress": return _FillControlStepProgress(xElement, new DfStepProgress(), context);
 
                 // SubContainery = grupy:
-                case "group": return _FillAreaGroup(xElement, null, args);
-                case "nestedgroup": return _FillAreaNestedGroup(xElement, null, args);
+                case "group": return _FillAreaGroup(xElement, null, context);
+                case "nestedgroup": return _FillAreaNestedGroup(xElement, null, context);
             }
-            args.AddError($"{sourceInfo} obsahuje prvek '{elementName}', který zde není očekáváván.");
+            context.AddError($"{sourceInfo} obsahuje prvek '{elementName}', který zde není očekáváván.");
             return null;
         }
-        private static DfBaseControl _FillControlPlaceHolder(System.Xml.Linq.XElement xElement, DfPlaceHolder control, DfTemplateLoadArgs args)
+        private static DfBaseControl _FillControlPlaceHolder(XElement xElement, DfPlaceHolder control, DfContext context)
         {
-            _FillBaseAttributes(xElement, control, args);
+            _FillBaseAttributes(xElement, control, context);
             return control;
         }
-        private static DfHLine _FillControlHLine(System.Xml.Linq.XElement xElement, DfHLine control, DfTemplateLoadArgs args)
+        private static DfHLine _FillControlHLine(XElement xElement, DfHLine control, DfContext context)
         {
-            _FillBaseAttributes(xElement, control, args);
+            _FillBaseAttributes(xElement, control, context);
             return control;
         }
-        private static DfVLine _FillControlVLine(System.Xml.Linq.XElement xElement, DfVLine control, DfTemplateLoadArgs args)
+        private static DfVLine _FillControlVLine(XElement xElement, DfVLine control, DfContext context)
         {
-            _FillBaseAttributes(xElement, control, args);
+            _FillBaseAttributes(xElement, control, context);
             return control;
         }
-        private static DfBaseControl _FillControlLabel(System.Xml.Linq.XElement xElement, DfLabel control, DfTemplateLoadArgs args)
+        private static DfBaseControl _FillControlLabel(XElement xElement, DfLabel control, DfContext context)
         {
-            _FillBaseAttributes(xElement, control, args);
+            _FillBaseAttributes(xElement, control, context);
             control.Text = _ReadAttributeString(xElement, "Text", null);
             control.Alignment = _ReadAttributeEnumN<ContentAlignmentType>(xElement, "Alignment");
             return control;
         }
-        private static DfBaseControl _FillControlTitle(System.Xml.Linq.XElement xElement, DfTitle control, DfTemplateLoadArgs args)
+        private static DfBaseControl _FillControlTitle(XElement xElement, DfTitle control, DfContext context)
         {
-            _FillBaseAttributes(xElement, control, args);
+            _FillBaseAttributes(xElement, control, context);
             control.IconName = _ReadAttributeString(xElement, "IconName", null);
             control.Title = _ReadAttributeString(xElement, "Title", null);
             control.Style = _ReadAttributeEnumN<TitleStyleType>(xElement, "Style");
             control.Alignment = _ReadAttributeEnumN<ContentAlignmentType>(xElement, "Alignment");
             return control;
         }
-        private static DfBaseControl _FillControlCheckBox(System.Xml.Linq.XElement xElement, DfCheckBox control, DfTemplateLoadArgs args)
+        private static DfBaseControl _FillControlCheckBox(XElement xElement, DfCheckBox control, DfContext context)
         {
-            _FillBaseAttributes(xElement, control, args);
+            _FillBaseAttributes(xElement, control, context);
             control.Style = _ReadAttributeEnumN<CheckBoxStyleType>(xElement, "Style");
             return control;
         }
-        private static DfBaseControl _FillControlButton(System.Xml.Linq.XElement xElement, DfButton control, DfTemplateLoadArgs args)
+        private static DfBaseControl _FillControlButton(XElement xElement, DfButton control, DfContext context)
         {
-            _FillBaseAttributes(xElement, control, args);
+            _FillBaseAttributes(xElement, control, context);
             control.ActionType = _ReadAttributeEnumN<ButtonActionType>(xElement, "ActionType");
             control.ActionData = _ReadAttributeString(xElement, "ActionData", null);
             control.HotKey = _ReadAttributeString(xElement, "HotKey", null);
             control.IconPosition = _ReadAttributeEnumN<IconPositionType>(xElement, "IconPosition");
             return control;
         }
-        private static DfBaseControl _FillControlDropDownButton(System.Xml.Linq.XElement xElement, DfDropDownButton control, DfTemplateLoadArgs args)
+        private static DfBaseControl _FillControlDropDownButton(XElement xElement, DfDropDownButton control, DfContext context)
         {
-            _FillControlButton(xElement, control, args);
-            control.DropDownButtons = _LoadSubButtons(xElement, "dropDownButton", args);
+            _FillControlButton(xElement, control, context);
+            control.DropDownButtons = _LoadSubButtons(xElement, "dropDownButton", context);
             return control;
         }
-        private static DfBaseControl _FillControlTextBox(System.Xml.Linq.XElement xElement, DfTextBox control, DfTemplateLoadArgs args)
+        private static DfBaseControl _FillControlTextBox(XElement xElement, DfTextBox control, DfContext context)
         {
-            _FillBaseAttributes(xElement, control, args);
+            _FillBaseAttributes(xElement, control, context);
             control.EditMask = _ReadAttributeString(xElement, "EditMask", null);
             control.Alignment = _ReadAttributeEnumN<ContentAlignmentType>(xElement, "Alignment");
             return control;
         }
-        private static DfBaseControl _FillControlEditBox(System.Xml.Linq.XElement xElement, DfEditBox control, DfTemplateLoadArgs args)
+        private static DfBaseControl _FillControlEditBox(XElement xElement, DfEditBox control, DfContext context)
         {
-            _FillBaseAttributes(xElement, control, args);
+            _FillBaseAttributes(xElement, control, context);
             return control;
         }
-        private static DfBaseControl _FillControlTextBoxButton(System.Xml.Linq.XElement xElement, DfTextBoxButton control, DfTemplateLoadArgs args)
+        private static DfBaseControl _FillControlTextBoxButton(XElement xElement, DfTextBoxButton control, DfContext context)
         {
-            _FillControlTextBox(xElement, control, args);
+            _FillControlTextBox(xElement, control, context);
             control.ButtonsVisibility = _ReadAttributeEnumN<ButtonsVisibilityType>(xElement, "ButtonsVisibility");
-            control.LeftButtons = _LoadSubButtons(xElement, "leftButton", args);
-            control.RightButtons = _LoadSubButtons(xElement, "rightButton", args);
+            control.LeftButtons = _LoadSubButtons(xElement, "leftButton", context);
+            control.RightButtons = _LoadSubButtons(xElement, "rightButton", context);
             return control;
         }
-        private static DfBaseControl _FillControlComboBox(System.Xml.Linq.XElement xElement, DfComboBox control, DfTemplateLoadArgs args)
+        private static DfBaseControl _FillControlComboBox(XElement xElement, DfComboBox control, DfContext context)
         {
-            _FillBaseAttributes(xElement, control, args);
+            _FillBaseAttributes(xElement, control, context);
             control.EditStyleName = _ReadAttributeString(xElement, "EditStyleName", null);
             control.Style = _ReadAttributeEnumN<ComboBoxStyleType>(xElement, "Style");
-            control.ComboItems = _LoadSubTextItems(xElement, "comboItem", args);
+            control.ComboItems = _LoadSubTextItems(xElement, "comboItem", context);
             return control;
         }
-        private static DfBaseControl _FillControlImage(System.Xml.Linq.XElement xElement, DfImage control, DfTemplateLoadArgs args)
+        private static DfBaseControl _FillControlImage(XElement xElement, DfImage control, DfContext context)
         {
-            _FillBaseAttributes(xElement, control, args);
+            _FillBaseAttributes(xElement, control, context);
             control.ImageName = _ReadAttributeString(xElement, "ImageName", null);
             control.ImageData = _ReadAttributeBytes(xElement, "ImageData", null);
             return control;
         }
-        private static DfBaseControl _FillControlStepProgress(System.Xml.Linq.XElement xElement, DfStepProgress control, DfTemplateLoadArgs args)
+        private static DfBaseControl _FillControlStepProgress(XElement xElement, DfStepProgress control, DfContext context)
         {
-            _FillBaseAttributes(xElement, control, args);
+            _FillBaseAttributes(xElement, control, context);
             control.EditStyleName = _ReadAttributeString(xElement, "EditStyleName", null);
 
             return control;
         }
-        private static List<DfSubButton> _LoadSubButtons(System.Xml.Linq.XElement xElement, string loadElementName, DfTemplateLoadArgs args)
+        private static List<DfSubButton> _LoadSubButtons(XElement xElement, string loadElementName, DfContext context)
         {
             List<DfSubButton> subButtons = null;
 
@@ -929,7 +931,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     string elementName = xItem?.Name.LocalName;
                     if (String.Equals(elementName, loadElementName, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        var subButton = _FillControlSubButton(xItem, new DfSubButton(), args);
+                        var subButton = _FillControlSubButton(xItem, new DfSubButton(), context);
                         if (subButton != null)
                         {
                             if (subButtons is null)
@@ -942,7 +944,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             return subButtons;
         }
-        private static List<DfSubTextItem> _LoadSubTextItems(System.Xml.Linq.XElement xElement, string loadElementName, DfTemplateLoadArgs args)
+        private static List<DfSubTextItem> _LoadSubTextItems(XElement xElement, string loadElementName, DfContext context)
         {
             List<DfSubTextItem> subTextItems = null;
 
@@ -954,7 +956,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     string elementName = xItem?.Name.LocalName;
                     if (String.Equals(elementName, loadElementName, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        var subTextItem = _FillControlSubTextItem(xItem, new DfSubTextItem(), args);
+                        var subTextItem = _FillControlSubTextItem(xItem, new DfSubTextItem(), context);
                         if (subTextItem != null)
                         {
                             if (subTextItems is null)
@@ -967,49 +969,52 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             return subTextItems;
         }
-        private static DfSubButton _FillControlSubButton(System.Xml.Linq.XElement xElement, DfSubButton control, DfTemplateLoadArgs args)
+        private static DfSubButton _FillControlSubButton(XElement xElement, DfSubButton control, DfContext context)
         {
-            _FillControlSubTextItem(xElement, control, args);
+            _FillControlSubTextItem(xElement, control, context);
             control.ActionType = _ReadAttributeEnumN<SubButtonActionType>(xElement, "ActionType");
             control.ActionData = _ReadAttributeString(xElement, "ActionData", null);
             return control;
         }
-        private static DfSubTextItem _FillControlSubTextItem(System.Xml.Linq.XElement xElement, DfSubTextItem control, DfTemplateLoadArgs args)
+        private static DfSubTextItem _FillControlSubTextItem(XElement xElement, DfSubTextItem control, DfContext context)
         {
-            _FillBaseAttributes(xElement, control, args);
+            _FillBaseAttributes(xElement, control, context);
             control.Text = _ReadAttributeString(xElement, "Text", null);
             control.IconName = _ReadAttributeString(xElement, "IconName", null);
             return control;
         }
         #endregion
-        #region Načítání a konverze starších verzí formátu V1 až V3
+        #region Načítání a konverze starších verzí formátu Infragistic
         /// <summary>
         /// Z dodaného elementu <paramref name="xElement"/> načte a vrátí odpovídající <see cref="DfForm"/>.
-        /// Specifická větev pro data verze 4
+        /// Specifická větev pro data verze 1-3 = IG = Infragistic
         /// </summary>
         /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
         /// <param name="dfForm"></param>
-        /// <param name="args"></param>
+        /// <param name="context">Průběžná data pro načítání obsahu</param>
         /// <returns></returns>
-        private static DfForm _FillAreaDfFormV1(System.Xml.Linq.XElement xElement, DfForm dfForm, DfTemplateLoadArgs args)
+        private static DfForm _FillAreaDfFormIG(XElement xElement, DfForm dfForm, DfContext context)
         {
-            // Atributy třídy DfForm:
-            dfForm.MasterWidth = _ReadAttributeInt32N(xElement, "MasterWidth");
-            dfForm.MasterHeight = _ReadAttributeInt32N(xElement, "MasterHeight");
+            // Atributy deklarované pro DataForm starší verze:
             dfForm.TotalWidth = _ReadAttributeInt32N(xElement, "TotalWidth");
             dfForm.TotalHeight = _ReadAttributeInt32N(xElement, "TotalHeight");
+            dfForm.MasterWidth = _ReadAttributeInt32N(xElement, "MasterWidth");
+            dfForm.MasterHeight = _ReadAttributeInt32N(xElement, "MasterHeight");
+            dfForm.AutoLabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPos", _ConvertIGLabelPos);
+            dfForm.ColumnsCount = _ReadAttributeInt32N(xElement, "TableColumns");
+            dfForm.AddUda = _ReadAttributeBoolN(xElement, "AddUda");
+            dfForm.UdaLabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "AutoUdaLablePos", _ConvertIGLabelPos);                 // textový překlep ve jménu atributu 'AutoUdaLablePos' je přítomen v DataForm.Frm.xsd
             dfForm.DataSource = _ReadAttributeString(xElement, "DataSource", null);
             dfForm.Messages = _ReadAttributeString(xElement, "Messages", null);
             dfForm.UseNorisClass = _ReadAttributeInt32N(xElement, "UseNorisClass");
-            dfForm.AddUda = _ReadAttributeBoolN(xElement, "AddUda");
-            dfForm.UdaLabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "UdaLabelPosition", _FixLabelPosition);
             dfForm.ContextMenu = _ReadAttributeBoolN(xElement, "ContextMenu");
 
-            // Implicit Page: do ní se vkládají Panely, pokud jsou zadány přímo do Formu
-            DfPage implicitPage = null;
-
-            // Current Page: naposledy přidaná Page, do které se přidávají detekované Panely, dokud nebude nalezena další Page:
+            // Načítání starší verze běží tak, že se načte <tab>, rozpozná se, co to je (Page / Panel / Group / Line) a následně se obsah tabu přidá do odpovídající struktury.
+            // Obsah jednoho <tab>u je vždy vložen do samostatné grupy.
+            // Panel má vždy jeden column, v tomto columnu je jedna celá grupa uložena jako jedna buňka.
+            // Grupa tedy má strukturu (počet sloupců) definovaný pro její <tab>
             DfPage currentPage = null;
+            DfPanel currentPanel = null;
 
             // Elementy = jednotlivé Taby, budeme je teprve klasifikovat:
             var xTabs = xElement.Elements();
@@ -1018,145 +1023,358 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 string sourceInfo = $"Formulář '{dfForm.Name}'";
                 foreach (var xTab in xTabs)
                 {
-                    var tabType = getTabType(xTab);
-                    qqq;
-                    // vhodně zařadíme do struktury:
+                    string tabName = _ReadAttributeString(xTab, "Name", null);
+                    var tabType = getTabType(xTab, out var tabTitle, out var nestedTemplate);      // Co daný <tab> reprezentuje:   Záložku?   Titulkový panel?   Beztitulkovou grupu?   Vodorovnou linku?   Nic?
+                    if (tabType == FormTabIGType.None) continue;
 
-                    var container = _CreateAreaV1(xTab, sourceInfo, args, "tab", "nestedtab");
-                    if (container != null)
+                    DfPanel targetPanel = getTargetPanel(tabType, tabName, tabTitle);              // Připrav mi panel, do kterého přidáme nový prvek (buď grupu pro prvky, anebo jen HLine)
+                    if (targetPanel is null) continue;
+
+                    switch (tabType)
                     {
-                        if (dfForm.Pages is null) dfForm.Pages = new List<DfPage>();
-                        switch (container)
-                        {
-                            case DfPage page:
-                                dfForm.Pages.Add(page);
-                                currentPage = page;
-                                break;
-                            case DfPanel panel:
-                                // Pokud je v rámci DfForm (=template) zadán přímo Panel (pro jednoduchost to umožňujeme), 
-                                //  pak jej vložím do implicitPage = ta bude první v seznamu stránek:
-                                if (implicitPage is null) implicitPage = createImplicitPage();
-                                implicitPage.Panels.Add(panel);
-                                break;
-                        }
+                        case FormTabIGType.NestedTemplate:
+                            _CreateNestedTemplateFromTabIG(xTab, nestedTemplate, dfForm, ref currentPage, ref currentPanel);
+                            break;
+                        case FormTabIGType.Page:
+                        case FormTabIGType.Panel:
+                        case FormTabIGType.Group:
+                            var group = _CreateGroupFromTabIG(xTab, sourceInfo, context);
+                            if (group != null) targetPanel.Childs.Add(group);
+                            break;
+                        case FormTabIGType.HLine:
+                            targetPanel.Childs.Add(new DfHLine() { DesignBounds = new DesignBounds() { Height = 6 } });
+                            break;
                     }
                 }
             }
             return dfForm;
 
-            // Určí, jaký druh Tabu je v XElementu
-            FormTabType getTabType(XElement xTab)
+            // Určí, jaký druh Tabu je v XElementu (Nested / Page / Panel / Grupa / Line):
+            FormTabIGType getTabType(XElement xTab, out string tabTitle, out string nestedTemplate)
             {
+                tabTitle = null;
+                nestedTemplate = null;
+
+                // Pokud to není element <tab>, pak nebudu načítat nic:
+                string elementName = _GetValidElementName(xTab);                              // tab nebo něco jiného?
+                if (elementName != "tab") return FormTabIGType.None;
+
                 // Načteme pár identifikačních informací, abychom poznali, jaký druh TABu máme zpracovat:
-                string tabPageLabel = _ReadAttributeString(xTab, "TabPageLabel", null);  // Titulek pro DfPage anebo DfPanel
-                string renderAs = _ReadAttributeString(xTab, "RenderAs", null);          // Pokud je tady "DesignTabWithLabel", pak je to DfPanel (máme titulek)
-                bool isEmptyTab = !xTab.HasElements && !xTab.HasAttributes;              // Jde o element   <tab/>   tedy vodorovná oddělovací linka, nejspíš za nějakým datovým Tabem
+                nestedTemplate = _ReadAttributeString(xTab, "NestedTemplate", null);          // Název Nested šablony
+                if (!String.IsNullOrEmpty(nestedTemplate)) return FormTabIGType.NestedTemplate;
 
-                if (isEmptyTab) return FormTabType.HLine;                                // tab bez dalšího obsahu = čára
+                bool isEmptyTab = !xTab.HasElements && !xTab.HasAttributes;                   // Jde o element   <tab/>   tedy vodorovná oddělovací linka, nejspíš za nějakým datovým Tabem
+                if (isEmptyTab) return FormTabIGType.HLine;                                     // tab bez dalšího obsahu = čára
 
+                string tabPageLabel = _ReadAttributeString(xTab, "TabPageLabel", null);       // Titulek pro DfPage anebo DfPanel
                 if (!String.IsNullOrEmpty(tabPageLabel))
                 {
-                    if (String.Equals(renderAs, "DesignTabWithLabel", StringComparison.OrdinalIgnoreCase)) 
-                        return FormTabType.Panel;                                        // "DesignTabWithLabel" => Panel
-                    return FormTabType.Page;                                             // Začátek nové záložky = Page
+                    tabTitle = tabPageLabel;
+                    string renderAs = _ReadAttributeString(xTab, "RenderAs", null);           // Pokud je tady "DesignTabWithLabel", pak je to DfPanel (máme titulek). Hodnoty:    "TabPage" / "DesignTab" / "DesignTabWithLabel"
+                    if (!String.IsNullOrEmpty(renderAs))
+                    {
+                        string key = renderAs.Trim().ToLower();
+                        switch (key)
+                        {
+                            case "tabpage": return FormTabIGType.Page;                          // Začátek nové záložky = Page
+                            case "designtab": return FormTabIGType.Group;                       // "DesignTab" => grupa bez titulku - stejně jako bez tohoto atributu
+                            case "designtabwithlabel": return FormTabIGType.Panel;              // "DesignTabWithLabel" => Panel (má titulek)
+                        }
+                    }
+                    return FormTabIGType.Page;                                                  // Bez zadání RenderAs a se zadaným TabPageLabel => Začátek nové záložky = Page
                 }
 
-                return FormTabType.Group;                                                // tab bez titulku = grupa
+                return FormTabIGType.Group;                                                     // tab nikoli Nested, s obsahem, ale bez titulku = grupa
+            }
+            // Najde / vytvoří a vrátí panel, do kterého bude přidána grupa pro nový Tab
+            DfPanel getTargetPanel(FormTabIGType type, string tabName, string tabTitle)
+            {
+                switch (type)
+                {
+                    case FormTabIGType.Page:
+                        currentPage = createPage(tabName, tabTitle);
+                        currentPanel = createPanel(tabName, null, TitleStyleType.NoTitle);
+                        return currentPanel;
+                    case FormTabIGType.Panel:
+                        if (currentPage is null) currentPage = createPage(null, tabTitle);
+                        currentPanel = createPanel(tabName, tabTitle, TitleStyleType.TextOnly);
+                        return currentPanel;
+                    case FormTabIGType.Group:
+                    case FormTabIGType.HLine:
+                        if (currentPage is null) currentPage = createPage(null, tabTitle);
+                        if (currentPanel is null) currentPanel = createPanel(null, null, TitleStyleType.NoTitle);
+                        return currentPanel;
+                }
+                return null;
+            }
+            // Vytvoří new instanci DfPage pro danou definici, přidá ji jako další stránku do dfForm.Pages a vrátí ji.
+            DfPage createPage(string pageName, string pageTitle)
+            {
+                if (String.IsNullOrEmpty(pageName)) pageName = $"AutoPageName{context.AutoPageNumber}";
+
+                var page = new DfPage
+                {
+                    Name = pageName,
+                    Title = pageTitle,
+                    Panels = new List<DfPanel>()
+                };
+
+                if (dfForm.Pages is null) dfForm.Pages = new List<DfPage>();
+                dfForm.Pages.Add(page);
+
+                return page;
+            }
+            // Vytvoří new instanci DfPanel pro danou definici, přidá ji jako další prvek do currentPage.Panels a vrátí jej.
+            DfPanel createPanel(string panelName, string panelTitle, TitleStyleType titleStyle)
+            {
+                if (String.IsNullOrEmpty(panelName)) panelName = $"AutoPanelName{context.AutoPanelNumber}";
+
+                var panel = new DfPanel()
+                {
+                    Name = panelName,
+                    Title = panelTitle,
+                    TitleStyle = titleStyle,
+                    ColumnsCount = 1,
+                    Childs = new List<DfBase>()
+                };
+
+                if (currentPage is null) currentPage = createPage(null, panelTitle);
+                currentPage.Panels.Add(panel);
+
+                return panel;
+            }
+        }
+        /// <summary>
+        /// Z dodaného elementu <paramref name="xElement"/> formátu V1-V3 (Infragistic) načte a vrátí odpovídající kontejner (tab), včetně jeho obsahu a child prvků.
+        /// Tato metoda není volaná pro NestedTab, tu řeší <see cref="_CreateNestedTemplateFromTabIG(XElement, string, DfForm, ref DfPage, ref DfPanel)"/>.
+        /// Výstupem je tedy <see cref="DfGroup"/> (nebo null).
+        /// Pokud je výstupem null, pak informace o chybě je již zanesena do <paramref name="context"/>, kam se uvádí i zdroj = <paramref name="sourceInfo"/>.
+        /// </summary>
+        /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
+        /// <param name="sourceInfo">Informace o zdrojovém místě, do chybové informace. Typicky: "Formulář 'Jméno'" nebo "Stránka 'Name01'".</param>
+        /// <param name="context">Průběžná data pro načítání obsahu</param>
+        private static DfGroup _CreateGroupFromTabIG(XElement xElement, string sourceInfo, DfContext context)
+        {
+            string groupName = _ReadAttributeString(xElement, "Name", null);
+            if (String.IsNullOrEmpty(groupName)) groupName = $"AutoGroupName{context.AutoGroupNumber}";
+
+            var dfGroup = new DfGroup
+            {
+                Name = groupName,
+                Invisible = _ReadAttributeString(xElement, "Invisible", null),
+                ColumnsCount = _ReadAttributeInt32N(xElement, "TableColumns"),
+                AutoLabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPos", _ConvertIGLabelPos),
+                HPosition = _ReadAttributeEnumN<HPositionType>(xElement, "Align", _ConvertIGAlign),
+                IsUDA = _ReadAttributeBoolN(xElement, "UDA")
+            };
+
+            var width = _ReadAttributeInt32PN(xElement, "Width");
+            if (width.HasValue)
+                dfGroup.DesignBounds = new DesignBounds() { Width = width };
+
+
+            // ... a možná i další atributy z tabu do grupy zde?
+
+
+            // Specifika:
+            //  V novém formuláři je dědičnost některých hodnot Form => Page => Panel => Group;
+            //  Ve starém formuláři je dědičnost krátká: Form => Group (protože obsahuje pouze Template a pod tím Tab):
+            if (!dfGroup.ColumnsCount.HasValue) dfGroup.ColumnsCount = context.Form.ColumnsCount;
+
+            // childs v <tab> jsou výhradně <columns>
+            var xChilds = xElement.Elements();
+            if (xChilds != null)
+            {
+                sourceInfo += $"; Tab '{dfGroup.Name}'";
+                foreach (var xChild in xChilds)
+                {
+                    var child = _CreateChildItemFromColumnIG(xChild, sourceInfo, context);
+                    if (child != null && (child is DfBaseControl || child is DfGroup))
+                    {   // Pouze Controly + Group
+                        if (dfGroup.Childs is null) dfGroup.Childs = new List<DfBase>();
+                        dfGroup.Childs.Add(child);
+                    }
+                }
             }
 
-            // Vytvoří new instanci DfPage jako "Implicitní stránku", přidá ji jako stránku [0] do control.Pages a vrátí ji
-            DfPage createImplicitPage()
+            return dfGroup;
+
+
+        }
+        /// <summary>
+        /// Vytvoří a vrátí DfControl podle dat v dodaném elementu typu 'column' formátu V1-V3 (Infragistic) 
+        /// </summary>
+        /// <param name="xElement"></param>
+        /// <param name="sourceInfo"></param>
+        /// <param name="context">Průběžná data pro načítání obsahu</param>
+        private static DfBase _CreateChildItemFromColumnIG(XElement xElement, string sourceInfo, DfContext context)
+        {
+            // Načtu obecně platné atributy:
+            var name = _ReadAttributeString(xElement, "Name", null);
+            var tabIndex = _ReadAttributeInt32N(xElement, "TabIndex");
+            var editMask = _ReadAttributeString(xElement, "EditMask", null);
+            var inputWindow = _ReadAttributeString(xElement, "InputWindow", null);
+            var currencyDisplay = _ReadAttributeBoolN(xElement, "CurrencyDisplay");
+            var maxLength = _ReadAttributeInt32N(xElement, "MaxLength");
+            var label = _ReadAttributeString(xElement, "Label", null);
+            var labelToolTip = _ReadAttributeString(xElement, "LabelToolTip", null);
+            var labelToolTipHide = _ReadAttributeString(xElement, "LabelToolTipHide", null);
+            var width = _ReadAttributeInt32PN(xElement, "Width");
+            var height = _ReadAttributeInt32PN(xElement, "Height");
+            var required = _ReadAttributeBoolN(xElement, "Required");
+            var invisible = _ReadAttributeString(xElement, "Invisible", null);
+            var readOnly = _ReadAttributeBoolN(xElement, "ReadOnly");
+            var inputType = _ReadAttributeString(xElement, "InputType", null);
+            var syntaxHighlightingType = _ReadAttributeString(xElement, "SyntaxHighlightingType", null);  // Sql, Xml
+            var aidcCodeType = _ReadAttributeString(xElement, "AidcCodeType", null);
+            var aidcCodeSettings = _ReadAttributeString(xElement, "AidcCodeSettings", null);
+            var percentageBarSettings = _ReadAttributeString(xElement, "PercentageBarSettings", null);
+            var buttonAction = _ReadAttributeString(xElement, "ButtonAction", null);               // Click, Update, Close, RunFunction, ClickCheckRequired
+            var buttonFunction = _ReadAttributeString(xElement, "ButtonFunction", null);
+            var buttonFunctionLabelType = _ReadAttributeString(xElement, "ButtonFunctionLabelType", null);       // Text, Icon, IconText
+            var values = _ReadAttributeString(xElement, "Values", null);
+            var expr = _ReadAttributeString(xElement, "Expr", null);
+            var exprType = _ReadAttributeString(xElement, "ExprType", null);                      // String, Int32, DateTime, Decimal
+            var editStyle = _ReadAttributeString(xElement, "EditStyle", null);
+            var editStyleViewMode = _ReadAttributeString(xElement, "EditStyleViewMode", null);    // Text, Icon, IconText
+            var protect = _ReadAttributeString(xElement, "Protect", null);
+            var htmlEdit = _ReadAttributeBoolN(xElement, "HtmlEdit");
+            var relation = _ReadAttributeBoolN(xElement, "Relation");                      // 0, 1
+            var htmlStyle = _ReadAttributeString(xElement, "HtmlStyle", null);
+            var colSpan = _ReadAttributeInt32N(xElement, "ColSpan");
+            var rowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
+            var labelPos = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPos", _ConvertIGLabelPos);        // type 'pos'
+            var align = _ReadAttributeString(xElement, "Align", null);
+            var alignValue = _ReadAttributeString(xElement, "AlignValue", null);
+            var registerItemChange = _ReadAttributeBoolN(xElement, "RegisterItemChange");
+            var registerDblClick = _ReadAttributeBoolN(xElement, "RegisterDblClick");
+            var boxCols = _ReadAttributeString(xElement, "BoxCols", null);
+            var boxRows = _ReadAttributeString(xElement, "BoxRows", null);
+            var boxStyle = _ReadAttributeString(xElement, "BoxStyle", null);
+            var attrShortName = _ReadAttributeBoolN(xElement, "AttrShortName");
+            var relationParams = _ReadAttributeString(xElement, "RelationParams", null);
+            var relationAddName = _ReadAttributeBoolN(xElement, "RelationAddName");
+            var renderAs = _ReadAttributeString(xElement, "RenderAs", null);
+            var setEmptyStringIsNull = _ReadAttributeBoolN(xElement, "SetEmptyStringIsNull");
+            var maxDropDownItems = _ReadAttributeInt32N(xElement, "MaxDropDownItems");
+            var isBreak = _ReadAttributeBoolN(xElement, "Break");
+            var allowUserChangeInvisibility = _ReadAttributeString(xElement, "AllowUserChangeInvisibility", null);
+            var oneMonthOnly = _ReadAttributeBoolN(xElement, "OneMonthOnly");
+            var noBorder = _ReadAttributeBoolN(xElement, "NoBorder");
+            var radioTextAlign = _ReadAttributeString(xElement, "RadioTextAlign", null);
+            var textAreaOverflow = _ReadAttributeString(xElement, "TextAreaOverflow", null);
+            var fontAndColor = _ReadAttributeString(xElement, "FontAndColor", null);
+            var xxxxxx = _ReadAttributeString(xElement, "xxxxxxxxxxxx", null);
+
+
+
+
+
+            var dfControl = new DfTextBox()
             {
-                DfPage iPage = new DfPage();
-                iPage.Name = Guid.NewGuid().ToString();
-                iPage.Panels = new List<DfPanel>();
-                if (dfForm.Pages.Count == 0)
-                    dfForm.Pages.Add(iPage);
-                else
-                    dfForm.Pages.Insert(0, iPage);
-                return iPage;
+                Name = name,
+                Label = label,
+                LabelPosition = labelPos,
+                RowSpan = rowSpan,
+                ColSpan = colSpan,
+                TabIndex = tabIndex,
+                DesignBounds = createDesignBounds(width, height)
+            };
+
+
+
+            return dfControl;
+
+
+
+            DesignBounds createDesignBounds(Int32P? width, Int32P? height)
+            {
+                if (width.HasValue || height.HasValue)
+                    return new DesignBounds() { Width = width, Height = height };
+                return null;
             }
+        }
+        /// <summary>
+        /// Vytvoří NestedPanel pro IG verzi
+        /// </summary>
+        /// <param name="xTab"></param>
+        /// <param name="nestedTemplate"></param>
+        /// <param name="dfForm"></param>
+        /// <param name="currentPage"></param>
+        /// <param name="currentPanel"></param>
+        private static void _CreateNestedTemplateFromTabIG(XElement xTab, string nestedTemplate, DfForm dfForm, ref DfPage currentPage, ref DfPanel currentPanel)
+        {
+#warning TODO : načítat NestedTemplate z FormatVersion 1-3 !!!
+            // throw new NotImplementedException("FormatVersion1 and NestedTemplate: conversion not implemented.");
+        }
+
+
+        /// <summary>
+        /// Konvertuje text zadaný jako Value pro atribut LabelPos (type 'pos') ve verzi IG, do textu enumu LabelPositionType
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private static string _ConvertIGLabelPos(string value)
+        {
+            if (!String.IsNullOrEmpty(value))
+            {
+                string key = value.Trim().ToLower();
+                switch (key)
+                {
+                    case "none": return nameof(LabelPositionType.None);
+                    case "left": return nameof(LabelPositionType.BeforeLeft);
+                    case "up": return nameof(LabelPositionType.Top);
+                    case "right": return nameof(LabelPositionType.After);
+                }
+            }
+            return value;
+        }
+        /// <summary>
+        /// Konvertuje text zadaný jako Value pro atribut Align (type 'leftrightcenter') ve verzi IG, do textu enumu HPositionType
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private static string _ConvertIGAlign(string value)
+        {
+            if (!String.IsNullOrEmpty(value))
+            {
+                string key = value.Trim().ToLower();
+                switch (key)
+                {
+                    case "left": return nameof(HPositionType.Left);
+                    case "center": return nameof(HPositionType.Center);
+                    case "right": return nameof(HPositionType.Right);
+                }
+            }
+            return value;
         }
         /// <summary>
         /// Druh Tabu = jeho konverze na prvek Df
         /// </summary>
-        private enum FormTabType
+        private enum FormTabIGType
         {
             None,
+            /// <summary>
+            /// Tab reprezentuje Nested template
+            /// </summary>
+            NestedTemplate,
+            /// <summary>
+            /// Tab reprezentuje záložku = DfPage
+            /// </summary>
             Page,
+            /// <summary>
+            /// Tab reprezentuje blok s titulkem = DfPanel
+            /// </summary>
             Panel,
+            /// <summary>
+            /// Tab reprezentuje blok bez titulku = DfGroup
+            /// </summary>
             Group,
+            /// <summary>
+            /// Tab je prázdný = reprezentuje vodorovnou čáru = HLine
+            /// </summary>
             HLine
         }
-        /// <summary>
-        /// Z dodaného elementu <paramref name="xElement"/> formátu V1 - V3 načte a vrátí odpovídající kontejner (tab, nestedtab), včetně jeho obsahu a child prvků.
-        /// Výstupem je tedy buď <see cref="DfPage"/> nebo <see cref="DfPanel"/> (nebo null).
-        /// Pokud je výstupem null, pak informace o chybě je již zanesena do <paramref name="args"/>, kam se uvádí i zdroj = <paramref name="sourceInfo"/>.
-        /// </summary>
-        /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
-        /// <param name="sourceInfo">Informace o zdrojovém místě, do chybové informace. Typicky: "Formulář 'Jméno'" nebo "Stránka 'Name01'".</param>
-        /// <param name="args">Průběžná data pro načítání obsahu</param>
-        /// <param name="validNames">Očekávaná validní jména elementů. Pokud je zadáno, a je detekován jiný než daný element, vrátí se null.</param>
-        private static DfBaseArea _CreateAreaV1(System.Xml.Linq.XElement xElement, string sourceInfo, DfTemplateLoadArgs args, params string[] validNames)
-        {
-            string elementName = _GetValidElementName(xElement);               // page, panel, nestedpanel, group, nestedgroup
-            if (String.IsNullOrEmpty(elementName)) return null;                // Nezadáno (?)
-            // Pokud je dodán seznam validních jmen elementů (přinejmenším 1 prvek), ale aktuální element neodpovídá žádnému povolenému jménu, pak skončím:
-            if (validNames != null && validNames.Length > 0 && !validNames.Any(v => String.Equals(v, elementName, StringComparison.OrdinalIgnoreCase)))
-            {
-                args.AddError($"{sourceInfo} obsahuje prvek '{elementName}', který není přípustný.");
-                return null;
-            }
-            switch (elementName)
-            {
-                case "tab": return _FillAreaV1Tab(xElement, null, args);
-            }
-            args.AddError($"{sourceInfo} obsahuje prvek '{elementName}', který zde není očekáváván.");
-            return null;
-        }
-        /// <summary>
-        /// Z dodaného elementu <paramref name="xElement"/> formátu V1 - V3 načte a vrátí odpovídající <c>tab</c>, včetně jeho obsahu (tj. atributy a child elementy).
-        /// Zde probíhá konverze elementu <c>tab</c> na přiměřený objekt <see cref="DfPage"/> nebo <see cref="DfPanel"/> nebo <see cref="DfGroup"/>.
-        /// </summary>
-        /// <param name="xElement">Element, z něhož se má vytvořit objekt</param>
-        /// <param name="dfTab"></param>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        private static DfBaseArea _FillAreaV1Tab(System.Xml.Linq.XElement xElement, DfBaseArea dfTab, DfTemplateLoadArgs args)
-        {
-            // Načteme pár identifikačních informací, abychom poznali, jaký druh TABu máme zpracovat:
-            string tabPageLabel = _ReadAttributeString(xElement, "TabPageLabel", null);
-            string renderAs = _ReadAttributeString(xElement, "RenderAs", null);
-            bool isEmptyTab = !xElement.HasElements && !xElement.HasAttributes;                    // Jde o element   <tab/>   tedy vodorovná oddělovací linka, nejspíš za nějakým datovým Tabem
-
-
-
-            /*
-            // Výsledná instance:
-            if (dfTab is null) dfTab = new DfPanel();
-
-            // Atributy:
-            _FillBaseAttributes(xElement, dfTab);
-            dfTab.IsHeader = _ReadAttributeBoolN(xElement, "IsHeader");
-            dfTab.HeaderOnPages = _ReadAttributeString(xElement, "HeaderOnPages", null);
-            dfTab.IconName = _ReadAttributeString(xElement, "IconName", null);
-            dfTab.Title = _ReadAttributeString(xElement, "Title", null);
-            dfTab.TitleStyle = _ReadAttributeEnumN<TitleStyleType>(xElement, "TitleStyle");
-            dfTab.TitleColorName = _ReadAttributeString(xElement, "TitleColorName", null);
-            dfTab.TitleColorLight = _ReadAttributeColorN(xElement, "TitleColorLight");
-            dfTab.TitleColorDark = _ReadAttributeColorN(xElement, "TitleColorDark");
-            dfTab.CollapseState = _ReadAttributeEnumN<PanelCollapseState>(xElement, "CollapseState");
-
-            // Elementy = Controly + Grupy:
-            _FillContainerChildElements(xElement, dfTab, args);
-            */
-
-            return dfTab;
-        }
-
-
-
-
         #endregion
         #region Načítání atributů
         /// <summary>
@@ -1169,8 +1387,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement">Element, z něhož se mají načítat atributy</param>
         /// <param name="target">Cílový prvek</param>
-        /// <param name="args">Argumenty načítání</param>
-        private static void _FillBaseAttributes(System.Xml.Linq.XElement xElement, DfBase target, DfTemplateLoadArgs args)
+        /// <param name="context">Průběžná data pro načítání obsahu</param>
+        private static void _FillBaseAttributes(XElement xElement, DfBase target, DfContext context)
         {
             // Každá zdejší větev / metoda načte pouze property deklarované přímo pro danou třídu, nikoli pro její předky!
             string name = null;
@@ -1210,26 +1428,26 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
 
             // Nyní mám k dispozici hodnoty 'name' a 'columnName'; nyní mohu načítat texty přeložené pro konkrétní prvek:
-            target.ToolTipTitle = _ReadAttributeUserText(xElement, "ToolTipTitle", name, columnName, args);
-            target.ToolTipText = _ReadAttributeUserText(xElement, "ToolTipText", name, columnName, args);
+            target.ToolTipTitle = _ReadAttributeUserText(xElement, "ToolTipTitle", name, columnName, context);
+            target.ToolTipText = _ReadAttributeUserText(xElement, "ToolTipText", name, columnName, context);
 
 
             if (target is DfBaseInputTextControl textControl)
             {
-                textControl.Text = _ReadAttributeUserText(xElement, "Text", name, columnName, args);
+                textControl.Text = _ReadAttributeUserText(xElement, "Text", name, columnName, context);
                 textControl.IconName = _ReadAttributeString(xElement, "IconName", null);
                 textControl.Alignment = _ReadAttributeEnumN<ContentAlignmentType>(xElement, "Alignment");
             }
             if (target is DfBaseLabeledInputControl labeledControl)
             {
-                labeledControl.Label = _ReadAttributeUserText(xElement, "Label", name, columnName, args);
+                labeledControl.Label = _ReadAttributeUserText(xElement, "Label", name, columnName, context);
                 labeledControl.LabelPosition = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPosition", _FixLabelPosition);
                 labeledControl.LabelWidth = _ReadAttributeInt32N(xElement, "LabelWidth");
-                labeledControl.SuffixLabel = _ReadAttributeUserText(xElement, "SuffixLabel", name, columnName, args);
+                labeledControl.SuffixLabel = _ReadAttributeUserText(xElement, "SuffixLabel", name, columnName, context);
             }
             if (target is DfSubTextItem subTextItem)
             {
-                subTextItem.Text = _ReadAttributeUserText(xElement, "Text", name, columnName, args);
+                subTextItem.Text = _ReadAttributeUserText(xElement, "Text", name, columnName, context);
                 subTextItem.IconName = _ReadAttributeString(xElement, "IconName", null);
             }
             if (target is DfSubButton subButton)
@@ -1271,14 +1489,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="attributeName"></param>
         /// <param name="name"></param>
         /// <param name="columnName"></param>
-        /// <param name="args"></param>
+        /// <param name="context">Průběžná data pro načítání obsahu</param>
         /// <returns></returns>
-        private static string _ReadAttributeUserText(System.Xml.Linq.XElement xElement, string attributeName, string name, string columnName, DfTemplateLoadArgs args)
+        private static string _ReadAttributeUserText(XElement xElement, string attributeName, string name, string columnName, DfContext context)
         {
-            zrušit;
-            nahradit celkovým zpracováním jednoho controlu a předáním args;
+            // Původně byl úmysl překládat texty ihned po načtení, tedy zde.
+            // Ale z hlediska efektivity translátoru není vhodné jej volat po jednom textu = např. 5x pro jeden column (text + label + tooltipy ...).
+            // Proto tady načtu jen to, co je v frm.xml, a další zpracování nechám na jindy.
             string text = _ReadAttributeString(xElement, attributeName, null);
-            return args.InfoSource.TranslateText(text, name, columnName, args.Form);
+            return text;
         }
         /// <summary>
         /// V daném elementu najde atribut daného jména a vrátí jeho String podobu
@@ -1286,7 +1505,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
         /// <param name="defaultValue"></param>
-        private static string _ReadAttributeString(System.Xml.Linq.XElement xElement, string attributeName, string defaultValue)
+        private static string _ReadAttributeString(XElement xElement, string attributeName, string defaultValue)
         {
             string value = defaultValue;
             if (xElement.HasAttributes && !String.IsNullOrEmpty(attributeName))
@@ -1302,7 +1521,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
         /// <param name="defaultValue"></param>
-        private static byte[] _ReadAttributeBytes(System.Xml.Linq.XElement xElement, string attributeName, byte[] defaultValue)
+        private static byte[] _ReadAttributeBytes(XElement xElement, string attributeName, byte[] defaultValue)
         {
             byte[] value = defaultValue;
             if (xElement.HasAttributes && !String.IsNullOrEmpty(attributeName))
@@ -1325,7 +1544,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="defaultValue"></param>
         /// <returns></returns>
-        private static ControlStateType _ReadAttributeControlState(System.Xml.Linq.XElement xElement, ControlStateType defaultValue)
+        private static ControlStateType _ReadAttributeControlState(XElement xElement, ControlStateType defaultValue)
         {
             // Pokud je deklarován atribut 'State', pak načtu jeho hodnotu:
             var state = _ReadAttributeEnumN<ControlStateType>(xElement, "State");
@@ -1351,7 +1570,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
         /// <param name="defaultValue"></param>
-        private static int _ReadAttributeInt32(System.Xml.Linq.XElement xElement, string attributeName, int defaultValue)
+        private static int _ReadAttributeInt32(XElement xElement, string attributeName, int defaultValue)
         {
             int? value = _ReadAttributeInt32N(xElement, attributeName);
             return value ?? defaultValue;
@@ -1361,7 +1580,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
-        private static int? _ReadAttributeInt32N(System.Xml.Linq.XElement xElement, string attributeName)
+        private static int? _ReadAttributeInt32N(XElement xElement, string attributeName)
         {
             int? value = null;
             if (xElement.HasAttributes && !String.IsNullOrEmpty(attributeName))
@@ -1376,7 +1595,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
-        private static Int32P? _ReadAttributeInt32PN(System.Xml.Linq.XElement xElement, string attributeName)
+        private static Int32P? _ReadAttributeInt32PN(XElement xElement, string attributeName)
         {
             Int32P? value = null;
             if (xElement.HasAttributes && !String.IsNullOrEmpty(attributeName))
@@ -1392,7 +1611,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
         /// <param name="defaultValue"></param>
-        private static System.Drawing.Color _ReadAttributeColor(System.Xml.Linq.XElement xElement, string attributeName, System.Drawing.Color defaultValue)
+        private static System.Drawing.Color _ReadAttributeColor(XElement xElement, string attributeName, System.Drawing.Color defaultValue)
         {
             System.Drawing.Color? value = _ReadAttributeColorN(xElement, attributeName);
             return value ?? defaultValue;
@@ -1402,7 +1621,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
-        private static System.Drawing.Color? _ReadAttributeColorN(System.Xml.Linq.XElement xElement, string attributeName)
+        private static System.Drawing.Color? _ReadAttributeColorN(XElement xElement, string attributeName)
         {
             System.Drawing.Color? value = null;
             if (xElement.HasAttributes && !String.IsNullOrEmpty(attributeName))
@@ -1423,7 +1642,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
         /// <param name="defaultValue"></param>
-        private static bool _ReadAttributeBool(System.Xml.Linq.XElement xElement, string attributeName, bool defaultValue)
+        private static bool _ReadAttributeBool(XElement xElement, string attributeName, bool defaultValue)
         {
             bool? value = _ReadAttributeBoolN(xElement, attributeName);
             return value ?? defaultValue;
@@ -1433,7 +1652,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
-        private static bool? _ReadAttributeBoolN(System.Xml.Linq.XElement xElement, string attributeName)
+        private static bool? _ReadAttributeBoolN(XElement xElement, string attributeName)
         {
             bool? value = null;
             if (xElement.HasAttributes && !String.IsNullOrEmpty(attributeName))
@@ -1460,7 +1679,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="attributeName"></param>
         /// <param name="defaultValueNotExists">Vrácená hodnota, pokud atribut neexistuje</param>
         /// <param name="defaultValueNotValue">Vrácená hodnota, pokud atribut existuje - ale nemá zadanou žádnou hodnotu (nebo má, ale není platná)</param>
-        private static bool _ReadAttributeBoolX(System.Xml.Linq.XElement xElement, string attributeName, bool defaultValueNotExists = false, bool defaultValueNotValue = true)
+        private static bool _ReadAttributeBoolX(XElement xElement, string attributeName, bool defaultValueNotExists = false, bool defaultValueNotValue = true)
         {
             if (String.IsNullOrEmpty(attributeName)) return defaultValueNotExists;
             if (xElement.HasAttributes)
@@ -1488,7 +1707,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="attributeName"></param>
         /// <param name="defaultValueNotExists">Vrácená hodnota, pokud atribut neexistuje</param>
         /// <param name="defaultValueNotValue">Vrácená hodnota, pokud atribut existuje - ale nemá zadanou žádnou hodnotu (nebo má, ale není platná)</param>
-        private static bool? _ReadAttributeBoolNX(System.Xml.Linq.XElement xElement, string attributeName, bool? defaultValueNotExists = null, bool? defaultValueNotValue = true)
+        private static bool? _ReadAttributeBoolNX(XElement xElement, string attributeName, bool? defaultValueNotExists = null, bool? defaultValueNotValue = true)
         {
             if (String.IsNullOrEmpty(attributeName)) return defaultValueNotExists;
             if (xElement.HasAttributes)
@@ -1545,7 +1764,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="attributeName"></param>
         /// <param name="defaultValue"></param>
         /// <param name="modifier">Modifikátor načteného textu z XML před tím, než proběhne jeho TryParse na hodnotu enumu</param>
-        private static TEnum _ReadAttributeEnum<TEnum>(System.Xml.Linq.XElement xElement, string attributeName, TEnum defaultValue, Func<string, string> modifier = null) where TEnum : struct
+        private static TEnum _ReadAttributeEnum<TEnum>(XElement xElement, string attributeName, TEnum defaultValue, Func<string, string> modifier = null) where TEnum : struct
         {
             TEnum? value = _ReadAttributeEnumN<TEnum>(xElement, attributeName, modifier);
             return value ?? defaultValue;
@@ -1557,7 +1776,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
         /// <param name="modifier">Modifikátor načteného textu z XML před tím, než proběhne jeho TryParse na hodnotu enumu</param>
-        private static TEnum? _ReadAttributeEnumN<TEnum>(System.Xml.Linq.XElement xElement, string attributeName, Func<string, string> modifier = null) where TEnum : struct
+        private static TEnum? _ReadAttributeEnumN<TEnum>(XElement xElement, string attributeName, Func<string, string> modifier = null) where TEnum : struct
         {
             TEnum? value = null;
             if (xElement.HasAttributes && !String.IsNullOrEmpty(attributeName))
@@ -1617,7 +1836,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="defaultValue"></param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
-        private static DfControlStyle _ReadAttributeStyle(System.Xml.Linq.XElement xElement, DfControlStyle defaultValue)
+        private static DfControlStyle _ReadAttributeStyle(XElement xElement, DfControlStyle defaultValue)
         {
             string styleName = _ReadAttributeString(xElement, "StyleName", null);
             if (!String.IsNullOrEmpty(styleName)) return new DfControlStyle() { StyleName = styleName };
@@ -1628,7 +1847,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="defaultValue"></param>
-        private static DesignBounds _ReadAttributeBounds(System.Xml.Linq.XElement xElement, DesignBounds defaultValue)
+        private static DesignBounds _ReadAttributeBounds(XElement xElement, DesignBounds defaultValue)
         {
             DesignBounds designBounds = null;
 
@@ -1718,7 +1937,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
         /// <param name="defaultValue"></param>
-        private static Location _ReadAttributesLocation(System.Xml.Linq.XElement xElement, string attributeName, Location defaultValue)
+        private static Location _ReadAttributesLocation(XElement xElement, string attributeName, Location defaultValue)
         {
             var textMargins = _ReadAttributeString(xElement, attributeName, null);
             if (!String.IsNullOrEmpty(textMargins))
@@ -1740,7 +1959,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <param name="attributeName"></param>
         /// <param name="defaultValue"></param>
-        private static Margins _ReadAttributesMargin(System.Xml.Linq.XElement xElement, string attributeName, Margins defaultValue)
+        private static Margins _ReadAttributesMargin(XElement xElement, string attributeName, Margins defaultValue)
         {
             var textMargins = _ReadAttributeString(xElement, attributeName, null);
             if (!String.IsNullOrEmpty(textMargins))
@@ -1914,7 +2133,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
         /// <returns></returns>
-        private static string _GetValidElementName(System.Xml.Linq.XElement xElement)
+        private static string _GetValidElementName(XElement xElement)
         {
             return xElement?.Name.LocalName.Trim().ToLower() ?? "";
         }
@@ -1977,56 +2196,49 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             };
         }
         #endregion
-        #region class DfTemplateArgs
+        #region class DfContext : průběžný kontext při načítání dat šablony
         /// <summary>
-        /// Třída, zahrnující v sobě průběžná data pro načítání obsahu <see cref="DfForm"/> v metodách v <see cref="DfTemplateLoader"/>
+        /// <see cref="DfContext"/> : průběžný kontext při načítání dat šablony
         /// </summary>
-        private class LoaderArgs
+        private class DfContext
         {
             /// <summary>
-            /// Funkce, která vrátí stringový obsah nested šablony daného jména.<br/>
-            /// Pokud bude jako <see cref="NestedTemplateLoader"/> předána hodnota null, a v šabloně bude detekován Nested prvek, pak dojde k chybě.<br/>
-            /// Loader bude volán s parametrem = jméno šablony (obsah atributu NestedTemplate), jeho úkolem je vrátit string = obsah požadované šablony (souboru).<br/>
-            /// Pokud loader požadovanou šablonu (soubor) nenajde, může sám loader ohlásit chybu. Anebo může vrátit null, pak bude Nested prvek ignorován.
+            /// Konstruktor
             /// </summary>
-            public Func<string, string> NestedLoader { get; set; }
+            /// <param name="loadArgs"></param>
+            /// <param name="onlyInfo"></param>
+            public DfContext(DfTemplateLoadArgs loadArgs, bool onlyInfo)
+            {
+                LoadArgs = loadArgs;
+                OnlyInfo = onlyInfo;
+            }
             /// <summary>
-            /// Jméno vstupního souboru, typicky plné včetně cesty
+            /// Vnější argumenty
             /// </summary>
-            public string FileName { get; set; }
+            public DfTemplateLoadArgs LoadArgs { get; private set; }
             /// <summary>
-            /// Holé jméno vstupního souboru, bez adresáře a bez přípony
+            /// Načíst jen záhlaví dokumentu
             /// </summary>
-            public string Name { get { return (!String.IsNullOrEmpty(this.FileName) ? System.IO.Path.GetFileNameWithoutExtension(this.FileName) : ""); } }
+            public bool OnlyInfo { get; private set; }
             /// <summary>
-            /// Máme načíst pouze atributy dokumentu, pro detekci jeho hlavičky (<see cref="DfForm.XmlNamespace"/> a <see cref="DfForm.FormatVersion"/>)
+            /// Vznikající formulář
             /// </summary>
-            public bool IsLoadOnlyDocumentAttributes { get; set; }
-
+            public DfForm Form { get { return LoadArgs.Form; } set { LoadArgs.Form = value; } }
             /// <summary>
             /// Přidá chybu, nalezenou v parsovaném souboru.
             /// </summary>
             /// <param name="message"></param>
-            public void AddError(string message)
+            internal void AddError(string message)
             {
-                if (!String.IsNullOrEmpty(message))
-                {
-                    __Errors ??= new StringBuilder();
-                    __Errors.AppendLine(message);
-                }
+                LoadArgs.AddError(message);
             }
-            /// <summary>
-            /// Souhrn chyb, nalezených v parsovaném souboru.
-            /// </summary>
-            public string Errors { get { return __Errors?.ToString(); } }
-            /// <summary>
-            /// Obsahuje true, pokud jsou zachyceny nějaké chyby.
-            /// </summary>
-            public bool HasErrors { get { return (__Errors != null && __Errors.Length > 0); } }
-            /// <summary>
-            /// Souhrn chyb, výchozí je null
-            /// </summary>
-            private StringBuilder __Errors;
+
+            [DebuggerHidden]
+            internal int AutoPageNumber { get { return ++__AutoPageNumber; } } private int __AutoPageNumber = 0;
+            [DebuggerHidden]
+            internal int AutoPanelNumber { get { return ++__AutoPanelNumber; } } private int __AutoPanelNumber = 0;
+            [DebuggerHidden]
+            internal int AutoGroupNumber { get { return ++__AutoGroupNumber; } } private int __AutoGroupNumber = 0;
         }
         #endregion
         #region Hierarchie tříd a jejich vlastnosti
@@ -2071,19 +2283,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Parsovaný XML dokument
         /// </summary>
-        public System.Xml.Linq.XDocument TemplateDocument { get; set; }
+        public XDocument TemplateDocument { get; set; }
         /// <summary>
         /// Vznikající formulář = načtený obsah frm.xml
         /// </summary>
         public DfForm Form { get; set; }
         /// <summary>
-        /// Vygeneruje a vrátí argument pro nested šablonu: fyzicky jiný dokument, ale společná metoda <see cref="NestedTemplateLoader"/> a evidence chyb.
+        /// Vygeneruje a vrátí argument pro nested šablonu: fyzicky jiný dokument, ale společný zdroj dat <see cref="DfProcessArgs.InfoSource"/> a evidence chyb.
         /// </summary>
         /// <param name="nestedFile"></param>
         /// <param name="nestedContent"></param>
         /// <param name="nestedDocument"></param>
         /// <returns></returns>
-        internal DfTemplateLoadArgs CreateNestedArgs(string nestedFile, string nestedContent, System.Xml.Linq.XDocument nestedDocument)
+        internal DfTemplateLoadArgs CreateNestedArgs(string nestedFile, string nestedContent, XDocument nestedDocument)
         {
             DfTemplateLoadArgs nestedArgs = new DfTemplateLoadArgs();
             nestedArgs.TemplateFileName = nestedFile;

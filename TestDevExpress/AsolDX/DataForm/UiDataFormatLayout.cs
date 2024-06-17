@@ -4373,21 +4373,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     internal interface IControlInfoSource
     {
         /// <summary>
-        /// Metoda má vrátit přeložený anebo vyplněný text
-        /// </summary>
-        /// <param name="formText"></param>
-        /// <param name="name"></param>
-        /// <param name="columnName"></param>
-        /// <param name="form"></param>
-        /// <returns></returns>
-
-
-        zrušit;
-            nahradit celkovým zpracováním jednoho controlu a předáním args;
-
-        string TranslateText(string formText, string name, string columnName, DfForm form);
-
-        /// <summary>
         /// Funkce, která vrátí stringový obsah nested šablony daného jména.<br/>
         /// Funkce bude volána s parametrem = jméno šablony (obsah atributu NestedTemplate), jeho úkolem je vrátit string = obsah požadované šablony (souboru).<br/>
         /// Pokud funkce požadovanou šablonu (soubor) nenajde, může sama ohlásit chybu. Anebo může vrátit null, pak bude Nested prvek ignorován.

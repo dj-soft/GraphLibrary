@@ -1300,7 +1300,12 @@
                     <xs:documentation xml:lang="cs-cz">Defaultní = TextWithLineBottom.</xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
-            <xs:enumeration value="TextOnly">
+			<xs:enumeration value="NoTitle">
+				<xs:annotation>
+					<xs:documentation xml:lang="cs-cz">Bez titulku.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="TextOnly">
                 <xs:annotation>
                     <xs:documentation xml:lang="cs-cz">Pouze výrazný text, bez linky.</xs:documentation>
                 </xs:annotation>

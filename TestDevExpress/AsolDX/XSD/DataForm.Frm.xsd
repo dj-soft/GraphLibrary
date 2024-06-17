@@ -234,6 +234,7 @@
         <xs:restriction base="xs:string">
           <xs:enumeration value="Codabar" />
           <xs:enumeration value="Code11" />
+          <xs:enumeration value="DataMatrix" />
           <xs:enumeration value="EAN13" />
           <xs:enumeration value="EAN8" />
           <xs:enumeration value="UPC_A" />

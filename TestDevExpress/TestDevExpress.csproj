@@ -416,6 +416,7 @@
     <Content Include="AsolDX\XML\dw_faktura_dosla_hlavicka_form.E5.frm.xml" />
     <Content Include="AsolDX\XML\dw_faktura_dosla_hlavicka_form.msg.xml" />
     <Content Include="AsolDX\XML\dw_faktura_dosla_image_V1.png" />
+    <Content Include="AsolDX\XML\dw_faktura_dosla_image_V2.png" />
     <Content Include="AsolDX\XML\dw_simple_2.frm.xml" />
     <None Include="AsolDX\XSD\DataForm.Frm.xsd">
       <SubType>Designer</SubType>
