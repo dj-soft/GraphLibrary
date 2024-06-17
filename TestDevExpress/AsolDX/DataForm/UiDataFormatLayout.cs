@@ -1718,6 +1718,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var controlTextColor1 = System.Drawing.Color.FromArgb(190, 96, 96, 96);
                 var controlTextColor2 = System.Drawing.Color.FromArgb(255, 32, 32, 32);
 
+                var controlLineColor = System.Drawing.Color.FromArgb(255, 80, 80, 86);
+
                 var guideLineCellColor = System.Drawing.Color.FromArgb(200, 200, 40, 60);
                 var guideLineControlColor = System.Drawing.Color.FromArgb(200, 40, 200, 60);
                 var guideLineLabelColor = System.Drawing.Color.FromArgb(200, 190, 180, 40); 
@@ -1768,8 +1770,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     // Control (nikoliv Container):
                     if (item._IsControl && iFlow.ControlExists && iFlow.ControlBounds != null)
                     {
-                        var alignment = ContentAlignmentType.MiddleCenter;
-                        drawControl(graphics, brush, pen, stringFormat, iData.Name, iFlow.ControlBounds, alignment);
+                        switch (item._DfControl.ControlType)
+                        {
+                            case ControlType.Label:
+                                drawControlLabel(graphics, brush, pen, stringFormat, iData.Name, iFlow.ControlBounds, ContentAlignmentType.MiddleRight);
+                                break;
+                            case ControlType.HLine:
+                                drawControlHLine(graphics, brush, pen, stringFormat, iData.Name, iFlow.ControlBounds, ContentAlignmentType.MiddleRight);
+                                break;
+                            case ControlType.VLine:
+                                drawControlVLine(graphics, brush, pen, stringFormat, iData.Name, iFlow.ControlBounds, ContentAlignmentType.MiddleRight);
+                                break;
+                            default:
+                                drawControlBorder(graphics, brush, pen, stringFormat, iData.Name, iFlow.ControlBounds, ContentAlignmentType.MiddleCenter);
+                                break;
+                        }
                     }
                 }
                 // Vykreslí Label včetně podkladu
@@ -1798,8 +1813,44 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         graphics.DrawString(text, font, brush, point.X, point.Y, stringFormat);        // Vlastní text MainLabel / SuffixLabel
                     }
                 }
-                // Vykreslí Control včetně podkladu
-                void drawControl(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, string text, ControlBounds bounds, ContentAlignmentType alignment)
+                // Vykreslí Control typu HLine
+                void drawControlHLine(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, string text, ControlBounds bounds, ContentAlignmentType alignment)
+                {
+                    var r = getRectangle(bounds);
+                    r.Y = r.Top + (r.Height / 2) - 1;
+                    r.Height = 2;
+                    graphicsForRectangles(graphics);
+                    brush.Color = controlLineColor;
+                    graphics.FillRectangle(brush, r);
+                }
+                // Vykreslí Control typu VLine
+                void drawControlVLine(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, string text, ControlBounds bounds, ContentAlignmentType alignment)
+                {
+                    var r = getRectangle(bounds);
+                    r.X = r.Left + (r.Width / 2) - 1;
+                    r.Width = 2;
+                    graphicsForRectangles(graphics);
+                    brush.Color = controlLineColor;
+                    graphics.FillRectangle(brush, r);
+                }
+                // Vykreslí Control typu Label včetně podkladu
+                void drawControlLabel(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, string text, ControlBounds bounds, ContentAlignmentType alignment)
+                {
+                    if (isValidBounds(bounds))
+                    {
+                        graphicsForText(graphics);
+                        var r = getRectangle(bounds);
+                        var font = System.Drawing.SystemFonts.DefaultFont;
+                        var size = graphics.MeasureString(text, font, r.Width, stringFormat);
+                        var point = alignText(r, size, alignment);
+                        brush.Color = controlTextColor1;
+                        graphics.DrawString(text, font, brush, point.X + 0.60f, point.Y);        // Text uprostřed Controlu, 2x ...
+                        brush.Color = controlTextColor2;
+                        graphics.DrawString(text, font, brush, point.X, point.Y - 0.60f, stringFormat);
+                    }
+                }
+                // Vykreslí Control typu Border včetně podkladu
+                void drawControlBorder(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, string text, ControlBounds bounds, ContentAlignmentType alignment)
                 {
                     var r = getRectangle(bounds);
                     using (var path = getControlPathRound(r))

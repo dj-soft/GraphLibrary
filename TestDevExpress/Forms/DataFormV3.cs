@@ -94,6 +94,9 @@ namespace TestDevExpress.Forms
             var openFileItems = _GetFrmXmlFileItems();
             groupSamples.Items.Add(new DataRibbonItem() { ItemId = "LoadFormFile", Text = "Load XML", ToolTipText = "Načte definici z XML souboru", ImageName = imageOpen, ItemType = RibbonItemType.Menu, SubItems = openFileItems });
 
+            string imageLastXmlFile = "svgimages/xaf/modeleditor_action_xml.svg";
+            groupSamples.Items.Add(new DataRibbonItem() { ItemId = "LoadLastXmlFile", Text = "LastXml file", ToolTipText = "Znovu načte XML soubor načtený posledně", ImageName = imageLastXmlFile });
+
             // WebBrowser testy:
             //string imageWeb = "svgimages/spreadsheet/functionsweb.svg";
             //ListExt<IRibbonItem> linkWebs = this._GetBrowseLinks();
@@ -356,13 +359,18 @@ namespace TestDevExpress.Forms
                     _ChangeDataInDataForm();
                     break;
                 case "LoadFormFileOne":
+                    __LastXmlFile = fileName;
                     _LoadDataFrmXml(fileName);
+                    break;
+                case "LoadLastXmlFile":
+                    _LoadDataFrmXml(__LastXmlFile);
                     break;
                 default:
                     var n = itemId;
                     break;
             }
         }
+        private string __LastXmlFile;
         /// <summary>
         /// Vrátí soupis položek do nabídky Ribbonu pro načítání XML souborů
         /// </summary>
@@ -500,6 +508,8 @@ namespace TestDevExpress.Forms
         /// <param name="fileFrmXml"></param>
         private void _LoadDataFrmXml(string fileFrmXml)
         {
+            if (String.IsNullOrEmpty(fileFrmXml)) return;
+
             try
             {
                 __FrmXmlPath = System.IO.Path.GetDirectoryName(fileFrmXml);

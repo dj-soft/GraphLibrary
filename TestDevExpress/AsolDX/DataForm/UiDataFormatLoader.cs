@@ -1275,21 +1275,51 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var fileFilter = _ReadAttributeString(xElement, "FileFilter", null);
 
 
+            DfBase dfBase = null;
+            var controlType = (inputType ?? "").Trim().ToLower();
+            switch (controlType)
+            {   // text / checkbox / radiobutton / string / dynamic / date / time / datetime / textarea / select / password / number / label / 
+                // group / button / picturelistbox / file / calendar / picture / htmltext / AidcCode / color / Geography / PercentageBar / calculator / Placeholder
+                case "label":
+                    var dfLabel = new DfLabel()
+                    {
+                        Name = name,
+                        Text = label,
+                        RowSpan = rowSpan,
+                        ColSpan = colSpan,
+                        DesignBounds = createDesignBounds(width, height)
+                    };
+                    dfBase = dfLabel;
+                    break;
 
-            var dfControl = new DfTextBox()
-            {
-                Name = name,
-                Label = label,
-                LabelPosition = labelPos,
-                RowSpan = rowSpan,
-                ColSpan = colSpan,
-                TabIndex = tabIndex,
-                DesignBounds = createDesignBounds(width, height)
-            };
+                case "placeholder":
+                    var dfPlaceholder = new DfPlaceHolder()
+                    {
+                        Name = name,
+                        RowSpan = rowSpan,
+                        ColSpan = colSpan,
+                        DesignBounds = createDesignBounds(width, height)
+                    };
+                    dfBase = dfPlaceholder;
+                    break;
 
+                case "text":
+                default:
+                    var dfTextBox = new DfTextBox()
+                    {
+                        Name = name,
+                        Label = label,
+                        LabelPosition = labelPos,
+                        RowSpan = rowSpan,
+                        ColSpan = colSpan,
+                        TabIndex = tabIndex,
+                        DesignBounds = createDesignBounds(width, height)
+                    };
+                    dfBase = dfTextBox;
+                    break;
+            }
 
-
-            return dfControl;
+            return dfBase;
 
 
 
