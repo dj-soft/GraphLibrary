@@ -32,7 +32,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     public class WinReg
 	{
 		#region Public metody
-        #region Exists(value), Exists(Folder)
+        #region Exists(value), Exists(Folder), Default
         /// <summary>
         /// Detekuje, zda existuje klíč daného jména. Vrací true = klíč existuje / false = klíč neexistuje.
         /// </summary>
@@ -53,6 +53,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             return _SubKeyExists(folder, subKeyName);
         }
+        /// <summary>
+        /// Úložiště pro aktuální folder. Výchozí je null. Typicky se inicializuje na začátku aplikace, např.
+        /// <code>WinReg.CurrentFolder = WinRegFolder.CreateForProcessView(Microsoft.Win32.RegistryHive.CurrentUser, @"Software\Company\ApplicationName\Config");</code>
+        /// </summary>
+        public static WinRegFolder CurrentFolder { get { return __CurrentFolder; } set { __CurrentFolder = value; } } private static WinRegFolder __CurrentFolder;
         #endregion
         #region Read Value Names, Read SubKey Names
         /// <summary>

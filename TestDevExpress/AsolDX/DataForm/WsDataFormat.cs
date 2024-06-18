@@ -2593,7 +2593,11 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// HTML prohlížeč
         /// </summary>
-        HtmlContent
+        HtmlContent,
+        /// <summary>
+        /// Grupa: z hlediska tvorby panelu jde o jeden z jeho controlů. Ale je to i Container.
+        /// </summary>
+        Group
     }
     #endregion
 }

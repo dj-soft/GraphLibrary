@@ -2509,6 +2509,7 @@
     <Content Include="AsolDX\XML\dw_nested_dph.frm.xml" />
     <Content Include="AsolDX\XML\dw_simple_1.frm.xml" />
     <Content Include="AsolDX\XML\dw_test1.frm.xml" />
+    <Content Include="AsolDX\XML\dw_test_IG.frm.xml" />
     <Content Include="AsolDX\XML\nested_sazbova_tabulka_fv3.E5.frm.xml" />
     <Content Include="AsolDX\XML\nested_sazbova_tabulka_fv3.msg.xml" />
     <Content Include="TestDevExpress.ico" />

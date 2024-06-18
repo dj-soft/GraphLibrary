@@ -1188,7 +1188,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 sourceInfo += $"; Tab '{dfGroup.Name}'";
                 foreach (var xChild in xChilds)
                 {
-                    var child = _CreateChildItemFromColumnIG(xChild, sourceInfo, context);
+                    var child = _CreateChildItemFromColumnIG(xChild, "column", sourceInfo, context);
                     if (child != null && (child is DfBaseControl || child is DfGroup))
                     {   // Pouze Controly + Group
                         if (dfGroup.Childs is null) dfGroup.Childs = new List<DfBase>();
@@ -1205,10 +1205,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Vytvoří a vrátí DfControl podle dat v dodaném elementu typu 'column' formátu V1-V3 (Infragistic) 
         /// </summary>
         /// <param name="xElement"></param>
+        /// <param name="elementName">Jméno očekávaného elementu, ostatní nebudu načítat</param>
         /// <param name="sourceInfo"></param>
         /// <param name="context">Průběžná data pro načítání obsahu</param>
-        private static DfBase _CreateChildItemFromColumnIG(XElement xElement, string sourceInfo, DfContext context)
+        private static DfBase _CreateChildItemFromColumnIG(XElement xElement, string elementName, string sourceInfo, DfContext context)
         {
+            string xName = _GetValidElementName(xElement);
+            if (!String.Equals(xName, elementName, StringComparison.OrdinalIgnoreCase)) return null;
+
             // Načtu obecně platné atributy, deklarované v DataForm.Frm.xsd :
             var name = _ReadAttributeString(xElement, "Name", null);
             var tabIndex = _ReadAttributeInt32N(xElement, "TabIndex");
@@ -1274,60 +1278,121 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var extendedAttributes = _ReadAttributeString(xElement, "ExtendedAttributes", null);
             var fileFilter = _ReadAttributeString(xElement, "FileFilter", null);
 
+            // Typ controlu:
+            ControlType? controlType = _ConvertIGInputType(inputType);
+            if (!controlType.HasValue)
+                controlType = context.InfoSource.GetControlType(name, context.Form.UseNorisClass);
+            if (!controlType.HasValue)
+                controlType = ControlType.TextBox;
 
-            DfBase dfBase = null;
-            var controlType = (inputType ?? "").Trim().ToLower();
-            switch (controlType)
+            DfBaseControl dfBaseControl = null;
+            DfBaseContainer dfBaseContainer = null;
+            switch (controlType.Value)
             {   // text / checkbox / radiobutton / string / dynamic / date / time / datetime / textarea / select / password / number / label / 
                 // group / button / picturelistbox / file / calendar / picture / htmltext / AidcCode / color / Geography / PercentageBar / calculator / Placeholder
-                case "label":
+                case ControlType.Label:
                     var dfLabel = new DfLabel()
                     {
-                        Name = name,
                         Text = label,
-                        RowSpan = rowSpan,
-                        ColSpan = colSpan,
-                        DesignBounds = createDesignBounds(width, height)
                     };
-                    dfBase = dfLabel;
+                    dfBaseControl = dfLabel;
                     break;
 
-                case "placeholder":
-                    var dfPlaceholder = new DfPlaceHolder()
+                case ControlType.PlaceHolder:
+                    var dfPlaceholder = new DfPlaceHolder();
+                    dfBaseControl = dfPlaceholder;
+                    break;
+
+                case ControlType.Button:
+                    var dfButton = new DfButton()
+                    {
+                        Text = label,
+                        IconName = image,
+                        ActionData = buttonFunction
+                    };
+                    dfBaseControl = dfButton;
+                    break;
+                case ControlType.ComboBox:
+                case ControlType.BreadCrumb:
+                    var dfComboBox = new DfComboBox()
+                    {
+                        TabIndex = tabIndex,
+                    };
+                    dfBaseControl = dfComboBox;
+                    break;
+                case ControlType.Group:
+                    var dfGroup = new DfGroup()
                     {
                         Name = name,
                         RowSpan = rowSpan,
                         ColSpan = colSpan,
                         DesignBounds = createDesignBounds(width, height)
                     };
-                    dfBase = dfPlaceholder;
+                    loadChildGroupColumns(dfGroup);
+                    dfBaseContainer = dfGroup;
                     break;
-
-                case "text":
-                default:
-                    var dfTextBox = new DfTextBox()
+                case ControlType.TextBoxButton:
+                    var dfTextBoxButton = new DfTextBoxButton()
                     {
-                        Name = name,
                         Label = label,
                         LabelPosition = labelPos,
-                        RowSpan = rowSpan,
-                        ColSpan = colSpan,
                         TabIndex = tabIndex,
-                        DesignBounds = createDesignBounds(width, height)
                     };
-                    dfBase = dfTextBox;
+                    dfBaseControl = dfTextBoxButton;
+                    break;
+                case ControlType.TextBox:
+                default:
+                    // Pokrývá více InputType:   string / date / time / datetime / password / number 
+                    var dfTextBox = new DfTextBox()
+                    {
+                        Label = label,
+                        LabelPosition = labelPos,
+                        TabIndex = tabIndex,
+                    };
+                    // Podle definice 'inputType' doplníme další vlastnosti, protože prvkem typu ControlType.TextBox se řeší vícero hodnot 'InputType':
+                    dfBaseControl = dfTextBox;
                     break;
             }
 
-            return dfBase;
+            if (dfBaseControl != null)
+            {
+                dfBaseControl.ToolTipText = toolTip;
+                dfBaseControl.Name = name;
+                dfBaseControl.RowSpan = rowSpan;
+                dfBaseControl.ColSpan = colSpan;
+                dfBaseControl.DesignBounds = createDesignBounds(width, height);
+                return dfBaseControl;
+            }
+
+            if (dfBaseContainer != null)
+            {
+                return dfBaseContainer;
+            }
+
+            return null;
 
 
-
+            // Vytvoří a vrátí souřadnice 'DesignBounds' pro danou šířku a výšku
             DesignBounds createDesignBounds(Int32P? width, Int32P? height)
             {
                 if (width.HasValue || height.HasValue)
                     return new DesignBounds() { Width = width, Height = height };
                 return null;
+            }
+            // Do dané grupy načte 'groupcolumn' z aktuálního elementu 'xElement'
+            void loadChildGroupColumns(DfGroup dfGroup)
+            {
+                string groupInfo = sourceInfo + $"; Group '{dfGroup.Name}'";
+                var xChilds = xElement.Elements();
+                foreach (var xChild in xChilds)
+                {
+                    var child = _CreateChildItemFromColumnIG(xChild, "groupcolumn", sourceInfo, context);
+                    if (child != null && (child is DfBaseControl || child is DfGroup))
+                    {   // Pouze Controly + Group
+                        if (dfGroup.Childs is null) dfGroup.Childs = new List<DfBase>();
+                        dfGroup.Childs.Add(child);
+                    }
+                }
             }
         }
         /// <summary>
@@ -1343,64 +1408,107 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 #warning TODO : načítat NestedTemplate z FormatVersion 1-3 !!!
             // throw new NotImplementedException("FormatVersion1 and NestedTemplate: conversion not implemented.");
         }
-
-
         /// <summary>
-        /// Konvertuje text zadaný jako Value pro atribut LabelPos (type 'pos') ve verzi IG, do textu enumu <see cref="LabelPositionType"/>
+        /// Konvertuje text zadaný jako Value pro atribut LabelPos (type 'pos') ve verzi IG, do hodnoty <see cref="LabelPositionType"/>
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        private static string _ConvertIGLabelPos(string value)
+        private static LabelPositionType? _ConvertIGLabelPos(string value)
         {
             if (!String.IsNullOrEmpty(value))
             {
                 string key = value.Trim().ToLower();
                 switch (key)
                 {
-                    case "none": return nameof(LabelPositionType.None);
-                    case "left": return nameof(LabelPositionType.BeforeLeft);
-                    case "up": return nameof(LabelPositionType.Top);
-                    case "right": return nameof(LabelPositionType.After);
+                    case "none": return LabelPositionType.None;
+                    case "left": return LabelPositionType.BeforeLeft;
+                    case "up": return LabelPositionType.Top;
+                    case "right": return LabelPositionType.After;
                 }
             }
-            return value;
+            return null;
         }
         /// <summary>
-        /// Konvertuje text zadaný jako Value pro atribut Align (type 'leftright') ve verzi IG, do textu enumu <see cref="ContentAlignmentType"/>
+        /// Konvertuje text zadaný jako Value pro atribut Align (type 'leftright') ve verzi IG, do hodnoty <see cref="ContentAlignmentType"/>
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        private static string _ConvertIGLabelLeftRight(string value)
+        private static ContentAlignmentType? _ConvertIGLabelLeftRight(string value)
         {
             if (!String.IsNullOrEmpty(value))
             {
                 string key = value.Trim().ToLower();
                 switch (key)
                 {
-                    case "left": return nameof(ContentAlignmentType.MiddleLeft);
-                    case "right": return nameof(ContentAlignmentType.MiddleRight);
+                    case "left": return ContentAlignmentType.MiddleLeft;
+                    case "right": return ContentAlignmentType.MiddleRight;
                 }
             }
-            return value;
+            return null;
         }
         /// <summary>
-        /// Konvertuje text zadaný jako Value pro atribut Align (type 'leftrightcenter') ve verzi IG, do textu enumu <see cref="HPositionType"/>
+        /// Konvertuje text zadaný jako Value pro atribut Align (type 'leftrightcenter') ve verzi IG, do hodnoty <see cref="HPositionType"/>
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        private static string _ConvertIGAlign(string value)
+        private static HPositionType? _ConvertIGAlign(string value)
         {
             if (!String.IsNullOrEmpty(value))
             {
                 string key = value.Trim().ToLower();
                 switch (key)
                 {
-                    case "left": return nameof(HPositionType.Left);
-                    case "center": return nameof(HPositionType.Center);
-                    case "right": return nameof(HPositionType.Right);
+                    case "left": return HPositionType.Left;
+                    case "center": return HPositionType.Center;
+                    case "right": return HPositionType.Right;
                 }
             }
-            return value;
+            return null;
+        }
+        /// <summary>
+        /// Konvertuje text zadaný jako Value pro atribut InputType (type 'inputtype') ve verzi IG, do hodnoty <see cref="ControlType"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private static ControlType? _ConvertIGInputType(string value)
+        {
+            if (!String.IsNullOrEmpty(value))
+            {
+                string key = value.Trim().ToLower();
+                switch (key)
+                {   // text / checkbox / radiobutton / string / dynamic / date / time / datetime / textarea / select / password / number / label / group / button / picturelistbox / file / 
+                    // calendar / picture / htmltext / AidcCode / color / Geography / PercentageBar / calculator / Placeholder
+                    case "text": return ControlType.TextBox;
+                    case "checkbox": return ControlType.CheckBox;
+#warning RadioButton
+                    case "radiobutton": return ControlType.Button;               
+                    case "string": return ControlType.TextBox;
+#warning Dynamic
+                    case "dynamic": return ControlType.TextBox;
+                    case "date": return ControlType.TextBox;
+                    case "time": return ControlType.TextBox;
+                    case "datetime": return ControlType.TextBox;
+                    case "textarea": return ControlType.EditBox;
+                    case "select": return ControlType.ComboBox;
+                    case "password": return ControlType.TextBox;
+                    case "number": return ControlType.TextBox;
+                    case "label": return ControlType.Label;
+                    case "group": return ControlType.Group;
+                    case "button": return ControlType.Button;
+                    case "picturelistbox": return ControlType.Label;
+                    case "file": return ControlType.TextBoxButton;
+                    case "calendar": return ControlType.Label;
+                    case "picture": return ControlType.Image;
+                    case "htmltext": return ControlType.EditBox;
+                    case "aidccode": return ControlType.Label;
+                    case "color": return ControlType.Label;
+                    case "geography": return ControlType.Label;
+                    case "percentagebar": return ControlType.Label;
+                    case "calculator": return ControlType.Label;
+                    case "placeholder": return ControlType.PlaceHolder;
+                }
+            }
+            return null;
         }
         /// <summary>
         /// Druh Tabu = jeho konverze na prvek Df
@@ -1884,6 +1992,27 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return value;
         }
         /// <summary>
+        /// V daném elementu najde atribut daného jména a vrátí jeho hodnotu převedenou do enumu <typeparamref name="TEnum"/>.
+        /// Pro převod načteného textu do typové hodnoty používá dodaný <paramref name="convertor"/>.
+        /// </summary>
+        /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
+        /// <param name="attributeName"></param>
+        /// <param name="convertor">Konvertor načteného textu do typové hodnoty</param>
+        private static TEnum? _ReadAttributeEnumN<TEnum>(XElement xElement, string attributeName, Func<string, TEnum?> convertor) where TEnum : struct
+        {
+            TEnum? value = null;
+            if (xElement.HasAttributes && !String.IsNullOrEmpty(attributeName))
+            {
+                var xAttribute = xElement.Attribute(attributeName);
+                if (xAttribute != null && !String.IsNullOrEmpty(xAttribute.Value))
+                {
+                    string text = xAttribute.Value;
+                    value = convertor(text);
+                }
+            }
+            return value;
+        }
+        /// <summary>
         /// Z dodaného <paramref name="xElement"/> načte styl prvku z atributu 'StyleName' nebo z elementu 'style'
         /// </summary>
         /// <param name="xElement">Element, v němž se má hledat zadaný atribut</param>
@@ -2278,6 +2407,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Vznikající formulář
             /// </summary>
             public DfForm Form { get { return LoadArgs.Form; } set { LoadArgs.Form = value; } }
+            /// <summary>
+            /// Objekt, který je zdrojem dalších dat pro dataform ze strany systému.
+            /// Například vyhledá popisný text pro datový control daného jména, určí velikost textu s daným obsahem a daným stylem, atd...
+            /// </summary>
+            public IControlInfoSource InfoSource { get { return LoadArgs.InfoSource; } }
+
             /// <summary>
             /// Přidá chybu, nalezenou v parsovaném souboru.
             /// </summary>

@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<template FormatVersion="3" DataSource="dw_faktura_dosla_hlavicka_form.data.xml"
+          TotalWidth="984" TotalHeight="598" MasterWidth="754" MasterHeight="398"
+          TableColumns="2" LabelPos="Up" DefaultLastRowColumnWidth="auto"
+          xmlns="http://tempuri.org/DataForm.Frm.xsd">
+
+    <tab TabPageLabel="fm(MSG018)" TableColumns="5">
+        <column InputType="group" Name="group_castka_pp">
+            <groupcolumn Name="castka_pp" Width="150" ReadOnly="True" />
+            <groupcolumn Name="castka_pp_mena" Width="150" ReadOnly="True" />
+        </column>
+        <column Name="typ_uhrady" Width="150" RegisterItemChange="True" />
+        <column Name="typ_uhrady_jiny" Protect="not(typ_uhrady = 'J' or typ_uhrady = '' or typ_uhrady is null)" ColSpan="3" />
+
+        <column Name="pozastaven_pp" Width="150" ReadOnly="True" />
+        <column Name="stav_pp" Width="150" ReadOnly="True" />
+        <column Name="datum_splatno_pp" Width="100" ReadOnly="True" />
+        <column Name="datum_posledni_platby" Width="100" ReadOnly="True" />
+        <column Name="prodleni" Width="100" ReadOnly="True" />
+
+        <column Name="cislo_ban_spoj_vlastni_pp_refer" Width="100%" ColSpan="2" />
+        <column Name="cislo_ban_spoj_vlastni_pp_nazev" Width="100%" ReadOnly="True" LabelPos="None" />
+        <column Name="stav_slozenky" Width="100" ReadOnly="True" />
+        <column Name="datum_sazby_dph" />
+    </tab>
+</template>

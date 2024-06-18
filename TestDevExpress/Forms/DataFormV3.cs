@@ -30,6 +30,8 @@ namespace TestDevExpress.Forms
             this.ImageName = "svgimages/spreadsheet/showcompactformpivottable.svg";
             this.ImageNameAdd = "@text|D|#002266||B|3|#88AAFF|#CCEEFF";
 
+            WinReg.CurrentFolder = WinRegFolder.CreateForProcessView(Microsoft.Win32.RegistryHive.CurrentUser, @"Software\Asseco Solutions\TestDevExpress\Config");
+
             __CurrentId = ++__InstanceCounter;
             __DataFormId = 0;
             _RefreshTitle();
@@ -359,18 +361,35 @@ namespace TestDevExpress.Forms
                     _ChangeDataInDataForm();
                     break;
                 case "LoadFormFileOne":
-                    __LastXmlFile = fileName;
+                    _LastXmlFile = fileName;
                     _LoadDataFrmXml(fileName);
                     break;
                 case "LoadLastXmlFile":
-                    _LoadDataFrmXml(__LastXmlFile);
+                    _LoadDataFrmXml(_LastXmlFile);
                     break;
                 default:
                     var n = itemId;
                     break;
             }
         }
-        private string __LastXmlFile;
+        /// <summary>
+        /// Posledně načtená soubor; persistuje do WinReg
+        /// </summary>
+        private string _LastXmlFile 
+        {
+            get
+            {
+                if (__LastXmlFile is null)
+                    __LastXmlFile = WinReg.ReadString(WinReg.CurrentFolder, "DataFormFile", "");
+                return __LastXmlFile;
+            }
+            set
+            {
+                __LastXmlFile = value;
+                WinReg.WriteString(WinReg.CurrentFolder, "DataFormFile", value);
+            }
+        }
+        private string __LastXmlFile = null;
         /// <summary>
         /// Vrátí soupis položek do nabídky Ribbonu pro načítání XML souborů
         /// </summary>
@@ -987,6 +1006,10 @@ namespace TestDevExpress.Forms
         #endregion
         #region IControlInfoSource
 
+        ControlType? IControlInfoSource.GetControlType(string columnName, int? useNorisClass)
+        {
+            return ControlType.TextBox;
+        }
         string IControlInfoSource.NestedTemplateContentLoad(string templateName)
         {
             string nestedFrmXml = (!String.IsNullOrEmpty(templateName) ? System.IO.Path.Combine(__FrmXmlPath, templateName) : null);
