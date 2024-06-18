@@ -726,10 +726,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private bool _IsAbsent { get { var state = __DfItem.State; return state.HasValue && state.Value.HasFlag(ControlStateType.Absent); } }
             /// <summary>
-            /// Vodící linky vytvářené pro režim FlowLayout, pokud v argumentu <see cref="_LayoutArgs"/> je požadováno <see cref="DfTemplateLayoutArgs.DebugImagesWithGuideLines"/> = true.
-            /// </summary>
-            private FlowGuideLine[] __FlowGuideLines;
-            /// <summary>
             /// Všechny Child prvky (controly + grupy).
             /// Všechny je třeba umístit
             /// </summary>
@@ -853,9 +849,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.__VPosition = dfGroup.VPosition;
                 this.__ExpandControl = dfGroup.ExpandControl;
                 this.__LabelPosition = dfGroup.LabelPosition;
-                this.__MainLabelText = dfGroup.Label;
-                this.__MainLabelWidth = dfGroup.LabelWidth;
-                this.__MainLabelStyle = dfGroup.LabelStyle;
+                this.__MainLabelInfo = new LabelInfo() { Text = dfGroup.Label, Style = dfGroup.LabelStyle, DesignWidth = dfGroup.LabelWidth };
                 this.__ContainerType = ContainerType.Group;
                 this.__ControlType = ControlType.None;
                 this.__ControlExists = true;
@@ -887,10 +881,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (dfControl is DfBaseLabeledInputControl labeledInputControl)
                 {   // Label vedle Controlu:
                     this.__LabelPosition = labeledInputControl.LabelPosition;
-                    this.__MainLabelText = labeledInputControl.Label;
-                    this.__MainLabelWidth = labeledInputControl.LabelWidth;
-                    this.__MainLabelStyle = labeledInputControl.LabelStyle;
-                    this.__SuffixLabelText = labeledInputControl.SuffixLabel;
+                    this.__MainLabelInfo = new LabelInfo() { Text = labeledInputControl.Label, Style = labeledInputControl.LabelStyle, DesignWidth = labeledInputControl.LabelWidth };
+                    this.__SuffixLabelInfo = new LabelInfo() { Text = labeledInputControl.SuffixLabel };
                 }
 
                 if (dfControl is DfBaseInputTextControl inputTextControl)
@@ -906,11 +898,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private void _RefreshData()
             {
+                // Logické rozmístění labelu Main a Suffix:
                 LabelPositionType lPos = __LabelPosition ?? _ParentStyle.AutoLabelPosition;
                 this.__ValidLabelPosition = lPos;
                 this.__MainLabelExists = (!String.IsNullOrEmpty(__MainLabelText) && (lPos == LabelPositionType.BeforeLeft || lPos == LabelPositionType.BeforeRight || lPos == LabelPositionType.Top || lPos == LabelPositionType.Bottom || lPos == LabelPositionType.BeforeRight));
                 this.__ControlExists = (this.__ContainerType == ContainerType.Panel || this.__ContainerType == ContainerType.Group) || !(this.__ControlType == ControlType.None || this.__ControlType == ControlType.PlaceHolder);
                 this.__SuffixLabelExists = (!String.IsNullOrEmpty(__SuffixLabelText) && __LabelPosition != LabelPositionType.After);
+
+                // Fyzické obsazení prostoru pro Labely: Left, Top, Right, Bottom:
+                qqq;
+
+
             }
             /// <summary>
             /// Zahodí veškerá data
@@ -1007,6 +1005,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private DfControlStyle __ControlStyle;
             /// <summary>
+            /// Na kterých prvcích má být aktivní ToolTip
+            /// </summary>
+            private ToolTipVisibilityType __ToolTipVisibility;
+            /// <summary>
             /// Titulek ToolTipu.
             /// </summary>
             private string __ToolTipTitle;
@@ -1015,35 +1017,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private string __ToolTipText;
             /// <summary>
-            /// Existuje MainLabel (tzn. je definován text a je určená pozice)
+            /// Kompletní informace o Main Labelu
             /// </summary>
-            private bool __MainLabelExists;
+            private LabelInfo __MainLabelInfo;
             /// <summary>
-            /// Text, popisující obsah políčka.
+            /// Kompletní informace o Suffix Labelu
             /// </summary>
-            private string __MainLabelText;
+            private LabelInfo __SuffixLabelInfo;
+
             /// <summary>
             /// Existuje Control (tzn. nějaký textbox nebo picture nebo button)? Nebo ne (třeba Placeholder)
             /// </summary>
             private bool __ControlExists;
-            /// <summary>
-            /// Existuje SuffixLabel (tzn. je definován text)
-            /// </summary>
-            private bool __SuffixLabelExists;
-            /// <summary>
-            /// Text suffix labelu. Jde o popisek vpravo od vstpního prvku, typicky obsahuje název jednotky (ks, Kč, $, kg, ...).
-            /// Pokud je null, pak není ve formuláři definováno. Pokud je "", je tím definováno 'Bez labelu'.
-            /// V existující definici mohou být přítomny formátovací funkce: "fm(xxx)", "fmr(xxx)". Přípravná funkce to má vyřešit.
-            /// </summary>
-            private string __SuffixLabelText;
-            /// <summary>
-            /// Nejvyšší šířka prostoru pro Label
-            /// </summary>
-            private int? __MainLabelWidth { get; set; }
-            /// <summary>
-            /// Styl pro Main label (název, styl písma, velikost, barva popisku, barva textu a pozadí, atd)
-            /// </summary>
-            private DfControlStyle __MainLabelStyle;
             /// <summary>
             /// Text popisku uvnitř controlu = text v Buttonu, text v CheckBoxu
             /// </summary>
@@ -1053,14 +1038,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Použití se liší podle typu prvku.
             /// </summary>
             private string __ControlIconName;
-            /// <summary>
-            /// Šířka pro Main label určená v kódu
-            /// </summary>
-            private int? __ImplicitMainLabelWidth;
-            /// <summary>
-            /// Výška pro Main label určená v kódu
-            /// </summary>
-            private int? __ImplicitMainLabelHeight;
             /// <summary>
             /// Výchozí minimální šířka vlastního controlu v pixelech, lze setovat.
             /// Pokud sloupec nebude mít žádnou šířku, a bude v něm tento prvek, a ten bude mít zde nastavenu určitou MinWidth, pak jeho sloupec ji bude mít nastavenu jako Implicitní.
@@ -1081,14 +1058,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Pokud řádek bude mít výslednou výšku větší než tato OptimalHeight, pak prvek bude ve výsledku dimenzován na tuto OptimalHeight, jako by ji zadal uživatel do Height.
             /// </summary>
             private int? __ImplicitControlOptimalHeight;
-            /// <summary>
-            /// Šířka pro Suffix label určená v kódu
-            /// </summary>
-            private int? __ImplicitSuffixLabelWidth;
-            /// <summary>
-            /// Výška pro Suffix label určená v kódu
-            /// </summary>
-            private int? __ImplicitSuffixLabelHeight;
 
             #region IDataFormItem : implementace
             DfForm IDataFormItem.DataForm { get { return _DfForm; } }
@@ -1354,8 +1323,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private void _PositionChilds()
             {
+                __ContentSize = null;
+                __FlowLayoutMatrix = null;
                 __FlowGuideLines = null;
-                this.__ContentSize = null;
+
                 var childs = this.__Childs;
                 if (childs.Count == 0) return;                                 // Není co dělat...
 
@@ -1399,6 +1370,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         }
                         flowLayout.ProcessFlowItems();
                         if (_LayoutArgs.DebugImagesWithGuideLines) __FlowGuideLines = flowLayout.CreateGuideLines();
+                        __FlowLayoutMatrix = flowLayout.CreateTotalMatrix();
 
                         addBoundsToSize(flowLayout.FlowLayoutBounds, contentSize);
                     }
@@ -1585,6 +1557,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Velikost obsahu včetně Margins
             /// </summary>
             private Size __ContentSize;
+            /// <summary>
+            /// Matrice souřadnic celého containeru.
+            /// Popisuje souřadnice krajních labelů a vnitřního prostoru, ve kterém jsou controly.
+            /// Na základě této matrice mohou být modifikovány údaje pro label v rámci Parent containeru v situaci, kdy this je vnořená grupa.
+            /// Jde o poměrně sofistikované řešení, jehož výstupem je plynule navazující layout labelů z vnořeného containeru se sousedícími labely v rámci Parent FlowLayoutu.
+            /// </summary>
+            private CellMatrixInfo __FlowLayoutMatrix;
+            /// <summary>
+            /// Vodící linky vytvářené pro režim FlowLayout, pokud v argumentu <see cref="_LayoutArgs"/> je požadováno <see cref="DfTemplateLayoutArgs.DebugImagesWithGuideLines"/> = true.
+            /// </summary>
+            private FlowGuideLine[] __FlowGuideLines;
             #endregion
             #region Určení absolutní souřadnice každého prvku
             /// <summary>
@@ -2470,6 +2453,36 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return _CreateGuideLines();
         }
         /// <summary>
+        /// Metoda vytvoří a vrátí <see cref="CellMatrixInfo"/>, popisující celý FlowLayout containeru.
+        /// Popisuje prostory pro labely Left, Top, Right, Bottom; a prostor pro Control.
+        /// </summary>
+        /// <returns></returns>
+        public CellMatrixInfo CreateTotalMatrix()
+        {
+            searchFirstLast(__Columns, out LineInfo columnBegin, out LineInfo columnEnd);
+            searchFirstLast(__Rows, out LineInfo rowBegin, out LineInfo rowEnd);
+
+            if (columnBegin is null) return null;
+            return new CellMatrixInfo(columnBegin, columnEnd, rowBegin, rowEnd);
+
+
+            // Určí první a poslední dimenzi LineInfo, která obsahuje nějaký prvek (LineInfo.ContainsItem je true)
+            void searchFirstLast(List<LineInfo> lines, out LineInfo first, out LineInfo last)
+            {
+                first = null;
+                last = null;
+                for (int i = 0; i < lines.Count; i++)
+                {
+                    var line = lines[i];
+                    if (line.ContainsItem)
+                    {
+                        first ??= line;                    // totéž jako:  if (first is null) first = line;
+                        last = line;
+                    }
+                }
+            }
+        }
+        /// <summary>
         /// Metoda vyhledá zdejší evidovaný Floated prvek (ten je definován dodaným jménem <paramref name="parentName"/>), a vrátí jeho souřadnice celé buňky (<see cref="CellMatrixInfo"/>).
         /// Volající typiky tuto souřadnici umístí do <see cref="IFlowLayoutItem.CellMatrix"/> jiného prvku, který může následně pozicovat v rámci daného prostoru.
         /// <para/>
@@ -2491,8 +2504,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void _ProcessReset()
         {
-            __Columns.ForEach(c => c.Reset());
-            __Rows.ForEach(r => r.Reset());
+            __Columns.ForEach(c => c.ResetFlowFinalResults());
+            __Rows.ForEach(r => r.ResetFlowFinalResults());
             __Items.ForEach(i => i.ResetFlowFinalResults());
         }
         /// <summary>
@@ -3566,6 +3579,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             public void Dispose()
             {
                 __Owner = null;
+                __ContainsItem = false;
+                ResetFlowFinalResults();
             }
             #endregion
             #region Public hodnoty : velikosti pracovní, výsledné; pozice
@@ -3779,9 +3794,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Resetuje svoje provozní a výsledné hodnoty. Volá se na začátku finalizace layoutu jako první metoda.
             /// Neresetuje designové hodnoty.
             /// </summary>
-            public void Reset()
+            public void ResetFlowFinalResults()
             {
-                __ContainsItem = false;
                 __LabelBeforeMaximalSize = null;
                 __ControlBoundsMaximalSize = null;
                 __ControlImplicitMaximalSize = null;
@@ -4069,6 +4083,38 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Neresetuje designové hodnoty. Neresetuje umístění do Matrixu. Resetuje to co souvisí s pixely.
         /// </summary>
         void ResetFlowFinalResults();
+    }
+    #endregion
+    #region class LabelSize : velikost Labelu daná uživatelem (šířka) a určená implicitně (změřením textu)
+    /// <summary>
+    /// <see cref="LabelInfo"/> : velikost Labelu daná uživatelem (šířka) a určená implicitně (změřením textu)
+    /// </summary>
+    internal class LabelInfo
+    {
+        /// <summary>
+        /// Existuje MainLabel (tzn. je definován text a je určená pozice)
+        /// </summary>
+        public bool Exists { get; set; }
+        /// <summary>
+        /// Text labelu
+        /// </summary>
+        public string Text { get; set; }
+        /// <summary>
+        /// Styl pro label (název, styl písma, velikost, barva popisku, barva textu a pozadí, atd)
+        /// </summary>
+        public DfControlStyle Style { get; set; }
+        /// <summary>
+        /// Šířka definovaná uživatelem
+        /// </summary>
+        public int? DesignWidth { get; set; }
+        /// <summary>
+        /// Šířka změřená podle textu
+        /// </summary>
+        public int? MeasuredWidth { get; set; }
+        /// <summary>
+        /// Výška změřená podle textu
+        /// </summary>
+        public int? MeasuredHeight { get; set; }
     }
     #endregion
     #region class CellMatrixInfo : popisuje veškeré souřadnice v jednom prvku FlowLayoutu (kde začínají a končí labely, a kde control)

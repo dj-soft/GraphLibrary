@@ -2060,6 +2060,29 @@ namespace Noris.WS.DataContracts.DxForm
         All = FullWidth | FullHeight
     }
     /// <summary>
+    /// Na kterých prvcích má být aktivní ToolTip
+    /// </summary>
+    [Flags]
+    public enum ToolTipVisibilityType
+    {
+        /// <summary>
+        /// Nikde
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Nad Controlem
+        /// </summary>
+        OnControl = 0x01,
+        /// <summary>
+        /// Nad Labelem
+        /// </summary>
+        OnLabel = 0x02,
+        /// <summary>
+        /// Defaultně = nad Controlem i nad Labelem
+        /// </summary>
+        Default = OnControl | OnLabel
+    }
+    /// <summary>
     /// Umístění obrázku vzhledem k prostoru
     /// </summary>
     public enum BackImagePositionType
