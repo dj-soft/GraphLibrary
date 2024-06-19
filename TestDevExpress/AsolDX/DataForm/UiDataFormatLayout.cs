@@ -4097,26 +4097,26 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Pokud sloupec nebude mít žádnou šířku, a bude v něm tento prvek, a ten bude mít zde nastavenu určitou MinWidth, pak jeho sloupec ji bude mít nastavenu jako Implicitní.
         /// Nicméně pokud sloupec bude mít šířku větší, a prvek bude mít jen tuto MinWidth, pak prvek bude ve výsledku dimenzován na 100% reálné šířky sloupce, klidně větší než zdejší MinWidth.
         /// </summary>
-        int? ImplicitControlMinimalWidth { get; set; }
+        int? ImplicitMinimalWidth { get; set; }
         /// <summary>
         /// Výchozí optimální šířka vlastního controlu v pixelech, lze setovat.
         /// Pokud sloupec bude mít výslednou šířku větší než tato OptimalWidth, pak prvek bude ve výsledku dimenzován na tuto OptimalWidth, jako by ji zadal uživatel do Width.
         /// </summary>
-        int? ImplicitControlOptimalWidth { get; set; }
+        int? ImplicitOptimalWidth { get; set; }
         /// <summary>
         /// Výchozí výška vlastního controlu v pixelech, lze setovat.
         /// Pokud řádek nebude mít žádnou výšku, a bude v něm tento prvek, a ten bude mít zde nastavenu určitou MinHeight, pak jeho řádek ji bude mít nastavenu jako Implicitní.
         /// Nicméně pokud řádek bude mít výšku větší, a prvek bude mít jen tuto MinHeight, pak prvek bude ve výsledku dimenzován na 100% reálné výšky sloupce, klidně větší než zdejší MinHeight.
         /// </summary>
-        int? ImplicitControlMinimalHeight { get; set; }
+        int? ImplicitMinimalHeight { get; set; }
         /// <summary>
         /// Výchozí optimální výška vlastního controlu v pixelech, lze setovat.
         /// Pokud řádek bude mít výslednou výšku větší než tato OptimalHeight, pak prvek bude ve výsledku dimenzován na tuto OptimalHeight, jako by ji zadal uživatel do Height.
         /// </summary>
-        int? ImplicitControlOptimalHeight { get; set; }
+        int? ImplicitOptimalHeight { get; set; }
 
         /// <summary>
-        /// Výsledná souřadnice tohoto Labelu v rámci parenta
+        /// Výsledná souřadnice tohoto Controlu v rámci parenta
         /// </summary>
         public ControlBounds Bounds { get; set; }
 
@@ -4667,31 +4667,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// V existující definici mohou být přítomny formátovací funkce: "fm(xxx)", "fmr(xxx)". Přípravná funkce to má vyřešit.
         /// </summary>
         string ToolTipText { get; set; }
-
-        // Implicitní, dopočtené pro prvek z jeho typu, textu atd:
-     
-        /// <summary>
-        /// Výchozí minimální šířka vlastního controlu v pixelech, lze setovat.
-        /// Pokud sloupec nebude mít žádnou šířku, a bude v něm tento prvek, a ten bude mít zde nastavenu určitou MinWidth, pak jeho sloupec ji bude mít nastavenu jako Implicitní.
-        /// Nicméně pokud sloupec bude mít šířku větší, a prvek bude mít jen tuto MinWidth, pak prvek bude ve výsledku dimenzován na 100% reálné šířky sloupce, klidně větší než zdejší MinWidth.
-        /// </summary>
-        int? ImplicitControlMinimalWidth { get; set; }
-        /// <summary>
-        /// Výchozí optimální šířka vlastního controlu v pixelech, lze setovat.
-        /// Pokud sloupec bude mít výslednou šířku větší než tato OptimalWidth, pak prvek bude ve výsledku dimenzován na tuto OptimalWidth, jako by ji zadal uživatel do Width.
-        /// </summary>
-        int? ImplicitControlOptimalWidth { get; set; }
-        /// <summary>
-        /// Výchozí výška vlastního controlu v pixelech, lze setovat.
-        /// Pokud řádek nebude mít žádnou výšku, a bude v něm tento prvek, a ten bude mít zde nastavenu určitou MinHeight, pak jeho řádek ji bude mít nastavenu jako Implicitní.
-        /// Nicméně pokud řádek bude mít výšku větší, a prvek bude mít jen tuto MinHeight, pak prvek bude ve výsledku dimenzován na 100% reálné výšky sloupce, klidně větší než zdejší MinHeight.
-        /// </summary>
-        int? ImplicitControlMinimalHeight { get; set; }
-        /// <summary>
-        /// Výchozí optimální výška vlastního controlu v pixelech, lze setovat.
-        /// Pokud řádek bude mít výslednou výšku větší než tato OptimalHeight, pak prvek bude ve výsledku dimenzován na tuto OptimalHeight, jako by ji zadal uživatel do Height.
-        /// </summary>
-        int? ImplicitControlOptimalHeight { get; set; }
     }
     /// <summary>
     /// Režim layoutu
