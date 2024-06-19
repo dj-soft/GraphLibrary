@@ -900,16 +900,28 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 // Logické rozmístění labelu Main a Suffix:
                 LabelPositionType lPos = __LabelPosition ?? _ParentStyle.AutoLabelPosition;
+                bool mainLabelExists = (this.__MainLabelInfo != null && !String.IsNullOrEmpty(this.__MainLabelInfo.Text) && (lPos == LabelPositionType.BeforeLeft || lPos == LabelPositionType.BeforeRight || lPos == LabelPositionType.Top || lPos == LabelPositionType.Bottom || lPos == LabelPositionType.BeforeRight));
+                bool controlExists = (this.__ContainerType == ContainerType.Panel || this.__ContainerType == ContainerType.Group) || !(this.__ControlType == ControlType.None || this.__ControlType == ControlType.PlaceHolder);
+                bool suffixLabelExists = (this.__SuffixLabelInfo != null && !String.IsNullOrEmpty(this.__SuffixLabelInfo.Text) && lPos != LabelPositionType.After);
+
                 this.__ValidLabelPosition = lPos;
-                this.__MainLabelExists = (!String.IsNullOrEmpty(__MainLabelText) && (lPos == LabelPositionType.BeforeLeft || lPos == LabelPositionType.BeforeRight || lPos == LabelPositionType.Top || lPos == LabelPositionType.Bottom || lPos == LabelPositionType.BeforeRight));
-                this.__ControlExists = (this.__ContainerType == ContainerType.Panel || this.__ContainerType == ContainerType.Group) || !(this.__ControlType == ControlType.None || this.__ControlType == ControlType.PlaceHolder);
-                this.__SuffixLabelExists = (!String.IsNullOrEmpty(__SuffixLabelText) && __LabelPosition != LabelPositionType.After);
+                if (this.__MainLabelInfo != null) this.__MainLabelInfo.Exists = mainLabelExists;
+                this.__ControlExists = controlExists;
+                if (this.__SuffixLabelInfo != null) this.__SuffixLabelInfo.Exists = suffixLabelExists;
 
                 // Fyzické obsazení prostoru pro Labely: Left, Top, Right, Bottom:
-                qqq;
-
-
+                this.__LabelLeftInfo = ((lPos == LabelPositionType.BeforeLeft || lPos == LabelPositionType.BeforeRight) && mainLabelExists ? this.__MainLabelInfo : null);
+                this.__LabelTopInfo = ((lPos == LabelPositionType.Top ) && mainLabelExists ? this.__MainLabelInfo : null);
+                this.__LabelBottomInfo = ((lPos == LabelPositionType.Bottom) && mainLabelExists ? this.__MainLabelInfo : null);
+                this.__LabelRightInfo = ((lPos == LabelPositionType.After) && mainLabelExists ? this.__MainLabelInfo : (suffixLabelExists ? this.__SuffixLabelInfo : null));
             }
+
+            private LabelInfo __LabelLeftInfo;
+            private LabelInfo __LabelTopInfo;
+            private LabelInfo __LabelRightInfo;
+            private LabelInfo __LabelBottomInfo;
+
+
             /// <summary>
             /// Zahodí veškerá data
             /// </summary>
