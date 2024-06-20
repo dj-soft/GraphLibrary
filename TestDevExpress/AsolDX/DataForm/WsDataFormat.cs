@@ -609,7 +609,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Druh vstupního prvku (Control).
         /// </summary>
-        public override ControlType ControlType { get { return ControlType.PlaceHolder; } }
+        public override DataControlType ControlType { get { return DataControlType.PlaceHolder; } }
     }
     /// <summary>
     /// DxDataForm : Vodorovná linka.<br/>
@@ -626,7 +626,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Druh vstupního prvku (Control).
         /// </summary>
-        public override ControlType ControlType { get { return ControlType.HLine; } }
+        public override DataControlType ControlType { get { return DataControlType.HLine; } }
     }
     /// <summary>
     /// DxDataForm : Svislá linka.<br/>
@@ -643,7 +643,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Druh vstupního prvku (Control).
         /// </summary>
-        public override ControlType ControlType { get { return ControlType.VLine; } }
+        public override DataControlType ControlType { get { return DataControlType.VLine; } }
     }
     /// <summary>
     /// DxDataForm : Label.<br/>
@@ -660,7 +660,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Druh vstupního prvku (Control).
         /// </summary>
-        public override ControlType ControlType { get { return ControlType.Label; } }
+        public override DataControlType ControlType { get { return DataControlType.Label; } }
         /// <summary>
         /// Pevný text prvku (text Labelu). Může obsahovat formátovací funkce fm(), fmr(), fmdr().
         /// </summary>
@@ -689,7 +689,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Druh vstupního prvku (Control).
         /// </summary>
-        public override ControlType ControlType { get { return ControlType.Title; } }
+        public override DataControlType ControlType { get { return DataControlType.Title; } }
         /// <summary>
         /// Jméno ikony odstavce nebo prvku (v titulku stránky, v titulku odstavce, ikona Buttonu, atd).
         /// Použití se liší podle typu prvku.
@@ -727,7 +727,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Druh vstupního prvku (Control).
         /// </summary>
-        public override ControlType ControlType { get { return ControlType.CheckBox; } }
+        public override DataControlType ControlType { get { return DataControlType.CheckBox; } }
         /// <summary>
         /// Styl vizualizace CheckBoxu
         /// </summary>
@@ -752,7 +752,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Druh vstupního prvku (Control).
         /// </summary>
-        public override ControlType ControlType { get { return ControlType.Button; } }
+        public override DataControlType ControlType { get { return DataControlType.Button; } }
         /// <summary>
         /// Akce na tomto buttonu
         /// </summary>
@@ -786,7 +786,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Druh vstupního prvku (Control).
         /// </summary>
-        public override ControlType ControlType { get { return ControlType.DropDownButton; } }
+        public override DataControlType ControlType { get { return DataControlType.DropDownButton; } }
         /// <summary>
         /// DropDown prvky na buttonu.
         /// Výchozí hodnota je NULL.
@@ -809,7 +809,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Druh vstupního prvku (Control).
         /// </summary>
-        public override ControlType ControlType { get { return ControlType.EditBox; } }
+        public override DataControlType ControlType { get { return DataControlType.EditBox; } }
     }
     /// <summary>
     /// DxDataForm : TextBox.<br/>
@@ -829,7 +829,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Druh vstupního prvku (Control).
         /// </summary>
-        public override ControlType ControlType { get { return ControlType.TextBox; } }
+        public override DataControlType ControlType { get { return DataControlType.TextBox; } }
         /// <summary>
         /// Editační maska
         /// </summary>
@@ -856,7 +856,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Druh vstupního prvku (Control).
         /// </summary>
-        public override ControlType ControlType { get { return ControlType.TextBoxButton; } }
+        public override DataControlType ControlType { get { return DataControlType.TextBoxButton; } }
         /// <summary>
         /// Buttony na levé straně TextBoxu.
         /// Výchozí hodnota je NULL.
@@ -890,7 +890,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Druh vstupního prvku (Control).
         /// </summary>
-        public override ControlType ControlType { get { return ControlType.ComboBox; } }
+        public override DataControlType ControlType { get { return DataControlType.ComboBox; } }
         /// <summary>
         /// Položky v nabídce
         /// </summary>
@@ -921,7 +921,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Druh vstupního prvku (Control).
         /// </summary>
-        public override ControlType ControlType { get { return ControlType.Image; } }
+        public override DataControlType ControlType { get { return DataControlType.Image; } }
         /// <summary>
         /// Jméno obrázku. Obrázek bude vyhledán mezi ikonami (tedy 'pic/images/obrazek').
         /// </summary>
@@ -948,7 +948,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Druh vstupního prvku (Control).
         /// </summary>
-        public override ControlType ControlType { get { return ControlType.StepProgressBar; } }
+        public override DataControlType ControlType { get { return DataControlType.StepProgressBar; } }
         /// <summary>
         /// Jednotlivý krok v progresu, jeho statická vizualizace.
         /// </summary>
@@ -959,7 +959,7 @@ namespace Noris.WS.DataContracts.DxForm
         public string EditStyleName { get; set; }
     }
     /// <summary>
-    /// DxDataForm : SubButton = součást <see cref="ControlType.DropDownButton"/> i <see cref="ControlType.TextBoxButton"/>.<br/>
+    /// DxDataForm : SubButton = součást <see cref="DataControlType.DropDownButton"/> i <see cref="DataControlType.TextBoxButton"/>.<br/>
     /// Odpovídá XSD typu <c>type_subbutton</c>
     /// </summary>
     internal class DfSubButton : DfSubTextItem
@@ -980,7 +980,7 @@ namespace Noris.WS.DataContracts.DxForm
         public string ActionData { get; set; }
     }
     /// <summary>
-    /// DxDataForm : DfSubTextItem = součást <see cref="ControlType.ComboBox"/>.<br/>
+    /// DxDataForm : DfSubTextItem = součást <see cref="DataControlType.ComboBox"/>.<br/>
     /// Odpovídá XSD typu <c>type_subtextitem</c>
     /// </summary>
     internal class DfSubTextItem : DfBase
@@ -1141,7 +1141,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Druh vstupního prvku (Control).
         /// </summary>
-        public virtual ControlType ControlType { get { return ControlType.None; } }
+        public virtual DataControlType ControlType { get { return DataControlType.None; } }
         /// <summary>
         /// Styl controlu (název, styl písma, velikost, barva popisku, barva textu a pozadí, atd)
         /// </summary>
@@ -1209,7 +1209,7 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Klíčové jméno prvku pro jeho jednoznačnou identifikaci.
         /// Odstavce a prvky musí mít <see cref="Name"/> jednoznačné přes celý formulář = přes všechny záložky.
-        /// Subprvky (=položky editačního stylu) a subbuttony (tlačítka v <see cref="ControlType.TextBoxButton"/>) mají <see cref="Name"/> jednoznačné jen v rámci svého prvku.
+        /// Subprvky (=položky editačního stylu) a subbuttony (tlačítka v <see cref="DataControlType.TextBoxButton"/>) mají <see cref="Name"/> jednoznačné jen v rámci svého prvku.
         /// Pokud více controlů má zobrazovat data jednoho datového sloupce, použije se atribut <see cref="DfBaseInputControl.ColumnName"/>.
         /// </summary>
         public string Name { get; set; }
@@ -2527,7 +2527,7 @@ namespace Noris.WS.DataContracts.DxForm
     /// <summary>
     /// Druh vstupního prvku
     /// </summary>
-    public enum ControlType
+    public enum DataControlType
     {
         /// <summary>
         /// Žádný prvek

@@ -1279,18 +1279,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var fileFilter = _ReadAttributeString(xElement, "FileFilter", null);
 
             // Typ controlu:
-            ControlType? controlType = _ConvertIGInputType(inputType);
+            DataControlType? controlType = _ConvertIGInputType(inputType);
             if (!controlType.HasValue)
                 controlType = context.InfoSource.GetControlType(name, context.Form.UseNorisClass);
             if (!controlType.HasValue)
-                controlType = ControlType.TextBox;
+                controlType = DataControlType.TextBox;
 
             DfBaseControl dfBaseControl = null;
             DfBaseContainer dfBaseContainer = null;
             switch (controlType.Value)
             {   // text / checkbox / radiobutton / string / dynamic / date / time / datetime / textarea / select / password / number / label / 
                 // group / button / picturelistbox / file / calendar / picture / htmltext / AidcCode / color / Geography / PercentageBar / calculator / Placeholder
-                case ControlType.Label:
+                case DataControlType.Label:
                     var dfLabel = new DfLabel()
                     {
                         Text = label,
@@ -1298,12 +1298,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     dfBaseControl = dfLabel;
                     break;
 
-                case ControlType.PlaceHolder:
+                case DataControlType.PlaceHolder:
                     var dfPlaceholder = new DfPlaceHolder();
                     dfBaseControl = dfPlaceholder;
                     break;
 
-                case ControlType.Button:
+                case DataControlType.Button:
                     var dfButton = new DfButton()
                     {
                         Text = label,
@@ -1312,15 +1312,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     };
                     dfBaseControl = dfButton;
                     break;
-                case ControlType.ComboBox:
-                case ControlType.BreadCrumb:
+                case DataControlType.ComboBox:
+                case DataControlType.BreadCrumb:
                     var dfComboBox = new DfComboBox()
                     {
                         TabIndex = tabIndex,
                     };
                     dfBaseControl = dfComboBox;
                     break;
-                case ControlType.Group:
+                case DataControlType.Group:
                     var dfGroup = new DfGroup()
                     {
                         Name = name,
@@ -1331,7 +1331,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     loadChildGroupColumns(dfGroup);
                     dfBaseContainer = dfGroup;
                     break;
-                case ControlType.TextBoxButton:
+                case DataControlType.TextBoxButton:
                     var dfTextBoxButton = new DfTextBoxButton()
                     {
                         Label = label,
@@ -1340,7 +1340,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     };
                     dfBaseControl = dfTextBoxButton;
                     break;
-                case ControlType.TextBox:
+                case DataControlType.TextBox:
                 default:
                     // Pokrývá více InputType:   string / date / time / datetime / password / number 
                     var dfTextBox = new DfTextBox()
@@ -1466,11 +1466,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return null;
         }
         /// <summary>
-        /// Konvertuje text zadaný jako Value pro atribut InputType (type 'inputtype') ve verzi IG, do hodnoty <see cref="ControlType"/>
+        /// Konvertuje text zadaný jako Value pro atribut InputType (type 'inputtype') ve verzi IG, do hodnoty <see cref="DataControlType"/>
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        private static ControlType? _ConvertIGInputType(string value)
+        private static DataControlType? _ConvertIGInputType(string value)
         {
             if (!String.IsNullOrEmpty(value))
             {
@@ -1478,34 +1478,34 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 switch (key)
                 {   // text / checkbox / radiobutton / string / dynamic / date / time / datetime / textarea / select / password / number / label / group / button / picturelistbox / file / 
                     // calendar / picture / htmltext / AidcCode / color / Geography / PercentageBar / calculator / Placeholder
-                    case "text": return ControlType.TextBox;
-                    case "checkbox": return ControlType.CheckBox;
+                    case "text": return DataControlType.TextBox;
+                    case "checkbox": return DataControlType.CheckBox;
 #warning RadioButton
-                    case "radiobutton": return ControlType.Button;               
-                    case "string": return ControlType.TextBox;
+                    case "radiobutton": return DataControlType.Button;               
+                    case "string": return DataControlType.TextBox;
 #warning Dynamic
-                    case "dynamic": return ControlType.TextBox;
-                    case "date": return ControlType.TextBox;
-                    case "time": return ControlType.TextBox;
-                    case "datetime": return ControlType.TextBox;
-                    case "textarea": return ControlType.EditBox;
-                    case "select": return ControlType.ComboBox;
-                    case "password": return ControlType.TextBox;
-                    case "number": return ControlType.TextBox;
-                    case "label": return ControlType.Label;
-                    case "group": return ControlType.Group;
-                    case "button": return ControlType.Button;
-                    case "picturelistbox": return ControlType.Label;
-                    case "file": return ControlType.TextBoxButton;
-                    case "calendar": return ControlType.Label;
-                    case "picture": return ControlType.Image;
-                    case "htmltext": return ControlType.EditBox;
-                    case "aidccode": return ControlType.Label;
-                    case "color": return ControlType.Label;
-                    case "geography": return ControlType.Label;
-                    case "percentagebar": return ControlType.Label;
-                    case "calculator": return ControlType.Label;
-                    case "placeholder": return ControlType.PlaceHolder;
+                    case "dynamic": return DataControlType.TextBox;
+                    case "date": return DataControlType.TextBox;
+                    case "time": return DataControlType.TextBox;
+                    case "datetime": return DataControlType.TextBox;
+                    case "textarea": return DataControlType.EditBox;
+                    case "select": return DataControlType.ComboBox;
+                    case "password": return DataControlType.TextBox;
+                    case "number": return DataControlType.TextBox;
+                    case "label": return DataControlType.Label;
+                    case "group": return DataControlType.Group;
+                    case "button": return DataControlType.Button;
+                    case "picturelistbox": return DataControlType.Label;
+                    case "file": return DataControlType.TextBoxButton;
+                    case "calendar": return DataControlType.Label;
+                    case "picture": return DataControlType.Image;
+                    case "htmltext": return DataControlType.EditBox;
+                    case "aidccode": return DataControlType.Label;
+                    case "color": return DataControlType.Label;
+                    case "geography": return DataControlType.Label;
+                    case "percentagebar": return DataControlType.Label;
+                    case "calculator": return DataControlType.Label;
+                    case "placeholder": return DataControlType.PlaceHolder;
                 }
             }
             return null;

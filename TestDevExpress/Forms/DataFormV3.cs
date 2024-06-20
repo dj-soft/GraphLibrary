@@ -1006,9 +1006,9 @@ namespace TestDevExpress.Forms
         #endregion
         #region IControlInfoSource
 
-        ControlType? IControlInfoSource.GetControlType(string columnName, int? useNorisClass)
+        DataControlType? IControlInfoSource.GetControlType(string columnName, int? useNorisClass)
         {
-            return ControlType.TextBox;
+            return DataControlType.TextBox;
         }
         string IControlInfoSource.NestedTemplateContentLoad(string templateName)
         {
@@ -1017,7 +1017,7 @@ namespace TestDevExpress.Forms
             return System.IO.File.ReadAllText(nestedFrmXml);
         }
 
-        void IControlInfoSource.ValidateControlInfo(IDataFormItem controlInfo)
+        void IControlInfoSource.ValidateControlInfo(IDataFormItem dataFormItem)
         {
             // Tady mám šanci doplnit takové informace o prvku, které autor šablony (frm.xml) explicitně nezadal.
             // Typicky:  
@@ -1026,33 +1026,34 @@ namespace TestDevExpress.Forms
             //   - tooltipy
             //   - editační styl, položky stylu, maska, atd...
 
-            var name = (controlInfo.ColumnName ?? "").Trim().ToLower();
+            var name = (dataFormItem.ColumnName ?? "").Trim().ToLower();
 
+            var controlInfo = dataFormItem.ControlInfo;
             bool hasWidth = (controlInfo.DesignWidthPixel.HasValue || controlInfo.DesignWidthPercent.HasValue);
             if (!hasWidth)
             {
-                var width = _GetDefaultControlWidth(controlInfo, name);
+                var width = _GetDefaultControlWidth(dataFormItem, name);
                 if (width.HasValue)
                 {
                     if (width.Value > 0)
-                        controlInfo.ImplicitControlOptimalWidth = width.Value;
+                        dataFormItem.ControlInfo.ImplicitOptimalWidth = width.Value;
                     else if (width.Value < 0)
-                        controlInfo.ImplicitControlMinimalWidth = -width.Value;
+                        dataFormItem.ControlInfo.ImplicitMinimalWidth = -width.Value;
                 }
             }
 
-            if (String.IsNullOrEmpty(controlInfo.MainLabelText) && controlInfo.LabelPosition != LabelPositionType.None)
-                controlInfo.MainLabelText = _GetMainLabelText(controlInfo, name);
+            if (dataFormItem.MainLabelInfo != null && String.IsNullOrEmpty(dataFormItem.MainLabelInfo.Text) && dataFormItem.LabelPosition != LabelPositionType.None)
+                dataFormItem.MainLabelInfo.Text = _GetMainLabelText(dataFormItem, name);
         }
         /// <summary>
         /// Vrátí vhodnou šířku pro prvek.
         /// Pokud vrátí kladné číslo, je to optimální šířka = tu bude prvek mít přesně.
         /// Pokud vrátí záporné číslo, je to minimální šířka = tu si prvek vyžádá, ale pokud bude prostor větší, pak bude mít prvek 100% šířky aktuálního sloupce.
         /// </summary>
-        /// <param name="controlInfo"></param>
+        /// <param name="dataFormItem"></param>
         /// <param name="name"></param>
         /// <returns></returns>
-        private int? _GetDefaultControlWidth(IDataFormItem controlInfo, string name)
+        private int? _GetDefaultControlWidth(IDataFormItem dataFormItem, string name)
         {
             if (name == "reference_subjektu" || name.EndsWith("_refer")) return 120;
             if (name == "nazev_subjektu" || name.EndsWith("_nazev")) return 250;

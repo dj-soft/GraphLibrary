@@ -209,26 +209,27 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Validuje (tzn. naplní prázdné hodnoty) velikost Controlu podle jeho typu, obsahu a fontu
         /// </summary>
-        /// <param name="itemData"></param>
-        private static void _ValidateControlSize(IDataFormItem itemData)
+        /// <param name="dataFormItem"></param>
+        private static void _ValidateControlSize(IDataFormItem dataFormItem)
         {
-            bool hasWidth = itemData.DesignWidthPixel.HasValue || itemData.DesignWidthPercent.HasValue || itemData.ImplicitControlMinimalWidth.HasValue || itemData.ImplicitControlOptimalWidth.HasValue;
-            bool hasHeight = itemData.DesignHeightPixel.HasValue || itemData.DesignHeightPercent.HasValue || itemData.ImplicitControlMinimalHeight.HasValue || itemData.ImplicitControlOptimalHeight.HasValue;
+            var controlInfo = dataFormItem.ControlInfo;
+            bool hasWidth = controlInfo.DesignWidthPixel.HasValue || controlInfo.DesignWidthPercent.HasValue || controlInfo.ImplicitMinimalWidth.HasValue || controlInfo.ImplicitOptimalWidth.HasValue;
+            bool hasHeight = controlInfo.DesignHeightPixel.HasValue || controlInfo.DesignHeightPercent.HasValue || controlInfo.ImplicitMinimalHeight.HasValue || controlInfo.ImplicitOptimalHeight.HasValue;
             if (hasWidth && hasHeight) return;                                 // Rozměry máme, není co řešit.
 
-            switch (itemData.ControlType)
+            switch (controlInfo.ControlType)
             {
                 // Poznámka k třetímu paramertu asOptimalDimension:
                 //  prvek bude vždy vyžadovat přidělení zadaného prostoru (např. šířku sloupce nebo výšku řádku, a to i v případě ColSpan / RowSpan), rozdíl je:
                 //   true =  Optimal  => pokud sloupec bude širší než je zde požadováno, pak prvek bude i tak mít zde zadanou šířku = optimální. Jako by v frm.xml bylo dáno Width="65".
                 //   false = Minimal  => pokud sloupec bude širší než je zde požadováno, pak prvek se roztáhne na celou šířku prostoru. Jako by v frm.xml bylo dáno Width="100%".
-                case ControlType.Label: setControlTextSize(12, 1, true); break;
-                case ControlType.Button: setControlTextSize(18, 6, true); break;
-                case ControlType.BarCode: setControlSize(32, 32, false); break;
-                case ControlType.Image: setControlSize(32, 32, false); break;
-                case ControlType.EditBox: setControlSize(250, 40, false); break;
-                case ControlType.TextBox:
-                    string name = GetItemKey(itemData.ColumnName, "");
+                case DataControlType.Label: setControlTextSize(12, 1, true); break;
+                case DataControlType.Button: setControlTextSize(18, 6, true); break;
+                case DataControlType.BarCode: setControlSize(32, 32, false); break;
+                case DataControlType.Image: setControlSize(32, 32, false); break;
+                case DataControlType.EditBox: setControlSize(250, 40, false); break;
+                case DataControlType.TextBox:
+                    string name = GetItemKey(dataFormItem.ColumnName, "");
                     if (name == "reference_subjektu" || name.EndsWith("_refer")) setControlSize(120, 20, true);
                     else if (name == "nazev_subjektu" || name.EndsWith("_nazev")) setControlSize(250, 20, true);
                     else setControlSize(100, 20, false);
@@ -239,9 +240,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // přidá definovaný přídavek a výsledné rozměry vloží do ControlWidth a ControlHeight, jako (asOptimalDimension: true => Optimal / false = Minimal)
             void setControlTextSize(int addWidth, int addHeight, bool asOptimalDimension)
             {
-                string text = itemData.ControlText;
-                int width = TextDimension.GetTextWidth(text, itemData.ControlFont) + addWidth;
-                int height = TextDimension.GetFontHeight(itemData.ControlFont) + addHeight;
+                string text = controlInfo.Text;
+                int width = TextDimension.GetTextWidth(text, controlInfo.Font) + addWidth;
+                int height = TextDimension.GetFontHeight(controlInfo.Font) + addHeight;
                 setControlSize(width, height, asOptimalDimension);
             }
             // Vloží dodané hodnoty do ControlWidth a ControlHeight, pokud tam nejsou, jako (asOptimalDimension: true => Optimal / false = Minimal)
@@ -250,63 +251,48 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (!hasWidth)
                 {
                     if (asOptimalDimension)
-                        itemData.ImplicitControlOptimalWidth = width;
+                        controlInfo.ImplicitOptimalWidth = width;
                     else
-                        itemData.ImplicitControlMinimalWidth = width;
+                        controlInfo.ImplicitMinimalWidth = width;
                 }
                 if (!hasHeight)
                 {
                     if (asOptimalDimension)
-                        itemData.ImplicitControlMinimalHeight = height;
+                        controlInfo.ImplicitOptimalHeight = height;
                     else
-                        itemData.ImplicitControlOptimalHeight = height;
+                        controlInfo.ImplicitMinimalHeight = height;
                 }
             }
         }
         /// <summary>
         /// Validuje (tzn. naplní prázdné hodnoty) velikost labelu Main a Suffix
         /// </summary>
-        /// <param name="itemData"></param>
-        private static void _ValidateLabelSize(IDataFormItem itemData)
+        /// <param name="dataFormItem"></param>
+        private static void _ValidateLabelSize(IDataFormItem dataFormItem)
         {
-            if (itemData.LabelPosition != LabelPositionType.None && CheckTextSize(itemData.MainLabelText, itemData.MainLabelFont, itemData.ImplicitMainLabelWidth, itemData.ImplicitMainLabelHeight, out var mainWidth, out var mainHeight))
-            {   // Main label existuje a je třeba aktualizovat některý rozměr:
-                if (mainWidth.HasValue) itemData.ImplicitMainLabelWidth = mainWidth.Value;
-                if (mainHeight.HasValue) itemData.ImplicitMainLabelHeight = mainHeight.Value;
+            var mainLabelInfo = dataFormItem.MainLabelInfo;
+            if (dataFormItem.LabelPosition != LabelPositionType.None && mainLabelInfo != null)
+                checkTextSize(mainLabelInfo);
+
+            var suffixLabelInfo = dataFormItem.SuffixLabelInfo;
+            if (suffixLabelInfo != null)
+                checkTextSize(suffixLabelInfo);
+
+            void checkTextSize(LabelInfo labelInfo)
+            {
+                if (labelInfo is null || String.IsNullOrEmpty(labelInfo.Text)) return;
+
+                bool hasWidth = labelInfo.MeasuredWidth.HasValue;
+                bool hasHeight = labelInfo.MeasuredHeight.HasValue;
+                if (hasWidth && hasHeight) return;
+
+                // Šířka:
+                if (!hasWidth) labelInfo.MeasuredWidth = TextDimension.GetTextWidth(labelInfo.Text, labelInfo.Font);
+
+                // Výška:
+                if (!hasHeight) labelInfo.MeasuredHeight = TextDimension.GetFontHeight(labelInfo.Font);
             }
-            if (CheckTextSize(itemData.SuffixLabelText, itemData.SuffixLabelFont, itemData.ImplicitSuffixLabelWidth, itemData.ImplicitSuffixLabelHeight, out var sufWidth, out var sufHeight))
-            {   // Suffix label existuje a je třeba aktualizovat některý jeho rozměr:
-                if (sufWidth.HasValue) itemData.ImplicitSuffixLabelWidth = sufWidth.Value;
-                if (sufHeight.HasValue) itemData.ImplicitSuffixLabelHeight = sufHeight.Value;
-            }
-        }
-        /// <summary>
-        /// Metoda ověří zadání šířky a výšky pro daný text
-        /// </summary>
-        /// <param name="text"></param>
-        /// <param name="fontInfo"></param>
-        /// <param name="inpWidth"></param>
-        /// <param name="inpHeight"></param>
-        /// <param name="outWidth"></param>
-        /// <param name="outHeight"></param>
-        /// <returns></returns>
-        internal static bool CheckTextSize(string text, DfFontInfo fontInfo, int? inpWidth, int? inpHeight, out int? outWidth, out int? outHeight)
-        {
-            outWidth = null;
-            outHeight = null;
-            if (String.IsNullOrEmpty(text)) return false;            // Není zadán text
 
-            bool hasWidth = inpWidth.HasValue;
-            bool hasHeight = inpHeight.HasValue;
-            if (hasWidth && hasHeight) return false;                 // Rozměry jsou plně určeny, není co řešit (i záporná čísla jsou akceptovaná)
-
-            // Šířka:
-            if (!hasWidth) outWidth = TextDimension.GetTextWidth(text, fontInfo);
-
-            // Výška:
-            if (!hasHeight) outHeight = TextDimension.GetFontHeight(fontInfo);
-
-            return true;
         }
         /// <summary>
         /// Vrátí true, pokud dané souřadnice prvku (<see cref="DesignBounds"/>) určují pevnou = fixní pozici v layoutu (vrací true), nebo plovoucí (false).
@@ -830,8 +816,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.__ExpandControl = null;
                 this.__LabelPosition = null;
                 this.__ContainerType = ContainerType.Panel;
-                this.__ControlType = ControlType.None;
-                this.__ControlExists = true;
+                this.__ControlInfo = new ControlInfo() { Exists = true, ControlType = DataControlType.None, DesignWidth = this.__DesignBounds?.Width, DesignHeight = this.__DesignBounds?.Height };
+
+                _RefreshData();
             }
             /// <summary>
             /// Inicializace vlastních dat tohoto prvku pro prvek typu Group.
@@ -848,11 +835,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.__HPosition = dfGroup.HPosition;
                 this.__VPosition = dfGroup.VPosition;
                 this.__ExpandControl = dfGroup.ExpandControl;
+                this.__ContainerType = ContainerType.Group;
+                this.__ControlInfo = new ControlInfo() { Exists = true, ControlType = DataControlType.None, DesignWidth = this.__DesignBounds?.Width, DesignHeight = this.__DesignBounds?.Height };
                 this.__LabelPosition = dfGroup.LabelPosition;
                 this.__MainLabelInfo = new LabelInfo() { Text = dfGroup.Label, Style = dfGroup.LabelStyle, DesignWidth = dfGroup.LabelWidth };
-                this.__ContainerType = ContainerType.Group;
-                this.__ControlType = ControlType.None;
-                this.__ControlExists = true;
 
                 _RefreshData();
             }
@@ -870,14 +856,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.__HPosition = dfControl.HPosition;
                 this.__VPosition = dfControl.VPosition;
                 this.__ExpandControl = dfControl.ExpandControl;
-                this.__LabelPosition = LabelPositionType.None;
                 this.__ContainerType = ContainerType.None;
-                this.__ControlType = dfControl.ControlType;
-                this.__ControlStyle = dfControl.ControlStyle;
+                this.__LabelPosition = LabelPositionType.None;
+                this.__ToolTipVisibility = ToolTipVisibilityType.Default;
                 this.__ToolTipTitle = dfControl.ToolTipTitle;
                 this.__ToolTipText = dfControl.ToolTipText;
 
-                // Specifické informace podle druhu controlu::
+                this.__ControlInfo = new ControlInfo() { Exists = true, ControlType = dfControl.ControlType, Style = dfControl.ControlStyle, DesignWidth = this.__DesignBounds?.Width, DesignHeight = this.__DesignBounds?.Height };
+
+                // Specifické informace podle druhu controlu:
+                if (dfControl is DfBaseInputTextControl inputTextControl)
+                {   // Text uvnitř Controlu:
+                    this.__ControlInfo.Text = inputTextControl.Text;
+                    this.__ControlInfo.IconName = inputTextControl.IconName;
+                }
+
                 if (dfControl is DfBaseLabeledInputControl labeledInputControl)
                 {   // Label vedle Controlu:
                     this.__LabelPosition = labeledInputControl.LabelPosition;
@@ -885,36 +878,53 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     this.__SuffixLabelInfo = new LabelInfo() { Text = labeledInputControl.SuffixLabel };
                 }
 
-                if (dfControl is DfBaseInputTextControl inputTextControl)
-                {   // Text uvnitř Controlu:
-                    this.__ControlText = inputTextControl.Text;
-                    this.__ControlIconName = inputTextControl.IconName;
-                }
-
                 _RefreshData();
             }
             /// <summary>
-            /// Refreshuje hodnoty <see cref="__MainLabelInfo"/>, <see cref="__ControlExists"/>, <see cref="__SuffixLabelInfo"/> 
+            /// Refreshuje hodnoty <see cref="__MainLabelInfo"/>, <see cref="__ControlInfo"/>, <see cref="__SuffixLabelInfo"/> 
             /// a správně umístí objekty pro labely <see cref="__LabelLeftInfo"/>, <see cref="__LabelTopInfo"/>, <see cref="__LabelRightInfo"/>, <see cref="__LabelBottomInfo"/>.
             /// </summary>
             private void _RefreshData()
             {
                 // Logické rozmístění labelu Main a Suffix:
                 LabelPositionType lPos = __LabelPosition ?? _ParentStyle.AutoLabelPosition;
-                bool mainLabelExists = (this.__MainLabelInfo != null && !String.IsNullOrEmpty(this.__MainLabelInfo.Text) && (lPos == LabelPositionType.BeforeLeft || lPos == LabelPositionType.BeforeRight || lPos == LabelPositionType.Top || lPos == LabelPositionType.Bottom || lPos == LabelPositionType.BeforeRight));
-                bool controlExists = (this.__ContainerType == ContainerType.Panel || this.__ContainerType == ContainerType.Group) || !(this.__ControlType == ControlType.None || this.__ControlType == ControlType.PlaceHolder);
-                bool suffixLabelExists = (this.__SuffixLabelInfo != null && !String.IsNullOrEmpty(this.__SuffixLabelInfo.Text) && lPos != LabelPositionType.After);
-
                 this.__ValidLabelPosition = lPos;
-                if (this.__MainLabelInfo != null) this.__MainLabelInfo.Exists = mainLabelExists;
-                this.__ControlExists = controlExists;
-                if (this.__SuffixLabelInfo != null) this.__SuffixLabelInfo.Exists = suffixLabelExists;
+
+                var mainLabel = this.__MainLabelInfo;
+                bool mainLabelExists = (mainLabel != null && !String.IsNullOrEmpty(mainLabel.Text) && (lPos == LabelPositionType.BeforeLeft || lPos == LabelPositionType.BeforeRight || lPos == LabelPositionType.Top || lPos == LabelPositionType.Bottom || lPos == LabelPositionType.BeforeRight));
+
+                var control = this.__ControlInfo;
+                var containerType = this.__ContainerType;
+                var controlType = control?.ControlType ?? DataControlType.None;
+                bool controlExists = (containerType == ContainerType.Panel || containerType == ContainerType.Group) || !(controlType == DataControlType.None || controlType == DataControlType.PlaceHolder);
+
+                var suffixLabel = this.__SuffixLabelInfo;
+                bool suffixLabelExists = (suffixLabel != null && !String.IsNullOrEmpty(suffixLabel.Text) && lPos != LabelPositionType.After);
+
+                if (mainLabel != null)
+                {
+                    mainLabel.Exists = mainLabelExists;
+                    mainLabel.Alignment = (lPos == LabelPositionType.BeforeLeft ? ContentAlignmentType.MiddleLeft :
+                                          (lPos == LabelPositionType.BeforeRight ? ContentAlignmentType.MiddleRight :
+                                          (lPos == LabelPositionType.Top ? ContentAlignmentType.BottomLeft :
+                                          (lPos == LabelPositionType.After ? ContentAlignmentType.MiddleLeft :
+                                          (lPos == LabelPositionType.Bottom ? ContentAlignmentType.TopLeft : ContentAlignmentType.MiddleRight)))));
+                }
+                if (control != null)
+                {
+                    control.Exists = controlExists;
+                }
+                if (suffixLabel != null)
+                {
+                    suffixLabel.Exists = suffixLabelExists;
+                    suffixLabel.Alignment = ContentAlignmentType.MiddleLeft;
+                }
 
                 // Fyzické obsazení prostoru pro Labely: Left, Top, Right, Bottom:
-                this.__LabelLeftInfo = ((lPos == LabelPositionType.BeforeLeft || lPos == LabelPositionType.BeforeRight) && mainLabelExists ? this.__MainLabelInfo : null);
-                this.__LabelTopInfo = ((lPos == LabelPositionType.Top ) && mainLabelExists ? this.__MainLabelInfo : null);
-                this.__LabelBottomInfo = ((lPos == LabelPositionType.Bottom) && mainLabelExists ? this.__MainLabelInfo : null);
-                this.__LabelRightInfo = ((lPos == LabelPositionType.After) && mainLabelExists ? this.__MainLabelInfo : (suffixLabelExists ? this.__SuffixLabelInfo : null));
+                this.__LabelLeftInfo = ((lPos == LabelPositionType.BeforeLeft || lPos == LabelPositionType.BeforeRight) && mainLabelExists ? mainLabel : null);
+                this.__LabelTopInfo = ((lPos == LabelPositionType.Top ) && mainLabelExists ? mainLabel : null);
+                this.__LabelBottomInfo = ((lPos == LabelPositionType.Bottom) && mainLabelExists ? mainLabel : null);
+                this.__LabelRightInfo = ((lPos == LabelPositionType.After) && mainLabelExists ? mainLabel : (suffixLabelExists ? suffixLabel : null));
             }
             /// <summary>
             /// Zahodí veškerá data
@@ -929,19 +939,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 __RowSpan = null;
                 __HPosition = null;
                 __ExpandControl = null;
+                __ContainerType = ContainerType.None;
                 __LabelPosition = null;
-                __ControlType = ControlType.None;
-                __ControlStyle = null;
+                __ToolTipVisibility = ToolTipVisibilityType.None;
                 __ToolTipTitle = null;
                 __ToolTipText = null;
+                __ControlInfo = null;
                 __MainLabelInfo = null;
                 __SuffixLabelInfo = null;
                 __LabelLeftInfo = null;
                 __LabelTopInfo = null;
                 __LabelRightInfo = null;
                 __LabelBottomInfo = null;
-                __ControlText = null;
-                __ControlIconName = null;
 
                 _ResetFlowData();
             }
@@ -994,6 +1003,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private ExpandControlType? __ExpandControl;
             /// <summary>
+            /// Typ containeru
+            /// </summary>
+            private ContainerType __ContainerType;
+            /// <summary>
             /// Umístění a zarovnání popisku (Main Labelu) vzhledem k souřadnicích controlu, zadané k prvku (nebo null)
             /// </summary>
             private LabelPositionType? __LabelPosition;
@@ -1001,18 +1014,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Umístění a zarovnání popisku (Main Labelu) vzhledem k souřadnicích controlu, validované (není null)
             /// </summary>
             private LabelPositionType __ValidLabelPosition;
-            /// <summary>
-            /// Typ containeru
-            /// </summary>
-            private ContainerType __ContainerType;
-            /// <summary>
-            /// Typ prvku
-            /// </summary>
-            private ControlType __ControlType;
-            /// <summary>
-            /// Styl controlu (název, styl písma, velikost, barva popisku, barva textu a pozadí, atd)
-            /// </summary>
-            private DfControlStyle __ControlStyle;
             /// <summary>
             /// Na kterých prvcích má být aktivní ToolTip
             /// </summary>
@@ -1025,6 +1026,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Text ToolTipu.
             /// </summary>
             private string __ToolTipText;
+            /// <summary>
+            /// Informace o Controlu (text, velikosti)
+            /// </summary>
+            private ControlInfo __ControlInfo;
             /// <summary>
             /// Kompletní informace o Main Labelu
             /// </summary>
@@ -1050,55 +1055,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private LabelInfo __LabelBottomInfo;
 
-            /// <summary>
-            /// Existuje Control (tzn. nějaký textbox nebo picture nebo button)? Nebo ne (třeba Placeholder)
-            /// </summary>
-            private bool __ControlExists;
-            /// <summary>
-            /// Text popisku uvnitř controlu = text v Buttonu, text v CheckBoxu
-            /// </summary>
-            private string __ControlText;
-            /// <summary>
-            /// Jméno ikony odstavce nebo prvku (v titulku stránky, v titulku odstavce, ikona Buttonu, atd).
-            /// Použití se liší podle typu prvku.
-            /// </summary>
-            private string __ControlIconName;
-            /// <summary>
-            /// Výchozí minimální šířka vlastního controlu v pixelech, lze setovat.
-            /// Pokud sloupec nebude mít žádnou šířku, a bude v něm tento prvek, a ten bude mít zde nastavenu určitou MinWidth, pak jeho sloupec ji bude mít nastavenu jako Implicitní.
-            /// Nicméně pokud sloupec bude mít šířku větší, a prvek bude mít jen tuto MinWidth, pak prvek bude ve výsledku dimenzován na 100% reálné šířky sloupce, klidně větší než zdejší MinWidth.
-            /// </summary>
-            private int? __ImplicitControlMinimalWidth;
-            /// <summary>
-            /// Výchozí optimální šířka vlastního controlu v pixelech, lze setovat.
-            /// Pokud sloupec bude mít výslednou šířku větší než tato OptimalWidth, pak prvek bude ve výsledku dimenzován na tuto OptimalWidth, jako by ji zadal uživatel do Width.
-            /// </summary>
-            private int? __ImplicitControlOptimalWidth;
-            /// <summary>
-            /// Výška pro Control určená v kódu
-            /// </summary>
-            private int? __ImplicitControlMinimalHeight;
-            /// <summary>
-            /// Výchozí optimální výška vlastního controlu v pixelech, lze setovat.
-            /// Pokud řádek bude mít výslednou výšku větší než tato OptimalHeight, pak prvek bude ve výsledku dimenzován na tuto OptimalHeight, jako by ji zadal uživatel do Height.
-            /// </summary>
-            private int? __ImplicitControlOptimalHeight;
-
             #region IDataFormItem : implementace
             DfForm IDataFormItem.DataForm { get { return _DfForm; } }
             DfBaseControl IDataFormItem.BaseControl { get { return _DfControl; } }
             string IDataFormItem.Name { get { return __Name; } }
             string IDataFormItem.ColumnName { get { return __ColumnName; } }
 
-            bool IDataFormItem.ControlExists { get { return __ControlExists; } }
-            ControlType IDataFormItem.ControlType { get { return __ControlType; } }
-            DfFontInfo IDataFormItem.ControlFont { get { return null; } }
-            string IDataFormItem.ControlText { get { return __ControlText; } }
-            DfControlStyle IDataFormItem.ControlStyle { get { return __ControlStyle; } }
-            int? IDataFormItem.DesignWidthPixel { get { return __DesignBounds?.Width?.NumberPixel; } }
-            int? IDataFormItem.DesignWidthPercent { get { return __DesignBounds?.Width?.NumberPercent; } }
-            int? IDataFormItem.DesignHeightPixel { get { return __DesignBounds?.Height?.NumberPixel; } }
-            int? IDataFormItem.DesignHeightPercent { get { return __DesignBounds?.Height?.NumberPercent; } }
+            ControlInfo IDataFormItem.ControlInfo { get { return __ControlInfo; } }
 
             LabelPositionType IDataFormItem.LabelPosition { get { return __ValidLabelPosition; } }
             LabelInfo IDataFormItem.MainLabelInfo { get { return __MainLabelInfo; } }
@@ -1107,11 +1070,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             string IDataFormItem.ToolTipTitle { get { return __ToolTipTitle; } set { __ToolTipTitle = value; } }
             string IDataFormItem.ToolTipText { get { return __ToolTipText; } set { __ToolTipText = value; } }
 
-            // Implicitní, dopočtené pro prvek z jeho typu, textu atd:
-            int? IDataFormItem.ImplicitControlMinimalWidth { get { return __ImplicitControlMinimalWidth; } set { __ImplicitControlMinimalWidth = value; } }
-            int? IDataFormItem.ImplicitControlOptimalWidth { get { return __ImplicitControlOptimalWidth; } set { __ImplicitControlOptimalWidth = value; } }
-            int? IDataFormItem.ImplicitControlMinimalHeight { get { return __ImplicitControlMinimalHeight; } set { __ImplicitControlMinimalHeight = value; } }
-            int? IDataFormItem.ImplicitControlOptimalHeight { get { return __ImplicitControlOptimalHeight; } set { __ImplicitControlOptimalHeight = value; } }
             #endregion
             #endregion
             #region Další data o prvku - primárně pro IFlowLayoutItem
@@ -1147,10 +1105,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 __AcceptedWidth = false;
                 __AcceptedHeight = false;
                 __CellMatrix = null;
-                __ControlBounds = null;
                 __FlowGuideLines = null;
-                __MainLabelInfo?.ResetFlowFinalResults();
 
+                __ControlInfo?.ResetFlowFinalResults();
+                __MainLabelInfo?.ResetFlowFinalResults();
                 __SuffixLabelInfo?.ResetFlowFinalResults();
                 __LabelLeftInfo?.ResetFlowFinalResults();
                 __LabelTopInfo?.ResetFlowFinalResults();
@@ -1182,10 +1140,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private CellMatrixInfo __CellMatrix;
             /// <summary>
-            /// Výsledná souřadnice Controlu v rámci parenta
-            /// </summary>
-            private ControlBounds __ControlBounds;
-            /// <summary>
             /// Algoritmus FlowLayout pro prvek zajistil potřebnou šířku
             /// </summary>
             private bool __AcceptedWidth;
@@ -1206,15 +1160,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             HPositionType? IFlowLayoutItem.DesignHPosition { get { return __HPosition; } }
             VPositionType? IFlowLayoutItem.DesignVPosition { get { return __VPosition; } }
             ExpandControlType? IFlowLayoutItem.DesignExpandControl { get { return __ExpandControl; } }
-            int? IFlowLayoutItem.DesignWidthPixel { get { return __DesignBounds?.Width?.NumberPixel; } }
-            int? IFlowLayoutItem.DesignWidthPercent { get { return __DesignBounds?.Width?.NumberPercent; } }
-            int? IFlowLayoutItem.DesignHeightPixel { get { return __DesignBounds?.Height?.NumberPixel; } }
-            int? IFlowLayoutItem.DesignHeightPercent { get { return __DesignBounds?.Height?.NumberPercent; } }
-            bool IFlowLayoutItem.ControlExists { get { return __ControlExists; } }
-            int? IFlowLayoutItem.ImplicitControlMinimalWidth { get { return __ImplicitControlMinimalWidth; } }
-            int? IFlowLayoutItem.ImplicitControlOptimalWidth { get { return __ImplicitControlOptimalWidth; } }
-            int? IFlowLayoutItem.ImplicitControlMinimalHeight { get { return __ImplicitControlMinimalHeight; } }
-            int? IFlowLayoutItem.ImplicitControlOptimalHeight { get { return __ImplicitControlOptimalHeight; } }
 
             // Umístění prvku v rámci FlowLayoutu
             int? IFlowLayoutItem.FlowColBeginIndex { get { return __FlowColBeginIndex; } set { __FlowColBeginIndex = value; } }
@@ -1222,8 +1167,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int? IFlowLayoutItem.FlowRowBeginIndex { get { return __FlowRowBeginIndex; } set { __FlowRowBeginIndex = value; } }
             int? IFlowLayoutItem.FlowRowEndIndex { get { return __FlowRowEndIndex; } set { __FlowRowEndIndex = value; } }
             CellMatrixInfo IFlowLayoutItem.CellMatrix { get { return __CellMatrix; } set { __CellMatrix = value; } }
-            ControlBounds IFlowLayoutItem.ControlBounds { get { return __ControlBounds; } set { __ControlBounds = value; } }
 
+            ControlInfo IFlowLayoutItem.ControlInfo { get { return __ControlInfo; } }
             LabelInfo IFlowLayoutItem.LabelLeftInfo { get { return __LabelLeftInfo; } }
             LabelInfo IFlowLayoutItem.LabelTopInfo { get { return __LabelTopInfo; } }
             LabelInfo IFlowLayoutItem.LabelRightInfo { get { return __LabelRightInfo; } }
@@ -1409,7 +1354,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     if (key != null && allDictionary.TryGetValue(key, out var parentItem) && parentItem.__CellMatrix != null)
                     {
                         processItem.__CellMatrix = parentItem.__CellMatrix;
-                        processItem.__ControlExists = true;
+                        processItem.__ControlInfo.Exists = true;
                         DfFlowLayoutInfo.ProcessInnerItemBounds(processItem, __ChildStyle);
                         addItemBoundsToSize(processItem, contentSize);
                     }
@@ -1464,9 +1409,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // Přidá souřadnice aktivních oblastí daného prvku do sumární velikosti 'contentSize' (řeší Right a Bottom)
                 void addItemBoundsToSize(ItemInfo processItem, Size contentSize)
                 {
-                    if (processItem.__MainLabelBounds != null) addBoundsToSize(processItem.__MainLabelBounds, contentSize);
-                    if (processItem.__ControlBounds != null) addBoundsToSize(processItem.__ControlBounds, contentSize);
-                    if (processItem.__SuffixLabelBounds != null) addBoundsToSize(processItem.__SuffixLabelBounds, contentSize);
+                    addBoundsToSize(processItem.__MainLabelInfo?.Bounds, contentSize);
+                    addBoundsToSize(processItem.__ControlInfo?.Bounds, contentSize);
+                    addBoundsToSize(processItem.__SuffixLabelInfo?.Bounds, contentSize);
                 }
                 // Zvětší velikost 'contentSize' tak, aby se do ní vešla souřadnice 'bounds'. Neřešíme Left a Top, jen Right a Bottom.
                 void addBoundsToSize(ControlBounds bounds, Size contentSize)
@@ -1521,9 +1466,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // Posune souřadnice v daném prvku o (dl, dt)
                 void processMargins(ItemInfo item)
                 {
-                    if (item.__ControlExists) processBounds(item.__ControlBounds);
-                    if (item.__MainLabelExists) processBounds(item.__MainLabelBounds);
-                    if (item.__SuffixLabelExists) processBounds(item.__SuffixLabelBounds);
+                    processBounds(item.__ControlInfo?.Bounds);
+                    processBounds(item.__MainLabelInfo?.Bounds);
+                    processBounds(item.__SuffixLabelInfo?.Bounds);
                 }
                 // Posune dané souřadnice o (dl, dt)
                 void processBounds(ControlBounds bounds)
@@ -1543,8 +1488,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             private void _ProcessContentSize()
             {
                 var size = this.__ContentSize;
-                this.__ImplicitControlOptimalWidth = size?.Width;
-                this.__ImplicitControlOptimalHeight = size?.Height;
+                this.__ControlInfo.ImplicitOptimalWidth = size?.Width;
+                this.__ControlInfo.ImplicitOptimalHeight = size?.Height;
 
                 //  this.__ImplicitControlMinimalWidth = size?.Width;
                 //  this.__ImplicitControlMinimalHeight = size?.Height;
@@ -1596,8 +1541,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                             prepareAbsoluteBounds(child, addX, addY);
                             if (child._HasChilds)
                             {
-                                int nextX = child.__ControlBounds.Left;
-                                int nextY = child.__ControlBounds.Top;
+                                int nextX = child.__ControlInfo.Bounds.Left;
+                                int nextY = child.__ControlInfo.Bounds.Top;
                                 _PrepareContainerAbsoluteBounds(child, nextX, nextY);
                             }
                         }
@@ -1608,9 +1553,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 {
                     if (dx != 0 || dy != 0)
                     {
-                        prepareAbsoluteBoundsOne(item.__ControlBounds, dx, dy);
-                        prepareAbsoluteBoundsOne(item.__MainLabelBounds, dx, dy);
-                        prepareAbsoluteBoundsOne(item.__SuffixLabelBounds, dx, dy);
+                        prepareAbsoluteBoundsOne(item.__ControlInfo.Bounds, dx, dy);
+                        prepareAbsoluteBoundsOne(item.__MainLabelInfo.Bounds, dx, dy);
+                        prepareAbsoluteBoundsOne(item.__SuffixLabelInfo.Bounds, dx, dy);
                     }
                 }
                 void prepareAbsoluteBoundsOne(ControlBounds bounds, int dx, int dy)
@@ -1730,39 +1675,39 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     var iFlow = item as IFlowLayoutItem;
                     var iData = item as IDataFormItem;
 
-                    // Main Label:
-                    if (iFlow.MainLabelExists && iFlow.MainLabelBounds != null)
-                    {
-                        var alignment = iFlow.MainLabelAlignment ?? ContentAlignmentType.MiddleLeft;
-                        drawLabel(graphics, brush, pen, stringFormat, iData.MainLabelText, iFlow.MainLabelBounds, alignment);
-                    }
+                    // Labely:
+                    drawLabelInfo(graphics, brush, pen, stringFormat, iFlow.LabelLeftInfo, ContentAlignmentType.MiddleLeft);
+                    drawLabelInfo(graphics, brush, pen, stringFormat, iFlow.LabelTopInfo, ContentAlignmentType.MiddleLeft);
+                    drawLabelInfo(graphics, brush, pen, stringFormat, iFlow.LabelRightInfo, ContentAlignmentType.MiddleLeft);
+                    drawLabelInfo(graphics, brush, pen, stringFormat, iFlow.LabelBottomInfo, ContentAlignmentType.MiddleLeft);
 
-                    // Suffix Label:
-                    if (iFlow.SuffixLabelExists && iFlow.SuffixLabelBounds != null)
-                    {
-                        var alignment = iFlow.SuffixLabelAlignment ?? ContentAlignmentType.MiddleLeft;
-                        drawLabel(graphics, brush, pen, stringFormat, iData.SuffixLabelText, iFlow.SuffixLabelBounds, alignment);
-                    }
 
                     // Control (nikoliv Container):
-                    if (item._IsControl && iFlow.ControlExists && iFlow.ControlBounds != null)
+                    var controlInfo = iFlow.ControlInfo;
+                    if (item._IsControl && controlInfo != null && controlInfo.Exists && controlInfo.Bounds != null)
                     {
                         switch (item._DfControl.ControlType)
                         {
-                            case ControlType.Label:
-                                drawControlLabel(graphics, brush, pen, stringFormat, iData.Name, iFlow.ControlBounds, ContentAlignmentType.MiddleRight);
+                            case DataControlType.Label:
+                                drawControlLabel(graphics, brush, pen, stringFormat, iData.Name, controlInfo.Bounds, ContentAlignmentType.MiddleRight);
                                 break;
-                            case ControlType.HLine:
-                                drawControlHLine(graphics, brush, pen, stringFormat, iData.Name, iFlow.ControlBounds, ContentAlignmentType.MiddleRight);
+                            case DataControlType.HLine:
+                                drawControlHLine(graphics, brush, pen, stringFormat, iData.Name, controlInfo.Bounds, ContentAlignmentType.MiddleCenter);
                                 break;
-                            case ControlType.VLine:
-                                drawControlVLine(graphics, brush, pen, stringFormat, iData.Name, iFlow.ControlBounds, ContentAlignmentType.MiddleRight);
+                            case DataControlType.VLine:
+                                drawControlVLine(graphics, brush, pen, stringFormat, iData.Name, controlInfo.Bounds, ContentAlignmentType.MiddleCenter);
                                 break;
                             default:
-                                drawControlBorder(graphics, brush, pen, stringFormat, iData.Name, iFlow.ControlBounds, ContentAlignmentType.MiddleCenter);
+                                drawControlBorder(graphics, brush, pen, stringFormat, iData.Name, controlInfo.Bounds, ContentAlignmentType.MiddleCenter);
                                 break;
                         }
                     }
+                }
+                // Vykreslí LabelInfo včetně podkladu
+                void drawLabelInfo(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, LabelInfo labelInfo, ContentAlignmentType alignment)
+                {
+                    if (labelInfo is null || !labelInfo.Exists || labelInfo.Bounds is null) return;
+                    drawLabel(graphics, brush, pen, stringFormat, labelInfo.Text, labelInfo.Bounds, labelInfo.Alignment ?? alignment);
                 }
                 // Vykreslí Label včetně podkladu
                 void drawLabel(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, string text, ControlBounds bounds, ContentAlignmentType alignment)
@@ -2524,53 +2469,38 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
 
             // Všechny prvky zpracují svoje labely:
-            __Items.ForEach(i => processLabel(i));
+            __Items.ForEach(i => processLabels(i));
 
             // Zpracuje labely daného prvku do sloupců a řádků, kam patří
-            void processLabel(IFlowLayoutItem item)
+            void processLabels(IFlowLayoutItem item)
             {
-                // MainLabel
-                bool skipSuffix = false;
-                if (item.MainLabelExists)
-                {
-                    var labelPosition = item.LabelPosition;
-                    switch (item.LabelPosition)
-                    {
-                        case LabelPositionType.BeforeLeft:
-                        case LabelPositionType.BeforeRight:
-                            processLabelSize(item, __Columns, item.FlowColBeginIndex, item.DesignLabelWidth ?? item.ImplicitMainLabelWidth, true);
-                            break;
+                processLabel(item.LabelLeftInfo, __Columns, item.FlowColBeginIndex, true, true);
+                processLabel(item.LabelTopInfo, __Rows, item.FlowRowBeginIndex, false, true);
+                processLabel(item.LabelRightInfo, __Columns, item.FlowColEndIndex, true, false);
+                processLabel(item.LabelBottomInfo, __Rows, item.FlowRowEndIndex, false, true);
 
-                        case LabelPositionType.Top:
-                            processLabelSize(item, __Rows, item.FlowRowBeginIndex, item.ImplicitMainLabelHeight, true);
-                            if (shiftTopLabel > 0)
-                                // Máme Label v pozici Top, a jeho X-offset je záporný (tedy Label je nad Controlem, a začíná o něco vlevo).
-                                // Musím zajistit, aby v prostoru LabelBefore (vlevo od controlu) byl dostatek místa pro tento offset:
-                                processLabelSize(item, __Columns, item.FlowColBeginIndex, shiftTopLabel, true);
-                            break;
-                        case LabelPositionType.Bottom:
-                            processLabelSize(item, __Rows, item.FlowRowEndIndex, item.ImplicitMainLabelHeight, false);
-                            if (shiftBottomLabel > 0)
-                                // Máme Label v pozici Bottom, a jeho X-offset je záporný (tedy Label je pod Controlem, a začíná o něco vlevo).
-                                // Musím zajistit, aby v prostoru LabelBefore (vlevo od controlu) byl dostatek místa pro tento offset:
-                                processLabelSize(item, __Columns, item.FlowColBeginIndex, shiftBottomLabel, true);
-                            break;
+                processLabelShift(item.LabelTopInfo, __Columns, item.FlowColBeginIndex, shiftTopLabel);
+                processLabelShift(item.LabelBottomInfo, __Columns, item.FlowColBeginIndex, shiftBottomLabel);
+            }
+            // Zpracuje jeden label (do sloupce / do řádku, v dané velikosti, rozměr Width / Height, do prostoru Before / After)
+            void processLabel(LabelInfo labelInfo, List<LineInfo> lines, int? lineIndex, bool isWidth, bool isBefore)
+            {
+                if (labelInfo is null || !labelInfo.Exists || !lineIndex.HasValue) return;
 
-                        case LabelPositionType.After:
-                            processLabelSize(item, __Columns, item.FlowColEndIndex, item.DesignLabelWidth ?? item.ImplicitMainLabelWidth, false);
-                            skipSuffix = true;
-                            break;
-                    }
-                }
+                // Řešíme šířku nebo výšku? (isWidth) : šířka uznává i DesignWidth jako prioritu. Jinak bereme Measured rozměr:
+                int? size = (isWidth ? (labelInfo.DesignWidth ?? labelInfo.MeasuredWidth) : labelInfo.MeasuredHeight);
+                processLabelSize(lines, lineIndex, size, isBefore);
+            }
+            // Zpracuje jeden shift labelu (do sloupce, v dané velikosti, do prostoru Before)
+            void processLabelShift(LabelInfo labelInfo, List<LineInfo> lines, int? lineIndex, int shift)
+            {
+                if (labelInfo is null || !labelInfo.Exists || !lineIndex.HasValue) return;
 
-                // SuffixLabel
-                if (item.SuffixLabelExists && !skipSuffix)
-                {
-                    processLabelSize(item, __Columns, item.FlowColEndIndex, item.ImplicitSuffixLabelWidth, false);
-                }
+                // Daný Shift zařadíme do sloupce jako prostor LabelBeforeMaximalSize:
+                processLabelSize(lines, lineIndex, shift, true);
             }
             // Zpracuje jeden label (do sloupce / do řádku, v dané velikosti, do prostoru Before / After)
-            void processLabelSize(IFlowLayoutItem item, List<LineInfo> lines, int? lineIndex, int? size, bool isBefore)
+            void processLabelSize(List<LineInfo> lines, int? lineIndex, int? size, bool isBefore)
             {
                 if (size.HasValue && size.Value > 0)
                 {
@@ -2612,11 +2542,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Zpracuje jeden Item, pouze Control, z hlediska jeho sloupce, ColSpan = 1, nikoliv šířka v procentech:
             void processColumnItem(LineInfo column, IFlowLayoutItem item)
             {
-                if (item.FlowColBeginIndex == item.FlowColEndIndex && item.FlowColBeginIndex == column.Index && !item.DesignWidthPercent.HasValue) 
-                {
-                    column.ControlBoundsMaximalSize = item.DesignWidthPixel;
-                    column.ControlImplicitMaximalSize = _GetMax(item.ImplicitControlMinimalWidth, item.ImplicitControlOptimalWidth);
-                    item.AcceptedWidth = true;
+                if (item.FlowColBeginIndex == item.FlowColEndIndex && item.FlowColBeginIndex == column.Index && item.ControlInfo != null && item.ControlInfo.Exists)
+                {   // Prvek má ColSpan = 1 a to daný column, a obsahuje Control a ten Existuje:
+                    var controlInfo = item.ControlInfo;                                  // item = komplet (Labely + Textbox) / controlInfo = pouze ten Textbox
+                    bool sizeIsPercent = controlInfo.DesignWidthPercent.HasValue;        // true = je definovaná šířka v procentech => nemá vliv na šířku sloupce!!!
+                    if (!sizeIsPercent)
+                    {
+                        column.ControlBoundsMaximalSize = controlInfo.DesignWidthPixel;
+                        column.ControlImplicitMaximalSize = _GetMax(controlInfo.ImplicitMinimalWidth, controlInfo.ImplicitOptimalWidth);
+                        item.AcceptedWidth = true;
+                    }
                 }
             }
             // Zpracuje jeden Row
@@ -2633,11 +2568,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Zpracuje jeden Item, pouze Control, z hlediska jeho řádku, RowSpan = 1, nikoliv výška v procentech:
             void processRowItem(LineInfo row, IFlowLayoutItem item)
             {
-                if (item.FlowRowBeginIndex == item.FlowRowEndIndex && item.FlowRowBeginIndex == row.Index && !item.DesignHeightPercent.HasValue)
+                if (item.FlowRowBeginIndex == item.FlowRowEndIndex && item.FlowRowBeginIndex == row.Index && item.ControlInfo != null && item.ControlInfo.Exists)
                 {
-                    row.ControlBoundsMaximalSize = item.DesignHeightPixel;
-                    row.ControlImplicitMaximalSize = _GetMax(item.ImplicitControlMinimalHeight, item.ImplicitControlOptimalHeight);
-                    item.AcceptedHeight = true;
+                    var controlInfo = item.ControlInfo;                                  // item = komplet (Labely + Textbox) / controlInfo = pouze ten Textbox
+                    bool sizeIsPercent = controlInfo.DesignHeightPercent.HasValue;       // true = je definovaná výška v procentech => nemá vliv na výšku řádku!!!
+                    if (!sizeIsPercent)
+                    {
+                        row.ControlBoundsMaximalSize = controlInfo.DesignHeightPixel;
+                        row.ControlImplicitMaximalSize = _GetMax(controlInfo.ImplicitMinimalHeight, controlInfo.ImplicitOptimalHeight);
+                        item.AcceptedWidth = true;
+                    }
                 }
             }
         }
@@ -2705,12 +2645,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 if (!needProcessWidth(item)) return false;                     // Není nutno
 
+                var controlInfo = item.ControlInfo;                            // item = komplet (Labely + Textbox) / controlInfo = pouze ten Textbox
                 int begin = item.FlowColBeginIndex.Value;
                 int end = item.FlowColEndIndex.Value;
 
                 // Hodnota sizeType má vliv na to, zda vůbec budu hledat SizeSum (pokud já nemám rozměr Design nebo Implicit, tak hledat nemusím), a kam ji pak ukládat.
-                int? implicitWidth = _GetMax(item.ImplicitControlMinimalWidth, item.ImplicitControlOptimalWidth);
-                LineInfo.ControlSizeType sizeType = (item.DesignWidthPixel.HasValue ? LineInfo.ControlSizeType.MaxBounds : implicitWidth.HasValue ? LineInfo.ControlSizeType.MaxImplicit : LineInfo.ControlSizeType.None);
+                int? implicitWidth = _GetMax(controlInfo.ImplicitMinimalWidth, controlInfo.ImplicitOptimalWidth);
+                int? designWidthPixel = controlInfo.DesignWidthPixel;
+                LineInfo.ControlSizeType sizeType = (designWidthPixel.HasValue ? LineInfo.ControlSizeType.MaxBounds : implicitWidth.HasValue ? LineInfo.ControlSizeType.MaxImplicit : LineInfo.ControlSizeType.None);
                 if (sizeType == LineInfo.ControlSizeType.None) return false;   // Není nutno
 
                 // Určovat hodnotu controlSizeSum budu v režimu BoundsOrImplicit.
@@ -2719,7 +2661,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (lastColumn is null || !controlSizeSum.HasValue) return false;                    // V dané vlně v dimenzích (sloupce) tohoto prvku nenajdu takovou dimenzi, do které bych vložil jeho rozměr...
 
                 // Obousměrné zpracování (Columns i Rows):
-                int sizeItem = item.DesignWidthPixel ?? implicitWidth ?? 0;
+                int sizeItem = designWidthPixel ?? implicitWidth ?? 0;
                 processItemAny(sizeItem, controlSizeSum.Value, sizeType, sumType, lastColumn, notColumns);
                 item.AcceptedWidth = true;
 
@@ -2730,12 +2672,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 if (!needProcessHeight(item)) return false;                    // Není nutno
 
+                var controlInfo = item.ControlInfo;                            // item = komplet (Labely + Textbox) / controlInfo = pouze ten Textbox
                 int begin = item.FlowRowBeginIndex.Value;
                 int end = item.FlowRowEndIndex.Value;
 
                 // Hodnota sizeType má vliv na to, zda vůbec budu hledat SizeSum (pokud já nemám rozměr Design nebo Implicit, tak hledat nemusím), a kam ji pak ukládat.
-                int? implicitHeight = _GetMax(item.ImplicitControlMinimalHeight, item.ImplicitControlOptimalHeight);
-                LineInfo.ControlSizeType sizeType = (item.DesignHeightPixel.HasValue ? LineInfo.ControlSizeType.MaxBounds : implicitHeight.HasValue ? LineInfo.ControlSizeType.MaxImplicit : LineInfo.ControlSizeType.None);
+                int? implicitHeight = _GetMax(controlInfo.ImplicitMinimalHeight, controlInfo.ImplicitOptimalHeight);
+                int? designHeightPixel = controlInfo.DesignHeightPixel;
+                LineInfo.ControlSizeType sizeType = (designHeightPixel.HasValue ? LineInfo.ControlSizeType.MaxBounds : implicitHeight.HasValue ? LineInfo.ControlSizeType.MaxImplicit : LineInfo.ControlSizeType.None);
                 if (sizeType == LineInfo.ControlSizeType.None) return false;   // Není nutno
                 
                 // Určovat hodnotu controlSizeSum budu v režimu BoundsOrImplicit.
@@ -2744,7 +2688,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (!controlSizeSum.HasValue) return false;                    // V dané vlně v dimenzích (řádky) tohoto prvku nenajdu takovou dimenzi, do které bych vložil jeho rozměr...
 
                 // Obousměrné zpracování (Columns i Rows):
-                int sizeItem = item.DesignHeightPixel ?? implicitHeight ?? 0;
+                int sizeItem = designHeightPixel ?? implicitHeight ?? 0;
                 processItemAny(sizeItem, controlSizeSum.Value, sizeType, sumType, lastRow, notRows);
                 item.AcceptedHeight = true;
 
@@ -2796,12 +2740,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Vrátí true pro prvek, který je třeba pracovat z hlediska šířky: má definovanou šířku (DesignWidthPixel nebo ImplicitControlMinimalWidth nebo ImplicitControlOptimalWidth), ale nemá ji zpracovanou (AcceptedWidth)
             bool needProcessWidth(IFlowLayoutItem item)
             {
-                return ((item.DesignWidthPixel.HasValue || item.ImplicitControlMinimalWidth.HasValue || item.ImplicitControlOptimalWidth.HasValue) && !item.AcceptedWidth);
+                var controlInfo = item.ControlInfo;                            // item = komplet (Labely + Textbox) / controlInfo = pouze ten Textbox
+                var designWidthPixel = controlInfo.DesignWidthPixel;
+                return ((designWidthPixel.HasValue || controlInfo.ImplicitMinimalWidth.HasValue || controlInfo.ImplicitOptimalWidth.HasValue) && !item.AcceptedWidth);
             }
             // Vrátí true pro prvek, který je třeba pracovat z hlediska výšky: má definovanou výšku (DesignHeightPixel nebo ImplicitControlMinimalHeight nebo ImplicitControlOptimalHeight), ale nemá ji zpracovanou (AcceptedHeight)
             bool needProcessHeight(IFlowLayoutItem item)
             {
-                return ((item.DesignHeightPixel.HasValue || item.ImplicitControlMinimalHeight.HasValue || item.ImplicitControlOptimalHeight.HasValue) && !item.AcceptedHeight);
+                var controlInfo = item.ControlInfo;                            // item = komplet (Labely + Textbox) / controlInfo = pouze ten Textbox
+                var designHeightPixel = controlInfo.DesignHeightPixel;
+                return ((designHeightPixel.HasValue || controlInfo.ImplicitMinimalHeight.HasValue || controlInfo.ImplicitOptimalHeight.HasValue) && !item.AcceptedHeight);
             }
             // Porovná dva prvky IFlowLayoutItem podle hodnoty FlowColEndIndex ASC = prvky zleva
             int compareX(IFlowLayoutItem a, IFlowLayoutItem b)
@@ -3099,37 +3047,34 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="bottomLabelOffsetX">Offset X pro labely umístěné Bottom</param>
         private static void _ProcessInnerItemBounds(IFlowLayoutItem item, bool labelsRelativeToControl, int topLabelOffsetX, int bottomLabelOffsetX)
         {
-            // Sekvence:
-            var mainLabelArea = getMainLabelArea();
-            var suffixLabelArea = getSuffixLabelArea(mainLabelArea);
-            var controlBounds = processItemControl(mainLabelArea | suffixLabelArea);
-            if (mainLabelArea != UsedAreaType.None) processItemMainLabel(controlBounds);
-            if (suffixLabelArea != UsedAreaType.None) processItemSuffixLabel(controlBounds);
+            UsedAreaType labelUsedAreas = getLabelUsedAreas();                           // Které prostory vedle Controlu jsou onsazeny Labelem?
+            var controlBounds = processItemControl(labelUsedAreas);                      // Souřadnice Controlu, možná jsou Extended do nevyužitých prostor místo Labelu, když tam Label není
+            processItemLabel(item.LabelLeftInfo, UsedAreaType.Left, controlBounds);      // Umístí Label do prostoru vlevo před control
+            processItemLabel(item.LabelTopInfo, UsedAreaType.Top, controlBounds);        //  ... nad control
+            processItemLabel(item.LabelRightInfo, UsedAreaType.Right, controlBounds);    //  ... vpravo
+            processItemLabel(item.LabelBottomInfo, UsedAreaType.Bottom, controlBounds);  //  ... dolů
             // hotovo.
 
 
-            // Metoda zjistí, která oblast buňky bude obsazena Main Labelem.
-            UsedAreaType getMainLabelArea()
-            {   // Pokud MainLabel existuje, tak podle jeho pozice:
-                var labelPos = item.MainLabelExists ? item.LabelPosition : LabelPositionType.None;
-                switch (labelPos)
-                {
-                    case LabelPositionType.BeforeLeft:
-                    case LabelPositionType.BeforeRight: return UsedAreaType.Left;
-                    case LabelPositionType.After: return UsedAreaType.Right;
-                    case LabelPositionType.Top: return UsedAreaType.Top;
-                    case LabelPositionType.Bottom: return UsedAreaType.Bottom;
-                }
-                return UsedAreaType.None;
+            // Metoda zjistí, které oblasti buňky budou obsazeny Labelem.
+            UsedAreaType getLabelUsedAreas()
+            {
+                return getOneUsedLabelArea(item.LabelLeftInfo, UsedAreaType.Left) |
+                       getOneUsedLabelArea(item.LabelTopInfo, UsedAreaType.Top) |
+                       getOneUsedLabelArea(item.LabelRightInfo, UsedAreaType.Right) |
+                       getOneUsedLabelArea(item.LabelBottomInfo, UsedAreaType.Bottom);
             }
-            // Metoda zjistí, která oblast buňky bude obsazena Suffix Labelem.
-            UsedAreaType getSuffixLabelArea(UsedAreaType mainLabelArea)
-            {   // Poud SuffixLabel existuje 
-                return (item.SuffixLabelExists && mainLabelArea != UsedAreaType.Right ? UsedAreaType.Right : UsedAreaType.None);
+            // Pokud daný LabelInfo je zadán a existuje, pak vrátí daný typ UsedArea
+            UsedAreaType getOneUsedLabelArea(LabelInfo labelInfo, UsedAreaType area)
+            {
+                return (labelInfo != null && labelInfo.Exists) ? area : UsedAreaType.None;
             }
             // Zpracuje souřadnici pro Control
             ControlBounds processItemControl(UsedAreaType labelUsedAreas)
             {
+                var controlInfo = item.ControlInfo;
+                if (controlInfo is null || !controlInfo.Exists) return null;
+
                 // Které prostory může Control využít? Bude expandovat do některých sousedních prostorů, pokud jsou volné?
                 var itemExpand = item.DesignExpandControl ?? ExpandControlType.None;
 
@@ -3141,7 +3086,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
                 // Souřadnice zvolené oblasti, určené pro umístění Controlu:
                 var cellMatrix = item.CellMatrix;
-                int l = expLeft ? correctExpandedControlLeftByOffset(cellMatrix.LeftLabelLeft) : cellMatrix.ControlLeft;
+                int l = expLeft ? correctExpandedControlLeftByOffset(cellMatrix.LeftLabelLeft, labelUsedAreas) : cellMatrix.ControlLeft;
                 int t = expTop ? cellMatrix.TopLabelTop : cellMatrix.ControlTop;
                 int r = expRight ? cellMatrix.RightLabelRight : cellMatrix.ControlRight;
                 int b = expBottom ? cellMatrix.BottomLabelBottom : cellMatrix.ControlBottom;
@@ -3160,16 +3105,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // Jak bude prostor využit z hlediska zadaných dimenzí controlu
                 // ControlWidth:
                 int cw = w;
-                if (item.DesignWidthPixel.HasValue) cw = item.DesignWidthPixel.Value;                                  // Designer zadal do frm.xml hodnotu 'Width="85"'
-                else if (item.DesignWidthPercent.HasValue) cw = (w * item.DesignWidthPercent.Value / 100);             // Designer zadal do frm.xml hodnotu 'Width="50%"'
-                else if (item.ImplicitControlOptimalWidth.HasValue) cw = item.ImplicitControlOptimalWidth.Value;       // Kód určil optimální šířku, které se držíme
+                if (controlInfo.DesignWidthPixel.HasValue) cw = controlInfo.DesignWidthPixel.Value;                                  // Designer zadal do frm.xml hodnotu 'Width="85"'
+                else if (controlInfo.DesignWidthPercent.HasValue) cw = (w * controlInfo.DesignWidthPercent.Value / 100);             // Designer zadal do frm.xml hodnotu 'Width="50%"'
+                else if (controlInfo.ImplicitOptimalWidth.HasValue) cw = controlInfo.ImplicitOptimalWidth.Value;                 // Kód určil optimální šířku, které se držíme
                 cw = (cw < 0 ? 0 : (cw > w ? w : cw));               // 'cw' zarovnat do mezí 0 až 'w'
 
                 // ControlHeight:
                 int ch = h;
-                if (item.DesignHeightPixel.HasValue) ch = item.DesignHeightPixel.Value;                                // Designer zadal do frm.xml hodnotu 'Height="50"'
-                else if (item.DesignHeightPercent.HasValue) ch = (h * item.DesignHeightPercent.Value / 100);           // Designer zadal do frm.xml hodnotu 'Height="100%"'
-                else if (item.ImplicitControlOptimalHeight.HasValue) ch = item.ImplicitControlOptimalHeight.Value;     // Kód určil optimální výšku, které se držíme
+                if (controlInfo.DesignHeightPixel.HasValue) ch = controlInfo.DesignHeightPixel.Value;                                // Designer zadal do frm.xml hodnotu 'Height="50"'
+                else if (controlInfo.DesignHeightPercent.HasValue) ch = (h * controlInfo.DesignHeightPercent.Value / 100);           // Designer zadal do frm.xml hodnotu 'Height="100%"'
+                else if (controlInfo.ImplicitOptimalHeight.HasValue) ch = controlInfo.ImplicitOptimalHeight.Value;               // Kód určil optimální výšku, které se držíme
                 ch = (ch < 0 ? 0 : (ch > h ? h : ch));               // 'ch' zarovnat do mezí 0 až 'h'
 
                 // Bude nějaké zarovnání controlu (pokud má control šířku menší je šířka prostoru, a podobně pro výšku)?
@@ -3187,7 +3132,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
 
                 var bounds = new ControlBounds(cl, ct, cw, ch);
-                item.ControlBounds = bounds;
+                controlInfo.Bounds = bounds;
                 return bounds;
             }
             // Vrátí pozici počátku Controlu, který bude zarovnán na střed nebo na konec prostoru total
@@ -3202,89 +3147,66 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
                 return controlBegin;
             }
-            // Koriguje souřadnici Control.Left v situaci, kdy je Expanded doleva, tedy Control začíná přímo na samé na souřadnici Cell.Left, 
+            // Koriguje souřadnici Control.Left v situaci, kdy je Expanded doleva, tedy Control začíná přímo na souřadnici Cell.Left, 
             //  a současně pokud by byl MainLabel umístěný Top nebo Bottom a odpovídající TopLabelOffsetX / BottomLabelOffsetX by byl záporný,
             //  pak musíme posunout Left Controlu doprava tak, aby předsunutý MainLabel začínal na pozici Left = 0!
-            int correctExpandedControlLeftByOffset(int left)
+            int correctExpandedControlLeftByOffset(int left, UsedAreaType usedAreas)
             {
-                int shift = 0;
-                var labelPos = item.MainLabelExists ? item.LabelPosition : LabelPositionType.None;
-                switch (labelPos)
-                {   // Pokud MainLabel bude Nahoře nebo Dole, pak musím vzít do úvahy i OffsetX pro tento Label:
-                    case LabelPositionType.Top:
-                        shift = -topLabelOffsetX;
-                        break;
-                    case LabelPositionType.Bottom:
-                        shift = -bottomLabelOffsetX;
-                        break;
-                }
-                // Pokud nalezený shift bude kladný (=záporný offset), pak to znamená, že Label bude předsunutý doleva o (shift) pixelů.
-                // A protože tato metoda běží tehdy, když Control je expandovaný doleva (tedy vlevo až na začátek buňky), a má "před ním" být předsazený Label,
-                //  pak Label bude umístěn na pozici 'left' (na začátku buňky) a Control bude posunut doprava o tento 'shift':
+                // Label na pozici Left není přítomen, proto mohu (když chci) Control expandovat doleva (nic tam nepřekáží).
+                // Pokud ale existuje Label na pozici Top (nebo Bottom) a v dané pozici je definován záporný offset 'topLabelOffsetX' (nebo 'bottomLabelOffsetX'),
+                //  pak zajistím, že daný Label bude vlevo na souřadnici 0, a Control bude odsazen doprava o odpovídající Shift:
+                int shiftT = ((usedAreas.HasFlag(UsedAreaType.Top) && topLabelOffsetX < 0) ? -topLabelOffsetX : 0);
+                if (shiftT < 0) shiftT = 0;
+                int shiftB = ((usedAreas.HasFlag(UsedAreaType.Bottom) && bottomLabelOffsetX < 0) ? -bottomLabelOffsetX : 0);
+                if (shiftB < 0) shiftB = 0;
+                // Beru větší Shift z Top / Bottom:
+                int shift = (shiftT > shiftB) ? shiftT : shiftB;
                 return ((shift > 0) ? left + shift : left);
             }
             // Zpracuje souřadnici pro MainLabel
-            void processItemMainLabel(ControlBounds controlBounds)
+            void processItemLabel(LabelInfo labelInfo, UsedAreaType area, ControlBounds controlBounds)
             {
+                if (labelInfo is null || !labelInfo.Exists) return;
+
                 var cellMatrix = item.CellMatrix;
                 bool relativeToControl = labelsRelativeToControl && controlBounds != null;
                 if (relativeToControl && controlBounds is null) relativeToControl = false;
                 int l, r, t, b;
-                var labelPos = item.LabelPosition;
-                switch (labelPos)
+                switch (area)
                 {
-                    case LabelPositionType.BeforeLeft:
-                    case LabelPositionType.BeforeRight:
+                    case UsedAreaType.Left:
                         l = cellMatrix.LeftLabelLeft;
                         r = (relativeToControl ? controlBounds.Left - cellMatrix.MarginControlLeft : cellMatrix.LeftLabelRight);
                         t = cellMatrix.ControlTop;
                         b = cellMatrix.ControlFirstBottom;
-                        item.MainLabelBounds = new ControlBounds(l, t, (r - l), (b - t));
-                        item.MainLabelAlignment = (labelPos == LabelPositionType.BeforeLeft ? ContentAlignmentType.MiddleLeft : (labelPos == LabelPositionType.BeforeRight ? ContentAlignmentType.MiddleRight : ContentAlignmentType.MiddleCenter));
+                        labelInfo.Bounds = new ControlBounds(l, t, (r - l), (b - t));
                         break;
-                    case LabelPositionType.After:
+                    case UsedAreaType.Right:
                         l = (relativeToControl ? controlBounds.Right + cellMatrix.MarginControlRight : cellMatrix.RightLabelLeft);
                         r = cellMatrix.RightLabelRight;
                         t = cellMatrix.ControlTop;
                         b = cellMatrix.ControlFirstBottom;
-                        item.MainLabelBounds = new ControlBounds(l, t, (r - l), (b - t));
-                        item.MainLabelAlignment = ContentAlignmentType.MiddleLeft;
+                        labelInfo.Bounds = new ControlBounds(l, t, (r - l), (b - t));
                         break;
-                    case LabelPositionType.Top:
+                    case UsedAreaType.Top:
                         l = (relativeToControl ? controlBounds.Left : cellMatrix.ControlLeft) + topLabelOffsetX;
                         r = (relativeToControl ? controlBounds.Right : cellMatrix.ControlRight);
                         t = cellMatrix.TopLabelTop;
                         b = cellMatrix.TopLabelBottom;
-                        if (item.DesignLabelWidth.HasValue && item.DesignLabelWidth.Value >= 0)
-                            r = l + item.DesignLabelWidth.Value;
-                        item.MainLabelBounds = new ControlBounds(l, t, (r - l), (b - t));
-                        item.MainLabelAlignment = ContentAlignmentType.BottomLeft;
+                        if (labelInfo.DesignWidth.HasValue && labelInfo.DesignWidth.Value >= 0)
+                            r = l + labelInfo.DesignWidth.Value;
+                        labelInfo.Bounds = new ControlBounds(l, t, (r - l), (b - t));
                         break;
-                    case LabelPositionType.Bottom:
+                    case UsedAreaType.Bottom:
                         l = (relativeToControl ? controlBounds.Left : cellMatrix.ControlLeft) + bottomLabelOffsetX;
                         r = (relativeToControl ? controlBounds.Right : cellMatrix.ControlRight);
                         t = cellMatrix.BottomLabelTop;
                         b = cellMatrix.BottomLabelBottom;
-                        if (item.DesignLabelWidth.HasValue && item.DesignLabelWidth.Value >= 0)
-                            r = l + item.DesignLabelWidth.Value;
-                        item.MainLabelBounds = new ControlBounds(l, t, (r - l), (b - t));
-                        item.MainLabelAlignment = ContentAlignmentType.TopLeft;
+                        if (labelInfo.DesignWidth.HasValue && labelInfo.DesignWidth.Value >= 0)
+                            r = l + labelInfo.DesignWidth.Value;
+                        labelInfo.Bounds = new ControlBounds(l, t, (r - l), (b - t));
                         break;
                 }
-            }
-            // Zpracuje souřadnici pro SuffixLabel
-            void processItemSuffixLabel(ControlBounds controlBounds)
-            {
-                bool relativeToControl = labelsRelativeToControl && controlBounds != null;
-                var cellMatrix = item.CellMatrix;
-                if (relativeToControl && controlBounds is null) relativeToControl = false;
-                int l, r, t, b;
-                l = (relativeToControl ? controlBounds.Right + cellMatrix.MarginControlRight : cellMatrix.RightLabelLeft);
-                r = cellMatrix.RightLabelRight;
-                t = cellMatrix.ControlTop;
-                b = cellMatrix.ControlFirstBottom;
-                item.SuffixLabelBounds = new ControlBounds(l, t, (r - l), (b - t));
-                item.SuffixLabelAlignment = ContentAlignmentType.MiddleLeft;
             }
         }
         /// <summary>
@@ -3297,14 +3219,26 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="margins">Okraje kolem controlu vzhledem k labelům</param>
         private static void _ProcessFixedItemBounds(IFlowLayoutItem item, ControlBounds controlBounds, int topLabelOffsetX, int bottomLabelOffsetX, Margins margins)
         {
-            if (item.ControlExists)
-                item.ControlBounds = controlBounds;
+            processControl(item.ControlInfo, controlBounds);
+            processLabel(item.LabelLeftInfo, controlBounds);
+            processLabel(item.LabelTopInfo, controlBounds);
+            processLabel(item.LabelRightInfo, controlBounds);
+            processLabel(item.LabelBottomInfo, controlBounds);
 
             if (item.MainLabelExists)
                 processMainLabelBounds();
 
             if (item.SuffixLabelExists)
                 processSuffixLabelBounds();
+
+
+
+            void processControl(ControlInfo controlInfo, ControlBounds controlBounds)
+            {
+                var controlInfo = item.ControlInfo;
+                if (controlInfo != null && controlInfo.Exists)
+                    controlInfo.Bounds = controlBounds;
+            }
 
 
             // Vyřeší souřadnici pro MainLabel
@@ -3948,47 +3882,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Rozšíření controlu do okolního prostoru pro labely, pokud labely nejsou použity
         /// </summary>
         ExpandControlType? DesignExpandControl { get; }
-        /// <summary>
-        /// Exaktně daná šířka v pixelech, v rámci Bounds prvku
-        /// </summary>
-        int? DesignWidthPixel { get; }
-        /// <summary>
-        /// Exaktně daná šířka v procentech, v rámci Bounds prvku
-        /// </summary>
-        int? DesignWidthPercent { get; }
-        /// <summary>
-        /// Exaktně daná výška v pixelech, v rámci Bounds prvku
-        /// </summary>
-        int? DesignHeightPixel { get; }
-        /// <summary>
-        /// Exaktně daná výška v procentech, v rámci Bounds prvku
-        /// </summary>
-        int? DesignHeightPercent { get; }
-        /// <summary>
-        /// Existuje Control (tzn. nějaký textbox nebo picture nebo button)? Nebo ne (třeba Placeholder)
-        /// </summary>
-        bool ControlExists { get; }
-        /// <summary>
-        /// Výchozí minimální šířka vlastního controlu v pixelech, lze setovat.
-        /// Pokud sloupec nebude mít žádnou šířku, a bude v něm tento prvek, a ten bude mít zde nastavenu určitou MinWidth, pak jeho sloupec ji bude mít nastavenu jako Implicitní.
-        /// Nicméně pokud sloupec bude mít šířku větší, a prvek bude mít jen tuto MinWidth, pak prvek bude ve výsledku dimenzován na 100% reálné šířky sloupce, klidně větší než zdejší MinWidth.
-        /// </summary>
-        int? ImplicitControlMinimalWidth { get; }
-        /// <summary>
-        /// Výchozí optimální šířka vlastního controlu v pixelech, lze setovat.
-        /// Pokud sloupec bude mít výslednou šířku větší než tato OptimalWidth, pak prvek bude ve výsledku dimenzován na tuto OptimalWidth, jako by ji zadal uživatel do Width.
-        /// </summary>
-        int? ImplicitControlOptimalWidth { get; }
-        /// <summary>
-        /// Výchozí optimální šířka vlastního controlu v pixelech, lze setovat.
-        /// Pokud sloupec bude mít výslednou šířku větší než tato OptimalWidth, pak prvek bude ve výsledku dimenzován na tuto OptimalWidth, jako by ji zadal uživatel do Width.
-        /// </summary>
-        int? ImplicitControlMinimalHeight { get; }
-        /// <summary>
-        /// Výchozí optimální výška vlastního controlu v pixelech, lze setovat.
-        /// Pokud řádek bude mít výslednou výšku větší než tato OptimalHeight, pak prvek bude ve výsledku dimenzován na tuto OptimalHeight, jako by ji zadal uživatel do Height.
-        /// </summary>
-        int? ImplicitControlOptimalHeight { get; }
 
         // Umístění prvku v rámci FlowLayoutu
         /// <summary>
@@ -4011,12 +3904,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Výsledná souřadnice celé buňky
         /// </summary>
         CellMatrixInfo CellMatrix { get; set; }
-        /// <summary>
-        /// Výsledná souřadnice Controlu v rámci parenta
-        /// </summary>
-        ControlBounds ControlBounds { get; set; }
 
-        // Labely mají svoje data pohromadě:
+        // Control a Labely mají svoje data pohromadě:
+        /// <summary>
+        /// Info o controlu
+        /// </summary>
+        ControlInfo ControlInfo { get; }
         /// <summary>
         /// Info o labelu vlevo
         /// </summary>
@@ -4056,64 +3949,77 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     internal class ControlInfo
     {
         /// <summary>
-        /// Existuje MainLabel (tzn. je definován text a je určená pozice)
+        /// Existuje Control
         /// </summary>
         public bool Exists { get; set; }
         /// <summary>
         /// Typ controlu, definovaný v Form.xml
         /// </summary>
-        ControlType ControlType { get; }
+        public DataControlType ControlType { get; set; }
         /// <summary>
         /// Fixní text v prvku, typicky v buttonu, v Checkboxu, Title, Label atd
         /// </summary>
         public string Text { get; set; }
         /// <summary>
+        /// Text ikony
+        /// </summary>
+        public string IconName { get; set; }
+        /// <summary>
         /// Styl písma pro text controlu
         /// </summary>
-        DfFontInfo Font { get; }
+        public DfFontInfo Font { get; set; }
         /// <summary>
         /// Styl pro label (název, styl písma, velikost, barva popisku, barva textu a pozadí, atd)
         /// </summary>
         public DfControlStyle Style { get; set; }
         /// <summary>
-        /// Šířka definovaná uživatelem v pixelech
+        /// Šířka daná designem
         /// </summary>
-        public int? DesignWidthPixel { get; }
+        public Int32P? DesignWidth { get; set; }
         /// <summary>
-        /// Šířka definovaná uživatelem v procentech
+        /// Výška daná designem
         /// </summary>
-        public int? DesignWidthPercent { get; }
+        public Int32P? DesignHeight { get; set; }
+
         /// <summary>
-        /// Výška definovaná uživatelem v pixelech
+        /// Designová šířka v pixelech nebo null
         /// </summary>
-        public int? DesignHeightPixel { get; }
+        public int? DesignWidthPixel { get { return DesignWidth?.NumberPixel; } }
         /// <summary>
-        /// Výška definovaná uživatelem v procentech
+        /// Designová šířka v procentech nebo null
         /// </summary>
-        public int? DesignHeightPercent { get; }
+        public int? DesignWidthPercent { get { return DesignWidth?.NumberPercent; } }
+        /// <summary>
+        /// Designová výška v pixelech nebo null
+        /// </summary>
+        public int? DesignHeightPixel { get { return DesignHeight?.NumberPixel; } }
+        /// <summary>
+        /// Designová výška v procentech nebo null
+        /// </summary>
+        public int? DesignHeightPercent { get { return DesignHeight?.NumberPercent; } }
 
         /// <summary>
         /// Výchozí minimální šířka vlastního controlu v pixelech, lze setovat.
         /// Pokud sloupec nebude mít žádnou šířku, a bude v něm tento prvek, a ten bude mít zde nastavenu určitou MinWidth, pak jeho sloupec ji bude mít nastavenu jako Implicitní.
         /// Nicméně pokud sloupec bude mít šířku větší, a prvek bude mít jen tuto MinWidth, pak prvek bude ve výsledku dimenzován na 100% reálné šířky sloupce, klidně větší než zdejší MinWidth.
         /// </summary>
-        int? ImplicitMinimalWidth { get; set; }
+        public int? ImplicitMinimalWidth { get; set; }
         /// <summary>
         /// Výchozí optimální šířka vlastního controlu v pixelech, lze setovat.
         /// Pokud sloupec bude mít výslednou šířku větší než tato OptimalWidth, pak prvek bude ve výsledku dimenzován na tuto OptimalWidth, jako by ji zadal uživatel do Width.
         /// </summary>
-        int? ImplicitOptimalWidth { get; set; }
+        public int? ImplicitOptimalWidth { get; set; }
         /// <summary>
         /// Výchozí výška vlastního controlu v pixelech, lze setovat.
         /// Pokud řádek nebude mít žádnou výšku, a bude v něm tento prvek, a ten bude mít zde nastavenu určitou MinHeight, pak jeho řádek ji bude mít nastavenu jako Implicitní.
         /// Nicméně pokud řádek bude mít výšku větší, a prvek bude mít jen tuto MinHeight, pak prvek bude ve výsledku dimenzován na 100% reálné výšky sloupce, klidně větší než zdejší MinHeight.
         /// </summary>
-        int? ImplicitMinimalHeight { get; set; }
+        public int? ImplicitMinimalHeight { get; set; }
         /// <summary>
         /// Výchozí optimální výška vlastního controlu v pixelech, lze setovat.
         /// Pokud řádek bude mít výslednou výšku větší než tato OptimalHeight, pak prvek bude ve výsledku dimenzován na tuto OptimalHeight, jako by ji zadal uživatel do Height.
         /// </summary>
-        int? ImplicitOptimalHeight { get; set; }
+        public int? ImplicitOptimalHeight { get; set; }
 
         /// <summary>
         /// Výsledná souřadnice tohoto Controlu v rámci parenta
@@ -4148,6 +4054,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Styl pro label (název, styl písma, velikost, barva popisku, barva textu a pozadí, atd)
         /// </summary>
         public DfControlStyle Style { get; set; }
+        /// <summary>
+        /// Font labelu
+        /// </summary>
+        public DfFontInfo Font { get; set; }
         /// <summary>
         /// Zarovnání textu tohoto Labelu v jeho prostoru
         /// </summary>
@@ -4569,12 +4479,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     {
         /// <summary>
         /// Metoda určí typ controlu pro daný prvek a třídu. Volá se pouze při konverzi formuláře Infragistic, pro sloupce kde atribut 'InputType' je nezadaný.
-        /// Potom je třeba, aby <see cref="IControlInfoSource"/> určil typ controlu <see cref="ControlType"/> podle typu atributu (daný jménem a třídou).
+        /// Potom je třeba, aby <see cref="IControlInfoSource"/> určil typ controlu <see cref="DataControlType"/> podle typu atributu (daný jménem a třídou).
         /// </summary>
         /// <param name="columnName"></param>
         /// <param name="useNorisClass"></param>
         /// <returns></returns>
-        ControlType? GetControlType(string columnName, int? useNorisClass);
+        DataControlType? GetControlType(string columnName, int? useNorisClass);
         /// <summary>
         /// Funkce, která vrátí stringový obsah nested šablony daného jména.<br/>
         /// Funkce bude volána s parametrem = jméno šablony (obsah atributu NestedTemplate), jeho úkolem je vrátit string = obsah požadované šablony (souboru).<br/>
@@ -4612,36 +4522,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Jméno sloupce v datech (více prvků různého jména <see cref="Name"/> může zobrazovat data ze stejného prvku <see cref="ColumnName"/>).
         /// </summary>
         string ColumnName { get; }
-
         /// <summary>
         /// Informace o Controlu
         /// </summary>
         ControlInfo ControlInfo { get; }
-        /// <summary>
-        /// Fixní text v prvku, typicky v buttonu, v Checkboxu, Title, Label atd
-        /// </summary>
-        string ControlText { get; }
-        /// <summary>
-        /// Styl controlu (název, styl písma, velikost, barva popisku, barva textu a pozadí, atd)
-        /// </summary>
-        DfControlStyle ControlStyle { get; }
-        /// <summary>
-        /// Exaktně daná šířka v pixelech, v rámci Bounds prvku
-        /// </summary>
-        int? DesignWidthPixel { get; }
-        /// <summary>
-        /// Exaktně daná šířka v procentech, v rámci Bounds prvku
-        /// </summary>
-        int? DesignWidthPercent { get; }
-        /// <summary>
-        /// Exaktně daná výška v pixelech, v rámci Bounds prvku
-        /// </summary>
-        int? DesignHeightPixel { get; }
-        /// <summary>
-        /// Exaktně daná výška v procentech, v rámci Bounds prvku
-        /// </summary>
-        int? DesignHeightPercent { get; }
-
         /// <summary>
         /// Pozice implicitního Main labelu
         /// </summary>
