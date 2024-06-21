@@ -1115,6 +1115,10 @@ namespace Noris.WS.DataContracts.DxForm
     internal class DfLine : DfBaseControl
     {
         /// <summary>
+        /// Šířka linky, zadaná v pixelech. Implicitně 2px.
+        /// </summary>
+        public int? LineWidth { get; set; }
+        /// <summary>
         /// Barva linky, zadaná explicitně pro světlé skiny: buď jménem např. Red, LightGray, anebo jako RGB: 0xDDFFDD, atd.
         /// </summary>
         public System.Drawing.Color? LineColorLight { get; set; }

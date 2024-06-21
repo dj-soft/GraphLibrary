@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<template xmlns="http://tempuri.org/DxDataFormat.Frm.xsd"
+          FormatVersion="4"
+          UseNorisClass="65"
+          Messages="dw_common_messages.msg.xml"
+          DataSource="dw_sample_form.data.xml"
+		  AutoLabelPosition="Top"
+          MasterWidth="530" MasterHeight="320"
+          TotalWidth="750" TotalHeight="520"
+		  AddUda="True" UdaLabelPosition="Top"
+          ColumnWidths="200;300;100" >
+
+
+    <panel Name="test14" Title="Pokladna" ColumnsCount="5" AutoLabelPosition="None"
+                    TopLabelOffsetX="5" BottomLabelOffsetX="12" Margins="4,4" ColumnsDistance="3" RowsDistance="3" >
+        <textbox Name="display" Width="100%" Height="40" ColSpan="7"/>
+
+        <placeholder Name="q0" Height="12" ColSpan="5"/>
+
+        <button Name="numl" Width="45" Text="NumLock" Height="30" />
+        <button Name="dele" Width="45" Text="/" />
+        <button Name="krat" Width="45" Text="*" />
+        <placeholder Name="q1" Width="6" />
+        <button Name="minu" Width="45" Text="-" />
+
+        <placeholder Name="q2" Height="6" ColSpan="5"/>
+
+        <button Name="b7" Width="45" Text="7" Height="30" />
+        <button Name="b8" Width="45" Text="8" />
+        <button Name="b9" Width="45" Text="9" />
+        <placeholder Name="q3" Width="6" />
+        <button Name="plus" Width="45" Text="+" RowSpan="2" />
+
+        <button Name="b4" Width="45" Height="30" />
+        <button Name="b5" Width="45" />
+        <button Name="b6" Width="45" />
+        <placeholder Name="q4" Width="6" />
+
+        <button Name="b1" Width="45" Text="1" Height="30" />
+        <button Name="b2" Width="45" Text="2" />
+        <button Name="b3" Width="45" Text="3" />
+        <placeholder Name="q5" Width="6" />
+        <button Name="enter" Width="45" Text="Enter" RowSpan="2" />
+
+        <button Name="b0" Text="0" ColSpan="2" Height="30" />
+        <button Name="bdot" Width="45" Text="." />
+        <placeholder Name="q6" Width="6" />
+    </panel>
+
+</template>

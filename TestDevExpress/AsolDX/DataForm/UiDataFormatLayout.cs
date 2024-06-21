@@ -48,17 +48,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var dfForm = args.DataForm;
             if (dfForm != null && dfForm.Pages != null)
             {
-                StyleInfo styleForm = new StyleInfo(dfForm);
+                DfTemplateLayoutStyle styleForm = new DfTemplateLayoutStyle(dfForm);
                 foreach (var dfPage in dfForm.Pages)
                 {
                     if (dfPage != null && dfPage.Panels != null)
                     {
-                        StyleInfo stylePage = new StyleInfo(dfPage, styleForm);
+                        DfTemplateLayoutStyle stylePage = new DfTemplateLayoutStyle(dfPage, styleForm);
                         foreach (var dfPanel in dfPage.Panels)
                         {   // Pro panel budu počítat rozmístění jeho vnitřních prvků a následně i vnější rozměry panelu.
                             // Tím končí práce serveru (výpočtem layoutu uvnitř panelu), další provádí klient (rozmístění panelů do záložky / okna.
-                            StyleInfo stylePanel = new StyleInfo(dfPanel, stylePage);
-                            using (var panelItem = ItemInfo.CreateRoot(dfPanel, args, stylePanel))
+                            DfTemplateLayoutStyle stylePanel = new DfTemplateLayoutStyle(dfPanel, stylePage);
+                            using (var panelItem = DfTemplateLayoutItem.CreateRoot(dfPanel, args, stylePanel))
                             {
                                 panelItem.ProcessPanel();
                             }
@@ -74,7 +74,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="args">Data a parametry pro tvorbu layoutu</param>
         /// <param name="dfPanel"></param>
         /// <param name="styleContainer">Styl pro daný panel. Panel si jej sám nevytvoří, protože musí mít k dispozici styl parenta (dědičnost pro implicitní hodnoty!)</param>
-        private static void _CreateLayoutPanel(DfTemplateLayoutArgs args, DfPanel dfPanel, StyleInfo styleContainer)
+        private static void _CreateLayoutPanel(DfTemplateLayoutArgs args, DfPanel dfPanel, DfTemplateLayoutStyle styleContainer)
         {
             //if (dfPanel is null) return;
 
@@ -178,7 +178,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="dfContainer">Container. Může deklarovat svoji velikost.</param>
         /// <param name="containerStyle">Styl pro container včetně stylů zděděných. Může deklarovat okraje.</param>
         /// <returns></returns>
-        private static ContainerSize GetEmptyDesignSize(DfBaseContainer dfContainer, StyleInfo containerStyle)
+        private static ContainerSize GetEmptyDesignSize(DfBaseContainer dfContainer, DfTemplateLayoutStyle containerStyle)
         {
             return new ContainerSize(0, 0, 0, 0);
         }
@@ -190,7 +190,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="maxX"></param>
         /// <param name="maxY"></param>
         /// <returns></returns>
-        private static ContainerSize GetDesignSize(DfBaseContainer dfContainer, StyleInfo containerStyle, int maxX, int maxY)
+        private static ContainerSize GetDesignSize(DfBaseContainer dfContainer, DfTemplateLayoutStyle containerStyle, int maxX, int maxY)
         {
             return new ContainerSize(0, 0, 0, 0);
         }
@@ -224,7 +224,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 //   true =  Optimal  => pokud sloupec bude širší než je zde požadováno, pak prvek bude i tak mít zde zadanou šířku = optimální. Jako by v frm.xml bylo dáno Width="65".
                 //   false = Minimal  => pokud sloupec bude širší než je zde požadováno, pak prvek se roztáhne na celou šířku prostoru. Jako by v frm.xml bylo dáno Width="100%".
                 case DataControlType.Label: setControlTextSize(12, 1, true); break;
-                case DataControlType.Button: setControlTextSize(18, 6, true); break;
+                case DataControlType.Button: setControlTextSize(18, 6, false); break;
                 case DataControlType.BarCode: setControlSize(32, 32, false); break;
                 case DataControlType.Image: setControlSize(32, 32, false); break;
                 case DataControlType.EditBox: setControlSize(250, 40, false); break;
@@ -335,1532 +335,1589 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return (name != null ? name.Trim().ToLower() : nullResult);
         }
         #endregion
-        #region class LayoutStyle : Styl vzhledu pro jeden container, podporuje dědičnost
-        /// <summary>
-        /// Styl vzhledu pro jeden container, podporuje dědičnost
-        /// </summary>
-        internal class StyleInfo
+    }
+    #region class DfTemplateLayoutStyle : Styl vzhledu pro jeden container, podporuje dědičnost
+    /// <summary>
+    /// Styl vzhledu pro jeden container.
+    /// Je uložen v Containeru a určuje parametry pro layout jeho Child prvků (sloupce, mezery, okraje, AreaBegin, LabelOffsety, implicitní pozici labelů pro Child prvky).
+    /// Upozornění: implicitní pozici labelu pro samotný this container nelze brát z <see cref="ChildsAutoLabelPosition"/> ze stylu tohoto containeru, protože ta určuje pozici labelu pro jeho Child prvky!
+    /// Ta se má brát ze stylu Parent containeru!
+    /// Podporuje dědičnost
+    /// </summary>
+    internal class DfTemplateLayoutStyle
+    {
+        public DfTemplateLayoutStyle()
         {
-            public StyleInfo()
-            {
-                this.CurrentAreaType = ContainerType.None;
-                this.ColumnsCount = 0;
-                this.ColumnWidths = null;
-                this.FlowAreaBegin = null;
-                this.AutoLabelPosition = LabelPositionType.None;
-                this.Margins = null;
-                this.ControlMargins = null;
-                this.ColumnsDistance = 0;
-                this.RowsDistance = 0;
-                this.TopLabelOffsetX = 3;
-                this.BottomLabelOffsetX = 3;
-                this.LabelsRelativeToControl = true;
+            this.CurrentAreaType = ContainerType.None;
+            this.ColumnsCount = 0;
+            this.ColumnWidths = null;
+            this.FlowAreaBegin = null;
+            this.CurrentAutoLabelPosition = LabelPositionType.None;
+            this.ChildsAutoLabelPosition = LabelPositionType.None;
+            this.Margins = null;
+            this.ControlMargins = null;
+            this.ColumnsDistance = 0;
+            this.RowsDistance = 0;
+            this.TopLabelOffsetX = 3;
+            this.BottomLabelOffsetX = 3;
+            this.LabelsRelativeToControl = true;
 
-                this._Validate();
-            }
-            public StyleInfo(ContainerType areaType, int? columnsCount, string columnWidths, Location flowAreaBegin, Margins controlMargins, LabelPositionType autoLabelPosition, Margins margins, int columnsDistance, int rowsDistance, int topLabelOffsetX, int bottomLabelOffsetX, bool labelsRelativeToControl)
-            {
-                this.CurrentAreaType = areaType;
-                this.ColumnsCount = columnsCount;
-                this.ColumnWidths = columnWidths;
-                this.FlowAreaBegin = flowAreaBegin;
-                this.AutoLabelPosition = autoLabelPosition;
-                this.Margins = margins;
-                this.ControlMargins = controlMargins;
-                this.ColumnsDistance = columnsDistance;
-                this.RowsDistance = rowsDistance;
-                this.TopLabelOffsetX = topLabelOffsetX;
-                this.BottomLabelOffsetX = bottomLabelOffsetX;
-                this.LabelsRelativeToControl = labelsRelativeToControl;
+            this._Validate();
+        }
+        public DfTemplateLayoutStyle(ContainerType areaType, int? columnsCount, string columnWidths, Location flowAreaBegin, Margins controlMargins, LabelPositionType currentAutoLabelPosition, LabelPositionType childsAutoLabelPosition, Margins margins, int columnsDistance, int rowsDistance, int topLabelOffsetX, int bottomLabelOffsetX, bool labelsRelativeToControl)
+        {
+            this.CurrentAreaType = areaType;
+            this.ColumnsCount = columnsCount;
+            this.ColumnWidths = columnWidths;
+            this.FlowAreaBegin = flowAreaBegin;
+            this.CurrentAutoLabelPosition = currentAutoLabelPosition;
+            this.ChildsAutoLabelPosition = childsAutoLabelPosition;
+            this.Margins = margins;
+            this.ControlMargins = controlMargins;
+            this.ColumnsDistance = columnsDistance;
+            this.RowsDistance = rowsDistance;
+            this.TopLabelOffsetX = topLabelOffsetX;
+            this.BottomLabelOffsetX = bottomLabelOffsetX;
+            this.LabelsRelativeToControl = labelsRelativeToControl;
 
-                this._Validate();
-            }
-            public StyleInfo(DfBaseArea dfArea)
-            {
-                this.CurrentAreaType = dfArea.AreaType;
+            this._Validate();
+        }
+        public DfTemplateLayoutStyle(DfBaseArea dfArea)
+        {
+            this.CurrentAreaType = dfArea.AreaType;
+            this.ColumnsCount = dfArea.ColumnsCount;
+            this.ColumnWidths = dfArea.ColumnWidths;
+            this.FlowAreaBegin = dfArea.FlowAreaBegin;
+            this.CurrentAutoLabelPosition = LabelPositionType.None;
+            this.CurrentAutoLabelPosition = LabelPositionType.None;
+            this.ChildsAutoLabelPosition = dfArea.AutoLabelPosition ?? LabelPositionType.None;
+            this.Margins = dfArea.Margins;
+            this.ControlMargins = dfArea.ControlMargins;
+            this.ColumnsDistance = dfArea.ColumnsDistance ?? 0;
+            this.RowsDistance = dfArea.RowsDistance ?? 0;
+            this.TopLabelOffsetX = dfArea.TopLabelOffsetX ?? 3;
+            this.BottomLabelOffsetX = dfArea.BottomLabelOffsetX ?? 3;
+            this.LabelsRelativeToControl = dfArea.LabelsRelativeToControl ?? true;
+
+            this._Validate();
+        }
+        public DfTemplateLayoutStyle(DfBaseArea dfArea, DfTemplateLayoutStyle styleParent)
+        {
+            this.CurrentAreaType = dfArea.AreaType;
+
+            // Sloupce (ColumnsCount a ColumnWidths):
+            //  - Pokud aktuální 'dfArea' přináší nějaké informace v jedné (nebo v obou) proměnné ('ColumnWidths' nebo 'ColumnsCount'), pak se převezme z dfArea a nikoli z Parenta.
+            //  - Nelze kombinovat jednu hodnotu z aktuálního 'dfArea' a druhou z 'styleParent'!
+            //  - Protože uživatel typicky do containeru zadává jen jednu ze dvou hodnot, a tím definuje sloupce !!!
+            if (dfArea != null && ((dfArea.ColumnsCount.HasValue && dfArea.ColumnsCount.Value > 0) || (!String.IsNullOrEmpty(dfArea.ColumnWidths))))
+            {   // Obě hodnoty převezmu z aktuálního 'dfArea', protože ten existuje a alespoň jednu hodnotu deklaruje:
                 this.ColumnsCount = dfArea.ColumnsCount;
                 this.ColumnWidths = dfArea.ColumnWidths;
-                this.FlowAreaBegin = dfArea.FlowAreaBegin;
-                this.AutoLabelPosition = dfArea.AutoLabelPosition ?? LabelPositionType.None;
-                this.Margins = dfArea.Margins;
-                this.ControlMargins = dfArea.ControlMargins;
-                this.ColumnsDistance = dfArea.ColumnsDistance ?? 0;
-                this.RowsDistance = dfArea.RowsDistance ?? 0;
-                this.TopLabelOffsetX = dfArea.TopLabelOffsetX ?? 3;
-                this.BottomLabelOffsetX = dfArea.BottomLabelOffsetX ?? 3;
-                this.LabelsRelativeToControl = dfArea.LabelsRelativeToControl ?? true;
-
-                this._Validate();
             }
-            public StyleInfo(DfBaseArea dfArea, StyleInfo styleParent)
+            else if (styleParent != null)
+            {   // Obě hodnoty z parenta, protože aktuální 'dfArea' nedeklaruje ani jednu hodnotu:
+                this.ColumnsCount = styleParent.ColumnsCount;
+                this.ColumnWidths = styleParent.ColumnWidths;
+            }
+
+            // Některé hodnoty se nedědí nikdy: pokud je nemá zadané přímo container, pak budou prázdné:
+            this.FlowAreaBegin = dfArea.FlowAreaBegin;
+
+            // Některé hodnoty se dědí jen pro určité druhy containerů, ale třeba do grupy se z vyšších stylů nedědí:
+            bool isGroup = (this.CurrentAreaType == ContainerType.Group);
+            this.Margins = dfArea.Margins != null ? dfArea.Margins : (isGroup ? null : styleParent.Margins);
+
+            // Některé hodnoty se výhradně dědí, z Parent.Child do Current:
+            this.CurrentAutoLabelPosition = styleParent.ChildsAutoLabelPosition;
+
+            // Ostatní hodnoty jsou "jednomístné" a lze je dědit jednoduše:
+            this.ChildsAutoLabelPosition = dfArea.AutoLabelPosition.HasValue ? dfArea.AutoLabelPosition.Value : styleParent.ChildsAutoLabelPosition;
+            this.ControlMargins = dfArea.ControlMargins ?? styleParent.ControlMargins;
+            this.ColumnsDistance = dfArea.ColumnsDistance.HasValue ? dfArea.ColumnsDistance.Value : styleParent.ColumnsDistance;
+            this.RowsDistance = dfArea.RowsDistance.HasValue ? dfArea.RowsDistance.Value : styleParent.RowsDistance;
+            this.TopLabelOffsetX = dfArea.TopLabelOffsetX.HasValue ? dfArea.TopLabelOffsetX.Value : styleParent.TopLabelOffsetX;
+            this.BottomLabelOffsetX = dfArea.BottomLabelOffsetX.HasValue ? dfArea.BottomLabelOffsetX.Value : styleParent.BottomLabelOffsetX;
+            this.LabelsRelativeToControl = dfArea.LabelsRelativeToControl.HasValue ? dfArea.LabelsRelativeToControl.Value : styleParent.LabelsRelativeToControl;
+
+            this._Validate();
+        }
+        /// <summary>
+        /// Validace hodnot
+        /// </summary>
+        private void _Validate()
+        {
+            if (Margins is null) Margins = Margins.Empty;
+            if (ControlMargins is null) ControlMargins = Margins.Empty;
+        }
+        /// <summary>
+        /// Druh containeru načtený v this instanci, pochází z dodaného <see cref="DfBaseArea.AreaType"/>.
+        /// </summary>
+        public ContainerType CurrentAreaType { get; private set; }
+        /// <summary>
+        /// Počet sloupců layoutu. Šířka sloupců se určí podle reálného obsahu (maximum šířky prvků).
+        /// Při zadání <see cref="ColumnsCount"/> se již nezadává <see cref="ColumnWidths"/>.
+        /// </summary>
+        public int? ColumnsCount { get; private set; }
+        /// <summary>
+        /// Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky). 
+        /// Při zadání <see cref="ColumnWidths"/> se již nezadává <see cref="ColumnsCount"/>.
+        /// </summary>
+        public string ColumnWidths { get; private set; }
+        /// <summary>
+        /// Souřadnice počátku Flow prostoru
+        /// </summary>
+        public Location FlowAreaBegin { get; private set; }
+        /// <summary>
+        /// Automaticky generovat labely atributů a vztahů, jejich umístění, pro <u><b>aktuální container a jeho label</b></u> (využije se jen pro grupu).
+        /// Defaultní = <c>NULL</c>
+        /// </summary>
+        public LabelPositionType CurrentAutoLabelPosition { get; private set; }
+        /// <summary>
+        /// Automaticky generovat labely atributů a vztahů, jejich umístění, pro <u><b>Child prvky</b></u> v tomto layoutu.
+        /// Defaultní = <c>NULL</c>
+        /// </summary>
+        public LabelPositionType ChildsAutoLabelPosition { get; private set; }
+        /// <summary>
+        /// Volné okraje mezi hranou kontejneru a začátkem Child prvků = prázdný prostor
+        /// </summary>
+        public Margins Margins { get; set; }
+        /// <summary>
+        /// Odstupy mezi MainLabelem a Controlem, nebo SuffixLabelem a Controlem, v rámci jedné buňky (jeden prvek). Uplatní se, pouze pokud daný label existuje.
+        /// </summary>
+        public Margins ControlMargins { get; private set; }
+        /// <summary>
+        /// Volný prostor mezi dvěma sousedními sloupci (vnitřní Margin)
+        /// </summary>
+        public int ColumnsDistance { get; private set; }
+        /// <summary>
+        /// Volný prostor mezi dvěma sousedními řádky (vnitřní Margin)
+        /// </summary>
+        public int RowsDistance { get; private set; }
+        /// <summary>
+        /// Posunutí Main Labelu umístěného Top, na ose X, oproti souřadnici X vlastního Controlu.
+        /// Kladná hodnota posune doprava.
+        /// Může být záporné, pak bude label předsazen vlevo před Controlem.
+        /// </summary>
+        public int TopLabelOffsetX { get; private set; }
+        /// <summary>
+        /// Posunutí Main Labelu umístěného Bottom, na ose X, oproti souřadnici X vlastního Controlu.
+        /// Kladná hodnota posune doprava.
+        /// Může být záporné, pak bude label předsazen vlevo před Controlem.
+        /// </summary>
+        public int BottomLabelOffsetX { get; private set; }
+        /// <summary>
+        /// Labely budou umísťovány : true = pokud možno k controlu / false = vždy do gridu
+        /// </summary>
+        public bool LabelsRelativeToControl { get; private set; }
+    }
+    #endregion
+    #region class DfTemplateLayoutItem : Dočasná pracovní a výkonná schránka na jednotlivý prvek layoutu, existuje jen po dobu výpočtu layoutu. Má tři tváře: Prvek/Container; Spolupráce s aplikací na doplnění hodnot; Spolupráce s FlowLayout na umístění do mřížky
+    /// <summary>
+    /// Dočasná pracovní a výkonná schránka na jednotlivý prvek layoutu (panel, grupa, control), v procesu určování layoutu prvků v rámci panelu.
+    /// <para/>
+    /// Uvnitř panelu jsou prvky rozmístěny fixně = jsou dané designerem formuláře. 
+    /// Ale rozmístění sousedních panelů na DataFormu je více v rukou uživatele / pohledu / velikosti monitoru atd.
+    /// </summary>
+    internal class DfTemplateLayoutItem : IDataFormItem, IFlowLayoutItem, IDisposable
+    {
+        #region Konstrukce, Dispose, základní stromové vlastnosti, Childs a jejich tvorba
+        /// <summary>
+        /// Vytvoří Root prvek, a sučasně v něm najde Containery a vytvoří rekurzivně celou strukturu
+        /// </summary>
+        /// <param name="dfItem"></param>
+        /// <param name="dfArgs"></param>
+        /// <param name="style">Styl pro Child prvky daného panelu.</param>
+        /// <returns></returns>
+        internal static DfTemplateLayoutItem CreateRoot(DfBase dfItem, DfTemplateLayoutArgs dfArgs, DfTemplateLayoutStyle style)
+        {
+            var rootItem = new DfTemplateLayoutItem(dfItem, null, dfArgs, style);
+            rootItem._CreateChilds();
+            return rootItem;
+        }
+        /// <summary>
+        /// Pokud this obsahuje container <see cref="DfBaseContainer"/>, pak projde jeho <see cref="DfBaseContainer.Childs"/>
+        /// a pro každý z nich vytvoří svůj <see cref="_Childs"/> prvek své vlastní třídy a korektně jej naváže.
+        /// Pokud tento Child prvek je container, pak vyvolá tuto metodu rekurzivně i pro něj.
+        /// </summary>
+        private void _CreateChilds()
+        {
+            if (__DfItem is DfBaseContainer dfContainer && dfContainer.Childs != null)
             {
-                this.CurrentAreaType = dfArea.AreaType;
-
-                // Sloupce (ColumnsCount a ColumnWidths):
-                //  - Pokud aktuální 'dfArea' přináší nějaké informace v jedné (nebo v obou) proměnné ('ColumnWidths' nebo 'ColumnsCount'), pak se převezme z dfArea a nikoli z Parenta.
-                //  - Nelze kombinovat jednu hodnotu z aktuálního 'dfArea' a druhou z 'styleParent'!
-                //  - Protože uživatel typicky do containeru zadává jen jednu ze dvou hodnot, a tím definuje sloupce !!!
-                if (dfArea != null && ((dfArea.ColumnsCount.HasValue && dfArea.ColumnsCount.Value > 0) || (!String.IsNullOrEmpty(dfArea.ColumnWidths))))
-                {   // Obě hodnoty převezmu z aktuálního 'dfArea', protože ten existuje a alespoň jednu hodnotu deklaruje:
-                    this.ColumnsCount = dfArea.ColumnsCount;
-                    this.ColumnWidths = dfArea.ColumnWidths;
+                __Childs = new List<DfTemplateLayoutItem>();
+                var dfChilds = dfContainer.Childs;
+                foreach (var dfChild in dfChilds)
+                {
+                    if (dfChild != null)
+                    {
+                        // a) Container (tj. Group)?
+                        if (dfChild is DfBaseContainer dfChildContainer)
+                        {
+                            DfTemplateLayoutStyle childStyle = new DfTemplateLayoutStyle(dfChildContainer, this.__Style);
+                            DfTemplateLayoutItem childContainer = new DfTemplateLayoutItem(dfChild, this, null, childStyle);
+                            __Childs.Add(childContainer);
+                            childContainer._CreateChilds();
+                        }
+                        // b) Control
+                        else if (dfChild is DfBaseControl dfChildControl)
+                        {
+                            DfTemplateLayoutItem childControl = new DfTemplateLayoutItem(dfChild, this, null, null);
+                            __Childs.Add(childControl);
+                        }
+                    }
                 }
-                else if (styleParent != null)
-                {   // Obě hodnoty z parenta, protože aktuální 'dfArea' nedeklaruje ani jednu hodnotu:
-                    this.ColumnsCount = styleParent.ColumnsCount;
-                    this.ColumnWidths = styleParent.ColumnWidths;
-                }
-
-                // Některé hodnoty se nedědí nikdy: pokud je nemá zadané přímo container, pak budou prázdné:
-                this.FlowAreaBegin = dfArea.FlowAreaBegin;
-
-                // Některé hodnoty se dědí jen pro určité druhy containerů, ale třeba do grupy se z vyšších stylů nedědí:
-                bool isGroup = (this.CurrentAreaType == ContainerType.Group);
-                this.Margins = dfArea.Margins != null ? dfArea.Margins : (isGroup ? null : styleParent.Margins);
-
-                // Ostatní hodnoty jsou "jednomístné" a lze je dědit jednoduše:
-                this.AutoLabelPosition = dfArea.AutoLabelPosition.HasValue ? dfArea.AutoLabelPosition.Value : styleParent.AutoLabelPosition;
-                this.ControlMargins = dfArea.ControlMargins ?? styleParent.ControlMargins;
-                this.ColumnsDistance = dfArea.ColumnsDistance.HasValue ? dfArea.ColumnsDistance.Value : styleParent.ColumnsDistance;
-                this.RowsDistance = dfArea.RowsDistance.HasValue? dfArea.RowsDistance.Value : styleParent.RowsDistance;
-                this.TopLabelOffsetX = dfArea.TopLabelOffsetX.HasValue ? dfArea.TopLabelOffsetX.Value : styleParent.TopLabelOffsetX;
-                this.BottomLabelOffsetX = dfArea.BottomLabelOffsetX.HasValue ? dfArea.BottomLabelOffsetX.Value : styleParent.BottomLabelOffsetX;
-                this.LabelsRelativeToControl = dfArea.LabelsRelativeToControl.HasValue ? dfArea.LabelsRelativeToControl.Value : styleParent.LabelsRelativeToControl;
-
-                this._Validate();
             }
-            /// <summary>
-            /// Validace hodnot
-            /// </summary>
-            private void _Validate()
+        }
+        /// <summary>
+        /// Privátní konstruktor
+        /// </summary>
+        /// <param name="dfItem"></param>
+        /// <param name="parent"></param>
+        /// <param name="dfArgs"></param>
+        /// <param name="style"></param>
+        private DfTemplateLayoutItem(DfBase dfItem, DfTemplateLayoutItem parent, DfTemplateLayoutArgs dfArgs, DfTemplateLayoutStyle style)
+        {
+            __DfItem = dfItem;
+            __Parent = parent;
+            __DfArgs = dfArgs;
+            __Style = style;
+            __Childs = null;
+
+            _InitData();
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        public void Dispose()
+        {
+            __Childs?.ForEach(i => i?.Dispose());
+
+            _ResetData();
+
+            __DfItem = null;
+            __Parent = null;
+            __DfArgs = null;
+            __Style = null;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return this._Text;
+        }
+        /// <summary>
+        /// Definiční prvek = načtený z XML šablony (panel, grupa, control...)
+        /// </summary>
+        private DfBase __DfItem;
+        /// <summary>
+        /// Náš přímý parent. Přes něj dojdeme až k Root prvku.
+        /// Pozor, zde může být null v případě Root prvku.
+        /// </summary>
+        private DfTemplateLayoutItem __Parent;
+        /// <summary>
+        /// Vstupní argumenty celého formu.
+        /// Pozor, zde je instance pouze v Root prvku. Běžně pro práci se používá <see cref="_LayoutArgs"/>.
+        /// </summary>
+        private DfTemplateLayoutArgs __DfArgs;
+        /// <summary>
+        /// Styl pro tento kontejner, deklaruje prostor určený pro Child prvky.
+        /// Pozor, jednotlivé controly zde mají null, najdou si styl ve svém parentu. Tato proměnná se běžně nepoužívá.
+        /// </summary>
+        private DfTemplateLayoutStyle __Style;
+        /// <summary>
+        /// Prvky mých Childs. Výchozí stav je null (většina prvků jsou Controly, které nemají Childs). Lze testovat <see cref="_HasChilds"/>.
+        /// </summary>
+        private List<DfTemplateLayoutItem> __Childs;
+        /// <summary>
+        /// Root prvek. Zde nikdy není null: pokud this je Root, pak zde je this.
+        /// </summary>
+        private DfTemplateLayoutItem _Root { get { return (__Parent?._Root ?? this); } }
+        /// <summary>
+        /// Styl pro Child prvky tohoto containeru. Pokud this je container, pak má definován svůj vlastní styl (<see cref="__Style"/>).
+        /// Pokud jej nemá (typicky proto, že jde o Control), pak zde vrací aktuální styl ze svého Parenta.
+        /// </summary>
+        private DfTemplateLayoutStyle _CurrentStyle { get { return __Style ?? __Parent?._CurrentStyle; } }
+        /// <summary>
+        /// Vrátí <see cref="LabelPositionType"/> pro this item, načtený ze stylu <see cref="_CurrentStyle"/>.
+        /// Pokud this je Container, pak vrací <see cref="DfTemplateLayoutStyle.CurrentAutoLabelPosition"/>, to se týká labelu grupy.
+        /// Pokud this je Control, pak vrací <see cref="DfTemplateLayoutStyle.ChildsAutoLabelPosition"/>, to se týká labelu child prvků v daném containeru.
+        /// </summary>
+        private LabelPositionType _CurrentAutoLabelPosition { get { return (_IsControl ? _CurrentStyle?.ChildsAutoLabelPosition : _CurrentStyle?.CurrentAutoLabelPosition) ?? LabelPositionType.None; } }
+        /// <summary>
+        /// Obsahuje true, pokud this je Root
+        /// </summary>
+        private bool _IsRoot { get { return (__Parent is null); } }
+        /// <summary>
+        /// Argumenty pro layout šablony = obsahuje Form, Source, Errors...
+        /// Zde není nikdy null.
+        /// </summary>
+        private DfTemplateLayoutArgs _LayoutArgs { get { return _Root.__DfArgs; } }
+        /// <summary>
+        /// Celý formulář
+        /// </summary>
+        private DfForm _DfForm { get { return _LayoutArgs.DataForm; } }
+        /// <summary>
+        /// Plná cesta a informace od Root přes jeho Child až ke mě = typy prvků oddělené šipkou.
+        /// </summary>
+        private string _Text
+        {
+            get
             {
-                if (Margins is null) Margins = Margins.Empty;
-                if (ControlMargins is null) ControlMargins = Margins.Empty;
+                var type = __DfItem.GetType().Name;
+                var name = __DfItem.Name;
+                var text = type + (!String.IsNullOrEmpty(name) ? $" '{name}'" : "");
+                if (this.__LayoutMode == LayoutModeType.Flow)
+                {
+                    text += $"; Flow [ RowIndex: {__FlowRowBeginIndex}";
+                    if (__RowSpan.HasValue && __RowSpan.Value > 1)
+                        text += $"; RowSpan: {__RowSpan}";
+                    text += $"; ColIndex: {__FlowColBeginIndex}";
+                    if (__ColSpan.HasValue && __ColSpan.Value > 1)
+                        text += $"; ColSpan: {__ColSpan}";
+                    text += $" ]";
+                }
+
+                var parent = __Parent;
+                return (parent != null ? parent._Text + " => " : "") + text;
             }
-            /// <summary>
-            /// Druh containeru načtený v this instanci, pochází z dodaného <see cref="DfBaseArea.AreaType"/>.
-            /// </summary>
-            public ContainerType CurrentAreaType { get; private set; }
-            /// <summary>
-            /// Počet sloupců layoutu. Šířka sloupců se určí podle reálného obsahu (maximum šířky prvků).
-            /// Při zadání <see cref="ColumnsCount"/> se již nezadává <see cref="ColumnWidths"/>.
-            /// </summary>
-            public int? ColumnsCount { get; private set; }
-            /// <summary>
-            /// Šířky jednotlivých sloupců layoutu, oddělené čárkou; např. 150,350,100 (deklaruje tři sloupce dané šířky). 
-            /// Při zadání <see cref="ColumnWidths"/> se již nezadává <see cref="ColumnsCount"/>.
-            /// </summary>
-            public string ColumnWidths { get; private set; }
-            /// <summary>
-            /// Souřadnice počátku Flow prostoru
-            /// </summary>
-            public Location FlowAreaBegin { get; private set; }
-            /// <summary>
-            /// Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = <c>NULL</c>
-            /// </summary>
-            public LabelPositionType AutoLabelPosition { get; private set; }
-            /// <summary>
-            /// Volné okraje mezi hranou kontejneru a začátkem Child prvků = prázdný prostor
-            /// </summary>
-            public Margins Margins { get; set; }
-            /// <summary>
-            /// Odstupy mezi MainLabelem a Controlem, nebo SuffixLabelem a Controlem, v rámci jedné buňky (jeden prvek). Uplatní se, pouze pokud daný label existuje.
-            /// </summary>
-            public Margins ControlMargins { get; private set; }
-            /// <summary>
-            /// Volný prostor mezi dvěma sousedními sloupci (vnitřní Margin)
-            /// </summary>
-            public int ColumnsDistance { get; private set; }
-            /// <summary>
-            /// Volný prostor mezi dvěma sousedními řádky (vnitřní Margin)
-            /// </summary>
-            public int RowsDistance { get; private set; }
-            /// <summary>
-            /// Posunutí Main Labelu umístěného Top, na ose X, oproti souřadnici X vlastního Controlu.
-            /// Kladná hodnota posune doprava.
-            /// Může být záporné, pak bude label předsazen vlevo před Controlem.
-            /// </summary>
-            public int TopLabelOffsetX { get; private set; }
-            /// <summary>
-            /// Posunutí Main Labelu umístěného Bottom, na ose X, oproti souřadnici X vlastního Controlu.
-            /// Kladná hodnota posune doprava.
-            /// Může být záporné, pak bude label předsazen vlevo před Controlem.
-            /// </summary>
-            public int BottomLabelOffsetX { get; private set; }
-            /// <summary>
-            /// Labely budou umísťovány : true = pokud možno k controlu / false = vždy do gridu
-            /// </summary>
-            public bool LabelsRelativeToControl { get; private set; }
+        }
+        /// <summary>
+        /// Plná cesta od Root přes jeho Child až ke mě = typy prvků oddělené šipkou.
+        /// </summary>
+        private string _FullPath
+        {
+            get
+            {
+                var type = __DfItem.GetType().Name;
+                var name = __DfItem.Name;
+                var text = type + (!String.IsNullOrEmpty(name) ? $" '{name}'" : "");
+
+                var parent = __Parent;
+                return (parent != null ? parent._FullPath + " => " : "") + text;
+            }
+        }
+        /// <summary>
+        /// Prvek reprezentuje container (panel, grupa)
+        /// </summary>
+        private bool _IsContainer { get { return (__DfItem is DfBaseContainer); } }
+        /// <summary>
+        /// Container (tedy Panel + Group)
+        /// </summary>
+        private DfBaseContainer _DfContainer { get { return (__DfItem as DfBaseContainer); } }
+        /// <summary>
+        /// Prvek reprezentuje grupu?
+        /// </summary>
+        private bool _IsGroup { get { return (__DfItem is DfGroup); } }
+        /// <summary>
+        /// Grupa uvnitř panelu nebo grupy
+        /// </summary>
+        private DfGroup _DfGroup { get { return (__DfItem as DfGroup); } }
+        /// <summary>
+        /// Prvek reprezentuje samostatný control: pak <see cref="__DfItem"/> je potomkem <see cref="DfBaseControl"/>.
+        /// </summary>
+        private bool _IsControl { get { return (__DfItem is DfBaseControl); } }
+        /// <summary>
+        /// Podkladový control
+        /// </summary>
+        private DfBaseControl _DfControl { get { return (__DfItem as DfBaseControl); } }
+        /// <summary>
+        /// Stav prvku
+        /// </summary>
+        private ControlStateType? _ControlState { get { return __DfItem.State; } }
+        /// <summary>
+        /// Stav prvku obsahuje příznak <see cref="ControlStateType.Absent"/>
+        /// </summary>
+        private bool _IsAbsent { get { var state = __DfItem.State; return state.HasValue && state.Value.HasFlag(ControlStateType.Absent); } }
+        /// <summary>
+        /// Všechny Child prvky (controly + grupy).
+        /// Všechny je třeba umístit
+        /// </summary>
+        private DfTemplateLayoutItem[] _Childs { get { return __Childs?.ToArray(); } }
+        /// <summary>
+        /// Obsahuje true, pokud máme nějaké <see cref="_Childs"/> (tj. pole <see cref="__Childs"/> není null a obsahuje alespoň jeden prvek).
+        /// </summary>
+        private bool _HasChilds { get { return (this.__Childs != null && this.__Childs.Count > 0); } }
+        /// <summary>
+        /// Obsahuje všechny Child prvky = linearizované pole Child prvků, kde je vložen i Container, a po něm i všechny jeho Child prvky, rekurzivně.
+        /// </summary>
+        private DfTemplateLayoutItem[] _AllChildItems
+        {
+            get
+            {
+                List<DfTemplateLayoutItem> allChilds = new List<DfTemplateLayoutItem>();
+                _AddAllChilds(this, allChilds, true);
+                return allChilds.ToArray();
+            }
+        }
+        /// <summary>
+        /// Obsahuje všechny Child controly = linearizované pole Child prvků, kde namísto Child containeru jsou vloženy Controly v něm obsažené.
+        /// </summary>
+        private DfTemplateLayoutItem[] _AllChildControls
+        {
+            get
+            {
+                List<DfTemplateLayoutItem> allChilds = new List<DfTemplateLayoutItem>();
+                _AddAllChilds(this, allChilds, false);
+                return allChilds.ToArray();
+            }
+        }
+        /// <summary>
+        /// Za prvek <paramref name="container"/> (který by měl být typu 'kontejner') přidá jeho Child prvky typu Control do vznikajícího pole <paramref name="allChildsTarget"/>.
+        /// Pokud child prvek je typu Container, pak jej nepřidává, ale vyvolá rekurzivně tuto metodu pro něj = přidají se tak na místo containeru jeho jednotlivé Child prvky.
+        /// </summary>
+        /// <param name="container"></param>
+        /// <param name="allChildsTarget"></param>
+        /// <param name="addContainersItem"></param>
+        private static void _AddAllChilds(DfTemplateLayoutItem container, List<DfTemplateLayoutItem> allChildsTarget, bool addContainersItem)
+        {
+            var childs = container.__Childs;
+            if (childs != null)
+            {
+                foreach (var child in childs)
+                {
+                    if (child != null)
+                    {
+                        if (child._IsControl)
+                            allChildsTarget.Add(child);
+                        else if (child._IsContainer && addContainersItem)
+                            allChildsTarget.Add(child);
+
+                        if (child._HasChilds)
+                            _AddAllChilds(child, allChildsTarget, addContainersItem);
+                    }
+                }
+            }
         }
         #endregion
-        #region class ItemInfo : Dočasná pracovní a výkonná schránka na jednotlivý prvek layoutu, existuje jen po dobu výpočtu layoutu. Má tři tváře: Prvek/Container; Spolupráce s aplikací na doplnění hodnot; Spolupráce s FlowLayout na umístění do mřížky
+        #region Další data o prvku - primárně pro interface IDataFormItem
         /// <summary>
-        /// Dočasná pracovní a výkonná schránka na jednotlivý prvek layoutu (panel, grupa, control), v procesu určování layoutu prvků v rámci panelu.
-        /// <para/>
-        /// Uvnitř panelu jsou prvky rozmístěny fixně = jsou dané designerem formuláře. 
-        /// Ale rozmístění sousedních panelů na DataFormu je více v rukou uživatele / pohledu / velikosti monitoru atd.
+        /// Je voláno na konci konstruktoru, když jsou uloženy základní proměnné <see cref="__DfItem"/>, <see cref="__Parent"/>, <see cref="__DfArgs"/>, <see cref="__Style"/>. Aktuálně neřešíme Childs, <see cref="__Childs"/> je null a dosud nebyly enumerovány.<br/>
+        /// Připraví si trvalá data: vyhodnotí svůj zdroj (grupa / control) a opíše si z něj jeho specifické hodnoty do zdejších proměnných. Ani zde se neřeší Childs, pouze aktuální prvek <see cref="__DfItem"/> v jeho konkrétní formě.
         /// </summary>
-        internal class ItemInfo : IDataFormItem, IFlowLayoutItem, IDisposable
+        private void _InitData()
         {
-            #region Konstrukce, Dispose, základní stromové vlastnosti, Childs a jejich tvorba
-            /// <summary>
-            /// Vytvoří Root prvek, a sučasně v něm najde Containery a vytvoří rekurzivně celou strukturu
-            /// </summary>
-            /// <param name="dfItem"></param>
-            /// <param name="dfArgs"></param>
-            /// <param name="style">Styl pro daný panel. Panel si jej sám nevytvoří, protože musí mít k dispozici styl parenta (dědičnost pro implicitní hodnoty!)</param>
-            /// <returns></returns>
-            internal static ItemInfo CreateRoot(DfBase dfItem, DfTemplateLayoutArgs dfArgs, StyleInfo style)
+            var dfItem = __DfItem;
+            string name = dfItem.Name;
+            __Name = name;
+
+            string columnName = name;
+            if (dfItem is DfBaseInputControl inputControl)
             {
-                var rootItem = new ItemInfo(dfItem, null, dfArgs, style);
-                rootItem._CreateChilds();
-                return rootItem;
+                if (!String.IsNullOrEmpty(inputControl.ColumnName)) columnName = inputControl.ColumnName;
             }
-            /// <summary>
-            /// Pokud this obsahuje container <see cref="DfBaseContainer"/>, pak projde jeho <see cref="DfBaseContainer.Childs"/>
-            /// a pro každý z nich vytvoří svůj <see cref="_Childs"/> prvek své vlastní třídy a korektně jej naváže.
-            /// Pokud tento Child prvek je container, pak vyvolá tuto metodu rekurzivně i pro něj.
-            /// </summary>
-            private void _CreateChilds()
+            __ColumnName = columnName;
+
+            if (dfItem is DfPanel dfPanel)
+                _InitDataPanel(dfPanel);
+            else if (dfItem is DfGroup dfGroup)
+                _InitDataGroup(dfGroup);
+            else if (dfItem is DfBaseControl dfControl)
+                _InitDataControl(dfControl);
+
+            _InitFlow();
+        }
+        /// <summary>
+        /// Inicializace vlastních dat tohoto prvku pro prvek typu Panel.
+        /// Neřešíme Childs!
+        /// </summary>
+        /// <param name="dfPanel"></param>
+        private void _InitDataPanel(DfPanel dfPanel)
+        {
+            this.__DesignBounds = dfPanel.DesignBounds;
+            this.__ParentBoundsName = null;
+            this.__ColIndex = null;
+            this.__ColSpan = null;
+            this.__RowSpan = null;
+            this.__HPosition = null;
+            this.__VPosition = null;
+            this.__ExpandControl = null;
+            this.__LabelPosition = null;
+            this.__ContainerType = ContainerType.Panel;
+            this.__ControlInfo = new ControlInfo() { Exists = true, ControlType = DataControlType.None, DesignWidth = this.__DesignBounds?.Width, DesignHeight = this.__DesignBounds?.Height };
+
+            _RefreshData();
+        }
+        /// <summary>
+        /// Inicializace vlastních dat tohoto prvku pro prvek typu Group.
+        /// Neřešíme Childs!
+        /// </summary>
+        /// <param name="dfGroup"></param>
+        private void _InitDataGroup(DfGroup dfGroup)
+        {
+            this.__DesignBounds = dfGroup.DesignBounds;
+            this.__ParentBoundsName = dfGroup.ParentBoundsName;
+            this.__ColIndex = dfGroup.ColIndex;
+            this.__ColSpan = dfGroup.ColSpan;
+            this.__RowSpan = dfGroup.RowSpan;
+            this.__HPosition = dfGroup.HPosition;
+            this.__VPosition = dfGroup.VPosition;
+            this.__ExpandControl = dfGroup.ExpandControl;
+            this.__ContainerType = ContainerType.Group;
+            this.__ControlInfo = new ControlInfo() { Exists = true, ControlType = DataControlType.None, DesignWidth = this.__DesignBounds?.Width, DesignHeight = this.__DesignBounds?.Height };
+            this.__LabelPosition = dfGroup.LabelPosition;
+            this.__MainLabelInfo = new LabelInfo() { Text = dfGroup.Label, Style = dfGroup.LabelStyle, DesignWidth = dfGroup.LabelWidth };
+
+            _RefreshData();
+        }
+        /// <summary>
+        /// Inicializace vlastních dat tohoto prvku pro prvek typu Control.
+        /// </summary>
+        /// <param name="dfControl"></param>
+        private void _InitDataControl(DfBaseControl dfControl)
+        {
+            this.__DesignBounds = dfControl.DesignBounds;
+            this.__ParentBoundsName = dfControl.ParentBoundsName;
+            this.__ColIndex = dfControl.ColIndex;
+            this.__ColSpan = dfControl.ColSpan;
+            this.__RowSpan = dfControl.RowSpan;
+            this.__HPosition = dfControl.HPosition;
+            this.__VPosition = dfControl.VPosition;
+            this.__ExpandControl = dfControl.ExpandControl;
+            this.__ContainerType = ContainerType.None;
+            this.__LabelPosition = LabelPositionType.None;
+            this.__ToolTipVisibility = ToolTipVisibilityType.Default;
+            this.__ToolTipTitle = dfControl.ToolTipTitle;
+            this.__ToolTipText = dfControl.ToolTipText;
+
+            this.__ControlInfo = new ControlInfo() { Exists = true, ControlType = dfControl.ControlType, Style = dfControl.ControlStyle, DesignWidth = this.__DesignBounds?.Width, DesignHeight = this.__DesignBounds?.Height };
+
+            // Specifické informace podle druhu controlu:
+            if (dfControl is DfBaseInputTextControl inputTextControl)
+            {   // Text uvnitř Controlu:
+                this.__ControlInfo.Text = inputTextControl.Text;
+                this.__ControlInfo.IconName = inputTextControl.IconName;
+            }
+
+            if (dfControl is DfBaseLabeledInputControl labeledInputControl)
+            {   // Label vedle Controlu:
+                this.__LabelPosition = labeledInputControl.LabelPosition;
+                this.__MainLabelInfo = new LabelInfo() { Text = labeledInputControl.Label, Style = labeledInputControl.LabelStyle, DesignWidth = labeledInputControl.LabelWidth };
+                this.__SuffixLabelInfo = new LabelInfo() { Text = labeledInputControl.SuffixLabel };
+            }
+
+            _RefreshData();
+        }
+        /// <summary>
+        /// Refreshuje hodnoty <see cref="__MainLabelInfo"/>, <see cref="__ControlInfo"/>, <see cref="__SuffixLabelInfo"/> 
+        /// a správně umístí objekty pro labely <see cref="__LabelLeftInfo"/>, <see cref="__LabelTopInfo"/>, <see cref="__LabelRightInfo"/>, <see cref="__LabelBottomInfo"/>.
+        /// </summary>
+        private void _RefreshData()
+        {
+            // Logické rozmístění labelu Main a Suffix:
+            LabelPositionType lPos = __LabelPosition ?? _CurrentAutoLabelPosition;
+            this.__ValidLabelPosition = lPos;
+
+            var mainLabel = this.__MainLabelInfo;
+            bool mainLabelExists = (mainLabel != null && !String.IsNullOrEmpty(mainLabel.Text) && (lPos == LabelPositionType.BeforeLeft || lPos == LabelPositionType.BeforeRight || lPos == LabelPositionType.Top || lPos == LabelPositionType.Bottom || lPos == LabelPositionType.BeforeRight));
+
+            var control = this.__ControlInfo;
+            var containerType = this.__ContainerType;
+            var controlType = control?.ControlType ?? DataControlType.None;
+            bool controlExists = (containerType == ContainerType.Panel || containerType == ContainerType.Group) || !(controlType == DataControlType.None || controlType == DataControlType.PlaceHolder);
+
+            var suffixLabel = this.__SuffixLabelInfo;
+            bool suffixLabelExists = (suffixLabel != null && !String.IsNullOrEmpty(suffixLabel.Text) && lPos != LabelPositionType.After);
+
+            if (mainLabel != null)
             {
-                if (__DfItem is DfBaseContainer dfContainer && dfContainer.Childs != null)
+                mainLabel.Exists = mainLabelExists;
+                mainLabel.Alignment = (lPos == LabelPositionType.BeforeLeft ? ContentAlignmentType.MiddleLeft :
+                                      (lPos == LabelPositionType.BeforeRight ? ContentAlignmentType.MiddleRight :
+                                      (lPos == LabelPositionType.Top ? ContentAlignmentType.BottomLeft :
+                                      (lPos == LabelPositionType.After ? ContentAlignmentType.MiddleLeft :
+                                      (lPos == LabelPositionType.Bottom ? ContentAlignmentType.TopLeft : ContentAlignmentType.MiddleRight)))));
+            }
+            if (control != null)
+            {
+                control.Exists = controlExists;
+            }
+            if (suffixLabel != null)
+            {
+                suffixLabel.Exists = suffixLabelExists;
+                suffixLabel.Alignment = ContentAlignmentType.MiddleLeft;
+            }
+
+            // Fyzické obsazení prostoru pro Labely: Left, Top, Right, Bottom:
+            this.__LabelLeftInfo = ((lPos == LabelPositionType.BeforeLeft || lPos == LabelPositionType.BeforeRight) && mainLabelExists ? mainLabel : null);
+            this.__LabelTopInfo = ((lPos == LabelPositionType.Top) && mainLabelExists ? mainLabel : null);
+            this.__LabelBottomInfo = ((lPos == LabelPositionType.Bottom) && mainLabelExists ? mainLabel : null);
+            this.__LabelRightInfo = ((lPos == LabelPositionType.After) && mainLabelExists ? mainLabel : (suffixLabelExists ? suffixLabel : null));
+        }
+        /// <summary>
+        /// Zahodí veškerá data
+        /// </summary>
+        private void _ResetData()
+        {
+            __Name = null;
+            __ColumnName = null;
+            __DesignBounds = null;
+            __ColIndex = null;
+            __ColSpan = null;
+            __RowSpan = null;
+            __HPosition = null;
+            __ExpandControl = null;
+            __ContainerType = ContainerType.None;
+            __LabelPosition = null;
+            __ToolTipVisibility = ToolTipVisibilityType.None;
+            __ToolTipTitle = null;
+            __ToolTipText = null;
+            __ControlInfo = null;
+            __MainLabelInfo = null;
+            __SuffixLabelInfo = null;
+            __LabelLeftInfo = null;
+            __LabelTopInfo = null;
+            __LabelRightInfo = null;
+            __LabelBottomInfo = null;
+
+            _ResetFlowData();
+        }
+        /// <summary>
+        /// Jméno prvku
+        /// </summary>
+        private string __Name;
+        /// <summary>
+        /// Klíč prvků: Trim, Lower.  Pochází z <see cref="__Name"/>. Pokud tam je null, je i <see cref="_Key"/> = null.
+        /// </summary>
+        private string _Key { get { return DfTemplateLayout.GetItemKey(__Name); } }
+        /// <summary>
+        /// Jméno sloupce (nebo jméno prvku)
+        /// </summary>
+        private string __ColumnName;
+        /// <summary>
+        /// Umístění prvku. Výchozí je null.
+        /// </summary>
+        private DesignBounds __DesignBounds;
+        /// <summary>
+        /// Jméno prvku 'Name', který určuje souřadnice pro zdejší prvek, pokud ten je umístěn fixně = má definované souřadnice 'X' a 'Y'.
+        /// </summary>
+        private string __ParentBoundsName;
+        /// <summary>
+        /// Klíč prvku ParentBoundsName: Trim, Lower.  Pochází z <see cref="__ParentBoundsName"/>. Pokud tam je null, je i <see cref="_Key"/> = null.
+        /// </summary>
+        private string _ParentBoundsKey { get { return DfTemplateLayout.GetItemKey(__ParentBoundsName); } }
+        /// <summary>
+        /// Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
+        /// </summary>
+        private int? __ColIndex;
+        /// <summary>
+        /// Počet sloupců, které prvek obsazuje v FlowLayoutu. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
+        /// </summary>
+        private int? __ColSpan;
+        /// <summary>
+        /// Počet řádků, které prvek obsazuje v FlowLayoutu. Ten se použije, pokud prvky nemají exaktně dané souřadnice.
+        /// </summary>
+        private int? __RowSpan;
+        /// <summary>
+        /// Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu (textu) v rámci controlu.
+        /// </summary>
+        private HPositionType? __HPosition;
+        /// <summary>
+        /// Umístění prvku svisle v rámci řádku v případě, kdy výška prvku je menší než výška řádku. Řeší tedy zarovnání controlu v řádku, nikoli zarovnání obsahu (textu) v rámci controlu.
+        /// </summary>
+        private VPositionType? __VPosition;
+        /// <summary>
+        /// Rozšíření controlu do okolního prostoru pro labely, pokud labely nejsou použity
+        /// </summary>
+        private ExpandControlType? __ExpandControl;
+        /// <summary>
+        /// Typ containeru
+        /// </summary>
+        private ContainerType __ContainerType;
+        /// <summary>
+        /// Umístění a zarovnání popisku (Main Labelu) vzhledem k souřadnicích controlu, zadané k prvku (nebo null)
+        /// </summary>
+        private LabelPositionType? __LabelPosition;
+        /// <summary>
+        /// Umístění a zarovnání popisku (Main Labelu) vzhledem k souřadnicích controlu, validované (není null)
+        /// </summary>
+        private LabelPositionType __ValidLabelPosition;
+        /// <summary>
+        /// Na kterých prvcích má být aktivní ToolTip
+        /// </summary>
+        private ToolTipVisibilityType __ToolTipVisibility;
+        /// <summary>
+        /// Titulek ToolTipu.
+        /// </summary>
+        private string __ToolTipTitle;
+        /// <summary>
+        /// Text ToolTipu.
+        /// </summary>
+        private string __ToolTipText;
+        /// <summary>
+        /// Informace o Controlu (text, velikosti)
+        /// </summary>
+        private ControlInfo __ControlInfo;
+        /// <summary>
+        /// Kompletní informace o Main Labelu
+        /// </summary>
+        private LabelInfo __MainLabelInfo;
+        /// <summary>
+        /// Kompletní informace o Suffix Labelu
+        /// </summary>
+        private LabelInfo __SuffixLabelInfo;
+        /// <summary>
+        /// Kompletní informace o Labelu umístěném vlevo
+        /// </summary>
+        private LabelInfo __LabelLeftInfo;
+        /// <summary>
+        /// Kompletní informace o Labelu umístěném nahoře
+        /// </summary>
+        private LabelInfo __LabelTopInfo;
+        /// <summary>
+        /// Kompletní informace o Labelu umístěném vpravo
+        /// </summary>
+        private LabelInfo __LabelRightInfo;
+        /// <summary>
+        /// Kompletní informace o Labelu umístěném dole
+        /// </summary>
+        private LabelInfo __LabelBottomInfo;
+
+        #region IDataFormItem : implementace
+        DfForm IDataFormItem.DataForm { get { return _DfForm; } }
+        DfBaseControl IDataFormItem.BaseControl { get { return _DfControl; } }
+        string IDataFormItem.Name { get { return __Name; } }
+        string IDataFormItem.ColumnName { get { return __ColumnName; } }
+
+        ControlInfo IDataFormItem.ControlInfo { get { return __ControlInfo; } }
+
+        LabelPositionType IDataFormItem.LabelPosition { get { return __ValidLabelPosition; } }
+        LabelInfo IDataFormItem.MainLabelInfo { get { return __MainLabelInfo; } }
+        LabelInfo IDataFormItem.SuffixLabelInfo { get { return __SuffixLabelInfo; } }
+
+        string IDataFormItem.ToolTipTitle { get { return __ToolTipTitle; } set { __ToolTipTitle = value; } }
+        string IDataFormItem.ToolTipText { get { return __ToolTipText; } set { __ToolTipText = value; } }
+
+        #endregion
+        #endregion
+        #region Další data o prvku - primárně pro IFlowLayoutItem
+        /// <summary>
+        /// Inicializuje data pro Flow layout
+        /// </summary>
+        private void _InitFlow()
+        {
+            bool isBoundsFixed = DfTemplateLayout.IsBoundsFixed(__DesignBounds);
+            bool isFixedToParent = !String.IsNullOrEmpty(__ParentBoundsName);
+            __LayoutMode = (isBoundsFixed && !isFixedToParent ? LayoutModeType.FixedAbsolute :
+                           (isBoundsFixed && isFixedToParent ? LayoutModeType.BoundsInParent :
+                           (!isBoundsFixed && isFixedToParent ? LayoutModeType.FlowInParent :
+                           LayoutModeType.Flow)));
+        }
+        /// <summary>
+        /// Resetuje veškerá provozní a výsledná data pro Flow layout. Volá se před zahájením prací na FlowLayoutu.
+        /// </summary>
+        private void _ResetFlowData()
+        {
+            __FlowColBeginIndex = null;
+            __FlowColEndIndex = null;
+            __FlowRowBeginIndex = null;
+            __FlowRowEndIndex = null;
+            _ResetFlowFinalResults();
+        }
+        /// <summary>
+        /// Resetuje výsledné hodnoty FlowLayoutu. Volá se na začátku finalizace layoutu jako první metoda.
+        /// Neresetuje designové hodnoty. Neresetuje umístění do Matrixu. Resetuje to co souvisí s pixely.
+        /// </summary>
+        private void _ResetFlowFinalResults()
+        {
+            __AcceptedWidth = false;
+            __AcceptedHeight = false;
+            __CellMatrix = null;
+            __FlowGuideLines = null;
+
+            __ControlInfo?.ResetFlowFinalResults();
+            __MainLabelInfo?.ResetFlowFinalResults();
+            __SuffixLabelInfo?.ResetFlowFinalResults();
+            __LabelLeftInfo?.ResetFlowFinalResults();
+            __LabelTopInfo?.ResetFlowFinalResults();
+            __LabelRightInfo?.ResetFlowFinalResults();
+            __LabelBottomInfo?.ResetFlowFinalResults();
+        }
+        /// <summary>
+        /// Režim layoutu
+        /// </summary>
+        private LayoutModeType __LayoutMode;
+        /// <summary>
+        /// Index sloupce, na kterém reálně začíná v režimu FlowLayout.
+        /// </summary>
+        private int? __FlowColBeginIndex;
+        /// <summary>
+        /// Index sloupce, na kterém reálně končí v režimu FlowLayout.
+        /// </summary>
+        private int? __FlowColEndIndex;
+        /// <summary>
+        /// Index řádku, na kterém reálně začíná prvek v režimu FlowLayout.
+        /// </summary>
+        private int? __FlowRowBeginIndex;
+        /// <summary>
+        /// Index řádku, na kterém reálně končí prvek v režimu FlowLayout.
+        /// </summary>
+        private int? __FlowRowEndIndex;
+        /// <summary>
+        /// Výsledná souřadnice celé buňky
+        /// </summary>
+        private CellMatrixInfo __CellMatrix;
+        /// <summary>
+        /// Algoritmus FlowLayout pro prvek zajistil potřebnou šířku
+        /// </summary>
+        private bool __AcceptedWidth;
+        /// <summary>
+        /// Algoritmus FlowLayout pro prvek zajistil potřebnou výšku
+        /// </summary>
+        private bool __AcceptedHeight;
+
+        #region IFlowLayoutItem : implementace
+        // Designové, čerpané z frm.xml:
+        string IFlowLayoutItem.Name { get { return __Name; } }
+        bool IFlowLayoutItem.IsAbsent { get { return _IsAbsent; } }
+        bool IFlowLayoutItem.IsFlowMode { get { return (__LayoutMode == LayoutModeType.Flow); } }
+        string IFlowLayoutItem.Text { get { return __Name; } }
+        int? IFlowLayoutItem.DesignColIndex { get { return __ColIndex; } }
+        int? IFlowLayoutItem.DesignColSpan { get { return __ColSpan; } }
+        int? IFlowLayoutItem.DesignRowSpan { get { return __RowSpan; } }
+        HPositionType? IFlowLayoutItem.DesignHPosition { get { return __HPosition; } }
+        VPositionType? IFlowLayoutItem.DesignVPosition { get { return __VPosition; } }
+        ExpandControlType? IFlowLayoutItem.DesignExpandControl { get { return __ExpandControl; } }
+
+        // Umístění prvku v rámci FlowLayoutu
+        int? IFlowLayoutItem.FlowColBeginIndex { get { return __FlowColBeginIndex; } set { __FlowColBeginIndex = value; } }
+        int? IFlowLayoutItem.FlowColEndIndex { get { return __FlowColEndIndex; } set { __FlowColEndIndex = value; } }
+        int? IFlowLayoutItem.FlowRowBeginIndex { get { return __FlowRowBeginIndex; } set { __FlowRowBeginIndex = value; } }
+        int? IFlowLayoutItem.FlowRowEndIndex { get { return __FlowRowEndIndex; } set { __FlowRowEndIndex = value; } }
+        CellMatrixInfo IFlowLayoutItem.CellMatrix { get { return __CellMatrix; } set { __CellMatrix = value; } }
+
+        ControlInfo IFlowLayoutItem.ControlInfo { get { return __ControlInfo; } }
+        LabelInfo IFlowLayoutItem.LabelLeftInfo { get { return __LabelLeftInfo; } }
+        LabelInfo IFlowLayoutItem.LabelTopInfo { get { return __LabelTopInfo; } }
+        LabelInfo IFlowLayoutItem.LabelRightInfo { get { return __LabelRightInfo; } }
+        LabelInfo IFlowLayoutItem.LabelBottomInfo { get { return __LabelBottomInfo; } }
+
+        bool IFlowLayoutItem.AcceptedWidth { get { return __AcceptedWidth; } set { __AcceptedWidth = value; } }
+        bool IFlowLayoutItem.AcceptedHeight { get { return __AcceptedHeight; } set { __AcceptedHeight = value; } }
+        void IFlowLayoutItem.ResetFlowFinalResults() { this._ResetFlowFinalResults(); }
+        #endregion
+        #endregion
+        #region Zpracování layoutu panelu
+        /// <summary>
+        /// Zajistí plné zpracování this containeru, rekurzivně jeho Child containerů a zdejších Controlů.
+        /// </summary>
+        internal void ProcessPanel()
+        {
+            var args = this._LayoutArgs;
+            var startTime = DxComponent.LogTimeCurrent;
+            _ProcessContainer();                                 // Zpracuje this container, a rekurzivně jeho Child containery etc
+            _PreparePanelAbsoluteBounds();                       // Naplní absolutní souřadnice do všech (i vnořených) prvků
+            if (args.LogTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Layout panel '{__Name}': {DxComponent.LogTokenTimeMicrosec}", startTime);
+            if (args.SaveDebugImages) _CreateImageFile();
+        }
+        /// <summary>
+        /// Zajistí plné zpracování this containeru, rekurzivně jeho Child containerů a zdejších Controlů.
+        /// </summary>
+        private void _ProcessContainer()
+        {
+            if (_HasChilds)
+            {
+                _PrepareChilds();                                // Příprava: Containery kompletně (rekurzivně), a poté všechny prvky: doplnění aplikačních dat a měření primární velikosti
+                _PositionChilds();                               // Kvalifikuje Child prvky na Fixed a Flow; a pro Flow prvky vyřeší jejich rozmístění (souřadnice) pomocí FlowLayoutu. Poté řeší Fixed prvky.
+            }
+            _ProcessMargins();                                   // Zpracuje Margins tohoto containeru = navýší všechny interní souřadnice svých prvků a upraví svoji velikost
+            _ProcessContentSize();
+        }
+        /// <summary>
+        /// Připraví data Childs: kompletní příprava Containeru, a prvotní příprava pro pozicování Group + Control
+        /// </summary>
+        private void _PrepareChilds()
+        {
+            // Přípravná fáze, jejím výsledkem jsou určené velikosti Child Containerů a Controlů:
+            var childs = this.__Childs;
+            foreach (var item in childs)
+            {
+                if (item._IsGroup)
+                {   // Grupa si nyní kompletně připraví layout pro svoje Child prvky.
+                    // A poté při tvorbě našeho layoutu s ním budeme zacházet jako s obyčejným prvkem.
+                    item._PrepareMeForGroup(item._DfGroup);
+                    item._ProcessContainer();                    // Child je Grupa = Container, ať si projde tuto metodu rekurzivně sám
+                }
+                else if (item._IsControl)
                 {
-                    __Childs = new List<ItemInfo>();
-                    var dfChilds = dfContainer.Childs;
-                    foreach (var dfChild in dfChilds)
+                    item._PrepareMeForControl(item._DfControl);
+                }
+            }
+        }
+        /// <summary>
+        /// Provede přípravné kroky před tvorbou layoutu pro danou grupu.
+        /// </summary>
+        /// <param name="dfGroup"></param>
+        private void _PrepareMeForGroup(DfGroup dfGroup)
+        {
+            // Implicitní validace controlu řeší výhradně Main a Suffix Labely, jejich rozměr:
+            DfTemplateLayout.ValidateControlInfo(this);
+            _RefreshData();
+        }
+        /// <summary>
+        /// Provede přípravné kroky před tvorbou layoutu pro daný control.
+        /// Zajistí určení implicitních velikostí pro control a pro label.
+        /// </summary>
+        /// <param name="dfControl"></param>
+        private void _PrepareMeForControl(DfBaseControl dfControl)
+        {
+            //  Tato metoda zajistí doplnění vlastností controlu pro ty hodnoty, které nejsou explicitně zadané v šabloně, 
+            //     na základě dat dodaných z jádra pro konkrétní atribut dané třídy
+            // Velikost controlu
+            // MainLabel - text, velikost (nikoli konkrétní pozice)
+            // Tooltip
+            // Překlady textů z formátovacách stringů : "fm(MSG001)" => "Reference", atd  (pro labely, pro tooltipy)
+
+            // Validace externí (tj. aplikační kód) a lokální (defaultní):
+            this._LayoutArgs.InfoSource.ValidateControlInfo(this);
+            DfTemplateLayout.ValidateControlInfo(this);
+            _RefreshData();
+        }
+        /// <summary>
+        /// Vytvoří pole sloupců, projde všechny Childs, nastaví jim LayoutMode = Fixed / Flow.
+        /// Pro Flow prvky určí jejich pozici v matici: LayoutBeginRowIndex, LayoutBeginColumnIndex, LayoutEndColumnIndex.
+        /// Pro jednosloupcový prvek typu Flow započítá jeho šířky (Label, Control) do jemu odpovídajícího sloupce.
+        /// </summary>
+        private void _PositionChilds()
+        {
+            __ContentSize = null;
+            __FlowLayoutMatrix = null;
+            __FlowGuideLines = null;
+
+            var childs = this.__Childs;
+            if (childs.Count == 0) return;                                 // Není co dělat...
+
+            // Flow prvky a ty ostatní:
+            List<DfTemplateLayoutItem> processItems = null;                            // Prvky pro další zpracování layoutu (Non Flow)
+            Size contentSize = new Size();
+            if (childs.Any(i => i.__LayoutMode == LayoutModeType.Flow && !i._IsAbsent))
+                // Pokud mám nějaké FlowItems, pak prvky LayoutModeType.Flow zpracuji a ostatní prvky dám do pole processItems:
+                processFlowItems(childs, contentSize, out processItems);
+            else
+                // Nemám FlowItems? Pak v dalším kole zpracuji všechny prvky childs:
+                processItems = childs.ToList();
+
+            // Non-Flow prvky:
+            processNonFlowItems(processItems, contentSize, childs);
+
+            // Finální velikost:
+            __ContentSize = contentSize;
+
+
+            // Z dodaného pole všech prvků (které obsahuje alespoň jeden v režimu Flow) vytvoří FlowLayout, vrátí jeho pozici, a určí prvky pro další zpracování NonFlow
+            void processFlowItems(List<DfTemplateLayoutItem> items, Size contentSize, out List<DfTemplateLayoutItem> otherItems)
+            {
+                otherItems = null;
+
+                using (var flowLayout = new DfFlowLayoutInfo(__Style, this.__DfItem.Name))
+                {
+                    flowLayout.Reset();
+                    foreach (var item in items)
                     {
-                        if (dfChild != null)
-                        {
-                            // a) Container (tj. Group)?
-                            if (dfChild is DfBaseContainer dfChildContainer)
-                            {
-                                StyleInfo childStyle = new StyleInfo(dfChildContainer, this.__ChildStyle);
-                                ItemInfo childContainer = new ItemInfo(dfChild, this, null, childStyle);
-                                __Childs.Add(childContainer);
-                                childContainer._CreateChilds();
-                            }
-                            // b) Control
-                            else if (dfChild is DfBaseControl dfChildControl)
-                            {
-                                ItemInfo childControl = new ItemInfo(dfChild, this, null, null);
-                                __Childs.Add(childControl);
-                            }
+                        if (item.__LayoutMode == LayoutModeType.Flow)
+                        {   // Flow prvek zpracuji (pokud není Absent):
+                            if (!item._IsAbsent)
+                                flowLayout.AddFlowItem(item);
+                        }
+                        else
+                        {   // Prvek jiného typu new Flow odložím do seznamu ostatních prvků, a zpracují se poté:
+                            if (otherItems is null) otherItems = new List<DfTemplateLayoutItem>();
+                            otherItems.Add(item);
                         }
                     }
+                    flowLayout.ProcessFlowItems();
+                    if (_LayoutArgs.DebugImagesWithGuideLines) __FlowGuideLines = flowLayout.CreateGuideLines();
+                    __FlowLayoutMatrix = flowLayout.CreateTotalMatrix();
+
+                    addBoundsToSize(flowLayout.FlowLayoutBounds, contentSize);
                 }
             }
-            /// <summary>
-            /// Privátní konstruktor
-            /// </summary>
-            /// <param name="dfItem"></param>
-            /// <param name="parent"></param>
-            /// <param name="dfArgs"></param>
-            /// <param name="style"></param>
-            private ItemInfo(DfBase dfItem, ItemInfo parent, DfTemplateLayoutArgs dfArgs, StyleInfo style)
+            // Pro prvky z dodaného pole prvků ke zpracování provede jejich roztřídění a zpracování podle typu.
+            void processNonFlowItems(List<DfTemplateLayoutItem> processItems, Size contentSize, List<DfTemplateLayoutItem> allItems)
             {
-                __DfItem = dfItem;
-                __Parent = parent;
-                __DfArgs = dfArgs;
-                __ChildStyle = style;
-                __Childs = null;
+                if (processItems is null || processItems.Count == 0) return;
 
-                _InitData();
-            }
-            /// <summary>
-            /// Dispose
-            /// </summary>
-            public void Dispose()
-            {
-                __Childs?.ForEach(i => i?.Dispose());
-                
-                _ResetData();
-                
-                __DfItem = null;
-                __Parent = null;
-                __DfArgs = null;
-                __ChildStyle = null;
-            }
-            /// <summary>
-            /// Vizualizace
-            /// </summary>
-            /// <returns></returns>
-            public override string ToString()
-            {
-                return this._Text;
-            }
-            /// <summary>
-            /// Definiční prvek = načtený z XML šablony (panel, grupa, control...)
-            /// </summary>
-            private DfBase __DfItem;
-            /// <summary>
-            /// Náš přímý parent. Přes něj dojdeme až k Root prvku.
-            /// Pozor, zde může být null v případě Root prvku.
-            /// </summary>
-            private ItemInfo __Parent;
-            /// <summary>
-            /// Vstupní argumenty celého formu.
-            /// Pozor, zde je instance pouze v Root prvku. Běžně pro práci se používá <see cref="_LayoutArgs"/>.
-            /// </summary>
-            private DfTemplateLayoutArgs __DfArgs;
-            /// <summary>
-            /// Styl pro tento kontejner.
-            /// Container si styl sám nevytvoří, protože musí mít k dispozici styl parenta (dědičnost pro implicitní hodnoty!).
-            /// Jednotlivé controly zde mají null, najdou si styl ve svém parentu.
-            /// </summary>
-            private StyleInfo __ChildStyle;
-            /// <summary>
-            /// Prvky mých Childs. Výchozí stav je null (většina prvků jsou Controly, které nemají Childs). Lze testovat <see cref="_HasChilds"/>.
-            /// </summary>
-            private List<ItemInfo> __Childs;
-            /// <summary>
-            /// Root prvek. Zde nikdy není null: pokud this je Root, pak zde je this.
-            /// </summary>
-            private ItemInfo _Root { get { return (__Parent?._Root ?? this); } }
-            /// <summary>
-            /// Styl pro Child prvky tohoto containeru. Pokud this je container, pak má definován svůj vlastní styl (<see cref="__ChildStyle"/>).
-            /// Pokud jej nemá (typicky proto, že jde o Control), pak zde vrací aktuální styl ze svého Parenta.
-            /// </summary>
-            private StyleInfo _CurrentStyle { get { return __ChildStyle ?? __Parent?._CurrentStyle; } }
-            /// <summary>
-            /// Styl pocházející z parenta. pro tento prvek. Pokud this je container, pak má definován svůj vlastní styl (<see cref="__ChildStyle"/>).
-            /// Pokud jej nemá (typicky proto, že jde o Control), pak zde vrací aktuální styl ze svého Parenta.
-            /// </summary>
-            private StyleInfo _ParentStyle { get { return __Parent?._CurrentStyle; } }
-            /// <summary>
-            /// Obsahuje true, pokud this je Root
-            /// </summary>
-            private bool _IsRoot { get { return (__Parent is null); } }
-            /// <summary>
-            /// Argumenty pro layout šablony = obsahuje Form, Source, Errors...
-            /// Zde není nikdy null.
-            /// </summary>
-            private DfTemplateLayoutArgs _LayoutArgs { get { return _Root.__DfArgs; } }
-            /// <summary>
-            /// Celý formulář
-            /// </summary>
-            private DfForm _DfForm { get { return _LayoutArgs.DataForm; } }
-            /// <summary>
-            /// Plná cesta a informace od Root přes jeho Child až ke mě = typy prvků oddělené šipkou.
-            /// </summary>
-            private string _Text
-            {
-                get
+                // Dictionary pro vyhledávání prvků podle jména pro prvky s ParentBoundsName
+                Dictionary<string, DfTemplateLayoutItem> allDictionary = null;
+                if (processItems.Any(i => (i.__LayoutMode == LayoutModeType.FlowInParent || i.__LayoutMode == LayoutModeType.BoundsInParent)))
+                {   // Pokud nějaký prvek bude potřebovat najít svého parenta, tak si připravím Dictionary:
+                    allDictionary = new Dictionary<string, DfTemplateLayoutItem>();
+                    foreach (var item in allItems)
+                        allDictionary.Add(item._Key, item);
+                }
+
+                // Projdu prvky a zpracuji je podle jejich režimu:
+                foreach (var processItem in processItems)
                 {
-                    var type = __DfItem.GetType().Name;
-                    var name = __DfItem.Name;
-                    var text = type + (!String.IsNullOrEmpty(name) ? $" '{name}'" : "");
-                    if (this.__LayoutMode == LayoutModeType.Flow)
+                    switch (processItem.__LayoutMode)
                     {
-                        text += $"; Flow [ RowIndex: {__FlowRowBeginIndex}";
-                        if (__RowSpan.HasValue && __RowSpan.Value > 1)
-                            text += $"; RowSpan: {__RowSpan}";
-                        text += $"; ColIndex: {__FlowColBeginIndex}";
-                        if (__ColSpan.HasValue && __ColSpan.Value > 1)
-                            text += $"; ColSpan: {__ColSpan}";
-                        text += $" ]";
-                    }
-
-                    var parent = __Parent;
-                    return (parent != null ? parent._Text + " => " : "") + text;
-                }
-            }
-            /// <summary>
-            /// Plná cesta od Root přes jeho Child až ke mě = typy prvků oddělené šipkou.
-            /// </summary>
-            private string _FullPath
-            {
-                get
-                {
-                    var type = __DfItem.GetType().Name;
-                    var name = __DfItem.Name;
-                    var text = type + (!String.IsNullOrEmpty(name) ? $" '{name}'" : "");
-
-                    var parent = __Parent;
-                    return (parent != null ? parent._FullPath + " => " : "") + text;
-                }
-            }
-            /// <summary>
-            /// Prvek reprezentuje container (panel, grupa)
-            /// </summary>
-            private bool _IsContainer { get { return (__DfItem is DfBaseContainer); } }
-            /// <summary>
-            /// Container (tedy Panel + Group)
-            /// </summary>
-            private DfBaseContainer _DfContainer { get { return (__DfItem as DfBaseContainer); } }
-            /// <summary>
-            /// Prvek reprezentuje grupu?
-            /// </summary>
-            private bool _IsGroup { get { return (__DfItem is DfGroup); } }
-            /// <summary>
-            /// Grupa uvnitř panelu nebo grupy
-            /// </summary>
-            private DfGroup _DfGroup { get { return (__DfItem as DfGroup); } }
-            /// <summary>
-            /// Prvek reprezentuje samostatný control: pak <see cref="__DfItem"/> je potomkem <see cref="DfBaseControl"/>.
-            /// </summary>
-            private bool _IsControl { get { return (__DfItem is DfBaseControl); } }
-            /// <summary>
-            /// Podkladový control
-            /// </summary>
-            private DfBaseControl _DfControl { get { return (__DfItem as DfBaseControl); } }
-            /// <summary>
-            /// Stav prvku
-            /// </summary>
-            private ControlStateType? _ControlState { get { return __DfItem.State; } }
-            /// <summary>
-            /// Stav prvku obsahuje příznak <see cref="ControlStateType.Absent"/>
-            /// </summary>
-            private bool _IsAbsent { get { var state = __DfItem.State; return state.HasValue && state.Value.HasFlag(ControlStateType.Absent); } }
-            /// <summary>
-            /// Všechny Child prvky (controly + grupy).
-            /// Všechny je třeba umístit
-            /// </summary>
-            private ItemInfo[] _Childs { get { return __Childs?.ToArray(); } }
-            /// <summary>
-            /// Obsahuje true, pokud máme nějaké <see cref="_Childs"/> (tj. pole <see cref="__Childs"/> není null a obsahuje alespoň jeden prvek).
-            /// </summary>
-            private bool _HasChilds { get { return (this.__Childs != null && this.__Childs.Count > 0); } }
-            /// <summary>
-            /// Obsahuje všechny Child prvky = linearizované pole Child prvků, kde je vložen i Container, a po něm i všechny jeho Child prvky, rekurzivně.
-            /// </summary>
-            private ItemInfo[] _AllChildItems
-            {
-                get
-                {
-                    List<ItemInfo> allChilds = new List<ItemInfo>();
-                    _AddAllChilds(this, allChilds, true);
-                    return allChilds.ToArray();
-                }
-            }
-            /// <summary>
-            /// Obsahuje všechny Child controly = linearizované pole Child prvků, kde namísto Child containeru jsou vloženy Controly v něm obsažené.
-            /// </summary>
-            private ItemInfo[] _AllChildControls
-            { 
-                get
-                {
-                    List<ItemInfo> allChilds = new List<ItemInfo>();
-                    _AddAllChilds(this, allChilds, false);
-                    return allChilds.ToArray();
-                }
-            }
-            /// <summary>
-            /// Za prvek <paramref name="container"/> (který by měl být typu 'kontejner') přidá jeho Child prvky typu Control do vznikajícího pole <paramref name="allChildsTarget"/>.
-            /// Pokud child prvek je typu Container, pak jej nepřidává, ale vyvolá rekurzivně tuto metodu pro něj = přidají se tak na místo containeru jeho jednotlivé Child prvky.
-            /// </summary>
-            /// <param name="container"></param>
-            /// <param name="allChildsTarget"></param>
-            /// <param name="addContainersItem"></param>
-            private static void _AddAllChilds(ItemInfo container, List<ItemInfo> allChildsTarget, bool addContainersItem)
-            {
-                var childs = container.__Childs;
-                if (childs != null)
-                {
-                    foreach (var child in childs)
-                    {
-                        if (child != null)
-                        {
-                            if (child._IsControl)
-                                allChildsTarget.Add(child);
-                            else if (child._IsContainer && addContainersItem)
-                                allChildsTarget.Add(child);
-
-                            if (child._HasChilds)
-                                _AddAllChilds(child, allChildsTarget, addContainersItem);
-                        }
+                        case LayoutModeType.FlowInParent:
+                            processFlowInParentItem(processItem, contentSize, allDictionary);
+                            break;
+                        case LayoutModeType.BoundsInParent:
+                            processBoundsInParentItem(processItem, contentSize, allDictionary);
+                            break;
+                        case LayoutModeType.FixedAbsolute:
+                            processFixedAbsoluteItem(processItem, contentSize, allDictionary);
+                            break;
                     }
                 }
             }
-            #endregion
-            #region Další data o prvku - primárně pro interface IDataFormItem
-            /// <summary>
-            /// Je voláno na konci konstruktoru, když jsou uloženy základní proměnné <see cref="__DfItem"/>, <see cref="__Parent"/>, <see cref="__DfArgs"/>, <see cref="__ChildStyle"/>. Aktuálně neřešíme Childs, <see cref="__Childs"/> je null a dosud nebyly enumerovány.<br/>
-            /// Připraví si trvalá data: vyhodnotí svůj zdroj (grupa / control) a opíše si z něj jeho specifické hodnoty do zdejších proměnných. Ani zde se neřeší Childs, pouze aktuální prvek <see cref="__DfItem"/> v jeho konkrétní formě.
-            /// </summary>
-            private void _InitData()
+            // Zpracuje prvek v režimu FlowInParent
+            void processFlowInParentItem(DfTemplateLayoutItem processItem, Size contentSize, Dictionary<string, DfTemplateLayoutItem> allDictionary)
             {
-                var dfItem = __DfItem;
-                string name = dfItem.Name;
-                __Name = name;
-
-                string columnName = name;
-                if (dfItem is DfBaseInputControl inputControl)
+                string key = processItem._ParentBoundsKey;
+                if (key != null && allDictionary.TryGetValue(key, out var parentItem) && parentItem.__CellMatrix != null)
                 {
-                    if (!String.IsNullOrEmpty(inputControl.ColumnName)) columnName = inputControl.ColumnName;
+                    processItem.__CellMatrix = parentItem.__CellMatrix;
+                    processItem.__ControlInfo.Exists = true;
+                    DfFlowLayoutInfo.ProcessInnerItemBounds(processItem, __Style);
+                    addItemBoundsToSize(processItem, contentSize);
                 }
-                __ColumnName = columnName;
-
-                if (dfItem is DfPanel dfPanel)
-                    _InitDataPanel(dfPanel);
-                else if (dfItem is DfGroup dfGroup)
-                    _InitDataGroup(dfGroup);
-                else if (dfItem is DfBaseControl dfControl)
-                    _InitDataControl(dfControl);
-
-                _InitFlow();
             }
-            /// <summary>
-            /// Inicializace vlastních dat tohoto prvku pro prvek typu Panel.
-            /// Neřešíme Childs!
-            /// </summary>
-            /// <param name="dfPanel"></param>
-            private void _InitDataPanel(DfPanel dfPanel)
+            // Zpracuje prvek v režimu BoundsInParent
+            void processBoundsInParentItem(DfTemplateLayoutItem processItem, Size contentSize, Dictionary<string, DfTemplateLayoutItem> allDictionary)
             {
-                this.__DesignBounds = dfPanel.DesignBounds;
-                this.__ParentBoundsName = null;
-                this.__ColIndex = null;
-                this.__ColSpan = null;
-                this.__RowSpan = null;
-                this.__HPosition = null;
-                this.__VPosition = null;
-                this.__ExpandControl = null;
-                this.__LabelPosition = null;
-                this.__ContainerType = ContainerType.Panel;
-                this.__ControlInfo = new ControlInfo() { Exists = true, ControlType = DataControlType.None, DesignWidth = this.__DesignBounds?.Width, DesignHeight = this.__DesignBounds?.Height };
-
-                _RefreshData();
-            }
-            /// <summary>
-            /// Inicializace vlastních dat tohoto prvku pro prvek typu Group.
-            /// Neřešíme Childs!
-            /// </summary>
-            /// <param name="dfGroup"></param>
-            private void _InitDataGroup(DfGroup dfGroup)
-            {
-                this.__DesignBounds = dfGroup.DesignBounds;
-                this.__ParentBoundsName = dfGroup.ParentBoundsName;
-                this.__ColIndex = dfGroup.ColIndex;
-                this.__ColSpan = dfGroup.ColSpan;
-                this.__RowSpan = dfGroup.RowSpan;
-                this.__HPosition = dfGroup.HPosition;
-                this.__VPosition = dfGroup.VPosition;
-                this.__ExpandControl = dfGroup.ExpandControl;
-                this.__ContainerType = ContainerType.Group;
-                this.__ControlInfo = new ControlInfo() { Exists = true, ControlType = DataControlType.None, DesignWidth = this.__DesignBounds?.Width, DesignHeight = this.__DesignBounds?.Height };
-                this.__LabelPosition = dfGroup.LabelPosition;
-                this.__MainLabelInfo = new LabelInfo() { Text = dfGroup.Label, Style = dfGroup.LabelStyle, DesignWidth = dfGroup.LabelWidth };
-
-                _RefreshData();
-            }
-            /// <summary>
-            /// Inicializace vlastních dat tohoto prvku pro prvek typu Control.
-            /// </summary>
-            /// <param name="dfControl"></param>
-            private void _InitDataControl(DfBaseControl dfControl)
-            {
-                this.__DesignBounds = dfControl.DesignBounds;
-                this.__ParentBoundsName = dfControl.ParentBoundsName;
-                this.__ColIndex = dfControl.ColIndex;
-                this.__ColSpan = dfControl.ColSpan;
-                this.__RowSpan = dfControl.RowSpan;
-                this.__HPosition = dfControl.HPosition;
-                this.__VPosition = dfControl.VPosition;
-                this.__ExpandControl = dfControl.ExpandControl;
-                this.__ContainerType = ContainerType.None;
-                this.__LabelPosition = LabelPositionType.None;
-                this.__ToolTipVisibility = ToolTipVisibilityType.Default;
-                this.__ToolTipTitle = dfControl.ToolTipTitle;
-                this.__ToolTipText = dfControl.ToolTipText;
-
-                this.__ControlInfo = new ControlInfo() { Exists = true, ControlType = dfControl.ControlType, Style = dfControl.ControlStyle, DesignWidth = this.__DesignBounds?.Width, DesignHeight = this.__DesignBounds?.Height };
-
-                // Specifické informace podle druhu controlu:
-                if (dfControl is DfBaseInputTextControl inputTextControl)
-                {   // Text uvnitř Controlu:
-                    this.__ControlInfo.Text = inputTextControl.Text;
-                    this.__ControlInfo.IconName = inputTextControl.IconName;
-                }
-
-                if (dfControl is DfBaseLabeledInputControl labeledInputControl)
-                {   // Label vedle Controlu:
-                    this.__LabelPosition = labeledInputControl.LabelPosition;
-                    this.__MainLabelInfo = new LabelInfo() { Text = labeledInputControl.Label, Style = labeledInputControl.LabelStyle, DesignWidth = labeledInputControl.LabelWidth };
-                    this.__SuffixLabelInfo = new LabelInfo() { Text = labeledInputControl.SuffixLabel };
-                }
-
-                _RefreshData();
-            }
-            /// <summary>
-            /// Refreshuje hodnoty <see cref="__MainLabelInfo"/>, <see cref="__ControlInfo"/>, <see cref="__SuffixLabelInfo"/> 
-            /// a správně umístí objekty pro labely <see cref="__LabelLeftInfo"/>, <see cref="__LabelTopInfo"/>, <see cref="__LabelRightInfo"/>, <see cref="__LabelBottomInfo"/>.
-            /// </summary>
-            private void _RefreshData()
-            {
-                // Logické rozmístění labelu Main a Suffix:
-                LabelPositionType lPos = __LabelPosition ?? _ParentStyle.AutoLabelPosition;
-                this.__ValidLabelPosition = lPos;
-
-                var mainLabel = this.__MainLabelInfo;
-                bool mainLabelExists = (mainLabel != null && !String.IsNullOrEmpty(mainLabel.Text) && (lPos == LabelPositionType.BeforeLeft || lPos == LabelPositionType.BeforeRight || lPos == LabelPositionType.Top || lPos == LabelPositionType.Bottom || lPos == LabelPositionType.BeforeRight));
-
-                var control = this.__ControlInfo;
-                var containerType = this.__ContainerType;
-                var controlType = control?.ControlType ?? DataControlType.None;
-                bool controlExists = (containerType == ContainerType.Panel || containerType == ContainerType.Group) || !(controlType == DataControlType.None || controlType == DataControlType.PlaceHolder);
-
-                var suffixLabel = this.__SuffixLabelInfo;
-                bool suffixLabelExists = (suffixLabel != null && !String.IsNullOrEmpty(suffixLabel.Text) && lPos != LabelPositionType.After);
-
-                if (mainLabel != null)
+                var bounds = processItem.__DesignBounds;
+                string key = processItem._ParentBoundsKey;
+                if (bounds != null && key != null && allDictionary.TryGetValue(key, out var parentItem) && parentItem.__CellMatrix != null)
                 {
-                    mainLabel.Exists = mainLabelExists;
-                    mainLabel.Alignment = (lPos == LabelPositionType.BeforeLeft ? ContentAlignmentType.MiddleLeft :
-                                          (lPos == LabelPositionType.BeforeRight ? ContentAlignmentType.MiddleRight :
-                                          (lPos == LabelPositionType.Top ? ContentAlignmentType.BottomLeft :
-                                          (lPos == LabelPositionType.After ? ContentAlignmentType.MiddleLeft :
-                                          (lPos == LabelPositionType.Bottom ? ContentAlignmentType.TopLeft : ContentAlignmentType.MiddleRight)))));
+                    var labelUsedAreas = DfFlowLayoutInfo.GetLabelUsedAreas(processItem);
+                    var parentBounds = parentItem.__CellMatrix.GetControlBounds(processItem.__ExpandControl, labelUsedAreas, __Style.TopLabelOffsetX, __Style.BottomLabelOffsetX);  // Souřadnice Controlu v Parent buňce, volitelně Expanded
+                    int pl = parentBounds.Left;
+                    int pt = parentBounds.Top;
+
+                    int l = bounds.Left ?? 0;                                        // Zadané souřadnice aktuálního prvku jsou relativní k Parent buňce
+                    int t = bounds.Top ?? 0;
+                    int w = getSize(bounds.Width, parentBounds.Width, 100);          // Pixely nebo procenta z Parent velikosti
+                    int h = getSize(bounds.Height, parentBounds.Height, 20);
+                    var controlBounds = new ControlBounds(pl + l, pt + t, w, h);     // Posunu souřadnice prvku (l,t) o souřadnice parenta (x,y)
+
+                    DfFlowLayoutInfo.ProcessFixedItemBounds(processItem, controlBounds, parentItem.__CellMatrix.ControlFirstRowHeight, __Style);
+                    addItemBoundsToSize(processItem, contentSize);
                 }
-                if (control != null)
+            }
+            // Vrátí velikost 'currSize': pokud je v pixelech, pak přímo; pokud je v procentech, pak vůči 'parentSize'; a pokud není, pak 'defaultSize'
+            int getSize(Int32P? currSize, int parentSize, int defaultSize)
+            {
+                if (currSize.HasValue)
                 {
-                    control.Exists = controlExists;
+                    if (currSize.Value.IsPixel) return currSize.Value.NumberPixel.Value;
+                    if (currSize.Value.IsPercent) return (int)Math.Round(((double)(parentSize * currSize.Value.NumberPercent.Value) / 100d), 0);
                 }
-                if (suffixLabel != null)
+                return defaultSize;
+            }
+            // Zpracuje prvek v režimu FixedAbsolute
+            void processFixedAbsoluteItem(DfTemplateLayoutItem processItem, Size contentSize, Dictionary<string, DfTemplateLayoutItem> allDictionary)
+            {
+                var bounds = processItem.__DesignBounds;
+                if (bounds != null)
                 {
-                    suffixLabel.Exists = suffixLabelExists;
-                    suffixLabel.Alignment = ContentAlignmentType.MiddleLeft;
+                    int l = bounds.Left ?? 0;
+                    int t = bounds.Top ?? 0;
+                    int w = bounds.Width?.NumberPixel ?? 100;
+                    int h = bounds.Height?.NumberPixel ?? 20;
+                    var controlBounds = new ControlBounds(l, t, w, h);
+
+                    DfFlowLayoutInfo.ProcessFixedItemBounds(processItem, controlBounds, null, __Style);
+                    addItemBoundsToSize(processItem, contentSize);
                 }
-
-                // Fyzické obsazení prostoru pro Labely: Left, Top, Right, Bottom:
-                this.__LabelLeftInfo = ((lPos == LabelPositionType.BeforeLeft || lPos == LabelPositionType.BeforeRight) && mainLabelExists ? mainLabel : null);
-                this.__LabelTopInfo = ((lPos == LabelPositionType.Top ) && mainLabelExists ? mainLabel : null);
-                this.__LabelBottomInfo = ((lPos == LabelPositionType.Bottom) && mainLabelExists ? mainLabel : null);
-                this.__LabelRightInfo = ((lPos == LabelPositionType.After) && mainLabelExists ? mainLabel : (suffixLabelExists ? suffixLabel : null));
             }
-            /// <summary>
-            /// Zahodí veškerá data
-            /// </summary>
-            private void _ResetData()
+            // Přidá souřadnice aktivních oblastí daného prvku do sumární velikosti 'contentSize' (řeší Right a Bottom)
+            void addItemBoundsToSize(DfTemplateLayoutItem processItem, Size contentSize)
             {
-                __Name = null;
-                __ColumnName = null;
-                __DesignBounds = null;
-                __ColIndex = null;
-                __ColSpan = null;
-                __RowSpan = null;
-                __HPosition = null;
-                __ExpandControl = null;
-                __ContainerType = ContainerType.None;
-                __LabelPosition = null;
-                __ToolTipVisibility = ToolTipVisibilityType.None;
-                __ToolTipTitle = null;
-                __ToolTipText = null;
-                __ControlInfo = null;
-                __MainLabelInfo = null;
-                __SuffixLabelInfo = null;
-                __LabelLeftInfo = null;
-                __LabelTopInfo = null;
-                __LabelRightInfo = null;
-                __LabelBottomInfo = null;
-
-                _ResetFlowData();
+                addBoundsToSize(processItem.__MainLabelInfo?.Bounds, contentSize);
+                addBoundsToSize(processItem.__ControlInfo?.Bounds, contentSize);
+                addBoundsToSize(processItem.__SuffixLabelInfo?.Bounds, contentSize);
             }
-            /// <summary>
-            /// Jméno prvku
-            /// </summary>
-            private string __Name;
-            /// <summary>
-            /// Klíč prvků: Trim, Lower.  Pochází z <see cref="__Name"/>. Pokud tam je null, je i <see cref="_Key"/> = null.
-            /// </summary>
-            private string _Key { get { return GetItemKey(__Name); } }
-            /// <summary>
-            /// Jméno sloupce (nebo jméno prvku)
-            /// </summary>
-            private string __ColumnName;
-            /// <summary>
-            /// Umístění prvku. Výchozí je null.
-            /// </summary>
-            private DesignBounds __DesignBounds;
-            /// <summary>
-            /// Jméno prvku 'Name', který určuje souřadnice pro zdejší prvek, pokud ten je umístěn fixně = má definované souřadnice 'X' a 'Y'.
-            /// </summary>
-            private string __ParentBoundsName;
-            /// <summary>
-            /// Klíč prvku ParentBoundsName: Trim, Lower.  Pochází z <see cref="__ParentBoundsName"/>. Pokud tam je null, je i <see cref="_Key"/> = null.
-            /// </summary>
-            private string _ParentBoundsKey { get { return GetItemKey(__ParentBoundsName); } }
-            /// <summary>
-            /// Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
-            /// </summary>
-            private int? __ColIndex;
-            /// <summary>
-            /// Počet sloupců, které prvek obsazuje v FlowLayoutu. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
-            /// </summary>
-            private int? __ColSpan;
-            /// <summary>
-            /// Počet řádků, které prvek obsazuje v FlowLayoutu. Ten se použije, pokud prvky nemají exaktně dané souřadnice.
-            /// </summary>
-            private int? __RowSpan;
-            /// <summary>
-            /// Umístění prvku vodorovně v rámci sloupce v případě, kdy šířka prvku je menší než šířka sloupce. Řeší tedy zarovnání controlu ve sloupci, nikoli zarovnání obsahu (textu) v rámci controlu.
-            /// </summary>
-            private HPositionType? __HPosition;
-            /// <summary>
-            /// Umístění prvku svisle v rámci řádku v případě, kdy výška prvku je menší než výška řádku. Řeší tedy zarovnání controlu v řádku, nikoli zarovnání obsahu (textu) v rámci controlu.
-            /// </summary>
-            private VPositionType? __VPosition;
-            /// <summary>
-            /// Rozšíření controlu do okolního prostoru pro labely, pokud labely nejsou použity
-            /// </summary>
-            private ExpandControlType? __ExpandControl;
-            /// <summary>
-            /// Typ containeru
-            /// </summary>
-            private ContainerType __ContainerType;
-            /// <summary>
-            /// Umístění a zarovnání popisku (Main Labelu) vzhledem k souřadnicích controlu, zadané k prvku (nebo null)
-            /// </summary>
-            private LabelPositionType? __LabelPosition;
-            /// <summary>
-            /// Umístění a zarovnání popisku (Main Labelu) vzhledem k souřadnicích controlu, validované (není null)
-            /// </summary>
-            private LabelPositionType __ValidLabelPosition;
-            /// <summary>
-            /// Na kterých prvcích má být aktivní ToolTip
-            /// </summary>
-            private ToolTipVisibilityType __ToolTipVisibility;
-            /// <summary>
-            /// Titulek ToolTipu.
-            /// </summary>
-            private string __ToolTipTitle;
-            /// <summary>
-            /// Text ToolTipu.
-            /// </summary>
-            private string __ToolTipText;
-            /// <summary>
-            /// Informace o Controlu (text, velikosti)
-            /// </summary>
-            private ControlInfo __ControlInfo;
-            /// <summary>
-            /// Kompletní informace o Main Labelu
-            /// </summary>
-            private LabelInfo __MainLabelInfo;
-            /// <summary>
-            /// Kompletní informace o Suffix Labelu
-            /// </summary>
-            private LabelInfo __SuffixLabelInfo;
-            /// <summary>
-            /// Kompletní informace o Labelu umístěném vlevo
-            /// </summary>
-            private LabelInfo __LabelLeftInfo;
-            /// <summary>
-            /// Kompletní informace o Labelu umístěném nahoře
-            /// </summary>
-            private LabelInfo __LabelTopInfo;
-            /// <summary>
-            /// Kompletní informace o Labelu umístěném vpravo
-            /// </summary>
-            private LabelInfo __LabelRightInfo;
-            /// <summary>
-            /// Kompletní informace o Labelu umístěném dole
-            /// </summary>
-            private LabelInfo __LabelBottomInfo;
-
-            #region IDataFormItem : implementace
-            DfForm IDataFormItem.DataForm { get { return _DfForm; } }
-            DfBaseControl IDataFormItem.BaseControl { get { return _DfControl; } }
-            string IDataFormItem.Name { get { return __Name; } }
-            string IDataFormItem.ColumnName { get { return __ColumnName; } }
-
-            ControlInfo IDataFormItem.ControlInfo { get { return __ControlInfo; } }
-
-            LabelPositionType IDataFormItem.LabelPosition { get { return __ValidLabelPosition; } }
-            LabelInfo IDataFormItem.MainLabelInfo { get { return __MainLabelInfo; } }
-            LabelInfo IDataFormItem.SuffixLabelInfo { get { return __SuffixLabelInfo; } }
-
-            string IDataFormItem.ToolTipTitle { get { return __ToolTipTitle; } set { __ToolTipTitle = value; } }
-            string IDataFormItem.ToolTipText { get { return __ToolTipText; } set { __ToolTipText = value; } }
-
-            #endregion
-            #endregion
-            #region Další data o prvku - primárně pro IFlowLayoutItem
-            /// <summary>
-            /// Inicializuje data pro Flow layout
-            /// </summary>
-            private void _InitFlow()
+            // Zvětší velikost 'contentSize' tak, aby se do ní vešla souřadnice 'bounds'. Neřešíme Left a Top, jen Right a Bottom.
+            void addBoundsToSize(ControlBounds bounds, Size contentSize)
             {
-                bool isBoundsFixed = DfTemplateLayout.IsBoundsFixed(__DesignBounds);
-                bool isFixedToParent = !String.IsNullOrEmpty(__ParentBoundsName);
-                __LayoutMode = (isBoundsFixed && !isFixedToParent ? LayoutModeType.FixedAbsolute :
-                               (isBoundsFixed && isFixedToParent ? LayoutModeType.BoundsInParent :
-                               (!isBoundsFixed && isFixedToParent ? LayoutModeType.FlowInParent :
-                               LayoutModeType.Flow)));
+                if (bounds is null) return;
+                if (!contentSize.Width.HasValue || bounds.Right > contentSize.Width.Value) contentSize.Width = bounds.Right;
+                if (!contentSize.Height.HasValue || bounds.Bottom > contentSize.Height.Value) contentSize.Height = bounds.Bottom;
             }
-            /// <summary>
-            /// Resetuje veškerá provozní a výsledná data pro Flow layout. Volá se před zahájením prací na FlowLayoutu.
-            /// </summary>
-            private void _ResetFlowData()
-            {
-                __FlowColBeginIndex = null;
-                __FlowColEndIndex = null;
-                __FlowRowBeginIndex = null;
-                __FlowRowEndIndex = null;
-                _ResetFlowFinalResults();
-            }
-            /// <summary>
-            /// Resetuje výsledné hodnoty FlowLayoutu. Volá se na začátku finalizace layoutu jako první metoda.
-            /// Neresetuje designové hodnoty. Neresetuje umístění do Matrixu. Resetuje to co souvisí s pixely.
-            /// </summary>
-            private void _ResetFlowFinalResults()
-            {
-                __AcceptedWidth = false;
-                __AcceptedHeight = false;
-                __CellMatrix = null;
-                __FlowGuideLines = null;
+        }
+        /// <summary>
+        /// Zpracuje Margins tohoto containeru = navýší všechny interní souřadnice svých prvků a upraví svoji velikost
+        /// </summary>
+        private void _ProcessMargins()
+        {
+            var margins = __Style.Margins;
+            // Distance Left, Top, Right, Bottom:
+            int dl = margins?.Left ?? 0;
+            if (dl < 0) dl = 0;
+            int dt = margins?.Top ?? 0;
+            if (dt < 0) dt = 0;
+            int dr = margins?.Right ?? 0;
+            if (dr < 0) dr = 0;
+            int db = margins?.Bottom ?? 0;
+            if (db < 0) db = 0;
 
-                __ControlInfo?.ResetFlowFinalResults();
-                __MainLabelInfo?.ResetFlowFinalResults();
-                __SuffixLabelInfo?.ResetFlowFinalResults();
-                __LabelLeftInfo?.ResetFlowFinalResults();
-                __LabelTopInfo?.ResetFlowFinalResults();
-                __LabelRightInfo?.ResetFlowFinalResults();
-                __LabelBottomInfo?.ResetFlowFinalResults();
-            }
-            /// <summary>
-            /// Režim layoutu
-            /// </summary>
-            private LayoutModeType __LayoutMode;
-            /// <summary>
-            /// Index sloupce, na kterém reálně začíná v režimu FlowLayout.
-            /// </summary>
-            private int? __FlowColBeginIndex;
-            /// <summary>
-            /// Index sloupce, na kterém reálně končí v režimu FlowLayout.
-            /// </summary>
-            private int? __FlowColEndIndex;
-            /// <summary>
-            /// Index řádku, na kterém reálně začíná prvek v režimu FlowLayout.
-            /// </summary>
-            private int? __FlowRowBeginIndex;
-            /// <summary>
-            /// Index řádku, na kterém reálně končí prvek v režimu FlowLayout.
-            /// </summary>
-            private int? __FlowRowEndIndex;
-            /// <summary>
-            /// Výsledná souřadnice celé buňky
-            /// </summary>
-            private CellMatrixInfo __CellMatrix;
-            /// <summary>
-            /// Algoritmus FlowLayout pro prvek zajistil potřebnou šířku
-            /// </summary>
-            private bool __AcceptedWidth;
-            /// <summary>
-            /// Algoritmus FlowLayout pro prvek zajistil potřebnou výšku
-            /// </summary>
-            private bool __AcceptedHeight;
-
-            #region IFlowLayoutItem : implementace
-            // Designové, čerpané z frm.xml:
-            string IFlowLayoutItem.Name { get { return __Name; } }
-            bool IFlowLayoutItem.IsAbsent { get { return _IsAbsent; } }
-            bool IFlowLayoutItem.IsFlowMode { get { return (__LayoutMode == LayoutModeType.Flow); } }
-            string IFlowLayoutItem.Text { get { return __Name; } }
-            int? IFlowLayoutItem.DesignColIndex { get { return __ColIndex; } }
-            int? IFlowLayoutItem.DesignColSpan { get { return __ColSpan; } }
-            int? IFlowLayoutItem.DesignRowSpan { get { return __RowSpan; } }
-            HPositionType? IFlowLayoutItem.DesignHPosition { get { return __HPosition; } }
-            VPositionType? IFlowLayoutItem.DesignVPosition { get { return __VPosition; } }
-            ExpandControlType? IFlowLayoutItem.DesignExpandControl { get { return __ExpandControl; } }
-
-            // Umístění prvku v rámci FlowLayoutu
-            int? IFlowLayoutItem.FlowColBeginIndex { get { return __FlowColBeginIndex; } set { __FlowColBeginIndex = value; } }
-            int? IFlowLayoutItem.FlowColEndIndex { get { return __FlowColEndIndex; } set { __FlowColEndIndex = value; } }
-            int? IFlowLayoutItem.FlowRowBeginIndex { get { return __FlowRowBeginIndex; } set { __FlowRowBeginIndex = value; } }
-            int? IFlowLayoutItem.FlowRowEndIndex { get { return __FlowRowEndIndex; } set { __FlowRowEndIndex = value; } }
-            CellMatrixInfo IFlowLayoutItem.CellMatrix { get { return __CellMatrix; } set { __CellMatrix = value; } }
-
-            ControlInfo IFlowLayoutItem.ControlInfo { get { return __ControlInfo; } }
-            LabelInfo IFlowLayoutItem.LabelLeftInfo { get { return __LabelLeftInfo; } }
-            LabelInfo IFlowLayoutItem.LabelTopInfo { get { return __LabelTopInfo; } }
-            LabelInfo IFlowLayoutItem.LabelRightInfo { get { return __LabelRightInfo; } }
-            LabelInfo IFlowLayoutItem.LabelBottomInfo { get { return __LabelBottomInfo; } }
-
-            bool IFlowLayoutItem.AcceptedWidth { get { return __AcceptedWidth; } set { __AcceptedWidth = value; } }
-            bool IFlowLayoutItem.AcceptedHeight { get { return __AcceptedHeight; } set { __AcceptedHeight = value; } }
-            void IFlowLayoutItem.ResetFlowFinalResults() { this._ResetFlowFinalResults(); }
-            #endregion
-            #endregion
-            #region Zpracování layoutu panelu
-            /// <summary>
-            /// Zajistí plné zpracování this containeru, rekurzivně jeho Child containerů a zdejších Controlů.
-            /// </summary>
-            internal void ProcessPanel()
+            // Posunu svoje Childs, pokud je důvod:
+            var childs = this.__Childs;
+            if ((dl > 0 || dt > 0) && (childs != null && childs.Count > 0))
             {
-                var args = this._LayoutArgs;
-                var startTime = DxComponent.LogTimeCurrent;
-                _ProcessContainer();                                 // Zpracuje this container, a rekurzivně jeho Child containery etc
-                _PreparePanelAbsoluteBounds();                       // Naplní absolutní souřadnice do všech (i vnořených) prvků
-                if (args.LogTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Layout panel '{__Name}': {DxComponent.LogTokenTimeMicrosec}", startTime);
-                if (args.SaveDebugImages) _CreateImageFile();
-            }
-            /// <summary>
-            /// Zajistí plné zpracování this containeru, rekurzivně jeho Child containerů a zdejších Controlů.
-            /// </summary>
-            private FlowGuideLine[] _ProcessContainer()
-            {
-                FlowGuideLine[] guideLines = null;
-                if (_HasChilds)
-                {
-                    _PrepareChilds();                                // Příprava: Containery kompletně (rekurzivně), a poté všechny prvky: doplnění aplikačních dat a měření primární velikosti
-                    _PositionChilds();                               // Kvalifikuje Child prvky na Fixed a Flow; a pro Flow prvky vyřeší jejich rozmístění (souřadnice) pomocí FlowLayoutu. Poté řeší Fixed prvky.
-                }
-                _ProcessMargins(guideLines);                         // Zpracuje Margins tohoto containeru = navýší všechny interní souřadnice svých prvků a upraví svoji velikost
-                _ProcessContentSize();
-                return guideLines;
-            }
-            /// <summary>
-            /// Připraví data Childs: kompletní příprava Containeru, a prvotní příprava pro pozicování Group + Control
-            /// </summary>
-            private void _PrepareChilds()
-            {
-                // Přípravná fáze, jejím výsledkem jsou určené velikosti Child Containerů a Controlů:
-                var childs = this.__Childs;
                 foreach (var item in childs)
+                    processMargins(item);
+            }
+
+            // Posunu guideLines, pokud je důvod:
+            FlowGuideLine[] guideLines = __FlowGuideLines;
+            if (guideLines != null && (dl > 0 || dt > 0))
+            {
+                foreach (var guideLine in guideLines)
+                    guideLine.AddMargin(guideLine.Axis == AxisType.X ? dl : dt);
+            }
+
+            // Zvětším velikost obsahu celého containeru, pokud je důvod:
+            int dw = dl + dr;
+            int dh = dt + db;
+            var size = this.__ContentSize;
+            if (size != null)
+            {
+                size.Width = size.Width + dw;
+                size.Height = size.Height + dh;
+            }
+
+            // Posune souřadnice v daném prvku o (dl, dt)
+            void processMargins(DfTemplateLayoutItem item)
+            {
+                processBounds(item.__ControlInfo?.Bounds);
+                processBounds(item.__MainLabelInfo?.Bounds);
+                processBounds(item.__SuffixLabelInfo?.Bounds);
+            }
+            // Posune dané souřadnice o (dl, dt)
+            void processBounds(ControlBounds bounds)
+            {
+                if (bounds != null)
                 {
-                    if (item._IsGroup)
-                    {   // Grupa si nyní kompletně připraví layout pro svoje Child prvky.
-                        // A poté při tvorbě našeho layoutu s ním budeme zacházet jako s obyčejným prvkem.
-                        item._PrepareMeForGroup(item._DfGroup);
-                        item._ProcessContainer();                    // Child je Grupa = Container, ať si projde tuto metodu rekurzivně sám
-                    }
-                    else if (item._IsControl)
-                    {
-                        item._PrepareMeForControl(item._DfControl);
-                    }
+                    bounds.Left = bounds.Left + dl;
+                    bounds.Top = bounds.Top + dt;
                 }
             }
-            /// <summary>
-            /// Provede přípravné kroky před tvorbou layoutu pro danou grupu.
-            /// </summary>
-            /// <param name="dfGroup"></param>
-            private void _PrepareMeForGroup(DfGroup dfGroup)
+        }
+        /// <summary>
+        /// Určí velikost <see cref="__ImplicitControlMinimalWidth"/> a <see cref="__ImplicitControlMinimalHeight"/> podle již existující <see cref="__ContentSize"/>.
+        /// Tento algoritmus tedy přenese reálnou velikost obsahu z Containeru (kde <see cref="__ContentSize"/> je určena jako prostor vnitřních prvků) 
+        /// do vnějších hodnot, které popisují tento prvek navenek (tedy ve vyšším containeru se bude při tvorbě jeho layoutu rezervovat patřičný prostor pro grupu a její obsah).
+        /// </summary>
+        private void _ProcessContentSize()
+        {
+            var size = this.__ContentSize;
+            this.__ControlInfo.ImplicitOptimalWidth = size?.Width;
+            this.__ControlInfo.ImplicitOptimalHeight = size?.Height;
+
+            //  this.__ImplicitControlMinimalWidth = size?.Width;
+            //  this.__ImplicitControlMinimalHeight = size?.Height;
+        }
+        /// <summary>
+        /// Velikost obsahu včetně Margins
+        /// </summary>
+        private Size __ContentSize;
+        /// <summary>
+        /// Matrice souřadnic celého containeru.
+        /// Popisuje souřadnice krajních labelů a vnitřního prostoru, ve kterém jsou controly.
+        /// Na základě této matrice mohou být modifikovány údaje pro label v rámci Parent containeru v situaci, kdy this je vnořená grupa.
+        /// Jde o poměrně sofistikované řešení, jehož výstupem je plynule navazující layout labelů z vnořeného containeru se sousedícími labely v rámci Parent FlowLayoutu.
+        /// </summary>
+        private CellMatrixInfo __FlowLayoutMatrix;
+        /// <summary>
+        /// Vodící linky vytvářené pro režim FlowLayout, pokud v argumentu <see cref="_LayoutArgs"/> je požadováno <see cref="DfTemplateLayoutArgs.DebugImagesWithGuideLines"/> = true.
+        /// </summary>
+        private FlowGuideLine[] __FlowGuideLines;
+        #endregion
+        #region Určení absolutní souřadnice každého prvku
+        /// <summary>
+        /// Projde všechny prvky a přidělí jim konkrétní absolutní souřadnice = v rámci Root panelu.
+        /// Tato metoda je vyvolána pro prvek typu Panel. 
+        /// <para/>
+        /// Smí být vyvolána pouze jedenkrát, protože reálně posunuje souřadnice prvků. Opakované volání by je posunulo znovu.
+        /// </summary>
+        private void _PreparePanelAbsoluteBounds()
+        {
+            _PrepareContainerAbsoluteBounds(this, 0, 0);
+        }
+        /// <summary>
+        /// Projde svoje prvky a posune souřadnice controlu a labelů o danou hodnotu.
+        /// Pokud najde container, posune jeho souřadnice a zajistí rekurzivní posun i pro jeho prvky.
+        /// Souřadnice vnořených containerů pak budou absolutní vzhledem k Root panelu.
+        /// </summary>
+        /// <param name="container"></param>
+        /// <param name="addX"></param>
+        /// <param name="addY"></param>
+        private static void _PrepareContainerAbsoluteBounds(DfTemplateLayoutItem container, int addX, int addY)
+        {
+            var childs = container.__Childs;
+            if (childs != null)
             {
-                // Implicitní validace controlu řeší výhradně Main a Suffix Labely, jejich rozměr:
-                DfTemplateLayout.ValidateControlInfo(this);
-                _RefreshData();
-            }
-            /// <summary>
-            /// Provede přípravné kroky před tvorbou layoutu pro daný control.
-            /// Zajistí určení implicitních velikostí pro control a pro label.
-            /// </summary>
-            /// <param name="dfControl"></param>
-            private void _PrepareMeForControl(DfBaseControl dfControl)
-            {
-                //  Tato metoda zajistí doplnění vlastností controlu pro ty hodnoty, které nejsou explicitně zadané v šabloně, 
-                //     na základě dat dodaných z jádra pro konkrétní atribut dané třídy
-                // Velikost controlu
-                // MainLabel - text, velikost (nikoli konkrétní pozice)
-                // Tooltip
-                // Překlady textů z formátovacách stringů : "fm(MSG001)" => "Reference", atd  (pro labely, pro tooltipy)
-
-                // Validace externí (tj. aplikační kód) a lokální (defaultní):
-                this._LayoutArgs.InfoSource.ValidateControlInfo(this);
-                DfTemplateLayout.ValidateControlInfo(this);
-                _RefreshData();
-            }
-            /// <summary>
-            /// Vytvoří pole sloupců, projde všechny Childs, nastaví jim LayoutMode = Fixed / Flow.
-            /// Pro Flow prvky určí jejich pozici v matici: LayoutBeginRowIndex, LayoutBeginColumnIndex, LayoutEndColumnIndex.
-            /// Pro jednosloupcový prvek typu Flow započítá jeho šířky (Label, Control) do jemu odpovídajícího sloupce.
-            /// </summary>
-            private void _PositionChilds()
-            {
-                __ContentSize = null;
-                __FlowLayoutMatrix = null;
-                __FlowGuideLines = null;
-
-                var childs = this.__Childs;
-                if (childs.Count == 0) return;                                 // Není co dělat...
-
-                // Flow prvky a ty ostatní:
-                List<ItemInfo> processItems = null;                            // Prvky pro další zpracování layoutu (Non Flow)
-                Size contentSize = new Size();
-                if (childs.Any(i => i.__LayoutMode == LayoutModeType.Flow && !i._IsAbsent))
-                    // Pokud mám nějaké FlowItems, pak prvky LayoutModeType.Flow zpracuji a ostatní prvky dám do pole processItems:
-                    processFlowItems(childs, contentSize, out processItems);
-                else
-                    // Nemám FlowItems? Pak v dalším kole zpracuji všechny prvky childs:
-                    processItems = childs.ToList();
-
-                // Non-Flow prvky:
-                processNonFlowItems(processItems, contentSize, childs);
-
-                // Finální velikost:
-                __ContentSize = contentSize;
-
-
-                // Z dodaného pole všech prvků (které obsahuje alespoň jeden v režimu Flow) vytvoří FlowLayout, vrátí jeho pozici, a určí prvky pro další zpracování NonFlow
-                void processFlowItems(List<ItemInfo> items, Size contentSize, out List<ItemInfo> otherItems)
+                foreach (var child in childs)
                 {
-                    otherItems = null;
-
-                    using (var flowLayout = new DfFlowLayoutInfo(__ChildStyle, this.__DfItem.Name))
+                    if (child != null)
                     {
-                        flowLayout.Reset();
-                        foreach (var item in items)
+                        prepareAbsoluteBounds(child, addX, addY);
+                        if (child._HasChilds)
                         {
-                            if (item.__LayoutMode == LayoutModeType.Flow)
-                            {   // Flow prvek zpracuji (pokud není Absent):
-                                if (!item._IsAbsent)
-                                    flowLayout.AddFlowItem(item);
-                            }
-                            else
-                            {   // Prvek jiného typu new Flow odložím do seznamu ostatních prvků, a zpracují se poté:
-                                if (otherItems is null) otherItems = new List<ItemInfo>();
-                                otherItems.Add(item);
-                            }
-                        }
-                        flowLayout.ProcessFlowItems();
-                        if (_LayoutArgs.DebugImagesWithGuideLines) __FlowGuideLines = flowLayout.CreateGuideLines();
-                        __FlowLayoutMatrix = flowLayout.CreateTotalMatrix();
-
-                        addBoundsToSize(flowLayout.FlowLayoutBounds, contentSize);
-                    }
-                }
-                // Pro prvky z dodaného pole prvků ke zpracování provede jejich roztřídění a zpracování podle typu.
-                void processNonFlowItems(List<ItemInfo> processItems, Size contentSize, List<ItemInfo> allItems)
-                {
-                    if (processItems is null || processItems.Count == 0) return;
-
-                    // Dictionary pro vyhledávání prvků podle jména pro prvky s ParentBoundsName
-                    Dictionary<string, ItemInfo> allDictionary = null;
-                    if (processItems.Any(i => (i.__LayoutMode == LayoutModeType.FlowInParent || i.__LayoutMode == LayoutModeType.BoundsInParent)))
-                    {   // Pokud nějaký prvek bude potřebovat najít svého parenta, tak si připravím Dictionary:
-                        allDictionary = new Dictionary<string, ItemInfo>();
-                        foreach (var item in allItems)
-                            allDictionary.Add(item._Key, item);
-                    }
-
-                    // Projdu prvky a zpracuji je podle jejich režimu:
-                    foreach (var processItem in processItems)
-                    {
-                        switch (processItem.__LayoutMode)
-                        {
-                            case LayoutModeType.FlowInParent:
-                                processFlowInParentItem(processItem, contentSize, allDictionary);
-                                break;
-                            case LayoutModeType.BoundsInParent:
-                                processBoundsInParentItem(processItem, contentSize, allDictionary);
-                                break;
-                            case LayoutModeType.FixedAbsolute:
-                                processFixedAbsoluteItem(processItem, contentSize, allDictionary);
-                                break;
+                            int nextX = child.__ControlInfo.Bounds.Left;
+                            int nextY = child.__ControlInfo.Bounds.Top;
+                            _PrepareContainerAbsoluteBounds(child, nextX, nextY);
                         }
                     }
                 }
-                // Zpracuje prvek v režimu FlowInParent
-                void processFlowInParentItem(ItemInfo processItem, Size contentSize, Dictionary<string, ItemInfo> allDictionary)
-                {
-                    string key = processItem._ParentBoundsKey;
-                    if (key != null && allDictionary.TryGetValue(key, out var parentItem) && parentItem.__CellMatrix != null)
-                    {
-                        processItem.__CellMatrix = parentItem.__CellMatrix;
-                        processItem.__ControlInfo.Exists = true;
-                        DfFlowLayoutInfo.ProcessInnerItemBounds(processItem, __ChildStyle);
-                        addItemBoundsToSize(processItem, contentSize);
-                    }
-                }
-                // Zpracuje prvek v režimu BoundsInParent
-                void processBoundsInParentItem(ItemInfo processItem, Size contentSize, Dictionary<string, ItemInfo> allDictionary)
-                {
-                    var bounds = processItem.__DesignBounds;
-                    string key = processItem._ParentBoundsKey;
-                    if (bounds != null && key != null && allDictionary.TryGetValue(key, out var parentItem) && parentItem.__CellMatrix != null)
-                    {
-                        var parentBounds = parentItem.__CellMatrix.GetBounds(processItem.__ExpandControl);  // Souřadnice Controlu v Parent buňce, volitelně Expanded
-                        int pl = parentBounds.Left;
-                        int pt = parentBounds.Top;
+            }
 
-                        int l = bounds.Left ?? 0;                                        // Zadané souřadnice aktuálního prvku jsou relativní k Parent buňce
-                        int t = bounds.Top ?? 0;
-                        int w = getSize(bounds.Width, parentBounds.Width, 100);          // Pixely nebo procenta z Parent velikosti
-                        int h = getSize(bounds.Height, parentBounds.Height, 20); 
-                        var controlBounds = new ControlBounds(pl + l, pt + t, w, h);     // Posunu souřadnice prvku (l,t) o souřadnice parenta (x,y)
-
-                        DfFlowLayoutInfo.ProcessFixedItemBounds(processItem, controlBounds, __ChildStyle);
-                        addItemBoundsToSize(processItem, contentSize);
-                    }
-                }
-                // Vrátí velikost 'currSize': pokud je v pixelech, pak přímo; pokud je v procentech, pak vůči 'parentSize'; a pokud není, pak 'defaultSize'
-                int getSize(Int32P? currSize, int parentSize, int defaultSize)
+            void prepareAbsoluteBounds(DfTemplateLayoutItem item, int dx, int dy)
+            {
+                if (dx != 0 || dy != 0)
                 {
-                    if (currSize.HasValue)
-                    {
-                        if (currSize.Value.IsPixel) return currSize.Value.NumberPixel.Value;
-                        if (currSize.Value.IsPercent) return (int)Math.Round(((double)(parentSize * currSize.Value.NumberPercent.Value) / 100d), 0);
-                    }
-                    return defaultSize;
-                }
-                // Zpracuje prvek v režimu FixedAbsolute
-                void processFixedAbsoluteItem(ItemInfo processItem, Size contentSize, Dictionary<string, ItemInfo> allDictionary)
-                {
-                    var bounds = processItem.__DesignBounds;
-                    if (bounds != null)
-                    {
-                        int l = bounds.Left ?? 0;
-                        int t = bounds.Top ?? 0;
-                        int w = bounds.Width?.NumberPixel ?? 100;
-                        int h = bounds.Height?.NumberPixel ?? 20;
-                        var controlBounds = new ControlBounds(l, t, w, h);
-
-                        DfFlowLayoutInfo.ProcessFixedItemBounds(processItem, controlBounds, __ChildStyle);
-                        addItemBoundsToSize(processItem, contentSize);
-                    }
-                }
-                // Přidá souřadnice aktivních oblastí daného prvku do sumární velikosti 'contentSize' (řeší Right a Bottom)
-                void addItemBoundsToSize(ItemInfo processItem, Size contentSize)
-                {
-                    addBoundsToSize(processItem.__MainLabelInfo?.Bounds, contentSize);
-                    addBoundsToSize(processItem.__ControlInfo?.Bounds, contentSize);
-                    addBoundsToSize(processItem.__SuffixLabelInfo?.Bounds, contentSize);
-                }
-                // Zvětší velikost 'contentSize' tak, aby se do ní vešla souřadnice 'bounds'. Neřešíme Left a Top, jen Right a Bottom.
-                void addBoundsToSize(ControlBounds bounds, Size contentSize)
-                {
-                    if (bounds is null) return;
-                    if (!contentSize.Width.HasValue || bounds.Right > contentSize.Width.Value) contentSize.Width = bounds.Right;
-                    if (!contentSize.Height.HasValue || bounds.Bottom > contentSize.Height.Value) contentSize.Height = bounds.Bottom;
+                    prepareAbsoluteBoundsOne(item.__ControlInfo.Bounds, dx, dy);
+                    prepareAbsoluteBoundsOne(item.__MainLabelInfo.Bounds, dx, dy);
+                    prepareAbsoluteBoundsOne(item.__SuffixLabelInfo.Bounds, dx, dy);
                 }
             }
-            /// <summary>
-            /// Zpracuje Margins tohoto containeru = navýší všechny interní souřadnice svých prvků a upraví svoji velikost
-            /// </summary>
-            /// <param name="guideLines">Vodiící linky</param>
-            private void _ProcessMargins(FlowGuideLine[] guideLines)
+            void prepareAbsoluteBoundsOne(ControlBounds bounds, int dx, int dy)
             {
-                var margins = __ChildStyle.Margins;
-                // Distance Left, Top, Right, Bottom:
-                int dl = margins?.Left ?? 0;
-                if (dl < 0) dl = 0;
-                int dt = margins?.Top ?? 0;
-                if (dt < 0) dt = 0;
-                int dr = margins?.Right ?? 0;
-                if (dr < 0) dr = 0;
-                int db = margins?.Bottom ?? 0;
-                if (db < 0) db = 0;
-
-                // Posunu svoje Childs, pokud je důvod:
-                var childs = this.__Childs;
-                if ((dl > 0 || dt > 0) && (childs != null && childs.Count > 0))
+                if (bounds != null)
                 {
-                    foreach (var item in childs)
-                        processMargins(item);
+                    bounds.Left = bounds.Left + dx;
+                    bounds.Top = bounds.Top + dy;
                 }
+            }
+        }
+        #endregion
+        #region Vizualizace PixelLayoutu (vytvoření Image, reprezentující aktuální stav layoutu)
+        /// <summary>
+        /// Z prvků layoutu vygeneruje bitmapu v měřítku 1:1, respektující rozměry a obsah containeru.
+        /// Uloží ji do souboru do Temp adresáře.
+        /// Plné jméno souboru vrátí.
+        /// </summary>
+        /// <returns></returns>
+        private string _CreateImageFile()
+        {
+            var startTime = DxComponent.LogTimeCurrent;
 
-                // Posunu guideLines, pokud je důvod:
-                if (guideLines != null && (dl > 0 || dt > 0))
+            string file = null;
+
+            var args = this._LayoutArgs;
+            string dfName = args.DataForm.FileName;
+            dfName = (!String.IsNullOrEmpty(dfName) ? System.IO.Path.GetFileNameWithoutExtension(dfName) : "dataform");      // dw_simple.frm.xml   =>   dw_simple.frm
+            if (dfName.Contains(".")) dfName = System.IO.Path.GetFileNameWithoutExtension(dfName);                           // dw_simple.frm       =>   dw_simple
+
+            using (var image = _CreateImage())
+            {
+                if (image != null)
                 {
+                    string cnt = ((__ImageCounter++) % 1000).ToString("000");
+                    string itemId = dfName + "_" + this.__Name;
+                    string dateId = getDateId();
+                    string name = $"{itemId}_{dateId}.png";
+                    string path = System.IO.Path.GetTempPath();
+                    if (!String.IsNullOrEmpty(args.DebugImagePath))
+                    {
+                        path = System.IO.Path.Combine(path, args.DebugImagePath.Trim());
+                        if (!System.IO.Directory.Exists(path))
+                            System.IO.Directory.CreateDirectory(path);
+                    }
+                    file = System.IO.Path.Combine(path, name);
+                    image.Save(file, System.Drawing.Imaging.ImageFormat.Png);
+                }
+            }
+
+            if (file != null)
+            {
+                if (args.DebugImages is null) args.DebugImages = new List<string>();
+                args.DebugImages.Add(file);
+            }
+            if (args.LogTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Save Debug image for panel '{__Name}': {DxComponent.LogTokenTimeMicrosec}", startTime);
+            return file;
+
+            string getDateId()
+            {
+                var now = DateTime.UtcNow;
+                long msec = now.Millisecond +
+                    1000 * now.Second +
+                    60000 * now.Minute +
+                    3600000 * now.Hour;
+                long days = now.DayOfYear + 368 * (now.Year % 12);
+                long time = 86400000L * days + msec;
+                return time.ToString();
+            }
+        }
+        /// <summary>
+        /// Z prvků layoutu vygeneruje bitmapu v měřítku 1:1, respektující rozměry a obsah containeru.
+        /// </summary>
+        /// <returns></returns>
+        private System.Drawing.Image _CreateImage()
+        {
+            // Kreslit, či nekreslit? - to je, oč tu běží...
+            var size = this.__ContentSize;
+            if (size is null) return null;
+            int width = size.Width ?? 0;
+            int height = size.Height ?? 0;
+            if (width <= 0 || height <= 0) return null;
+
+            // Definujeme barvy pro prvky:
+            var workspaceColor = System.Drawing.Color.FromArgb(255, 181, 181, 181);
+
+            var labelBorderColor = System.Drawing.Color.FromArgb(255, 178, 191, 198);
+            var labelBackColor = System.Drawing.Color.FromArgb(255, 208, 218, 219);
+            var labelTextColor = System.Drawing.Color.FromArgb(255, 80, 64, 80);
+
+            var controlBorderColor = System.Drawing.Color.FromArgb(255, 80, 80, 86);
+            var controlBackColor = System.Drawing.Color.FromArgb(255, 232, 232, 211);
+            var controlTextColor1 = System.Drawing.Color.FromArgb(190, 96, 96, 96);
+            var controlTextColor2 = System.Drawing.Color.FromArgb(255, 32, 32, 32);
+
+            var controlLabelBorderColor = System.Drawing.Color.FromArgb(255, 140, 140, 140);
+
+            var controlLineColor = System.Drawing.Color.FromArgb(255, 80, 80, 86);
+
+            var guideLineCellColor = System.Drawing.Color.FromArgb(200, 200, 40, 60);
+            var guideLineControlColor = System.Drawing.Color.FromArgb(200, 40, 200, 60);
+            var guideLineLabelColor = System.Drawing.Color.FromArgb(200, 190, 180, 40);
+
+            // Image a grafické nástroje, jimiž postupně vykreslíme jednotlivé prvky:
+            var image = new System.Drawing.Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            using (var graphics = System.Drawing.Graphics.FromImage(image))
+            using (var brush = new System.Drawing.SolidBrush(controlBackColor))
+            using (var pen = new System.Drawing.Pen(controlBorderColor))
+            using (var stringFormat = new System.Drawing.StringFormat(System.Drawing.StringFormatFlags.NoWrap | System.Drawing.StringFormatFlags.LineLimit))
+            {
+                graphics.Clear(workspaceColor);
+
+                var childs = this._AllChildItems;
+                foreach (var i in childs)
+                    drawItem(i, graphics, brush, pen, stringFormat);
+
+                var guideLines = __FlowGuideLines;
+                if (guideLines != null)
+                {
+                    graphicsForRectangles(graphics);
                     foreach (var guideLine in guideLines)
-                        guideLine.AddMargin(guideLine.Axis == AxisType.X ? dl : dt);
+                        drawGuideLine(guideLine, graphics, brush, pen);
                 }
+            }
+            return image;
 
-                // Zvětším velikost obsahu celého containeru, pokud je důvod:
-                int dw = dl + dr;
-                int dh = dt + db;
-                var size = this.__ContentSize;
-                if (size != null)
-                {
-                    size.Width = size.Width + dw;
-                    size.Height = size.Height + dh;
-                }
 
-                // Posune souřadnice v daném prvku o (dl, dt)
-                void processMargins(ItemInfo item)
+            // Vykreslí celý prvek do grafiky
+            void drawItem(DfTemplateLayoutItem item, System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat)
+            {
+                var iFlow = item as IFlowLayoutItem;
+                var iData = item as IDataFormItem;
+
+                // Labely:
+                drawLabelInfo(graphics, brush, pen, stringFormat, iFlow.LabelLeftInfo, ContentAlignmentType.MiddleLeft);
+                drawLabelInfo(graphics, brush, pen, stringFormat, iFlow.LabelTopInfo, ContentAlignmentType.MiddleLeft);
+                drawLabelInfo(graphics, brush, pen, stringFormat, iFlow.LabelRightInfo, ContentAlignmentType.MiddleLeft);
+                drawLabelInfo(graphics, brush, pen, stringFormat, iFlow.LabelBottomInfo, ContentAlignmentType.MiddleLeft);
+
+
+                // Control (nikoliv Container):
+                var controlInfo = iFlow.ControlInfo;
+                if (item._IsControl && controlInfo != null && controlInfo.Exists && controlInfo.Bounds != null)
                 {
-                    processBounds(item.__ControlInfo?.Bounds);
-                    processBounds(item.__MainLabelInfo?.Bounds);
-                    processBounds(item.__SuffixLabelInfo?.Bounds);
-                }
-                // Posune dané souřadnice o (dl, dt)
-                void processBounds(ControlBounds bounds)
-                {
-                    if (bounds != null)
+                    switch (item._DfControl.ControlType)
                     {
-                        bounds.Left = bounds.Left + dl;
-                        bounds.Top = bounds.Top + dt;
-                    }
-                }
-            }
-            /// <summary>
-            /// Určí velikost <see cref="__ImplicitControlMinimalWidth"/> a <see cref="__ImplicitControlMinimalHeight"/> podle již existující <see cref="__ContentSize"/>.
-            /// Tento algoritmus tedy přenese reálnou velikost obsahu z Containeru (kde <see cref="__ContentSize"/> je určena jako prostor vnitřních prvků) 
-            /// do vnějších hodnot, které popisují tento prvek navenek (tedy ve vyšším containeru se bude při tvorbě jeho layoutu rezervovat patřičný prostor pro grupu a její obsah).
-            /// </summary>
-            private void _ProcessContentSize()
-            {
-                var size = this.__ContentSize;
-                this.__ControlInfo.ImplicitOptimalWidth = size?.Width;
-                this.__ControlInfo.ImplicitOptimalHeight = size?.Height;
-
-                //  this.__ImplicitControlMinimalWidth = size?.Width;
-                //  this.__ImplicitControlMinimalHeight = size?.Height;
-            }
-            /// <summary>
-            /// Velikost obsahu včetně Margins
-            /// </summary>
-            private Size __ContentSize;
-            /// <summary>
-            /// Matrice souřadnic celého containeru.
-            /// Popisuje souřadnice krajních labelů a vnitřního prostoru, ve kterém jsou controly.
-            /// Na základě této matrice mohou být modifikovány údaje pro label v rámci Parent containeru v situaci, kdy this je vnořená grupa.
-            /// Jde o poměrně sofistikované řešení, jehož výstupem je plynule navazující layout labelů z vnořeného containeru se sousedícími labely v rámci Parent FlowLayoutu.
-            /// </summary>
-            private CellMatrixInfo __FlowLayoutMatrix;
-            /// <summary>
-            /// Vodící linky vytvářené pro režim FlowLayout, pokud v argumentu <see cref="_LayoutArgs"/> je požadováno <see cref="DfTemplateLayoutArgs.DebugImagesWithGuideLines"/> = true.
-            /// </summary>
-            private FlowGuideLine[] __FlowGuideLines;
-            #endregion
-            #region Určení absolutní souřadnice každého prvku
-            /// <summary>
-            /// Projde všechny prvky a přidělí jim konkrétní absolutní souřadnice = v rámci Root panelu.
-            /// Tato metoda je vyvolána pro prvek typu Panel. 
-            /// <para/>
-            /// Smí být vyvolána pouze jedenkrát, protože reálně posunuje souřadnice prvků. Opakované volání by je posunulo znovu.
-            /// </summary>
-            private void _PreparePanelAbsoluteBounds()
-            {
-                _PrepareContainerAbsoluteBounds(this, 0, 0);
-            }
-            /// <summary>
-            /// Projde svoje prvky a posune souřadnice controlu a labelů o danou hodnotu.
-            /// Pokud najde container, posune jeho souřadnice a zajistí rekurzivní posun i pro jeho prvky.
-            /// Souřadnice vnořených containerů pak budou absolutní vzhledem k Root panelu.
-            /// </summary>
-            /// <param name="container"></param>
-            /// <param name="addX"></param>
-            /// <param name="addY"></param>
-            private static void _PrepareContainerAbsoluteBounds(ItemInfo container, int addX, int addY)
-            {
-                var childs = container.__Childs;
-                if (childs != null)
-                {
-                    foreach (var child in childs)
-                    {
-                        if (child != null)
-                        {
-                            prepareAbsoluteBounds(child, addX, addY);
-                            if (child._HasChilds)
+                        case DataControlType.Label:
+                            ContentAlignmentType labelAlignment = ContentAlignmentType.MiddleLeft;
+                            string text = iData.Name;
+                            if (item.__DfItem is DfLabel dfLabel)
                             {
-                                int nextX = child.__ControlInfo.Bounds.Left;
-                                int nextY = child.__ControlInfo.Bounds.Top;
-                                _PrepareContainerAbsoluteBounds(child, nextX, nextY);
+                                if (dfLabel.Alignment.HasValue) labelAlignment = dfLabel.Alignment.Value;
+                                text = dfLabel.Text;
                             }
-                        }
-                    }
-                }
-
-                void prepareAbsoluteBounds(ItemInfo item, int dx, int dy)
-                {
-                    if (dx != 0 || dy != 0)
-                    {
-                        prepareAbsoluteBoundsOne(item.__ControlInfo.Bounds, dx, dy);
-                        prepareAbsoluteBoundsOne(item.__MainLabelInfo.Bounds, dx, dy);
-                        prepareAbsoluteBoundsOne(item.__SuffixLabelInfo.Bounds, dx, dy);
-                    }
-                }
-                void prepareAbsoluteBoundsOne(ControlBounds bounds, int dx, int dy)
-                {
-                    if (bounds != null)
-                    {
-                        bounds.Left = bounds.Left + dx;
-                        bounds.Top = bounds.Top + dy;
+                            drawControlBorder(graphics, brush, pen, controlInfo.Bounds, null, controlLabelBorderColor);
+                            drawControlLabel(graphics, brush, pen, stringFormat, text, controlInfo.Bounds, labelAlignment);
+                            break;
+                        case DataControlType.HLine:
+                            int hLineWidth = 2;
+                            if (item.__DfItem is DfHLine dfHLine && dfHLine.LineWidth.HasValue)
+                                hLineWidth = dfHLine.LineWidth.Value;
+                            drawControlHLine(graphics, brush, pen, stringFormat, iData.Name, controlInfo.Bounds, ContentAlignmentType.MiddleCenter, hLineWidth);
+                            break;
+                        case DataControlType.VLine:
+                            int vLineWidth = 2;
+                            if (item.__DfItem is DfVLine dfVLine && dfVLine.LineWidth.HasValue)
+                                vLineWidth = dfVLine.LineWidth.Value;
+                            drawControlVLine(graphics, brush, pen, stringFormat, iData.Name, controlInfo.Bounds, ContentAlignmentType.MiddleCenter, vLineWidth);
+                            break;
+                        default:
+                            drawControlBorder(graphics, brush, pen, controlInfo.Bounds, controlBackColor, controlBorderColor);
+                            drawControlName(graphics, brush, pen, stringFormat, iData.Name, controlInfo.Bounds, ContentAlignmentType.MiddleCenter);
+                            break;
                     }
                 }
             }
-            #endregion
-            #region Vizualizace PixelLayoutu (vytvoření Image, reprezentující aktuální stav layoutu)
-            /// <summary>
-            /// Z prvků layoutu vygeneruje bitmapu v měřítku 1:1, respektující rozměry a obsah containeru.
-            /// Uloží ji do souboru do Temp adresáře.
-            /// Plné jméno souboru vrátí.
-            /// </summary>
-            /// <returns></returns>
-            private string _CreateImageFile()
+            // Vykreslí LabelInfo včetně podkladu
+            void drawLabelInfo(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, LabelInfo labelInfo, ContentAlignmentType alignment)
             {
-                var startTime = DxComponent.LogTimeCurrent;
-
-                string file = null;
-
-                var args = this._LayoutArgs;
-                string dfName = args.DataForm.FileName;
-                dfName = (!String.IsNullOrEmpty(dfName) ? System.IO.Path.GetFileNameWithoutExtension(dfName) : "dataform");      // dw_simple.frm.xml   =>   dw_simple.frm
-                if (dfName.Contains(".")) dfName = System.IO.Path.GetFileNameWithoutExtension(dfName);                           // dw_simple.frm       =>   dw_simple
-
-                using (var image = _CreateImage())
-                {
-                    if (image != null)
-                    {
-                        string cnt = ((__ImageCounter++) % 1000).ToString("000");
-                        string dateId = $"{DateTime.Now:yyyyMMdd_HHmmss}_{cnt}";
-                        string itemId = dfName + "_" + this.__Name;
-                        string name = $"ItemLayout_{itemId}_{dateId}.png";
-                        string path = System.IO.Path.GetTempPath();
-                        if (!String.IsNullOrEmpty(args.DebugImagePath))
-                        {
-                            path = System.IO.Path.Combine(path, args.DebugImagePath.Trim());
-                            if (!System.IO.Directory.Exists(path))
-                                System.IO.Directory.CreateDirectory(path);
-                        }
-                        file = System.IO.Path.Combine(path, name);
-                        image.Save(file, System.Drawing.Imaging.ImageFormat.Png);
-                    }
-                }
-
-                if (file != null)
-                {
-                    if (args.DebugImages is null) args.DebugImages = new List<string>();
-                    args.DebugImages.Add(file);
-                }
-                if (args.LogTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Save Debug image for panel '{__Name}': {DxComponent.LogTokenTimeMicrosec}", startTime);
-                return file;
+                if (labelInfo is null || !labelInfo.Exists || labelInfo.Bounds is null) return;
+                drawLabel(graphics, brush, pen, stringFormat, labelInfo.Text, labelInfo.Bounds, labelInfo.Alignment ?? alignment);
             }
-            /// <summary>
-            /// Z prvků layoutu vygeneruje bitmapu v měřítku 1:1, respektující rozměry a obsah containeru.
-            /// </summary>
-            /// <returns></returns>
-            private System.Drawing.Image _CreateImage()
+            // Vykreslí Label včetně podkladu
+            void drawLabel(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, string text, ControlBounds bounds, ContentAlignmentType alignment)
             {
-                // Kreslit, či nekreslit? - to je, oč tu běží...
-                var size = this.__ContentSize;
-                if (size is null) return null;
-                int width = size.Width ?? 0;
-                int height = size.Height ?? 0;
-                if (width <= 0 || height <= 0) return null;
+                var r = getRectangle(bounds);
 
-                // Definujeme barvy pro prvky:
-                var workspaceColor = System.Drawing.Color.FromArgb(255, 206, 206, 206);
-
-                var labelBorderColor = System.Drawing.Color.FromArgb(255, 178, 191, 198);
-                var labelBackColor = System.Drawing.Color.FromArgb(255, 221, 221, 224);
-                var labelTextColor = System.Drawing.Color.FromArgb(255, 80, 64, 80);
-
-                var controlBorderColor = System.Drawing.Color.FromArgb(255, 80, 80, 86);
-                var controlBackColor = System.Drawing.Color.FromArgb(255, 233, 233, 225);
-                var controlTextColor1 = System.Drawing.Color.FromArgb(190, 96, 96, 96);
-                var controlTextColor2 = System.Drawing.Color.FromArgb(255, 32, 32, 32);
-
-                var controlLineColor = System.Drawing.Color.FromArgb(255, 80, 80, 86);
-
-                var guideLineCellColor = System.Drawing.Color.FromArgb(200, 200, 40, 60);
-                var guideLineControlColor = System.Drawing.Color.FromArgb(200, 40, 200, 60);
-                var guideLineLabelColor = System.Drawing.Color.FromArgb(200, 190, 180, 40); 
-
-                // Image a grafické nástroje, jimiž postupně vykreslíme jednotlivé prvky:
-                var image = new System.Drawing.Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                using (var graphics = System.Drawing.Graphics.FromImage(image))
-                using (var brush = new System.Drawing.SolidBrush(controlBackColor))
-                using (var pen = new System.Drawing.Pen(controlBorderColor))
-                using (var stringFormat = new System.Drawing.StringFormat(System.Drawing.StringFormatFlags.NoWrap | System.Drawing.StringFormatFlags.LineLimit))
+                using (var path = getControlPathSquare(r))
                 {
-                    graphics.Clear(workspaceColor);
-
-                    var childs = this._AllChildItems;
-                    foreach (var i in childs)
-                        drawItem(i, graphics, brush, pen, stringFormat);
-
-                    var guideLines = __FlowGuideLines;
-                    if (guideLines != null)
-                    {
-                        graphicsForRectangles(graphics);
-                        foreach (var guideLine in guideLines)
-                            drawGuideLine(guideLine, graphics, brush, pen);
-                    }
-                }
-                return image;
-
-
-                // Vykreslí celý prvek do grafiky
-                void drawItem(ItemInfo item, System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat)
-                {
-                    var iFlow = item as IFlowLayoutItem;
-                    var iData = item as IDataFormItem;
-
-                    // Labely:
-                    drawLabelInfo(graphics, brush, pen, stringFormat, iFlow.LabelLeftInfo, ContentAlignmentType.MiddleLeft);
-                    drawLabelInfo(graphics, brush, pen, stringFormat, iFlow.LabelTopInfo, ContentAlignmentType.MiddleLeft);
-                    drawLabelInfo(graphics, brush, pen, stringFormat, iFlow.LabelRightInfo, ContentAlignmentType.MiddleLeft);
-                    drawLabelInfo(graphics, brush, pen, stringFormat, iFlow.LabelBottomInfo, ContentAlignmentType.MiddleLeft);
-
-
-                    // Control (nikoliv Container):
-                    var controlInfo = iFlow.ControlInfo;
-                    if (item._IsControl && controlInfo != null && controlInfo.Exists && controlInfo.Bounds != null)
-                    {
-                        switch (item._DfControl.ControlType)
-                        {
-                            case DataControlType.Label:
-                                drawControlLabel(graphics, brush, pen, stringFormat, iData.Name, controlInfo.Bounds, ContentAlignmentType.MiddleRight);
-                                break;
-                            case DataControlType.HLine:
-                                drawControlHLine(graphics, brush, pen, stringFormat, iData.Name, controlInfo.Bounds, ContentAlignmentType.MiddleCenter);
-                                break;
-                            case DataControlType.VLine:
-                                drawControlVLine(graphics, brush, pen, stringFormat, iData.Name, controlInfo.Bounds, ContentAlignmentType.MiddleCenter);
-                                break;
-                            default:
-                                drawControlBorder(graphics, brush, pen, stringFormat, iData.Name, controlInfo.Bounds, ContentAlignmentType.MiddleCenter);
-                                break;
-                        }
-                    }
-                }
-                // Vykreslí LabelInfo včetně podkladu
-                void drawLabelInfo(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, LabelInfo labelInfo, ContentAlignmentType alignment)
-                {
-                    if (labelInfo is null || !labelInfo.Exists || labelInfo.Bounds is null) return;
-                    drawLabel(graphics, brush, pen, stringFormat, labelInfo.Text, labelInfo.Bounds, labelInfo.Alignment ?? alignment);
-                }
-                // Vykreslí Label včetně podkladu
-                void drawLabel(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, string text, ControlBounds bounds, ContentAlignmentType alignment)
-                {
-                    var r = getRectangle(bounds);
-
-                    using (var path = getControlPathSquare(r))
-                    {
-                        graphicsForRectangles(graphics);
-
-                        brush.Color = labelBackColor;
-                        graphics.FillPath(brush, path);                              // BackColor pod labelem MainLabel
-
-                        pen.Color = labelBorderColor;
-                        graphics.DrawPath(pen, path);                                // Border okolo prostoru pro MainLabel
-                    }
-
-                    if (isValidBounds(bounds))
-                    {
-                        var font = System.Drawing.SystemFonts.DefaultFont;
-                        var size = graphics.MeasureString(text, font, r.Width);
-                        var point = alignText(r, size, alignment);
-                        brush.Color = labelTextColor;
-                        graphicsForText(graphics);
-                        graphics.DrawString(text, font, brush, point.X, point.Y, stringFormat);        // Vlastní text MainLabel / SuffixLabel
-                    }
-                }
-                // Vykreslí Control typu HLine
-                void drawControlHLine(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, string text, ControlBounds bounds, ContentAlignmentType alignment)
-                {
-                    var r = getRectangle(bounds);
-                    r.Y = r.Top + (r.Height / 2) - 1;
-                    r.Height = 2;
                     graphicsForRectangles(graphics);
-                    brush.Color = controlLineColor;
-                    graphics.FillRectangle(brush, r);
-                }
-                // Vykreslí Control typu VLine
-                void drawControlVLine(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, string text, ControlBounds bounds, ContentAlignmentType alignment)
-                {
-                    var r = getRectangle(bounds);
-                    r.X = r.Left + (r.Width / 2) - 1;
-                    r.Width = 2;
-                    graphicsForRectangles(graphics);
-                    brush.Color = controlLineColor;
-                    graphics.FillRectangle(brush, r);
-                }
-                // Vykreslí Control typu Label včetně podkladu
-                void drawControlLabel(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, string text, ControlBounds bounds, ContentAlignmentType alignment)
-                {
-                    if (isValidBounds(bounds))
-                    {
-                        graphicsForText(graphics);
-                        var r = getRectangle(bounds);
-                        var font = System.Drawing.SystemFonts.DefaultFont;
-                        var size = graphics.MeasureString(text, font, r.Width, stringFormat);
-                        var point = alignText(r, size, alignment);
-                        brush.Color = controlTextColor1;
-                        graphics.DrawString(text, font, brush, point.X + 0.60f, point.Y);        // Text uprostřed Controlu, 2x ...
-                        brush.Color = controlTextColor2;
-                        graphics.DrawString(text, font, brush, point.X, point.Y - 0.60f, stringFormat);
-                    }
-                }
-                // Vykreslí Control typu Border včetně podkladu
-                void drawControlBorder(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, string text, ControlBounds bounds, ContentAlignmentType alignment)
-                {
-                    var r = getRectangle(bounds);
-                    using (var path = getControlPathRound(r))
-                    {
-                        graphicsForText(graphics);
 
-                        brush.Color = controlBackColor;
+                    brush.Color = labelBackColor;
+                    graphics.FillPath(brush, path);                              // BackColor pod labelem MainLabel
+
+                    pen.Color = labelBorderColor;
+                    graphics.DrawPath(pen, path);                                // Border okolo prostoru pro MainLabel
+                }
+
+                if (isValidBounds(bounds))
+                {
+                    var font = System.Drawing.SystemFonts.DefaultFont;
+                    var size = graphics.MeasureString(text, font, r.Width);
+                    var point = alignText(r, size, alignment);
+                    brush.Color = labelTextColor;
+                    graphicsForText(graphics);
+                    graphics.DrawString(text, font, brush, point.X, point.Y, stringFormat);        // Vlastní text MainLabel / SuffixLabel
+                }
+            }
+            // Vykreslí Control typu HLine
+            void drawControlHLine(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, string text, ControlBounds bounds, ContentAlignmentType alignment, int lineWidth)
+            {
+                if (lineWidth <= 0) return;
+                var r = getRectangle(bounds);
+                r.Y = r.Top + ((r.Height - lineWidth) / 2);
+                r.Height = lineWidth;
+                graphicsForRectangles(graphics);
+                brush.Color = controlLineColor;
+                graphics.FillRectangle(brush, r);
+            }
+            // Vykreslí Control typu VLine
+            void drawControlVLine(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, string text, ControlBounds bounds, ContentAlignmentType alignment, int lineWidth)
+            {
+                var r = getRectangle(bounds);
+                r.X = r.Left + ((r.Width - lineWidth) / 2);
+                r.Width = lineWidth;
+                graphicsForRectangles(graphics);
+                brush.Color = controlLineColor;
+                graphics.FillRectangle(brush, r);
+            }
+            // Vykreslí Control typu Label včetně podkladu
+            void drawControlLabel(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, string text, ControlBounds bounds, ContentAlignmentType alignment)
+            {
+                if (isValidBounds(bounds))
+                {
+                    graphicsForText(graphics);
+                    var r = getRectangle(bounds);
+                    var font = System.Drawing.SystemFonts.DefaultFont;
+                    var size = graphics.MeasureString(text, font, r.Width, stringFormat);
+                    var point = alignText(r, size, alignment);
+                    brush.Color = controlTextColor1;
+                    graphics.DrawString(text, font, brush, point.X + 0.60f, point.Y);        // Text uprostřed Controlu, 2x ...
+                    brush.Color = controlTextColor2;
+                    graphics.DrawString(text, font, brush, point.X, point.Y - 0.60f, stringFormat);
+                }
+            }
+            // Vykreslí Border a podklad pro Control
+            void drawControlBorder(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, ControlBounds bounds, System.Drawing.Color? fillColor, System.Drawing.Color? borderColor)
+            {
+                var r = getRectangle(bounds);
+                using (var path = getControlPathRound(r))
+                {
+                    graphicsForText(graphics);
+
+                    if (fillColor.HasValue)
+                    {
+                        brush.Color = fillColor.Value;
                         graphics.FillPath(brush, path);                              // BackColor pod Controlem
+                    }
 
-                        pen.Color = controlBorderColor;
+                    if (borderColor.HasValue)
+                    {
+                        pen.Color = borderColor.Value;
                         graphics.DrawPath(pen, path);                                // Border okolo prostoru pro Controlem
                     }
+                }
+            }
+            // Vykreslí Name do Controlu
+            void drawControlName(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, string text, ControlBounds bounds, ContentAlignmentType alignment)
+            {
+                var r = getRectangle(bounds);
+                if (isValidBounds(bounds))
+                {
+                    var font = System.Drawing.SystemFonts.DefaultFont;
+                    var size = graphics.MeasureString(text, font, r.Width, stringFormat);
+                    var point = alignText(r, size, alignment);
+                    brush.Color = controlTextColor1;
+                    graphics.DrawString(text, font, brush, point.X + 0.60f, point.Y);        // Text uprostřed Controlu, 2x ...
+                    brush.Color = controlTextColor2;
+                    graphics.DrawString(text, font, brush, point.X, point.Y - 0.60f, stringFormat);
+                }
+            }
+            // Vrátí true, pokud do daných 'bounds' lze něco vepsat
+            bool isValidBounds(ControlBounds bounds)
+            {
+                return (bounds != null && bounds.Width >= 10 && bounds.Height >= 15);
+            }
+            // Vykreslí jednu GuideLine
+            void drawGuideLine(FlowGuideLine guideLine, System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen)
+            {
+                bool isCell = guideLine.LineType.HasFlag(GuideLineType.Cell);
+                bool isControl = guideLine.LineType.HasFlag(GuideLineType.Control);
+                bool isLabel = guideLine.LineType.HasFlag(GuideLineType.LabelBefore) || guideLine.LineType.HasFlag(GuideLineType.LabelAfter);
 
-                    if (isValidBounds(bounds))
-                    {
-                        var font = System.Drawing.SystemFonts.DefaultFont;
-                        var size = graphics.MeasureString(text, font, r.Width, stringFormat);
-                        var point = alignText(r, size, alignment);
-                        brush.Color = controlTextColor1;
-                        graphics.DrawString(text, font, brush, point.X + 0.60f, point.Y);        // Text uprostřed Controlu, 2x ...
-                        brush.Color = controlTextColor2;
-                        graphics.DrawString(text, font, brush, point.X, point.Y - 0.60f, stringFormat);
-                    }
-                }
-                // Vrátí true, pokud do daných 'bounds' lze něco vepsat
-                bool isValidBounds(ControlBounds bounds)
-                {
-                    return (bounds != null && bounds.Width >= 10 && bounds.Height >= 15);
-                }
-                // Vykreslí jednu GuideLine
-                void drawGuideLine(FlowGuideLine guideLine, System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen)
-                {
-                    bool isCell = guideLine.LineType.HasFlag(GuideLineType.Cell);
-                    bool isControl = guideLine.LineType.HasFlag(GuideLineType.Control);
-                    bool isLabel = guideLine.LineType.HasFlag(GuideLineType.LabelBefore) || guideLine.LineType.HasFlag(GuideLineType.LabelAfter);
+                pen.Color = (isCell ? guideLineCellColor : (isControl ? guideLineControlColor : guideLineLabelColor));
+                pen.Width = 1f;
+                pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dot;
+                pen.DashCap = System.Drawing.Drawing2D.DashCap.Round;
 
-                    pen.Color = (isCell ? guideLineCellColor : (isControl ? guideLineControlColor : guideLineLabelColor));
-                    pen.Width = 1f;
-                    pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dot;
-                    pen.DashCap = System.Drawing.Drawing2D.DashCap.Round;
-
-                    if (guideLine.Axis == AxisType.X)
-                        graphics.DrawLine(pen, guideLine.Position, 0, guideLine.Position, height);
-                    else
-                        graphics.DrawLine(pen, 0, guideLine.Position, width, guideLine.Position);
-                }
-                // Nasetuje grafiku pro texty
-                void graphicsForText(System.Drawing.Graphics graphics)
+                if (guideLine.Axis == AxisType.X)
+                    graphics.DrawLine(pen, guideLine.Position, 0, guideLine.Position, height);
+                else
+                    graphics.DrawLine(pen, 0, guideLine.Position, width, guideLine.Position);
+            }
+            // Nasetuje grafiku pro texty
+            void graphicsForText(System.Drawing.Graphics graphics)
+            {
+                graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+            }
+            // Nasetuje grafiku pro čtverce
+            void graphicsForRectangles(System.Drawing.Graphics graphics)
+            {
+                graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+                graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Default;
+            }
+            // Vrátí Path pro obdélník
+            System.Drawing.Drawing2D.GraphicsPath getControlPathSquare(System.Drawing.Rectangle rectangle)
+            {
+                int l = rectangle.Left;
+                int t = rectangle.Top;
+                int r = rectangle.Right - 1;
+                int b = rectangle.Bottom - 1;
+                var path = new System.Drawing.Drawing2D.GraphicsPath();
+                path.AddPolygon(new System.Drawing.PointF[]
                 {
-                    graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-                    graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                }
-                // Nasetuje grafiku pro čtverce
-                void graphicsForRectangles(System.Drawing.Graphics graphics)
-                {
-                    graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
-                    graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Default;
-                }
-                // Vrátí Path pro obdélník
-                System.Drawing.Drawing2D.GraphicsPath getControlPathSquare(System.Drawing.Rectangle rectangle)
-                {
-                    int l = rectangle.Left;
-                    int t = rectangle.Top;
-                    int r = rectangle.Right - 1;
-                    int b = rectangle.Bottom - 1;
-                    var path = new System.Drawing.Drawing2D.GraphicsPath();
-                    path.AddPolygon(new System.Drawing.PointF[]
-                    {
                         new System.Drawing.PointF(l, t),
                         new System.Drawing.PointF(r, t),
                         new System.Drawing.PointF(r, b),
                         new System.Drawing.PointF(l, b),
                         new System.Drawing.PointF(l, t)
-                    });
-                    path.CloseFigure();
-                    return path;
-                }
-                // Vrátí Path pro obdélník se zkosenými rohy
-                System.Drawing.Drawing2D.GraphicsPath getControlPathRound(System.Drawing.Rectangle rectangle)
+                });
+                path.CloseFigure();
+                return path;
+            }
+            // Vrátí Path pro obdélník se zkosenými rohy
+            System.Drawing.Drawing2D.GraphicsPath getControlPathRound(System.Drawing.Rectangle rectangle)
+            {
+                int l = rectangle.Left;
+                int t = rectangle.Top;
+                int r = rectangle.Right - 1;
+                int b = rectangle.Bottom - 1;
+                int q = 2;
+                var path = new System.Drawing.Drawing2D.GraphicsPath();
+                path.AddPolygon(new System.Drawing.PointF[]
                 {
-                    int l = rectangle.Left;
-                    int t = rectangle.Top;
-                    int r = rectangle.Right - 1;
-                    int b = rectangle.Bottom - 1;
-                    int q = 2;
-                    var path = new System.Drawing.Drawing2D.GraphicsPath();
-                    path.AddPolygon(new System.Drawing.PointF[]
-                    {
                         new System.Drawing.PointF(l + q, t),
                         new System.Drawing.PointF(r - q, t),
                         new System.Drawing.PointF(r, t + q),
@@ -1870,74 +1927,73 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         new System.Drawing.PointF(l, b - q),
                         new System.Drawing.PointF(l, t + q),
                         new System.Drawing.PointF(l + q, t)
-                    });
-                    path.CloseFigure();
-                    return path;
-                }
-                // Konvertuje Bounds na Drawing.Rectangle
-                System.Drawing.Rectangle getRectangle(ControlBounds bounds)
-                {
-                    return new System.Drawing.Rectangle(bounds.Left, bounds.Top, bounds.Width, bounds.Height);
-                }
-                // Vrátí souřadnice textu tak, aby byl zarovnán
-                System.Drawing.PointF alignText(System.Drawing.Rectangle area, System.Drawing.SizeF content, ContentAlignmentType alignment)
-                {
-                    float x = area.X;
-                    float y = area.Y;
-                    float dx = 0f;
-                    float dy = 0f;
-                    float dw = (float)area.Width - content.Width;
-                    if (dw < 0f) dw = 0f;
-                    float dh = (float)area.Height - content.Height;
-                    if (dh < 0f) dh = 0f;
-
-                    switch (alignment)
-                    {
-                        case ContentAlignmentType.TopLeft:
-                            break;
-                        case ContentAlignmentType.TopCenter:
-                            dx = dw / 2f;
-                            break;
-                        case ContentAlignmentType.TopRight:
-                            dx = dw;
-                            break;
-
-                        case ContentAlignmentType.MiddleLeft:
-                            dy = dh / 2f;
-                            break;
-                        case ContentAlignmentType.MiddleCenter:
-                            dy = dh / 2f;
-                            dx = dw / 2f;
-                            break;
-                        case ContentAlignmentType.MiddleRight:
-                            dy = dh / 2f;
-                            dx = dw;
-                            break;
-
-                        case ContentAlignmentType.BottomLeft:
-                            dy = dh;
-                            break;
-                        case ContentAlignmentType.BottomCenter:
-                            dy = dh;
-                            dx = dw / 2f;
-                            break;
-                        case ContentAlignmentType.BottomRight:
-                            dy = dh;
-                            dx = dw;
-                            break;
-
-                    }
-                    return new System.Drawing.PointF(x + dx, y + dy);
-                }
+                });
+                path.CloseFigure();
+                return path;
             }
-            /// <summary>
-            /// Počitadlo vytvořených Images, slouží jako suffix názvu souboru
-            /// </summary>
-            private static int __ImageCounter = 0;
-            #endregion
+            // Konvertuje Bounds na Drawing.Rectangle
+            System.Drawing.Rectangle getRectangle(ControlBounds bounds)
+            {
+                return new System.Drawing.Rectangle(bounds.Left, bounds.Top, bounds.Width, bounds.Height);
+            }
+            // Vrátí souřadnice textu tak, aby byl zarovnán
+            System.Drawing.PointF alignText(System.Drawing.Rectangle area, System.Drawing.SizeF content, ContentAlignmentType alignment)
+            {
+                float x = area.X;
+                float y = area.Y;
+                float dx = 0f;
+                float dy = 0f;
+                float dw = (float)area.Width - content.Width;
+                if (dw < 0f) dw = 0f;
+                float dh = (float)area.Height - content.Height;
+                if (dh < 0f) dh = 0f;
+
+                switch (alignment)
+                {
+                    case ContentAlignmentType.TopLeft:
+                        break;
+                    case ContentAlignmentType.TopCenter:
+                        dx = dw / 2f;
+                        break;
+                    case ContentAlignmentType.TopRight:
+                        dx = dw;
+                        break;
+
+                    case ContentAlignmentType.MiddleLeft:
+                        dy = dh / 2f;
+                        break;
+                    case ContentAlignmentType.MiddleCenter:
+                        dy = dh / 2f;
+                        dx = dw / 2f;
+                        break;
+                    case ContentAlignmentType.MiddleRight:
+                        dy = dh / 2f;
+                        dx = dw;
+                        break;
+
+                    case ContentAlignmentType.BottomLeft:
+                        dy = dh;
+                        break;
+                    case ContentAlignmentType.BottomCenter:
+                        dy = dh;
+                        dx = dw / 2f;
+                        break;
+                    case ContentAlignmentType.BottomRight:
+                        dy = dh;
+                        dx = dw;
+                        break;
+
+                }
+                return new System.Drawing.PointF(x + dx, y + dy);
+            }
         }
+        /// <summary>
+        /// Počitadlo vytvořených Images, slouží jako suffix názvu souboru
+        /// </summary>
+        private static int __ImageCounter = 0;
         #endregion
     }
+    #endregion
     #region class DfFlowLayoutInfo : koordinátor pro FlowLayout = jednotlivé prvky umístěné ve sloupcích a řádcích
     /// <summary>
     /// <see cref="DfFlowLayoutInfo"/> : koordinátor pro FlowLayout = jednotlivé prvky umístěné ve sloupcích a řádcích
@@ -1950,7 +2006,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="layoutStyle"></param>
         /// <param name="sourceId">ID zdroje do chybové hlášky</param>
-        public DfFlowLayoutInfo(DfTemplateLayout.StyleInfo layoutStyle, string sourceId)
+        public DfFlowLayoutInfo(DfTemplateLayoutStyle layoutStyle, string sourceId)
         {
             if (layoutStyle is null) throw new ArgumentNullException($"DfFlowLayoutInfo ctor fail: 'layoutStyle' is null.");
 
@@ -2005,7 +2061,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void _PrepareColumns()
         {
-            DfTemplateLayout.StyleInfo layoutStyle = __Style;
+            DfTemplateLayoutStyle layoutStyle = __Style;
             // Nějak dané šířky:
             if (layoutStyle != null)
             {   // Podle definovaného stylu:
@@ -2128,7 +2184,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __FlowBounds.Left = style.FlowAreaBegin?.Left;
             __FlowBounds.Top = style.FlowAreaBegin?.Top;
             __ControlMargins = new Margins(style.ControlMargins);
-            __AutoLabelPosition = style.AutoLabelPosition;
+            __AutoLabelPosition = style.ChildsAutoLabelPosition;
             __ColumnsDistance = (style.ColumnsDistance >= 0 ? style.ColumnsDistance : 0);
             __RowsDistance = (style.RowsDistance >= 0 ? style.RowsDistance : 0);
             __ColumnImplicitSize = 50;
@@ -2140,7 +2196,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Styl panelu, definuje konstantní vlastnosti layoutu
         /// </summary>
-        private DfTemplateLayout.StyleInfo __Style;
+        private DfTemplateLayoutStyle __Style;
         /// <summary>
         /// Oblast FlowLayoutu od prvního do posledního sloupce a řádku. Není null, ale ve výchozím stavu nemusí mít zadané konkrétní souřadnice.
         /// </summary>
@@ -2373,7 +2429,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Dopočítá šířky sloupců a výšky řádků podle obsahu a určí jejich fyzické souřadnice.
         /// Určí konkrétní souřadnice jednotlivých prvků (dodaných v metodě <see cref="AddFlowItem(IFlowLayoutItem)"/>) a vepíše je do těchto prvků.<br/>
-        /// Výchozí souřadnice celého FlowLayout prostoru je definovaná stylem dodaným do konstruktoru, jeho hodnotou <see cref="DfTemplateLayout.StyleInfo.FlowAreaBegin"/>.
+        /// Výchozí souřadnice celého FlowLayout prostoru je definovaná stylem dodaným do konstruktoru, jeho hodnotou <see cref="DfTemplateLayout.DfTemplateLayoutStyle.FlowAreaBegin"/>.
         /// Určí sumární prostor FlowLayout prostoru (protože dopočítá i konec obsazeného prostoru), viz <see cref="FlowLayoutBounds"/>.
         /// </summary>
         public void ProcessFlowItems()
@@ -2980,7 +3036,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="item">Prvek, do kterého chceme vypočítat souřadnice</param>
         /// <param name="layoutStyle">Definice stylu obsahuje v sobě potřebné hodnoty</param>
-        public static void ProcessInnerItemBounds(IFlowLayoutItem item, DfTemplateLayout.StyleInfo layoutStyle)
+        public static void ProcessInnerItemBounds(IFlowLayoutItem item, DfTemplateLayoutStyle layoutStyle)
         {
             if (item is null) throw new ArgumentNullException($"DfFlowLayoutInfo.ProcessInnerItemBounds fail: item is null.");
             if (item.CellMatrix is null) throw new ArgumentNullException($"DfFlowLayoutInfo.ProcessInnerItemBounds fail: item.CellBounds is null.");
@@ -3012,8 +3068,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="item">Prvek, do kterého chceme vypočítat souřadnice</param>
         /// <param name="controlBounds">Oblast pro Control</param>
+        /// <param name="firstRowHeight">Výška prvního řádku = výška labelu na pozici Left a Right</param>
         /// <param name="layoutStyle">Definice stylu obsahuje v sobě potřebné hodnoty</param>
-        public static void ProcessFixedItemBounds(IFlowLayoutItem item, ControlBounds controlBounds, DfTemplateLayout.StyleInfo layoutStyle)
+        public static void ProcessFixedItemBounds(IFlowLayoutItem item, ControlBounds controlBounds, int? firstRowHeight, DfTemplateLayoutStyle layoutStyle)
         {
             if (item is null) throw new ArgumentNullException($"DfFlowLayoutInfo.ProcessFixedItemBounds fail: item is null.");
             if (controlBounds is null) throw new ArgumentNullException($"DfFlowLayoutInfo.ProcessFixedItemBounds fail: controlBounds is null.");
@@ -3021,21 +3078,40 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int topLabelOffsetX = layoutStyle.TopLabelOffsetX;
             int bottomLabelOffsetX = layoutStyle.BottomLabelOffsetX;
             var margins = layoutStyle.ControlMargins;
-            _ProcessFixedItemBounds(item, controlBounds, topLabelOffsetX, bottomLabelOffsetX, margins);
+            _ProcessFixedItemBounds(item, controlBounds, firstRowHeight, topLabelOffsetX, bottomLabelOffsetX, margins);
         }
         /// <summary>
         /// Metoda určí a uloží do prvku <see cref="IFlowLayoutItem"/> <paramref name="item"/> souřadnice pro MainLabel, pro Control a pro SuffixLabel podle dodané souřadnice pro Control.
         /// </summary>
         /// <param name="item">Prvek, do kterého chceme vypočítat souřadnice</param>
         /// <param name="controlBounds">Oblast pro Control</param>
+        /// <param name="firstRowHeight">Výška prvního řádku = výška labelu na pozici Left a Right</param>
         /// <param name="topLabelOffsetX">Offset X pro labely umístěné Top</param>
         /// <param name="bottomLabelOffsetX">Offset X pro labely umístěné Bottom</param>
         /// <param name="margins">Okraje kolem controlu vzhledem k labelům</param>
-        public static void ProcessFixedItemBounds(IFlowLayoutItem item, ControlBounds controlBounds, int topLabelOffsetX, int bottomLabelOffsetX, Margins margins)
+        public static void ProcessFixedItemBounds(IFlowLayoutItem item, ControlBounds controlBounds, int? firstRowHeight, int topLabelOffsetX, int bottomLabelOffsetX, Margins margins)
         {
             if (item is null) throw new ArgumentNullException($"DfFlowLayoutInfo.ProcessFixedItemBounds fail: item is null.");
             if (controlBounds is null) throw new ArgumentNullException($"DfFlowLayoutInfo.ProcessFixedItemBounds fail: controlBounds is null.");
-            _ProcessFixedItemBounds(item, controlBounds, topLabelOffsetX, bottomLabelOffsetX, margins);
+            _ProcessFixedItemBounds(item, controlBounds, firstRowHeight, topLabelOffsetX, bottomLabelOffsetX, margins);
+        }
+        /// <summary>
+        /// Metoda zjistí, které oblasti buňky budou obsazeny Labelem.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        internal static UsedAreaType GetLabelUsedAreas(IFlowLayoutItem item)
+        {
+            return getOneUsedLabelArea(item.LabelLeftInfo, UsedAreaType.Left) |
+                   getOneUsedLabelArea(item.LabelTopInfo, UsedAreaType.Top) |
+                   getOneUsedLabelArea(item.LabelRightInfo, UsedAreaType.Right) |
+                   getOneUsedLabelArea(item.LabelBottomInfo, UsedAreaType.Bottom);
+
+            // Pokud daný LabelInfo je zadán a existuje, pak vrátí daný typ UsedArea
+            UsedAreaType getOneUsedLabelArea(LabelInfo labelInfo, UsedAreaType area)
+            {
+                return (labelInfo != null && labelInfo.Exists) ? area : UsedAreaType.None;
+            }
         }
         /// <summary>
         /// Metoda určí a uloží do prvku <see cref="IFlowLayoutItem"/> <paramref name="item"/> souřadnice pro MainLabel, pro Control a pro SuffixLabel podle standardních pravidel.
@@ -3047,7 +3123,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="bottomLabelOffsetX">Offset X pro labely umístěné Bottom</param>
         private static void _ProcessInnerItemBounds(IFlowLayoutItem item, bool labelsRelativeToControl, int topLabelOffsetX, int bottomLabelOffsetX)
         {
-            UsedAreaType labelUsedAreas = getLabelUsedAreas();                           // Které prostory vedle Controlu jsou onsazeny Labelem?
+            UsedAreaType labelUsedAreas = GetLabelUsedAreas(item);                       // Které prostory vedle Controlu jsou obsazeny Labelem?
             var controlBounds = processItemControl(labelUsedAreas);                      // Souřadnice Controlu, možná jsou Extended do nevyužitých prostor místo Labelu, když tam Label není
             processItemLabel(item.LabelLeftInfo, UsedAreaType.Left, controlBounds);      // Umístí Label do prostoru vlevo před control
             processItemLabel(item.LabelTopInfo, UsedAreaType.Top, controlBounds);        //  ... nad control
@@ -3056,27 +3132,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // hotovo.
 
 
-            // Metoda zjistí, které oblasti buňky budou obsazeny Labelem.
-            UsedAreaType getLabelUsedAreas()
-            {
-                return getOneUsedLabelArea(item.LabelLeftInfo, UsedAreaType.Left) |
-                       getOneUsedLabelArea(item.LabelTopInfo, UsedAreaType.Top) |
-                       getOneUsedLabelArea(item.LabelRightInfo, UsedAreaType.Right) |
-                       getOneUsedLabelArea(item.LabelBottomInfo, UsedAreaType.Bottom);
-            }
-            // Pokud daný LabelInfo je zadán a existuje, pak vrátí daný typ UsedArea
-            UsedAreaType getOneUsedLabelArea(LabelInfo labelInfo, UsedAreaType area)
-            {
-                return (labelInfo != null && labelInfo.Exists) ? area : UsedAreaType.None;
-            }
             // Zpracuje souřadnici pro Control
             ControlBounds processItemControl(UsedAreaType labelUsedAreas)
             {
                 var controlInfo = item.ControlInfo;
-                if (controlInfo is null || !controlInfo.Exists) return null;
+                if (controlInfo is null || !controlInfo.Exists || item.CellMatrix is null) return null;
 
                 // Které prostory může Control využít? Bude expandovat do některých sousedních prostorů, pokud jsou volné?
                 var itemExpand = item.DesignExpandControl ?? ExpandControlType.None;
+
+                // Souřadnice zvolené oblasti, určené pro umístění Controlu:
+                var cellMatrix = item.CellMatrix;
+                // Umístění Controlu při akceptování 'itemExpand' a 'labelUsedAreas', včetně offsetů Top a Bottom:
+                var controlBoundsMatrix = cellMatrix.GetControlBounds(itemExpand, labelUsedAreas, topLabelOffsetX, bottomLabelOffsetX);
 
                 // Využít oblast ... = pokud prvek chce (itemExpand) a současně pokud label tuto oblast nepoužívá:
                 bool expLeft = itemExpand.HasFlag(ExpandControlType.Left) && !labelUsedAreas.HasFlag(UsedAreaType.Left);
@@ -3084,8 +3152,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 bool expRight = itemExpand.HasFlag(ExpandControlType.Right) && !labelUsedAreas.HasFlag(UsedAreaType.Right);
                 bool expBottom = itemExpand.HasFlag(ExpandControlType.Bottom) && !labelUsedAreas.HasFlag(UsedAreaType.Bottom);
 
-                // Souřadnice zvolené oblasti, určené pro umístění Controlu:
-                var cellMatrix = item.CellMatrix;
                 int l = expLeft ? correctExpandedControlLeftByOffset(cellMatrix.LeftLabelLeft, labelUsedAreas) : cellMatrix.ControlLeft;
                 int t = expTop ? cellMatrix.TopLabelTop : cellMatrix.ControlTop;
                 int r = expRight ? cellMatrix.RightLabelRight : cellMatrix.ControlRight;
@@ -3214,97 +3280,77 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="item">Prvek, do kterého chceme vypočítat souřadnice</param>
         /// <param name="controlBounds">Oblast pro Control</param>
+        /// <param name="firstRowHeight">Výška prvního řádku = výška labelu na pozici Left a Right</param>
         /// <param name="topLabelOffsetX">Offset X pro labely umístěné Top</param>
         /// <param name="bottomLabelOffsetX">Offset X pro labely umístěné Bottom</param>
         /// <param name="margins">Okraje kolem controlu vzhledem k labelům</param>
-        private static void _ProcessFixedItemBounds(IFlowLayoutItem item, ControlBounds controlBounds, int topLabelOffsetX, int bottomLabelOffsetX, Margins margins)
+        private static void _ProcessFixedItemBounds(IFlowLayoutItem item, ControlBounds controlBounds, int? firstRowHeight, int topLabelOffsetX, int bottomLabelOffsetX, Margins margins)
         {
             processControl(item.ControlInfo, controlBounds);
-            processLabel(item.LabelLeftInfo, controlBounds);
-            processLabel(item.LabelTopInfo, controlBounds);
-            processLabel(item.LabelRightInfo, controlBounds);
-            processLabel(item.LabelBottomInfo, controlBounds);
+            processLabel(item.LabelLeftInfo, controlBounds, UsedAreaType.Left);
+            processLabel(item.LabelTopInfo, controlBounds, UsedAreaType.Top);
+            processLabel(item.LabelRightInfo, controlBounds, UsedAreaType.Right);
+            processLabel(item.LabelBottomInfo, controlBounds, UsedAreaType.Bottom);
 
-            if (item.MainLabelExists)
-                processMainLabelBounds();
-
-            if (item.SuffixLabelExists)
-                processSuffixLabelBounds();
-
-
-
+            // Uloží bounds do controlu
             void processControl(ControlInfo controlInfo, ControlBounds controlBounds)
             {
-                var controlInfo = item.ControlInfo;
-                if (controlInfo != null && controlInfo.Exists)
-                    controlInfo.Bounds = controlBounds;
+                if (controlInfo is null || !controlInfo.Exists) return;
+                controlInfo.Bounds = controlBounds;
             }
+            // Vypočítá a uloží bounds do labelu, zohlední přitom jeho pozici, určí rozměry labelu, vychází z pozice controlu plus margins + offset
+            void processLabel(LabelInfo labelInfo, ControlBounds controlBounds, UsedAreaType area)
+            {
+                if (labelInfo is null || !labelInfo.Exists) return;
 
-
-            // Vyřeší souřadnici pro MainLabel
-            void processMainLabelBounds()
-            {
-                if (controlBounds is null) return;
-                var labelPos = item.LabelPosition;
-                if (labelPos == LabelPositionType.None) return;
-                item.MainLabelBounds = getLabelBounds(labelPos, item.DesignLabelWidth ?? item.ImplicitMainLabelWidth, item.ImplicitMainLabelHeight, out var labelAlignment);
-                item.MainLabelAlignment = labelAlignment;
-            }
-            // Vyřeší souřadnici pro SuffixLabel
-            void processSuffixLabelBounds()
-            {
-                if (controlBounds is null) return;
-                var labelPos = item.LabelPosition;
-                if (item.MainLabelExists && labelPos == LabelPositionType.After) return;           // Pokud existuje Main label a ten je After, tak tam neůže být Suffix Label
-                item.SuffixLabelBounds = getLabelBounds(labelPos, item.ImplicitSuffixLabelWidth, item.ImplicitSuffixLabelHeight, out var labelAlignment);
-            }
-            // Určí a vrátí souřadnici pro dané umístění
-            ControlBounds getLabelBounds(LabelPositionType labelPos, int? width, int? height, out ContentAlignmentType labelAlignment)
-            {
-                labelAlignment = ContentAlignmentType.Default;
-                if (!width.HasValue || width.Value <= 0 || !height.HasValue || height.Value <= 0) return null;
+                // Rozměry labelu:
+                int width = labelInfo.DesignWidth ?? labelInfo.MeasuredWidth ?? 0;
+                int heightL = labelInfo.MeasuredHeight ?? 0;                                                            // Výška vlastního textu labelu
+                int heightR = (firstRowHeight.HasValue && firstRowHeight.Value > 0 ? firstRowHeight.Value : heightL);   // Výška prvního řádku = výška labelu na pozici Left a Right
+                if (width <= 0 || heightL <= 0) area = UsedAreaType.None;
 
                 int l, r, t, b;
-                switch (labelPos)
+                switch (area)
                 {
-                    case LabelPositionType.BeforeLeft:
-                    case LabelPositionType.BeforeRight:
+                    case UsedAreaType.Left:
                         r = controlBounds.Left - margins.Left;
-                        l = r - width.Value;
+                        l = r - width;
                         t = controlBounds.Top;
-                        b = t + height.Value;
-                        labelAlignment = (labelPos == LabelPositionType.BeforeLeft ? ContentAlignmentType.MiddleLeft : (labelPos == LabelPositionType.BeforeRight ? ContentAlignmentType.MiddleRight : ContentAlignmentType.MiddleCenter));
-                        return new ControlBounds(l, t, (r - l), (b - t));
-                    case LabelPositionType.After:
+                        b = t + heightR;
+                        labelInfo.Bounds = new ControlBounds(l, t, (r - l), (b - t));
+                        break;
+                    case UsedAreaType.Right:
                         l = controlBounds.Right + margins.Right;
-                        r = l + width.Value;
+                        r = l + width;
                         t = controlBounds.Top;
-                        b = t + height.Value;
-                        labelAlignment = ContentAlignmentType.MiddleLeft;
-                        return new ControlBounds(l, t, (r - l), (b - t));
-                    case LabelPositionType.Top:
+                        b = t + heightR;
+                        labelInfo.Bounds = new ControlBounds(l, t, (r - l), (b - t));
+                        break;
+                    case UsedAreaType.Top:
                         l = controlBounds.Left + topLabelOffsetX;
                         r = controlBounds.Right;
                         b = controlBounds.Top - margins.Top;
-                        t = b - height.Value;
-                        labelAlignment = ContentAlignmentType.BottomLeft;
-                        return new ControlBounds(l, t, (r - l), (b - t));
-                    case LabelPositionType.Bottom:
+                        t = b - heightL;
+                        labelInfo.Bounds = new ControlBounds(l, t, (r - l), (b - t));
+                        break;
+                    case UsedAreaType.Bottom:
                         l = controlBounds.Left + bottomLabelOffsetX;
                         r = controlBounds.Right;
                         t = controlBounds.Bottom + margins.Bottom;
-                        b = t + height.Value;
-                        labelAlignment = ContentAlignmentType.TopLeft;
-                        return new ControlBounds(l, t, (r - l), (b - t));
+                        b = t + heightL;
+                        labelInfo.Bounds = new ControlBounds(l, t, (r - l), (b - t));
+                        break;
+                    default:
+                        labelInfo.Bounds = null;
+                        break;
                 }
-                return null;
             }
         }
         /// <summary>
         /// Oblasti v buňce, které jsou využity pro labely a pro control
         /// </summary>
         [Flags]
-        private enum UsedAreaType
+        internal enum UsedAreaType
         {
             None = 0,
             Left = 0x01,
@@ -4290,38 +4336,75 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Okraj vlevo od controlu, za LeftLabel
         /// </summary>
-        public int MarginControlLeft { get { return __Data[X, ControlBegin] - __Data[X, LabelBeforeEnd]; } }
+        public int MarginControlLeft { get { return ControlLeft - LeftLabelRight; } }
         /// <summary>
         /// Okraj nahoře od controlu, pod TopLabel
         /// </summary>
-        public int MarginControlTop { get { return __Data[Y, ControlBegin] - __Data[Y, LabelBeforeEnd]; } }
+        public int MarginControlTop { get { return ControlTop - TopLabelBottom; } }
         /// <summary>
         /// Okraj vpravo od controlu, před RightLabel
         /// </summary>
-        public int MarginControlRight { get { return __Data[X, LabelAfterBegin] - __Data[X, ControlEnd]; } }
+        public int MarginControlRight { get { return RightLabelLeft - ControlRight; } }
         /// <summary>
         /// Okraj dole od controlu, před BottomLabel
         /// </summary>
-        public int MarginControlBottom { get { return __Data[Y, LabelAfterBegin] - __Data[Y, ControlEnd]; } }
+        public int MarginControlBottom { get { return BottomLabelTop - ControlBottom; } }
+
+        /// <summary>
+        /// Výška prvního řádku v Controlu
+        /// </summary>
+        public int ControlFirstRowHeight { get { return ControlFirstBottom - ControlTop; } }
+        /// <summary>
+        /// Šířka prvního sloupce v Controlu
+        /// </summary>
+        public int ControlFirstColumnWidth { get { return ControlFirstRight - ControlLeft; } }
         #endregion
         #region Získání Bounds podle požadavku
         /// <summary>
-        /// Vrátí souřadnice z matrixu, primárně controlové, volitelně expandované
+        /// Vrátí souřadnice pro vlastní Control z matrixu, volitelně expandované (dle <paramref name="expandControl"/>) do okolních prostorů určených pro Label.
+        /// Pokud dostane informaci o využití prostorů pro labely <paramref name="usedAreas"/>, pak do nich nebude expandovat.<br/>
+        /// Pokud bude expandovat do prostoru Left, a současně má Labely v pozici Top nebo Bottom a současně daný jejich offset (<paramref name="topLabelOffsetX"/> či <paramref name="bottomLabelOffsetX"/>), který je záporný, 
+        /// pak souřadnici Control.Left odsune doprava o daný offset. (Zajistí tak záporný offset mezi labelem a controlem).
         /// </summary>
-        /// <param name="expandControl"></param>
+        /// <param name="expandControl">Do kterých prostor by chtěl control expandovat?</param>
+        /// <param name="usedAreas">Které prostory jsou obsazeny Labelem a nelze do nich expandovat?</param>
+        /// <param name="topLabelOffsetX">Offset labelu na pozici Top; pokud bude záporný (Top label je předsazen doleva před Control), pak souřadnice Controlu bude odsunuta doprava o toto předsazení</param>
+        /// <param name="bottomLabelOffsetX">Offset labelu na pozici Bottom; pokud bude záporný (Bottom label je předsazen doleva před Control), pak souřadnice Controlu bude odsunuta doprava o toto předsazení</param>
         /// <returns></returns>
-        internal ControlBounds GetBounds(ExpandControlType? expandControl = null)
+        internal ControlBounds GetControlBounds(ExpandControlType? expandControl = null, DfFlowLayoutInfo.UsedAreaType? usedAreas = null, int? topLabelOffsetX = null, int? bottomLabelOffsetX = null)
         {
             var expand = expandControl ?? ExpandControlType.None;
-            var expL = expand.HasFlag(ExpandControlType.Left);
-            var expT = expand.HasFlag(ExpandControlType.Top);
-            var expR = expand.HasFlag(ExpandControlType.Right);
-            var expB = expand.HasFlag(ExpandControlType.Bottom);
-            int l = expL ? this.CellLeft : this.ControlLeft;
+            var areas = usedAreas ?? DfFlowLayoutInfo.UsedAreaType.None;
+
+            // Kam reálně budeme expandovat?   Kam chceme, a kde dosud nic není:
+            var expL = expand.HasFlag(ExpandControlType.Left) && !areas.HasFlag(DfFlowLayoutInfo.UsedAreaType.Left);
+            var expT = expand.HasFlag(ExpandControlType.Top) && !areas.HasFlag(DfFlowLayoutInfo.UsedAreaType.Top);
+            var expR = expand.HasFlag(ExpandControlType.Right) && !areas.HasFlag(DfFlowLayoutInfo.UsedAreaType.Right);
+            var expB = expand.HasFlag(ExpandControlType.Bottom) && !areas.HasFlag(DfFlowLayoutInfo.UsedAreaType.Bottom);
+
+            int l = expL ? correctExpandedControlLeftByOffset(this.CellLeft) : this.ControlLeft;
             int t = expT ? this.CellTop : this.ControlTop;
             int r = expR ? this.CellRight : this.ControlRight;
             int b = expB ? this.CellBottom : this.ControlBottom;
             return new ControlBounds(l, t, (r - l), (b - t));
+
+            // Koriguje souřadnici Control.Left v situaci, kdy je Expanded doleva, tedy Control začíná přímo na souřadnici Cell.Left, 
+            //  a současně pokud by byl MainLabel umístěný Top nebo Bottom a odpovídající TopLabelOffsetX / BottomLabelOffsetX by byl záporný,
+            //  pak musíme posunout Left Controlu doprava tak, aby předsunutý MainLabel začínal na pozici Left = 0!
+            int correctExpandedControlLeftByOffset(int left)
+            {
+                // Label na pozici Left není přítomen, proto mohu (když chci) Control expandovat doleva (nic tam nepřekáží).
+                // Pokud ale existuje Label na pozici Top (nebo Bottom) a v dané pozici je definován záporný offset 'topLabelOffsetX' (nebo 'bottomLabelOffsetX'),
+                //  pak zajistím, že daný Label bude vlevo na souřadnici 0, a Control bude odsazen doprava o odpovídající Shift:
+                int shiftT = ((areas.HasFlag(DfFlowLayoutInfo.UsedAreaType.Top) && topLabelOffsetX.HasValue && topLabelOffsetX.Value < 0) ? -topLabelOffsetX.Value : 0);
+                if (shiftT < 0) shiftT = 0;
+                int shiftB = ((areas.HasFlag(DfFlowLayoutInfo.UsedAreaType.Bottom) && bottomLabelOffsetX.HasValue && bottomLabelOffsetX.Value < 0) ? -bottomLabelOffsetX.Value : 0);
+                if (shiftB < 0) shiftB = 0;
+
+                // Beru větší Shift z Top / Bottom:
+                int shift = (shiftT > shiftB) ? shiftT : shiftB;
+                return ((shift > 0) ? left + shift : left);
+            }
         }
         #endregion
     }

@@ -81,12 +81,12 @@
         <image Name="Obrazek" Bounds="" ImageName="pic/open_mail"/>
     </panel>
 
-    <panel Name="test07" Title="Neobyčejný" ColumnWidths="120;250" AutoLabelPosition="Up" BackColorLight="#662211" BackColorDark="#220804" BackImageName="pic/back/angle_violet" >
+    <panel Name="test07" Title="Neobyčejný" ColumnWidths="120;250" AutoLabelPosition="Top" BackColorLight="#662211" BackColorDark="#220804" BackImageName="pic/back/angle_violet" Size="445,320" >
         <textboxbutton Name="dokument" ColumnName="reference_subjektu" Label="Scan faktury" Bounds="25,30,400,20">
             <rightButton Name="open_doc" IconName="pic/opendoc"/>
             <rightButton Name="open_rec" IconName="pic/openrec"/>
         </textboxbutton>
-        <image Name="logo" ImageName="pic/images/logo01" Bounds="25,60,320,240"/>
+        <image Name="logo" ImageName="pic/images/logo01" Bounds="25,70,320,240"/>
     </panel>
 
     <panel Name="test08" Title="Test zajímavý" ColumnsCount="5" AutoLabelPosition="BeforeRight" ColumnsDistance="0" RowsDistance="0" ControlMargins="1,1" TopLabelOffsetX="6" >
@@ -179,13 +179,14 @@
     </panel>
 
     <panel Name="test12" Title="Absolute bounds" ColumnsCount="3" AutoLabelPosition="None" Margins="4,4" >
-        <label Name="title" Text="Fotografie zaměstnance" Bounds="0,0,460,22" />
+        <label Name="title" Text="Fotografie zaměstnance" Bounds="16,0,440,22" />
         <image Name="fotografie" Label="Fotografie" Bounds="0,26,336,240" />
-        <button Name="open" Text="Otevřít" Bounds="340,26,120,28" />
-        <button Name="clear" Text="Vymazat" Bounds="340,66,120,28" />
-        <button Name="save" Text="Uložit" Bounds="340,106,120,28" />
-        <button Name="flip" Text="Otočit" Bounds="340,146,120,28" />
-        <button Name="Close" Text="Zavřít" Bounds="340,238,120,28" />
+        <vline Name="sep1" Bounds="341,26,4,240" LineWidth="4" />
+        <button Name="open" Text="Otevřít" Bounds="350,26,120,28" />
+        <button Name="clear" Text="Vymazat" Bounds="350,66,120,28" />
+        <button Name="save" Text="Uložit" Bounds="350,106,120,28" />
+        <button Name="flip" Text="Otočit" Bounds="350,146,120,28" />
+        <button Name="Close" Text="Zavřít" Bounds="350,238,120,28" />
     </panel>
 
     <panel Name="test13" Title="test13" ColumnsCount="3" AutoLabelPosition="Top"
@@ -270,6 +271,38 @@
         <textbox Name="sklad_refer" Width="150"/>
         <textbox Name="sklad_nazev" Width="250"/>
         <textbox Name="sklad_osoba" Width="350"/>
+    </panel>
+
+
+    <panel Name="test17" Title="test17" ColumnsCount="1" AutoLabelPosition="None" >
+        <group Name="adresa" ColumnsCount="3" AutoLabelPosition="None" >
+            <textbox Name="Ulice" Width="250" Label="Ulice" LabelPosition="Bottom" />
+            <textbox Name="čp" Width="60" Label="č.p." LabelPosition="Bottom" State="Absent" />
+            <textbox Name="tel" Width="140" Label="telf." LabelPosition="Bottom"/>
+            <textbox Name="PSČ" Width ="80" Label="PSČ" LabelPosition="Bottom" State="Absent" />
+            <textbox Name="Obec" Width="250" Label="Město" LabelPosition="Bottom" />
+        </group>
+        <hline Name="line1" Height="6" LineColorLight="DarkMagenta" />
+        <group Name="doklady" ColumnsCount="3" AutoLabelPosition="Top" >
+            <textbox Name="fv_refer" Width="100%"/>
+            <textbox Name="fv_nazev" />
+            <textbox Name="fv_osoba" />
+            <textbox Name="organizace_refer" State="Absent" Width="100%" />
+            <textbox Name="organizace_nazev" State="Default" ColSpan="2" />
+            <textbox Name="organizace_osoba" ColSpan="1" />
+            <textbox Name="sklad_refer" Width="150"/>
+            <textbox Name="sklad_nazev" Width="250"/>
+            <textbox Name="sklad_osoba" Width="350"/>
+        </group>
+        <hline Name="line2" Height="6" LineColorLight="DarkMagenta" />
+        <group Name="podklady" ColumnsCount="2" AutoLabelPosition="Top" >
+            <textbox Name="fd_refer" Width="100%" />
+            <textbox Name="fd_nazev" Width="100%" />
+            <textbox Name="dodav_refer" State="Absent" Width="100%" />
+            <textbox Name="dodav_nazev" State="Absent" />
+            <textbox Name="vp_refer" Width="160"/>
+            <textbox Name="vp_nazev" Width="320"/>
+        </group>
     </panel>
 
 </template>

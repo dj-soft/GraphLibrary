@@ -1578,6 +1578,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
             if (target is DfLine line)
             {
+                line.LineWidth = _ReadAttributeInt32N(xElement, "LineWidth");
                 line.LineColorLight = _ReadAttributeColorN(xElement, "LineColorLight");
                 line.LineColorDark = _ReadAttributeColorN(xElement, "LineColorDark");
             }

@@ -645,6 +645,13 @@
     <xs:complexType name="type_line">
         <xs:complexContent>
             <xs:extension base="type_base_control">
+                <xs:attribute name="LineWidth" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="cs-cz">
+                            Šířka linky, zadaná v pixelech. Implicitně 2px.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
                 <xs:attribute name="LineColorLight" type="color_name_enum">
                     <xs:annotation>
                         <xs:documentation xml:lang="cs-cz">
