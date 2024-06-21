@@ -77,7 +77,7 @@
         <textbox Name="kontakt_nazev" LabelPosition="None"/>
         <textbox Name="adresa1" ColSpan="2" Width="100%" />
         <textbox Name="adresa2" ColSpan="2" Width="400" />
-        <button Name="open_contact" Bounds="380,0,60,50" Text="MSG001" ToolTipTitle="TIT001" ToolTipText="TIP001" IconName="pic/open_mail"/>
+        <button Name="open_contact" Bounds="380,0,90,65" Text="MSG001" ToolTipTitle="TIT001" ToolTipText="TIP001" IconName="pic/open_mail"/>
         <image Name="Obrazek" Bounds="" ImageName="pic/open_mail"/>
     </panel>
 
@@ -107,7 +107,7 @@
         <editbox Name="pkpozn4abcde" ColSpan="5" LabelPosition="Top" ExpandControl="Left" Height="80"/>
     </panel>
 
-    <panel Name="panel09" Title="Test 1" ColumnsCount="5" AutoLabelPosition="None" ColumnsDistance="0" RowsDistance="0" Margins="9,6" ControlMargins="1,1" TopLabelOffsetX="6" FlowAreaBegin="0,40" >
+    <panel Name="test09" Title="Test 1" ColumnsCount="5" AutoLabelPosition="None" ColumnsDistance="0" RowsDistance="0" Margins="9,6" ControlMargins="1,1" TopLabelOffsetX="6" FlowAreaBegin="0,40" >
 
         <label Name="Titulek" Bounds="10,5,730,30" Text="Titulek" />
 
@@ -138,7 +138,7 @@
         <button Name="outbutton3" Bounds="505,160,213,40" Text="Velké tlačítko 3" />
     </panel>
 
-    <panel Name="panel10" Title="Test 1" ColumnsCount="5" AutoLabelPosition="None"  Margins="9,6" ControlMargins="1,1" FlowAreaBegin="0,34" >
+    <panel Name="test10" Title="Test 1" ColumnsCount="5" AutoLabelPosition="None"  Margins="9,6" ControlMargins="1,1" FlowAreaBegin="0,34" >
 
         <label Name="Titulek" Bounds="10,0,730,30" Text="Titulek" />
 

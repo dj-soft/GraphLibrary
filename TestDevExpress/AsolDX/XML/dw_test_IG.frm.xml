@@ -7,7 +7,7 @@
     <tab TabPageLabel="fm(MSG018)" TableColumns="5">
         <column InputType="group" Name="group_castka_pp">
             <groupcolumn Name="castka_pp" Width="150" ReadOnly="True" />
-            <groupcolumn Name="castka_pp_mena" Width="150" ReadOnly="True" />
+            <groupcolumn Name="castka_pp_mena" Width="150" ReadOnly="True" Invisible="true" />
         </column>
         <column Name="typ_uhrady" Width="150" RegisterItemChange="True" />
         <column Name="typ_uhrady_jiny" Protect="not(typ_uhrady = 'J' or typ_uhrady = '' or typ_uhrady is null)" ColSpan="3" />

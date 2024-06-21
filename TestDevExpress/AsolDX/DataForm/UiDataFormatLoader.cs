@@ -1361,6 +1361,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 dfBaseControl.RowSpan = rowSpan;
                 dfBaseControl.ColSpan = colSpan;
                 dfBaseControl.DesignBounds = createDesignBounds(width, height);
+                dfBaseControl.Invisible = invisible;
+                dfBaseControl.State = (String.IsNullOrEmpty(invisible) ? ControlStateType.Default : ControlStateType.Absent);
                 return dfBaseControl;
             }
 
