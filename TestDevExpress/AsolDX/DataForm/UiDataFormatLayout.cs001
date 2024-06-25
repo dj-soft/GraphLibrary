@@ -1546,20 +1546,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var childLabelUserAreas = flowMatrix.LabelUsedAreas; // Které krajní pozice ve FlowLayoutu našich Child prvků využívají Labely?
 
                 ExpandControlType expandControl = ExpandControlType.None;
-                int controlWidth = flowMatrix.CellWidth;
-                int controlHeight = flowMatrix.CellHeight;
-                useLabelArea(DfLabelUsedAreaType.Left, flowMatrix, flowMatrix.LeftLabelWidth, flowMatrix.ControlFirstRowHeight, ref this.__LabelLeftInfo, cellLabelUsedAreas, childLabelUserAreas, ref controlWidth, ref controlHeight, ExpandControlType.Left, ref expandControl);
-                useLabelArea(DfLabelUsedAreaType.Top, flowMatrix, flowMatrix.ControlWidth, flowMatrix.TopLabelHeight, ref this.__LabelTopInfo, cellLabelUsedAreas, childLabelUserAreas, ref controlWidth, ref controlHeight, ExpandControlType.Top, ref expandControl);
-                useLabelArea(DfLabelUsedAreaType.Right, flowMatrix, flowMatrix.RightLabelWidth, flowMatrix.ControlFirstRowHeight, ref this.__LabelRightInfo, cellLabelUsedAreas, childLabelUserAreas, ref controlWidth, ref controlHeight, ExpandControlType.Right, ref expandControl);
-                useLabelArea(DfLabelUsedAreaType.Bottom, flowMatrix, flowMatrix.ControlWidth, flowMatrix.BottomLabelHeight, ref this.__LabelBottomInfo, cellLabelUsedAreas, childLabelUserAreas, ref controlWidth, ref controlHeight, ExpandControlType.Bottom, ref expandControl);
 
-                //   NENÍ OK  :  this.__ExpandControl = expandControl;
-                this.__ControlInfo.ImplicitOptimalWidth = controlWidth;
-                this.__ControlInfo.ImplicitOptimalHeight = controlHeight;
+                useLabelArea(DfLabelUsedAreaType.Left, flowMatrix.LeftLabelWidth, flowMatrix.ControlFirstRowHeight, ref this.__LabelLeftInfo, cellLabelUsedAreas, childLabelUserAreas, ExpandControlType.Left, ref expandControl);
+                useLabelArea(DfLabelUsedAreaType.Top, flowMatrix.ControlWidth, flowMatrix.TopLabelHeight, ref this.__LabelTopInfo, cellLabelUsedAreas, childLabelUserAreas, ExpandControlType.Top, ref expandControl);
+                useLabelArea(DfLabelUsedAreaType.Right, flowMatrix.RightLabelWidth, flowMatrix.ControlFirstRowHeight, ref this.__LabelRightInfo, cellLabelUsedAreas, childLabelUserAreas, ExpandControlType.Right, ref expandControl);
+                useLabelArea(DfLabelUsedAreaType.Bottom, flowMatrix.ControlWidth, flowMatrix.BottomLabelHeight, ref this.__LabelBottomInfo, cellLabelUsedAreas, childLabelUserAreas, ExpandControlType.Bottom, ref expandControl);
+
+                this.__ExpandControl = expandControl;
+                this.__ControlInfo.ImplicitOptimalWidth = contentSize?.Width;
+                this.__ControlInfo.ImplicitOptimalHeight = contentSize?.Height;
             }
 
 
-            void useLabelArea(DfLabelUsedAreaType currArea, CellMatrixInfo flowMatrix, int childLabelWidth, int childLabelHeight, ref LabelInfo labelInfo, DfLabelUsedAreaType cellAreas, DfLabelUsedAreaType childAreas, ref int controlWidth, ref int controlHeight, ExpandControlType currExpand, ref ExpandControlType sumExpand)
+            void useLabelArea(DfLabelUsedAreaType currArea, int childLabelWidth, int childLabelHeight, ref LabelInfo labelInfo, DfLabelUsedAreaType cellAreas, DfLabelUsedAreaType childAreas, ExpandControlType currExpand, ref ExpandControlType sumExpand)
             {
                 if (childLabelWidth <= 0 || childLabelHeight <= 0) return;               // Child layout nemá pro aktuální stranu vymezený vhodný prostor, tedy jej nepotřebuje
                 bool childUseCurrentArea = childAreas.HasFlag(currArea);
@@ -1572,38 +1571,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // Pak prostě Child labely budou vnořeny dovnitř do prostoru pro Control, nelze je "vystrčit" ven do prostoru labelu grupy:
                 if (cellLabelExists) return;
 
-                // Sumární rozměry labelu dané strany z mých Child vložím do LabelInfo mého vlastního:
-                if (labelInfo is null) labelInfo = new LabelInfo();
-                labelInfo.MeasuredWidth = childLabelWidth;
-                labelInfo.MeasuredHeight = childLabelHeight;
-                labelInfo.Exists = true;
-
-                // Zmenším rozměry ControlInfo
-                switch (currArea)
-                {
-                    case DfLabelUsedAreaType.Left:
-                        controlWidth -= flowMatrix.ControlLeft;
-                        break;
-                    case DfLabelUsedAreaType.Top:
-                        controlHeight -= flowMatrix.ControlTop;
-                        break;
-                    case DfLabelUsedAreaType.Right:
-                        controlWidth -= (flowMatrix.CellRight - flowMatrix.ControlRight);
-                        break;
-                    case DfLabelUsedAreaType.Bottom:
-                        controlWidth -= (flowMatrix.CellBottom - flowMatrix.ControlBottom);
-                        break;
-                }
-
-
-
-
-                // Algoritmus EXPAND není OK, protože size posune Child prvky grupy do prostoru Labelu, ale jeho sumární nezmenšená velikost (total, ne jen control) se promítá do sousedních buněk.
-
                 // Na dané straně (currArea) je nevyužitý prostor pro label (grupa tam svůj label nemá), a Child prvky ve svém flowLayoutu tam label mají.
                 // Využijeme ten prostor => nastavíme Expand pro nás jako grupu do daného směru.
                 // Neobsazujeme LabelInfo v naší buňce, to by neproběhl správně Expand.
-                //  NENÍ OK  :  sumExpand |= currExpand;
+                sumExpand |= currExpand;
             }
             //  this.__ImplicitControlMinimalWidth = size?.Width;
             //  this.__ImplicitControlMinimalHeight = size?.Height;
@@ -1667,9 +1638,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 if (dx != 0 || dy != 0)
                 {
-                    prepareAbsoluteBoundsOne(item.__ControlInfo?.Bounds, dx, dy);
-                    prepareAbsoluteBoundsOne(item.__MainLabelInfo?.Bounds, dx, dy);      // Panel nemá MainLabel
-                    prepareAbsoluteBoundsOne(item.__SuffixLabelInfo?.Bounds, dx, dy);    // Grupa sice má MainLabel, ale nemá SuffixLabel
+                    prepareAbsoluteBoundsOne(item.__ControlInfo.Bounds, dx, dy);
+                    prepareAbsoluteBoundsOne(item.__MainLabelInfo.Bounds, dx, dy);
+                    prepareAbsoluteBoundsOne(item.__SuffixLabelInfo.Bounds, dx, dy);
                 }
             }
             void prepareAbsoluteBoundsOne(ControlBounds bounds, int dx, int dy)
