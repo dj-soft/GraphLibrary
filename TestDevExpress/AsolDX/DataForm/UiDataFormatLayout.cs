@@ -1226,10 +1226,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             var args = this._LayoutArgs;
             var startTime = DxComponent.LogTimeCurrent;
-            _ProcessContainer();                                 // Zpracuje this container, a rekurzivně jeho Child containery etc
-            _PreparePanelAbsoluteBounds();                       // Naplní absolutní souřadnice do všech (i vnořených) prvků
+            _ProcessContainer();                           // Zpracuje this container, a rekurzivně jeho Child containery etc
+            _PreparePanelAbsoluteBounds();                 // Naplní absolutní souřadnice do všech (i vnořených) prvků
             if (args.LogTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Layout panel '{__Name}': {DxComponent.LogTokenTimeMicrosec}", startTime);
-            if (args.SaveDebugImages) _CreateImageFile();
+            if (args.SaveDebugImages) _CreateResultImage();// Výsledný obrázek?
         }
         /// <summary>
         /// Zajistí plné zpracování this containeru, rekurzivně jeho Child containerů a zdejších Controlů.
@@ -1689,7 +1689,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Plné jméno souboru vrátí.
         /// </summary>
         /// <returns></returns>
-        private string _CreateImageFile()
+        private string _CreateResultImage()
         {
             var startTime = DxComponent.LogTimeCurrent;
 
