@@ -3397,7 +3397,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         break;
                     case DfLabelUsedAreaType.Top:
                         p = labelPlaceholders?.Top ?? 0;
-                        if (p > 0) p += (margins?.Top ?? 0);
+                       // if (p > 0) p += (margins?.Top ?? 0);
+                       qqq
                         l = (relativeToControl ? controlBounds.Left : cellMatrix.ControlLeft) + topLabelOffsetX;
                         r = (relativeToControl ? controlBounds.Right : cellMatrix.ControlRight);
                         t = cellMatrix.TopLabelTop;
