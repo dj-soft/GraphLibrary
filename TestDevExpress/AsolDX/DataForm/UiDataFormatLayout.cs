@@ -833,7 +833,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this.__ExpandControl = null;
             this.__LabelPosition = null;
             this.__ContainerType = ContainerType.Panel;
-            this.__ControlInfo = new ControlInfo() { Exists = true, ControlType = DataControlType.None, DesignWidth = this.__DesignBounds?.Width, DesignHeight = this.__DesignBounds?.Height };
+            this.__ControlInfo = new ControlInfo() { Exists = true, ControlType = DataControlType.Panel, DesignWidth = this.__DesignBounds?.Width, DesignHeight = this.__DesignBounds?.Height };
 
             _RefreshLabelControlData();
         }
@@ -853,7 +853,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this.__VPosition = dfGroup.VPosition;
             this.__ExpandControl = dfGroup.ExpandControl;
             this.__ContainerType = ContainerType.Group;
-            this.__ControlInfo = new ControlInfo() { Exists = true, ControlType = DataControlType.None, DesignWidth = this.__DesignBounds?.Width, DesignHeight = this.__DesignBounds?.Height };
+            this.__ControlInfo = new ControlInfo() { Exists = true, ControlType = DataControlType.Group, DesignWidth = this.__DesignBounds?.Width, DesignHeight = this.__DesignBounds?.Height };
             this.__LabelPosition = dfGroup.LabelPosition;
             this.__MainLabelInfo = new LabelInfo() { Text = dfGroup.Label, Style = dfGroup.LabelStyle, DesignWidth = dfGroup.LabelWidth };
 
@@ -1073,6 +1073,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Kompletní informace o Labelu umístěném dole
         /// </summary>
         private LabelInfo __LabelBottomInfo;
+        /// <summary>
+        /// Velikost prostoru pro Labely Left, Top, Right, Bottom přenesená do this buňky z layoutu Child prvků pro jeho krajní labely.
+        /// </summary>
+        private Margins __LabelPlaceholders;
+        /// <summary>
+        /// Označení prostoru, do kterého byly do this buňky přeneseny labely z layoutu Child prvků (pro jeho krajní labely).
+        /// </summary>
+        private DfLabelUsedAreaType __ChildExpandAreas;
 
         #region IDataFormItem : implementace
         DfForm IDataFormItem.DataForm { get { return _DfForm; } }
@@ -1189,6 +1197,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #region IFlowLayoutItem : implementace
         // Designové, čerpané z frm.xml:
         string IFlowLayoutItem.Name { get { return __Name; } }
+        bool IFlowLayoutItem.IsContainer { get { return (__ContainerType != ContainerType.None); } }
         bool IFlowLayoutItem.IsAbsent { get { return _IsAbsent; } }
         bool IFlowLayoutItem.IsFlowMode { get { return (__LayoutMode == LayoutModeType.Flow); } }
         string IFlowLayoutItem.Text { get { return __Name; } }
@@ -1212,9 +1221,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         LabelInfo IFlowLayoutItem.LabelTopInfo { get { return __LabelTopInfo; } }
         LabelInfo IFlowLayoutItem.LabelRightInfo { get { return __LabelRightInfo; } }
         LabelInfo IFlowLayoutItem.LabelBottomInfo { get { return __LabelBottomInfo; } }
-
+        Margins IFlowLayoutItem.LabelPlaceholders { get { return __LabelPlaceholders; } }
         bool IFlowLayoutItem.AcceptedWidth { get { return __AcceptedWidth; } set { __AcceptedWidth = value; } }
         bool IFlowLayoutItem.AcceptedHeight { get { return __AcceptedHeight; } set { __AcceptedHeight = value; } }
+        void IFlowLayoutItem.InnerBoundsProcessed() { this._InnerBoundsProcessed(); }
         void IFlowLayoutItem.ResetFlowFinalResults() { this._ResetFlowFinalResults(); }
         #endregion
         #endregion
@@ -1228,8 +1238,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var startTime = DxComponent.LogTimeCurrent;
             _ProcessContainer();                           // Zpracuje this container, a rekurzivně jeho Child containery etc
             _PreparePanelAbsoluteBounds();                 // Naplní absolutní souřadnice do všech (i vnořených) prvků
-            if (args.LogTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Layout panel '{__Name}': {DxComponent.LogTokenTimeMicrosec}", startTime);
-            if (args.SaveDebugImages) _CreateResultImage();// Výsledný obrázek?
+            if (args.LogTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"ProcessLayout panel '{__Name}': {DxComponent.LogTokenTimeMicrosec}", startTime);
+            if (args.CreateDebugImages != DfTemplateLayoutDebugImageMode.None) _CreateDebugImage();// Výsledný obrázek?
         }
         /// <summary>
         /// Zajistí plné zpracování this containeru, rekurzivně jeho Child containerů a zdejších Controlů.
@@ -1347,7 +1357,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         }
                     }
                     flowLayout.ProcessFlowItems();
-                    if (_LayoutArgs.DebugImagesWithGuideLines) __FlowGuideLines = flowLayout.CreateGuideLines();
+                    if (_LayoutArgs.DebugImagesInfoLevel.HasFlag(DfTemplateLayoutDebugInfoLevelType.AddGuideLines)) __FlowGuideLines = flowLayout.CreateGuideLines();
                     __FlowLayoutMatrix = flowLayout.CreateTotalMatrix();
 
                     addBoundsToSize(flowLayout.FlowLayoutBounds, contentSize);
@@ -1537,76 +1547,128 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.__ControlInfo.ImplicitOptimalHeight = contentSize?.Height;
             }
             else
-            {   // Máme FlowLayout i parenta, tak se pokusíme využít prostory v Parentu pro zobrazení našich krajních labelů.
-                // My jako grupa můžeme mít svůj Label umístěný např. nahoře, anebo taky nemáme nahoře Label.
-                // Pro naše Childs jsme si vytvořili jejich FlowLayout (jeho sumární prostor je v __FlowLayoutMatrix = flowMatrix).
-                // Pokud naše Childs mají nějaké labely v pozici Top, pak 
-                _RefreshLabelControlData();                          // Validně obsadí pozice labelů Left, Top, Right, Bottom
-                var cellLabelUsedAreas = this._LabelUsedAreas;       // Které pozice pro moje vlastní labely jsou obsazené? Grupa může mít svůj Label, slouží jako Titulek grupy
-                var childLabelUserAreas = flowMatrix.LabelUsedAreas; // Které krajní pozice ve FlowLayoutu našich Child prvků využívají Labely?
+            {   // Máme FlowLayout i parenta (který bude počítat rozmístění svých Child prvků = tedy i nás).
+                // Nyní chceme, aby se správně koordinovaly prostory pro Labely moje (this = Item může mít svůj Label) plus labely mých Child prvků.
+                // Například this prvek nebude mít label na pozici Top, ale máme Child prvky, které si právě vytvořily svůj prostor (__FlowLayoutMatrix => flowMatrix),
+                //   a v něm mají nahoře nějaké labely => a my nyní chceme, aby tyto Child labely umístěné Top byly ve společném pruhu se sousedními buňkami, které mohou být jednoduché (ne vnořené grupy) a mají svůj label umístěný Top.
+                //   (Jiná situace by byla, když bych já jako Item měl svůj Top label, pak jej zobrazím, a Child prvky budou mít label níže).
+                // Samozřejmě chci, aby potom i výška Controlu v Child prvcích odpovídala jen controlům, už bez labelu. A navazovala tak na vedlejší Itemy.
+                // Tedy: pokud Child prvky mají ve svém layoutu prostor pro krajní Labely (Left, Top, Right, Bottom) a my jako Item na dané straně Label nemáme, pak ten prostor přenecháme našemu Child layoutu pro jeho Labely na dané straně.
+                //  1. Velikost využitého prostoru z Child layoutu přeneseme do Placeholderu = čtyři dimenze, určující potřebný prostor okolo Controlu;
+                //  2. Snížíme tím potřebnou velikost pro náš Control;
+                //  3. Parent prvek pak počítá Layout, akceptuje prostory Placeholder na těch stranách, kde nemá Layout (Left, Top, ...)
+                //  4. Parent prvek po dopočtení Layoutu pak ukládá vypočtené souřadnice, pokud najde LabelInfo na určité straně, pak do něj vloží Bounds; pokud najde ControlInfo pak volá jej, obecně volá ...
+                _RefreshLabelControlData();                                    // Validně obsadí pozice labelů Left, Top, Right, Bottom
+                var cellLabelUsedAreas = this._LabelUsedAreas;                 // Které pozice pro moje vlastní labely jsou obsazené? Grupa může mít svůj Label, slouží jako Titulek grupy
+                var childLabelUserAreas = flowMatrix.LabelUsedAreas;           // Které krajní pozice ve FlowLayoutu našich Child prvků využívají Labely?
 
-                ExpandControlType expandControl = ExpandControlType.None;
-                int controlWidth = flowMatrix.CellWidth;
-                int controlHeight = flowMatrix.CellHeight;
-                useLabelArea(DfLabelUsedAreaType.Left, flowMatrix, flowMatrix.LeftLabelWidth, flowMatrix.ControlFirstRowHeight, ref this.__LabelLeftInfo, cellLabelUsedAreas, childLabelUserAreas, ref controlWidth, ref controlHeight, ExpandControlType.Left, ref expandControl);
-                useLabelArea(DfLabelUsedAreaType.Top, flowMatrix, flowMatrix.ControlWidth, flowMatrix.TopLabelHeight, ref this.__LabelTopInfo, cellLabelUsedAreas, childLabelUserAreas, ref controlWidth, ref controlHeight, ExpandControlType.Top, ref expandControl);
-                useLabelArea(DfLabelUsedAreaType.Right, flowMatrix, flowMatrix.RightLabelWidth, flowMatrix.ControlFirstRowHeight, ref this.__LabelRightInfo, cellLabelUsedAreas, childLabelUserAreas, ref controlWidth, ref controlHeight, ExpandControlType.Right, ref expandControl);
-                useLabelArea(DfLabelUsedAreaType.Bottom, flowMatrix, flowMatrix.ControlWidth, flowMatrix.BottomLabelHeight, ref this.__LabelBottomInfo, cellLabelUsedAreas, childLabelUserAreas, ref controlWidth, ref controlHeight, ExpandControlType.Bottom, ref expandControl);
+                bool isCombineLabelAreas = true;
+                Size controlSize = new Size(flowMatrix.CellWidth, flowMatrix.CellHeight);
+                Margins labelPlaceholders = new Margins();
+                DfLabelUsedAreaType childExpandAreas = DfLabelUsedAreaType.None;
+                prepareLabelMargin(DfLabelUsedAreaType.Left, isCombineLabelAreas, cellLabelUsedAreas, childLabelUserAreas, flowMatrix, controlSize, labelPlaceholders, ref childExpandAreas);
+                prepareLabelMargin(DfLabelUsedAreaType.Top, isCombineLabelAreas, cellLabelUsedAreas, childLabelUserAreas, flowMatrix, controlSize, labelPlaceholders, ref childExpandAreas);
+                prepareLabelMargin(DfLabelUsedAreaType.Right, isCombineLabelAreas, cellLabelUsedAreas, childLabelUserAreas, flowMatrix, controlSize, labelPlaceholders, ref childExpandAreas);
+                prepareLabelMargin(DfLabelUsedAreaType.Bottom, isCombineLabelAreas, cellLabelUsedAreas, childLabelUserAreas, flowMatrix, controlSize, labelPlaceholders, ref childExpandAreas);
 
-                //   NENÍ OK  :  this.__ExpandControl = expandControl;
-                this.__ControlInfo.ImplicitOptimalWidth = controlWidth;
-                this.__ControlInfo.ImplicitOptimalHeight = controlHeight;
+                this.__ControlInfo.ImplicitOptimalWidth = controlSize.Width.Value;
+                this.__ControlInfo.ImplicitOptimalHeight = controlSize.Height.Value;
+                this.__LabelPlaceholders = labelPlaceholders;
+                this.__ChildExpandAreas = childExpandAreas;
             }
 
-
-            void useLabelArea(DfLabelUsedAreaType currArea, CellMatrixInfo flowMatrix, int childLabelWidth, int childLabelHeight, ref LabelInfo labelInfo, DfLabelUsedAreaType cellAreas, DfLabelUsedAreaType childAreas, ref int controlWidth, ref int controlHeight, ExpandControlType currExpand, ref ExpandControlType sumExpand)
+            // Určí, zda na dané straně je možno využít prostor pro Label tohoto prvku pro Labely mých Child prvků, nastaví odpovídající Margins 'lblPlaceholders' a zmenší velikost potřebnou pro vnitřní Control 'ctlSize'
+            void prepareLabelMargin(DfLabelUsedAreaType currArea, bool isCombineAreas, DfLabelUsedAreaType cellAreas, DfLabelUsedAreaType childAreas, CellMatrixInfo flowMatrix, Size ctlSize, Margins lblPlaceholders, ref DfLabelUsedAreaType expandAreas)
             {
-                if (childLabelWidth <= 0 || childLabelHeight <= 0) return;               // Child layout nemá pro aktuální stranu vymezený vhodný prostor, tedy jej nepotřebuje
-                bool childUseCurrentArea = childAreas.HasFlag(currArea);
-                if (!childUseCurrentArea) return;                                        // Child layout aktuální stranu formálně nepoužívá (asi shodné jako předešlá podmínka)
+                if (!childAreas.HasFlag(currArea)) return;                     // Pokud Child prvky nepoužívají danou stranu (Top, Left) pro svoje labely, pak daný prostor nebudu používat ani pro ně
+                if (!isCombineAreas && cellAreas.HasFlag(currArea)) return;    // Pokud se nesmí kombinovat Labely, a buňka (=my) používá danou stranu (Top, Left) pro svůj vlastní Label, pak do tohoto prostoru nebudu vkládat Label od mých Child prvků
+                // Pokud se smí kombinovat Labely (isCombineAreas je true), pak vstoupíme do dalšího kroku bez ohledu na stav Labelů v this buňce!
 
-                // Child layout má na aktuální straně (currArea) nějaký Label!
-                bool cellLabelExists = (labelInfo != null && labelInfo.Exists);          // My jako grupa (jako jedna buňka) na dané straně máme label a ten existuje?
-
-                // Tudy vypadnu v případě, kdy na dané straně (currArea) má label grupa jako nuňka, i její Childs. Jde s souběh labelů.
-                // Pak prostě Child labely budou vnořeny dovnitř do prostoru pro Control, nelze je "vystrčit" ven do prostoru labelu grupy:
-                if (cellLabelExists) return;
-
-                // Sumární rozměry labelu dané strany z mých Child vložím do LabelInfo mého vlastního:
-                if (labelInfo is null) labelInfo = new LabelInfo();
-                labelInfo.MeasuredWidth = childLabelWidth;
-                labelInfo.MeasuredHeight = childLabelHeight;
-                labelInfo.Exists = true;
-
-                // Zmenším rozměry ControlInfo
+                // OK, nějak obsadíme prostor našeho labelu (my jej nepotřebujeme) pro label Childů (oni jej potřebují):
                 switch (currArea)
                 {
                     case DfLabelUsedAreaType.Left:
-                        controlWidth -= flowMatrix.ControlLeft;
+                        expandAreas |= currArea;
+                        lblPlaceholders.Left = flowMatrix.LeftLabelWidth;
+                        ctlSize.Width -= flowMatrix.ControlLeft;
                         break;
                     case DfLabelUsedAreaType.Top:
-                        controlHeight -= flowMatrix.ControlTop;
+                        expandAreas |= currArea;
+                        lblPlaceholders.Top = flowMatrix.TopLabelHeight;
+                        ctlSize.Height -= flowMatrix.ControlTop;
                         break;
                     case DfLabelUsedAreaType.Right:
-                        controlWidth -= (flowMatrix.CellRight - flowMatrix.ControlRight);
+                        expandAreas |= currArea;
+                        lblPlaceholders.Right = flowMatrix.RightLabelWidth;
+                        ctlSize.Width -= (flowMatrix.CellRight - flowMatrix.ControlRight);
                         break;
                     case DfLabelUsedAreaType.Bottom:
-                        controlWidth -= (flowMatrix.CellBottom - flowMatrix.ControlBottom);
+                        expandAreas |= currArea;
+                        lblPlaceholders.Bottom = flowMatrix.BottomLabelHeight;
+                        ctlSize.Height -= (flowMatrix.CellBottom - flowMatrix.ControlBottom);
                         break;
                 }
-
-
-
-
-                // Algoritmus EXPAND není OK, protože size posune Child prvky grupy do prostoru Labelu, ale jeho sumární nezmenšená velikost (total, ne jen control) se promítá do sousedních buněk.
-
-                // Na dané straně (currArea) je nevyužitý prostor pro label (grupa tam svůj label nemá), a Child prvky ve svém flowLayoutu tam label mají.
-                // Využijeme ten prostor => nastavíme Expand pro nás jako grupu do daného směru.
-                // Neobsazujeme LabelInfo v naší buňce, to by neproběhl správně Expand.
-                //  NENÍ OK  :  sumExpand |= currExpand;
             }
-            //  this.__ImplicitControlMinimalWidth = size?.Width;
-            //  this.__ImplicitControlMinimalHeight = size?.Height;
+        }
+        /// <summary>
+        /// Volá se pouze pro Containery (jejichž je <see cref="IFlowLayoutItem.IsContainer"/> true), volá se po vložení souřadnic do Bounds do <see cref="__ControlInfo"/> a do jednotlivých Labelů.
+        /// V tuto chvíli je platný obsah <see cref="__CellMatrix"/>.
+        /// Container může na základě těchto hodnot modifikovat souřadnice svých Child prvků.
+        /// </summary>
+        private void _InnerBoundsProcessed()
+        {
+            // Situace: Do this.__ControlInfo.Bounds  byla právě vložena souřadnice obsahu controlu, zmenšená o ty vnější Labely z našich Child prvků,
+            //   které jsme ve zdejší metodě _ProcessContentSize() "přesunuli" na místo Labelů zdejšího prvku (protože zdejší prvek je nepoužívá).
+            // Přesunutí vidíme v hodnotách this.__LabelPlaceholders: pokud je některá hodnota kladná, pak Child labely na dané straně jsme umístili namísto našich labelů, a zmenšili jsme v daném směru zdejší control.
+
+            // Reálný příklad:
+            //  Máme prvek, který nemá žádný label, nachází se na 1. řádku celého panelu, obsahuje grupu se 4 prvky v jednom řádku, labely umístěné Top.
+            //  Pak jeho  __CellMatrix = { Left: 0; Right: 309; Top: 0; Bottom: 38}, TopLabelTop = 0, TopLabelHeight = 16, ControlTop = 18, ControlHeight = 20, ControlBottom = 38
+            //  Ale protože obsah grupy je zvenku chápán jako Control, tak po určení dimenzí je vepsána souřadnice:
+            //    __ControlInfo.Bounds = {Left: 0; Top: 18; Width: 300; Height: 20}	
+            //  Hodnoty v __LabelPlaceholders = {Left: 0; Top: 16; Right: 0; Bottom: 0}	= rezervace prostoru pro labely (výška labelu Top = 16px, je čerpána z __CellMatrix.TopLabelHeight = 16,
+            //    zajistila posunutí __ControlInfo.Bounds.Top = 18 = 16px Label + 2px Margin !!! 
+            var controlBounds = this.__ControlInfo.Bounds;
+            if (controlBounds is null) return;
+
+            var lblPlaceholders = this.__LabelPlaceholders;
+            if (lblPlaceholders.IsEmpty) return;
+
+            var cellMatrix = this.__CellMatrix;
+            var flowMatrix = this.__FlowLayoutMatrix;
+
+            int fx = controlBounds.Left;
+            int fy = controlBounds.Top;
+            int fw = controlBounds.Width;
+            int fh = controlBounds.Height;
+
+            if (lblPlaceholders.Left > 0)
+            {   // Naše Left labely jsme přesunuli doleva do prostoru LabelLeft = nyní přemístíme celý prostor controlBounds doleva tak, aby náš prostor Control.Left odpovídal okolnímu ControlLeft = controlBounds.Left:
+                int dx = flowMatrix.ControlLeft - flowMatrix.LeftLabelLeft;
+                fx = controlBounds.Left - dx;
+                fw += dx;
+            }
+            if (lblPlaceholders.Top > 0)
+            {   // Naše Top labely jsme přesunuli nahoru do prostoru LabelTop = nyní přemístíme celý prostor controlBounds nahoru tak, aby náš prostor Control.Top odpovídal okolnímu ControlTop = controlBounds.Top:
+                int dy = flowMatrix.ControlTop - flowMatrix.TopLabelTop;
+                fy = controlBounds.Top - dy;
+                fh += dy;
+            }
+            if (lblPlaceholders.Right > 0)
+            {   // Naše Right labely jsme přesunuli doprava do prostoru LabelRight = nyní rozšíříme celý prostor controlBounds doprava tak, aby náš prostor Control.Right obsahoval i labely Right:
+                int dw = flowMatrix.RightLabelRight - flowMatrix.ControlRight;
+                fw += dw;
+            }
+            if (lblPlaceholders.Bottom > 0)
+            {   // Naše Bottom labely jsme přesunuli dolů do prostoru LabelBottom = nyní rozšíříme celý prostor controlBounds dolů tak, aby náš prostor Control.Bottom obsahoval i labely Bottom:
+                int dh = flowMatrix.BottomLabelBottom - flowMatrix.ControlBottom;
+                fh += dh;
+            }
+
+            controlBounds.Left = fx;
+            controlBounds.Top = fy;
+            controlBounds.Width = fw;
+            controlBounds.Height = fh;
         }
         /// <summary>
         /// Velikost obsahu včetně Margins
@@ -1620,7 +1682,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private CellMatrixInfo __FlowLayoutMatrix;
         /// <summary>
-        /// Vodící linky vytvářené pro režim FlowLayout, pokud v argumentu <see cref="_LayoutArgs"/> je požadováno <see cref="DfTemplateLayoutArgs.DebugImagesWithGuideLines"/> = true.
+        /// Vodící linky vytvářené pro režim FlowLayout, pokud v argumentu <see cref="_LayoutArgs"/> je požadováno <see cref="DfTemplateLayoutArgs.DebugImagesInfoLevel"/> = true.
         /// </summary>
         private FlowGuideLine[] __FlowGuideLines;
         #endregion
@@ -1689,55 +1751,87 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Plné jméno souboru vrátí.
         /// </summary>
         /// <returns></returns>
-        private string _CreateResultImage()
+        private void _CreateDebugImage()
         {
             var startTime = DxComponent.LogTimeCurrent;
 
-            string file = null;
-
             var args = this._LayoutArgs;
-            string dfName = args.DataForm.FileName;
-            dfName = (!String.IsNullOrEmpty(dfName) ? System.IO.Path.GetFileNameWithoutExtension(dfName) : "dataform");      // dw_simple.frm.xml   =>   dw_simple.frm
-            if (dfName.Contains(".")) dfName = System.IO.Path.GetFileNameWithoutExtension(dfName);                           // dw_simple.frm       =>   dw_simple
-
-            using (var image = _CreateImage())
+            switch (args.CreateDebugImages)
             {
-                if (image != null)
-                {
-                    string cnt = ((__ImageCounter++) % 1000).ToString("000");
-                    string itemId = dfName + "_" + this.__Name;
-                    string dateId = getDateId();
-                    string name = $"{itemId}_{dateId}.png";
-                    string path = System.IO.Path.GetTempPath();
-                    if (!String.IsNullOrEmpty(args.DebugImagePath))
-                    {
-                        path = System.IO.Path.Combine(path, args.DebugImagePath.Trim());
-                        if (!System.IO.Directory.Exists(path))
-                            System.IO.Directory.CreateDirectory(path);
-                    }
-                    file = System.IO.Path.Combine(path, name);
-                    image.Save(file, System.Drawing.Imaging.ImageFormat.Png);
-                }
-            }
-
-            if (file != null)
-            {
-                if (args.DebugImages is null) args.DebugImages = new List<string>();
-                args.DebugImages.Add(file);
+                case DfTemplateLayoutDebugImageMode.File:
+                    createDebugImageFile();
+                    break;
+                case DfTemplateLayoutDebugImageMode.Image:
+                    createDebugImageItem();
+                    break;
             }
             if (args.LogTime) DxComponent.LogAddLineTime(LogActivityKind.DataFormRepository, $"Save Debug image for panel '{__Name}': {DxComponent.LogTokenTimeMicrosec}", startTime);
-            return file;
 
-            string getDateId()
+
+            // Vytvoří Image a uloží jej do patřičného souboru
+            void createDebugImageFile()
             {
-                var now = DateTime.UtcNow;
-                long msec = now.Millisecond +
-                    1000 * now.Second +
-                    60000 * now.Minute +
-                    3600000 * now.Hour;
-                long days = now.DayOfYear + 368 * (now.Year % 12);
-                long time = 86400000L * days + msec;
-                return time.ToString();
+                var fileName = getImageName(true, true, ".png");
+
+                using (var image = _CreateImage())
+                {
+                    if (image != null)
+                    {
+                        var path = System.IO.Path.GetTempPath();
+                        if (!String.IsNullOrEmpty(args.DebugImagePath))
+                        {
+                            path = System.IO.Path.Combine(path, args.DebugImagePath.Trim());
+                            if (!System.IO.Directory.Exists(path))
+                                System.IO.Directory.CreateDirectory(path);
+                        }
+                        var fullFile = System.IO.Path.Combine(path, fileName);
+                        image.Save(fullFile, System.Drawing.Imaging.ImageFormat.Png);
+
+                        if (args.ImageFiles is null) args.ImageFiles = new List<string>();
+                        args.ImageFiles.Add(fullFile);
+
+                    }
+                }
+            }
+            // Vytvoří Image a přidá jej do pole
+            void createDebugImageItem()
+            {
+                var fileName = getImageName(false, false, null);
+                var image = _CreateImage();
+
+                if (args.Images is null) args.Images = new List<Tuple<string, System.Drawing.Image>>();
+                args.Images.Add(new Tuple<string, System.Drawing.Image>(fileName, image));
+            }
+            // Vytvoří a vrátí jméno pro soubor
+            string getImageName(bool addFile, bool addTimeId, string extension)
+            {
+                string n = "";
+                if (addFile)
+                {   // Form Filename:
+                    string dfName = args.DataForm.FileName;
+                    dfName = (!String.IsNullOrEmpty(dfName) ? System.IO.Path.GetFileNameWithoutExtension(dfName) : "dataform");      // dw_simple.frm.xml   =>   dw_simple.frm
+                    if (dfName.Contains(".")) dfName = System.IO.Path.GetFileNameWithoutExtension(dfName);                           // dw_simple.frm       =>   dw_simple
+                    n += dfName + "_";
+                }
+
+                n += this.__Name;
+
+                if (addTimeId)
+                {
+                    var now = DateTime.UtcNow;
+                    long msec = now.Millisecond +
+                        1000 * now.Second +
+                        60000 * now.Minute +
+                        3600000 * now.Hour;
+                    long days = now.DayOfYear + 368 * (now.Year % 12);
+                    long time = 86400000L * days + msec;
+                    n += "_" + time.ToString();
+                }
+
+                if (!String.IsNullOrEmpty(extension))
+                    n += extension;
+
+                return n;
             }
         }
         /// <summary>
@@ -1752,6 +1846,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int width = size.Width ?? 0;
             int height = size.Height ?? 0;
             if (width <= 0 || height <= 0) return null;
+
+
+            var infoLevel = _LayoutArgs.DebugImagesInfoLevel;
+            var drawLabelBackground = infoLevel.HasFlag(DfTemplateLayoutDebugInfoLevelType.AddLabelBackground);
+            var drawLabelBorder = infoLevel.HasFlag(DfTemplateLayoutDebugInfoLevelType.AddLabelBorder);
+            var drawLabelDebug = drawLabelBackground || drawLabelBorder;
+            var drawGuideLines = infoLevel.HasFlag(DfTemplateLayoutDebugInfoLevelType.AddGuideLines);
 
             // Definujeme barvy pro prvky:
             var workspaceColor = System.Drawing.Color.FromArgb(255, 181, 181, 181);
@@ -1786,12 +1887,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 foreach (var i in childs)
                     drawItem(i, graphics, brush, pen, stringFormat);
 
-                var guideLines = __FlowGuideLines;
-                if (guideLines != null)
+                if (drawGuideLines)
                 {
-                    graphicsForRectangles(graphics);
-                    foreach (var guideLine in guideLines)
-                        drawGuideLine(guideLine, graphics, brush, pen);
+                    var guideLines = __FlowGuideLines;
+                    if (guideLines != null)
+                    {
+                        graphicsForRectangles(graphics);
+                        foreach (var guideLine in guideLines)
+                            drawGuideLine(guideLine, graphics, brush, pen);
+                    }
                 }
             }
             return image;
@@ -1809,7 +1913,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 drawLabelInfo(graphics, brush, pen, stringFormat, iFlow.LabelRightInfo, ContentAlignmentType.MiddleLeft);
                 drawLabelInfo(graphics, brush, pen, stringFormat, iFlow.LabelBottomInfo, ContentAlignmentType.MiddleLeft);
 
-
                 // Control (nikoliv Container):
                 var controlInfo = iFlow.ControlInfo;
                 if (item._IsControl && controlInfo != null && controlInfo.Exists && controlInfo.Bounds != null)
@@ -1824,7 +1927,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                                 if (dfLabel.Alignment.HasValue) labelAlignment = dfLabel.Alignment.Value;
                                 text = dfLabel.Text;
                             }
-                            drawControlBorder(graphics, brush, pen, controlInfo.Bounds, null, controlLabelBorderColor);
+                            if (drawLabelBorder)
+                                drawControlBorder(graphics, brush, pen, controlInfo.Bounds, null, controlLabelBorderColor);
                             drawControlLabel(graphics, brush, pen, stringFormat, text, controlInfo.Bounds, labelAlignment);
                             break;
                         case DataControlType.HLine:
@@ -1857,17 +1961,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 var r = getRectangle(bounds);
 
-                using (var path = getControlPathSquare(r))
+                if (drawLabelDebug)
                 {
-                    graphicsForRectangles(graphics);
+                    using (var path = getControlPathSquare(r))
+                    {
+                        graphicsForRectangles(graphics);
 
-                    brush.Color = labelBackColor;
-                    graphics.FillPath(brush, path);                              // BackColor pod labelem MainLabel
+                        if (drawLabelBackground)
+                        {
+                            brush.Color = labelBackColor;
+                            graphics.FillPath(brush, path);                              // BackColor pod labelem MainLabel
+                        }
 
-                    pen.Color = labelBorderColor;
-                    graphics.DrawPath(pen, path);                                // Border okolo prostoru pro MainLabel
+                        if (drawLabelBorder)
+                        {
+                            pen.Color = labelBorderColor;
+                            graphics.DrawPath(pen, path);                                // Border okolo prostoru pro MainLabel
+                        }
+                    }
                 }
-
                 if (isValidBounds(bounds))
                 {
                     var font = System.Drawing.SystemFonts.DefaultFont;
@@ -1899,7 +2011,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 brush.Color = controlLineColor;
                 graphics.FillRectangle(brush, r);
             }
-            // Vykreslí Control typu Label včetně podkladu
+            // Vykreslí Control typu Label, nikoli jeho podklad
             void drawControlLabel(System.Drawing.Graphics graphics, System.Drawing.SolidBrush brush, System.Drawing.Pen pen, System.Drawing.StringFormat stringFormat, string text, ControlBounds bounds, ContentAlignmentType alignment)
             {
                 if (isValidBounds(bounds))
@@ -2607,42 +2719,64 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void _ProcessLabels()
         {
-            // Pokud Label má definován offset (pro Top a Bottom pozice), a ten je záporný, značí to předsunutí labelu doleva od controlu.
-            // Například __TopLabelOffsetX = -15  =>  Label v pozici Nad controlem bude nahoře, a bude začínat o 15px vlevo od začátku controlu.
-            // Pokud ale současně mám __ControlMargins definující okraj 2px mezi labelem vlevo a controlem, pak o tyto 2px zmenším LabelOffset, 
-            //  protože pozice Left Labelu se měří od okraje Left Controlu bez tohoto Margins.
-            int shiftTopLabel = (this.__TopLabelOffsetX < 0 ? -this.__TopLabelOffsetX : 0);
-            int shiftBottomLabel = (this.__BottomLabelOffsetX < 0 ? -this.__BottomLabelOffsetX : 0);
-            int margin = this.__ControlMargins?.Left ?? 0;
-            if (margin > 0)
-            {   // Kladný 'shift' znamená předsunutí Labelu doleva před Control o daný počet pixelů:
-                // Prostor pro LabelBefore budeme rezervovat menší, o Margin mezi Labelem a Controlem:
-                shiftTopLabel -= margin;
-                shiftBottomLabel -= margin;
-            }
+            // Shift doleva pro LabelTop a LabelBottom, který musí rezervovat pixely v prostoru Left:
+            int shiftTopLabel = getShiftLabel(this.__TopLabelOffsetX);
+            int shiftBottomLabel = getShiftLabel(this.__BottomLabelOffsetX);
 
             // Všechny prvky zpracují svoje labely:
             __Items.ForEach(i => processLabels(i));
 
+
+            // Vrátí Shift doleva pro LabelTop a LabelBottom, který musí rezervovat pixely v prostoru Left:
+            int getShiftLabel(int offsetX)
+            {
+                // Pokud Label má definován offset (pro Top a Bottom pozice), a ten je záporný, značí to předsunutí labelu doleva od controlu.
+                // Například __TopLabelOffsetX = -15  =>  Label v pozici Nad controlem bude nahoře, a bude začínat o 15px vlevo od začátku controlu.
+                // Pokud ale současně mám __ControlMargins definující okraj 2px mezi labelem vlevo a controlem, pak o tyto 2px zmenším LabelOffset, 
+                //  protože pozice Left Labelu se měří od okraje Left Controlu bez tohoto Margins.
+                int shift = (offsetX < 0 ? -offsetX : 0);            // Pokud je offset záporný, pak jde o shift doleva = ten bude kladný:
+                int margin = this.__ControlMargins?.Left ?? 0;       // Mezera mezi labelem vlevo a controlem
+                if (shift > 0 && margin > 0)
+                {   // Kladný 'shift' znamená předsunutí Labelu doleva před Control o daný počet pixelů:
+                    // Prostor pro LabelBefore budeme rezervovat menší, o Margin mezi Labelem a Controlem:
+                    shift -= margin;
+                    if (shift < 0) shift = 0;
+                }
+                return shift;
+            }
             // Zpracuje labely daného prvku do sloupců a řádků, kam patří
             void processLabels(IFlowLayoutItem item)
             {
-                processLabel(item.LabelLeftInfo, __Columns, item.FlowColBeginIndex, true, true);
-                processLabel(item.LabelTopInfo, __Rows, item.FlowRowBeginIndex, false, true);
-                processLabel(item.LabelRightInfo, __Columns, item.FlowColEndIndex, true, false);
-                processLabel(item.LabelBottomInfo, __Rows, item.FlowRowEndIndex, false, false);
+                var placeHolders = item.LabelPlaceholders;
+                var controlMargins = this.__ControlMargins;
+                processLabel(item.LabelLeftInfo, placeHolders?.Left, controlMargins?.Left, __Columns, item.FlowColBeginIndex, true, true);
+                processLabel(item.LabelTopInfo, placeHolders?.Top, controlMargins?.Top, __Rows, item.FlowRowBeginIndex, false, true);
+                processLabel(item.LabelRightInfo, placeHolders?.Right, controlMargins?.Right, __Columns, item.FlowColEndIndex, true, false);
+                processLabel(item.LabelBottomInfo, placeHolders?.Bottom, controlMargins?.Bottom, __Rows, item.FlowRowEndIndex, false, false);
 
                 processLabelShift(item.LabelTopInfo, __Columns, item.FlowColBeginIndex, shiftTopLabel);
                 processLabelShift(item.LabelBottomInfo, __Columns, item.FlowColBeginIndex, shiftBottomLabel);
             }
             // Zpracuje jeden label (do sloupce / do řádku, v dané velikosti, rozměr Width / Height, do prostoru Before / After)
-            void processLabel(LabelInfo labelInfo, List<LineInfo> lines, int? lineIndex, bool isWidth, bool isBefore)
+            void processLabel(LabelInfo labelInfo, int? placeHolder, int? space, List<LineInfo> lines, int? lineIndex, bool isWidth, bool isBefore)
             {
-                if (labelInfo is null || !labelInfo.Exists || !lineIndex.HasValue) return;
+                if (!lineIndex.HasValue) return;
 
-                // Řešíme šířku nebo výšku? (isWidth) : šířka uznává i DesignWidth jako prioritu. Jinak bereme Measured rozměr:
-                int? size = (isWidth ? (labelInfo.DesignWidth ?? labelInfo.MeasuredWidth) : labelInfo.MeasuredHeight);
-                processLabelSize(lines, lineIndex, size, isBefore);
+                // Máme daný label a ten existuje? { pak řešíme: šířku nebo výšku (isWidth) ? : šířka uznává i DesignWidth jako prioritu. Jinak bereme Measured rozměr)
+                // Akceptujeme i dodaný placeholder!
+
+                int labelSize = ((labelInfo != null && labelInfo.Exists) ? ((isWidth ? (labelInfo.DesignWidth ?? labelInfo.MeasuredWidth) : labelInfo.MeasuredHeight) ?? 0) : 0);
+                int placeSize = placeHolder ?? 0;
+                if (labelSize > 0 || placeSize > 0)
+                {
+                    // Mezera m se aplikuje tehdy, když máme současně dánu velikost Labelu i Placeholderu:
+                    int m = ((labelSize > 0 && placeSize > 0) ? (space ?? 0) : 0);
+
+                    // Určíme velikost Labelu = velikost Labelu + (mezera) + velikost placeholderu:
+                    int size = labelSize + m + placeSize;
+                    if (size > 0)
+                        processLabelSize(lines, lineIndex, size, isBefore);
+                }
             }
             // Zpracuje jeden shift labelu (do sloupce, v dané velikosti, do prostoru Before)
             void processLabelShift(LabelInfo labelInfo, List<LineInfo> lines, int? lineIndex, int shift)
@@ -2976,10 +3110,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _ProcessItemsBounds()
         {
             // Zpracuje všechny prvky:
+            var margins = __Style.Margins;
             foreach (var i in __Items)
             {
                 i.CellMatrix = new CellMatrixInfo(__Columns[i.FlowColBeginIndex.Value], __Columns[i.FlowColEndIndex.Value], __Rows[i.FlowRowBeginIndex.Value], __Rows[i.FlowRowEndIndex.Value]);
-                _ProcessInnerItemBounds(i, __LabelsRelativeToControl, __TopLabelOffsetX, __BottomLabelOffsetX);
+                _ProcessInnerItemBounds(i, __LabelsRelativeToControl, __TopLabelOffsetX, __BottomLabelOffsetX, margins);
             }
         }
         /// <summary>
@@ -3143,7 +3278,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int topLabelOffsetX = layoutStyle.TopLabelOffsetX;
             int bottomLabelOffsetX = layoutStyle.BottomLabelOffsetX;
 
-            _ProcessInnerItemBounds(item, labelsRelativeToControl, topLabelOffsetX, bottomLabelOffsetX);
+            _ProcessInnerItemBounds(item, labelsRelativeToControl, topLabelOffsetX, bottomLabelOffsetX, layoutStyle.Margins);
         }
         /// <summary>
         /// Metoda určí a uloží do prvku <see cref="IFlowLayoutItem"/> <paramref name="item"/> souřadnice pro MainLabel, pro Control a pro SuffixLabel podle standardních pravidel.
@@ -3153,12 +3288,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="labelsRelativeToControl">Příznak, že labely chceme umísťovat přiměřeně k prostoru controlu (true) / exaktně do mřížky okolních prvků (false)</param>
         /// <param name="topLabelOffsetX">Offset X pro labely umístěné Top</param>
         /// <param name="bottomLabelOffsetX">Offset X pro labely umístěné Bottom</param>
-        public static void ProcessInnerItemBounds(IFlowLayoutItem item, bool labelsRelativeToControl, int topLabelOffsetX, int bottomLabelOffsetX)
+        /// <param name="margins">Okraje kolem controlu vzhledem k labelům</param>
+        public static void ProcessInnerItemBounds(IFlowLayoutItem item, bool labelsRelativeToControl, int topLabelOffsetX, int bottomLabelOffsetX, Margins margins)
         {
             if (item is null) throw new ArgumentNullException($"DfFlowLayoutInfo.ProcessInnerItemBounds fail: item is null.");
             if (item.CellMatrix is null) throw new ArgumentNullException($"DfFlowLayoutInfo.ProcessInnerItemBounds fail: item.CellBounds is null.");
 
-            _ProcessInnerItemBounds(item, labelsRelativeToControl, topLabelOffsetX, bottomLabelOffsetX);
+            _ProcessInnerItemBounds(item, labelsRelativeToControl, topLabelOffsetX, bottomLabelOffsetX, margins);
         }
         /// <summary>
         /// Metoda určí a uloží do prvku <see cref="IFlowLayoutItem"/> <paramref name="item"/> souřadnice pro MainLabel, pro Control a pro SuffixLabel podle dodané souřadnice pro Control.
@@ -3200,14 +3336,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="labelsRelativeToControl">Příznak, že labely chceme umísťovat přiměřeně k prostoru controlu (true) / exaktně do mřížky okolních prvků (false)</param>
         /// <param name="topLabelOffsetX">Offset X pro labely umístěné Top</param>
         /// <param name="bottomLabelOffsetX">Offset X pro labely umístěné Bottom</param>
-        private static void _ProcessInnerItemBounds(IFlowLayoutItem item, bool labelsRelativeToControl, int topLabelOffsetX, int bottomLabelOffsetX)
+        /// <param name="margins">Okraje kolem controlu vzhledem k labelům</param>
+        private static void _ProcessInnerItemBounds(IFlowLayoutItem item, bool labelsRelativeToControl, int topLabelOffsetX, int bottomLabelOffsetX, Margins margins)
         {
-            var labelUsedAreas = item.LabelUsedAreas;                                                        // Které prostory vedle Controlu jsou obsazeny Labelem?
-            var controlBounds = processItemControl(labelUsedAreas);                                          // Souřadnice Controlu, možná jsou Extended do nevyužitých prostor místo Labelu, když tam Label není
-            processItemLabel(item.LabelLeftInfo, DfLabelUsedAreaType.Left, controlBounds);     // Umístí Label do prostoru vlevo před control
-            processItemLabel(item.LabelTopInfo, DfLabelUsedAreaType.Top, controlBounds);       //  ... nad control
-            processItemLabel(item.LabelRightInfo, DfLabelUsedAreaType.Right, controlBounds);   //  ... vpravo
-            processItemLabel(item.LabelBottomInfo, DfLabelUsedAreaType.Bottom, controlBounds); //  ... dolů
+            var labelUsedAreas = item.LabelUsedAreas;                                    // Které prostory vedle Controlu jsou obsazeny Labelem?
+            var controlBounds = processItemControl(labelUsedAreas);                      // Souřadnice Controlu, možná jsou Extended do nevyužitých prostor místo Labelu, když tam Label není
+            var labelPlaceholders = item.LabelPlaceholders;
+            
+            processItemLabel(item.LabelLeftInfo, DfLabelUsedAreaType.Left);              // Umístí Label do prostoru vlevo před control
+            processItemLabel(item.LabelTopInfo, DfLabelUsedAreaType.Top);                //  ... nad control
+            processItemLabel(item.LabelRightInfo, DfLabelUsedAreaType.Right);            //  ... vpravo
+            processItemLabel(item.LabelBottomInfo, DfLabelUsedAreaType.Bottom);          //  ... dolů
+            if (item.IsContainer) item.InnerBoundsProcessed();
             // hotovo.
 
 
@@ -3220,103 +3360,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // Které prostory může Control využít? Bude expandovat do některých sousedních prostorů, pokud jsou volné?
                 var itemExpand = item.DesignExpandControl ?? ExpandControlType.None;
 
-                // Souřadnice zvolené oblasti, určené pro umístění Controlu:
-                var cellMatrix = item.CellMatrix;
-                // Umístění Controlu při akceptování 'itemExpand' a 'labelUsedAreas', včetně offsetů Top a Bottom:
-                var controlBoundsMatrix = cellMatrix.GetControlBounds(itemExpand, labelUsedAreas, topLabelOffsetX, bottomLabelOffsetX);
+                // Souřadnice zvolené oblasti, určené pro umístění Controlu, celý dostupný prostor (nemusí být využit celý),
+                //  při akceptování 'itemExpand' a 'labelUsedAreas', včetně X-offsetů pro Labely Top a Bottom:
+                var totalBounds = item.CellMatrix.GetControlBounds(itemExpand, labelUsedAreas, topLabelOffsetX, bottomLabelOffsetX);
 
-                // Využít oblast ... = pokud prvek chce (itemExpand) a současně pokud label tuto oblast nepoužívá:
-                bool expLeft = itemExpand.HasFlag(ExpandControlType.Left) && !labelUsedAreas.HasFlag(DfLabelUsedAreaType.Left);
-                bool expTop = itemExpand.HasFlag(ExpandControlType.Top) && !labelUsedAreas.HasFlag(DfLabelUsedAreaType.Top);
-                bool expRight = itemExpand.HasFlag(ExpandControlType.Right) && !labelUsedAreas.HasFlag(DfLabelUsedAreaType.Right);
-                bool expBottom = itemExpand.HasFlag(ExpandControlType.Bottom) && !labelUsedAreas.HasFlag(DfLabelUsedAreaType.Bottom);
-
-                int l = expLeft ? correctExpandedControlLeftByOffset(cellMatrix.LeftLabelLeft, labelUsedAreas) : cellMatrix.ControlLeft;
-                int t = expTop ? cellMatrix.TopLabelTop : cellMatrix.ControlTop;
-                int r = expRight ? cellMatrix.RightLabelRight : cellMatrix.ControlRight;
-                int b = expBottom ? cellMatrix.BottomLabelBottom : cellMatrix.ControlBottom;
-                int w = r - l;
-                int h = b - t;
-
-                // Control obsadí celou oblast? Nebo jen menší část? Jakou? A v jaké relativní pozici?
-                // Poznámka: Implicitní velikost 'ImplicitControlMinimalWidth' a 'ImplicitControlMinimalHeight' je velikost "doporučená minimální".
-                //    Proto slouží při výpočtech velikosti souřadnic (metody _ProcessControlSingleSpan a _ProcessControlMultiSpan).
-                //    Ale nevepisuji ji do reálné šířky / výšky prvku.
-                //    Pokud má prvek zadanou pouze 'ImplicitControlMinimalWidth', pak reálnou šířku má 100% sloupce/sloupců.
-                // Jinak to je u hodnoty 'ImplicitControlOptimalWidth' a 'ImplicitControlOptimalHeight': 
-                //    to je velikost "doporučená" - a má tedy charakter zadaného rozměru do Bounds.Width / Height.
-                //    Tedy pokud je zadaná, pak ji prvek bude mít.
-
-                // Jak bude prostor využit z hlediska zadaných dimenzí controlu
-                // ControlWidth:
-                int cw = w;
-                if (controlInfo.DesignWidthPixel.HasValue) cw = controlInfo.DesignWidthPixel.Value;                                  // Designer zadal do frm.xml hodnotu 'Width="85"'
-                else if (controlInfo.DesignWidthPercent.HasValue) cw = (w * controlInfo.DesignWidthPercent.Value / 100);             // Designer zadal do frm.xml hodnotu 'Width="50%"'
-                else if (controlInfo.ImplicitOptimalWidth.HasValue) cw = controlInfo.ImplicitOptimalWidth.Value;                 // Kód určil optimální šířku, které se držíme
-                cw = (cw < 0 ? 0 : (cw > w ? w : cw));               // 'cw' zarovnat do mezí 0 až 'w'
-
-                // ControlHeight:
-                int ch = h;
-                if (controlInfo.DesignHeightPixel.HasValue) ch = controlInfo.DesignHeightPixel.Value;                                // Designer zadal do frm.xml hodnotu 'Height="50"'
-                else if (controlInfo.DesignHeightPercent.HasValue) ch = (h * controlInfo.DesignHeightPercent.Value / 100);           // Designer zadal do frm.xml hodnotu 'Height="100%"'
-                else if (controlInfo.ImplicitOptimalHeight.HasValue) ch = controlInfo.ImplicitOptimalHeight.Value;               // Kód určil optimální výšku, které se držíme
-                ch = (ch < 0 ? 0 : (ch > h ? h : ch));               // 'ch' zarovnat do mezí 0 až 'h'
-
-                // Bude nějaké zarovnání controlu (pokud má control šířku menší je šířka prostoru, a podobně pro výšku)?
-                int cl = l;
-                if (cw < w)
-                {   // Vodorovně na střed / doprava?
-                    var hPos = item.DesignHPosition ?? HPositionType.Left;
-                    cl = getControlBegin(l, w, cw, hPos == HPositionType.Center, hPos == HPositionType.Right);
-                }
-                int ct = t;
-                if (ch < h)
-                {   // Svisle na střed / dolů?
-                    var vPos = item.DesignVPosition ?? VPositionType.Top;
-                    ct = getControlBegin(t, h, ch, vPos == VPositionType.Center, vPos == VPositionType.Bottom);
-                }
-
-                var bounds = new ControlBounds(cl, ct, cw, ch);
-                controlInfo.Bounds = bounds;
-                return bounds;
+                // Souřadnice fyzického Controlu, zmenšené na cílový rozměr, zarovnané do vyhrazené oblasti:
+                ControlBounds controlBounds = controlInfo.GetControlBounds(totalBounds, item.DesignHPosition, item.DesignVPosition);
+                controlInfo.Bounds = controlBounds;
+                return controlBounds;
             }
-            // Vrátí pozici počátku Controlu, který bude zarovnán na střed nebo na konec prostoru total
-            int getControlBegin(int begin, int totalSize, int controlSize, bool isCenter, bool isEnd)
-            {
-                int controlBegin = begin;
-                if ((isCenter || isEnd) && (controlSize < totalSize))     // Někam posunout? ... a control je menší, než total prostor => takže posouvat je požadováno a možno:
-                {
-                    int space = (totalSize - controlSize);                // Posouvací volný prostor (uvnitř Total, po odečtení Control)
-                    if (isCenter) space = space / 2;                      // Posunout na střed => jen o polovinu  (pokud ne, pak posunu o celé space => na konec = Right/Bottom)
-                    controlBegin = begin + space;                         // Posunu begin pro control, doprava / dolů, o daný prostor.
-                }
-                return controlBegin;
-            }
-            // Koriguje souřadnici Control.Left v situaci, kdy je Expanded doleva, tedy Control začíná přímo na souřadnici Cell.Left, 
-            //  a současně pokud by byl MainLabel umístěný Top nebo Bottom a odpovídající TopLabelOffsetX / BottomLabelOffsetX by byl záporný,
-            //  pak musíme posunout Left Controlu doprava tak, aby předsunutý MainLabel začínal na pozici Left = 0!
-            int correctExpandedControlLeftByOffset(int left, DfLabelUsedAreaType usedAreas)
-            {
-                // Label na pozici Left není přítomen, proto mohu (když chci) Control expandovat doleva (nic tam nepřekáží).
-                // Pokud ale existuje Label na pozici Top (nebo Bottom) a v dané pozici je definován záporný offset 'topLabelOffsetX' (nebo 'bottomLabelOffsetX'),
-                //  pak zajistím, že daný Label bude vlevo na souřadnici 0, a Control bude odsazen doprava o odpovídající Shift:
-                int shiftT = ((usedAreas.HasFlag(DfLabelUsedAreaType.Top) && topLabelOffsetX < 0) ? -topLabelOffsetX : 0);
-                if (shiftT < 0) shiftT = 0;
-                int shiftB = ((usedAreas.HasFlag(DfLabelUsedAreaType.Bottom) && bottomLabelOffsetX < 0) ? -bottomLabelOffsetX : 0);
-                if (shiftB < 0) shiftB = 0;
-                // Beru větší Shift z Top / Bottom:
-                int shift = (shiftT > shiftB) ? shiftT : shiftB;
-                return ((shift > 0) ? left + shift : left);
-            }
+    
             // Zpracuje souřadnici pro MainLabel
-            void processItemLabel(LabelInfo labelInfo, DfLabelUsedAreaType area, ControlBounds controlBounds)
+            void processItemLabel(LabelInfo labelInfo, DfLabelUsedAreaType area)
             {
                 if (labelInfo is null || !labelInfo.Exists) return;
 
                 var cellMatrix = item.CellMatrix;
                 bool relativeToControl = labelsRelativeToControl && controlBounds != null;
                 if (relativeToControl && controlBounds is null) relativeToControl = false;
-                int l, r, t, b;
+                int l, r, t, b, p;
                 switch (area)
                 {
                     case DfLabelUsedAreaType.Left:
@@ -3334,10 +3396,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         labelInfo.Bounds = new ControlBounds(l, t, (r - l), (b - t));
                         break;
                     case DfLabelUsedAreaType.Top:
+                        p = labelPlaceholders?.Top ?? 0;
+                        if (p > 0) p += (margins?.Top ?? 0);
                         l = (relativeToControl ? controlBounds.Left : cellMatrix.ControlLeft) + topLabelOffsetX;
                         r = (relativeToControl ? controlBounds.Right : cellMatrix.ControlRight);
                         t = cellMatrix.TopLabelTop;
-                        b = cellMatrix.TopLabelBottom;
+                        b = cellMatrix.TopLabelBottom - p;
                         if (labelInfo.DesignWidth.HasValue && labelInfo.DesignWidth.Value >= 0)
                             r = l + labelInfo.DesignWidth.Value;
                         labelInfo.Bounds = new ControlBounds(l, t, (r - l), (b - t));
@@ -3959,6 +4023,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         string Name { get; }
         /// <summary>
+        /// Aktuální prvek je Container = má nějaké Child prvky. Pro takový prvek se volá metoda <see cref="InnerBoundsProcessed()"/>.
+        /// </summary>
+        bool IsContainer { get; }
+        /// <summary>
         /// Příznak, že s prvkem se vůbec nemá počítat při tvorbě layoutu (jeho stav obsahuje <see cref="ControlStateType.Absent"/>).
         /// </summary>
         bool IsAbsent { get; }
@@ -4042,6 +4110,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Info o labelu dole
         /// </summary>
         LabelInfo LabelBottomInfo { get; }
+        /// <summary>
+        /// Velikost prostoru pro Labely (Left, Top, Right, Bottom) pro situaci, kdy v odpovídajících instancích (<see cref="LabelLeftInfo"/> atd) je null nebo NotExists.
+        /// Pak prvek může (v situaci, kdy jde o container a má tedy své Childs) využít dosud prázdný prostor pro labely, a umístit do něj krajní labely svých Child prvků: najde jejich velikost a vloží ji do tohoto Placeholderu.
+        /// Pak FlowLayout rezervuje požadované místo (pixely) i když na dané straně nemá Label.
+        /// </summary>
+        Margins LabelPlaceholders { get; }
 
         /// <summary>
         /// Algoritmus FlowLayout pro prvek zajistil potřebnou šířku
@@ -4051,6 +4125,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Algoritmus FlowLayout pro prvek zajistil potřebnou výšku
         /// </summary>
         bool AcceptedHeight { get; set; }
+
+        /// <summary>
+        /// Volá se pouze pro Containery (jejichž je <see cref="IsContainer"/> true), volá se po vložení souřadnic do Bounds do <see cref="ControlInfo"/> a do jednotlivých Labelů.
+        /// V tuto chvíli je platný obsah <see cref="CellMatrix"/>.
+        /// Container může na základě těchto hodnot modifikovat souřadnice svých Child prvků.
+        /// </summary>
+        void InnerBoundsProcessed();
         /// <summary>
         /// Resetuje výsledné hodnoty FlowLayoutu. Volá se na začátku finalizace layoutu jako první metoda.
         /// Neresetuje designové hodnoty. Neresetuje umístění do Matrixu. Resetuje to co souvisí s pixely.
@@ -4160,6 +4241,72 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         internal void ResetFlowFinalResults()
         {
             Bounds = null;
+        }
+        /// <summary>
+        /// Vypočte a vrátí souřadnice pro this Control, na základě svých dat, dodaného vyhrazeného prostoru a dodaného zarovnání obsahu.
+        /// Control sám ví, jaký by měl mít rozměr (DesignPixel, DesignPercent, Optimal) pro osy Width i Height.
+        /// </summary>
+        /// <param name="totalBounds">Prostor, v němž se Control má umístit</param>
+        /// <param name="designHPosition">Zarovnání horizontální (Left / Center / Right)</param>
+        /// <param name="designVPosition">Zarovnání vertikální (Top / Center / Bottom)</param>
+        /// <returns></returns>
+        internal ControlBounds GetControlBounds(ControlBounds totalBounds, HPositionType? designHPosition, VPositionType? designVPosition)
+        {
+            // Control obsadí celou oblast? Nebo jen menší část? Jakou? A v jaké relativní pozici?
+            // Poznámka: Implicitní velikost 'ImplicitControlMinimalWidth' a 'ImplicitControlMinimalHeight' je velikost "doporučená minimální".
+            //    Proto slouží při výpočtech velikosti souřadnic (metody _ProcessControlSingleSpan a _ProcessControlMultiSpan).
+            //    Ale nevepisuji ji do reálné šířky / výšky prvku.
+            //    Pokud má prvek zadanou pouze 'ImplicitControlMinimalWidth', pak reálnou šířku má 100% sloupce/sloupců.
+            // Jinak to je u hodnoty 'ImplicitControlOptimalWidth' a 'ImplicitControlOptimalHeight': 
+            //    to je velikost "doporučená" - a má tedy charakter zadaného rozměru do Bounds.Width / Height.
+            //    Tedy pokud je zadaná, pak ji prvek bude mít.
+
+            // Jak bude prostor využit z hlediska zadaných dimenzí controlu
+            // ControlWidth:
+            int bw = totalBounds.Width;
+            int cw = bw;
+            if (this.DesignWidthPixel.HasValue) cw = this.DesignWidthPixel.Value;                            // Designer zadal do frm.xml hodnotu 'Width="85"'
+            else if (this.DesignWidthPercent.HasValue) cw = (bw * this.DesignWidthPercent.Value / 100);      // Designer zadal do frm.xml hodnotu 'Width="50%"'
+            else if (this.ImplicitOptimalWidth.HasValue) cw = this.ImplicitOptimalWidth.Value;               // Kód určil optimální šířku, které se držíme
+            cw = (cw < 0 ? 0 : (cw > bw ? bw : cw));                                                         // 'cw' zarovnat do mezí 0 až 'bw'
+
+            // ControlHeight:
+            int bh = totalBounds.Height;
+            int ch = bh;
+            if (this.DesignHeightPixel.HasValue) ch = this.DesignHeightPixel.Value;                          // Designer zadal do frm.xml hodnotu 'Height="50"'
+            else if (this.DesignHeightPercent.HasValue) ch = (bh * this.DesignHeightPercent.Value / 100);    // Designer zadal do frm.xml hodnotu 'Height="100%"'
+            else if (this.ImplicitOptimalHeight.HasValue) ch = this.ImplicitOptimalHeight.Value;             // Kód určil optimální výšku, které se držíme
+            ch = (ch < 0 ? 0 : (ch > bh ? bh : ch));                                                         // 'ch' zarovnat do mezí 0 až 'bh'
+
+            // Bude nějaké zarovnání controlu (pokud má control šířku menší je šířka prostoru, a podobně pro výšku)?
+            int cl = totalBounds.Left;
+            if (cw < bw)
+            {   // Vodorovně na střed / doprava?
+                var hPos = designHPosition ?? HPositionType.Left;
+                cl = getControlBegin(cl, bw, cw, hPos == HPositionType.Center, hPos == HPositionType.Right);
+            }
+            int ct = totalBounds.Top;
+            if (ch < bh)
+            {   // Svisle na střed / dolů?
+                var vPos = designVPosition ?? VPositionType.Top;
+                ct = getControlBegin(ct, bh, ch, vPos == VPositionType.Center, vPos == VPositionType.Bottom);
+            }
+
+            return new ControlBounds(cl, ct, cw, ch);
+
+
+            // Vrátí pozici počátku Controlu, který bude zarovnán na střed nebo na konec prostoru total
+            int getControlBegin(int begin, int totalSize, int controlSize, bool isCenter, bool isEnd)
+            {
+                int controlBegin = begin;
+                if ((isCenter || isEnd) && (controlSize < totalSize))     // Někam posunout? ... a control je menší, než total prostor => takže posouvat je požadováno a možno:
+                {
+                    int space = (totalSize - controlSize);                // Posouvací volný prostor (uvnitř Total, po odečtení Control)
+                    if (isCenter) space = space / 2;                      // Posunout na střed => jen o polovinu  (pokud ne, pak posunu o celé space => na konec = Right/Bottom)
+                    controlBegin = begin + space;                         // Posunu begin pro control, doprava / dolů, o daný prostor.
+                }
+                return controlBegin;
+            }
         }
     }
     #endregion
@@ -4304,7 +4451,29 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Left: {CellLeft}; Right: {CellRight}; Top: {CellTop}; Bottom: {CellBottom}";
+            return Text;
+        }
+        /// <summary>
+        /// Debug text
+        /// </summary>
+        public string Text
+        {
+            get
+            {
+                return $"Left: {CellLeft}; Right: {CellRight}; Top: {CellTop}; Bottom: {CellBottom}";
+            }
+        }
+        /// <summary>
+        /// Debug text plný
+        /// </summary>
+        public string TextFull
+        {
+            get
+            {
+                return $"Left: {CellLeft}; Right: {CellRight}; Top: {CellTop}; Bottom: {CellBottom}.   " +
+                    $"LeftLabelWidth: {LeftLabelWidth}; ControlLeft: {ControlLeft}; ControlWidth: {ControlWidth}; RightLabelLeft: {RightLabelLeft}; RightLabelWidth: {RightLabelWidth}.   " +
+                    $"TopLabelHeight: {TopLabelHeight}; ControlTop: {ControlTop}; ControlHeight: {ControlHeight}; BottomLabelTop: {BottomLabelTop}; BottomLabelHeight: {BottomLabelHeight}.";
+            }
         }
         /// <summary>
         /// Pole souřadnic. <br/>
@@ -4687,122 +4856,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     }
     #endregion
     #endregion
-    #region interface IControlInfoSource + IDataFormItem : Předpis rozhraní pro toho, kdo bude poskytovat informace o atributech a o rozměrech textů pro DataForm; rozhraní prvku DataFormu
-    /// <summary>
-    /// Předpis rozhraní pro toho, kdo bude poskytovat informace o atributech a o rozměrech textů pro DataForm.
-    /// </summary>
-    internal interface IControlInfoSource
-    {
-        /// <summary>
-        /// Metoda určí typ controlu pro daný prvek a třídu. Volá se pouze při konverzi formuláře Infragistic, pro sloupce kde atribut 'InputType' je nezadaný.
-        /// Potom je třeba, aby <see cref="IControlInfoSource"/> určil typ controlu <see cref="DataControlType"/> podle typu atributu (daný jménem a třídou).
-        /// </summary>
-        /// <param name="columnName"></param>
-        /// <param name="useNorisClass"></param>
-        /// <returns></returns>
-        DataControlType? GetControlType(string columnName, int? useNorisClass);
-        /// <summary>
-        /// Funkce, která vrátí stringový obsah nested šablony daného jména.<br/>
-        /// Funkce bude volána s parametrem = jméno šablony (obsah atributu NestedTemplate), jeho úkolem je vrátit string = obsah požadované šablony (souboru).<br/>
-        /// Pokud funkce požadovanou šablonu (soubor) nenajde, může sama ohlásit chybu. Anebo může vrátit null, pak bude Nested prvek ignorován.
-        /// </summary>
-        /// <param name="templateName"></param>
-        /// <returns></returns>
-        string NestedTemplateContentLoad(string templateName);
-        /// <summary>
-        /// Validuje (prověří a doplní) informace o konkrétním controlu.
-        /// </summary>
-        /// <param name="controlInfo">Data o controlu</param>
-        /// <returns></returns>
-        void ValidateControlInfo(IDataFormItem controlInfo);
-    }
-    /// <summary>
-    /// Definuje potřebné vlastnosti prvku DataFormu (jednotlivý Control) pro aplikační kód, 
-    /// pomocí kterého může aplikační kód doplňovat chybějící informace pro controly (typicky text popisku Main label, Tooltip, Editační styl, atd) na základě třídy a jména atributu / vztahu.
-    /// </summary>
-    internal interface IDataFormItem
-    {
-        /// <summary>
-        /// Dataform, jehož layout vzniká
-        /// </summary>
-        DfForm DataForm { get; }
-        /// <summary>
-        /// Vlastní control, tak jak je deklarován v <c>frm.xml</c>
-        /// </summary>
-        DfBaseControl BaseControl { get; }
-        /// <summary>
-        /// Jméno prvku
-        /// </summary>
-        string Name { get; }
-        /// <summary>
-        /// Jméno sloupce v datech (více prvků různého jména <see cref="Name"/> může zobrazovat data ze stejného prvku <see cref="ColumnName"/>).
-        /// </summary>
-        string ColumnName { get; }
-        /// <summary>
-        /// Informace o Controlu
-        /// </summary>
-        ControlInfo ControlInfo { get; }
-        /// <summary>
-        /// Pozice implicitního Main labelu
-        /// </summary>
-        LabelPositionType LabelPosition { get; }
-        /// <summary>
-        /// Kompletní data pro Main Label. Může být null, pokud konkrétní Control nemá Label.
-        /// </summary>
-        LabelInfo MainLabelInfo { get; }
-        /// <summary>
-        /// Kompletní data pro Suffix Label. Může být null, pokud konkrétní Control nemá Label.
-        /// </summary>
-        LabelInfo SuffixLabelInfo { get; }
-
-        /// <summary>
-        /// Titulek ToolTipu.
-        /// Pokud je null, pak není ve formuláři definováno. Pokud je "", je tím definováno 'Bez labelu'.
-        /// V existující definici mohou být přítomny formátovací funkce: "fm(xxx)", "fmr(xxx)". Přípravná funkce to má vyřešit.
-        /// </summary>
-        string ToolTipTitle { get; set; }
-        /// <summary>
-        /// Text ToolTipu.
-        /// Pokud je null, pak není ve formuláři definováno. Pokud je "", je tím definováno 'Bez labelu'.
-        /// V existující definici mohou být přítomny formátovací funkce: "fm(xxx)", "fmr(xxx)". Přípravná funkce to má vyřešit.
-        /// </summary>
-        string ToolTipText { get; set; }
-    }
-    /// <summary>
-    /// Režim layoutu
-    /// </summary>
-    internal enum LayoutModeType
-    {
-        /// <summary>
-        /// Neurčeno, bere se jako <see cref="Flow"/>
-        /// </summary>
-        None,
-        /// <summary>
-        /// <see cref="Flow"/> = umisťuje se do postupně vznikající mřížky s pevně daným počtem sloupců. 
-        /// Mřížka určuje i rozložení Labelu a Controlu uvnitř buňky.
-        /// </summary>
-        Flow,
-        /// <summary>
-        /// <see cref="FlowInParent"/> = sám není součástí FlowLayoutu, ale využívá existující Parent buňku FlowLayoutu pro svoje umístění.
-        /// Parent buňka je specifikována jejím jménem, odkázaným z <see cref="DfBaseControl.ParentBoundsName"/>.
-        /// Uvnitř buňky je prvek umístěn zcela identicky, jako by byl součástí FlowLayoutu.
-        /// Lze tak do jedné buňky vložit střídavě více prvků a řídit jejich Visible.
-        /// </summary>
-        FlowInParent,
-        /// <summary>
-        /// <see cref="BoundsInParent"/> = sám není součástí FlowLayoutu, ale využívá existující Parent buňku FlowLayoutu pro svoje umístění.
-        /// Parent buňka je specifikována jejím jménem, odkázaným z <see cref="DfBaseControl.ParentBoundsName"/>.<br/>
-        /// V rámci dané buňky je pak umístěn na základě svých Bounds. 
-        /// Využívá tedy souřadnici odkázanou buňku, z ní načte její vnitřní souřadnice, určí počátek prostoru pro Control a ten použije jako bod 0/0,
-        /// k němu přičte svoje zadané souřadnice Bounds a na výsledné místo se umístí. Může se tedy umístit i mimo prostor zadané buňky.
-        /// </summary>
-        BoundsInParent,
-        /// <summary>
-        /// <see cref="FixedAbsolute"/> Fixní s přesně danými souřadnicemi X,Y vzhledem k parent containeru. Bez vztahu k FlowLayoutu.
-        /// </summary>
-        FixedAbsolute
-    }
-    #endregion
     #region class DfTemplateLayoutArgs : Data pro algoritmy rozmístění prvků šablony DataFormu
     /// <summary>
     /// Data pro algoritmy rozmístění prvků šablony DataFormu
@@ -4814,21 +4867,72 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public DfForm DataForm { get; set; }
         /// <summary>
-        /// Mají se ukládat Debug obrázky? Pak budou jejich jména uložena v <see cref="DebugImages"/>
+        /// Mají se ukládat Debug obrázky? Pak budou jejich jména uložena v <see cref="ImageFiles"/>
         /// </summary>
-        public bool SaveDebugImages { get; set; }
+        public DfTemplateLayoutDebugImageMode CreateDebugImages { get; set; }
         /// <summary>
-        /// Do Debug obrázku vykreslovat i vodící linky?
+        /// Do Debug obrázku vykreslovat i vodící linky a další prvky?
         /// </summary>
-        public bool DebugImagesWithGuideLines { get; set; }
+        public DfTemplateLayoutDebugInfoLevelType DebugImagesInfoLevel { get; set; }
         /// <summary>
         /// Podadresář pro DebugImages v rámci Windows Temp adresáře
         /// </summary>
         public string DebugImagePath { get; set; }
         /// <summary>
-        /// Debug obrázky, pokud <see cref="SaveDebugImages"/> je true
+        /// Objekty Image obsahující Název obrázku a Obrázek, pokud <see cref="CreateDebugImages"/> je <see cref="DfTemplateLayoutDebugImageMode.Image"/>
         /// </summary>
-        public List<string> DebugImages { get; set; }
+        public List<Tuple<string, System.Drawing.Image>> Images { get; set; }
+        /// <summary>
+        /// Plné názvy souborů s DebugImage soubory, pokud <see cref="CreateDebugImages"/> je <see cref="DfTemplateLayoutDebugImageMode.File"/>
+        /// </summary>
+        public List<string> ImageFiles { get; set; }
+    }
+    /// <summary>
+    /// V jakém režimu generovat Debug image
+    /// </summary>
+    internal enum DfTemplateLayoutDebugImageMode
+    {
+        /// <summary>
+        /// Negenerovat
+        /// </summary>
+        None,
+        /// <summary>
+        /// Vytvořit Image a vložit je do <see cref="DfTemplateLayoutArgs.Images"/>
+        /// </summary>
+        Image,
+        /// <summary>
+        /// Vytvořit Image a uložit je do souboru do adresáře (WinTemp)/<see cref="DfTemplateLayoutArgs.DebugImagePath"/>, a výsledná jména souborů uložit do <see cref="DfTemplateLayoutArgs.ImageFiles"/>
+        /// </summary>
+        File
+    }
+    /// <summary>
+    /// Jaké grafické informace vykreslovat do DebugImage
+    /// </summary>
+    [Flags]
+    internal enum DfTemplateLayoutDebugInfoLevelType
+    {
+        /// <summary>
+        /// Žádné debug informace = čistý obraz formuláře
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Vykresli pozadí pod Labely
+        /// </summary>
+        AddLabelBackground = 0x0010,
+        /// <summary>
+        /// Vykresli okraje kolem labelů
+        /// </summary>
+        AddLabelBorder = 0x0020,
+        /// <summary>
+        /// Vykresli vodící linky
+        /// </summary>
+        AddGuideLines = 0x0100,
+
+        /// <summary>
+        /// Všechno
+        /// </summary>
+        All = AddLabelBackground | AddLabelBorder | AddGuideLines
+
     }
     #endregion
     #region class TextDimension : měřítko textu a fontu
@@ -5582,6 +5686,122 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private const float _FontMarginB = 13.333f;
         #endregion
+    }
+    #endregion
+    #region interface IControlInfoSource + IDataFormItem : Předpis rozhraní pro toho, kdo bude poskytovat informace o atributech a o rozměrech textů pro DataForm; rozhraní prvku DataFormu
+    /// <summary>
+    /// Předpis rozhraní pro toho, kdo bude poskytovat informace o atributech a o rozměrech textů pro DataForm.
+    /// </summary>
+    internal interface IControlInfoSource
+    {
+        /// <summary>
+        /// Metoda určí typ controlu pro daný prvek a třídu. Volá se pouze při konverzi formuláře Infragistic, pro sloupce kde atribut 'InputType' je nezadaný.
+        /// Potom je třeba, aby <see cref="IControlInfoSource"/> určil typ controlu <see cref="DataControlType"/> podle typu atributu (daný jménem a třídou).
+        /// </summary>
+        /// <param name="columnName"></param>
+        /// <param name="useNorisClass"></param>
+        /// <returns></returns>
+        DataControlType? GetControlType(string columnName, int? useNorisClass);
+        /// <summary>
+        /// Funkce, která vrátí stringový obsah nested šablony daného jména.<br/>
+        /// Funkce bude volána s parametrem = jméno šablony (obsah atributu NestedTemplate), jeho úkolem je vrátit string = obsah požadované šablony (souboru).<br/>
+        /// Pokud funkce požadovanou šablonu (soubor) nenajde, může sama ohlásit chybu. Anebo může vrátit null, pak bude Nested prvek ignorován.
+        /// </summary>
+        /// <param name="templateName"></param>
+        /// <returns></returns>
+        string NestedTemplateContentLoad(string templateName);
+        /// <summary>
+        /// Validuje (prověří a doplní) informace o konkrétním controlu.
+        /// </summary>
+        /// <param name="controlInfo">Data o controlu</param>
+        /// <returns></returns>
+        void ValidateControlInfo(IDataFormItem controlInfo);
+    }
+    /// <summary>
+    /// Definuje potřebné vlastnosti prvku DataFormu (jednotlivý Control) pro aplikační kód, 
+    /// pomocí kterého může aplikační kód doplňovat chybějící informace pro controly (typicky text popisku Main label, Tooltip, Editační styl, atd) na základě třídy a jména atributu / vztahu.
+    /// </summary>
+    internal interface IDataFormItem
+    {
+        /// <summary>
+        /// Dataform, jehož layout vzniká
+        /// </summary>
+        DfForm DataForm { get; }
+        /// <summary>
+        /// Vlastní control, tak jak je deklarován v <c>frm.xml</c>
+        /// </summary>
+        DfBaseControl BaseControl { get; }
+        /// <summary>
+        /// Jméno prvku
+        /// </summary>
+        string Name { get; }
+        /// <summary>
+        /// Jméno sloupce v datech (více prvků různého jména <see cref="Name"/> může zobrazovat data ze stejného prvku <see cref="ColumnName"/>).
+        /// </summary>
+        string ColumnName { get; }
+        /// <summary>
+        /// Informace o Controlu
+        /// </summary>
+        ControlInfo ControlInfo { get; }
+        /// <summary>
+        /// Pozice implicitního Main labelu
+        /// </summary>
+        LabelPositionType LabelPosition { get; }
+        /// <summary>
+        /// Kompletní data pro Main Label. Může být null, pokud konkrétní Control nemá Label.
+        /// </summary>
+        LabelInfo MainLabelInfo { get; }
+        /// <summary>
+        /// Kompletní data pro Suffix Label. Může být null, pokud konkrétní Control nemá Label.
+        /// </summary>
+        LabelInfo SuffixLabelInfo { get; }
+
+        /// <summary>
+        /// Titulek ToolTipu.
+        /// Pokud je null, pak není ve formuláři definováno. Pokud je "", je tím definováno 'Bez labelu'.
+        /// V existující definici mohou být přítomny formátovací funkce: "fm(xxx)", "fmr(xxx)". Přípravná funkce to má vyřešit.
+        /// </summary>
+        string ToolTipTitle { get; set; }
+        /// <summary>
+        /// Text ToolTipu.
+        /// Pokud je null, pak není ve formuláři definováno. Pokud je "", je tím definováno 'Bez labelu'.
+        /// V existující definici mohou být přítomny formátovací funkce: "fm(xxx)", "fmr(xxx)". Přípravná funkce to má vyřešit.
+        /// </summary>
+        string ToolTipText { get; set; }
+    }
+    /// <summary>
+    /// Režim layoutu
+    /// </summary>
+    internal enum LayoutModeType
+    {
+        /// <summary>
+        /// Neurčeno, bere se jako <see cref="Flow"/>
+        /// </summary>
+        None,
+        /// <summary>
+        /// <see cref="Flow"/> = umisťuje se do postupně vznikající mřížky s pevně daným počtem sloupců. 
+        /// Mřížka určuje i rozložení Labelu a Controlu uvnitř buňky.
+        /// </summary>
+        Flow,
+        /// <summary>
+        /// <see cref="FlowInParent"/> = sám není součástí FlowLayoutu, ale využívá existující Parent buňku FlowLayoutu pro svoje umístění.
+        /// Parent buňka je specifikována jejím jménem, odkázaným z <see cref="DfBaseControl.ParentBoundsName"/>.
+        /// Uvnitř buňky je prvek umístěn zcela identicky, jako by byl součástí FlowLayoutu.
+        /// Lze tak do jedné buňky vložit střídavě více prvků a řídit jejich Visible.
+        /// </summary>
+        FlowInParent,
+        /// <summary>
+        /// <see cref="BoundsInParent"/> = sám není součástí FlowLayoutu, ale využívá existující Parent buňku FlowLayoutu pro svoje umístění.
+        /// Parent buňka je specifikována jejím jménem, odkázaným z <see cref="DfBaseControl.ParentBoundsName"/>.<br/>
+        /// V rámci dané buňky je pak umístěn na základě svých Bounds. 
+        /// Využívá tedy souřadnici odkázanou buňku, z ní načte její vnitřní souřadnice, určí počátek prostoru pro Control a ten použije jako bod 0/0,
+        /// k němu přičte svoje zadané souřadnice Bounds a na výsledné místo se umístí. Může se tedy umístit i mimo prostor zadané buňky.
+        /// </summary>
+        BoundsInParent,
+        /// <summary>
+        /// <see cref="FixedAbsolute"/> Fixní s přesně danými souřadnicemi X,Y vzhledem k parent containeru. Bez vztahu k FlowLayoutu.
+        /// </summary>
+        FixedAbsolute
     }
     #endregion
 }

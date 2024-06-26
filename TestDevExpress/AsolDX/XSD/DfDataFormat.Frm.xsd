@@ -554,7 +554,11 @@
                 </xs:attribute>
                 <xs:attribute name="AutoLabelPosition" type="label_position_enum" >
                     <xs:annotation>
-                        <xs:documentation xml:lang="cs-cz">Automaticky generovat labely atributů a vztahů v rámci tohoto containeru, jejich umístění. Defaultní = podle parenta.</xs:documentation>
+                        <xs:documentation xml:lang="cs-cz">
+							Automaticky generovat labely atributů a vztahů pro Child prvky v rámci tohoto containeru, jejich umístění.
+							Tato hodnota neovlivňuje umístění Labelu pro samotný aktuální container, to se řídí zdejší hodnotou atributu 'LabelPosition', anebo (pokud není přítomen) pak nastavením 'AutoLabelPosition' z Parent containeru!
+							Defaultní = podle parenta.
+						</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
                 <xs:attribute name="Margins" type="xs:string">

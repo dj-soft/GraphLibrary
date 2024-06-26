@@ -548,7 +548,9 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public Margins Margins { get; set; }
         /// <summary>
-        /// Automaticky generovat labely atributů a vztahů, jejich umístění. Defaultní = <c>NULL</c>
+        /// Automaticky generovat labely atributů a vztahů pro Child prvky v rámci tohoto containeru, jejich umístění.
+        /// Tato hodnota neovlivňuje umístění Labelu pro samotný aktuální container, to se řídí zdejší hodnotou atributu 'LabelPosition', anebo (pokud není přítomen) pak nastavením 'AutoLabelPosition' z Parent containeru!
+        /// Defaultní = NULL = podle parenta.
         /// </summary>
         public LabelPositionType? AutoLabelPosition { get; set; }
         /// <summary>
@@ -1534,7 +1536,7 @@ namespace Noris.WS.DataContracts.DxForm
         public int? Top { get; set; }
     }
     /// <summary>
-    /// Umístění
+    /// Velikost
     /// </summary>
     public sealed class Size
     {
@@ -1794,7 +1796,7 @@ namespace Noris.WS.DataContracts.DxForm
         public override string ToString()
         {
             if (IsEmpty) return "Empty";
-            if (IsAll)return $"All: {Left}";
+            if (IsAllSame)return $"All: {Left}";
             return $"Left: {Left}; Top: {Top}; Right: {Right}; Bottom: {Bottom}";
         }
         /// <summary>
@@ -1820,11 +1822,11 @@ namespace Noris.WS.DataContracts.DxForm
         /// <summary>
         /// Je empty = vše je 0
         /// </summary>
-        private bool IsEmpty { get { return (this.Left == 0 && this.Top == 0 && this.Right == 0 && this.Bottom == 0); } }
+        public bool IsEmpty { get { return (this.Left == 0 && this.Top == 0 && this.Right == 0 && this.Bottom == 0); } }
         /// <summary>
-        /// Je všude stejný = všechny hodnoty jsou stejné (i <see cref="IsEmpty"/> prvek má <see cref="IsAll"/> == true)
+        /// Je všude stejný = všechny hodnoty jsou stejné (i <see cref="IsEmpty"/> prvek má <see cref="IsAllSame"/> == true)
         /// </summary>
-        private bool IsAll { get { return (this.Left == this.Top && this.Top == this.Right && this.Right == this.Bottom); } }
+        public bool IsAllSame { get { return (this.Left == this.Top && this.Top == this.Right && this.Right == this.Bottom); } }
     }
     /// <summary>
     /// Informace o stylu písma
@@ -2622,7 +2624,11 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         HtmlContent,
         /// <summary>
-        /// Grupa: z hlediska tvorby panelu jde o jeden z jeho controlů. Ale je to i Container.
+        /// Panel: z hlediska tvorby layoutu jde o Root control. Ale je to i Container. 
+        /// </summary>
+        Panel,
+        /// <summary>
+        /// Grupa: z hlediska tvorby layoutu jde o jeden z controlů. Ale je to i Container.
         /// </summary>
         Group
     }

@@ -553,8 +553,8 @@ namespace TestDevExpress.Forms
                         InfoSource = this,
                         Errors = loadingArgs.Errors,
                         LogTime = true,
-                        SaveDebugImages = true,
-                        DebugImagesWithGuideLines = true,
+                        CreateDebugImages = DfTemplateLayoutDebugImageMode.File,
+                        DebugImagesInfoLevel = DfTemplateLayoutDebugInfoLevelType.All,
                         DebugImagePath = "AsolLayouts"
                     };
                     DxDForm.DfTemplateLayout.CreateLayout(layoutArgs);
