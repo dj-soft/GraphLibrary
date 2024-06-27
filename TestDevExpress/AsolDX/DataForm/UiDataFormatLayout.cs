@@ -825,6 +825,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             this.__DesignBounds = dfPanel.DesignBounds;
             this.__ParentBoundsName = null;
+            this.__Break = null;
             this.__ColIndex = null;
             this.__ColSpan = null;
             this.__RowSpan = null;
@@ -846,6 +847,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             this.__DesignBounds = dfGroup.DesignBounds;
             this.__ParentBoundsName = dfGroup.ParentBoundsName;
+            this.__Break = dfGroup.Break;
             this.__ColIndex = dfGroup.ColIndex;
             this.__ColSpan = dfGroup.ColSpan;
             this.__RowSpan = dfGroup.RowSpan;
@@ -867,6 +869,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             this.__DesignBounds = dfControl.DesignBounds;
             this.__ParentBoundsName = dfControl.ParentBoundsName;
+            this.__Break = dfControl.Break;
             this.__ColIndex = dfControl.ColIndex;
             this.__ColSpan = dfControl.ColSpan;
             this.__RowSpan = dfControl.RowSpan;
@@ -953,6 +956,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __Name = null;
             __ColumnName = null;
             __DesignBounds = null;
+            __Break = null;
             __ColIndex = null;
             __ColSpan = null;
             __RowSpan = null;
@@ -997,6 +1001,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Klíč prvku ParentBoundsName: Trim, Lower.  Pochází z <see cref="__ParentBoundsName"/>. Pokud tam je null, je i <see cref="_Key"/> = null.
         /// </summary>
         private string _ParentBoundsKey { get { return DfTemplateLayout.GetItemKey(__ParentBoundsName); } }
+        /// <summary>
+        /// Tento prvek sloupec odskočí na nový řádek, na pozici prvního sloupce.
+        /// </summary>
+        private bool? __Break;
         /// <summary>
         /// Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
         /// </summary>
@@ -1205,6 +1213,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         bool IFlowLayoutItem.IsAbsent { get { return _IsAbsent; } }
         bool IFlowLayoutItem.IsFlowMode { get { return (__LayoutMode == LayoutModeType.Flow); } }
         string IFlowLayoutItem.Text { get { return __Name; } }
+        bool? IFlowLayoutItem.Break { get { return __Break; } }
         int? IFlowLayoutItem.DesignColIndex { get { return __ColIndex; } }
         int? IFlowLayoutItem.DesignColSpan { get { return __ColSpan; } }
         int? IFlowLayoutItem.DesignRowSpan { get { return __RowSpan; } }
@@ -2485,6 +2494,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int firstColumn = 0;
             int rowIndex = __CurrentRowIndex;
             int colIndex = __CurrentColIndex;
+            bool isBreak = layoutItem.Break ?? false;
             int? itemColIndex = layoutItem.DesignColIndex;
             int itemColSpan = getSpan(layoutItem.DesignColSpan, columnsCount);
             int itemRowSpan = getSpan(layoutItem.DesignRowSpan, null);
@@ -2492,7 +2502,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Pokud autor zadal moc široký ColSpan 'itemColSpan', který se nevejde do layoutu, zmenším ho tak, aby se vešel:
             if (itemColSpan > columnsCount) itemColSpan = columnsCount;
 
-            // Pokud autor zadal umísťovací index 'itemColIndex', připravíme se na to:
+            // Pokud autor zadal Break nebo umísťovací index 'itemColIndex', připravíme se na to:
+            if (isBreak)
+                processItemBreak();
             if (itemColIndex.HasValue)
                 processItemColIndex(itemColIndex.Value);
 
@@ -2522,6 +2534,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (!itemSpan.HasValue) return 1;
                 int span = itemSpan.Value;
                 return (span < 1 ? 1 : ((maxSpan.HasValue && span > maxSpan.Value) ? maxSpan.Value : span));
+            }
+            // Zpracuje požadavek na Break
+            void processItemBreak()
+            {
+                if (colIndex > 0)
+                    rowIndex++;
+                colIndex = 0;
             }
             // Zpracuje požadavek na umístění na ColIndex
             void processItemColIndex(int iColIdx)
@@ -4001,6 +4020,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Text, slouží jen pro popis prvku pro ladění. Implicitně Name nebo ColumnName.
         /// </summary>
         string Text { get; }
+        /// <summary>
+        /// Tento prvek sloupec odskočí na nový řádek, na pozici prvního sloupce.
+        /// </summary>
+        bool? Break { get; }
         /// <summary>
         /// Explicitně definovaný index sloupce, kde prvek má začínat
         /// </summary>

@@ -613,6 +613,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             // Atributy:
             _FillBaseAttributes(xElement, dfGroup, context);
+            dfGroup.Break = _ReadAttributeBoolNX(xElement, "Break", null, true);
             dfGroup.ColIndex = _ReadAttributeInt32N(xElement, "ColIndex");
             dfGroup.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
             dfGroup.RowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
@@ -646,6 +647,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             dfNestedGroup.NestedGroupName = _ReadAttributeString(xElement, "NestedPanelName", null);
             dfNestedGroup.DesignBounds = _ReadAttributeBounds(xElement, null);
             dfNestedGroup.ParentBoundsName = _ReadAttributeString(xElement, "ParentBoundsName", null);
+            dfNestedGroup.Break = _ReadAttributeBoolNX(xElement, "Break", null, true);
             dfNestedGroup.ColIndex = _ReadAttributeInt32N(xElement, "ColIndex");
             dfNestedGroup.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
             dfNestedGroup.RowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
@@ -670,6 +672,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (dfNestedGroup.Invisible != null) dfGroup.Invisible = dfNestedGroup.Invisible;
                 dfGroup.DesignBounds = dfNestedGroup.DesignBounds;
                 dfGroup.ParentBoundsName = dfNestedGroup.ParentBoundsName;
+                dfGroup.Break = dfNestedGroup.Break;
                 dfGroup.ColIndex = dfNestedGroup.ColIndex;
                 dfGroup.ColSpan = dfNestedGroup.ColSpan;
                 dfGroup.RowSpan = dfNestedGroup.RowSpan;
@@ -1571,6 +1574,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 control.ControlStyle = _ReadAttributeStyle(xElement, null);
                 control.DesignBounds = _ReadAttributeBounds(xElement, null);
                 control.ParentBoundsName = _ReadAttributeString(xElement, "ParentBoundsName", null);
+                control.Break = _ReadAttributeBoolNX(xElement, "Break", null, true);
                 control.ColIndex = _ReadAttributeInt32N(xElement, "ColIndex");
                 control.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
                 control.RowSpan = _ReadAttributeInt32N(xElement, "RowSpan");

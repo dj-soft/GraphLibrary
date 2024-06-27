@@ -23,10 +23,12 @@
 			<textbox Name="PSČ" Width ="50"/>
 			<textbox Name="Obec" Width="100" Label="Město" />
 		</group>
-		<textbox Name="fv_refer" Width="250" Label="FV, číslo"/>
-        <textbox Name="fv_nazev" Width="350" Label="FV, variabilní symbol" />
+        <group Name="fv" Break="True" >
+            <textbox Name="fv_refer" Width="150" Label="FV, číslo" Break="True" />
+            <textbox Name="fv_nazev" Width="250" Label="FV, variabilní symbol"  />
+        </group>
 		
-        <textbox Name="sklad_refer" Width="150" HPosition="Right" />
+        <textbox Name="sklad_refer" Width="150" HPosition="Right" Break="True" />
         <textbox Name="sklad_nazev" Width="250"/>
         <textbox Name="sklad_osoba" Width="350"/>
 		

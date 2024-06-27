@@ -307,6 +307,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// </summary>
         public override ContainerType AreaType { get { return ContainerType.Group; } }
         /// <summary>
+        /// Tento prvek sloupec odskočí na nový řádek, na pozici prvního sloupce.
+        /// </summary>
+        public bool? Break { get; set; }
+        /// <summary>
         /// Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
         /// </summary>
         public int? ColIndex { get; set; }
@@ -420,6 +424,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// Jméno prvku 'Name', který určuje souřadnice pro zdejší prvek, pokud ten je umístěn fixně = má definované souřadnice 'X' a 'Y'.
         /// </summary>
         public string ParentBoundsName { get; set; }
+        /// <summary>
+        /// Tento prvek sloupec odskočí na nový řádek, na pozici prvního sloupce.
+        /// </summary>
+        public bool? Break { get; set; }
         /// <summary>
         /// Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
         /// </summary>
@@ -1165,6 +1173,10 @@ namespace Noris.WS.DataContracts.DxForm
         /// Jméno prvku 'Name', který určuje souřadnice pro zdejší prvek, pokud ten je umístěn fixně = má definované souřadnice 'X' a 'Y'.
         /// </summary>
         public string ParentBoundsName { get; set; }
+        /// <summary>
+        /// Tento prvek sloupec odskočí na nový řádek, na pozici prvního sloupce.
+        /// </summary>
+        public bool? Break { get; set; }
         /// <summary>
         /// Index sloupce, na kterém je prvek umístěn v režimu FlowLayout. Ten se použije, pokud prvky nemají exaktně dané souřadnice, spolu s atributem 'ColumnWidths'.
         /// </summary>
