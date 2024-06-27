@@ -14,9 +14,10 @@
     <panel Name="test18" Title="test13" ColumnsCount="3" AutoLabelPosition="Top"
                          TopLabelOffsetX="6" BottomLabelOffsetX="12" Margins="4,4" ControlMargins="2" ColumnsDistance="3" RowsDistance="3" >
 
-		<textbox Name="nazev" Width="915" Height="40" ColSpan="3" />
+		<textbox Name="nazev" Width="915" Height="40" ColSpan="3" ExpandControl="Left" />
 
-		<group  Name="fv_group" Width="300" Label="Adresa odběratele, titulek celé skupiny vypsaný nahoru" LabelPosition="Top" ColumnsCount="4" AutoLabelPosition="Top" >
+		<group Name="fv_group" Width="300" LabelPosition="BeforeLeft" Label="Adresa:"  ColumnsCount="4" AutoLabelPosition="Top"
+               Labelx="Adresa odběratele, titulek celé skupiny vypsaný nahoru" LabelPositionx="Bottom">
 			<textbox Name="Ulice" Width="120" Label="Ulice" />
 			<textbox Name="čp." Width="30"/>
 			<textbox Name="PSČ" Width ="50"/>

@@ -1074,7 +1074,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private LabelInfo __LabelBottomInfo;
         /// <summary>
-        /// Velikost prostoru pro Labely Left, Top, Right, Bottom přenesená do this buňky z layoutu Child prvků pro jeho krajní labely.
+        /// Velikost přidané rezervy v prostoru pro Labely (Left, Top, Right, Bottom), které vyžaduje container Child prvků.
+        /// Pokud this je Container, pak má svůj FlowLayout sestavený pro své Child prvky.
+        /// Tento container pak může vygenerovat velikosti Labelů okolo svého obsahu (Výška Top labelů pro první řádek, šířka Left labelů pro první sloupec, atd).
+        /// Tyto rozměry z Child layoutu pak umístíme do této property, odkud si je vezme FlowLayout nadřazeného containeru a <b><u>přičte je k rozměrům</u></b> našich labelů (<see cref="LabelTopInfo"/> atd),
+        /// a tím zarezervuje sumární prostor pro např. Top labely (moje + mých Child prvků).
         /// </summary>
         private Margins __LabelPlaceholders;
         /// <summary>
@@ -1562,7 +1566,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var cellLabelUsedAreas = this._LabelUsedAreas;                 // Které pozice pro moje vlastní labely jsou obsazené? Grupa může mít svůj Label, slouží jako Titulek grupy
                 var childLabelUserAreas = flowMatrix.LabelUsedAreas;           // Které krajní pozice ve FlowLayoutu našich Child prvků využívají Labely?
 
-                bool isCombineLabelAreas = true;
+                bool isCombineLabelAreas = true;                               // Spojovat prostor pro this Label + Label mých Child prvků z flowMatrix?  true je hezčí.
+
                 Size controlSize = new Size(flowMatrix.CellWidth, flowMatrix.CellHeight);
                 Margins labelPlaceholders = new Margins();
                 DfLabelUsedAreaType childExpandAreas = DfLabelUsedAreaType.None;
@@ -1574,7 +1579,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.__ControlInfo.ImplicitOptimalWidth = controlSize.Width.Value;
                 this.__ControlInfo.ImplicitOptimalHeight = controlSize.Height.Value;
                 this.__LabelPlaceholders = labelPlaceholders;
-                this.__ChildExpandAreas = childExpandAreas;
+                // this.__ChildExpandAreas = childExpandAreas;
             }
 
             // Určí, zda na dané straně je možno využít prostor pro Label tohoto prvku pro Labely mých Child prvků, nastaví odpovídající Margins 'lblPlaceholders' a zmenší velikost potřebnou pro vnitřní Control 'ctlSize'
@@ -1584,7 +1589,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (!isCombineAreas && cellAreas.HasFlag(currArea)) return;    // Pokud se nesmí kombinovat Labely, a buňka (=my) používá danou stranu (Top, Left) pro svůj vlastní Label, pak do tohoto prostoru nebudu vkládat Label od mých Child prvků
                 // Pokud se smí kombinovat Labely (isCombineAreas je true), pak vstoupíme do dalšího kroku bez ohledu na stav Labelů v this buňce!
 
-                // OK, nějak obsadíme prostor našeho labelu (my jej nepotřebujeme) pro label Childů (oni jej potřebují):
+                // OK, nějak obsadíme prostor našeho labelu (my jej nepotřebujeme nebo jej smíme zkombinovat) pro label Childů (oni jej potřebují):
                 switch (currArea)
                 {
                     case DfLabelUsedAreaType.Left:
@@ -2196,10 +2201,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 return new System.Drawing.PointF(x + dx, y + dy);
             }
         }
-        /// <summary>
-        /// Počitadlo vytvořených Images, slouží jako suffix názvu souboru
-        /// </summary>
-        private static int __ImageCounter = 0;
         #endregion
     }
     #endregion
@@ -3370,53 +3371,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 return controlBounds;
             }
     
-            // Zpracuje souřadnici pro MainLabel
+            // Zpracuje souřadnici pro daný Label na dané pozici
             void processItemLabel(LabelInfo labelInfo, DfLabelUsedAreaType area)
             {
                 if (labelInfo is null || !labelInfo.Exists) return;
 
-                var cellMatrix = item.CellMatrix;
-                bool relativeToControl = labelsRelativeToControl && controlBounds != null;
-                if (relativeToControl && controlBounds is null) relativeToControl = false;
-                int l, r, t, b, p;
-                switch (area)
-                {
-                    case DfLabelUsedAreaType.Left:
-                        l = cellMatrix.LeftLabelLeft;
-                        r = (relativeToControl ? controlBounds.Left - cellMatrix.MarginControlLeft : cellMatrix.LeftLabelRight);
-                        t = cellMatrix.ControlTop;
-                        b = cellMatrix.ControlFirstBottom;
-                        labelInfo.Bounds = new ControlBounds(l, t, (r - l), (b - t));
-                        break;
-                    case DfLabelUsedAreaType.Right:
-                        l = (relativeToControl ? controlBounds.Right + cellMatrix.MarginControlRight : cellMatrix.RightLabelLeft);
-                        r = cellMatrix.RightLabelRight;
-                        t = cellMatrix.ControlTop;
-                        b = cellMatrix.ControlFirstBottom;
-                        labelInfo.Bounds = new ControlBounds(l, t, (r - l), (b - t));
-                        break;
-                    case DfLabelUsedAreaType.Top:
-                        p = labelPlaceholders?.Top ?? 0;
-                       // if (p > 0) p += (margins?.Top ?? 0);
-                       qqq
-                        l = (relativeToControl ? controlBounds.Left : cellMatrix.ControlLeft) + topLabelOffsetX;
-                        r = (relativeToControl ? controlBounds.Right : cellMatrix.ControlRight);
-                        t = cellMatrix.TopLabelTop;
-                        b = cellMatrix.TopLabelBottom - p;
-                        if (labelInfo.DesignWidth.HasValue && labelInfo.DesignWidth.Value >= 0)
-                            r = l + labelInfo.DesignWidth.Value;
-                        labelInfo.Bounds = new ControlBounds(l, t, (r - l), (b - t));
-                        break;
-                    case DfLabelUsedAreaType.Bottom:
-                        l = (relativeToControl ? controlBounds.Left : cellMatrix.ControlLeft) + bottomLabelOffsetX;
-                        r = (relativeToControl ? controlBounds.Right : cellMatrix.ControlRight);
-                        t = cellMatrix.BottomLabelTop;
-                        b = cellMatrix.BottomLabelBottom;
-                        if (labelInfo.DesignWidth.HasValue && labelInfo.DesignWidth.Value >= 0)
-                            r = l + labelInfo.DesignWidth.Value;
-                        labelInfo.Bounds = new ControlBounds(l, t, (r - l), (b - t));
-                        break;
-                }
+                ControlBounds alignToControl = (labelsRelativeToControl ? controlBounds : null);
+                ControlBounds labelBounds = item.CellMatrix.GetLabelBounds(area, alignToControl, labelInfo.DesignWidth, labelPlaceholders, topLabelOffsetX, bottomLabelOffsetX);
+                labelInfo.Bounds = labelBounds;
             }
         }
         /// <summary>
@@ -4112,9 +4074,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         LabelInfo LabelBottomInfo { get; }
         /// <summary>
-        /// Velikost prostoru pro Labely (Left, Top, Right, Bottom) pro situaci, kdy v odpovídajících instancích (<see cref="LabelLeftInfo"/> atd) je null nebo NotExists.
-        /// Pak prvek může (v situaci, kdy jde o container a má tedy své Childs) využít dosud prázdný prostor pro labely, a umístit do něj krajní labely svých Child prvků: najde jejich velikost a vloží ji do tohoto Placeholderu.
-        /// Pak FlowLayout rezervuje požadované místo (pixely) i když na dané straně nemá Label.
+        /// Velikost přidané rezervy v prostoru pro Labely (Left, Top, Right, Bottom), které vyžaduje container Child prvků.
+        /// Pokud this je Container, pak má svůj FlowLayout sestavený pro své Child prvky.
+        /// Tento container pak může vygenerovat velikosti Labelů okolo svého obsahu (Výška Top labelů pro první řádek, šířka Left labelů pro první sloupec, atd).
+        /// Tyto rozměry z Child layoutu pak umístíme do této property, odkud si je vezme FlowLayout nadřazeného containeru a <b><u>přičte je k rozměrům</u></b> našich labelů (<see cref="LabelTopInfo"/> atd),
+        /// a tím zarezervuje sumární prostor pro např. Top labely (moje + mých Child prvků).
         /// </summary>
         Margins LabelPlaceholders { get; }
 
@@ -4654,7 +4618,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Vrátí souřadnice pro vlastní Control z matrixu, volitelně expandované (dle <paramref name="expandControl"/>) do okolních prostorů určených pro Label.
         /// Pokud dostane informaci o využití prostorů pro labely <paramref name="usedAreas"/>, pak do nich nebude expandovat.<br/>
         /// Pokud bude expandovat do prostoru Left, a současně má Labely v pozici Top nebo Bottom a současně daný jejich offset (<paramref name="topLabelOffsetX"/> či <paramref name="bottomLabelOffsetX"/>), který je záporný, 
-        /// pak souřadnici Control.Left odsune doprava o daný offset. (Zajistí tak záporný offset mezi labelem a controlem).
+        /// pak souřadnici Control.Left odsune doprava o daný offset. (Zajistí tak prostor vlevo pro záporný offset mezi labelem a controlem).
         /// </summary>
         /// <param name="expandControl">Do kterých prostor by chtěl control expandovat?</param>
         /// <param name="usedAreas">Které prostory jsou obsazeny Labelem a nelze do nich expandovat?</param>
@@ -4695,6 +4659,53 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 int shift = (shiftT > shiftB) ? shiftT : shiftB;
                 return ((shift > 0) ? left + shift : left);
             }
+        }
+
+        internal ControlBounds GetLabelBounds(DfLabelUsedAreaType labelArea, ControlBounds alignToControl, int? labelDesignWidth, Margins labelPlaceholders, int topLabelOffsetX, int bottomLabelOffsetX)
+        {
+            bool relativeToControl = (alignToControl != null);
+
+            int l, r, t, b, p;
+            switch (labelArea)
+            {
+                case DfLabelUsedAreaType.Left:
+                    l = this.LeftLabelLeft;
+                    r = (relativeToControl ? alignToControl.Left - this.MarginControlLeft : this.LeftLabelRight);
+                    t = this.ControlTop;
+                    b = this.ControlFirstBottom;
+                    r -= (labelPlaceholders?.Left ?? 0);
+                    return new ControlBounds(l, t, (r - l), (b - t));
+
+                case DfLabelUsedAreaType.Top:
+                    l = (relativeToControl ? alignToControl.Left : this.ControlLeft) + topLabelOffsetX;
+                    r = (relativeToControl ? alignToControl.Right : this.ControlRight);
+                    t = this.TopLabelTop;
+                    b = this.TopLabelBottom;
+                    if (labelDesignWidth.HasValue && labelDesignWidth.Value >= 0)
+                        r = l + labelDesignWidth.Value;
+                    b -= (labelPlaceholders?.Top ?? 0);
+                    return new ControlBounds(l, t, (r - l), (b - t));
+
+                case DfLabelUsedAreaType.Right:
+                    l = (relativeToControl ? alignToControl.Right + this.MarginControlRight : this.RightLabelLeft);
+                    r = this.RightLabelRight;
+                    t = this.ControlTop;
+                    b = this.ControlFirstBottom;
+                    l += (labelPlaceholders?.Right ?? 0);
+                    return new ControlBounds(l, t, (r - l), (b - t));
+
+                case DfLabelUsedAreaType.Bottom:
+                    l = (relativeToControl ? alignToControl.Left : this.ControlLeft) + bottomLabelOffsetX;
+                    r = (relativeToControl ? alignToControl.Right : this.ControlRight);
+                    t = (relativeToControl ? alignToControl.Bottom + this.MarginControlBottom : this.BottomLabelTop);
+                    b = (relativeToControl ? t + this.BottomLabelHeight : this.BottomLabelBottom);
+                    if (labelDesignWidth.HasValue && labelDesignWidth.Value >= 0)
+                        r = l + labelDesignWidth.Value;
+                    t += (labelPlaceholders?.Bottom ?? 0);
+                    return new ControlBounds(l, t, (r - l), (b - t));
+                    
+            }
+            return null;
         }
         #endregion
     }
