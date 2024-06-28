@@ -305,4 +305,71 @@
         </group>
     </panel>
 
+    <panel Name="test18" Title="test18" ColumnsCount="3" AutoLabelPosition="Top"
+                             TopLabelOffsetX="6" BottomLabelOffsetX="12" Margins="4,4" ControlMargins="2" ColumnsDistance="3" RowsDistance="3" >
+
+        <textbox Name="nazev" Width="915" Height="40" ColSpan="3" ExpandControl="Left" />
+
+        <group Name="fv_group" Width="306" Label="Adresa odběratele, titulek celé skupiny vypsaný nahoru" LabelPosition="Top" ColumnsDistance="2" ColumnsCount="4" AutoLabelPosition="Top" >
+            <textbox Name="Ulice" Width="120" Label="Ulice" />
+            <textbox Name="čp." Width="30"/>
+            <textbox Name="PSČ" Width ="50"/>
+            <textbox Name="Obec" Width="100" Label="Město" />
+        </group>
+        <textbox Name="fv_refer" Width="100%" Label="FV, číslo" />
+        <textbox Name="fv_nazev" Width="100%" Label="FV, variabilní symbol"  />
+
+        <textbox Name="sklad_refer" Width="306" HPosition="Right" />
+        <textbox Name="sklad_nazev" Width="250"/>
+        <textbox Name="sklad_osoba" Width="306"/>
+
+    </panel>
+
+    <panel Name="test19" Title="test19" ColumnsCount="3" AutoLabelPosition="Top"
+                         TopLabelOffsetX="6" BottomLabelOffsetX="12" Margins="4,4" ControlMargins="2" ColumnsDistance="3" RowsDistance="3" >
+
+        <textbox Name="nazev" Width="915" Height="40" ColSpan="3" ExpandControl="Left" />
+
+        <group Name="fv_group" Width="306" Label="Adresa odběratele, titulek celé skupiny vypsaný nahoru" LabelPosition="Top" ColumnsDistance="2" RowsDistance="1" ColumnsCount="4" AutoLabelPosition="Top" >
+            <textbox Name="Ulice" Width="120" Label="Ulice" />
+            <textbox Name="čp." Width="30"/>
+            <textbox Name="PSČ" Width ="50"/>
+            <textbox Name="Obec" Width="100" Label="Město" />
+
+            <textbox Name="Ulice2" Width="120" LabelPosition="None" />
+            <textbox Name="čp.2" Width="30" LabelPosition="None" />
+            <textbox Name="PSČ2" Width ="50" LabelPosition="None" />
+            <textbox Name="Obec2" Width="100" LabelPosition="None" />
+        </group>
+        <textbox Name="fv_refer" Width="100%" Label="FV, číslo" />
+        <textbox Name="fv_nazev" Width="100%" Label="FV, variabilní symbol"  />
+
+        <textbox Name="sklad_refer" Width="306" HPosition="Right" />
+        <textbox Name="sklad_nazev" Width="250"/>
+        <textbox Name="sklad_osoba" Width="306"/>
+
+    </panel>
+
+    <panel Name="test20" Title="test20" ColumnsCount="3" AutoLabelPosition="Top"
+                         TopLabelOffsetX="6" BottomLabelOffsetX="12" Margins="4,4" ControlMargins="2" ColumnsDistance="3" RowsDistance="3" >
+
+        <textbox Name="nazev" Width="915" Height="40" ColSpan="3" ExpandControl="Left" />
+
+        <group Name="fv_group" Width="306" ColumnsDistance="2" LabelPosition="BeforeLeft" Label="Adresa:"  ColumnsCount="4" AutoLabelPosition="Top">
+            <textbox Name="Ulice" Width="120" Label="Ulice" />
+            <textbox Name="čp." Width="30"/>
+            <textbox Name="PSČ" Width ="50"/>
+            <textbox Name="Obec" Width="100" Label="Město" />
+        </group>
+        <group Name="fv" Break="True" >
+            <textbox Name="fv_refer" Width="123" Label="FV, číslo" Break="True" />
+            <textbox Name="fv_nazev" Width="180" Label="FV, variabilní symbol"  />
+        </group>
+
+        <textbox Name="sklad_refer" Width="306" HPosition="Right" Break="True" />
+        <textbox Name="sklad_nazev" Width="250"/>
+        <textbox Name="sklad_osoba" Width="306"/>
+
+    </panel>    
+
 </template>
