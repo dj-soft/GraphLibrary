@@ -293,7 +293,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return dfForm;
         }
         /// <summary>
-        /// Z dodaných podkladů, definujících šablonu (<paramref name="args"/>), načte a vrátí Root element <see cref="XElement"/>.
+        /// Z dodaných podkladů, definujících šablonu (<paramref name="context"/>), načte a vrátí Root element <see cref="XElement"/>.
         /// </summary>
         /// <param name="context">Průběžná data pro načítání obsahu</param>
         /// <returns></returns>
@@ -1216,75 +1216,78 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             string xName = _GetValidElementName(xElement);
             if (!String.Equals(xName, elementName, StringComparison.OrdinalIgnoreCase)) return null;
 
+            var column = new DfColumn();
+
             // Načtu obecně platné atributy, deklarované v DataForm.Frm.xsd :
-            var name = _ReadAttributeString(xElement, "Name", null);
-            var tabIndex = _ReadAttributeInt32N(xElement, "TabIndex");
-            var editMask = _ReadAttributeString(xElement, "EditMask", null);
-            var inputWindow = _ReadAttributeString(xElement, "InputWindow", null);
-            var currencyDisplay = _ReadAttributeBoolN(xElement, "CurrencyDisplay");
-            var maxLength = _ReadAttributeInt32N(xElement, "MaxLength");
-            var label = _ReadAttributeString(xElement, "Label", null);
-            var labelToolTip = _ReadAttributeString(xElement, "LabelToolTip", null);
-            var labelToolTipHide = _ReadAttributeString(xElement, "LabelToolTipHide", null);
-            var width = _ReadAttributeInt32PN(xElement, "Width");
-            var height = _ReadAttributeInt32PN(xElement, "Height");
-            var required = _ReadAttributeBoolN(xElement, "Required");
-            var invisible = _ReadAttributeString(xElement, "Invisible", null);
-            var readOnly = _ReadAttributeBoolN(xElement, "ReadOnly");
-            var inputType = _ReadAttributeString(xElement, "InputType", null);                               // text / checkbox / radiobutton / string / dynamic / date / time / datetime / textarea / select / password / number / label / group / button / picturelistbox / file / calendar / picture / htmltext / AidcCode / color / Geography / PercentageBar / calculator / Placeholder
-            var syntaxHighlightingType = _ReadAttributeString(xElement, "SyntaxHighlightingType", null);     // Sql / Xml
-            var aidcCodeType = _ReadAttributeString(xElement, "AidcCodeType", null);                         // Codabar / Code11 / DataMatrix / EAN13 / EAN8 / ....
-            var aidcCodeSettings = _ReadAttributeString(xElement, "AidcCodeSettings", null);
-            var percentageBarSettings = _ReadAttributeString(xElement, "PercentageBarSettings", null);
-            var buttonAction = _ReadAttributeString(xElement, "ButtonAction", null);                         // Click / Update / Close / RunFunction / ClickCheckRequired
-            var buttonFunction = _ReadAttributeString(xElement, "ButtonFunction", null);
-            var buttonFunctionLabelType = _ReadAttributeString(xElement, "ButtonFunctionLabelType", null);   // Text / Icon / IconText
-            var values = _ReadAttributeString(xElement, "Values", null);
-            var expr = _ReadAttributeString(xElement, "Expr", null);
-            var exprType = _ReadAttributeString(xElement, "ExprType", null);                                 // String / Int32 / DateTime / Decimal
-            var editStyle = _ReadAttributeString(xElement, "EditStyle", null);
-            var editStyleViewMode = _ReadAttributeString(xElement, "EditStyleViewMode", null);               // Text / Icon / IconText
-            var protect = _ReadAttributeString(xElement, "Protect", null);
-            var htmlEdit = _ReadAttributeBoolN(xElement, "HtmlEdit");
-            var relation = _ReadAttributeBoolN(xElement, "Relation");                                        // 0 / 1
-            var htmlStyle = _ReadAttributeString(xElement, "HtmlStyle", null);
-            var colSpan = _ReadAttributeInt32N(xElement, "ColSpan");
-            var rowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
-            var labelPos = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPos", _ConvertIGLabelPos);                // type 'pos'         : Left / Up / None / Right
-            var align = _ReadAttributeEnumN<ContentAlignmentType>(xElement, "Align", _ConvertIGLabelLeftRight);             // type 'leftright'   : Left / Right
-            var alignValue = _ReadAttributeEnumN<ContentAlignmentType>(xElement, "AlignValue", _ConvertIGLabelLeftRight);   // type 'leftright'   : Left / Right
-            var registerItemChange = _ReadAttributeBoolN(xElement, "RegisterItemChange");
-            var registerDblClick = _ReadAttributeBoolN(xElement, "RegisterDblClick");
-            var boxCols = _ReadAttributeString(xElement, "BoxCols", null);
-            var boxRows = _ReadAttributeString(xElement, "BoxRows", null);
-            var boxStyle = _ReadAttributeString(xElement, "BoxStyle", null);
-            var attrShortName = _ReadAttributeBoolN(xElement, "AttrShortName");
-            var relationParams = _ReadAttributeString(xElement, "RelationParams", null);
-            var relationAddName = _ReadAttributeBoolN(xElement, "RelationAddName");
-            var renderAs = _ReadAttributeString(xElement, "RenderAs", null);                                 // enum, ale string = bez omezení...
-            var setEmptyStringIsNull = _ReadAttributeBoolN(xElement, "SetEmptyStringIsNull");
-            var maxDropDownItems = _ReadAttributeInt32N(xElement, "MaxDropDownItems");
-            var isBreak = _ReadAttributeBoolN(xElement, "Break");
-            var allowUserChangeInvisibility = _ReadAttributeString(xElement, "AllowUserChangeInvisibility", null);
-            var oneMonthOnly = _ReadAttributeBoolN(xElement, "OneMonthOnly");
-            var noBorder = _ReadAttributeBoolN(xElement, "NoBorder");
-            var radioTextAlign = _ReadAttributeString(xElement, "RadioTextAlign", null);
-            var textAreaOverflow = _ReadAttributeString(xElement, "TextAreaOverflow", null);
-            var fontAndColor = _ReadAttributeString(xElement, "FontAndColor", null);
-            var acceptPromptFormatMask = _ReadAttributeString(xElement, "AcceptPromptFormatMask", null);
-            var image = _ReadAttributeString(xElement, "Image", null);
-            var toolTip = _ReadAttributeString(xElement, "ToolTip", null);
-            var linkType = _ReadAttributeString(xElement, "LinkType", null);                                 // email / phone / url
-            var allowExtendedEditor = _ReadAttributeBoolN(xElement, "AllowExtendedEditor");
-            var suppressReadOnlyFromDataForm = _ReadAttributeBoolN(xElement, "SuppressReadOnlyFromDataForm");
-            var dDLBEditor = _ReadAttributeString(xElement, "DDLBEditor", null);                             // Combobox / Breadcrumb
-            var extendedAttributes = _ReadAttributeString(xElement, "ExtendedAttributes", null);
-            var fileFilter = _ReadAttributeString(xElement, "FileFilter", null);
+            column.Name = _ReadAttributeString(xElement, "Name", null);
+            column.TabIndex = _ReadAttributeInt32N(xElement, "TabIndex");
+            column.EditMask = _ReadAttributeString(xElement, "EditMask", null);
+            column.InputWindow = _ReadAttributeString(xElement, "InputWindow", null);
+            column.CurrencyDisplay = _ReadAttributeBoolN(xElement, "CurrencyDisplay");
+            column.MaxLength = _ReadAttributeInt32N(xElement, "MaxLength");
+            column.Label = _ReadAttributeString(xElement, "Label", null);
+            column.LabelToolTip = _ReadAttributeString(xElement, "LabelToolTip", null);
+            column.LabelToolTipHide = _ReadAttributeString(xElement, "LabelToolTipHide", null);
+            column.Width = _ReadAttributeInt32PN(xElement, "Width");
+            column.Height = _ReadAttributeInt32PN(xElement, "Height");
+            column.Required = _ReadAttributeBoolN(xElement, "Required");
+            column.Invisible = _ReadAttributeString(xElement, "Invisible", null);
+            column.ReadOnly = _ReadAttributeBoolN(xElement, "ReadOnly");
+            column.InputType = _ReadAttributeString(xElement, "InputType", null);                               // text / checkbox / radiobutton / string / dynamic / date / time / datetime / textarea / select / password / number / label / group / button / picturelistbox / file / calendar / picture / htmltext / AidcCode / color / Geography / PercentageBar / calculator / Placeholder
+            column.SyntaxHighlightingType = _ReadAttributeString(xElement, "SyntaxHighlightingType", null);     // Sql / Xml
+            column.AidcCodeType = _ReadAttributeString(xElement, "AidcCodeType", null);                         // Codabar / Code11 / DataMatrix / EAN13 / EAN8 / ....
+            column.AidcCodeSettings = _ReadAttributeString(xElement, "AidcCodeSettings", null);
+            column.PercentageBarSettings = _ReadAttributeString(xElement, "PercentageBarSettings", null);
+            column.ButtonAction = _ReadAttributeString(xElement, "ButtonAction", null);                         // Click / Update / Close / RunFunction / ClickCheckRequired
+            column.ButtonFunction = _ReadAttributeString(xElement, "ButtonFunction", null);
+            column.ButtonFunctionLabelType = _ReadAttributeString(xElement, "ButtonFunctionLabelType", null);   // Text / Icon / IconText
+            column.Values = _ReadAttributeString(xElement, "Values", null);
+            column.Expr = _ReadAttributeString(xElement, "Expr", null);
+            column.ExprType = _ReadAttributeString(xElement, "ExprType", null);                                 // String / Int32 / DateTime / Decimal
+            column.EditStyle = _ReadAttributeString(xElement, "EditStyle", null);
+            column.EditStyleViewMode = _ReadAttributeString(xElement, "EditStyleViewMode", null);               // Text / Icon / IconText
+            column.Protect = _ReadAttributeString(xElement, "Protect", null);
+            column.HtmlEdit = _ReadAttributeBoolN(xElement, "HtmlEdit");
+            column.Relation = _ReadAttributeBoolN(xElement, "Relation");                                        // 0 / 1
+            column.HtmlStyle = _ReadAttributeString(xElement, "HtmlStyle", null);
+            column.ColSpan = _ReadAttributeInt32N(xElement, "ColSpan");
+            column.RowSpan = _ReadAttributeInt32N(xElement, "RowSpan");
+            column.LabelPos = _ReadAttributeEnumN<LabelPositionType>(xElement, "LabelPos", _ConvertIGLabelPos);                // type 'pos'         : Left / Up / None / Right
+            column.Align = _ReadAttributeEnumN<ContentAlignmentType>(xElement, "Align", _ConvertIGLabelLeftRight);             // type 'leftright'   : Left / Right
+            column.AlignValue = _ReadAttributeEnumN<ContentAlignmentType>(xElement, "AlignValue", _ConvertIGLabelLeftRight);   // type 'leftright'   : Left / Right
+            column.RegisterItemChange = _ReadAttributeBoolN(xElement, "RegisterItemChange");
+            column.RegisterDblClick = _ReadAttributeBoolN(xElement, "RegisterDblClick");
+            column.BoxCols = _ReadAttributeString(xElement, "BoxCols", null);
+            column.BoxRows = _ReadAttributeString(xElement, "BoxRows", null);
+            column.BoxStyle = _ReadAttributeString(xElement, "BoxStyle", null);
+            column.AttrShortName = _ReadAttributeBoolN(xElement, "AttrShortName");
+            column.RelationParams = _ReadAttributeString(xElement, "RelationParams", null);
+            column.RelationAddName = _ReadAttributeBoolN(xElement, "RelationAddName");
+            column.RenderAs = _ReadAttributeString(xElement, "RenderAs", null);                                 // enum, ale string = bez omezení...
+            column.SetEmptyStringIsNull = _ReadAttributeBoolN(xElement, "SetEmptyStringIsNull");
+            column.MaxDropDownItems = _ReadAttributeInt32N(xElement, "MaxDropDownItems");
+            column.IsBreak = _ReadAttributeBoolN(xElement, "Break");
+            column.IsDefault = _ReadAttributeBoolN(xElement, "Default");
+            column.AllowUserChangeInvisibility = _ReadAttributeString(xElement, "AllowUserChangeInvisibility", null);
+            column.OneMonthOnly = _ReadAttributeBoolN(xElement, "OneMonthOnly");
+            column.NoBorder = _ReadAttributeBoolN(xElement, "NoBorder");
+            column.RadioTextAlign = _ReadAttributeString(xElement, "RadioTextAlign", null);
+            column.TextAreaOverflow = _ReadAttributeString(xElement, "TextAreaOverflow", null);
+            column.FontAndColor = _ReadAttributeString(xElement, "FontAndColor", null);
+            column.AcceptPromptFormatMask = _ReadAttributeString(xElement, "AcceptPromptFormatMask", null);
+            column.Image = _ReadAttributeString(xElement, "Image", null);
+            column.ToolTip = _ReadAttributeString(xElement, "ToolTip", null);
+            column.LinkType = _ReadAttributeString(xElement, "LinkType", null);                                 // email / phone / url
+            column.AllowExtendedEditor = _ReadAttributeBoolN(xElement, "AllowExtendedEditor");
+            column.SuppressReadOnlyFromDataForm = _ReadAttributeBoolN(xElement, "SuppressReadOnlyFromDataForm");
+            column.DDLBEditor = _ReadAttributeString(xElement, "DDLBEditor", null);                             // Combobox / Breadcrumb
+            column.ExtendedAttributes = _ReadAttributeString(xElement, "ExtendedAttributes", null);
+            column.FileFilter = _ReadAttributeString(xElement, "FileFilter", null);
 
             // Typ controlu:
-            DataControlType? controlType = _ConvertIGInputType(inputType);
+            DataControlType? controlType = _ConvertIGInputType(column);
             if (!controlType.HasValue)
-                controlType = context.InfoSource.GetControlType(name, context.Form.UseNorisClass);
+                controlType = context.InfoSource.GetControlType(column, context.Form.UseNorisClass);
             if (!controlType.HasValue)
                 controlType = DataControlType.TextBox;
 
@@ -1296,7 +1299,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 case DataControlType.Label:
                     var dfLabel = new DfLabel()
                     {
-                        Text = label,
+                        Text = column.Label,
                     };
                     dfBaseControl = dfLabel;
                     break;
@@ -1309,9 +1312,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 case DataControlType.Button:
                     var dfButton = new DfButton()
                     {
-                        Text = label,
-                        IconName = image,
-                        ActionData = buttonFunction
+                        Text = column.Label,
+                        IconName = column.Image,
+                        ActionData = column.ButtonFunction
                     };
                     dfBaseControl = dfButton;
                     break;
@@ -1319,17 +1322,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 case DataControlType.BreadCrumb:
                     var dfComboBox = new DfComboBox()
                     {
-                        TabIndex = tabIndex,
+                        TabIndex = column.TabIndex,
                     };
                     dfBaseControl = dfComboBox;
                     break;
                 case DataControlType.Group:
                     var dfGroup = new DfGroup()
                     {
-                        Name = name,
-                        RowSpan = rowSpan,
-                        ColSpan = colSpan,
-                        DesignBounds = createDesignBounds(width, height)
+                        Name = column.Name,
+                        RowSpan = column.RowSpan,
+                        ColSpan = column.ColSpan,
+                        DesignBounds = createDesignBounds(column.Width, column.Height)
                     };
                     loadChildGroupColumns(dfGroup);
                     dfBaseContainer = dfGroup;
@@ -1337,9 +1340,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 case DataControlType.TextBoxButton:
                     var dfTextBoxButton = new DfTextBoxButton()
                     {
-                        Label = label,
-                        LabelPosition = labelPos,
-                        TabIndex = tabIndex,
+                        Label = column.Label,
+                        LabelPosition = column.LabelPos,
+                        TabIndex = column.TabIndex,
                     };
                     dfBaseControl = dfTextBoxButton;
                     break;
@@ -1348,9 +1351,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     // Pokrývá více InputType:   string / date / time / datetime / password / number 
                     var dfTextBox = new DfTextBox()
                     {
-                        Label = label,
-                        LabelPosition = labelPos,
-                        TabIndex = tabIndex,
+                        Label = column.Label,
+                        LabelPosition = column.LabelPos,
+                        TabIndex = column.TabIndex,
                     };
                     // Podle definice 'inputType' doplníme další vlastnosti, protože prvkem typu ControlType.TextBox se řeší vícero hodnot 'InputType':
                     dfBaseControl = dfTextBox;
@@ -1359,13 +1362,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             if (dfBaseControl != null)
             {
-                dfBaseControl.ToolTipText = toolTip;
-                dfBaseControl.Name = name;
-                dfBaseControl.RowSpan = rowSpan;
-                dfBaseControl.ColSpan = colSpan;
-                dfBaseControl.DesignBounds = createDesignBounds(width, height);
-                dfBaseControl.Invisible = invisible;
-                dfBaseControl.State = (String.IsNullOrEmpty(invisible) ? ControlStateType.Default : ControlStateType.Absent);
+                dfBaseControl.ToolTipText = column.ToolTip;
+                dfBaseControl.Name = column.Name;
+                dfBaseControl.RowSpan = column.RowSpan;
+                dfBaseControl.ColSpan = column.ColSpan;
+                dfBaseControl.DesignBounds = createDesignBounds(column.Width, column.Height);
+                dfBaseControl.Invisible = column.Invisible;
+                dfBaseControl.State = (String.IsNullOrEmpty(column.Invisible) ? ControlStateType.Default : ControlStateType.Absent);
                 return dfBaseControl;
             }
 
@@ -1471,15 +1474,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return null;
         }
         /// <summary>
-        /// Konvertuje text zadaný jako Value pro atribut InputType (type 'inputtype') ve verzi IG, do hodnoty <see cref="DataControlType"/>
+        /// Konvertuje typ controlu z dodaného sloupce, načteného z Ifragistic šablony, do hodnoty <see cref="DataControlType"/>
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name="column"></param>
         /// <returns></returns>
-        private static DataControlType? _ConvertIGInputType(string value)
+        private static DataControlType? _ConvertIGInputType(DfColumn column)
         {
-            if (!String.IsNullOrEmpty(value))
+            if (!String.IsNullOrEmpty(column.InputType))
             {
-                string key = value.Trim().ToLower();
+                string key = column.InputType.Trim().ToLower();
                 switch (key)
                 {   // text / checkbox / radiobutton / string / dynamic / date / time / datetime / textarea / select / password / number / label / group / button / picturelistbox / file / 
                     // calendar / picture / htmltext / AidcCode / color / Geography / PercentageBar / calculator / Placeholder
@@ -1829,7 +1832,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 var xAttribute = xElement.Attribute(attributeName);
                 if (xAttribute != null)
                 {
-                    if (String.IsNullOrEmpty(xAttribute.Value))
+                    if (!String.IsNullOrEmpty(xAttribute.Value))
                     {   // Hledaný atribut existuje:
                         var booln = _ConvertTextToBoolN(xAttribute.Value);
                         if (booln.HasValue) return booln.Value;
@@ -1894,7 +1897,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Atribut neexistuje:
             return defaultValueNotExists;
         }
-
         /// <summary>
         /// Vrací true nebo false podle obsahu dodaného textu. Může vrátit null, když text je jiný.
         /// </summary>
@@ -2554,6 +2556,78 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Souhrn chyb, výchozí je null
         /// </summary>
         private StringBuilder __Errors;
+    }
+    #endregion
+    #region class DfColumn : obraz načteného sloupce z formuláře Infragistic (element column)
+    /// <summary>
+    /// Schránka na data, definující jeden <b><u>column</u></b> v deklaraci formuláře Infragistic
+    /// </summary>
+    internal class DfColumn
+    {
+        public string Name { get; set; }
+        public int? TabIndex { get; set; }
+        public string EditMask { get; set; }
+        public string InputWindow { get; set; }
+        public bool? CurrencyDisplay { get; set; }
+        public int? MaxLength { get; set; }
+        public string Label { get; set; }
+        public string LabelToolTip { get; set; }
+        public string LabelToolTipHide { get; set; }
+        public Int32P? Width { get; set; }
+        public Int32P? Height { get; set; }
+        public bool? Required { get; set; }
+        public string Invisible { get; set; }
+        public bool? ReadOnly { get; set; }
+        public string InputType { get; set; }
+        public string SyntaxHighlightingType { get; set; }
+        public string AidcCodeType { get; set; }
+        public string AidcCodeSettings { get; set; }
+        public string PercentageBarSettings { get; set; }
+        public string ButtonAction { get; set; }
+        public string ButtonFunction { get; set; }
+        public string ButtonFunctionLabelType { get; set; }
+        public string Values { get; set; }
+        public string Expr { get; set; }
+        public string ExprType { get; set; }
+        public string EditStyle { get; set; }
+        public string EditStyleViewMode { get; set; }
+        public string Protect { get; set; }
+        public bool? HtmlEdit { get; set; }
+        public bool? Relation { get; set; }
+        public string HtmlStyle { get; set; }
+        public int? ColSpan { get; set; }
+        public int? RowSpan { get; set; }
+        public LabelPositionType? LabelPos { get; set; }
+        public ContentAlignmentType? Align { get; set; }
+        public ContentAlignmentType? AlignValue { get; set; }
+        public bool? RegisterItemChange { get; set; }
+        public bool? RegisterDblClick { get; set; }
+        public string BoxCols { get; set; }
+        public string BoxRows { get; set; }
+        public string BoxStyle { get; set; }
+        public bool? AttrShortName { get; set; }
+        public string RelationParams { get; set; }
+        public bool? RelationAddName { get; set; }
+        public string RenderAs { get; set; }
+        public bool? SetEmptyStringIsNull { get; set; }
+        public int? MaxDropDownItems { get; set; }
+        public bool? IsBreak { get; set; }
+        public bool? IsDefault { get; set; }
+        public string AllowUserChangeInvisibility { get; set; }
+        public bool? OneMonthOnly { get; set; }
+        public bool? NoBorder { get; set; }
+        public string RadioTextAlign { get; set; }
+        public string TextAreaOverflow { get; set; }
+        public string FontAndColor { get; set; }
+        public string AcceptPromptFormatMask { get; set; }
+        public string Image { get; set; }
+        public string ToolTip { get; set; }
+        public string LinkType { get; set; }
+        public bool? AllowExtendedEditor { get; set; }
+        public bool? SuppressReadOnlyFromDataForm { get; set; }
+        public string DDLBEditor { get; set; }
+        public string ExtendedAttributes { get; set; }
+        public string FileFilter { get; set; }
     }
     #endregion
 }

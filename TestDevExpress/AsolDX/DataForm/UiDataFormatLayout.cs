@@ -1085,7 +1085,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Velikost přidané rezervy v prostoru pro Labely (Left, Top, Right, Bottom), které vyžaduje container Child prvků.
         /// Pokud this je Container, pak má svůj FlowLayout sestavený pro své Child prvky.
         /// Tento container pak může vygenerovat velikosti Labelů okolo svého obsahu (Výška Top labelů pro první řádek, šířka Left labelů pro první sloupec, atd).
-        /// Tyto rozměry z Child layoutu pak umístíme do této property, odkud si je vezme FlowLayout nadřazeného containeru a <b><u>přičte je k rozměrům</u></b> našich labelů (<see cref="LabelTopInfo"/> atd),
+        /// Tyto rozměry z Child layoutu pak umístíme do této property, odkud si je vezme FlowLayout nadřazeného containeru a <b><u>přičte je k rozměrům</u></b> našich labelů (<see cref="__LabelTopInfo"/> atd),
         /// a tím zarezervuje sumární prostor pro např. Top labely (moje + mých Child prvků).
         /// </summary>
         private Margins __LabelPlaceholders;
@@ -2658,7 +2658,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Dopočítá šířky sloupců a výšky řádků podle obsahu a určí jejich fyzické souřadnice.
         /// Určí konkrétní souřadnice jednotlivých prvků (dodaných v metodě <see cref="AddFlowItem(IFlowLayoutItem)"/>) a vepíše je do těchto prvků.<br/>
-        /// Výchozí souřadnice celého FlowLayout prostoru je definovaná stylem dodaným do konstruktoru, jeho hodnotou <see cref="DfTemplateLayout.DfTemplateLayoutStyle.FlowAreaBegin"/>.
+        /// Výchozí souřadnice celého FlowLayout prostoru je definovaná stylem dodaným do konstruktoru, jeho hodnotou <see cref="DfTemplateLayoutStyle.FlowAreaBegin"/>.
         /// Určí sumární prostor FlowLayout prostoru (protože dopočítá i konec obsazeného prostoru), viz <see cref="FlowLayoutBounds"/>.
         /// </summary>
         public void ProcessFlowItems()
@@ -4683,12 +4683,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 return ((shift > 0) ? left + shift : left);
             }
         }
-
+        /// <summary>
+        /// Vrátí souřadnice pro Label ze svých dat (mapa souřadnic buňky) podle požadavku
+        /// </summary>
+        /// <param name="labelArea"></param>
+        /// <param name="alignToControl"></param>
+        /// <param name="labelDesignWidth"></param>
+        /// <param name="labelPlaceholders"></param>
+        /// <param name="topLabelOffsetX"></param>
+        /// <param name="bottomLabelOffsetX"></param>
+        /// <returns></returns>
         internal ControlBounds GetLabelBounds(DfLabelUsedAreaType labelArea, ControlBounds alignToControl, int? labelDesignWidth, Margins labelPlaceholders, int topLabelOffsetX, int bottomLabelOffsetX)
         {
             bool relativeToControl = (alignToControl != null);
 
-            int l, r, t, b, p;
+            int l, r, t, b;
             switch (labelArea)
             {
                 case DfLabelUsedAreaType.Left:
@@ -5733,10 +5742,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Metoda určí typ controlu pro daný prvek a třídu. Volá se pouze při konverzi formuláře Infragistic, pro sloupce kde atribut 'InputType' je nezadaný.
         /// Potom je třeba, aby <see cref="IControlInfoSource"/> určil typ controlu <see cref="DataControlType"/> podle typu atributu (daný jménem a třídou).
         /// </summary>
-        /// <param name="columnName"></param>
+        /// <param name="column"></param>
         /// <param name="useNorisClass"></param>
         /// <returns></returns>
-        DataControlType? GetControlType(string columnName, int? useNorisClass);
+        DataControlType? GetControlType(DfColumn column, int? useNorisClass);
         /// <summary>
         /// Funkce, která vrátí stringový obsah nested šablony daného jména.<br/>
         /// Funkce bude volána s parametrem = jméno šablony (obsah atributu NestedTemplate), jeho úkolem je vrátit string = obsah požadované šablony (souboru).<br/>

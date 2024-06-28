@@ -1005,18 +1005,16 @@ namespace TestDevExpress.Forms
         }
         #endregion
         #region IControlInfoSource
-
-        DataControlType? IControlInfoSource.GetControlType(string columnName, int? useNorisClass)
-        {
-            return DataControlType.TextBox;
-        }
         string IControlInfoSource.NestedTemplateContentLoad(string templateName)
         {
             string nestedFrmXml = (!String.IsNullOrEmpty(templateName) ? System.IO.Path.Combine(__FrmXmlPath, templateName) : null);
             if (!System.IO.File.Exists(nestedFrmXml)) return null;         // Neexistující nested šablona
             return System.IO.File.ReadAllText(nestedFrmXml);
         }
-
+        DataControlType? IControlInfoSource.GetControlType(DfColumn column, int? useNorisClass)
+        {
+            return DataControlType.TextBox;
+        }
         void IControlInfoSource.ValidateControlInfo(IDataFormItem dataFormItem)
         {
             // Tady mám šanci doplnit takové informace o prvku, které autor šablony (frm.xml) explicitně nezadal.
