@@ -554,17 +554,18 @@ namespace TestDevExpress.Forms
                         Errors = loadingArgs.Errors,
                         LogTime = true,
                         CreateDebugImages = DfTemplateLayoutDebugImageMode.File,
-                        DebugImagesInfoLevel = DfTemplateLayoutDebugInfoLevelType.All,
+                        DebugImagesInfoLevel = DfTemplateLayoutDebugInfoLevelType.None,
                         DebugImagePath = "AsolLayouts"
                     };
                     DxDForm.DfTemplateLayout.CreateLayout(layoutArgs);
                     if (layoutArgs.HasErrors)              // Zde jsou i chyby sdílené z procesu Loading
                         DxComponent.ShowMessageWarning($"Zadaný dokument '{fileFrmXml}' obsahuje chyby:\r\n{loadingArgs.ErrorsText}");
+
                     _ApplyDfForm(dfForm);
                 }
                 else
                 {
-                    DxComponent.ShowMessageWarning($"Zadaný dokument '{fileFrmXml}' nemá odpovídající FormatVersion='4', jde o '{dxInfo.FormatVersion}'.");
+                    DxComponent.ShowMessageWarning($"Zadaný dokument '{fileFrmXml}' nemá správnou verzi formátu: '{dxInfo.FormatVersion}'. Platné verze jsou: 1-4.");
                 }
             }
             catch (Exception ex)

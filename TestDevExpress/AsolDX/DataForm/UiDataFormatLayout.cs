@@ -1869,14 +1869,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var drawGuideLines = infoLevel.HasFlag(DfTemplateLayoutDebugInfoLevelType.AddGuideLines);
 
             // Definujeme barvy pro prvky:
-            var workspaceColor = System.Drawing.Color.FromArgb(255, 181, 181, 181);
+            var workspaceColor = System.Drawing.Color.FromArgb(255, 232, 232, 232);
 
             var labelBorderColor = System.Drawing.Color.FromArgb(255, 178, 191, 198);
             var labelBackColor = System.Drawing.Color.FromArgb(255, 208, 218, 219);
-            var labelTextColor = System.Drawing.Color.FromArgb(255, 80, 64, 80);
+            var labelTextColor = System.Drawing.Color.FromArgb(255, 60, 45, 60);
 
             var controlBorderColor = System.Drawing.Color.FromArgb(255, 80, 80, 86);
-            var controlBackColor = System.Drawing.Color.FromArgb(255, 232, 232, 211);
+            var controlBackColor = System.Drawing.Color.FromArgb(255, 244, 244, 222);
             var controlTextColor1 = System.Drawing.Color.FromArgb(190, 96, 96, 96);
             var controlTextColor2 = System.Drawing.Color.FromArgb(255, 32, 32, 32);
 

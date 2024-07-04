@@ -10,14 +10,14 @@
 		  AddUda="True" UdaLabelPosition="Top"
           ColumnWidths="200;300;100" >
 
-    <panel Name="test00" Title="Primitivní" ColumnsCount="2" AutoLabelPosition="Top" >
-        <textbox Name="reference_subjektu" Label="Číslo faktury"/>
-        <textbox Name="nazev_subjektu" Label="Variabilní symbol"/>
-        <textbox Name="odberatel_refer" LabelWidth="420" Label="Cílový odběratel zboží, které je zde fakturováno:" />
-        <textbox Name="odberatel_nazev" LabelPosition="None"/>
+    <panel Name="test00" Title="Basic" ColumnsCount="2" AutoLabelPosition="Top" >
+        <textbox Name="reference_subjektu" />
+        <textbox Name="nazev_subjektu" />
+        <textbox Name="odberatel_refer" />
+        <textbox Name="odberatel_nazev" />
     </panel>
 
-    <panel Name="test01" Title="Primitivní" ColumnsCount="2" AutoLabelPosition="None" >
+    <panel Name="test01" Title="Primitivní" ColumnsCount="2" AutoLabelPosition="Top" >
         <textbox Name="reference_subjektu3" ColumnName="reference_subjektu" Width="120" Label="Číslo faktury"/>
         <textbox Name="nazev_subjektu3" ColumnName="nazev_subjektu" Width="300" Label="Variabilní symbol"/>
         <textbox Name="odberatel_refer3" LabelWidth="420" Label="Cílový odběratel zboží, které je zde fakturováno:" />
@@ -39,13 +39,22 @@
         <image Name="row01col2" RowSpan="2" Width="150" Height="50"/>
         <image Name="row12col0" RowSpan="2" Width="150" Height="50"/>
         <textbox Name="row2col12" ColSpan="2" Width="300" />
-        <placeholder Name="p1" ColSpan="3" Height="6"/>
+        <placeholder Name="p1" ColSpan="3" Height="12"/>
         <textbox Name="row3col1" ColIndex="1" />
         <textbox Name="row4col0" ColIndex="0" />
         <textbox Name="row4col2" ColIndex="2" />
     </panel>
 
     <panel Name="test04" Title="test04" ColumnsCount="3" AutoLabelPosition="Top" >
+        <textbox Name="pkrefer1" Width="150"/>
+        <textbox Name="pknazev1" Width="250"/>
+        <image Name="pkimage1" RowSpan="3" Width="120" Height="100%" ExpandControl="All" LabelPosition="None" />
+        <textbox Name="pkrefer2" />
+        <textbox Name="pknazev2" />
+        <textbox Name="pkpozn3" ColSpan="2"/>
+    </panel>
+
+    <panel Name="test04x" Title="test04x" ColumnsCount="3" AutoLabelPosition="Top" TopLabelOffsetX="-15" Margins="4,4" >
         <textbox Name="pkrefer1" Width="150"/>
         <textbox Name="pknazev1" Width="250"/>
         <image Name="pkimage1" RowSpan="3" Width="120" Height="100%" ExpandControl="All" LabelPosition="None" />
@@ -190,7 +199,7 @@
     </panel>
 
     <panel Name="test13" Title="test13" ColumnsCount="3" AutoLabelPosition="Top"
-                   TopLabelOffsetX="6" BottomLabelOffsetX="12" Margins="4,4" ControlMargins="2" ColumnsDistance="3" RowsDistance="3" >
+                    TopLabelOffsetX="6" BottomLabelOffsetX="12" Margins="4,4" ControlMargins="2" ColumnsDistance="3" RowsDistance="3" >
         <textbox Name="fv_refer" Width="100%"/>
         <textbox Name="fv_nazev" />
         <textbox Name="fv_osoba" />

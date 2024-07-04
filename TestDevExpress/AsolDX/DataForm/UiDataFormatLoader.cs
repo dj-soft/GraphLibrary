@@ -1474,7 +1474,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return null;
         }
         /// <summary>
-        /// Konvertuje typ controlu z dodaného sloupce, načteného z Ifragistic šablony, do hodnoty <see cref="DataControlType"/>
+        /// Konvertuje typ controlu z dodaného sloupce, načteného z Infragistic šablony z atributu "InputType", do hodnoty typu <see cref="DataControlType"/>.
+        /// Více různých "InputType" se konvertoje do shodné hodnoty <see cref="DataControlType"/>, protože jsou reprezentovány stejným controlem.
+        /// Odlišnost je pak dána např. v odlišném nastavení toho controlu.
         /// </summary>
         /// <param name="column"></param>
         /// <returns></returns>
@@ -1512,7 +1514,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     case "color": return DataControlType.Label;
                     case "geography": return DataControlType.Label;
                     case "percentagebar": return DataControlType.Label;
-                    case "calculator": return DataControlType.Label;
+                    case "calculator": return DataControlType.TextBox;
                     case "placeholder": return DataControlType.PlaceHolder;
                 }
             }
@@ -1546,7 +1548,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             HLine
         }
         #endregion
-        #region Načítání atributů
+        #region Načítání XML atributů různého datového typu, včetně konverze (enumy, primitivní typy)
         /// <summary>
         /// Z dodaného <paramref name="xElement"/> načte hodnoty odpovídající cílovému typu,
         /// a vloží je do dodaného controlu <paramref name="target"/>.
@@ -2373,7 +2375,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Umožní korigovat zadanou hodnotu do atributu typu <see cref="LabelPositionType"/>.
         /// Reprezentuje příklad, jak průběžně změnit názvy položek enumů:
         /// Pokud například v původním kódu existovala hodnota "Up", která byla poté v enumu přejmenována na "Top",
-        /// tak existuje řada formulářů (XML dokumentyú, které stále obsahují hodnotu "Up", kterou sice XML editor nyní podtrhává jako vadnou,
+        /// tak existuje řada formulářů (XML dokumentů), které stále obsahují hodnotu "Up" - kterou sice XML editor nyní podtrhává jako vadnou,
         /// ale musíme ji umět načíst => převést text z "Up" na "Top"...
         /// </summary>
         /// <param name="value"></param>
@@ -2383,7 +2385,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             string key = (value ?? "").Trim().ToLower();
             return key switch
             {   // Ze staré hodnoty na aktuální:
-                "up" => "Top",
+                "up" => nameof(LabelPositionType.Top),
+                "above" => nameof(LabelPositionType.Top),
+                "left" => nameof(LabelPositionType.BeforeLeft),
+                "right" => nameof(LabelPositionType.After),
+                "down" => nameof(LabelPositionType.Bottom),
+                "no" => nameof(LabelPositionType.None),
                 _ => value,
             };
         }
