@@ -422,7 +422,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         }
         /// <summary>
-        /// Provede přípravu obsahu hlavního panelu <see cref="DxMainPanel"/>. Panel je již vytvořen a umístěn v okně, Ribbon i StatusBar existují.<br/>
+        /// Provede přípravu obsahu hlavního panelu <see cref="DxRibbonForm.DxMainPanel"/>. Panel je již vytvořen a umístěn v okně, Ribbon i StatusBar existují.<br/>
         /// Zde se typicky vytváří obsah do hlavního panelu.
         /// </summary>
         protected override void DxMainContentPrepare()

@@ -1099,7 +1099,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (e.SelectedControl is DxListBoxControl listBox)
             {
                 int index = listBox.IndexFromPoint(e.ControlMousePosition);
-                if (index != -1)
+                if (index != -1 && index < listBox.ListItems.Length)
                 {
                     var menuItem = listBox.ListItems[index];
                     if (menuItem != null)

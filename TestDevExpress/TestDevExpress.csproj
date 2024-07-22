@@ -378,6 +378,9 @@
     <Compile Include="Forms\TestSvgForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Forms\ThreadTestForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Forms\TreeBgrForm.cs">
       <SubType>Form</SubType>
     </Compile>
