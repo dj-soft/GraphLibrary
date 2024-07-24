@@ -39,76 +39,597 @@ namespace TestDevExpress.Forms
         /// </summary>
         protected override void DxMainContentPrepare()
         {
-            __MainPanel = DxComponent.CreateDxPanel(this.DxMainPanel, DockStyle.None, DevExpress.XtraEditors.Controls.BorderStyles.Office2003, 850, 450);
+            __MainPanel = DxComponent.CreateDxPanel(this.DxMainPanel, DockStyle.None, DevExpress.XtraEditors.Controls.BorderStyles.HotFlat, 850, 450);
 
-            __Threads = new List<ThreadListData>();
-
-            var template = new DevExpress.XtraEditors.TableLayout.ItemTemplateBase() { Name = "Main" };
-
-            var col0 = new DevExpress.XtraEditors.TableLayout.TableColumnDefinition();
-            col0.Length.Value = 40d;
-            template.Columns.Add(col0);
-
-            var col1 = new DevExpress.XtraEditors.TableLayout.TableColumnDefinition();
-            col1.Length.Value = 100d;
-            template.Columns.Add(col1);
-
-            var col2 = new DevExpress.XtraEditors.TableLayout.TableColumnDefinition();
-            col2.Length.Value = 200d;
-            template.Columns.Add(col2);
-            
-
-            var row0 = new DevExpress.XtraEditors.TableLayout.TableRowDefinition();
-            row0.Length.Value = 20d;
-            row0.Length.Type = DevExpress.XtraEditors.TableLayout.TableDefinitionLengthType.Pixel;
-            template.Rows.Add(row0);
-
-            var row1 = new DevExpress.XtraEditors.TableLayout.TableRowDefinition();
-            row1.Length.Value = 2d;
-            row1.Length.Type = DevExpress.XtraEditors.TableLayout.TableDefinitionLengthType.Pixel;
-            row1.AutoHeight = true;
-            template.Rows.Add(row1);
-
-            var span0 = new DevExpress.XtraEditors.TableLayout.TableSpan() { ColumnIndex = 0, RowSpan = 2 };
-            template.Spans.Add(span0);
-            var span1 = new DevExpress.XtraEditors.TableLayout.TableSpan() { RowIndex = 1, ColumnIndex = 1, ColumnSpan = 2 };
-            template.Spans.Add(span1);
-
-            string resource1 = "images/xaf/action_simpleaction_32x32.png";
-            var elem00 = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement() { RowIndex = 0, ColumnIndex = 0, ImageToTextAlignment = DevExpress.XtraEditors.TileControlImageToTextAlignment.Right, ImageAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleCenter, FieldName = "Text0", TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleCenter, Width = 35, Height = 40, Image = DxComponent.GetBitmapImage(resource1) };
-            elem00.Appearance.Normal.FontStyleDelta = FontStyle.Bold;
-            elem00.Appearance.Normal.FontSizeDelta = 3;
-            elem00.Appearance.Normal.Options.UseFont = true;
-            template.Elements.Add(elem00);
-
-            var elem01 = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement() { RowIndex = 0, ColumnIndex = 1, FieldName = "Text1", TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleLeft, Width = 120, Height = 28 };
-            elem01.Appearance.Normal.FontStyleDelta = FontStyle.Bold;
-            template.Elements.Add(elem01);
-
-            var elem02 = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement() { RowIndex = 0, ColumnIndex = 2, FieldName = "Text2", TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleLeft, Width = 240, Height = 28 };
-            elem02.Appearance.Normal.FontStyleDelta = FontStyle.Regular;
-            template.Elements.Add(elem02);
-
-            var elem11 = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement() { RowIndex = 1, ColumnIndex = 1, FieldName = "Text3", TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleLeft, Width = 360, Height = 20 };
-            elem11.Appearance.Normal.FontStyleDelta = FontStyle.Italic;
-            template.Elements.Add(elem11);
+            // Určitě hezčí:
+            // _PrepareListBoxTyped();
+            _PrepareListBoxTable();
 
 
+            // Není tak pěkný, nehezky scrolluje = po celých řádcích, ne po pixelech
+            // _PrepareListBoxHtml();
+        }
+        #region ListBox nad DataTable a HTML Template
 
-            __ThreadListBox = DxComponent.CreateDxListBox(300, 28, 500, 410, __MainPanel);
+        private void _PrepareListBoxHtml()
+        {
+            var template = createTemplate();
+            var data = createData(120);
+
+            __ThreadListBox = DxComponent.CreateDxListBox(300, 28, 544, 416, __MainPanel);
+            __ThreadListBox.HtmlTemplates.Add(template);
+            __ThreadListBox.DataSource = data;
+            __ThreadListBox.ItemAutoHeight = true;
+            __ThreadListBox.ContextButtons.Add(new DevExpress.Utils.ContextItem() { Visibility = DevExpress.Utils.ContextItemVisibility.Visible, Size = new WinDraw.Size(24, 24) });
+
+            __Searcher = new DevExpress.XtraEditors.SearchControl();
+            __Searcher.Bounds = new Rectangle(300, 6, 544, 20);
+            __Searcher.Client = __ThreadListBox;
+            __Searcher.Properties.NullValuePrompt = "Co byste chtěli najít?";
+            __MainPanel.Controls.Add(__Searcher);
+
+
+            DevExpress.Utils.Html.HtmlTemplate createTemplate()
+            {
+                //  https://docs.devexpress.com/WindowsForms/DevExpress.Utils.Html.HtmlTemplate
+                //  https://docs.devexpress.com/WindowsForms/403397/common-features/html-css-based-desktop-ui
+                DevExpress.Utils.Html.HtmlTemplate template = new DevExpress.Utils.Html.HtmlTemplate();
+
+                string html, css;
+                html = @"<div><img src='${iconname}'></div>";
+                html = @"<div><b>Hlavička</b></div>";
+                html = @"<div>
+<table>
+  <tr height='30'>
+    <td width='60'>${refer}</td>
+    <td width='120'>${nazev}</td>
+    <td width='360'>${suffix}</td>
+  </tr>
+  <tr height='50'>
+    <td colspan='3' width='540'>${note}</td>
+  </tr>
+</table>
+</div>";
+
+                html = @"<div>
+<table>
+  <tr height = 30>
+    <td width = 60>${refer}</td>
+    <td width = 120>${nazev}</td>
+    <td width = 360>${suffix}</td>
+  </tr>
+  <tr height = 50>
+    <td colspan = 3 width = 540>${note}</td>
+  </tr>
+</table>
+</div>";
+                css = "";
+
+
+                // Dx wiki:
+                html = @"<div class=""container"" id=""container"">    
+    <div class=""avatarContainer"">       
+        <img src=""${iconname}"" class=""avatar"">
+        <div id=""uploadBtn"" onclick=""OnButtonClick"" class=""centered button"">Upload</div>
+        <div id=""removeBtn"" onclick=""OnButtonClick"" class=""centered button"">Remove</div>
+    </div>
+    <div class=""separator""></div>
+    <div class=""avatarContainer "">
+        <div class=""field-container"">
+            <div class=""field-header"">
+                <b>Display name</b><b class=""hint"">Visible to other members</b>
+            </div>
+            <p>${refer}</p>           
+        </div>
+        <div class=""field-container with-left-margin"">
+            <div class=""field-header"">
+                <b>Full name</b><b class=""hint"">Not visible to other members</b>
+            </div>
+            <p>${nazev}</p>   
+        </div>
+    </div>
+</div>
+";
+
+                css = @".container{
+    background-color:@Window;
+    display:flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-radius: 10px;
+    padding: 0px 12px 16px 12px;
+    border-style: solid;
+    border-width: 1px;
+    border-color:@HideSelection;
+    color: @ControlText;
+}
+.avatarContainer{
+    display: flex;
+    margin-top: 6px;
+    margin-bottom: 6px;   
+}
+.avatar{
+    width: 40px;
+    height: 40px;
+    border-radius: 40px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: @HideSelection;
+}
+.field-container{
+    display:flex;
+    flex-direction:column;
+    justify-content: space-between;
+    flex-grow: 1;
+    flex-basis: 150px;
+    padding-left: 6px;
+    padding-right: 6px;
+}
+.with-left-margin{
+    margin-left: 10px;
+}
+.field-header{
+    display:flex;
+    justify-content: space-between;
+}
+.button{
+    display: inline-block;
+    padding: 10px;
+    margin-left: 10px;
+    color: gray;
+    background-color: @Window;
+    border-width: 1px;
+    border-style: solid;
+    border-color: @HideSelection;
+    border-radius: 5px;
+    text-align: center;
+    align-self:center;
+    width: 70px;
+}
+.hint{
+    color: @DisabledText;
+    font-size:7.5pt;
+}
+.button:hover {
+    background-color: @DisabledText;
+    color: @White;
+    border-color: @DisabledControl;
+}
+.separator{
+    width:100%;
+    height:1px;
+    background-color:@HideSelection;
+}";
+
+
+                template.Template = html.Replace("'", "\"");
+                template.Styles = css.Replace("'", "\"");
+                return template;
+
+            }
+            System.Data.DataTable createData(int rowsCount)
+            {
+                System.Data.DataTable table = new System.Data.DataTable();
+                table.Columns.Add("refer", typeof(string));
+                table.Columns.Add("iconname", typeof(string));
+                table.Columns.Add("nazev", typeof(string));
+                table.Columns.Add("suffix", typeof(string));
+                table.Columns.Add("note", typeof(string));
+
+                var images = _GetImages32();
+                for (int i = 0; i < rowsCount; i++)
+                {
+                    string refer = (i + 1).ToString();
+                    string iconname = Randomizer.GetItem(images);
+                    string nazev = Randomizer.GetWord(true);
+                    string suffix = Randomizer.GetSentence(1, 3, false);
+                    string note = Randomizer.GetSentence(5, 9, true);
+                    table.Rows.Add(refer, iconname, nazev, suffix, note);
+                }
+                return table;
+            }
+        }
+        #endregion
+        #region ListBox s typovou Template a typovými daty
+        private void _PrepareListBoxTyped()
+        {
+            var template = createTemplate();
+            var data = new List<ThreadListData>();
+
+            __ThreadListBox = DxComponent.CreateDxListBox(300, 28, 544, 416, __MainPanel);
             __ThreadListBox.Templates.Add(template);
-            __ThreadListBox.DataSource = __Threads;
+            __ThreadListBox.DataSource = data;
             __ThreadListBox.ItemAutoHeight = true;
 
-            __Threads.Add(new ThreadListData() { Text0 = "1", Text1 = "T1 1", Text2 = "podrobný popisek t1", Text3 = Randomizer.GetSentence(5, 9, true) });
-            __Threads.Add(new ThreadListData() { Text0 = "2", Text1 = "T1 2", Text2 = "podrobný popisek t2", Text3 = Randomizer.GetSentence(5, 9, true) });
-            __Threads.Add(new ThreadListData() { Text0 = "3", Text1 = "T1 3", Text2 = "podrobný popisek t3", Text3 = Randomizer.GetSentence(5, 9, true) });
-            __Threads.Add(new ThreadListData() { Text0 = "4", Text1 = "T1 4", Text2 = "podrobný popisek t4", Text3 = Randomizer.GetSentence(5, 9, true) });
+            __ThreadListBox.ContextButtons.Add(new DevExpress.Utils.ContextItem() { Visibility = DevExpress.Utils.ContextItemVisibility.Visible, Size = new WinDraw.Size(24, 24) });
+            __ThreadListBox.HorizontalScrollbar = true;
+            __ThreadListBox.HorzScrollStep = 1;
+
+            __ThreadListBox.CustomizeItem += __ThreadListBoxTyped_CustomizeItem;
+            __ThreadListBox.CustomItemDisplayText += __ThreadListBoxTyped_CustomItemDisplayText;
+            __ThreadListBox.CustomItemTemplate += __ThreadListBoxTyped_CustomItemTemplate;
+
+            data.AddRange(createData(120));
+
+            __Searcher = new DevExpress.XtraEditors.SearchControl();
+            __Searcher.Bounds = new Rectangle(300, 6, 544, 20);
+            __Searcher.Client = __ThreadListBox;
+            __Searcher.Properties.NullValuePrompt = "Co byste chtěli najít?";
+            __MainPanel.Controls.Add(__Searcher);
+
+
+            DevExpress.XtraEditors.TableLayout.ItemTemplateBase createTemplate()
+            {
+                var template = new DevExpress.XtraEditors.TableLayout.ItemTemplateBase() { Name = "Main" };
+
+                // Columns:
+                var col0 = new DevExpress.XtraEditors.TableLayout.TableColumnDefinition();
+                col0.Length.Value = 48d;
+                template.Columns.Add(col0);
+
+                var col1 = new DevExpress.XtraEditors.TableLayout.TableColumnDefinition();
+                col1.Length.Value = 100d;
+                template.Columns.Add(col1);
+
+                var col2 = new DevExpress.XtraEditors.TableLayout.TableColumnDefinition();
+                col2.Length.Value = 200d;
+                template.Columns.Add(col2);
+
+                // Rows:
+                var row0 = new DevExpress.XtraEditors.TableLayout.TableRowDefinition();
+                row0.Length.Value = 20d;
+                row0.Length.Type = DevExpress.XtraEditors.TableLayout.TableDefinitionLengthType.Pixel;
+                template.Rows.Add(row0);
+
+                var row1 = new DevExpress.XtraEditors.TableLayout.TableRowDefinition();
+                row1.Length.Value = 2d;
+                row1.Length.Type = DevExpress.XtraEditors.TableLayout.TableDefinitionLengthType.Pixel;
+                row1.AutoHeight = true;
+                template.Rows.Add(row1);
+
+                // Spans:
+                var span0 = new DevExpress.XtraEditors.TableLayout.TableSpan() { ColumnIndex = 0, RowSpan = 2 };
+                template.Spans.Add(span0);
+                var span1 = new DevExpress.XtraEditors.TableLayout.TableSpan() { RowIndex = 1, ColumnIndex = 1, ColumnSpan = 2 };
+                template.Spans.Add(span1);
+
+                // Elements:
+                string resource1 = "images/xaf/action_simpleaction_32x32.png";
+                var elem00 = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement() { RowIndex = 0, ColumnIndex = 0, ImageToTextAlignment = DevExpress.XtraEditors.TileControlImageToTextAlignment.Right, ImageAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleCenter, FieldName = "Text0", TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleRight, Width = 35, Height = 40, Image = DxComponent.GetBitmapImage(resource1) };
+                elem00.Appearance.Normal.FontStyleDelta = FontStyle.Bold;
+                elem00.Appearance.Normal.FontSizeDelta = 3;
+                elem00.Appearance.Normal.Options.UseFont = true;
+                template.Elements.Add(elem00);
+
+                var elem01 = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement() { RowIndex = 0, ColumnIndex = 1, FieldName = "Text1", TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleLeft, Width = 120, Height = 28 };
+                elem01.Appearance.Normal.FontStyleDelta = FontStyle.Bold;
+                template.Elements.Add(elem01);
+
+                var elem02 = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement() { RowIndex = 0, ColumnIndex = 2, FieldName = "Text2", TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleLeft, Width = 240, Height = 28 };
+                elem02.Appearance.Normal.FontStyleDelta = FontStyle.Regular;
+                template.Elements.Add(elem02);
+
+                var elem11 = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement() { RowIndex = 1, ColumnIndex = 1, FieldName = "Text3", TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleLeft, Width = 360, Height = 20 };
+                elem11.Appearance.Normal.FontStyleDelta = FontStyle.Italic;
+                template.Elements.Add(elem11);
+
+                return template;
+
+            }
+            List<ThreadListData> createData(int rowsCount)
+            {
+                List<ThreadListData> dataList = new List<ThreadListData>();
+                var images = _GetImages32();
+                for (int i = 0; i < rowsCount; i++)
+                {
+                    var dataItem = new ThreadListData()
+                    {
+                        Text0 = (i + 1).ToString(),
+                        Text1 = Randomizer.GetWord(true),
+                        Text2 = Randomizer.GetSentence(1, 3, false),
+                        Text3 = Randomizer.GetSentence(5, 9, true),
+                        IconName = Randomizer.GetItem(images)
+                    };
+
+                    dataList.Add(dataItem);
+                }
+                return dataList;
+            }
+
 
         }
-        private DxPanelControl __MainPanel;
+
+        private void __ThreadListBoxTyped_CustomItemTemplate(object sender, DevExpress.XtraEditors.CustomItemTemplateEventArgs e)
+        {
+        }
+
+        private void __ThreadListBoxTyped_CustomItemDisplayText(object sender, DevExpress.XtraEditors.CustomItemDisplayTextEventArgs e)
+        {
+            
+        }
+
+        private void __ThreadListBoxTyped_CustomizeItem(object sender, DevExpress.XtraEditors.CustomizeTemplatedItemEventArgs e)
+        {
+            if (e.Value is ThreadListData data)
+                e.TemplatedItem.Image = DxComponent.GetBitmapImage(data.IconName);
+        }
+
         private DxListBoxControl __ThreadListBox;
-        private List<ThreadListData> __Threads;
+        private DevExpress.XtraEditors.SearchControl __Searcher;
+        #endregion
+
+        #region ListBox s typovou Template a DataTable
+        private void _PrepareListBoxTable()
+        {
+            var template = createTemplate();
+            var data = createData(120);
+
+            __ThreadListBox = DxComponent.CreateDxListBox(300, 28, 544, 416, __MainPanel);
+            __ThreadListBox.Templates.Add(template);
+            __ThreadListBox.DataSource = data;
+            __ThreadListBox.ItemAutoHeight = true;
+
+            __ThreadListBox.ContextButtons.Add(new DevExpress.Utils.ContextItem() { Visibility = DevExpress.Utils.ContextItemVisibility.Visible, Size = new WinDraw.Size(24, 24) });
+            __ThreadListBox.HorizontalScrollbar = true;
+            __ThreadListBox.HorzScrollStep = 1;
+
+            __ThreadListBox.CustomItemTemplate += _ThreadListBoxTable_CustomItemTemplate;         // Vybere pro konkrétní prvek jednu z vícero šablon
+            //  __ThreadListBox.CustomItemDisplayText += _ThreadListBoxTable_CustomItemDisplayText;   // Modifikuje text zobrazovaný v buňce => ale pozor, má smysl jen pro primitivní ListBox (jeden řádek = jeden text)
+            __ThreadListBox.CustomizeItem += _ThreadListBoxTable_CustomizeItem;                   // Aktualizuje Image pro buňku = pro TemplateItem
+
+            __Searcher = new DevExpress.XtraEditors.SearchControl();
+            __Searcher.Bounds = new Rectangle(300, 6, 544, 20);
+            __Searcher.Client = __ThreadListBox;
+            __Searcher.Properties.NullValuePrompt = "Co byste chtěli najít?";
+            __MainPanel.Controls.Add(__Searcher);
+
+
+            DevExpress.XtraEditors.TableLayout.ItemTemplateBase createTemplate()
+            {
+                var template = new DevExpress.XtraEditors.TableLayout.ItemTemplateBase() { Name = "Main" };
+
+                // Columns:
+                var col0 = new DevExpress.XtraEditors.TableLayout.TableColumnDefinition();
+                col0.Length.Value = 48d;
+                template.Columns.Add(col0);
+
+                var col1 = new DevExpress.XtraEditors.TableLayout.TableColumnDefinition();
+                col1.Length.Value = 100d;
+                template.Columns.Add(col1);
+
+                var col2 = new DevExpress.XtraEditors.TableLayout.TableColumnDefinition();
+                col2.Length.Value = 200d;
+                template.Columns.Add(col2);
+
+                var col3 = new DevExpress.XtraEditors.TableLayout.TableColumnDefinition();
+                col3.Length.Value = 40d;
+                template.Columns.Add(col3);
+
+                // Rows:
+                var row0 = new DevExpress.XtraEditors.TableLayout.TableRowDefinition();
+                row0.Length.Value = 20d;
+                row0.Length.Type = DevExpress.XtraEditors.TableLayout.TableDefinitionLengthType.Pixel;
+                template.Rows.Add(row0);
+
+                var row1 = new DevExpress.XtraEditors.TableLayout.TableRowDefinition();
+                row1.Length.Value = 2d;
+                row1.Length.Type = DevExpress.XtraEditors.TableLayout.TableDefinitionLengthType.Pixel;
+                row1.AutoHeight = true;
+                template.Rows.Add(row1);
+
+                // Spans:
+                var span0 = new DevExpress.XtraEditors.TableLayout.TableSpan() { RowIndex = 0, ColumnIndex = 0, RowSpan = 2 };
+                template.Spans.Add(span0);
+                var span1 = new DevExpress.XtraEditors.TableLayout.TableSpan() { RowIndex = 1, ColumnIndex = 1, ColumnSpan = 2 };
+                template.Spans.Add(span1);
+                var span2 = new DevExpress.XtraEditors.TableLayout.TableSpan() { RowIndex = 0, ColumnIndex = 3, RowSpan = 2 };
+                template.Spans.Add(span2);
+
+                // Elements:
+                var elem00 = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement() { RowIndex = 0, ColumnIndex = 0, FieldName = "refer", ImageToTextAlignment = DevExpress.XtraEditors.TileControlImageToTextAlignment.Right, ImageAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleCenter, TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleRight, Width = 35, Height = 40, Name = "imagename" };
+                elem00.Appearance.Normal.FontStyleDelta = FontStyle.Bold;
+                elem00.Appearance.Normal.FontSizeDelta = 3;
+                elem00.Appearance.Normal.Options.UseFont = true;
+                template.Elements.Add(elem00);
+
+                var elem01 = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement() { RowIndex = 0, ColumnIndex = 1, FieldName = "nazev", TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleLeft, Width = 120, Height = 28 };
+                elem01.Appearance.Normal.FontStyleDelta = FontStyle.Bold;
+                template.Elements.Add(elem01);
+
+                var elem02 = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement() { RowIndex = 0, ColumnIndex = 2, FieldName = "suffix", TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleLeft, Width = 240, Height = 28 };
+                elem02.Appearance.Normal.FontStyleDelta = FontStyle.Regular;
+                template.Elements.Add(elem02);
+
+                var elem11 = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement() { RowIndex = 1, ColumnIndex = 1, FieldName = "note", TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleLeft, Width = 360, Height = 20 };
+                elem11.Appearance.Normal.FontStyleDelta = FontStyle.Italic;
+                template.Elements.Add(elem11);
+
+                var imag03 = "office2013/actions/add_32x32.png";
+                var elem03 = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement() { RowIndex = 0, ColumnIndex = 3, FieldName = null, ImageAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleCenter, Width = 40, Height = 28 };
+                template.Elements.Add(elem03);
+
+                return template;
+            }
+            System.Data.DataTable createData(int rowsCount)
+            {
+                System.Data.DataTable table = new System.Data.DataTable();
+                table.Columns.Add("refer", typeof(string));
+                table.Columns.Add("iconname1", typeof(string));
+                table.Columns.Add("nazev", typeof(string));
+                table.Columns.Add("suffix", typeof(string));
+                table.Columns.Add("note", typeof(string));
+                table.Columns.Add("iconname2", typeof(string));
+                // table.Columns.Add("photo", typeof(byte[]));
+                table.Columns.Add("photo", typeof(Image));
+
+                var images32 = _GetImages32();
+                var images16 = _GetImages16();
+                var photoNames = _GetPhotoNames();
+                var hasPhotoNames = (photoNames != null && photoNames.Length > 0);
+                for (int i = 0; i < rowsCount; i++)
+                {
+                    string refer = (i + 1).ToString();
+                    string iconname1 = Randomizer.GetItem(images32);
+                    string nazev = Randomizer.GetWord(true);
+                    string suffix = Randomizer.GetSentence(1, 3, false);
+                    string note = Randomizer.GetSentence(5, 9, true);
+                    string iconname2 = Randomizer.GetItem(images16);
+                    Image photo = null;
+                    if (hasPhotoNames && Randomizer.IsTrue(25))
+                        photo = loadImage(Randomizer.GetItem(photoNames));
+                    table.Rows.Add(refer, iconname1, nazev, suffix, note, iconname2, photo);
+                }
+                return table;
+            }
+
+            Image loadImage(string fileName)
+            {
+                using (var stream = System.IO.File.OpenRead(fileName))
+                    return Image.FromStream(stream);
+            }
+        }
+        /// <summary>
+        /// Událost je volána 1x per 1 řádek Listu v procesu jeho kreslení, jako příprava
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ThreadListBoxTable_CustomizeItem(object sender, DevExpress.XtraEditors.CustomizeTemplatedItemEventArgs e)
+        {
+            var imageName1 = "iconname1";
+            var imageName2 = "iconname2";
+            var photoName = "photo";
+            if (e.Value is System.Data.DataRowView rowView)
+            {
+                if (rowView.Row.Table.Columns.Contains(imageName1))
+                    e.TemplatedItem.Elements[0].Image = DxComponent.GetBitmapImage(rowView.Row[imageName1] as string);
+
+                bool hasImage2 = false;
+                if (rowView.Row.Table.Columns.Contains(photoName))
+                {
+                    if (rowView.Row[photoName] is Image image)
+                    {
+                        e.TemplatedItem.Elements[4].Image = image;
+                        e.TemplatedItem.Elements[4].ImageOptions.ImageScaleMode = DevExpress.XtraEditors.TileItemImageScaleMode.ZoomInside;
+                        hasImage2 = true;
+                    }
+                }
+                if (!hasImage2 && rowView.Row.Table.Columns.Contains(imageName2))
+                {
+                    string name = rowView.Row[imageName2] as string;
+                    e.TemplatedItem.Elements[4].Image = DxComponent.GetBitmapImage(name, ResourceImageSizeType.Small);
+                    hasImage2 = true;
+                }
+                if (!hasImage2)
+                {
+                    e.TemplatedItem.Elements[4].Image = null;
+                }
+            }
+        }
+        private void _ThreadListBoxTable_CustomItemTemplate(object sender, DevExpress.XtraEditors.CustomItemTemplateEventArgs e)
+        {
+            
+        }
+
+        private void _ThreadListBoxTable_CustomItemDisplayText(object sender, DevExpress.XtraEditors.CustomItemDisplayTextEventArgs e)
+        {
+            if (e.Value is System.Data.DataRowView rowView)
+            {
+                var item = e.Item;
+                e.DisplayText = e.DisplayText + " ??";
+            }
+        }
+
+        #endregion
+        private DxPanelControl __MainPanel;
+
+        private string[] _GetImages32()
+        {
+            string[] images = new string[]
+            {
+                "images/xaf/action_clear_32x32.png",
+                "images/xaf/action_clear_settings_32x32.png",
+                "images/xaf/action_clonemerge_clone_object_32x32.png",
+                "images/xaf/action_clonemerge_merge_object_32x32.png",
+                "images/xaf/action_close_32x32.png",
+                "images/xaf/action_createdashboard_32x32.png",
+                "images/xaf/action_dashboard_showdesigner_32x32.png",
+                "images/xaf/action_debug_breakpoint_toggle_32x32.png",
+                "images/xaf/action_debug_start_32x32.png",
+                "images/xaf/action_delete_32x32.png",
+                "images/xaf/action_deny_32x32.png",
+                "images/xaf/action_editmodel_32x32.png",
+                "images/xaf/action_exit_32x32.png",
+                "images/xaf/action_grant_32x32.png",
+                "images/xaf/action_chart_printing_preview_32x32.png",
+                "images/xaf/action_chart_showdesigner_32x32.png",
+                "images/xaf/action_chartdatavertical_32x32.png",
+                "images/xaf/action_chooseskin_32x32.png",
+                "images/xaf/action_navigation_history_back_32x32.png",
+                "images/xaf/action_navigation_history_forward_32x32.png",
+                "images/xaf/action_navigation_next_object_32x32.png",
+                "images/xaf/action_navigation_previous_object_32x32.png",
+                "images/xaf/action_redo_32x32.png",
+                "images/xaf/action_refresh_32x32.png",
+                "images/xaf/action_reload_32x32.png"
+            };
+            return images;
+        }
+        private string[] _GetImages16()
+        {
+            string[] images = new string[]
+            {
+                "images/scales/bluewhitered_16x16.png",
+                "images/scales/geenyellow_16x16.png",
+                "images/scales/greenwhite_16x16.png",
+                "images/scales/greenwhitered_16x16.png",
+                "images/scales/greenyellowred_16x16.png",
+                "images/scales/redwhite_16x16.png",
+                "images/scales/redwhiteblue_16x16.png",
+                "images/scales/redwhitegreen_16x16.png",
+                "images/scales/redyellowgreen_16x16.png",
+                "images/scales/whitegreen_16x16.png",
+                "images/scales/whitered_16x16.png",
+                "images/scales/yellowgreen_16x16.png"
+            };
+            return images;
+        }
+        /// <summary>
+        /// Vrátí pole obsahující obsah souborů typu Fotografie
+        /// </summary>
+        /// <param name="minCount"></param>
+        /// <param name="maxCount"></param>
+        /// <returns></returns>
+        private byte[][] _GetPhotos(int minCount = 10, int maxCount = 100)
+        {
+            var names = _GetPhotoNames(minCount, maxCount);
+            if (names is null || Name.Length == 0) return new byte[0][];
+            List<byte[]> result = new List<byte[]>();
+            foreach (var  name in names)
+                result.Add(System.IO.File.ReadAllBytes(name));
+            return result.ToArray();
+        }
+        /// <summary>
+        /// Vrátí jména souborů JPG z adresáře 'c:\DavidPrac\Images\Small'
+        /// </summary>
+        /// <param name="minCount"></param>
+        /// <param name="maxCount"></param>
+        /// <returns></returns>
+        private string[] _GetPhotoNames(int minCount = 10, int maxCount = 100)
+        {
+            string path = @"c:\DavidPrac\Images\Small";
+            if (!System.IO.Directory.Exists(path)) return new string[0];
+            var files = System.IO.Directory.GetFiles(path, "*.*")
+                .Where(n => isImage(n))
+                .ToArray();
+            int count = Randomizer.Rand.Next(minCount, maxCount + 1);
+            return Randomizer.GetItems(count, files);
+
+            bool isImage(string name)
+            {
+                string extn = System.IO.Path.GetExtension(name).ToLower();
+                return (extn == ".jpg" || extn == ".jpeg" || extn == ".png" || extn == ".bmp" || extn == ".pcx" || extn == ".tif" || extn == ".gif");
+            }
+        }
         #endregion
 
         #region DxSample
@@ -203,6 +724,7 @@ namespace TestDevExpress.Forms
             public string Text1 { get; set; }
             public string Text2 { get; set; }
             public string Text3 { get; set; }
+            public string IconName { get; set; }
         }
     }
 }

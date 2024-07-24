@@ -366,7 +366,7 @@ Kapitán se na mně nerozhněval. Jenom se zasmál.
 „Inu, pane,“ povídá, „kdybyste chtěl jet do Ipswiche, tak bysme lepší vítr mít nemohli, jenomže my máme
 namířeno k holandskýmu pobřeží a v tom pádě - no co vám mám povídat?“
 Sdělil jsem tuto novinu Ethelbertě a dohodli jsme se, že ten den strávíme na břehu. Harwich není moc veselé
-město, k večeru je tam dokonce dost velká nuda. „U doverského dvora“ jsme si dali čaj a pár chlabíčků s
+město, k večeru je tam dokonce dost velká nuda. „U doverského dvora“ jsme si dali čaj a pár chlebíčků s
 řeřichovým salátem a pak jsme se vrátili na nábřeží, abychom se podívali, co dělá loď a kapitán Golyes. Na
 kapitána jsme čekali celou hodinu. Když přišel, byl v mnohem lepší náladě než my; kdyby mi sám nebyl řekl, že
 než jde na kutě, jakživ nevypije víc než jednu sklenici horkého grogu, byl bych si myslel, že je opilý.
@@ -394,7 +394,7 @@ různými modifikacemi. Jestli víte o nějakém dalším bodu na větrné růž
 něm, a já ještě počkám. Jestli o žádném nevíte a jestli vaše kotva už nezarostla do dna oceánu, tak ji dneska
 zvedneme a uvidíme, co to bude dělat.“
 Z toho vyrozuměl, že jsem odhodlán ke všemu.
-„No prosím!“ řekl. „Vy jste pán, já jsem kmán. Mám, zaplať Pámbu, jenom jedno děcko, který ja na mě závislý,
+„No prosím!“ řekl. „Vy jste pán, já jsem kmán. Mám, zaplať Pámbu, jenom jedno děcko, který je na mě závislý,
 a vykonavatelé vaší poslední vůle budou nepochybně vědět, jaký povinnosti je čekaj vůči mý starý.“
 Jeho slavnostně vážný tón na mě zapůsobil.
 „Pane Goylesi,“ řekl jsem, „jednejte se mnou na rovinu. Existuje nějaká naděje, nebo nějaké počasí, jež nám
