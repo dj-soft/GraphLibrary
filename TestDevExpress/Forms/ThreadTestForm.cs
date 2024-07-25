@@ -509,7 +509,8 @@ namespace TestDevExpress.Forms
                     if (rowView.Row[photoName] is Image image)
                     {
                         e.TemplatedItem.Elements[4].Image = image;
-                        e.TemplatedItem.Elements[4].ImageOptions.ImageScaleMode = DevExpress.XtraEditors.TileItemImageScaleMode.ZoomInside;
+                        e.TemplatedItem.Elements[4].ImageOptions.ImageScaleMode = DevExpress.XtraEditors.TileItemImageScaleMode.Squeeze;
+
                         hasImage2 = true;
                     }
                 }
@@ -517,6 +518,7 @@ namespace TestDevExpress.Forms
                 {
                     string name = rowView.Row[imageName2] as string;
                     e.TemplatedItem.Elements[4].Image = DxComponent.GetBitmapImage(name, ResourceImageSizeType.Small);
+                    e.TemplatedItem.Elements[4].ImageOptions.ImageScaleMode = DevExpress.XtraEditors.TileItemImageScaleMode.Squeeze;
                     hasImage2 = true;
                 }
                 if (!hasImage2)
