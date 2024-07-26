@@ -31,6 +31,11 @@ namespace TestDevExpress.Forms
             this.ImageName = "svgimages/dashboards/grouplabels.svg";
             this.ImageNameAdd = "@text|D|#002266||B|3|#88AAFF|#CCEEFF";
         }
+        protected override void Dispose(bool disposing)
+        {
+            _ThreadStop();
+            base.Dispose(disposing);
+        }
         #endregion
         #region Main Content
         /// <summary>
@@ -42,12 +47,14 @@ namespace TestDevExpress.Forms
             __MainPanel = DxComponent.CreateDxPanel(this.DxMainPanel, DockStyle.None, DevExpress.XtraEditors.Controls.BorderStyles.HotFlat, 850, 450);
 
             // Určitě hezčí:
-            // _PrepareListBoxTyped();
-            _PrepareListBoxTable();
+            // _PrepareListBoxTyped();              // typová data
+            _PrepareListBoxTable();                 // datatable
 
 
-            // Není tak pěkný, nehezky scrolluje = po celých řádcích, ne po pixelech
+            // Není tak pěkný:
             // _PrepareListBoxHtml();
+
+            _ThreadStart();
         }
         #region ListBox nad DataTable a HTML Template
 
@@ -356,8 +363,16 @@ namespace TestDevExpress.Forms
 
         private DxListBoxControl __ThreadListBox;
         private DevExpress.XtraEditors.SearchControl __Searcher;
-        #endregion
 
+        internal class ThreadListData
+        {
+            public string Text0 { get; set; }
+            public string Text1 { get; set; }
+            public string Text2 { get; set; }
+            public string Text3 { get; set; }
+            public string IconName { get; set; }
+        }
+        #endregion
         #region ListBox s typovou Template a DataTable
         private void _PrepareListBoxTable()
         {
@@ -543,7 +558,6 @@ namespace TestDevExpress.Forms
 
         #endregion
         private DxPanelControl __MainPanel;
-
         private string[] _GetImages32()
         {
             string[] images = new string[]
@@ -633,6 +647,16 @@ namespace TestDevExpress.Forms
             }
         }
         #endregion
+        #region Threads
+        private void _ThreadStart()
+        {
+
+        }
+        private void _ThreadStop()
+        { }
+
+        #endregion
+
 
         #region DxSample
 
@@ -720,13 +744,5 @@ namespace TestDevExpress.Forms
 
 
 
-        internal class ThreadListData
-        {
-            public string Text0 { get; set; }
-            public string Text1 { get; set; }
-            public string Text2 { get; set; }
-            public string Text3 { get; set; }
-            public string IconName { get; set; }
-        }
     }
 }
