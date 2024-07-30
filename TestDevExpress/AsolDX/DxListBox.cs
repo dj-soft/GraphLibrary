@@ -33,19 +33,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void Initialize()
         {
-            _ListBox = new DxListBoxControl();
-            _Buttons = new List<DxSimpleButton>();
-            _ButtonsPosition = ToolbarPosition.RightSideCenter;
-            _ButtonsTypes = ListBoxButtonType.None;
-            _ButtonsSize = ResourceImageSizeType.Medium;
-            this.Controls.Add(_ListBox);
+            __ListBox = new DxListBoxControl();
+            __Buttons = new List<DxSimpleButton>();
+            __ButtonsPosition = ToolbarPosition.RightSideCenter;
+            __ButtonsTypes = ListBoxButtonType.None;
+            __ButtonsSize = ResourceImageSizeType.Medium;
+            this.Controls.Add(__ListBox);
             this.Padding = new Padding(0);
             this.ClientSizeChanged += _ClientSizeChanged;
-            _ListBox.UndoRedoEnabledChanged += _ListBox_UndoRedoEnabledChanged;
-            _ListBox.SelectedItemsChanged += _ListBox_SelectedItemsChanged;
-            _ListBox.SelectedMenuItemChanged += _ListBox_SelectedMenuItemChanged;
-            _ListBox.ActionRefresh += _ListBox_ActionRefresh;
-            _FilterBoxInitialize();
+            __ListBox.UndoRedoEnabled = false;
+            __ListBox.UndoRedoEnabledChanged += _ListBox_UndoRedoEnabledChanged;
+            __ListBox.SelectedItemsChanged += _ListBox_SelectedItemsChanged;
+            __ListBox.SelectedMenuItemChanged += _ListBox_SelectedMenuItemChanged;
+            __ListBox.ActionRefresh += _ListBox_ActionRefresh;
+            _RowFilterInitialize();
             DoLayout();
         }
         /// <summary>
@@ -70,97 +71,129 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected virtual void DoLayout()
         {
-            Rectangle innerBounds = this.GetInnerBounds();
-            if (innerBounds.Width < 30 || innerBounds.Height < 30) return;
-
-            _DoLayoutButtons(ref innerBounds);
-            _FilterBoxDoLayout(ref innerBounds);
-            _ListBox.Bounds = new Rectangle(innerBounds.X, innerBounds.Y, innerBounds.Width - 0, innerBounds.Height);
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(DoLayout));
+            }
+            else
+            {
+                Rectangle innerBounds = this.GetInnerBounds();
+                if (innerBounds.Width >= 30 && innerBounds.Height >= 30)
+                {
+                    _ButtonsLayout(ref innerBounds);
+                    _RowFilterLayout(ref innerBounds);
+                    __ListBox.Bounds = new Rectangle(innerBounds.X, innerBounds.Y, innerBounds.Width - 0, innerBounds.Height);
+                }
+            }
         }
-        /// <summary>
-        /// Instance ListBoxu
-        /// </summary>
-        private DxListBoxControl _ListBox;
         /// <summary>
         /// Dá Focus do main controlu
         /// </summary>
         private void _MainControlFocus()
         {
-            _ListBox.Focus();
+            __ListBox.Focus();
         }
+        /// <summary>
+        /// Dispose panelu
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            _RemoveButtons();
+            _RowFilterDispose();
+        }
+        /// <summary>
+        /// Instance ListBoxu
+        /// </summary>
+        private DxListBoxControl __ListBox;
         #endregion
         #region Public prvky
         /// <summary>
         /// ListBox
         /// </summary>
-        public DxListBoxControl ListBox { get { return _ListBox; } }
+        public DxListBoxControl ListBox { get { return __ListBox; } }
+        /// <summary>
+        /// Varianta řádkového filtru. Default = None
+        /// </summary>
+        public FilterRowMode RowFilterMode { get { return __RowFilterMode; } set { _SetRowFilterMode(value); } }
         /// <summary>
         /// Typy dostupných tlačítek
         /// </summary>
-        public ListBoxButtonType ButtonsTypes { get { return _ButtonsTypes; } set { _ButtonsTypes = value; AcceptButtonsType(); DoLayout(); } }
+        public ListBoxButtonType ButtonsTypes { get { return __ButtonsTypes; } set { __ButtonsTypes = value; _AcceptButtonsType(); DoLayout(); } }
         /// <summary>
         /// Umístění tlačítek
         /// </summary>
-        public ToolbarPosition ButtonsPosition { get { return _ButtonsPosition; } set { _ButtonsPosition = value; DoLayout(); } }
+        public ToolbarPosition ButtonsPosition { get { return __ButtonsPosition; } set { __ButtonsPosition = value; DoLayout(); } }
         /// <summary>
         /// Velikost tlačítek
         /// </summary>
-        public ResourceImageSizeType ButtonsSize { get { return _ButtonsSize; } set { _ButtonsSize = value; DoLayout(); } }
+        public ResourceImageSizeType ButtonsSize { get { return __ButtonsSize; } set { __ButtonsSize = value; DoLayout(); } }
         #endregion
-        #region DxListBoxControlu (přímý přístup na jeho prvky)
+        #region Data = položky, a layout = Template
+        #region Jednoduchý List postavený nad položkami IMenuItem
         /// <summary>
         /// Pokud obsahuje true, pak List smí obsahovat duplicitní klíče (defaultní hodnota je true).
         /// Pokud je false, pak vložení dalšího záznamu s klíčem, který už v Listu je, bude ignorováno.
         /// Pozor, pokud List obsahuje nějaké duplicitní záznamy a poté bude nastaveno <see cref="DuplicityEnabled"/> na false, NEBUDOU duplicitní záznamy odstraněny.
         /// </summary>
-        public bool DuplicityEnabled { get { return _ListBox.DuplicityEnabled; } set { _ListBox.DuplicityEnabled = value; } }
+        public bool DuplicityEnabled { get { return __ListBox.DuplicityEnabled; } set { __ListBox.DuplicityEnabled = value; } }
         /// <summary>
         /// Prvky Listu typované na <see cref="IMenuItem"/>.
         /// Pokud v Listu budou obsaženy jiné prvky než <see cref="IMenuItem"/>, pak na jejich místě v tomto poli bude null.
         /// Toto pole má stejný počet prvků jako pole this.Items
         /// Pole jako celek lze setovat: vymění se obsah, ale zachová se pozice.
         /// </summary>
-        public IMenuItem[] ListItems { get { return _ListBox.ListItems; } set { _ListBox.ListItems = value; } }
+        public IMenuItem[] ListItems { get { return __ListBox.ListItems; } set { __ListBox.ListItems = value; } }
         /// <summary>
         /// Aktuálně vybraný prvek typu <see cref="IMenuItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
         /// </summary>
-        public IMenuItem SelectedMenuItem { get { return _ListBox.SelectedMenuItem; } set { _ListBox.SelectedMenuItem = value; } }
+        public IMenuItem SelectedListItem { get { return __ListBox.SelectedListItem; } set { __ListBox.SelectedListItem = value; } }
         /// <summary>
         /// Prvky Listu
         /// </summary>
-        public DevExpress.XtraEditors.Controls.ImageListBoxItemCollection Items { get { return _ListBox.Items; } }
-        /// <summary>
-        /// Režim označování prvků
-        /// </summary>
-        public SelectionMode SelectionMode { get { return _ListBox.SelectionMode; } set { _ListBox.SelectionMode = value; } }
-        /// <summary>
-        /// Souhrn povolených akcí Drag and Drop
-        /// </summary>
-        public DxDragDropActionType DragDropActions { get { return _ListBox.DragDropActions; } set { _ListBox.DragDropActions = value; } }
-        /// <summary>
-        /// Povolené akce. Výchozí je <see cref="KeyActionType.None"/>
-        /// </summary>
-        public KeyActionType EnabledKeyActions { get { return _ListBox.EnabledKeyActions; } set { _ListBox.EnabledKeyActions = value; } }
+        public DevExpress.XtraEditors.Controls.ImageListBoxItemCollection Items { get { return __ListBox.Items; } }
+        #endregion
+        #region Komplexní List postavený nad DataTable a Template
+
+        #endregion
+
+        #endregion
+        #region Ctrl+C a Ctrl+V, i mezi controly a mezi aplikacemi
         /// <summary>
         /// ID tohoto objektu, je vkládáno do balíčku s daty při CtrlC, CtrlX a při DragAndDrop z tohoto zdroje.
         /// Je součástí Exchange dat uložených do <see cref="DataExchangeContainer.DataSourceId"/>.
         /// </summary>
-        public string ExchangeCurrentDataId { get { return _ListBox.ExchangeCurrentDataId; } set { _ListBox.ExchangeCurrentDataId = value; } }
+        public string DataExchangeCurrentControlId { get { return __ListBox.DataExchangeCurrentControlId; } set { __ListBox.DataExchangeCurrentControlId = value; } }
         /// <summary>
         /// Režim výměny dat při pokusu o vkládání do tohoto objektu.
         /// Pokud některý jiný objekt provedl Ctrl+C, pak svoje data vložil do balíčku <see cref="DataExchangeContainer"/>,
-        /// přidal k tomu svoje ID controlu (jako zdejší <see cref="ExchangeCurrentDataId"/>) do <see cref="DataExchangeContainer.DataSourceId"/>,
+        /// přidal k tomu svoje ID controlu (jako zdejší <see cref="DataExchangeCurrentControlId"/>) do <see cref="DataExchangeContainer.DataSourceId"/>,
         /// do balíčku se přidalo ID aplikace do <see cref="DataExchangeContainer.ApplicationGuid"/>, a tato data jsou uložena v Clipboardu.
         /// <para/>
         /// Pokud nyní zdejší control zaeviduje klávesu Ctrl+V, pak zjistí, zda v Clipboardu existuje balíček <see cref="DataExchangeContainer"/>,
-        /// a pokud ano, pak prověří, zda this control může akceptovat data ze zdroje v balíčku uvedeného, na základě nastavení režimu výměny v <see cref="ExchangeCrossType"/>
-        /// a ID zdrojového controlu podle <see cref="ExchangeAcceptSourceDataId"/>.
+        /// a pokud ano, pak prověří, zda this control může akceptovat data ze zdroje v balíčku uvedeného, na základě nastavení režimu výměny v <see cref="DataExchangeCrossType"/>
+        /// a ID zdrojového controlu podle <see cref="DataExchangeAcceptSourceControlId"/>.
         /// </summary>
-        public DataExchangeCrossType ExchangeCrossType { get { return _ListBox.ExchangeCrossType; } set { _ListBox.ExchangeCrossType = value; } }
+        public DataExchangeCrossType DataExchangeCrossType { get { return __ListBox.DataExchangeCrossType; } set { __ListBox.DataExchangeCrossType = value; } }
         /// <summary>
         /// Povolené zdroje dat pro vkládání do this controlu pomocí výměnného balíčku <see cref="DataExchangeContainer"/>.
         /// </summary>
-        public string ExchangeAcceptSourceDataId { get { return _ListBox.ExchangeAcceptSourceDataId; } set { _ListBox.ExchangeAcceptSourceDataId = value; } }
+        public string DataExchangeAcceptSourceControlId { get { return __ListBox.DataExchangeAcceptSourceControlId; } set { __ListBox.DataExchangeAcceptSourceControlId = value; } }
+        #endregion
+        #region DxListBoxControl (přímý přístup na jeho prvky)
+        /// <summary>
+        /// Režim označování prvků
+        /// </summary>
+        public SelectionMode SelectionMode { get { return __ListBox.SelectionMode; } set { __ListBox.SelectionMode = value; } }
+        /// <summary>
+        /// Souhrn povolených akcí Drag and Drop
+        /// </summary>
+        public DxDragDropActionType DragDropActions { get { return __ListBox.DragDropActions; } set { __ListBox.DragDropActions = value; } }
+        /// <summary>
+        /// Povolené akce. Výchozí je <see cref="KeyActionType.None"/>
+        /// </summary>
+        public KeyActionType EnabledKeyActions { get { return __ListBox.EnabledKeyActions; } set { __ListBox.EnabledKeyActions = value; } }
         /// <summary>
         /// Při požadavku na Refresh, z tlačítka v ListBoxu
         /// </summary>
@@ -220,86 +253,234 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler<TEventArgs<IMenuItem>> SelectedMenuItemChanged;
         #endregion
-        #region FilterBox (přímý přístup na jeho prvky)
+        #region Filtrování položek: klientské / serverové
         /// <summary>
-        /// Inicializace FilterBoxu, a jeho vložení do this.Controls
+        /// Inicializace řádkového filtrování
         /// </summary>
-        private void _FilterBoxInitialize()
+        private void _RowFilterInitialize()
         {
-            _FilterBox = new DxFilterBox() { Dock = DockStyle.None, Visible = false, TabIndex = 0 };
-            _FilterBox.FilterOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
-            _FilterBoxVisible = false;
-            _RegisterFilterRowEventHandlers();
-            this.Controls.Add(_FilterBox);
+            __RowFilterMode = FilterRowMode.None;
         }
         /// <summary>
-        /// Zaregistruje zdejší eventhandlery na události v nativním <see cref="_FilterBox"/>
+        /// Disposeřádkového filtrování
         /// </summary>
-        private void _RegisterFilterRowEventHandlers()
+        private void _RowFilterDispose()
         {
-            _FilterBox.FilterValueChangedSources = DxFilterBoxChangeEventSource.DefaultGreen;
-            _FilterBox.FilterValueChanged += FilterBox_Changed;      // Změna obsahu filtru a Enter
-            _FilterBox.KeyEnterPress += FilterBox_KeyEnter;
+            _RowFilterClientRemove();
+            _RowFilterServerRemove();
+            __RowFilterMode = FilterRowMode.None;
         }
         /// <summary>
-        /// Zobrazovat řádkový filtr? Default = NE
+        /// Aktivuje daný režim řádkového filtru
         /// </summary>
-        public bool FilterBoxVisible { get { return _FilterBoxVisible; } set { _FilterBoxVisible = value; this.RunInGui(FilterBoxSetVisible); } } private bool _FilterBoxVisible = false;
-        /// <summary>
-        /// Instance řádkového filtru
-        /// </summary>
-        public DxFilterBox FilterBox { get { return _FilterBox; } }
-        /// <summary>
-        /// Aktuální text v řádkovém filtru
-        /// </summary>
-        public DxFilterBoxValue FilterBoxValue { get { return _FilterBox.FilterValue; } set { _FilterBox.FilterValue = value; } }
-        /// <summary>
-        /// Pole operátorů nabízených pod tlačítkem vlevo.
-        /// Pokud bude vloženo null nebo prázdné pole, pak tlačítko vlevo nebude zobrazeno vůbec, a v hodnotě FilterValue bude Operator = null.
-        /// </summary>
-        public List<IMenuItem> FilterBoxOperators { get { return _FilterBox.FilterOperators; } set { _FilterBox.FilterOperators = value; } }
-        /// <summary>
-        /// Za jakých událostí se volá event <see cref="FilterBoxChanged"/>
-        /// </summary>
-        public DxFilterBoxChangeEventSource FilterBoxChangedSources { get { return _FilterBox.FilterValueChangedSources; } set { _FilterBox.FilterValueChangedSources = value; } }
-        /// <summary>
-        /// Událost volaná po hlídané změně obsahu filtru.
-        /// Argument obsahuje hodnotu filtru a druh události, která vyvolala event.
-        /// Druhy události, pro které se tento event volá, lze nastavit v <see cref="FilterBoxChangedSources"/>.
-        /// </summary>
-        public event EventHandler<DxFilterBoxChangeArgs> FilterBoxChanged;
-        /// <summary>
-        /// Provede se po stisku Enter v řádkovém filtru (i bez změny textu), vhodné pro řízení Focusu
-        /// </summary>
-        public event EventHandler FilterBoxKeyEnter;
-        /// <summary>
-        /// Aplikuje viditelnost pro FilterRow
-        /// </summary>
-        private void FilterBoxSetVisible()
+        /// <param name="filterMode"></param>
+        private void _SetRowFilterMode(FilterRowMode filterMode)
         {
-            _FilterBox.Visible = _FilterBoxVisible;
-            DoLayout();
+            if (filterMode != FilterRowMode.Client && _RowFilterClientExists)
+                _RowFilterClientRemove();
+            if (filterMode != FilterRowMode.Server && _RowFilterServerExists)
+                _RowFilterServerRemove();
+
+            if (filterMode == FilterRowMode.Client && !_RowFilterClientExists)
+                _RowFilterClientPrepare();
+            if (filterMode == FilterRowMode.Server && !_RowFilterServerExists)
+                _RowFilterServerPrepare();
+
+            if (filterMode != __RowFilterMode)
+            {
+                __RowFilterMode = filterMode;
+                this.RunInGui(_ShowRowFilterBox);
+            }
+        }
+        /// <summary>
+        /// Nastaví viditelnost pro aktuální FilterRow a upraví celkový Layout aby byl správně umístěn
+        /// </summary>
+        private void _ShowRowFilterBox()
+        {
+            var filterMode = __RowFilterMode;
+            if (filterMode == FilterRowMode.Client && _RowFilterClientExists)
+            {
+                __RowFilterClient.Visible = true;
+                DoLayout();
+            }
+            else if (filterMode == FilterRowMode.Server && _RowFilterServerExists)
+            {
+                __RowFilterServer.Visible = true;
+                DoLayout();
+            }
         }
         /// <summary>
         /// Umístí FilterBox (pokud je Visible) do daného prostoru, a ten zmenší o velikost FilterBoxu
         /// </summary>
         /// <param name="innerBounds"></param>
-        private void _FilterBoxDoLayout(ref Rectangle innerBounds)
+        private void _RowFilterLayout(ref Rectangle innerBounds)
         {
-            if (!_FilterBoxVisible) return;
-            Rectangle filterBounds = new Rectangle(innerBounds.X, innerBounds.Y, innerBounds.Width, _FilterBox.Height);
-            _FilterBox.Bounds = filterBounds;
-            innerBounds = new Rectangle(innerBounds.X, filterBounds.Bottom, innerBounds.Width, innerBounds.Bottom - filterBounds.Bottom);
+            var filterMode = __RowFilterMode;
+            if (filterMode == FilterRowMode.Client && _RowFilterClientExists)
+            {
+                Rectangle filterBounds = new Rectangle(innerBounds.X, innerBounds.Y, innerBounds.Width, __RowFilterClient.Height);
+                __RowFilterClient.Bounds = filterBounds;
+                int y = __RowFilterClient.Bottom + 1;
+                innerBounds = new Rectangle(innerBounds.X, y, innerBounds.Width, innerBounds.Bottom - y);
+            }
+            else if (filterMode == FilterRowMode.Server && _RowFilterServerExists)
+            {
+                Rectangle filterBounds = new Rectangle(innerBounds.X, innerBounds.Y, innerBounds.Width, __RowFilterServer.Height);
+                __RowFilterServer.Bounds = filterBounds;
+                int y = __RowFilterServer.Bottom + 1;
+                innerBounds = new Rectangle(innerBounds.X, y, innerBounds.Width, innerBounds.Bottom - y);
+            }
         }
+        /// <summary>
+        /// Varianty řádkového filtru
+        /// </summary>
+        public enum FilterRowMode
+        {
+            /// <summary>
+            /// Není zobrazen, default
+            /// </summary>
+            None,
+            /// <summary>
+            /// Klientský: DevExpress
+            /// </summary>
+            Client,
+            /// <summary>
+            /// Serverový: události na server a reload nazpátek
+            /// </summary>
+            Server
+        }
+        /// <summary>
+        /// Varianta řádkového filtru.
+        /// </summary>
+        private FilterRowMode __RowFilterMode;
+        #region Klientský řádkový filtr = používá Searcher
+        /// <summary>
+        /// Aktuálně existuje řádkový filtr typu Client?
+        /// </summary>
+        private bool _RowFilterClientExists { get { return (__RowFilterClient != null); } }
+        /// <summary>
+        /// Inicializace klientského FilterBoxu, a jeho vložení do this.Controls
+        /// </summary>
+        private void _RowFilterClientPrepare()
+        {
+            __RowFilterClient = new SearchControl();
+            __RowFilterClient.Client = __ListBox;
+            __RowFilterClient.Properties.NullValuePrompt = "Co byste chtěli najít?";
+            _RowFilterClientRegisterEvents();
+            this.Controls.Add(__RowFilterClient);
+        }
+        /// <summary>
+        /// Odebere klientský RowFilter
+        /// </summary>
+        private void _RowFilterClientRemove()
+        {
+            if (__RowFilterClient != null)
+            {
+                _RowFilterClientUnRegisterEvents();
+                __RowFilterClient.RemoveControlFromParent();
+                __RowFilterClient.Dispose();
+                __RowFilterClient = null;
+            }
+        }
+        /// <summary>
+        /// Zaregistruje zdejší eventhandlery na události v nativním <see cref="__RowFilterClient"/>
+        /// </summary>
+        private void _RowFilterClientRegisterEvents()
+        {
+        }
+        /// <summary>
+        /// Odregistruje zdejší eventhandlery na události v nativním <see cref="__RowFilterClient"/>
+        /// </summary>
+        private void _RowFilterClientUnRegisterEvents()
+        {
+        }
+        /// <summary>
+        /// Klientský RowFilter
+        /// </summary>
+        private DevExpress.XtraEditors.SearchControl __RowFilterClient;
+        #endregion
+        #region Serverový řádkový filtr = používá FilterBox
+        /// <summary>
+        /// Aktuálně existuje řádkový filtr typu Server?
+        /// </summary>
+        private bool _RowFilterServerExists { get { return (__RowFilterServer != null); } }
+        /// <summary>
+        /// Inicializace serverového FilterBoxu, a jeho vložení do this.Controls
+        /// </summary>
+        private void _RowFilterServerPrepare()
+        {
+            __RowFilterServer = new DxFilterBox() { Dock = DockStyle.None, Visible = false, TabIndex = 0 };
+            __RowFilterServer.FilterOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
+            __RowFilterServer.FilterValueChangedSources = DxFilterBoxChangeEventSource.DefaultGreen;
+            _RowFilterServerRegisterEvents();
+            this.Controls.Add(__RowFilterServer);
+        }
+        /// <summary>
+        /// Odebere serverový RowFilter
+        /// </summary>
+        private void _RowFilterServerRemove()
+        {
+            if (__RowFilterServer != null)
+            {
+                _RowFilterServerUnRegisterEvents();
+                __RowFilterServer.RemoveControlFromParent();
+                __RowFilterServer.Dispose();
+                __RowFilterServer = null;
+            }
+        }
+        /// <summary>
+        /// Zaregistruje zdejší eventhandlery na události v nativním <see cref="__RowFilterServer"/>
+        /// </summary>
+        private void _RowFilterServerRegisterEvents()
+        {
+            __RowFilterServer.FilterValueChanged += _RowFilterServer_Changed;      // Změna obsahu filtru a Enter
+            __RowFilterServer.KeyEnterPress += _RowFilterServer_KeyEnter;
+        }
+        /// <summary>
+        /// Odregistruje zdejší eventhandlery na události v nativním <see cref="__RowFilterServer"/>
+        /// </summary>
+        private void _RowFilterServerUnRegisterEvents()
+        {
+            __RowFilterServer.FilterValueChanged -= _RowFilterServer_Changed;      // Změna obsahu filtru a Enter
+            __RowFilterServer.KeyEnterPress -= _RowFilterServer_KeyEnter;
+        }
+        /// <summary>
+        /// Instance serverového řádkového filtru
+        /// </summary>
+        public DxFilterBox RowFilterServer { get { return __RowFilterServer; } }
+        /// <summary>
+        /// Aktuální text v řádkovém filtru
+        /// </summary>
+        public DxFilterBoxValue RowFilterServerText { get { return __RowFilterServer?.FilterValue; } set { if (_RowFilterServerExists) __RowFilterServer.FilterValue = value; } }
+        /// <summary>
+        /// Pole operátorů nabízených pod tlačítkem vlevo.
+        /// Pokud bude vloženo null nebo prázdné pole, pak tlačítko vlevo nebude zobrazeno vůbec, a v hodnotě FilterValue bude Operator = null.
+        /// </summary>
+        public List<IMenuItem> RowFilterServerOperators { get { return __RowFilterServer?.FilterOperators; } set { if (_RowFilterServerExists) __RowFilterServer.FilterOperators = value; } }
+        /// <summary>
+        /// Za jakých událostí se volá event <see cref="RowFilterServerChanged"/>
+        /// </summary>
+        public DxFilterBoxChangeEventSource? RowFilterServerChangedSources { get { return __RowFilterServer?.FilterValueChangedSources; } set { if (_RowFilterServerExists) __RowFilterServer.FilterValueChangedSources = value ?? DxFilterBoxChangeEventSource.DefaultGreen; } }
+        /// <summary>
+        /// Událost volaná po hlídané změně obsahu filtru.
+        /// Argument obsahuje hodnotu filtru a druh události, která vyvolala event.
+        /// Druhy události, pro které se tento event volá, lze nastavit v <see cref="RowFilterServerChangedSources"/>.
+        /// </summary>
+        public event EventHandler<DxFilterBoxChangeArgs> RowFilterServerChanged;
+        /// <summary>
+        /// Provede se po stisku Enter v řádkovém filtru (i bez změny textu), vhodné pro řízení Focusu
+        /// </summary>
+        public event EventHandler RowFilterServerKeyEnter;
+        
         /// <summary>
         /// Po jakékoli změně v řádkovém filtru
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        private void FilterBox_Changed(object sender, DxFilterBoxChangeArgs args)
+        private void _RowFilterServer_Changed(object sender, DxFilterBoxChangeArgs args)
         {
             OnFilterBoxChanged(args);
-            FilterBoxChanged?.Invoke(this, args);
+            RowFilterServerChanged?.Invoke(this, args);
         }
         /// <summary>
         /// Proběhne po jakékoli změně v řádkovém filtru
@@ -310,11 +491,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void FilterBox_KeyEnter(object sender, EventArgs e)
+        private void _RowFilterServer_KeyEnter(object sender, EventArgs e)
         {
             _MainControlFocus();
             OnFilterBoxKeyEnter();
-            FilterBoxKeyEnter?.Invoke(this, e);
+            RowFilterServerKeyEnter?.Invoke(this, e);
         }
         /// <summary>
         /// Proběhne po stisku Enter v řádkovém filtru
@@ -323,16 +504,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// DxFilterBox
         /// </summary>
-        private DxFilterBox _FilterBox;
+        private DxFilterBox __RowFilterServer;
+        #endregion
         #endregion
         #region Tlačítka
         /// <summary>
         /// Umístí tlačítka podle potřeby do daného vnitřního prostoru, ten zmenší o prostor zabraný tlačítky
         /// </summary>
         /// <param name="innerBounds"></param>
-        private void _DoLayoutButtons(ref Rectangle innerBounds)
+        private void _ButtonsLayout(ref Rectangle innerBounds)
         {
-            var layoutInfos = GetButtonsInfo();
+            var layoutInfos = _GetButtonsInfo();
             if (layoutInfos != null)
             {
                 Padding margins = DxComponent.GetDefaultInnerMargins(this.CurrentDpi);
@@ -344,12 +526,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Načte a vrátí informace pro tvorbu layoutu buttonů
         /// </summary>
         /// <returns></returns>
-        private ControlItemLayoutInfo[] GetButtonsInfo()
+        private ControlItemLayoutInfo[] _GetButtonsInfo()
         {
-            var buttons = _Buttons;
+            var buttons = __Buttons;
             if (buttons == null || buttons.Count == 0) return null;
 
-            Size buttonSize = DxComponent.GetImageSize(_ButtonsSize, true, this.CurrentDpi).Add(4, 4);
+            Size buttonSize = DxComponent.GetImageSize(__ButtonsSize, true, this.CurrentDpi).Add(4, 4);
             Size spaceSize = new Size(buttonSize.Width / 8, buttonSize.Height / 8);
             List<ControlItemLayoutInfo> layoutInfos = new List<ControlItemLayoutInfo>();
             ListBoxButtonType group1 = ListBoxButtonType.MoveTop | ListBoxButtonType.MoveUp | ListBoxButtonType.MoveDown | ListBoxButtonType.MoveBottom;
@@ -379,73 +561,73 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aktuální povolená tlačítka promítne do panelu jako viditelná tlačítka, a i do ListBoxu jako povolené klávesové akce
         /// </summary>
-        private void AcceptButtonsType()
+        private void _AcceptButtonsType()
         {
-            ListBoxButtonType validButtonsTypes = _ButtonsTypes;
+            ListBoxButtonType validButtonsTypes = __ButtonsTypes;
 
             // Buttony z _ButtonsType převedu na povolené akce v ListBoxu a sloučím s akcemi dosud povolenými:
-            KeyActionType oldActions = _ListBox.EnabledKeyActions;
+            KeyActionType oldActions = __ListBox.EnabledKeyActions;
             KeyActionType newActions = ConvertButtonsToActions(validButtonsTypes);
-            _ListBox.EnabledKeyActions = (newActions | oldActions);
+            __ListBox.EnabledKeyActions = (newActions | oldActions);
 
             // Odstraním stávající buttony:
-            RemoveButtons();
+            _RemoveButtons(true);
 
             // Vytvořím potřebné buttony:
             //   (vytvoří se jen ty buttony, které jsou vyžádané proměnné buttonsTypes, fyzické pořadí buttonů je dané pořadím těchto řádků)
-            AcceptButtonType(ListBoxButtonType.MoveTop, validButtonsTypes, "@arrowsmall|top|blue", MsgCode.DxKeyActionMoveTopTitle, MsgCode.DxKeyActionMoveTopText);
-            AcceptButtonType(ListBoxButtonType.MoveUp, validButtonsTypes, "@arrowsmall|up|blue", MsgCode.DxKeyActionMoveUpTitle, MsgCode.DxKeyActionMoveUpText);
-            AcceptButtonType(ListBoxButtonType.MoveDown, validButtonsTypes, "@arrowsmall|down|blue", MsgCode.DxKeyActionMoveDownTitle, MsgCode.DxKeyActionMoveDownText);
-            AcceptButtonType(ListBoxButtonType.MoveBottom, validButtonsTypes, "@arrowsmall|bottom|blue", MsgCode.DxKeyActionMoveBottomTitle, MsgCode.DxKeyActionMoveBottomText);
-            AcceptButtonType(ListBoxButtonType.Refresh, validButtonsTypes, "devav/actions/refresh.svg", MsgCode.DxKeyActionRefreshTitle, MsgCode.DxKeyActionRefreshText);   // qqq
-            AcceptButtonType(ListBoxButtonType.SelectAll, validButtonsTypes, "@editsmall|all|blue", MsgCode.DxKeyActionSelectAllTitle, MsgCode.DxKeyActionSelectAllText);
-            AcceptButtonType(ListBoxButtonType.Delete, validButtonsTypes, "@editsmall|del|red", MsgCode.DxKeyActionDeleteTitle, MsgCode.DxKeyActionDeleteText);       // "devav/actions/delete.svg"
-            AcceptButtonType(ListBoxButtonType.ClipCopy, validButtonsTypes, "devav/actions/copy.svg", MsgCode.DxKeyActionClipCopyTitle, MsgCode.DxKeyActionClipCopyText);
-            AcceptButtonType(ListBoxButtonType.ClipCut, validButtonsTypes, "devav/actions/cut.svg", MsgCode.DxKeyActionClipCutTitle, MsgCode.DxKeyActionClipCutText);
-            AcceptButtonType(ListBoxButtonType.ClipPaste, validButtonsTypes, "devav/actions/paste.svg", MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
-            AcceptButtonType(ListBoxButtonType.Undo, validButtonsTypes, "svgimages/dashboards/undo.svg", MsgCode.DxKeyActionUndoTitle, MsgCode.DxKeyActionUndoText);
-            AcceptButtonType(ListBoxButtonType.Redo, validButtonsTypes, "svgimages/dashboards/redo.svg", MsgCode.DxKeyActionRedoTitle, MsgCode.DxKeyActionRedoText);
+            _AcceptButtonType(ListBoxButtonType.MoveTop, validButtonsTypes, "@arrowsmall|top|blue", MsgCode.DxKeyActionMoveTopTitle, MsgCode.DxKeyActionMoveTopText);
+            _AcceptButtonType(ListBoxButtonType.MoveUp, validButtonsTypes, "@arrowsmall|up|blue", MsgCode.DxKeyActionMoveUpTitle, MsgCode.DxKeyActionMoveUpText);
+            _AcceptButtonType(ListBoxButtonType.MoveDown, validButtonsTypes, "@arrowsmall|down|blue", MsgCode.DxKeyActionMoveDownTitle, MsgCode.DxKeyActionMoveDownText);
+            _AcceptButtonType(ListBoxButtonType.MoveBottom, validButtonsTypes, "@arrowsmall|bottom|blue", MsgCode.DxKeyActionMoveBottomTitle, MsgCode.DxKeyActionMoveBottomText);
+            _AcceptButtonType(ListBoxButtonType.Refresh, validButtonsTypes, "devav/actions/refresh.svg", MsgCode.DxKeyActionRefreshTitle, MsgCode.DxKeyActionRefreshText);   // qqq
+            _AcceptButtonType(ListBoxButtonType.SelectAll, validButtonsTypes, "@editsmall|all|blue", MsgCode.DxKeyActionSelectAllTitle, MsgCode.DxKeyActionSelectAllText);
+            _AcceptButtonType(ListBoxButtonType.Delete, validButtonsTypes, "@editsmall|del|red", MsgCode.DxKeyActionDeleteTitle, MsgCode.DxKeyActionDeleteText);       // "devav/actions/delete.svg"
+            _AcceptButtonType(ListBoxButtonType.ClipCopy, validButtonsTypes, "devav/actions/copy.svg", MsgCode.DxKeyActionClipCopyTitle, MsgCode.DxKeyActionClipCopyText);
+            _AcceptButtonType(ListBoxButtonType.ClipCut, validButtonsTypes, "devav/actions/cut.svg", MsgCode.DxKeyActionClipCutTitle, MsgCode.DxKeyActionClipCutText);
+            _AcceptButtonType(ListBoxButtonType.ClipPaste, validButtonsTypes, "devav/actions/paste.svg", MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
+            _AcceptButtonType(ListBoxButtonType.Undo, validButtonsTypes, "svgimages/dashboards/undo.svg", MsgCode.DxKeyActionUndoTitle, MsgCode.DxKeyActionUndoText);
+            _AcceptButtonType(ListBoxButtonType.Redo, validButtonsTypes, "svgimages/dashboards/redo.svg", MsgCode.DxKeyActionRedoTitle, MsgCode.DxKeyActionRedoText);
 
             // Pokud bylo povoleno UndoRedo, pak povolím i odpovídající funkcionalitu:
             if ((newActions.HasFlag(KeyActionType.Undo) || newActions.HasFlag(KeyActionType.Redo)) || !this.UndoRedoEnabled)
                 this.UndoRedoEnabled = true;
 
-            SetButtonsEnabled();
+            _SetButtonsEnabled();
         }
         /// <summary>
         /// Metoda vytvoří Button, pokud má být vytvořen. Tedy pokud typ buttonu v <paramref name="buttonType"/> bude přítomen v povolených buttonech v <paramref name="validButtonsTypes"/>.
-        /// Pak vygeneruje odpovídající button a přidá jej do pole <see cref="_Buttons"/>.
+        /// Pak vygeneruje odpovídající button a přidá jej do pole <see cref="__Buttons"/>.
         /// </summary>
         /// <param name="buttonType">Typ konkrétního jednoho buttonu</param>
         /// <param name="validButtonsTypes">Soupis požadovaných buttonů</param>
         /// <param name="imageName"></param>
         /// <param name="msgToolTipTitle"></param>
         /// <param name="msgToolTipText"></param>
-        private void AcceptButtonType(ListBoxButtonType buttonType, ListBoxButtonType validButtonsTypes, string imageName, MsgCode msgToolTipTitle, MsgCode msgToolTipText)
+        private void _AcceptButtonType(ListBoxButtonType buttonType, ListBoxButtonType validButtonsTypes, string imageName, MsgCode msgToolTipTitle, MsgCode msgToolTipText)
         {
             if (!validButtonsTypes.HasFlag(buttonType)) return;
 
             string toolTipTitle = DxComponent.Localize(msgToolTipTitle);
             string toolTipText = DxComponent.Localize(msgToolTipText);
             DxSimpleButton dxButton = DxComponent.CreateDxMiniButton(0, 0, 24, 24, this, this._ButtonClick, resourceName: imageName, toolTipTitle: toolTipTitle, toolTipText: toolTipText, tabStop: false, allowFocus: false, tag: buttonType);
-            _Buttons.Add(dxButton);
+            __Buttons.Add(dxButton);
         }
         /// <summary>
-        /// Odebere všechny buttony přítomné v poli <see cref="_Buttons"/>
+        /// Odebere všechny buttony přítomné v poli <see cref="__Buttons"/>
         /// </summary>
-        private void RemoveButtons()
+        private void _RemoveButtons(bool createEmptyList = false)
         {
-            if (_Buttons == null)
-                _Buttons = new List<DxSimpleButton>();
-            else if (_Buttons.Count > 0)
+            if (__Buttons != null && __Buttons.Count > 0)
             {
-                foreach (var button in _Buttons)
+                foreach (var button in __Buttons)
                 {
                     button.RemoveControlFromParent();
                     button.Dispose();
                 }
-                _Buttons.Clear();
+                __Buttons.Clear();
             }
+            if (__Buttons is null && createEmptyList)
+                __Buttons = new List<DxSimpleButton>();
         }
         /// <summary>
         /// Promítne stav <see cref="UndoRedoController.UndoEnabled"/> a <see cref="UndoRedoController.RedoEnabled"/> 
@@ -453,7 +635,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _ListBox_UndoRedoEnabledChanged(object sender, EventArgs e)
         {
-            SetButtonsEnabledUndoRedo();
+            _SetButtonsEnabledUndoRedo();
         }
         /// <summary>
         /// Po změně Selected prvků reaguje Enabled buttonů
@@ -462,56 +644,56 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _ListBox_SelectedItemsChanged(object sender, TEventArgs<object> e)
         {
-            SetButtonsEnabledSelection();
+            _SetButtonsEnabledSelection();
             RunSelectedItemsChanged(e);
         }
         /// <summary>
         /// Nastaví Enabled buttonů
         /// </summary>
-        private void SetButtonsEnabled()
+        private void _SetButtonsEnabled()
         {
-            SetButtonsEnabledUndoRedo();
-            SetButtonsEnabledSelection();
+            _SetButtonsEnabledUndoRedo();
+            _SetButtonsEnabledSelection();
         }
         /// <summary>
         /// Nastaví Enabled buttonů typu UndoRedo
         /// </summary>
-        private void SetButtonsEnabledUndoRedo()
+        private void _SetButtonsEnabledUndoRedo()
         {
             bool undoRedoEnabled = this.UndoRedoEnabled;
-            SetButtonEnabled(ListBoxButtonType.Undo, (undoRedoEnabled && this.UndoRedoController.UndoEnabled));
-            SetButtonEnabled(ListBoxButtonType.Redo, (undoRedoEnabled && this.UndoRedoController.RedoEnabled));
+            _SetButtonEnabled(ListBoxButtonType.Undo, (undoRedoEnabled && this.UndoRedoController.UndoEnabled));
+            _SetButtonEnabled(ListBoxButtonType.Redo, (undoRedoEnabled && this.UndoRedoController.RedoEnabled));
         }
         /// <summary>
         /// Nastaví Enabled buttonů typu OnSelected
         /// </summary>
-        private void SetButtonsEnabledSelection()
+        private void _SetButtonsEnabledSelection()
         {
-            int selectedCount = this._ListBox.SelectedIndices.Count;
-            int totalCount = this._ListBox.ItemCount;
+            int selectedCount = this.__ListBox.SelectedIndices.Count;
+            int totalCount = this.__ListBox.ItemCount;
 
             bool isAnySelected = selectedCount > 0;
-            SetButtonEnabled(ListBoxButtonType.ClipCopy, isAnySelected);
-            SetButtonEnabled(ListBoxButtonType.ClipCut, isAnySelected);
-            SetButtonEnabled(ListBoxButtonType.Delete, isAnySelected);
+            _SetButtonEnabled(ListBoxButtonType.ClipCopy, isAnySelected);
+            _SetButtonEnabled(ListBoxButtonType.ClipCut, isAnySelected);
+            _SetButtonEnabled(ListBoxButtonType.Delete, isAnySelected);
 
             bool canMove = (selectedCount > 0 && selectedCount < totalCount);
-            SetButtonEnabled(ListBoxButtonType.MoveTop, canMove);
-            SetButtonEnabled(ListBoxButtonType.MoveUp, canMove);
-            SetButtonEnabled(ListBoxButtonType.MoveDown, canMove);
-            SetButtonEnabled(ListBoxButtonType.MoveBottom, canMove);
+            _SetButtonEnabled(ListBoxButtonType.MoveTop, canMove);
+            _SetButtonEnabled(ListBoxButtonType.MoveUp, canMove);
+            _SetButtonEnabled(ListBoxButtonType.MoveDown, canMove);
+            _SetButtonEnabled(ListBoxButtonType.MoveBottom, canMove);
 
             bool canSelectAll = (totalCount > 0 && selectedCount < totalCount);
-            SetButtonEnabled(ListBoxButtonType.SelectAll, canSelectAll);
+            _SetButtonEnabled(ListBoxButtonType.SelectAll, canSelectAll);
         }
         /// <summary>
         /// Nastaví do daného buttonu stav enabled
         /// </summary>
         /// <param name="buttonType"></param>
         /// <param name="enabled"></param>
-        private void SetButtonEnabled(ListBoxButtonType buttonType, bool enabled)
+        private void _SetButtonEnabled(ListBoxButtonType buttonType, bool enabled)
         {
-            if (_Buttons.TryGetFirst(b => b.Tag is ListBoxButtonType bt && bt == buttonType, out var button))
+            if (__Buttons.TryGetFirst(b => b.Tag is ListBoxButtonType bt && bt == buttonType, out var button))
                 button.Enabled = enabled;
         }
         /// <summary>
@@ -524,7 +706,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (sender is DxSimpleButton dxButton && dxButton.Tag is ListBoxButtonType buttonType)
             {
                 KeyActionType action = ConvertButtonsToActions(buttonType);
-                _ListBox.DoKeyActions(action);
+                __ListBox.DoKeyActions(action);
             }
         }
         /// <summary>
@@ -578,32 +760,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Typy dostupných tlačítek
         /// </summary>
-        private ListBoxButtonType _ButtonsTypes;
+        private ListBoxButtonType __ButtonsTypes;
         /// <summary>
         /// Umístění tlačítek
         /// </summary>
-        private ToolbarPosition _ButtonsPosition;
+        private ToolbarPosition __ButtonsPosition;
         /// <summary>
         /// Velikost tlačítek
         /// </summary>
-        private ResourceImageSizeType _ButtonsSize;
+        private ResourceImageSizeType __ButtonsSize;
         /// <summary>
         /// Tlačítka, která mají být dostupná, v patřičném pořadí
         /// </summary>
-        private List<DxSimpleButton> _Buttons;
+        private List<DxSimpleButton> __Buttons;
         #endregion
         #region UndoRedo manager (přístup do vnitřního Listu)
         /// <summary>
         /// UndoRedoEnabled List má povoleny akce Undo a Redo?
         /// </summary>
-        public bool UndoRedoEnabled { get { return _ListBox.UndoRedoEnabled; } set { _ListBox.UndoRedoEnabled = value; } }
+        public bool UndoRedoEnabled { get { return __ListBox.UndoRedoEnabled; } set { __ListBox.UndoRedoEnabled = value; } }
         /// <summary>
         /// Controller UndoRedo.
         /// Pokud není povoleno <see cref="UndoRedoController"/>, je zde null.
         /// Pokud je povoleno, je zde vždy instance. 
         /// Instanci lze setovat, lze ji sdílet mezi více / všemi controly na jedné stránce / okně.
         /// </summary>
-        public UndoRedoController UndoRedoController { get { return _ListBox.UndoRedoController; } set { _ListBox.UndoRedoController = value; } }
+        public UndoRedoController UndoRedoController { get { return __ListBox.UndoRedoController; } set { __ListBox.UndoRedoController = value; } }
         #endregion
     }
     #region enum ListBoxButtonType : Typy tlačítek dostupných u Listboxu pro jeho ovládání (vnitřní příkazy, nikoli Drag and Drop)
@@ -699,15 +881,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxListBoxControl()
         {
-            KeyActionsInit();
-            DataExchangeInit();
-            DxDragDropInit(DxDragDropActionType.None);
-            ToolTipInit();
-            ImageInit();
+            _KeyActionsInit();
+            _DataExchangeInit();
+            _DxDragDropInit(DxDragDropActionType.None);
+            _ToolTipInit();
+            _ImageInit();
             DuplicityEnabled = true;
             ItemSizeType = ResourceImageSizeType.Small;
-            DrawItem += DxListBoxControl_DrawItem;
+            this.Items.ListChanged += _ItemsListChanged;
+            DrawItem += _DrawItem;
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName(); }
         /// <summary>
         /// Dispose
         /// </summary>
@@ -719,25 +907,143 @@ namespace Noris.Clients.Win.Components.AsolDX
             ToolTipDispose();
         }
         /// <summary>
+        /// Přídavek k výšce jednoho řádku ListBoxu v pixelech.
+        /// Hodnota 0 a záporná: bude nastaveno <see cref="DevExpress.XtraEditors.BaseListBoxControl.ItemAutoHeight"/> = true.
+        /// Kladná hodnota přidá daný počet pixelů nad a pod text = zvýší výšku řádku o 2x <see cref="ItemHeightPadding"/>.
+        /// Hodnota vyšší než 10 se akceptuje jako 10.
+        /// </summary>
+        public int ItemHeightPadding
+        {
+            get { return _ItemHeightPadding; }
+            set
+            {
+                if (value > 0)
+                {
+                    int padding = (value > 10 ? 10 : value);
+                    int fontheight = this.Appearance.GetFont().Height;
+                    this.ItemAutoHeight = false;
+                    this.ItemHeight = fontheight + (2 * padding);
+                    _ItemHeightPadding = padding;
+                }
+                else
+                {
+                    this.ItemAutoHeight = true;
+                    _ItemHeightPadding = 0;
+                }
+            }
+        }
+        private int _ItemHeightPadding = 0;
+        #endregion
+        #region Data = položky, a layout = Template
+        /// <summary>
+        /// Režim prvků v ListBoxu.
+        /// </summary>
+        public ListBoxItemsMode ItemsMode { get { return __ItemsMode; } }
+        #region Jednoduchý List postavený nad položkami IMenuItem
+        /// <summary>
+        /// Prvky Listu typované na <see cref="IMenuItem"/>.
+        /// Pokud v Listu budou obsaženy jiné prvky než <see cref="IMenuItem"/>, pak na jejich místě v tomto poli bude null.
+        /// Toto pole má stejný počet prvků jako pole this.Items
+        /// Pole jako celek lze setovat: vymění se obsah, ale zachová se pozice.
+        /// </summary>
+        public IMenuItem[] ListItems
+        {
+            get
+            {
+                return this.Items.Select(i => i.Value as IMenuItem).ToArray();
+            }
+            set
+            {
+                this.DataSource = null;
+
+                var validItems = _GetOnlyValidItems(value, false);
+                this.Items.Clear();
+                this.Items.AddRange(validItems);
+
+                __ItemsMode = ListBoxItemsMode.MenuItems;
+            }
+        }
+        /// <summary>
+        /// Po změně v prvcích Items
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _ItemsListChanged(object sender, System.ComponentModel.ListChangedEventArgs e)
+        {
+            if (__ItemsMode != ListBoxItemsMode.MenuItems && this.Items.Count > 0)
+                __ItemsMode = ListBoxItemsMode.MenuItems;
+        }
+
+        /// <summary>
+        /// Aktuálně vybraný prvek typu <see cref="IMenuItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
+        /// </summary>
+        public IMenuItem SelectedListItem
+        {
+            get
+            {   // Vrátím IMenuItem nalezený v aktuálně vybraném prvku:
+                return ((__ItemsMode == ListBoxItemsMode.MenuItems && this.Items.Count > 0 && _TryFindListItem(this.SelectedItem, out var menuItem)) ? menuItem : null);
+            }
+            set
+            {   // Najdu první prvek zdejšího pole, který v sobě obsahuje IMenuItem, který je identický s dodanou value:
+                if (__ItemsMode == ListBoxItemsMode.MenuItems)
+                {
+                    object selectedItem = null;
+                    if (this.Items.Count > 0 && value != null)
+                        selectedItem = this.Items.FirstOrDefault(i => (_TryFindListItem(i, out var iMenuItem) && Object.ReferenceEquals(iMenuItem, value)));
+                    this.SelectedItem = selectedItem;
+                }
+            }
+        }
+        /// <summary>
+        /// Metoda zkusí najít a vrátit <see cref="IMenuItem"/> z dodaného prvku ListBoxu
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="menuItem"></param>
+        /// <returns></returns>
+        private bool _TryFindListItem(object item, out IMenuItem menuItem)
+        {
+            if (__ItemsMode == ListBoxItemsMode.MenuItems && item is not null)
+            {
+                if (item is DevExpress.XtraEditors.Controls.ImageListBoxItem listItem && listItem.Value is IMenuItem menuItem1)
+                {
+                    menuItem = menuItem1;
+                    return true;
+                }
+                if (item is IMenuItem menuItem2)
+                {
+                    menuItem = menuItem2;
+                    return true;
+                }
+            }
+            menuItem = null;
+            return false;
+        }
+
+        /// <summary>
         /// Pole, obsahující informace o právě viditelných prvcích ListBoxu a jejich aktuální souřadnice
         /// </summary>
         public Tuple<int, IMenuItem, Rectangle>[] VisibleItems
         {
             get
             {
-                var listItems = this.ListItems;
-                var visibleItems = new List<Tuple<int, IMenuItem, Rectangle>>();
-                int topIndex = this.TopIndex;
-                int index = (topIndex > 0 ? topIndex - 1 : topIndex);
-                int count = this.ItemCount;
-                while (index < count)
+                List<Tuple<int, IMenuItem, Rectangle>> visibleItems = null;
+                if (__ItemsMode == ListBoxItemsMode.MenuItems)
                 {
-                    Rectangle? bounds = GetItemBounds(index);
-                    if (bounds.HasValue)
-                        visibleItems.Add(new Tuple<int, IMenuItem, Rectangle>(index, listItems[index], bounds.Value));
-                    else if (index > topIndex)
-                        break;
-                    index++;
+                    visibleItems = new List<Tuple<int, IMenuItem, Rectangle>>();
+                    var listItems = this.ListItems;
+                    int topIndex = this.TopIndex;
+                    int index = (topIndex > 0 ? topIndex - 1 : topIndex);
+                    int count = this.ItemCount;
+                    while (index < count)
+                    {
+                        Rectangle? bounds = GetItemBounds(index);
+                        if (bounds.HasValue)
+                            visibleItems.Add(new Tuple<int, IMenuItem, Rectangle>(index, listItems[index], bounds.Value));
+                        else if (index > topIndex)
+                            break;
+                        index++;
+                    }
                 }
                 return visibleItems.ToArray();
             }
@@ -749,35 +1055,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                var listItems = this.ListItems;
-                var selectedItemsInfo = new List<Tuple<int, IMenuItem, Rectangle?>>();
-                foreach (var index in this.SelectedIndices)
+                List<Tuple<int, IMenuItem, Rectangle?>> selectedItemsInfo = null;
+                if (__ItemsMode == ListBoxItemsMode.MenuItems)
                 {
-                    Rectangle? bounds = GetItemBounds(index);
-                    selectedItemsInfo.Add(new Tuple<int, IMenuItem, Rectangle?>(index, listItems[index], bounds));
+                    var listItems = this.ListItems;
+                    selectedItemsInfo = new List<Tuple<int, IMenuItem, Rectangle?>>();
+                    foreach (var index in this.SelectedIndices)
+                    {
+                        Rectangle? bounds = GetItemBounds(index);
+                        selectedItemsInfo.Add(new Tuple<int, IMenuItem, Rectangle?>(index, listItems[index], bounds));
+                    }
                 }
                 return selectedItemsInfo.ToArray();
-            }
-        }
-        /// <summary>
-        /// Obsahuje pole indexů prvků, které jsou aktuálně Selected. 
-        /// Lze setovat. Setování nastaví stav Selected na určených prvcích this.Items. Ostatní budou not selected.
-        /// </summary>
-        public IEnumerable<int> SelectedIndexes
-        {
-            get
-            {
-                return this.SelectedIndices.ToArray();
-            }
-            set
-            {
-                int count = this.ItemCount;
-                Dictionary<int, int> indexes = value.CreateDictionary(i => i, true);
-                for (int i = 0; i < count; i++)
-                {
-                    bool isSelected = indexes.ContainsKey(i);
-                    this.SetSelected(i, isSelected);
-                }
             }
         }
         /// <summary>
@@ -808,33 +1097,55 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Přídavek k výšce jednoho řádku ListBoxu v pixelech.
-        /// Hodnota 0 a záporná: bude nastaveno <see cref="DevExpress.XtraEditors.BaseListBoxControl.ItemAutoHeight"/> = true.
-        /// Kladná hodnota přidá daný počet pixelů nad a pod text = zvýší výšku řádku o 2x <see cref="ItemHeightPadding"/>.
-        /// Hodnota vyšší než 10 se akceptuje jako 10.
+        /// Obsahuje pole indexů prvků, které jsou aktuálně Selected. 
+        /// Lze setovat. Setování nastaví stav Selected na určených prvcích this.Items. Ostatní budou not selected.
         /// </summary>
-        public int ItemHeightPadding
+        public IEnumerable<int> SelectedIndexes
         {
-            get { return _ItemHeightPadding; }
+            get
+            {
+                return this.SelectedIndices.ToArray();
+            }
             set
             {
-                if (value > 0)
+                int count = this.ItemCount;
+                Dictionary<int, int> indexes = value.CreateDictionary(i => i, true);
+                for (int i = 0; i < count; i++)
                 {
-                    int padding = (value > 10 ? 10 : value);
-                    int fontheight = this.Appearance.GetFont().Height;
-                    this.ItemAutoHeight = false;
-                    this.ItemHeight = fontheight + (2 * padding);
-                    _ItemHeightPadding = padding;
-                }
-                else
-                {
-                    this.ItemAutoHeight = true;
-                    _ItemHeightPadding = 0;
+                    bool isSelected = indexes.ContainsKey(i);
+                    this.SetSelected(i, isSelected);
                 }
             }
         }
-        private int _ItemHeightPadding = 0;
         #endregion
+        #region Komplexní List postavený nad DataTable a Template
+
+        #endregion
+        /// <summary>
+        /// Aktuální režim položek
+        /// </summary>
+        private ListBoxItemsMode __ItemsMode;
+        /// <summary>
+        /// Režim položek
+        /// </summary>
+        public enum ListBoxItemsMode
+        {
+            /// <summary>
+            /// Neurčeno
+            /// </summary>
+            None,
+            /// <summary>
+            /// Jednotlivé položky, <see cref="IMenuItem"/>, pole <see cref="ListItems"/>.
+            /// Podporuje vykreslování ikon.
+            /// </summary>
+            MenuItems,
+            /// <summary>
+            /// Datová tabulka
+            /// </summary>
+            Table
+        }
+        #endregion
+
         #region Rozšířené property
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
@@ -845,70 +1156,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
-        /// <summary>
-        /// Vizualizace
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString() { return this.GetTypeName(); }
-        /// <summary>
-        /// Prvky Listu typované na <see cref="IMenuItem"/>.
-        /// Pokud v Listu budou obsaženy jiné prvky než <see cref="IMenuItem"/>, pak na jejich místě v tomto poli bude null.
-        /// Toto pole má stejný počet prvků jako pole this.Items
-        /// Pole jako celek lze setovat: vymění se obsah, ale zachová se pozice.
-        /// </summary>
-        public IMenuItem[] ListItems
-        {
-            get
-            {
-                return this.Items.Select(i => i.Value as IMenuItem).ToArray();
-            }
-            set
-            {
-                var validItems = _GetOnlyValidItems(value, false);
-                this.Items.Clear();
-                this.Items.AddRange(validItems);
-            }
-        }
-        /// <summary>
-        /// Aktuálně vybraný prvek typu <see cref="IMenuItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
-        /// </summary>
-        public IMenuItem SelectedMenuItem
-        {
-            get
-            {   // Vrátím IMenuItem nalezený v aktuálně vybraném prvku:
-                return ((this.Items.Count > 0 && TryFindIMenuItem(this.SelectedItem, out var menuItem)) ? menuItem : null);
-            }
-            set
-            {   // Najdu první prvek zdejšího pole, který v sobě obsahuje IMenuItem, který je identický s dodanou value:
-                object selectedItem = null;
-                if (this.Items.Count > 0 && value != null)
-                    selectedItem = this.Items.FirstOrDefault(i => (TryFindIMenuItem(i, out var iMenuItem) && Object.ReferenceEquals(iMenuItem, value)));
-                this.SelectedItem = selectedItem;
-            }
-        }
-        /// <summary>
-        /// Metoda zkusí najít a vrátit <see cref="IMenuItem"/> z dodaného prvku ListBoxu
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="menuItem"></param>
-        /// <returns></returns>
-        private bool TryFindIMenuItem(object item, out IMenuItem menuItem)
-        {
-            menuItem = null;
-            if (item is null) return false;
-
-            if (item is DevExpress.XtraEditors.Controls.ImageListBoxItem listItem && listItem.Value is IMenuItem menuItem1)
-            {
-                menuItem = menuItem1;
-                return true;
-            }
-            if (item is IMenuItem menuItem2)
-            {
-                menuItem = menuItem2;
-                return true;
-            }
-            return false;
-        }
         /// <summary>
         /// Pokud obsahuje true, pak List smí obsahovat duplicitní klíče (defaultní hodnota je true).
         /// Pokud je false, pak vložení dalšího záznamu s klíčem, který už v Listu je, bude ignorováno.
@@ -933,7 +1180,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void DxListBoxControl_DrawItem(object sender, ListBoxDrawItemEventArgs e)
+        private void _DrawItem(object sender, ListBoxDrawItemEventArgs e)
         {
             if (e.Item is IMenuItem iMenuItem && iMenuItem.FontStyle.HasValue)
             {
@@ -960,14 +1207,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             TEventArgs<object> args = new TEventArgs<object>(this.SelectedItem);
             RunSelectedItemsChanged(args);
 
-            DetectSelectedMenuItemChanged();
+            _DetectSelectedMenuItemChanged();
         }
         /// <summary>
         /// Detekuje zda aktuálně vybraný prvek obsahuje jiný <see cref="IMenuItem"/>, než který byl posledně oznámen
         /// </summary>
-        private void DetectSelectedMenuItemChanged()
+        private void _DetectSelectedMenuItemChanged()
         {
-            var selectedMenuItem = this.SelectedMenuItem;
+            var selectedMenuItem = this.SelectedListItem;
             if (!Object.ReferenceEquals(selectedMenuItem, _LastSelectedItem))
             {
                 this.RunSelectedMenuItemChanged(new TEventArgs<IMenuItem>(selectedMenuItem));
@@ -984,7 +1231,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Inicializace pro Images
         /// </summary>
-        protected virtual void ImageInit()
+        protected virtual void _ImageInit()
         {
             this.MeasureItem += _MeasureItem;
             this.__ItemImageSize = null;
@@ -1046,10 +1293,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public ResourceImageSizeType ItemSizeType
         {
-            get { return _ItemSizeType; }
+            get { return __ItemSizeType; }
             set
             {
-                _ItemSizeType = value;
+                __ItemSizeType = value;
                 __ItemImageSize = null;
                 if (this.Parent != null) this.Invalidate();
             }
@@ -1057,7 +1304,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Velikost ikon
         /// </summary>
-        private ResourceImageSizeType _ItemSizeType = ResourceImageSizeType.Small;
+        private ResourceImageSizeType __ItemSizeType = ResourceImageSizeType.Small;
         /// <summary>
         /// Velikost ikony, vychází z <see cref="ItemSizeType"/> a aktuálního DPI.
         /// </summary>
@@ -1080,7 +1327,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// ToolTipy mohou obsahovat SimpleHtml tagy?
         /// </summary>
         public bool ToolTipAllowHtmlText { get; set; }
-        private void ToolTipInit()
+        private void _ToolTipInit()
         {
             this.ToolTipController = DxComponent.CreateNewToolTipController();
             this.ToolTipController.GetActiveObjectInfo += ToolTipController_GetActiveObjectInfo;
@@ -1145,7 +1392,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Inicializace eventhandlerů a hodnot pro KeyActions
         /// </summary>
-        private void KeyActionsInit()
+        private void _KeyActionsInit()
         {
             this.KeyDown += DxListBoxControl_KeyDown;
             this.EnabledKeyActions = KeyActionType.None;
@@ -1495,30 +1742,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region DataExchange
-        private void DataExchangeInit()
+        /// <summary>
+        /// Inicializace hodnot pro DataExchange
+        /// </summary>
+        private void _DataExchangeInit()
         {
-            ExchangeCurrentDataId = DxComponent.CreateGuid();
+            DataExchangeCurrentControlId = DxComponent.CreateGuid();
         }
         /// <summary>
         /// ID tohoto objektu, je vkládáno do balíčku s daty při CtrlC, CtrlX a při DragAndDrop z tohoto zdroje.
         /// Je součástí Exchange dat uložených do <see cref="DataExchangeContainer.DataSourceId"/>.
         /// </summary>
-        public string ExchangeCurrentDataId { get; set; }
+        public string DataExchangeCurrentControlId { get; set; }
         /// <summary>
         /// Režim výměny dat při pokusu o vkládání do tohoto objektu.
         /// Pokud některý jiný objekt provedl Ctrl+C, pak svoje data vložil do balíčku <see cref="DataExchangeContainer"/>,
-        /// přidal k tomu svoje ID controlu (jako zdejší <see cref="ExchangeCurrentDataId"/>) do <see cref="DataExchangeContainer.DataSourceId"/>,
+        /// přidal k tomu svoje ID controlu (jako zdejší <see cref="DataExchangeCurrentControlId"/>) do <see cref="DataExchangeContainer.DataSourceId"/>,
         /// do balíčku se přidalo ID aplikace do <see cref="DataExchangeContainer.ApplicationGuid"/>, a tato data jsou uložena v Clipboardu.
         /// <para/>
         /// Pokud nyní zdejší control zaeviduje klávesu Ctrl+V, pak zjistí, zda v Clipboardu existuje balíček <see cref="DataExchangeContainer"/>,
-        /// a pokud ano, pak prověří, zda this control může akceptovat data ze zdroje v balíčku uvedeného, na základě nastavení režimu výměny v <see cref="ExchangeCrossType"/>
-        /// a ID zdrojového controlu podle <see cref="ExchangeAcceptSourceDataId"/>.
+        /// a pokud ano, pak prověří, zda this control může akceptovat data ze zdroje v balíčku uvedeného, na základě nastavení režimu výměny v <see cref="DataExchangeCrossType"/>
+        /// a ID zdrojového controlu podle <see cref="DataExchangeAcceptSourceControlId"/>.
         /// </summary>
-        public DataExchangeCrossType ExchangeCrossType { get; set; }
+        public DataExchangeCrossType DataExchangeCrossType { get; set; }
         /// <summary>
         /// Povolené zdroje dat pro vkládání do this controlu pomocí výměnného balíčku <see cref="DataExchangeContainer"/>.
         /// </summary>
-        public string ExchangeAcceptSourceDataId { get; set; }
+        public string DataExchangeAcceptSourceControlId { get; set; }
         /// <summary>
         /// Dodaná data umístí do clipboardu 
         /// </summary>
@@ -1526,7 +1776,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="text"></param>
         private void DataExchangeClipboardPublish(object data, string text)
         {
-            DxComponent.ClipboardInsert(ExchangeCurrentDataId, data, text);
+            DxComponent.ClipboardInsert(DataExchangeCurrentControlId, data, text);
         }
         /// <summary>
         /// Pokusí se z Clipboardu získat data pro this control, podle aktuálního nastavení. Vrací true = máme data.
@@ -1537,7 +1787,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             data = null;
             if (!DxComponent.ClipboardTryGetApplicationData(out DataExchangeContainer appDataContainer)) return false;
-            if (!DxComponent.CanAcceptExchangeData(appDataContainer, this.ExchangeCurrentDataId, this.ExchangeCrossType, this.ExchangeAcceptSourceDataId)) return false;
+            if (!DxComponent.CanAcceptExchangeData(appDataContainer, this.DataExchangeCurrentControlId, this.DataExchangeCrossType, this.DataExchangeAcceptSourceControlId)) return false;
             data = appDataContainer.Data;
             return true;
         }
@@ -1546,7 +1796,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Souhrn povolených akcí Drag and Drop
         /// </summary>
-        public DxDragDropActionType DragDropActions { get { return _DragDropActions; } set { DxDragDropInit(value); } }
+        public DxDragDropActionType DragDropActions { get { return _DragDropActions; } set { _DxDragDropInit(value); } }
         private DxDragDropActionType _DragDropActions;
         /// <summary>
         /// Vrátí true, pokud je povolena daná akce
@@ -1573,7 +1823,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Inicializace controlleru Drag and Drop
         /// </summary>
         /// <param name="actions"></param>
-        private void DxDragDropInit(DxDragDropActionType actions)
+        private void _DxDragDropInit(DxDragDropActionType actions)
         {
             if (actions != DxDragDropActionType.None && _DxDragDrop == null)
                 _DxDragDrop = new DxDragDrop(this);

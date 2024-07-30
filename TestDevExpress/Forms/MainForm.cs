@@ -5243,8 +5243,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropAList.Name = "AList";
             _DragDropAList.ListItems = _CreateSampleListItems(100, false, true);
             _DragDropAList.MouseDown += _DragDrop_MouseDown;
-            _DragDropAList.ExchangeCrossType = DataExchangeCrossType.None;
-            _DragDropAList.FilterBoxVisible = true;
+            _DragDropAList.DataExchangeCrossType = DataExchangeCrossType.None;
+            _DragDropAList.RowFilterMode = DxListBoxPanel.FilterRowMode.Server;
             _PanelDragDrop.Controls.Add(_DragDropAList);
 
             KeyActionType targetKeyActions = KeyActionType.All;
@@ -5254,8 +5254,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropBList.DuplicityEnabled = false;
             _DragDropBList.ListItems = _CreateSampleListItems(18, true, false);
             _DragDropBList.MouseDown += _DragDrop_MouseDown;
-            _DragDropBList.ExchangeCrossType = DataExchangeCrossType.AllControlsInCurrentApplication | DataExchangeCrossType.AnyOtherApplications;
-            _DragDropBList.FilterBoxVisible = true;
+            _DragDropBList.DataExchangeCrossType = DataExchangeCrossType.AllControlsInCurrentApplication | DataExchangeCrossType.AnyOtherApplications;
+            _DragDropBList.RowFilterMode = DxListBoxPanel.FilterRowMode.Server;
             _DragDropBList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
             _DragDropBList.ButtonsTypes = ListBoxButtonType.MoveAll;
             _PanelDragDrop.Controls.Add(_DragDropBList);

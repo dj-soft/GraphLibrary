@@ -16,17 +16,12 @@ using System.Drawing;
 
 using DevExpress.Utils;
 using System.Drawing.Drawing2D;
-using DevExpress.Pdf.Native;
-using DevExpress.XtraPdfViewer;
 using DevExpress.XtraEditors;
-using DevExpress.XtraRichEdit.Layout;
 using WSXmlSerializer = Noris.WS.Parser.XmlSerializer;
-using System.Diagnostics;
 using DevExpress.Utils.Svg;
 using DevExpress.Utils.Design;
 using System.Globalization;
-using DevExpress.Utils.Filtering.Internal;
-using System.Diagnostics.Eventing.Reader;
+
 
 // using BAR = DevExpress.XtraBars;
 // using EDI = DevExpress.XtraEditors;
@@ -2521,18 +2516,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="enabled"></param>
         /// <param name="tabStop"></param>
         /// <param name="hotKey"></param>
+        /// <param name="tag"></param>
         /// <returns></returns>
         public static DxSimpleButton CreateDxSimpleButton(int x, int y, int w, int h, Control parent, string text, EventHandler click = null,
             DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
             Image image = null, string resourceName = null,
             string toolTipTitle = null, string toolTipText = null,
-            bool? visible = null, bool? enabled = null, bool? tabStop = null, Keys? hotKey = null)
+            bool? visible = null, bool? enabled = null, bool? tabStop = null, Keys? hotKey = null, object tag = null)
         {
             return CreateDxSimpleButton(x, ref y, w, h, parent, text, click,
                 paintStyles,
                 image, resourceName,
                 toolTipTitle, toolTipText,
-                visible, enabled, tabStop, hotKey, false);
+                visible, enabled, tabStop, hotKey, tag, false);
         }
         /// <summary>
         /// Vytvoří a vrátí DxSimpleButton s danými parametry
@@ -2553,13 +2549,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="enabled"></param>
         /// <param name="tabStop"></param>
         /// <param name="hotKey"></param>
+        /// <param name="tag"></param>
         /// <param name="shiftY"></param>
         /// <returns></returns>
         public static DxSimpleButton CreateDxSimpleButton(int x, ref int y, int w, int h, Control parent, string text, EventHandler click = null,
             DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
             Image image = null, string resourceName = null,
             string toolTipTitle = null, string toolTipText = null,
-            bool? visible = null, bool? enabled = null, bool? tabStop = null, Keys? hotKey = null, bool shiftY = false)
+            bool? visible = null, bool? enabled = null, bool? tabStop = null, Keys? hotKey = null, object tag = null, bool shiftY = false)
         {
             var inst = Instance;
 
@@ -2583,6 +2580,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (click != null) simpleButton.Click += click;
             if (parent != null) parent.Controls.Add(simpleButton);
             if (shiftY) y = y + simpleButton.Height + inst._DetailYSpaceText;
+
+            simpleButton.Tag = tag;
 
             return simpleButton;
         }
@@ -7603,6 +7602,27 @@ White
         /// Priorita zpracování, metoda s nižším číslem bude volána dříve
         /// </summary>
         public int Priority { get; private set; }
+        /// <summary>
+        /// V daném typu najde instanční metody, které mají atribut <see cref="InitializerAttribute"/>, seřadí je podle jejich priority <see cref="Priority"/>, a výsledné pole vrátí.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static System.Reflection.MethodInfo[] SearchInitializerMethods(Type type)           // List of: Method, Priority
+        {
+            var infos = new List<Tuple<System.Reflection.MethodInfo, int>>();
+            var methods = type.GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.FlattenHierarchy);
+            foreach (var method in methods)
+            {
+                var attributes = System.Reflection.CustomAttributeExtensions.GetCustomAttributes<InitializerAttribute>(method, true);
+                if (attributes != null && attributes.Any())
+                {
+                    var attribute = attributes.First();
+                    infos.Add(new Tuple<System.Reflection.MethodInfo, int>(method, attribute.Priority));
+                }
+            }
+            if (infos.Count > 1) infos.Sort((t1, t2) => t1.Item2.CompareTo(t2.Item2));             // ORDER BY Priority ASC
+            return infos.Select(t => t.Item1).ToArray();
+        }
     }
     /// <summary>
     /// Statické informace o skinu, vlastnosti jsou získané měřením, nikoli dynamicky detekcí vlastností skinu.
