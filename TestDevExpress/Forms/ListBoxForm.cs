@@ -142,8 +142,8 @@ namespace TestDevExpress.Forms
         {
             _Sample3ListA = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 400, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
             _Sample3ListA.SelectionMode = SelectionMode.MultiExtended;
-            _Sample3ListA.ButtonsPosition = ToolbarPosition.RightSideCenter;
-            _Sample3ListA.ButtonsTypes = ListBoxButtonType.SelectAll;
+            _Sample3ListA.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            _Sample3ListA.ButtonsTypes = ListBoxButtonType.SelectAll | ListBoxButtonType.CopyToRightOne | ListBoxButtonType.CopyToRightAll;
             _Sample3ListA.EnabledKeyActions = KeyActionType.None;
             _Sample3ListA.DragDropActions = DxDragDropActionType.CopyItemsFrom;
             _Sample3ListA.ListItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
@@ -151,11 +151,11 @@ namespace TestDevExpress.Forms
 
             _Sample3ListB = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X + 410, __SampleBegin.Y, 400, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
             _Sample3ListB.SelectionMode = SelectionMode.MultiExtended;
-            _Sample3ListB.ButtonsPosition = ToolbarPosition.RightSideCenter;
-            _Sample3ListB.ButtonsTypes = ListBoxButtonType.SelectAll | ListBoxButtonType.Delete;
+            _Sample3ListB.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            _Sample3ListB.ButtonsTypes = ListBoxButtonType.SelectAll | ListBoxButtonType.Delete | ListBoxButtonType.CopyToLeftOne | ListBoxButtonType.CopyToLeftAll | ListBoxButtonType.MoveAll;
             _Sample3ListB.EnabledKeyActions = KeyActionType.None;
             _Sample3ListB.DragDropActions = DxDragDropActionType.ImportItemsInto | DxDragDropActionType.ReorderItems;
-            _Sample3ListB.ListItems = Randomizer.GetMenuItems(2, Randomizer.ImageResourceType.PngSmall, true);
+            _Sample3ListB.ListItems = Randomizer.GetMenuItems(7, Randomizer.ImageResourceType.PngSmall, true);
             this.DxMainPanel.Controls.Add(_Sample3ListB);
 
         }
@@ -163,6 +163,9 @@ namespace TestDevExpress.Forms
         {
             _Sample3ListA?.RemoveControlFromParent();
             _Sample3ListA = null;
+
+            _Sample3ListB?.RemoveControlFromParent();
+            _Sample3ListB = null;
         }
         private DxListBoxPanel _Sample3ListA;
         private DxListBoxPanel _Sample3ListB;

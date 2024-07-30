@@ -10421,6 +10421,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         Redo = 0x2000,
 
         /// <summary>
+        /// Kopírovat prvek / vybrané prvky zleva doprava
+        /// </summary>
+        CopyToRightOne = 0x00010000,
+        /// <summary>
+        /// Kopírovat všechny prvky zleva doprava
+        /// </summary>
+        CopyToRightAll = 0x00020000,
+        /// <summary>
+        /// Kopírovat prvek / vybrané prvky zprava doleva
+        /// </summary>
+        CopyToLeftOne = 0x00040000,
+        /// <summary>
+        /// Kopírovat všechny prvky zprava doleva
+        /// </summary>
+        CopyToLeftAll = 0x00080000,
+
+        /// <summary>
         /// Všechny práce s clipboardem
         /// </summary>
         AllClipboard = ClipCopy | ClipCut | ClipPaste,
@@ -10429,9 +10446,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         AllGo = GoBegin | GoEnd,
         /// <summary>
-        /// Všechny přesuny
+        /// Všechny přesuny nahoru/dolů
         /// </summary>
         AllMove = MoveTop | MoveUp | MoveDown | MoveBottom,
+        /// <summary>
+        /// Všechny kopie doleva/doprava
+        /// </summary>
+        AllCopy = CopyToRightOne | CopyToRightAll | CopyToLeftOne | CopyToLeftAll,
 
         /// <summary>
         /// Všechny akce

@@ -55,7 +55,7 @@ namespace TestDevExpress.Forms
         protected override void OnFirstShownAfter()
         {
             base.OnFirstShownAfter();
-            this.RunProcessRefresh();
+            this._RunProcessRefresh();
         }
         private void InitSplitContainer()
         {
@@ -83,7 +83,7 @@ namespace TestDevExpress.Forms
                 RowFilterMode = DxListBoxPanel.FilterRowMode.Server,
                 Dock = System.Windows.Forms.DockStyle.Fill
             };
-            _ProcessListBox.ActionRefresh += _ProcessListBox_ActionRefresh;
+            _ProcessListBox.ListActionAfter += _ProcessListBox_ActionAfter;
             _ProcessListBox.RowFilterServerKeyEnter += _ProcessListBox_FilterBoxKeyEnter;
             _ProcessListBox.SelectedMenuItemChanged += _ProcessListBox_SelectedMenuItemChanged;
             _SplitContainer.Panel1.Controls.Add(_ProcessListBox);
@@ -94,16 +94,17 @@ namespace TestDevExpress.Forms
             RunMemoryScanAsync();
         }
 
-        private void _ProcessListBox_ActionRefresh(object sender, EventArgs e)
+        private void _ProcessListBox_ActionAfter(object sender, DxListBoxActionEventArgs args)
         {
-            RunProcessRefresh();
+            if (args.Action == KeyActionType.Refresh)
+                _RunProcessRefresh();
         }
 
         private void _ProcessListBox_FilterBoxKeyEnter(object sender, EventArgs e)
         {
         }
 
-        private void RunProcessRefresh()
+        private void _RunProcessRefresh()
         {
             var currentSelectedProcess = this.SelectedProcess;
             var currentProcessInfos = ProcessInfo.SearchProcesses(out var currentProcess);         // Nové instance informací o aktuálních procesech

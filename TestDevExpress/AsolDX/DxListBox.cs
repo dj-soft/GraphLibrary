@@ -41,13 +41,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Controls.Add(__ListBox);
             this.Padding = new Padding(0);
             this.ClientSizeChanged += _ClientSizeChanged;
+            __ListBox.ListItemsChanged += __ListBox_ListItemsChanged;
             __ListBox.UndoRedoEnabled = false;
             __ListBox.UndoRedoEnabledChanged += _ListBox_UndoRedoEnabledChanged;
             __ListBox.SelectedItemsChanged += _ListBox_SelectedItemsChanged;
             __ListBox.SelectedMenuItemChanged += _ListBox_SelectedMenuItemChanged;
-            __ListBox.ActionRefresh += _ListBox_ActionRefresh;
+            __ListBox.ListActionBefore += _RunListActionBefore;
+            __ListBox.ListActionAfter += _RunListActionAfter;
             _RowFilterInitialize();
             DoLayout();
+        }
+        /// <summary>
+        /// Proběhne po změně v poli <see cref="ListItems"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void __ListBox_ListItemsChanged(object sender, System.ComponentModel.ListChangedEventArgs e)
+        {
+            _SetButtonsEnabledSelection();
         }
         /// <summary>
         /// Po změně velikosti se provede <see cref="DoLayout"/>
@@ -194,25 +205,45 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Povolené akce. Výchozí je <see cref="KeyActionType.None"/>
         /// </summary>
         public KeyActionType EnabledKeyActions { get { return __ListBox.EnabledKeyActions; } set { __ListBox.EnabledKeyActions = value; } }
+
         /// <summary>
-        /// Při požadavku na Refresh, z tlačítka v ListBoxu
+        /// Volá se před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
         /// </summary>
         /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ListBox_ActionRefresh(object sender, EventArgs e)
+        /// <param name="args"></param>
+        private void _RunListActionBefore(object sender, DxListBoxActionCancelEventArgs args)
         {
-            OnActionRefresh(e);
-            ActionRefresh?.Invoke(this, e);
+            OnListActionBefore(args);
+            ListActionBefore?.Invoke(this, args);
         }
         /// <summary>
-        /// Volá se při požadavku na Refresh
+        /// Proběhne před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void OnActionRefresh(EventArgs e) { }
+        protected virtual void OnListActionBefore(DxListBoxActionCancelEventArgs e) { }
         /// <summary>
-        /// Událost volaná při požadavku na Refresh
+        /// Událost vyvolaná před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
         /// </summary>
-        public event EventHandler ActionRefresh;
+        public event DxListBoxActionCancelDelegate ListActionBefore;
+
+        /// <summary>
+        /// Volá se po provedení kteréhokoli požadavku
+        /// </summary>
+        /// <param name="args"></param>
+        private void _RunListActionAfter(object sender, DxListBoxActionEventArgs args)
+        {
+            OnListActionAfter(args);
+            ListActionAfter?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne po provedení kteréhokoli požadavku
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnListActionAfter(DxListBoxActionEventArgs e) { }
+        /// <summary>
+        /// Událost vyvolaná po provedení kteréhokoli požadavku
+        /// </summary>
+        public event DxListBoxActionDelegate ListActionAfter;
 
         /// <summary>
         /// Při změně Selected prvků, libovolného typu
@@ -585,6 +616,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             _AcceptButtonType(ListBoxButtonType.ClipCopy, validButtonsTypes, "devav/actions/copy.svg", MsgCode.DxKeyActionClipCopyTitle, MsgCode.DxKeyActionClipCopyText);
             _AcceptButtonType(ListBoxButtonType.ClipCut, validButtonsTypes, "devav/actions/cut.svg", MsgCode.DxKeyActionClipCutTitle, MsgCode.DxKeyActionClipCutText);
             _AcceptButtonType(ListBoxButtonType.ClipPaste, validButtonsTypes, "devav/actions/paste.svg", MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
+
+            _AcceptButtonType(ListBoxButtonType.CopyToRightOne, validButtonsTypes, "@arrowsmall|right|blue", MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
+            _AcceptButtonType(ListBoxButtonType.CopyToRightAll, validButtonsTypes, "@arrow|right|blue", MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
+            _AcceptButtonType(ListBoxButtonType.CopyToLeftOne, validButtonsTypes, "@arrowsmall|left|blue", MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
+            _AcceptButtonType(ListBoxButtonType.CopyToLeftAll, validButtonsTypes, "@arrow|left|blue", MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
+
             _AcceptButtonType(ListBoxButtonType.Undo, validButtonsTypes, "svgimages/dashboards/undo.svg", MsgCode.DxKeyActionUndoTitle, MsgCode.DxKeyActionUndoText);
             _AcceptButtonType(ListBoxButtonType.Redo, validButtonsTypes, "svgimages/dashboards/redo.svg", MsgCode.DxKeyActionRedoTitle, MsgCode.DxKeyActionRedoText);
 
@@ -729,6 +766,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 (buttons.HasFlag(ListBoxButtonType.MoveUp) ? KeyActionType.MoveUp : KeyActionType.None) |
                 (buttons.HasFlag(ListBoxButtonType.MoveDown) ? KeyActionType.MoveDown : KeyActionType.None) |
                 (buttons.HasFlag(ListBoxButtonType.MoveBottom) ? KeyActionType.MoveBottom : KeyActionType.None) |
+                (buttons.HasFlag(ListBoxButtonType.CopyToRightOne) ? KeyActionType.CopyToRightOne : KeyActionType.None) |
+                (buttons.HasFlag(ListBoxButtonType.CopyToRightAll) ? KeyActionType.CopyToRightAll : KeyActionType.None) |
+                (buttons.HasFlag(ListBoxButtonType.CopyToLeftOne) ? KeyActionType.CopyToLeftOne : KeyActionType.None) |
+                (buttons.HasFlag(ListBoxButtonType.CopyToLeftAll) ? KeyActionType.CopyToLeftAll : KeyActionType.None) |
                 (buttons.HasFlag(ListBoxButtonType.Undo) ? KeyActionType.Undo : KeyActionType.None) |
                 (buttons.HasFlag(ListBoxButtonType.Redo) ? KeyActionType.Redo : KeyActionType.None);
             return actions;
@@ -861,9 +902,31 @@ namespace Noris.Clients.Win.Components.AsolDX
         Redo = 0x2000,
 
         /// <summary>
+        /// Kopírovat prvek / vybrané prvky zleva doprava
+        /// </summary>
+        CopyToRightOne = 0x00010000,
+        /// <summary>
+        /// Kopírovat všechny prvky zleva doprava
+        /// </summary>
+        CopyToRightAll = 0x00020000,
+        /// <summary>
+        /// Kopírovat prvek / vybrané prvky zprava doleva
+        /// </summary>
+        CopyToLeftOne = 0x00040000,
+        /// <summary>
+        /// Kopírovat všechny prvky zprava doleva
+        /// </summary>
+        CopyToLeftAll = 0x00080000,
+
+        /// <summary>
         /// Souhrn všech pohybů
         /// </summary>
         MoveAll = MoveTop | MoveUp | MoveDown | MoveBottom,
+        /// <summary>
+        /// Všechny kopie doleva/doprava
+        /// </summary>
+        CopyAll = CopyToRightOne | CopyToRightAll | CopyToLeftOne | CopyToLeftAll,
+
         /// <summary>
         /// Souhrn Undo + Redo
         /// </summary>
@@ -888,7 +951,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ImageInit();
             DuplicityEnabled = true;
             ItemSizeType = ResourceImageSizeType.Small;
-            this.Items.ListChanged += _ItemsListChanged;
+            this.Items.ListChanged += _ListItemsChanged;
             DrawItem += _DrawItem;
         }
         /// <summary>
@@ -969,11 +1032,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="sender"></param>
         /// <param name="e"></param>
         /// <exception cref="NotImplementedException"></exception>
-        private void _ItemsListChanged(object sender, System.ComponentModel.ListChangedEventArgs e)
+        private void _ListItemsChanged(object sender, System.ComponentModel.ListChangedEventArgs e)
         {
+            // Pokud aktuálně nejsme v režimu MenuItems, a přitom máme položky v poli this.Items, pak se do režimu MenuItems přepneme nyní:
+            //  Někdo asi vložil položky přímo do nativního soupisu...
             if (__ItemsMode != ListBoxItemsMode.MenuItems && this.Items.Count > 0)
                 __ItemsMode = ListBoxItemsMode.MenuItems;
+            _RunItemsListChanged(e);
         }
+        /// <summary>
+        /// Zavolá akce po změně v poli <see cref="ListItems"/>
+        /// </summary>
+        /// <param name="e"></param>
+        private void _RunItemsListChanged(System.ComponentModel.ListChangedEventArgs e)
+        {
+            OnListItemsChanged(e);
+            ListItemsChanged?.Invoke(this, e);
+        }
+        /// <summary>
+        /// Proběhne po změně v poli <see cref="ListItems"/>
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnListItemsChanged(System.ComponentModel.ListChangedEventArgs e) { }
+        /// <summary>
+        /// Proběhne po změně v poli <see cref="ListItems"/>
+        /// </summary>
+        public event System.ComponentModel.ListChangedEventHandler ListItemsChanged;
 
         /// <summary>
         /// Aktuálně vybraný prvek typu <see cref="IMenuItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
@@ -1460,7 +1544,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool _DoKeyAction(KeyActionType action, bool force = false)
         {
             bool handled = false;
-            _DoKeyAction(action, KeyActionType.Refresh, force, _DoKeyActionRefresh, ref handled);
+            _DoKeyAction(action, KeyActionType.Refresh, force, null, ref handled);
             _DoKeyAction(action, KeyActionType.SelectAll, force, _DoKeyActionCtrlA, ref handled);
             _DoKeyAction(action, KeyActionType.ClipCopy, force, _DoKeyActionCtrlC, ref handled);
             _DoKeyAction(action, KeyActionType.ClipCut, force, _DoKeyActionCtrlX, ref handled);
@@ -1470,32 +1554,38 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DoKeyAction(action, KeyActionType.MoveDown, force, _DoKeyActionMoveDown, ref handled);
             _DoKeyAction(action, KeyActionType.MoveBottom, force, _DoKeyActionMoveBottom, ref handled);
             _DoKeyAction(action, KeyActionType.Delete, force, _DoKeyActionDelete, ref handled);
+            _DoKeyAction(action, KeyActionType.CopyToRightOne, force, null, ref handled);
+            _DoKeyAction(action, KeyActionType.CopyToRightAll, force, null, ref handled);
+            _DoKeyAction(action, KeyActionType.CopyToLeftOne, force, null, ref handled);
+            _DoKeyAction(action, KeyActionType.CopyToLeftAll, force, null, ref handled);
             _DoKeyAction(action, KeyActionType.Undo, force, _DoKeyActionUndo, ref handled);
             _DoKeyAction(action, KeyActionType.Redo, force, _DoKeyActionRedo, ref handled);
             return handled;
         }
         /// <summary>
-        /// Pokud v soupisu akcí <paramref name="action"/> je příznak akce <paramref name="flag"/>, pak provede danou akci <paramref name="runMethod"/>, 
+        /// Pokud v soupisu akcí <paramref name="action"/> je příznak akce <paramref name="flag"/>, pak provede danou akci <paramref name="internalActionMethod"/>, 
         /// s testem povolení dle <see cref="EnabledKeyActions"/> nebo povinně (<paramref name="force"/>)
         /// </summary>
         /// <param name="action"></param>
         /// <param name="flag"></param>
         /// <param name="force"></param>
-        /// <param name="runMethod"></param>
+        /// <param name="internalActionMethod"></param>
         /// <param name="handled">Nastaví na true, pokud byla provedena požadovaná akce</param>
-        private void _DoKeyAction(KeyActionType action, KeyActionType flag, bool force, Action runMethod, ref bool handled)
+        private void _DoKeyAction(KeyActionType action, KeyActionType flag, bool force, Action internalActionMethod, ref bool handled)
         {
             if (!action.HasFlag(flag)) return;
             if (!force && !EnabledKeyActions.HasFlag(flag)) return;
-            runMethod();
+
+            var argsBefore = new DxListBoxActionCancelEventArgs(action);
+            _RunListActionBefore(argsBefore);
+            bool isCancelled = argsBefore.Cancel;
+            if (!isCancelled)
+            {
+                if (internalActionMethod != null) internalActionMethod();
+                var argsAfter = new DxListBoxActionEventArgs(action);
+                _RunListActionAfter(argsAfter);
+            }
             handled = true;
-        }
-        /// <summary>
-        /// Provedení klávesové akce: Refresh
-        /// </summary>
-        private void _DoKeyActionRefresh()
-        {
-            RunActionRefresh(EventArgs.Empty);
         }
         /// <summary>
         /// Provedení klávesové akce: CtrlA
@@ -2232,23 +2322,92 @@ namespace Noris.Clients.Win.Components.AsolDX
         public event EventHandler<TEventArgs<IMenuItem>> SelectedMenuItemChanged;
 
         /// <summary>
-        /// Volá se při požadavku na Refresh
+        /// Volá se před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
         /// </summary>
-        /// <param name="e"></param>
-        private void RunActionRefresh(EventArgs e)
+        /// <param name="args"></param>
+        private void _RunListActionBefore(DxListBoxActionCancelEventArgs args)
         {
-            OnActionRefresh(e);
-            ActionRefresh?.Invoke(this, e);
+            OnListActionBefore(args);
+            ListActionBefore?.Invoke(this, args);
         }
         /// <summary>
-        /// Volá se při požadavku na Refresh
+        /// Proběhne před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void OnActionRefresh(EventArgs e) { }
+        protected virtual void OnListActionBefore(DxListBoxActionCancelEventArgs e) { }
         /// <summary>
-        /// Událost volaná při požadavku na Refresh
+        /// Událost vyvolaná před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
         /// </summary>
-        public event EventHandler ActionRefresh;
+        public event DxListBoxActionCancelDelegate ListActionBefore;
+
+        /// <summary>
+        /// Volá se po provedení kteréhokoli požadavku
+        /// </summary>
+        /// <param name="args"></param>
+        private void _RunListActionAfter(DxListBoxActionEventArgs args)
+        {
+            OnListActionAfter(args);
+            ListActionAfter?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne po provedení kteréhokoli požadavku
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnListActionAfter(DxListBoxActionEventArgs e) { }
+        /// <summary>
+        /// Událost vyvolaná po provedení kteréhokoli požadavku
+        /// </summary>
+        public event DxListBoxActionDelegate ListActionAfter;
         #endregion
     }
+    /// <summary>
+    /// Argumenty pro akci na <see cref="DxListBoxControl"/>
+    /// </summary>
+    public class DxListBoxActionEventArgs : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="action"></param>
+        public DxListBoxActionEventArgs(KeyActionType action)
+        {
+            this.Action = action;
+        }
+        /// <summary>
+        /// Probíhající akce
+        /// </summary>
+        public KeyActionType Action { get; }
+    }
+    /// <summary>
+    /// Delegát pro událost Akce na <see cref="DxListBoxControl"/>
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    public delegate void DxListBoxActionDelegate(object sender, DxListBoxActionEventArgs e);
+
+    /// <summary>
+    /// Argumenty pro akci Before na <see cref="DxListBoxControl"/>, kdy je možnost dát <see cref="Cancel"/> = true;
+    /// </summary>
+    public class DxListBoxActionCancelEventArgs : DxListBoxActionEventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="action"></param>
+        public DxListBoxActionCancelEventArgs(KeyActionType action)
+            : base(action)
+        {
+            Cancel = false;
+        }
+        /// <summary>
+        /// Nastavením na true bude akce stornována
+        /// </summary>
+        public bool Cancel { get; set; }
+    }
+    /// <summary>
+    /// Delegát pro událost Akce Before na <see cref="DxListBoxControl"/>
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    public delegate void DxListBoxActionCancelDelegate(object sender, DxListBoxActionCancelEventArgs e);
 }
