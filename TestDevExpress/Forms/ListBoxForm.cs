@@ -147,6 +147,7 @@ namespace TestDevExpress.Forms
             _Sample3ListA.EnabledKeyActions = KeyActionType.None;
             _Sample3ListA.DragDropActions = DxDragDropActionType.CopyItemsFrom;
             _Sample3ListA.ListItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
+            _Sample3ListA.ListActionAfter += _Sample3ListA_ListActionAfter;
             this.DxMainPanel.Controls.Add(_Sample3ListA);
 
             _Sample3ListB = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X + 410, __SampleBegin.Y, 400, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
@@ -156,6 +157,7 @@ namespace TestDevExpress.Forms
             _Sample3ListB.EnabledKeyActions = KeyActionType.None;
             _Sample3ListB.DragDropActions = DxDragDropActionType.ImportItemsInto | DxDragDropActionType.ReorderItems;
             _Sample3ListB.ListItems = Randomizer.GetMenuItems(7, Randomizer.ImageResourceType.PngSmall, true);
+            _Sample3ListB.ListActionAfter += _Sample3ListB_ListActionAfter;
             this.DxMainPanel.Controls.Add(_Sample3ListB);
 
         }
@@ -167,6 +169,30 @@ namespace TestDevExpress.Forms
             _Sample3ListB?.RemoveControlFromParent();
             _Sample3ListB = null;
         }
+
+
+        private void _Sample3ListA_ListActionAfter(object sender, DxListBoxActionEventArgs e)
+        {
+            switch (e.Action)
+            {
+                case KeyActionType.CopyToRightOne:
+                case KeyActionType.CopyToRightAll:
+
+                    break;
+            }
+        }
+        private void _Sample3ListB_ListActionAfter(object sender, DxListBoxActionEventArgs e)
+        {
+            switch (e.Action)
+            {
+                case KeyActionType.CopyToLeftOne:
+                case KeyActionType.CopyToLeftAll:
+
+                    break;
+            }
+        }
+
+
         private DxListBoxPanel _Sample3ListA;
         private DxListBoxPanel _Sample3ListB;
         #endregion
