@@ -47,19 +47,27 @@ namespace TestDevExpress.Forms
         {
             base.DxMainContentPrepare();
 
+            // Pro všechny metody, které jsou označené atributem 'InitializerAttribute' je vyvolám 
+            //  a získám tak pole __Samples = jednotlivá tlačítka pro jednotlivé testy:
             __Samples = new List<SampleInfo>();
-
             var methods = InitializerAttribute.SearchInitializerMethods(this.GetType());
             foreach (var method in methods )
                 method.Invoke(this, null);       // Volá metody označené atributem [Initializer()]
 
+            // Na základě prvků v poli __Samples vytvořím sadu buttonů pro jednotlivé testy:
             int y = 12;
+            int x = 12;
+            int w = 260;
+            int h = 32;
+            int n = 0;
+            __SampleBegin = new Point(x + w + 6, y);
             foreach (var sample in __Samples)
             {
-                DxComponent.CreateDxSimpleButton(12, y, 260, 32, this.DxMainPanel, sample.ButtonText, _SampleButtonClick, tag: sample);
-                y += 35;
+                if (n > 0 && sample.IsNewGroup) y += 6;
+                DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, sample.ButtonText, _SampleButtonClick, tag: sample);
+                y += (h + 3);
+                n++;
             }
-            __SampleBegin = new Point(290, 12);
         }
         private void _SampleButtonClick(object sender, EventArgs args)
         {
@@ -77,21 +85,26 @@ namespace TestDevExpress.Forms
         private Point __SampleBegin;
         private class SampleInfo
         {
-            public SampleInfo(string buttonText, Action buttonClick, Action disposeContent)
+            public SampleInfo(string buttonText, Action buttonClick, Action disposeContent, bool isNewGroup = false)
             {
                 this.ButtonText = buttonText;
                 this.ButtonClick = buttonClick;
                 this.DisposeContent = disposeContent;
+                this.IsNewGroup = isNewGroup;
             }
             public readonly string ButtonText;
             public readonly Action ButtonClick;
             public readonly Action DisposeContent;
+            public readonly bool IsNewGroup;
         }
 
         #endregion
         #region Sample 1
-        [Initializer(10)]
-        private void _PrepareSample1()           // Metoda je volaná reflexí v this.DxMainContentPrepare() na základě atributu [Initializer()] !!!
+        /// <summary>
+        /// Metoda je volaná reflexí v <see cref="DxMainContentPrepare"/> na základě atributu [Initializer()] !!!
+        /// </summary>
+        [Initializer(1)]
+        private void _PrepareSample1()
         {
             __Samples.Add(new SampleInfo("Jednoduchý List", _ClickSample1, _DisposeSample1));
         }
@@ -109,8 +122,11 @@ namespace TestDevExpress.Forms
         private DxListBoxPanel _Sample1List;
         #endregion
         #region Sample 2
-        [Initializer(10)]
-        private void _PrepareSample2()           // Metoda je volaná reflexí v this.DxMainContentPrepare() na základě atributu [Initializer()] !!!
+        /// <summary>
+        /// Metoda je volaná reflexí v <see cref="DxMainContentPrepare"/> na základě atributu [Initializer()] !!!
+        /// </summary>
+        [Initializer(2)]
+        private void _PrepareSample2()
         {
             __Samples.Add(new SampleInfo("List s Reorder a buttony", _ClickSample2, _DisposeSample2));
         }
@@ -133,8 +149,11 @@ namespace TestDevExpress.Forms
         private DxListBoxPanel _Sample2List;
         #endregion
         #region Sample 3
-        [Initializer(10)]
-        private void _PrepareSample3()           // Metoda je volaná reflexí v this.DxMainContentPrepare() na základě atributu [Initializer()] !!!
+        /// <summary>
+        /// Metoda je volaná reflexí v <see cref="DxMainContentPrepare"/> na základě atributu [Initializer()] !!!
+        /// </summary>
+        [Initializer(3)]
+        private void _PrepareSample3()
         {
             __Samples.Add(new SampleInfo("Dva Listy", _ClickSample3, _DisposeSample3));
         }
@@ -199,14 +218,17 @@ namespace TestDevExpress.Forms
 
 
         #region Sample 11
-        [Initializer(10)]
-        private void _PrepareSample11()           // Metoda je volaná reflexí v this.DxMainContentPrepare() na základě atributu [Initializer()] !!!
+        /// <summary>
+        /// Metoda je volaná reflexí v <see cref="DxMainContentPrepare"/> na základě atributu [Initializer()] !!!
+        /// </summary>
+        [Initializer(11)]
+        private void _PrepareSample11()
         {
-            __Samples.Add(new SampleInfo("DataTable a Template", _ClickSample11, _DisposeSample11));
+            __Samples.Add(new SampleInfo("DataTable a Template", _ClickSample11, _DisposeSample11, true));
         }
         private void _ClickSample11()
         {
-            _Sample11List = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 400, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
+            _Sample11List = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 520, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
             _Sample11List.DataTable = Randomizer.GetDataTable(48,96, "id:int;name:idtext;surname:text;description:note;icon:imagenamepngfull;photo:photo"); ;
             _Sample11List.DxTemplate = _CreateTemplate11();
             _Sample11List.SelectionMode = SelectionMode.MultiExtended;
@@ -223,10 +245,10 @@ namespace TestDevExpress.Forms
         private DxListBoxTemplate _CreateTemplate11()
         {
             var dxTemplate = new DxListBoxTemplate();
-            dxTemplate.Cells.Add(new DxListBoxTemplate.Cell() { TextColumnName = "name", AdressX = 0, AdressY = 0, Width = 160, Height = 24, FontStyle = FontStyle.Bold });
-            dxTemplate.Cells.Add(new DxListBoxTemplate.Cell() { TextColumnName = "surname", AdressX = 1, AdressY = 0, Width = 280, Height = 24 });
-            dxTemplate.Cells.Add(new DxListBoxTemplate.Cell() { TextColumnName = "description", AdressX = 0, AdressY = 1, ColSpan = 2, Width = 440, Height = 32, FontStyle = FontStyle.Italic });
-            dxTemplate.Cells.Add(new DxListBoxTemplate.Cell() { ImageNameColumnName = "icon", AdressX = 0, AdressY = 2, RowSpan = 2, Width = 48, Height = 48 });
+            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { TextColumnName = "name", ColIndex = 0, RowIndex = 0, Width = 160, Height = 24, FontStyle = FontStyle.Bold });
+            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { TextColumnName = "surname", ColIndex = 1, RowIndex = 0, Width = 280, Height = 24 });
+            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { TextColumnName = "description", ColIndex = 0, RowIndex = 1, ColSpan = 2, Width = 440, Height = 32, FontStyle = FontStyle.Italic });
+            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { ImageNameColumnName = "icon", ColIndex = 2, RowIndex = 0, RowSpan = 2, Width = 48, Height = 48, ImageAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleCenter });
             return dxTemplate;
         }
 
