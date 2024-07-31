@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web.UI.WebControls;
 using Noris.Clients.Win.Components;
 using Noris.Clients.Win.Components.AsolDX;
 
@@ -100,7 +102,7 @@ namespace TestDevExpress
             return sentence;
         }
         #endregion
-        #region MenuItems, Icons
+        #region MenuItems, DataTable, Icons
         /// <summary>
         /// Vytvoří a vrátí pole jednoduchých prvků menu
         /// </summary>
@@ -148,6 +150,207 @@ namespace TestDevExpress
                 return item;
             }
         }
+        /// <summary>
+        /// Vrátí datovou tabulku s danou strukturou
+        /// </summary>
+        /// <param name="minCount"></param>
+        /// <param name="maxCount"></param>
+        /// <param name="structure">Struktura: sloupce oddělené středníkem; uvnitř sloupce je "název:typ". Typ je: "id, int, decimal, text, note, date, datetime, imagename, iconname"</param>
+        /// <returns></returns>
+        public static DataTable GetDataTable(int minCount, int maxCount, string structure)
+        {
+            if (String.IsNullOrEmpty(structure)) return null;
+            int count = Rand.Next(minCount, maxCount);
+            return GetDataTable(count, structure);
+        }
+        /// <summary>
+        /// Vrátí datovou tabulku s danou strukturou
+        /// </summary>
+        /// <param name="count"></param>
+        /// <param name="structure">Struktura: sloupce oddělené středníkem; uvnitř sloupce je "název:typ". Typ je: "id, int, decimal, text, note, date, datetime, imagename, iconname"</param>
+        /// <returns></returns>
+        public static DataTable GetDataTable(int count, string structure)
+        {
+            if (String.IsNullOrEmpty(structure)) return null;
+            var columns = ColumnInfo.Parse(structure);
+            var dataTable = ColumnInfo.CreateTable(columns);
+
+            for (int i = 0; i < count; i++)
+                dataTable.Rows.Add(ColumnInfo.CreateRowItems(i, columns));
+
+            return dataTable;
+        }
+        #region class ColumnInfo : jeden sloupec random tabulky: typ, druh hodnot
+        private class ColumnInfo
+        {
+            private ColumnInfo() { }
+            internal static ColumnInfo[] Parse(string structure)
+            {
+                List<ColumnInfo> result = new List<ColumnInfo>();
+                var columns = structure.Split(';');
+                foreach (var column in columns)
+                {
+                    if (!String.IsNullOrEmpty(column))
+                    {
+                        var parts = column.Split(':');
+                        int count = parts.Length;
+                        string name = parts[0];
+                        if (!String.IsNullOrEmpty(name))
+                        {
+                            string typeName = (count > 1 ? parts[1] : null);
+
+                            Type type = typeof(string);
+                            if (!String.IsNullOrEmpty(typeName))
+                            {
+                                typeName = typeName.Trim().ToLower();
+                                switch (typeName)
+                                {
+                                    case "id":
+                                    case "int":
+                                        type = typeof(int);
+                                        break;
+                                    case "char":
+                                    case "word":
+                                    case "sentence":
+                                    case "idtext":
+                                    case "text":
+                                    case "note":
+                                    case "string":
+                                    case "varchar":
+                                    case "nvarchar":
+                                        type = typeof(string);
+                                        break;
+                                    case "decimal":
+                                    case "numeric":
+                                        type = typeof(decimal);
+                                        break;
+                                    case "date":
+                                    case "datetime":
+                                        type = typeof(DateTime);
+                                        break;
+                                    case "imagename":
+                                    case "imagenamesvg":
+                                    case "imagenamepng":
+                                    case "imagenamepngsmall":
+                                    case "imagenamepngfull":
+                                        type = typeof(string);
+                                        break;
+                                    case "image":
+                                    case "photo":
+                                    case "bytes":
+                                        type = typeof(byte[]);
+                                        break;
+                                    default:
+                                        type = typeof(string);
+                                        typeName = "text";
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                type = typeof(string);
+                                typeName = "text";
+                            }
+
+                            ColumnInfo col = new ColumnInfo() { ColumnName = name, ColumnTypeName = typeName, ColumnType = type};
+                            result.Add(col);
+                        }
+                    }
+                }
+
+                return result.ToArray();
+            }
+            internal static DataTable CreateTable(ColumnInfo[] columns)
+            {
+                DataTable table = new DataTable();
+                foreach (ColumnInfo col in columns) 
+                    table.Columns.Add(col.ColumnName, col.ColumnType);
+                return table;
+            }
+            internal static object[] CreateRowItems(int id, ColumnInfo[] columns)
+            {
+                object[] result = new object[columns.Length];
+                for (int c = 0; c < columns.Length; c++)
+                {
+                    var col = columns[c];
+                    string typeName = col.ColumnTypeName;
+                    switch (typeName)
+                    {
+                        case "id":
+                            result[c] = id;
+                            break;
+                        case "int":
+                            result[c] = Rand.Next();
+                            break;
+                        case "char":
+                            result[c] = ((char)(Rand.Next(32, 128))).ToString();
+                            break;
+                        case "word":
+                            result[c] = GetWord(true);
+                            break;
+                        case "sentence":
+                        case "text":
+                            result[c] = GetSentence(2, 6, true);
+                            break;
+                        case "idtext":
+                            result[c] = (id + 1).ToString() + ". " + GetSentence(2, 6, true);
+                            break;
+                        case "note":
+                            result[c] = GetSentences(4, 9, 3, 8);
+                            break;
+                        case "string":
+                        case "varchar":
+                        case "nvarchar":
+                            result[c] = GetSentence(1, 4, false);
+                            break;
+                        case "decimal":
+                        case "numeric":
+                            result[c] = (decimal)(Math.Round(1000000d * Rand.NextDouble(), 2));
+                            break;
+                        case "date":
+                        case "datetime":
+                            result[c] = DateTime.Now.AddMinutes(-259200d * Rand.NextDouble());           // 259200 minut = 180 dní, záporné = od teď do minulosti o půl roku.
+                            break;
+
+                        case "imagename":
+                        case "imagenamesvg":
+                            result[c] = GetIconName(ImageResourceType.Svg);
+                            break;
+                        case "imagenamepng":
+                            result[c] = GetIconName(ImageResourceType.PngFull);
+                            break;
+                        case "imagenamepngsmall":
+                            result[c] = GetIconName(ImageResourceType.PngSmall);
+                            break;
+                        case "imagenamepngfull":
+                            result[c] = GetIconName(ImageResourceType.PngFull);
+                            break;
+                        case "image":
+                        case "photo":
+                        case "bytes":
+                            result[c] = GetImageFileContent();
+                            break;
+                    }
+                }
+
+                return result;
+            }
+
+            internal string ColumnName { get; private set; }
+            internal string ColumnTypeName { get; private set; }
+            internal Type ColumnType { get; private set; }
+
+            public override string ToString()
+            {
+                return $"{ColumnName} ({ColumnTypeName})";
+            }
+        }
+        #endregion
+        /// <summary>
+        /// Vrátí jednu náhodnou ikonu daného typu
+        /// </summary>
+        /// <param name="imageType"></param>
+        /// <returns></returns>
         public static string GetIconName(ImageResourceType imageType = ImageResourceType.PngFull)
         {
             switch (imageType)
@@ -159,6 +362,10 @@ namespace TestDevExpress
             }
             return null;
         }
+        /// <summary>
+        /// Vrátí jednu náhodnou ikonu typu SVG
+        /// </summary>
+        /// <returns></returns>
         public static string GetIconNameSvg()
         {
             string[] resourcesSvg = new string[]
@@ -240,6 +447,10 @@ namespace TestDevExpress
             };
             return GetItem(resourcesSvg);
         }
+        /// <summary>
+        /// Vrátí jednu náhodnou ikonu typu PNG small
+        /// </summary>
+        /// <returns></returns>
         public static string GetIconNamePngSmall()
         {
             string[] resourcesPng = new string[]
@@ -451,6 +662,10 @@ namespace TestDevExpress
                 };
             return GetItem(resourcesPng);
         }
+        /// <summary>
+        /// Vrátí jednu náhodnou ikonu typu PNG full
+        /// </summary>
+        /// <returns></returns>
         public static string GetIconNamePngFull()
         {
             string[] resourcesPng = new string[]
@@ -664,13 +879,86 @@ namespace TestDevExpress
             return GetItem(resourcesPng);
         }
         /// <summary>
+        /// Vrátí jméno souboru na lokálním disku, který obsahuje obrázek
+        /// </summary>
+        /// <returns></returns>
+        public static string GetImageFileName()
+        {
+            return GetItem(ImageFileNames);
+        }
+        /// <summary>
+        /// Vrátí obsah ze souboru na lokálním disku, který obsahuje obrázek
+        /// </summary>
+        /// <returns></returns>
+        public static byte[] GetImageFileContent()
+        {
+            string imageName = GetItem(ImageFileNames);
+            if (String.IsNullOrEmpty(imageName)) return null;
+            return System.IO.File.ReadAllBytes(imageName);
+        }
+        /// <summary>
+        /// Jména souborů typu Obrázek v adresáři <c>c:\DavidPrac\Images\Small</c> nebo jiném
+        /// </summary>
+        private static string[] ImageFileNames
+        {
+            get 
+            {
+                if (__ImageFileNames is null)
+                    __ImageFileNames = _LoadImageFileNames();
+                return __ImageFileNames;
+            }
+        }
+        private static string[] __ImageFileNames;
+        private static string[] _LoadImageFileNames()
+        {
+            return _LoadImageFileNamesPaths(
+                @"c:\DavidPrac\Images\Small",
+                @"",
+                @"",
+                @"",
+                @""
+                );
+        }
+        private static string[] _LoadImageFileNamesPaths(params string[] paths)
+        {
+            foreach (var path in paths) 
+            {
+                if (String.IsNullOrEmpty(path)) continue;
+                if (!System.IO.Directory.Exists(path)) continue;
+                var files = System.IO.Directory.GetFiles(path, "*.*", System.IO.SearchOption.AllDirectories)
+                    .Where(n => isImage(n))
+                    .ToArray();
+                if (files.Length > 0) return files;
+            }
+            return new string[0];
+
+            // Je to Image?
+            bool isImage(string name)
+            {
+                string extn = System.IO.Path.GetExtension(name).ToLower();
+                return (extn == ".jpg" || extn == ".jpeg" || extn == ".png" || extn == ".bmp" || extn == ".pcx" || extn == ".tif" || extn == ".gif");
+            }
+        }
+        /// <summary>
         /// Typ zdroje ikony
         /// </summary>
         public enum ImageResourceType
         {
+            /// <summary>
+            /// Žádná ikona
+            /// </summary>
             None,
+            /// <summary>
+            /// Vektorová ikona
+            /// </summary>
             Svg,
+            /// <summary>
+            /// Bitmapa 16px
+            /// </summary>
             PngSmall,
+            /// <summary>
+            /// Bitmapa 32px
+            /// </summary>
             PngFull
         }
         #endregion
@@ -1415,3 +1703,4 @@ but the soft, foreboding chant welling up out of eight hundred thousand throats.
         #endregion
     }
 }
+

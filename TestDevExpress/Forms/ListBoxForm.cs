@@ -196,5 +196,41 @@ namespace TestDevExpress.Forms
         private DxListBoxPanel _Sample3ListA;
         private DxListBoxPanel _Sample3ListB;
         #endregion
+
+
+        #region Sample 11
+        [Initializer(10)]
+        private void _PrepareSample11()           // Metoda je volaná reflexí v this.DxMainContentPrepare() na základě atributu [Initializer()] !!!
+        {
+            __Samples.Add(new SampleInfo("DataTable a Template", _ClickSample11, _DisposeSample11));
+        }
+        private void _ClickSample11()
+        {
+            _Sample11List = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 400, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
+            _Sample11List.DataTable = Randomizer.GetDataTable(48,96, "id:int;name:idtext;surname:text;description:note;icon:imagenamepngfull;photo:photo"); ;
+            _Sample11List.DxTemplate = _CreateTemplate11();
+            _Sample11List.SelectionMode = SelectionMode.MultiExtended;
+            _Sample11List.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            this.DxMainPanel.Controls.Add(_Sample11List);
+
+        }
+        private void _DisposeSample11()
+        {
+            _Sample11List?.RemoveControlFromParent();
+            _Sample11List = null;
+        }
+
+        private DxListBoxTemplate _CreateTemplate11()
+        {
+            var dxTemplate = new DxListBoxTemplate();
+            dxTemplate.Cells.Add(new DxListBoxTemplate.Cell() { TextColumnName = "name", AdressX = 0, AdressY = 0, Width = 160, Height = 24, FontStyle = FontStyle.Bold });
+            dxTemplate.Cells.Add(new DxListBoxTemplate.Cell() { TextColumnName = "surname", AdressX = 1, AdressY = 0, Width = 280, Height = 24 });
+            dxTemplate.Cells.Add(new DxListBoxTemplate.Cell() { TextColumnName = "description", AdressX = 0, AdressY = 1, ColSpan = 2, Width = 440, Height = 32, FontStyle = FontStyle.Italic });
+            dxTemplate.Cells.Add(new DxListBoxTemplate.Cell() { ImageNameColumnName = "icon", AdressX = 0, AdressY = 2, RowSpan = 2, Width = 48, Height = 48 });
+            return dxTemplate;
+        }
+
+        private DxListBoxPanel _Sample11List;
+        #endregion
     }
 }
