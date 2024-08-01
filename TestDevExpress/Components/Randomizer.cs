@@ -1239,7 +1239,7 @@ takové té lázeňské kabině na kolečkách, neboť lázeňská kabina na kol
 Strávili jsme další den v Harwichi a noc po něm - i tu příští - jsme přespali „U královy hlavy“, jelikož vítr vanul
 neustále k jihu. V pátek foukal vítr přesně od východu. Kapitána Goylese jsem potkal na nábřeží a zmínil jsem se
 mu, že za těchto okolností bychom se snad mohli vydat na cestu. Má umíněnost ho zjevně rozčílila.
-„Kdybyste se v tom kapánel líp vyznal, pane,“ pravil, „sám byste pochopil, že to není možný. Vždyť vítr fouká
+„Kdybyste se v tom kapánek líp vyznal, pane,“ pravil, „sám byste pochopil, že to není možný. Vždyť vítr fouká
 rovnou od moře.“
 „Pane kapitáne,“ řekl jsem, „povězte mi laskavě, co jsem si to vlastně najal. Je to plachetnice nebo hausbót?“
 Vypadal, jako kdyby ho ten dotaz překvapil.“

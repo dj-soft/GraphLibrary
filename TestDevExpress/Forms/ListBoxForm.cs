@@ -245,10 +245,10 @@ namespace TestDevExpress.Forms
         private DxListBoxTemplate _CreateTemplate11()
         {
             var dxTemplate = new DxListBoxTemplate();
-            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { TextColumnName = "name", ColIndex = 0, RowIndex = 0, Width = 160, Height = 24, FontStyle = FontStyle.Bold });
-            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { TextColumnName = "surname", ColIndex = 1, RowIndex = 0, Width = 280, Height = 24 });
-            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { TextColumnName = "description", ColIndex = 0, RowIndex = 1, ColSpan = 2, Width = 440, Height = 32, FontStyle = FontStyle.Italic });
-            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { ImageNameColumnName = "icon", ColIndex = 2, RowIndex = 0, RowSpan = 2, Width = 48, Height = 48, ImageAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleCenter });
+            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { TextColumnName = "name", ColIndex = 0, RowIndex = 0, Width = 160, Height = 18, FontStyle = FontStyle.Bold, TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.TopLeft });
+            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { TextColumnName = "surname", ColIndex = 1, RowIndex = 0, Width = 280, Height = 18, TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.BottomRight });
+            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { TextColumnName = "description", ColIndex = 0, RowIndex = 1, ColSpan = 2, Width = 440, Height = 18, FontStyle = FontStyle.Italic });
+            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { ImageNameColumnName = "icon", ColIndex = 2, RowIndex = 0, RowSpan = 2, Width = 48, Height = 36, ImageAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleCenter });
             return dxTemplate;
         }
 

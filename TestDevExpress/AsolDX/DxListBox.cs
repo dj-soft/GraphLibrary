@@ -15,6 +15,7 @@ using DevExpress.Utils;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraEditors.TableLayout;
+using TestDevExpress;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -2500,14 +2501,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // Buňky, které jednoznačně určují šířky sloupců:
                 var widths = getSingleSizes(__Cells
                     .Where(c => c.ColSpan == 1 && c.Width.HasValue)                                // Buňky, které mají ColSpan = 1: určují šířku svého sloupce; a mají Width definované
-                    .Select(c => new Tuple<int, int>(c.ColIndex, c.Width.Value)));                  // Tuple: Item1 = index sloupce; Item2 = definovaná šířka
+                    .Select(c => new Tuple<int, int>(c.ColIndex, c.Width.Value)));                 // Tuple: Item1 = index sloupce; Item2 = definovaná šířka
 
                 // Buňky, které mají větší ColSpan a mohou upravit šířky sloupců:
                 verifySpanSizes(widths, __Cells
                     .Where(c => c.ColSpan > 1 && c.Width.HasValue)                                 // Buňky, které mají ColSpan > 1: vyžadují více sloupců; a mají Width definované
-                    .Select(c => new Tuple<int, int, int>(c.ColIndex, c.ColSpan, c.Width.Value)));  // Tuple: Item1 = index sloupce; Item2 = definovaná šířka
+                    .Select(c => new Tuple<int, int, int>(c.ColIndex, c.ColSpan, c.Width.Value))); // Tuple: Item1 = index sloupce; Item2 = ColSpan; Item3 = definovaná šířka
 
                 // Pro zjištěné velikosti vytvoří TableColumnDefinition:
+                //  Na rozdíl od řádků (TableRowDefinition) tady pro sloupce není potřeba operovat s AutoWidth.
                 foreach (var width in widths)
                 {
                     var columnDef = new DevExpress.XtraEditors.TableLayout.TableColumnDefinition();
@@ -2521,21 +2523,27 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // Buňky, které jednoznačně určují výšky řádků:
                 var heights = getSingleSizes(__Cells
                     .Where(c => c.RowSpan == 1 && c.Height.HasValue)                               // Buňky, které mají RowSpan = 1: určují výšku svého řádku; a mají Height definované
-                    .Select(c => new Tuple<int, int>(c.RowIndex, c.Height.Value)));                 // Tuple: Item1 = index řádku; Item2 = definovaná výška
+                    .Select(c => new Tuple<int, int>(c.RowIndex, c.Height.Value)));                // Tuple: Item1 = index řádku; Item2 = definovaná výška
 
                 // Buňky, které mají větší RowSpan a mohou upravit výšky řádků:
                 verifySpanSizes(heights, __Cells
                     .Where(c => c.RowSpan > 1 && c.Height.HasValue)                                // Buňky, které mají RowSpan > 1: vyžadují více řádků; a mají Height definované
-                    .Select(c => new Tuple<int, int, int>(c.ColIndex, c.RowSpan, c.Width.Value)));  // Tuple: Item1 = index řádku; Item2 = RowSpan; Item3 = definovaná výška
+                    .Select(c => new Tuple<int, int, int>(c.RowIndex, c.RowSpan, c.Height.Value))); // Tuple: Item1 = index řádku; Item2 = RowSpan; Item3 = definovaná výška
 
-                // Pro zjištěné velikosti vytvoří TableColumnDefinition:
+                // Pro zjištěné velikosti vytvoří TableRowDefinition:
+                //  DevExpress má zajímavou vlastnost, kterou obcházím pomocí řízení .AutoHeight:
+                //  - Pokud všem Rows nastavím .AutoHeight = true, pak je celý řádek ListBoxu strašně vysoký.
+                //  - Pokud nastavím .AutoHeight = false, pak se všechny řádky zmastí do jednoho.
+                //  - Ale když nastavím do prvního Row .AutoHeight = false, a do dalších potom .AutoHeight = true, pak je řádek ListBoxu OK...
+                bool isAutoSize = false;
                 foreach (var height in heights)
                 {
                     var rowDef = new DevExpress.XtraEditors.TableLayout.TableRowDefinition();
                     rowDef.Length.Value = (double)height;
                     rowDef.Length.Type = DevExpress.XtraEditors.TableLayout.TableDefinitionLengthType.Pixel;
-                    rowDef.AutoHeight = true;
+                    rowDef.AutoHeight = isAutoSize;        // První má false, další mají true. Viz nahoře...
                     template.Rows.Add(rowDef);
+                    isAutoSize = true;
                 }
             }
             void createSpans()
@@ -2560,22 +2568,25 @@ namespace Noris.Clients.Win.Components.AsolDX
                         RowIndex = cell.RowIndex,
                         ColumnIndex = cell.ColIndex,
                         FieldName = cell.TextColumnName,
-                        ImageToTextAlignment = DevExpress.XtraEditors.TileControlImageToTextAlignment.Right,
-                        ImageAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleCenter,
-                        TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleRight,
+                        TextAlignment = cell.TextAlignment ?? TileItemContentAlignment.MiddleLeft,
+                        ImageAlignment = cell.ImageAlignment ?? TileItemContentAlignment.MiddleCenter,
+                        ImageToTextAlignment = cell.ImageToTextAlignment ?? TileControlImageToTextAlignment.Left,
                         Width = cell.Width ?? 0,
-                        Height = cell.Height ?? 0,
-                        
+                        Height = cell.Height ?? 0
                     };
+
                     if (cell.FontStyle.HasValue)
-                    {
                         element.Appearance.Normal.FontStyleDelta = cell.FontStyle.Value;
-                    }
+
                     if (cell.FontSizeDelta.HasValue)
                     {
                         element.Appearance.Normal.FontSizeDelta = cell.FontSizeDelta.Value;
                         element.Appearance.Normal.Options.UseFont = true;
                     }
+
+                    //element.Appearance.Normal.BackColor = Randomizer.GetColor(200, 255);
+                    //element.Appearance.Normal.Options.UseBackColor = true;
+
                     template.Elements.Add(element);
                     var isDynamicImage = hasDynamicImage(cell);
                     __TemplateCells.Add(key, new TemplateCell(key, cell, isDynamicImage));
@@ -2671,39 +2682,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                 }
             }
-
-
-
-            /*
-
-            if (rowView.Row.Table.Columns.Contains(imageName1))
-                e.TemplatedItem.Elements[0].Image = DxComponent.GetBitmapImage(rowView.Row[imageName1] as string);
-
-            bool hasImage2 = false;
-            if (rowView.Row.Table.Columns.Contains(photoName))
-            {
-                if (rowView.Row[photoName] is Image image)
-                {
-                    e.TemplatedItem.Elements[4].Image = image;
-                    e.TemplatedItem.Elements[4].ImageOptions.ImageScaleMode = DevExpress.XtraEditors.TileItemImageScaleMode.Squeeze;
-
-                    hasImage2 = true;
-                }
-            }
-            if (!hasImage2 && rowView.Row.Table.Columns.Contains(imageName2))
-            {
-                string name = rowView.Row[imageName2] as string;
-                e.TemplatedItem.Elements[4].Image = DxComponent.GetBitmapImage(name, ResourceImageSizeType.Small);
-                e.TemplatedItem.Elements[4].ImageOptions.ImageScaleMode = DevExpress.XtraEditors.TileItemImageScaleMode.Squeeze;
-                hasImage2 = true;
-            }
-            if (!hasImage2)
-            {
-                e.TemplatedItem.Elements[4].Image = null;
-            }
-            */
         }
-
+        /// <summary>
+        /// Úložiště dat o jedné buňce, slouží k propojení mezi ListBoxem a jeho porcesem vykreslování, a definicí buňky <see cref="IDxListBoxTemplateCell"/>.
+        /// </summary>
         private class TemplateCell
         {
             public TemplateCell(string key, IDxListBoxTemplateCell cell, bool hasDynamicImage)
