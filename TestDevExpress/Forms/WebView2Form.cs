@@ -15,109 +15,57 @@ namespace TestDevExpress.Forms
     /// Web viewer typu MS WebView2
     /// </summary>
     [RunFormInfo(groupText: "Testovací okna", buttonText: "MS WebView2", buttonOrder: 71, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře MS WebView2 prohlížeč (MS Edge based)", tabViewToolTip: "WebView2 Browser")]
-    internal class WebView2Form : Form
+    internal class WebView2Form : DxRibbonForm
     {
         #region Konstrukce
 
-        public WebView2Form()
+        protected override void DxMainContentPrepare()
         {
-            InitializeComponent();
+            __DxMainPadding = new Padding(9, 6, 9, 6);
+            int x = __DxMainPadding.Left;
+            int y = __DxMainPadding.Top;
+            int w = 190;
+            int h = 32;
+            int s = 3;
+            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "seznam", _ClickButton, tag: "https://www.seznam.cz/");
+            x += (w + s);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "mapy", _ClickButton, tag: "https://www.mapy.cz/");
+            x += (w + s);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "google", _ClickButton, tag: "https://www.google.com/");
+            x += (w + s);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "meteo", _ClickButton, tag: "https://www.chmi.cz/files/portal/docs/meteo/rad/inca-cz/short.html?display=var&gmap_zoom=7&prod=czrad_maxz_celdn_masked&opa1=0.6&opa2=0.7&nselect=14&nselect_fct=6&di=1&rep=2&add=4&update=4&lat=49.951&lon=15.797&lang=CZ");
+            x += (w + s);
+
+            __WebPanelLocation = new Point(__DxMainPadding.Left, __DxMainPadding.Top + h + s);
+            __WebViewPanel = new DxWebViewPanel();
+            this.DxMainPanel.Controls.Add(__WebViewPanel);
+
+
         }
-        /// <summary>
-        /// Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
-        protected override void Dispose(bool disposing)
+        private Padding __DxMainPadding;
+        private Point __WebPanelLocation;
+        private DxWebViewPanel __WebViewPanel;
+        protected override void DxMainContentDoLayout()
         {
-            if (disposing && (components != null))
-            {
-                components.Dispose();
-            }
-            base.Dispose(disposing);
+            var webPanel = __WebViewPanel;
+            if (webPanel is null) return;
+
+            var clientSize = this.DxMainPanel.ClientSize;
+            int x = __WebPanelLocation.X;
+            int y = __WebPanelLocation.Y;
+            int w = clientSize.Width - __DxMainPadding.Right - x;
+            int h = clientSize.Height - __DxMainPadding.Bottom - y;
+            webPanel.Bounds = new Rectangle(x, y, w, h);
         }
-        /// <summary>
-        /// Required method for Designer support - do not modify
-        /// the contents of this method with the code editor.
-        /// </summary>
-        private void InitializeComponent()
+
+        private void _ClickButton(object sender, EventArgs e)
         {
-            _Resources = new System.ComponentModel.ComponentResourceManager(typeof(WebView2Form));
-
-            this._Button1 = new Button();
-            this._Button2 = new Button();
-            this._Button3 = new Button();
-            this._Button4 = new Button();
-            this._UrlAdress = new TextBox();
-            this._ButtonGo = new Button();
-
-            this.SuspendLayout();
-
-            this._Button1.Bounds = new Rectangle(12, 12, 176, 28);
-            this._Button1.TabIndex = 1;
-            this._Button1.Text = "Seznam.cz";
-            this._Button1.UseVisualStyleBackColor = true;
-            this._Button1.Click += new System.EventHandler(this.button1_Click);
-
-            this._Button2.Bounds = new Rectangle(194, 12, 176, 28);
-            this._Button2.TabIndex = 2;
-            this._Button2.Text = "mapa.cz";
-            this._Button2.UseVisualStyleBackColor = true;
-            this._Button2.Click += new System.EventHandler(this.button2_Click);
-
-            this._Button3.Bounds = new Rectangle(376, 12, 176, 28);
-            this._Button3.TabIndex = 3;
-            this._Button3.Text = "google.com";
-            this._Button3.UseVisualStyleBackColor = true;
-            this._Button3.Click += new System.EventHandler(this.button3_Click);
-
-            this._Button4.Bounds = new Rectangle(558, 12, 176, 28);
-            this._Button4.TabIndex = 4;
-            this._Button4.Text = "Mapa Nephrite";
-            this._Button4.UseVisualStyleBackColor = true;
-            this._Button4.Click += new System.EventHandler(this.button4_Click);
-
-            this._UrlAdress.Location = new Point(740, 14);
-            this._UrlAdress.ReadOnly = false;
-
-            this._ButtonGo.Bounds = new Rectangle(1200, 12, 50, 28);
-            this._ButtonGo.TabIndex = 6;
-            this._ButtonGo.Text = "=>";
-            this._ButtonGo.UseVisualStyleBackColor = true;
-            this._ButtonGo.Click += new System.EventHandler(this.buttonGo_Click);
-
-
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = AutoScaleMode.Font;
-            this.BackColor = SystemColors.AppWorkspace;
-            this.Controls.Add(this._Button1);
-            this.Controls.Add(this._Button2);
-            this.Controls.Add(this._Button3);
-            this.Controls.Add(this._Button4);
-            this.Controls.Add(this._UrlAdress);
-            this.Controls.Add(this._ButtonGo);
-
-            this.Text = "MS WebView2 (MS Edge Browser)";
-
-            this.SizeChanged += _Form_SizeChanged;
-
-            this.ResumeLayout(false);
+            if (sender is Control control && control.Tag is string text)
+                _DoNavigate(text);
         }
-        private void _Form_SizeChanged(object sender, EventArgs e)
-        {
-            _DoLayout();
-        }
-        /// <summary>
-        /// Required designer variable.
-        /// </summary>
-        private System.ComponentModel.IContainer components = null;
-        ComponentResourceManager _Resources;
 
-        private Button _Button1;
-        private Button _Button2;
-        private Button _Button3;
-        private Button _Button4;
-        private TextBox _UrlAdress;
-        private Button _ButtonGo;
+
+
         #endregion
         #region Buttony a jejich události
         private void button1_Click(object sender, EventArgs e)
@@ -128,7 +76,7 @@ namespace TestDevExpress.Forms
         private void button2_Click(object sender, EventArgs e)
         {
             _PrepareWView();
-            _DoNavigate(@"https://mapy.cz/dopravni?l=0&x=15.8629028&y=50.2145999&z=17");        // https://mapy.cz/dopravni?x=14.5802973&y=50.5311090&z=14
+            _DoNavigate(@"https://mapy.cz/dopravni?vlastni-body&ut=Nový bod&uc=9kFczxY5mZ&ud=15°51%2742.665""E 50°12%2754.179""N&x=15.8629028&y=50.2145999&z=17"); // @"https://mapy.cz/dopravni?l=0&x=15.8629028&y=50.2145999&z=17");        // https://mapy.cz/dopravni?x=14.5802973&y=50.5311090&z=14
         }
         private void button3_Click(object sender, EventArgs e)
         {
@@ -170,13 +118,13 @@ m.addControl(sync);
 </script>
 </html>
 ";
-            _DoNavigate(html, true);
+            _DoNavigate(html);
         }
         private void buttonGo_Click(object sender, EventArgs e)
         {
             _PrepareWView();
             string url = this._UrlAdress.Text;
-            _DoNavigate(url, true);
+            _DoNavigate(url);
         }
         #endregion
         #region Layout a _UrlAdress
@@ -251,7 +199,7 @@ m.addControl(sync);
             DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.EnsureCoreWebView2Async...");
             this._WView.CoreWebView2InitializationCompleted += _CoreWebView2InitializationCompleted;
             var task =  this._WView.EnsureCoreWebView2Async();
-            task.Wait(2000);
+            task.Wait(50);
             DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.EnsureCoreWebView2Async Wait done; Status: '{task.Status}'");
         }
 
@@ -295,7 +243,10 @@ m.addControl(sync);
                 if (!asAsync)
                 {
                     DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.DoNavigate Now to '{source}'...");
-                    _WView.Source = new Uri(source);
+                    if (!source.StartsWith("<"))
+                        _WView.Source = new Uri(source);
+                    else
+                        _WView.NavigateToString(source);
                 }
                 else
                 { }

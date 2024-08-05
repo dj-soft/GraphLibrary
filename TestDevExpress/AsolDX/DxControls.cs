@@ -419,7 +419,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void DxMainContentCreate()
         {
             this._DxMainPanel = DxComponent.CreateDxPanel(this, System.Windows.Forms.DockStyle.Fill, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
-
+            this._DxMainPanel.ClientSizeChanged += _DxMainPanel_ClientSizeChanged;
+        }
+        /// <summary>
+        /// Po změně velikosti panelu <see cref="_DxMainPanel"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _DxMainPanel_ClientSizeChanged(object sender, EventArgs e)
+        {
+            DxMainContentDoLayout();
         }
         /// <summary>
         /// Provede přípravu obsahu hlavního panelu <see cref="DxRibbonForm.DxMainPanel"/>. Panel je již vytvořen a umístěn v okně, Ribbon i StatusBar existují.<br/>
@@ -479,6 +488,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.ImageName = AsolDX.ImageName.DxFormIcon;
             this.InitDxRibbonForm();
             DxComponent.RegisterListener(this);
+            this.DxMainContentDoLayout();
             this.EndInitDxRibbonForm();
         }
         /// <summary>
@@ -1001,7 +1011,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.PerformLayout();
         }
         /// <summary>
-        /// Provede tvorbu hlavního obsahue okna, podle jeho typu, a jeho přidání do okna včetně zadokování.
+        /// Provede tvorbu hlavního obsahu okna, podle jeho typu, a jeho přidání do okna včetně zadokování.
         /// Provádí se před vytvořením Ribbonu a Status baru, aby obsah byl správně umístěn na Z ose.
         /// </summary>
         protected abstract void DxMainContentCreate();
@@ -1024,6 +1034,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zde se typicky vytváří obsah do hlavního panelu.
         /// </summary>
         protected abstract void DxMainContentPrepare();
+        /// <summary>
+        /// Provede rozmístění interních prvků po změně velikosti prvku Main
+        /// </summary>
+        protected virtual void DxMainContentDoLayout() { }
         /// <summary>
         /// Vytvoří a vrátí standardní stránku Home pro Ribbon, volitelně do ní přidá grupu Design s danými prvky (defaultně = None).
         /// </summary>
