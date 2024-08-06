@@ -24,27 +24,37 @@ namespace TestDevExpress.Forms
             __DxMainPadding = new Padding(9, 6, 9, 6);
             int x = __DxMainPadding.Left;
             int y = __DxMainPadding.Top;
-            int w = 190;
+            int w = 140;
             int h = 32;
             int s = 3;
             DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "seznam", _ClickButton, tag: "https://www.seznam.cz/");
             x += (w + s);
-            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "mapy", _ClickButton, tag: "https://www.mapy.cz/");
+            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "mapy A", _ClickButton, tag: "https://www.mapy.cz/");
+            x += (w + s);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "mapy B", _ClickButton, tag: @"https://mapy.cz/dopravni?x=14.5802973&y=50.5311090&z=14");
+            x += (w + s);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "mapy C", _ClickButton, tag: @"https://mapy.cz/dopravni?l=0&x=15.8629028&y=50.2145999&z=17");
+            x += (w + s);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "mapy D", _ClickButton, tag: @"https://mapy.cz/dopravni?vlastni-body&ut=Nový bod&uc=9kFczxY5mZ&ud=15°51%2742.665""E 50°12%2754.179""N&x=15.8629028&y=50.2145999&z=17");
             x += (w + s);
             DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "google", _ClickButton, tag: "https://www.google.com/");
             x += (w + s);
             DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "meteo", _ClickButton, tag: "https://www.chmi.cz/files/portal/docs/meteo/rad/inca-cz/short.html?display=var&gmap_zoom=7&prod=czrad_maxz_celdn_masked&opa1=0.6&opa2=0.7&nselect=14&nselect_fct=6&di=1&rep=2&add=4&update=4&lat=49.951&lon=15.797&lang=CZ");
             x += (w + s);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "GreenMapa", _ClickButton, tag: "<GreenMapa>");
+            x += (w + s);
 
             __WebPanelLocation = new Point(__DxMainPadding.Left, __DxMainPadding.Top + h + s);
             __WebViewPanel = new DxWebViewPanel();
+
             this.DxMainPanel.Controls.Add(__WebViewPanel);
-
-
         }
         private Padding __DxMainPadding;
         private Point __WebPanelLocation;
         private DxWebViewPanel __WebViewPanel;
+        /// <summary>
+        /// Provede se po změně velikosti ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/>
+        /// </summary>
         protected override void DxMainContentDoLayout()
         {
             var webPanel = __WebViewPanel;
@@ -61,32 +71,10 @@ namespace TestDevExpress.Forms
         private void _ClickButton(object sender, EventArgs e)
         {
             if (sender is Control control && control.Tag is string text)
-                _DoNavigate(text);
-        }
-
-
-
-        #endregion
-        #region Buttony a jejich události
-        private void button1_Click(object sender, EventArgs e)
-        {
-            _PrepareWView();
-            _DoNavigate("https://www.seznam.cz/");
-        }
-        private void button2_Click(object sender, EventArgs e)
-        {
-            _PrepareWView();
-            _DoNavigate(@"https://mapy.cz/dopravni?vlastni-body&ut=Nový bod&uc=9kFczxY5mZ&ud=15°51%2742.665""E 50°12%2754.179""N&x=15.8629028&y=50.2145999&z=17"); // @"https://mapy.cz/dopravni?l=0&x=15.8629028&y=50.2145999&z=17");        // https://mapy.cz/dopravni?x=14.5802973&y=50.5311090&z=14
-        }
-        private void button3_Click(object sender, EventArgs e)
-        {
-            _PrepareWView();
-            _DoNavigate(@"https://google.com");
-        }
-        private void button4_Click(object sender, EventArgs e)
-        {
-            _PrepareWView();
-            string html = @"<!DOCTYPE html>
+            {
+                if (text == "<GreenMapa>")
+                {
+                    string html = @"<!DOCTYPE html>
 <html>
 <head>
 <meta http-equiv=""X-UA-Compatible"" content=""IE=10"" />
@@ -118,30 +106,19 @@ m.addControl(sync);
 </script>
 </html>
 ";
-            _DoNavigate(html);
-        }
-        private void buttonGo_Click(object sender, EventArgs e)
-        {
-            _PrepareWView();
-            string url = this._UrlAdress.Text;
-            _DoNavigate(url);
-        }
-        #endregion
-        #region Layout a _UrlAdress
-        private void _DoLayout()
-        {
-            var clientSize = this.ClientSize;
-            if (_WView != null)
-            {
-                _WView.Bounds = new Rectangle(12, 50, clientSize.Width - 24, clientSize.Height - 59);
+                }
+                else
+                {
+                    // _DoNavigate(text);
+                }
             }
-
-            int cw = clientSize.Width;
-            int w = cw - this._UrlAdress.Left - this._ButtonGo.Width - 18;
-            if (w < 100) w = 100;
-            this._UrlAdress.Width = w;
-            this._ButtonGo.Left = this._UrlAdress.Right + 6;
         }
+
+
+        #endregion
+        
+        /*
+       
         private void _RefreshUrl(string uri)
         {
             _NavigatedUri = uri;
@@ -155,8 +132,7 @@ m.addControl(sync);
             this._UrlAdress.Text = _NavigatedUri;
         }
         private string _NavigatedUri;
-        #endregion
-        #region Konkrétní WView
+       
         private Microsoft.Web.WebView2.WinForms.WebView2 _WView;
         private void _PrepareWView()
         {
@@ -184,13 +160,12 @@ m.addControl(sync);
             this._WView.Size = new System.Drawing.Size(776, 389);
             this._WView.TabIndex = 0;
 
-            /*
-            this._WView.OnNavigationStarting += _AxAntView_OnNavigationStarting;
-            this._WView.OnFrameNavigationStarting += _AxAntView_OnFrameNavigationStarting;
-            this._WView.OnFrameNavigationCompleted += _AxAntView_OnFrameNavigationCompleted;
-            this._WView.OnNavigationCompleted += _AxAntView_OnNavigationCompleted;
-            this._WView.OnSourceChanged += _AxAntView_OnSourceChanged;
-            */
+            //this._WView.OnNavigationStarting += _AxAntView_OnNavigationStarting;
+            //this._WView.OnFrameNavigationStarting += _AxAntView_OnFrameNavigationStarting;
+            //this._WView.OnFrameNavigationCompleted += _AxAntView_OnFrameNavigationCompleted;
+            //this._WView.OnNavigationCompleted += _AxAntView_OnNavigationCompleted;
+            //this._WView.OnSourceChanged += _AxAntView_OnSourceChanged;
+
             ((System.ComponentModel.ISupportInitialize)(this._WView)).EndInit();
 
             _DoLayout();
@@ -265,30 +240,7 @@ m.addControl(sync);
             DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.StatusBarTextChanged: '{_WView.CoreWebView2.StatusBarText}'");
         }
 
-        /*
-        private void _AxAntView_OnSourceChanged(object sender, AxAntViewAx.IAntViewEvents_OnSourceChangedEvent e)
-        {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"AntView.OnSourceChanged: '{_WView.Source}'");
-            _RefreshUrl(_WView.Source);
-        }
-        private void _AxAntView_OnFrameNavigationStarting(object sender, AxAntViewAx.IAntViewEvents_OnFrameNavigationStartingEvent e)
-        {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"AntView.OnFrameNavigationStarting: #{e.args.NavigationId}: '{e.args.URI}'");
-        }
-        private void _AxAntView_OnFrameNavigationCompleted(object sender, AxAntViewAx.IAntViewEvents_OnFrameNavigationCompletedEvent e)
-        {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"AntView.OnFrameNavigationCompleted: #{e.navigationId}");
-        }
-        private void _AxAntView_OnNavigationStarting(object sender, AxAntViewAx.IAntViewEvents_OnNavigationStartingEvent e)
-        {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"AntView.OnNavigationStarting: #{e.args.NavigationId}: '{e.args.URI}'");
-            _RefreshUrl(e.args.URI);
-        }
-        private void _AxAntView_OnNavigationCompleted(object sender, AxAntViewAx.IAntViewEvents_OnNavigationCompletedEvent e)
-        {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"AntView.OnNavigationCompleted: '{_WView.Source}'");
-        }
+    
         */
-        #endregion
     }
 }

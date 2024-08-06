@@ -422,7 +422,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._DxMainPanel.ClientSizeChanged += _DxMainPanel_ClientSizeChanged;
         }
         /// <summary>
-        /// Po změně velikosti panelu <see cref="_DxMainPanel"/>
+        /// Provede se po změně velikosti ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/>
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -1035,7 +1035,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected abstract void DxMainContentPrepare();
         /// <summary>
-        /// Provede rozmístění interních prvků po změně velikosti prvku Main
+        /// Provede se po změně velikosti ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/>
         /// </summary>
         protected virtual void DxMainContentDoLayout() { }
         /// <summary>
@@ -2906,6 +2906,12 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxSimpleButton : DevExpress.XtraEditors.SimpleButton, IHotKeyControl
     {
+        #region Button skryté property
+        /// <summary>
+        /// Styl borderu
+        /// </summary>
+        public new BorderStyles BorderStyle { get { return base.BorderStyle; } set { base.BorderStyle = value; } }
+        #endregion
         #region Rozšířené property
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
