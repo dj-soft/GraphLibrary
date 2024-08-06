@@ -2507,7 +2507,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="parent"></param>
         /// <param name="text"></param>
         /// <param name="click"></param>
-        /// <param name="paintStyles"></param>
+        /// <param name="paintStyle"></param>
         /// <param name="image"></param>
         /// <param name="resourceName"></param>
         /// <param name="toolTipTitle"></param>
@@ -2519,13 +2519,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="tag"></param>
         /// <returns></returns>
         public static DxSimpleButton CreateDxSimpleButton(int x, int y, int w, int h, Control parent, string text, EventHandler click = null,
-            DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
+            DevExpress.XtraEditors.Controls.PaintStyles? paintStyle = null,
             Image image = null, string resourceName = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? enabled = null, bool? tabStop = null, Keys? hotKey = null, object tag = null)
         {
             return CreateDxSimpleButton(x, ref y, w, h, parent, text, click,
-                paintStyles,
+                paintStyle,
                 image, resourceName,
                 toolTipTitle, toolTipText,
                 visible, enabled, tabStop, hotKey, tag, false);
@@ -2540,7 +2540,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="parent"></param>
         /// <param name="text"></param>
         /// <param name="click"></param>
-        /// <param name="paintStyles"></param>
+        /// <param name="paintStyle"></param>
         /// <param name="image"></param>
         /// <param name="resourceName"></param>
         /// <param name="toolTipTitle"></param>
@@ -2553,7 +2553,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="shiftY"></param>
         /// <returns></returns>
         public static DxSimpleButton CreateDxSimpleButton(int x, ref int y, int w, int h, Control parent, string text, EventHandler click = null,
-            DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
+            DevExpress.XtraEditors.Controls.PaintStyles? paintStyle = null,
             Image image = null, string resourceName = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? enabled = null, bool? tabStop = null, Keys? hotKey = null, object tag = null, bool shiftY = false)
@@ -2567,12 +2567,23 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (enabled.HasValue) simpleButton.Enabled = enabled.Value;
             if (tabStop.HasValue) simpleButton.TabStop = tabStop.Value;
             if (hotKey.HasValue) simpleButton.HotKey = hotKey.Value;
-            if (paintStyles.HasValue) simpleButton.PaintStyle = paintStyles.Value;
+            if (paintStyle.HasValue) simpleButton.PaintStyle = paintStyle.Value;
 
-            DxComponent.ApplyImage(simpleButton.ImageOptions, resourceName, image, null, null, true);
-            simpleButton.ImageOptions.ImageToTextAlignment = ImageAlignToText.LeftCenter;
-            simpleButton.ImageOptions.ImageToTextIndent = 3;
-            simpleButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Default;
+            if (!String.IsNullOrEmpty(resourceName))
+                simpleButton.ImageName = resourceName;
+            else if (image != null)
+                simpleButton.Image = image;
+
+            if (!String.IsNullOrEmpty(text))
+            {
+                simpleButton.ImageOptions.ImageToTextAlignment = ImageAlignToText.LeftCenter;
+                simpleButton.ImageOptions.ImageToTextIndent = 3;
+            }
+            else
+            {
+                simpleButton.ImageOptions.ImageToTextAlignment = ImageAlignToText.LeftCenter;
+                simpleButton.ImageOptions.ImageToTextIndent = 0;
+            }
             simpleButton.PrepareSizeSvgImage(true);
 
             simpleButton.SetToolTip(toolTipTitle, toolTipText, text);

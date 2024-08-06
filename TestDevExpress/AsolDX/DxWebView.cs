@@ -28,23 +28,31 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.SuspendLayout();
 
             __ToolPanel = new DxPanelControl() { BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
-            __BackButton = DxComponent.CreateDxSimpleButton(3, 3, 24, 24, __ToolPanel, "", __BackClick, DevExpress.XtraEditors.Controls.PaintStyles.Light, resourceName: ImageNameBackDisabled);
-            __NextButton = DxComponent.CreateDxSimpleButton(30, 3, 24, 24, __ToolPanel, "", __NextClick, DevExpress.XtraEditors.Controls.PaintStyles.Light, resourceName: ImageNameForwardDisabled);
-            __RefreshButton = DxComponent.CreateDxSimpleButton(63, 3, 24, 24, __ToolPanel, "", __RefreshClick, DevExpress.XtraEditors.Controls.PaintStyles.Light, resourceName: ImageNameRefreshDisabled);
+            __BackButton = DxComponent.CreateDxSimpleButton(3, 3, 24, 24, __ToolPanel, "", _BackClick, DevExpress.XtraEditors.Controls.PaintStyles.Light, resourceName: ImageNameBackDisabled);
+            __ForwardButton = DxComponent.CreateDxSimpleButton(30, 3, 24, 24, __ToolPanel, "", _ForwardClick, DevExpress.XtraEditors.Controls.PaintStyles.Light, resourceName: ImageNameForwardDisabled);
+            __RefreshButton = DxComponent.CreateDxSimpleButton(63, 3, 24, 24, __ToolPanel, "", _RefreshClick, DevExpress.XtraEditors.Controls.PaintStyles.Light, resourceName: ImageNameRefreshDisabled);
             __AdressText = DxComponent.CreateDxTextEdit(96, 3, 250, __ToolPanel);
             __GoToButton = DxComponent.CreateDxSimpleButton(340, 3, 24, 24, __ToolPanel, "", __GoToClick, DevExpress.XtraEditors.Controls.PaintStyles.Light, resourceName: ImageNameGoTo);
-            __BackButton.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+            __BackButton.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat;
             __BackButton.TabStop = false;
-            __NextButton.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
-            __NextButton.TabStop = false;
-            __RefreshButton.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+            __ForwardButton.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat;
+            __ForwardButton.TabStop = false;
+            __RefreshButton.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat;
             __RefreshButton.TabStop = false;
-            __AdressText.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
+            __AdressText.Enter += _AdressEntered;
+            __AdressText.Leave += _AdressLeaved;
+            __AdressText.KeyDown += _AdressKeyDown;
+            __AdressText.KeyPress += _AdressKeyPress;
+            __AdressText.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat;
             __AdressText.TabStop = false;
-            __GoToButton.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+            __GoToButton.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat;
             __GoToButton.TabStop = false;
 
             __MsWebView = new MsWebView();
+            __MsWebView.MsWebCurrentCanGoEnabledChanged += _MsWebCurrentCanGoEnabledChanged;
+            __MsWebView.MsWebCurrentSourceUrlChanged += _MsWebCurrentSourceUrlChanged;
+            __MsWebView.MsWebCurrentStatusTextChanged += _MsWebCurrentStatusTextChanged;
+
 
             __StatusBar = new DxPanelControl() { BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
             __StatusText = DxComponent.CreateDxLabel(6, 3, 250, __StatusBar, "Stavová informace...", LabelStyleType.Info, hAlignment: DevExpress.Utils.HorzAlignment.Near);
@@ -53,75 +61,202 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Controls.Add(__MsWebView);
             this.Controls.Add(__StatusBar);
             this.ResumeLayout(false);
-            this.DoLayout();
+            this._DoLayout();
+            this._DoEnabled();
         }
+        private void _MsWebCurrentCanGoEnabledChanged(object sender, EventArgs e)
+        {
+            OnMsWebCurrentCanGoEnabledChanged();
+            MsWebCurrentCanGoEnabledChanged?.Invoke(this, EventArgs.Empty);
+        }
+        protected virtual void OnMsWebCurrentCanGoEnabledChanged() { }
+        public event EventHandler MsWebCurrentCanGoEnabledChanged;
+        private void _MsWebCurrentSourceUrlChanged(object sender, EventArgs e)
+        {
+            OnMsWebCurrentSourceUrlChanged();
+            MsWebCurrentSourceUrlChanged?.Invoke(this, EventArgs.Empty);
+        }
+        protected virtual void OnMsWebCurrentSourceUrlChanged() { }
+        public event EventHandler MsWebCurrentSourceUrlChanged;
+        private void _MsWebCurrentStatusTextChanged(object sender, EventArgs e)
+        {
+            OnMsWebCurrentStatusTextChanged();
+            MsWebCurrentStatusTextChanged?.Invoke(this, EventArgs.Empty);
+        }
+        protected virtual void OnMsWebCurrentStatusTextChanged() { }
+        public event EventHandler MsWebCurrentStatusTextChanged;
+
         /// <summary>
-        /// Po změně velikosti vyvoláme <see cref="DoLayout"/>
+        /// Po změně velikosti vyvoláme <see cref="_DoLayout"/>
         /// </summary>
         /// <param name="e"></param>
         protected override void OnClientSizeChanged(EventArgs e)
         {
             base.OnClientSizeChanged(e);
-            this.DoLayout();
+            this._DoLayout();
         }
         /// <summary>
-        /// Rozmístí vnitřní prvky podle prostoru a podle požadavků
+        /// Provede požadované akce. Je povoleno volat z threadu mimo GUI.
         /// </summary>
-        internal void DoLayout()
+        /// <param name="actionTypes"></param>
+        internal void DoAction(DxWebViewActionType actionTypes)
         {
             if (this.InvokeRequired)
-            {
-                this.BeginInvoke(new Action(DoLayout));
+            {   // 1x invokace na případně vícero akci
+                this.BeginInvoke(new Action<DxWebViewActionType>(DoAction), actionTypes);
             }
             else
             {
-                var size = this.ClientSize;
-                int x = 0;
-                int w = size.Width;
-                int y = 0;
-                int b = size.Height;
+                if (actionTypes.HasFlag(DxWebViewActionType.DoLayout)) this._DoLayout();
+                if (actionTypes.HasFlag(DxWebViewActionType.DoEnabled)) this._DoEnabled();
+                if (actionTypes.HasFlag(DxWebViewActionType.DoChangeSourceUrl)) this._DoShowSourceUrl();
+                if (actionTypes.HasFlag(DxWebViewActionType.DoChangeStatusText)) this._DoShowStatusText();
+            }
+        }
+        /// <summary>
+        /// Rozmístí vnitřní prvky podle prostoru a podle požadavků.
+        /// Musí být voláno v GUI threadu.
+        /// </summary>
+        private void _DoLayout()
+        {
+            var properties = this.MsWebProperties;
 
-                bool isToolbarVisible = this.MsWebProperties.IsToolbarVisible;
-                this.__ToolPanel.Visible = isToolbarVisible;
-                if (isToolbarVisible)
+            var size = this.ClientSize;
+            int left = 0;
+            int width = size.Width;
+            int top = 0;
+            int bottom = size.Height;
+
+            int buttonSize = DxComponent.ZoomToGui(24);
+            int toolHeight = DxComponent.ZoomToGui(30);
+            int buttonTop = (toolHeight - buttonSize) / 2;
+            int paddingX = 0; // buttonTop;
+
+            // Toolbar
+            bool isToolbarVisible = properties.IsToolbarVisible;
+            this.__ToolPanel.Visible = isToolbarVisible;
+            if (isToolbarVisible)
+            {
+                int toolLeft = paddingX;
+                int shiftX = buttonSize * 9 / 8;
+                int distanceX = shiftX - buttonSize;
+
+                bool isBackForwardVisible = properties.IsBackForwardButtonsVisible;
+                __BackButton.Visible = isBackForwardVisible;
+                __ForwardButton.Visible = isBackForwardVisible;
+                if (isBackForwardVisible)
                 {
-                    int bs = DxComponent.ZoomToGui(24);
-                    int th = DxComponent.ZoomToGui(32);
-                    int by = (th - bs) / 2;
-                    int bx = by;
-                    int dx = bs * 9 / 8;
-                    int sx = dx - bs;
-                    __BackButton.Bounds = new System.Drawing.Rectangle(bx, by, bs, bs);
-                    bx += dx;
-                    __NextButton.Bounds = new System.Drawing.Rectangle(bx, by, bs, bs);
-                    bx += dx;
-                    __RefreshButton.Bounds = new System.Drawing.Rectangle(bx, by, bs, bs);
-                    bx += dx;
-
-                    int br = w - dx;
-                    __GoToButton.Bounds = new System.Drawing.Rectangle(br, by, bs, bs);
-
-                    int ah = __AdressText.Bounds.Height;
-                    int ay = by + bs - ah;
-                    __AdressText.Bounds = new System.Drawing.Rectangle(bx, ay, (br - bx - sx), ah);
-
-                    __ToolPanel.Bounds = new System.Drawing.Rectangle(x, y, w, th);
-                    y = y + th;
+                    __BackButton.Bounds = new System.Drawing.Rectangle(toolLeft, buttonTop, buttonSize, buttonSize);
+                    toolLeft += shiftX;
+                    __ForwardButton.Bounds = new System.Drawing.Rectangle(toolLeft, buttonTop, buttonSize, buttonSize);
+                    toolLeft += shiftX;
                 }
 
-                bool isStatusVisible = this.MsWebProperties.IsStatusRowVisible;
-                this.__StatusBar.Visible = isStatusVisible;
-                if (isStatusVisible) 
+                bool isRefreshVisible = properties.IsRefreshButtonVisible;
+                __RefreshButton.Visible = isRefreshVisible;
+                if (isRefreshVisible)
                 {
-                    int th = this.__StatusText.Height;
-                    int sh = th + 4;
-                    b = b - sh;
-                    this.__StatusBar.Bounds = new System.Drawing.Rectangle(x, b, w, sh);
-                    this.__StatusText.Bounds = new System.Drawing.Rectangle(6, 2, w - 12, th);
+                    __RefreshButton.Bounds = new System.Drawing.Rectangle(toolLeft, buttonTop, buttonSize, buttonSize);
+                    toolLeft += shiftX;
                 }
 
-                int wh = b - y;
-                this.__MsWebView.Bounds = new System.Drawing.Rectangle(x, y, w, wh);
+                int toolRight = width - paddingX;
+                bool isAdressVisible = properties.IsAdressEditorVisible;
+                bool isAdressEditable = properties.IsAdressEditorEditable;
+                __AdressText.Visible = isAdressVisible;
+                __GoToButton.Visible = isAdressVisible && isAdressEditable;
+                if (isAdressVisible)
+                {
+                    if (isAdressEditable)
+                    {
+                        __GoToButton.Bounds = new System.Drawing.Rectangle((toolRight - buttonSize), buttonTop, buttonSize, buttonSize);
+                        toolRight -= shiftX;
+                    }
+
+                    int editorHeight = __AdressText.Bounds.Height;
+                    int editorTop = buttonTop + buttonSize - editorHeight - 1;
+                    __AdressText.Bounds = new System.Drawing.Rectangle(toolLeft, editorTop, (toolRight - toolLeft), editorHeight);
+                }
+
+                __ToolPanel.Bounds = new System.Drawing.Rectangle(left, top, width, toolHeight);
+                top = top + toolHeight;
+            }
+
+            // Statusbar:
+            bool isStatusVisible = this.MsWebProperties.IsStatusRowVisible;
+            this.__StatusBar.Visible = isStatusVisible;
+            if (isStatusVisible) 
+            {
+                int textHeight = this.__StatusText.Height;
+                int statusHeight = textHeight + 4;
+                bottom = bottom - statusHeight;
+                this.__StatusBar.Bounds = new System.Drawing.Rectangle(left, bottom, width, statusHeight);
+                this.__StatusText.Bounds = new System.Drawing.Rectangle(paddingX, 2, width - (2 * paddingX), textHeight);
+            }
+
+            // Web:
+            int wh = bottom - top;
+            this.__MsWebView.Bounds = new System.Drawing.Rectangle(left, top, width, wh);
+        }
+        /// <summary>
+        /// Nastaví Enabled na patřičné prvky, odpovídající aktuálnímu stavu MsWebView.
+        /// Musí být voláno v GUI threadu.
+        /// </summary>
+        private void _DoEnabled()
+        {
+            var properties = this.MsWebProperties;
+
+            // Toolbar
+            bool isToolbarVisible = properties.IsToolbarVisible;
+            if (isToolbarVisible)
+            {
+                bool isBackForwardVisible = properties.IsBackForwardButtonsVisible;
+                if (isBackForwardVisible)
+                {
+                    bool canGoBack = properties.CanGoBack; ;
+                    __BackButton.Enabled = canGoBack;
+                    __BackButton.ImageName = (canGoBack ? ImageNameBackEnabled : ImageNameBackDisabled);
+
+                    bool canGoForward = properties.CanGoForward;
+                    __ForwardButton.Enabled = canGoForward;
+                    __ForwardButton.ImageName = (canGoForward ? ImageNameForwardEnabled : ImageNameForwardDisabled);
+                }
+
+                bool isRefreshVisible = properties.IsRefreshButtonVisible;
+                if (isRefreshVisible)
+                {
+                    bool isRefreshEnabled = true;
+                    __RefreshButton.Enabled = isRefreshEnabled;
+                    __RefreshButton.ImageName = (isRefreshEnabled ? ImageNameRefreshEnabled : ImageNameRefreshDisabled);
+                }
+            }
+        }
+        /// <summary>
+        /// Aktualizuje text SourceUrl v adresním prostoru.
+        /// Musí být voláno v GUI threadu.
+        /// </summary>
+        private void _DoShowSourceUrl()
+        {
+            var properties = this.MsWebProperties;
+            bool isVisible = properties.IsToolbarVisible && properties.IsAdressEditorVisible;
+            bool isInEditState = isVisible && properties.IsAdressEditorEditable && this.__AdressEditorHasFocus;
+            if (isVisible && !isInEditState)
+            {
+                string sourceUrl = properties.CurrentSourceUrl;
+                this.__AdressText.Text = sourceUrl;
+            }
+        }
+        /// <summary>
+        /// Nastaví text do StatusBaru.
+        /// Musí být voláno v GUI threadu.
+        /// </summary>
+        private void _DoShowStatusText()
+        {
+            var properties = this.MsWebProperties;
+            if (properties.IsStatusRowVisible)
+            {
+                string statusText = properties.CurrentStatusText;
+                this.__StatusText.Text = statusText;
             }
         }
         /// <summary>
@@ -135,7 +270,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private DxPanelControl __ToolPanel;
         private DxSimpleButton __BackButton;
-        private DxSimpleButton __NextButton;
+        private DxSimpleButton __ForwardButton;
         private DxSimpleButton __RefreshButton;
         private DxTextEdit __AdressText;
         private DxSimpleButton __GoToButton;
@@ -149,26 +284,70 @@ namespace Noris.Clients.Win.Components.AsolDX
         private const string ImageNameForwardDisabled = "images/xaf/templatesv2images/action_navigation_history_forward_disabled.svg";
         private const string ImageNameRefreshEnabled = "images/xaf/templatesv2images/action_refresh.svg";
         private const string ImageNameRefreshDisabled = "images/xaf/templatesv2images/action_refresh_disabled.svg";
-        private const string ImageNameGoTo = "images/xaf/templatesv2images/action_simpleaction.svg";
+        private const string ImageNameGoTo1 = "images/xaf/templatesv2images/action_simpleaction.svg";
+        private const string ImageNameGoTo2 = "devav/actions/pagenext.svg";
+        private const string ImageNameGoTo3 = "svgimages/arrows/next.svg";
+        private const string ImageNameGoTo4 = "svgimages/business%20objects/bo_validation.svg";
+        private const string ImageNameGoTo = ImageNameGoTo2;
         private const string ImageNameValidateEnabled = "images/xaf/templatesv2images/action_validation_validate.svg";
         private const string ImageNameValidateDisabled = "images/xaf/templatesv2images/action_validation_validate_disabled.svg";
         #endregion
         #region Privátní život
-        private void __BackClick(object sender, EventArgs args) { }
-        private void __NextClick(object sender, EventArgs args) { }
-        private void __RefreshClick(object sender, EventArgs args) { }
-        private void __AdressEntered(object sender, EventArgs args) { }
-        private void __AdressLeaved(object sender, EventArgs args) { }
-        private void __GoToClick(object sender, EventArgs args) { }
+        private void _BackClick(object sender, EventArgs args)
+        {
+            this.__MsWebView.GoBack();
+            this.__MsWebView.Focus();
+        }
+        private void _ForwardClick(object sender, EventArgs args) 
+        {
+            this.__MsWebView.GoForward();
+            this.__MsWebView.Focus();
+        }
+        private void _RefreshClick(object sender, EventArgs args)
+        {
+            this.__MsWebView.Reload();
+            this.__MsWebView.Focus();
+        }
+        private void _AdressEntered(object sender, EventArgs args)
+        {
+            __AdressEditorHasFocus = true;
+            __AdressValueOnEnter = __AdressText.Text;
+        }
+        private void _AdressKeyPress(object sender, System.Windows.Forms.KeyPressEventArgs e)
+        {
+        }
+        private void _AdressKeyDown(object sender, System.Windows.Forms.KeyEventArgs e)
+        {
+            var properties = this.MsWebProperties;
+            if ((properties.IsAdressEditorVisible && properties.IsAdressEditorEditable) && (e.KeyCode == System.Windows.Forms.Keys.Enter))
+                this._AdressNavigate();
+        }
+        private void _AdressLeaved(object sender, EventArgs args)
+        {
+            __AdressEditorHasFocus = false;
+        }
+        private void __GoToClick(object sender, EventArgs args)
+        {
+            var properties = this.MsWebProperties;
+            if (properties.IsAdressEditorVisible && properties.IsAdressEditorEditable)
+                this._AdressNavigate();
+        }
+        private void _AdressNavigate()
+        {
+            var properties = this.MsWebProperties;
+            properties.UrlAdress = __AdressText.Text;
+            this.__MsWebView.Focus();
+        }
+        private string __AdressValueOnEnter;
+        private bool __AdressEditorHasFocus;
         #endregion
 
 
         #region Public vlastnosti
         /// <summary>
-        /// Souhrn vlastností <see cref="MsWebView"/>, tak aby byly k dosažení pod jedním místem
+        /// Souhrn vlastností <see cref="MsWebView"/>, tak aby byly k dosažení v jednom místě.
         /// </summary>
-        public MsWebView.PropertiesInfo MsWebProperties { get { return __MsWebView.Properties; } }
-
+        public MsWebView.PropertiesInfo MsWebProperties { get { return __MsWebView.MsWebProperties; } }
         #endregion
     }
     /// <summary>
@@ -176,12 +355,14 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class MsWebView : Microsoft.Web.WebView2.WinForms.WebView2
     {
+        #region Konstruktor, Parent akce, Dispose
         /// <summary>
         /// Konstruktor
         /// </summary>
         public MsWebView()
         {
-            __Properties = new PropertiesInfo(this);
+            __MsWebProperties = new PropertiesInfo(this);
+            _InitWebCore();
         }
         /// <summary>
         /// Dispose
@@ -190,18 +371,244 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
-            __Properties?.Dispose();
-            __Properties = null;
+            __MsWebProperties?.Dispose();
+            __MsWebProperties = null;
         }
         /// <summary>
         /// Parent typovaný na <see cref="DxWebViewPanel"/>, nebo null
         /// </summary>
         protected DxWebViewPanel ParentWebView { get { return this.Parent as DxWebViewPanel; } }
+        /// <summary>
+        /// Vyvolá v parentu akci definovanou parametrem <paramref name="actionTypes"/>
+        /// </summary>
+        /// <param name="actionTypes"></param>
+        private void DoActionInParent(DxWebViewActionType actionTypes)
+        {
+            ParentWebView?.DoAction(actionTypes);
+        }
+        #endregion
+        #region Lazy inicializace, Web events, navigace, atd...
+        /// <summary>
+        /// Provede start inicializace EnsureCoreWebView2Async
+        /// </summary>
+        private void _InitWebCore()
+        {
+            this.__CoreWebInitializerCounter = 1;
+            this.CoreWebView2InitializationCompleted += _CoreWebView2InitializationCompleted;
+            var task = this.EnsureCoreWebView2Async();
+            task.Wait(50);
+
+        }
+        /// <summary>
+        /// Počítadlo, kolikrát byl spuštěn proces <c>EnsureCoreWebView2Async()</c>
+        /// </summary>
+        private int __CoreWebInitializerCounter;
+        /// <summary>
+        /// Po dokončení procesu <q>EnsureCoreWebView2Async()</q> navážeme eventhandlery a provedeme případnou čekající navigaci
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _CoreWebView2InitializationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2InitializationCompletedEventArgs e)
+        {
+            if (this.CoreWebView2 is null)
+            {
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.CoreWebView2InitializationCompleted: IS NULL; Counter: {__CoreWebInitializerCounter}!");
+                // Možná bych dal druhý pokus?  Ale jen druhý, nikoli nekonečný:
+                if (__CoreWebInitializerCounter == 1)
+                {
+                    __CoreWebInitializerCounter = 2;
+                    var task = this.EnsureCoreWebView2Async();
+                    task.Wait(50);
+                }
+            }
+            else
+            {
+                // DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.CoreWebView2InitializationCompleted: Set eventhandlers...");
+
+                this.CoreWebView2.SourceChanged += _CoreWebView_SourceChanged;
+                this.CoreWebView2.StatusBarTextChanged += _CoreWebView_StatusTextChanged;
+
+                this._DoNavigate();
+            }
+        }
+        /// <summary>
+        /// Eventhandler pro změnu URL
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _CoreWebView_SourceChanged(object sender, Microsoft.Web.WebView2.Core.CoreWebView2SourceChangedEventArgs e)
+        {
+            _DetectChanges();
+        }
+        /// <summary>
+        /// Eventhandler pro změnu StatusText
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _CoreWebView_StatusTextChanged(object sender, object e)
+        {
+            _DetectChanges();
+        }
+        private void _RunMsWebCurrentClear()
+        {
+            __MsWebUrlAdress = null;
+            __MsWebHtmlContent = null;
+            __MsWebCurrentSourceUrl = null;
+            __MsWebCurrentStatusText = null;
+            _RunMsWebCurrentSourceUrlChanged();
+            _RunMsWebCurrentStatusTextChanged();
+        }
+        private void _DetectChanges()
+        {
+            bool newCanGoBack = this.CanGoBack;
+            bool newCanGoForward = this.CanGoForward;
+            string newSourceUrl = this.Source.ToString();
+            string newStatusText = this.CoreWebView2?.StatusBarText;
+
+            bool isChangeCanGoBack = __MsWebCanGoBack != newCanGoBack;
+            bool isChangeCanGoForward = __MsWebCanGoForward != newCanGoForward;
+            bool isChangeSourceUrl = !String.Equals(__MsWebCurrentSourceUrl, newSourceUrl, StringComparison.InvariantCulture);
+            bool isChangeStatusText = !String.Equals(__MsWebCurrentStatusText, newStatusText, StringComparison.InvariantCulture);
+
+            __MsWebCanGoBack = newCanGoBack;
+            __MsWebCanGoForward = newCanGoForward;
+            __MsWebCurrentSourceUrl = newSourceUrl;
+            __MsWebCurrentStatusText = newStatusText;
+
+            DxWebViewActionType actionTypes =
+                (isChangeCanGoBack || isChangeCanGoForward ? DxWebViewActionType.DoEnabled : DxWebViewActionType.None) |
+                (isChangeSourceUrl ? DxWebViewActionType.DoChangeSourceUrl : DxWebViewActionType.None) |
+                (isChangeStatusText ? DxWebViewActionType.DoChangeStatusText : DxWebViewActionType.None);
+
+            if (actionTypes != DxWebViewActionType.None)
+                DoActionInParent(actionTypes);
+
+            if (isChangeCanGoBack || isChangeCanGoForward)
+                _RunMsWebCurrentCanGoEnabledChanged();
+
+            if (isChangeSourceUrl)
+                _RunMsWebCurrentSourceUrlChanged();
+
+            if (isChangeStatusText)
+                _RunMsWebCurrentStatusTextChanged();
+        }
+
+        private void _RunMsWebCurrentCanGoEnabledChanged()
+        {
+            OnMsWebCurrentCanGoEnabledChanged();
+            MsWebCurrentCanGoEnabledChanged?.Invoke(this, EventArgs.Empty);
+        }
+        protected virtual void OnMsWebCurrentCanGoEnabledChanged() { }
+        public event EventHandler MsWebCurrentCanGoEnabledChanged;
+
+        private void _RunMsWebCurrentSourceUrlChanged()
+        {
+            OnMsWebCurrentSourceUrlChanged();
+            MsWebCurrentSourceUrlChanged?.Invoke(this, EventArgs.Empty);
+        }
+        protected virtual void OnMsWebCurrentSourceUrlChanged() { }
+        public event EventHandler MsWebCurrentSourceUrlChanged;
+        
+        private void _RunMsWebCurrentStatusTextChanged()
+        {
+            OnMsWebCurrentStatusTextChanged();
+            MsWebCurrentStatusTextChanged?.Invoke(this, EventArgs.Empty);
+        }
+        protected virtual void OnMsWebCurrentStatusTextChanged() { }
+        public event EventHandler MsWebCurrentStatusTextChanged;
+
+        private string __MsWebCurrentSourceUrl;
+        private string __MsWebCurrentStatusText;
+        private bool __MsWebCanGoBack;
+        private bool __MsWebCanGoForward;
+        #endregion
+        #region URL adresa, Status bar, navigace, atd...
+        /// <summary>
+        /// Požadovaná URL adresa obsahu.
+        /// Sem je možno setovat požadovanou adresu, zůstane zde trvale až do setování další adresy.
+        /// Na rozdíl od toho aktuální adresa je v <see cref="MsWebCurrentSourceUrl"/>.
+        /// </summary>
+        public string MsWebUrlAdress 
+        {
+            get { return __MsWebUrlAdress; }
+            set
+            {
+                _RunMsWebCurrentClear();
+                __MsWebUrlAdress = value;
+                __MsWebNeedNavigate = !String.IsNullOrEmpty(value);
+                _DoNavigate();
+            }
+        }
+        /// <summary>
+        /// Požadovaná URL adresa
+        /// </summary>
+        private string __MsWebUrlAdress;
+        /// <summary>
+        /// Externě vložený HTML obsah k zobrazení v prvku.
+        /// </summary>
+        public string MsWebHtmlContent
+        {
+            get { return __MsWebHtmlContent; }
+            set
+            {
+                _RunMsWebCurrentClear();
+                __MsWebHtmlContent = value;
+                __MsWebNeedNavigate = !String.IsNullOrEmpty(value);
+                _DoNavigate();
+            }
+        }
+        /// <summary>
+        /// Externí HTML content
+        /// </summary>
+        private string __MsWebHtmlContent;
+        /// <summary>
+        /// Aktuální stav Enabled pro button Go Back
+        /// </summary>
+        public bool MsWebCanGoBack { get { return __MsWebCanGoBack; } }
+        /// <summary>
+        /// Aktuální stav Enabled pro button Go Forward
+        /// </summary>
+        public bool MsWebCanGoForward { get { return __MsWebCanGoForward; } }
+        /// <summary>
+        /// Aktuální zobrazená URL adresa
+        /// </summary>
+        public string MsWebCurrentSourceUrl { get { return __MsWebCurrentSourceUrl; } }
+        /// <summary>
+        /// Aktuální text Status baru
+        /// </summary>
+        public string MsWebCurrentStatusText { get { return __MsWebCurrentStatusText; } }
+        /// <summary>
+        /// Zajistí zobrazení požadované URL adresy <see cref="MsWebUrlAdress"/> nebo obsahu <see cref="MsWebHtmlContent"/>.
+        /// Pouze pokud <see cref="__MsWebNeedNavigate"/> je true a pokud <q>CoreWebView2</q> existuje.
+        /// Shodí příznak <see cref="__MsWebNeedNavigate"/> na false po provedení změny.
+        /// </summary>
+        private void _DoNavigate()
+        {
+            if (!__MsWebNeedNavigate) return;                        // Pokud nemám určený cíl, kam mám navigovat: nic neděláme.
+
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(_DoNavigate));
+            }
+            else
+            {
+                if (!(this.CoreWebView2 is null))
+                {
+                    __MsWebNeedNavigate = false;                     // Pokud by nás někdo volal odteď, pak zdejší metoda nic neprovede.
+                    if (!String.IsNullOrEmpty(__MsWebUrlAdress))
+                        this.Source = new Uri(__MsWebUrlAdress);
+                    else if (!String.IsNullOrEmpty(__MsWebHtmlContent))
+                        this.NavigateToString(__MsWebHtmlContent);
+                }
+            }
+        }
+        private bool __MsWebNeedNavigate;
+        #endregion
         #region class PropertiesInfo : Souhrn vlastností, tak aby byly k dosažení pod jedním místem
         /// <summary>
-        /// Souhrn vlastností, tak aby byly k dosažení pod jedním místem
+        /// Souhrn vlastností <see cref="MsWebView"/>, tak aby byly k dosažení v jednom místě.
         /// </summary>
-        public PropertiesInfo Properties { get { return __Properties; } } private PropertiesInfo __Properties;
+        public PropertiesInfo MsWebProperties { get { return __MsWebProperties; } } private PropertiesInfo __MsWebProperties;
         /// <summary>
         /// Definice vlastností <see cref="MsWebView"/>
         /// </summary>
@@ -228,21 +635,18 @@ namespace Noris.Clients.Win.Components.AsolDX
                 __Owner = null;
             }
             /// <summary>
-            /// Vyvolá Layout v parentu <see cref="DxWebViewPanel.DoLayout()"/>
-            /// </summary>
-            private void _ParentDoLayout() { __Owner?.ParentWebView?.DoLayout(); }
-            /// <summary>
             /// Pokud se dodaná hodnota <paramref name="value"/> liší od hodnoty v proměnné <paramref name="variable"/>, 
-            /// pak do proměnné vloží hodnotu a vyvolá <see cref="_ParentDoLayout"/>.
+            /// pak do proměnné vloží hodnotu a vyvolá <see cref="DoActionInParent(DxWebViewActionType)"/>.
             /// </summary>
             /// <typeparam name="T"></typeparam>
             /// <param name="value"></param>
             /// <param name="variable"></param>
-            private void _SetValueDoLayout<T>(T value, ref T variable)
+            /// <param name="actionType"></param>
+            private void _SetValueDoAction<T>(T value, ref T variable, DxWebViewActionType actionType)
             {
                 if (Object.Equals(value, variable)) return;
                 variable = value;
-                _ParentDoLayout();
+                __Owner.DoActionInParent(actionType);
             }
             /// <summary>
             /// Nastaví výchozí hodnoty
@@ -250,44 +654,83 @@ namespace Noris.Clients.Win.Components.AsolDX
             private void _InitValues()
             {
                 __IsToolbarVisible = true;
-                __IsBackNextButtonsVisible = true;
+                __IsBackForwardButtonsVisible = true;
                 __IsRefreshButtonVisible = true;
-                __IsAdressButtonVisible = true;
-                __IsAdressButtonEditable = true;
+                __IsAdressEditorVisible = true;
+                __IsAdressEditorEditable = true;
                 __IsStatusRowVisible = true;
             }
             /// <summary>
             /// Je toolbar viditelný?
             /// Default = true;
             /// </summary>
-            public bool IsToolbarVisible { get { return __IsToolbarVisible; } set { _SetValueDoLayout(value, ref __IsToolbarVisible); } } private bool __IsToolbarVisible;
+            public bool IsToolbarVisible { get { return __IsToolbarVisible; } set { _SetValueDoAction(value, ref __IsToolbarVisible, DxWebViewActionType.DoLayout); } } private bool __IsToolbarVisible;
             /// <summary>
             /// Jsou buttony Back a Next viditelné?
             /// Default = true;
             /// </summary>
-            public bool IsBackNextButtonsVisible { get { return __IsBackNextButtonsVisible; } set { _SetValueDoLayout(value, ref __IsBackNextButtonsVisible); } } private bool __IsBackNextButtonsVisible;
+            public bool IsBackForwardButtonsVisible { get { return __IsBackForwardButtonsVisible; } set { _SetValueDoAction(value, ref __IsBackForwardButtonsVisible, DxWebViewActionType.DoLayout); } } private bool __IsBackForwardButtonsVisible;
             /// <summary>
             /// Je button Refresh viditelný?
             /// Default = true;
             /// </summary>
-            public bool IsRefreshButtonVisible { get { return __IsRefreshButtonVisible; } set { _SetValueDoLayout(value, ref __IsRefreshButtonVisible); } } private bool __IsRefreshButtonVisible;
+            public bool IsRefreshButtonVisible { get { return __IsRefreshButtonVisible; } set { _SetValueDoAction(value, ref __IsRefreshButtonVisible, DxWebViewActionType.DoLayout); } } private bool __IsRefreshButtonVisible;
             /// <summary>
             /// Je adresní pole viditelné?
             /// Default = true;
             /// </summary>
-            public bool IsAdressButtonVisible { get { return __IsAdressButtonVisible; } set { _SetValueDoLayout(value, ref __IsAdressButtonVisible); } } private bool __IsAdressButtonVisible;
+            public bool IsAdressEditorVisible { get { return __IsAdressEditorVisible; } set { _SetValueDoAction(value, ref __IsAdressEditorVisible, DxWebViewActionType.DoLayout); } } private bool __IsAdressEditorVisible;
             /// <summary>
             /// Je adresní pole editovatelné? Pak je i zobrazen button GoTo
             /// Default = true;
             /// </summary>
-            public bool IsAdressButtonEditable { get { return __IsAdressButtonEditable; } set { _SetValueDoLayout(value, ref __IsAdressButtonEditable); } } private bool __IsAdressButtonEditable;
+            public bool IsAdressEditorEditable { get { return __IsAdressEditorEditable; } set { _SetValueDoAction(value, ref __IsAdressEditorEditable, DxWebViewActionType.DoLayout); } } private bool __IsAdressEditorEditable;
             /// <summary>
             /// Je stavový řádek viditelný?
             /// Default = true;
             /// </summary>
-            public bool IsStatusRowVisible { get { return __IsStatusRowVisible; } set { _SetValueDoLayout(value, ref __IsStatusRowVisible); } } private bool __IsStatusRowVisible;
+            public bool IsStatusRowVisible { get { return __IsStatusRowVisible; } set { _SetValueDoAction(value, ref __IsStatusRowVisible, DxWebViewActionType.DoLayout); } } private bool __IsStatusRowVisible;
+
+            /// <summary>
+            /// Požadovaná URL adresa obsahu.
+            /// Sem je možno setovat požadovanou adresu, zůstane zde trvale až do setování další adresy.
+            /// Na rozdíl od toho aktuální adresa je v <see cref="CurrentSourceUrl"/>.
+            /// </summary>
+            public string UrlAdress { get { return __Owner.MsWebUrlAdress; }  set { __Owner.MsWebUrlAdress = value; } }
+            /// <summary>
+            /// Externě vložený HTML obsah k zobrazení v prvku.
+            /// </summary>
+            public string HtmlContent { get { return __Owner.MsWebHtmlContent; } set { __Owner.MsWebHtmlContent = value; } }
+
+            /// <summary>
+            /// Aktuální stav Enabled pro button Go Back
+            /// </summary>
+            public bool CanGoBack { get { return __Owner.MsWebCanGoBack; } }
+            /// <summary>
+            /// Aktuální stav Enabled pro button Go Forward
+            /// </summary>
+            public bool CanGoForward { get { return __Owner.MsWebCanGoForward; } }
+            /// <summary>
+            /// Aktuální zobrazená URL adresa
+            /// </summary>
+            public string CurrentSourceUrl { get { return __Owner.MsWebCurrentSourceUrl; } }
+            /// <summary>
+            /// Aktuální text Status baru
+            /// </summary>
+            public string CurrentStatusText { get { return __Owner.MsWebCurrentStatusText; } }
         }
         #endregion
     }
-
+    /// <summary>
+    /// Typy akcí, které má provést Parent panel
+    /// </summary>
+    [Flags]
+    internal enum DxWebViewActionType
+    {
+        None = 0,
+        DoLayout = 0x0001,
+        DoEnabled = 0x0002,
+        DoChangeSourceUrl = 0x0010,
+        DoChangeStatusText = 0x0020
+    }
 }

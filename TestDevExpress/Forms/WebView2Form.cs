@@ -21,6 +21,7 @@ namespace TestDevExpress.Forms
 
         protected override void DxMainContentPrepare()
         {
+            // Buttony, které reprezentují "oblíbené stránky":
             __DxMainPadding = new Padding(9, 6, 9, 6);
             int x = __DxMainPadding.Left;
             int y = __DxMainPadding.Top;
@@ -45,8 +46,9 @@ namespace TestDevExpress.Forms
             x += (w + s);
 
             __WebPanelLocation = new Point(__DxMainPadding.Left, __DxMainPadding.Top + h + s);
-            __WebViewPanel = new DxWebViewPanel();
 
+            // Vlastní WebView:
+            __WebViewPanel = new DxWebViewPanel();
             this.DxMainPanel.Controls.Add(__WebViewPanel);
         }
         private Padding __DxMainPadding;
@@ -70,6 +72,7 @@ namespace TestDevExpress.Forms
 
         private void _ClickButton(object sender, EventArgs e)
         {
+            var webPanel = __WebViewPanel;
             if (sender is Control control && control.Tag is string text)
             {
                 if (text == "<GreenMapa>")
@@ -106,15 +109,14 @@ m.addControl(sync);
 </script>
 </html>
 ";
+                    webPanel.MsWebProperties.HtmlContent = html;
                 }
                 else
                 {
-                    // _DoNavigate(text);
+                    webPanel.MsWebProperties.UrlAdress = text;
                 }
             }
         }
-
-
         #endregion
         
         /*

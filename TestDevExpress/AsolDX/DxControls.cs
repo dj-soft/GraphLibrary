@@ -2911,6 +2911,44 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Styl borderu
         /// </summary>
         public new BorderStyles BorderStyle { get { return base.BorderStyle; } set { base.BorderStyle = value; } }
+        /// <summary>
+        /// Jméno ikony
+        /// </summary>
+        public string ImageName
+        {
+            get
+            {
+                return __ImageName;
+            }
+            set
+            {
+                if (!String.Equals(__ImageName, value, StringComparison.InvariantCulture))
+                {
+                    __Image = null;
+                    __ImageName = value;
+                    DxComponent.ApplyImage(this.ImageOptions, value, null, null, null, true);
+                    this.PrepareSizeSvgImage(true);
+                }
+            }
+        }
+        private string __ImageName;
+        /// <summary>
+        /// Obrázek ikony
+        /// </summary>
+        public new Image Image
+        {
+            get
+            {
+                return __Image;
+            }
+            set
+            {
+                __ImageName = null;
+                __Image = value;
+                DxComponent.ApplyImage(this.ImageOptions, null, value, null, null, true);
+            }
+        }
+        private Image __Image;
         #endregion
         #region Rozšířené property
         /// <summary>
