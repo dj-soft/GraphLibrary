@@ -27,25 +27,28 @@ namespace TestDevExpress.Forms
             int y = __DxMainPadding.Top;
             int w = 140;
             int h = 32;
-            int s = 3;
-            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "seznam", _ClickButton, tag: "https://www.seznam.cz/");
-            x += (w + s);
-            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "mapy A", _ClickButton, tag: "https://www.mapy.cz/");
-            x += (w + s);
-            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "mapy B", _ClickButton, tag: @"https://mapy.cz/dopravni?x=14.5802973&y=50.5311090&z=14");
-            x += (w + s);
-            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "mapy C", _ClickButton, tag: @"https://mapy.cz/dopravni?l=0&x=15.8629028&y=50.2145999&z=17");
-            x += (w + s);
-            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "mapy D", _ClickButton, tag: @"https://mapy.cz/dopravni?vlastni-body&ut=Nový bod&uc=9kFczxY5mZ&ud=15°51%2742.665""E 50°12%2754.179""N&x=15.8629028&y=50.2145999&z=17");
-            x += (w + s);
-            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "google", _ClickButton, tag: "https://www.google.com/");
-            x += (w + s);
-            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "meteo", _ClickButton, tag: "https://www.chmi.cz/files/portal/docs/meteo/rad/inca-cz/short.html?display=var&gmap_zoom=7&prod=czrad_maxz_celdn_masked&opa1=0.6&opa2=0.7&nselect=14&nselect_fct=6&di=1&rep=2&add=4&update=4&lat=49.951&lon=15.797&lang=CZ");
-            x += (w + s);
-            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "GreenMapa", _ClickButton, tag: "<GreenMapa>");
-            x += (w + s);
+            int s1 = 3;
+            int s2 = 12;
+            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "seznam", _ClickButtonNavigate, tag: "https://www.seznam.cz/");
+            x += (w + s1);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "mapy A", _ClickButtonNavigate, tag: "https://www.mapy.cz/");
+            x += (w + s1);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "mapy B", _ClickButtonNavigate, tag: @"https://mapy.cz/dopravni?x=14.5802973&y=50.5311090&z=14");
+            x += (w + s1);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "mapy C", _ClickButtonNavigate, tag: @"https://mapy.cz/dopravni?l=0&x=15.8629028&y=50.2145999&z=17");
+            x += (w + s1);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "mapy D", _ClickButtonNavigate, tag: @"https://mapy.cz/dopravni?vlastni-body&ut=Nový bod&uc=9kFczxY5mZ&ud=15°51%2742.665""E 50°12%2754.179""N&x=15.8629028&y=50.2145999&z=17");
+            x += (w + s1);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "google", _ClickButtonNavigate, tag: "https://www.google.com/");
+            x += (w + s1);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "meteo", _ClickButtonNavigate, tag: "https://www.chmi.cz/files/portal/docs/meteo/rad/inca-cz/short.html?display=var&gmap_zoom=7&prod=czrad_maxz_celdn_masked&opa1=0.6&opa2=0.7&nselect=14&nselect_fct=6&di=1&rep=2&add=4&update=4&lat=49.951&lon=15.797&lang=CZ");
+            x += (w + s1);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "GreenMapa", _ClickButtonNavigate, tag: "<GreenMapa>");
+            x += (w + s2);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "Static", _ClickButtonStaticImage);
+            x += (w + s1);
 
-            __WebPanelLocation = new Point(__DxMainPadding.Left, __DxMainPadding.Top + h + s);
+            __WebPanelLocation = new Point(__DxMainPadding.Left, __DxMainPadding.Top + h + s1);
 
             // Vlastní WebView:
             __WebViewPanel = new DxWebViewPanel();
@@ -70,7 +73,7 @@ namespace TestDevExpress.Forms
             webPanel.Bounds = new Rectangle(x, y, w, h);
         }
 
-        private void _ClickButton(object sender, EventArgs e)
+        private void _ClickButtonNavigate(object sender, EventArgs e)
         {
             var webPanel = __WebViewPanel;
             if (sender is Control control && control.Tag is string text)
@@ -117,8 +120,21 @@ m.addControl(sync);
                 }
             }
         }
+
+        private void _ClickButtonStaticImage(object sender, EventArgs e)
+        {
+            var properties = __WebViewPanel.MsWebProperties;
+            var isStatic = !properties.IsStaticPicture;
+            if (sender is DxSimpleButton button)
+            {
+                string checkImage = "svgimages/diagramicons/check.svg";
+                button.Appearance.FontStyleDelta = (isStatic ? (FontStyle.Bold | FontStyle.Underline) : FontStyle.Regular);
+                button.ImageName = (isStatic ? checkImage : null);
+            }
+            properties.IsStaticPicture = isStatic;
+        }
         #endregion
-        
+
         /*
        
         private void _RefreshUrl(string uri)

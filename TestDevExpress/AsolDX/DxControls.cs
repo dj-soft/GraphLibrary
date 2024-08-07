@@ -2928,6 +2928,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     __ImageName = value;
                     DxComponent.ApplyImage(this.ImageOptions, value, null, null, null, true);
                     this.PrepareSizeSvgImage(true);
+                    this.ImageOptions.Location = DevExpress.XtraEditors.ImageLocation.MiddleCenter;
+                    this.ImageOptions.ImageToTextAlignment = DevExpress.XtraEditors.ImageAlignToText.LeftCenter;
                 }
             }
         }

@@ -676,7 +676,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Malá služba nakonec:
             if (args.SmallButton && imageOptions is SimpleButtonImageOptions buttonImageOptions)
+            {
                 buttonImageOptions.Location = DevExpress.XtraEditors.ImageLocation.MiddleCenter;
+                buttonImageOptions.ImageToTextAlignment = ImageAlignToText.LeftCenter;
+            }
         }
         /// <summary>
         /// Aplikuje dodanou bitmapu do <see cref="ImageOptions"/>

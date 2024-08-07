@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -32,7 +33,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             __ForwardButton = DxComponent.CreateDxSimpleButton(30, 3, 24, 24, __ToolPanel, "", _ForwardClick, DevExpress.XtraEditors.Controls.PaintStyles.Light, resourceName: ImageNameForwardDisabled);
             __RefreshButton = DxComponent.CreateDxSimpleButton(63, 3, 24, 24, __ToolPanel, "", _RefreshClick, DevExpress.XtraEditors.Controls.PaintStyles.Light, resourceName: ImageNameRefreshDisabled);
             __AdressText = DxComponent.CreateDxTextEdit(96, 3, 250, __ToolPanel);
-            __GoToButton = DxComponent.CreateDxSimpleButton(340, 3, 24, 24, __ToolPanel, "", __GoToClick, DevExpress.XtraEditors.Controls.PaintStyles.Light, resourceName: ImageNameGoTo);
+            __GoToButton = DxComponent.CreateDxSimpleButton(340, 3, 24, 24, __ToolPanel, "", _GoToClick, DevExpress.XtraEditors.Controls.PaintStyles.Light, resourceName: ImageNameGoTo);
             __BackButton.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat;
             __BackButton.TabStop = false;
             __ForwardButton.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat;
@@ -40,52 +41,31 @@ namespace Noris.Clients.Win.Components.AsolDX
             __RefreshButton.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat;
             __RefreshButton.TabStop = false;
             __AdressText.Enter += _AdressEntered;
-            __AdressText.Leave += _AdressLeaved;
             __AdressText.KeyDown += _AdressKeyDown;
             __AdressText.KeyPress += _AdressKeyPress;
+            __AdressText.Leave += _AdressLeaved;
+            __AdressText.LostFocus += _AdressLostFocus;
             __AdressText.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat;
             __AdressText.TabStop = false;
             __GoToButton.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat;
             __GoToButton.TabStop = false;
 
             __MsWebView = new MsWebView();
-            __MsWebView.MsWebCurrentCanGoEnabledChanged += _MsWebCurrentCanGoEnabledChanged;
-            __MsWebView.MsWebCurrentSourceUrlChanged += _MsWebCurrentSourceUrlChanged;
-            __MsWebView.MsWebCurrentStatusTextChanged += _MsWebCurrentStatusTextChanged;
+            _MsWebInitEvents();
 
+            __PictureWeb = new PictureBox() { Visible = false, BorderStyle = System.Windows.Forms.BorderStyle.None };
 
             __StatusBar = new DxPanelControl() { BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
             __StatusText = DxComponent.CreateDxLabel(6, 3, 250, __StatusBar, "Stavová informace...", LabelStyleType.Info, hAlignment: DevExpress.Utils.HorzAlignment.Near);
 
             this.Controls.Add(__ToolPanel);
             this.Controls.Add(__MsWebView);
+            this.Controls.Add(__PictureWeb);
             this.Controls.Add(__StatusBar);
             this.ResumeLayout(false);
             this._DoLayout();
             this._DoEnabled();
         }
-        private void _MsWebCurrentCanGoEnabledChanged(object sender, EventArgs e)
-        {
-            OnMsWebCurrentCanGoEnabledChanged();
-            MsWebCurrentCanGoEnabledChanged?.Invoke(this, EventArgs.Empty);
-        }
-        protected virtual void OnMsWebCurrentCanGoEnabledChanged() { }
-        public event EventHandler MsWebCurrentCanGoEnabledChanged;
-        private void _MsWebCurrentSourceUrlChanged(object sender, EventArgs e)
-        {
-            OnMsWebCurrentSourceUrlChanged();
-            MsWebCurrentSourceUrlChanged?.Invoke(this, EventArgs.Empty);
-        }
-        protected virtual void OnMsWebCurrentSourceUrlChanged() { }
-        public event EventHandler MsWebCurrentSourceUrlChanged;
-        private void _MsWebCurrentStatusTextChanged(object sender, EventArgs e)
-        {
-            OnMsWebCurrentStatusTextChanged();
-            MsWebCurrentStatusTextChanged?.Invoke(this, EventArgs.Empty);
-        }
-        protected virtual void OnMsWebCurrentStatusTextChanged() { }
-        public event EventHandler MsWebCurrentStatusTextChanged;
-
         /// <summary>
         /// Po změně velikosti vyvoláme <see cref="_DoLayout"/>
         /// </summary>
@@ -93,7 +73,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnClientSizeChanged(EventArgs e)
         {
             base.OnClientSizeChanged(e);
-            this._DoLayout();
+            this._DoLayout();                                                  // Tady jsme v GUI threadu.
         }
         /// <summary>
         /// Provede požadované akce. Je povoleno volat z threadu mimo GUI.
@@ -101,6 +81,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="actionTypes"></param>
         internal void DoAction(DxWebViewActionType actionTypes)
         {
+            if (actionTypes == DxWebViewActionType.None) return;               // Pokud není co dělat, není třeba ničehož invokovati !
+
             if (this.InvokeRequired)
             {   // 1x invokace na případně vícero akci
                 this.BeginInvoke(new Action<DxWebViewActionType>(DoAction), actionTypes);
@@ -109,6 +91,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (actionTypes.HasFlag(DxWebViewActionType.DoLayout)) this._DoLayout();
                 if (actionTypes.HasFlag(DxWebViewActionType.DoEnabled)) this._DoEnabled();
+                if (actionTypes.HasFlag(DxWebViewActionType.DoShowStaticPicture)) this._DoShowStaticPicture();
                 if (actionTypes.HasFlag(DxWebViewActionType.DoChangeSourceUrl)) this._DoShowSourceUrl();
                 if (actionTypes.HasFlag(DxWebViewActionType.DoChangeStatusText)) this._DoShowStatusText();
             }
@@ -194,9 +177,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.__StatusText.Bounds = new System.Drawing.Rectangle(paddingX, 2, width - (2 * paddingX), textHeight);
             }
 
-            // Web:
+            // Web + Picture:
             int wh = bottom - top;
-            this.__MsWebView.Bounds = new System.Drawing.Rectangle(left, top, width, wh);
+            var newWebBounds = new System.Drawing.Rectangle(left, top, width, wh);
+            var oldPicBounds = this.__PictureWeb.Bounds;
+            this.__MsWebView.Bounds = newWebBounds;
+            this.__PictureWeb.Bounds = newWebBounds;
+            if (newWebBounds != oldPicBounds) _RefreshImageCaptured();
         }
         /// <summary>
         /// Nastaví Enabled na patřičné prvky, odpovídající aktuálnímu stavu MsWebView.
@@ -229,6 +216,30 @@ namespace Noris.Clients.Win.Components.AsolDX
                     __RefreshButton.Enabled = isRefreshEnabled;
                     __RefreshButton.ImageName = (isRefreshEnabled ? ImageNameRefreshEnabled : ImageNameRefreshDisabled);
                 }
+            }
+        }
+        /// <summary>
+        /// Aktualizuje Picture z okna živého webu, podle nastavení <see cref="MsWebProperties"/>: <see cref="MsWebView.PropertiesInfo.IsStaticPicture"/>
+        /// Musí být voláno v GUI threadu.
+        /// </summary>
+        private void _DoShowStaticPicture()
+        {
+            var properties = this.MsWebProperties;
+            bool isStaticPicture = properties.IsStaticPicture;
+            if (isStaticPicture)
+            {
+                this._RefreshImageCaptured();
+
+                if (!this.__PictureWeb.Visible)
+                    this.__PictureWeb.Visible = true;
+
+            }
+            else
+            {
+                if (!this.__MsWebView.Visible)
+                    this.__MsWebView.Visible = true;
+                if (this.__PictureWeb.Visible)
+                    this.__PictureWeb.Visible = false;
             }
         }
         /// <summary>
@@ -275,6 +286,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DxTextEdit __AdressText;
         private DxSimpleButton __GoToButton;
         private MsWebView __MsWebView;
+        private PictureBox __PictureWeb;
         private DxPanelControl __StatusBar;
         private DxLabelControl __StatusText;
 
@@ -292,7 +304,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private const string ImageNameValidateEnabled = "images/xaf/templatesv2images/action_validation_validate.svg";
         private const string ImageNameValidateDisabled = "images/xaf/templatesv2images/action_validation_validate_disabled.svg";
         #endregion
-        #region Privátní život
+        #region Privátní život - buttony a adresní editor
         private void _BackClick(object sender, EventArgs args)
         {
             this.__MsWebView.GoBack();
@@ -322,11 +334,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             if ((properties.IsAdressEditorVisible && properties.IsAdressEditorEditable) && (e.KeyCode == System.Windows.Forms.Keys.Enter))
                 this._AdressNavigate();
         }
+        private void _AdressLostFocus(object sender, EventArgs e)
+        {
+            __AdressEditorHasFocus = false;
+        }
         private void _AdressLeaved(object sender, EventArgs args)
         {
             __AdressEditorHasFocus = false;
         }
-        private void __GoToClick(object sender, EventArgs args)
+        private void _GoToClick(object sender, EventArgs args)
         {
             var properties = this.MsWebProperties;
             if (properties.IsAdressEditorVisible && properties.IsAdressEditorEditable)
@@ -341,8 +357,103 @@ namespace Noris.Clients.Win.Components.AsolDX
         private string __AdressValueOnEnter;
         private bool __AdressEditorHasFocus;
         #endregion
+        #region Public Eventy a jejich vyvolávání
+        /// <summary>
+        /// Provede inicializaci eventů z <see cref="__MsWebView"/>, jejich napojení na naše handlery
+        /// </summary>
+        private void _MsWebInitEvents()
+        {
+            __MsWebView.MsWebHistoryChanged += _MsWebCurrentCanGoEnabledChanged;
+            __MsWebView.MsWebCurrentSourceUrlChanged += _MsWebCurrentSourceUrlChanged;
+            __MsWebView.MsWebCurrentStatusTextChanged += _MsWebCurrentStatusTextChanged;
+            __MsWebView.MsWebNavigationCompleted += _MsWebNavigationCompleted;
+            __MsWebView.MsWebImageCaptured += _MsWebImageCaptured;
+        }
+
+        private void _MsWebCurrentCanGoEnabledChanged(object sender, EventArgs e)
+        {
+            OnMsWebCurrentCanGoEnabledChanged();
+            MsWebCurrentCanGoEnabledChanged?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Volá se při změně v historii navigace, kdy se mění Enabled v proměnných <see cref="MsWebProperties"/>: <see cref="MsWebView.PropertiesInfo.CanGoBack"/> nebo <see cref="MsWebView.PropertiesInfo.CanGoForward"/>.
+        /// </summary>
+        protected virtual void OnMsWebCurrentCanGoEnabledChanged() { }
+        /// <summary>
+        /// Event při změně v historii navigace, kdy se mění Enabled v proměnných <see cref="MsWebProperties"/>: <see cref="MsWebView.PropertiesInfo.CanGoBack"/> nebo <see cref="MsWebView.PropertiesInfo.CanGoForward"/>.
+        /// </summary>
+        public event EventHandler MsWebCurrentCanGoEnabledChanged;
+
+        private void _MsWebCurrentSourceUrlChanged(object sender, EventArgs e)
+        {
+            OnMsWebCurrentSourceUrlChanged();
+            MsWebCurrentSourceUrlChanged?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Volá se při změně URL adresy.
+        /// </summary>
+        protected virtual void OnMsWebCurrentSourceUrlChanged() { }
+        /// <summary>
+        /// Event při změně URL adresy.
+        /// </summary>
+        public event EventHandler MsWebCurrentSourceUrlChanged;
+
+        private void _MsWebCurrentStatusTextChanged(object sender, EventArgs e)
+        {
+            OnMsWebCurrentStatusTextChanged();
+            MsWebCurrentStatusTextChanged?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Volá se při změně textu ve StatusBaru.
+        /// </summary>
+        protected virtual void OnMsWebCurrentStatusTextChanged() { }
+        /// <summary>
+        /// Event při změně textu ve StatusBaru.
+        /// </summary>
+        public event EventHandler MsWebCurrentStatusTextChanged;
+
+        private void _MsWebNavigationCompleted(object sender, EventArgs e)
+        {
+            _RefreshImageCaptured();
+            OnMsWebNavigationCompleted();
+            MsWebNavigationCompleted?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Volá se při dokončení navigace.
+        /// </summary>
+        protected virtual void OnMsWebNavigationCompleted() { }
+        /// <summary>
+        /// Event při dokončení navigace.
+        /// </summary>
+        public event EventHandler MsWebNavigationCompleted;
+
+        /// <summary>
+        /// Metodu volá zdejší panel vždy, když mohlo dojít ke změně obrázku, pokud je statický.
+        /// Tedy: při změně velikosti controlu, při doběhnutí navigace, při vložená hodnoty <see cref="MsWebView.PropertiesInfo.IsStaticPicture"/> = true, atd
+        /// Zdejší metoda sama otestuje, zda je vhodné získat Image, a pokud ano, pak o něj požádá <see cref="__MsWebView"/>. 
+        /// Jde o asynchronní operaci, zdejší metoda tedy skončí okamžitě. Po získání obrázku (po nějaké době) bude volán eventhandler <see cref="_MsWebImageCaptured(object, EventArgs)"/>, který řeší další akce.
+        /// </summary>
+        private void _RefreshImageCaptured()
+        {
+            var properties = this.MsWebProperties;
+            bool isStaticPicture = properties.IsStaticPicture;
+            if (!isStaticPicture) return;
+
+            string url = __MsWebView.MsWebProperties.UrlAdress;
+            if (String.IsNullOrEmpty(url)) return;
+
+            this.__MsWebView.CapturePreviewImage();                  // Zahájí se async načítání, po načtení obrázku bude vyvolán event __MsWebView.MsWebImageCaptured => _MsWebImageCaptured()
+
+        }
+        private void _MsWebImageCaptured(object sender, EventArgs e)
+        {
+            var properties = this.MsWebProperties;
+            bool isStaticPicture = properties.IsStaticPicture;
+            if (!isStaticPicture) return;
 
 
+        }
+        #endregion
         #region Public vlastnosti
         /// <summary>
         /// Souhrn vlastností <see cref="MsWebView"/>, tak aby byly k dosažení v jednom místě.
@@ -397,7 +508,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.CoreWebView2InitializationCompleted += _CoreWebView2InitializationCompleted;
             var task = this.EnsureCoreWebView2Async();
             task.Wait(50);
-
         }
         /// <summary>
         /// Počítadlo, kolikrát byl spuštěn proces <c>EnsureCoreWebView2Async()</c>
@@ -423,10 +533,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             else
             {
-                // DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.CoreWebView2InitializationCompleted: Set eventhandlers...");
-
-                this.CoreWebView2.SourceChanged += _CoreWebView_SourceChanged;
-                this.CoreWebView2.StatusBarTextChanged += _CoreWebView_StatusTextChanged;
+                this.CoreWebView2.SourceChanged += _CoreWeb_SourceChanged;
+                this.CoreWebView2.StatusBarTextChanged += _CoreWeb_StatusTextChanged;
+                this.CoreWebView2.HistoryChanged += _CoreWeb_HistoryChanged;
+                this.CoreWebView2.NewWindowRequested += _CoreWeb_NewWindowRequested;
+                this.CoreWebView2.NavigationCompleted += _CoreWeb_NavigationCompleted;
 
                 this._DoNavigate();
             }
@@ -436,7 +547,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _CoreWebView_SourceChanged(object sender, Microsoft.Web.WebView2.Core.CoreWebView2SourceChangedEventArgs e)
+        private void _CoreWeb_SourceChanged(object sender, Microsoft.Web.WebView2.Core.CoreWebView2SourceChangedEventArgs e)
         {
             _DetectChanges();
         }
@@ -445,19 +556,58 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _CoreWebView_StatusTextChanged(object sender, object e)
+        private void _CoreWeb_StatusTextChanged(object sender, object e)
         {
             _DetectChanges();
         }
+        /// <summary>
+        /// Eventhandler po změně v okně historie navigátru. Může mít vliv na tlačítka Back/Forward.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _CoreWeb_HistoryChanged(object sender, object e)
+        {
+            _DetectChanges();
+        }
+        /// <summary>
+        /// Eventhandler při požadavku na otevření nového okna prohlížeče.
+        /// Může reagovat na nastavení <see cref="PropertiesInfo.CanOpenNewWindow"/> a pokud není povoleno, pak zajistí otevření nového odkazu v aktuálním controlu namísto v novém okně.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _CoreWeb_NewWindowRequested(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NewWindowRequestedEventArgs e)
+        {
+            var properties = this.MsWebProperties;
+            if (properties.CanOpenNewWindow)
+                e.NewWindow = this.CoreWebView2;
+        }
+        /// <summary>
+        /// Eventhandler při dokončení navigace.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _CoreWeb_NavigationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs e)
+        {
+            _DetectChanges();
+            _RunMsWebNavigationCompleted();
+        }
+        /// <summary>
+        /// Vynuluje všechny proměnné související s aktuální i požadovanou adresou a statustextem.
+        /// Volá se před tím, než se nastaví nový cíl navigace.
+        /// </summary>
         private void _RunMsWebCurrentClear()
         {
             __MsWebUrlAdress = null;
             __MsWebHtmlContent = null;
+            __MsWebNeedNavigate = false;
             __MsWebCurrentSourceUrl = null;
             __MsWebCurrentStatusText = null;
             _RunMsWebCurrentSourceUrlChanged();
             _RunMsWebCurrentStatusTextChanged();
         }
+        /// <summary>
+        /// Detekuje změny aktuálního 
+        /// </summary>
         private void _DetectChanges()
         {
             bool newCanGoBack = this.CanGoBack;
@@ -484,7 +634,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 DoActionInParent(actionTypes);
 
             if (isChangeCanGoBack || isChangeCanGoForward)
-                _RunMsWebCurrentCanGoEnabledChanged();
+                _RunMsWebHistoryChanged();
 
             if (isChangeSourceUrl)
                 _RunMsWebCurrentSourceUrlChanged();
@@ -493,20 +643,32 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _RunMsWebCurrentStatusTextChanged();
         }
 
-        private void _RunMsWebCurrentCanGoEnabledChanged()
+        private void _RunMsWebHistoryChanged()
         {
-            OnMsWebCurrentCanGoEnabledChanged();
-            MsWebCurrentCanGoEnabledChanged?.Invoke(this, EventArgs.Empty);
+            OnMsWebHistoryChanged();
+            MsWebHistoryChanged?.Invoke(this, EventArgs.Empty);
         }
-        protected virtual void OnMsWebCurrentCanGoEnabledChanged() { }
-        public event EventHandler MsWebCurrentCanGoEnabledChanged;
+        /// <summary>
+        /// Volá se při změně v historii navigace, kdy se mění Enabled v proměnných <see cref="MsWebCanGoBack"/> nebo <see cref="MsWebCanGoForward"/>.
+        /// </summary>
+        protected virtual void OnMsWebHistoryChanged() { }
+        /// <summary>
+        /// Event při změně v historii navigace, kdy se mění Enabled v proměnných <see cref="MsWebCanGoBack"/> nebo <see cref="MsWebCanGoForward"/>.
+        /// </summary>
+        public event EventHandler MsWebHistoryChanged;
 
         private void _RunMsWebCurrentSourceUrlChanged()
         {
             OnMsWebCurrentSourceUrlChanged();
             MsWebCurrentSourceUrlChanged?.Invoke(this, EventArgs.Empty);
         }
+        /// <summary>
+        /// Volá se při změně URL adresy.
+        /// </summary>
         protected virtual void OnMsWebCurrentSourceUrlChanged() { }
+        /// <summary>
+        /// Event při změně URL adresy.
+        /// </summary>
         public event EventHandler MsWebCurrentSourceUrlChanged;
         
         private void _RunMsWebCurrentStatusTextChanged()
@@ -514,8 +676,47 @@ namespace Noris.Clients.Win.Components.AsolDX
             OnMsWebCurrentStatusTextChanged();
             MsWebCurrentStatusTextChanged?.Invoke(this, EventArgs.Empty);
         }
+        /// <summary>
+        /// Volá se při změně textu ve StatusBaru.
+        /// </summary>
         protected virtual void OnMsWebCurrentStatusTextChanged() { }
+        /// <summary>
+        /// Event při změně textu ve StatusBaru.
+        /// </summary>
         public event EventHandler MsWebCurrentStatusTextChanged;
+
+        private void _RunMsWebNavigationCompleted()
+        {
+            OnMsWebNavigationCompleted();
+            MsWebNavigationCompleted?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Volá se při dokončení navigace.
+        /// </summary>
+        protected virtual void OnMsWebNavigationCompleted() { }
+        /// <summary>
+        /// Event při dokončení navigace.
+        /// </summary>
+        public event EventHandler MsWebNavigationCompleted;
+
+
+        public async void CapturePreviewImage()
+        {
+
+            var task = this.CoreWebView2.CapturePreviewAsync( Microsoft.Web.WebView2.Core.CoreWebView2CapturePreviewImageFormat.Png, );
+            task.
+        }
+        // this.CoreWebView2.CapturePreviewAsync()
+
+        /// <summary>
+        /// Volá se po získání ImageCapture.
+        /// </summary>
+        protected virtual void OnMsWebImageCaptured() { }
+        /// <summary>
+        /// Event po získání ImageCapture.
+        /// </summary>
+        public event EventHandler MsWebImageCaptured;
+
 
         private string __MsWebCurrentSourceUrl;
         private string __MsWebCurrentStatusText;
@@ -639,12 +840,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// pak do proměnné vloží hodnotu a vyvolá <see cref="DoActionInParent(DxWebViewActionType)"/>.
             /// </summary>
             /// <typeparam name="T"></typeparam>
-            /// <param name="value"></param>
-            /// <param name="variable"></param>
-            /// <param name="actionType"></param>
-            private void _SetValueDoAction<T>(T value, ref T variable, DxWebViewActionType actionType)
+            /// <param name="value">hodnota do proměnné</param>
+            /// <param name="variable">ref proměnná</param>
+            /// <param name="actionType">Druhy prováděných akcí</param>
+            /// <param name="actionForce">Požadavek na vyvolání akce i tehdy, když hodnota není změněna. Hodnota false = default = akci provést jen při změně hodnoty.</param>
+            private void _SetValueDoAction<T>(T value, ref T variable, DxWebViewActionType actionType, bool actionForce = false)
             {
-                if (Object.Equals(value, variable)) return;
+                if (!actionForce && Object.Equals(value, variable)) return;
                 variable = value;
                 __Owner.DoActionInParent(actionType);
             }
@@ -658,7 +860,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 __IsRefreshButtonVisible = true;
                 __IsAdressEditorVisible = true;
                 __IsAdressEditorEditable = true;
-                __IsStatusRowVisible = true;
+                __IsStatusRowVisible = false;
+                __CanOpenNewWindow = true;
             }
             /// <summary>
             /// Je toolbar viditelný?
@@ -687,9 +890,25 @@ namespace Noris.Clients.Win.Components.AsolDX
             public bool IsAdressEditorEditable { get { return __IsAdressEditorEditable; } set { _SetValueDoAction(value, ref __IsAdressEditorEditable, DxWebViewActionType.DoLayout); } } private bool __IsAdressEditorEditable;
             /// <summary>
             /// Je stavový řádek viditelný?
-            /// Default = true;
+            /// Default = false;
             /// </summary>
             public bool IsStatusRowVisible { get { return __IsStatusRowVisible; } set { _SetValueDoAction(value, ref __IsStatusRowVisible, DxWebViewActionType.DoLayout); } } private bool __IsStatusRowVisible;
+            /// <summary>
+            /// Může být otevřeno nové okno při požadavku (z odkazu / z kontextového menu)?
+            /// Default = true = Otevře se samostatné okno bez vlastností prohlížeče.
+            /// Hodnota false = veškeré odkazy se otevírají ve stejném controlu, nikdy v novém okně.
+            /// </summary>
+            public bool CanOpenNewWindow { get { return __CanOpenNewWindow; } set { _SetValueDoAction(value, ref __CanOpenNewWindow, DxWebViewActionType.None); } } private bool __CanOpenNewWindow;
+            /// <summary>
+            /// Použít statický výsledek = navigovat na URL, po dokončení navigace získat obraz a ten zobrazovat namísto živého webu.
+            /// Default = false = standardní webový prohlížeč.
+            /// <para/>
+            /// Setování hodnoty true (i když už hodnota true je nasetovaná) vyvolá získání aktuálního Image z WebView a jeho promítnutí do panelu.
+            /// <para/>
+            /// Tato hodnota není použitelná pro samotný webový control <see cref="MsWebView"/> (ten vždy reprezentuje živý web), ale pouze pro komplexní panel <see cref="DxWebViewPanel"/> 
+            /// - ten může zajišťovat získání Image a jeho zobrazení v Panelu namísto živého WebView.
+            /// </summary>
+            public bool IsStaticPicture { get { return __IsStaticPicture; } set { _SetValueDoAction(value, ref __IsStaticPicture, DxWebViewActionType.DoShowStaticPicture, value); } } private bool __IsStaticPicture;
 
             /// <summary>
             /// Požadovaná URL adresa obsahu.
@@ -721,6 +940,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
+    #region Enumy, servisní třídy...
     /// <summary>
     /// Typy akcí, které má provést Parent panel
     /// </summary>
@@ -730,7 +950,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         None = 0,
         DoLayout = 0x0001,
         DoEnabled = 0x0002,
-        DoChangeSourceUrl = 0x0010,
-        DoChangeStatusText = 0x0020
+        DoShowStaticPicture = 0x0010,
+        DoChangeSourceUrl = 0x0020,
+        DoChangeStatusText = 0x0040
     }
+    #endregion
 }
