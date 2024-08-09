@@ -380,6 +380,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             __MsWebView.MsWebCurrentStatusTextChanged += _MsWebCurrentStatusTextChanged;
             __MsWebView.MsWebNavigationBefore += _MsWebNavigationBefore;
             __MsWebView.MsWebNavigationStarted += _MsWebNavigationStarted;
+            __MsWebView.MsWebNavigationStarting += _MsWebNavigationStarted;
             __MsWebView.MsWebNavigationCompleted += _MsWebNavigationCompleted;
             __MsWebView.MsWebImageCaptured += _MsWebImageCaptured;
         }
@@ -705,6 +706,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.CoreWebView2.StatusBarTextChanged += _CoreWeb_StatusTextChanged;
                 this.CoreWebView2.HistoryChanged += _CoreWeb_HistoryChanged;
                 this.CoreWebView2.NewWindowRequested += _CoreWeb_NewWindowRequested;
+                this.CoreWebView2.NavigationStarting += _CoreWeb_NavigationStarting;
                 this.CoreWebView2.NavigationCompleted += _CoreWeb_NavigationCompleted;
 
                 // Navigace na URL, která byla zachycena, ale nebyla realizována:
@@ -754,12 +756,23 @@ namespace Noris.Clients.Win.Components.AsolDX
                 e.NewWindow = this.CoreWebView2;
         }
         /// <summary>
+        /// Eventhandler při zahájení navigace.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _CoreWeb_NavigationStarting(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs e)
+        {
+            __MsWebIsInNavigateState = true;
+            _RunMsWebNavigationStarting();
+        }
+        /// <summary>
         /// Eventhandler při dokončení navigace.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void _CoreWeb_NavigationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs e)
         {
+            __MsWebIsInNavigateState = false;
             _DetectChanges();
             _RunMsWebNavigationCompleted();
         }
@@ -901,6 +914,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         public event EventHandler MsWebNavigationStarted;
 
         /// <summary>
+        /// Vyvolá události při zahájení navigace.
+        /// </summary>
+        private void _RunMsWebNavigationStarting()
+        {
+            OnMsWebNavigationStarting();
+            MsWebNavigationStarting?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Volá se při zahájení navigace.
+        /// </summary>
+        protected virtual void OnMsWebNavigationStarting() { }
+        /// <summary>
+        /// Event při zahájení navigace.
+        /// </summary>
+        public event EventHandler MsWebNavigationStarting;
+
+        /// <summary>
         /// Vyvolá události při dokončení navigace.
         /// </summary>
         private void _RunMsWebNavigationCompleted()
@@ -916,8 +946,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Event při dokončení navigace.
         /// </summary>
         public event EventHandler MsWebNavigationCompleted;
+
+        private string __MsWebCurrentSourceUrl;
+        private string __MsWebCurrentStatusText;
+        private bool __MsWebCanGoBack;
+        private bool __MsWebCanGoForward;
         #endregion
-        #region CaptureImage
+        #region CaptureImage: zachycení statického Image celého WebView
         /// <summary>
         /// Obsahuje true, pokud tento samotný Control je Visible, bez ohledu na Visible jeho Parentů.
         /// WinForm control může mít nastaveno Visible = true, ale pokud jeho Parenti nejsou Visible, pak control bude vracet Visible = false.
@@ -977,11 +1012,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Event po získání ImageCapture.
         /// </summary>
         public event MsWebImageCapturedHandler MsWebImageCaptured;
-
-        private string __MsWebCurrentSourceUrl;
-        private string __MsWebCurrentStatusText;
-        private bool __MsWebCanGoBack;
-        private bool __MsWebCanGoForward;
         #endregion
         #region URL adresa, Status bar, navigace, atd...
         /// <summary>
@@ -1057,6 +1087,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     __MsWebNeedNavigate = false;                     // Pokud by nás někdo volal odteď, pak zdejší metoda nic neprovede.
                     _RunMsWebNavigationBefore();                     // Událost před tím, než začneme aktivně měnit URL
+                    __MsWebIsInNavigateState = true;
                     if (!String.IsNullOrEmpty(__MsWebUrlAdress))
                         this.Source = new Uri(__MsWebUrlAdress);
                     else if (!String.IsNullOrEmpty(__MsWebHtmlContent))
@@ -1066,6 +1097,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private bool __MsWebNeedNavigate;
+        private bool __MsWebIsInNavigateState;
         #endregion
         #region class PropertiesInfo : Souhrn vlastností, tak aby byly k dosažení pod jedním místem
         /// <summary>
@@ -1171,6 +1203,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// - ten může zajišťovat získání Image a jeho zobrazení v Panelu namísto živého WebView.
             /// </summary>
             public bool IsStaticPicture { get { return __IsStaticPicture; } set { _SetValueDoAction(value, ref __IsStaticPicture, DxWebViewActionType.DoShowStaticPicture, value); } } private bool __IsStaticPicture;
+            /// <summary>
+            /// WebView je v procesu probíhající navigace
+            /// </summary>
+            public bool IsInNavigateState { get { return __Owner.__MsWebIsInNavigateState; } }
 
             /// <summary>
             /// Požadovaná URL adresa obsahu.
