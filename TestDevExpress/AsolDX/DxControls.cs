@@ -10300,27 +10300,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         RightSideBottom,
         /// <summary>
-        /// Na dolní straně, zarovnáno nahoru
+        /// Na dolní straně, zarovnáno doprava
         /// </summary>
         BottomSideRight,
         /// <summary>
-        /// Na pravé straně, zarovnáno uprostřed
+        /// Na dolní straně, zarovnáno uprostřed
         /// </summary>
         BottomSideCenter,
         /// <summary>
-        /// Na pravé straně, zarovnáno nahoru
+        /// Na dolní straně, zarovnáno doleva
         /// </summary>
         BottomSideLeft,
         /// <summary>
-        /// Na pravé straně, zarovnáno nahoru
+        /// Na levé straně, zarovnáno dolů
         /// </summary>
         LeftSideBottom,
         /// <summary>
-        /// Na pravé straně, zarovnáno dolů
+        /// Na levé straně, zarovnáno uprostřed
         /// </summary>
         LeftSideCenter,
         /// <summary>
-        /// Na pravé straně, zarovnáno nahoru
+        /// Na levé straně, zarovnáno nahoru
         /// </summary>
         LeftSideTop
     }

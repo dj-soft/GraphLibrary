@@ -2584,9 +2584,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                         element.Appearance.Normal.Options.UseFont = true;
                     }
 
-                    //element.Appearance.Normal.BackColor = Randomizer.GetColor(200, 255);
-                    //element.Appearance.Normal.Options.UseBackColor = true;
-
                     template.Elements.Add(element);
                     var isDynamicImage = hasDynamicImage(cell);
                     __TemplateCells.Add(key, new TemplateCell(key, cell, isDynamicImage));

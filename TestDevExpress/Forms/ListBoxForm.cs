@@ -110,9 +110,11 @@ namespace TestDevExpress.Forms
         }
         private void _ClickSample1()
         {
-            _Sample1List = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 450, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.None };
-            _Sample1List.ListItems = Randomizer.GetMenuItems(24, 60, Randomizer.ImageResourceType.PngSmall);
-            this.DxMainPanel.Controls.Add(_Sample1List);
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 450, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.None };
+            sampleList.ListItems = Randomizer.GetMenuItems(24, 60, Randomizer.ImageResourceType.PngSmall);
+            this.DxMainPanel.Controls.Add(sampleList);
+
+            _Sample1List = sampleList;
         }
         private void _DisposeSample1()
         {
@@ -132,14 +134,16 @@ namespace TestDevExpress.Forms
         }
         private void _ClickSample2()
         {
-            _Sample2List = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 450, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
-            _Sample2List.SelectionMode = SelectionMode.MultiExtended;
-            _Sample2List.ButtonsPosition = ToolbarPosition.RightSideCenter;
-            _Sample2List.ButtonsTypes = ListBoxButtonType.MoveAll;
-            _Sample2List.EnabledKeyActions = KeyActionType.AllMove;
-            _Sample2List.DragDropActions = DxDragDropActionType.ReorderItems;
-            _Sample2List.ListItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
-            this.DxMainPanel.Controls.Add(_Sample2List);
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 450, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
+            sampleList.SelectionMode = SelectionMode.MultiExtended;
+            sampleList.ButtonsPosition = ToolbarPosition.RightSideCenter;
+            sampleList.ButtonsTypes = ListBoxButtonType.MoveAll;
+            sampleList.EnabledKeyActions = KeyActionType.AllMove;
+            sampleList.DragDropActions = DxDragDropActionType.ReorderItems;
+            sampleList.ListItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
+            this.DxMainPanel.Controls.Add(sampleList);
+
+            _Sample2List = sampleList;
         }
         private void _DisposeSample2()
         {
@@ -159,26 +163,28 @@ namespace TestDevExpress.Forms
         }
         private void _ClickSample3()
         {
-            _Sample3ListA = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 400, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
-            _Sample3ListA.SelectionMode = SelectionMode.MultiExtended;
-            _Sample3ListA.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            _Sample3ListA.ButtonsTypes = ListBoxButtonType.SelectAll | ListBoxButtonType.CopyToRightOne | ListBoxButtonType.CopyToRightAll;
-            _Sample3ListA.EnabledKeyActions = KeyActionType.None;
-            _Sample3ListA.DragDropActions = DxDragDropActionType.CopyItemsFrom;
-            _Sample3ListA.ListItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
-            _Sample3ListA.ListActionAfter += _Sample3ListA_ListActionAfter;
-            this.DxMainPanel.Controls.Add(_Sample3ListA);
+            var sampleListA = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 400, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
+            sampleListA.SelectionMode = SelectionMode.MultiExtended;
+            sampleListA.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            sampleListA.ButtonsTypes = ListBoxButtonType.SelectAll | ListBoxButtonType.CopyToRightOne | ListBoxButtonType.CopyToRightAll;
+            sampleListA.EnabledKeyActions = KeyActionType.None;
+            sampleListA.DragDropActions = DxDragDropActionType.CopyItemsFrom;
+            sampleListA.ListItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
+            sampleListA.ListActionAfter += _Sample3ListA_ListActionAfter;
+            this.DxMainPanel.Controls.Add(sampleListA);
 
-            _Sample3ListB = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X + 410, __SampleBegin.Y, 400, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
-            _Sample3ListB.SelectionMode = SelectionMode.MultiExtended;
-            _Sample3ListB.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            _Sample3ListB.ButtonsTypes = ListBoxButtonType.SelectAll | ListBoxButtonType.Delete | ListBoxButtonType.CopyToLeftOne | ListBoxButtonType.CopyToLeftAll | ListBoxButtonType.MoveAll;
-            _Sample3ListB.EnabledKeyActions = KeyActionType.None;
-            _Sample3ListB.DragDropActions = DxDragDropActionType.ImportItemsInto | DxDragDropActionType.ReorderItems;
-            _Sample3ListB.ListItems = Randomizer.GetMenuItems(7, Randomizer.ImageResourceType.PngSmall, true);
-            _Sample3ListB.ListActionAfter += _Sample3ListB_ListActionAfter;
-            this.DxMainPanel.Controls.Add(_Sample3ListB);
+            var sampleListB = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X + 410, __SampleBegin.Y, 400, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
+            sampleListB.SelectionMode = SelectionMode.MultiExtended;
+            sampleListB.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            sampleListB.ButtonsTypes = ListBoxButtonType.SelectAll | ListBoxButtonType.Delete | ListBoxButtonType.CopyToLeftOne | ListBoxButtonType.CopyToLeftAll | ListBoxButtonType.MoveAll;
+            sampleListB.EnabledKeyActions = KeyActionType.None;
+            sampleListB.DragDropActions = DxDragDropActionType.ImportItemsInto | DxDragDropActionType.ReorderItems;
+            sampleListB.ListItems = Randomizer.GetMenuItems(7, Randomizer.ImageResourceType.PngSmall, true);
+            sampleListB.ListActionAfter += _Sample3ListB_ListActionAfter;
+            this.DxMainPanel.Controls.Add(sampleListB);
 
+            _Sample3ListA = sampleListA;
+            _Sample3ListB = sampleListB;
         }
         private void _DisposeSample3()
         {
@@ -188,8 +194,6 @@ namespace TestDevExpress.Forms
             _Sample3ListB?.RemoveControlFromParent();
             _Sample3ListB = null;
         }
-
-
         private void _Sample3ListA_ListActionAfter(object sender, DxListBoxActionEventArgs e)
         {
             switch (e.Action)
@@ -210,8 +214,6 @@ namespace TestDevExpress.Forms
                     break;
             }
         }
-
-
         private DxListBoxPanel _Sample3ListA;
         private DxListBoxPanel _Sample3ListB;
         #endregion
@@ -228,20 +230,19 @@ namespace TestDevExpress.Forms
         }
         private void _ClickSample11()
         {
-            _Sample11List = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 520, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
-            _Sample11List.DataTable = Randomizer.GetDataTable(48,96, "id:int;name:idtext;surname:text;description:note;icon:imagenamepngfull;photo:photo"); ;
-            _Sample11List.DxTemplate = _CreateTemplate11();
-            _Sample11List.SelectionMode = SelectionMode.MultiExtended;
-            _Sample11List.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            this.DxMainPanel.Controls.Add(_Sample11List);
-
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 520, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
+            sampleList.DataTable = Randomizer.GetDataTable(48,96, "id:int;name:idtext;surname:text;description:note;icon:imagenamepngfull;photo:photo"); ;
+            sampleList.DxTemplate = _CreateTemplate11();
+            sampleList.SelectionMode = SelectionMode.MultiExtended;
+            sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            this.DxMainPanel.Controls.Add(sampleList);
+            _Sample11List = sampleList;
         }
         private void _DisposeSample11()
         {
             _Sample11List?.RemoveControlFromParent();
             _Sample11List = null;
         }
-
         private DxListBoxTemplate _CreateTemplate11()
         {
             var dxTemplate = new DxListBoxTemplate();
@@ -251,8 +252,42 @@ namespace TestDevExpress.Forms
             dxTemplate.Cells.Add(new DxListBoxTemplateCell() { ImageNameColumnName = "icon", ColIndex = 2, RowIndex = 0, RowSpan = 2, Width = 48, Height = 36, ImageAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleCenter });
             return dxTemplate;
         }
-
         private DxListBoxPanel _Sample11List;
+        #endregion
+        #region Sample 12
+        /// <summary>
+        /// Metoda je volaná reflexí v <see cref="DxMainContentPrepare"/> na základě atributu [Initializer()] !!!
+        /// </summary>
+        [Initializer(12)]
+        private void _PrepareSample12()
+        {
+            __Samples.Add(new SampleInfo("DataTable a Template 2500 řádků", _ClickSample12, _DisposeSample12, true));
+        }
+        private void _ClickSample12()
+        {
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 520, 750), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
+            sampleList.DataTable = Randomizer.GetDataTable(2300, 2500, "id:int;name:idtext;surname:text;description:note;icon:imagenamepngfull;photo:photo"); ;
+            sampleList.DxTemplate = _CreateTemplate12();
+            sampleList.SelectionMode = SelectionMode.MultiExtended;
+            sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            this.DxMainPanel.Controls.Add(sampleList);
+            _Sample12List = sampleList;
+        }
+        private void _DisposeSample12()
+        {
+            _Sample12List?.RemoveControlFromParent();
+            _Sample12List = null;
+        }
+        private DxListBoxTemplate _CreateTemplate12()
+        {
+            var dxTemplate = new DxListBoxTemplate();
+            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { TextColumnName = "name", ColIndex = 0, RowIndex = 0, Width = 160, Height = 18, FontStyle = FontStyle.Bold, TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.TopLeft });
+            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { TextColumnName = "surname", ColIndex = 1, RowIndex = 0, Width = 280, Height = 18, TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.BottomRight });
+            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { TextColumnName = "description", ColIndex = 0, RowIndex = 1, ColSpan = 2, Width = 440, Height = 18, FontStyle = FontStyle.Italic });
+            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { ImageNameColumnName = "icon", ColIndex = 2, RowIndex = 0, RowSpan = 2, Width = 48, Height = 36, ImageAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleCenter });
+            return dxTemplate;
+        }
+        private DxListBoxPanel _Sample12List;
         #endregion
     }
 }
