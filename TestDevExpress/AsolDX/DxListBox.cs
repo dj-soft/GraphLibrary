@@ -1536,6 +1536,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                         }
                     }
                 }
+                else if (__ItemsMode == ListBoxItemsMode.Table)
+                {
+
+                }
             }
         }
         /// <summary>
@@ -2478,7 +2482,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Jednotlivé buňky šablony
         /// </summary>
         public List<IDxListBoxTemplateCell> Cells { get { return __Cells; } }
-
         /// <summary>
         /// Konvertuje zdejší data o layoutu jednotlivých buněk <see cref="Cells"/> = <see cref="IDxListBoxTemplateCell"/> do fyzické deklarace šablony Template do dodaného Listu.
         /// </summary>
