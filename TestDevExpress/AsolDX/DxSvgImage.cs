@@ -174,14 +174,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="size"></param>
         /// <param name="alignment"></param>
         /// <param name="svgPalette"></param>
+        /// <param name="setSmoothing">Nastavit vyhlazování grafiky? false = nikdy / true = ano / null = pokud poměr velikosti ikony a prostoru nebude == 1.00</param>
         /// <returns></returns>
-        public static Image RenderToImage(SvgImage svgImage, Size size, ContentAlignment alignment = ContentAlignment.MiddleCenter, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null)
+        public static Image RenderToImage(SvgImage svgImage, Size size, ContentAlignment alignment = ContentAlignment.MiddleCenter, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, bool? setSmoothing = null)
         {
             Rectangle bounds = new Rectangle(Point.Empty, size);
             Bitmap image = new Bitmap(size.Width, size.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                _RenderTo(svgImage, graphics, bounds, alignment, svgPalette, out var imageBounds);
+                _RenderTo(svgImage, graphics, bounds, alignment, svgPalette, setSmoothing, out var imageBounds);
             }
             return image;
         }
@@ -193,7 +194,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="svgPalette">SVG paleta pro korekce barev. Může být null.</param>
         public void RenderTo(Graphics graphics, Rectangle bounds, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null)
         {
-            _RenderTo(this, graphics, bounds, ContentAlignment.MiddleCenter, svgPalette, out var _);
+            _RenderTo(this, graphics, bounds, ContentAlignment.MiddleCenter, svgPalette, null, out var _);
         }
         /// <summary>
         /// Renderuje this image do dané grafiky na dané místo
@@ -204,7 +205,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="alignment"></param>
         public void RenderTo(Graphics graphics, Rectangle bounds, ContentAlignment alignment, out RectangleF? imageBounds)
         {
-            _RenderTo(this, graphics, bounds, alignment, null, out imageBounds);
+            _RenderTo(this, graphics, bounds, alignment, null, null, out imageBounds);
         }
         /// <summary>
         /// Renderuje this image do dané grafiky na dané místo
@@ -216,7 +217,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageBounds"></param>
         public void RenderTo(Graphics graphics, Rectangle bounds, ContentAlignment alignment, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette, out RectangleF? imageBounds)
         {
-            _RenderTo(this, graphics, bounds, alignment, svgPalette, out imageBounds);
+            _RenderTo(this, graphics, bounds, alignment, svgPalette, null, out imageBounds);
         }
         /// <summary>
         /// Renderuje daný image do dané grafiky na dané místo
@@ -226,9 +227,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="bounds"></param>
         /// <param name="alignment "></param>
         /// <param name="svgPalette">SVG paleta pro korekce barev. Může být null.</param>
-        public static void RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds, ContentAlignment alignment = ContentAlignment.MiddleCenter, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null)
+        /// <param name="setSmoothing">Nastavit vyhlazování grafiky? false = nikdy / true = ano / null = pokud poměr velikosti ikony a prostoru nebude == 1.00</param>
+        public static void RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds, ContentAlignment alignment = ContentAlignment.MiddleCenter, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, bool? setSmoothing = null)
         {
-            _RenderTo(svgImage, graphics, bounds, alignment, svgPalette, out var _);
+            _RenderTo(svgImage, graphics, bounds, alignment, svgPalette, setSmoothing, out var _);
         }
         /// <summary>
         /// Renderuje daný image do dané grafiky na dané místo
@@ -239,9 +241,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageBounds"></param>
         /// <param name="alignment "></param>
         /// <param name="svgPalette">SVG paleta pro korekce barev. Může být null.</param>
-        public static void RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds, out RectangleF? imageBounds, ContentAlignment alignment = ContentAlignment.MiddleCenter, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null)
+        /// <param name="setSmoothing">Nastavit vyhlazování grafiky? false = nikdy / true = ano / null = pokud poměr velikosti ikony a prostoru nebude == 1.00</param>
+        public static void RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds, out RectangleF? imageBounds, ContentAlignment alignment = ContentAlignment.MiddleCenter, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, bool? setSmoothing = null)
         {
-            _RenderTo(svgImage, graphics, bounds, alignment, svgPalette, out imageBounds);
+            _RenderTo(svgImage, graphics, bounds, alignment, svgPalette, setSmoothing, out imageBounds);
         }
         /// <summary>
         /// Renderuje daný image do dané grafiky na dané místo
@@ -251,8 +254,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="bounds"></param>
         /// <param name="alignment "></param>
         /// <param name="svgPalette">SVG paleta pro korekce barev. Může být null.</param>
+        /// <param name="setSmoothing">Nastavit vyhlazování grafiky? false = nikdy / true = ano / null = pokud poměr velikosti ikony a prostoru nebude == 1.00</param>
         /// <param name="imageBounds"></param>
-        private static void _RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds, ContentAlignment alignment, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette, out RectangleF? imageBounds)
+        private static void _RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds, ContentAlignment alignment, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette, bool? setSmoothing, out RectangleF? imageBounds)
         {
             imageBounds = null;
             if (svgImage is null || graphics is null || bounds.Width <= 2 || bounds.Height <= 2) return;
@@ -276,10 +280,24 @@ namespace Noris.Clients.Win.Components.AsolDX
                 double scaleY = (double)imgBounds.Height / svgImage.Height;
                 double scale = (scaleX <= scaleY ? scaleX : scaleY);
 
-                graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-                graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
-                graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                svgImage.RenderToGraphics(graphics, svgPalette, scale);
+                DefaultBoolean useHighSpeed = DefaultBoolean.Default;
+                bool setSmooth = (setSmoothing.HasValue && setSmoothing.Value) || (!setSmoothing.HasValue && scale != 1d);
+                if (setSmooth)
+                {
+                    graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                    graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
+                    graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                    useHighSpeed = DefaultBoolean.False;
+                }
+                else
+                {
+                    graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
+                    graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.Default;
+                    graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Default;
+                    useHighSpeed = DefaultBoolean.True;
+                }
+
+                svgImage.RenderToGraphics(graphics, svgPalette, scale, useHighSpeed);
 
                 imageBounds = imgBounds;
             }
@@ -2504,9 +2522,14 @@ M22,22H10v2H22v-2z " class="Black" />
                 xmlText = xmlText.Replace($"fill=\"none\" stroke=\"{Palette.ColorCode383838}\"", $"fill=\"none\" stroke=\"{palette[Palette.ColorCodeE57428 /* as JD */, ColorType.Stroke]}\""); //path
                 xmlText = xmlText.Replace($"fill=\"none\" stroke=\"{Palette.ColorCodeE57428}\"", $"fill=\"none\" stroke=\"{palette[Palette.ColorCodeE57428 /* as JD */, ColorType.Stroke]}\""); //path
             }
+            else if (TextContainsAny(imageName, "grade-yellow")) //JD 0076024 04.06.2024
+            {
+                xmlText = xmlText.Replace($"fill=\"{Palette.ColorCodeF7DA8E}\" stroke=\"{Palette.ColorCodeE57428}\"", $"fill=\"{palette[Palette.ColorCodeF7DA8E, ColorType.Fill]}\" stroke=\"{palette[Palette.ColorCodeF7CDA7, ColorType.Fill]}\""); //výplň a okraj (E57428->E57427, aby se neprovedla záměna v ConvertXmlColorNodes)
+                xmlText = xmlText.Replace($"stroke=\"{Palette.ColorCodeE57428}\"", $"stroke=\"{palette[Palette.ColorCodeF7CDA7, ColorType.Fill]}\""); //písmeno C (E57428->E57427, aby se neprovedla záměna v ConvertXmlColorNodes)
+            }
             else
             {   // Ikona třídy pro přehled a pro formulář, anebo button-(barva)-filled, = věci založené jen na barvě:
-                // JD 0065426 26.05.2020; JD 0066902 20.11.2020; JD 0067697 19.02.2021 Ve formuláři nejsou označ.blokované DV
+                // JD 0065426 26.05.2020; JD 0066902 20.11.2020; JD 0067697 19.02.2021 Ve formuláři nejsou označ.blokované DV;
                 bool isSpecific = palette.IsDark && (
                                       TextContainsAny(imageName, "class-colour", "form-colour", "tag-filled", "DynRel")
                                    || TextContainsAll(imageName, "button", "filled"));
@@ -3278,6 +3301,10 @@ M22,22H10v2H22v-2z " class="Black" />
                 contentXml = contentXml.Replace($"fill=\"{LightColorCodeF7DA8E}\" stroke=\"{DarkColorCode38}\"", $"fill=\"{DarkColorCode38}\" stroke=\"{LightColorCodeF7DA8E}\""); //rect
                 contentXml = contentXml.Replace($"fill=\"none\" stroke=\"{DarkColorCode38}\"", $"fill=\"none\" stroke=\"{LightColorCodeF7DA8E}\""); //path
                 contentXml = contentXml.Replace($"fill=\"none\" stroke=\"{DarkColorCodeE57428}\"", $"fill=\"none\" stroke=\"{LightColorCodeF7DA8E}\""); //path
+            }
+            else if (imageName.Contains("grade-yellow"))  //JD 0076024 04.06.2024
+            {
+                contentXml = contentXml.Replace($"fill=\"{LightColorCodeF7DA8E}\"", $"fill=\"{DarkColorCodeF7D52C}\"");
             }
             else
             {

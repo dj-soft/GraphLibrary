@@ -2900,6 +2900,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _TitleText = iLayoutUserControl.TitleText;
             _TitleSubstitute = iLayoutUserControl.TitleSubstitute;
             _TitleImageName = iLayoutUserControl.TitleImageName;
+            _TitleAdditionalIcons = iLayoutUserControl.TitleAdditionalIcons;
 
             _RefreshControlGui();
         }
@@ -2932,7 +2933,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public string TitleSubstitute { get { return _TitleSubstitute; } set { _TitleSubstitute = value; if (HasParent) this.RunInGui(_RefreshControlGui); } }
         private string _TitleSubstitute;
-
+        /// <summary>
+        /// Ikony vpravo vedle textu titulku.
+        /// </summary>
+        public IEnumerable<string> TitleAdditionalIcons { get { return _TitleAdditionalIcons; } set { _TitleAdditionalIcons = value; if (HasParent) this.RunInGui(_RefreshControlGui); } }
+        private IEnumerable<string> _TitleAdditionalIcons;
         /// <summary>
         /// Interaktivní stav tohoto prvku z hlediska Enabled, Mouse, Focus, Selected
         /// </summary>
@@ -3364,6 +3369,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private string TitleSubstitute { get { return PanelOwner?.TitleSubstitute ?? ""; } }
         /// <summary>
+        /// Ikony vpravo vedle textu titulku.
+        /// </summary>
+        private IEnumerable<string> TitleAdditionalIcons { get { return PanelOwner?.TitleAdditionalIcons; } }
+        /// <summary>
         /// Interaktivní stav Ownera
         /// </summary>
         private DxInteractiveState OwnerInteractiveState { get { return PanelOwner?.InteractiveState ?? DxInteractiveState.Enabled; } }
@@ -3382,7 +3391,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _CreateControls()
         {
-            _TitlePicture = new DxImageArea() { Bounds = new Rectangle(12, 6, 24, 24), Visible = false };
+            _TitlePicture = new DxImageArea() { Bounds = new Rectangle(12, 6, 24, 24), Visible = false, SetSmoothing = false, Tag = "TitlePicture" };
             PaintedItems.Add(_TitlePicture);
 
             _TitleLabel = DxComponent.CreateDxLabel(12, 6, 200, this, "", LabelStyleType.MainTitle, hAlignment: HorzAlignment.Near, autoSizeMode: DevExpress.XtraEditors.LabelAutoSizeMode.Horizontal);
@@ -3420,6 +3429,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DockBottomButton = null;
             _DockRightButton?.Dispose();
             _DockRightButton = null;
+            _TitleStringFormat?.Dispose();
+            _TitleStringFormat = null;
         }
         /// <summary>
         /// Změna Mouse na Child prvku
@@ -3507,6 +3518,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private DxLabelControl _TitleLabel;
         /// <summary>
+        /// Obsahuje true, pokud ikony <see cref="TitleAdditionalIcons"/> mají určeny validní souřadnice.
+        /// Po změně layoutu je zde false, což vyvolá rekalkulaci hodnot souřadnic, viz metoda <see cref="_CheckAdditionalPictBounds(PaintEventArgs)"/>.
+        /// </summary>
+        private bool _AdditionalDxImagesHasLayout;
+        /// <summary>
         /// Dock button Left
         /// </summary>
         private DxSimpleButton _DockLeftButton;
@@ -3534,6 +3550,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal void RefreshControl()
         {
             this._RefreshTitle();
+            this._RefreshAdditionalIcons();
             this._RefreshButtonVisibility(false);
             this._DoLayout();
         }
@@ -3551,6 +3568,41 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (useDxPainter)
                 this.Invalidate();               // Požádáme this panel aby se překreslil, protože při jeho překreslení se vypíše nový text (z this._TitleLabel.Text) fyzicky na plochu panelu.
         }
+        /// <summary>
+        /// Vytvoří prvky <see cref="DxImageArea"/> pro <see cref="TitleAdditionalIcons"/> do pole <see cref="DxPanelControl.PaintedItems"/>.
+        /// </summary>
+        private void _RefreshAdditionalIcons()
+        {
+            string tag = AdditionalImageTag;
+
+            // Nejprve odeberu dosavadní prvky:
+            PaintedItems.RemoveAll(p => (p.Tag is string text && String.Equals(text, tag, StringComparison.Ordinal)));
+
+            // Nyní vytvořím DxImageArea pro aktuálně zadané TitleAdditionalIcons:
+            var icons = this.TitleAdditionalIcons;
+            if (icons != null)
+            {
+                foreach (var iconName in icons)
+                {
+                    if (!String.IsNullOrEmpty(iconName))
+                    {
+                        DxImageArea dxImage = new DxImageArea()
+                        {
+                            ImageName = iconName,
+                            Visible = true,
+                            SetSmoothing = false,
+                            Tag = tag
+                        };
+                        PaintedItems.Add(dxImage);
+                    }
+                }
+            }
+            _AdditionalDxImagesHasLayout = false;
+        }
+        /// <summary>
+        /// Tag umístěný do <see cref="DxImageArea.Tag"/> pro prvky z <see cref="TitleAdditionalIcons"/>, aby byly detekovatelné v poli <see cref="DxPanelControl.PaintedItems"/>.
+        /// </summary>
+        private const string AdditionalImageTag = "AdditionalImage";
         /// <summary>
         /// Nastaví Visible a Enabled pro buttony podle aktuálního stavu a podle požadavků
         /// </summary>
@@ -3646,6 +3698,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 _TitleLabelRight = r;
                 _DoLayoutTitleLabel();
+                _AdditionalDxImagesHasLayout = false;
             }
 
             int getPanelHeight()
@@ -3674,12 +3727,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 string imageName = TitleImageName;
                 var titlePicture = _TitlePicture;
+
+                int iw = buttonSize;
+                int ih = buttonSize;
+                int yc = y + (ih / 2);                     // Střed umístění v ose Y
+                _ModifyIconSize(ref iw, ref ih);           // DAJ pro JD 19.7.2024
+                int iy = yc - (ih / 2);                    // Ikony v ose Y na střed
+                titlePicture.Bounds = new Rectangle(x, iy, iw, ih);
                 if (!String.IsNullOrEmpty(imageName))
                 {
-                    titlePicture.Bounds = new Rectangle(x, y, buttonSize, buttonSize);
                     titlePicture.ImageName = imageName;
                     titlePicture.Visible = true;
-                    x += (buttonSize + space);
+
+                    x += (iw + space);
                 }
                 else
                 {
@@ -3712,6 +3772,94 @@ namespace Noris.Clients.Win.Components.AsolDX
             int h = _TitleLabel.Height;
             int y = y = (this.ClientSize.Height - h) / 2;
             _TitleLabel.Bounds = new Rectangle(x, y, w, h);
+        }
+        /// <summary>
+        /// Do objektů Additional ikon (<see cref="DxImageArea"/>) vepíše jejich aktuálně platné souřadnice, pokud je toho zapotřebí.
+        /// </summary>
+        /// <param name="e"></param>
+        private void _CheckAdditionalPictBounds(PaintEventArgs e)
+        {
+            if (_AdditionalDxImagesHasLayout) return;      // Už je hotovo, není třeba opakovat.
+
+            // Najdu potřebné ikony:
+            string tag = AdditionalImageTag;
+            var dxImages = PaintedItems
+                .Where(p => (p.Tag is string text && String.Equals(text, tag, StringComparison.Ordinal)))
+                .OfType<DxImageArea>()
+                .ToArray();
+
+            // Pokud máme Additional ikony, pak je musíme umístit na vhodné místo do titulkového řádku přímo za text titulku
+            //  (nikoli za jeho souřadnice = ty udávají prostor, ale my musíme změit reálnou velikost textu):
+            if (dxImages.Length > 0)
+            {
+                var titleBounds = _GetDxTitleBounds(e);
+                int x = titleBounds.Right + 6;
+                int y = 0;
+                int w = 16;
+                int h = 16;
+                bool iconSizeByTitle = true;               // true = podle velikosti a pozice textu / false = podle Main ikony
+                if (iconSizeByTitle)
+                {   // Ikony za titulkem navážeme velikostí na Titulek:
+                    y = titleBounds.Top;
+                    h = titleBounds.Height;
+                    w = h;
+                }
+                else
+                {   // Ikony za titulkem navážeme velikostí na Main ikonu:
+                    var mainIconBounds = _TitlePicture.Bounds;
+                    var size = mainIconBounds.Size;
+                    y = mainIconBounds.Y;
+                    w = size.Width;
+                    h = size.Height;
+                }
+                int yc = y + (h / 2);                      // Střed umístění v ose Y
+                _ModifyIconSize(ref w, ref h);             // DAJ pro JD 19.7.2024
+                y = yc - (h / 2);                          // Ikony v ose Y na střed
+                int dx = w / 2;                            // Mezery mezi ikonami, vizuálně odladěno KOU + DAJ
+
+                // Zajistíme, že Additional ikony budou vpravo nejdále na pozici Right celého titulkového textu (_TitleLabelRight).
+                // Pokud by přetekly doprava, tak je "zasekneme" na pravé souřadnici titulkového textu.
+                //  (řešíme tak krátký prostor a dlouhý titulek, pak Additional ikony budou vpravo vykreslené pod text titulku)
+                int widthTotal = dxImages.Length * w + (dxImages.Length - 1) * dx;
+                int rightTotal = x + widthTotal;
+                int rightTitle = _TitleLabelRight;
+                if (rightTotal > rightTitle)
+                {
+                    rightTotal = rightTitle;
+                    x = rightTotal - widthTotal;
+                    if (x < _TitleLabelLeft) x = _TitleLabelLeft;
+                }
+
+                // Umístíme ikony:
+                foreach (var dxImage in dxImages)
+                {
+                    dxImage.Bounds = new Rectangle(x, y, w, h);
+                    x += (w + dx);
+                }
+            }
+
+            // Hotovo, příště nemusíme řešit, až do nejbližší změny...
+            _AdditionalDxImagesHasLayout = true;
+
+        }
+        /// <summary>
+        /// Zarovná velikost ikony na nejbližší nižší vhodnou hodnotu v řadě 12-16-24-32-40-48-56.
+        /// </summary>
+        /// <param name="iw"></param>
+        /// <param name="ih"></param>
+        private void _ModifyIconSize(ref int iw, ref int ih)
+        {
+            int m = (iw < ih ? iw : ih);
+            if (m < 16) m = 12;
+            else if (m < 24) m = 16;
+            else if (m < 32) m = 24;
+            else if (m < 40) m = 32;
+            else if (m < 48) m = 40;
+            else if (m < 56) m = 48;
+            else if (m < 64) m = 56;
+
+            iw = m;
+            ih = m;
         }
         /// <summary>
         /// Aktualizuje vzhled ikon, pokud je to nutné (= pokud došlo ke změně typu ikon anebo velikosti ikon vlivem změny Zoomu).
@@ -3841,6 +3989,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             using (SystemAdapter.TraceTextScope(TraceLevel.Info, this.GetType(), "OnPaint", "Performance"))
             {
+                this._CheckAdditionalPictBounds(e);
                 if (!this.UseDxPainter)
                     base.OnPaint(e);
                 else
@@ -3898,8 +4047,37 @@ namespace Noris.Clients.Win.Components.AsolDX
             var font = label.StyleController?.Appearance.GetFont() ?? label.Appearance.GetFont();
             var textColor = (isActive ? colorSet.AccentPaint : colorSet.LabelForeColor);
             var brush = DxComponent.PaintGetSolidBrush(textColor ?? label.ForeColor);
-            e.Graphics.DrawString(text, font, brush, bounds, StringFormat.GenericDefault);
+
+            e.Graphics.DrawString(text, font, brush, bounds, TitleStringFormat);
         }
+        private Rectangle _GetDxTitleBounds(PaintEventArgs e)
+        {
+            DxSkinColorSet colorSet = DxComponent.SkinColorSet;
+
+            var label = _TitleLabel;
+            var bounds = label.Bounds;
+            string text = label.Text;
+            var font = label.StyleController?.Appearance.GetFont() ?? label.Appearance.GetFont();
+            var sizeT = e.Graphics.MeasureString(text, font, bounds.Width, TitleStringFormat);
+            var sizeH = e.Graphics.MeasureString("Ůy", font, 200, TitleStringFormat);
+            var height = font.GetHeight(e.Graphics);
+
+            return new Rectangle(bounds.X, bounds.Y, (int)Math.Ceiling(sizeT.Width), (int)Math.Ceiling(height)  /*(int)Math.Ceiling(sizeH.Height)*/ );
+        }
+        private StringFormat TitleStringFormat
+        {
+            get
+            {
+                if (_TitleStringFormat is null)
+                {
+                    var titleStringFormat = new StringFormat(StringFormat.GenericDefault);
+                    titleStringFormat.FormatFlags |= (StringFormatFlags.NoWrap | StringFormatFlags.LineLimit);
+                    _TitleStringFormat = titleStringFormat;
+                }
+                return _TitleStringFormat;
+            }
+        }
+        private StringFormat _TitleStringFormat;
         #endregion
         #region Vykreslení Dx 22.2      --     deaktivováno !!!
         // 46.27 test    deaktivováno
@@ -4209,6 +4387,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Ikonka před textem
         /// </summary>
         string TitleImageName { get; }
+        /// <summary>
+        /// Ikonky umístěné za textem titulku vpravo.
+        /// </summary>
+        IEnumerable<string> TitleAdditionalIcons { get; }
         /// <summary>
         /// Událost volaná po změně jakékoli hodnoty v <see cref="TitleText"/> nebo <see cref="TitleBackColor"/> nebo <see cref="TitleTextColor"/>
         /// </summary>
