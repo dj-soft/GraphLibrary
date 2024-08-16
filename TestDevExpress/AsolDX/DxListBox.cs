@@ -180,6 +180,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Šablona pro zobrazení dat z <see cref="DataTable"/>
         /// </summary>
         public DxListBoxTemplate DxTemplate { get { return __ListBox.DxTemplate; } set { __ListBox.DxTemplate = value; } }
+        /// <summary>
+        /// Metoda vytvoří Simple template pro ikonu a pro text
+        /// </summary>
+        /// <param name="columnNameIcon"></param>
+        /// <param name="columnNameText"></param>
+        /// <param name="columnNameToolTip"></param>
+        /// <returns></returns>
+        public DxListBoxTemplate CreateSimpleDxTemplate(string columnNameIcon, string columnNameText, string columnNameToolTip) { return __ListBox.CreateSimpleDxTemplate(columnNameIcon, columnNameText, columnNameToolTip); }
         #endregion
         #endregion
         #region Ctrl+C a Ctrl+V, i mezi controly a mezi aplikacemi
@@ -1271,7 +1279,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (dxTemplate != null && __ItemsMode == ListBoxItemsMode.Table)
                 dxTemplate.ApplyTemplateToList(this);
         }
-
         /// <summary>
         /// Událost je volána 1x per 1 řádek Listu v procesu jeho kreslení, jako příprava, v režimu Table
         /// </summary>
@@ -1283,13 +1290,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (dxTemplate != null && e.Value is System.Data.DataRowView rowView)
                 dxTemplate.ApplyRowDataToTemplateItem(rowView.Row, e.TemplatedItem);
         }
+        /// <summary>
+        /// Metoda vytvoří Simple template pro ikonu a pro text
+        /// </summary>
+        /// <param name="columnNameIcon"></param>
+        /// <param name="columnNameText"></param>
+        /// <param name="columnNameToolTip"></param>
+        /// <returns></returns>
+        public DxListBoxTemplate CreateSimpleDxTemplate(string columnNameIcon, string columnNameText, string columnNameToolTip)
+        { return DxListBoxTemplate.CreateSimpleDxTemplate(this.DataTable, columnNameIcon, columnNameText, columnNameToolTip); }
         #endregion
         /// <summary>
         /// Aktuální režim položek
         /// </summary>
         private ListBoxItemsMode __ItemsMode;
         #endregion
-
         #region Rozšířené property
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
@@ -2466,12 +2481,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxListBoxTemplate()
         {
-            __Cells = new List<IDxListBoxTemplateCell>();
+            __Cells = new List<IListBoxTemplateElement>();
         }
         /// <summary>
         /// Všechny deklarované buňky
         /// </summary>
-        private List<IDxListBoxTemplateCell> __Cells;
+        private List<IListBoxTemplateElement> __Cells;
         /// <summary>
         /// Buňky umístěné v šabloně; Key = vygenerované jméno
         /// </summary>
@@ -2479,9 +2494,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Jednotlivé buňky šablony
         /// </summary>
-        public List<IDxListBoxTemplateCell> Cells { get { return __Cells; } }
+        public List<IListBoxTemplateElement> Cells { get { return __Cells; } }
         /// <summary>
-        /// Konvertuje zdejší data o layoutu jednotlivých buněk <see cref="Cells"/> = <see cref="IDxListBoxTemplateCell"/> do fyzické deklarace šablony Template do dodaného Listu.
+        /// Konvertuje zdejší data o layoutu jednotlivých buněk <see cref="Cells"/> = <see cref="IListBoxTemplateElement"/> do fyzické deklarace šablony Template do dodaného Listu.
         /// </summary>
         /// <param name="targetList"></param>
         public void ApplyTemplateToList(DxListBoxControl targetList)
@@ -2568,7 +2583,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         Name = key,
                         RowIndex = cell.RowIndex,
                         ColumnIndex = cell.ColIndex,
-                        FieldName = cell.TextColumnName,
+                        FieldName = cell.ColumnName,
                         TextAlignment = cell.TextAlignment ?? TileItemContentAlignment.MiddleLeft,
                         ImageAlignment = cell.ImageAlignment ?? TileItemContentAlignment.MiddleCenter,
                         ImageToTextAlignment = cell.ImageToTextAlignment ?? TileControlImageToTextAlignment.Left,
@@ -2641,7 +2656,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // Vrátí true, pokud daná definice buňky reprezentuje buňku s dynamicky definovaným obrázkem (ikona, Image)
-            bool hasDynamicImage(IDxListBoxTemplateCell cell)
+            bool hasDynamicImage(IListBoxTemplateElement cell)
             {
                 return (!String.IsNullOrEmpty(cell.ImageNameColumnName));
             }
@@ -2682,32 +2697,47 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Úložiště dat o jedné buňce, slouží k propojení mezi ListBoxem a jeho porcesem vykreslování, a definicí buňky <see cref="IDxListBoxTemplateCell"/>.
+        /// Úložiště dat o jedné buňce, slouží k propojení mezi ListBoxem a jeho porcesem vykreslování, a definicí buňky <see cref="IListBoxTemplateElement"/>.
         /// </summary>
         private class TemplateCell
         {
-            public TemplateCell(string key, IDxListBoxTemplateCell cell, bool hasDynamicImage)
+            public TemplateCell(string key, IListBoxTemplateElement cell, bool hasDynamicImage)
             {
                 this.Key = key;
                 this.Cell = cell;
                 this.HasDynamicImage = hasDynamicImage;
             }
             public readonly string Key;
-            public readonly IDxListBoxTemplateCell Cell;
+            public readonly IListBoxTemplateElement Cell;
             public readonly bool HasDynamicImage;
 
         }
+        /// <summary>
+        /// Metoda vytvoří Simple template pro ikonu a pro text
+        /// </summary>
+        /// <param name="dataTable"></param>
+        /// <param name="columnNameIcon"></param>
+        /// <param name="columnNameText"></param>
+        /// <param name="columnNameToolTip"></param>
+        /// <returns></returns>
+        public static DxListBoxTemplate CreateSimpleDxTemplate(System.Data.DataTable dataTable, string columnNameIcon, string columnNameText, string columnNameToolTip)
+        {
+
+
+
+            return null;
+        }
     }
     /// <summary>
-    /// Definice jedné buňky layoutu. Implementuje <see cref="IDxListBoxTemplateCell"/>, lze ji vkládat do <see cref="DxListBoxTemplate.Cells"/>.
+    /// Definice jedné buňky layoutu. Implementuje <see cref="IListBoxTemplateElement"/>, lze ji vkládat do <see cref="DxListBoxTemplate.Cells"/>.
     /// Jde o prostou schránku na data, nemá funkcionalitu.
     /// </summary>
-    public class DxListBoxTemplateCell : IDxListBoxTemplateCell
+    public class DxListBoxTemplateElement : IListBoxTemplateElement
     {
         /// <summary>
         /// Konstruktor nastaví defaulty
         /// </summary>
-        public DxListBoxTemplateCell()
+        public DxListBoxTemplateElement()
         {
             Width = null;
             Height = null;
@@ -2719,21 +2749,39 @@ namespace Noris.Clients.Win.Components.AsolDX
             FontStyle = null;
         }
         /// <summary>
-        /// ID buňky
+        /// Jednoznačné interní ID buňky. Přiděluje se v procesu tvorby, aplikace na něj nemá vliv a nijak jej nevyužije.
         /// </summary>
-        public string Id { get; set; }
+        public int Id { get; set; }
         /// <summary>
-        /// Jméno sloupce v datech, jehož obsah j ezde zobrazen
+        /// Název šablony. Elementy budou rozgrupovány podle tohoto jména a budou vytvořeny samostatné šablony.
         /// </summary>
-        public string TextColumnName { get; set; }
+        public string TemplateName { get; set; }
         /// <summary>
-        /// Název ikony v tomto prvku, konstantní
+        /// Jméno sloupce v datech, jehož obsah je zde zobrazen, buď jako Text, nebo Ikona daného jména, nebo jako Image daného obsahu.
         /// </summary>
-        public string ImageName { get; set; }
+        public string ColumnName { get; set; }
         /// <summary>
-        /// Jméno sloupce v datech, který obsahuje název ikony
+        /// Druh obsahu v tomito elementu
         /// </summary>
-        public string ImageNameColumnName { get; set; }
+        public ElementContentType ElementContent { get; set; }
+        /// <summary>
+        /// Pozice Y buňky v matici = číslo řádku, počínaje 0.
+        /// Pokud má buňka <see cref="RowSpan"/> větší než 1, jde pozici počátku buňky.
+        /// </summary>
+        public int RowIndex { get; set; }
+        /// <summary>
+        /// Počet řádků, které buňka překrývá. Default = 1, netřeba zadávat.
+        /// </summary>
+        public int RowSpan { get; set; }
+        /// <summary>
+        /// Pozice X buňky v matici = číslo sloupce, počínaje 0.
+        /// Pokud má buňka <see cref="ColSpan"/> větší než 1, jde pozici počátku buňky.
+        /// </summary>
+        public int ColIndex { get; set; }
+        /// <summary>
+        /// Počet sloupců, které buňka překrývá. Default = 1, netřeba zadávat.
+        /// </summary>
+        public int ColSpan { get; set; }
         /// <summary>
         /// Šířka buňky v pixelech.
         /// Pokud má buňka <see cref="ColSpan"/> větší než 1, jde o šířku celkovou.
@@ -2744,24 +2792,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud má buňka <see cref="RowSpan"/> větší než 1, jde o výšku celkovou.
         /// </summary>
         public int? Height { get; set; }
-        /// <summary>
-        /// Pozice X buňky v matici = číslo sloupce, počínaje 0.
-        /// Pokud má buňka <see cref="ColSpan"/> větší než 1, jde pozici počátku buňky.
-        /// </summary>
-        public int ColIndex { get; set; }
-        /// <summary>
-        /// Pozice Y buňky v matici = číslo řádku, počínaje 0.
-        /// Pokud má buňka <see cref="RowSpan"/> větší než 1, jde pozici počátku buňky.
-        /// </summary>
-        public int RowIndex { get; set; }
-        /// <summary>
-        /// Počet sloupců, které buňka překrývá. Default = 1, netřeba zadávat.
-        /// </summary>
-        public int ColSpan { get; set; }
-        /// <summary>
-        /// Počet řádků, které buňka překrývá. Default = 1, netřeba zadávat.
-        /// </summary>
-        public int RowSpan { get; set; }
         /// <summary>
         /// Odchylka velikosti fontu od defaultu, null = default.
         /// </summary>
@@ -2783,29 +2813,46 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vzájemná pozice textu a obrázku v buňce, null = default.
         /// </summary>
         public DevExpress.XtraEditors.TileControlImageToTextAlignment? ImageToTextAlignment { get; set; }
-
     }
     /// <summary>
     /// Deklarace požadavků na definici jedné buňky layoutu v <see cref="DxListBoxTemplate"/>, použité pro definici layoutu v <see cref="DxListBoxControl.DxTemplate"/>
     /// </summary>
-    public interface IDxListBoxTemplateCell
+    public interface IListBoxTemplateElement
     {
         /// <summary>
-        /// ID buňky
+        /// Jednoznačné interní ID buňky. Přiděluje se v procesu tvorby, aplikace na něj nemá vliv a nijak jej nevyužije.
         /// </summary>
-        string Id { get; }
+        int Id { get; set; }
         /// <summary>
-        /// Jméno sloupce v datech, jehož obsah j ezde zobrazen
+        /// Název šablony. Elementy budou rozgrupovány podle tohoto jména a budou vytvořeny samostatné šablony.
         /// </summary>
-        string TextColumnName { get; }
+        public string TemplateName { get; }
         /// <summary>
-        /// Název ikony v tomto prvku, konstantní
+        /// Jméno sloupce v datech, jehož obsah je zde zobrazen, buď jako Text, nebo Ikona daného jména, nebo jako Image daného obsahu.
         /// </summary>
-        string ImageName { get; }
+        public string ColumnName { get; }
         /// <summary>
-        /// Jméno sloupce v datech, který obsahuje název ikony
+        /// Druh obsahu v tomito elementu
         /// </summary>
-        string ImageNameColumnName { get; }
+        public ElementContentType ElementContent { get; }
+        /// <summary>
+        /// Pozice Y buňky v matici = číslo řádku, počínaje 0.
+        /// Pokud má buňka <see cref="RowSpan"/> větší než 1, jde pozici počátku buňky.
+        /// </summary>
+        int RowIndex { get; }
+        /// <summary>
+        /// Počet řádků, které buňka překrývá. Default = 1, netřeba zadávat.
+        /// </summary>
+        int RowSpan { get; }
+        /// <summary>
+        /// Pozice X buňky v matici = číslo sloupce, počínaje 0.
+        /// Pokud má buňka <see cref="ColSpan"/> větší než 1, jde pozici počátku buňky.
+        /// </summary>
+        int ColIndex { get; }
+        /// <summary>
+        /// Počet sloupců, které buňka překrývá. Default = 1, netřeba zadávat.
+        /// </summary>
+        int ColSpan { get; }
         /// <summary>
         /// Šířka buňky v pixelech.
         /// Pokud má buňka <see cref="ColSpan"/> větší než 1, jde o šířku celkovou.
@@ -2816,24 +2863,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud má buňka <see cref="RowSpan"/> větší než 1, jde o výšku celkovou.
         /// </summary>
         int? Height { get; }
-        /// <summary>
-        /// Pozice X buňky v matici = číslo sloupce, počínaje 0.
-        /// Pokud má buňka <see cref="ColSpan"/> větší než 1, jde pozici počátku buňky.
-        /// </summary>
-        int ColIndex { get; }
-        /// <summary>
-        /// Pozice Y buňky v matici = číslo řádku, počínaje 0.
-        /// Pokud má buňka <see cref="RowSpan"/> větší než 1, jde pozici počátku buňky.
-        /// </summary>
-        int RowIndex { get; }
-        /// <summary>
-        /// Počet sloupců, které buňka překrývá. Default = 1, netřeba zadávat.
-        /// </summary>
-        int ColSpan { get; }
-        /// <summary>
-        /// Počet řádků, které buňka překrývá. Default = 1, netřeba zadávat.
-        /// </summary>
-        int RowSpan { get; }
         /// <summary>
         /// Odchylka velikosti fontu od defaultu, null = default.
         /// </summary>
@@ -2855,6 +2884,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vzájemná pozice textu a obrázku v buňce, null = default.
         /// </summary>
         DevExpress.XtraEditors.TileControlImageToTextAlignment? ImageToTextAlignment { get; }
+    }
+    /// <summary>
+    /// Druh obsahu v daném elementu
+    /// </summary>
+    public enum ElementContentType
+    {
+        /// <summary>
+        /// Nic
+        /// </summary>
+        None,
+        /// <summary>
+        /// Text
+        /// </summary>
+        Text,
+        /// <summary>
+        /// Název ikony
+        /// </summary>
+        IconName,
+        /// <summary>
+        /// Binární data obrázku
+        /// </summary>
+        ImageData
     }
     #endregion
     #region Event args + delegáti, public enumy

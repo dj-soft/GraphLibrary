@@ -246,10 +246,10 @@ namespace TestDevExpress.Forms
         private DxListBoxTemplate _CreateTemplate11()
         {
             var dxTemplate = new DxListBoxTemplate();
-            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { TextColumnName = "name", ColIndex = 0, RowIndex = 0, Width = 160, Height = 18, FontStyle = FontStyle.Bold, TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.TopLeft });
-            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { TextColumnName = "surname", ColIndex = 1, RowIndex = 0, Width = 280, Height = 18, TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.BottomRight });
-            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { TextColumnName = "description", ColIndex = 0, RowIndex = 1, ColSpan = 2, Width = 440, Height = 18, FontStyle = FontStyle.Italic });
-            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { ImageNameColumnName = "icon", ColIndex = 2, RowIndex = 0, RowSpan = 2, Width = 48, Height = 36, ImageAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleCenter });
+            dxTemplate.Cells.Add(new DxListBoxTemplateElement() { ColumnName = "name", ColIndex = 0, RowIndex = 0, Width = 160, Height = 18, FontStyle = FontStyle.Bold, TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.TopLeft });
+            dxTemplate.Cells.Add(new DxListBoxTemplateElement() { ColumnName = "surname", ColIndex = 1, RowIndex = 0, Width = 280, Height = 18, TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.BottomRight });
+            dxTemplate.Cells.Add(new DxListBoxTemplateElement() { ColumnName = "description", ColIndex = 0, RowIndex = 1, ColSpan = 2, Width = 440, Height = 18, FontStyle = FontStyle.Italic });
+            dxTemplate.Cells.Add(new DxListBoxTemplateElement() { ColumnName = "icon", ElementContent = ElementContentType.IconName, ColIndex = 2, RowIndex = 0, RowSpan = 2, Width = 48, Height = 36, ImageAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleCenter });
             return dxTemplate;
         }
         private DxListBoxPanel _Sample11List;
@@ -281,13 +281,39 @@ namespace TestDevExpress.Forms
         private DxListBoxTemplate _CreateTemplate12()
         {
             var dxTemplate = new DxListBoxTemplate();
-            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { ImageNameColumnName = "icon", ColIndex = 0, RowIndex = 0, RowSpan = 2, Width = 48, Height = 36, ImageAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleCenter });
-            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { TextColumnName = "name", ColIndex = 1, RowIndex = 0, Width = 160, Height = 18, FontStyle = FontStyle.Bold, TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.TopLeft });
-            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { TextColumnName = "surname", ColIndex = 2, RowIndex = 0, Width = 280, Height = 18, TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.BottomRight });
-            dxTemplate.Cells.Add(new DxListBoxTemplateCell() { TextColumnName = "description", ColIndex = 1, RowIndex = 1, ColSpan = 2, Width = 440, Height = 18, FontStyle = FontStyle.Italic });
+            dxTemplate.Cells.Add(new DxListBoxTemplateElement() { ColumnName = "icon", ElementContent = ElementContentType.IconName, ColIndex = 0, RowIndex = 0, RowSpan = 2, Width = 48, Height = 36, ImageAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleCenter });
+            dxTemplate.Cells.Add(new DxListBoxTemplateElement() { ColumnName = "name", ColIndex = 1, RowIndex = 0, Width = 160, Height = 18, FontStyle = FontStyle.Bold, TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.TopLeft });
+            dxTemplate.Cells.Add(new DxListBoxTemplateElement() { ColumnName = "surname", ColIndex = 2, RowIndex = 0, Width = 280, Height = 18, TextAlignment = DevExpress.XtraEditors.TileItemContentAlignment.BottomRight });
+            dxTemplate.Cells.Add(new DxListBoxTemplateElement() { ColumnName = "description", ColIndex = 1, RowIndex = 1, ColSpan = 2, Width = 440, Height = 18, FontStyle = FontStyle.Italic });
             return dxTemplate;
         }
         private DxListBoxPanel _Sample12List;
+        #endregion
+        #region Sample 13
+        /// <summary>
+        /// Metoda je volaná reflexí v <see cref="DxMainContentPrepare"/> na základě atributu [Initializer()] !!!
+        /// </summary>
+        [Initializer(13)]
+        private void _PrepareSample13()
+        {
+            __Samples.Add(new SampleInfo("DataTable a SimpleLayout", _ClickSample13, _DisposeSample13, true));
+        }
+        private void _ClickSample13()
+        {
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 520, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
+            sampleList.DataTable = Randomizer.GetDataTable(48, 96, "id:int;name:idtext;surname:text;description:note;icon:imagenamepngfull;photo:photo"); ;
+            sampleList.DxTemplate = sampleList.CreateSimpleDxTemplate("icon", "name", "note");
+            sampleList.SelectionMode = SelectionMode.MultiExtended;
+            sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            this.DxMainPanel.Controls.Add(sampleList);
+            _Sample13List = sampleList;
+        }
+        private void _DisposeSample13()
+        {
+            _Sample13List?.RemoveControlFromParent();
+            _Sample13List = null;
+        }
+        private DxListBoxPanel _Sample13List;
         #endregion
     }
 }
