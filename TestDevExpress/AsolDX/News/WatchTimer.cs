@@ -35,14 +35,13 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Zavolej mě (danou akci včetně parametru) za daný počet milisekund
         /// </summary>
-        /// <param name="action"></param>
         /// <param name="actionParam"></param>
         /// <param name="param"></param>
         /// <param name="miliseconds"></param>
         /// <param name="synchronizeUI"></param>
         /// <param name="id">ID existujícího budíku, kterému chci změnit vlastnosti a reaktivovat jej. Pokud je null, nebo takový budík již neexistuje, bude standardně vytvořen a uložen nový budík.</param>
         /// <returns></returns>
-        public static Guid CallMeAfter(Action<object> action, Action<object> actionParam, object param, int miliseconds, bool synchronizeUI = true, Guid? id = null)
+        public static Guid CallMeAfter(Action<object> actionParam, object param, int miliseconds, bool synchronizeUI = true, Guid? id = null)
         {
             WatchItem watchItem = new WatchItem(null, actionParam, param, miliseconds, false, synchronizeUI);
             Timer._AddItem(watchItem, id);

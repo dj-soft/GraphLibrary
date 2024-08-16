@@ -293,7 +293,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Požadavky designu na vzhled buttonů:
             this.AppearanceButton.Normal.FontStyleDelta = FontStyle.Regular;
             this.AppearanceButton.Normal.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
-            this.AppearanceButton.Hovered.FontStyleDelta = FontStyle.Underline;
             this.AppearanceButton.Hovered.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
             this.AppearanceButton.Pressed.FontStyleDelta = FontStyle.Bold;
             this.AppearanceButton.Pressed.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
@@ -1690,7 +1689,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Požadavky designu na vzhled buttonů:
             AppearancePage.Header.FontStyleDelta = FontStyle.Regular;
-            AppearancePage.HeaderHotTracked.FontStyleDelta = FontStyle.Underline;
             AppearancePage.HeaderActive.FontStyleDelta = FontStyle.Bold;
 
             PageHeaderPosition = DxPageHeaderPosition.Default;
