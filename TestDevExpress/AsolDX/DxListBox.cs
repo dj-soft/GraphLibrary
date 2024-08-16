@@ -9,13 +9,11 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+
 using DevExpress.Utils;
 using DevExpress.XtraEditors;
-using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraEditors.TableLayout;
-using TestDevExpress;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {

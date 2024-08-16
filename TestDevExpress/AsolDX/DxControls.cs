@@ -1640,6 +1640,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="e"></param>
         void OnPaint(PaintEventArgs e);
+        /// <summary>
+        /// Libovolná aplikační data
+        /// </summary>
+        object Tag { get; }
     }
     #endregion
     #region DxSplitContainerControl
@@ -1837,6 +1841,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public ContentAlignment Alignment { get; set; }
         /// <summary>
+        /// Nastavit vyhlazování grafiky? false = nikdy / true = ano / null = pokud poměr velikosti ikony a prostoru nebude == 1.00
+        /// </summary>
+        public bool? SetSmoothing { get; set; }
+        /// <summary>
+        /// Jakýkoli aplikační údaj
+        /// </summary>
+        public object Tag { get; set; }
+        /// <summary>
         /// Prvek bude vykreslen do panelu
         /// </summary>
         /// <param name="e"></param>
@@ -1930,7 +1942,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             edgeBounds = null;
             var svgImage = DxComponent.GetVectorImage(imageName, this.ExactName, sizeType);
             if (svgImage == null) return false;
-            DxSvgImage.RenderTo(svgImage, graphics, bounds, out var imageBounds, Alignment, palette);
+            DxSvgImage.RenderTo(svgImage, graphics, bounds, out var imageBounds, Alignment, palette, this.SetSmoothing);
             if (imageBounds.HasValue) edgeBounds = Rectangle.Ceiling(imageBounds.Value);
             viewBounds = Rectangle.Ceiling((svgImage is DxSvgImage dxSvgImage) ? dxSvgImage.ViewBounds : DxSvgImage.Create(svgImage).ViewBounds);
             return true;
