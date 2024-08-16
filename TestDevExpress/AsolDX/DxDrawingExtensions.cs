@@ -103,7 +103,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (control == null) return;
             if (hideControl) control.Visible = false;
             if (control.Parent != null && (parent == null || Object.ReferenceEquals(control.Parent, parent)))
-                control.Parent.Controls.Remove(control);
+            {
+                control.Parent.TryRunInGui(() => control.Parent.Controls.Remove(control));
+            }
         }
         /// <summary>
         /// Vrací defaultní ToString() = Type.Name + Control.Name
@@ -410,6 +412,23 @@ namespace Noris.Clients.Win.Components.AsolDX
                 control.Invoke(action);
             else
                 action();
+        }
+        /// <summary>
+        /// Metoda provede danou akci v GUI threadu. Případné exceptions zahodí, používá se typicky v Dispose.
+        /// Pokud aktuální thread je GUI thread (tedy this control nepotřebuje invokaci), pak se akce provede nativně v Current threadu.
+        /// Jinak se použije synchronní Invoke().
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="action"></param>
+        public static void TryRunInGui(this Control control, Action action)
+        {
+            if (control.InvokeRequired)
+                control.Invoke(action);
+            else
+            {
+                try { action(); }
+                catch { }
+            }
         }
         /// <summary>
         /// Metoda vrátí hodnotu z GUI prvku, zajistí si invokaci GUI threadu

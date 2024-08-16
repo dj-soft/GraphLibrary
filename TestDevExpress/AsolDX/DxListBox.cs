@@ -2482,12 +2482,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxListBoxTemplate()
         {
-            __Cells = new List<IListBoxTemplateElement>();
+            __Elements = new List<IListBoxTemplateElement>();
         }
         /// <summary>
         /// Všechny deklarované buňky
         /// </summary>
-        private List<IListBoxTemplateElement> __Cells;
+        private List<IListBoxTemplateElement> __Elements;
         /// <summary>
         /// Buňky umístěné v šabloně; Key = vygenerované jméno
         /// </summary>
@@ -2495,33 +2495,53 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Jednotlivé buňky šablony
         /// </summary>
-        public List<IListBoxTemplateElement> Cells { get { return __Cells; } }
+        public List<IListBoxTemplateElement> Cells { get { return __Elements; } }
         /// <summary>
         /// Konvertuje zdejší data o layoutu jednotlivých buněk <see cref="Cells"/> = <see cref="IListBoxTemplateElement"/> do fyzické deklarace šablony Template do dodaného Listu.
         /// </summary>
         /// <param name="targetList"></param>
         public void ApplyTemplateToList(DxListBoxControl targetList)
         {
-            var template = new DevExpress.XtraEditors.TableLayout.ItemTemplateBase() { Name = "Main" };
+            targetList.Templates.Clear();
+
+            __TemplateCells = new Dictionary<string, TemplateCell>();
+
+            var elementGroups = __Elements.GroupBy(c => c.TemplateName ?? "");
+            int id = 0;
+            foreach (var elementGroup in elementGroups)
+            {
+                var templateName = elementGroup.Key;
+                var elements = elementGroup.ToArray();
+                var template = _CreateTemplateFromElements(templateName, elements, ref id);
+                if (template != null)
+                    targetList.Templates.Add(template);
+            }
+            
+            targetList.ItemAutoHeight = true;
+        }
+
+
+        private DevExpress.XtraEditors.TableLayout.ItemTemplateBase _CreateTemplateFromElements(string templateName, IListBoxTemplateElement[] iElements, ref int id)
+        {
+            var template = new DevExpress.XtraEditors.TableLayout.ItemTemplateBase() { Name = templateName };
 
             createColumns();
             createRows();
             createSpans();
-            createElements();
+            createTemplateElements(ref id);
 
-            targetList.Templates.Clear();
-            targetList.Templates.Add(template);
-            targetList.ItemAutoHeight = true;
+            return template;
+
 
             void createColumns()
             {
                 // Buňky, které jednoznačně určují šířky sloupců:
-                var widths = getSingleSizes(__Cells
+                var widths = getSingleSizes(iElements
                     .Where(c => c.ColSpan == 1 && c.Width.HasValue)                                // Buňky, které mají ColSpan = 1: určují šířku svého sloupce; a mají Width definované
                     .Select(c => new Tuple<int, int>(c.ColIndex, c.Width.Value)));                 // Tuple: Item1 = index sloupce; Item2 = definovaná šířka
 
                 // Buňky, které mají větší ColSpan a mohou upravit šířky sloupců:
-                verifySpanSizes(widths, __Cells
+                verifySpanSizes(widths, iElements
                     .Where(c => c.ColSpan > 1 && c.Width.HasValue)                                 // Buňky, které mají ColSpan > 1: vyžadují více sloupců; a mají Width definované
                     .Select(c => new Tuple<int, int, int>(c.ColIndex, c.ColSpan, c.Width.Value))); // Tuple: Item1 = index sloupce; Item2 = ColSpan; Item3 = definovaná šířka
 
@@ -2529,21 +2549,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                 //  Na rozdíl od řádků (TableRowDefinition) tady pro sloupce není potřeba operovat s AutoWidth.
                 foreach (var width in widths)
                 {
-                    var columnDef = new DevExpress.XtraEditors.TableLayout.TableColumnDefinition();
-                    columnDef.Length.Value = (double)width;
-                    columnDef.Length.Type = DevExpress.XtraEditors.TableLayout.TableDefinitionLengthType.Pixel;
-                    template.Columns.Add(columnDef);
+                    var tColumn = new DevExpress.XtraEditors.TableLayout.TableColumnDefinition();
+                    tColumn.Length.Value = (double)width;
+                    tColumn.Length.Type = DevExpress.XtraEditors.TableLayout.TableDefinitionLengthType.Pixel;
+                    template.Columns.Add(tColumn);
                 }
             }
             void createRows()
             {
                 // Buňky, které jednoznačně určují výšky řádků:
-                var heights = getSingleSizes(__Cells
+                var heights = getSingleSizes(iElements
                     .Where(c => c.RowSpan == 1 && c.Height.HasValue)                               // Buňky, které mají RowSpan = 1: určují výšku svého řádku; a mají Height definované
                     .Select(c => new Tuple<int, int>(c.RowIndex, c.Height.Value)));                // Tuple: Item1 = index řádku; Item2 = definovaná výška
 
                 // Buňky, které mají větší RowSpan a mohou upravit výšky řádků:
-                verifySpanSizes(heights, __Cells
+                verifySpanSizes(heights, iElements
                     .Where(c => c.RowSpan > 1 && c.Height.HasValue)                                // Buňky, které mají RowSpan > 1: vyžadují více řádků; a mají Height definované
                     .Select(c => new Tuple<int, int, int>(c.RowIndex, c.RowSpan, c.Height.Value))); // Tuple: Item1 = index řádku; Item2 = RowSpan; Item3 = definovaná výška
 
@@ -2555,56 +2575,55 @@ namespace Noris.Clients.Win.Components.AsolDX
                 bool isAutoSize = false;
                 foreach (var height in heights)
                 {
-                    var rowDef = new DevExpress.XtraEditors.TableLayout.TableRowDefinition();
-                    rowDef.Length.Value = (double)height;
-                    rowDef.Length.Type = DevExpress.XtraEditors.TableLayout.TableDefinitionLengthType.Pixel;
-                    rowDef.AutoHeight = isAutoSize;        // První má false, další mají true. Viz nahoře...
-                    template.Rows.Add(rowDef);
+                    var tRow = new DevExpress.XtraEditors.TableLayout.TableRowDefinition();
+                    tRow.Length.Value = (double)height;
+                    tRow.Length.Type = DevExpress.XtraEditors.TableLayout.TableDefinitionLengthType.Pixel;
+                    tRow.AutoHeight = isAutoSize;        // První má false, další mají true. Viz nahoře...
+                    template.Rows.Add(tRow);
                     isAutoSize = true;
                 }
             }
             void createSpans()
             {
-                var cells = __Cells.Where(c => c.ColSpan > 1 || c.RowSpan > 1).ToArray();
-                foreach (var cell in cells)
+                var iElementsSpan = iElements.Where(c => c.ColSpan > 1 || c.RowSpan > 1).ToArray();
+                foreach (var iElementSpan in iElementsSpan)
                 {
-                    var span0 = new DevExpress.XtraEditors.TableLayout.TableSpan() { RowIndex = cell.RowIndex, ColumnIndex = cell.ColIndex, RowSpan = cell.RowSpan, ColumnSpan = cell.ColSpan };
-                    template.Spans.Add(span0);
+                    var tSpan = new DevExpress.XtraEditors.TableLayout.TableSpan() { RowIndex = iElementSpan.RowIndex, ColumnIndex = iElementSpan.ColIndex, RowSpan = iElementSpan.RowSpan, ColumnSpan = iElementSpan.ColSpan };
+                    template.Spans.Add(tSpan);
                 }
             }
-            void createElements()
+            void createTemplateElements(ref int elementId)
             {
-                __TemplateCells = new Dictionary<string, TemplateCell>();
-                int keyId = 0;
-                foreach (var cell in __Cells)
+                foreach (var iElement in iElements)
                 {
-                    string key = "C_" + keyId.ToString();
-                    var element = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement()
+                    elementId++;
+                    string key = "C_" + elementId.ToString();
+                    iElement.Key = key;
+                    var tElement = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement()
                     {
                         Name = key,
-                        RowIndex = cell.RowIndex,
-                        ColumnIndex = cell.ColIndex,
-                        FieldName = cell.ColumnName,
-                        TextAlignment = cell.TextAlignment ?? TileItemContentAlignment.MiddleLeft,
-                        ImageAlignment = cell.ImageAlignment ?? TileItemContentAlignment.MiddleCenter,
-                        ImageToTextAlignment = cell.ImageToTextAlignment ?? TileControlImageToTextAlignment.Left,
-                        Width = cell.Width ?? 0,
-                        Height = cell.Height ?? 0
+                        RowIndex = iElement.RowIndex,
+                        ColumnIndex = iElement.ColIndex,
+                        FieldName = (iElement.ElementContent == ElementContentType.Text ? iElement.ColumnName : null),
+                        TextAlignment = iElement.TextAlignment ?? TileItemContentAlignment.MiddleLeft,
+                        ImageAlignment = iElement.ImageAlignment ?? TileItemContentAlignment.MiddleCenter,
+                        ImageToTextAlignment = iElement.ImageToTextAlignment ?? TileControlImageToTextAlignment.Left,
+                        Width = iElement.Width ?? 0,
+                        Height = iElement.Height ?? 0
                     };
 
-                    if (cell.FontStyle.HasValue)
-                        element.Appearance.Normal.FontStyleDelta = cell.FontStyle.Value;
+                    if (iElement.FontStyle.HasValue)
+                        tElement.Appearance.Normal.FontStyleDelta = iElement.FontStyle.Value;
 
-                    if (cell.FontSizeDelta.HasValue)
+                    if (iElement.FontSizeDelta.HasValue)
                     {
-                        element.Appearance.Normal.FontSizeDelta = cell.FontSizeDelta.Value;
-                        element.Appearance.Normal.Options.UseFont = true;
+                        tElement.Appearance.Normal.FontSizeDelta = iElement.FontSizeDelta.Value;
+                        tElement.Appearance.Normal.Options.UseFont = true;
                     }
 
-                    template.Elements.Add(element);
-                    var isDynamicImage = hasDynamicImage(cell);
-                    __TemplateCells.Add(key, new TemplateCell(key, cell, isDynamicImage));
-                    keyId++;
+                    template.Elements.Add(tElement);
+                    var isDynamicImage = hasDynamicImage(iElement);
+                    __TemplateCells.Add(key, new TemplateCell(key, iElement, isDynamicImage));
                 }
             }
 
@@ -2659,7 +2678,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Vrátí true, pokud daná definice buňky reprezentuje buňku s dynamicky definovaným obrázkem (ikona, Image)
             bool hasDynamicImage(IListBoxTemplateElement cell)
             {
-                return (!String.IsNullOrEmpty(cell.ImageNameColumnName));
+                return (cell.ElementContent == ElementContentType.IconName || cell.ElementContent == ElementContentType.ImageData);
             }
         }
         /// <summary>
@@ -2683,12 +2702,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (!String.IsNullOrEmpty(key) && templateCells.TryGetValue(key, out var cell) && cell.HasDynamicImage)
                 {
                     bool hasImage = false;
-                    var imageName = row[cell.Cell.ImageNameColumnName] as string;
-                    if (!String.IsNullOrEmpty(imageName))
+                    var elementContent = cell.Cell.ElementContent;
+                    switch (elementContent)
                     {
-                        element.Image = DxComponent.GetBitmapImage(imageName);
-                        element.ImageOptions.ImageScaleMode = TileItemImageScaleMode.Squeeze;
-                        hasImage = true;
+                        case ElementContentType.IconName:
+                            var imageName = row[cell.Cell.ColumnName] as string;
+                            if (!String.IsNullOrEmpty(imageName))
+                            {
+                                element.Image = DxComponent.GetBitmapImage(imageName);
+                                element.ImageOptions.ImageScaleMode = TileItemImageScaleMode.Squeeze;
+                                hasImage = true;
+                            }
+                            break;
+                        case ElementContentType.ImageData:
+                            var imageData = row[cell.Cell.ColumnName] as byte[];
+                            break;
                     }
                     if (!hasImage)
                     {
@@ -2740,6 +2768,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxListBoxTemplateElement()
         {
+            ElementContent = ElementContentType.Text;
             Width = null;
             Height = null;
             ColIndex = 0;
@@ -2752,7 +2781,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Jednoznačné interní ID buňky. Přiděluje se v procesu tvorby, aplikace na něj nemá vliv a nijak jej nevyužije.
         /// </summary>
-        public int Id { get; set; }
+        public string Key { get; set; }
         /// <summary>
         /// Název šablony. Elementy budou rozgrupovány podle tohoto jména a budou vytvořeny samostatné šablony.
         /// </summary>
@@ -2823,7 +2852,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Jednoznačné interní ID buňky. Přiděluje se v procesu tvorby, aplikace na něj nemá vliv a nijak jej nevyužije.
         /// </summary>
-        int Id { get; set; }
+        string Key { get; set; }
         /// <summary>
         /// Název šablony. Elementy budou rozgrupovány podle tohoto jména a budou vytvořeny samostatné šablony.
         /// </summary>
