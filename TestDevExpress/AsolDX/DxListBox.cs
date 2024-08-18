@@ -1562,6 +1562,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         ttci.AllowHtmlText = (ToolTipAllowHtmlText ? DefaultBoolean.True : DefaultBoolean.False);
                         ttci.ToolTipPosition = this.PointToScreen(mousePoint);
                         ttci.ToolTipAnchor = ToolTipAnchor.Cursor;
+                        ttci.SuperTip = DxComponent.CreateDxSuperTip(toolTipTitle, toolTipText);
                         e.Info = ttci;
                         e.SelectedObject = this.SelectedItem;
                     }
