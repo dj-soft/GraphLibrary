@@ -2597,7 +2597,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public event DxListBoxActionDelegate ListActionAfter;
         #endregion
     }
-    #region Template
+    #region class DxListBoxTemplate : data pro tvorbu šablony v ListBoxu
     /// <summary>
     /// Šablona pro zobrazení prvku v <see cref="DxListBoxControl"/>
     /// </summary>
@@ -2654,7 +2654,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (template != null)
                     targetList.Templates.Add(template);
             }
-            
+
+            targetList.ItemPadding = new Padding(2, 1, 2, 1);
             targetList.ItemAutoHeight = true;
         }
         /// <summary>
@@ -2695,6 +2696,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     var tColumn = new DevExpress.XtraEditors.TableLayout.TableColumnDefinition();
                     tColumn.Length.Value = (double)width;
                     tColumn.Length.Type = DevExpress.XtraEditors.TableLayout.TableDefinitionLengthType.Pixel;
+                    tColumn.PaddingLeft = 1;
+                    tColumn.PaddingRight = 1;
                     template.Columns.Add(tColumn);
                 }
             }
@@ -2724,6 +2727,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     tRow.Length.Value = (double)height;
                     tRow.Length.Type = DevExpress.XtraEditors.TableLayout.TableDefinitionLengthType.Pixel;
                     tRow.AutoHeight = isAutoSize;          // První má false, další mají true. Viz nahoře...
+                    tRow.PaddingTop = 0;
+                    tRow.PaddingBottom = 0;
                     template.Rows.Add(tRow);
                     isAutoSize = true;
                 }
@@ -2758,7 +2763,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                         ImageAlignment = iElement.ContentAlignment ?? TileItemContentAlignment.MiddleCenter,
                         ImageToTextAlignment = TileControlImageToTextAlignment.None,
                         Width = iElement.Width ?? 0,
-                        Height = iElement.Height ?? 0
+                        Height = iElement.Height ?? 0,
+                        StretchHorizontal = iElement.StretchHorizontal,
+                        StretchVertical = iElement.StretchVertical
                     };
 
                     if (iElement.FontStyle.HasValue)
@@ -2953,7 +2960,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     RowIndex = 0,
                     ColIndex = colIndex,
                     Width = 300,
-                    Height = rowHeight
+                    Height = rowHeight,
+                    StretchHorizontal = true
                 });
                 colIndex++;
             }
@@ -2981,6 +2989,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             RowIndex = 0;
             RowSpan = 1;
             ColSpan = 1;
+            StretchHorizontal = false;
+            StretchVertical = false;
             FontSizeDelta = null;
             FontStyle = null;
             ContentAlignment = null;
@@ -3029,6 +3039,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud má buňka <see cref="RowSpan"/> větší než 1, jde o výšku celkovou.
         /// </summary>
         public int? Height { get; set; }
+        /// <summary>
+        /// Příznak, že tento element může být roztažen doprava na celou šířku
+        /// </summary>
+        public bool StretchHorizontal { get; set; }
+        /// <summary>
+        /// Příznak, že tento element může být roztažen dolů podle potřeby
+        /// </summary>
+        public bool StretchVertical { get; set; }
         /// <summary>
         /// Odchylka velikosti fontu od defaultu, null = default.
         /// </summary>
@@ -3091,6 +3109,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud má buňka <see cref="RowSpan"/> větší než 1, jde o výšku celkovou.
         /// </summary>
         int? Height { get; }
+        /// <summary>
+        /// Příznak, že tento element může být roztažen doprava na celou šířku
+        /// </summary>
+        bool StretchHorizontal { get; }
+        /// <summary>
+        /// Příznak, že tento element může být roztažen dolů podle potřeby
+        /// </summary>
+        bool StretchVertical { get; }
         /// <summary>
         /// Odchylka velikosti fontu od defaultu, null = default.
         /// </summary>
