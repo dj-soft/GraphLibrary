@@ -1120,7 +1120,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private bool _TryFindListItem(object item, out IMenuItem menuItem)
         {
-            if (__ItemsMode == ListBoxItemsMode.MenuItems && item is not null)
+            if (__ItemsMode == ListBoxItemsMode.MenuItems && item != null)
             {
                 if (item is DevExpress.XtraEditors.Controls.ImageListBoxItem listItem && listItem.Value is IMenuItem menuItem1)
                 {
@@ -2746,15 +2746,17 @@ namespace Noris.Clients.Win.Components.AsolDX
                     elementId++;
                     string key = "C_" + elementId.ToString();
                     iElement.Key = key;
+
+                    // Jeden element v našem podání zobrazuje buď text, nebo obrázek. Proto máme na vstupu property ContentAlignment, kterou ukládáme jak do TextAlignment, tak i do ImageAlignment. A ImageToTextAlignment dávám None.
                     var tElement = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement()
                     {
                         Name = key,
                         RowIndex = iElement.RowIndex,
                         ColumnIndex = iElement.ColIndex,
                         FieldName = (iElement.ElementContent == ElementContentType.Text ? iElement.ColumnName : null),
-                        TextAlignment = iElement.TextAlignment ?? TileItemContentAlignment.MiddleLeft,
-                        ImageAlignment = iElement.ImageAlignment ?? TileItemContentAlignment.MiddleCenter,
-                        ImageToTextAlignment = iElement.ImageToTextAlignment ?? TileControlImageToTextAlignment.Left,
+                        TextAlignment = iElement.ContentAlignment ?? TileItemContentAlignment.MiddleLeft,
+                        ImageAlignment = iElement.ContentAlignment ?? TileItemContentAlignment.MiddleCenter,
+                        ImageToTextAlignment = TileControlImageToTextAlignment.None,
                         Width = iElement.Width ?? 0,
                         Height = iElement.Height ?? 0
                     };
@@ -2931,7 +2933,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     ColumnName = columnNameIcon,
                     ElementContent = ElementContentType.IconName,
-                    ImageAlignment = TileItemContentAlignment.MiddleCenter,
+                    ContentAlignment = TileItemContentAlignment.MiddleCenter,
                     RowIndex = 0,
                     ColIndex = colIndex,
                     Width = size + 4,
@@ -2947,6 +2949,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     ColumnName = columnNameText,
                     ElementContent = ElementContentType.Text,
+                    ContentAlignment = TileItemContentAlignment.MiddleLeft,
                     RowIndex = 0,
                     ColIndex = colIndex,
                     Width = 300,
@@ -2980,6 +2983,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ColSpan = 1;
             FontSizeDelta = null;
             FontStyle = null;
+            ContentAlignment = null;
         }
         /// <summary>
         /// Jednoznačné interní ID buňky. Přiděluje se v procesu tvorby, aplikace na něj nemá vliv a nijak jej nevyužije.
@@ -3036,15 +3040,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Umístění textu v rámci prostoru buňky, null = default.
         /// </summary>
-        public DevExpress.XtraEditors.TileItemContentAlignment? TextAlignment { get; set; }
-        /// <summary>
-        /// Umístění obrázku / ikony v rámci prostoru buňky, null = default.
-        /// </summary>
-        public DevExpress.XtraEditors.TileItemContentAlignment? ImageAlignment { get; set; }
-        /// <summary>
-        /// Vzájemná pozice textu a obrázku v buňce, null = default.
-        /// </summary>
-        public DevExpress.XtraEditors.TileControlImageToTextAlignment? ImageToTextAlignment { get; set; }
+        public DevExpress.XtraEditors.TileItemContentAlignment? ContentAlignment { get; set; }
     }
     /// <summary>
     /// Deklarace požadavků na definici jedné buňky layoutu v <see cref="DxListBoxTemplate"/>, použité pro definici layoutu v <see cref="DxListBoxControl.DxTemplate"/>
@@ -3058,15 +3054,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Název šablony. Elementy budou rozgrupovány podle tohoto jména a budou vytvořeny samostatné šablony.
         /// </summary>
-        public string TemplateName { get; }
+        string TemplateName { get; }
         /// <summary>
         /// Jméno sloupce v datech, jehož obsah je zde zobrazen, buď jako Text, nebo Ikona daného jména, nebo jako Image daného obsahu.
         /// </summary>
-        public string ColumnName { get; }
+        string ColumnName { get; }
         /// <summary>
         /// Druh obsahu v tomito elementu
         /// </summary>
-        public ElementContentType ElementContent { get; }
+        ElementContentType ElementContent { get; }
         /// <summary>
         /// Pozice Y buňky v matici = číslo řádku, počínaje 0.
         /// Pokud má buňka <see cref="RowSpan"/> větší než 1, jde pozici počátku buňky.
@@ -3103,19 +3099,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Styl fontu, null = default.
         /// </summary>
         FontStyle? FontStyle { get; }
-
         /// <summary>
         /// Umístění textu v rámci prostoru buňky, null = default.
         /// </summary>
-        DevExpress.XtraEditors.TileItemContentAlignment? TextAlignment { get; }
-        /// <summary>
-        /// Umístění obrázku / ikony v rámci prostoru buňky, null = default.
-        /// </summary>
-        DevExpress.XtraEditors.TileItemContentAlignment? ImageAlignment { get; }
-        /// <summary>
-        /// Vzájemná pozice textu a obrázku v buňce, null = default.
-        /// </summary>
-        DevExpress.XtraEditors.TileControlImageToTextAlignment? ImageToTextAlignment { get; }
+        DevExpress.XtraEditors.TileItemContentAlignment? ContentAlignment { get; }
     }
     /// <summary>
     /// Druh obsahu v daném elementu

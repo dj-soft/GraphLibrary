@@ -9,10 +9,11 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
-
 using DevExpress.Utils;
 using DevExpress.XtraEditors;
+using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraEditors.TableLayout;
 
 namespace Noris.Clients.Win.Components.AsolDX
@@ -180,6 +181,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Šablona pro zobrazení dat z <see cref="DataTable"/>
         /// </summary>
         public DxListBoxTemplate DxTemplate { get { return __ListBox.DxTemplate; } set { __ListBox.DxTemplate = value; } }
+        /// <summary>
+        /// Metoda vytvoří Simple template pro ikonu a pro text
+        /// </summary>
+        /// <param name="columnNameItemId"></param>
+        /// <param name="columnNameIcon"></param>
+        /// <param name="columnNameText"></param>
+        /// <param name="columnNameToolTip"></param>
+        /// <param name="iconSize"></param>
+        /// <returns></returns>
+        public DxListBoxTemplate CreateSimpleDxTemplate(string columnNameItemId, string columnNameIcon, string columnNameText, string columnNameToolTip = null, int? iconSize = null) { return __ListBox.CreateSimpleDxTemplate(columnNameItemId, columnNameIcon, columnNameText, columnNameToolTip, iconSize); }
         #endregion
         #endregion
         #region Ctrl+C a Ctrl+V, i mezi controly a mezi aplikacemi
@@ -948,7 +959,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// ListBoxControl s podporou pro drag and drop a reorder
     /// </summary>
-    public class DxListBoxControl : DevExpress.XtraEditors.ImageListBoxControl, IDxDragDropControl, IUndoRedoControl   // původně :ListBoxControl, nyní: https://docs.devexpress.com/WindowsForms/DevExpress.XtraEditors.ImageListBoxControl
+    public class DxListBoxControl : DevExpress.XtraEditors.ImageListBoxControl, IDxDragDropControl, IUndoRedoControl, IDxToolTipDynamicClient   // původně: ListBoxControl, nyní: https://docs.devexpress.com/WindowsForms/DevExpress.XtraEditors.ImageListBoxControl
     {
         #region Public členy
         /// <summary>
@@ -979,7 +990,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             base.Dispose(disposing);
             DxDragDropDispose();
-            ToolTipDispose();
+            _ToolTipDispose();
         }
         /// <summary>
         /// Přídavek k výšce jednoho řádku ListBoxu v pixelech.
@@ -1271,7 +1282,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (dxTemplate != null && __ItemsMode == ListBoxItemsMode.Table)
                 dxTemplate.ApplyTemplateToList(this);
         }
-
         /// <summary>
         /// Událost je volána 1x per 1 řádek Listu v procesu jeho kreslení, jako příprava, v režimu Table
         /// </summary>
@@ -1283,13 +1293,23 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (dxTemplate != null && e.Value is System.Data.DataRowView rowView)
                 dxTemplate.ApplyRowDataToTemplateItem(rowView.Row, e.TemplatedItem);
         }
+        /// <summary>
+        /// Metoda vytvoří Simple template pro ikonu a pro text
+        /// </summary>
+        /// <param name="columnNameItemId"></param>
+        /// <param name="columnNameIcon"></param>
+        /// <param name="columnNameText"></param>
+        /// <param name="columnNameToolTip"></param>
+        /// <param name="iconSize"></param>
+        /// <returns></returns>
+        public DxListBoxTemplate CreateSimpleDxTemplate(string columnNameItemId, string columnNameIcon, string columnNameText, string columnNameToolTip = null, int? iconSize = null)
+        { return DxListBoxTemplate.CreateSimpleDxTemplate(this.DataTable, columnNameItemId, columnNameIcon, columnNameText, columnNameToolTip, iconSize); }
         #endregion
         /// <summary>
         /// Aktuální režim položek
         /// </summary>
         private ListBoxItemsMode __ItemsMode;
         #endregion
-
         #region Rozšířené property
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
@@ -1493,65 +1513,187 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region ToolTip
         /// <summary>
-        /// ToolTipy mohou obsahovat SimpleHtml tagy?
+        /// Inicializace ToolTipu, voláno z konstruktoru
         /// </summary>
-        public bool ToolTipAllowHtmlText { get; set; }
         private void _ToolTipInit()
         {
-            this.ToolTipController = DxComponent.CreateNewToolTipController();
-            this.ToolTipController.GetActiveObjectInfo += ToolTipController_GetActiveObjectInfo;
-        }
-        private void ToolTipDispose()
-        {
-            this.ToolTipController?.Dispose();
+            this.ToolTipAllowHtmlText = null;
+            this.DxToolTipController = DxComponent.CreateNewToolTipController(ToolTipAnchor.Cursor);
+            this.DxToolTipController.AddClient(this);                                               // Protože this třída implementuje IDxToolTipDynamicClient, bude volána metoda IDxToolTipDynamicClient.PrepareSuperTipForPoint()
+            this.DxToolTipController.ToolTipDebugTextChanged += _ToolTipDebugTextChanged;           // Má význam jen pro Debug, nemusí být řešeno
         }
         /// <summary>
-        /// Připraví ToolTip pro aktuální Node
+        /// Dispose ToolTipu
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ToolTipController_GetActiveObjectInfo(object sender, ToolTipControllerGetActiveObjectInfoEventArgs e)
+        private void _ToolTipDispose()
         {
-            if (e.SelectedControl is DxListBoxControl listBox)
+            this.DxToolTipController?.Dispose();
+        }
+        /// <summary>
+        /// ToolTipy mohou obsahovat SimpleHtml tagy? Null = default
+        /// </summary>
+        public bool? ToolTipAllowHtmlText { get; set; }
+        /// <summary>
+        /// Controller ToolTipu
+        /// </summary>
+        public DxToolTipController DxToolTipController
+        {
+            get { return __DxToolTipController; }
+            private set { __DxToolTipController = value; this.ToolTipController = value; }
+        }
+        private DxToolTipController __DxToolTipController;
+        /// <summary>
+        /// Zde control určí, jaký ToolTip má být pro danou pozici myši zobrazen
+        /// </summary>
+        /// <param name="args"></param>
+        void IDxToolTipDynamicClient.PrepareSuperTipForPoint(Noris.Clients.Win.Components.AsolDX.DxToolTipDynamicPrepareArgs args)
+        {
+            bool hasItem = TryGetViewItemOnPoint(args.MouseLocation, out var viewItem);
+            if (hasItem)
             {
-                var mousePoint = e.ControlMousePosition;
-                int index = listBox.IndexFromPoint(mousePoint);
-                if (__ItemsMode == ListBoxItemsMode.MenuItems)
-                {
-                    var listItems = listBox.ListItems;
-                    if (index >= 0 && index < listItems.Length)
+                // Pokud myš nyní ukazuje na ten samý prvek, pro který už máme ToolTip vytvořen, pak nebudeme ToolTip připravovat:
+                bool isSameAsLast = (args.DxSuperTip != null && Object.ReferenceEquals(args.DxSuperTip.ClientData, viewItem.Item));
+                if (!isSameAsLast)
+                {   // Připravíme data pro ToolTip:
+                    var dxSuperTip = _CreateDxSuperTip(viewItem.Item);                   // Vytvořím new data ToolTipu
+                    if (dxSuperTip != null)
                     {
-                        var menuItem = listItems[index];
-                        if (menuItem != null)
-                        {
-                            string toolTipText = menuItem.ToolTipText;
-                            string toolTipTitle = menuItem.ToolTipTitle ?? menuItem.Text;
-                            var ttci = new DevExpress.Utils.ToolTipControlInfo(menuItem, toolTipText, toolTipTitle);
-                            ttci.ToolTipType = ToolTipType.SuperTip;
-                            ttci.AllowHtmlText = (ToolTipAllowHtmlText ? DefaultBoolean.True : DefaultBoolean.False);
-                            ttci.ToolTipPosition = mousePoint;
-                            e.Info = ttci;
-                        }
+                        if (ToolTipAllowHtmlText.HasValue) dxSuperTip.ToolTipAllowHtmlText = ToolTipAllowHtmlText;
+                        dxSuperTip.ClientData = viewItem.Item;                           // Přibalím si do nich náš Node abych příště detekoval, zda jsme/nejsme na tom samém
                     }
+                    args.DxSuperTip = dxSuperTip;
+                    args.ToolTipChange = DxToolTipChangeType.NewToolTip;                 // Zajistím rozsvícení okna ToolTipu
                 }
-                else if (__ItemsMode == ListBoxItemsMode.Table)
+                else
                 {
-
+                    args.ToolTipChange = DxToolTipChangeType.SameAsLastToolTip;          // Není třeba nic dělat, nechme svítit stávající ToolTip
                 }
+            }
+            else
+            {   // Myš je mimo prvky:
+                args.ToolTipChange = DxToolTipChangeType.NoToolTip;                      // Pokud ToolTip svítí, zhasneme jej
             }
         }
         /// <summary>
-        /// Nastaví daný text a titulek pro tooltip
+        /// Vytvoří data pro ToolTip pro daný prvek Listu
         /// </summary>
-        /// <param name="text"></param>
-        public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private DxSuperToolTip _CreateDxSuperTip(object item)
+        {
+            string toolTipTitle = null;
+            string toolTipText = null;
+            switch (__ItemsMode)
+            {
+                case ListBoxItemsMode.MenuItems:
+                    // V režimu MenuItem máme prvky Listu postavené na interface IMenuItem;
+                    // Ten implementuje ITextItem a tedy i IToolTipItem;
+                    // A pro IToolTipItem umíme vytvořit DxSuperToolTip standardním postupem:
+                    if (item is IMenuItem menuItem)
+                        return DxComponent.CreateDxSuperTip(menuItem);
+                    break;
+                case ListBoxItemsMode.Table:
+                    if (item is System.Data.DataRowView rowView && rowView.Row != null)
+                    {   // Z datového řádku 
+                        toolTipTitle = _GetTableToolTipTitle(rowView.Row);
+                        toolTipText = _GetTableToolTipText(rowView.Row);
+                        return DxComponent.CreateDxSuperTip(toolTipTitle, toolTipText);
+                    }
+                    break;
+            }
+            return null;
+        }
         /// <summary>
-        /// Nastaví daný text a titulek pro tooltip
+        /// Explicitně skrýt ToolTip - typicky při nějaké myší akci (drag and drop, kontextové menu atd)
         /// </summary>
-        /// <param name="title">Titulek</param>
-        /// <param name="text">Text</param>
-        /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
-        public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
+        /// <param name="message"></param>
+        private void _ToolTipHide(string message)
+        {
+            this.DxToolTipController.HideTip();
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"TreeList.HideToolTip({message})");
+        }
+        /// <summary>
+        /// V controlleru ToolTipu došlo k události, pošli ji do našeho eventu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _ToolTipDebugTextChanged(object sender, DxToolTipArgs args)
+        {
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, args.EventName);
+        }
+        #endregion
+        #region VisibleItems a konverze ...
+
+
+        /// <summary>
+        /// Metoda najde prvek this Listu, který se nachází na dané souřadnici.
+        /// Souřadnice je v koordinátech controlu, tedy 0,0 = levý horní roh ListBoxu.
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="foundItem"></param>
+        /// <returns></returns>
+        public bool TryGetViewItemOnPoint(Point point, out DevExpress.XtraEditors.ViewInfo.BaseListBoxViewInfo.ItemInfo foundItem)
+        {
+            foundItem = null;
+            if (!this.ClientRectangle.Contains(point)) return false;
+
+            var visibleItems = this.ViewInfo?.VisibleItems;
+            if (visibleItems is null) return false;
+
+            foreach (DevExpress.XtraEditors.ViewInfo.BaseListBoxViewInfo.ItemInfo item in visibleItems)
+            {
+                if (item.Bounds.Contains(point))
+                {
+                    foundItem = item;
+                    return true;
+                }
+            }
+            return false;
+        }
+        /// <summary>
+        /// Metoda vrátí ID pro daný prvek.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public object GetItemId(object item)
+        {
+            if (item is null) return null;
+
+            switch (__ItemsMode)
+            {
+                case ListBoxItemsMode.MenuItems:
+                    if (item is IMenuItem menuItem) 
+                        return menuItem.ItemId;
+                    break;
+                case ListBoxItemsMode.Table:
+                    if (item is System.Data.DataRowView rowView && rowView.Row != null)
+                        return _GetTableItemId(rowView.Row);
+                    break;
+            }
+            return null;
+        }
+        private object _GetTableItemId(System.Data.DataRow row)
+        {
+            string colName = this.DxTemplate.ColumnNameItemId;
+            if (!String.IsNullOrEmpty(colName) && row != null && row.Table.Columns.Contains(colName))
+                return row[colName];
+            return null;
+        }
+        private string _GetTableToolTipTitle(System.Data.DataRow row)
+        {
+            string colName = this.DxTemplate.ColumnNameToolTipTitle;
+            if (!String.IsNullOrEmpty(colName) && row != null && row.Table.Columns.Contains(colName))
+                return row[colName] as string;
+            return null;
+        }
+        private string _GetTableToolTipText(System.Data.DataRow row)
+        {
+            string colName = this.DxTemplate.ColumnNameToolTipText;
+            if (!String.IsNullOrEmpty(colName) && row != null && row.Table.Columns.Contains(colName))
+                return row[colName] as string;
+            return null;
+        }
         #endregion
         #region DoKeyActions; CtrlA, CtrlC, CtrlX, CtrlV, Delete; Move, Insert, Remove
         /// <summary>
@@ -2466,12 +2608,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxListBoxTemplate()
         {
-            __Cells = new List<IDxListBoxTemplateCell>();
+            __Elements = new List<IListBoxTemplateElement>();
         }
         /// <summary>
         /// Všechny deklarované buňky
         /// </summary>
-        private List<IDxListBoxTemplateCell> __Cells;
+        private List<IListBoxTemplateElement> __Elements;
         /// <summary>
         /// Buňky umístěné v šabloně; Key = vygenerované jméno
         /// </summary>
@@ -2479,33 +2621,70 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Jednotlivé buňky šablony
         /// </summary>
-        public List<IDxListBoxTemplateCell> Cells { get { return __Cells; } }
+        public List<IListBoxTemplateElement> Elements { get { return __Elements; } }
         /// <summary>
-        /// Konvertuje zdejší data o layoutu jednotlivých buněk <see cref="Cells"/> = <see cref="IDxListBoxTemplateCell"/> do fyzické deklarace šablony Template do dodaného Listu.
+        /// Sloupec tabulky, obsahující ItemId aktuálního řádku
+        /// </summary>
+        public string ColumnNameItemId { get; set; }
+        /// <summary>
+        /// Sloupec tabulky, obsahující titulek pro ToolTip
+        /// </summary>
+        public string ColumnNameToolTipTitle { get; set; }
+        /// <summary>
+        /// Sloupec tabulky, obsahující text pro ToolTip
+        /// </summary>
+        public string ColumnNameToolTipText { get; set; }
+        /// <summary>
+        /// Konvertuje zdejší data o layoutu jednotlivých buněk <see cref="Elements"/> = <see cref="IListBoxTemplateElement"/> do fyzické deklarace šablony Template do dodaného Listu.
         /// </summary>
         /// <param name="targetList"></param>
         public void ApplyTemplateToList(DxListBoxControl targetList)
         {
-            var template = new DevExpress.XtraEditors.TableLayout.ItemTemplateBase() { Name = "Main" };
+            targetList.Templates.Clear();
+
+            __TemplateCells = new Dictionary<string, TemplateCell>();
+
+            var elementGroups = __Elements.GroupBy(c => c.TemplateName ?? "");
+            int id = 0;
+            foreach (var elementGroup in elementGroups)
+            {
+                var templateName = elementGroup.Key;
+                var elements = elementGroup.ToArray();
+                var template = _CreateTemplateFromElements(templateName, elements, ref id);
+                if (template != null)
+                    targetList.Templates.Add(template);
+            }
+            
+            targetList.ItemAutoHeight = true;
+        }
+        /// <summary>
+        /// Vytvoří jednu Template ze všech dodaných dat Elementů. Tato metoda neřeší MultiTemplate a tedy TemplateName.
+        /// </summary>
+        /// <param name="templateName"></param>
+        /// <param name="iElements"></param>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        private DevExpress.XtraEditors.TableLayout.ItemTemplateBase _CreateTemplateFromElements(string templateName, IListBoxTemplateElement[] iElements, ref int id)
+        {
+            var template = new DevExpress.XtraEditors.TableLayout.ItemTemplateBase() { Name = templateName };
 
             createColumns();
             createRows();
             createSpans();
-            createElements();
+            createTemplateElements(ref id);
 
-            targetList.Templates.Clear();
-            targetList.Templates.Add(template);
-            targetList.ItemAutoHeight = true;
+            return template;
 
+            // Do vznikající šablony vytvoří sloupce
             void createColumns()
             {
                 // Buňky, které jednoznačně určují šířky sloupců:
-                var widths = getSingleSizes(__Cells
+                var widths = getSingleSizes(iElements
                     .Where(c => c.ColSpan == 1 && c.Width.HasValue)                                // Buňky, které mají ColSpan = 1: určují šířku svého sloupce; a mají Width definované
                     .Select(c => new Tuple<int, int>(c.ColIndex, c.Width.Value)));                 // Tuple: Item1 = index sloupce; Item2 = definovaná šířka
 
                 // Buňky, které mají větší ColSpan a mohou upravit šířky sloupců:
-                verifySpanSizes(widths, __Cells
+                verifySpanSizes(widths, iElements
                     .Where(c => c.ColSpan > 1 && c.Width.HasValue)                                 // Buňky, které mají ColSpan > 1: vyžadují více sloupců; a mají Width definované
                     .Select(c => new Tuple<int, int, int>(c.ColIndex, c.ColSpan, c.Width.Value))); // Tuple: Item1 = index sloupce; Item2 = ColSpan; Item3 = definovaná šířka
 
@@ -2513,21 +2692,22 @@ namespace Noris.Clients.Win.Components.AsolDX
                 //  Na rozdíl od řádků (TableRowDefinition) tady pro sloupce není potřeba operovat s AutoWidth.
                 foreach (var width in widths)
                 {
-                    var columnDef = new DevExpress.XtraEditors.TableLayout.TableColumnDefinition();
-                    columnDef.Length.Value = (double)width;
-                    columnDef.Length.Type = DevExpress.XtraEditors.TableLayout.TableDefinitionLengthType.Pixel;
-                    template.Columns.Add(columnDef);
+                    var tColumn = new DevExpress.XtraEditors.TableLayout.TableColumnDefinition();
+                    tColumn.Length.Value = (double)width;
+                    tColumn.Length.Type = DevExpress.XtraEditors.TableLayout.TableDefinitionLengthType.Pixel;
+                    template.Columns.Add(tColumn);
                 }
             }
+            // Do vznikající šablony vytvoří řádky
             void createRows()
             {
                 // Buňky, které jednoznačně určují výšky řádků:
-                var heights = getSingleSizes(__Cells
+                var heights = getSingleSizes(iElements
                     .Where(c => c.RowSpan == 1 && c.Height.HasValue)                               // Buňky, které mají RowSpan = 1: určují výšku svého řádku; a mají Height definované
                     .Select(c => new Tuple<int, int>(c.RowIndex, c.Height.Value)));                // Tuple: Item1 = index řádku; Item2 = definovaná výška
 
                 // Buňky, které mají větší RowSpan a mohou upravit výšky řádků:
-                verifySpanSizes(heights, __Cells
+                verifySpanSizes(heights, iElements
                     .Where(c => c.RowSpan > 1 && c.Height.HasValue)                                // Buňky, které mají RowSpan > 1: vyžadují více řádků; a mají Height definované
                     .Select(c => new Tuple<int, int, int>(c.RowIndex, c.RowSpan, c.Height.Value))); // Tuple: Item1 = index řádku; Item2 = RowSpan; Item3 = definovaná výška
 
@@ -2536,62 +2716,63 @@ namespace Noris.Clients.Win.Components.AsolDX
                 //  - Pokud všem Rows nastavím .AutoHeight = true, pak je celý řádek ListBoxu strašně vysoký.
                 //  - Pokud nastavím .AutoHeight = false, pak se všechny řádky zmastí do jednoho.
                 //  - Ale když nastavím do prvního Row .AutoHeight = false, a do dalších potom .AutoHeight = true, pak je řádek ListBoxu OK...
-                bool isAutoSize = false;
+                //  Ale když je jen jeden řádek, tak musím do toho jediného prvního dát .AutoHeight = true !!!
+                bool isAutoSize = (heights.Count == 1);    // Pokud je jen jeden řádek, pak máme připraveno isAutoSize = true; pokud je jich víc, pak první bude mít isAutoSize = false, a další true!
                 foreach (var height in heights)
                 {
-                    var rowDef = new DevExpress.XtraEditors.TableLayout.TableRowDefinition();
-                    rowDef.Length.Value = (double)height;
-                    rowDef.Length.Type = DevExpress.XtraEditors.TableLayout.TableDefinitionLengthType.Pixel;
-                    rowDef.AutoHeight = isAutoSize;        // První má false, další mají true. Viz nahoře...
-                    template.Rows.Add(rowDef);
+                    var tRow = new DevExpress.XtraEditors.TableLayout.TableRowDefinition();
+                    tRow.Length.Value = (double)height;
+                    tRow.Length.Type = DevExpress.XtraEditors.TableLayout.TableDefinitionLengthType.Pixel;
+                    tRow.AutoHeight = isAutoSize;          // První má false, další mají true. Viz nahoře...
+                    template.Rows.Add(tRow);
                     isAutoSize = true;
                 }
             }
+            // Do vznikající šablony vytvoří Spans
             void createSpans()
             {
-                var cells = __Cells.Where(c => c.ColSpan > 1 || c.RowSpan > 1).ToArray();
-                foreach (var cell in cells)
+                var iElementsSpan = iElements.Where(c => c.ColSpan > 1 || c.RowSpan > 1).ToArray();
+                foreach (var iElementSpan in iElementsSpan)
                 {
-                    var span0 = new DevExpress.XtraEditors.TableLayout.TableSpan() { RowIndex = cell.RowIndex, ColumnIndex = cell.ColIndex, RowSpan = cell.RowSpan, ColumnSpan = cell.ColSpan };
-                    template.Spans.Add(span0);
+                    var tSpan = new DevExpress.XtraEditors.TableLayout.TableSpan() { RowIndex = iElementSpan.RowIndex, ColumnIndex = iElementSpan.ColIndex, RowSpan = iElementSpan.RowSpan, ColumnSpan = iElementSpan.ColSpan };
+                    template.Spans.Add(tSpan);
                 }
             }
-            void createElements()
+            // Do vznikající šablony vytvoří elementy
+            void createTemplateElements(ref int elementId)
             {
-                __TemplateCells = new Dictionary<string, TemplateCell>();
-                int keyId = 0;
-                foreach (var cell in __Cells)
+                foreach (var iElement in iElements)
                 {
-                    string key = "C_" + keyId.ToString();
-                    var element = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement()
+                    elementId++;
+                    string key = "C_" + elementId.ToString();
+                    iElement.Key = key;
+                    var tElement = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement()
                     {
                         Name = key,
-                        RowIndex = cell.RowIndex,
-                        ColumnIndex = cell.ColIndex,
-                        FieldName = cell.TextColumnName,
-                        TextAlignment = cell.TextAlignment ?? TileItemContentAlignment.MiddleLeft,
-                        ImageAlignment = cell.ImageAlignment ?? TileItemContentAlignment.MiddleCenter,
-                        ImageToTextAlignment = cell.ImageToTextAlignment ?? TileControlImageToTextAlignment.Left,
-                        Width = cell.Width ?? 0,
-                        Height = cell.Height ?? 0
+                        RowIndex = iElement.RowIndex,
+                        ColumnIndex = iElement.ColIndex,
+                        FieldName = (iElement.ElementContent == ElementContentType.Text ? iElement.ColumnName : null),
+                        TextAlignment = iElement.TextAlignment ?? TileItemContentAlignment.MiddleLeft,
+                        ImageAlignment = iElement.ImageAlignment ?? TileItemContentAlignment.MiddleCenter,
+                        ImageToTextAlignment = iElement.ImageToTextAlignment ?? TileControlImageToTextAlignment.Left,
+                        Width = iElement.Width ?? 0,
+                        Height = iElement.Height ?? 0
                     };
 
-                    if (cell.FontStyle.HasValue)
-                        element.Appearance.Normal.FontStyleDelta = cell.FontStyle.Value;
+                    if (iElement.FontStyle.HasValue)
+                        tElement.Appearance.Normal.FontStyleDelta = iElement.FontStyle.Value;
 
-                    if (cell.FontSizeDelta.HasValue)
+                    if (iElement.FontSizeDelta.HasValue)
                     {
-                        element.Appearance.Normal.FontSizeDelta = cell.FontSizeDelta.Value;
-                        element.Appearance.Normal.Options.UseFont = true;
+                        tElement.Appearance.Normal.FontSizeDelta = iElement.FontSizeDelta.Value;
+                        tElement.Appearance.Normal.Options.UseFont = true;
                     }
 
-                    template.Elements.Add(element);
-                    var isDynamicImage = hasDynamicImage(cell);
-                    __TemplateCells.Add(key, new TemplateCell(key, cell, isDynamicImage));
-                    keyId++;
+                    template.Elements.Add(tElement);
+                    var isDynamicImage = hasDynamicImage(iElement);
+                    __TemplateCells.Add(key, new TemplateCell(key, iElement, isDynamicImage));
                 }
             }
-
             // Vrátí lineární pole, obsahující velikosti (Width / Height) prvků SingleSpan na daném indexu
             List<int> getSingleSizes(IEnumerable<Tuple<int, int>> items)
             {
@@ -2639,11 +2820,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                         sizes[itemLast] = sizes[itemLast] + addToLast;
                 }
             }
-
             // Vrátí true, pokud daná definice buňky reprezentuje buňku s dynamicky definovaným obrázkem (ikona, Image)
-            bool hasDynamicImage(IDxListBoxTemplateCell cell)
+            bool hasDynamicImage(IListBoxTemplateElement cell)
             {
-                return (!String.IsNullOrEmpty(cell.ImageNameColumnName));
+                return (cell.ElementContent == ElementContentType.IconName || cell.ElementContent == ElementContentType.ImageData);
             }
         }
         /// <summary>
@@ -2665,14 +2845,23 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 string key = element.Name;
                 if (!String.IsNullOrEmpty(key) && templateCells.TryGetValue(key, out var cell) && cell.HasDynamicImage)
-                {
+                {   // element.Name = __TemplateCells.Key = interní přidělené ID elementu šablony, jednoznačné i přes vícero Templates:
                     bool hasImage = false;
-                    var imageName = row[cell.Cell.ImageNameColumnName] as string;
-                    if (!String.IsNullOrEmpty(imageName))
+                    var elementContent = cell.Cell.ElementContent;
+                    switch (elementContent)
                     {
-                        element.Image = DxComponent.GetBitmapImage(imageName);
-                        element.ImageOptions.ImageScaleMode = TileItemImageScaleMode.Squeeze;
-                        hasImage = true;
+                        case ElementContentType.IconName:
+                            var imageName = row[cell.Cell.ColumnName] as string;
+                            if (!String.IsNullOrEmpty(imageName))
+                            {
+                                element.Image = DxComponent.GetBitmapImage(imageName);
+                                element.ImageOptions.ImageScaleMode = TileItemImageScaleMode.Squeeze;
+                                hasImage = true;
+                            }
+                            break;
+                        case ElementContentType.ImageData:
+                            var imageData = row[cell.Cell.ColumnName] as byte[];
+                            break;
                     }
                     if (!hasImage)
                     {
@@ -2682,33 +2871,107 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Úložiště dat o jedné buňce, slouží k propojení mezi ListBoxem a jeho porcesem vykreslování, a definicí buňky <see cref="IDxListBoxTemplateCell"/>.
+        /// Úložiště dat o jedné buňce, slouží k propojení mezi ListBoxem a jeho porcesem vykreslování, a definicí buňky <see cref="IListBoxTemplateElement"/>.
         /// </summary>
         private class TemplateCell
         {
-            public TemplateCell(string key, IDxListBoxTemplateCell cell, bool hasDynamicImage)
+            public TemplateCell(string key, IListBoxTemplateElement cell, bool hasDynamicImage)
             {
                 this.Key = key;
                 this.Cell = cell;
                 this.HasDynamicImage = hasDynamicImage;
             }
             public readonly string Key;
-            public readonly IDxListBoxTemplateCell Cell;
+            public readonly IListBoxTemplateElement Cell;
             public readonly bool HasDynamicImage;
+        }
+        /// <summary>
+        /// Metoda vytvoří Simple template pro ikonu a pro text
+        /// </summary>
+        /// <param name="dataTable"></param>
+        /// <param name="columnNameItemId"></param>
+        /// <param name="columnNameIcon"></param>
+        /// <param name="columnNameText"></param>
+        /// <param name="columnNameToolTip"></param>
+        /// <param name="iconSize"></param>
+        /// <returns></returns>
+        public static DxListBoxTemplate CreateSimpleDxTemplate(System.Data.DataTable dataTable, string columnNameItemId, string columnNameIcon, string columnNameText, string columnNameToolTip = null, int? iconSize = null)
+        {
+            if (dataTable is null || dataTable.Columns.Count == 0) return null;
 
+            // Sloupce do Dictionary - kvůli hledání a kvůli ienumerable:
+            Dictionary<string, DataColumn> columns = new Dictionary<string, DataColumn>(StringComparer.OrdinalIgnoreCase);
+            foreach (DataColumn column in dataTable.Columns)
+            {
+                if (!columns.ContainsKey(column.ColumnName))
+                    columns.Add(column.ColumnName, column);
+            }
+
+            // Pokud je na vstupu něco, co neexistuje v tabulce, tak to zahodím:
+            if (!String.IsNullOrEmpty(columnNameText) && !columns.ContainsKey(columnNameText)) columnNameText = null;
+            if (!String.IsNullOrEmpty(columnNameIcon) && !columns.ContainsKey(columnNameIcon)) columnNameIcon = null;
+            if (!String.IsNullOrEmpty(columnNameToolTip) && !columns.ContainsKey(columnNameToolTip)) columnNameToolTip = null;
+
+            // Pokud nemám zadaný sloupec s textem, najdu první vhodný sloupec:
+            if (String.IsNullOrEmpty(columnNameText)) columnNameText = columns.Values.FirstOrDefault(c => c.DataType == typeof(string))?.ColumnName;
+
+            // Výsledná deklarace šablony:
+            DxListBoxTemplate dxTemplate = new DxListBoxTemplate();
+            dxTemplate.ColumnNameItemId = columnNameItemId;
+            dxTemplate.ColumnNameToolTipTitle = columnNameText;           // Text zobrazený v Listu bude sloužit i jako titulek pro ToolTip
+            dxTemplate.ColumnNameToolTipText = columnNameToolTip;         // Explicitně daný zdroj textu pro ToolTip
+            int colIndex = 0;
+            int rowHeight = 20;
+
+            if (!String.IsNullOrEmpty(columnNameIcon))
+            {
+                int size = iconSize ?? 24;
+                size = ((size < 20) ? 20 : ((size > 64) ? 64 : size));
+                dxTemplate.Elements.Add(new DxListBoxTemplateElement()
+                {
+                    ColumnName = columnNameIcon,
+                    ElementContent = ElementContentType.IconName,
+                    ImageAlignment = TileItemContentAlignment.MiddleCenter,
+                    RowIndex = 0,
+                    ColIndex = colIndex,
+                    Width = size + 4,
+                    Height = size
+                });
+                rowHeight = size;
+                colIndex++;
+            }
+
+            if (!String.IsNullOrEmpty(columnNameText))
+            {
+                dxTemplate.Elements.Add(new DxListBoxTemplateElement()
+                {
+                    ColumnName = columnNameText,
+                    ElementContent = ElementContentType.Text,
+                    RowIndex = 0,
+                    ColIndex = colIndex,
+                    Width = 300,
+                    Height = rowHeight
+                });
+                colIndex++;
+            }
+
+            dxTemplate.ColumnNameToolTipText = columnNameToolTip;
+
+            return dxTemplate;
         }
     }
     /// <summary>
-    /// Definice jedné buňky layoutu. Implementuje <see cref="IDxListBoxTemplateCell"/>, lze ji vkládat do <see cref="DxListBoxTemplate.Cells"/>.
+    /// Definice jedné buňky layoutu. Implementuje <see cref="IListBoxTemplateElement"/>, lze ji vkládat do <see cref="DxListBoxTemplate.Elements"/>.
     /// Jde o prostou schránku na data, nemá funkcionalitu.
     /// </summary>
-    public class DxListBoxTemplateCell : IDxListBoxTemplateCell
+    public class DxListBoxTemplateElement : IListBoxTemplateElement
     {
         /// <summary>
         /// Konstruktor nastaví defaulty
         /// </summary>
-        public DxListBoxTemplateCell()
+        public DxListBoxTemplateElement()
         {
+            ElementContent = ElementContentType.Text;
             Width = null;
             Height = null;
             ColIndex = 0;
@@ -2719,21 +2982,39 @@ namespace Noris.Clients.Win.Components.AsolDX
             FontStyle = null;
         }
         /// <summary>
-        /// ID buňky
+        /// Jednoznačné interní ID buňky. Přiděluje se v procesu tvorby, aplikace na něj nemá vliv a nijak jej nevyužije.
         /// </summary>
-        public string Id { get; set; }
+        public string Key { get; set; }
         /// <summary>
-        /// Jméno sloupce v datech, jehož obsah j ezde zobrazen
+        /// Název šablony. Elementy budou rozgrupovány podle tohoto jména a budou vytvořeny samostatné šablony.
         /// </summary>
-        public string TextColumnName { get; set; }
+        public string TemplateName { get; set; }
         /// <summary>
-        /// Název ikony v tomto prvku, konstantní
+        /// Jméno sloupce v datech, jehož obsah je zde zobrazen, buď jako Text, nebo Ikona daného jména, nebo jako Image daného obsahu.
         /// </summary>
-        public string ImageName { get; set; }
+        public string ColumnName { get; set; }
         /// <summary>
-        /// Jméno sloupce v datech, který obsahuje název ikony
+        /// Druh obsahu v tomito elementu
         /// </summary>
-        public string ImageNameColumnName { get; set; }
+        public ElementContentType ElementContent { get; set; }
+        /// <summary>
+        /// Pozice Y buňky v matici = číslo řádku, počínaje 0.
+        /// Pokud má buňka <see cref="RowSpan"/> větší než 1, jde pozici počátku buňky.
+        /// </summary>
+        public int RowIndex { get; set; }
+        /// <summary>
+        /// Počet řádků, které buňka překrývá. Default = 1, netřeba zadávat.
+        /// </summary>
+        public int RowSpan { get; set; }
+        /// <summary>
+        /// Pozice X buňky v matici = číslo sloupce, počínaje 0.
+        /// Pokud má buňka <see cref="ColSpan"/> větší než 1, jde pozici počátku buňky.
+        /// </summary>
+        public int ColIndex { get; set; }
+        /// <summary>
+        /// Počet sloupců, které buňka překrývá. Default = 1, netřeba zadávat.
+        /// </summary>
+        public int ColSpan { get; set; }
         /// <summary>
         /// Šířka buňky v pixelech.
         /// Pokud má buňka <see cref="ColSpan"/> větší než 1, jde o šířku celkovou.
@@ -2745,24 +3026,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public int? Height { get; set; }
         /// <summary>
-        /// Pozice X buňky v matici = číslo sloupce, počínaje 0.
-        /// Pokud má buňka <see cref="ColSpan"/> větší než 1, jde pozici počátku buňky.
-        /// </summary>
-        public int ColIndex { get; set; }
-        /// <summary>
-        /// Pozice Y buňky v matici = číslo řádku, počínaje 0.
-        /// Pokud má buňka <see cref="RowSpan"/> větší než 1, jde pozici počátku buňky.
-        /// </summary>
-        public int RowIndex { get; set; }
-        /// <summary>
-        /// Počet sloupců, které buňka překrývá. Default = 1, netřeba zadávat.
-        /// </summary>
-        public int ColSpan { get; set; }
-        /// <summary>
-        /// Počet řádků, které buňka překrývá. Default = 1, netřeba zadávat.
-        /// </summary>
-        public int RowSpan { get; set; }
-        /// <summary>
         /// Odchylka velikosti fontu od defaultu, null = default.
         /// </summary>
         public int? FontSizeDelta { get; set; }
@@ -2770,7 +3033,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Styl fontu, null = default.
         /// </summary>
         public FontStyle? FontStyle { get; set; }
-
         /// <summary>
         /// Umístění textu v rámci prostoru buňky, null = default.
         /// </summary>
@@ -2783,29 +3045,46 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vzájemná pozice textu a obrázku v buňce, null = default.
         /// </summary>
         public DevExpress.XtraEditors.TileControlImageToTextAlignment? ImageToTextAlignment { get; set; }
-
     }
     /// <summary>
     /// Deklarace požadavků na definici jedné buňky layoutu v <see cref="DxListBoxTemplate"/>, použité pro definici layoutu v <see cref="DxListBoxControl.DxTemplate"/>
     /// </summary>
-    public interface IDxListBoxTemplateCell
+    public interface IListBoxTemplateElement
     {
         /// <summary>
-        /// ID buňky
+        /// Jednoznačné interní ID buňky. Přiděluje se v procesu tvorby, aplikace na něj nemá vliv a nijak jej nevyužije.
         /// </summary>
-        string Id { get; }
+        string Key { get; set; }
         /// <summary>
-        /// Jméno sloupce v datech, jehož obsah j ezde zobrazen
+        /// Název šablony. Elementy budou rozgrupovány podle tohoto jména a budou vytvořeny samostatné šablony.
         /// </summary>
-        string TextColumnName { get; }
+        public string TemplateName { get; }
         /// <summary>
-        /// Název ikony v tomto prvku, konstantní
+        /// Jméno sloupce v datech, jehož obsah je zde zobrazen, buď jako Text, nebo Ikona daného jména, nebo jako Image daného obsahu.
         /// </summary>
-        string ImageName { get; }
+        public string ColumnName { get; }
         /// <summary>
-        /// Jméno sloupce v datech, který obsahuje název ikony
+        /// Druh obsahu v tomito elementu
         /// </summary>
-        string ImageNameColumnName { get; }
+        public ElementContentType ElementContent { get; }
+        /// <summary>
+        /// Pozice Y buňky v matici = číslo řádku, počínaje 0.
+        /// Pokud má buňka <see cref="RowSpan"/> větší než 1, jde pozici počátku buňky.
+        /// </summary>
+        int RowIndex { get; }
+        /// <summary>
+        /// Počet řádků, které buňka překrývá. Default = 1, netřeba zadávat.
+        /// </summary>
+        int RowSpan { get; }
+        /// <summary>
+        /// Pozice X buňky v matici = číslo sloupce, počínaje 0.
+        /// Pokud má buňka <see cref="ColSpan"/> větší než 1, jde pozici počátku buňky.
+        /// </summary>
+        int ColIndex { get; }
+        /// <summary>
+        /// Počet sloupců, které buňka překrývá. Default = 1, netřeba zadávat.
+        /// </summary>
+        int ColSpan { get; }
         /// <summary>
         /// Šířka buňky v pixelech.
         /// Pokud má buňka <see cref="ColSpan"/> větší než 1, jde o šířku celkovou.
@@ -2816,24 +3095,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud má buňka <see cref="RowSpan"/> větší než 1, jde o výšku celkovou.
         /// </summary>
         int? Height { get; }
-        /// <summary>
-        /// Pozice X buňky v matici = číslo sloupce, počínaje 0.
-        /// Pokud má buňka <see cref="ColSpan"/> větší než 1, jde pozici počátku buňky.
-        /// </summary>
-        int ColIndex { get; }
-        /// <summary>
-        /// Pozice Y buňky v matici = číslo řádku, počínaje 0.
-        /// Pokud má buňka <see cref="RowSpan"/> větší než 1, jde pozici počátku buňky.
-        /// </summary>
-        int RowIndex { get; }
-        /// <summary>
-        /// Počet sloupců, které buňka překrývá. Default = 1, netřeba zadávat.
-        /// </summary>
-        int ColSpan { get; }
-        /// <summary>
-        /// Počet řádků, které buňka překrývá. Default = 1, netřeba zadávat.
-        /// </summary>
-        int RowSpan { get; }
         /// <summary>
         /// Odchylka velikosti fontu od defaultu, null = default.
         /// </summary>
@@ -2855,6 +3116,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vzájemná pozice textu a obrázku v buňce, null = default.
         /// </summary>
         DevExpress.XtraEditors.TileControlImageToTextAlignment? ImageToTextAlignment { get; }
+    }
+    /// <summary>
+    /// Druh obsahu v daném elementu
+    /// </summary>
+    public enum ElementContentType
+    {
+        /// <summary>
+        /// Nic
+        /// </summary>
+        None,
+        /// <summary>
+        /// Text
+        /// </summary>
+        Text,
+        /// <summary>
+        /// Název ikony
+        /// </summary>
+        IconName,
+        /// <summary>
+        /// Binární data obrázku
+        /// </summary>
+        ImageData
     }
     #endregion
     #region Event args + delegáti, public enumy

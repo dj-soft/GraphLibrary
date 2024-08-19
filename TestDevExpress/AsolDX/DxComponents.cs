@@ -12831,6 +12831,67 @@ White
         }
         #endregion
         #endregion
+        #region Konverze enumů na základě názvu hodnoty (Enum přes String na jiný Enum)
+        /// <summary>
+        /// Vstupní hodnotu enumu konvertuje do výstupní odpovídající stejnojmenné hodnoty.
+        /// Konvertuje přes string, nikoli přes numerickou hodnotu. Enumy tedy musí mít shodné názvy prvků.
+        /// </summary>
+        /// <typeparam name="TInp"></typeparam>
+        /// <typeparam name="TOut"></typeparam>
+        /// <param name="inp"></param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
+        public static TOut ConvertEnum<TInp, TOut>(TInp inp, TOut defaultValue)
+            where TInp : struct
+            where TOut : struct
+        {
+            string name = inp.ToString();
+            if (Enum.TryParse<TOut>(name, out TOut value1)) return value1;
+            if (Enum.TryParse<TOut>(name, true, out TOut value2)) return value2;
+            return defaultValue;
+        }
+        /// <summary>
+        /// Vstupní hodnotu danou stringem konvertuje do hodnoty enumu <typeparamref name="TOut"/> odpovídající stejnojmenné hodnoty.
+        /// </summary>
+        /// <typeparam name="TOut"></typeparam>
+        /// <param name="text"></param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
+        public static TOut ConvertEnum<TOut>(string text, TOut defaultValue)
+            where TOut : struct
+        {
+            if (!String.IsNullOrEmpty(text))
+            {
+                string name = text.Trim();
+                if (Enum.TryParse<TOut>(name, out TOut value1)) return value1;
+                if (Enum.TryParse<TOut>(name, true, out TOut value2)) return value2;
+            }
+            return defaultValue;
+        }
+        /// <summary>
+        /// Vstupní hodnotu enumu konvertuje do výstupní odpovídající stejnojmenné hodnoty.
+        /// Konvertuje přes string, nikoli přes numerickou hodnotu. Enumy tedy musí mít shodné názvy prvků.
+        /// <para/>
+        /// Ošetřena NULL hodnota na vstupu: pokud je na vstupu NULL, pak výstup je automaticky NULL. Nikoli <paramref name="defaultValue"/>.
+        /// Pokud vstupní hodnota nebude nalezena ve výstupním Enumu, pak výstupem bude <paramref name="defaultValue"/>. Ta může být předána jako null, pak i tehdy bude výstupem null.
+        /// </summary>
+        /// <typeparam name="TInp"></typeparam>
+        /// <typeparam name="TOut"></typeparam>
+        /// <param name="inp"></param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
+        public static TOut? ConvertEnum<TInp, TOut>(TInp? inp, TOut? defaultValue)
+            where TInp : struct
+            where TOut : struct
+        {
+            if (!inp.HasValue) return null;
+
+            string name = inp.Value.ToString();
+            if (Enum.TryParse<TOut>(name, out TOut value1)) return value1;
+            if (Enum.TryParse<TOut>(name, true, out TOut value2)) return value2;
+            return defaultValue;
+        }
+        #endregion
         #region Static konstruktor
         static Convertor()
         { _PrepareFormats(); }
