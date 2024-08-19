@@ -2365,8 +2365,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (visible.HasValue) listBox.Visible = visible.Value;
             if (tabStop.HasValue) listBox.TabStop = tabStop.Value;
 
-            listBox.SetToolTip(toolTipTitle, toolTipText);
-
             if (selectedIndexChanged != null) listBox.SelectedIndexChanged += selectedIndexChanged;
             if (parent != null) parent.Controls.Add(listBox);
             if (shiftY) y = y + listBox.Height + inst._DetailYSpaceText;

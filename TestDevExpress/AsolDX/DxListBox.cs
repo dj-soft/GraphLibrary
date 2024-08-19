@@ -184,12 +184,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Metoda vytvoří Simple template pro ikonu a pro text
         /// </summary>
+        /// <param name="columnNameItemId"></param>
         /// <param name="columnNameIcon"></param>
         /// <param name="columnNameText"></param>
         /// <param name="columnNameToolTip"></param>
         /// <param name="iconSize"></param>
         /// <returns></returns>
-        public DxListBoxTemplate CreateSimpleDxTemplate(string columnNameIcon, string columnNameText, string columnNameToolTip = null, int? iconSize = null) { return __ListBox.CreateSimpleDxTemplate(columnNameIcon, columnNameText, columnNameToolTip, iconSize); }
+        public DxListBoxTemplate CreateSimpleDxTemplate(string columnNameItemId, string columnNameIcon, string columnNameText, string columnNameToolTip = null, int? iconSize = null) { return __ListBox.CreateSimpleDxTemplate(columnNameItemId, columnNameIcon, columnNameText, columnNameToolTip, iconSize); }
         #endregion
         #endregion
         #region Ctrl+C a Ctrl+V, i mezi controly a mezi aplikacemi
@@ -958,7 +959,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// ListBoxControl s podporou pro drag and drop a reorder
     /// </summary>
-    public class DxListBoxControl : DevExpress.XtraEditors.ImageListBoxControl, IDxDragDropControl, IUndoRedoControl   // původně :ListBoxControl, nyní: https://docs.devexpress.com/WindowsForms/DevExpress.XtraEditors.ImageListBoxControl
+    public class DxListBoxControl : DevExpress.XtraEditors.ImageListBoxControl, IDxDragDropControl, IUndoRedoControl, IDxToolTipDynamicClient   // původně: ListBoxControl, nyní: https://docs.devexpress.com/WindowsForms/DevExpress.XtraEditors.ImageListBoxControl
     {
         #region Public členy
         /// <summary>
@@ -989,7 +990,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             base.Dispose(disposing);
             DxDragDropDispose();
-            ToolTipDispose();
+            _ToolTipDispose();
         }
         /// <summary>
         /// Přídavek k výšce jednoho řádku ListBoxu v pixelech.
@@ -1295,13 +1296,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Metoda vytvoří Simple template pro ikonu a pro text
         /// </summary>
+        /// <param name="columnNameItemId"></param>
         /// <param name="columnNameIcon"></param>
         /// <param name="columnNameText"></param>
         /// <param name="columnNameToolTip"></param>
         /// <param name="iconSize"></param>
         /// <returns></returns>
-        public DxListBoxTemplate CreateSimpleDxTemplate(string columnNameIcon, string columnNameText, string columnNameToolTip = null, int? iconSize = null)
-        { return DxListBoxTemplate.CreateSimpleDxTemplate(this.DataTable, columnNameIcon, columnNameText, columnNameToolTip, iconSize); }
+        public DxListBoxTemplate CreateSimpleDxTemplate(string columnNameItemId, string columnNameIcon, string columnNameText, string columnNameToolTip = null, int? iconSize = null)
+        { return DxListBoxTemplate.CreateSimpleDxTemplate(this.DataTable, columnNameItemId, columnNameIcon, columnNameText, columnNameToolTip, iconSize); }
         #endregion
         /// <summary>
         /// Aktuální režim položek
@@ -1511,64 +1513,119 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region ToolTip
         /// <summary>
-        /// ToolTipy mohou obsahovat SimpleHtml tagy?
+        /// Inicializace ToolTipu, voláno z konstruktoru
         /// </summary>
-        public bool ToolTipAllowHtmlText { get; set; }
         private void _ToolTipInit()
         {
-            this.ToolTipController = DxComponent.CreateNewToolTipController();
-            this.ToolTipController.GetActiveObjectInfo += ToolTipController_GetActiveObjectInfo;
-        }
-        private void ToolTipDispose()
-        {
-            this.ToolTipController?.Dispose();
+            this.ToolTipAllowHtmlText = null;
+            this.DxToolTipController = DxComponent.CreateNewToolTipController(ToolTipAnchor.Cursor);
+            this.DxToolTipController.AddClient(this);                                               // Protože this třída implementuje IDxToolTipDynamicClient, bude volána metoda IDxToolTipDynamicClient.PrepareSuperTipForPoint()
+            this.DxToolTipController.ToolTipDebugTextChanged += _ToolTipDebugTextChanged;           // Má význam jen pro Debug, nemusí být řešeno
         }
         /// <summary>
-        /// Připraví ToolTip pro aktuální Node
+        /// Dispose ToolTipu
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ToolTipController_GetActiveObjectInfo(object sender, ToolTipControllerGetActiveObjectInfoEventArgs e)
+        private void _ToolTipDispose()
         {
-            if (e.SelectedControl is DxListBoxControl listBox && Object.ReferenceEquals(listBox, this))
+            this.DxToolTipController?.Dispose();
+        }
+        /// <summary>
+        /// ToolTipy mohou obsahovat SimpleHtml tagy? Null = default
+        /// </summary>
+        public bool? ToolTipAllowHtmlText { get; set; }
+        /// <summary>
+        /// Controller ToolTipu
+        /// </summary>
+        public DxToolTipController DxToolTipController
+        {
+            get { return __DxToolTipController; }
+            private set { __DxToolTipController = value; this.ToolTipController = value; }
+        }
+        private DxToolTipController __DxToolTipController;
+        /// <summary>
+        /// Zde control určí, jaký ToolTip má být pro danou pozici myši zobrazen
+        /// </summary>
+        /// <param name="args"></param>
+        void IDxToolTipDynamicClient.PrepareSuperTipForPoint(Noris.Clients.Win.Components.AsolDX.DxToolTipDynamicPrepareArgs args)
+        {
+            bool hasItem = TryGetViewItemOnPoint(args.MouseLocation, out var viewItem);
+            if (hasItem)
             {
-                var mousePoint = e.ControlMousePosition;
-                if (TryGetItemOnPoint(mousePoint, out var item))
+                // Pokud myš nyní ukazuje na ten samý prvek, pro který už máme ToolTip vytvořen, pak nebudeme ToolTip připravovat:
+                bool isSameAsLast = (args.DxSuperTip != null && Object.ReferenceEquals(args.DxSuperTip.ClientData, viewItem.Item));
+                if (!isSameAsLast)
+                {   // Připravíme data pro ToolTip:
+                    var dxSuperTip = _CreateDxSuperTip(viewItem.Item);                   // Vytvořím new data ToolTipu
+                    if (dxSuperTip != null)
+                    {
+                        if (ToolTipAllowHtmlText.HasValue) dxSuperTip.ToolTipAllowHtmlText = ToolTipAllowHtmlText;
+                        dxSuperTip.ClientData = viewItem.Item;                           // Přibalím si do nich náš Node abych příště detekoval, zda jsme/nejsme na tom samém
+                    }
+                    args.DxSuperTip = dxSuperTip;
+                    args.ToolTipChange = DxToolTipChangeType.NewToolTip;                 // Zajistím rozsvícení okna ToolTipu
+                }
+                else
                 {
-                    string toolTipTitle = null;
-                    string toolTipText = null;
-                    switch (__ItemsMode)
-                    {
-                        case ListBoxItemsMode.MenuItems:
-                            if (item.Item is IMenuItem menuItem)
-                            {
-                                toolTipTitle = menuItem.ToolTipTitle;
-                                toolTipText = menuItem.ToolTipText;
-                            }
-                            break;
-                        case ListBoxItemsMode.Table:
-                            if (item.Item is System.Data.DataRowView rowView && rowView.Row != null)
-                            {
-                                toolTipTitle = _GetTableToolTipTitle(rowView.Row);
-                                toolTipText = _GetTableToolTipText(rowView.Row);
-                            }
-                            break;
-                    }
-
-                    if (!String.IsNullOrEmpty(toolTipText))
-                    {
-                        var ttci = new DevExpress.Utils.ToolTipControlInfo(this, toolTipText, toolTipTitle);
-                        ttci.ToolTipType = ToolTipType.SuperTip;
-                        ttci.AllowHtmlText = (ToolTipAllowHtmlText ? DefaultBoolean.True : DefaultBoolean.False);
-                        ttci.ToolTipPosition = this.PointToScreen(mousePoint);
-                        ttci.ToolTipAnchor = ToolTipAnchor.Cursor;
-                        ttci.SuperTip = DxComponent.CreateDxSuperTip(toolTipTitle, toolTipText);
-                        e.Info = ttci;
-                        e.SelectedObject = this.SelectedItem;
-                    }
+                    args.ToolTipChange = DxToolTipChangeType.SameAsLastToolTip;          // Není třeba nic dělat, nechme svítit stávající ToolTip
                 }
             }
+            else
+            {   // Myš je mimo prvky:
+                args.ToolTipChange = DxToolTipChangeType.NoToolTip;                      // Pokud ToolTip svítí, zhasneme jej
+            }
         }
+        /// <summary>
+        /// Vytvoří data pro ToolTip pro daný prvek Listu
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private DxSuperToolTip _CreateDxSuperTip(object item)
+        {
+            string toolTipTitle = null;
+            string toolTipText = null;
+            switch (__ItemsMode)
+            {
+                case ListBoxItemsMode.MenuItems:
+                    // V režimu MenuItem máme prvky Listu postavené na interface IMenuItem;
+                    // Ten implementuje ITextItem a tedy i IToolTipItem;
+                    // A pro IToolTipItem umíme vytvořit DxSuperToolTip standardním postupem:
+                    if (item is IMenuItem menuItem)
+                        return DxComponent.CreateDxSuperTip(menuItem);
+                    break;
+                case ListBoxItemsMode.Table:
+                    if (item is System.Data.DataRowView rowView && rowView.Row != null)
+                    {   // Z datového řádku 
+                        toolTipTitle = _GetTableToolTipTitle(rowView.Row);
+                        toolTipText = _GetTableToolTipText(rowView.Row);
+                        return DxComponent.CreateDxSuperTip(toolTipTitle, toolTipText);
+                    }
+                    break;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Explicitně skrýt ToolTip - typicky při nějaké myší akci (drag and drop, kontextové menu atd)
+        /// </summary>
+        /// <param name="message"></param>
+        private void _ToolTipHide(string message)
+        {
+            this.DxToolTipController.HideTip();
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"TreeList.HideToolTip({message})");
+        }
+        /// <summary>
+        /// V controlleru ToolTipu došlo k události, pošli ji do našeho eventu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _ToolTipDebugTextChanged(object sender, DxToolTipArgs args)
+        {
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, args.EventName);
+        }
+        #endregion
+        #region VisibleItems a konverze ...
+
+
         /// <summary>
         /// Metoda najde prvek this Listu, který se nachází na dané souřadnici.
         /// Souřadnice je v koordinátech controlu, tedy 0,0 = levý horní roh ListBoxu.
@@ -1576,7 +1633,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="point"></param>
         /// <param name="foundItem"></param>
         /// <returns></returns>
-        public bool TryGetItemOnPoint(Point point, out DevExpress.XtraEditors.ViewInfo.BaseListBoxViewInfo.ItemInfo foundItem)
+        public bool TryGetViewItemOnPoint(Point point, out DevExpress.XtraEditors.ViewInfo.BaseListBoxViewInfo.ItemInfo foundItem)
         {
             foundItem = null;
             if (!this.ClientRectangle.Contains(point)) return false;
@@ -1594,7 +1651,35 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return false;
         }
+        /// <summary>
+        /// Metoda vrátí ID pro daný prvek.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public object GetItemId(object item)
+        {
+            if (item is null) return null;
 
+            switch (__ItemsMode)
+            {
+                case ListBoxItemsMode.MenuItems:
+                    if (item is IMenuItem menuItem) 
+                        return menuItem.ItemId;
+                    break;
+                case ListBoxItemsMode.Table:
+                    if (item is System.Data.DataRowView rowView && rowView.Row != null)
+                        return _GetTableItemId(rowView.Row);
+                    break;
+            }
+            return null;
+        }
+        private object _GetTableItemId(System.Data.DataRow row)
+        {
+            string colName = this.DxTemplate.ColumnNameItemId;
+            if (!String.IsNullOrEmpty(colName) && row != null && row.Table.Columns.Contains(colName))
+                return row[colName];
+            return null;
+        }
         private string _GetTableToolTipTitle(System.Data.DataRow row)
         {
             string colName = this.DxTemplate.ColumnNameToolTipTitle;
@@ -1609,18 +1694,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return row[colName] as string;
             return null;
         }
-        /// <summary>
-        /// Nastaví daný text a titulek pro tooltip
-        /// </summary>
-        /// <param name="text"></param>
-        public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
-        /// <summary>
-        /// Nastaví daný text a titulek pro tooltip
-        /// </summary>
-        /// <param name="title">Titulek</param>
-        /// <param name="text">Text</param>
-        /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
-        public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
         #region DoKeyActions; CtrlA, CtrlC, CtrlX, CtrlV, Delete; Move, Insert, Remove
         /// <summary>
@@ -2550,6 +2623,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public List<IListBoxTemplateElement> Elements { get { return __Elements; } }
         /// <summary>
+        /// Sloupec tabulky, obsahující ItemId aktuálního řádku
+        /// </summary>
+        public string ColumnNameItemId { get; set; }
+        /// <summary>
         /// Sloupec tabulky, obsahující titulek pro ToolTip
         /// </summary>
         public string ColumnNameToolTipTitle { get; set; }
@@ -2812,12 +2889,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Metoda vytvoří Simple template pro ikonu a pro text
         /// </summary>
         /// <param name="dataTable"></param>
+        /// <param name="columnNameItemId"></param>
         /// <param name="columnNameIcon"></param>
         /// <param name="columnNameText"></param>
         /// <param name="columnNameToolTip"></param>
         /// <param name="iconSize"></param>
         /// <returns></returns>
-        public static DxListBoxTemplate CreateSimpleDxTemplate(System.Data.DataTable dataTable, string columnNameIcon, string columnNameText, string columnNameToolTip = null, int? iconSize = null)
+        public static DxListBoxTemplate CreateSimpleDxTemplate(System.Data.DataTable dataTable, string columnNameItemId, string columnNameIcon, string columnNameText, string columnNameToolTip = null, int? iconSize = null)
         {
             if (dataTable is null || dataTable.Columns.Count == 0) return null;
 
@@ -2839,6 +2917,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Výsledná deklarace šablony:
             DxListBoxTemplate dxTemplate = new DxListBoxTemplate();
+            dxTemplate.ColumnNameItemId = columnNameItemId;
             dxTemplate.ColumnNameToolTipTitle = columnNameText;           // Text zobrazený v Listu bude sloužit i jako titulek pro ToolTip
             dxTemplate.ColumnNameToolTipText = columnNameToolTip;         // Explicitně daný zdroj textu pro ToolTip
             int colIndex = 0;

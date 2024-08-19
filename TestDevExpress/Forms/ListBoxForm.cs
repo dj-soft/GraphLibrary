@@ -306,7 +306,7 @@ namespace TestDevExpress.Forms
         {
             var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 520, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
             sampleList.DataTable = Randomizer.GetDataTable(48, 96, "id:int;name:idtext;surname:text;description:note;icon:imagenamepngfull;photo:photo"); ;
-            sampleList.DxTemplate = sampleList.CreateSimpleDxTemplate("icon", "name", "description", 16);
+            sampleList.DxTemplate = sampleList.CreateSimpleDxTemplate("id", "icon", "name", "description", 16);
             sampleList.SelectionMode = SelectionMode.MultiExtended;
             sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
             this.DxMainPanel.Controls.Add(sampleList);
