@@ -4837,7 +4837,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _ListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            var selectedItems = _ListBox.SelectedItemsInfo;
+            var selectedItems = _ListBox.SelectedMenuItemsExt;
             StatusText = "Označeny řádky: " + selectedItems.Length.ToString();
         }
         /// <summary>
@@ -4852,7 +4852,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private void _ListBox_PaintListIcons(PaintEventArgs e)
         {
-            var visibleItems = _ListBox.VisibleItems;
+            var visibleItems = _ListBox.VisibleMenuItemsExt;
             foreach (var visibleItem in visibleItems)
             {
                 string resourceName = visibleItem.Item2?.Text;
@@ -4927,7 +4927,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _DoCopyClipboard()
         {
-            var selectedItems = _ListBox.SelectedItemsInfo;
+            var selectedItems = _ListBox.SelectedMenuItemsExt;
             int rowCount = selectedItems.Length;
             int rowLast = rowCount - 1;
             StringBuilder sb = new StringBuilder();

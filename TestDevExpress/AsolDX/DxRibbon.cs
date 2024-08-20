@@ -6314,7 +6314,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var qatPanel = new DxListBoxPanel() { Dock = DockStyle.Fill };
                 form.ControlPanel.Controls.Add(qatPanel);
                 var currentItems = QatManagerItems;
-                qatPanel.ListBox.ListItems = currentItems;
+                qatPanel.ListBox.MenuItems = currentItems;
                 qatPanel.ListBox.SelectionMode = SelectionMode.MultiExtended;
                 qatPanel.ListBox.ItemHeight = 20;
                 qatPanel.ListBox.DragDropActions = DxDragDropActionType.ReorderItems;
@@ -6335,7 +6335,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 if (result == DialogResult.OK)
                 {   // V ListBoxu jsou prvky typované jako IMenuItem, ale protože jsem tam dával IRibbonItem, tak tam budou tito potomkové:
-                    var modifiedItems = qatPanel.ListBox.ListItems.OfType<IRibbonItem>().ToArray();
+                    var modifiedItems = qatPanel.ListBox.MenuItems.OfType<IRibbonItem>().ToArray();
                     ChangeQatItems(currentItems, modifiedItems);
                 }    
             }     

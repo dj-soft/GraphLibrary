@@ -162,11 +162,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Toto pole má stejný počet prvků jako pole this.Items
         /// Pole jako celek lze setovat: vymění se obsah, ale zachová se pozice.
         /// </summary>
-        public IMenuItem[] ListItems { get { return __ListBox.ListItems; } set { __ListBox.ListItems = value; } }
+        public IMenuItem[] ListItems { get { return __ListBox.MenuItems; } set { __ListBox.MenuItems = value; } }
         /// <summary>
         /// Aktuálně vybraný prvek typu <see cref="IMenuItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
         /// </summary>
-        public IMenuItem SelectedListItem { get { return __ListBox.SelectedListItem; } set { __ListBox.SelectedListItem = value; } }
+        public IMenuItem SelectedListItem { get { return __ListBox.SelectedMenuItem; } set { __ListBox.SelectedMenuItem = value; } }
         /// <summary>
         /// Prvky Listu
         /// </summary>
@@ -252,6 +252,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Volá se po provedení kteréhokoli požadavku
         /// </summary>
+        /// <param name="sender"></param>
         /// <param name="args"></param>
         private void _RunListActionAfter(object sender, DxListBoxActionEventArgs args)
         {
@@ -272,7 +273,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Při změně Selected prvků, libovolného typu
         /// </summary>
         /// <param name="e"></param>
-        private void RunSelectedItemsChanged(TEventArgs<object> e)
+        private void _RunSelectedItemsChanged(TEventArgs<object> e)
         {
             OnSelectedItemsChanged(e);
             SelectedItemsChanged?.Invoke(this, e);
@@ -330,36 +331,41 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="filterMode"></param>
         private void _SetRowFilterMode(FilterRowMode filterMode)
         {
-            if (filterMode != FilterRowMode.Client && _RowFilterClientExists)
-                _RowFilterClientRemove();
-            if (filterMode != FilterRowMode.Server && _RowFilterServerExists)
-                _RowFilterServerRemove();
-
-            if (filterMode == FilterRowMode.Client && !_RowFilterClientExists)
-                _RowFilterClientPrepare();
-            if (filterMode == FilterRowMode.Server && !_RowFilterServerExists)
-                _RowFilterServerPrepare();
-
-            if (filterMode != __RowFilterMode)
-            {
-                __RowFilterMode = filterMode;
-                this.RunInGui(_ShowRowFilterBox);
-            }
+            this.RunInGui(() => _SetRowFilterModeGui(filterMode));
         }
         /// <summary>
-        /// Nastaví viditelnost pro aktuální FilterRow a upraví celkový Layout aby byl správně umístěn
+        /// Aktivuje daný režim řádkového filtru, v GUI threadu
         /// </summary>
-        private void _ShowRowFilterBox()
+        /// <param name="newFilterMode"></param>
+        private void _SetRowFilterModeGui(FilterRowMode newFilterMode)
         {
-            var filterMode = __RowFilterMode;
-            if (filterMode == FilterRowMode.Client && _RowFilterClientExists)
+            var oldFilterMode = __RowFilterMode;
+
+            if (newFilterMode != FilterRowMode.Client && _RowFilterClientExists)
+                _RowFilterClientRemove();
+            if (newFilterMode != FilterRowMode.Server && _RowFilterServerExists)
+                _RowFilterServerRemove();
+
+            if (newFilterMode == FilterRowMode.Client && !_RowFilterClientExists)
+                _RowFilterClientPrepare();
+            if (newFilterMode == FilterRowMode.Server && !_RowFilterServerExists)
+                _RowFilterServerPrepare();
+
+            switch (newFilterMode)
             {
-                __RowFilterClient.Visible = true;
-                DoLayout();
+                case FilterRowMode.Client:
+                    if (!__RowFilterClient.IsSetVisible())
+                        __RowFilterClient.Visible = true;
+                    break;
+                case FilterRowMode.Server:
+                    if (!__RowFilterServer.IsSetVisible())
+                        __RowFilterServer.Visible = true;
+                    break;
             }
-            else if (filterMode == FilterRowMode.Server && _RowFilterServerExists)
+
+            if (newFilterMode != oldFilterMode)
             {
-                __RowFilterServer.Visible = true;
+                __RowFilterMode = newFilterMode;
                 DoLayout();
             }
         }
@@ -705,7 +711,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _ListBox_SelectedItemsChanged(object sender, TEventArgs<object> e)
         {
             _SetButtonsEnabledSelection();
-            RunSelectedItemsChanged(e);
+            _RunSelectedItemsChanged(e);
         }
         /// <summary>
         /// Nastaví Enabled buttonů
@@ -1032,7 +1038,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Toto pole má stejný počet prvků jako pole this.Items
         /// Pole jako celek lze setovat: vymění se obsah, ale zachová se pozice.
         /// </summary>
-        public IMenuItem[] ListItems
+        public IMenuItem[] MenuItems
         {
             get
             {
@@ -1074,7 +1080,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _RunItemsListChanged(e);
         }
         /// <summary>
-        /// Zavolá akce po změně v poli <see cref="ListItems"/>
+        /// Zavolá akce po změně v poli <see cref="MenuItems"/>
         /// </summary>
         /// <param name="e"></param>
         private void _RunItemsListChanged(System.ComponentModel.ListChangedEventArgs e)
@@ -1083,23 +1089,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             ListItemsChanged?.Invoke(this, e);
         }
         /// <summary>
-        /// Proběhne po změně v poli <see cref="ListItems"/>
+        /// Proběhne po změně v poli <see cref="MenuItems"/>
         /// </summary>
         /// <param name="e"></param>
         protected virtual void OnListItemsChanged(System.ComponentModel.ListChangedEventArgs e) { }
         /// <summary>
-        /// Proběhne po změně v poli <see cref="ListItems"/>
+        /// Proběhne po změně v poli <see cref="MenuItems"/>
         /// </summary>
         public event System.ComponentModel.ListChangedEventHandler ListItemsChanged;
-
         /// <summary>
         /// Aktuálně vybraný prvek typu <see cref="IMenuItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
         /// </summary>
-        public IMenuItem SelectedListItem
+        public IMenuItem SelectedMenuItem
         {
             get
             {   // Vrátím IMenuItem nalezený v aktuálně vybraném prvku:
-                return ((__ItemsMode == ListBoxItemsMode.MenuItems && this.Items.Count > 0 && _TryFindListItem(this.SelectedItem, out var menuItem)) ? menuItem : null);
+                return ((__ItemsMode == ListBoxItemsMode.MenuItems && this.Items.Count > 0 && _TryFindMenuItem(this.SelectedItem, out var menuItem)) ? menuItem : null);
             }
             set
             {   // Najdu první prvek zdejšího pole, který v sobě obsahuje IMenuItem, který je identický s dodanou value:
@@ -1107,7 +1112,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     object selectedItem = null;
                     if (this.Items.Count > 0 && value != null)
-                        selectedItem = this.Items.FirstOrDefault(i => (_TryFindListItem(i, out var iMenuItem) && Object.ReferenceEquals(iMenuItem, value)));
+                        selectedItem = this.Items.FirstOrDefault(i => (_TryFindMenuItem(i, out var iMenuItem) && Object.ReferenceEquals(iMenuItem, value)));
                     this.SelectedItem = selectedItem;
                 }
             }
@@ -1118,7 +1123,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="item"></param>
         /// <param name="menuItem"></param>
         /// <returns></returns>
-        private bool _TryFindListItem(object item, out IMenuItem menuItem)
+        private bool _TryFindMenuItem(object item, out IMenuItem menuItem)
         {
             if (__ItemsMode == ListBoxItemsMode.MenuItems && item != null)
             {
@@ -1136,19 +1141,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             menuItem = null;
             return false;
         }
-
         /// <summary>
         /// Pole, obsahující informace o právě viditelných prvcích ListBoxu a jejich aktuální souřadnice
         /// </summary>
-        public Tuple<int, IMenuItem, Rectangle>[] VisibleItems
+        public Tuple<int, IMenuItem, Rectangle>[] VisibleMenuItemsExt
         {
             get
             {
-                List<Tuple<int, IMenuItem, Rectangle>> visibleItems = null;
+                List<Tuple<int, IMenuItem, Rectangle>> visibleMenuItems = null;
                 if (__ItemsMode == ListBoxItemsMode.MenuItems)
                 {
-                    visibleItems = new List<Tuple<int, IMenuItem, Rectangle>>();
-                    var listItems = this.ListItems;
+                    visibleMenuItems = new List<Tuple<int, IMenuItem, Rectangle>>();
+                    var listItems = this.MenuItems;
                     int topIndex = this.TopIndex;
                     int index = (topIndex > 0 ? topIndex - 1 : topIndex);
                     int count = this.ItemCount;
@@ -1156,45 +1160,45 @@ namespace Noris.Clients.Win.Components.AsolDX
                     {
                         Rectangle? bounds = GetItemBounds(index);
                         if (bounds.HasValue)
-                            visibleItems.Add(new Tuple<int, IMenuItem, Rectangle>(index, listItems[index], bounds.Value));
+                            visibleMenuItems.Add(new Tuple<int, IMenuItem, Rectangle>(index, listItems[index], bounds.Value));
                         else if (index > topIndex)
                             break;
                         index++;
                     }
                 }
-                return visibleItems.ToArray();
+                return visibleMenuItems.ToArray();
             }
         }
         /// <summary>
         /// Pole, obsahující informace o právě selectovaných prvcích ListBoxu a jejich aktuální souřadnice
         /// </summary>
-        public Tuple<int, IMenuItem, Rectangle?>[] SelectedItemsInfo
+        public Tuple<int, IMenuItem, Rectangle?>[] SelectedMenuItemsExt
         {
             get
             {
-                List<Tuple<int, IMenuItem, Rectangle?>> selectedItemsInfo = null;
+                List<Tuple<int, IMenuItem, Rectangle?>> selectedMenuItems = null;
                 if (__ItemsMode == ListBoxItemsMode.MenuItems)
                 {
-                    var listItems = this.ListItems;
-                    selectedItemsInfo = new List<Tuple<int, IMenuItem, Rectangle?>>();
+                    var listItems = this.MenuItems;
+                    selectedMenuItems = new List<Tuple<int, IMenuItem, Rectangle?>>();
                     foreach (var index in this.SelectedIndices)
                     {
                         Rectangle? bounds = GetItemBounds(index);
-                        selectedItemsInfo.Add(new Tuple<int, IMenuItem, Rectangle?>(index, listItems[index], bounds));
+                        selectedMenuItems.Add(new Tuple<int, IMenuItem, Rectangle?>(index, listItems[index], bounds));
                     }
                 }
-                return selectedItemsInfo.ToArray();
+                return selectedMenuItems.ToArray();
             }
         }
         /// <summary>
         /// Obsahuje pole prvků, které jsou aktuálně Selected. 
         /// Lze setovat. Setování nastaví stav Selected na těch prvcích this.Items, které jsou Object.ReferenceEquals() shodné s některým dodaným prvkem. Ostatní budou not selected.
         /// </summary>
-        public new IEnumerable<IMenuItem> SelectedItems
+        public IEnumerable<IMenuItem> SelectedMenuItems
         {
             get
             {
-                var listItems = this.ListItems;
+                var listItems = this.MenuItems;
                 var selectedItems = new List<IMenuItem>();
                 foreach (var index in this.SelectedIndices)
                     selectedItems.Add(listItems[index]);
@@ -1203,7 +1207,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             set
             {
                 var selectedItems = (value?.ToList() ?? new List<IMenuItem>());
-                var listItems = this.ListItems;
+                var listItems = this.MenuItems;
                 int count = this.ItemCount;
                 for (int i = 0; i < count; i++)
                 {
@@ -1346,7 +1350,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _DrawItem(object sender, ListBoxDrawItemEventArgs e)
         {
-            if (e.Item is IMenuItem iMenuItem && iMenuItem.FontStyle.HasValue)
+            if (__ItemsMode == ListBoxItemsMode.MenuItems && e.Item is IMenuItem iMenuItem && iMenuItem.FontStyle.HasValue)
             {
                 e.Appearance.FontStyleDelta = iMenuItem.FontStyle.Value;
                 e.Appearance.Options.UseTextOptions = true;
@@ -1368,8 +1372,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             base.OnSelectionChanged();
 
+            this._RunSelectionChanged();
             TEventArgs<object> args = new TEventArgs<object>(this.SelectedItem);
-            RunSelectedItemsChanged(args);
+            _RunSelectedItemsChanged(args);
 
             _DetectSelectedMenuItemChanged();
         }
@@ -1378,7 +1383,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _DetectSelectedMenuItemChanged()
         {
-            var selectedMenuItem = this.SelectedListItem;
+            var selectedMenuItem = this.SelectedMenuItem;
             if (!Object.ReferenceEquals(selectedMenuItem, _LastSelectedItem))
             {
                 this.RunSelectedMenuItemChanged(new TEventArgs<IMenuItem>(selectedMenuItem));
@@ -1418,7 +1423,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (index >= 0 && __ItemsMode == ListBoxItemsMode.MenuItems)
             {
-                var listItems = this.ListItems;
+                var listItems = this.MenuItems;
                 if (listItems != null && index < listItems.Length)
                 {
                     var menuItem = listItems[index];
@@ -1829,14 +1834,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _DoKeyActionCtrlA()
         {
-            this.SelectedItems = this.ListItems;
+            this.SelectedMenuItems = this.MenuItems;
         }
         /// <summary>
         /// Provedení klávesové akce: CtrlC
         /// </summary>
         private void _DoKeyActionCtrlC()
         {
-            var selectedItems = this.SelectedItems;
+            var selectedItems = this.SelectedMenuItems;
             string textTxt = selectedItems.ToOneString();
             DataExchangeClipboardPublish(selectedItems, textTxt);
         }
@@ -1928,7 +1933,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="targetIndexLocator">Lokátor: pro dodané selectované prvky vrátí index přesunu. Prvky nejsou null a je nejméně jeden. Jinak se přesun neprovádí.</param>
         private void _MoveSelectedItems(Func<Tuple<int, IMenuItem, Rectangle?>[], int?> targetIndexLocator)
         {
-            var selectedItemsInfo = this.SelectedItemsInfo;
+            var selectedItemsInfo = this.SelectedMenuItemsExt;
             if (selectedItemsInfo.Length == 0) return;
 
             var targetIndex = targetIndexLocator(selectedItemsInfo);
@@ -1954,7 +1959,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="targetIndex"></param>
         public void MoveSelectedItems(int? targetIndex)
         {
-            _MoveItems(this.SelectedItemsInfo, targetIndex);
+            _MoveItems(this.SelectedMenuItemsExt, targetIndex);
         }
         /// <summary>
         /// Do this listu vloží další prvky <paramref name="sourceItems"/>, počínaje aktuální pozicí vybraného prvku.
@@ -2030,7 +2035,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (removeItems == null) return;
             var removeArray = removeItems.ToArray();
-            var listItems = this.ListItems;
+            var listItems = this.MenuItems;
             for (int i = this.ItemCount - 1; i >= 0; i--)
             {
                 var listItem = listItems[i];
@@ -2055,7 +2060,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 bool duplicityEnabled = this.DuplicityEnabled;
                 Dictionary<string, IMenuItem> itemIdDict = (duplicityEnabled ? null : 
-                      (withCurrentList ? this.ListItems.Where(i => i.ItemId != null).CreateDictionary(i => i.ItemId, true) : 
+                      (withCurrentList ? this.MenuItems.Where(i => i.ItemId != null).CreateDictionary(i => i.ItemId, true) : 
                       new Dictionary<string, IMenuItem>()));
                 foreach (var item in items)
                 {
@@ -2220,7 +2225,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args"></param>
         private void DoDragSourceStart(DxDragDropArgs args)
         {
-            var selectedItems = this.SelectedItemsInfo;
+            var selectedItems = this.SelectedMenuItemsExt;
             if (selectedItems.Length == 0)
             {
                 args.SourceDragEnabled = false;
@@ -2523,8 +2528,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Volá se po změně selected prvků
         /// </summary>
-        /// <param name="e"></param>
-        private void RunSelectedItemsChanged(TEventArgs<object> e)
+        private void _RunSelectionChanged()
         {
             OnSelectedItemsChanged(e);
             SelectedItemsChanged?.Invoke(this, e);
@@ -3164,7 +3168,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         None,
         /// <summary>
-        /// Jednotlivé položky, <see cref="IMenuItem"/>, pole <see cref="DxListBoxControl.ListItems"/>.
+        /// Jednotlivé položky, <see cref="IMenuItem"/>, pole <see cref="DxListBoxControl.MenuItems"/>.
         /// Podporuje vykreslování ikon.
         /// </summary>
         MenuItems,
