@@ -85,11 +85,11 @@ namespace TestDevExpress.Forms
             };
             _ProcessListBox.ListActionAfter += _ProcessListBox_ActionAfter;
             _ProcessListBox.RowFilterServerKeyEnter += _ProcessListBox_FilterBoxKeyEnter;
-            _ProcessListBox.SelectedMenuItemChanged += _ProcessListBox_SelectedMenuItemChanged;
+            _ProcessListBox.SelectedItemsChanged += _ProcessListBox_SelectedMenuItemChanged;
             _SplitContainer.Panel1.Controls.Add(_ProcessListBox);
         }
 
-        private void _ProcessListBox_SelectedMenuItemChanged(object sender, TEventArgs<IMenuItem> e)
+        private void _ProcessListBox_SelectedMenuItemChanged(object sender, EventArgs e)
         {
             RunMemoryScanAsync();
         }

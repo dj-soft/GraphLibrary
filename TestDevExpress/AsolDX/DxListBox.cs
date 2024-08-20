@@ -48,7 +48,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             __ListBox.UndoRedoEnabled = false;
             __ListBox.UndoRedoEnabledChanged += _ListBox_UndoRedoEnabledChanged;
             __ListBox.SelectedItemsChanged += _ListBox_SelectedItemsChanged;
-            __ListBox.SelectedMenuItemChanged += _ListBox_SelectedMenuItemChanged;
             __ListBox.ListActionBefore += _RunListActionBefore;
             __ListBox.ListActionAfter += _RunListActionAfter;
             _RowFilterInitialize();
@@ -171,6 +170,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Prvky Listu
         /// </summary>
         public DevExpress.XtraEditors.Controls.ImageListBoxItemCollection Items { get { return __ListBox.Items; } }
+
+        /// <summary>
+        /// Aktuálně označené objekty. Může jich být i více, nebo žádný.
+        /// Objekty to mohou být různé, typicky <see cref="IMenuItem"/> nebo <see cref="System.Data.DataRowView"/>.
+        /// ID označených řádků je v poli <see cref="SelectedItemsId"/>.
+        /// </summary>
+        public object[] SelectedItems { get { return __ListBox.SelectedItems; } }
+        /// <summary>
+        /// Pole obsahující ID selectovaných záznamů.
+        /// </summary>
+        public object[] SelectedItemsId { get { return __ListBox.SelectedItemsId; } }
+        /// <summary>
+        /// Prvek, na kterém je kurzor. Je jen jediný, nebo null.
+        /// Objekty to mohou být různé, typicky <see cref="IMenuItem"/> nebo <see cref="System.Data.DataRowView"/>.
+        /// ID aktivního řádku je v <see cref="ActiveItemId"/>.
+        /// </summary>
+        public object ActiveItem { get { return __ListBox.ActiveItem; } }
+        /// <summary>
+        /// Pole obsahující ID aktivního řádku.
+        /// </summary>
+        public object ActiveItemId { get { return __ListBox.ActiveItemId; } }
+
         #endregion
         #region Komplexní List postavený nad DataTable a Template
         /// <summary>
@@ -272,41 +293,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Při změně Selected prvků, libovolného typu
         /// </summary>
-        /// <param name="e"></param>
-        private void _RunSelectedItemsChanged(TEventArgs<object> e)
+        private void _RunSelectedItemsChanged()
         {
-            OnSelectedItemsChanged(e);
-            SelectedItemsChanged?.Invoke(this, e);
+            OnSelectedItemsChanged();
+            SelectedItemsChanged?.Invoke(this, EventArgs.Empty);
         }
         /// <summary>
-        /// Volá se při změně Selected prvku, libovolného typu
+        /// Volá se po změně selected prvků.<br/>
+        /// Aktuální vybrané prvky jsou k dispozici v <see cref="SelectedItems"/>, jejich ID v <see cref="SelectedItemsId"/>.
+        /// Prvek s kurzorem je v <see cref="ActiveItem"/>, jeho ID je v <see cref="ActiveItemId"/>.
         /// </summary>
-        /// <param name="e"></param>
-        protected virtual void OnSelectedItemsChanged(TEventArgs<object> e) { }
+        protected virtual void OnSelectedItemsChanged() { }
         /// <summary>
-        /// Událost, kdy v <see cref="ListBox"/> je vybrán nějaký konkrétní prvek.
+        /// Událost volaná po změně selected prvků.<br/>
+        /// Aktuální vybrané prvky jsou k dispozici v <see cref="SelectedItems"/>, jejich ID v <see cref="SelectedItemsId"/>.
+        /// Prvek s kurzorem je v <see cref="ActiveItem"/>, jeho ID je v <see cref="ActiveItemId"/>.
         /// </summary>
-        public event EventHandler<TEventArgs<object>> SelectedItemsChanged;
+        public event EventHandler SelectedItemsChanged;
 
-        /// <summary>
-        /// Provede se když v <see cref="ListBox"/> je vybrán nějaký prvek typu <see cref="IMenuItem"/>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ListBox_SelectedMenuItemChanged(object sender, TEventArgs<IMenuItem> e)
-        {
-            OnSelectedMenuItemChanged(e);
-            SelectedMenuItemChanged?.Invoke(this, e);
-        }
-        /// <summary>
-        /// Volá se při změně Selected prvku typu typu <see cref="IMenuItem"/>
-        /// </summary>
-        /// <param name="e"></param>
-        protected virtual void OnSelectedMenuItemChanged(TEventArgs<IMenuItem> e) { }
-        /// <summary>
-        /// Událost, kdy v <see cref="ListBox"/> je vybrán nějaký prvek typu <see cref="IMenuItem"/>
-        /// </summary>
-        public event EventHandler<TEventArgs<IMenuItem>> SelectedMenuItemChanged;
         #endregion
         #region Filtrování položek: klientské / serverové
         /// <summary>
@@ -708,10 +712,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _ListBox_SelectedItemsChanged(object sender, TEventArgs<object> e)
+        private void _ListBox_SelectedItemsChanged(object sender, EventArgs e)
         {
             _SetButtonsEnabledSelection();
-            _RunSelectedItemsChanged(e);
+            _RunSelectedItemsChanged();
         }
         /// <summary>
         /// Nastaví Enabled buttonů
@@ -1371,30 +1375,40 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnSelectionChanged()
         {
             base.OnSelectionChanged();
-
-            this._RunSelectionChanged();
-            TEventArgs<object> args = new TEventArgs<object>(this.SelectedItem);
-            _RunSelectedItemsChanged(args);
-
-            _DetectSelectedMenuItemChanged();
+            if (this.IsRealSelectionChanged(true))
+                this._RunSelectionChanged();
         }
         /// <summary>
-        /// Detekuje zda aktuálně vybraný prvek obsahuje jiný <see cref="IMenuItem"/>, než který byl posledně oznámen
+        /// Vrátí true, pokud aktuální stav <see cref="SelectedItems"/> ji jiný než posledně známý <see cref="__LastSelectedItems"/>.
+        /// Volitelně (podle <paramref name="acceptCurrentState"/>) může aktuální stav (obsah pole <see cref="SelectedItems"/>) uložit do <see cref="__LastSelectedItems"/>.
         /// </summary>
-        private void _DetectSelectedMenuItemChanged()
+        /// <param name="acceptCurrentState"></param>
+        /// <returns></returns>
+        protected bool IsRealSelectionChanged(bool acceptCurrentState = false)
         {
-            var selectedMenuItem = this.SelectedMenuItem;
-            if (!Object.ReferenceEquals(selectedMenuItem, _LastSelectedItem))
+            var currSelectedItems = this.SelectedItems;
+            var lastSelectedItems = this.__LastSelectedItems;
+            int currCount = currSelectedItems?.Length ?? -1;
+            int lastCount = lastSelectedItems?.Length ?? -1;
+            bool isChanged = (currCount != lastCount);
+            if (!isChanged && currCount > 0)
             {
-                this.RunSelectedMenuItemChanged(new TEventArgs<IMenuItem>(selectedMenuItem));
-                _LastSelectedItem = selectedMenuItem;
+                for (int i = 0; i < currCount; i++)
+                {
+                    if (!Object.Equals(currSelectedItems[i], lastSelectedItems[i]))
+                    {
+                        isChanged = true;
+                        break;
+                    }
+                }
             }
+            if (acceptCurrentState) __LastSelectedItems = currSelectedItems;
+            return isChanged;
         }
         /// <summary>
-        /// Objekt, který byl naposledy předán do metody <see cref="RunSelectedMenuItemChanged(TEventArgs{IMenuItem})"/>.
-        /// Poku dbude napříště vybrán jiný objekt, bude předán i ten další.
+        /// Posledně zapamatovaný stav <see cref="SelectedItems"/>
         /// </summary>
-        private IMenuItem _LastSelectedItem;
+        private object[] __LastSelectedItems;
         #endregion
         #region Images
         /// <summary>
@@ -1568,6 +1582,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                     args.DxSuperTip = dxSuperTip;
                     args.ToolTipChange = DxToolTipChangeType.NewToolTip;                 // Zajistím rozsvícení okna ToolTipu
+                    DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "ToolTip: New item found");
                 }
                 else
                 {
@@ -1577,6 +1592,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             else
             {   // Myš je mimo prvky:
                 args.ToolTipChange = DxToolTipChangeType.NoToolTip;                      // Pokud ToolTip svítí, zhasneme jej
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "ToolTip: NoToolTip");
             }
         }
         /// <summary>
@@ -1615,7 +1631,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _ToolTipHide(string message)
         {
             this.DxToolTipController.HideTip();
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"TreeList.HideToolTip({message})");
+          //  DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"TreeList.HideToolTip({message})");
         }
         /// <summary>
         /// V controlleru ToolTipu došlo k události, pošli ji do našeho eventu
@@ -1625,12 +1641,42 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <exception cref="NotImplementedException"></exception>
         private void _ToolTipDebugTextChanged(object sender, DxToolTipArgs args)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, args.EventName);
+          //  DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, args.EventName);
         }
         #endregion
-        #region VisibleItems a konverze ...
-
-
+        #region VisibleItems, SelectedItems, ActiveItem a Id, a konverze ...
+        /// <summary>
+        /// Aktuálně označené objekty. Může jich být i více, nebo žádný.
+        /// Objekty to mohou být různé, typicky <see cref="IMenuItem"/> nebo <see cref="System.Data.DataRowView"/>.
+        /// ID označených řádků je v poli <see cref="SelectedItemsId"/>.
+        /// </summary>
+        public new object[] SelectedItems
+        {
+            get { return base.SelectedItems.Select(li => GetDataItem(li)).ToArray(); }   // ImageListBoxItem => Value => IMenuItem / DataRow
+        }
+        /// <summary>
+        /// Pole obsahující ID selectovaných záznamů.
+        /// </summary>
+        public object[] SelectedItemsId
+        {
+            get { return this.SelectedItems.Select(i => GetItemId(i)).ToArray(); }
+        }
+        /// <summary>
+        /// Prvek, na kterém je kurzor. Je jen jediný, nebo null.
+        /// Objekty to mohou být různé, typicky <see cref="IMenuItem"/> nebo <see cref="System.Data.DataRowView"/>.
+        /// ID aktivního řádku je v <see cref="ActiveItemId"/>.
+        /// </summary>
+        public object ActiveItem
+        {
+            get { return GetDataItem(base.SelectedItem); }                               // ImageListBoxItem => Value => IMenuItem / DataRow
+        }
+        /// <summary>
+        /// Pole obsahující ID aktivního řádku.
+        /// </summary>
+        public object ActiveItemId
+        {
+            get { return GetItemId(ActiveItem); }
+        }
         /// <summary>
         /// Metoda najde prvek this Listu, který se nachází na dané souřadnici.
         /// Souřadnice je v koordinátech controlu, tedy 0,0 = levý horní roh ListBoxu.
@@ -1657,11 +1703,50 @@ namespace Noris.Clients.Win.Components.AsolDX
             return false;
         }
         /// <summary>
+        /// Metoda dostává Item v rámci ListBoxu, což může být <see cref="DevExpress.XtraEditors.Controls.ImageListBoxItem"/> anebo <see cref="System.Data.DataRowView"/>.
+        /// Podle toho v nich vyhledá odpovídající datový prvek <see cref="IMenuItem"/> anebo <see cref="System.Data.DataRow"/> a ten vrátí.
+        /// </summary>
+        /// <param name="listItem"></param>
+        /// <returns></returns>
+        protected object GetDataItem(object listItem)
+        {
+            if (listItem is null) return null;
+
+            if (listItem is DevExpress.XtraEditors.Controls.ImageListBoxItem lbxItem)
+            {
+                var value = lbxItem.Value;
+                switch (__ItemsMode)
+                {
+                    case ListBoxItemsMode.MenuItems:
+                        if (value is IMenuItem menuItem)
+                            return value;
+                        break;
+                    case ListBoxItemsMode.Table:
+                        if (value is System.Data.DataRowView lbxRowView && lbxRowView.Row != null)
+                            return lbxRowView.Row;
+                        break;
+                }
+                return null;
+            }
+
+            if (listItem is System.Data.DataRowView itmRowView)
+            {
+                switch (__ItemsMode)
+                {
+                    case ListBoxItemsMode.Table:
+                        return itmRowView.Row;
+                }
+                return null;
+            }
+
+            return null;
+        }
+        /// <summary>
         /// Metoda vrátí ID pro daný prvek.
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        public object GetItemId(object item)
+        protected object GetItemId(object item)
         {
             if (item is null) return null;
 
@@ -1672,7 +1757,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                         return menuItem.ItemId;
                     break;
                 case ListBoxItemsMode.Table:
-                    if (item is System.Data.DataRowView rowView && rowView.Row != null)
+                    if (item is System.Data.DataRow row)
+                        return _GetTableItemId(row);
+                    else if (item is System.Data.DataRowView rowView && rowView.Row != null)
                         return _GetTableItemId(rowView.Row);
                     break;
             }
@@ -2526,43 +2613,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         public event PaintEventHandler PaintList;
 
         /// <summary>
-        /// Volá se po změně selected prvků
-        /// </summary>
-        private void _RunSelectionChanged()
-        {
-            OnSelectedItemsChanged(e);
-            SelectedItemsChanged?.Invoke(this, e);
-        }
-        /// <summary>
-        /// Volá se po změně selected prvků
-        /// </summary>
-        /// <param name="e"></param>
-        protected virtual void OnSelectedItemsChanged(TEventArgs<object> e) { }
-        /// <summary>
-        /// Událost volaná po změně selected prvků
-        /// </summary>
-        public event EventHandler<TEventArgs<object>> SelectedItemsChanged;
-
-        /// <summary>
-        /// Volá se po změně selected prvku
-        /// </summary>
-        /// <param name="e"></param>
-        private void RunSelectedMenuItemChanged(TEventArgs<IMenuItem> e)
-        {
-            OnSelectedMenuItemChanged(e);
-            SelectedMenuItemChanged?.Invoke(this, e);
-        }
-        /// <summary>
-        /// Volá se po změně selected prvku typu <see cref="IMenuItem"/>
-        /// </summary>
-        /// <param name="e"></param>
-        protected virtual void OnSelectedMenuItemChanged(TEventArgs<IMenuItem> e) { }
-        /// <summary>
-        /// Událost volaná po změně selected prvku typu <see cref="IMenuItem"/>
-        /// </summary>
-        public event EventHandler<TEventArgs<IMenuItem>> SelectedMenuItemChanged;
-
-        /// <summary>
         /// Volá se před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
         /// </summary>
         /// <param name="args"></param>
@@ -2599,6 +2649,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Událost vyvolaná po provedení kteréhokoli požadavku
         /// </summary>
         public event DxListBoxActionDelegate ListActionAfter;
+
+        /// <summary>
+        /// Volá se po změně selected prvků
+        /// </summary>
+        private void _RunSelectionChanged()
+        {
+            OnSelectedItemsChanged();
+            SelectedItemsChanged?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Volá se po změně selected prvků.<br/>
+        /// Aktuální vybrané prvky jsou k dispozici v <see cref="SelectedItems"/>, jejich ID v <see cref="SelectedItemsId"/>.
+        /// Prvek s kurzorem je v <see cref="ActiveItem"/>, jeho ID je v <see cref="ActiveItemId"/>.
+        /// </summary>
+        protected virtual void OnSelectedItemsChanged() { }
+        /// <summary>
+        /// Událost volaná po změně selected prvků.<br/>
+        /// Aktuální vybrané prvky jsou k dispozici v <see cref="SelectedItems"/>, jejich ID v <see cref="SelectedItemsId"/>.
+        /// Prvek s kurzorem je v <see cref="ActiveItem"/>, jeho ID je v <see cref="ActiveItemId"/>.
+        /// </summary>
+        public event EventHandler SelectedItemsChanged;
         #endregion
     }
     #region class DxListBoxTemplate : data pro tvorbu šablony v ListBoxu
@@ -2921,12 +2992,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // Pokud je na vstupu něco, co neexistuje v tabulce, tak to zahodím:
-            if (!String.IsNullOrEmpty(columnNameText) && !columns.ContainsKey(columnNameText)) columnNameText = null;
-            if (!String.IsNullOrEmpty(columnNameIcon) && !columns.ContainsKey(columnNameIcon)) columnNameIcon = null;
-            if (!String.IsNullOrEmpty(columnNameToolTip) && !columns.ContainsKey(columnNameToolTip)) columnNameToolTip = null;
+            columnNameItemId = checkColumnName(columnNameItemId);
+            columnNameText = checkColumnName(columnNameText);
+            columnNameIcon = checkColumnName(columnNameIcon);
+            columnNameToolTip = checkColumnName(columnNameToolTip);
 
-            // Pokud nemám zadaný sloupec s textem, najdu první vhodný sloupec:
-            if (String.IsNullOrEmpty(columnNameText)) columnNameText = columns.Values.FirstOrDefault(c => c.DataType == typeof(string))?.ColumnName;
+            // Pokud nemám zadaný sloupec s ID a s textem, najdu první vhodný sloupec:
+            if (columnNameItemId is null) columnNameItemId = columns.Values.FirstOrDefault(c => c.DataType == typeof(int))?.ColumnName;
+            if (columnNameText is null) columnNameText = columns.Values.FirstOrDefault(c => c.DataType == typeof(string))?.ColumnName;
 
             // Výsledná deklarace šablony:
             DxListBoxTemplate dxTemplate = new DxListBoxTemplate();
@@ -2973,6 +3046,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             dxTemplate.ColumnNameToolTipText = columnNameToolTip;
 
             return dxTemplate;
+
+            string checkColumnName(string columnName)
+            {
+                if (columnName != null && columnName.Trim().Length > 0 && !columns.ContainsKey(columnNameText)) return null;
+                return columnName;
+            }
         }
     }
     /// <summary>

@@ -38,7 +38,6 @@ namespace TestDevExpress.Forms
         }
         #endregion
         #region Main Content
-
         /// <summary>
         /// Provede přípravu obsahu hlavního panelu <see cref="DxRibbonForm.DxMainPanel"/>. Panel je již vytvořen a umístěn v okně, Ribbon i StatusBar existují.<br/>
         /// Zde se typicky vytváří obsah do hlavního panelu.
@@ -64,7 +63,7 @@ namespace TestDevExpress.Forms
             foreach (var sample in __Samples)
             {
                 if (n > 0 && sample.IsNewGroup) y += 6;
-                DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, sample.ButtonText, _SampleButtonClick, tag: sample);
+                sample.Button = DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, sample.ButtonText, _SampleButtonClick, tag: sample);
                 y += (h + 3);
                 n++;
             }
@@ -74,12 +73,25 @@ namespace TestDevExpress.Forms
             if (sender is Control control && control.Tag is SampleInfo sampleInfo)
             {
                 _DisposeSamplesAll();
+                sampleInfo.Button.Appearance.FontStyleDelta = FontStyle.Bold;
                 sampleInfo.ButtonClick();
             }
         }
+        private void _SelectedItemsChanged(object sender, EventArgs e)
+        {
+            string text = "SelectedItemsChanged";
+            if (sender is DxListBoxPanel listBox)
+                text += $"; ActiveItemId: {listBox.ActiveItemId}; SelectedCount: {listBox.SelectedItems.Length}";
+
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, text);
+        }
         private void _DisposeSamplesAll()
         {
-            __Samples.ForEach(s => s.DisposeContent());
+            __Samples.ForEach(s =>
+            {
+                s.Button.Appearance.FontStyleDelta = FontStyle.Regular;
+                s.DisposeContent();
+            });
         }
         private List<SampleInfo> __Samples;
         private Point __SampleBegin;
@@ -96,6 +108,7 @@ namespace TestDevExpress.Forms
             public readonly Action ButtonClick;
             public readonly Action DisposeContent;
             public readonly bool IsNewGroup;
+            public DxSimpleButton Button;
         }
 
         #endregion
@@ -112,6 +125,7 @@ namespace TestDevExpress.Forms
         {
             var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 450, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.None };
             sampleList.ListItems = Randomizer.GetMenuItems(24, 60, Randomizer.ImageResourceType.PngSmall);
+            sampleList.SelectedItemsChanged += _SelectedItemsChanged;
             this.DxMainPanel.Controls.Add(sampleList);
 
             _Sample1List = sampleList;
@@ -141,6 +155,7 @@ namespace TestDevExpress.Forms
             sampleList.EnabledKeyActions = KeyActionType.AllMove;
             sampleList.DragDropActions = DxDragDropActionType.ReorderItems;
             sampleList.ListItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
+            sampleList.SelectedItemsChanged += _SelectedItemsChanged;
             this.DxMainPanel.Controls.Add(sampleList);
 
             _Sample2List = sampleList;
@@ -171,6 +186,7 @@ namespace TestDevExpress.Forms
             sampleListA.DragDropActions = DxDragDropActionType.CopyItemsFrom;
             sampleListA.ListItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
             sampleListA.ListActionAfter += _Sample3ListA_ListActionAfter;
+            sampleListA.SelectedItemsChanged += _SelectedItemsChanged;
             this.DxMainPanel.Controls.Add(sampleListA);
 
             var sampleListB = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X + 410, __SampleBegin.Y, 400, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
@@ -181,6 +197,7 @@ namespace TestDevExpress.Forms
             sampleListB.DragDropActions = DxDragDropActionType.ImportItemsInto | DxDragDropActionType.ReorderItems;
             sampleListB.ListItems = Randomizer.GetMenuItems(7, Randomizer.ImageResourceType.PngSmall, true);
             sampleListB.ListActionAfter += _Sample3ListB_ListActionAfter;
+            sampleListB.SelectedItemsChanged += _SelectedItemsChanged;
             this.DxMainPanel.Controls.Add(sampleListB);
 
             _Sample3ListA = sampleListA;
@@ -235,6 +252,7 @@ namespace TestDevExpress.Forms
             sampleList.DxTemplate = _CreateTemplate11();
             sampleList.SelectionMode = SelectionMode.MultiExtended;
             sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            sampleList.SelectedItemsChanged += _SelectedItemsChanged;
             this.DxMainPanel.Controls.Add(sampleList);
             _Sample11List = sampleList;
         }
@@ -250,6 +268,7 @@ namespace TestDevExpress.Forms
             dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "surname", ColIndex = 1, RowIndex = 0, Width = 280, Height = 18, ContentAlignment = DevExpress.XtraEditors.TileItemContentAlignment.BottomRight });
             dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "description", ColIndex = 0, RowIndex = 1, ColSpan = 2, Width = 440, Height = 18, FontStyle = FontStyle.Italic });
             dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "icon", ElementContent = ElementContentType.IconName, ColIndex = 2, RowIndex = 0, RowSpan = 2, Width = 48, Height = 36, ContentAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleCenter });
+            dxTemplate.ColumnNameItemId = "id";
             dxTemplate.ColumnNameToolTipTitle = "name";
             dxTemplate.ColumnNameToolTipText = "description";
             return dxTemplate;
@@ -272,6 +291,7 @@ namespace TestDevExpress.Forms
             sampleList.DxTemplate = _CreateTemplate12();
             sampleList.SelectionMode = SelectionMode.MultiExtended;
             sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            sampleList.SelectedItemsChanged += _SelectedItemsChanged;
             this.DxMainPanel.Controls.Add(sampleList);
             _Sample12List = sampleList;
         }
@@ -287,6 +307,7 @@ namespace TestDevExpress.Forms
             dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "name", ColIndex = 1, RowIndex = 0, Width = 160, Height = 18, FontStyle = FontStyle.Bold, ContentAlignment = DevExpress.XtraEditors.TileItemContentAlignment.TopLeft });
             dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "surname", ColIndex = 2, RowIndex = 0, Width = 280, Height = 18, ContentAlignment = DevExpress.XtraEditors.TileItemContentAlignment.BottomRight });
             dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "description", ColIndex = 1, RowIndex = 1, ColSpan = 2, Width = 440, Height = 18, FontStyle = FontStyle.Italic });
+            dxTemplate.ColumnNameItemId = "id";
             dxTemplate.ColumnNameToolTipTitle = "name";
             dxTemplate.ColumnNameToolTipText = "description";
             return dxTemplate;
@@ -309,6 +330,7 @@ namespace TestDevExpress.Forms
             sampleList.DxTemplate = sampleList.CreateSimpleDxTemplate("id", "icon", "name", "description", 16);
             sampleList.SelectionMode = SelectionMode.MultiExtended;
             sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            sampleList.SelectedItemsChanged += _SelectedItemsChanged;
             this.DxMainPanel.Controls.Add(sampleList);
             _Sample13List = sampleList;
         }
