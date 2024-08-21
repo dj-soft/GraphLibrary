@@ -525,9 +525,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static string GetPackKey(string name, out ResourceImageSizeType sizeType, out ResourceContentType contentType)
         {
-            string packKey = GetItemKey(name);
             sizeType = ResourceImageSizeType.None;
             contentType = ResourceContentType.None;
+            if (String.IsNullOrEmpty(name) || name.Trim().StartsWith("@") || name.Contains("«")) return name;
+            string packKey = GetItemKey(name);
             if (!String.IsNullOrEmpty(packKey) && !packKey.Contains("«"))
                 if (RemoveContentTypeByExtension(ref packKey, out contentType) && ContentTypeSupportSize(contentType))
                     RemoveSizeTypeBySuffix(ref packKey, out sizeType);
