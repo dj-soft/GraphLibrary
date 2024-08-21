@@ -12851,24 +12851,6 @@ White
             return defaultValue;
         }
         /// <summary>
-        /// Vstupní hodnotu danou stringem konvertuje do hodnoty enumu <typeparamref name="TOut"/> odpovídající stejnojmenné hodnoty.
-        /// </summary>
-        /// <typeparam name="TOut"></typeparam>
-        /// <param name="text"></param>
-        /// <param name="defaultValue"></param>
-        /// <returns></returns>
-        public static TOut ConvertEnum<TOut>(string text, TOut defaultValue)
-            where TOut : struct
-        {
-            if (!String.IsNullOrEmpty(text))
-            {
-                string name = text.Trim();
-                if (Enum.TryParse<TOut>(name, out TOut value1)) return value1;
-                if (Enum.TryParse<TOut>(name, true, out TOut value2)) return value2;
-            }
-            return defaultValue;
-        }
-        /// <summary>
         /// Vstupní hodnotu enumu konvertuje do výstupní odpovídající stejnojmenné hodnoty.
         /// Konvertuje přes string, nikoli přes numerickou hodnotu. Enumy tedy musí mít shodné názvy prvků.
         /// <para/>
@@ -12889,6 +12871,24 @@ White
             string name = inp.Value.ToString();
             if (Enum.TryParse<TOut>(name, out TOut value1)) return value1;
             if (Enum.TryParse<TOut>(name, true, out TOut value2)) return value2;
+            return defaultValue;
+        }
+        /// <summary>
+        /// Vstupní hodnotu danou stringem konvertuje do hodnoty enumu <typeparamref name="TOut"/> odpovídající stejnojmenné hodnoty.
+        /// </summary>
+        /// <typeparam name="TOut"></typeparam>
+        /// <param name="text"></param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
+        public static TOut ConvertEnum<TOut>(string text, TOut defaultValue)
+            where TOut : struct
+        {
+            if (!String.IsNullOrEmpty(text))
+            {
+                string name = text.Trim();
+                if (Enum.TryParse<TOut>(name, out TOut value1)) return value1;
+                if (Enum.TryParse<TOut>(name, true, out TOut value2)) return value2;
+            }
             return defaultValue;
         }
         #endregion

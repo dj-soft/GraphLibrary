@@ -68,6 +68,11 @@ namespace TestDevExpress.Forms
                 n++;
             }
         }
+        /// <summary>
+        /// Kliknutí na button se samplem = zahodí se dosavadní listy, a zavolá se sample pro tvorbu nové komponenty
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private void _SampleButtonClick(object sender, EventArgs args)
         {
             if (sender is Control control && control.Tag is SampleInfo sampleInfo)
@@ -77,12 +82,48 @@ namespace TestDevExpress.Forms
                 sampleInfo.ButtonClick();
             }
         }
+        /// <summary>
+        /// Do daného List se navážou obecné eventhandlery, vedou na LogAddLine
+        /// </summary>
+        /// <param name="listPanel"></param>
+        private void _AddEventHandlers(DxListBoxPanel listPanel)
+        {
+            listPanel.SelectedItemsChanged += _SelectedItemsChanged;
+            listPanel.ItemMouseClick += _ItemMouseClick;
+            listPanel.ItemMouseDoubleClick += _ItemMouseDoubleClick;
+
+        }
+        /// <summary>
+        /// List změnil prvek
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _SelectedItemsChanged(object sender, EventArgs e)
         {
             string text = "SelectedItemsChanged";
             if (sender is DxListBoxPanel listBox)
                 text += $"; ActiveItemId: {listBox.ActiveItemId}; SelectedCount: {listBox.SelectedItems.Length}";
 
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, text);
+        }
+        /// <summary>
+        /// List provedl Click
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _ItemMouseClick(object sender, DxListBoxItemMouseClickEventArgs args)
+        {
+            string text = $"ItemMouseClick: ItemId: '{args.ItemId}'; Button: '{args.Buttons}'";
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, text);
+        }
+        /// <summary>
+        /// List provedl DoubleClick
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _ItemMouseDoubleClick(object sender, DxListBoxItemMouseClickEventArgs args)
+        {
+            string text = $"ItemMouseDoubleClick: ItemId: '{args.ItemId}'; Button: '{args.Buttons}'";
             DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, text);
         }
         private void _DisposeSamplesAll()
@@ -125,7 +166,7 @@ namespace TestDevExpress.Forms
         {
             var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 450, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.None };
             sampleList.ListItems = Randomizer.GetMenuItems(24, 60, Randomizer.ImageResourceType.PngSmall);
-            sampleList.SelectedItemsChanged += _SelectedItemsChanged;
+            _AddEventHandlers(sampleList);
             this.DxMainPanel.Controls.Add(sampleList);
 
             _Sample1List = sampleList;
@@ -155,7 +196,7 @@ namespace TestDevExpress.Forms
             sampleList.EnabledKeyActions = KeyActionType.AllMove;
             sampleList.DragDropActions = DxDragDropActionType.ReorderItems;
             sampleList.ListItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
-            sampleList.SelectedItemsChanged += _SelectedItemsChanged;
+            _AddEventHandlers(sampleList);
             this.DxMainPanel.Controls.Add(sampleList);
 
             _Sample2List = sampleList;
@@ -186,7 +227,7 @@ namespace TestDevExpress.Forms
             sampleListA.DragDropActions = DxDragDropActionType.CopyItemsFrom;
             sampleListA.ListItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
             sampleListA.ListActionAfter += _Sample3ListA_ListActionAfter;
-            sampleListA.SelectedItemsChanged += _SelectedItemsChanged;
+            _AddEventHandlers(sampleListA);
             this.DxMainPanel.Controls.Add(sampleListA);
 
             var sampleListB = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X + 410, __SampleBegin.Y, 400, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
@@ -197,7 +238,7 @@ namespace TestDevExpress.Forms
             sampleListB.DragDropActions = DxDragDropActionType.ImportItemsInto | DxDragDropActionType.ReorderItems;
             sampleListB.ListItems = Randomizer.GetMenuItems(7, Randomizer.ImageResourceType.PngSmall, true);
             sampleListB.ListActionAfter += _Sample3ListB_ListActionAfter;
-            sampleListB.SelectedItemsChanged += _SelectedItemsChanged;
+            _AddEventHandlers(sampleListB);
             this.DxMainPanel.Controls.Add(sampleListB);
 
             _Sample3ListA = sampleListA;
@@ -252,7 +293,7 @@ namespace TestDevExpress.Forms
             sampleList.DxTemplate = _CreateTemplate11();
             sampleList.SelectionMode = SelectionMode.MultiExtended;
             sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            sampleList.SelectedItemsChanged += _SelectedItemsChanged;
+            _AddEventHandlers(sampleList);
             this.DxMainPanel.Controls.Add(sampleList);
             _Sample11List = sampleList;
         }
@@ -291,7 +332,7 @@ namespace TestDevExpress.Forms
             sampleList.DxTemplate = _CreateTemplate12();
             sampleList.SelectionMode = SelectionMode.MultiExtended;
             sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            sampleList.SelectedItemsChanged += _SelectedItemsChanged;
+            _AddEventHandlers(sampleList);
             this.DxMainPanel.Controls.Add(sampleList);
             _Sample12List = sampleList;
         }
@@ -330,7 +371,7 @@ namespace TestDevExpress.Forms
             sampleList.DxTemplate = sampleList.CreateSimpleDxTemplate("id", "icon", "name", "description", 16);
             sampleList.SelectionMode = SelectionMode.MultiExtended;
             sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            sampleList.SelectedItemsChanged += _SelectedItemsChanged;
+            _AddEventHandlers(sampleList);
             this.DxMainPanel.Controls.Add(sampleList);
             _Sample13List = sampleList;
         }

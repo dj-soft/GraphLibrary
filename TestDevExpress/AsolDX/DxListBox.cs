@@ -44,15 +44,23 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Controls.Add(__ListBox);
             this.Padding = new Padding(0);
             this.ClientSizeChanged += _ClientSizeChanged;
+            this.Enter += _Panel_Enter;
             __ListBox.ListItemsChanged += __ListBox_ListItemsChanged;
             __ListBox.UndoRedoEnabled = false;
             __ListBox.UndoRedoEnabledChanged += _ListBox_UndoRedoEnabledChanged;
             __ListBox.SelectedItemsChanged += _ListBox_SelectedItemsChanged;
             __ListBox.ListActionBefore += _RunListActionBefore;
             __ListBox.ListActionAfter += _RunListActionAfter;
+            _ItemClickInit();
             _RowFilterInitialize();
             DoLayout();
         }
+
+        private void _Panel_Enter(object sender, EventArgs e)
+        {
+            _MainControlFocus();
+        }
+
         /// <summary>
         /// Proběhne po změně v poli <see cref="ListItems"/>
         /// </summary>
@@ -213,6 +221,56 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public DxListBoxTemplate CreateSimpleDxTemplate(string columnNameItemId, string columnNameIcon, string columnNameText, string columnNameToolTip = null, int? iconSize = null) { return __ListBox.CreateSimpleDxTemplate(columnNameItemId, columnNameIcon, columnNameText, columnNameToolTip, iconSize); }
         #endregion
+        #endregion
+        #region ItemClick
+        /// <summary>
+        /// Inicializace eventů pro Click a MouseClick
+        /// </summary>
+        private void _ItemClickInit()
+        {
+            __ListBox.ItemMouseClick += _ListBox_ItemMouseClick;
+            __ListBox.ItemMouseDoubleClick += _ListBox_ItemMouseDoubleClick;
+        }
+        /// <summary>
+        /// Eventhandler List.ItemMouseClick
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _ListBox_ItemMouseClick(object sender, DxListBoxItemMouseClickEventArgs args)
+        {
+            OnItemMouseClick(args);
+            ItemMouseClick?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Eventhandler List.ItemMouseDoubleClick
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _ListBox_ItemMouseDoubleClick(object sender, DxListBoxItemMouseClickEventArgs args)
+        {
+            OnItemMouseDoubleClick(args);
+            ItemMouseDoubleClick?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne po jednoduchém kliknutí na prvek
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnItemMouseClick(DxListBoxItemMouseClickEventArgs args) { }
+        /// <summary>
+        /// Proběhne po jednoduchém kliknutí na prvek
+        /// </summary>
+        public event DxListBoxItemMouseClickDelegate ItemMouseClick;
+        /// <summary>
+        /// Proběhne po double kliknutí na prvek
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnItemMouseDoubleClick(DxListBoxItemMouseClickEventArgs args) { }
+        /// <summary>
+        /// Proběhne po double kliknutí na prvek
+        /// </summary>
+        public event DxListBoxItemMouseClickDelegate ItemMouseDoubleClick;
         #endregion
         #region Ctrl+C a Ctrl+V, i mezi controly a mezi aplikacemi
         /// <summary>
@@ -977,11 +1035,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxListBoxControl()
         {
+            _ItemClickInit();
             _KeyActionsInit();
             _DataExchangeInit();
             _DxDragDropInit(DxDragDropActionType.None);
             _ToolTipInit();
-            _ImageInit();
+            OnImageInit();
             DuplicityEnabled = true;
             ItemSizeType = ResourceImageSizeType.Small;
             this.Items.ListChanged += _ListItemsChanged;
@@ -1247,10 +1306,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Tabulka s daty
         /// </summary>
-        public System.Data.DataTable DataTable 
-        { 
-            get { return (__ItemsMode == ListBoxItemsMode.Table ? __DataTable : null); } 
-            set 
+        public System.Data.DataTable DataTable
+        {
+            get { return (__ItemsMode == ListBoxItemsMode.Table ? __DataTable : null); }
+            set
             {
                 this.DataSource = null;
 
@@ -1271,10 +1330,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Šablona pro zobrazení dat z <see cref="DataTable"/>
         /// </summary>
-        public DxListBoxTemplate DxTemplate 
+        public DxListBoxTemplate DxTemplate
         {
-            get { return __DxTemplate; } 
-            set 
+            get { return __DxTemplate; }
+            set
             {
                 __DxTemplate = value;
                 _ReloadDxTemplate();
@@ -1414,7 +1473,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Inicializace pro Images
         /// </summary>
-        protected virtual void _ImageInit()
+        protected virtual void OnImageInit()
         {
             this.MeasureItem += _MeasureItem;
             this.CustomizeItem += _ListBoxCustomizeItem;                        // Aktualizuje Image pro buňku = pro TemplateItem
@@ -1518,7 +1577,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private Size _ItemImageSize
         {
-            get 
+            get
             {
                 if (!__ItemImageSize.HasValue)
                     __ItemImageSize = DxComponent.GetImageSize(this.ItemSizeType, true, this.DeviceDpi);
@@ -1529,6 +1588,78 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Velikost ikon, null = je nutno spočítat
         /// </summary>
         private Size? __ItemImageSize;
+        #endregion
+        #region ItemClick
+        /// <summary>
+        /// Inicializace eventů pro Click a MouseClick
+        /// </summary>
+        private void _ItemClickInit()
+        {
+            this.MouseClick += _MouseClick;
+            this.MouseDoubleClick += _MouseDoubleClick;
+        }
+        /// <summary>
+        /// Eventhandler MouseClick
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MouseClick(object sender, MouseEventArgs e)
+        {
+            _RunMouseEvent(e.Location, e.Button, false);
+        }
+        /// <summary>
+        /// Eventhandler MouseDoubleClick
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            _RunMouseEvent(e.Location, e.Button, true);
+        }
+        /// <summary>
+        /// Řešení události MouseClick a MouseDoubleClick
+        /// </summary>
+        /// <param name="location"></param>
+        /// <param name="buttons"></param>
+        /// <param name="isDoubleClick"></param>
+        private void _RunMouseEvent(Point location, MouseButtons buttons, bool isDoubleClick)
+        {
+            bool hasItem = TryGetViewItemOnPoint(location, out var viewItem);
+            if (hasItem)
+            {
+                var itemId = this.GetItemId(viewItem);
+
+                DxListBoxItemMouseClickEventArgs args = new DxListBoxItemMouseClickEventArgs(buttons, location, Control.ModifierKeys, itemId);
+                if (!isDoubleClick)
+                {
+                    OnItemMouseClick(args);
+                    ItemMouseClick?.Invoke(this, args);
+                }
+                else
+                {
+                    OnItemMouseDoubleClick(args);
+                    ItemMouseDoubleClick?.Invoke(this, args);
+                }
+            }
+        }
+        /// <summary>
+        /// Proběhne po jednoduchém kliknutí na prvek
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnItemMouseClick(DxListBoxItemMouseClickEventArgs args) { }
+        /// <summary>
+        /// Proběhne po jednoduchém kliknutí na prvek
+        /// </summary>
+        public event DxListBoxItemMouseClickDelegate ItemMouseClick;
+        /// <summary>
+        /// Proběhne po double kliknutí na prvek
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnItemMouseDoubleClick(DxListBoxItemMouseClickEventArgs args) { }
+        /// <summary>
+        /// Proběhne po double kliknutí na prvek
+        /// </summary>
+        public event DxListBoxItemMouseClickDelegate ItemMouseDoubleClick;
         #endregion
         #region ToolTip
         /// <summary>
@@ -1706,39 +1837,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Metoda dostává Item v rámci ListBoxu, což může být <see cref="DevExpress.XtraEditors.Controls.ImageListBoxItem"/> anebo <see cref="System.Data.DataRowView"/>.
         /// Podle toho v nich vyhledá odpovídající datový prvek <see cref="IMenuItem"/> anebo <see cref="System.Data.DataRow"/> a ten vrátí.
         /// </summary>
-        /// <param name="listItem"></param>
+        /// <param name="item"></param>
         /// <returns></returns>
-        protected object GetDataItem(object listItem)
+        protected object GetDataItem(object item)
         {
-            if (listItem is null) return null;
+            if (item is null) return null;
+            if (item is DevExpress.XtraEditors.ViewInfo.ImageListBoxViewInfo.ImageItemInfo imgItem) item = imgItem.Item;
+            if (item is DevExpress.XtraEditors.Controls.ImageListBoxItem lbxItem) item = lbxItem.Value;
+            if (item is System.Data.DataRowView rowView) item = rowView.Row;
 
-            if (listItem is DevExpress.XtraEditors.Controls.ImageListBoxItem lbxItem)
+            switch (__ItemsMode)
             {
-                var value = lbxItem.Value;
-                switch (__ItemsMode)
-                {
-                    case ListBoxItemsMode.MenuItems:
-                        if (value is IMenuItem menuItem)
-                            return value;
-                        break;
-                    case ListBoxItemsMode.Table:
-                        if (value is System.Data.DataRowView lbxRowView && lbxRowView.Row != null)
-                            return lbxRowView.Row;
-                        break;
-                }
-                return null;
+                case ListBoxItemsMode.MenuItems:
+                    if (item is IMenuItem menuItem)
+                        return menuItem;
+                    break;
+                case ListBoxItemsMode.Table:
+                    if (item is System.Data.DataRow lbxRow)
+                        return lbxRow;
+                    break;
             }
-
-            if (listItem is System.Data.DataRowView itmRowView)
-            {
-                switch (__ItemsMode)
-                {
-                    case ListBoxItemsMode.Table:
-                        return itmRowView.Row;
-                }
-                return null;
-            }
-
             return null;
         }
         /// <summary>
@@ -1749,6 +1867,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected object GetItemId(object item)
         {
             if (item is null) return null;
+            if (item is DevExpress.XtraEditors.ViewInfo.ImageListBoxViewInfo.ImageItemInfo imgItem) item = imgItem.Item;
+            if (item is DevExpress.XtraEditors.Controls.ImageListBoxItem lbxItem) item = lbxItem.Value;
+            if (item is System.Data.DataRowView rowView) item = rowView.Row;
 
             switch (__ItemsMode)
             {
@@ -1759,8 +1880,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case ListBoxItemsMode.Table:
                     if (item is System.Data.DataRow row)
                         return _GetTableItemId(row);
-                    else if (item is System.Data.DataRowView rowView && rowView.Row != null)
-                        return _GetTableItemId(rowView.Row);
                     break;
             }
             return null;
@@ -2744,6 +2863,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var template = new DevExpress.XtraEditors.TableLayout.ItemTemplateBase() { Name = templateName };
 
+            int[] colWidths = null;
+            int[] rowHeights = null;
+
             createColumns();
             createRows();
             createSpans();
@@ -2763,6 +2885,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 verifySpanSizes(widths, iElements
                     .Where(c => c.ColSpan > 1 && c.Width.HasValue)                                 // Buňky, které mají ColSpan > 1: vyžadují více sloupců; a mají Width definované
                     .Select(c => new Tuple<int, int, int>(c.ColIndex, c.ColSpan, c.Width.Value))); // Tuple: Item1 = index sloupce; Item2 = ColSpan; Item3 = definovaná šířka
+
+                colWidths = widths.ToArray();
 
                 // Pro zjištěné velikosti vytvoří TableColumnDefinition:
                 //  Na rozdíl od řádků (TableRowDefinition) tady pro sloupce není potřeba operovat s AutoWidth.
@@ -2788,6 +2912,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 verifySpanSizes(heights, iElements
                     .Where(c => c.RowSpan > 1 && c.Height.HasValue)                                // Buňky, které mají RowSpan > 1: vyžadují více řádků; a mají Height definované
                     .Select(c => new Tuple<int, int, int>(c.RowIndex, c.RowSpan, c.Height.Value))); // Tuple: Item1 = index řádku; Item2 = RowSpan; Item3 = definovaná výška
+
+                rowHeights = heights.ToArray();
 
                 // Pro zjištěné velikosti vytvoří TableRowDefinition:
                 //  DevExpress má zajímavou vlastnost, kterou obcházím pomocí řízení .AutoHeight:
@@ -2827,6 +2953,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                     string key = "C_" + elementId.ToString();
                     iElement.Key = key;
 
+                    iElement.CellWidth = getCellSize(colWidths, iElement.ColIndex, iElement.ColSpan);
+                    iElement.CellHeight = getCellSize(rowHeights, iElement.RowIndex, iElement.RowSpan);
+
                     // Jeden element v našem podání zobrazuje buď text, nebo obrázek. Proto máme na vstupu property ContentAlignment, kterou ukládáme jak do TextAlignment, tak i do ImageAlignment. A ImageToTextAlignment dávám None.
                     var tElement = new DevExpress.XtraEditors.TableLayout.TemplatedItemElement()
                     {
@@ -2851,6 +2980,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                         tElement.Appearance.Normal.FontSizeDelta = iElement.FontSizeDelta.Value;
                         tElement.Appearance.Normal.Options.UseFont = true;
                     }
+
+                    if (iElement.ElementContent == ElementContentType.IconName)
+                        iElement.ImageSize = getImageSize(iElement.CellWidth, iElement.CellHeight);
 
                     template.Elements.Add(tElement);
                     var isDynamicImage = hasDynamicImage(iElement);
@@ -2903,6 +3035,27 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (addToLast > 0)
                         sizes[itemLast] = sizes[itemLast] + addToLast;
                 }
+            }
+            // Vrátí sumární velikost z daných jednotlivých velikostí, počínaje indexem, v počtu span
+            int getCellSize(int[] sizes, int index, int span)
+            {
+                int size = 0;
+                int length = sizes.Length;
+                for (int o = 0; o < span; o++)
+                {
+                    int i = index + o;
+                    if (i >= 0 && i < length)
+                        size += sizes[i];
+                }
+                return size;
+            }
+            // Vrátí velikost obrázku podle dostupného prostoru
+            ResourceImageSizeType getImageSize(int width, int height)
+            {
+                int size = (width < height ? width : height);
+                if (size <= 18) return ResourceImageSizeType.Small;
+                if (size <= 26) return ResourceImageSizeType.Medium;
+                return ResourceImageSizeType.Large;
             }
             // Vrátí true, pokud daná definice buňky reprezentuje buňku s dynamicky definovaným obrázkem (ikona, Image)
             bool hasDynamicImage(IListBoxTemplateElement cell)
@@ -3123,6 +3276,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public int? Height { get; set; }
         /// <summary>
+        /// Šířka buňky = součet ze Span Columns, setuje se při výpočtu
+        /// </summary>
+        public int CellWidth { get; set; }
+        /// <summary>
+        /// Výška buňky = součet ze Span Rows, setuje se při výpočtu
+        /// </summary>
+        public int CellHeight { get; set; }
+        /// <summary>
+        /// Velikost ikony odvozená od velikosti prostoru, pouze pro <see cref="ElementContent"/> == <see cref="ElementContentType.IconName"/>
+        /// </summary>
+        public ResourceImageSizeType? ImageSize { get; set; }
+        /// <summary>
         /// Příznak, že tento element může být roztažen doprava na celou šířku
         /// </summary>
         public bool StretchHorizontal { get; set; }
@@ -3192,6 +3357,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud má buňka <see cref="RowSpan"/> větší než 1, jde o výšku celkovou.
         /// </summary>
         int? Height { get; }
+        /// <summary>
+        /// Šířka buňky = součet ze Span Columns, setuje se při výpočtu
+        /// </summary>
+        int CellWidth { get; set; }
+        /// <summary>
+        /// Výška buňky = součet ze Span Rows, setuje se při výpočtu
+        /// </summary>
+        int CellHeight { get; set; }
+        /// <summary>
+        /// Velikost ikony odvozená od velikosti prostoru, pouze pro <see cref="ElementContent"/> == <see cref="ElementContentType.IconName"/>
+        /// </summary>
+        ResourceImageSizeType? ImageSize { get; set; }
+
         /// <summary>
         /// Příznak, že tento element může být roztažen doprava na celou šířku
         /// </summary>
@@ -3306,5 +3484,48 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <param name="sender"></param>
     /// <param name="e"></param>
     public delegate void DxListBoxActionCancelDelegate(object sender, DxListBoxActionCancelEventArgs e);
+
+    /// <summary>
+    /// Argumenty pro akci ItemMouseClick a ItemMouseDoubleClick
+    /// </summary>
+    public class DxListBoxItemMouseClickEventArgs : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="buttons"></param>
+        /// <param name="location"></param>
+        /// <param name="modifierKeys"></param>
+        /// <param name="itemId"></param>
+        public DxListBoxItemMouseClickEventArgs(MouseButtons buttons, Point location, Keys modifierKeys, object itemId)
+        {
+            this.Buttons = buttons;
+            this.Location = location;
+            this.ModifierKeys = modifierKeys;
+            this.ItemId = itemId;
+        }
+        /// <summary>
+        /// Tlačítko myši
+        /// </summary>
+        public MouseButtons Buttons { get; }
+        /// <summary>
+        /// Pozice myši
+        /// </summary>
+        public Point Location { get; }
+        /// <summary>
+        /// Modifikátorové klávesy (Ctrl, Shift, Alt)
+        /// </summary>
+        public Keys ModifierKeys { get; }
+        /// <summary>
+        /// ID prvku pod myší
+        /// </summary>
+        public object ItemId { get; }
+    }
+    /// <summary>
+    /// Handler pro akci ItemMouseClick a ItemMouseDoubleClick
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="args"></param>
+    public delegate void DxListBoxItemMouseClickDelegate(object sender, DxListBoxItemMouseClickEventArgs args);
     #endregion
 }

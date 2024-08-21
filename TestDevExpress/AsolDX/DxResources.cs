@@ -2759,7 +2759,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Jméno obrázku
             /// </summary>
-            public string ImageName { get; set; }
+            public string ImageName { get { return __ImageName; } set { __ImageName = value; __SizeTypeByName = _DetectSizeTypeByName(value); } } private string __ImageName;
             /// <summary>
             /// Je zadané jméno <see cref="ImageName"/> ?
             /// </summary>
@@ -2773,9 +2773,25 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public ResourceImageSizeType? SizeType { get; set; }
             /// <summary>
-            /// Platný typ velikosti <see cref="SizeType"/>, default = <see cref="ResourceImageSizeType.Large"/>
+            /// Typ velikosti určený suffixem jména obrázku
             /// </summary>
-            public ResourceImageSizeType CurrentSizeType { get { return (this.SizeType ?? ResourceImageSizeType.Large); } }
+            public ResourceImageSizeType? SizeTypeByName { get { return __SizeTypeByName; } } private ResourceImageSizeType? __SizeTypeByName;
+            /// <summary>
+            /// Vrátí velikost obrázku odvozenou podle jeho jména
+            /// </summary>
+            /// <param name="imageName"></param>
+            /// <returns></returns>
+            private static ResourceImageSizeType? _DetectSizeTypeByName(string imageName)
+            {
+                if (String.IsNullOrEmpty(imageName)) return null;
+                DataResources.GetPackKey(imageName, out var size, out var type);
+                if (size == ResourceImageSizeType.None) return null; 
+                return size;
+            }
+            /// <summary>
+            /// Platný typ velikosti <see cref="SizeType"/>, nebo daný jménem obrázku, nebo default = <see cref="ResourceImageSizeType.Large"/>
+            /// </summary>
+            public ResourceImageSizeType CurrentSizeType { get { return (this.SizeType ?? this.SizeTypeByName ?? ResourceImageSizeType.Large); } }
             /// <summary>
             /// Cílová velikost SVG
             /// </summary>
