@@ -522,9 +522,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             __RowFilterClient.Client = __ListBox;
             __RowFilterClient.Properties.NullValuePrompt = "Co byste chtěli najít?";
             __RowFilterClient.TabStop = false;
+            __RowFilterClient.Properties.ShowMRUButton = false;
+            __RowFilterClient.AddingMRUItem += __RowFilterClient_AddingMRUItem;
             _RowFilterClientRegisterEvents();
             this.Controls.Add(__RowFilterClient);
         }
+
+        private void __RowFilterClient_AddingMRUItem(object sender, AddingMRUItemEventArgs e)
+        {
+            e.Cancel = true;
+        }
+
         /// <summary>
         /// Aktivuje klientský RowFilter, volitelně do něj vepíše daný text (pokud není null)
         /// </summary>
@@ -586,6 +594,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Down)
             {
                 e.IsInputKey = false;
+                this.__ListBox.UnSelectAll();
                 this.__ListBox.SelectedIndex = 0;
                 this.__ListBox.Focus();
             }
