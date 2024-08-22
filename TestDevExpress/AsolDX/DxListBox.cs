@@ -15,7 +15,6 @@ using DevExpress.Utils;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraEditors.TableLayout;
-using System.Runtime.InteropServices;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
