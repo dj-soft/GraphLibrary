@@ -526,12 +526,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             _RowFilterClientRegisterEvents();
             this.Controls.Add(__RowFilterClient);
         }
-
+        /// <summary>
+        /// DevExpress je ochoten evidovat MRU (Most Recent Unit), ale myslím že to spíš obtěžuje. Zakážu přidávání...
+        /// My používáme šipku dolů (kurzor) na přechod do vlastního Listu, ale DevExpress na ní rozbaluje MRU menu, a pak se přes sebe pletou MRU položky a Itemy od Listu...
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void __RowFilterClient_AddingMRUItem(object sender, AddingMRUItemEventArgs e)
         {
             e.Cancel = true;
         }
-
         /// <summary>
         /// Aktivuje klientský RowFilter, volitelně do něj vepíše daný text (pokud není null)
         /// </summary>
