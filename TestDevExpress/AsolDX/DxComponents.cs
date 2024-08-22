@@ -4016,6 +4016,331 @@ namespace Noris.Clients.Win.Components.AsolDX
             return false;
         }
         #endregion
+        #region Práce s klávesovými kódy - KeyArgs
+        /// <summary>
+        /// Vrátí true, pokjud daná klávesa je pouze modifikátor bez další významné klávesy.
+        /// </summary>
+        /// <param name="keyArgs"></param>
+        /// <returns></returns>
+        public static bool KeyIsOnlyModifier(KeyEventArgs keyArgs) { return KeyIsOnlyModifier(keyArgs.KeyCode); }
+        /// <summary>
+        /// Vrátí true, pokjud daná klávesa je pouze modifikátor bez další významné klávesy.
+        /// </summary>
+        /// <param name="keyCode"></param>
+        /// <returns></returns>
+        public static bool KeyIsOnlyModifier(Keys keyCode)
+        {
+            return (keyCode == Keys.Capital ||                                 // Caps lock
+                    keyCode == Keys.ShiftKey ||
+                    keyCode == Keys.ControlKey ||
+                    keyCode == Keys.LWin ||                                    // Wokno
+                    keyCode == Keys.Apps ||                                    // Kontextové menu
+                    keyCode == Keys.Menu);
+        }
+        /// <summary>
+        /// Vrátí Char odpovídající daným datům klávesnice.
+        /// Pokud daná klávesa není znak, ale nějaký ovládací prvek, pak vrátí null (= typicky modifikátory, pohyby kurzoru, Ctrl+něco, Fnn, aplikační klávesy).
+        /// </summary>
+        /// <param name="keyArgs"></param>
+        /// <param name="useLocalizedKeys"></param>
+        /// <returns></returns>
+        public static char? KeyConvertToChar(KeyEventArgs keyArgs, bool useLocalizedKeys)
+        {
+            if (KeyIsOnlyModifier(keyArgs)) return null;                       // Samotné modifikační klávesy nejsou znak
+
+            // Modifikátory:
+            bool isCtrlMod = keyArgs.KeyData.HasFlag(Keys.Control);            // Je zmáčknutý 'Ctrl'
+            bool isShiftMod = (keyArgs.KeyData.HasFlag(Keys.Shift));           // Je zmáčknutý 'Shift'
+            bool isAltMod = (keyArgs.KeyData.HasFlag(Keys.Alt));               // Je zmáčknutý 'Alt'
+            bool isAltGr = isCtrlMod && isAltMod;                              // klávesa      'AltGr' se projevuje tak, že v KeyData je Control + Alt
+
+            if (isCtrlMod && !isAltMod) return null;                           // Ctrl bez Alt je např. Ctrl+C, Ctrl+A (clipboard, editor) nebo Ctrl+S (klávesová zkratka). Ale ne 'Znak'.
+            if (isShiftMod && isAltGr) return null;                            // 'Shift' + 'AltGr' nic nepíše
+
+            bool isCapsLock = Console.CapsLock;
+
+            // Index znaku v řetězci, který odpovídá aktuálním modifikátorům:
+            int index = (isAltGr ? 5 : (isCapsLock ? 2 : 0) + (isShiftMod ? 1 : 0));
+
+            // Jednotlivé klávesy a jejich znaky s různými modifikátory:
+            if (useLocalizedKeys)
+            {   // CZ klávesnice:
+                switch (keyArgs.KeyCode)                // KeyCode obsahuje klávesu, pouze klávesu očištěnou o modifikátory
+                {
+                    // Esc a Fn:
+                    case Keys.Escape: return null;
+                    case Keys.F1: return null;
+                    case Keys.F2: return null;
+                    case Keys.F3: return null;
+                    case Keys.F4: return null;
+                    case Keys.F5: return null;
+                    case Keys.F6: return null;
+                    case Keys.F7: return null;
+                    case Keys.F8: return null;
+                    case Keys.F9: return null;
+                    case Keys.F10: return null;
+                    case Keys.F11: return null;
+                    case Keys.F12: return null;
+
+
+                    // Horní řada
+                    case Keys.Oemtilde: return getChar(";°;°  ");
+                    case Keys.D1: return getChar("+1+1 ~ ");
+                    case Keys.D2: return getChar("ě2Ěě ˇ ");
+                    case Keys.D3: return getChar("š3Š3 ^ ");
+                    case Keys.D4: return getChar("č4Č4 ˘ ");
+                    case Keys.D5: return getChar("ř5Ř5 ° ");
+                    case Keys.D6: return getChar("ž6Ž6 ˛ ");
+                    case Keys.D7: return getChar("ý7Ý7 ` ");
+                    case Keys.D8: return getChar("á8Á8 · ");
+                    case Keys.D9: return getChar("í9Í9 ´ ");
+                    case Keys.D0: return getChar("é0É0 ˝ ");
+                    case Keys.Oemplus: return getChar("=%=% ¨ ");
+                    case Keys.OemQuestion: return getChar("´ˇ´ˇ ¸ ");
+                    case Keys.Back: return null;
+
+                    // QWER
+                    case Keys.Tab: return null;
+                    case Keys.Q: return getChar("qQQq \\ ");
+                    case Keys.W: return getChar("wWwW | ");
+                    case Keys.E: return getChar("eEEe € ");
+                    case Keys.R: return getChar("rRRr   ");
+                    case Keys.T: return getChar("tTTt   ");
+                    case Keys.Z: return getChar("zZZz   ");
+                    case Keys.U: return getChar("uUUu   ");
+                    case Keys.I: return getChar("iIIi   ");
+                    case Keys.O: return getChar("oOOo   ");
+                    case Keys.P: return getChar("pPPp   ");
+                    case Keys.OemOpenBrackets: return getChar("ú/Ú/ ÷ ");
+                    case Keys.Oem6: return getChar(")()( × ");
+                    case Keys.Oem5: return getChar("¨'¨' ¨ ");
+
+                    // ASDF
+                    case Keys.Capital: return null;
+                    case Keys.A: return getChar("aAAa   ");
+                    case Keys.S: return getChar("sSSs đ ");
+                    case Keys.D: return getChar("dDDd Đ ");
+                    case Keys.F: return getChar("fFFf [ ");
+                    case Keys.G: return getChar("gGGg ] ");
+                    case Keys.H: return getChar("hHHh   ");
+                    case Keys.J: return getChar("jJJj   ");
+                    case Keys.K: return getChar("kKKk ł ");
+                    case Keys.L: return getChar("lLLl Ł ");
+                    case Keys.Oem1: return getChar("ů\"Ů\" $ ");
+                    case Keys.Oem7: return getChar("§!§! ß ");
+                    case Keys.Return: return null;
+
+                    // YXCV
+                    case Keys.Y: return getChar("yYYy   ");
+                    case Keys.X: return getChar("xXXx # ");
+                    case Keys.C: return getChar("cCCc & ");
+                    case Keys.V: return getChar("vVVv @ ");
+                    case Keys.B: return getChar("bBBb { ");
+                    case Keys.N: return getChar("nNNn } ");
+                    case Keys.M: return getChar("mMMm   ");
+                    case Keys.Oemcomma: return getChar(",?,? < ");
+                    case Keys.OemPeriod: return getChar(".:.: > ");
+                    case Keys.OemMinus: return getChar("-_-_ * ");
+
+                    // Mezera:
+                    case Keys.Space: return getChar("       ");
+
+
+                    // Střední blok:
+                    case Keys.PrintScreen: return null;
+                    case Keys.Scroll: return null;
+                    case Keys.Pause: return null;
+
+                    case Keys.Insert: return null;
+                    case Keys.Home: return null;
+                    case Keys.PageUp: return null;
+
+                    case Keys.Delete: return null;
+                    case Keys.End: return null;
+                    case Keys.PageDown: return null;
+
+                    case Keys.Up: return null;
+                    case Keys.Left: return null;
+                    case Keys.Down: return null;
+                    case Keys.Right: return null;
+
+
+                    // Numerická:
+                    case Keys.NumLock: return null;
+                    case Keys.Divide: return getChar("////   ");
+                    case Keys.Multiply: return getChar("****   ");
+                    case Keys.Subtract: return getChar("----   ");
+
+                    case Keys.NumPad7: return getChar("7\07\0 • ");
+                    case Keys.NumPad8: return getChar("7\07\0 ◘ ");
+                    case Keys.NumPad9: return getChar("7\07\0 ○ ");
+                    case Keys.Add: return getChar("++++  ");
+
+                    case Keys.NumPad4: return getChar("4\04\0 ♦ ");
+                    case Keys.NumPad5: return getChar("5\05\0 ♣ ");
+                    case Keys.NumPad6: return getChar("6\06\0 ♠ ");
+
+                    case Keys.NumPad1: return getChar("1\01\0 ♦ ");
+                    case Keys.NumPad2: return getChar("2\02\0 ☻ ");
+                    case Keys.NumPad3: return getChar("3\03\0 ♥ ");
+
+                    case Keys.NumPad0: return getChar("0\00\0   ");
+                    case Keys.Decimal: return getChar(",\0,\0   ");
+                }
+            }
+            else
+            {   // EN klávesnice:
+                switch (keyArgs.KeyCode)                // KeyCode obsahuje klávesu, pouze klávesu očištěnou o modifikátory
+                {
+                    // Esc a Fn:
+                    case Keys.Escape: return null;
+                    case Keys.F1: return null;
+                    case Keys.F2: return null;
+                    case Keys.F3: return null;
+                    case Keys.F4: return null;
+                    case Keys.F5: return null;
+                    case Keys.F6: return null;
+                    case Keys.F7: return null;
+                    case Keys.F8: return null;
+                    case Keys.F9: return null;
+                    case Keys.F10: return null;
+                    case Keys.F11: return null;
+                    case Keys.F12: return null;
+
+
+                    // Horní řada
+                    case Keys.Oemtilde: return getChar(";°;°  ");
+                    case Keys.D1: return getChar("+1+1 ~ ");
+                    case Keys.D2: return getChar("ě2Ěě ˇ ");
+                    case Keys.D3: return getChar("š3Š3 ^ ");
+                    case Keys.D4: return getChar("č4Č4 ˘ ");
+                    case Keys.D5: return getChar("ř5Ř5 ° ");
+                    case Keys.D6: return getChar("ž6Ž6 ˛ ");
+                    case Keys.D7: return getChar("ý7Ý7 ` ");
+                    case Keys.D8: return getChar("á8Á8 · ");
+                    case Keys.D9: return getChar("í9Í9 ´ ");
+                    case Keys.D0: return getChar("é0É0 ˝ ");
+                    case Keys.Oemplus: return getChar("=%=% ¨ ");
+                    case Keys.OemQuestion: return getChar("´ˇ´ˇ ¸ ");
+                    case Keys.Back: return null;
+
+                    // QWER
+                    case Keys.Tab: return null;
+                    case Keys.Q: return getChar("qQQq \\ ");
+                    case Keys.W: return getChar("wWwW | ");
+                    case Keys.E: return getChar("eEEe € ");
+                    case Keys.R: return getChar("rRRr   ");
+                    case Keys.T: return getChar("tTTt   ");
+                    case Keys.Z: return getChar("zZZz   ");
+                    case Keys.U: return getChar("uUUu   ");
+                    case Keys.I: return getChar("iIIi   ");
+                    case Keys.O: return getChar("oOOo   ");
+                    case Keys.P: return getChar("pPPp   ");
+                    case Keys.OemOpenBrackets: return getChar("ú/Ú/ ÷ ");
+                    case Keys.Oem6: return getChar(")()( × ");
+                    case Keys.Oem5: return getChar("¨'¨' ¨ ");
+
+                    // ASDF
+                    case Keys.Capital: return null;
+                    case Keys.A: return getChar("aAAa   ");
+                    case Keys.S: return getChar("sSSs đ ");
+                    case Keys.D: return getChar("dDDd Đ ");
+                    case Keys.F: return getChar("fFFf [ ");
+                    case Keys.G: return getChar("gGGg ] ");
+                    case Keys.H: return getChar("hHHh   ");
+                    case Keys.J: return getChar("jJJj   ");
+                    case Keys.K: return getChar("kKKk ł ");
+                    case Keys.L: return getChar("lLLl Ł ");
+                    case Keys.Oem1: return getChar("ů\"Ů\" $ ");
+                    case Keys.Oem7: return getChar("§!§! ß ");
+                    case Keys.Return: return null;
+
+                    // YXCV
+                    case Keys.Y: return getChar("yYYy   ");
+                    case Keys.X: return getChar("xXXx # ");
+                    case Keys.C: return getChar("cCCc & ");
+                    case Keys.V: return getChar("vVVv @ ");
+                    case Keys.B: return getChar("bBBb { ");
+                    case Keys.N: return getChar("nNNn } ");
+                    case Keys.M: return getChar("mMMm   ");
+                    case Keys.Oemcomma: return getChar(",?,? < ");
+                    case Keys.OemPeriod: return getChar(".:.: > ");
+                    case Keys.OemMinus: return getChar("-_-_ * ");
+
+                    // Mezera:
+                    case Keys.Space: return getChar("       ");
+
+
+                    // Střední blok:
+                    case Keys.PrintScreen: return null;
+                    case Keys.Scroll: return null;
+                    case Keys.Pause: return null;
+
+                    case Keys.Insert: return null;
+                    case Keys.Home: return null;
+                    case Keys.PageUp: return null;
+
+                    case Keys.Delete: return null;
+                    case Keys.End: return null;
+                    case Keys.PageDown: return null;
+
+                    case Keys.Up: return null;
+                    case Keys.Left: return null;
+                    case Keys.Down: return null;
+                    case Keys.Right: return null;
+
+
+                    // Numerická:
+                    case Keys.NumLock: return null;
+                    case Keys.Divide: return getChar("////   ");
+                    case Keys.Multiply: return getChar("****   ");
+                    case Keys.Subtract: return getChar("----   ");
+
+                    case Keys.NumPad7: return getChar("7\07\0 • ");
+                    case Keys.NumPad8: return getChar("8\08\0 ◘ ");
+                    case Keys.NumPad9: return getChar("9\09\0 ○ ");
+                    case Keys.Add: return getChar("++++  ");
+
+                    case Keys.NumPad4: return getChar("4\04\0 ♦ ");
+                    case Keys.NumPad5: return getChar("5\05\0 ♣ ");
+                    case Keys.NumPad6: return getChar("6\06\0 ♠ ");
+
+                    case Keys.NumPad1: return getChar("1\01\0 ♦ ");
+                    case Keys.NumPad2: return getChar("2\02\0 ☻ ");
+                    case Keys.NumPad3: return getChar("3\03\0 ♥ ");
+
+                    case Keys.NumPad0: return getChar("0\00\0   ");
+                    case Keys.Decimal: return getChar(",\0,\0   ");
+                }
+            }
+
+            return null;
+
+            // Vrátí znak z daného řetězce, kde jsou znaky v pořadí:
+            //  0: Bez CapsLock a bez Shiftu         CZ  klávesnice
+            //  1: Bez CapsLock a včetně Shiftu      CZ  klávesnice
+            //  2: Včetně CapsLock a bez Shiftu      CZ  klávesnice
+            //  3: Včetně CapsLock a včetně Shiftu   CZ  klávesnice
+            //  4:   mezera pro přehlednost
+            //  5: AltGr  (nebo mezera)              CZ  klávesnice
+            //  6:   mezera pro přehlednost
+            //  7: Bez CapsLock a bez Shiftu         ENG klávesnice
+            //  8: Bez CapsLock a včetně Shiftu      ENG klávesnice
+            //  9: Včetně CapsLock a bez Shiftu      ENG klávesnice
+            // 10: Včetně CapsLock a včetně Shiftu   ENG klávesnice
+            // 11:   mezera pro přehlednost
+            //  5: AltGr  (nebo mezera)              ENG klávesnice
+            char? getChar(string text)
+            {
+                if (text.Length < index) return null;
+                char c = text[index];
+                if (isAltGr && c == ' ') return null;
+                if (c == '\0') return null;
+                return c;
+            }
+        }
+        #endregion
+
         #region Temp Directory
         /// <summary>
         /// Aplikace zde najde fullname adresáře Temp, v podobě: "C:\User\Jméno\...\".

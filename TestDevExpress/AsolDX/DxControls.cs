@@ -10491,6 +10491,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Klávesa CtrlY: Redo (znovu provést poslední změnu)
         /// </summary>
         Redo = 0x2000,
+        /// <summary>
+        /// Klávesa Šipka nahoru nebo PageUp na první pozici Listu: aktivuj řádkový filtr
+        /// </summary>
+        ActivateFilter = 0x4000,
+        /// <summary>
+        /// Jiné klávesy (znaky): aktivuj řádkový filtr a vlož do něj dodaný znak
+        /// </summary>
+        FillKeyToFilter = 0x8000,
 
         /// <summary>
         /// Kopírovat prvek / vybrané prvky zleva doprava
@@ -10525,11 +10533,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Všechny kopie doleva/doprava
         /// </summary>
         AllCopy = CopyToRightOne | CopyToRightAll | CopyToLeftOne | CopyToLeftAll,
+        /// <summary>
+        /// Undo a Redo
+        /// </summary>
+        AllUndoRedo = Undo | Redo,
 
         /// <summary>
         /// Všechny akce
         /// </summary>
-        All = AllClipboard | Delete | SelectAll | AllGo | AllMove
+        All = AllClipboard | Delete | SelectAll | AllGo | AllMove | AllUndoRedo | ActivateFilter | ActivateFilter
     }
     /// <summary>
     /// Stav aktivity okna

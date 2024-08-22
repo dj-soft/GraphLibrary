@@ -15,6 +15,7 @@ using DevExpress.Utils;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraEditors.TableLayout;
+using System.Runtime.InteropServices;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -121,8 +122,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
-            _RemoveButtons();
-            _RowFilterDispose();
+            try
+            {
+                _RemoveButtons();
+                _RowFilterDispose();
+            }
+            catch { /* Chyby v Dispose občas nastanou v DevExpress, který něco likviduje v GC threadu a nemá přístup do GUI. */ }
         }
         /// <summary>
         /// Instance ListBoxu
@@ -377,6 +382,34 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _RowFilterInitialize()
         {
             __RowFilterMode = FilterRowMode.None;
+            this.__ListBox.ListActionBefore += _ListBox_ListActionBefore;
+        }
+        /// <summary>
+        /// Panel je zaháčkovaný na akce ListBoxu, kde panel ošetřuje akce <see cref="KeyActionType.ActivateFilter"/> a <see cref="KeyActionType.FillKeyToFilter"/>.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ListBox_ListActionBefore(object sender, DxListBoxActionCancelEventArgs e)
+        {
+            // Jiné akce ignoruji:
+            bool isFilterAction = (e.Action == KeyActionType.ActivateFilter || e.Action == KeyActionType.FillKeyToFilter);
+            if (!isFilterAction) return;
+
+            // Pokud já nemám FilterRow, pak akci stornuji, tím si ListBox nebude nastavovat IsHandled = true, a případné klávesy pošle do nativního controlu:
+            var filterMode = this.RowFilterMode;
+            if (filterMode == FilterRowMode.None) { e.Cancel = true; return; }
+
+            string text = ((e.Action == KeyActionType.FillKeyToFilter) ? DxComponent.KeyConvertToChar(e.Keys, true)?.ToString() : (string)null);
+            switch (filterMode)
+            {
+                case FilterRowMode.Client:
+                    _RowFilterClientSetFocus(text);
+                    break;
+                case FilterRowMode.Server:
+                    _RowFilterServerSetFocus(text);
+                    __RowFilterServer.Focus();
+                    break;
+            }
         }
         /// <summary>
         /// Disposeřádkového filtrování
@@ -488,8 +521,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             __RowFilterClient = new SearchControl();
             __RowFilterClient.Client = __ListBox;
             __RowFilterClient.Properties.NullValuePrompt = "Co byste chtěli najít?";
+            __RowFilterClient.TabStop = false;
             _RowFilterClientRegisterEvents();
             this.Controls.Add(__RowFilterClient);
+        }
+        /// <summary>
+        /// Aktivuje klientský RowFilter, volitelně do něj vepíše daný text (pokud není null)
+        /// </summary>
+        private void _RowFilterClientSetFocus(string text)
+        {
+            if (__RowFilterClient != null)
+            {
+                __RowFilterClient.Focus();
+                if (text != null)
+                {
+                    __RowFilterClient.Text = text;
+                    __RowFilterClient.SelectionStart = text.Length;
+                }
+            }
         }
         /// <summary>
         /// Odebere klientský RowFilter
@@ -509,12 +558,37 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _RowFilterClientRegisterEvents()
         {
+            var filter = __RowFilterClient;
+            if (filter != null)
+            {
+                filter.PreviewKeyDown += _RowFilterClient_PreviewKeyDown;
+            }
         }
         /// <summary>
         /// Odregistruje zdejší eventhandlery na události v nativním <see cref="__RowFilterClient"/>
         /// </summary>
         private void _RowFilterClientUnRegisterEvents()
         {
+            var filter = __RowFilterClient;
+            if (filter != null)
+            {
+                filter.PreviewKeyDown -= _RowFilterClient_PreviewKeyDown;
+            }
+        }
+        /// <summary>
+        /// Po stisku klávesy v řádkovém filtru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _RowFilterClient_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Down)
+            {
+                e.IsInputKey = false;
+                this.__ListBox.SelectedIndex = 0;
+                this.__ListBox.Focus();
+            }
         }
         /// <summary>
         /// Klientský RowFilter
@@ -536,6 +610,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             __RowFilterServer.FilterValueChangedSources = DxFilterBoxChangeEventSource.DefaultGreen;
             _RowFilterServerRegisterEvents();
             this.Controls.Add(__RowFilterServer);
+        }
+        /// <summary>
+        /// Aktivuje klientský RowFilter, volitelně do něj vepíše daný text (pokud není null)
+        /// </summary>
+        private void _RowFilterServerSetFocus(string text)
+        {
+            if (__RowFilterServer != null)
+            {
+                __RowFilterServer.Focus();
+                if (text != null)
+                    __RowFilterServer.FilterText = text;
+            }
         }
         /// <summary>
         /// Odebere serverový RowFilter
@@ -1713,7 +1799,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                     args.DxSuperTip = dxSuperTip;
                     args.ToolTipChange = DxToolTipChangeType.NewToolTip;                 // Zajistím rozsvícení okna ToolTipu
-                    DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "ToolTip: New item found");
+                    //  DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "ToolTip: New item found");
                 }
                 else
                 {
@@ -1723,7 +1809,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             else
             {   // Myš je mimo prvky:
                 args.ToolTipChange = DxToolTipChangeType.NoToolTip;                      // Pokud ToolTip svítí, zhasneme jej
-                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "ToolTip: NoToolTip");
+                //  DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "ToolTip: NoToolTip");
             }
         }
         /// <summary>
@@ -1762,7 +1848,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _ToolTipHide(string message)
         {
             this.DxToolTipController.HideTip();
-          //  DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"TreeList.HideToolTip({message})");
+            //  DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"TreeList.HideToolTip({message})");
         }
         /// <summary>
         /// V controlleru ToolTipu došlo k události, pošli ji do našeho eventu
@@ -1772,7 +1858,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <exception cref="NotImplementedException"></exception>
         private void _ToolTipDebugTextChanged(object sender, DxToolTipArgs args)
         {
-          //  DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, args.EventName);
+            //  DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, args.EventName);
         }
         #endregion
         #region VisibleItems, SelectedItems, ActiveItem a Id, a konverze ...
@@ -1919,14 +2005,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         public void DoKeyActions(params KeyActionType[] actions)
         {
             foreach (KeyActionType action in actions)
-                _DoKeyAction(action, true);
+                _DoKeyAction(action, null, true);
         }
         /// <summary>
         /// Inicializace eventhandlerů a hodnot pro KeyActions
         /// </summary>
         private void _KeyActionsInit()
         {
-            this.KeyDown += DxListBoxControl_KeyDown;
+            this.KeyDown += _KeyDown;
             this.EnabledKeyActions = KeyActionType.None;
         }
         /// <summary>
@@ -1934,106 +2020,125 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void DxListBoxControl_KeyDown(object sender, KeyEventArgs e)
+        private void _KeyDown(object sender, KeyEventArgs e)
         {
+            //  DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"KeyDown: KeyData: [{e.KeyData}]; KeyCode: [{e.KeyCode}]");
+
             var enabledActions = EnabledKeyActions;
             bool isHandled = false;
             switch (e.KeyData)
             {
                 case Keys.Delete:
-                    isHandled = _DoKeyAction(KeyActionType.Delete);
+                    isHandled = _DoKeyAction(KeyActionType.Delete, e);
                     break;
                 case Keys.Control | Keys.A:
-                    isHandled = _DoKeyAction(KeyActionType.SelectAll);
+                    isHandled = _DoKeyAction(KeyActionType.SelectAll, e);
                     break;
                 case Keys.Control | Keys.C:
-                    isHandled = _DoKeyAction(KeyActionType.ClipCopy);
+                    isHandled = _DoKeyAction(KeyActionType.ClipCopy, e);
                     isHandled = true;            // I kdyby tato akce NEBYLA povolena, chci ji označit jako Handled = nechci, aby v případě NEPOVOLENÉ akce dával objekt nativně věci do clipbardu.
                     break;
                 case Keys.Control | Keys.X:
-                    // Ctrl+X : pokud je povoleno, provedu; pokud nelze provést Ctrl+X ale lze provést Ctrl+C, tak se provede to:
+                    // Ctrl+X : pokud je povoleno, provedu to; pokud ale nelze provést Ctrl+X a přitom lze provést Ctrl+C, tak se provede to:
                     if (EnabledKeyActions.HasFlag(KeyActionType.ClipCut))
-                        isHandled = _DoKeyAction(KeyActionType.ClipCut);
+                        isHandled = _DoKeyAction(KeyActionType.ClipCut, e);
                     else if (EnabledKeyActions.HasFlag(KeyActionType.ClipCopy))
-                        isHandled = _DoKeyAction(KeyActionType.ClipCopy);
+                        isHandled = _DoKeyAction(KeyActionType.ClipCopy, e);
                     isHandled = true;            // I kdyby tato akce NEBYLA povolena, chci ji označit jako Handled = nechci, aby v případě NEPOVOLENÉ akce dával objekt nativně věci do clipbardu.
                     break;
                 case Keys.Control | Keys.V:
-                    isHandled = _DoKeyAction(KeyActionType.ClipPaste);
+                    isHandled = _DoKeyAction(KeyActionType.ClipPaste, e);
                     isHandled = true;            // I kdyby tato akce NEBYLA povolena, chci ji označit jako Handled = nechci, aby v případě NEPOVOLENÉ akce dával objekt nativně věci do clipbardu.
                     break;
                 case Keys.Alt | Keys.Home:
-                    isHandled = _DoKeyAction(KeyActionType.MoveTop);
+                    isHandled = _DoKeyAction(KeyActionType.MoveTop, e);
                     break;
                 case Keys.Alt | Keys.Up:
-                    isHandled = _DoKeyAction(KeyActionType.MoveUp);
+                    isHandled = _DoKeyAction(KeyActionType.MoveUp, e);
                     break;
                 case Keys.Alt | Keys.Down:
-                    isHandled = _DoKeyAction(KeyActionType.MoveDown);
+                    isHandled = _DoKeyAction(KeyActionType.MoveDown, e);
                     break;
                 case Keys.Alt | Keys.End:
-                    isHandled = _DoKeyAction(KeyActionType.MoveBottom);
+                    isHandled = _DoKeyAction(KeyActionType.MoveBottom, e);
                     break;
                 case Keys.Control | Keys.Z:
-                    isHandled = _DoKeyAction(KeyActionType.Undo);
+                    isHandled = _DoKeyAction(KeyActionType.Undo, e);
                     break;
                 case Keys.Control | Keys.Y:
-                    isHandled = _DoKeyAction(KeyActionType.Redo);
+                    isHandled = _DoKeyAction(KeyActionType.Redo, e);
+                    break;
+                default:
+                    KeyActionType rowFilterAction = _IsActivateKeyForFilter(e);
+                    if (rowFilterAction != KeyActionType.None)
+                        isHandled = _DoKeyAction(rowFilterAction, e);
                     break;
             }
             if (isHandled)
                 e.Handled = true; 
         }
         /// <summary>
-        /// Provede akce zadané jako bity v dané akci (<paramref name="action"/>), s testem povolení dle <see cref="EnabledKeyActions"/> nebo povinně (<paramref name="force"/>)
+        /// Provede akce zadané jako bity v dané akci (<paramref name="actions"/>), s testem povolení dle <see cref="EnabledKeyActions"/> nebo povinně (<paramref name="force"/>)
         /// </summary>
-        /// <param name="action"></param>
-        /// <param name="force"></param>
-        private bool _DoKeyAction(KeyActionType action, bool force = false)
+        /// <param name="actions">Požadovaná akce</param>
+        /// <param name="e">Data o klávese, může být null</param>
+        /// <param name="force">Provede danou akci i tehdy, když List sám ji nemá povolenou v nastavení <see cref="EnabledKeyActions"/>! </param>
+        private bool _DoKeyAction(KeyActionType actions, KeyEventArgs e = null, bool force = false)
         {
             bool handled = false;
-            _DoKeyAction(action, KeyActionType.Refresh, force, null, ref handled);
-            _DoKeyAction(action, KeyActionType.SelectAll, force, _DoKeyActionCtrlA, ref handled);
-            _DoKeyAction(action, KeyActionType.ClipCopy, force, _DoKeyActionCtrlC, ref handled);
-            _DoKeyAction(action, KeyActionType.ClipCut, force, _DoKeyActionCtrlX, ref handled);
-            _DoKeyAction(action, KeyActionType.ClipPaste, force, _DoKeyActionCtrlV, ref handled);
-            _DoKeyAction(action, KeyActionType.MoveTop, force, _DoKeyActionMoveTop, ref handled);
-            _DoKeyAction(action, KeyActionType.MoveUp, force, _DoKeyActionMoveUp, ref handled);
-            _DoKeyAction(action, KeyActionType.MoveDown, force, _DoKeyActionMoveDown, ref handled);
-            _DoKeyAction(action, KeyActionType.MoveBottom, force, _DoKeyActionMoveBottom, ref handled);
-            _DoKeyAction(action, KeyActionType.Delete, force, _DoKeyActionDelete, ref handled);
-            _DoKeyAction(action, KeyActionType.CopyToRightOne, force, null, ref handled);
-            _DoKeyAction(action, KeyActionType.CopyToRightAll, force, null, ref handled);
-            _DoKeyAction(action, KeyActionType.CopyToLeftOne, force, null, ref handled);
-            _DoKeyAction(action, KeyActionType.CopyToLeftAll, force, null, ref handled);
-            _DoKeyAction(action, KeyActionType.Undo, force, _DoKeyActionUndo, ref handled);
-            _DoKeyAction(action, KeyActionType.Redo, force, _DoKeyActionRedo, ref handled);
+            
+            // Akce okolo řádkového filtru jsou povoleny vždy:
+            var enabledKeyActions = EnabledKeyActions | KeyActionType.ActivateFilter | KeyActionType.FillKeyToFilter;
+
+            doSingleAction(KeyActionType.Refresh, null);
+            doSingleAction(KeyActionType.SelectAll, _DoKeyActionCtrlA);
+            doSingleAction(KeyActionType.ClipCopy, _DoKeyActionCtrlC);
+            doSingleAction(KeyActionType.ClipCut, _DoKeyActionCtrlX);
+            doSingleAction(KeyActionType.ClipPaste, _DoKeyActionCtrlV);
+            doSingleAction(KeyActionType.MoveTop, _DoKeyActionMoveTop);
+            doSingleAction(KeyActionType.MoveUp, _DoKeyActionMoveUp);
+            doSingleAction(KeyActionType.MoveDown, _DoKeyActionMoveDown);
+            doSingleAction(KeyActionType.MoveBottom, _DoKeyActionMoveBottom);
+            doSingleAction(KeyActionType.Delete, _DoKeyActionDelete);
+            doSingleAction(KeyActionType.CopyToRightOne, null);                // Pozn. pokud není dodaná metoda pro akci (=null), pak tuto akci má řešit pouze nadřazený container
+            doSingleAction(KeyActionType.CopyToRightAll, null);                //  - pomocí eventhandlerů ListActionBefore a ListActionAfter
+            doSingleAction(KeyActionType.CopyToLeftOne, null);
+            doSingleAction(KeyActionType.CopyToLeftAll, null);
+            doSingleAction(KeyActionType.Undo, _DoKeyActionUndo);
+            doSingleAction(KeyActionType.Redo, _DoKeyActionRedo);
+            doSingleAction(KeyActionType.ActivateFilter, null);                // Měl by odchytit Parent container a případně přesměrovat
+            doSingleAction(KeyActionType.FillKeyToFilter, null);               //  obdobně
             return handled;
+
+            // Zjistí, zda má být provedena daná akce, a pokud ano pak ji provede.
+            void doSingleAction(KeyActionType action, Action internalActionMethod)
+            {
+                if (!actions.HasFlag(action)) return;                          // Tato akce není požadována
+                if (!force && !enabledKeyActions.HasFlag(action)) return;      // Tato akce sice je požadována, ale není povolena
+
+                var argsBefore = new DxListBoxActionCancelEventArgs(actions, e);
+                _RunListActionBefore(argsBefore);
+                if (!argsBefore.Cancel)
+                {
+                    if (internalActionMethod != null) internalActionMethod();  // Provedu konkrétní akci, pokud je dodána; viz dole napž. _DoKeyActionCtrlA()
+                    var argsAfter = new DxListBoxActionEventArgs(actions, e);
+                    _RunListActionAfter(argsAfter);
+                    handled = true;
+                }
+            }
         }
         /// <summary>
-        /// Pokud v soupisu akcí <paramref name="action"/> je příznak akce <paramref name="flag"/>, pak provede danou akci <paramref name="internalActionMethod"/>, 
-        /// s testem povolení dle <see cref="EnabledKeyActions"/> nebo povinně (<paramref name="force"/>)
+        /// Vrátí true, pokud dodaná klávesa může být aktivační klávesou pro přestup do řádkového filtru.
         /// </summary>
-        /// <param name="action"></param>
-        /// <param name="flag"></param>
-        /// <param name="force"></param>
-        /// <param name="internalActionMethod"></param>
-        /// <param name="handled">Nastaví na true, pokud byla provedena požadovaná akce</param>
-        private void _DoKeyAction(KeyActionType action, KeyActionType flag, bool force, Action internalActionMethod, ref bool handled)
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private KeyActionType _IsActivateKeyForFilter(KeyEventArgs e)
         {
-            if (!action.HasFlag(flag)) return;
-            if (!force && !EnabledKeyActions.HasFlag(flag)) return;
+            if ((e.KeyData == Keys.Up || e.KeyData == Keys.PageUp) && this.SelectedIndex <= 0) return KeyActionType.ActivateFilter;   // Šipka/stránka nahoru na první (nebo žádné) pozici aktivuje řádkový filtr
 
-            var argsBefore = new DxListBoxActionCancelEventArgs(action);
-            _RunListActionBefore(argsBefore);
-            bool isCancelled = argsBefore.Cancel;
-            if (!isCancelled)
-            {
-                if (internalActionMethod != null) internalActionMethod();
-                var argsAfter = new DxListBoxActionEventArgs(action);
-                _RunListActionAfter(argsAfter);
-            }
-            handled = true;
+            char? inputChar = DxComponent.KeyConvertToChar(e, true);
+            if (inputChar.HasValue) return KeyActionType.FillKeyToFilter;
+            return KeyActionType.None;
         }
         /// <summary>
         /// Provedení klávesové akce: CtrlA
@@ -3442,15 +3547,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="action"></param>
-        public DxListBoxActionEventArgs(KeyActionType action)
+        /// <param name="action">Probíhající akce</param>
+        /// <param name="keys">Stisknutá klávesa, může být null</param>
+        public DxListBoxActionEventArgs(KeyActionType action, KeyEventArgs keys)
         {
             this.Action = action;
+            this.Keys = keys;
         }
         /// <summary>
         /// Probíhající akce
         /// </summary>
         public KeyActionType Action { get; }
+        /// <summary>
+        /// Stisknutá klávesa, může být null
+        /// </summary>
+        public KeyEventArgs Keys { get; }
     }
     /// <summary>
     /// Delegát pro událost Akce na <see cref="DxListBoxControl"/>
@@ -3467,9 +3578,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="action"></param>
-        public DxListBoxActionCancelEventArgs(KeyActionType action)
-            : base(action)
+        /// <param name="action">Probíhající akce</param>
+        /// <param name="keys">Stisknutá klávesa, může být null</param>
+        public DxListBoxActionCancelEventArgs(KeyActionType action, KeyEventArgs e)
+            : base(action, e)
         {
             Cancel = false;
         }

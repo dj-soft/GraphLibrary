@@ -208,41 +208,43 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             List<IMenuItem> menuItems = new List<IMenuItem>();
 
-            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.Contains, "%", ImageName.DxFilterOperatorContains, MsgCode.DxFilterOperatorContainsText, MsgCode.DxFilterOperatorContainsTip, menuItems);
-            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.DoesNotContain, "!%", ImageName.DxFilterOperatorDoesNotContain, MsgCode.DxFilterOperatorDoesNotContainText, MsgCode.DxFilterOperatorDoesNotContainTip, menuItems);
-            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.StartsWith, "=", ImageName.DxFilterOperatorStartWith, MsgCode.DxFilterOperatorStartWithText, MsgCode.DxFilterOperatorStartWithTip, menuItems);
-            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.DoesNotStartWith, "!", ImageName.DxFilterOperatorDoesNotStartWith, MsgCode.DxFilterOperatorDoesNotStartWithText, MsgCode.DxFilterOperatorDoesNotStartWithTip, menuItems);
-            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.EndsWith, "/", ImageName.DxFilterOperatorEndWith, MsgCode.DxFilterOperatorEndWithText, MsgCode.DxFilterOperatorEndWithTip, menuItems);
-            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.DoesNotEndWith, "!/", ImageName.DxFilterOperatorDoesNotEndWith, MsgCode.DxFilterOperatorDoesNotEndWithText, MsgCode.DxFilterOperatorDoesNotEndWithTip, menuItems);
+            addOperator(FilterBoxOperatorItems.Contains, "%", ImageName.DxFilterOperatorContains, MsgCode.DxFilterOperatorContainsText, MsgCode.DxFilterOperatorContainsTip);
+            addOperator(FilterBoxOperatorItems.DoesNotContain, "!%", ImageName.DxFilterOperatorDoesNotContain, MsgCode.DxFilterOperatorDoesNotContainText, MsgCode.DxFilterOperatorDoesNotContainTip);
+            addOperator(FilterBoxOperatorItems.StartsWith, "=", ImageName.DxFilterOperatorStartWith, MsgCode.DxFilterOperatorStartWithText, MsgCode.DxFilterOperatorStartWithTip);
+            addOperator(FilterBoxOperatorItems.DoesNotStartWith, "!", ImageName.DxFilterOperatorDoesNotStartWith, MsgCode.DxFilterOperatorDoesNotStartWithText, MsgCode.DxFilterOperatorDoesNotStartWithTip);
+            addOperator(FilterBoxOperatorItems.EndsWith, "/", ImageName.DxFilterOperatorEndWith, MsgCode.DxFilterOperatorEndWithText, MsgCode.DxFilterOperatorEndWithTip);
+            addOperator(FilterBoxOperatorItems.DoesNotEndWith, "!/", ImageName.DxFilterOperatorDoesNotEndWith, MsgCode.DxFilterOperatorDoesNotEndWithText, MsgCode.DxFilterOperatorDoesNotEndWithTip);
 
-            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.Like, "", ImageName.DxFilterOperatorLike, MsgCode.DxFilterOperatorLikeText, MsgCode.DxFilterOperatorLikeTip, menuItems);
-            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.NotLike, "", ImageName.DxFilterOperatorNotLike, MsgCode.DxFilterOperatorNotLikeText, MsgCode.DxFilterOperatorNotLikeTip, menuItems);
-            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.Match, "", ImageName.DxFilterOperatorMatch, MsgCode.DxFilterOperatorMatchText, MsgCode.DxFilterOperatorMatchTip, menuItems);
-            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.DoesNotMatch, "", ImageName.DxFilterOperatorDoesNotMatch, MsgCode.DxFilterOperatorDoesNotMatchText, MsgCode.DxFilterOperatorDoesNotMatchTip, menuItems);
+            addOperator(FilterBoxOperatorItems.Like, "", ImageName.DxFilterOperatorLike, MsgCode.DxFilterOperatorLikeText, MsgCode.DxFilterOperatorLikeTip);
+            addOperator(FilterBoxOperatorItems.NotLike, "", ImageName.DxFilterOperatorNotLike, MsgCode.DxFilterOperatorNotLikeText, MsgCode.DxFilterOperatorNotLikeTip);
+            addOperator(FilterBoxOperatorItems.Match, "", ImageName.DxFilterOperatorMatch, MsgCode.DxFilterOperatorMatchText, MsgCode.DxFilterOperatorMatchTip);
+            addOperator(FilterBoxOperatorItems.DoesNotMatch, "", ImageName.DxFilterOperatorDoesNotMatch, MsgCode.DxFilterOperatorDoesNotMatchText, MsgCode.DxFilterOperatorDoesNotMatchTip);
 
-            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.LessThan, "<", ImageName.DxFilterOperatorLessThan, MsgCode.DxFilterOperatorLessThanText, MsgCode.DxFilterOperatorLessThanTip, menuItems);
-            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.LessThanOrEqualTo, "<=", ImageName.DxFilterOperatorLessThanOrEqualTo, MsgCode.DxFilterOperatorLessThanOrEqualToText, MsgCode.DxFilterOperatorLessThanOrEqualToTip, menuItems);
-            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.Equals, "=", ImageName.DxFilterOperatorEquals, MsgCode.DxFilterOperatorEqualsText, MsgCode.DxFilterOperatorEqualsTip, menuItems);
-            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.NotEquals, "<>", ImageName.DxFilterOperatorNotEquals, MsgCode.DxFilterOperatorNotEqualsText, MsgCode.DxFilterOperatorNotEqualsTip, menuItems);
-            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.GreaterThanOrEqualTo, ">=", ImageName.DxFilterOperatorGreaterThanOrEqualTo, MsgCode.DxFilterOperatorGreaterThanOrEqualToText, MsgCode.DxFilterOperatorGreaterThanOrEqualToTip, menuItems);
-            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.GreaterThan, ">", ImageName.DxFilterOperatorGreaterThan, MsgCode.DxFilterOperatorGreaterThanText, MsgCode.DxFilterOperatorGreaterThanTip, menuItems);
+            addOperator(FilterBoxOperatorItems.LessThan, "<", ImageName.DxFilterOperatorLessThan, MsgCode.DxFilterOperatorLessThanText, MsgCode.DxFilterOperatorLessThanTip);
+            addOperator(FilterBoxOperatorItems.LessThanOrEqualTo, "<=", ImageName.DxFilterOperatorLessThanOrEqualTo, MsgCode.DxFilterOperatorLessThanOrEqualToText, MsgCode.DxFilterOperatorLessThanOrEqualToTip);
+            addOperator(FilterBoxOperatorItems.Equals, "=", ImageName.DxFilterOperatorEquals, MsgCode.DxFilterOperatorEqualsText, MsgCode.DxFilterOperatorEqualsTip);
+            addOperator(FilterBoxOperatorItems.NotEquals, "<>", ImageName.DxFilterOperatorNotEquals, MsgCode.DxFilterOperatorNotEqualsText, MsgCode.DxFilterOperatorNotEqualsTip);
+            addOperator(FilterBoxOperatorItems.GreaterThanOrEqualTo, ">=", ImageName.DxFilterOperatorGreaterThanOrEqualTo, MsgCode.DxFilterOperatorGreaterThanOrEqualToText, MsgCode.DxFilterOperatorGreaterThanOrEqualToTip);
+            addOperator(FilterBoxOperatorItems.GreaterThan, ">", ImageName.DxFilterOperatorGreaterThan, MsgCode.DxFilterOperatorGreaterThanText, MsgCode.DxFilterOperatorGreaterThanTip);
 
             return menuItems;
-        }
-        private static void CreateDefaultOperatorItem(FilterBoxOperatorItems items, FilterBoxOperatorItems value, string hotKey, string imageName, MsgCode textCode, MsgCode toolTipCode, List<IMenuItem> menuItems)
-        {
-            if (!items.HasFlag(value)) return;
 
-            menuItems.Add(new DataMenuItem()
+            // Přidá daný operátor, pokud je vyžadován
+            void addOperator(FilterBoxOperatorItems value, string hotKey, string imageName, MsgCode textCode, MsgCode toolTipCode)
             {
-                ItemId = value.ToString(),
-                HotKey = hotKey,
-                ImageName = imageName,
-                Text = DxComponent.Localize(textCode),
-                ToolTipText = DxComponent.Localize(toolTipCode),
-                Checked = false,
-                Tag = value
-            });
+                if (!items.HasFlag(value)) return;
+
+                menuItems.Add(new DataMenuItem()
+                {
+                    ItemId = value.ToString(),
+                    HotKey = hotKey,
+                    ImageName = imageName,
+                    Text = DxComponent.Localize(textCode),
+                    ToolTipText = DxComponent.Localize(toolTipCode),
+                    Checked = false,
+                    Tag = value
+                });
+            }
         }
         /// <summary>
         /// Metoda v daném poli <paramref name="menuItems"/> zkusí najít takovou položku, jejíž <see cref="IMenuItem.HotKey"/> == začátek zadaného textu <paramref name="text"/>.
@@ -284,6 +286,30 @@ namespace Noris.Clients.Win.Components.AsolDX
                 string text = value?.FilterText ?? "";
                 this._CurrentText = text;
                 this._CurrentValue = value?.FilterValue;
+
+                this.RunInGui(() => { ActivateCurrentFilterOperator(); FilterTextSetSilent(text); });
+            }
+        }
+        /// <summary>
+        /// Aktuální textová hodnota filtru. Lze setovat. Setování ale nevyvolá událost <see cref="FilterValueChanged"/>. Při setování se nastaví operátor 'Obsahuje'.
+        /// </summary>
+        public string FilterText
+        {
+            get { return this.CurrentFilterValue.FilterText; }
+            set
+            {
+                // Najdu operátor Contains nebo Equals:
+                IMenuItem newOperator = this._CurrentFilterOperator;
+                var filterOperators = this.FilterOperators;
+                if (filterOperators.TryGetFirst(i => (i.Tag is FilterBoxOperatorItems oper && oper == FilterBoxOperatorItems.Contains), out var opContain))
+                    newOperator = opContain;
+                else if (filterOperators.TryGetFirst(i => (i.Tag is FilterBoxOperatorItems oper && oper == FilterBoxOperatorItems.Equals), out var opEqual))
+                    newOperator = opEqual;
+
+                string text = value ?? "";
+                this._CurrentText = text;
+                this._CurrentValue = text;
+                this._CurrentFilterOperator = newOperator;
 
                 this.RunInGui(() => { ActivateCurrentFilterOperator(); FilterTextSetSilent(text); });
             }
