@@ -2759,7 +2759,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Jméno obrázku
             /// </summary>
-            public string ImageName { get { return __ImageName; } set { __ImageName = value; __SizeTypeByName = _DetectSizeTypeByName(value); } } private string __ImageName;
+            public string ImageName { get { return __ImageName; } set { __ImageName = value; __SizeTypeByName = null; __SizeTypeByNamesValid = false; } } private string __ImageName;
             /// <summary>
             /// Je zadané jméno <see cref="ImageName"/> ?
             /// </summary>
@@ -2777,21 +2777,33 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public ResourceImageSizeType? SizeTypeByName { get { return __SizeTypeByName; } } private ResourceImageSizeType? __SizeTypeByName;
             /// <summary>
-            /// Vrátí velikost obrázku odvozenou podle jeho jména
+            /// Hodnota <see cref="__SizeTypeByName"/> již byla validována
             /// </summary>
-            /// <param name="imageName"></param>
-            /// <returns></returns>
-            private static ResourceImageSizeType? _DetectSizeTypeByName(string imageName)
-            {
-                if (String.IsNullOrEmpty(imageName)) return null;
-                DataResources.GetPackKey(imageName, out var size, out var type);
-                if (size == ResourceImageSizeType.None) return null; 
-                return size;
-            }
+            private bool __SizeTypeByNamesValid;
             /// <summary>
             /// Platný typ velikosti <see cref="SizeType"/>, nebo daný jménem obrázku, nebo default = <see cref="ResourceImageSizeType.Large"/>
             /// </summary>
-            public ResourceImageSizeType CurrentSizeType { get { return (this.SizeType ?? this.SizeTypeByName ?? ResourceImageSizeType.Large); } }
+            public ResourceImageSizeType CurrentSizeType 
+            {
+                get 
+                {
+                    if (this.SizeType.HasValue) return this.SizeType.Value;
+
+                    if (!__SizeTypeByNamesValid)
+                    {
+                        var imageName = ImageName;
+                        if (!String.IsNullOrEmpty(imageName))
+                        {
+                            DataResources.GetPackKey(imageName, out var size, out var type);
+                            if (size != ResourceImageSizeType.None)
+                                __SizeTypeByName = size;
+                        }
+                        __SizeTypeByNamesValid = true;
+                    }
+                    if (this.__SizeTypeByName.HasValue) return this.__SizeTypeByName.Value;
+                    return ResourceImageSizeType.Large;
+                }
+            }
             /// <summary>
             /// Cílová velikost SVG
             /// </summary>
