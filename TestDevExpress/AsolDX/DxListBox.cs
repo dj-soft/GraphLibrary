@@ -234,6 +234,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             __ListBox.ItemMouseClick += _ListBox_ItemMouseClick;
             __ListBox.ItemMouseDoubleClick += _ListBox_ItemMouseDoubleClick;
+            __ListBox.ItemEnterKeyDown += _ListBox_ItemEnterKeyDown;
         }
         /// <summary>
         /// Eventhandler List.ItemMouseClick
@@ -258,6 +259,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             ItemMouseDoubleClick?.Invoke(this, args);
         }
         /// <summary>
+        /// Eventhandler List.ItemEnterKeyDown
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _ListBox_ItemEnterKeyDown(object sender, DxListBoxItemKeyEventArgs args)
+        {
+            OnItemEnterKeyDown(args);
+            ItemEnterKeyDown?.Invoke(this, args);
+        }
+        /// <summary>
         /// Proběhne po jednoduchém kliknutí na prvek
         /// </summary>
         /// <param name="args"></param>
@@ -275,6 +286,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Proběhne po double kliknutí na prvek
         /// </summary>
         public event DxListBoxItemMouseClickDelegate ItemMouseDoubleClick;
+        /// <summary>
+        /// Proběhne po stisku klávesy Enter na prvku
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnItemEnterKeyDown(DxListBoxItemKeyEventArgs args) { }
+        /// <summary>
+        /// Proběhne po stisku klávesy Enter na prvku
+        /// </summary>
+        public event DxListBoxItemKeyDelegate ItemEnterKeyDown;
         #endregion
         #region Ctrl+C a Ctrl+V, i mezi controly a mezi aplikacemi
         /// <summary>
@@ -1533,7 +1553,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             base.OnSelectionChanged();
             if (this.IsRealSelectionChanged(true))
+            {
+                this._ToolTipHide();
                 this._RunSelectionChanged();
+            }
         }
         /// <summary>
         /// Vrátí true, pokud aktuální stav <see cref="SelectedItems"/> ji jiný než posledně známý <see cref="__LastSelectedItems"/>.
@@ -1687,7 +1710,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private Size? __ItemImageSize;
         #endregion
-        #region ItemClick
+        #region ItemClick + KeyDown.Enter
         /// <summary>
         /// Inicializace eventů pro Click a MouseClick
         /// </summary>
@@ -1741,6 +1764,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Obsluha KeyDown: Enter
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool _DoKeyActionEnter(KeyEventArgs e)
+        {
+            bool hasItem = TryGetViewItemOnIndex(this.SelectedIndex, out var viewItem);
+            if (!hasItem) return false;
+
+            var itemId = this.GetItemId(viewItem);
+            DxListBoxItemKeyEventArgs args = new DxListBoxItemKeyEventArgs(e, itemId);
+            OnItemEnterKeyDown(args);
+            ItemEnterKeyDown?.Invoke(this, args);
+            return true;
+        }
+        /// <summary>
         /// Proběhne po jednoduchém kliknutí na prvek
         /// </summary>
         /// <param name="args"></param>
@@ -1758,6 +1797,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Proběhne po double kliknutí na prvek
         /// </summary>
         public event DxListBoxItemMouseClickDelegate ItemMouseDoubleClick;
+        /// <summary>
+        /// Proběhne po stisku klávesy Enter na prvku
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnItemEnterKeyDown(DxListBoxItemKeyEventArgs args) { }
+        /// <summary>
+        /// Proběhne po stisku klávesy Enter na prvku
+        /// </summary>
+        public event DxListBoxItemKeyDelegate ItemEnterKeyDown;
         #endregion
         #region ToolTip
         /// <summary>
@@ -1857,7 +1905,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Explicitně skrýt ToolTip - typicky při nějaké myší akci (drag and drop, kontextové menu atd)
         /// </summary>
         /// <param name="message"></param>
-        private void _ToolTipHide(string message)
+        private void _ToolTipHide(string message = null)
         {
             this.DxToolTipController.HideTip();
             //  DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"TreeList.HideToolTip({message})");
@@ -1918,18 +1966,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             foundItem = null;
             if (!this.ClientRectangle.Contains(point)) return false;
 
-            var visibleItems = this.ViewInfo?.VisibleItems;
-            if (visibleItems is null) return false;
+            var visibleItems = this.VisibleViewItems;
+            if (visibleItems is null || visibleItems.Length == 0) return false;
 
-            foreach (DevExpress.XtraEditors.ViewInfo.BaseListBoxViewInfo.ItemInfo item in visibleItems)
-            {
-                if (item.Bounds.Contains(point))
-                {
-                    foundItem = item;
-                    return true;
-                }
-            }
-            return false;
+            return visibleItems.TryGetFirst(i => i.Bounds.Contains(point), out foundItem);
+        }
+        /// <summary>
+        /// Metoda najde prvek, který se nachází na daném indexu.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="foundItem"></param>
+        /// <returns></returns>
+        public bool TryGetViewItemOnIndex(int index, out DevExpress.XtraEditors.ViewInfo.BaseListBoxViewInfo.ItemInfo foundItem)
+        {
+            foundItem = null;
+            if (index < 0) return false;
+
+            var visibleItems = this.VisibleViewItems;
+            if (visibleItems is null || index >= visibleItems.Length) return false;
+            foundItem = visibleItems[index];
+            return true;
         }
         /// <summary>
         /// Metoda dostává Item v rámci ListBoxu, což může být <see cref="DevExpress.XtraEditors.Controls.ImageListBoxItem"/> anebo <see cref="System.Data.DataRowView"/>.
@@ -1981,6 +2037,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
             }
             return null;
+        }
+        /// <summary>
+        /// Pole aktuálně viditelných prvků
+        /// </summary>
+        protected DevExpress.XtraEditors.ViewInfo.BaseListBoxViewInfo.ItemInfo[] VisibleViewItems
+        {
+            get
+            {
+                var items = this.ViewInfo?.VisibleItems;
+                if (items == null) return null;
+                int count = items.Count;
+                var itemsArray = new DevExpress.XtraEditors.ViewInfo.BaseListBoxViewInfo.ItemInfo[count];
+                items.CopyTo(itemsArray, 0);
+                return itemsArray;
+            }
         }
         private object _GetTableItemId(System.Data.DataRow row)
         {
@@ -2079,6 +2150,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
                 case Keys.Control | Keys.Y:
                     isHandled = _DoKeyAction(KeyActionType.Redo, e);
+                    break;
+                case Keys.Return:
+                case Keys.Shift | Keys.Return:
+                case Keys.Control | Keys.Return:
+                    isHandled = _DoKeyActionEnter(e);
                     break;
                 default:
                     KeyActionType rowFilterAction = _IsActivateKeyForFilter(e);
@@ -3651,5 +3727,36 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <param name="sender"></param>
     /// <param name="args"></param>
     public delegate void DxListBoxItemMouseClickDelegate(object sender, DxListBoxItemMouseClickEventArgs args);
+
+    /// <summary>
+    /// Argumenty pro akci Key
+    /// </summary>
+    public class DxListBoxItemKeyEventArgs : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="keyArgs"></param>
+        /// <param name="itemId"></param>
+        public DxListBoxItemKeyEventArgs(KeyEventArgs keyArgs, object itemId)
+        {
+            this.KeyArgs = keyArgs;
+            this.ItemId = itemId;
+        }
+        /// <summary>
+        /// Data o KeyPress
+        /// </summary>
+        public KeyEventArgs KeyArgs { get; }
+        /// <summary>
+        /// ID prvku pod myší
+        /// </summary>
+        public object ItemId { get; }
+    }
+    /// <summary>
+    /// Handler pro akci Key
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="args"></param>
+    public delegate void DxListBoxItemKeyDelegate(object sender, DxListBoxItemKeyEventArgs args);
     #endregion
 }
