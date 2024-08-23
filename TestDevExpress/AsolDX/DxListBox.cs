@@ -56,13 +56,36 @@ namespace Noris.Clients.Win.Components.AsolDX
             DoLayout();
         }
         /// <summary>
+        /// Obsahuje true, pokud List může dostat Focus
+        /// </summary>
+        public bool CanListFocus { get { return true; } }
+        /// <summary>
+        /// Aktivuje focus do Listu
+        /// </summary>
+        public void SetListFocus()
+        {
+            if (this.CanListFocus)
+            {
+                this.Select();
+                this._MainControlFocus();
+            }
+        }
+        /// <summary>
         /// Vstup do panelu dává vstup do ListBoxu
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void _Panel_Enter(object sender, EventArgs e)
         {
-            _MainControlFocus();
+            this._MainControlFocus();
+        }
+        /// <summary>
+        /// Dá Focus do main controlu
+        /// </summary>
+        private void _MainControlFocus()
+        {
+            this.__ListBox.Select();
+            this.__ListBox.Focus();
         }
         /// <summary>
         /// Proběhne po změně v poli <see cref="ListItems"/>
@@ -109,13 +132,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                     __ListBox.Bounds = new Rectangle(innerBounds.X, innerBounds.Y, innerBounds.Width - 0, innerBounds.Height);
                 }
             }
-        }
-        /// <summary>
-        /// Dá Focus do main controlu
-        /// </summary>
-        private void _MainControlFocus()
-        {
-            __ListBox.Focus();
         }
         /// <summary>
         /// Dispose panelu
@@ -1531,6 +1547,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         public bool DuplicityEnabled { get; set; }
         #endregion
         #region Overrides
+        /// <summary>
+        /// Při příchodu focusu
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnEnter(EventArgs e)
+        {
+            base.OnEnter(e);
+        }
+        /// <summary>
+        /// Při odchodu focusu
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnLeave(EventArgs e)
+        {
+            base.OnLeave(e);
+        }
         /// <summary>
         /// Při vykreslování
         /// </summary>

@@ -2042,7 +2042,7 @@ namespace Noris.Clients.Win.Components
             UserZoomRatio = 1f;
             DialogZoomRatio = DialogForm.DefaultDialogZoomRatio;
             StatusBarVisible = false;
-            StatusBarButtonsBorderStyles = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;        // UltraFlat: nemá border;  Default: nemá a je nižší;  Office2003: nemá;   Simple: nemá;  Style3D
+            StatusBarButtonsBorderStyles = DevExpress.XtraEditors.Controls.BorderStyles.Default;        // UltraFlat: nemá border;  Default: nemá a je nižší;  Office2003: nemá;   Simple: nemá;  Style3D
             StatusBarCtrlCVisible = false;
             StatusBarCtrlCText = DxComponent.Localize(MsgCode.DialogFormCtrlCText);
             StatusBarCtrlCTooltip = DxComponent.Localize(MsgCode.DialogFormCtrlCToolTip);
