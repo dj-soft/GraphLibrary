@@ -289,7 +289,7 @@ namespace TestDevExpress.Forms
         private void _ClickSample11()
         {
             var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 520, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
-            sampleList.DataTable = Randomizer.GetDataTable(48,96, "id:int;name:idtext;surname:text;description:note;icon:imagenamepngfull;photo:photo"); ;
+            sampleList.DataTable = Randomizer.GetDataTable(48, 96, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:photo");
             sampleList.DxTemplate = _CreateTemplate11();
             sampleList.SelectionMode = SelectionMode.MultiExtended;
             sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
@@ -327,8 +327,8 @@ namespace TestDevExpress.Forms
         }
         private void _ClickSample12()
         {
-            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 520, 750), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
-            sampleList.DataTable = Randomizer.GetDataTable(2300, 2500, "id:int;name:idtext;surname:text;description:note;icon:imagenamepngfull;photo:photo"); ;
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 570, 790), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
+            sampleList.DataTable = Randomizer.GetDataTable(2300, 2500, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:photo");
             sampleList.DxTemplate = _CreateTemplate12();
             sampleList.SelectionMode = SelectionMode.MultiExtended;
             sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
@@ -346,8 +346,9 @@ namespace TestDevExpress.Forms
             var dxTemplate = new DxListBoxTemplate();
             dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "icon", ElementContent = ElementContentType.IconName, ColIndex = 0, RowIndex = 0, RowSpan = 2, Width = 48, Height = 36, ContentAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleCenter });
             dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "name", ColIndex = 1, RowIndex = 0, Width = 160, Height = 18, FontStyle = FontStyle.Bold, ContentAlignment = DevExpress.XtraEditors.TileItemContentAlignment.TopLeft });
-            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "surname", ColIndex = 2, RowIndex = 0, Width = 280, Height = 18, ContentAlignment = DevExpress.XtraEditors.TileItemContentAlignment.BottomRight });
-            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "description", ColIndex = 1, RowIndex = 1, ColSpan = 2, Width = 440, Height = 18, FontStyle = FontStyle.Italic });
+            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "surname", ColIndex = 2, RowIndex = 0, Width = 250, Height = 18, ContentAlignment = DevExpress.XtraEditors.TileItemContentAlignment.BottomRight });
+            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "pocet", ColIndex = 3, RowIndex = 0, Width = 120, Height = 18, ContentAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleRight });
+            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "description", ColIndex = 1, RowIndex = 1, ColSpan = 3, Width = 500, Height = 18, FontStyle = FontStyle.Italic });
             dxTemplate.ColumnNameItemId = "id";
             dxTemplate.ColumnNameToolTipTitle = "name";
             dxTemplate.ColumnNameToolTipText = "description";
@@ -367,7 +368,7 @@ namespace TestDevExpress.Forms
         private void _ClickSample13()
         {
             var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 520, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
-            sampleList.DataTable = Randomizer.GetDataTable(48, 96, "id:int;name:idtext;surname:text;description:note;icon:imagenamepngfull;photo:photo"); ;
+            sampleList.DataTable = Randomizer.GetDataTable(48, 96, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:photo");
             sampleList.DxTemplate = sampleList.CreateSimpleDxTemplate("id", "icon", "name", "description", 16);
             sampleList.SelectionMode = SelectionMode.MultiExtended;
             sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;

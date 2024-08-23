@@ -155,7 +155,7 @@ namespace TestDevExpress
         /// </summary>
         /// <param name="minCount"></param>
         /// <param name="maxCount"></param>
-        /// <param name="structure">Struktura: sloupce oddělené středníkem; uvnitř sloupce je "název:typ". Typ je: "id, int, decimal, text, note, date, datetime, imagename, iconname"</param>
+        /// <param name="structure">Struktura: sloupce oddělené středníkem; uvnitř sloupce je "název:typ". Typ je: "id, int, number, decimal, text, note, date, datetime, imagename, iconname"</param>
         /// <returns></returns>
         public static DataTable GetDataTable(int minCount, int maxCount, string structure)
         {
@@ -167,7 +167,7 @@ namespace TestDevExpress
         /// Vrátí datovou tabulku s danou strukturou
         /// </summary>
         /// <param name="count"></param>
-        /// <param name="structure">Struktura: sloupce oddělené středníkem; uvnitř sloupce je "název:typ". Typ je: "id, int, decimal, text, note, date, datetime, imagename, iconname"</param>
+        /// <param name="structure">Struktura: sloupce oddělené středníkem; uvnitř sloupce je "název:typ". Typ je: "id, int, number, decimal, text, note, date, datetime, imagename, iconname"</param>
         /// <returns></returns>
         public static DataTable GetDataTable(int count, string structure)
         {
@@ -207,6 +207,9 @@ namespace TestDevExpress
                                 {
                                     case "id":
                                     case "int":
+                                        type = typeof(int);
+                                        break;
+                                    case "number":
                                         type = typeof(int);
                                         break;
                                     case "char":
@@ -281,6 +284,9 @@ namespace TestDevExpress
                             break;
                         case "int":
                             result[c] = Rand.Next();
+                            break;
+                        case "number":
+                            result[c] = Rand.Next(100, 1000000);
                             break;
                         case "char":
                             result[c] = ((char)(Rand.Next(32, 128))).ToString();
