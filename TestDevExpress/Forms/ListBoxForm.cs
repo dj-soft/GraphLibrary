@@ -102,7 +102,7 @@ namespace TestDevExpress.Forms
         {
             string text = "SelectedItemsChanged";
             if (sender is DxListBoxPanel listBox)
-                text += $"; ActiveItemId: {listBox.ActiveItemId}; SelectedCount: {listBox.SelectedItems.Length}";
+                text += $"; ActiveItemId: {listBox.CurrentItemId}; SelectedCount: {listBox.SelectedItems.Length}";
 
             DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, text);
         }
