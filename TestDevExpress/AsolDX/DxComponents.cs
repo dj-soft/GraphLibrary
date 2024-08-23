@@ -8641,6 +8641,10 @@ White
         [DefaultMessageText("Zruší zadaný filtr")]
         DxFilterBoxClearTipText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Hledat")]
+        DxFilterBoxNullValuePrompt,
+
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Obsahuje")]
         DxFilterOperatorContainsText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>

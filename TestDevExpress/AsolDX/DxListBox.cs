@@ -196,13 +196,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Prvek, na kterém je kurzor. Je jen jediný, nebo null.
         /// Objekty to mohou být různé, typicky <see cref="IMenuItem"/> nebo <see cref="System.Data.DataRowView"/>.
-        /// ID aktivního řádku je v <see cref="ActiveItemId"/>.
+        /// ID aktivního řádku je v <see cref="CurrentItemId"/>.
         /// </summary>
-        public object ActiveItem { get { return __ListBox.ActiveItem; } }
+        public object CurrentItem { get { return __ListBox.CurrentItem; } }
         /// <summary>
         /// Pole obsahující ID aktivního řádku.
         /// </summary>
-        public object ActiveItemId { get { return __ListBox.ActiveItemId; } }
+        public object CurrentItemId { get { return __ListBox.CurrentItemId; } }
 
         #endregion
         #region Komplexní List postavený nad DataTable a Template
@@ -383,13 +383,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Volá se po změně selected prvků.<br/>
         /// Aktuální vybrané prvky jsou k dispozici v <see cref="SelectedItems"/>, jejich ID v <see cref="SelectedItemsId"/>.
-        /// Prvek s kurzorem je v <see cref="ActiveItem"/>, jeho ID je v <see cref="ActiveItemId"/>.
+        /// Prvek s kurzorem je v <see cref="CurrentItem"/>, jeho ID je v <see cref="CurrentItemId"/>.
         /// </summary>
         protected virtual void OnSelectedItemsChanged() { }
         /// <summary>
         /// Událost volaná po změně selected prvků.<br/>
         /// Aktuální vybrané prvky jsou k dispozici v <see cref="SelectedItems"/>, jejich ID v <see cref="SelectedItemsId"/>.
-        /// Prvek s kurzorem je v <see cref="ActiveItem"/>, jeho ID je v <see cref="ActiveItemId"/>.
+        /// Prvek s kurzorem je v <see cref="CurrentItem"/>, jeho ID je v <see cref="CurrentItemId"/>.
         /// </summary>
         public event EventHandler SelectedItemsChanged;
 
@@ -539,7 +539,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             __RowFilterClient = new SearchControl();
             __RowFilterClient.Client = __ListBox;
-            __RowFilterClient.Properties.NullValuePrompt = "Co byste chtěli najít?";
+            __RowFilterClient.Properties.NullValuePrompt = DxComponent.Localize(MsgCode.DxFilterBoxNullValuePrompt);   // "Hledat"
             __RowFilterClient.TabStop = false;
             __RowFilterClient.Properties.ShowMRUButton = false;
             __RowFilterClient.AddingMRUItem += __RowFilterClient_AddingMRUItem;
@@ -1941,18 +1941,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Prvek, na kterém je kurzor. Je jen jediný, nebo null.
         /// Objekty to mohou být různé, typicky <see cref="IMenuItem"/> nebo <see cref="System.Data.DataRowView"/>.
-        /// ID aktivního řádku je v <see cref="ActiveItemId"/>.
+        /// ID aktivního řádku je v <see cref="CurrentItemId"/>.
         /// </summary>
-        public object ActiveItem
+        public object CurrentItem
         {
             get { return GetDataItem(base.SelectedItem); }                               // ImageListBoxItem => Value => IMenuItem / DataRow
         }
         /// <summary>
         /// Pole obsahující ID aktivního řádku.
         /// </summary>
-        public object ActiveItemId
+        public object CurrentItemId
         {
-            get { return GetItemId(ActiveItem); }
+            get { return GetItemId(CurrentItem); }
         }
         /// <summary>
         /// Metoda najde prvek this Listu, který se nachází na dané souřadnici.
@@ -2973,13 +2973,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Volá se po změně selected prvků.<br/>
         /// Aktuální vybrané prvky jsou k dispozici v <see cref="SelectedItems"/>, jejich ID v <see cref="SelectedItemsId"/>.
-        /// Prvek s kurzorem je v <see cref="ActiveItem"/>, jeho ID je v <see cref="ActiveItemId"/>.
+        /// Prvek s kurzorem je v <see cref="CurrentItem"/>, jeho ID je v <see cref="CurrentItemId"/>.
         /// </summary>
         protected virtual void OnSelectedItemsChanged() { }
         /// <summary>
         /// Událost volaná po změně selected prvků.<br/>
         /// Aktuální vybrané prvky jsou k dispozici v <see cref="SelectedItems"/>, jejich ID v <see cref="SelectedItemsId"/>.
-        /// Prvek s kurzorem je v <see cref="ActiveItem"/>, jeho ID je v <see cref="ActiveItemId"/>.
+        /// Prvek s kurzorem je v <see cref="CurrentItem"/>, jeho ID je v <see cref="CurrentItemId"/>.
         /// </summary>
         public event EventHandler SelectedItemsChanged;
         #endregion
