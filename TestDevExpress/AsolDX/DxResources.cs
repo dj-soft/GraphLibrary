@@ -2634,6 +2634,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             return 9999;
         }
         #endregion
+        #region Tvorba Bitmapy z byte[]
+        /// <summary>
+        /// Vrátí Image vygenerovaný z dodaných dat.
+        /// </summary>
+        /// <param name="imageData"></param>
+        /// <returns></returns>
+        public static Image GetBitmapImage(byte[] imageData)
+        {
+            if (imageData is null) return null;
+            using (var stream = new System.IO.MemoryStream(imageData))
+                return Image.FromStream(stream);
+        }
+        #endregion
         #region Modifikace SVG ikon ASOL - konverze do tmavého skinu
         /// <summary>
         /// Inicializace Svg convertoru

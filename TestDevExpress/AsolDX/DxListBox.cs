@@ -55,12 +55,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             _RowFilterInitialize();
             DoLayout();
         }
-
+        /// <summary>
+        /// Vstup do panelu dává vstup do ListBoxu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _Panel_Enter(object sender, EventArgs e)
         {
             _MainControlFocus();
         }
-
         /// <summary>
         /// Proběhne po změně v poli <see cref="ListItems"/>
         /// </summary>
@@ -125,6 +128,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 _RemoveButtons();
                 _RowFilterDispose();
+                __ListBox?.Dispose();
             }
             catch { /* Chyby v Dispose občas nastanou v DevExpress, který něco likviduje v GC threadu a nemá přístup do GUI. */ }
         }
@@ -1170,14 +1174,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName(); }
         /// <summary>
-        /// Dispose
+        /// Dispose Listu
         /// </summary>
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
-            DxDragDropDispose();
-            _ToolTipDispose();
+            try
+            {
+                _DxDragDropDispose();
+                _ToolTipDispose();
+                _DxTemplateDispose();
+            }
+            catch { /* Chyby v Dispose občas nastanou v DevExpress, který něco likviduje v GC threadu a nemá přístup do GUI. */ }
         }
         /// <summary>
         /// Přídavek k výšce jednoho řádku ListBoxu v pixelech.
@@ -1466,6 +1475,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             var dxTemplate = __DxTemplate;
             if (dxTemplate != null && __ItemsMode == ListBoxItemsMode.Table)
                 dxTemplate.ApplyTemplateToList(this);
+        }
+        /// <summary>
+        /// Dispose šablony
+        /// </summary>
+        private void _DxTemplateDispose()
+        {
+            var dxTemplate = __DxTemplate;
+            if (dxTemplate != null)
+                dxTemplate.Dispose();
         }
         /// <summary>
         /// Událost je volána 1x per 1 řádek Listu v procesu jeho kreslení, jako příprava, v režimu Table
@@ -2563,7 +2581,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Dispose controlleru Drag and Drop
         /// </summary>
-        private void DxDragDropDispose()
+        private void _DxDragDropDispose()
         {
             if (_DxDragDrop != null)
                 _DxDragDrop.Dispose();
@@ -2988,7 +3006,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Šablona pro zobrazení prvku v <see cref="DxListBoxControl"/>
     /// </summary>
-    public class DxListBoxTemplate
+    public class DxListBoxTemplate : IDisposable
     {
         /// <summary>
         /// Konstruktor
@@ -2996,6 +3014,31 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxListBoxTemplate()
         {
             __Elements = new List<IListBoxTemplateElement>();
+            __TemplateCells = new Dictionary<string, TemplateCell>();
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        public void Dispose()
+        {
+            if (__Elements != null)
+            {
+                __Elements.Clear();
+                __Elements = null;
+            }
+            _ClearTemplateCells();
+            __TemplateCells = null;
+        }
+        /// <summary>
+        /// Disposuje a smaže obsah <see cref="__TemplateCells"/>, ale Dictionary ponechává s 0 záznamy.
+        /// </summary>
+        private void _ClearTemplateCells()
+        {
+            if (__TemplateCells != null)
+            {
+                __TemplateCells.ForEachExec(c => c.Value.Dispose());
+                __TemplateCells.Clear();
+            }
         }
         /// <summary>
         /// Všechny deklarované buňky
@@ -3029,7 +3072,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             targetList.Templates.Clear();
 
-            __TemplateCells = new Dictionary<string, TemplateCell>();
+            _ClearTemplateCells();
 
             var elementGroups = __Elements.GroupBy(c => c.TemplateName ?? "");
             int id = 0;
@@ -3155,15 +3198,26 @@ namespace Noris.Clients.Win.Components.AsolDX
                         Name = key,
                         RowIndex = iElement.RowIndex,
                         ColumnIndex = iElement.ColIndex,
-                        FieldName = (iElement.ElementContent == ElementContentType.Text ? iElement.ColumnName : null),
-                        TextAlignment = iElement.ContentAlignment ?? TileItemContentAlignment.MiddleLeft,
-                        ImageAlignment = iElement.ContentAlignment ?? TileItemContentAlignment.MiddleCenter,
-                        ImageToTextAlignment = TileControlImageToTextAlignment.None,
                         Width = iElement.Width ?? 0,
                         Height = iElement.Height ?? 0,
                         StretchHorizontal = iElement.StretchHorizontal,
                         StretchVertical = iElement.StretchVertical
                     };
+
+                    if (iElement.ElementContent == ElementContentType.Text)
+                    {
+                        tElement.FieldName = iElement.ColumnName;
+                        tElement.TextAlignment = iElement.ContentAlignment ?? TileItemContentAlignment.MiddleLeft;
+                        tElement.ImageVisible = false;
+                        tElement.ImageToTextAlignment = TileControlImageToTextAlignment.None;
+                    }
+                    else
+                    {
+                        tElement.FieldName = null;
+                        tElement.ImageAlignment = iElement.ContentAlignment ?? TileItemContentAlignment.MiddleCenter;
+                        tElement.ImageVisible = true;
+                        tElement.ImageToTextAlignment = TileControlImageToTextAlignment.None;
+                    }
 
                     if (iElement.FontStyle.HasValue)
                         tElement.Appearance.Normal.FontStyleDelta = iElement.FontStyle.Value;
@@ -3274,28 +3328,41 @@ namespace Noris.Clients.Win.Components.AsolDX
             foreach (TemplatedItemElement element in templatedItem.Elements)
             {
                 string key = element.Name;
-                if (!String.IsNullOrEmpty(key) && templateCells.TryGetValue(key, out var cell) && cell.HasDynamicImage)
+                if (!String.IsNullOrEmpty(key) && templateCells.TryGetValue(key, out var cell))
                 {   // element.Name = __TemplateCells.Key = interní přidělené ID elementu šablony, jednoznačné i přes vícero Templates:
-                    bool hasImage = false;
-                    var elementContent = cell.Cell.ElementContent;
-                    switch (elementContent)
+                    if (cell.HasDynamicImage)
                     {
-                        case ElementContentType.IconName:
-                            var imageName = row[cell.Cell.ColumnName] as string;
-                            if (!String.IsNullOrEmpty(imageName))
-                            {
-                                element.Image = DxComponent.GetBitmapImage(imageName);
+                        bool hasImage = false;
+                        var elementContent = cell.Cell.ElementContent;
+                        switch (elementContent)
+                        {
+                            case ElementContentType.IconName:
+                                var imageName = row[cell.Cell.ColumnName] as string;
+                                if (!String.IsNullOrEmpty(imageName))
+                                {
+                                    element.Image = DxComponent.GetBitmapImage(imageName);
+                                    element.ImageOptions.ImageScaleMode = TileItemImageScaleMode.Squeeze;
+                                    hasImage = true;
+                                }
+                                break;
+                            case ElementContentType.ImageData:
+                                element.Image = cell.GetImage(row);
                                 element.ImageOptions.ImageScaleMode = TileItemImageScaleMode.Squeeze;
                                 hasImage = true;
-                            }
-                            break;
-                        case ElementContentType.ImageData:
-                            var imageData = row[cell.Cell.ColumnName] as byte[];
-                            break;
+                                break;
+                        }
+                        if (!hasImage)
+                        {
+                            element.Image = null;
+                        }
                     }
-                    if (!hasImage)
+                    else
                     {
-                        element.Image = null;
+                        //element.ImageVisible = false;
+                        //element.ImageAlignment = TileItemContentAlignment.Manual;
+                        //if (cell.Cell.ContentAlignment.HasValue && cell.Cell.ContentAlignment.Value == TileItemContentAlignment.MiddleRight)
+                        //{
+                        //}
                     }
                 }
             }
@@ -3303,7 +3370,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Úložiště dat o jedné buňce, slouží k propojení mezi ListBoxem a jeho porcesem vykreslování, a definicí buňky <see cref="IListBoxTemplateElement"/>.
         /// </summary>
-        private class TemplateCell
+        private class TemplateCell : IDisposable
         {
             public TemplateCell(string key, IListBoxTemplateElement cell, bool hasDynamicImage)
             {
@@ -3314,6 +3381,115 @@ namespace Noris.Clients.Win.Components.AsolDX
             public readonly string Key;
             public readonly IListBoxTemplateElement Cell;
             public readonly bool HasDynamicImage;
+
+            /// <summary>
+            /// Dispose interních dat, povinný (pokud se používají fotky)
+            /// </summary>
+            public void Dispose()
+            {
+                var rowImages = __RowImages;
+                if (rowImages != null)
+                {
+                    foreach (var imageInfo in rowImages.Values)
+                    {
+                        if (imageInfo != null)
+                        {
+                            try { imageInfo.Dispose(); }
+                            catch { }
+                        }
+                    }
+                    rowImages.Clear();
+                    __RowImages = null;
+                }
+            }
+            /// <summary>
+            /// Pro daný řádek a tuto buňku vrátí fotku.
+            /// Fotka se hledá v interní cache pro zadaný řádek.
+            /// Při prvním volání si získá data z řádku pro this sloupec a vygeneruje Image, tu uloží pro daný řádek do interní cache.
+            /// Dispose je poté povinný.
+            /// </summary>
+            /// <param name="row"></param>
+            /// <returns></returns>
+            public Image GetImage(DataRow row)
+            {
+                if (row is null || this.Cell.ElementContent != ElementContentType.ImageData) return null;
+
+                if (__RowImages is null) __RowImages = new Dictionary<DataRow, TemplateCellImageInfo>();
+          
+                if (!__RowImages.TryGetValue(row, out var imageInfo))
+                {
+                    // Redukce položek v cache před přidáním další: když přeteče horní mez (333), redukujeme položky na dolní mez (48):
+                    if (__RowImages.Count > 333) _RemoveCache(48);
+
+                    Image image = null;
+                    string columnName = this.Cell.ColumnName;
+                    if (!String.IsNullOrEmpty(columnName) && row.Table.Columns.Contains(columnName))
+                    {
+                        byte[] imageData = row[columnName] as byte[];
+                        if (imageData != null)
+                        {
+                            try { image = DxComponent.GetBitmapImage(imageData); }
+                            catch { }
+                        }
+                    }
+                    imageInfo = new TemplateCellImageInfo() { Image = image };
+                    __RowImages.Add(row, imageInfo);
+                }
+                __LastUsed++;
+                imageInfo.LastUsed = __LastUsed;
+                return imageInfo.Image;
+            }
+            /// <summary>
+            /// Odebere z cache nejméně použité položky, ponechá daný počet nejnověji potřebných
+            /// </summary>
+            private void _RemoveCache(int leaveCount)
+            {
+                // Pokud není důvod, nic neděláme:
+                if (leaveCount < 0) leaveCount = 0;
+                if (__RowImages.Count <= leaveCount) return;
+
+                lock (__RowImages)
+                {
+                    // Všechny položky cache, setřídím LastUsed DESC = na indexu 0 bude nejnověji použitá, na konci budou nejstarší:
+                    var images = __RowImages.ToList();
+                    images.Sort((a, b) => b.Value.LastUsed.CompareTo(a.Value.LastUsed));
+
+                    // Počínaje indexem [48] disposuji a odebírám položky = to jsou ty starší:
+                    for (int i = leaveCount; i < images.Count; i++)
+                    {
+                        var imageInfoKvp = images[i];
+                        imageInfoKvp.Value.Dispose();
+                        __RowImages.Remove(imageInfoKvp.Key);
+                    }
+                }
+            }
+            /// <summary>
+            /// Úložiště Images, per každý řádek.
+            /// Key = DataRow = Reference instance; value = odpovídající fotka pro tuto buňku = element
+            /// </summary>
+            private Dictionary<DataRow, TemplateCellImageInfo> __RowImages;
+            /// <summary>
+            /// Postupné číslo použití ImageInfo, abychom označili ty nově použité a odlišili je od těch nepotřebných
+            /// </summary>
+            private long __LastUsed;
+        }
+        /// <summary>
+        /// Jeden záznam v cache: Image, a kdy naposledy byl potřeba. Dispose.
+        /// </summary>
+        private class TemplateCellImageInfo : IDisposable
+        {
+            public Image Image;
+            public long LastUsed;
+            public void Dispose()
+            {
+                var image = Image;
+                if (image != null)
+                {
+                    try { image.Dispose(); }
+                    catch { }
+                }
+                Image = null;
+            }
         }
         /// <summary>
         /// Metoda vytvoří Simple template pro ikonu a pro text

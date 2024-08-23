@@ -918,6 +918,7 @@ namespace TestDevExpress
         private static string[] _LoadImageFileNames()
         {
             return _LoadImageFileNamesPaths(
+                @"c:\DavidPrac\Photos\Small",
                 @"c:\DavidPrac\Images\Small",
                 @"",
                 @"",
