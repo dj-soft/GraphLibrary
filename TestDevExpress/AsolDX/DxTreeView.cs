@@ -157,15 +157,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public int NodesCount { get { return _TreeListNative.NodesCount; } }
         /// <summary>
-        /// Povolené akce. Výchozí je <see cref="KeyActionType.None"/>
+        /// Povolené akce. Výchozí je <see cref="ControlKeyActionType.None"/>
         /// </summary>
-        public KeyActionType EnabledKeyActions { get { return _TreeListNative.EnabledKeyActions; } set { _TreeListNative.EnabledKeyActions = value; } }
+        public ControlKeyActionType EnabledKeyActions { get { return _TreeListNative.EnabledKeyActions; } set { _TreeListNative.EnabledKeyActions = value; } }
         /// <summary>
-        /// Provede zadané akce v pořadí jak jsou zadány. Pokud v jedné hodnotě je více akcí (<see cref="KeyActionType"/> je typu Flags), pak jsou prováděny v pořadí bitů od nejnižšího.
+        /// Provede zadané akce v pořadí jak jsou zadány. Pokud v jedné hodnotě je více akcí (<see cref="ControlKeyActionType"/> je typu Flags), pak jsou prováděny v pořadí bitů od nejnižšího.
         /// Upozornění: požadované akce budou provedeny i tehdy, když v <see cref="EnabledKeyActions"/> nejsou povoleny = tamní hodnota má za úkol omezit uživatele, ale ne aplikační kód, který danou akci může provést i tak.
         /// </summary>
         /// <param name="actions"></param>
-        public void DoKeyActions(params KeyActionType[] actions) { _TreeListNative.DoKeyActions(actions); }
+        public void DoKeyActions(params ControlKeyActionType[] actions) { _TreeListNative.DoKeyActions(actions); }
         /// <summary>
         /// Seznam HotKeys = klávesy, pro které se volá událost <see cref="NodeKeyDown"/>.
         /// </summary>
@@ -3046,17 +3046,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region DoKeyActions; CtrlA, CtrlC, CtrlX, CtrlV, Delete
         /// <summary>
-        /// Povolené akce. Výchozí je <see cref="KeyActionType.None"/>
+        /// Povolené akce. Výchozí je <see cref="ControlKeyActionType.None"/>
         /// </summary>
-        public KeyActionType EnabledKeyActions { get; set; }
+        public ControlKeyActionType EnabledKeyActions { get; set; }
         /// <summary>
-        /// Provede zadané akce v pořadí jak jsou zadány. Pokud v jedné hodnotě je více akcí (<see cref="KeyActionType"/> je typu Flags), pak jsou prováděny v pořadí bitů od nejnižšího.
+        /// Provede zadané akce v pořadí jak jsou zadány. Pokud v jedné hodnotě je více akcí (<see cref="ControlKeyActionType"/> je typu Flags), pak jsou prováděny v pořadí bitů od nejnižšího.
         /// Upozornění: požadované akce budou provedeny i tehdy, když v <see cref="EnabledKeyActions"/> nejsou povoleny = tamní hodnota má za úkol omezit uživatele, ale ne aplikační kód, který danou akci může provést i tak.
         /// </summary>
         /// <param name="actions"></param>
-        public void DoKeyActions(params KeyActionType[] actions)
+        public void DoKeyActions(params ControlKeyActionType[] actions)
         {
-            foreach (KeyActionType action in actions)
+            foreach (ControlKeyActionType action in actions)
                 _DoKeyAction(action, true);
         }
         /// <summary>
@@ -3075,25 +3075,25 @@ namespace Noris.Clients.Win.Components.AsolDX
             switch (e.KeyData)
             {
                 case Keys.Delete:
-                    isHandled = _DoKeyAction(KeyActionType.Delete);
+                    isHandled = _DoKeyAction(ControlKeyActionType.Delete);
                     break;
                 case Keys.Control | Keys.A:
-                    isHandled = _DoKeyAction(KeyActionType.SelectAll);
+                    isHandled = _DoKeyAction(ControlKeyActionType.SelectAll);
                     break;
                 case Keys.Control | Keys.C:
-                    isHandled = _DoKeyAction(KeyActionType.ClipCopy);
+                    isHandled = _DoKeyAction(ControlKeyActionType.ClipCopy);
                     isHandled = true;            // I kdyby tato akce NEBYLA povolena, chci ji označit jako Handled = nechci, aby v případě NEPOVOLENÉ akce dával objekt nativně věci do clipbardu.
                     break;
                 case Keys.Control | Keys.X:
                     // Ctrl+X : pokud je povoleno, provedu; pokud nelze provést Ctrl+X ale lze provést Ctrl+C, tak se provede to:
-                    if (EnabledKeyActions.HasFlag(KeyActionType.ClipCut))
-                        isHandled = _DoKeyAction(KeyActionType.ClipCut);
-                    else if (EnabledKeyActions.HasFlag(KeyActionType.ClipCopy))
-                        isHandled = _DoKeyAction(KeyActionType.ClipCopy);
+                    if (EnabledKeyActions.HasFlag(ControlKeyActionType.ClipCut))
+                        isHandled = _DoKeyAction(ControlKeyActionType.ClipCut);
+                    else if (EnabledKeyActions.HasFlag(ControlKeyActionType.ClipCopy))
+                        isHandled = _DoKeyAction(ControlKeyActionType.ClipCopy);
                     isHandled = true;            // I kdyby tato akce NEBYLA povolena, chci ji označit jako Handled = nechci, aby v případě NEPOVOLENÉ akce dával objekt nativně věci do clipbardu.
                     break;
                 case Keys.Control | Keys.V:
-                    isHandled = _DoKeyAction(KeyActionType.ClipPaste);
+                    isHandled = _DoKeyAction(ControlKeyActionType.ClipPaste);
                     isHandled = true;            // I kdyby tato akce NEBYLA povolena, chci ji označit jako Handled = nechci, aby v případě NEPOVOLENÉ akce dával objekt nativně věci do clipbardu.
                     break;
             }
@@ -3104,22 +3104,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="action"></param>
         /// <param name="force"></param>
-        private bool _DoKeyAction(KeyActionType action, bool force = false)
+        private bool _DoKeyAction(ControlKeyActionType action, bool force = false)
         {
             bool isHandled = false;
-            _DoKeyAction(action, KeyActionType.SelectAll, force, _DoKeyActionCtrlA, ref isHandled);
-            _DoKeyAction(action, KeyActionType.ClipCopy, force, _DoKeyActionCtrlC, ref isHandled);
-            _DoKeyAction(action, KeyActionType.ClipCut, force, _DoKeyActionCtrlX, ref isHandled);
-            _DoKeyAction(action, KeyActionType.ClipPaste, force, _DoKeyActionCtrlV, ref isHandled);
+            _DoKeyAction(action, ControlKeyActionType.SelectAll, force, _DoKeyActionCtrlA, ref isHandled);
+            _DoKeyAction(action, ControlKeyActionType.ClipCopy, force, _DoKeyActionCtrlC, ref isHandled);
+            _DoKeyAction(action, ControlKeyActionType.ClipCut, force, _DoKeyActionCtrlX, ref isHandled);
+            _DoKeyAction(action, ControlKeyActionType.ClipPaste, force, _DoKeyActionCtrlV, ref isHandled);
             /*
             _DoKeyAction(action, KeyActionType.MoveTop, force, _DoKeyActionMoveTop, ref isHandled);
             _DoKeyAction(action, KeyActionType.MoveUp, force, _DoKeyActionMoveUp, ref isHandled);
             _DoKeyAction(action, KeyActionType.MoveDown, force, _DoKeyActionMoveDown, ref isHandled);
             _DoKeyAction(action, KeyActionType.MoveBottom, force, _DoKeyActionMoveBottom, ref isHandled);
             */
-            _DoKeyAction(action, KeyActionType.Delete, force, _DoKeyActionDelete, ref isHandled);
-            _DoKeyAction(action, KeyActionType.Undo, force, _DoKeyActionUndo, ref isHandled);
-            _DoKeyAction(action, KeyActionType.Redo, force, _DoKeyActionRedo, ref isHandled);
+            _DoKeyAction(action, ControlKeyActionType.Delete, force, _DoKeyActionDelete, ref isHandled);
+            _DoKeyAction(action, ControlKeyActionType.Undo, force, _DoKeyActionUndo, ref isHandled);
+            _DoKeyAction(action, ControlKeyActionType.Redo, force, _DoKeyActionRedo, ref isHandled);
             return isHandled;
         }
         /// <summary>
@@ -3131,7 +3131,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="force"></param>
         /// <param name="runMethod"></param>
         /// <param name="handled">Nastaví na true, pokud byla provedena požadovaná akce</param>
-        private void _DoKeyAction(KeyActionType action, KeyActionType flag, bool force, Action runMethod, ref bool handled)
+        private void _DoKeyAction(ControlKeyActionType action, ControlKeyActionType flag, bool force, Action runMethod, ref bool handled)
         {
             if (!action.HasFlag(flag)) return;
             if (!force && !EnabledKeyActions.HasFlag(flag)) return;

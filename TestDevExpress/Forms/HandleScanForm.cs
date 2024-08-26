@@ -78,7 +78,7 @@ namespace TestDevExpress.Forms
             _ProcessListBox = new DxListBoxPanel()
             {
                 ButtonsPosition = ToolbarPosition.BottomSideRight,
-                ButtonsTypes = ListBoxButtonType.Refresh,
+                ButtonsTypes = ControlKeyActionType.Refresh,
                 ButtonsSize = ResourceImageSizeType.Medium,
                 RowFilterMode = DxListBoxPanel.FilterRowMode.Server,
                 Dock = System.Windows.Forms.DockStyle.Fill
@@ -96,7 +96,7 @@ namespace TestDevExpress.Forms
 
         private void _ProcessListBox_ActionAfter(object sender, DxListBoxActionEventArgs args)
         {
-            if (args.Action == KeyActionType.Refresh)
+            if (args.Action == ControlKeyActionType.Refresh)
                 _RunProcessRefresh();
         }
 

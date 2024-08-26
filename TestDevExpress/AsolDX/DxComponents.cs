@@ -2275,7 +2275,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static DxListBoxControl CreateDxListBox(DockStyle? dock = null, int? width = null, int? height = null, Control parent = null, EventHandler selectedIndexChanged = null,
             bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null,
-            KeyActionType? enabledKeyActions = null, DxDragDropActionType? dragDropActions = null,
+            ControlKeyActionType? enabledKeyActions = null, DxDragDropActionType? dragDropActions = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? tabStop = null)
         {
@@ -2311,7 +2311,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static DxListBoxControl CreateDxListBox(int x, int y, int w, int h, Control parent = null, EventHandler selectedIndexChanged = null,
             bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null,
-            KeyActionType? enabledKeyActions = null, DxDragDropActionType? dragDropActions = null,
+            ControlKeyActionType? enabledKeyActions = null, DxDragDropActionType? dragDropActions = null,
             string toolTipTitle = null, string toolTipText = null,
             DockStyle? dock = null, bool? visible = null, bool? tabStop = null)
         {
@@ -2345,7 +2345,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static DxListBoxControl CreateDxListBox(int x, ref int y, int w, int h, Control parent = null, EventHandler selectedIndexChanged = null,
             bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null,
-            KeyActionType? enabledKeyActions = null, DxDragDropActionType? dragDropActions = null,
+            ControlKeyActionType? enabledKeyActions = null, DxDragDropActionType? dragDropActions = null,
             string toolTipTitle = null, string toolTipText = null,
             DockStyle? dock = null, bool? visible = null, bool? tabStop = null, bool shiftY = false)
         {

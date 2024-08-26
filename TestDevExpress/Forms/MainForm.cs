@@ -5237,7 +5237,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         {
             _PanelDragDrop = panel;
 
-            KeyActionType sourceKeyActions = KeyActionType.SelectAll | KeyActionType.ClipCopy;
+            ControlKeyActionType sourceKeyActions = ControlKeyActionType.SelectAll | ControlKeyActionType.ClipCopy;
             DxDragDropActionType sourceDDActions = DxDragDropActionType.CopyItemsFrom;
             _DragDropAList = new DxListBoxPanel() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = sourceDDActions, EnabledKeyActions = sourceKeyActions };
             _DragDropAList.Name = "AList";
@@ -5247,7 +5247,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropAList.RowFilterMode = DxListBoxPanel.FilterRowMode.Server;
             _PanelDragDrop.Controls.Add(_DragDropAList);
 
-            KeyActionType targetKeyActions = KeyActionType.All;
+            ControlKeyActionType targetKeyActions = ControlKeyActionType.All;
             DxDragDropActionType targetDDActions = DxDragDropActionType.ReorderItems | DxDragDropActionType.ImportItemsInto | DxDragDropActionType.CopyItemsFrom | DxDragDropActionType.MoveItemsFrom;
             _DragDropBList = new DxListBoxPanel() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = targetDDActions, EnabledKeyActions = targetKeyActions };
             _DragDropBList.Name = "BList";
@@ -5257,7 +5257,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropBList.DataExchangeCrossType = DataExchangeCrossType.AllControlsInCurrentApplication | DataExchangeCrossType.AnyOtherApplications;
             _DragDropBList.RowFilterMode = DxListBoxPanel.FilterRowMode.Server;
             _DragDropBList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            _DragDropBList.ButtonsTypes = ListBoxButtonType.MoveAll;
+            _DragDropBList.ButtonsTypes = ControlKeyActionType.MoveAll;
             _PanelDragDrop.Controls.Add(_DragDropBList);
 
             _DragDropCTree = new DxTreeList() { FilterBoxVisible = true, DragDropActions = targetDDActions, EnabledKeyActions = sourceKeyActions };

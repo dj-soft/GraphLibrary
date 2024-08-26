@@ -10422,10 +10422,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         OnActiveControl = OnMouse | OnFocus
     }
     /// <summary>
-    /// Klávesové akce
+    /// Klávesové a jiné akce, mohou sloužit i jako označení typu buttonu
     /// </summary>
     [Flags]
-    public enum KeyActionType
+    public enum ControlKeyActionType : long
     {
         /// <summary>
         /// Žádná akce
@@ -10520,28 +10520,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Všechny práce s clipboardem
         /// </summary>
-        AllClipboard = ClipCopy | ClipCut | ClipPaste,
+        ClipboardAll = ClipCopy | ClipCut | ClipPaste,
         /// <summary>
         /// Všechny pohyby kurzoru
         /// </summary>
-        AllGo = GoBegin | GoEnd,
+        GoAll = GoBegin | GoEnd,
         /// <summary>
         /// Všechny přesuny nahoru/dolů
         /// </summary>
-        AllMove = MoveTop | MoveUp | MoveDown | MoveBottom,
+        MoveAll = MoveTop | MoveUp | MoveDown | MoveBottom,
         /// <summary>
         /// Všechny kopie doleva/doprava
         /// </summary>
-        AllCopy = CopyToRightOne | CopyToRightAll | CopyToLeftOne | CopyToLeftAll,
+        CopyAll = CopyToRightOne | CopyToRightAll | CopyToLeftOne | CopyToLeftAll,
         /// <summary>
         /// Undo a Redo
         /// </summary>
-        AllUndoRedo = Undo | Redo,
+        UndoRedoAll = Undo | Redo,
 
         /// <summary>
         /// Všechny akce
         /// </summary>
-        All = AllClipboard | Delete | SelectAll | AllGo | AllMove | AllUndoRedo | ActivateFilter | ActivateFilter
+        All = ClipboardAll | Delete | SelectAll | GoAll | MoveAll | UndoRedoAll | ActivateFilter | ActivateFilter
     }
     /// <summary>
     /// Stav aktivity okna
