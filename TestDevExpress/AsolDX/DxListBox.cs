@@ -3144,19 +3144,29 @@ namespace Noris.Clients.Win.Components.AsolDX
                         StretchVertical = iElement.StretchVertical
                     };
 
-                    if (iElement.ElementContent == ElementContentType.Text)
+                    switch (iElement.ElementContent)
                     {
-                        tElement.FieldName = iElement.ColumnName;
-                        tElement.TextAlignment = iElement.ContentAlignment ?? TileItemContentAlignment.MiddleLeft;
-                        tElement.ImageVisible = false;
-                        tElement.ImageToTextAlignment = TileControlImageToTextAlignment.None;
-                    }
-                    else
-                    {
-                        tElement.FieldName = null;
-                        tElement.ImageAlignment = iElement.ContentAlignment ?? TileItemContentAlignment.MiddleCenter;
-                        tElement.ImageVisible = true;
-                        tElement.ImageToTextAlignment = TileControlImageToTextAlignment.None;
+                        case ElementContentType.Text:
+                            tElement.FieldName = iElement.ColumnName;
+                            tElement.TextAlignment = iElement.ContentAlignment ?? TileItemContentAlignment.MiddleLeft;
+                            tElement.ImageVisible = false;
+                            tElement.ImageToTextAlignment = TileControlImageToTextAlignment.None;
+                            break;
+
+                        case ElementContentType.Label:
+                            tElement.Text = iElement.Label;
+                            tElement.TextAlignment = iElement.ContentAlignment ?? TileItemContentAlignment.MiddleLeft;
+                            tElement.ImageVisible = false;
+                            tElement.ImageToTextAlignment = TileControlImageToTextAlignment.None;
+                            break;
+
+                        case ElementContentType.IconName:
+                        case ElementContentType.ImageData:
+                            tElement.FieldName = null;
+                            tElement.ImageAlignment = iElement.ContentAlignment ?? TileItemContentAlignment.MiddleCenter;
+                            tElement.ImageVisible = true;
+                            tElement.ImageToTextAlignment = TileControlImageToTextAlignment.None;
+                            break;
                     }
 
                     if (iElement.FontStyle.HasValue)
@@ -3557,6 +3567,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public ElementContentType ElementContent { get; set; }
         /// <summary>
+        /// Fixní label = popisek, bude ve všech řádcích stejný. Sloupec tohoto jména tedy nemusí existovat v datové tabulce.
+        /// </summary>
+        public string Label { get; set; }
+        /// <summary>
         /// Pozice Y buňky v matici = číslo řádku, počínaje 0.
         /// Pokud má buňka <see cref="RowSpan"/> větší než 1, jde pozici počátku buňky.
         /// </summary>
@@ -3639,6 +3653,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         ElementContentType ElementContent { get; }
         /// <summary>
+        /// Fixní label = popisek, bude ve všech řádcích stejný. Sloupec tohoto jména tedy nemusí existovat v datové tabulce.
+        /// </summary>
+        string Label { get; }
+        /// <summary>
         /// Pozice Y buňky v matici = číslo řádku, počínaje 0.
         /// Pokud má buňka <see cref="RowSpan"/> větší než 1, jde pozici počátku buňky.
         /// </summary>
@@ -3709,6 +3727,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Nic
         /// </summary>
         None,
+        /// <summary>
+        /// Fixní Label, definovaný v elementu
+        /// </summary>
+        Label,
         /// <summary>
         /// Text
         /// </summary>

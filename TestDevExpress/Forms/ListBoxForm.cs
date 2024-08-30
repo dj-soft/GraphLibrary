@@ -434,7 +434,7 @@ namespace TestDevExpress.Forms
         {
             var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 675, 420), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
 
-            var table = Randomizer.GetDataTable(72, 96, "id:int; iconjedla:label; cznamelabel:label; czname:label; latnamelabel:label; latname:label; arealabel:label; area:label; description:note; photo:photo");
+            var table = Randomizer.GetDataTable(72, 96, "id:int; iconjedla:label; czname:label; latname:label; area:label; description:note; photo:photo");
             var mycelias = Randomizer.Mycelias;
             var areas = "Jižní Evropa;Střední Evropa;Severní Evropa;Východní Evropa;Západní Evropa;Nížiny;Bažiny;Sahara;Tundra;Východní Asie;Kanada;Listnaté lesy;Lesní houštiny".Split(';');
             var icons = new string[] { "images/xaf/bo_skull_32x32.png", "images/xaf/bo_attention_32x32.png", "images/xaf/action_grant_32x32.png", "images/xaf/action_bell_32x32.png" };
@@ -443,11 +443,8 @@ namespace TestDevExpress.Forms
                 var row = table.Rows[r];
                 var mycelium = Randomizer.GetItem(mycelias);
                 row["iconjedla"] = Randomizer.GetItem(icons);
-                row["cznamelabel"] = "České jméno:";
                 row["czname"] = mycelium.Item2;
-                row["latnamelabel"] = "Latinské jméno:";
                 row["latname"] = mycelium.Item1;
-                row["arealabel"] = "Oblast výskytu:";
                 row["area"] = Randomizer.GetItem(areas);
             }
             sampleList.DataTable = table;
@@ -469,16 +466,16 @@ namespace TestDevExpress.Forms
             var dxTemplate = new DxListBoxTemplate();
             dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "photo", ColIndex = 0, RowIndex = 0, ColSpan = 1, RowSpan = 4, Width = 240, Height = 240, ElementContent = ElementContentType.ImageData });
 
-            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "cznamelabel", ColIndex = 1, RowIndex = 0, Width = 100, Height = 18, FontStyle = FontStyle.Italic });
+            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "cznamelabel", ColIndex = 1, RowIndex = 0, Width = 100, Height = 18, Label = "České jméno:", FontStyle = FontStyle.Italic, ContentAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleRight, ElementContent = ElementContentType.Label });
             dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "czname", ColIndex = 2, RowIndex = 0, Width = 250, Height = 18, FontStyle = FontStyle.Bold, FontSizeDelta = 1 });
 
-            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "iconjedla", ColIndex = 3, RowIndex = 0, RowSpan = 3, Width = 36, Height = 36, ElementContent = ElementContentType.IconName });
-
-            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "latnamelabel", ColIndex = 1, RowIndex = 1, Width = 100, Height = 18, FontStyle = FontStyle.Italic });
+            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "latnamelabel", ColIndex = 1, RowIndex = 1, Width = 100, Height = 18, Label = "Latinské jméno:", FontStyle = FontStyle.Italic, ContentAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleRight, ElementContent = ElementContentType.Label });
             dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "latname", ColIndex = 2, RowIndex = 1, Width = 250, Height = 18, FontStyle = FontStyle.Bold });
 
-            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "arealabel", ColIndex = 1, RowIndex = 2, Width = 100, Height = 18, FontStyle = FontStyle.Italic });
+            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "arealabel", ColIndex = 1, RowIndex = 2, Width = 100, Height = 18, Label = "Oblast výskytu:", FontStyle = FontStyle.Italic, ContentAlignment = DevExpress.XtraEditors.TileItemContentAlignment.MiddleRight, ElementContent = ElementContentType.Label });
             dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "area", ColIndex = 2, RowIndex = 2, Width = 250, Height = 18, FontStyle = FontStyle.Bold });
+
+            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "iconjedla", ColIndex = 3, RowIndex = 0, RowSpan = 3, Width = 36, Height = 36, ElementContent = ElementContentType.IconName });
 
             dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "description", ColIndex = 1, RowIndex = 3, ColSpan = 3, Width = 380, Height = 48, FontStyle = FontStyle.Regular});
 

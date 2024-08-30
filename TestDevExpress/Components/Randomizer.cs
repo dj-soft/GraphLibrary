@@ -152,11 +152,40 @@ namespace TestDevExpress
             }
         }
         /// <summary>
-        /// Vrátí datovou tabulku s danou strukturou
+        /// Vrátí datovou tabulku s danou strukturou<br/>
+        /// Struktura se deklaruje jedním stringem ve formě: <c>"colname1:type; colname2:type; colname3:type..."</c> - kde <c>type</c> určuje jednak konkrétní datový typ (string, int, atd), a i vygenerovaný obsah sloupce.
+        /// <list type="bullet">
+        /// <item>id: typ int, generuje se postupné číslo od 0</item>
+        /// <item>int: typ int, generuje se náhodné číslo v plném rozsahu</item>
+        /// <item>number: typ int, generuje se náhodné číslo v rozsahu 100 - 1000000</item>
+        /// <item>label: typ string, prázdné (null)</item>
+        /// <item>char: typ string, jeden znak 32 + 128</item>
+        /// <item>word: typ string, jedno náhodné slovo</item>
+        /// <item>sentence: typ string, věta o 2 - 5 slovech</item>
+        /// <item>text: typ string, věta o 2 - 5 slovech</item>
+        /// <item>idtext: typ string, pořadové číslo od 1, tečka, věta o 2 - 5 slovech</item>
+        /// <item>note: typ string, delší text se 3 - 7 větami</item>
+        /// <item>string: typ string, několik slov bez tečky</item>
+        /// <item>varchar: typ string, několik slov bez tečky</item>
+        /// <item>nvarchar: typ string, několik slov bez tečky</item>
+        /// <item>decimal: typ decimal, náhodné číslo 0 až 1000000d</item>
+        /// <item>numeric: typ decimal, náhodné číslo 0 až 1000000d</item>
+        /// <item>date: typ DateTime, náhodné datum v rozmezí před půl rokem do dneška</item>
+        /// <item>datetime: typ DateTime, náhodné datum v rozmezí před půl rokem do dneška</item>
+        /// <item>imagename: typ string, jméno ikony typu SVG</item>
+        /// <item>imagenamesvg: typ string, jméno ikony typu SVG</item>
+        /// <item>imagenamepng: typ string, jméno ikony typu PNG, velká</item>
+        /// <item>imagenamepngsmall: typ string, jméno ikony typu PNG, malá</item>
+        /// <item>imagenamepngfull: typ string, jméno ikony typu PNG, velká</item>
+        /// <item>thumb: typ byte[], obsahuje data fotografie malé</item>
+        /// <item>bytes: typ byte[], obsahuje data fotografie malé</item>
+        /// <item>photo: typ byte[], obsahuje data fotografie velké</item>
+        /// <item>image: typ byte[], obsahuje data fotografie velké</item>
+        /// </list>
         /// </summary>
-        /// <param name="minCount"></param>
-        /// <param name="maxCount"></param>
-        /// <param name="structure">Struktura: sloupce oddělené středníkem; uvnitř sloupce je "název:typ". Typ je: "id, int, number, decimal, text, note, date, datetime, imagename, iconname"</param>
+        /// <param name="minCount">Počet řádků nejnižší</param>
+        /// <param name="maxCount">Počet řádků nejvyšší</param>
+        /// <param name="structure">Struktura: sloupce oddělené středníkem; uvnitř sloupce je "název:typ; ". Typ je: "id, int, number, decimal, text, note, date, datetime, imagename, iconname a další"</param>
         /// <returns></returns>
         public static DataTable GetDataTable(int minCount, int maxCount, string structure)
         {
@@ -165,10 +194,39 @@ namespace TestDevExpress
             return GetDataTable(count, structure);
         }
         /// <summary>
-        /// Vrátí datovou tabulku s danou strukturou
+        /// Vrátí datovou tabulku s danou strukturou.<br/>
+        /// Struktura se deklaruje jedním stringem ve formě: <c>"colname1:type; colname2:type; colname3:type..."</c> - kde <c>type</c> určuje jednak konkrétní datový typ (string, int, atd), a i vygenerovaný obsah sloupce.
+        /// <list type="bullet">
+        /// <item>id: typ int, generuje se postupné číslo od 0</item>
+        /// <item>int: typ int, generuje se náhodné číslo v plném rozsahu</item>
+        /// <item>number: typ int, generuje se náhodné číslo v rozsahu 100 - 1000000</item>
+        /// <item>label: typ string, prázdné (null)</item>
+        /// <item>char: typ string, jeden znak 32 + 128</item>
+        /// <item>word: typ string, jedno náhodné slovo</item>
+        /// <item>sentence: typ string, věta o 2 - 5 slovech</item>
+        /// <item>text: typ string, věta o 2 - 5 slovech</item>
+        /// <item>idtext: typ string, pořadové číslo od 1, tečka, věta o 2 - 5 slovech</item>
+        /// <item>note: typ string, delší text se 3 - 7 větami</item>
+        /// <item>string: typ string, několik slov bez tečky</item>
+        /// <item>varchar: typ string, několik slov bez tečky</item>
+        /// <item>nvarchar: typ string, několik slov bez tečky</item>
+        /// <item>decimal: typ decimal, náhodné číslo 0 až 1000000d</item>
+        /// <item>numeric: typ decimal, náhodné číslo 0 až 1000000d</item>
+        /// <item>date: typ DateTime, náhodné datum v rozmezí před půl rokem do dneška</item>
+        /// <item>datetime: typ DateTime, náhodné datum v rozmezí před půl rokem do dneška</item>
+        /// <item>imagename: typ string, jméno ikony typu SVG</item>
+        /// <item>imagenamesvg: typ string, jméno ikony typu SVG</item>
+        /// <item>imagenamepng: typ string, jméno ikony typu PNG, velká</item>
+        /// <item>imagenamepngsmall: typ string, jméno ikony typu PNG, malá</item>
+        /// <item>imagenamepngfull: typ string, jméno ikony typu PNG, velká</item>
+        /// <item>thumb: typ byte[], obsahuje data fotografie malé</item>
+        /// <item>bytes: typ byte[], obsahuje data fotografie malé</item>
+        /// <item>photo: typ byte[], obsahuje data fotografie velké</item>
+        /// <item>image: typ byte[], obsahuje data fotografie velké</item>
+        /// </list>
         /// </summary>
-        /// <param name="count"></param>
-        /// <param name="structure">Struktura: sloupce oddělené středníkem; uvnitř sloupce je "název:typ". Typ je: "id, int, number, decimal, text, note, date, datetime, imagename, iconname"</param>
+        /// <param name="count">Počet řádků</param>
+        /// <param name="structure">Struktura: sloupce oddělené středníkem; uvnitř sloupce je "název:typ; ". Typ je: "id, int, number, decimal, text, note, date, datetime, imagename, iconname a další"</param>
         /// <returns></returns>
         public static DataTable GetDataTable(int count, string structure)
         {
@@ -291,6 +349,9 @@ namespace TestDevExpress
                             break;
                         case "number":
                             result[c] = Rand.Next(100, 1000000);
+                            break;
+                        case "label":
+                            result[c] = null;
                             break;
                         case "char":
                             result[c] = ((char)(Rand.Next(32, 128))).ToString();
