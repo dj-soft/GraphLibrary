@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web.UI.WebControls;
+using CefSharp.DevTools.SystemInfo;
 using Noris.Clients.Win.Components;
 using Noris.Clients.Win.Components.AsolDX;
 
@@ -102,7 +103,7 @@ namespace TestDevExpress
             return sentence;
         }
         #endregion
-        #region MenuItems, DataTable, Icons
+        #region MenuItems, DataTable, Icons, Images, Myco
         /// <summary>
         /// Vytvoří a vrátí pole jednoduchých prvků menu
         /// </summary>
@@ -197,6 +198,7 @@ namespace TestDevExpress
                         string name = parts[0];
                         if (!String.IsNullOrEmpty(name))
                         {
+                            name = name.Trim();
                             string typeName = (count > 1 ? parts[1] : null);
 
                             Type type = typeof(string);
@@ -212,6 +214,7 @@ namespace TestDevExpress
                                     case "number":
                                         type = typeof(int);
                                         break;
+                                    case "label":
                                     case "char":
                                     case "word":
                                     case "sentence":
@@ -238,6 +241,7 @@ namespace TestDevExpress
                                     case "imagenamepngfull":
                                         type = typeof(string);
                                         break;
+                                    case "thumb":
                                     case "image":
                                     case "photo":
                                     case "bytes":
@@ -331,10 +335,13 @@ namespace TestDevExpress
                         case "imagenamepngfull":
                             result[c] = GetIconName(ImageResourceType.PngFull);
                             break;
-                        case "image":
-                        case "photo":
+                        case "thumb":
                         case "bytes":
-                            result[c] = GetImageFileContent();
+                            result[c] = GetImageFileContent(RandomImageType.Thumb);
+                            break;
+                        case "photo":
+                        case "image":
+                            result[c] = GetImageFileContent(RandomImageType.Photo);
                             break;
                     }
                 }
@@ -888,44 +895,46 @@ namespace TestDevExpress
         /// Vrátí jméno souboru na lokálním disku, který obsahuje obrázek
         /// </summary>
         /// <returns></returns>
-        public static string GetImageFileName()
+        public static string GetImageFileName(RandomImageType type)
         {
-            return GetItem(ImageFileNames);
+            if (type == RandomImageType.None) return null;
+
+            if (__ImageFileNames is null) __ImageFileNames = new Dictionary<RandomImageType, string[]>();
+            if (!__ImageFileNames.TryGetValue(type, out var images))
+            { 
+                switch (type)
+                {
+                    case RandomImageType.Thumb:
+                        images = _LoadImageFileNamesPaths(@"c:\DavidPrac\Photos\Small", @"c:\DavidPrac\Images\Small");
+                        break;
+                    case RandomImageType.Photo:
+                        images = _LoadImageFileNamesPaths(@"c:\DavidPrac\Photos\Full", @"c:\DavidPrac\Images\Full");
+                        break;
+                }
+                __ImageFileNames.Add(type, images);
+            }
+            return GetItem(images);
         }
+        private static Dictionary<RandomImageType, string[]> __ImageFileNames;
         /// <summary>
         /// Vrátí obsah ze souboru na lokálním disku, který obsahuje obrázek
         /// </summary>
         /// <returns></returns>
-        public static byte[] GetImageFileContent()
+        public static byte[] GetImageFileContent(RandomImageType type)
         {
-            string imageName = GetItem(ImageFileNames);
+            string imageName = GetImageFileName(type);
             if (String.IsNullOrEmpty(imageName)) return null;
             return System.IO.File.ReadAllBytes(imageName);
         }
         /// <summary>
-        /// Jména souborů typu Obrázek v adresáři <c>c:\DavidPrac\Images\Small</c> nebo jiném
+        /// Druh obrázku
         /// </summary>
-        private static string[] ImageFileNames
-        {
-            get 
-            {
-                if (__ImageFileNames is null)
-                    __ImageFileNames = _LoadImageFileNames();
-                return __ImageFileNames;
-            }
-        }
-        private static string[] __ImageFileNames;
-        private static string[] _LoadImageFileNames()
-        {
-            return _LoadImageFileNamesPaths(
-                @"c:\DavidPrac\Photos\Small",
-                @"c:\DavidPrac\Images\Small",
-                @"",
-                @"",
-                @"",
-                @""
-                );
-        }
+        public enum RandomImageType { None, Thumb, Photo }
+        /// <summary>
+        /// Vrátí pole názvů souborů z prvního z dodaných adresářů, kde nějaký existuje
+        /// </summary>
+        /// <param name="paths"></param>
+        /// <returns></returns>
         private static string[] _LoadImageFileNamesPaths(params string[] paths)
         {
             foreach (var path in paths) 
@@ -979,21 +988,40 @@ namespace TestDevExpress
         /// Aktivní slovní zásoba
         /// </summary>
         public static WordBookType ActiveWordBook { get { return _ActiveWordBook; } set { _ActiveWordBook = value; _WordBook = null; } }
-        private static WordBookType _ActiveWordBook = WordBookType.TriMuziNaToulkach;
+        private static WordBookType _ActiveWordBook = WordBookType.TriMuziVeClunu;
         /// <summary>
         /// Zdroj slovní zásoby
         /// </summary>
-        public enum WordBookType { TriMuziNaToulkach, TaborSvatych, CampOfSaints  }
+        public enum WordBookType
+        {
+            /// <summary>
+            /// Jerome Klapka Jerome: Tři muži ve člunu, o psu nemluvě
+            /// </summary>
+            TriMuziVeClunu,
+            /// <summary>
+            /// Jerome Klapka Jerome: Tři muži na toulkách
+            /// </summary>
+            TriMuziNaToulkach,
+            /// <summary>
+            /// Tábor Svatých
+            /// </summary>
+            TaborSvatych, 
+            /// <summary>
+            /// Camp Of Saints
+            /// </summary>
+            CampOfSaints  
+        }
         /// <summary>
         /// Vrátí pole náhodných slov
         /// </summary>
         /// <returns></returns>
         private static string[] _GetWordBook()
         {
-            string text = (_ActiveWordBook == WordBookType.TriMuziNaToulkach ? Text_TriMuziNaToulkach : 
+            string text = (_ActiveWordBook == WordBookType.TriMuziVeClunu ? Text_TriMuziVeClunu :
+                          (_ActiveWordBook == WordBookType.TriMuziNaToulkach ? Text_TriMuziNaToulkach : 
                           (_ActiveWordBook == WordBookType.TaborSvatych ? Text_TaborSvatych :
                           (_ActiveWordBook == WordBookType.CampOfSaints ? Text_CampOfSaints :
-                          Text_TriMuziNaToulkach)));
+                          Text_TriMuziNaToulkach))));
 
             // Některé znaky odstraníme, text rozdělíme na slova, a z nich vybereme pouze slova se 3 znaky a více:
             text = text.Replace("„", " ");
@@ -1030,6 +1058,26 @@ namespace TestDevExpress
             text = text.ToLower();
             var words = text.Split(" \r\n\t".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
             return words.Where(w => w.Length >= 3).ToArray();
+        }
+        /// <summary>
+        /// Text "Tři muži ve člunu"
+        /// </summary>
+        public static string Text_TriMuziVeClunu
+        {
+            get
+            {
+                return @"Byli jsme čtyři - George, William Samuel Harris, já a Montmorency. Seděli jsme u mě v pokoji, kouřili jsme a každý z nás vykládal, jak je špatný - špatný z hlediska zdravotního, pochopitelně. Ani jeden jsme se necítili ve své kůži, a to nám šlo na nervy. Harris říkal, že chvílemi se s ním všechno začne tak prapodivně motat, že si stěží uvědomuje, co dělá; a pak říkal George, že s ním se taky chvílemi všechno motá a že i on si stěží uvědomuje, co dělá. A já, já zas měl v nepořádku játra. Věděl jsem, že jsou to játra, to, co mám v nepořádku, protože jsem si zrovna přečetl prospekt na zázrační jaterní pilulky, kde byly podrobně popsány příznaky, podle nichž člověk pozná, že má v nepořádku játra. Já měl ty příznaky všechny. Prapodivná věc, ale já když si čtu reklamní oznámení na nějakou zázračnou medicínu, tak vždycky dojdu k závěru, že tou dotyčnou nemocí, o které se tam pojednává, trpím v té nejvirulentnější podobě. Pokaždé odpovídá diagnóza přesně všem pocitům, které mám odjakživa já. Vzpomínám si, jak jsem si jednoho dne zašel do knihovny Britského muzea, abych se poučil, co má člověk podnikati proti jakési nepatrné chorůbce, která se o mě pokoušela - mám dojem, že to byla senná rýma. Vyhledal jsem příslušnou publikaci a prostudoval jsem si všechno, co jsem si prostudovat přišel; a potom jsem tak nějak bezmyšlenkovitě a bezplánovitě obracel listy a naprosto lhostejně si začal číst o jiných nemocech, jen tak povšechně. Už si nepamatuji, co to bylo za chorobu, do které jsem se poprvé víc zahloubal - vím jenom, že to byla nějaká strašlivá, zhoubná metla lidstva - ale ještě jsem ani zpolovičky nepřelétl očima výčet „varovných symptomů“, a už na mě dolehlo poznání, že tu chorobu mám. Na chvilku jsem úplně zkameněl hrůzou; a pak jsem, už v naprosté apatii zoufalství, zase obrátil pár stránek. narazil jsem na tyfus - pročetl jsem si příznaky - objevil jsem, že mám i tyfus, a už ho mám zřejmě řadu měsíců a že to vůbec nevím - a ptal jsem se v duchu, co mám ještě; nalistoval jsem tanec svatého Víta - zjistil jsem, jak jsem očekával, že ten mám taky - začal jsem se o svůj případ zajímat a rozhodl jsem se prozkoumat ho důkladně, a tak jsem se do toho dal podle abecedy. Prostudoval jsem Addisonovu chorobu a dověděl se, že na ni stůňu a že se do čtrnácti dnů může vystupňovat v addisonskou krizi. O Brightově nemoci jsem se ke své úlevě dočetl, že ji mám jen ve formě zcela mírné, takže v mém případě se s ní snad dá ještě nějaký čas žít. Zato cukrovku jsem měl s vážnými komplikacemi a s cholerou jsem se zřejmě už narodil. Svědomitě jsem probádal všechna písmena abecedy a pouze o jediném neduhu jsem mohl s jistotou usoudit, že jím netrpím, a to o sklonu k samovolným potratům. V první chvíli mě to dost zamrzelo; připadalo mi to jako urážlivé přezírání. Jak to, že netrpím sklonem k samovolným potratům? Jak to, že zrovna já mám být takto omezován? Po nějaké chvíli však ve mně převládly pocity méně chamtivé. uvážil jsem, že mám všechny ostatní ve farmakologii známé nemoci, začal jsem se na celou tu věc dívat méně sobecky a došel jsem k rozhodnutí, že se bez sklonu k samovolným potratům obejdu. Záškrt, jak se ukázalo, mě zachvátil, aniž jsem si toho povšiml, rovnou ve svém nejzavilejším stádiu a žloutenkou infekční jsem se očividně nakazil už ve věku jinošském. Po žloutence už tam žádné další choroby nebyly, usoudil jsem tudíž, že ani ve mně už nic jiného nehlodá. Seděl jsem a dumal. Přemítal jsem, jaký to musím být z lékařského hlediska zajímavý případ a jak cennou akvizicí bych byl pro kandidáty veškerého lékařství. Kdyby medici měli mne, nemuseli by dělat žádnou klinickou praxi. Já sám vydám za celou kliniku. Úplně by jim stačilo párkrát si mě obejít, a hned by si mohli doběhnout pro diplom. Pak mi v mysli vyvstal problém, kolik asi mi ještě zbývá let života. Zkoušel jsem sám sebe vyšetřit. Chtěl jsem si spočítat puls. Nejdřív jsem si vůbec žádný puls nenahmatal. Potom se zčistajasna roztepal. Vytáhl jsem hodinky a odpočítával. Napočítal jsem sto čtyřicet sedm tepů za minutu. Pak jsem chtěl vědět, jak mi tluče srdce. Ale ani srdce jsem si nenahmatal. Úplně se mi zastavilo. Od té doby jsem už byl sice přinucen přiklonit se k názoru, že na svém místě být muselo a zastavit se nemohlo, ale vysvětlení mi chybí pořád. Proklepal jsem si celé své průčelí, od míst, kterým říkám pás, až k hlavě, vzal jsem to i kousíček do stran a kousíček přes ramena na záda, ale na nic podezřelého jsem nenarazil a nic podezřelého jsem neslyšel. Ještě jsem se pokusil kouknout na jazyk. Vyplázl jsem ho, jak nejdál to šlo, zavřel jsem jedno oko a tím druhým jsem se snažil jazyk prohlédnout. Viděl jsem mu jenom na špičku a jediné, co mi ta námaha vynesla, bylo ještě důkladnější ujištění, že mám spálu. Vešel jsem do té čítárny jako šťastný, zdravím kypící člověk. Ven jsem se vybelhal jako zchátralá troska. Odebral jsem se k svému lékaři. Je to můj dobrý, starý kamarád, a když si vezmu do hlavy, že stůňu, tak mi vždycky sáhne na puls, mrkne mi na jazyk a popovídá si se mnou o počasí - a to všechno zadarmo; tak jsem si řekl, že tentokrát mu prokážu znamenitou službu, když k němu zajdu. „Doktor nesmí vyjít ze cviku,“ povídám si. „Ať má tedy mne! Na mně se pocvičí mnohem víc než na sedmnácti stech obyčejných, běžných pacientů s jednou, nanejvýš dvěma nemocemi.“ A tak jsem zašel rovnou k němu a on povídá: „Tak co tě trápí?“ „Líčením, co mě trápí,“ řekl jsem, „nebudu mařit tvůj čas, milý příteli. Život je krátký, takže bys mohl vydechnout naposled, než bych s tím líčením byl hotov. Povím ti raději, co mě netrápí. netrápí mě sklon k samovolným potratům. Proč mě sklon k samovolným potratům netrápí, to ti říci nemohu; spokoj se s faktem, že mě netrápí. Zato mě trápí všechno ostatní.“ A pověděl jsem mu, jak jsem na to všechno přišel. On si mě otevřel tam, kde mám ústa, nakoukl do mě, chňapl mi po zápěstí, pak mě, zrovna když jsem to nečekal, praštil přes prsa - tomu říkám zbabělost - a hned vzápětí mi do prsou trkl skrání. Načež se posadil, napsal recept, složil ho a podal mi ho a já si ho strčil do kapsy a šel jsem pryč. Ani jsem ten recept nerozložil. Šel jsem s ním do nejbližší lékárny a tam jsem se s ním vytasil. Lékárník si ho přečetl a vrátil mi ho. Řekl, tohle že on nevede. „Jste přece lékárník?“ zeptal jsem se. „Ano, jsem lékárník,“ řekl on. „Kdybych byl potravní konzum a k tomu ještě rodinný penzión, pak bych vám snad mohl být k službám. Co mi v tomto případě hází klacky pod nohy, je skutečnost, že jsem pouze lékárník.“ Přečetl jsem si ten recept. Stálo v něm: 1 půlkilový biftek, k tomu 1 půllitr piva pravidelně po 6 hodinách, 1 patnáctikilometrová procházka každé ráno, 1 postel přesně v 11 každý večer. A neláduj si do hlavy věci, kterým nerozumíš. Řídil jsem se podle těchto pokynů, což mělo ten šťastný výsledek - mluvím jenom za sebe - že můj život byl zachován a běží dokonce dodnes. Tentokrát, abych se vrátil k tomu prospektu na jaterní pilulky, jsem však měl všechny příznaky zcela nepochybně, především ten hlavní, totiž „naprostou nechuť k jakékoli práci.“ Co já si v tomhle směru vytrpím, žádný jazyk není s to vypovědět. To je u mě už od nejútlejšího dětství učiněné mučednictví. Když jsem byl větší chlapec, nebylo snad jediného dne, aby mě ta nemoc nechala na pokoji. Lékařská věda nebyla tenkrát ještě tak pokročilá jako dnes, a tak to naši napořád přičítali lenosti. „Tak necháš už konečně toho válení, ty kluku líná, ulejvácká, a začneš dělat něco pořádného, aby sis zasloužil byt a stravu?“ křičeli na mě, nevědouce samozřejmě, že jsem nemocný. A nedávali mi pilulky; dávali mi pohlavky. Ale ty pohlavky, ať to zní sebeneuvěřitelněji, mě často vyléčily - na nějakou chvíli. Teď už dovedu posoudit, že jeden takový pohlavek měl mnohem zdárnější účinek na má játra a mnohem hbitěji povzbudil mou chuť skočit sem nebo tam a bez dalšího otálení udělat, co se po mně chtělo, než dneska celá krabička pilulek. A to je častý zjev, poslechněte - tyhle obyčejnské, staromódní medicíny jsou kolikrát účinnější než všechny serepetičky z lékáren. A tak jsme seděli aspoň půl hodiny a popisovali si navzájem svoje nemoci. Já jsem líčil Georgeovi a Williamu Harrisovi, jak mi je, když ráno vstávám, a William Harris nám vykládal, jak mu je, když jde večer spát; a George stál na rohožce před krbem a vtipně a působivě nám mimicky předváděl, jak jemu je v noci. George si ovšem jenom namlouvá, že je nemocný; ve skutečnosti mu - mezi námi - nechybí vůbec nic. V tom okamžiku nám zaklepala na dveře paní Poppetsová; chtěla vědět, jestli už máme chuť na večeři. Smutně jsme se jeden na druhého pousmáli a odpověděli jsme, že bychom se snad měli pokusit vpravit do sebe ždibec potravy. Harris řekl, že nějaké to soustečko v žaludku často průběh choroby poněkud zmírní. A tak paní Poppetsová přinesla podnos a my jsme se dovlekli ke stolu a nimrali se ve filátkách na cibulce a v několika kouscích reveňového koláče. Musel jsem být v té době velice zesláblý; vzpomínám si totiž, že asi po půlhodině nebo tak nějak jsem ztratil všechnu chuť k jídlu - případ u mě neobvyklý - a že jsem už nechtěl ani sýr. Když jsme tu povinnost měli konečně s krku, naplnili jsme si znova sklenice, zapálili dýmky a opět jsme se rozhovořili o svém zdravotním stavu. Co to s námi doopravdy je, to nemohl s jistotou říci ani jeden z nás; ale jednomyslně jsme došli k náhledu, že ať už máme cokoli, máme to z přepracování. „Potřebujeme si zkrátka odpočinout,“ prohlásil Harris. „Odpočinout si a důkladně změnit způsob života,“ dodal George. „Přílišné mozkové vypětí ochromilo celou naši tělesnou soustavu. Když změníme prostředí a nebudeme nuceni neustále myslet, zrestaurujeme opět svou duševní rovnováhu.“ George má bratrance, který je v trestním rejstříku veden jako studující medicíny, a po něm se pochopitelně vyjadřuje tak trochu jako rodinný lékař. Já jsem s Georgem souhlasil a navrhoval jsem, abychom si vyhledali nějaké odlehlé, starosvětské místečko, daleko od běsnícího davu, a abychom tam prosnili slunečný týden v ospalých alejích - nějaký polozapomenutý koutek, který si někde mimo dosah hlučného světa schovaly víly - nějaké dravčí hnízdo, důmyslně přilepené na útesech času, kde by převalující se vlnobití devatenáctého století bylo slyšet jen slabounce a z velikých dálav. Harris řekl, že to by podle jeho názoru byla pěkná otrava. Zná prý taková místa, jaká mám na mysli; kdekdo tam chodí spat už v osm, ani za peníze, ani za dobré slovo tam člověk nesežene Milovníka sportu, a pro kuřivo aby jeden chodil patnáct kilometrů. „Kdepak,“ řekl Harris, „když chcete odpočinek a změnu, tak není nad výlet po moři. Já jsem proti výletu po moři vehementně protestoval. Výlet po moři vám udělá dobře, když na něj máte pár měsíců, ale na jeden týden je to nepředloženost. Vyplujete v pondělí, v nitru pevně zakořeněnou představu, jak si užijete. S lehkým srdcem zamáváte na rozloučenou mládencům na břehu, zapálíte si svou nej mohutnější dýmku a chvástavě si vykračujete po palubě, jako kdybyste byl kapitán Cook, sir Francis Drake a Krištof Kolumbus v jedné osobě. V úterý si říkáte, že jste se nikam plavit neměl. Ve středu, ve čtvrtek a v pátek si říkáte, že by vám bylo líp, kdyby bylo po vás. V sobotu jste už schopen pozřít kapku čistého hovězího bujónu, posadit se na palubu a s mírným, malátným úsměvem hlesnout v odpověď, když se vás dobrosrdeční lidé zeptají, jak se cítíte dneska. V neděli už zase můžete udělat pár kroků a sníst trochu hutné stravy. A v pondělí ráno, když s kufrem a deštníkem v ruce stojíte na boku lodi u zábradlí a máte už vystoupit na břeh, začíná se vám to ohromně líbit. Vzpomínám si, jak můj švagr se jednou vypravil na krátkou cestu po moři, aby si upevnil zdraví. Zajistil si kabinu z Londýna do Liverpoolu a zpět; a když dorazil do Liverpoolu, měl jen jedinou snahu: prodat ten zpáteční lístek. Nabízel ho prý s ohromnou slevou po celém městě a nakonec ho za osmnáct pencí prodal nějakému mládenci, který vypadal, jako kdyby měl žloutenku, a jemuž lékaři doporučili, aby jel k moři a hodně se pohyboval. „Moře!“ zvolal můj švagr, lýskyplně mu tiskna lístek do dlaně. „Jéje, toho si takhle užijete, že vám to vystačí na celý život. A co se pohybu týče? Když na téhle lodi budete jenom sedět, tak budete mít víc pohybu, než kdybyste na souši dělal kotrmelce.“ On sám - můj švagr totiž - jel zpátky vlakem. Prohlásil, že pro nějo je až dost zdravá severozápadní dráha. Jiný člověk, kterého jsem znal, se zase vydal na týdenní plavbu podél pobřeží, a než odrazili od břehu, přišel se ho zeptat stevard, jestli bude platit po každém jídle zvlášť, nebo jestli si přeje celé stravování rovnou předplatit. Stevard doporučoval to druhé řešení, přijde prý o mnoho laciněji. Za celý týden to prý bude dělat dvě libry pět šilinků. K snídani prý bývá ryba a pak nějaké rožněné maso. Oběd je v jednu a skládá se ze čtyř chodů. Večeře v šest - polévka, ryba, předkrm, porce masa nebo drůbeže, salát, sladkosti, sýr a ovoce. A v deset je lehká masitá večeře na noc. Můj přítel usoudil, že by se měl rozhodnout pro to předplatné (on je pořádný jedlík), a taky se pro ně rozhodl. Oběd se podával, sotva odpluli z Sheernessu. Můj přítel neměl takový hlad, jaký myslel, že mít bude, a tak se spokojil s kousíčkem vařeného hovězího a několika jahůdkami se šlehačkou. Odpoledne byl značně zadumaný; chvílemi měl pocit, jako by už dlouhé týdny nejedl nic jiného než vařené hovězí, a chvílemi si zase říkal, že se určitě už dlouhá léta živí jedině jahodami se šlehačkou. A ani to hovězí ani ty jahody se šlehačkou nedělaly spokojený dojem. Chovaly se spíš rozmrzele. V šest přišli tomu mému příteli oznámit, že se podává večeře. Ta zpráva v něm nevzbudila pažádné nadšení, uvědomoval si však, že by bylo záhodno odjíst něco z těch dvou liber a pěti šilinků, a tak se přidržoval lan a všeho možného a sestoupil do podpalubí. Na nejspodnějším schůdku ho uvítala lahodná vůně cibule a horké šunky, smíšená s vůní smažených ryb a zeleniny; a tu už k němu přistoupil stevard a se servilním úsměvem se zeptal: „Co mohu pánovi nabídnout?“ „Nabídněte mi rámě a vyveďte mě odtud,“ zněla mdlá odpověď. A tak s ním honem vyběhli nahoru, na závětrné straně ho zaklesli do zábradlí a tam ho nechali. Celé příští čtyři dny vedl prostý a bohulibý život pouze ve společnosti lodních sucharů (myslím tím opravdové suchary, nikoli členy lodní posádky, kteří měli všichni veliký smysl pro humor) a sodovky. Ale takhle k sobotě mu zase narozsl hřebínek a zašel si do jídelny na slabý čaj s toastem bez másla a v pondělí se už přecpal řídkým kuřecím vývarem. V úterý vystoupil z lodi, a když se plnou parou vzdalovala od přístavního můstku, zíral na ní pln lítosti. „To se jí to pluje,“ říkal si. „To se jí to pluje, když si odváží za dvě libry jídla, které patří mně a z kterého jsem nic neměl!“ Tvrdil, že kdyby mu byli přidali jeden jediný den, byl by si ten dluh zinkasoval. A proto já jsem byl proti výletu po moři. Nikoli kvůli sobě, to jsem řekl rovnou. Mně nanic nebývá. Ale měl jsem starost o Geortge. George zas tvrdil, že jemu by se zle neudělalo, a že by se mu to dokonce líbilo, ale mně a Harrisovi že to nedoporučuje, my dva že bychom to určitě odnesli. A Harris prohlásil, že co se jeho týče, pro něho je to odjakživa učiněná záhada, jak se někomu může podařit dostat mořskou nemoc - on prý je přesvědčen, že to lidi schválně předstírají, aby vypadali zajímavě - on prý si už mockrát přál mořskou nemoc dostat, ale nikdy to nedokázal. A potom nám vyprávěl historky, jak se plavil přes Kanál, když se moře tak divoce vztekalo, že cestující museli být připoutáni k lůžkům, a jak on a kapitán byli jediné dvě živé bytosti na palubě, kterým nic nebylo. Pak zas to byl on a druhý kormidelník, kterým nic nebylo. Prostě vždycky to byl on a ještě někdo. A když to nebylo on a ještě někdo, tak to byl on sám. To je stejně divná věc, že nikdo nedostane mořksou nemoc - na suché zemi. Na moři, tam vidíte spousty lidí, kterým je hrozně zle, tam jsou jich plné lodě; ale na suché zemi jsem ještě nepotkal člověka, který by věděl, co je to mít mořskou nemoc. Kde se ty tisíce a tisíce lidí, co nesnášejí plavbu po moři a co se jimi každá loď zrovna hemží, schovávají, když jsou na suché zemi, to je namouduši záhada. Kdyby se jich většina podobala tomu chlapíkovi, kterého jsem jednou viděl na lodi do Yarmouthu, pak bych tu zdánlivou šarádu dovedl rozlousknout docela snadno. Jen jsme odrazili od southendské přístavní hráze, už se ten člověk nebezpečně vykláněl z jednoho okénka na boku. Běžím k němu, abych ho zachránil. „Hej, nevyklánějte se tolik!“ povídám a tahám ho zpátky za rameno. „Sletíte do vody!“ „Ach bóže, už abych tam radši byl!“ To byla jediná odpověď, kterou jsem z něho dostal. A tak jsem ho nechal být. Za tři neděle jsem ho uviděl v kavárně jednoho hotelu v Bathu. Vyprávěl o svých cestách a nadšeně vykládal, jak miluje moře. „Mně prostě to houpání vůbec nic nedělá,“ pravil zrovna v odpověď na závistivý dotaz jakéhosi dobře vychovaného mladíka. „Pravda ovšem je, že jednou, jedinkrát mě bylo kapánek divně, to přiznávám. U Hornova mysu. To ráno potom naše loď ztroskotala.“ „A nebylo vám jednou trošku nanic u southendského mola?“ zeptal jsem se ho. „Tam jste si přece přál, aby vás radši hodili do moře.“ „U southendského mola?“ opáčil a tvářil se, jako by nevěděl, oč jde. „Ano. Při plavbě do Yarmouthu. V pátek to byly tři neděle.“ „Á! No ovšem,“ zvolal v šťastném osvícení. „Už si vzpomínám. To mě tlačil žaludek, tenkrát odpoledne. To po těch kyselých okurkách, poslechněte. Na žádné slušné lodi jsem jakživ nejedl tak mizerné kyselé okurky. Vy jste si je taky dal?“ Já jsem si proti mořské nemoci vymyslel sám pro sebe znamenitý preventivní prostředek: já se kolébám. To se postavíte doprostřed paluby, a jak se loď kymácí a houpe, pohybujete tělem tak, abyste pořád stáli svisle. Když se zvedá příď, nakláníte se celým tělem dopředu, až se nosem skoro dotknete paluby; a když jde nahoru záď, tak se nakláníte dozadu. Hodinu nebo dvě to jde moc dobře, celý týden se ovšem takhle kolébat nemůžete. Najednou povídá Jiří: „Tak pojeďme na řeku.“ Tam bychom měli čistý vzduch, povídá, pohyb i klid; ustavičná změna scenérie by zaujala našeho ducha (i to, co místo toho má Harris) a po té tělesné námaze bychom s chutí jedli a výtečně spali. Harris na to řekl, že podle jeho mínění by George neměl dělat nic takového, co by v něm probouzelo ještě větší chuť spát, než jakou má v jednom kuse, jelikož to by už pro něho bylo nebezpečné. Nedovede si prý dobře představit, jak by George dokázal prospat ještě víc času, než prospí teď, když přece den má pouze čtyřiadvacet hodin, a to jak v létě tak v zimě. Ale kdyby to přece jen dokázal, pak už by to prý bylo totéž, jako kdyby byl mrtvý, a tím by aspoň ušetřil za byt a za stravu. Pak ale Harris dodal, že přesto přese všecko by mu řeka seděla. Já sice nevím, jak by řeka mohla sedět, ledaže by seděla modelem, a ani potom mi není jasné, na čem by seděla, ale mně řeka seděla taky, a tak jsme oba, Harris i j á, řekli, že to je od George výborný nápad, a řekli j sme to tónem, z kterého byl dost j asně znát náš údiv nad tím, že se z George najednou vyklubal člověk tak rozumný. Jediný, komu ten návrh nepadl do noty, byl Montmorency. Jemu se ovšem řeka nikdy moc nezamlouvala, jemu opravdu ne. „Copak vy, mládenci, vy si tam na své přijdete,“ povídá, „vy máte řeku rádi, ale já ne. Co já tam budu dělat? Scenérie, to pro mě není nic a kuřák nejsem. A když uvidím myš, tak mi nezastavíte; a když se mně bude chtít spát, tak budete s lodí všelijak blbnout a shodíte mě do vody. Jestli se ptáte na moje mínění, tak já to považuju za úplnou pitomost.“ Ale byli jsme tři proti jednomu, a tak byl ten návrh přijat.
+
+Vytáhli jsme mapy a rozvíjely plány. Dohodli jsme se, že vyrazíme příští sobotu z Kongstonu. Harris a já tam pojedeme hned ráno a loď dopravíme do Chertsey a George, který se může utrhnout ze zaměstnání až odpoledne (chodí denně od deseti do čtyř spát do jedné banky, denně s výjimkou soboty, kdy ho vždycky probudí a vyšoupnou ven už ve dvě), se s námi sejde až tam. Máme „tábořit pod širým nebem“, nebo spát v hostincích? George a já jsme hlasovali pro táboření pod širým nebem. Říkali jsme, že by to bylo takové romantické a nespoutané, takové skoro patriarchální. Ze srdcí chladných, smutných mraků zvolna vyprchává zlatá vzpomínka na zemřelé slunce. Ptáci už nezpívají, ztichli jako truchlící děti a jen plačtivý křik vodní slípky a chraptivé vrzání chřástala polního čeří posvátnou hrůzou strnulou tišinu nad vodním lůžkem, na němž umírající den dýchá z posledního. Z potemnělých lesů na obou březích se bezhlučným, plíživým krokem vynořuje stradšidelná armáda noci, ty šedé stíny, které mají zahnat stále ještě otálející zadní voj světla; tichýma, neviditelnýma nohama postupují nad vlnící se trávou při řece a skrze vzdychající rákosí; a noc na chmurném trůnu rozkládá své černé perutě nad hasnoucím světlem a ze svého přízračného paláce, ozářeného sinalými hvězdami, kraluje v říši ticha. A my zajíždíme s lodičkou do nějaké poklidné zátočinky, rozbíjíme tábor a vaříme a jíme střídmou večeři. Pak si nacpáváme a zapalujeme statné dýmky a melodickým polohlasem rozpřádáme příjemný potlach; a do zámlk v našem hovoru nám řeka, dovádějící kolem lodi, šplouchá podivuhodné starobylé zkazky a starobylá tajemství a tichounce zpívá tu starobylou dětskou písničku, kterou už zpívá tolik tisíc let - a kterou tolik tisíc let ještě zpívat bude, než jí vysokým věkem ochraptí hlas -, tu písničku, o níž si my, kteří jsme se naučili milovat na řece její proměnlivou tvář, my, kteří tak často hledáme útočiště na jejích pružných ňadrech, myslíme, že jí rozumíme, i když bychom nedokázali vyprávět pouhými slovy obsah toho, čemu nasloucháme. A tak tam sedíme, nad lemem té řeky, a měsíc, který ji má taky rád, sestupuje níž, aby jí dal bratrské políbení a objal ji svýma stříbrnýma pažema a přitulil se k ní. A my se na ni dáváme, jak plyne, věčně ševelící, věčně rozezpívaná, na schůzku se svým králem, s mořem - až se naše hlasy ztratí v mlčení a až nám vyhasnou dýmky - až i my, mládenci tak všední, tak tuctoví, máme najednou neuvěřitelný pocit, že jsme plni myšlenek, napůl rozteskňujících, napůl rozjařujících, a nechceme už a ani nepotřebujeme mluvit - až se zasmějeme, vstaneme, vyklepáme z vyhaslých dýmek popel, řekneme si „dobrou noc“ a ukolébáni šuměním vody a šelestěním stromů usneme pod velkolepými tichými hvězdami a máme sen, že země je zase mladá - mladá a líbezná, jaká bývala, než jí staletí rozhořčení a starostí zbrázdila sličnou tvář, než jí to milující slunce zestárlo nad hříchy a zpozdilostmi jejích dětí - líbezná, jako by v těch dávných dnech, kdy jako nezkušená matka nás, své dítky, živila z hlubokosti svých prsů - než nás svody nalíčené civilizace odlákaly z její schovívavé náruče a než jsme se kvůli jedovatým posměškům a afektovanosti začali stydět za ten prostý život, co jsme vedli u ní, a za ten prostý, ale důstojný domov, v němž se lidstvo před tolika tisíciletími zrodilo. „A co když bude pršet?“ povídá Harris. Harrise jakživi ničím nedojmete. V Harrisovi není kouska poetičnosti - ani ždibec divého prahnutí po nedosažitelnu. Harris jakživ „nepláče, nevěda proč“ Má-li Harris v očích slzy, můžete se vsadit, že buď zrovna snědl syrovou cibuli, nebo si nakapal na kotletu příliš mnoho worcesterské omáčky. Kdybyste s Harrisem stanuli v noci na mořském břehu a zašeptali: „Zmlkni! Což neslyšíš? To nemůže být nic jiného než mořské panny pějící v hlubinách těch zvlněných vod. Či to truchlící duše lkají žalozpěvy nad svými umrlými těly, zachycenými ve spleti chaluh?“ Harris by vás vzal pod paží a řekl: „Já ti povím, co to je, kamaráde. Leze na tebe rýma. Pojď hezky se mnou, já znám tadyhle za rohem podniček, kde dostaneš nejlepší skotskou whisky, jakou jsi kdy ochutnal, a ta tě v cuku letu postaví na nohy.“ Harris totiž vždycky ví o podničku za rohem, kde člověk dostane něco vynikajícího z oblasti nápojů. Jsem přesvědčen, že kdybyste Harrise potkali v ráji (za předpokladu, že jeho byste tam potkat mohli), hned by vás vítal slovy: „To jsem rád, kamaráde, že jsi tady. Já tadyhle za rohem našel rozkošný podniček, kde dostaneš nektar - no doopravdy prvotřídní.“ V tom případě, o němž je řeč, když totiž běželo o to táboření pod širým nebem, byl však Harrisův praktický názor velmi vhodnou připomínkou. Tábořit pod širým nebem za deštivého počasí, to není žádná radost. Je večer. Jste promoklí na kůži, v lodi je dobrých pět centimetrů vody a všecky vaše věci jsou vlhké. Spatříte na břehu místo, kde je o něco málo míň kaluží než na ostatních místech, která jste ohledali, a tak přistanete a vylovíte z lodi stan a dva z vás se ho pokoušejí postavit. Je prosáklý vodou a těžký a plácá sebou a hroutí se a lepí se vám na hlavu a šíleně vás rozčiluje. A přitom nepřetržitě leje. Postavit stan, to je i za sucha dost obtížné; ale když prší, tak je to práce herkulovská. A ten druhý chlapík, místo aby vám pomáhal, si z vás očividně dělá blázny. Sotva se vám podařilo tu vaši stranu jakžtakž vypnout, on vám s ní ze svého konce cukne, a zas je všecko na draka. „No tak! Co to vyvádíš?“ voláte na něj. „Co ty to vyvádíš?“ odpovídá on. „Pusť to!“ „Ty tam za to netahej! Vždyť ty se v tom vůbec nevyznáš, ty trumbero!“ křičíte. Já se v tom vyznám,“ ječí on. „Ty to tam máš pustit!“ „Povídám ti, že se v tom nevyznáš,“ řvete a nejraději byste po něm skočil; škubnete lanem a vytáhnete mu ze země všecky kolíky. „Ách, ten pitomec pitomá!“ slyšíte ho cedit mezi zuby. A vzápětí následuje prudké trhnutí - a vyletí kolíky na vaší straně. Odložíte palici a vykročíte kolem stanu, abyste tomu nemehlu pověděl, co si o tom všem myslíte, ale současně i on vykročí, stejným směrem jako vy, aby vám vyložil, jak on se na to dívá. A tak běháte za sebou, pořád dokolečka, a nadáváte si, až se stan sesuje na hromadu a vy se přes jeho trosky kouknete jeden na druhého a oba jedním dechem rozhořčeně zařvete: „Tady to máš! Co jsem ti říkal?“ A tu váš třetí kamarád, který zatím vybíral z lodi vodu a lil si ji do rukávů a posledních deset minut nepřetržitě klel, začne být zvědav, proč si u všech ďasů takhle hračičkaříte a proč jste ještě nepostavili ten zatracený stan. Nakonec ho - tak či onak - přece jen postavíte a vynesete z lodi svéí věci. Chtít si rozdělat oheň z dříví, to by byl pokus naprosto beznadějný, a tak si zapálíte lihový vařič a sesednete se kolem toho. Převládající složkou večeře je dešťová voda. Chléb, to je dešťová voda ze dvou třetin, nesmírně bohaté na dešťovou vodu jsou i taštičky se sekaným hovězím, a máslo, džem, sůl a káva daly dohromady s dešťovou vodou polévku. Po večeři zjistíte, že máte vlhký tabák, a že si nemůžete zakouřit. Naštěstí máte s sebou láhev nápoje, který požit v náležitém množství rozveseluje a rozjařuje, a ten ve vás natolik obnoví zájem o život, že vás přiměje jít spat. Načež se vám zdá, že si vám zčistajasna sedl na prsa slon a současně že vybuchla sopka a svrhla vás na dno moře - i s tím slonem, který vám dál klidně spí na prsou. Probudíte se a okamžitě pochopíte, že se vskutku stalo něco strašlivého. V prvním okamžiku máte dojem, že nastal konec světa; pak si uvědomíte, že to se stát nemohlo, ale že se na vás vrhli zloději a vrahové nebo že vypukl požár, a toto mínění vyjadřujete obvyklým způsobem. Pomoc však odnikud nepřichází a vy víte jen jedno: že po vás šlapou tisíce lidí a že se co nevidět udusíte. Nejste však zřejmě sám, kdo je na tom bledě. Slyšíte přidušené výkřiky, ozývající se zpod vašeho lůžka. Rozhodnete se, že ať se děje co se děje, prodáte svůj život draho, a začnete se zuřivě rvát, rozdávaje doprava i doleva rány a kopance a v jednom kuse přitom divoce ječíte, až konečně někde něco povolí a vy máte najednou hlavu na četstvém vzduchu. Ve vzdálenosti asi půl metru od sebe matně rozeznáte nějakého polooblečeného halamu, který se vás chystá zavraždit, připravujete se na zápas na život a na smrt, ale vtom se vám v mozku rozbřeskne, že je to Jim. „Á ták to jsi ty!“ povídá, neboť vás v tom okamžiku taky poznal. „No!“ odvětíte a protíráte si oči. „Co se stalo?“ „Ale ten zatracený stan se zřítil,“ povídá Jim. „Kde je Bill?“ Pak oba hlasitě hulákáte „Bille!“ a pod vámi se začne vzdouvat a zmítat půda a z těch zřícenin se ozývá ten přiškrcený hlas, který jste už před chviličkou slyšeli: „Přestaň se mi, ksakru, válet po hlavě!“ A ven se vyškrábe Bill, zablácený, pošlapaný lidský vrak, a zcela bezdůvodně má útočnou náladu - zjevně se domnívá, že to všechno jste udělali jemu naschvál. Ráno ani jednomu z vás tří není valně do řeči, neboť jste se v noci strašně nachladili; kvůli každé maličkosti se hned hádáte a po celou snídani jeden na druhého sípavým chrapotem nadáváte. Proto jsme se rozhodli, že venku budeme spát jen za pěkných nocí; a když bude pršet nebo když zatoužíme po změně, přespíme jako pořádní lidé v hotelu, v hostinci nebo v krčmě. Montmorency přivítal tento kompromis s velikým uspokojením. On si v romantické samotě nelibuje. On horuje pro místa hlučná; a je-li to tam kapánek obhroublé, tím víc se mu tam líbí. Kdybyste Montmorencyho viděli, určitě byste měli dojem, že je to andílek, který z nějakého člověčenstvu utajeného důvodu byl seslán na zem v podobě malého foxteriéra. Montmorency má takový ten výraz, říkající „Ach, ten svět je tak zkažený a já bych si tolik přál ho zlepšit a zušlechtit,“ takový ten výraz, jaký dovede vehnat slzy do očí zbožných starých dam a pánů. Když se ke mne přistěhoval, aby žil na mé útraty, nevěřil jsem, žře se mi podaří uchovat ho při životě. Sedával jsem u něho a pozoroval ho, jak leží na dece a vzhlíží ke mně, a říkával jsem si: „Ach jé, tenhle pejsek tady dlouho nebude. Toho mi jednou unesou v nebeské káře k janým výšinám, nic jiného ho nečeká.“ Ale když jsem pak zaplatil dobrého půl tuctu kuřat, která roztrhal; když jsem ho vrčícího a rafajícího vyvlekl za zátylek ze sto čtrnácti pouličních rvaček; když mi jedna rozběsněná ženská přinesla ukázat mrtvou kočku a říkala mi vrahu; když mě soused, co bydlí ob dům, pohnal před soud, poněvadž prý nechávám volně pobíhat krvelačného psa, který ho za chladné noci zahnal do jeho vlastní kůlny a přes dvě hodiny mu nedovolil vystrčit ze dveří nos; a když jsem se dověděl, že náš zahradník se vsadil, že Montmorendy zakousne ve stanovené době tolik a tolik krys, a vyhrál třicet šilinků, začal jsem věřit, že ten můj pejsánek bude přece jen ponechán na světě o něco déle. Potloukat se kolem stájí, shromažďovat hordy těch nejvykřičenějších hafanů, jaké lze ve městě sehnat, pochodovat v jejich čele po perifériích a vodit je tam do boj ů s dalšími vykřičenými hafany - task si Montmorency představuje „život“. A proto, jak jsem prve poznamenal, schválil tak emfaticky ten návrh týkající se krčem, hostinců a hotelů. Když jsme takto k spokojenosti všech nás čtyř rozřešili problém noclehů, zbývalo už pouze projednat, co všechno si vezmeme s sebou; i zahájili jsme o tom rozepři, když tu Harris prohlásil, že on se už toho na jeden večer nařečnil až dost, a navrhl, abychom si někam vyšli a rozjasnili tváře; objevil prý kousek za náměstím podniček, kde si můžeme dát kapku irské, která stojí za ochutnání. George řekl, že on žízeň má (co ho znám, tak jaktěživ neřekl, že žízeň nemá), a ježto já měl takovou předtuchu, že trocha whisky, pěkně teplé, s plátečkem citrónu, mi značně uleví v mé nevolnosti, byla debata za všeobecného souhlasu odročena na příští večer a celé shromáždění si nasadilo klobouky a vyšlo z domu. 
+
+A tak jsme se příští večer opět sešli, abychom prohovořili a projednali své plány. Harris řekl: „V první řadě se musíme dohodnout, co si vezmeme s sebou. Ty si vem kousek papíru, Jerome, a piš, ty Georgi, ty si vem k ruce katalog z toho obchodu se smíšeným zbožím a mně někdo půjčte tužku a já potom sestavím seznam.“ To je celý Harris - ochotně vezme sám na sebe bířmě veškeré práce a vloží je na bedra těch druhých. Vždycky mi připomene chudáka strýce Podgera. V životě jste neviděli takový blázinec po celém domě, jako když se můj strýc Podger pustí do nějaké práce. Od rámaře přijde obraz, stojí opřen o stěnu v jídelně a čeká, až ho někdo pověsí. Teta Podgerová se zeptá, co s ním, a strýc Podger řekne: „Á, to nechte na mně. S tím si nikdo z vás nedělejte starosti. To všechno zařídím sám.“ A sundá si sako a dá se do toho. Služku pošle koupit za šest pencí hřebíků, a vzápětí za ní žene jednoho z podomků, aby jí řekl, jak ty hřebíky mají být dlouhé. A tak postupně zaměstná a uvede v chod celý dům. „Ty jdi pro kladivo, Wille,“ volá, „a ty mi přines pravítko, Tome; a pak budu potřebovat štafle a taky bych tu měl mít nějakou kuchyňskou stoličku; a Jime! ty skoč k panu Gogglesovi a řekni mu: ,Tatínek se dává pěkně poroučet a doufá, že s tou nohou to už máte lepší, a půjčil byste mu laskavě libelu?‘ A ty tady zůstaň, Marie, někdo mně bude muset posvítit. A až se vrátí to děvče, tak musí ještě doběhnout pro kus pořádného špagátu. A Tome! - kde je Tom? - pojď sem, Tome, ty mi ten obraz podáš.“ Potom obraz zvedne, upustí ho, obraz vyletí z rámu, strýc se snaží zachránit sklo a pořeže se; načež poskakuje po pokoji a hledá svůj kapesník. Ale nemůže ten kapesník najít, protože ho má v kapse saka, které si sundal, a nemá ponětí, kam si to sako dal, a tak celá domácnost musí nechat shánění nářadí a dát se do shánění strýcova saka, a strýc zatím tancuje po celém pokoji a kdekomu se plete pod nohy. „Copak v celém baráku není ani jediná živá duše, která by věděla, kde to moje sako je? V životě jsem neviděl takovou hromadu budižkničemů, na mou duši, že ne. Je vás šest! - a nejste s to najít sako, které jsem si sundal ani ne před pěti minutami! To vám teda řeknu, že ze všech...“ Zvedne se, zjistí, že si na tom saku seděl, a křičí: „No, teď už hledat nemusíte, už jsem to sako našel sám. Od vás tak chtít, abyste mi něco našli! To bych to rovnou mohl chtít na naší kočce! “ A když se po půlhodině, věnované obvazování strýcova prstu, sežene nové sklo a snesou se všechny nástroje a štafle a stolička a svíčka, a celá rodina i se služkou a s posluhovačkou stojí v půlkruhu připravena pomáhat, strýc se znovu pustí do díla. Dva mu musejí držet stoličku, třetí mu na ni pomůže vylézt a dává mu tam záchranu, čtvrtý mu podává hřebík, pátý k němu zvedá kladivo a strýc sáhne po hřebíku a upustí ho. „No prosím,“ řekne dotčeným tónem, „a hřebík je v tahu!“ A my musíme všichni na kolena a plazit se a hledat, zatímco on stojí na stoličce a remcá a přeje si vědět, jestli ho tam míníme nechat stát celý večer. Hřebík je konečně na světě, ale strýc zase ztratil kladivo. „Kde mám kladivo? Kam já j sem to kladivo dal? Kristepane! Čučí vás na mě sedum a ani j eden z vás neví, kam jstem dal kladivo! “ Vypátráme kladivo, ale on zase najednou ne a ne najít na stěně znamínko, kam se má zatlouci hřebík, a my všichni musíme jeden po druhém vylézt k němu na stoličku a snažit se to jeho znamínko objevit. Každý je vidíme někde jinde a on nám postupně všem vynadá, že jsme pitomci a ať radši slezeme dolů. A pak se chopí pravítka a stěnu přeměří a zjistí, že od rohu to má dělat polovinu ze sedmdesáti sedmi centimetrů a devíti a půl milimetru, a pokouší se to vypočítat z hlavy, a to ho dožene div ne k nepříčetnosti. Pak se to i my pokoušíme vypočítat z hlavy, každému vyjde něco docela jiného a jeden druhému se pošklebujeme. Načež ve všeobecné vřavě upadne v zapomenutí původní číslo a strýc Podger musí měřit znova. Tentokrát si na to vezme kus provázku a v kritickém okamžiku, když se z té své stoličky vyklání v pětačtyřicetistupňovém úhlu do strany a snaží se dosáhnout bodu ležícího o sem a půl centimetru dále, než kam vůbec může dosáhnout, provázek se mu vysmekne z prstů a ten blázen stará uklouzne a zřítí se na otevřené piáno, a tím, jak znenadání třískne hlavou i tělem do všech kláves současně, vyloudí vskutku pěkný hudební efekt. A teta Marie prohlásí, že nedovolí, aby děti poslouchaly takové výrazy. Posléze si strýc Podger znovu označí příslušné místo, levou rukou na ně nasadí špičku hřebíku a pravou rukou se chopí kladiva. Hned prvním úderem si rozmačká palec a s vřískotem upustí kladivo na prsty něčí nohy. Teta Marie vysloví mírným hlasem naději, že příště jí snad strýc Podger zavčas oznámí, kdy zas bude zatloukat do zdi hřebík, aby se mohla domluvit s matkou a strávila ten týden u ní. „Ách, vy ženské! Vás všecko hned vyvede z míry!“ odvětí strýc Podger, sbíraje se na nohy. „To já, já tyhle drobné domácí práce dělám rád.“ A poté zahájí další pokus; při druhém úderu proletí hřebík skrze celou omítku a půlka kladiva za ním a strýc Podger naletí tak prudce na zeď, že si málem rozplácne nos. I musíme opět vyhledat pravítko a provázek a ve zdi vznikne nová díra; obraz visí až někdy k půlnoci - značně nakřivo a nespolehlivě - stěna na metry kolem dokola vypadá, jako kdyby po ní byl někdo jezdil hráběmi, a kdekdo je k smrti utahaný a umlácený - jen strýc Podger ne. „No - a je to!“ praví, těžce sestoupí se stoličky na kuří oko naší posluhovačky a obhlíží spoušť, kterou natropil, s očividnou pýchou. „A to prosím existujou lidi, kteří by si na takovou maličkost někoho zjednali!“ A Harris, to já vím, bude zrovna taková, až bude starší. Však jsem mu to taky řekl. A prohlásil jsem, že nepřipustím, aby si sám nabral tolik těžké práce. „Ne, ne! Ty si vezmeš papír a tužku a ten katalog, George bude zapisovat a tu hlavní práci udělám já.“ První seznam, který jsme sestavili, jsme museli zahodit. Bylo nám jasné, že horním tokem Temže by neproplulo plavidlo tak velikánské, aby mohlo pobrat všechny věci, které jsme uvedli jako nepostradatelné; a tak jsme ten seznam roztrhali a podívali j sme se jeden na druhého. A George povídá: „Poslouchejte, my na to jdeme úplně špatně. Nesmíme myslet na věci, které s sebou mít chceme, ale jenom na věci, které s sebou mít musíme “ Čas od času se George projeví docela rozumně. Což člověka překvapí. A tomuhle říkám přímo moudrost, nejen s ohledem na ten tehdejší případ, ale i se zřetelem na celou naši plavbu po řece života. Kolik lidí si na tuhle cestu přetíží loď, že se s nimi div nepotopí pod nákladem hloupostí, o nichž si leckdo myslí, že jsou pro zábavu a pohodlí na tom výletu nepostradatelné, které však ve skutečnosti nejsou nic jiného než bezúčelné haraburdí! Až po vršek stěžně přecpou ten ubohý korábek skvostnými obleky a velikými domy; zbytečným služebnictvem a davem nastrojených přátel, kteří o ně ani za mák nestojí a o které oni sami nestojí ani za máček; nákladnými radovánkami, při nichž se nikdo nebaví, okázalostmi a obřadnostmi, konvencemi a předstíráním a hlavně - a to jsou ty nejtěžší, nejnesmyslnější kusy toho haraburdí! - strachem, co si pomyslí soused, přepychem, který se už přejídá, zábavičkami, které už nudí, nicotnou parádou, pod níž - jako pod tou železnou korunou nasazovanou za dávných časů zločincům - obolavěná hlava krvácí a klesá do bezvědomí. To je haraburdí, člověče, samé haraburdí! Hoď to všecko přes palubu! S tím je loď tak těžká, že u vesel div neomdlíš. S tím je tak nemotorná, její řízení tě přivádí do tolika nebezpečí, že si ani na okamžik neoddychneš od úzkostí a starostí, ani na okamžik si nemůžeš odpočinout v lenivém zasnění - nemáš kdy se zahledět na prchavé stíny, ve vánku lehce těkající nad mělčinami, na sluneční paprsky, jiskřivě prosakující mezi vlnkami, na vznešené stromy na břehu, shlížející na své vlastní podoby, na lesy, které jsou samá zeleň a samé zlato, na lekníny a stulíky, na zádumčivě se vlnící rákosí, na houštiny ostřice, na vstavače, na modré pomněnky. To haraburdí hoď přes palubu, člověče! Ať loď tvého života je lehká, naložená jenom tím, co nutně potřebuješ - domovem, kde jsi doopravdy doma, prostými radostmi, jedním nebo dvěma přáteli, hodnými toho označení, někým, koho můžeš milovat a kdo může milovat tebe, kočkou, psem, dýmkou - nebo i dvěma -, dostatečnou zásobou jídla a dostatečnou zásobou šatstva - a o něco víc než dostatečnou zásobou pití; neboť žízeň je věc nebezpečná. Na takové lodi se ti pak bude snadněji veslovat, ta se s tebou hned tak nepřevrhne, a když se převrhne, tak to nebude taková pohroma; dobrému, solidnímu zboží voda moc neuškodí. A budeš mít čas na přemýšlení, zrovna tak jako na práci. Čas nalokat se slunečního jasu života - čas zaposlouchat se do té eolské hudby, kterou boží vítr vyluzuje ze strun lidských srdcí kolem nás - čas... Jé, moc se omlouvám. Dočista jsem zapomněl. No tak j sme ten seznam přehráli na George, a on ho začal sepisovat. „Stan si s sebou brát nebudeme,“ prohlásil, „opatříme si na loď natahovací střechu. To bude o moc jednodušší a taky pohodlnější.“ Ten nápad se nám zamlouval a byli jsme pro. Nevím, jestli jste to, o čem teď mluvím, už někdy viděli. To překlenete loď železnými žebry, zahutými do oblouků, přes ně napnete velikánskou plachtu, tu dole připevníte k oběma bokům po celé jejich délce, a tím vlastně loď proměnte v takový domeček, kde je krásně útulno, i když kapánek dusno. Jenomže všechno na světě má svou stinnou stránku, jak poznamenal ten chlapík, co mu umřela tchýně, když na něj přišli, aby zaplatil útraty na její pohřeb. George řekl, že v tom případě musíme mít s sebou tři deky, lampu, nějaké mýdlo, kartáč a hřeben (společný), kartáček na zuby (každý svůj), zubní pasty, holicí náčiní (to je, jako když se učíte slovíčka na hodinu francouzšitny, viďte?) a dvě veliké osušky ke koupání. Často si všímám, jaké se dělají gigantické přípravy na koupání, když lidi jednou někam k řece, ale jak se potom, když tam jsou, moc nekoupou. To je zrovna tak, jako když jedete k moři. Já si pokaždé umiňuju - když o tom přemýšlím ještě v Lonýdně -, že si denně ráno přivstanu a půjdu se namočit do moře ještě před snídaní, a vždycky si zbožně zapakuju plavky a osušku. Kupuju si výhradně červené plavky. Červené plavky se mi líbí nejvíc. Výtečně mi jdou k pleti. Ale když potom k tomu moři přijedu, tak můj pocit, že tu časnou ranní koupel tolik potřebuju, není už najednou tak výrazný, jako byl v Londýně. Naopak, spíš mám pocit, že potřebuju zůstat do posledního okamžiku v posteli a pak rovnou sejít dolů ke snídani. Jednou nebo dvakrát ve mně zvítězí čest, vstanu před šestou, trochu se přiobléknu, seberu plavky a ručník a ponuře doškobrtám k moři. Ale rozkoš mi to nepůsobí žádnou. Zřejmě tam chovají zvlášť řezavý východní vítr, který mají nachystaný speciálně pro mě, až se časně ráno půjdu koupat; k té příležitosti taky seberou kdejaký trojhranný kámen, všechny položí hezky navrch, zašpičatí skaliska a ty špice zasypou trochou písku, abych je neviděl, a navíc vezmou moře a posunou je o tři kilometry dál, takže musím, schoulený do svých vlastních zkřížených paží a drkotaje zimou, přebrotit lán patnácticentometrové hloubky. A když konečně dorazím k moři, to moře se chová neurvale a vysloveně mě uráží. Drapne mě obrovská vlna, složí si mě, že vypadám jako vsedě, a pak nejsurovější silou, jaké je schopna, se mnou práskne na skalisko, které tam dali schválně kvůli mně. A dřív než stačím zařvat „Au! Júúú!“ a zjistit, co mám pryč, už je ta vlna zpátky a smýkne se mnou doprostřed oceánu. Zběsile sebou plácám směrem k pobřeží, pochybuju, že ještě někdy uvidím domov a přátele, a vyčítám si, proč jsem nebyl hodnější na svou sestřičku v klukovských letech (když jsem já byl v klukovských letech, pochopitelně, nikoli ona). A přesně v okamžiku, kdy jsem se vzdal veškeré nadsěje, vlna se dá náhle na ústup a nechá mě rozcabeného jako mořskou hvězdici na mokrém písku; vyškrábu se na nohy, ohlédnu se s vidím, že jsem plaval o život v sotva půlmetrové hloubce. Po jedné noze doskáču na břeh, obléknu se a dopotácím se domů, a tam musím předstírat, že se mi to líbilo. I v tomto případě jsme všichni vedli řeči, jako kdybychom se chystali každé ráno si pořádně zaplavat. Georte pravil, že není nad to, probudit se za čiperného rána v lodi a hned se ponořit do průhledné řeky. Harris pravil, že nic tak nezvýší chuť k jídlu, jako když si člověk před snídaní zaplave. U něho prý to vždycky zvýší chuť k jídlu. Na to řekl George, že jestli po koupeli spořádá Harris ještě víc jídla než obvykle, pak on, George, musí být ostře proti tomu, aby se Harris koupal. I tak to prý bude perná dřina, táhnout proti proudu tolik jídla, aby to stačilo pro Harrise. Já jsem však George přiměl k zamyšlení, oč bude pro nás příjemnější mít v dodi Harrise čistého a svěžího, i kdybychom vážně museli s sebou vzít o pár metráků proviantu víc; a George musel to mé hledisko uznat a svou námitku proti Harrisovým koupelím vzal zpátky. Posléze jsme se dohodli, že osušky si s sebou vezmeme tři, aby jeden na druhého nemusel čekat. Pokud šlo o věci na sebe, mínil George, že nám úplně postačí dva flanelové obleky, protože ty si můžeme sami vyprat v řece, až je ušpiníme. Ptali jsme se ho, jestli už někdy zkoušel vyprat v řece flanelový oblek, a Georte odvětil, že on sám to sice nezkoušel, ale že zná pár mládenců, kteří to zkusili, a že to prý byla hračka. A já s Harrisem j sme si bláhově mysleli, že George ví, o čem mluví, a že si tři úctyhodní mladí muži bez vliveného postavení a bez jakýchkoli zkušeností s praním mohou vskutku kouskem mýdla vyprat vlastní košile a kalhoty v řece Temži. Teprve ve dnech, které byly před námi, v době, kdy už bylo příliš pozdě, jsme se měli dovědět, že George je ničemný podvodník, který o té věci neví zřejmě vůbec nic. Kdybyste ty šaty byli viděli, když jsme je - leč nepředbíhejme, jak se to říká v šestákových krvácích. George nám rovněž kladl na srdce, abychom si vzali dost rezervního spodního prádla a spoustu ponožek pro případ, že bychom se převrhli a potřebovali se převléknout; a taky spoustu kapesníků, ty že se budou hodit jako utěrky, a kromě lehkých veslařských střevíců ještě jedny vysoké botky z pořádné kůže, ty že taky budeme potřebovat, kdybychom se převrhli.
+
+Pak jsme vzali na přetřes otázku stravování. George povídá: „Začneme snídaní.“ (George je velice praktický.) „Tak tedy k snídani budeme potřebovat pánev,“ (Harris řekl, ta že je těžko stravitelná; ale my jsme ho prostě vybídli, aby neblbnul, a George pokračoval) „konvici na čaj, kotlík a lihový vařič.“ „Jen ne petrolej!“ dodal s významným pohledme George a Harris i já jsme přikývli. Jednou jsme si s sebou vzali vařič petrolejový, ale to ,již nikdy více!“ Ten týden jsme měli dojem, jako bychom žili v krámě s petrolejem. Plechovka s tím petrolejem totiž tekla. A když odněkud teče petrolej, to si teda nepřejte. My jsme tu plechovku měli v samé špici lodi, a ten petrolej tekl odtamtud až ke kormidlu a cestou se vsákl do celé lodi a do všeho, co v ní bylo, a natekl do řeky a prostoupil celou scenérii a zamořil ovzduší. Někdy foukal západní petrolejový vítr, jindy východní petrolejový vítr; ale ať už přicházel od sněhů Arktidy nebo se zrodil v nehostinné písečné poušti, k nám vždycky doletěl stejně prosycený vůní petroleje. A náš petrolej tekl dál a poničil i západy slunce; dokonce i měsíční paprsky určitě už zaváněly petrolejem. V Marlow jsme se mu pokusili utéci. Loď jsme nechali u mostu a přes město jsme se vydali pěšky, abychom tomu petroleji unikli; táhl se však za námi. Za chvilku ho bylo plné město. Pustili jsme se přes hřbitov, ale tam zřejmě nebožtíky pochovávali v petroleji. I Hlavní třída smrděla petrolejem; divli jsme se, jak tam lidi dokážou bydlet. A tak jsme ušli kilometry a kilometry po silnici k Birminghamu; ale ani to nebylo nic platné, i ten venkov se koupal v petroleji. Na konci tohohle výletu jsme se o půlnoci všichni sešli na opuštěné pláni pod takovým olysalým dubem a zakleli jsme se strašlivou přísahou (kleli jsme kvůli tomu neřádu samozřejmě celý týden, ale jenom tak normálně, středostavovsky, kdežto teď to byl úkon slavnostní) - zakleli jsme se tedy strašlivou přísahou, že si už jakživi nevezmeme na loď petrolej. Proto jsme i tentokrát dali přednost lihu. Ono i s tím je to dost zlé. To máte denaturátovou sekanou a denaturátové pečivo. Jenomže denaturovaný líh, když ho tělu poskytnete větší množství, je o něco výživnější než petrolej. Jako další pomůcky k snídani navrhoval George vejce a slaninu, což se dá lehce připravit, studená masa, čaj, chléb, máslo a džem. K obědům bychom si prý mohli brát studené pečínky se suchary, chléb s máslem a džemem - nikoli však sýr. Sýr, zrovna tak jako petrolej, se všude cpe do popředí. Chce celou loď jenom pro sebe. Prolézá celým košem s jídlem a všemu ostatnímu v tom koši dává sýrovou příchuť. Těžko uhodnete, jestli jíte jablkový závin nebo párek nebo jahody se šlehačkou. Všecko to připomíná sýr. Sýr má totiž příliš mocný odér. Vzpomínám si, jak jeden můj přítel zakoupil v Liverpoolu páreček sýrů. Byly to výtečné sýry, vyzrále a uležené, s vůní o síle dvou set koní, na niž bylo možno vystavit záruku, že dostřelí do vzdálenosti čtyř a půl kilometru a na vzdálenost dvou set metrů srazí k zemi člověka. Já byl tehdy taky v Liverpoolu a ten můj přítel se mne přišel zeptat, jestli bych byl tak hodný a vzal mu ty sýry s sebou do Londýna, protože on se tam dostane až za den nebo dva, a myslí si, že ty sýry by se už neměly déle skladovat. „Ale milerád, kamaráde,“ odpověděl jsem, „milerád.“ Zašel jsem pro ty sýry k němu a odvážel jsem je drožkou. Byla to taková rachotina na rozsypání, tažená dýchavičným náměsíčníkem s nohama do X, o němž se jeho majitel v okamžiku nadšení během konverzace vyjádřil jako o koni. Sýry jsem položil na střechu kabiny a drožka se rozdrkotala tempem, které by sloužilo ke cti nejsvižnějšímu dosud sestrojenému parnímu válci, a tak jsme jeli, vesele jako s umíráčkem, dokud jsme nezabočili za roh. Tam vítr zanesl aróma sýrů přímo k našemu komoni. To ho probudilo; zděšeně zafrkal a vyrazil vpřed rychlostí pěti kilometrů za hodinu. Vítr stále vanul směrem k němu, a než jsme dorazili na konec ulice, dostal už ze sebe rychlost téměř šestikilometrovou, takže invalidy a tělnaté staré dámy nechával za sebou prostě v nedohlednu. Před nádražím měli co dělat dva nosiči, aby společně s kočím koně zastavili a udrželi na místě; a patrně by se jim to vůbec nebylo podařilo, kdyby jeden z nich nebyl měl tolik duchapřítomnosti, že tomu splašenci zakryl kapesníkem nozdry a honem před ním zapálil kus balicího papíru. Koupil jsme si jízdenku a hrdě jsem se svými sýry kráčel po nástupišti a lidé se přede mnou uctivlě rozestupovali na obě strany. Vlak byl přeplněn a já se musel vecpat do oddělení, kde už bylo sedm cestujících. Jakýsi nerudný starý pán protestoval, ale já jsem se tam přece jen vecpal; sýry jsem dal nahoru do sítě, s vlídným pousmáním jsem se vtěsnal na lavici a prohodil jsem, že je dnes teploučko. Za několik okamžiků začal ten starý pán nervózně poposedat. „Je tu nějak dusno,“ řekl. „Přímo k zalknutí,“ přitakal jeho soused. Pak oba začali čenichat, při třetím začenichání uhodili hřebík na hlavičku, zvedli se a bez dalších slov odešli. Pak vstala jakási korpulentní dáma, prohlásila, že takovéto týrání počestné vdané ženy považuje prostě za hanebnost, sebrala kufr a osm balíků a rovněž odešla. Zbývající čtyři cestující poseděli až do chvíle, kdy slavnostně vypadající muž, sedící v koutě a oblečením a celkovým vzezřením vzbuzující dojem, že je příslušníkem kasty majitelů pohřebních ústavů, poznamenal, že mu to jaksi připomíná zesnulé batole; pak se ti tři ostatní cestující pokusili, všichni současně, vyrazit ze dveří a vzájemně se zranili. Usmál jsem se na toho černého pána a poznamenal jsem, že teď zřejmě budeme mít celé kupé pro sebe; a on se bodře zasmál a řekl, že někteří lidé nadělají spousty cavyků kvůli úplným maličkostem. Ale jen jsme vyjeli, začala i na něho padat podivná sklíčenost, a tak když jsme dorazili do Crewe, pozval jsem ho, aby se se mnou šel napít. Přijal, probojovali jsme se tudíž k bufetu, a tam jsme čtvrt hodiny pokřikovali a dupali a mávali deštníky, načež přišla nějaká slečna a otázala se nás, jestli snad něco nechceme. „Co vy si dáte?“ zeptal jsem se, obraceje se k svému příteli. „Velký koňak, slečno. A bez sodovky, prosím,“ odvětil. A když ho vypil, klidně odešel a nastoupil do jiného vagónu, což mi připadalo nevychované. Od Crewe jsem měl celé kupé pro sebe, přestože vlak byl stále přeplněn. Na každém nádraží, kde jsme zastavili, si lidé toho prázdného oddělení všimli a hnali se k němu. „No vidíš, Marie! Pojď, tadyhle je místa dost.“ „Dobrá, Tome, nastoupíme sem,“ volali na sebe. A přiběhli s těžkými kufry a přede dveřmi se vždycky prali o to, kdo vleze dovnitř první. A pak vždycky jeden ty dveře otevřel, vystoupil po schůdkách a vyvrávoral pozpátku do náruče toho, co byl za ním. A tak vstupovali jeden po druhém každý začenichal a odpotácel se ven a vtěsnal se do jiného oddělení nebo si doplatil na první třídu. Z eustonského nádraží jsem sýry dopravil do domu svého přítele. Jeho žena, když vstoupila do pokoje, chviličku čichala a pak řekla: „Co to je? Nešetřete mě, povězte mi rovnou to nejhorší.“ „Sýry jsou to,“ odvětil jsem. „Tom si je koupil v Liverpoolu a požádal mě, abych mu je sem zavezl.“ A dodal jsem, že ona, jak doufám pochopí, že já jsem v tom nevinně, a ona řekla, že tím je si jista, ale až se vrátí Tom, že si s ním pohovoří. Tom se musle v Liverpoolu zdržet déle, než očekával, a když se ani třetího dne ještě nevrátil domů, přišla jeho žena ke mně. „Co Tom o těch sýrech říkal?“ zeptala se. Odvětil jsem, že nařídil, aby byly uchovány někde ve vlhku a aby na ně nikdo nesahal. „Nikoho ani nenapadne, aby na ně sahal,“ řekla. „Přivoněl si k nim vůbec?“ Pravil jsem, že pravděpodobně ano, a dodal jsem, že mu na nich zřejmě nesmírně záleželo. „Takže myslíte, že by ho mrzelo,“ vyzvídala, „kdybych někomu dala zlatku, aby je někam odnesl a zakopal?“ Odpověděl jsem, že by se pravděpodobně už nikdy neusmál. Tu dostala nápad. A řekla: „A co kdybyste mu je vzal do opatrování vy? Dovolte, abych je poslala k vám.“ „Madam,“ odvětil jsem, ,já osobně mám vůni sýrů rád a na tok jak jsme s nimi tuhle cestoval z Liverpoolu, budu vždycky vzpomínat jako na šťastné zakončení příjemné dovolené. Leč na tomto světě musíme brát ohled na ostatní. Dáma, pod jejíž střechou mám čest přebývat, je vdova, a pokud je mi známo, patrně též sirota. Ta dáma má mocný, řekl bych až výmluvný odpor k tomu, aby ji někdo, jak to ona sama formuluje, »dožíral«. Přítomnost sýrů vašeho manžela ve svém bytě by určitě, to instinktivně cítím, považovala za »dožírání«. A o mně se bohdá nikdy neřekne, že jsem dožíral vdovu a sirotu.“ „No dobrá,“ řekla žena mého přítele povstávajíc, „pak mohu říci pouze tolik, že seberu děti a budeme bydlet v hotelu, dokud ty sýry někdo nesní. Žít společně s nimi pod jednou střechou, to prostě odmítám.“ Dodržela slovo a domácnost přenechala v péči své posluhovačky, která na otázku, jestli ten zápach přežije, odpověděla „Jakej zápach?“ a která, když ji přivedli až těsně k těm sýrům a řekli jí, aby si k nim pořádně přičichla, prohlásila, že rozeznává slabounkou vůni melounů. Z toho bylo možno usoudit, že této ženě ovzduší bytu nijak zvlášť neublíží, a byla tam tedy ponechána. Účet za hotel činil patnáct guinejí, a když můj přítel spočítal všechno dohromady, zjistil, že jeho ty sýry přišly na osm a půl šilinku za půl kila. Pravil, že s nesmírnou chutí sní kousek sýra, tohle že je však nad jeho prostředky. A tak se rozhodl, že se těch dvou sýrů zbaví, a hodil je do jednoho průplavu u doků; ale musle je zase vylovit, ježto chlapi z nákladních bárek si stěžovali; prý jim z nich bylo na omdlení. Potom je jedné temné noci odnesl na místní hřbitov a nechal je tam v márnici. Ale přišel na ně ohledač mrtvol a ztropil pekelný randál. Křičel, že to je úklad, jehož cílem je vzkřísit mrtvoly a jeho tak připravit o živobytí. Nakonec se můj přítel těch sýrů zbavil tím, že je odvezl do jednoho přímožského města a tam je zakopal na pobřeží. A tím tomu místu zajistil značnou proslulost. Návštěvníci se najednou začali divit, proč si už dřív nepovšimli, jak silný je tam vzuch, a ještě řadu let potom se tam houfně hrnuli souchotináři a vůbec lidé slabí na prsa. A proto jsem i já, ačkoli sýry velice rád, dal Georgeovi za pravdu, když je odmítl vzít s sebou. „Taky si odpustíme odpolední svačinu,“ dodal George (načež Harris protáhl obličej), „ale zato si pravidelně v sedm dáme denně pořádnou, vydatnou baštu - prostě svačinu, večeři a sousto na noc v jednom.“ Harris hned vypadal veseleji. George navrhoval masové a jablečné záviny, šunku, studené pečínky, rajčata a hlávkový a okurkový salát a ovoce. K pití jsme si s sebou brali jakousi báječnou lepkavou míchanici podle Harrisova receptu, které, když se rozředí vodou, se dá říkat limonáda, spousty čaje a láhev whisky, pro případ, jak pravil George, že bychom se převrhli.
+
+Podle mého názoru se George k té představě, že se můžeme převrhnout, vracel zbytečně často. To přece nebyl ten pravý duch, jaký měl vládnout našim cestovním přípravám. Ale že jsme s sebou měli tu whisky, to jsem dodnes rád. Pivo ani víno jsme si nebrali. To není dobré na řeku. Pak jste ospalí a máte těžké nohy. Takhle navečer, když se jen tak poflakujete po městě a koukáte po holkách, to je nějaká ta sklenička na místě; ale když vám na hlavu praží slunce a čeká vás tvrdá dřina, tak nepijte. Sepisovali jsme seznam všeho, co se má vzít, a byl z toho seznam hezky dlouhý, než jsme se toho večera rozešli. Nazítří, to byl pátek, jsme to všechno nanosili ke mně a večer jsme se sešli, abychom to zapakovali. Na šatstvo jsme měli obrovský kožený kufr a na poživatiny a kuchařské náčiní dva koše. Stůl jsme odstrčili k oknu, všecky ty věci jsme snesli na jednu hromadu doprostřed pokoje, sedli jsme si kolem té hromady a dívali se na ni. Já jsem řekl, že to zapakuju sám. Na to, jak umím pakovat, jsem dost pyšný. Pakování je jedna z těch mnoha věcí, v nichž se vyznám líp než kterýkoli žijící člověk. (Někdy mě samotného překvapí, jak mnoho těch věcí je.) Důtklivě jsem George i Harrise na tuto skutečnost upozornil a radil jsem jim, aby to všechno nechali na mně. Skočili na ten návrh s ochotou, která se mi hned nějak nezamlouvala. George si nacpal dýmku a rozvalil se v lenošce a Harris si dal nohy na stůl a zapálil si doutník. Ttakhle jsem to ovšem nemínil. Představoval jsem si to - samozřejmě - tak, že já budu při té práci vrchním dohlížitelem a Harris a George že se budou podle mých direktiv motat sem a tam a já že je každou chvíli odstrčím s takovým tím „Jdi ty...!“ nebo „Pusť, já to udělám sám,“ nebo „No prosím, vždyť to není nic těžkého!“ - prostě že je budu tak říkajíc učit. Že si to vyložili tak, jak si to vyložili, to mě popudilo. Nic mě totiž tolik nepopudí, jako když si ti druzí jenom sedí a nic nedělají, zatímco já pracuju. Jednou jsem bydlel s člověkem, který mě tímhle způsobem doháněl skoro k šílenství. Vždycky když jsem něco dělal, on se povaloval na pohovce a koukal na mě; celé hodiny mě vydržel sledovat očima, ať jsem se v tom pokoji kamkoli pohnul. Říkal, že mu dělá úžasně dobře, když se může dívat, jak pilně markýruju práci. Prý mu to dokazuje, že život není jen jalové snění, určené k prozevlování a prozívání, ale vznešené poslání, plné povinností a tvrdé práce. Často už prý si kladl otázku, jak mohl vůbec existovat, než se seznámil se mnou, když neměl nikoho, koho by mohl pozorovat při práci. Tak takovýhle já nejsem. Já nevydržím klidně sedět, když vidím, jak se někdo jiný otrocky lopotí. To musím vstát a dozírat na něj, obcházet ho s rukama v kapsách a radit mu, jak na to. To dělá ta moje činorodá povaha. Tomu se prostě neubráním. Přesto jsem neřekl ani slovo a dal jsem se do toho pakování. Dalo to víc práce, než jsem předpokládal, ale posléze jsem byl hotov s kufrem, sedl jsem si na něj a stáhl jsem ho řemeny. „A co boty? Ty tam nedáš?“ zeptal se Harris. Rozhlédl jsem se a zjistil, že na boty jsem zapomněl. To je celý Harris. Ani necekne samozřejmě, dokud kufr nezavřu a nestáhnu ho řemeny. A George se smál - tím svým popuzujícím, bezdůvodným, přiblblým chechotem, při kterém mu huba div nevyletí z pantů a který mě pokaždé rozzuří. Otevřel jsem kufr a přibalil boty; a potom, právě když jsem se chystal kufr zase zavřít, napadla mě strašlivá myšlenka. Dal jsem tam svůj kartáček na zuby? Nevím, čím to je, ale já vážně nikdy nevím, jestli jsem si dal do kufru kartáček na zuby. Můj kartáček na zuby, to je věc, která mě při každém cestování v jednom kuse straší a proměňuje mi život v peklo. V noci se mi zdá, že jsem si ho nezapakoval, probudím se zborcen studeným potem, vyskočím z postele a sháním se po kartáčku. A ráno ho zapakuju dřív, než si vyčistím zuby, takže ho zase musím vypakovat, a vždycky ho najdu, až když vytahám z kufru všecko ostatní; pak musím zapakovat znova a na kartáček zapomenu a v posledním okamžiku pro něj pádím nahoru a na nádraží ho vezu v kapse, zabalený do kapesníku. I teď jsem samozřejmě musel všecko do poslední mrtě zase vypakovat, ale kartáček, samozřejmě, ne a ne najít. Celý obsah kufru jsem vyházel a tak důkladně zpřeházel, že to u mne vypadalo přibližně jako před stvořením světa, když ještě vládl chaos. Georgeův a Harrisův kartáček jsem měl v ruce, samozřejmě! aspoň osmnáctkrát, ale ten svůj jsem nenašel. Tak jsem všecky ty věci házel zpátky do kufru, jednu po druhé, každou jsem zvedl a protřepal. A ten kartáček j sem našel v j edné botě. A pakoval j sem znova. Když jsem s tím byl hotov, zeptal se George, jestli je tam mýdlo. Řekl jsem mu, na tom že mi pendrek záleží, jestli tam je nebo není mýdlo, kufr jsem zabouchl a stáhl řemeny a zjistil jsem, že jsem si do něho dal pytlík s tabákem a musel jsem ho nanovo otevřít. Definitvně byl zavřen v 10,05 a ještě zbývalo zapakovat koše. Harris poznamenal, že budeme chtít vyrazit už za necelých dvanáct hodin, a že by tedy snad bylo lepší, kdyby si to ostatní vzal na starost on s Georgem; s tím jsem souhlasil, posadil jsem se a do práce se dali oni. Začali s veselou myslí očividně v úmyslu předvést mi, jak se to dělá. Já se zdržel poznámek; prostě jsem čekal. Až milého George pověsí, nej horším pakovačem na tomto světě bude Harris. Díval jsem se na ty stohy talířů a šálků a konvic a lahví a sklenic a konzerv a vařičů a pečiva a rajčat, atd., a tušil jsem, že brzy to bude vzrušující. A bylo. Zahájili to tím, že rozbili jeden šálek. To bylo první, co udělali. A udělali to jenom proto, aby ukázali, co všechno by udělat dovedli, a aby vzbudili zájem. Pak Harris postavil sklenici s jahodovým džemem rovnou na jedno rajče a rozmačkal je, takže je museli z koše vybírat lžičkou. Pak přišel na řadu George, a ten dupl na máslo. Já nic neřekl, ale přistoupil jsem blíž, sedl si na kraj stolu a pozoroval je. To je popouzelo mnohem víc než všechno, co bych byl mohl říci. To jsem vycítil. Byli ze mne nervózní a rozčilení, na všecko šlapali, všecko, co vzali do ruky, hned někam zašantročili, a když to pak potřebovali, tak to nemohli najít; a nákyp dali do koše na dno a těžké předměty navrch, takže z nákypu udělali kaši. Sůl, tu rozsypali prostě do všeho - a to máslo? V životě jsem si nedovedl představit, že by se dva chlapi dovedli tolik vydovádět s kouskem másla za jeden šilink a dvě pence. Když si je George odlepil z pantofle, chtěli je nacpat do konvičky na mléko. Tam samozřejmě nešlo, a to, co tam z něho přece jen šlo, to zase nešlo ven. Nakonec je kupodivu vyškrábali a odložili je na židli, a tam si na ně sedl Harris a máslo se k němu přilíplo a oba šmejdili po celém pokoji a pátrali, kam se podělo. „Já bych přísahal, že jsem ho dal tuhle na židli,“ pravil George, zíraje na prázdné sedadlo. „No jo, já sám jsem viděl, jak ho tam dáváš, to není ani minuta,“ přikyvoval Harris. A znova se vydali na obhlídku celého pokoje a znova se sešli uprostřed a civěli jeden na druhého. „To teda je ta nejfantastičtější věc, jakou jsem kdy zažil,“ prohlásil George. „Úplná záhada!“ dodal Harris. Pak se najednou George octl Harrisovi za zády a to máslo uviděl. „Prosím tě, vždyť jeho celou tu dobu máš tadyhle!“ zvolal rozhořčeně. „Kde?“ zařval Harris a začal se točit dokolečka. „Copak ty nedovedeš chviličku klidně postát?“ hřměl George, lítaje za ním. Nakonec to máslo seškrábali a nandali je do čajové konvice. Všeho toho se, přirozeně, zúčastnil i Montmorency. Montmorencyho životní ctižádostí je totiž plést se lidem pod nohy a provokovat je k nadávkám. Když se mu podaří vklouznout někam, kde je obzvlášť nežádoucí, kde příšerně překáží, kde lidi rozzuří do té míry, že po něm házejí vším, co je po ruce, pak teprve má pocit, že nepromarnil den. Jeho nejvyšší metou a touhou je docílit, aby se přes něj někdo přerazil a pak ho nepřetržitě po celou hodinu proklínal; to když se mu povede, pak je jeho domýšlivost naprosto nesnesitelná. A tak se vždycky běžel posadit na to, co George a Harris chtěli zrovna zapakovat, a řídil se utkvělou představou, že kdykoli ti dva vztahujou po něčem ruku, vztahujou ji po jeho studeném, vlhkém čumáku. Tlapky strkal do džemů, sápal se na lžičky a pak si začal hrát, že citróny jsou myši, skočil do jednoho koše a tři ty myši zakousl, dřív než se Harrisovi podažilo uzemnit ho železnou pánví. Harris tvrdil, že já jsem ho k tomu všemu podněcoval. Nikoli, nepodněcoval jsem ho. Takový pes žádné podněcování nepotřebuje. Aby takhle jančil, k tomu ho podněcuje vrozený prvotní hřích, s kterým už přišel na svět. Pakování skončilo ve 12.50. Harris seděl na tom větším koši a vyslovil naději, že v něm nic nebude rozbité. A George řekl, že jestli v něm něco rozbité bude, tak to je rozbité už teď, a tato úvaha ho zjevně uklidnila. A dodal, že je zralý pro postel. Harris měl té noci spát u nás, a tak jsme šli všichni nahoru do ložnice. Házeli jsme šilinkem, kdo s kým bude sdílet lože, a Harrisovi vyšlo, že má spát se mnou. „Chceš spát radši u zdi nebo dál ode zdi?“ zeptal se mne. Odpověděl jsem, to že je mi jedno, jen když to bude v posteli. A Harris řekl, že to je fousaté. „A kdy vás mám vzbudit, mládenci?“ tázal se George. Haris řekl: „V sedm.“ A já řekl „Ne - v šest!“, protože jsem ještě chtěl napsat pár dopisů. Kvůli tomu j sme se já a Harris chvilku hádali, ale nakonec j sme si vyšli na půl cesty vstříc a dohodli j sme se na půl sedmé. „Vzbuď nás v šest třicet, Georgi,“ řekli jsme. George nám na to neodpověděl, a když jsme k němu přistoupili, zjistili jsme, že už spí; a tak jsme mu k posteli postavili vaničku s vodou, aby do ní skočil, až bude ráno vstávat, a šli jsme taky spat.
+
+Ale byla to paní Poppetsová, kdo mě ráno vzbudil. „Jestlipak víte, pane, že už je skoro devět hodin?“ volala. „Devět čeho?“ vykřikl jsem, vyskakuje z postele. „Devět hodin,“ odvětila skrze klíčovou dírku. „Říkám si, že jste asi zaspali.“ Vzbudil jsem Harrise a řekl jsem mu, co se stalo. „Já myslel, že tys chtěl vstávat v šest,“ pravil Harris. „Taky že chtěl,“ odpověděl jsem. „Proč jsi mě nevzbudil?“ „Jak jsem tě mohl vzbudit, když jsi ty nevzbudil mě,“ odsekl. „A teď se už stejně nedostaneme na vodu dřív než někdy po dvanácté. Tak nechápu, proč vůbec lezeš z postele.“ „Ty buď rád, že z ní lezu,“ odvětil jsem. „Kdybych tě neprobudil, tak tu budeš takhle ležet celých těch čtrnáct dní.“ Tímto tónem jsme na sebe ňafali už pět minut, když nás přerušilo vyzývavé chrápání Georgeovo. Tím jsme si poprvé od okamžiku, kdy jsme byli vyburcováni ze spánku, uvědomili jeho existenci. A on si tam ležel - ten chlap, který chtěl vědět, v kolik hodin nás má vzbudit - na zádech, s hubou dokořán a s koleny nahoru. Nevím, čím to je, to na mou duši nevím, ale pohled na někoho jiného, jak si spí v posteli, zatímco já jsem na nohou, mě vždycky rozzuří. To na mě působí přímo otřesně, když musím přihlížet, jak někdo dokáže drahocenné hodiny života - ty okamžiky k nezaplacení, které se mu nikdy nenavrátí - promarňovat jako nějaké hovado jen a jen spánkem. No prosím! - a takhle tam George v odporném lenošení zahazoval ten neocenitelný dar času; cenný život, z jehož každé vteřiny bude jednou muset skládat počet, mu ubíhal nevyužit. Mohl se cpát slaninou s vejci, pošťuchovat psa nebo koketovat s naší služtičkou, místo aby se takto povaloval, zapadlý do duchamorného nevědomí. To bylo strašlivé pomyšlení. A zasáhlo zřejmě Harrise i mne současně. Rozhodli jsme se, že ho zachráníme, a pro toto ušlechilé předsevzetí jsme rázem zapomněli i na svou vlastní rozepři. Vrhli jsme se k Georgeovi, servali s něho deku, Harris mu jednu přišil pantoflem a já mu zařval do ucha a George se probudil. „Coseděé?“ pravil a posadil se. „Vstávej, ty kládo jedna slabomyslná!“ zaburácel Harris. „Je čtvrt na deset!“ „Co?“ zavřeštěl George a vyskočil z postele do vaničky. - „Kdo to sem ksakru postavil?“ Řekli jsme mu, že musel pořádně zblbnout, když už nevidí ani vaničku. Dooblékli jsme se, a když došlo na konečnou úpravu zevnějšku, vzpomněli jsme si, že jsme si už zapakovali kartáčky na zuby, kartáč na vlasy a hřeben (ten můj kartáček na zuby, to bude jednou moje smrt, to já vím), a museli jsme jít dolů všecko to z kufru vylovit. A když jsme to konečně dokázali, chtěl George holicí náčiní. Řekli jsme mu, že dneska se musí objeít bez holení, jelikož kvůli němu ani kvůli komukoli jinému už ten kufr přepakovávat nebudeme. „Mějte rozum,“ povídá. „Copak můžu jít do banky takhle?“ To nesporně byla vůči celé bankovní čtvrti surovost, co nám však bylo do útrap lidstva? Bankovní čtvrť, jak to svým běžným drsným způsobem vyjádřil Harris, to bude muset spolknout. Sešli jsme dolů k snídani. Montmorendy si pozval dva jiné psy, aby se s ním přišli rozloučit, a ti si zrovna krátili čas tím, že se rvali před domovními dveřmi. Uklidnili jsme je deštníkem a zasedli jsme ke kotletám a studenému hovězímu. „Pořádně se nasnídat, to je věc velice důležitá,“ pravil Harris a začal s dvěma kotletami; ty je prý nutno jíst, dokud jsou teplé, hovězí, to prý počká. George se zmocnil novin a předčítal nám zprávy o neštěstích na řece a předpověď počasí, kterážto předpověď prorokovala „zamračeno, chladno, proměnlivo až deštivo,“ (prostě ještě příšernější počasí, než bývá obvykle), „občasné místní bouřky, východní vítr, celková deprese nad hrabstvími střední Anglie (Londýn a Kanál); barometr klesá.“ Já si přece jen myslím, že ze všech těch pitomých, popuzujících šaškáren, jimiž jsme sužováni, jde tenhle podvod s „předpovídáním počasí“ na nervy nejvíc. Vždycky „předpovídá“ přesně to, co bylo včera nebo předevčírem, a přesně opak toho, co se chystá dnes. Vzpomínám si, jak jsme si jednou na sklonku podzimu úplně zkazili dovolenou tím, že jsme se řídili povětrnostními zprávami v místních novinách. „Dnes jest očekávati vydatné přeháňky a bouřky,“ stálo tam třeba v pondělí, a tak jsme se vzdali plánovaného pikniku v přírodě a celý den jsme trčeli doma a čekali, kdy začne pršet. Kolem našeho dou proudili výletníci, v kočárech i omnibusech, všichni v té nejlepší, nejveselejší náladě neboť svítilo sluníčko a nikde nebylo vidět mráček. „Á jé,“ říkali jsme si, koukajíce na ně z okna, „ti přijedou domů promočení!“ Chichtali jsme se při pomyšlení, jak zmoknou, odstoupili jsme od okna, prohrábli oheň a vzali si knížky a přerovnávali sbírečku mořských chaluh a mušliček. K poledni, když jsme div nepadli horkem, jak nám do pokoje pražilo slunce, jsme si kladli otázku, kdy asi spustí ty prudké přeháňky a občasné bouřky. „Všecko to přijde odpoledne, uvidíte,“ říkali jsme si. „A ti tak promoknou, ti lidé, to bude taková legrace!“ V jednu hodinu se nás naše domácí přišla zeptat, jestli nepůjdeme ven, když je tak překrásný den. „Kdepak, kdepak,“ odvětili jsme s mazaným uchichtnutím. „My promoknout nechceme. Kdepak.“ A když se odpoledne chýlilo ke konci a pořád to ještě nevypadalo na déšť, snažili jsme se zvednout si náladu představou, že to spadne zčistajasna, až lidi už budou na cestě domů a nebudou se mít kam schovat, takže na nich nezůstane suchá ani nitka. Leč nespadla ani kapička a celý den se vydařil a přišla po něm líbezná noc. Nazítří jsme si přečetli, že bude „suché, pěkné, ustalující se počasí, značné horko“; vzali jsme si na sebe své nejlehčí hadříky a vyrazili jsme do přírody a za půl hodiny se přihnal hustý liják, zvedl se hnusně studený vítr a to obojí trvalo bez ustání celý den a my jsme se vrátili domů s rýmou a s revmatismem v celém těle a hned jsme museli do postelí. Počasí, to je prostě něco, nač vůbec nestačím. Jaktěživ se v něm nevyznám. A barometr je k ničemu; to je zrovna taková šalba jako ty novinářské předpovědi. Jeden visel v jistém oxfordském hotelu, kde jsem byl ubytován loni na jaře, a když jsem tam přišel, tak ukazoval na „ustáleně pěkně“. A venku pršelo, jen se lilo; celý den; nedovedl jsem si to vysvětlit. Zaťukal jsem na ten barometr a ručička poskočila a ukázala na „velmi sucho“. Zrovna šel kolem kluk, co tam čistil boty, zastavil se u mě a povídá, že to asi znamená, jak bude zítra. Já spíš soudil, že to ukazuje, jak bylo předminulý týden, ale ten kluk povídá, to že asi ne. Příští ráno jsem na ten barometr zaťukal znova a ručička vyletěla ještě výš a venku cedilo jako snad nikdy. Ve středu jsem do něj šel šťouchnut zase a ručička běžela přes „ustáleně pěkně “, „velmi sucho“ a „vedro “, až se zarazila o takový ten čudlík a dál už nemohla. Dělala, co mohla, ale ten aparát byl sestrojen tak, že důrazněji už pěkné počasí prorokovat nemohl, to už by se byl pochroumal. Ručička očividně chtěla běžet dál a udělat prognózu na katastrofální sucha a vypaření všeho vodstva a sluneční úžehy a písečné vichřice a podobné věci, ale ten čudlík jí v tom zabránil, takže se musela spokojit s tím, že ukázala na to prosté, obyčejné „vedro“. A venku zatím vytrvale lilo jako z konve a níže položená část města byla pod vodou, neboť se rozvodnila řeka. Čistič obuvi viděl v chování barometru zjevný příslib, že někdy později se nám nádherné počasí udrží po velmi dlouhou dobu, a nahlas mi přečetl veršovánku vytištěnou nad tím orákulem, něco jako: Dlouho slibované trvá dlouze; narychlo oznámené přeletí pouze. Toho léta se pěkné počasí nedostavilo vůbec. Počítám, že ten přístroj se zmiňoval až o jaru příštího roku. Pak jsou ty nové barometry, ty dlouhé, jako tyčky. Z těch už jsem teda úplný jelen. Tam se na jedné straně ukazuje stav v deset hodin dopoledne včera a na druhé straně stav v deset hodin dopoledne dnes; jenže přivstat si tak, abyste to šel kontrolovat zrovna v deset, se člověku nepodaří, to dá rozum. Klesá a stoupá to tam na déšť nebo na pěkně, na silný vítr nebo na slabý vítr, na jednom konci je MIN a na druhém MAX (nemám ponětí, který Max to má být), a když na to zaťukáte, tak vám to vůbec neodpoví. A ještě si to musíte přepočítat na příslušnou výšku nad mořem a převést na Fahrenheita, a já ani potom nevím, co mě vlastně čeká. Ale kdo vlastně touží po tom, aby se mu předpovídalo počasí? Když ten nečas přijde, tak je to protivné až dost, a aspoň jsme z toho neměli mizernou náladu už napřed. Prorok, jakého máme rádi, to je ten stařeček, který se toho obzvlášť ponurého rána, kdy si obzvlášť vroucně přejeme, aby byl krásný den, rozhlédne obzvlášť znaleckým zrakem po obzoru a řekne: „Ale kdepák, pane, já počítám, že se to vybere. To se určitě protrhá, pane.“ „Ten se v tom hlot vyzná,“ říkáme si, popřejeme mu dobré jitro a vyrážíme. „Ohromná věc, jak tomu tihle staroušci rozumějí.“ A pociťujeme k tomu člověku náklonnost, kterou nikterak neoslabí fakt, že se to nevybralo a že celý den nepřetržitě leje. „Inu,“ myslíme si, „aspoň se snažil.“ Zatímco vůči člověku, který nám prorokoval špatné počasí, chováme jen myšlenky trpké a pomstychtivé. „Vybere se to, co myslíte?“ voláme bodře, když jdeme kolem něho. „Ne ne, pane. Dneska to bohužel celej den nebude stát za nic,“ kroutí hlavou ten člověk. „Dědek jeden pitomá!“ bručíme. Co ten o tom může vědět?“ A když na jeho zlověstnou předtuchu dojde, vracíme se s pocity ještě větší zloby vůči němu a s takovým mlhavým dojmem, že to nějak spískal on. Toho dotyčného rána bylo příliš jasno a slunečno, aby nás George mohl nějak znepokojit, když nám tónem, při němž měla stydnout krev, předčítal, jak „barometr klesá“, jak „atmosférické proruchy postupují nad jižní Evropou šikmo k severu,“ a jak se „přibližuje oblast nízkého tlaku“. Když tedy zjistil, že nás nemůže uvrhnout v zoufalství a že zbytečně maří čas, šlohnul mi cigaretu, kteru jsem si zrovna pečlivě ukroutil, a šel do banky. Harris a já jsme dojedli to málo, co George nechal na stole, a pak jsme vyvlekli před dům svá zavazadla a vyhlíželi jsme drožku. Těch zavazadel bylo dost, když jsme je snesli na jednu hromadu. Měli jsme ten veliký kufr a jeden menší kufřík, příruční, a ty dva koše a velikánskou roli dek a asi tak čtvero nebo patero svrchníků a pršáků a několik deštníků a pak meloun, který měl jednu tašku jenom pro sebe, protože ho byl takový kus, že se nikam jinam nevešel, a ještě pár kilo hroznů v další tašce a takové japonské papírové paraple a pánev, která byla tak dlouhá, že jsme ji nemohli k ničemu připakovat, a tak jsme ji jen tak zabalili do papíru. No, byla toho pořádná kupa a Harris a já jsme se za ni začali jaksi stydět, i když teď nechápu, proč vlastně. Drožka se neobjevovala, zato se objevovali četní uličníci, kterým jsme zřejmě skýtali zajímavou podívanou, a tak se stavěli kolem nás. První se přiloudal ten kluk od Biggse. Biggs je náš zelinář a má zvláštní talent zaměstnávat ty nej sprostší a nejzpustlejší učedníky, jaké civilizace dosud zplodila. Když se v našem okolí vyskytne něco až neobvykle zlotřilého v klukovském provedení, hned víme, žte je to Biggsův nejnovější učedník. Po té vraždě v Great Coram Street došla prý naše ulice okamžitě k závěru, že v tom má prsty Biggsův učedník (ten tehdejší), a kdyby se mu při přísném křížovém výslechu, kterému ho podrobilo číslo 1 9, k němuž ráno po tom zločinu zaskočil pro objednávku (číslu 1 9 asistovalo číslo 21 , protože náhodou stálo zrovna před domem), kdyby se mu tedy bylo nepodařilo prokázat při tom výslechu dokonalé alibi, bylo by to s ním dopadlo moc špatně. Já jsem toho tehdejšího Biggsova učedníka neznal, ale soudě podle toho, co vím o všech těch dalších, sám bych byl tomu alibi velký význam nepřikládal. Jak už jsem tedy řekl, za rohem se ukázal Biggsův učedník. Když se prvně zjevil v dohledu, měl očividně veliký spěch, ale jakmile si všiml Harrise a mne a Montmorencyho a našich věcí, zpomalil svůj běh a vypoulil oči. Harris i já jsme se na něho zaškaredili. Jen poněkud citlivé povahy by se to bylo dotklo, avšak Biggsovi učedníci nejsou obyčejně žádné netykavky. Ani ne metr od našich schůdků se ten kluk zastavil, opře se o železnou tyč v plotě, pečlivě si vybral stéblo trávy, které by se dalo cucat, a začal nás upřeně pozorovat. Zřejmě se mínil dožít toho, jak to s námi dopadne. Za chvilku šel na protějším chodníku učedník hokynářův. Biggsův kluk na něj zavolal: „Ahoj! Přízemí z dvaačtyřicítky se stěhuje.“ Hokynářův učedník přešel přes ulici a zaujal postavení na druhé straně našich schůdků. Pak se u nás zastavil mladý pán od obchodníka s obuví a připojil se k učedníkovi od Biggse, zatímco vrchní dohlížitel na čistotu vyprzádněných pohárů od „Modrých sloupů“ zaujal postavení zcela samostatné, a to na obrubě chodníku. „Hlad teda mít nebudou, co?“ řekl pán z krámu s obuví. „Hele, ty by sis taky vzal s sebou jednu nebo dvě věci,“ namítly Modré sloupy, „dyby ses v malej lodičce chystal přes Atlantickej oceán.“ „Ty se neplavěj přes oceán,“ vložil se do toho kluk od Biggse, „ty jedou hledat Stanleye.“ Tou dobou se už shromážidl slušný hlouček a lidi se jeden druhého ptali, co se to děje. Jedna skupina (ta mladší a frivolnější část hloučku) trvala na tom, že je to svatba, a za ženicha označovali Harrise; zatímco ti starší a uvážlivější v tom lidu se přikláněli k názoru, že jde o pohřeb a já že jsem patrně bratr mrtvoly. Konečně se vynořila prázdná drožka (je to ulice, kterou zpravidla - když je nikdo nepotřebuje - projíždějí tři prázné drožky za minutu, postávají a pletou se vám do cesty), i naskládali jsme do ní sebe i své příslušenství, vyhodili jsme z ní pár Montmorencyho kamarádů, kteří se mu zřejmě zapřisáhli, že ho nikdy neopustí, a odjížděli jsme; dav nám provolával slávu a Biggsův učedník po nás pro štěstí hodil mrkví. Na nádraží Waterloo jsme dorazili v jedenáct a vyptávali jsme se, odkud vyjíždí vlak v 11,05. To pochopitelně nikdo nevěděl; na tomhle nádraží nikdy nikdo neví, odkud který vlak vyjíždí, nebo kam který vlak, když už odněkud vyjíždí, dojíždí, no tam prostě nikdy nikdo neví nic. Nosič, který se ujal našich zavazadel, měl za to, že náš vlak jede z nástupiště číslo dvě, avšak jiný nosič, s kterým jsme o tom problému rovněž diskutovali, prý někde zaslechl cosi o nástupišti číslo jedna. Přednosta stanice byl však naproti tomu přesvědčen, že ten vlak vyjede z nástupiště pro vnitrolondýnskou dopravu. Abychom se to dověděli s konečnou platností, šli jsme nahoru a zeptali jsme se hlavního výpravčího, a ten nám řekl, že zrovna potkal nějakého člověka, který se zmínil, že ten vlak viděl na nástupišti číslo tři. Odebrali jsme se na nástupiště číslo tři, ale tam se příslušní činitelé domnívali, že ten jejich vlak je expres do Southamptonu nebo taky možná lokálka do Windsoru. Ale že to není vlak do Kongstonu, to věděli naprosto jistě, i když nevěděli jistě, proč to vědí tak jistě. Pak řekl náš nosič, že náš vlak bude nejspíš ten vlak na zvýšeném nástupišti; prý ho zná, ten náš vlak. Tak jsme šli na zvýšené nástupiště a ptali jsme se přímo strojvedoucího, jestli jede do Kongstonu. Pravil, že s jistotou to pochopitelně tvrdit nemůže, ale že si myslí, že tam jede. A i kdyby ten jeho vlak nebyl ten v 11.05 do Kingstonu, tak prý dost pevně věří, že je to vlak v 9,32 do Virginia Water, nebo rychlík v 10.00 na ostrov Wight, anebo prostě někam tím směrem, což prý bezpečně poznáme, až tam dojedeme. Strčili jsme mu do dlaně půlkorunu a prosili jsme ho, ať z toho udělá ten v 11.05 do Kingstonu. „Na téhle trati stejně nikdo neví, co jste za vlak a kam jedete,“ řekli jsme mu. „Cestu jistě znáte, tak odtud potichounku vyklouzněte a vemte to na Kingston.“ „No, já teda nevím, páni,“ odvětil ten šlechetný muž, „ale předpokládám, že nějakej vlak do Kingstonu jet musí, tak tam teda pojedu já. Tu půlkorunu mi klidně nechte.“ Takto jsme se Londýnskou a Jihozápadní dráhou dostali do Kingstonu. Později jsme se dověděli, že ten vlak, co jsme s ním jeli, byl ve skutečnosti poštovní vlak do Exeteru a že ho na nádraží Waterloo hodiny a hodiny hledali a nikdo nevěděl, co se s ním stalo. Naše loď na nás čekala v Kingstonu přímo pod mostem, k ní j sme tedy zameřili své kroky, na ni j sme naskládali svá zavazadla a do ní jsme posléze vstoupili. „Nechybí vám něco, páni?“ ptal se muž, co mu loď patřila. „Ne, nic tu nechybí,“ odpověděli jsme a pak jsme, Harris u vesel, já u kormidla a Montmorency, nešťastný a hluboce nedůvěřivý, na přídi, odrazili na vody, jež měly být čtrnáct dní naším domovem. ";
+            }
         }
         /// <summary>
         /// Text "Tři muži na toulkách"
@@ -1592,6 +1640,1654 @@ but the soft, foreboding chant welling up out of eight hundred thousand throats.
             }
         }
         private static string[] _SentenceDots = null;
+
+        /// <summary>
+        /// Obsahuje houby (latinsky, česky, latinsky + info o původu)
+        /// </summary>
+        public static Tuple<string, string, string>[] Mycelias
+        {
+            get
+            {
+                if (__Mycelias is null)
+                    __Mycelias = _GetMycelias().ToArray();
+                return __Mycelias;
+            }
+        }
+        /// <summary>
+        /// Houby
+        /// </summary>
+        private static Tuple<string, string, string>[] __Mycelias;
+        /// <summary>
+        /// Vrátí názvy hub: Latinský - Český - Latinský extend.
+        /// </summary>
+        /// <returns></returns>
+        private static List<Tuple<string, string, string>> _GetMycelias()
+        {
+            // Data obsahují řádky ve fixním pořadí: LatName, CzName, LatName2
+            // Zdroj: https://www.mykoweb.cz/atlas-hub#limit=250
+            // Zkopírovat do prostého textu a soupis pouze hub zkopírovat sem:
+            // POZOR: někdy ve zdroji chybí první z latinských slov. Doplnil jsem je ručně (ze třetího prvku), ale je to vopruz.
+            //  Asi nebude potřeba to aktualizovat :-) !!!
+            string data = @"Gloeophyllum odoratum
+anýzovník vonný
+Gloeophyllum odoratum (Wulfen) Imazeki 1943
+
+Balsamia polysperma
+balzamovka mnohovýtrusá
+Balsamia polysperma Vittad. (1831)
+
+Sarcosphaera coronaria
+baňka velkokališná
+Sarcosphaera coronaria (Jacq.) J. Schröt. 1893
+
+Battarrea phalloides
+battarovka pochvatá (Stevenova)
+Battarrea phalloides (Dicks.) Pers. 1801
+
+Lepiota boudieri
+bedla Boudierova
+Lepiota boudieri Bres. 1881
+
+Cystolepiota bucknallii
+bedla Bucknallova
+Cystolepiota bucknallii (Berk. & Broome) Singer & Clémençon 1972
+
+Leucocoprinus birnbaumii
+bedla cibulkotřenná
+Leucocoprinus birnbaumii (Corda) Singer 1962
+
+Lepiota felina
+bedla černošupinná
+Lepiota felina (Pers.) P. Karst. 1879
+
+Chlorophyllum rachodes
+bedla červenající
+Chlorophyllum rachodes (Vittad.) Vellinga 2002
+
+Leucoagaricus nympharum
+bedla dívčí
+Leucoagaricus nympharum (Kalchbr.) Bon 1977
+
+Lepiota grangei
+bedla Grangeova
+Lepiota grangei (Eyre) Kühner 1934
+
+Leucocoprinus heinemannii
+bedla Heinemannova
+Leucocoprinus heinemannii Migl. 1987
+
+Cystolepiota hetieri
+bedla Hetierova
+Cystolepiota hetieri (Boud.) Singer 1973
+
+Lepiota fuscovinacea
+bedla hnědovínová
+Lepiota fuscovinacea F.H. Møller & J.E. Lange 1940
+
+Lepiota cristata
+bedla hřebenitá
+Lepiota cristata (Bolton) P. Kumm. 1871
+
+Lepiota castanea
+bedla kaštanová
+Lepiota castanea Quél. 1881
+
+Lepiota pseudolilacea
+bedla klamavá
+Lepiota pseudolilacea Huijsman 1947
+
+Macrolepiota konradii
+bedla Konradova
+Macrolepiota konradii (Huijsman ex P.D. Orton) M.M. Moser 1967
+
+Melanophyllum haematospermum
+bedla krvavá
+Melanophyllum haematospermum (Bull.) Kreisel 1984
+
+Lepiota subincarnata
+bedla namasovělá
+Lepiota subincarnata J.E. Lange 1940
+
+Lepiota magnispora
+bedla nažloutlá
+Lepiota magnispora Murrill 1912
+
+Macrolepiota excoriata
+bedla odřená
+Macrolepiota excoriata (Schaeff.) Wasser 1978
+
+Lepiota ignivolvata
+bedla ohňopochvá
+Lepiota ignivolvata Bousset & Joss. ex Joss. 1990
+
+Chamaemyces fracidus
+bedla orosená
+Chamaemyces fracidus (Fr.) Donk 1962
+
+Echinoderma asperum
+bedla ostrošupinná
+Echinoderma asperum (Pers.) Bon 1991
+
+Lepiota tomentella
+bedla plstnatá
+Lepiota tomentella J.E. Lange 1923
+
+Cystolepiota seminuda
+bedla polonahá
+Cystolepiota seminuda (Lasch) Bon 1976
+
+Cystolepiota pulverulenta
+bedla poprášená
+Cystolepiota pulverulenta (Huijsman) Vellinga 1992
+
+Leucoagaricus croceovelutinus
+bedla šafránová
+Leucoagaricus croceovelutinus (Bon & Boiffard) Bon 1976
+
+Chlorophyllum olivieri
+bedla šedohnědá
+Chlorophyllum olivieri (Barla) Vellinga 2002
+
+Lepiota oreadiformis
+bedla špičkovitá
+Lepiota oreadiformis Velen. 1920
+
+Lepiota echinella
+bedla štětinkatá
+Lepiota echinella Quél. & G.E. Bernard 1888
+
+Macrolepiota mastoidea
+bedla útlá
+Macrolepiota mastoidea (Fr.) Singer 1951
+
+Lepiota clypeolaria
+bedla vlnatá
+Lepiota clypeolaria (Bull.) P. Kumm. 1871
+
+Macrolepiota procera
+bedla vysoká
+Macrolepiota procera (Scop.) Singer 1948
+
+Chlorophyllum brunneum
+bedla zahradní
+Chlorophyllum brunneum (Farl. & Burt) Vellinga 2002
+
+Leucoagaricus leucothites
+bedla zardělá
+Leucoagaricus leucothites (Vittad.) Wasser 1977
+
+Leucopaxillus gentianeus
+běločechratka hořká
+Leucopaxillus gentianeus (Quél.) Kotl. 1966
+
+Leucopaxillus giganteus
+běločechratka obrovská
+Leucopaxillus giganteus (Sowerby) Singer 1939
+
+Pseudoclitopilus rhodoleucus
+běločechratka zardělá
+Pseudoclitopilus rhodoleucus (Sacc.) Kühner 1926
+
+Postia balsamea
+bělochoroš cystidonosný
+Postia balsamea (Peck) Jülich 1982
+
+Postia sericeomollis
+bělochoroš hedvábitý
+Postia sericeomollis (Romell) Jülich 1982
+
+Postia stiptica
+bělochoroš hořký
+Postia stiptica (Pers.) Jülich 1982
+
+Aurantiporus fissilis
+bělochoroš jabloňový
+Aurantiporus fissilis (Berk. & M.A. Curtis) H. Jahn 1973
+
+Tyromyces kmetii
+bělochoroš Kmeťův
+Tyromyces kmetii (Bres.) Bondartsev & Singer 1941
+
+Postia fragilis
+bělochoroš křehký
+Postia fragilis (Fr.) Jülich 1982
+
+Postia subcaesia
+bělochoroš lužní
+Postia subcaesia (A. David) Jülich 1982
+
+Postia caesia
+bělochoroš modravý
+Postia caesia (Schrad.) Gilb. & Ryvarden 1985
+
+Postia rennyi
+bělochoroš prašnatý
+Postia rennyi (Berk. & Broome) Rajchenb.
+
+Postia ptychogaster
+bělochoroš pýchavkovitý
+Postia ptychogaster (F. Ludw.) Vesterh. 1996
+
+Postia guttulata
+bělochoroš slzící
+Postia guttulata (Sacc.) Jülich 1982
+
+Tyromyces chioneus
+bělochoroš sněhobílý
+Tyromyces chioneus (Fr.) P. Karst. 1881
+
+Skeletocutis nivea
+bělochoroš (kostrovka) polokloboukatý
+Skeletocutis nivea (Jungh.) Jean Keller 1979
+
+Trichophaea hemisphaerioides
+bělokosmatka miskovitá
+Trichophaea hemisphaerioides (Mouton) Graddon 1960
+
+Trichophaea woolhopeia
+bělokosmatka osmahlá
+Trichophaea woolhopeia (Cooke & W. Phillips)
+
+Humaria hemisphaerica
+bělokosmatka polokulovitá
+Humaria hemisphaerica (F.H. Wigg.) Fuckel 1870
+
+Trichophaea gregaria
+bělokosmatka pospolitá
+Trichophaea gregaria (Rehm) Boud. (1907)
+
+Choiromyces venosus
+bělolanýž obecný
+Choiromyces venosus (Fr.) Th. Fr. 1909
+
+Leucocortinarius bulbiger
+bělopavučinec hlíznatý
+Leucocortinarius bulbiger (Alb. & Schwein.) Singer 1945
+
+Bankera violascens
+bělozub nafialovělý
+Bankera violascens (Alb. & Schwein.) Pouzar 1955
+
+Phellodon fuligineoalbus
+bělozub osmahlý
+Phellodon fuligineoalbus (J.C. Schmidt) Baird 2013
+
+Pachyella violaceonigra
+bochníček fialovočerný
+Pachyella violaceonigra (Rehm) Pfister 1974
+
+Pachyella babingtonii
+bochníček potoční
+Pachyella babingtonii (Berk. & Broome) Boud. 1907
+
+Camarops tubulina
+bolinka černohnědá
+Camarops tubulina (Alb. & Schwein.) Shear 1938
+
+Camarops polysperma
+bolinka mnohovýtrusá
+Camarops polysperma (Mont.) J.H. Mill. 1930
+
+Auricularia mesenterica
+boltcovitka mozkovitá
+Auricularia mesenterica (Dicks.) Pers. 1822
+
+Auricularia auricula-judae
+boltcovitka ucho Jidášovo
+Auricularia auricula-judae (Bull.) Quél. 1886
+
+Bondarzewia mesenterica
+bondarcevka horská
+Bondarzewia mesenterica (Schaeff.) Kreisel 1984
+
+Eutypella sorbi
+bradavkatka jeřábová
+Eutypella sorbi (Alb. & Schwein.) Sacc. 1882
+
+Eutypella alnifraga
+bradavkatka olšová
+Eutypella alnifraga (Wahlenb.) Sacc. 1882
+
+Eutypa spinosa
+bradavkatka ostnitá
+Eutypa spinosa (Pers.) Tul. & C. Tul.
+
+Peroneutypa scoparia
+bradavkatka různoostná
+Peroneutypa scoparia (Schwein.) Carmarán & A.I. Romero 2006
+
+Trichaptum biforme
+bránovitec dvoutvarý
+Trichaptum biforme (Fr.) Ryvarden 1972
+
+Trichaptum fuscoviolaceum
+bránovitec hnědofialový
+Trichaptum fuscoviolaceum (Ehrenb.) Ryvarden 1972
+
+Trichaptum abietinum
+bránovitec jedlový
+Trichaptum abietinum (Dicks.) Ryvarden 1972
+
+Irpex lacteus
+bránovitka mléčná
+Irpex lacteus (Fr.) Fr. 1828
+
+Steccherinum oreophilum
+bránovitka přezkatá
+Steccherinum oreophilum Lindsey & Gilb. 1977
+
+Lachnellula calyciformis
+brvenka číškovitá
+Lachnellula calyciformis (Fr.) Dharne (1965)
+
+Lachnellula subtilissima
+brvenka drobná
+Lachnellula subtilissima (Cooke) Dennis
+
+Lachnellula gallica
+brvenka francouzská
+Lachnellula gallica (P. Karst. & Har.) Dennis (1962)
+
+Lachnellula occidentalis
+brvenka Hahnova
+Lachnellula occidentalis (G.G. Hahn & Ayers) Dharne 1965
+
+Lasiobolus macrotrichus
+Lasiobolus macrotrichus
+Lasiobolus macrotrichus Rea 1917
+
+Lasiobolus intermedius
+Lasiobolus intermedius
+Lasiobolus intermedius J.L. Bezerra & Kimbr. (1975)
+
+Piptoporus betulinus
+březovník obecný
+Piptoporus betulinus (Bull.) P. Karst. 1881
+
+Macrocystidia cucumis
+cystidovka rybovonná
+Macrocystidia cucumis (Pers.) Joss. 1934
+
+Mitrula paludosa
+čapulka bahenní
+Mitrula paludosa Fr. 1816
+
+Tapinella atrotomentosa
+čechratice černohuňatá
+Tapinella atrotomentosa (Batsch) Šutara 1992
+
+Tapinella panuoides
+čechratice sklepní
+Tapinella panuoides (Fr.) E.-J. Gilbert 1931
+
+Paxillus rubicundulus
+čechratka olšová
+Paxillus rubicundulus P.D. Orton 1969
+
+Paxillus involutus
+čechratka podvinutá
+Paxillus involutus (Batsch) Fr. 1838
+
+Galerina atkinsoniana
+čepičatka Atkinsonova
+Galerina atkinsoniana A.H. Sm. 1953
+
+Phaeogalera stagnina
+čepičatka bažinná
+Phaeogalera stagnina (Fr.) Pegler & T.W.K. Young 1975
+
+Galerina marginata
+čepičatka jehličnanová
+Galerina marginata (Batsch) Kühner 1935
+
+Galerina triscopa
+čepičatka kmenová
+Galerina triscopa (Fr.) Kühner 1935
+
+Galerina mairei
+čepičatka kosťovitá
+Galerina mairei Boutev. & P.-A. Moreau 2005
+
+Exidia thuretiana
+černorosol bělavý
+Exidia thuretiana (Lév.) Fr. 1874
+
+Myxarium nucleatum
+černorosol bezbarvý
+Myxarium nucleatum Wallr. 1833
+
+Exidia saccharina
+černorosol borový
+Exidia saccharina Fr. 1822
+
+Exidia glandulosa
+černorosol bukový
+Exidia glandulosa (Bull.) Fr. 1822
+
+Exidia cartilaginea
+černorosol chrupavčitý
+Exidia cartilaginea S. Lundell & Neuhoff 1935
+
+Exidia pithya
+černorosol smrkový
+Exidia pithya (Alb. & Schwein.) Fr. 1822
+
+Exidia recisa
+černorosol terčovitý
+Exidia recisa (Ditmar) Fr. 1822
+
+Exidia badioumbrina
+černorosol umbrový
+Exidia badioumbrina (Bres.) Neuhoff 1936
+
+Exidia truncata
+černorosol uťatý
+Exidia truncata Fr. 1822
+
+Melanogaster broomeanus
+černoušek Broomeův
+Melanogaster broomeanus Berk. 1843
+
+Ascocoryne sarcoides
+čihovitka masová
+Ascocoryne sarcoides (Jacq.) J.W. Groves & D.E. Wilson 1967
+
+Ascocoryne cylichnium
+čihovitka větší
+Ascocoryne cylichnium (Tul.) Korf 1971
+
+Dermoloma josserandii
+čirůvečka Josserandova
+Dermoloma josserandii Dennis & P.D. Orton 1960
+
+Dermoloma cuneifolium
+čirůvečka klínolupenná
+Dermoloma cuneifolium (Fr.) Singer ex Bon 1986
+
+Dermoloma pseudocuneifolium
+čirůvečka trávníková
+Dermoloma pseudocuneifolium Herink ex Bon 1986
+
+Tricholoma albobrunneum
+čirůvka bělohnědá
+Tricholoma albobrunneum (Pers.) P. Kumm. 1871
+
+Tricholoma stiparophyllum
+čirůvka běložlutavá
+Tricholoma stiparophyllum (N. Lund) P. Karst. 1879
+
+Tricholoma album
+čirůvka bílá
+Tricholoma album (Schaeff.) P. Kumm. 1871
+
+Tricholoma sciodes
+čirůvka buková
+Tricholoma sciodes (Pers.) C. Martín 1919
+
+Tricholoma apium
+čirůvka celerová
+Tricholoma apium Jul. Schäff. 1925
+
+Porpoloma metapodium
+čirůvka černavá
+Porpoloma metapodium (Fr.) Singer 1973
+
+Tricholoma atrosquamosum
+čirůvka černošupinná
+Tricholoma atrosquamosum Sacc. 1887
+
+Lepista personata
+čirůvka dvoubarvá
+Lepista personata (Fr.) Cooke 1871
+
+Lepista nuda
+čirůvka fialová
+Lepista nuda (Bull.) Cooke 1871
+
+Tricholoma portentosum
+čirůvka havelka
+Tricholoma portentosum (Fr.) Quél. 1873
+
+Tricholoma columbetta
+čirůvka holubičí
+Tricholoma columbetta (Fr.) P. Kumm. 1871
+
+Tricholoma acerbum
+čirůvka hořká
+Tricholoma acerbum (Bull.) Quél. 1872
+
+Tricholoma vaccinum
+čirůvka kravská
+Tricholoma vaccinum (Schaeff.) P. Kumm. 1871
+
+Tricholoma cingulatum
+čirůvka kroužkatá
+Tricholoma cingulatum (Almfelt ex Fr.) Jacobashch 1890
+
+Tricholoma pseudonictitans
+čirůvka lesklá (jehličnanová)
+Tricholoma pseudonictitans Bon 1983
+
+Tricholoma focale
+čirůvka límcovitá
+Tricholoma focale (Fr.) Ricken 1914
+
+Calocybe gambosa
+čirůvka májovka
+Calocybe gambosa (Fr.) Donk 1962
+
+Tricholoma pessundatum
+čirůvka masitá
+Tricholoma pessundatum (Fr.) Quél. (1872)
+
+Rugosomyces carneus
+čirůvka masová
+Rugosomyces carneus (Bull.) Bon 1991
+
+Tricholoma psammopus
+čirůvka modřínová
+Tricholoma psammopus (Kalchbr.) Quél. 1875
+
+Tricholoma saponaceum
+čirůvka mýdlová
+Tricholoma saponaceum (Fr.) P. Kumm. 1871
+
+Tricholoma inamoenum
+čirůvka nevonná
+Tricholoma inamoenum (Fr.) Gillet 1874
+
+Tricholoma colossus
+čirůvka obrovská
+Tricholoma colossus (Fr.) Quél. 1872
+
+Tricholoma sejunctum
+čirůvka odlišná
+Tricholoma sejunctum (Sowerby) Quél. 1872
+
+Tricholoma viridilutescens
+čirůvka olivově hnědá
+Tricholoma viridilutescens M.M. Moser 1978
+
+Tricholoma ustaloides
+čirůvka opálená
+Tricholoma ustaloides Romagn. 1954
+
+Tricholoma aurantium
+čirůvka oranžová
+Tricholoma aurantium (Schaeff.) Ricken 1914
+
+Tricholoma frondosae
+čirůvka osiková
+Tricholoma frondosae Kalamees & Shchukin 2001
+
+Tricholoma ustale
+čirůvka osmahlá
+Tricholoma ustale (Fr.) P. Kumm. 1871
+
+Tricholoma fucatum
+čirůvka peřestá
+Tricholoma fucatum (Fr.) P. Kumm. 1871
+
+Tricholoma stans
+čirůvka pochybná
+Tricholoma stans (Fr.) Sacc. 1887
+
+Tricholoma batschii
+čirůvka prstenitá
+Tricholoma batschii Gulden 1969
+
+Tricholoma arvernense
+čirůvka příbuzná
+Tricholoma arvernense Bon 1976
+
+čirůvka růžovolupenná
+Tricholoma orirubens Quél. 1872
+Tricholoma basirubens
+
+Tricholoma basirubens
+čirůvka růžovotřenná
+Tricholoma basirubens (Bon) A. Riva & Bon 1988
+
+Tricholoma aestuans
+čirůvka sálající
+Tricholoma aestuans (Fr.) Gillet 1874
+
+Tricholoma sulphureum
+čirůvka sírožlutá
+Tricholoma sulphureum (Bull.) P. Kumm. 1871
+
+Tricholoma lascivum
+čirůvka smrdutá
+Tricholoma lascivum (Fr.) Gillet 1874
+
+Tricholoma imbricatum
+čirůvka střechovitá
+Tricholoma imbricatum (Fr.) P. Kumm. 1871
+
+Tricholoma scalpturatum
+čirůvka šedožemlová
+Tricholoma scalpturatum (Fr.) Quél. 1872
+
+Lepista sordida
+čirůvka špinavá
+Lepista sordida (Schumach.) Singer 1951
+
+Tricholoma populinum
+čirůvka topolová
+Tricholoma populinum J.E. Lange 1933
+
+Tricholoma pardinum
+čirůvka tygrovaná
+Tricholoma pardinum (Pers.) Quél. 1873
+
+Tricholoma matsutake
+čirůvka větší
+Tricholoma matsutake (S. Ito & S. Imai) Singer 1943
+
+Rugosomyces ionides
+čirůvka violková
+Rugosomyces ionides (Bull.) Bon 1991
+
+Tricholoma filamentosum
+čirůvka vláknitá
+Tricholoma filamentosum (Alessio) Alessio 1988
+
+Lepista luscina
+čirůvka zamlžená
+Lepista luscina (Fr.) Singer 1951
+
+Tricholoma equestre
+čirůvka zelánka
+Tricholoma equestre (L.) P. Kumm. 1871
+
+Tricholoma terreum
+čirůvka zemní
+Tricholoma terreum (Schaeff.) P. Kumm. 1871
+
+Tricholoma bufonium
+čirůvka žabí
+Tricholoma bufonium (Pers.) Gillet 1874
+
+Tricholoma virgatum
+čirůvka žíhaná
+Tricholoma virgatum (Fr.) P. Kumm. 1871
+
+Tricholoma fulvum
+čirůvka žlutohnědá
+Tricholoma fulvum (DC.) Bigeard & H. Guill. 1909
+
+Tricholoma distantifoliaceum
+Tricholoma distantifoliaceum
+Tricholoma distantifoliaceum E. Ludw. & H. Willer 2012
+
+Cyathus olla
+číšenka hrnečková
+Cyathus olla (Batsch) Pers. 1801
+
+Cyathus striatus
+číšenka rýhovaná
+Cyathus striatus (Huds.) Willd. 178
+
+Cyathus stercoreus
+číšenka výkalová
+Cyathus stercoreus (Schwein.) De Toni 1888
+
+Lachnella alboviolascens
+číšovec bělofialový
+Lachnella alboviolascens (Alb. & Schwein.) Fr. 1849
+
+Cyphella digitalis
+číšovec náprstkovitý
+Cyphella digitalis (Alb. & Schwein.) Fr. 1822
+
+Woldmaria filicina
+číšovec pérovníkový
+Woldmaria filicina (Peck) Knudsen 1996
+
+Calyptella capula
+číšoveček kápovitý
+Calyptella capula (Holmsk.) Quél. 1888
+
+Discina ancilis
+destice chřapáčová
+Discina ancilis (Pers.) Sacc. 1889
+
+Gyromitra parma
+destice okrouhlá
+Gyromitra parma (J. Breitenb. & Maas Geest.) Kotl. & Pouzar 1974
+
+Cyathicula coronata
+dlouhobrvka zdobená
+Cyathicula coronata (Bull.) Rehm 1893
+
+Xylaria carpophila
+dřevnatka číškomilná
+Xylaria carpophila (Pers.) Fr. 1849
+
+Xylaria longipes
+dřevnatka dlouhonohá
+Xylaria longipes Nitschke 1867
+
+Xylaria polymorpha
+dřevnatka kyjovitá
+Xylaria polymorpha (Pers.) Grev. 1824
+
+Xylaria filiformis
+dřevnatka niťovitá
+Xylaria filiformis (Alb. & Schwein.) Fr. 1849
+
+Xylaria hypoxylon
+dřevnatka parohatá
+Xylaria hypoxylon (L.) Grev. 1824
+
+Byssomerulius corium
+dřevokaz kožový
+Byssomerulius corium (Pers.) Parmasto 1967
+
+Phlebia tremellosa
+dřevokaz rosolovitý
+Phlebia tremellosa (Schrad.) Nakasone & Burds. 1984
+
+Hypoxylon fragiforme
+dřevomor červený
+Hypoxylon fragiforme (Pers.) J. Kickx f. 1835
+
+Hypoxylon fuscum
+dřevomor hnědý
+Hypoxylon fuscum (Pers.) Fr. 1849
+
+Hypoxylon howeanum
+dřevomor Howeův
+Hypoxylon howeanum Peck 1872
+
+Annulohypoxylon multiforme
+dřevomor mnohotvarý
+Annulohypoxylon multiforme (Fr.) Y.M. Ju, J.D. Rogers & H.M. Hsieh
+
+Nemania serpens
+dřevomor plazivý
+Nemania serpens (Pers.) Gray 1821
+
+Entoleuca mammata
+dřevomor prsnatý
+Entoleuca mammata (Wahlenb.) J.D. Rogers & Y.M. Ju 1996
+
+Jackrogersella cohaerens
+dřevomor ranový
+Jackrogersella cohaerens (Pers.) L. Wendt, Kuhnert & M. Stadler 2017
+
+Hypoxylon rubiginosum
+dřevomor rezavý
+Hypoxylon rubiginosum (Pers.) Fr. 1849
+
+Serpula lacrymans
+dřevomorka domácí
+Serpula lacrymans (Wulfen) J. Schröt. 1885
+
+Serpula himantioides
+dřevomorka lesní
+Serpula himantioides (Fr.) P. Karst. 1884
+
+Leucogyrophana mollusca
+dřevomorka meruňková
+Leucogyrophana mollusca (Fr.) Pouzar 1958
+
+Pseudomerulius aureus
+dřevomorka zlatá
+Pseudomerulius aureus (Fr.) Jülich 1979
+
+Onnia triqueter
+ďubkatec borový
+Onnia triqueter (Pers.) Imazeki 1955
+
+Coltricia perennis
+ďubkatec pohárkovitý
+Coltricia perennis (L.) Murrill 1903
+
+Pachykytospora tuberculosa
+dubovnice střevovitá
+Pachykytospora tuberculosa (Fr.) Kotl. & Pouzar 1963
+
+Fayodia bisphaerigera
+fajodka osténkatá
+Fayodia bisphaerigera (J.E. Lange) Singer 1936
+
+Gamundia striatula
+fajodka zimní
+Gamundia striatula (Kühner) Raithelh. 1983
+
+Phallus impudicus
+hadovka smrdutá
+Phallus impudicus L. 1753
+
+Phallus hadriani
+hadovka valčická
+Phallus hadriani Vent. 1798
+
+Mycena belliae
+helmovka Bellové
+Mycena belliae (Johnst.) P.D. Orton 1960
+
+Mycena bulbosa
+helmovka cibulkatá
+Mycena bulbosa (Cejp) Kühner 1938
+
+Mycena atropapillata
+helmovka (černobradavková)
+Mycena atropapillata Kühner & Maire 1938
+
+Mycena rubromarginata
+helmovka červenobřitá
+Mycena rubromarginata (Fr.) P. Kumm. 1871
+
+Mycena stylobates
+helmovka diskovitá
+Mycena stylobates (Pers.) P. Kumm. 1871
+
+Mycena diosma
+helmovka dvojvonná
+Mycena diosma Krieglst. & Schwöbel 1982
+
+Mycena laevigata
+helmovka hladká
+Mycena laevigata (Lasch) Gillet (1876)
+
+Mycena purpureofusca
+helmovka hnědopurpurová
+Mycena purpureofusca (Peck) Sacc. 1887
+
+Mycena acicula
+helmovka jehličková
+Mycena acicula (Schaeff.) P. Kumm. 1871
+
+Atheniella adonis
+helmovka jitřenková
+Atheniella adonis (Bull.) Redhead, Moncalvo, Vilgalys, Desjardin & B.A. Perry 2012
+
+Mycena pterigena
+helmovka kapradinová
+Mycena pterigena (Fr.) P. Kumm. 1871
+
+Mycena pseudocorticola
+helmovka koromilná
+Mycena pseudocorticola Kühner (1938)
+
+Mycena sanguinolenta
+helmovka krvavá
+Mycena sanguinolenta (Alb. & Schwein.) P. Kumm. 1871
+
+Mycena haematopus
+helmovka krvonohá
+Mycena haematopus (Pers.) P. Kumm. 1871
+
+Mycena metata
+helmovka kuželovitá
+Mycena metata (Secr. ex Fr.) P. Kumm. (1871)
+
+Mycena nucicola
+helmovka lísková
+Mycena nucicola Huijsman (1958)
+
+Mycena stipata
+helmovka louhová
+Mycena stipata Maas Geest. & Schwöbel 1987
+
+Mycena renati
+helmovka medonohá
+Mycena renati Quél. (1886)
+
+Mycena galopus
+helmovka mléčná
+Mycena galopus (Pers.) P. Kumm. 1871
+
+Mycena amicta
+helmovka modravá
+Mycena amicta (Fr.) Quél. 1872
+
+Mycena rosea
+helmovka narůžovělá
+Mycena rosea Gramberg 1912
+
+Mycena flavescens
+helmovka nažloutlá
+Mycena flavescens Velen. 1920
+
+Mycena vulgaris
+helmovka obecná
+Mycena vulgaris (Pers.) P. Kumm. 1871
+
+Mycena tintinnabulum
+helmovka pařezová
+Mycena tintinnabulum (Paulet) Quél. 1872
+
+Mycena abramsii
+helmovka raná
+Mycena abramsii (Murrill) Murrill 1916
+
+Mycena romagnesiana
+helmovka Romagnesiho
+Mycena romagnesiana Maas Geest. 1991
+
+Mycena rosella
+helmovka růžová
+Mycena rosella (Fr.) P. Kumm. 1871
+
+Mycena polygramma
+helmovka rýhonohá
+Mycena polygramma (Bull.) Gray 1821
+
+Mycena pura
+helmovka ředkvičková
+Mycena pura (Pers.) P. Kumm. 1871
+
+Hemimycena cucullata
+helmovka sádrová
+Hemimycena cucullata (Pers.) Singer 1961
+
+Mycena maculata
+helmovka skvrnitá
+Mycena maculata P. Karst. 1890,
+
+Mycena epipterygia
+helmovka slizká
+Mycena epipterygia (Scop.) Gray 1821
+
+Mycena silvae-nigrae
+helmovka smrková
+Mycena silvae-nigrae Maas Geest. & Schwöbel 1987
+
+Mycena niveipes
+helmovka sněhonohá
+Mycena niveipes (Murrill) Murrill 1916
+
+Mycena flos-nivium
+helmovka sněžná
+Mycena flos-nivium Kühner 1952
+
+Mycena crocata
+helmovka šafránová
+Mycena crocata (Schrad.) P. Kumm. 1871
+
+Mycena cinerella
+helmovka šedá
+Mycena cinerella (P. Karst.) P. Karst. 1879
+
+Mycena latifolia
+helmovka širokolupenná
+Mycena latifolia (Peck) A.H. Sm. 1935
+
+Mycena strobilicola
+helmovka šiškomilná
+Mycena strobilicola J. Favre & Kühner 1938
+
+Mycena galericulata
+helmovka tuhonohá
+Mycena galericulata (Scop.) Gray 1821
+
+Mycena viridimarginata
+helmovka zelenobřitá
+Mycena viridimarginata P. Karst. 1892
+
+Mycena hiemalis
+helmovka zimní
+Mycena hiemalis (Osbeck) Quél. 1872
+
+Mycena aurantiomarginata
+helmovka zlatobřitá
+Mycena aurantiomarginata (Fr.) Quél. 1872
+
+Mycena pelianthina
+helmovka zoubkatá
+Mycena pelianthina (Fr.) Quél. 1872
+
+Mycena flavoalba
+helmovka žlutobílá
+Mycena flavoalba (Fr.) Quél. 1872
+
+Mycena agrestis
+Mycena agrestis
+Mycena agrestis Aronsen & Maas Geest. 1997
+
+Hapalopilus nidulans
+hlinák červenající
+Hapalopilus nidulans (Fr.) P. Karst. 1881
+
+Hapalopilus ochraceolateritius
+hlinák (okrovocihlový)
+Hapalopilus ochraceolateritius (Bondartsev) Bondartsev & Singer 1941
+
+Pleurotus calyptratus
+hlíva čepičkatá
+Pleurotus calyptratus (Lindblad ex Fr.) Sacc. 1887
+
+Tectella patellaris
+hlíva číškovitá
+Tectella patellaris (Fr.) Murrill 1915
+
+Pleurotus dryinus
+hlíva dubová
+Pleurotus dryinus (Pers.) P. Kumm. 1871
+
+Panus conchatus
+hlíva fialová
+Panus conchatus (Bull.) Fr. 1838
+
+Phyllotopsis nidulans
+hlíva hnízdovitá
+Phyllotopsis nidulans (Pers.) Singer 1936
+
+Panus lecomtei
+hlíva chlupatá
+Panus lecomtei (Fr.) Corner 1981
+
+Omphalotus illudens
+hlíva klamná
+Omphalotus illudens Bresinsky & Besl 1979
+
+Hohenbuehelia petaloides
+hlíva plátkovitá (zemní)
+Hohenbuehelia petaloides (Bull.) Schulzer 1866
+
+Pleurotus pulmonarius
+hlíva plicní
+Pleurotus pulmonarius (Fr.) Quél. 1872
+
+Pleurotus ostreatus
+hlíva ústřičná
+Pleurotus ostreatus (Jacq.) P. Kumm. 1871
+
+Pleurocybella porrigens
+hlíva ušatá
+Pleurocybella porrigens (Pers.) Singer 1947
+
+Resupinatus striatulus
+hlívečník Kavinův
+Resupinatus striatulus (Pers.) Murrill
+
+Resupinatus applicatus
+hlívečník připjatý
+Resupinatus applicatus (Batsch) Gray 1821
+
+Hohenbuehelia unguicularis
+hlívička ???
+Hohenbuehelia unguicularis (Fr.) O.K. Mill. 1986
+
+Hohenbuehelia cyphelliformis
+hlívička číšovcovitá
+Hohenbuehelia cyphelliformis (Berk.) O.K. Mill. 1986
+
+Hohenbuehelia auriscalpium
+hlívička stopkatá
+Hohenbuehelia auriscalpium (Maire) Singer 1951
+
+Rhodotus palmatus
+hlívovec ostnovýtrusý
+Rhodotus palmatus (Bull.) Maire 1926
+
+Hymenogaster niveus
+hlíza bělostná
+Hymenogaster niveus Vittad. (1831)
+
+Hymenogaster bulliardii
+hlíza Bulliardova
+Hymenogaster bulliardii Vittad. 1831
+
+Hymenogaster olivaceus
+hlíza olivová
+Hymenogaster olivaceus Vittad. (1831)
+
+Hymenogaster decorus
+hlíza zdobná
+Hymenogaster decorus Tul. & C. Tul. (1843)
+
+Hymenogaster luteus
+hlíza žlutá
+Hymenogaster luteus Vittad. (1831)
+
+Monilinia jonsonii
+hlízenka hlohová
+Monilinia jonsonii (Ellis & Everh.) Honey 1936
+
+Sclerotinia ficariae
+hlízenka orsejová
+Sclerotinia ficariae Rehm 1893
+
+Dumontinia tuberosa
+hlízenka sasanková
+Dumontinia tuberosa (Bull.) L.M. Kohn 1979
+
+Phaeolus schweinitzi
+hnědák Schweinitzův
+Phaeolus schweinitzi (Fr.) Pat. 1900
+
+Nidularia deformis
+hnízdovka nacpaná
+Nidularia deformis (Willd.) Fr. 1817
+
+Coprinellus domesticus
+hnojník domácí
+Coprinellus domesticus (Bolton) Vilgalys, Hopple & Jacq. Johnson 2001
+
+Coprinopsis acuminata
+hnojník hrotitý
+Coprinopsis acuminata (Romagn.) Redhead, Vilgalys & Moncalvo 2001
+
+Coprinopsis atramentaria
+hnojník inkoustový
+Coprinopsis atramentaria (Bull.) Redhead, Vilgalys & Moncalvo 2001
+
+Coprinopsis cinerea
+hnojník mrvní
+Coprinopsis cinerea (Schaeff.) Redhead, Vilgalys & Moncalvo 2001
+
+Coprinus disseminatus
+hnojník nasetý
+Coprinus disseminatus (Pers.) Gray 1821
+
+Coprinus comatus
+hnojník obecný
+Coprinus comatus (O.F. Müll.) Pers. 1797
+
+Parasola plicatilis
+hnojník řasnatý
+Parasola plicatilis (Curtis) Redhead, Vilgalys & Hopple 2001
+
+Coprinus picaceus
+hnojník strakatý
+Coprinus picaceus (Bull.) Gray 1821
+
+Coprinellus micaceus
+hnojník třpytivý
+Coprinellus micaceus (Bull.) Vilgalys, Hopple & Jacq. Johnson 2001
+
+Coprinopsis lagopus
+hnojník zaječí
+Coprinopsis lagopus (Fr.) Redhead, Vilgalys & Moncalvo 2001
+
+Russula chloroides
+holubinka akvamarínová
+Russula chloroides (Krombh.) Bres. 1900
+
+Russula delica
+holubinka bílá
+Russula delica Fr. 1838
+
+Russula badia
+holubinka brunátná
+Russula badia Quél. 1881
+
+Russula betularum
+holubinka březová
+Russula betularum Hora 1960
+
+Russula faginea
+holubinka buková
+Russula faginea Romagn. 1967
+
+Russula heterophylla
+holubinka bukovka
+Russula heterophylla (Fr.) Fr. 1838
+
+Russula integra
+holubinka celokrajná
+Russula integra (L.) Fr. 1838
+
+Russula luteotacta
+holubinka citlivá
+Russula luteotacta Rea 1922
+
+Russula nigricans
+holubinka černající
+Russula nigricans Fr. 1838
+
+Russula albonigra
+holubinka černobílá
+Russula albonigra (Krombh.) Fr. 1874
+
+Russula atropurpurea
+holubinka černonachová
+Russula atropurpurea (Krombh.) Britzelm.
+
+Russula grisea
+holubinka doupňáková (sivá)
+Russula grisea Fr. 1838
+
+Russula pumila
+holubinka drobná
+Russula pumila Rouzeau & F. Massart 1970
+
+Russula cavipes
+holubinka dutonohá
+Russula cavipes Britzelm. 1893
+
+Russula violeipes
+holubinka fialovonohá
+Russula violeipes Quél. 1898
+
+Russula ionochlora
+holubinka fialovozelená
+Russula ionochlora Romagn. 1952
+
+Russula ochroleuca
+holubinka hlínožlutá
+Russula ochroleuca Fr. 1838
+
+Russula grata
+holubinka hořkomandlová
+Russula grata Britzelm. 1898
+
+Russula amoenolens
+holubinka hřebílkatá
+Russula amoenolens Romagn. 1952
+
+Russula pectinatoides
+holubinka hřebínkatá
+Russula pectinatoides Peck 1907
+
+Russula densifolia
+holubinka hustolupenná (hustolistá)
+Russula densifolia Secr. ex Gillet 1876
+
+Russula claroflava
+holubinka chromová
+Russula claroflava Grove 1888
+
+Russula paludosa
+holubinka jahodová
+Russula paludosa Britzelm. 1891
+
+Russula sardonia
+holubinka jízlivá
+Russula sardonia Fr. 1838
+
+Russula anatina
+holubinka kachní
+Russula anatina Romagn. 1967
+
+Russula mustelina
+holubinka kolčaví
+Russula mustelina Fr. 1838
+
+Russula curtipes
+holubinka krátkonohá
+Russula curtipes F.H. Møller & Jul. Schäff. 1935
+
+Russula fragilis
+holubinka křehká
+Russula fragilis Fr. 1838
+
+Russula lundellii
+holubinka Lundellova
+Russula lundellii Singer 1951
+
+Russula vesca
+holubinka mandlová
+Russula vesca Fr. 1836
+
+Russula risigallina
+holubinka měnlivá
+Russula risigallina (Batsch) Sacc. 1915
+
+Russula subrubens
+holubinka mokřadní
+Russula subrubens (J.E. Lange) Bon 1972
+
+Russula cyanoxantha
+holubinka namodralá
+Russula cyanoxantha (Schaeff.) Fr. 1863
+
+Russula virescens
+holubinka nazelenalá
+Russula virescens (Schaeff.) Fr. 1836
+
+Russula decolorans
+holubinka odbarvená
+Russula decolorans (Fr.) Fr. 1838
+
+Russula olivacea
+holubinka olivová
+Russula olivacea (Schaeff.) Fr. 1838
+
+Russula alnetorum
+holubinka olšinná
+Russula alnetorum Romagn. 1956
+
+Russula adusta
+holubinka osmahlá
+Russula adusta (Pers.) Fr. 1838
+
+Russula subfoetens
+holubinka páchnoucí (zápašná)
+Russula subfoetens W.G. Sm. 1873
+
+Russula acrifolia
+holubinka palčivolupenná (ostrá)
+Russula acrifolia Romagn. 1997
+
+Russula farinipes
+holubinka pružná
+Russula farinipes Romell 1893
+
+Russula queletii
+holubinka Quéletova
+Russula queletii Fr. 1872
+
+Russula nauseosa
+holubinka raná
+Russula nauseosa (Pers.) Fr. 1838
+
+Russula helodes
+holubinka rašelinná
+Russula helodes Melzer 1929
+
+Russula xerampelina
+holubinka révová
+Russula xerampelina (Schaeff.) Fr. 1838
+
+Russula rhodopus
+holubinka rudonohá
+Russula rhodopus Zvára 1927
+
+Russula pseudointegra
+holubinka ruměnná
+Russula pseudointegra Arnould & Goris 1907
+
+Russula roseipes
+holubinka růžovonohá
+Russula roseipes Secr. ex Bres. 1881
+
+Russula sororia
+holubinka sesterská
+Russula sororia (Fr.) Romell 1891
+
+Russula maculata
+holubinka skvrnitá
+Russula maculata Quél. 1878
+
+Russula graveolens
+holubinka slanečková
+Russula graveolens Romell 1885
+
+Russula rosea
+holubinka sličná
+Russula rosea Pers. 1796
+
+Russula solaris
+holubinka sluneční
+Russula solaris Ferd. & Winge 1924
+
+Russula foetens
+holubinka smrdutá
+Russula foetens Pers. 1796
+
+Russula vinosa
+holubinka tečkovaná
+Russula vinosa Lindblad 1901
+
+Russula illota
+holubinka tmavolemá
+Russula illota Romagn. 1954
+
+Russula aeruginea
+holubinka trávozelená
+Russula aeruginea Lindblad ex Fr.
+
+Russula emetica
+holubinka vrhavka
+Russula emetica (Schaeff.) Pers. 1796
+
+Russula aurea
+holubinka zlatá
+Russula aurea Pers. 1796
+
+Russula fellea
+holubinka žlučová
+Russula fellea (Fr.) Fr. 1838
+
+Ophiocordyceps gracilis
+housenec menší
+Ophiocordyceps gracilis (Grev.) G.H. Sung, J.M. Sung, Hywel-Jones & Spatafora 2007
+
+Ophiocordyceps myrmecophila
+housenec mravenčí
+Ophiocordyceps myrmecophila (Ces.) G.H. Sung, J.M. Sung, Hywel-Jones & Spatafora 2007
+
+Tolypocladium ophioglossoides
+housenice cizopasná
+Tolypocladium ophioglossoides (J.F. Gmel.) Quandt, Kepler & Spatafora 2014
+
+Cordyceps militaris
+housenice červená
+Cordyceps militaris (L.) Fr. 1818
+
+Ophiocordyceps sinensis
+housenice čínská
+Ophiocordyceps sinensis (Berk.) G.H. Sung, J.M. Sung, Hywel-Jones & Spatafora 2007
+
+Tolypocladium rouxii
+housenice Rouxova
+Tolypocladium rouxii (Cand.) Quandt, Kepler & Spatafora 2014
+
+Neolentinus adhaerens
+houževnatec přivázlý
+Neolentinus adhaerens (Alb. & Schwein.) Redhead & Ginns 1985
+
+Neolentinus lepideus
+houževnatec šupinatý
+Neolentinus lepideus (Fr.) Redhead & Ginns 1985
+
+Lentinus suavissimus
+houževnatec vonný
+Lentinus suavissimus Fr. 1836
+
+Lentinellus castoreus
+houžovec bobří
+Lentinellus castoreus (Fr.) Kühner & Maire 1934
+
+Lentinellus cochleatus
+houžovec hlemýžďovitý
+Lentinellus cochleatus (Pers.) P. Karst. 1879
+
+Lentinellus ursinus
+houžovec medvědí
+Lentinellus ursinus (Fr.) Kühner 1926
+
+Ascobolus furfuraceus
+hovník otrubičnatý
+Ascobolus furfuraceus Pers. 1794
+
+Ascobolus carbonarius
+hovník spáleništní
+Ascobolus carbonarius P.Karst. 1870
+
+Sphaerobolus stellatus
+hrachovec hvězdovitý
+Sphaerobolus stellatus Tode 1790
+
+Boletopsis leucomelaena
+hrbolatka černobílá
+Boletopsis leucomelaena (Pers.) Fayod 1889
+
+Cystostereum murray
+hrbolatník vonný
+Cystostereum murray (Berk. & M.A. Curtis) Pouzar 1959
+
+Geopora foliacea
+hrobenka listovitá
+Geopora foliacea (Schaeff.) S. Ahmad 1978
+
+Geopora arenosa
+hrobenka písečná
+Geopora arenosa (Fuckel) S. Ahmad 1978
+
+Geopora arenicola
+hrobenka pískomilná
+Geopora arenicola (Lév.) Kers 1974
+
+Mycoacia uda
+hrotnatečka žlutá
+Mycoacia uda (Fr.) Donk 1931
+
+Sarcodontia crocea
+hrotnatka zápašná
+Sarcodontia crocea (Schwein.) Kotl. 1953
+
+Boletus pinophilus
+hřib borový
+Boletus pinophilus Pilát & Dermek 1973
+
+Boletus aereus
+hřib bronzový
+Boletus aereus Bull. 1789
+
+Xerocomellus rubellus
+hřib červený
+Xerocomellus rubellus (Krombh.) Šutara 2008
+
+Buchwaldoboletus lignicola
+hřib dřevožijný
+Buchwaldoboletus lignicola (Kallenb.) Pilát 1969
+
+Boletus reticulatus
+hřib dubový
+Boletus reticulatus Schaeff 1774
+
+Boletus dupainii
+hřib Dupainův
+Boletus dupainii Boud. 1902
+
+Suillus cavipes
+hřib dutonohý
+Suillus cavipes (Opat.) A.H. Sm. & Thiers 1964
+
+Xerocomellus engelii
+hřib Engelův
+Xerocomellus engelii (Hlaváček) Šutara (2008)
+
+Boletus fechtneri
+hřib Fechtnerův
+Boletus fechtneri Velen. 1922
+
+Boletus badius
+hřib hnědý
+Boletus badius (Fr.) Fr.
+
+Boletus subappendiculatus
+hřib horský
+Boletus subappendiculatus Dermek, Lazebn. & J. Veselský 1979
+
+Boletus kluzakii
+hřib Kluzákův
+Boletus kluzakii Šutara & Špinar 2006
+
+Boletus luridus
+hřib koloděj
+Boletus luridus Schaeff. 1774
+
+Boletus erythropus
+hřib kovář
+Boletus erythropus Pers. 1796
+
+Boletus luridiformis var. discolor
+hřib kovář odbarvený
+Boletus luridiformis var. discolor (Quél.) Krieglst. 1991
+
+Boletus junquilleus
+hřib kovář žlutý
+Boletus junquilleus (Quél.) Boud. 1906
+
+Boletus regius
+hřib královský
+Boletus regius Krombh. 1832
+
+Boletus calopus
+hřib kříšť
+Boletus calopus Pers.
+
+Boletus legaliae
+hřib Le Galové
+Boletus legaliae (Pilát & Dermek) Della Maggiora & Trassin 2015
+
+Boletus legaliae f. spinarii
+hřib Le Galové Špinarův
+Boletus legaliae f. spinarii (Hlaváček) Janda 2009
+
+Xerocomellus marekii
+hřib Markův
+Xerocomellus marekii (Šutara & Skála) Šutara 2008
+
+Boletus radicans
+hřib medotrpký
+Boletus radicans Pers.
+
+Xerocomellus armeniacus
+hřib meruňkový
+Xerocomellus armeniacus (Quél.) Šutara 2008
+
+Boletus pulverulentus
+hřib modračka
+Boletus pulverulentus Opat. (1836)
+
+Xerocomellus ripariellus
+hřib mokřadní
+Xerocomellus ripariellus (Redeuilh) Šutara 2008
+
+Aureoboletus moravicus
+hřib moravský
+Aureoboletus moravicus (Vacek) Klofac 2010
+
+Boletus rubrosanguineus
+hřib Moserův
+Boletus rubrosanguineus Cheype 1983
+
+Boletus rhodoxanthus
+hřib nachový
+Boletus rhodoxanthus (Krombh.) Kallenb. 1925
+
+Tylopilus porphyrosporus
+hřib nachovýtrusý
+Tylopilus porphyrosporus (Fr. & Hök) A.H. Sm. & Thiers 1971
+
+Boletus ferrugineus
+hřib osmahlý
+Boletus ferrugineus Schaeff 1774
+
+Xerocomellus bubalinus
+hřib parkový (lindový)
+Xerocomellus bubalinus (Oolbekk. & Duin) Mikšík 2014
+
+Chalciporus piperatus
+hřib peprný
+Chalciporus piperatus (Bull.) Bataille 1908
+
+Hemileccinum impolitum
+hřib plavý
+Hemileccinum impolitum (Fr.) Šutara 2008
+
+Boletus subtomentosus
+hřib plstnatý
+Boletus subtomentosus L. 1753
+";
+
+            List<Tuple<string, string, string>> mycelias = new List<Tuple<string, string, string>>();
+            var lines = data.Replace("\n", "").Split('\r');
+            int length = lines.Length;
+            for (int l = 0; l < length;)
+            {
+                if (!String.IsNullOrEmpty(lines[l]))
+                {   // Neprázdný řádek: musím mít ještě další dva:
+                    if (l + 2 >= length) break;
+                    var latName = lines[l++];              // Aureoboletus moravicus
+                    var czName = lines[l++];               // hřib moravský
+                    var latName2 = lines[l++];             // Aureoboletus moravicus (Vacek) Klofac 2010
+                    mycelias.Add(new Tuple<string, string, string>(latName, czName, latName2));
+                }
+                else
+                    // Prázdný řádek mezi prvky přeskočím:
+                    l++;
+            }
+            return mycelias;
+        }
         #endregion
         #region Generátor náhodné pravděpodobnosti, čísla, barvy...
         /// <summary>

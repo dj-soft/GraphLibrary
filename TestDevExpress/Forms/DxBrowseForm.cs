@@ -80,7 +80,7 @@ namespace TestDevExpress.Forms
                     FillBrowse(0);
                     break;
                 case "Dx.Test.Add1k":
-                    FillBrowse(1000, Randomizer.WordBookType.TriMuziNaToulkach);
+                    FillBrowse(1000, Randomizer.WordBookType.TriMuziVeClunu);
                     break;
                 case "Dx.Test.Add10k":
                     FillBrowse(10000, Randomizer.WordBookType.TriMuziNaToulkach, true);

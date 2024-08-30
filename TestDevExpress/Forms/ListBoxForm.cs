@@ -53,6 +53,8 @@ namespace TestDevExpress.Forms
             foreach (var method in methods )
                 method.Invoke(this, null);       // Volá metody označené atributem [Initializer()]
 
+            __ResizedControls = new List<Control>();
+
             // Na základě prvků v poli __Samples vytvořím sadu buttonů pro jednotlivé testy:
             int y = 12;
             int x = 12;
@@ -63,10 +65,12 @@ namespace TestDevExpress.Forms
             foreach (var sample in __Samples)
             {
                 if (n > 0 && sample.IsNewGroup) y += 6;
-                sample.Button = DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, sample.ButtonText, _SampleButtonClick, tag: sample);
+                sample.Button = DxComponent.CreateDxSimpleButton(x, y, w, h, this._HostContainer, sample.ButtonText, _SampleButtonClick, tag: sample);
                 y += (h + 3);
                 n++;
             }
+
+            _HostContainer.ClientSizeChanged += _HostContainer_ClientSizeChanged;
         }
         /// <summary>
         /// Kliknutí na button se samplem = zahodí se dosavadní listy, a zavolá se sample pro tvorbu nové komponenty
@@ -80,18 +84,22 @@ namespace TestDevExpress.Forms
                 _DisposeSamplesAll();
                 sampleInfo.Button.Appearance.FontStyleDelta = FontStyle.Bold;
                 sampleInfo.ButtonClick();
+                _ResizeChildControls();
             }
         }
         /// <summary>
         /// Do daného List se navážou obecné eventhandlery, vedou na LogAddLine
         /// </summary>
         /// <param name="listPanel"></param>
-        private void _AddEventHandlers(DxListBoxPanel listPanel)
+        /// <param name="resizeHeight"></param>
+        private void _AddEventHandlers(DxListBoxPanel listPanel, bool resizeHeight = false)
         {
             listPanel.SelectedItemsChanged += _SelectedItemsChanged;
             listPanel.ItemMouseClick += _ItemMouseClick;
             listPanel.ItemMouseDoubleClick += _ItemMouseDoubleClick;
 
+            if (resizeHeight)
+                __ResizedControls.Add(listPanel);
         }
         /// <summary>
         /// List změnil prvek
@@ -128,14 +136,36 @@ namespace TestDevExpress.Forms
         }
         private void _DisposeSamplesAll()
         {
+            __ResizedControls.Clear();
             __Samples.ForEach(s =>
             {
                 s.Button.Appearance.FontStyleDelta = FontStyle.Regular;
                 s.DisposeContent();
             });
         }
+        private Control _HostContainer { get { return this.DxMainPanel; } }
         private List<SampleInfo> __Samples;
         private Point __SampleBegin;
+        private List<Control> __ResizedControls;
+
+        private void _HostContainer_ClientSizeChanged(object sender, EventArgs e)
+        {
+            _ResizeChildControls();
+        }
+        private void _ResizeChildControls()
+        { 
+            var clientSize = _HostContainer.ClientSize;
+            int top = __SampleBegin.Y;
+            int bottom = clientSize.Height - top;
+            int height = bottom - top;
+
+            foreach (var child in __ResizedControls)
+            {
+                child.Top = top;
+                child.Height = height;
+            }
+        }
+
         private class SampleInfo
         {
             public SampleInfo(string buttonText, Action buttonClick, Action disposeContent, bool isNewGroup = false)
@@ -166,8 +196,8 @@ namespace TestDevExpress.Forms
         {
             var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 450, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.None };
             sampleList.ListItems = Randomizer.GetMenuItems(24, 60, Randomizer.ImageResourceType.PngSmall);
-            _AddEventHandlers(sampleList);
-            this.DxMainPanel.Controls.Add(sampleList);
+            _AddEventHandlers(sampleList, true);
+            this._HostContainer.Controls.Add(sampleList);
 
             _Sample1List = sampleList;
         }
@@ -196,8 +226,8 @@ namespace TestDevExpress.Forms
             sampleList.EnabledKeyActions = ControlKeyActionType.MoveAll;
             sampleList.DragDropActions = DxDragDropActionType.ReorderItems;
             sampleList.ListItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
-            _AddEventHandlers(sampleList);
-            this.DxMainPanel.Controls.Add(sampleList);
+            _AddEventHandlers(sampleList, true);
+            this._HostContainer.Controls.Add(sampleList);
 
             _Sample2List = sampleList;
         }
@@ -227,8 +257,8 @@ namespace TestDevExpress.Forms
             sampleListA.DragDropActions = DxDragDropActionType.CopyItemsFrom;
             sampleListA.ListItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
             sampleListA.ListActionAfter += _Sample3ListA_ListActionAfter;
-            _AddEventHandlers(sampleListA);
-            this.DxMainPanel.Controls.Add(sampleListA);
+            _AddEventHandlers(sampleListA, true);
+            this._HostContainer.Controls.Add(sampleListA);
 
             var sampleListB = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X + 410, __SampleBegin.Y, 400, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
             sampleListB.SelectionMode = SelectionMode.MultiExtended;
@@ -238,8 +268,8 @@ namespace TestDevExpress.Forms
             sampleListB.DragDropActions = DxDragDropActionType.ImportItemsInto | DxDragDropActionType.ReorderItems;
             sampleListB.ListItems = Randomizer.GetMenuItems(7, Randomizer.ImageResourceType.PngSmall, true);
             sampleListB.ListActionAfter += _Sample3ListB_ListActionAfter;
-            _AddEventHandlers(sampleListB);
-            this.DxMainPanel.Controls.Add(sampleListB);
+            _AddEventHandlers(sampleListB, true);
+            this._HostContainer.Controls.Add(sampleListB);
 
             _Sample3ListA = sampleListA;
             _Sample3ListB = sampleListB;
@@ -276,7 +306,6 @@ namespace TestDevExpress.Forms
         private DxListBoxPanel _Sample3ListB;
         #endregion
 
-
         #region Sample 11
         /// <summary>
         /// Metoda je volaná reflexí v <see cref="DxMainContentPrepare"/> na základě atributu [Initializer()] !!!
@@ -289,15 +318,15 @@ namespace TestDevExpress.Forms
         private void _CreateSample11()
         {
             var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 520, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
-            sampleList.DataTable = Randomizer.GetDataTable(48, 96, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:photo");
+            sampleList.DataTable = Randomizer.GetDataTable(48, 96, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:thumb");
             sampleList.DxTemplate = _CreateTemplate11();
             sampleList.SelectionMode = SelectionMode.MultiExtended;
             sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
             sampleList.ButtonsTypes = ControlKeyActionType.MoveAll;
             sampleList.EnabledKeyActions = ControlKeyActionType.MoveAll;
             sampleList.DragDropActions = DxDragDropActionType.ReorderItems;
-            _AddEventHandlers(sampleList);
-            this.DxMainPanel.Controls.Add(sampleList);
+            _AddEventHandlers(sampleList, true);
+            this._HostContainer.Controls.Add(sampleList);
             _Sample11List = sampleList;
         }
         private void _DisposeSample11()
@@ -331,12 +360,12 @@ namespace TestDevExpress.Forms
         private void _CreateSample12()
         {
             var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 675, 700), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
-            sampleList.DataTable = Randomizer.GetDataTable(2300, 2500, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:photo");
+            sampleList.DataTable = Randomizer.GetDataTable(2300, 2500, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:thumb");
             sampleList.DxTemplate = _CreateTemplate12();
             sampleList.SelectionMode = SelectionMode.MultiExtended;
             sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            _AddEventHandlers(sampleList);
-            this.DxMainPanel.Controls.Add(sampleList);
+            _AddEventHandlers(sampleList, true);
+            this._HostContainer.Controls.Add(sampleList);
             _Sample12List = sampleList;
         }
         private void _DisposeSample12()
@@ -372,12 +401,12 @@ namespace TestDevExpress.Forms
         private void _CreateSample13()
         {
             var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 520, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
-            sampleList.DataTable = Randomizer.GetDataTable(48, 96, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:photo");
+            sampleList.DataTable = Randomizer.GetDataTable(48, 96, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:thumb");
             sampleList.DxTemplate = sampleList.CreateSimpleDxTemplate("id", "icon", "name", "description", 16);
             sampleList.SelectionMode = SelectionMode.MultiExtended;
             sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            _AddEventHandlers(sampleList);
-            this.DxMainPanel.Controls.Add(sampleList);
+            _AddEventHandlers(sampleList, true);
+            this._HostContainer.Controls.Add(sampleList);
             _Sample13List = sampleList;
         }
         private void _DisposeSample13()
@@ -386,6 +415,74 @@ namespace TestDevExpress.Forms
             _Sample13List = null;
         }
         private DxListBoxPanel _Sample13List;
+        #endregion
+        #region Sample 14
+        /// <summary>
+        /// Metoda je volaná reflexí v <see cref="DxMainContentPrepare"/> na základě atributu [Initializer()] !!!
+        /// </summary>
+        [Initializer(14)]
+        private void _PrepareSample14()
+        {
+            __Samples.Add(new SampleInfo("Katalog hub, 80 řádků", _CreateSample14, _DisposeSample14, true));
+        }
+        private void _CreateSample14()
+        {
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 675, 420), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
+
+            var table = Randomizer.GetDataTable(72, 96, "id:int; iconjedla:label; cznamelabel:label; czname:label; latnamelabel:label; latname:label; arealabel:label; area:label; description:note; photo:photo");
+            var mycelias = Randomizer.Mycelias;
+            var areas = "Jižní Evropa;Střední Evropa;Severní Evropa;Východní Evropa;Západní Evropa;Nížiny;Bažiny;Sahara;Tundra;Východní Asie;Kanada;Listnaté lesy;Lesní houštiny".Split(';');
+            var icons = new string[] { "images/xaf/bo_skull_32x32.png", "images/xaf/bo_attention_32x32.png", "images/xaf/action_grant_32x32.png", "images/xaf/action_bell_32x32.png" };
+            for (int r = 0; r < table.Rows.Count; r++)
+            {
+                var row = table.Rows[r];
+                var mycelium = Randomizer.GetItem(mycelias);
+                row["iconjedla"] = Randomizer.GetItem(icons);
+                row["cznamelabel"] = "České jméno:";
+                row["czname"] = mycelium.Item2;
+                row["latnamelabel"] = "Latinské jméno:";
+                row["latname"] = mycelium.Item1;
+                row["arealabel"] = "Oblast výskytu:";
+                row["area"] = Randomizer.GetItem(areas);
+            }
+            sampleList.DataTable = table;
+
+            sampleList.DxTemplate = _CreateTemplate14();
+            sampleList.SelectionMode = SelectionMode.MultiExtended;
+            sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            _AddEventHandlers(sampleList, true);
+            this._HostContainer.Controls.Add(sampleList);
+            _Sample14List = sampleList;
+        }
+        private void _DisposeSample14()
+        {
+            _Sample14List?.RemoveControlFromParent();
+            _Sample14List = null;
+        }
+        private DxListBoxTemplate _CreateTemplate14()
+        {
+            var dxTemplate = new DxListBoxTemplate();
+            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "photo", ColIndex = 0, RowIndex = 0, ColSpan = 1, RowSpan = 4, Width = 240, Height = 240, ElementContent = ElementContentType.ImageData });
+
+            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "cznamelabel", ColIndex = 1, RowIndex = 0, Width = 100, Height = 18, FontStyle = FontStyle.Italic });
+            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "czname", ColIndex = 2, RowIndex = 0, Width = 250, Height = 18, FontStyle = FontStyle.Bold, FontSizeDelta = 1 });
+
+            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "iconjedla", ColIndex = 3, RowIndex = 0, RowSpan = 3, Width = 36, Height = 36, ElementContent = ElementContentType.IconName });
+
+            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "latnamelabel", ColIndex = 1, RowIndex = 1, Width = 100, Height = 18, FontStyle = FontStyle.Italic });
+            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "latname", ColIndex = 2, RowIndex = 1, Width = 250, Height = 18, FontStyle = FontStyle.Bold });
+
+            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "arealabel", ColIndex = 1, RowIndex = 2, Width = 100, Height = 18, FontStyle = FontStyle.Italic });
+            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "area", ColIndex = 2, RowIndex = 2, Width = 250, Height = 18, FontStyle = FontStyle.Bold });
+
+            dxTemplate.Elements.Add(new DxListBoxTemplateElement() { ColumnName = "description", ColIndex = 1, RowIndex = 3, ColSpan = 3, Width = 380, Height = 48, FontStyle = FontStyle.Regular});
+
+            dxTemplate.ColumnNameItemId = "id";
+            dxTemplate.ColumnNameToolTipTitle = "czname";
+            dxTemplate.ColumnNameToolTipText = "description";
+            return dxTemplate;
+        }
+        private DxListBoxPanel _Sample14List;
         #endregion
     }
 }
