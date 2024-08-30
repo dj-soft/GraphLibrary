@@ -1869,21 +1869,46 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region VisibleItems, SelectedItems, ActiveItem a Id, a konverze ...
         /// <summary>
+        /// Aktuálně viditelné a dostupné prvky v jejich pořadí.
+        /// Pokud je aplikován řádkový filtr, pak jde o ty prvky, které mu vyhovují.
+        /// Toto pole neobsahuje prvky, které nejsou ve viditelné oblasti = sice na ně může být nascrollováno, ale aktuálně z nich není vidět ani jeden pixel.
+        /// <para/>
+        /// Prvky jsou typu buď <see cref="IMenuItem"/> anebo <see cref="System.Data.DataRow"/>, podle režimu <see cref="ItemsMode"/>.
+        /// </summary>
+        public object[] VisibleItems { get { return this.VisibleViewItems.Select(li => GetDataItem(li)).ToArray(); } }             // ImageListBoxItem => Value => IMenuItem / DataRow
+        /// <summary>
+        /// Aktuálně viditelné a dostupné prvky, jejich ItemId, v jejich pořadí.
+        /// Pokud je aplikován řádkový filtr, pak jde o ty prvky, které mu vyhovují.
+        /// Toto pole neobsahuje prvky, které nejsou ve viditelné oblasti = sice na ně může být nascrollováno, ale aktuálně z nich není vidět ani jeden pixel.
+        /// </summary>
+        public object[] VisibleItemsId { get { return this.VisibleViewItems.Select(li => GetItemId(li)).ToArray(); } }             // ImageListBoxItem => Value => IMenuItem / DataRow => ItemId
+        /// <summary>
+        /// Pole aktuálně viditelných, typu DevExpress.ViewInfo.
+        /// Pokud je aplikován řádkový filtr, pak jde o ty prvky, které mu vyhovují.
+        /// Toto pole neobsahuje prvky, které nejsou ve viditelné oblasti = sice na ně může být nascrollováno, ale aktuálně z nich není vidět ani jeden pixel.
+        /// </summary>
+        protected DevExpress.XtraEditors.ViewInfo.BaseListBoxViewInfo.ItemInfo[] VisibleViewItems
+        {
+            get
+            {
+                var items = this.ViewInfo?.VisibleItems;
+                if (items == null) return null;
+                int count = items.Count;
+                var itemsArray = new DevExpress.XtraEditors.ViewInfo.BaseListBoxViewInfo.ItemInfo[count];
+                items.CopyTo(itemsArray, 0);
+                return itemsArray;
+            }
+        }
+        /// <summary>
         /// Aktuálně označené objekty. Může jich být i více, nebo žádný.
         /// Objekty to mohou být různé, typicky <see cref="IMenuItem"/> nebo <see cref="System.Data.DataRowView"/>.
         /// ID označených řádků je v poli <see cref="SelectedItemsId"/>.
         /// </summary>
-        public new object[] SelectedItems
-        {
-            get { return base.SelectedItems.Select(li => GetDataItem(li)).ToArray(); }   // ImageListBoxItem => Value => IMenuItem / DataRow
-        }
+        public new object[] SelectedItems { get { return base.SelectedItems.Select(li => GetDataItem(li)).ToArray(); } }         // ImageListBoxItem => Value => IMenuItem / DataRow
         /// <summary>
         /// Pole obsahující ID selectovaných záznamů.
         /// </summary>
-        public object[] SelectedItemsId
-        {
-            get { return this.SelectedItems.Select(i => GetItemId(i)).ToArray(); }
-        }
+        public object[] SelectedItemsId { get { return this.SelectedItems.Select(i => GetItemId(i)).ToArray(); } }               // ImageListBoxItem => Value => IMenuItem / DataRow => ItemId
         /// <summary>
         /// Prvek, na kterém je kurzor. Je jen jediný, nebo null.
         /// Objekty to mohou být různé, typicky <see cref="IMenuItem"/> nebo <see cref="System.Data.DataRowView"/>.
@@ -1919,6 +1944,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Metoda najde prvek, který se nachází na daném indexu.
+        /// Vyhledává pouze v dostupných prvcích = pokud je aplikován řádkový filtr, pak tedy jen v těch, které mu vyhovují.
+        /// Dostupné = ty, co jsou vidět a nebo na ně může být nascrollováno (tedy nemusí být fyzicky vidět v aktuální oblasti, mohou být pod ní nebo nad ní).
         /// </summary>
         /// <param name="index"></param>
         /// <param name="foundItem"></param>
@@ -1983,21 +2010,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
             }
             return null;
-        }
-        /// <summary>
-        /// Pole aktuálně viditelných prvků
-        /// </summary>
-        protected DevExpress.XtraEditors.ViewInfo.BaseListBoxViewInfo.ItemInfo[] VisibleViewItems
-        {
-            get
-            {
-                var items = this.ViewInfo?.VisibleItems;
-                if (items == null) return null;
-                int count = items.Count;
-                var itemsArray = new DevExpress.XtraEditors.ViewInfo.BaseListBoxViewInfo.ItemInfo[count];
-                items.CopyTo(itemsArray, 0);
-                return itemsArray;
-            }
         }
         private object _GetTableItemId(System.Data.DataRow row)
         {
