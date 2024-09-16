@@ -293,6 +293,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string AppContextMenuRunToolTip { get { return _GetText("Spustí tuto aplikaci"); } }
         public string AppContextMenuRunAsText { get { return _GetText("Spustit jako správce"); } }
         public string AppContextMenuRunAsToolTip { get { return _GetText("Spustí tuto aplikaci s oprávněním Správce"); } }
+        public string AppContextMenuShowInToolbarText { get { return _GetText("Nabízet v Toolbaru"); } }
+        public string AppContextMenuShowInToolbarToolTip { get { return _GetText("Tato aplikace bude přítomna v Toolbaru a bude tak dostupná vždy. Bude přidána na poslední pozici."); } }
+        public string AppContextMenuHideInToolbarText { get { return _GetText("Odebrat z Toolbaru"); } }
+        public string AppContextMenuHideInToolbarToolTip { get { return _GetText("Odebere tuto aplikace z Toolbaru."); } }
         public string AppContextMenuRemoveText { get { return _GetText("Odstranit"); } }
         public string AppContextMenuRemoveApplicationToolTip { get { return _GetText("Odstranit tuto aplikaci z nabídky"); } }
         public string AppContextMenuEditText { get { return _GetText("Upravit"); } }

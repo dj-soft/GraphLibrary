@@ -616,4 +616,13 @@
   <data name="thumb_h_y4_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pics\16px\thumb-h-y4-11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="favorites_oxygen_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\favorites-oxygen-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="file_locked_nuvola_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\file-locked-nuvola-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="services_nuvola_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pics\22px\services-nuvola-22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>

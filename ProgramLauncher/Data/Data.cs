@@ -7,6 +7,7 @@ using DjSoft.Tools.ProgramLauncher.Components;
 using DjSoft.Tools.ProgramLauncher.Data;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace DjSoft.Tools.ProgramLauncher.Data
 {
@@ -77,6 +78,30 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         [PersistingEnabled(false)]
         public int ApplicationsCount { get { return Pages.Sum(p => p.ApplicationsCount); } }
+        /// <summary>
+        /// Pole aplikací ve správném pořadí, které se mají objevit v ToolBaru.
+        /// </summary>
+        [PersistingEnabled(false)]
+        public ApplicationData[] ToolbarApplications { get { return _GetToolbarApplications(); } }
+        /// <summary>
+        /// Vygeneruje a vrátí pole aplikací ve správném pořadí, které se mají objevit v ToolBaru.
+        /// </summary>
+        /// <returns></returns>
+        private ApplicationData[] _GetToolbarApplications()
+        {
+            List<ApplicationData> result = new List<ApplicationData>();
+            foreach (var page in Pages)
+                foreach (var group in page.Groups)
+                    foreach (var app in group.Applications)
+                    {
+                        if (app.IsInToolBar)
+                            result.Add(app);
+                    }
+
+            if (result.Count > 1) result.Sort(ApplicationData.CompareByToolBarOrder);
+
+            return result.ToArray();
+        }
         /// <summary>
         /// Vytvoří a vrátí pole svých Child prvků.
         /// </summary>
@@ -183,6 +208,13 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.Format(App.Messages.AppContextMenuTitleApplication, applicationData.Title) });
                     menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunText, ToolTip = App.Messages.AppContextMenuRunToolTip, Image = Properties.Resources.media_playback_start_3_22, UserData = new ContextMenuItemInfo(DataItemActionType.RunApplication, actionInfo) });
                     menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRunAsText, ToolTip = App.Messages.AppContextMenuRunAsToolTip, Image = Properties.Resources.media_seek_forward_3_22, UserData = new ContextMenuItemInfo(DataItemActionType.RunApplicationAsAdmin, actionInfo) });
+
+                    bool isInToolBar = applicationData.IsInToolBar;
+                    Image showToolImage = isInToolBar ? Properties.Resources.services_nuvola_22 : Properties.Resources.services_nuvola_22;
+                    string showToolText = isInToolBar ? App.Messages.AppContextMenuHideInToolbarText : App.Messages.AppContextMenuShowInToolbarText;
+                    string showToolTip = isInToolBar ? App.Messages.AppContextMenuHideInToolbarToolTip : App.Messages.AppContextMenuShowInToolbarToolTip;
+                    menuItems.Add(new DataMenuItem() { Text = showToolText, ToolTip = showToolTip, Image = showToolImage, UserData = new ContextMenuItemInfo(DataItemActionType.ShowApplictionInToolbar, actionInfo) });
+
                     menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuEditText, ToolTip = App.Messages.AppContextMenuEditApplicationToolTip, Image = Properties.Resources.edit_4_22, UserData = new ContextMenuItemInfo(DataItemActionType.EditApplication, actionInfo) });
                     menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuCopyText, ToolTip = App.Messages.AppContextMenuCopyApplicationToolTip, Image = Properties.Resources.edit_copy_4_22, UserData = new ContextMenuItemInfo(DataItemActionType.CopyApplication, actionInfo) });
                     menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuRemoveText, ToolTip = App.Messages.AppContextMenuRemoveApplicationToolTip, Image = Properties.Resources.archive_remove_22, UserData = new ContextMenuItemInfo(DataItemActionType.DeleteApplication, actionInfo) });
@@ -292,6 +324,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     break;
                 case DataItemActionType.RunApplication:
                 case DataItemActionType.RunApplicationAsAdmin:
+                case DataItemActionType.ShowApplictionInToolbar:
                     isEdited = ApplicationData.RunEditAction(actionType, actionInfo);
                     break;
             }
@@ -1245,6 +1278,16 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         [PropertyName("OneInstance")]
         public bool OnlyOneInstance { get; set; }
         /// <summary>
+        /// Pořadí v ToolBaru; null když aplikace není v Toolbaru přítomna
+        /// </summary>
+        [PropertyName("ToolBarOrder")]
+        public int? ToolBarOrder { get; set; }
+        /// <summary>
+        /// Obsahuje true pokud prvek má být v ToolBaru
+        /// </summary>
+        [PersistingEnabled(false)]
+        public bool IsInToolBar { get { return (ToolBarOrder.HasValue && ToolBarOrder.Value > 0); } }
+        /// <summary>
         /// Metoda vrátí validní název spustitelného souboru = odstraní krajní uvozovky
         /// </summary>
         /// <param name="executableFileName"></param>
@@ -1260,14 +1303,27 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             }
             return executableFileName;
         }
+        /// <summary>
+        /// Komparátor podle <see cref="ToolBarOrder"/> ASCs
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static int CompareByToolBarOrder(ApplicationData a, ApplicationData b)
+        {
+            int at = a?.ToolBarOrder ?? 0;
+            int bt = b?.ToolBarOrder ?? 0;
+            return at.CompareTo(bt);
+        }
         #endregion
         #region Provedení editační akce pro některý z mých Child prvků
         /// <summary>
-        /// Provede vybranou akci pro svoje stránky
+        /// Provede vybranou akci pro danou aplikaci
         /// </summary>
         /// <param name="menuItem"></param>
         public static bool RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
         {
+            bool result = false;
             var applicationData = (actionInfo.ItemData as ApplicationData);
             bool hasApplicationData = applicationData != null;
             switch (actionType)
@@ -1280,9 +1336,19 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     if (hasApplicationData)
                         applicationData.RunNewProcess(true);
                     break;
+                case DataItemActionType.ShowApplictionInToolbar:
+                    if (applicationData.IsInToolBar)
+                        applicationData.ToolBarOrder = null;
+                    else
+                    {
+                        int toolCount = applicationData.ParentGroup.ParentPage.ParentSet.ToolbarApplications.Length;
+                        applicationData.ToolBarOrder = toolCount + 1;
+                    }
+                    result = true;
+                    break;
             }
 
-            return false;
+            return result;
         }
         #endregion
         #region Spouštění aplikace
@@ -1996,7 +2062,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         CopyApplication,
         DeleteApplication,
         RunApplication,
-        RunApplicationAsAdmin
+        RunApplicationAsAdmin,
+        ShowApplictionInToolbar
     }
     #endregion
     #region class InteractiveDataItem : Potomek vizuálního (= interaktivního) prvku, vytvořený nad daty "BaseData"

@@ -853,6 +853,26 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap favorites_oxygen_22 {
+            get {
+                object obj = ResourceManager.GetObject("favorites_oxygen_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap file_locked_nuvola_22 {
+            get {
+                object obj = ResourceManager.GetObject("file_locked_nuvola_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap folder_16 {
             get {
                 object obj = ResourceManager.GetObject("folder_16", resourceCulture);
@@ -1286,6 +1306,16 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         internal static System.Drawing.Bitmap process_stop_6_22 {
             get {
                 object obj = ResourceManager.GetObject("process_stop_6_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap services_nuvola_22 {
+            get {
+                object obj = ResourceManager.GetObject("services_nuvola_22", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

@@ -299,6 +299,8 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             RefreshToolbarUndoRedoState();
             RefreshToolbarTexts();
 
+            _UserToolInit();
+
             ToolStripButton addButton(Image image, EventHandler onClick)
             {
                 var button = new ToolStripButton() { DisplayStyle = ToolStripItemDisplayStyle.Image, Image = image, Size = new Size(52, 52), AutoToolTip = true };
@@ -382,6 +384,41 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         private ToolStripButton _ToolPreferenceButton;
         private ToolStripButton _ToolEditButton;
         private ToolStripButton _ToolMessageSyncButton;
+        #endregion
+        #region ToolBar uživatelem deklarovaný
+        /// <summary>
+        /// Inicializace dat pro UserToolbar
+        /// </summary>
+        private void _UserToolInit()
+        {
+            _UserTools = new List<ToolStripButton>();
+        }
+        /// <summary>
+        /// Naplnění ToolButtonů pro UserToolbar
+        /// </summary>
+        private void _UserToolFill()
+        {
+            _UserToolClear();
+            var toolApps = _PageSet?.ToolbarApplications;
+            if (toolApps != null && toolApps.Length > 0)
+            {
+            
+            }
+        }
+        /// <summary>
+        /// Odebere z Toolbaru všechny User prvky
+        /// </summary>
+        private void _UserToolClear()
+        {
+            var userTools = _UserTools;
+            if (userTools != null && userTools.Count > 0)
+            {
+            }
+        }
+        /// <summary>
+        /// Pole prvků, které si do ToolBaru zvolil uživatel
+        /// </summary>
+        private List<ToolStripButton> _UserTools;
         #endregion
         #region Undo a Redo
         /// <summary>
@@ -492,6 +529,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             _PagesPanel.DataItems = _PageSet.CreateInteractiveItems();         // InteractiveItems, jsou zobrazené v levém panelu a jsou myšoaktivní
             _ActivePageData = searchActivePageData();
             _PagesPanelVisible = true || _PagesPanel.DataItems.Count > 1;
+            _UserToolFill();
             RefreshStatusBarTexts();
 
 
