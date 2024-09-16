@@ -92,6 +92,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (actionTypes.HasFlag(DxWebViewActionType.DoLayout)) this._DoLayout();
                 if (actionTypes.HasFlag(DxWebViewActionType.DoEnabled)) this._DoEnabled();
                 if (actionTypes.HasFlag(DxWebViewActionType.DoShowStaticPicture)) this._DoShowStaticPicture();
+                if (actionTypes.HasFlag(DxWebViewActionType.DoChangeDocumentTitle)) this._DoShowDocumentTitle();
                 if (actionTypes.HasFlag(DxWebViewActionType.DoChangeSourceUrl)) this._DoShowSourceUrl();
                 if (actionTypes.HasFlag(DxWebViewActionType.DoChangeStatusText)) this._DoShowStatusText();
             }
@@ -110,8 +111,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             int top = 0;
             int bottom = size.Height;
 
-            int buttonSize = DxComponent.ZoomToGui(24);
-            int toolHeight = DxComponent.ZoomToGui(30);
+            int buttonSize = DxComponent.ZoomToGui(24, this.CurrentDpi);
+            int toolHeight = DxComponent.ZoomToGui(30, this.CurrentDpi);
             int buttonTop = (toolHeight - buttonSize) / 2;
             int paddingX = 0; // buttonTop;
 
@@ -254,6 +255,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                     this.__PictureWeb.Visible = false;
             }
         }
+
+        private void _DoShowDocumentTitle()
+        { }
         /// <summary>
         /// Aktualizuje text SourceUrl v adresním prostoru.
         /// Musí být voláno v GUI threadu.
@@ -376,6 +380,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _MsWebInitEvents()
         {
             __MsWebView.MsWebHistoryChanged += _MsWebHistoryChanged;
+            __MsWebView.WebCurrentDocumentTitleChanged += _MsWebCurrentDocumentTitleChanged;
             __MsWebView.MsWebCurrentSourceUrlChanged += _MsWebCurrentSourceUrlChanged;
             __MsWebView.MsWebCurrentStatusTextChanged += _MsWebCurrentStatusTextChanged;
             __MsWebView.MsWebNavigationBefore += _MsWebNavigationBefore;
@@ -399,6 +404,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Event při změně v historii navigace, kdy se mění Enabled v proměnných <see cref="MsWebProperties"/>: <see cref="MsWebView.PropertiesInfo.CanGoBack"/> nebo <see cref="MsWebView.PropertiesInfo.CanGoForward"/>.
         /// </summary>
         public event EventHandler MsWebCurrentCanGoEnabledChanged;
+
+        /// <summary>
+        /// Vyvolá události při změně titulku dokumentu.
+        /// </summary>
+        private void _MsWebCurrentDocumentTitleChanged(object sender, EventArgs e)
+        {
+            OnMsWebCurrentDocumentTitleChanged();
+            MsWebCurrentDocumentTitleChanged?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Volá se při změně titulku dokumentu.
+        /// </summary>
+        protected virtual void OnMsWebCurrentDocumentTitleChanged() { }
+        /// <summary>
+        /// Event při změně titulku dokumentu.
+        /// </summary>
+        public event EventHandler MsWebCurrentDocumentTitleChanged;
 
         private void _MsWebCurrentSourceUrlChanged(object sender, EventArgs e)
         {
@@ -708,6 +730,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.CoreWebView2.NewWindowRequested += _CoreWeb_NewWindowRequested;
                 this.CoreWebView2.NavigationStarting += _CoreWeb_NavigationStarting;
                 this.CoreWebView2.NavigationCompleted += _CoreWeb_NavigationCompleted;
+                this.CoreWebView2.DocumentTitleChanged += _CoreWeb_DocumentTitleChanged;
 
                 // Navigace na URL, která byla zachycena, ale nebyla realizována:
                 this._DoNavigate();
@@ -777,6 +800,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             _RunMsWebNavigationCompleted();
         }
         /// <summary>
+        /// Po změně titulku dokumentu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _CoreWeb_DocumentTitleChanged(object sender, object e)
+        {
+            _DetectChanges();
+        }
+        /// <summary>
         /// Vynuluje všechny proměnné související s aktuální i požadovanou adresou a statustextem.
         /// Volá se před tím, než se nastaví nový cíl navigace.
         /// </summary>
@@ -797,21 +829,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             bool newCanGoBack = this.CanGoBack;
             bool newCanGoForward = this.CanGoForward;
+            string newDocumentTitle = this.CoreWebView2?.DocumentTitle;
             string newSourceUrl = this.Source.ToString();
             string newStatusText = this.CoreWebView2?.StatusBarText;
 
             bool isChangeCanGoBack = __MsWebCanGoBack != newCanGoBack;
             bool isChangeCanGoForward = __MsWebCanGoForward != newCanGoForward;
+            bool isChangeDocumentTitle = !String.Equals(__MsWebCurrentDocumentTitle, newDocumentTitle, StringComparison.InvariantCulture);
             bool isChangeSourceUrl = !String.Equals(__MsWebCurrentSourceUrl, newSourceUrl, StringComparison.InvariantCulture);
             bool isChangeStatusText = !String.Equals(__MsWebCurrentStatusText, newStatusText, StringComparison.InvariantCulture);
 
             __MsWebCanGoBack = newCanGoBack;
             __MsWebCanGoForward = newCanGoForward;
+            __MsWebCurrentDocumentTitle = newDocumentTitle;
             __MsWebCurrentSourceUrl = newSourceUrl;
             __MsWebCurrentStatusText = newStatusText;
 
             DxWebViewActionType actionTypes =
                 (isChangeCanGoBack || isChangeCanGoForward ? DxWebViewActionType.DoEnabled : DxWebViewActionType.None) |
+                (isChangeDocumentTitle ? DxWebViewActionType.DoChangeDocumentTitle : DxWebViewActionType.None) |
                 (isChangeSourceUrl ? DxWebViewActionType.DoChangeSourceUrl : DxWebViewActionType.None) |
                 (isChangeStatusText ? DxWebViewActionType.DoChangeStatusText : DxWebViewActionType.None);
 
@@ -820,6 +856,9 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (isChangeCanGoBack || isChangeCanGoForward)
                 _RunMsWebHistoryChanged();
+
+            if (isChangeDocumentTitle)
+                _RunMsWebCurrentDocumentTitleChanged();
 
             if (isChangeSourceUrl)
                 _RunMsWebCurrentSourceUrlChanged();
@@ -844,6 +883,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Event při změně v historii navigace, kdy se mění Enabled v proměnných <see cref="MsWebCanGoBack"/> nebo <see cref="MsWebCanGoForward"/>.
         /// </summary>
         public event EventHandler MsWebHistoryChanged;
+
+        /// <summary>
+        /// Vyvolá události při změně titulku dokumentu.
+        /// </summary>
+        private void _RunMsWebCurrentDocumentTitleChanged()
+        {
+            OnWebCurrentDocumentTitleChanged();
+            WebCurrentDocumentTitleChanged?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Volá se při změně titulku dokumentu.
+        /// </summary>
+        protected virtual void OnWebCurrentDocumentTitleChanged() { }
+        /// <summary>
+        /// Event při změně titulku dokumentu.
+        /// </summary>
+        public event EventHandler WebCurrentDocumentTitleChanged;
 
         /// <summary>
         /// Vyvolá události při změně URL adresy.
@@ -947,6 +1003,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler MsWebNavigationCompleted;
 
+        private string __MsWebCurrentDocumentTitle;
         private string __MsWebCurrentSourceUrl;
         private string __MsWebCurrentStatusText;
         private bool __MsWebCanGoBack;
@@ -1014,6 +1071,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         public event MsWebImageCapturedHandler MsWebImageCaptured;
         #endregion
         #region URL adresa, Status bar, navigace, atd...
+        /// <summary>
+        /// Titulek dokumentu.
+        /// </summary>
+        public string DocumentTitle { get { return __MsWebCurrentDocumentTitle; } }
+
         /// <summary>
         /// Požadovaná URL adresa obsahu.
         /// Sem je možno setovat požadovanou adresu, zůstane zde trvale až do setování další adresy.
@@ -1209,6 +1271,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             public bool IsInNavigateState { get { return __Owner.__MsWebIsInNavigateState; } }
 
             /// <summary>
+            /// Titulek dokumentu.
+            /// </summary>
+            public string DocumentTitle { get { return __Owner.DocumentTitle; } }
+            /// <summary>
             /// Požadovaná URL adresa obsahu.
             /// Sem je možno setovat požadovanou adresu, zůstane zde trvale až do setování další adresy.
             /// Na rozdíl od toho aktuální adresa je v <see cref="CurrentSourceUrl"/>.
@@ -1250,7 +1316,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         DoEnabled = 0x0002,
         DoShowStaticPicture = 0x0010,
         DoChangeSourceUrl = 0x0020,
-        DoChangeStatusText = 0x0040
+        DoChangeStatusText = 0x0040,
+        DoChangeDocumentTitle = 0x0080
     }
     /// <summary>
     /// Data pro událost o načtení dat CaptureImage

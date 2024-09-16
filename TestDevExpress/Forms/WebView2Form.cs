@@ -18,59 +18,83 @@ namespace TestDevExpress.Forms
     internal class WebView2Form : DxRibbonForm
     {
         #region Konstrukce
-
         protected override void DxMainContentPrepare()
         {
             // Buttony, které reprezentují "oblíbené stránky":
-            __DxMainPadding = new Padding(9, 6, 9, 6);
-            int x = __DxMainPadding.Left;
-            int y = __DxMainPadding.Top;
-            int w = 140;
-            int h = 32;
-            int s1 = 3;
-            int s2 = 12;
-            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "seznam", _ClickButtonNavigate, tag: "https://www.seznam.cz/");
-            x += (w + s1);
-            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "mapy A", _ClickButtonNavigate, tag: "https://www.mapy.cz/");
-            x += (w + s1);
-            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "mapy B", _ClickButtonNavigate, tag: @"https://mapy.cz/dopravni?x=14.5802973&y=50.5311090&z=14");
-            x += (w + s1);
-            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "mapy C", _ClickButtonNavigate, tag: @"https://mapy.cz/dopravni?l=0&x=15.8629028&y=50.2145999&z=17");
-            x += (w + s1);
-            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "mapy D", _ClickButtonNavigate, tag: @"https://mapy.cz/dopravni?vlastni-body&ut=Nový bod&uc=9kFczxY5mZ&ud=15°51%2742.665""E 50°12%2754.179""N&x=15.8629028&y=50.2145999&z=17");
-            x += (w + s1);
-            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "google", _ClickButtonNavigate, tag: "https://www.google.com/");
-            x += (w + s1);
-            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "meteo", _ClickButtonNavigate, tag: "https://www.chmi.cz/files/portal/docs/meteo/rad/inca-cz/short.html?display=var&gmap_zoom=7&prod=czrad_maxz_celdn_masked&opa1=0.6&opa2=0.7&nselect=14&nselect_fct=6&di=1&rep=2&add=4&update=4&lat=49.951&lon=15.797&lang=CZ");
-            x += (w + s1);
-            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "GreenMapa", _ClickButtonNavigate, tag: "<GreenMapa>");
-            x += (w + s2);
-            DxComponent.CreateDxSimpleButton(x, y, w, h, this.DxMainPanel, "Static", _ClickButtonStaticImage);
-            x += (w + s1);
+            __NavButtons = new List<DxSimpleButton>();
 
-            __WebPanelLocation = new Point(__DxMainPadding.Left, __DxMainPadding.Top + h + s1);
+            createButton("seznam", "https://www.seznam.cz/", _ClickButtonNavigate);
+            createButton("mapy A", "https://www.mapy.cz/", _ClickButtonNavigate);
+            createButton("mapy B", @"https://mapy.cz/dopravni?x=14.5802973&y=50.5311090&z=14", _ClickButtonNavigate);
+            createButton("mapy C", @"https://mapy.cz/dopravni?l=0&x=15.8629028&y=50.2145999&z=17", _ClickButtonNavigate);
+            createButton("mapy D", @"https://mapy.cz/dopravni?vlastni-body&ut=Nový bod&uc=9kFczxY5mZ&ud=15°51%2742.665""E 50°12%2754.179""N&x=15.8629028&y=50.2145999&z=17", _ClickButtonNavigate);
+            createButton("google", "https://www.google.com/", _ClickButtonNavigate);
+            createButton("meteo", "https://www.chmi.cz/files/portal/docs/meteo/rad/inca-cz/short.html?display=var&gmap_zoom=7&prod=czrad_maxz_celdn_masked&opa1=0.6&opa2=0.7&nselect=14&nselect_fct=6&di=1&rep=2&add=4&update=4&lat=49.951&lon=15.797&lang=CZ", _ClickButtonNavigate);
+            createButton("GreenMapa", "<GreenMapa>", _ClickButtonNavigate);
+            createButton("Static", null, _ClickButtonStaticImage);
 
             // Vlastní WebView:
             __WebViewPanel = new DxWebViewPanel();
+            __WebViewPanel.MsWebCurrentDocumentTitleChanged += _MsWebCurrentDocumentTitleChanged;
             this.DxMainPanel.Controls.Add(__WebViewPanel);
+
+            _DoContentLayout();
+
+            void createButton(string text, string url, EventHandler click)
+            {
+                var button = DxComponent.CreateDxSimpleButton(0, 0, 150, 32, this.DxMainPanel, text, click, tag: url);
+                __NavButtons.Add(button);
+            }
         }
-        private Padding __DxMainPadding;
-        private Point __WebPanelLocation;
+        /// <summary>
+        /// Po změně titulku dokumentu jej vepíšu jaké název formuláře
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MsWebCurrentDocumentTitleChanged(object sender, EventArgs e)
+        {
+            var docTitle = __WebViewPanel.MsWebProperties.DocumentTitle ?? "";
+            if (docTitle.Length > 53) docTitle = docTitle.Substring(0, 50) + "...";
+            this.SetGuiValue(t => this.Text = t, docTitle);
+        }
+
+        private List<DxSimpleButton> __NavButtons;
         private DxWebViewPanel __WebViewPanel;
         /// <summary>
         /// Provede se po změně velikosti ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/>
         /// </summary>
         protected override void DxMainContentDoLayout()
         {
+            _DoContentLayout();
+        }
+        private void _DoContentLayout()
+        {
             var webPanel = __WebViewPanel;
             if (webPanel is null) return;
 
             var clientSize = this.DxMainPanel.ClientSize;
-            int x = __WebPanelLocation.X;
-            int y = __WebPanelLocation.Y;
-            int w = clientSize.Width - __DxMainPadding.Right - x;
-            int h = clientSize.Height - __DxMainPadding.Bottom - y;
-            webPanel.Bounds = new Rectangle(x, y, w, h);
+
+            int currentDpi = this.CurrentDpi;
+            int x0 = DxComponent.ZoomToGui(6, currentDpi);
+            int y0 = DxComponent.ZoomToGui(6, currentDpi);
+            int bw = DxComponent.ZoomToGui(140, currentDpi);
+            int bh = DxComponent.ZoomToGui(28, currentDpi);
+            int dw = DxComponent.ZoomToGui(4, currentDpi);
+
+            int bx = x0;
+            int by = y0;
+            foreach (var button in __NavButtons)
+            {
+                button.Bounds = new Rectangle(bx, by, bw, bh);
+                bx += (bw + dw);
+            }
+
+            int ws = DxComponent.ZoomToGui(3, currentDpi);
+            int wx = x0;
+            int wy = y0 + bh + ws;
+            int ww = clientSize.Width - wx - wx;
+            int wh = clientSize.Height - y0 - wy;
+            webPanel.Bounds = new Rectangle(wx, wy, ww, wh);
         }
 
         private void _ClickButtonNavigate(object sender, EventArgs e)
@@ -134,131 +158,5 @@ m.addControl(sync);
             properties.IsStaticPicture = isStatic;
         }
         #endregion
-
-        /*
-       
-        private void _RefreshUrl(string uri)
-        {
-            _NavigatedUri = uri;
-            if (this.InvokeRequired)
-                this.BeginInvoke(new Action(_RefreshUrlText));
-            else
-                _RefreshUrlText();
-        }
-        private void _RefreshUrlText()
-        {
-            this._UrlAdress.Text = _NavigatedUri;
-        }
-        private string _NavigatedUri;
-       
-        private Microsoft.Web.WebView2.WinForms.WebView2 _WView;
-        private void _PrepareWView()
-        {
-            if (_WView != null && Control.ModifierKeys == Keys.Control)
-            {
-                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.Dispose...");
-                DxComponent.TryRun(() => _WView.Dispose(), true);
-                _WView = null;
-            }
-
-            if (this._WView != null)
-            {
-                _DoLayout();
-                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.Exists.");
-                return;
-            }
-
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.Creating new instance...");
-            this._WView = new Microsoft.Web.WebView2.WinForms.WebView2();
-
-            ((System.ComponentModel.ISupportInitialize)(this._WView)).BeginInit();
-            this.Controls.Add(this._WView);
-            this._WView.Location = new System.Drawing.Point(12, 49);
-            this._WView.Name = "_WebView2";
-            this._WView.Size = new System.Drawing.Size(776, 389);
-            this._WView.TabIndex = 0;
-
-            //this._WView.OnNavigationStarting += _AxAntView_OnNavigationStarting;
-            //this._WView.OnFrameNavigationStarting += _AxAntView_OnFrameNavigationStarting;
-            //this._WView.OnFrameNavigationCompleted += _AxAntView_OnFrameNavigationCompleted;
-            //this._WView.OnNavigationCompleted += _AxAntView_OnNavigationCompleted;
-            //this._WView.OnSourceChanged += _AxAntView_OnSourceChanged;
-
-            ((System.ComponentModel.ISupportInitialize)(this._WView)).EndInit();
-
-            _DoLayout();
-
-            this.__SourceAsync = null;
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.EnsureCoreWebView2Async...");
-            this._WView.CoreWebView2InitializationCompleted += _CoreWebView2InitializationCompleted;
-            var task =  this._WView.EnsureCoreWebView2Async();
-            task.Wait(50);
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.EnsureCoreWebView2Async Wait done; Status: '{task.Status}'");
-        }
-
-        private void _CoreWebView2InitializationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2InitializationCompletedEventArgs e)
-        {
-            if (this._WView.CoreWebView2 is null)
-            {
-                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.CoreWebView2InitializationCompleted: IS NULL!");
-
-                // this._WView.Reload();
-            }
-            if (this._WView.CoreWebView2 != null)
-            {
-                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.CoreWebView2InitializationCompleted: Set eventhandlers...");
-
-                this._WView.CoreWebView2.SourceChanged += _WebView2_SourceChanged;
-                this._WView.CoreWebView2.StatusBarTextChanged += CoreWebView2_StatusBarTextChanged;
-
-                if (!String.IsNullOrEmpty(__SourceAsync))
-                {
-                    DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.CoreWebView2InitializationCompleted: Run Lazy DoNavigate to '{__SourceAsync}'.");
-                    _DoNavigate(__SourceAsync);
-                }
-            }
-        }
-
-        private void _DoNavigate(string source, bool asAsync = false)
-        {
-            if (String.IsNullOrEmpty(source)) return;
-
-            if (this._WView.CoreWebView2 is null)
-            {
-                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.DoNavigate: IS NULL => EnsureCoreWebView2Async...");
-                this._WView.EnsureCoreWebView2Async();
-                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.DoNavigate: IS NULL => Delayed (to '{source}').");
-                __SourceAsync = source;
-            }
-            else
-            {
-                __SourceAsync = null;
-                if (!asAsync)
-                {
-                    DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.DoNavigate Now to '{source}'...");
-                    if (!source.StartsWith("<"))
-                        _WView.Source = new Uri(source);
-                    else
-                        _WView.NavigateToString(source);
-                }
-                else
-                { }
-            }
-        }
-        private string __SourceAsync;
-
-        private void _WebView2_SourceChanged(object sender, Microsoft.Web.WebView2.Core.CoreWebView2SourceChangedEventArgs e)
-        {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.SourceChanged: '{_WView.Source.ToString()}'");
-            _RefreshUrl(_WView.Source.ToString());
-        }
-
-        private void CoreWebView2_StatusBarTextChanged(object sender, object e)
-        {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.StatusBarTextChanged: '{_WView.CoreWebView2.StatusBarText}'");
-        }
-
-    
-        */
     }
 }
