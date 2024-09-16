@@ -44,15 +44,6 @@
     <ApplicationIcon>TestDevExpress.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CefSharp, Version=124.3.80.0, Culture=neutral, PublicKeyToken=40c4b6fc221f4138, processorArchitecture=MSIL">
-      <HintPath>packages\CefSharp.Common.124.3.80\lib\net462\CefSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="CefSharp.Core, Version=124.3.80.0, Culture=neutral, PublicKeyToken=40c4b6fc221f4138, processorArchitecture=MSIL">
-      <HintPath>packages\CefSharp.Common.124.3.80\lib\net462\CefSharp.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="CefSharp.WinForms, Version=124.3.80.0, Culture=neutral, PublicKeyToken=40c4b6fc221f4138, processorArchitecture=MSIL">
-      <HintPath>packages\CefSharp.WinForms.124.3.80\lib\net462\CefSharp.WinForms.dll</HintPath>
-    </Reference>
     <Reference Include="DevExpress.BonusSkins.v23.2">
       <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.BonusSkins.v23.2.dll</HintPath>
     </Reference>
@@ -293,9 +284,6 @@
     <Compile Include="Components\Obsoletes\OldDataFormData.cs" />
     <Compile Include="Components\Randomizer.cs" />
     <Compile Include="Components\ThreadManager.cs" />
-    <Compile Include="Forms\CefViewForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
     <Compile Include="Forms\DataFormV1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -390,9 +378,6 @@
     <Compile Include="Forms\TreeBgrForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Forms\AntViewForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
     <Compile Include="Forms\WebView2Form.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -411,9 +396,6 @@
     <EmbeddedResource Include="Forms\MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
       <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Forms\AntViewForm.resx">
-      <DependentUpon>AntViewForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -2540,23 +2522,6 @@
     <None Include="_Icons\Nephrite_0.ico" />
   </ItemGroup>
   <ItemGroup>
-    <COMReference Include="AntViewAx">
-      <Guid>{D4278A43-021B-4C82-9C1F-D6A6FA39851C}</Guid>
-      <VersionMajor>1</VersionMajor>
-      <VersionMinor>1</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>False</Isolated>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </COMReference>
-    <COMReference Include="AxAntViewAx">
-      <Guid>{D4278A43-021B-4C82-9C1F-D6A6FA39851C}</Guid>
-      <VersionMajor>1</VersionMajor>
-      <VersionMinor>1</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>aximp</WrapperTool>
-      <Isolated>False</Isolated>
-    </COMReference>
     <COMReference Include="stdole">
       <Guid>{00020430-0000-0000-C000-000000000046}</Guid>
       <VersionMajor>2</VersionMajor>
