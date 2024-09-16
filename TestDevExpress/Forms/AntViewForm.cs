@@ -14,7 +14,7 @@ namespace TestDevExpress.Forms
     /// <summary>
     /// Web viewer typu AntView
     /// </summary>
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "Ant View", buttonOrder: 70, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře AntView prohlížeč (MS Edge based)", tabViewToolTip: "AntView Browser")]
+//  [RunFormInfo(groupText: "Testovací okna", buttonText: "Ant View", buttonOrder: 70, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře AntView prohlížeč (MS Edge based)", tabViewToolTip: "AntView Browser")]
     public partial class AntViewForm : Form
     {
         #region Konstrukce

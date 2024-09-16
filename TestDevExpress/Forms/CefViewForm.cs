@@ -14,7 +14,7 @@ namespace TestDevExpress.Forms
     /// <summary>
     /// Web viewer typu AntView
     /// </summary>
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "Cef View", buttonOrder: 72, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře CefView prohlížeč (MS Edge based)", tabViewToolTip: "CefView Browser")]
+//  [RunFormInfo(groupText: "Testovací okna", buttonText: "Cef View", buttonOrder: 72, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře CefView prohlížeč (MS Edge based)", tabViewToolTip: "CefView Browser")]
     public partial class CefViewForm : Form
     {
         #region Konstrukce
