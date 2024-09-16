@@ -36,6 +36,10 @@ AppContextMenuRunText Spustit
 AppContextMenuRunToolTip Spustí tuto aplikaci
 AppContextMenuRunAsText Spustit jako správce
 AppContextMenuRunAsToolTip Spustí tuto aplikaci s oprávněním Správce
+AppContextMenuShowInToolbarText Nabízet v Toolbaru
+AppContextMenuShowInToolbarToolTip Tato aplikace bude přítomna v Toolbaru a bude tak dostupná vždy. Bude přidána na poslední pozici.
+AppContextMenuHideInToolbarText Odebrat z Toolbaru
+AppContextMenuHideInToolbarToolTip Odebere tuto aplikace z Toolbaru.
 AppContextMenuRemoveText Odstranit
 AppContextMenuRemoveApplicationToolTip Odstranit tuto aplikaci z nabídky
 AppContextMenuEditText Upravit

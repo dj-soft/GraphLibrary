@@ -36,6 +36,10 @@ AppContextMenuRunText Start
 AppContextMenuRunToolTip Startet diese Anwendung
 AppContextMenuRunAsText Als Administrator ausführen
 AppContextMenuRunAsToolTip Führt diese Anwendung mit Administratorrechten aus
+AppContextMenuShowInToolbarText Angebot in der Symbolleiste
+AppContextMenuShowInToolbarToolTip Diese Anwendung wird in der Symbolleiste vorhanden und somit immer verfügbar sein. Es wird an der letzten Position hinzugefügt.
+AppContextMenuHideInToolbarText Aus der Symbolleiste entfernen
+AppContextMenuHideInToolbarToolTip Entfernt diese Anwendung aus der Symbolleiste.
 AppContextMenuRemoveText Entfernen
 AppContextMenuRemoveApplicationToolTip Entfernen Sie diese Anwendung aus dem Menü
 AppContextMenuEditText Bearbeiten

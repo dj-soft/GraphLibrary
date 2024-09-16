@@ -391,7 +391,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         /// </summary>
         private void _UserToolInit()
         {
-            _UserTools = new List<ToolStripButton>();
+            _UserToolItems = new List<ToolStripItem>();
         }
         /// <summary>
         /// Naplnění ToolButtonů pro UserToolbar
@@ -402,23 +402,44 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             var toolApps = _PageSet?.ToolbarApplications;
             if (toolApps != null && toolApps.Length > 0)
             {
-            
+                var toolStrip = this._ToolStrip;
+                var userToolItems = _UserToolItems;
+
+                // Oddělovač od systémových prvků:
+                var separator = new ToolStripSeparator();
+                toolStrip.Items.Add(separator);
+                userToolItems.Add(separator);
+
+                // Aplikace:
+                foreach (var toolApp in toolApps)
+                {
+                    var toolButtonItem = toolApp.CreateToolStripItem();
+                    toolStrip.Items.Add(toolButtonItem);
+                    userToolItems.Add(toolButtonItem);
+                }
             }
         }
         /// <summary>
-        /// Odebere z Toolbaru všechny User prvky
+        /// Odebere z Toolbaru všechny User prvky, včetně Separátoru
         /// </summary>
         private void _UserToolClear()
         {
-            var userTools = _UserTools;
-            if (userTools != null && userTools.Count > 0)
+            var userToolItems = _UserToolItems;
+            if (userToolItems != null && userToolItems.Count > 0)
             {
+                var toolStrip = this._ToolStrip;
+                foreach (var userToolItem in userToolItems)
+                {
+                    toolStrip.Items.Remove(userToolItem);
+                    userToolItem.Dispose();
+                }
+                _UserToolItems.Clear();
             }
         }
         /// <summary>
         /// Pole prvků, které si do ToolBaru zvolil uživatel
         /// </summary>
-        private List<ToolStripButton> _UserTools;
+        private List<ToolStripItem> _UserToolItems;
         #endregion
         #region Undo a Redo
         /// <summary>

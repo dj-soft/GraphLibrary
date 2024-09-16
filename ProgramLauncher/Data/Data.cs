@@ -1318,36 +1318,75 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         #endregion
         #region Provedení editační akce pro některý z mých Child prvků
         /// <summary>
+        /// Vytvoří a vrátí Button do ToolBaru pro tuto aplikaci
+        /// </summary>
+        /// <returns></returns>
+        public ToolStripItem CreateToolStripItem()
+        {
+            string toolTip = "";
+            if (!String.IsNullOrEmpty(this.Title)) toolTip += this.Title + Environment.NewLine;
+            if (!String.IsNullOrEmpty(this.Description)) toolTip += this.Description + Environment.NewLine;
+            if (!String.IsNullOrEmpty(this.ToolTipText)) toolTip += this.ToolTipText + Environment.NewLine;
+            var button = new ToolStripButton() { Image = App.GetImage(this.ImageFileName), ToolTipText = toolTip, Tag = this };
+            button.MouseUp += _ToolButton_MouseUp;
+            return button;
+        }
+        /// <summary>
+        /// MouseUp na ToolBar Buttonu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _ToolButton_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                _RunEditAction(DataItemActionType.RunApplication, null);
+            }
+            else if (e.Button == MouseButtons.Right)
+            {   // RightClick => Kontextové menu k aplikaci:
+                var pageSet = this.ParentGroup.ParentPage.ParentSet;
+                MouseState mouseState = new MouseState(DateTime.Now, e.Location, e.Location, Control.MousePosition, e.Button, Control.ModifierKeys, false);
+                pageSet.ShowContextMenu(mouseState, null, this.ParentGroup.ParentPage, this);
+            }
+        }
+        /// <summary>
         /// Provede vybranou akci pro danou aplikaci
         /// </summary>
         /// <param name="menuItem"></param>
         public static bool RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
         {
             bool result = false;
-            var applicationData = (actionInfo.ItemData as ApplicationData);
-            bool hasApplicationData = applicationData != null;
+            if (actionInfo.ItemData is ApplicationData applicationData)
+                result = applicationData._RunEditAction(actionType, actionInfo);
+            return result;
+        }
+        /// <summary>
+        /// Provede vybranou akci pro this aplikaci
+        /// </summary>
+        /// <param name="menuItem"></param>
+        private bool _RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
+        {
+            bool result = false;
             switch (actionType)
             {
                 case DataItemActionType.RunApplication:
-                    if (hasApplicationData)
-                        applicationData.RunNewProcess(false);
+                    this.RunNewProcess(false);
                     break;
                 case DataItemActionType.RunApplicationAsAdmin:
-                    if (hasApplicationData)
-                        applicationData.RunNewProcess(true);
+                    this.RunNewProcess(true);
                     break;
                 case DataItemActionType.ShowApplictionInToolbar:
-                    if (applicationData.IsInToolBar)
-                        applicationData.ToolBarOrder = null;
+                    if (this.IsInToolBar)
+                        this.ToolBarOrder = null;
                     else
                     {
-                        int toolCount = applicationData.ParentGroup.ParentPage.ParentSet.ToolbarApplications.Length;
-                        applicationData.ToolBarOrder = toolCount + 1;
+                        int toolCount = this.ParentGroup.ParentPage.ParentSet.ToolbarApplications.Length;
+                        this.ToolBarOrder = toolCount + 1;
                     }
                     result = true;
                     break;
             }
-
             return result;
         }
         #endregion

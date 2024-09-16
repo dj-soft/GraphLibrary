@@ -36,6 +36,10 @@ AppContextMenuRunText Start
 AppContextMenuRunToolTip Starts this application
 AppContextMenuRunAsText Run as administrator
 AppContextMenuRunAsToolTip Runs this application with Administrator privileges
+AppContextMenuShowInToolbarText Offer in Toolbar
+AppContextMenuShowInToolbarToolTip This application will be present in the Toolbar and thus always available. It will be added to the last position.
+AppContextMenuHideInToolbarText Remove from Toolbar
+AppContextMenuHideInToolbarToolTip Removes this application from the Toolbar.
 AppContextMenuRemoveText Remove
 AppContextMenuRemoveApplicationToolTip Remove this application from the menu
 AppContextMenuEditText Edit

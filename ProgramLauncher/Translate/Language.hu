@@ -36,6 +36,10 @@ AppContextMenuRunText Rajt
 AppContextMenuRunToolTip Elindítja ezt az alkalmazást
 AppContextMenuRunAsText Futtatás rendszergazdaként
 AppContextMenuRunAsToolTip Rendszergazdai jogosultságokkal futtatja ezt az alkalmazást
+AppContextMenuShowInToolbarText Ajánlat az Eszköztárban
+AppContextMenuShowInToolbarToolTip Ez az alkalmazás jelen lesz az Eszköztárban, és így mindig elérhető lesz. Az utolsó pozícióhoz lesz hozzáadva.
+AppContextMenuHideInToolbarText Eltávolítás az Eszköztárról
+AppContextMenuHideInToolbarToolTip Eltávolítja ezt az alkalmazást az Eszköztárról.
 AppContextMenuRemoveText Távolítsa el
 AppContextMenuRemoveApplicationToolTip Távolítsa el ezt az alkalmazást a menüből
 AppContextMenuEditText Szerkesztés

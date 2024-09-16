@@ -36,6 +36,10 @@ AppContextMenuRunText Αρχή
 AppContextMenuRunToolTip Ξεκινά αυτήν την εφαρμογή
 AppContextMenuRunAsText Εκτελέστε ως διαχειριστής
 AppContextMenuRunAsToolTip Εκτελεί αυτήν την εφαρμογή με δικαιώματα διαχειριστή
+AppContextMenuShowInToolbarText Προσφορά στο Toolbar
+AppContextMenuShowInToolbarToolTip Αυτή η εφαρμογή θα είναι παρούσα στη γραμμή εργαλείων και επομένως πάντα διαθέσιμη. Θα προστεθεί στην τελευταία θέση.
+AppContextMenuHideInToolbarText Αφαίρεση από το Toolbar
+AppContextMenuHideInToolbarToolTip Καταργεί αυτήν την εφαρμογή από το Toolbar.
 AppContextMenuRemoveText Αφαιρώ
 AppContextMenuRemoveApplicationToolTip Καταργήστε αυτήν την εφαρμογή από το μενού
 AppContextMenuEditText Επεξεργασία
