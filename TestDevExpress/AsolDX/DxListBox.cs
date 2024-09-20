@@ -3287,7 +3287,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         switch (elementContent)
                         {
                             case ElementContentType.IconName:
-                                var imageName = row[cell.Cell.ColumnName] as string;
+                                var imageName = cell.GetIconName(row);
                                 if (!String.IsNullOrEmpty(imageName))
                                 {
                                     element.Image = DxComponent.GetBitmapImage(imageName);
@@ -3308,11 +3308,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                     else
                     {
-                        //element.ImageVisible = false;
-                        //element.ImageAlignment = TileItemContentAlignment.Manual;
-                        //if (cell.Cell.ContentAlignment.HasValue && cell.Cell.ContentAlignment.Value == TileItemContentAlignment.MiddleRight)
-                        //{
-                        //}
                     }
                 }
             }
@@ -3353,6 +3348,22 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
             /// <summary>
+            /// Pro daný řádek a tuto buňku vrátí název ikony.
+            /// </summary>
+            /// <param name="row"></param>
+            /// <returns></returns>
+            public string GetIconName(DataRow row)
+            {
+                if (row is null || this.Cell.ElementContent != ElementContentType.IconName) return null;
+                string columnName = this.Cell.ColumnName;
+                if (!String.IsNullOrEmpty(columnName) && row.Table.Columns.Contains(columnName))
+                {
+                    object value = (!row.IsNull(columnName) ? row[columnName] : null);
+                    if (value is string iconName) return iconName;
+                }
+                return null;
+            }
+            /// <summary>
             /// Pro daný řádek a tuto buňku vrátí fotku.
             /// Fotka se hledá v interní cache pro zadaný řádek.
             /// Při prvním volání si získá data z řádku pro this sloupec a vygeneruje Image, tu uloží pro daný řádek do interní cache.
@@ -3375,11 +3386,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                     string columnName = this.Cell.ColumnName;
                     if (!String.IsNullOrEmpty(columnName) && row.Table.Columns.Contains(columnName))
                     {
-                        byte[] imageData = row[columnName] as byte[];
-                        if (imageData != null)
-                        {
+                        object value = (!row.IsNull(columnName) ? row[columnName] : null);
+                        if (value != null && value is byte[] imageData)
+                        { 
                             try { image = DxComponent.GetBitmapImage(imageData); }
-                            catch { }
+                            catch { /* Binární data obsahují něco, co nelze považovat za Obrázek (např. XML, PDF, ZIP ... vývojáři sem mohou poslat cokoliv)*/ }
                         }
                     }
                     imageInfo = new TemplateCellImageInfo() { Image = image };
@@ -3563,11 +3574,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public string ColumnName { get; set; }
         /// <summary>
-        /// Druh obsahu v tomito elementu
+        /// Způsob práce s obsahem - je možno zobrazit obsah jako Text / Label / Ikonu / Obrázek. Implicitní je Text.
         /// </summary>
         public ElementContentType ElementContent { get; set; }
         /// <summary>
-        /// Fixní label = popisek, bude ve všech řádcích stejný. Sloupec tohoto jména tedy nemusí existovat v datové tabulce.
+        /// Fixní label = popisek, bude ve všech řádcích stejný. Sloupec tohoto jména tedy nemusí existovat v datové tabulce. Tento element musí mít nastaveno <see cref="ElementContent"/> = <see cref="ElementContentType.Label"/>
         /// </summary>
         public string Label { get; set; }
         /// <summary>
@@ -3649,11 +3660,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         string ColumnName { get; }
         /// <summary>
-        /// Druh obsahu v tomito elementu
+        /// Způsob práce s obsahem - je možno zobrazit obsah jako Text / Label / Ikonu / Obrázek. Implicitní je Text.
         /// </summary>
         ElementContentType ElementContent { get; }
         /// <summary>
-        /// Fixní label = popisek, bude ve všech řádcích stejný. Sloupec tohoto jména tedy nemusí existovat v datové tabulce.
+        /// Fixní label = popisek, bude ve všech řádcích stejný. Sloupec tohoto jména tedy nemusí existovat v datové tabulce. Tento element musí mít nastaveno <see cref="ElementContent"/> = <see cref="ElementContentType.Label"/>
         /// </summary>
         string Label { get; }
         /// <summary>
@@ -3742,7 +3753,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Binární data obrázku
         /// </summary>
-        ImageData
+        ImageData,
+
+        /// <summary>
+        /// Default = Text
+        /// </summary>
+        Default = Text
     }
     #endregion
     #region Event args + delegáti, public enumy

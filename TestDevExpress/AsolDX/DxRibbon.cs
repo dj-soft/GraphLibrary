@@ -17,7 +17,6 @@ using DevExpress.Utils.Extensions;
 using DevExpress.XtraBars;
 using DevExpress.XtraBars.Ribbon;
 using XS = Noris.WS.Parser.XmlSerializer;
-using System.Web.UI.WebControls.WebParts;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -151,6 +150,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             SearchMenuShrinkResultCount = 0;
 
             ImageRightInit();
+            RemoveItemsShortcuts();
             Visible = true;
             DxDisposed = false;
         }
@@ -200,6 +200,22 @@ namespace Noris.Clients.Win.Components.AsolDX
                 MdiMergeStyle = DefaultMdiMergeStyleForms;
                 ShowSearchItem = true;
                 ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
+            }
+
+            RemoveItemsShortcuts();
+        }
+        /// <summary>
+        /// Projde všechny Itemy v tomto Ribbonu, a pokud mají klávesovou zkratku, pak jí odebere (deaktivuje).<br/>
+        /// Účelem je uvolnit veškeré klávesové zkratky (tedy implicitní DevExpress) pro použití z aplikace (tedy Nephrite).<br/>
+        /// Ukázkou je Ctrl+F, která je defaultně přiřazena pro RibbonSearch, ale obecně ji chceme použít pro Fulltext.<br/>
+        /// Volá se při inicializaci Ribbonu.
+        /// </summary>
+        protected void RemoveItemsShortcuts()
+        {   // DAJ 0076218 9.7.2024
+            foreach (BarItem item in this.Items)
+            {
+                if (item.ItemShortcut != null && item.ItemShortcut.IsExist)
+                    item.ItemShortcut = null;
             }
         }
         /// <summary>
@@ -2609,6 +2625,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (iRibbonObjects == null) return;
 
+            this.ParentOwner.RunInGui(() =>
+            {
+                _RefreshObjectsOnly(iRibbonObjects);
+                if (NeedOpenMenu)
+                    DoOpenMenu();
+            });
+        }
+        /// <summary>
+        /// Zajistí refresh dodaných objektů. Dost možná nezajistí otevření menu, to musí zkontrolovat volající.
+        /// Tato metoda má být spuštěna v GUI threadu. Sama si invokování neřeší.
+        /// </summary>
+        /// <param name="iRibbonObjects"></param>
+        private void _RefreshObjectsOnly(IEnumerable<IRibbonObject> iRibbonObjects)
+        {
             // Vstupní data roztřídím na: { Page | Group | Items }, a pak půjdu standardními postupy:
             List<IRibbonPage> iRibbonPages = new List<IRibbonPage>();
             List<IRibbonGroup> iRibbonGroups = new List<IRibbonGroup>();
@@ -2628,19 +2658,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!hasPages && !hasGroups)
             {   // Když nemám stránky ani grupy, tak řeším jen jednotlivé Itemy:
                 if (!hasItems) return;                               // Itemy taky nejsou
-                if (!AnalyseRefreshItems(iRibbonItems, out var reFillItems, out var reCreateItems)) return;         // Itemy nepotřebují žádnou změnu
+                if (!AnalyseRefreshItems(iRibbonItems, out var reFillItems, out var reCreateItems)) return;         // Ani dodané Itemy nepotřebují žádnou změnu
 
                 if (reFillItems != null)
                 {
                     this._RefreshItems(reFillItems);
-                    if (NeedOpenMenu)
-                        DoOpenMenu();
                 }
-                if (reCreateItems is null) return;
+                if (reCreateItems is null) return;                   // Měl jsem jen prvky ReFill, nic dalšího řešit nebudu
 
                 // Do dalšího Refreshe pokračují jen ReCreate items:
                 iRibbonItems = reCreateItems;
-                hasItems = true; ;
+                hasItems = true;
             }
 
             // Máme data, půjdeme dělat něco viditelného:
@@ -2649,19 +2677,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (refreshDirect && !needInvoke)
             {   // Přímý refresh (bez změn stránek)
                 _RefreshObjects(iRibbonPages, iRibbonGroups, iRibbonItems, true);
-                if (NeedOpenMenu)
-                    DoOpenMenu();
             }
             else
             {
-                this.ParentOwner.RunInGui(() =>
+                _UnMergeModifyMergeCurrentRibbon(() =>
                 {
-                    _UnMergeModifyMergeCurrentRibbon(() =>
-                    {
-                        _RefreshObjects(iRibbonPages, iRibbonGroups, iRibbonItems, true);
-                    }, true);
-                    DoOpenMenu();
-                });
+                    _RefreshObjects(iRibbonPages, iRibbonGroups, iRibbonItems, true);
+                }, true);
             }
         }
         /// <summary>
@@ -2729,12 +2751,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (iRibbonItems == null) return;
             if (!AnalyseRefreshItems(iRibbonItems, out var reFillItems, out var reCreateItems)) return;             // Zkratka
-
-            if (reCreateItems is null)
-            {
-
-            }
-
 
             this.ParentOwner.RunInGui(() =>
             {
@@ -2980,17 +2996,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (iRibbonItem == null) return ItemRefreshType.None;
             var changeMode = iRibbonItem.ChangeMode;
             bool needExists = (changeMode == ContentChangeMode.Add || changeMode == ContentChangeMode.ReFill);
-            if (TryGetIRibbonData(iRibbonItem.ItemId, out var iCurrentItem, out bool isValid))
+            if (TryGetIRibbonData(iRibbonItem.ItemId, out var iCurrentItem, out bool isValid, true))         // Pokud najdeme prvek Menu, a to je ve stavu Reloading (jeho BarItemTagInfo.ValidMenu je ContentValidityType.ReloadInProgress), pak to bereme jako validní prvek
             {   // Prvek existuje: Refresh je třeba, pokud prvek nemá existovat, anebo když aktuálně obsahuje jiná data než je nyní požadováno:
                 if (!needExists) return ItemRefreshType.Remove;
                 if (!isValid) return ItemRefreshType.ReCreate;                                               // Nevalidní prvek je třeba refreshovat
                 if (Object.ReferenceEquals(iRibbonItem, iCurrentItem)) return ItemRefreshType.ReFill;        // Pokud dodaná instance (iRibbonItem) a zdejší instance (iCurrentItem) je totožná, pak Refresh je nutný - neboť nedokážu rozpoznat, jestli došlo ke změně. To dokážu jen pro dvě odlišné instance!
+                if (needReload(iCurrentItem)) return ItemRefreshType.ReFill;                                 // Pokud naše dosavadní instance je OnDemandLoad, pak musí dostat ReFill !!!  Kvůli refreshi obsahu a předání informace, že prvek dostal data a může být otevřen...
                 if (DataRibbonItem.HasEqualContent(iRibbonItem, iCurrentItem)) return ItemRefreshType.None;  // Shodný obsah => netřeba refresh.
                 return ItemRefreshType.ReFill;                                 // Neshodný obsah => ReFill tehdy, když dva prvky (nově požadovaný a stávající) NEJSOU shodné!   Takhle je tu podmínka proto, abych na Equals mohl dát breakpoint...
             }
             else
             {   // Prvek neexistuje: Refresh je třeba, pokud se prvek má vytvořit nebo upravit:
                 return ItemRefreshType.ReCreate;
+            }
+
+            // Vrátí true, pokud dodaný prvek potřebuje Reload položek SubItems. Takový prvek musí mít vyvolánu metodu Refresh, aby validně zobrazil nově dodané anebo i původní menu...
+            bool needReload(IRibbonItem ribbonItem)
+            {
+                return (ribbonItem != null && (ribbonItem.SubItemsIsOnDemand || ribbonItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce || ribbonItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime));
             }
         }
         /// <summary>
@@ -3793,6 +3816,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="withReset"></param>
         protected void FillBarItem(DevExpress.XtraBars.BarItem barItem, IRibbonItem iRibbonItem, int level, bool withReset = false)
         {
+            DelayResetForce(iRibbonItem, barItem);
+
             // Společné hodnoty:
             DxComponent.FillBarItemFrom(barItem, iRibbonItem, level);
 
@@ -4437,7 +4462,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     int count = 0;
                     _BarMenu_FillItems(menu, itemInfo.Level + 1, itemInfo.DxGroup, lazyInfo.ParentItem, lazyInfo.SubItems, true, ref count);
                     lazyInfo.SubItems = null;                        // SubItems, které jsme nyní vložili do menu, už příště nebudeme potřebovat. Jsou v menu, a dokud nepřijde Refresh, tak tam budou.
-                    itemInfo.ValidMenu = true;                       // Prvek nyní obsahuje validní menu
+                    itemInfo.ValidMenu = ContentValidityType.Valid;  // Prvek nyní obsahuje validní menu
                     if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $"LazyLoad Menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
                 }
                 //  b) Je třeba zavolat server, aby nám dal nové prvky do menu (eventu ItemOnDemandLoad => RefreshItems => _BarMenu_OpenMenu()),
@@ -4458,7 +4483,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (menu.ItemLinks.Count > 0)
                     {
                         menu.ItemLinks.Clear();
-                        itemInfo.ValidMenu = false;
+                        itemInfo.ValidMenu = ContentValidityType.ReloadInProgress;       // Rozběhl se OnDemandLoad, menu dosud není naplněno, ale není nevalidní...
                     }
                 }
                 // Prvek již NENÍ OnDemand: odpojíme tedy jeho LazyInfo:
@@ -4494,7 +4519,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 int count = 0;
                 _BarMenu_FillItems(barMenu, itemInfo.Level + 1, itemInfo.DxGroup, lazyInfo.ParentItem, lazyInfo.SubItems, true, ref count);
                 lazyInfo.SubItems = null;                            // SubItems, které jsme nyní vložili do menu, už příště nebudeme potřebovat. Jsou v menu, a dokud nepřijde Refresh, tak tam budou.
-                itemInfo.ValidMenu = true;                           // Prvek nyní obsahuje validní menu
+                itemInfo.ValidMenu = ContentValidityType.Valid;      // Prvek nyní obsahuje validní menu
                 if (LogActive) DxComponent.LogAddLineTime(LogActivityKind.Ribbon, $"LazyLoad Menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
             }
             //  b) Je třeba zavolat server, aby nám dal nové prvky do menu (eventu ItemOnDemandLoad => RefreshItems => _BarMenu_OpenMenu()),
@@ -4504,6 +4529,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 lazyInfo.CurrentMergeLevel = this.MergeLevel;
                 lazyInfo.RefreshPending = true;
                 this.RunItemOnDemandLoad(lazyInfo.ParentItem);
+                itemInfo.ValidMenu = ContentValidityType.ReloadInProgress;       // Rozběhl se OnDemandLoad, menu dosud není naplněno, ale není nevalidní...
             }
             // Prvek již NENÍ OnDemand: odpojíme tedy jeho LazyInfo:
             if (!isOnDemand)
@@ -4533,7 +4559,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (!this.CurrentModifiedState)        // V procesu Modify - Refresh to nedělám, pouze když uživatel ručně zhasíná menu (klikne do něj nebo mimo něj):
                     {
                         menu.ItemLinks.Clear();            // Tím při příštím rozsvícení bude menu prázdné a nebude blikat (Blikání = rozsvítí se nejprve starý obsah, provede se CallReload + Refresh + DoOpenMenu) ...
-                        itemInfo.ValidMenu = false;            // Tím při Refreshi zajistím, že prvek bude vyhodnocen jako "změněný" a bude reálně refreshován.
+                        itemInfo.ValidMenu = ContentValidityType.ReloadInProgress;       // Rozběhl se OnDemandLoad, menu dosud není naplněno, ale není nevalidní...  Tím při Refreshi zajistím, že prvek bude vyhodnocen jako "změněný" a bude reálně refreshován.
                     }
                 }
             }
@@ -4556,7 +4582,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                
                 // Aktualizujeme info uložené v menu.Tag:
                 itemInfo.Data = newRibbonItem;
-                itemInfo.ValidMenu = true;
+                itemInfo.ValidMenu = ContentValidityType.Valid;                          // Menu je validně naplněno platnými daty
                 bool isOnDemand = (newRibbonItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || newRibbonItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce);
                 if (isOnDemand)
                     itemInfo.LazyInfo = new LazySubItemsInfo(newRibbonItem, newRibbonItem.SubItemsContentMode, null);             // Tady si už neukládám newRibbonItem.SubItems, protože položky menu jsou již vygenerovány...
@@ -5015,7 +5041,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             public BarItemTagInfo(IRibbonItem data, int level, DxRibbonControl dxRibbon, DxRibbonGroup dxGroup, LazySubItemsInfo lazyInfo = null)
             {
                 this.Data = data;
-                this.ValidMenu = true;                    // V konstruktoru nastavuji validitu true
+                this.ValidMenu = ContentValidityType.Valid;                    // V konstruktoru nastavuji validitu true
                 this.Level = level;
                 this._DxRibbon = dxRibbon;
                 this._DxGroup = dxGroup;
@@ -5028,11 +5054,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             internal IRibbonItem Data { get; set; }
             /// <summary>
-            /// Prvek je validní (po vytvoření), ale může být shozen na false.
-            /// Pak bude vyhodnocen jako nevalidní a při refreshi se bude aktualizovat.
-            /// Na false je shozena při modifikaci prvku mimo pravidla (typicky při zavření OnDemand menu)
+            /// Obsah menu je validní nebo se právě donačítá jeho obsah?
+            /// <para/>
+            /// Prvek může mít menu validní (pokud při vytvoření je dodán platný obsah), pak je zde <see cref="ContentValidityType.Valid"/>;
+            /// Nebo je dodán příznak NeedReload, pak po vytvoření je zde <see cref="ContentValidityType.NonValid"/> (a menu může obsahovat jen náhradní prvek, který dovolí systému zobrazit menu), 
+            /// pak při pokusu o jeho rozbalení proběhne událost OnDemandLoad a stav se změní na <see cref="ContentValidityType.ReloadInProgress"/>.
+            /// <para/>
+            /// Při vyhledávání dat prvku se validita menu vyhodnocuje, viz metoda <see cref="TryGetIRibbonData(string, out IRibbonItem, out bool, bool)"/>...
             /// </summary>
-            internal bool ValidMenu { get; set; }
+            internal ContentValidityType ValidMenu { get; set; }
             /// <summary>
             /// Hladina prvku
             /// </summary>
@@ -5143,6 +5173,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// BarManager interní, vestavěný v Ribbonu, pro běžné použití
         /// </summary>
         public RibbonBarManager BarManagerInt { get { return base.Manager; } }
+        /// <summary>
+        /// Stav obsahu prvku
+        /// </summary>
+        protected enum ContentValidityType
+        {
+            /// <summary>
+            /// Nevalidní (nenaplněn nebo zcela invalidován), nemá být zobrazen, obsah je třeba donačíst
+            /// </summary>
+            NonValid,
+            /// <summary>
+            /// Právě byl vyžádán reload prvku, ale dosud nebyl naplněn
+            /// </summary>
+            ReloadInProgress,
+            /// <summary>
+            /// Prvek je naplněn a je validní
+            /// </summary>
+            Valid
+        }
         #endregion
         #region Podpora pro QAT - Quick Access Toolbar
         /*     Jak to tady funguje?
@@ -5322,7 +5370,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private bool _ContainsRealChangeQatUserKeys(string[] qatKeys, Dictionary<string, Tuple<BarItem, IRibbonItem>> qatBarItems)
         {
-            Queue<QatItem> qatQueue = new Queue<QatItem>();          // Fronta prvků QAT User, které my reálně máme v QAT, v jejich aktuálním pořadí
+            Queue<QatItem> qatQueue = new Queue<QatItem>();                    // Fronta prvků QAT User, které my reálně máme v QAT, v jejich aktuálním pořadí
             if (_QATUserItems != null)
                 _QATUserItems.Where(q => q.IsInQAT).ForEachExec(i => qatQueue.Enqueue(i));
 
@@ -5337,12 +5385,12 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 // a) Pokud požadovaný QAT prvek [itemId] v našem Ribbonu fyzicky máme:
                 //  => Měli bychom jej mít i v naší frontě viditelných prvků:
-                if (qatQueue.Count == 0) return true;                // Naše reálné QAT prvky už nic neobsahují => musíme prvek přidat, jde tedy o změnu
+                if (qatQueue.Count == 0) return true;                          // Naše reálné QAT prvky už nic neobsahují => musíme prvek přidat, jde tedy o změnu
                 var qatItem = qatQueue.Dequeue();                              // Nějaký prvek tam máme, musí mít shodný klíč:
                 if (qatItem.QatKey != key) return true;                        // Ale ten prvek, který máme na této pozici, má jiný klíč - jde o změnu.
             }
 
-            return (qatQueue.Count > 0);                             // Pokud v našem soupisu máme nějaké další prvky, musíme je odstranit - jde o změnu.
+            return (qatQueue.Count > 0);                                       // Pokud v našem soupisu máme nějaké další prvky, musíme je odstranit - jde o změnu.
         }
         /// <summary>
         /// Ze zadaného stringu vytvoří struktury pro evidenci prvků pro toolbar QAT (pole <see cref="_QATUserItems"/> a <see cref="_QATUserItemDict"/>).
@@ -5359,7 +5407,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 string key = GetValidQATKey(qatKey);
                 if (key == "") continue;
-                if (_QATUserItemDict.ContainsKey(key)) continue;     // Duplicita na vstupu: ignorujeme
+                if (_QATUserItemDict.ContainsKey(key)) continue;               // Duplicita na vstupu: ignorujeme
 
                 QatItem qatItem = new QatItem(this, key);
                 if (refreshToolbar && qatBarItems != null && qatBarItems.TryGetValue(key, out var barData))
@@ -5968,8 +6016,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="itemId"></param>
         /// <param name="iRibbonItem"></param>
         /// <param name="isValid"></param>
+        /// <param name="isReloadingMenuValid">Upřesnění pro prvek typu Menu: pokud najdeš prvek Menu, a ten bude ve stavu Reloading, pak to máme akceptovat jako validní (vstup true == výstup true) nebo nevalidní (vstup false == výstup false) ?</param>
         /// <returns></returns>
-        private bool TryGetIRibbonData(string itemId, out IRibbonItem iRibbonItem, out bool isValid)
+        private bool TryGetIRibbonData(string itemId, out IRibbonItem iRibbonItem, out bool isValid, bool isReloadingMenuValid)
         {
             iRibbonItem = null;
             isValid = false;
@@ -5988,7 +6037,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (tag is BarItemTagInfo itemInfo)
             {
                 iRibbonItem = itemInfo.Data;
-                isValid = itemInfo.ValidMenu;             // předává informaci o validitě prvku. Na false je shozena při modifikaci prvku mimo pravidla (typicky při zavření OnDemand menu)
+                var menuValidity = itemInfo.ValidMenu;     // Obsahuje informaci o validitě prvku. U menu zde evidujeme navíc stav Reloading...
+                isValid = (menuValidity == ContentValidityType.Valid || (isReloadingMenuValid && menuValidity == ContentValidityType.ReloadInProgress));     // Pokud isReloadingMenuValid je true, pak jako Valid akceptujeme i stav .ReloadInProgress !
                 return true;
             }
             if (tag is IRibbonItem iItem)
@@ -6614,7 +6664,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Obsahuje true, když tento prvek máme fyzicky přidat do QAT. Tj. máme odpovídající BarItem, ale nemáme BarItemLink.
             /// </summary>
-            public bool NeedAddToQat 
+            public bool NeedAddToQat
             {
                 get
                 {
@@ -6888,9 +6938,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Tady jsem v té instanci Ribbonu, která deklarovala BarItem a navázala do něj svůj Click eventhandler...
             if (_TryGetIRibbonItem(e.Item, out IRibbonItem iRibbonItem))
             {
-                var dxArgs = _SearchItemClickInfo(iRibbonItem, e);
-                _RibbonItemTestCheckChanges(e.Item, dxArgs);
-                _RibbonItemClick(dxArgs);
+                if (DelayIsValidForClick(iRibbonItem, e.Item, true))
+                {
+                    var dxArgs = _SearchItemClickInfo(iRibbonItem, e);
+                    _RibbonItemTestCheckChanges(e.Item, dxArgs);
+                    _RibbonItemClick(dxArgs);
+                }
             }
         }
         /// <summary>
@@ -7398,6 +7451,92 @@ namespace Noris.Clients.Win.Components.AsolDX
                          .OfType<DxRibbonControl>()
                          .FirstOrDefault();
             return ribbon;
+        }
+        #endregion
+        #region Button Click + Delay ( Disable / Enable )
+        /// <summary>
+        /// Metoda zajistí nulování intervalu Delay pro daný prvek Ribbonu.
+        /// Volá se typicky v procesu inicializace / refreshe dat pro BarItem.
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="barItem"></param>
+        protected void DelayResetForce(IRibbonItem iRibbonItem, BarItem barItem)
+        {
+            iRibbonItem.DelayLastClickTime = null;
+            iRibbonItem.DelayTimerGuid = null;
+            if (barItem.Enabled != iRibbonItem.Enabled)
+            {
+                barItem.Enabled = iRibbonItem.Enabled;
+                this.RefreshBarItem(barItem);
+            }
+        }
+        /// <summary>
+        /// Provede Refresh daného BarItem, včetně jeho Ribbonu a včetně Parent Ribbonů
+        /// </summary>
+        /// <param name="barItem"></param>
+        protected void RefreshBarItem(BarItem barItem)
+        {
+            if (barItem is null) return;
+            barItem.Refresh();
+            if (_TryGetDxRibbon(barItem, out var defRibbon))
+            {
+                var upRibbons = defRibbon.MergedRibbonsUp;
+                foreach (var upRibbon in upRibbons)
+                    upRibbon.Item1.Refresh();
+            }
+        }
+        /// <summary>
+        /// Metoda vrátí true, pokud daný prvek Ribbonu může akceptovat kliknutí z hlediska Delay.
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="barItem"></param>
+        /// <param name="temporaryDisable">Pokud je prvek nastaven jako Delay, a bude akceptován jeho Click, pak na něm nastavit Disable po dobu jeho Delay intervalu</param>
+        /// <returns></returns>
+        protected bool DelayIsValidForClick(IRibbonItem iRibbonItem, BarItem barItem, bool temporaryDisable)
+        {
+            // Pokud delay není dané, anebo je 0 či záporné, pak kliknutí akceptuji bez problému:
+            var delay = iRibbonItem.DelayMilisecBeforeNextClick ?? 0;
+            if (delay <= 0) return true;
+
+            // Pokud předchozí kliknutí dosud nebylo (DelayLastClickTime je null = výchozí), anebo od posledního kliknutní uběhla přinejmenším stanovená doba,
+            //  pak si nastavím ochranný čas pro příští kliknutí, a aktuální kliknutí akceptuji:
+            
+            // Pokud máme čas minulého kliknutí, a uplynulý čas do teď je menší než stanovená doba delay, pak nemůžeme nové kliknutí akceptovat:
+            var last = iRibbonItem.DelayLastClickTime;
+            var now = DateTime.Now;
+            if (last.HasValue && (((TimeSpan)(now - last.Value)).TotalMilliseconds < delay))
+            {
+                return false;
+            }
+
+            // Prvek sice má stanovený čas Delay, ale buď jde o prvoklik, anebo o klik po uplynutí stanoveného času. Kliknutí tedy lze akceptovat.
+            if (temporaryDisable)
+            {   // Nicméně je tady ten Delay, proto prvek BarItem nyní dáme Disabled, a nastavíme časovač (WatchTimer) na daný čas, abychom po jeho uplynutí znovu nastavili Enabled = true:
+                barItem.Enabled = false;
+                iRibbonItem.DelayLastClickTime = now;
+                iRibbonItem.DelayTimerGuid = WatchTimer.CallMeAfter(DelayTimeElapsed, barItem, delay, true, iRibbonItem.DelayTimerGuid);
+            }
+            return true;
+        }
+        /// <summary>
+        /// Metoda volaná po dosažení stanoveného času Delay
+        /// </summary>
+        /// <param name="param"></param>
+        protected void DelayTimeElapsed(object param)
+        {
+            if (this.IsDisposed || this.Disposing) return;
+
+            if (param is BarItem barItem)
+            {
+                if (_TryGetIRibbonItem(barItem, out IRibbonItem iRibbonItem))
+                {
+                    DelayResetForce(iRibbonItem, barItem);
+                }
+                else
+                {
+                    barItem.Enabled = true;
+                }
+            }
         }
         #endregion
         #region Mergování, Unmergování, podpora pro ReMerge (Unmerge - Modify - Merge back)
@@ -9911,7 +10050,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private void ComboBox_ButtonPressed(object sender, DevExpress.XtraEditors.Controls.ButtonPressedEventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.Ribbon, $"DxRibbonComboBox.ComboBox_ButtonPressed: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}; Button={e.Button.Kind}");
+           DxComponent.LogAddLine(LogActivityKind.Ribbon, $"DxRibbonComboBox.ComboBox_ButtonPressed: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}; Button={e.Button.Kind}");
 
             // Při stisknutí buttonu DropDown v situaci, kdy DropDown button není první button vpravo přímo za textem v ComboBoxu, 
             //  se v DevExpress nativně neotevírá Popup. Nevím proč.
@@ -10037,7 +10176,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     // Border:
                     applyComboBorderStyle(iRibbonCombo.ComboBorderStyle);
                     applyButtonsBorderStyle(iRibbonCombo.SubButtonsBorderStyle);
-
+              
                     // Width:
                     if (iRibbonCombo.Width.HasValue && iRibbonCombo.Width.Value > 0)
                         this.Width = iRibbonCombo.Width.Value;       // Tohle jediné nastaví šířku cca přesně
@@ -11174,6 +11313,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.RibbonStyle = RibbonItemStyles.All;
             this.ItemPaintStyle = BarItemPaintStyle.CaptionGlyph;
             this.QatKey = null;
+            this.DelayMilisecBeforeNextClick = null;
+            this.DelayLastClickTime = null;
+            this.DelayTimerGuid = null;
             this.VisibleInSearchMenu = true;
         }
         /// <summary>
@@ -11202,6 +11344,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             ParentRibbonItem = source.ParentRibbonItem;
             ItemType = source.ItemType;
             RibbonStyle = source.RibbonStyle;
+            DelayMilisecBeforeNextClick = source.DelayMilisecBeforeNextClick;
+            DelayLastClickTime = source.DelayLastClickTime;
+            DelayTimerGuid = source.DelayTimerGuid;
             VisibleInSearchMenu = source.VisibleInSearchMenu;
             Size = source.Size;
             SubItemsContentMode = source.SubItemsContentMode;
@@ -11296,6 +11441,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (itemA.Size != itemB.Size) return false;
             if (itemA.BackColor != itemB.BackColor) return false;
             if (itemA.TextColor != itemB.TextColor) return false;
+            if (itemA.SubItemsContentMode != itemB.SubItemsContentMode) return false;
 
             if ((itemA.ItemType == RibbonItemType.CheckBoxStandard || itemA.ItemType == RibbonItemType.CheckBoxPasive || itemA.ItemType == RibbonItemType.CheckBoxToggle) && itemA.Checked != itemB.Checked) return false;
 
@@ -11382,6 +11528,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zarovnání prvku; uplatní se u StatusBaru
         /// </summary>
         public virtual BarItemAlignment? Alignment { get; set; }
+        /// <summary>
+        /// Doba (v milisekundách), která musí uplynout před opakovaným kliknutím na tento button. Rychlejší kliknutí (doubleclick) bude ignorováno.
+        /// <para/>
+        /// U běžných tlačítek nám opakované kliknutí nevadí (refresh, posun řádku nahoru/dolů, atd).<br/>
+        /// Jsou ale tlačítka (funkce, workflow, ...), kde opakované vyvolání téže akce je problémem. 
+        /// Pak se doporučuje nastavit dostatečnou kladnou hodnotu, která zajistí, že první kliknutí se dostane z klienta na server, zpracuje se a odešle na klienta refresh menu, kde zdrojový button např. již nebude přítomen.<br/>
+        /// Hodnota null je default a umožní opakované odeslání akce na server bez časového omezení.
+        /// </summary>
+        public virtual int? DelayMilisecBeforeNextClick { get; set; }
+        /// <summary>
+        /// DateTime kdy bylo naposledy kliknuto. Řídí neaktivní interval spolu s hodnotou <see cref="DelayMilisecBeforeNextClick"/>.
+        /// </summary>
+        public virtual DateTime? DelayLastClickTime { get; set; }
+        /// <summary>
+        /// Prostor pro ID budíku, který řídí obnovení stavu Enabled pro odpovídající BarItem po uplynutí času <see cref="DelayMilisecBeforeNextClick"/> po akceptování kliknutí
+        /// </summary>
+        public virtual Guid? DelayTimerGuid { get; set; }
         /// <summary>
         /// Zobrazit v Search menu?
         /// </summary>
@@ -11916,6 +12079,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         BarItemAlignment? Alignment { get; }
         /// <summary>
+        /// Doba (v milisekundách), která musí uplynout před opakovaným kliknutím na tento button. Rychlejší kliknutí (doubleclick) bude ignorováno.
+        /// <para/>
+        /// U běžných tlačítek nám opakované kliknutí nevadí (refresh, posun řádku nahoru/dolů, atd).<br/>
+        /// Jsou ale tlačítka (funkce, workflow, ...), kde opakované vyvolání téže akce je problémem. 
+        /// Pak se doporučuje nastavit dostatečnou kladnou hodnotu, která zajistí, že první kliknutí se dostane z klienta na server, zpracuje se a odešle na klienta refresh menu, kde zdrojový button např. již nebude přítomen.<br/>
+        /// Hodnota null je default a umožní opakované odeslání akce na server bez časového omezení.
+        /// </summary>
+        int? DelayMilisecBeforeNextClick { get; }
+        /// <summary>
+        /// DateTime kdy bylo naposledy kliknuto. Řídí neaktivní interval spolu s hodnotou <see cref="DelayMilisecBeforeNextClick"/>.
+        /// </summary>
+        DateTime? DelayLastClickTime { get; set; }
+        /// <summary>
+        /// Prostor pro ID budíku, který řídí obnovení stavu Enabled pro odpovídající BarItem po uplynutí času <see cref="DelayMilisecBeforeNextClick"/> po akceptování kliknutí
+        /// </summary>
+        Guid? DelayTimerGuid { get; set; }
+        /// <summary>
         /// Zobrazit v Search menu?
         /// </summary>
         bool VisibleInSearchMenu { get; }
@@ -12121,7 +12301,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Smazání
         /// </summary>
-        Clear = 0x8000, 
+        Clear = 0x8000,
         /// <summary>
         /// Uživatelský obrázek
         /// </summary>

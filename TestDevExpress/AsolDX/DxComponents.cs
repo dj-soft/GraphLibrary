@@ -8852,8 +8852,10 @@ White
         TxtNumberFirstNumberIsHigherThanSecond,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Nesprávně zadané číslo.")]
-        TxtNumberValueNotValid
-
+        TxtNumberValueNotValid,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Pro zadanou skupinu ještě nejsou načtena všechna data.")]
+        ClientBrowse_Grouping_DataNotLoaded
 
 
         // Nové kódy přidej do Messages.xml v klientu!!!     Do AdapterTest.cs není nutno, tam se načítá hodnota atributu DefaultMessageText() !
