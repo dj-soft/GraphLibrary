@@ -792,26 +792,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 __CoordSystemSpin.Visible = isCoordinatesTextVisible;
                 if (isCoordinatesTextVisible)
                 {
+                    int ctHeight = __CoordinatesText.Bounds.Height;
+                    int ctTop = buttonTop + buttonSize - ctHeight - 1;
+                    int ctWidth = 250;
+                    __CoordinatesText.Bounds = new System.Drawing.Rectangle(toolLeft, ctTop, ctWidth, ctHeight);
+                    toolLeft += (ctWidth + distanceX);
 
-                }
-
-
-                int toolRight = width - paddingX;
-                bool isAdressVisible = webProperties.IsAdressEditorVisible;
-                bool isAdressEditable = webProperties.IsAdressEditorEditable;
-                __CoordinatesText.Visible = isAdressVisible;
-                __GoToButton.Visible = isAdressVisible && isAdressEditable;
-                if (isAdressVisible)
-                {
-                    if (isAdressEditable)
-                    {
-                        __GoToButton.Bounds = new System.Drawing.Rectangle((toolRight - buttonSize), buttonTop, buttonSize, buttonSize);
-                        toolRight -= shiftX;
-                    }
-
-                    int editorHeight = __CoordinatesText.Bounds.Height;
-                    int editorTop = buttonTop + buttonSize - editorHeight - 1;
-                    __CoordinatesText.Bounds = new System.Drawing.Rectangle(toolLeft, editorTop, (toolRight - toolLeft), editorHeight);
+                    __CoordSystemSpin.Bounds = new System.Drawing.Rectangle(toolLeft, buttonTop, buttonSize, buttonSize);
+                    toolLeft += shiftX;
                 }
 
                 __ToolPanel.Bounds = new System.Drawing.Rectangle(left, top, width, toolHeight);
@@ -831,24 +819,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // Web + Picture:
-            int wh = bottom - top;
+            int webHeight = bottom - top;
             var oldPicBounds = this.__PictureWeb.Bounds;
-            var newWebBounds = new System.Drawing.Rectangle(left, top, width, wh);
+            var newWebBounds = new System.Drawing.Rectangle(left, top, width, webHeight);
             var newPicBounds = newWebBounds;
-
-            // Debug: živý web nechám vlevo nahoře přes 3/4 plochy, a Picture vpravo dole, s tím že prostřední 1/2 se překrývá:
-            /*
-            int w4 = width / 4;
-            int h4 = wh / 4;
-            newWebBounds.Width -= w4;
-            newWebBounds.Height -= h4;
-
-            newPicBounds.X += w4;
-            newPicBounds.Y += h4;
-            newPicBounds.Width -= w4;
-            newPicBounds.Height -= h4;
-            */
-            // Debug konec.
 
             this.__MsWebView.Bounds = newWebBounds;
             this.__PictureWeb.Bounds = newPicBounds;
@@ -860,12 +834,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _DoEnabled()
         {
-            var properties = this.MsWebProperties;
+            var webProperties = this.MsWebProperties;
+            var mapProperties = this.MapProperties;
 
             // Toolbar
-            bool isToolbarVisible = properties.IsToolbarVisible;
+            bool isToolbarVisible = webProperties.IsToolbarVisible;
             if (isToolbarVisible)
             {
+                bool isMapEditable = mapProperties.IsMapEditable;
+                __CoordinatesText.Enabled = isMapEditable;
             }
         }
         /// <summary>
@@ -1356,6 +1333,150 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         }
         #endregion
+    }
+    public class DxMapCoordinates
+    {
+        public DxMapCoordinates()
+        {
+            __DotChar = System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
+
+            _Reset();
+        }
+        /// <summary>
+        /// Oddělovač desetinných míst v aktuální kultuře, pracuje s ním <see cref="Decimal.TryParse(string, out decimal)"/>
+        /// </summary>
+        private string __DotChar;
+        public string Coordinates { get { return _GetCoordinates(); } set { _SetCoordinates(value); } }
+        public string UrlAdress { get { return _GetUrlAdress(); } set { _SetUrlAdress(value); } }
+
+        public decimal CenterX { get { return __CenterX; } set { __CenterX = _Align((value % 360m), 0m, 360m); } } private decimal __CenterX;
+        public decimal CenterY { get { return __CenterY; } set { __CenterY = _Align((value % 360m), -180m, 180m); } } private decimal __CenterY;
+        public int Zoom { get { return __Zoom; } set { __Zoom = _Align(value, 1, 19); } } private int __Zoom;
+        public bool HasPoint { get { return (this.PointX.HasValue && this.PointY.HasValue); } }
+        public decimal? PointX { get { return __PointX; } set { __PointX = _Align((value % 360m), 0m, 360m); } } private decimal? __PointX;
+        public decimal? PointY { get { return __PointY; } set { __PointY = _Align((value % 360m), -180m, 180m); } } private decimal? __PointY;
+        private static int _Align(int value, int min, int max) { return (value < min ? min : (value > max ? max : value)); }
+        private static decimal _Align(decimal value, decimal min, decimal max) { return (value < min ? min : (value > max ? max : value)); }
+        private static decimal? _Align(decimal? value, decimal min, decimal max) { return (value.HasValue ? (decimal?)(value.Value < min ? min : (value.Value > max ? max : value.Value)) : (decimal?)null); }
+        private void _SetCoordinates(string coordinates)
+        {
+            _Reset();
+            if (String.IsNullOrEmpty(coordinates)) return;
+
+            //  Varianty:
+            // 15.7951729;49.9499113;15
+            // 14.4289607, 50.0395802
+            // 50.0395802N, 14.4289607E
+            // N 50.0395802, E 14.4289607
+            // 50°2'22,49"N, 14°25'44,26"E
+            // N 50°2'22,49", E 14°25'44,26"
+            // +9F2P.2CQHRH
+            // 9F2P2CQH+RH
+            coordinates = coordinates.Replace(" ", "").ToUpper();
+
+            bool hasSemiColon = coordinates.Contains(";");
+            bool hasColon = coordinates.Contains(",");
+            bool hasGrade = coordinates.Contains("°");
+            bool hasNSEW = (coordinates.Contains("N") || coordinates.Contains("S") || coordinates.Contains("E") || coordinates.Contains("W"));
+            bool beginNS = (coordinates.StartsWith("N") || coordinates.StartsWith("S"));
+
+            // Vyhodnocení varianty zadání:
+
+            // Analýza dat konkrétní varianty:
+
+            var parts = coordinates.Split(';');
+            int count = parts.Length;
+            if (count >= 2)
+            {
+                this.CenterX = _ParseDecimal(parts[0]);
+                this.CenterY = _ParseDecimal(parts[1]);
+                this.Zoom = (count >= 3 ? _ParseInt(parts[2]) : 12);
+                this.PointX = (count >= 5 ? _ParseDecimalN(parts[3]) : (decimal?)null);
+                this.PointY = (count >= 5 ? _ParseDecimalN(parts[4]) : (decimal?)null);
+                return;
+            }
+
+            // Nevalidní:
+            return;
+
+
+        }
+        private string _GetCoordinates()
+        {
+            string text = $"{this.CenterX}; {this.CenterY}; {this.Zoom}";
+            if (this.HasPoint) text += $";{this.PointX}; {this.PointY}";
+            text = text.Replace(",", ".");
+            return text;
+        }
+        private void _Reset()
+        {
+            // https://mapy.cz/turisticka?l=0&x=15.7435513&y=49.8152928&z=8
+            this.CenterX = 15.7435513m;
+            this.CenterY = 49.8152928m;
+            this.PointX = null;
+            this.PointY = null;
+            this.Zoom = 8;
+        }
+
+        private string _GetUrlAdress() 
+        {
+            string web = "https://mapy.cz/";
+            string variant = "zakladni";                // turisticka  letecka  dopravni
+            string centerX = _FormatDecimal(this.CenterX);
+            string centerY = _FormatDecimal(this.CenterY);
+            string pointX = _FormatDecimalN(this.PointX);
+            string pointY = _FormatDecimalN(this.PointY);
+            string zoom = _FormatInt(this.Zoom);
+
+            string urlAdress;
+
+            // https://mapy.cz/zakladni?l=0&source=coor&id=15.782303855847147%2C49.990992469096604&x=15.7821322&y=49.9893301&z=16
+            pointX = centerX;
+            pointY = centerY;
+            string point = $"&source=coor&id={pointX}%2C{pointY}";
+
+            urlAdress = $"{web}{variant}?l=0{point}&x={centerX}&y={centerY}&z={zoom}";
+
+            return urlAdress;
+        }
+        private void _SetUrlAdress(string urlAdress)
+        { }
+
+
+
+        private decimal _ParseDecimal(string text)
+        {
+            var value = _ParseDecimalN(text);
+            return value ?? 0m;
+        }
+        private decimal? _ParseDecimalN(string text)
+        {
+            if (!String.IsNullOrEmpty(text))
+            {
+                if (text.Contains(".") && __DotChar != ".") text = text.Replace(".", __DotChar);
+                if (Decimal.TryParse(text, out decimal value)) return value;
+            }
+            return null;
+        }
+        private int _ParseInt(string text)
+        {
+            if (!String.IsNullOrEmpty(text) && Int32.TryParse(text, out int value)) return value;
+            return 0;
+        }
+        private string _FormatDecimal(decimal value)
+        {
+            string text = value.ToString();
+            return text.Replace(__DotChar, ".").Replace(" ", "");
+        }
+        private string _FormatDecimalN(decimal? value)
+        {
+            return (value.HasValue ? _FormatDecimal(value.Value) : "");
+        }
+        private string _FormatInt(int value)
+        {
+            string text = value.ToString();
+            return text.Replace(" ", "");
+        }
     }
     /// <summary>
     /// Potomek třídy <see cref="Microsoft.Web.WebView2.WinForms.WebView2"/>

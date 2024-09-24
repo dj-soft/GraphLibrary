@@ -14,24 +14,21 @@ namespace TestDevExpress.Forms
     /// <summary>
     /// Web viewer typu MS WebView2
     /// </summary>
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "MS WebMapa", buttonOrder: 71, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře MS WebView2 prohlížeč (MS Edge based)", tabViewToolTip: "WebView2 Mapa")]
+    [RunFormInfo(groupText: "Testovací okna", buttonText: "MS WebMapa", buttonOrder: 72, buttonImage: "devav/other/map.svg", buttonToolTip: "Otevře MS WebView2 mapy (MS Edge based)", tabViewToolTip: "WebView2 Mapa")]
     internal class WebMapForm : DxRibbonForm
     {
         #region Konstrukce
         protected override void DxMainContentPrepare()
         {
-            // Buttony, které reprezentují "oblíbené stránky":
+            // Buttony, které reprezentují "oblíbené pozice":
             __NavButtons = new List<DxSimpleButton>();
 
-            createButton("seznam", "https://www.seznam.cz/", _ClickButtonNavigate);
-            createButton("mapy A", "https://www.mapy.cz/", _ClickButtonNavigate);
-            createButton("mapy B", @"https://mapy.cz/dopravni?x=14.5802973&y=50.5311090&z=14", _ClickButtonNavigate);
-            createButton("mapy C", @"https://mapy.cz/dopravni?l=0&x=15.8629028&y=50.2145999&z=17", _ClickButtonNavigate);
-            createButton("mapy D", @"https://mapy.cz/dopravni?vlastni-body&ut=Nový bod&uc=9kFczxY5mZ&ud=15°51%2742.665""E 50°12%2754.179""N&x=15.8629028&y=50.2145999&z=17", _ClickButtonNavigate);
-            createButton("google", "https://www.google.com/", _ClickButtonNavigate);
-            createButton("meteo", "https://www.chmi.cz/files/portal/docs/meteo/rad/inca-cz/short.html?display=var&gmap_zoom=7&prod=czrad_maxz_celdn_masked&opa1=0.6&opa2=0.7&nselect=14&nselect_fct=6&di=1&rep=2&add=4&update=4&lat=49.951&lon=15.797&lang=CZ", _ClickButtonNavigate);
-            createButton("GreenMapa", "<GreenMapa>", _ClickButtonNavigate);
-            createButton("Static", null, _ClickButtonStaticImage);
+            createButton("Chrudim", "15.7951729;49.9499113;15", _ClickButtonNavigate);
+            createButton("Pardubice", "15.7713549;50.0323932;14", _ClickButtonNavigate);
+            createButton("Hradec Králové", "15.8304922;50.2072337;14", _ClickButtonNavigate);
+            createButton("Staré Ransko", "15.8308731;49.6790662;18;F", _ClickButtonNavigate);
+            createButton("Orlické hory", "16.2956143;50.2435940;11", _ClickButtonNavigate);
+            createButton("Gargano", "15.7868100;41.7842548;10", _ClickButtonNavigate);
 
             // Vlastní WebView:
             __MapViewPanel = new DxMapViewPanel();
@@ -101,46 +98,11 @@ namespace TestDevExpress.Forms
             var webPanel = __MapViewPanel;
             if (sender is Control control && control.Tag is string text)
             {
-                if (text == "<GreenMapa>")
-                {
-                    string html = @"<!DOCTYPE html>
-<html>
-<head>
-<meta http-equiv=""X-UA-Compatible"" content=""IE=10"" />
-<meta charset=""utf-8"" />
-<script type=""text/javascript"" src=""http://api.mapy.cz/loader.js""></script>
-<script type=""text/javascript"">Loader.load();</script>
-</head>
-<body style=""padding: 0; margin: 0"">
-<div id=""m"" style=""padding: 0; margin: 0;height:441px;""></div>
-</body>
-<script type=""text/javascript"">
-function afterMapLoaded()
-{
-window.external.callClientEvent(""AfterMapLoaded"","""");
-}
-var mapSignalsCallback = function(e) {
-afterMapLoaded();
-}
-var center = SMap.Coords.fromWGS84(15.3351975,49.7420097);
-var m = new SMap(JAK.gel(""m""), center, 7);
-var mapSignals = m.getSignals();
-mapSignals.addListener(null, ""tileset-load"", mapSignalsCallback);
-m.addDefaultLayer(SMap.DEF_BASE).enable();
-layer = new SMap.Layer.Marker();
-var layerId = layer.getId();
-m.addLayer(layer);
-var sync = new SMap.Control.Sync({});
-m.addControl(sync);
-</script>
-</html>
-";
-                    webPanel.MsWebProperties.HtmlContent = html;
-                }
-                else
-                {
-                    webPanel.MsWebProperties.UrlAdress = text;
-                }
+                var coordinates = new DxMapCoordinates();
+                coordinates.Coordinates = text;
+                string url = coordinates.UrlAdress;
+                webPanel.MsWebProperties.UrlAdress = url;
+
             }
         }
 
