@@ -2391,31 +2391,36 @@ namespace Noris.Clients.Win.Components
                 while (ex != null)
                 {
                     Type type = ex.GetType();
-                    string prefix = (!hasInner ? "" : $"{number}. ");
-                    string message = ex.Message;
-                    string method = (ex.TargetSite != null ? $"{ex.TargetSite.DeclaringType.FullName}.{ex.TargetSite.Name}()" : "");
-                    string stack = ex.StackTrace;
+                    bool isTiExc = (type == typeof(System.Reflection.TargetInvocationException) && ex.InnerException != null);
+                    bool isAgExc = (type == typeof(System.AggregateException) && ex.InnerException != null);
+                    if (!isTiExc && !isAgExc)
+                    {
+                        string prefix = (!hasInner ? "" : $"{number}. ");
+                        string message = ex.Message;
+                        string method = (ex.TargetSite != null ? $"{ex.TargetSite.DeclaringType.FullName}.{ex.TargetSite.Name}()" : "");
+                        string stack = ex.StackTrace ?? "";
 
-                    if (withHtml)
-                    {
-                        stack = stack.Replace("\r\n", eol);
-                        sb1.Append($"<size=+2>{prefix}<b>{message}</b></size>{eol}");
-                        sb2.Append($"<size=+2>{prefix}<b>{message}</b>  ({type.Name})</size>{eol}");
-                        sb2.Append($"   <b><size=+1>{type.FullName}</size></b>{eol}");
-                        sb2.Append($"<i>{stack}</i>{eol}");
-                        sb2.Append($"{line}{eol}");
-                    }
-                    else
-                    {
-                        sb1.Append($"{prefix}{message}{eol}");
-                        sb2.Append($"{prefix}{message}  ({type.Name}){eol}");
-                        sb2.Append($"   {type.FullName}{eol}");
-                        sb2.Append($"{stack}{eol}");
-                        sb2.Append($"{line}{eol}");
+                        if (withHtml)
+                        {
+                            stack = stack.Replace("\r\n", eol);
+                            sb1.Append($"<size=+2>{prefix}<b>{message}</b></size>{eol}");
+                            sb2.Append($"<size=+2>{prefix}<b>{message}</b>  ({type.Name})</size>{eol}");
+                            sb2.Append($"   <b><size=+1>{type.FullName}</size></b>{eol}");
+                            sb2.Append($"<i>{stack}</i>{eol}");
+                            sb2.Append($"{line}{eol}");
+                        }
+                        else
+                        {
+                            sb1.Append($"{prefix}{message}{eol}");
+                            sb2.Append($"{prefix}{message}  ({type.Name}){eol}");
+                            sb2.Append($"   {type.FullName}{eol}");
+                            sb2.Append($"{stack}{eol}");
+                            sb2.Append($"{line}{eol}");
+                        }
+                        number++;
                     }
 
                     ex = ex.InnerException;
-                    number++;
                 }
             }
             return new Tuple<string, string>(sb1.ToString(), sb2.ToString());

@@ -499,8 +499,15 @@ namespace TestDevExpress.Forms
         /// <param name="formType"></param>
         private void Run(Type formType)
         {
-            var form = System.Activator.CreateInstance(formType) as System.Windows.Forms.Form;
-            DxMainAppForm.ShowChildForm(form, this.RunAsFloating, this.TabViewToolTip);
+            try
+            {
+                var form = System.Activator.CreateInstance(formType) as System.Windows.Forms.Form;
+                DxMainAppForm.ShowChildForm(form, this.RunAsFloating, this.TabViewToolTip);
+            }
+            catch (Exception exc)
+            {
+                DxComponent.ShowMessageException(exc);
+            }
         }
         #endregion
     }

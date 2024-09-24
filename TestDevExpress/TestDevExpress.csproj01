@@ -1,0 +1,2548 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="packages\CefSharp.Common.124.3.80\build\CefSharp.Common.props" Condition="Exists('packages\CefSharp.Common.124.3.80\build\CefSharp.Common.props')" />
+  <Import Project="packages\chromiumembeddedframework.runtime.win-x86.124.3.8\build\chromiumembeddedframework.runtime.win-x86.props" Condition="Exists('packages\chromiumembeddedframework.runtime.win-x86.124.3.8\build\chromiumembeddedframework.runtime.win-x86.props')" />
+  <Import Project="packages\chromiumembeddedframework.runtime.win-x64.124.3.8\build\chromiumembeddedframework.runtime.win-x64.props" Condition="Exists('packages\chromiumembeddedframework.runtime.win-x64.124.3.8\build\chromiumembeddedframework.runtime.win-x64.props')" />
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{55CBEC08-1EE5-4F90-B4FE-CB65ABCB57E0}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>TestDevExpress</RootNamespace>
+    <AssemblyName>TestDevExpress</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;Compile_TestDevExpress DebugBuild</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\TestDevExpress.xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>9.0</LangVersion>
+    <ApplicationIcon>TestDevExpress.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="DevExpress.BonusSkins.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.BonusSkins.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Charts.v23.2.Core">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Charts.v23.2.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Data.Desktop.v23.2">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Data.Desktop.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Data.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Data.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Diagram.v23.2.Core">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Diagram.v23.2.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Dialogs.v23.2.Core">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Dialogs.v23.2.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Docs.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Docs.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Drawing.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Drawing.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Images.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Images.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Office.v23.2.Core">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Office.v23.2.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Pdf.v23.2.Core">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Pdf.v23.2.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Pdf.v23.2.Drawing">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Pdf.v23.2.Drawing.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.PivotGrid.v23.2.Core">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.PivotGrid.v23.2.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Printing.v23.2.Core">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Printing.v23.2.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.RichEdit.v23.2.Core">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.RichEdit.v23.2.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.RichEdit.v23.2.Export">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.RichEdit.v23.2.Export.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Sparkline.v23.2.Core">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Sparkline.v23.2.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Utils.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Utils.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Utils.v23.2.UI">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Utils.v23.2.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraBars.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraBars.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraCharts.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraCharts.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraCharts.v23.2.UI">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraCharts.v23.2.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraCharts.v23.2.Wizard">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraCharts.v23.2.Wizard.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraDiagram.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraDiagram.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraEditors.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraEditors.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraGrid.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraGrid.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraLayout.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraLayout.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraNavBar.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraNavBar.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraPdfViewer.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraPdfViewer.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraPivotGrid.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraPivotGrid.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraPrinting.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraPrinting.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraRichEdit.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraRichEdit.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraTreeList.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraTreeList.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraVerticalGrid.v23.2">
+      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraVerticalGrid.v23.2.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.Web.WebView2.Core, Version=1.0.2535.41, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.Web.WebView2.1.0.2535.41\lib\net462\Microsoft.Web.WebView2.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Web.WebView2.WinForms, Version=1.0.2535.41, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.Web.WebView2.1.0.2535.41\lib\net462\Microsoft.Web.WebView2.WinForms.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Web.WebView2.Wpf, Version=1.0.2535.41, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.Web.WebView2.1.0.2535.41\lib\net462\Microsoft.Web.WebView2.Wpf.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AdapterTest.cs" />
+    <Compile Include="AsolDX\DataForm\DxCollections.cs" />
+    <Compile Include="AsolDX\DataForm\DxDataForm.cs" />
+    <Compile Include="AsolDX\DataForm\UiDataFormatLayout.cs" />
+    <Compile Include="AsolDX\DataForm\WsDataFormat.cs" />
+    <Compile Include="AsolDX\DataForm\UiDataFormatLoader.cs" />
+    <Compile Include="AsolDX\DataForm\DxDataFormData.cs" />
+    <Compile Include="AsolDX\DataForm\DxDataFormPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="AsolDX\DataForm\DxFormLayout.cs" />
+    <Compile Include="AsolDX\DataForm\DxGraphics.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="AsolDX\DataForm\DxInteractive.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="AsolDX\DataForm\DxRepositoryEditors.cs" />
+    <Compile Include="AsolDX\DataForm\DxRepositoryManager.cs" />
+    <Compile Include="AsolDX\DxControls.cs" />
+    <Compile Include="AsolDX\DxDataExtensions.cs" />
+    <Compile Include="AsolDX\DxDataForm.cs" />
+    <Compile Include="AsolDX\DxDataFormData.cs" />
+    <Compile Include="AsolDX\DxDialogForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AsolDX\DxDragDrop.cs" />
+    <Compile Include="AsolDX\DxDrawingExtensions.cs" />
+    <Compile Include="AsolDX\DxGrid.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="AsolDX\DxListBox.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="AsolDX\DxMainAppForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AsolDX\DxResources.cs" />
+    <Compile Include="AsolDX\DxControlForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AsolDX\DxScroll.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="AsolDX\DxSettings.cs" />
+    <Compile Include="AsolDX\DxSvgImage.cs" />
+    <Compile Include="AsolDX\DxTabHeaders.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="AsolDX\DxWebView.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="AsolDX\DxWinReg.cs" />
+    <Compile Include="AsolDX\News\AppState.cs" />
+    <Compile Include="AsolDX\News\DxControlsNew.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="AsolDX\News\DxDiagramControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="AsolDX\News\DxIconConverter.cs" />
+    <Compile Include="AsolDX\News\DxTools.cs" />
+    <Compile Include="AsolDX\System\NrsParser.cs" />
+    <Compile Include="AsolDX\System\Shared.cs" />
+    <Compile Include="AsolDX\System\XmlPersist.cs" />
+    <Compile Include="AsolDX\Tests\DxDataExtensions_Test.cs" />
+    <Compile Include="AsolDX\DxFilterBox.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="AsolDX\News\DxLocalizer.cs" />
+    <Compile Include="AsolDX\DxPanelBufferedGraphic.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="AsolDX\DxRange.cs" />
+    <Compile Include="AsolDX\DxWin32.cs" />
+    <Compile Include="AsolDX\Tests\DxDrawingExtensions_Test.cs" />
+    <Compile Include="AsolDX\News\WatchTimer.cs" />
+    <Compile Include="Components\AppLogPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Components\ChartControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Components\Components.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="AsolDX\DxComponents.cs" />
+    <Compile Include="AsolDX\News\DxDataFormX.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="AsolDX\DxLayoutPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="AsolDX\DxOverlay.cs" />
+    <Compile Include="AsolDX\DxRibbon.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="AsolDX\News\DxThreadManager.cs" />
+    <Compile Include="AsolDX\DxTreeView.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Components\DataFormSample.cs" />
+    <Compile Include="Components\LayoutForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Components\Obsoletes\OldDataForm.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Components\Obsoletes\OldDataFormData.cs" />
+    <Compile Include="Components\Randomizer.cs" />
+    <Compile Include="Components\ThreadManager.cs" />
+    <Compile Include="Forms\DataFormV1.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\DataFormV2.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\DataFormV3.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\DiagramControlForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\DxBrowseForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\DxBrowseForm.Designer.cs">
+      <DependentUpon>DxBrowseForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\DxBrowseStandardForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\DxBrowseVirtualForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\DxDialogTestForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\GraphForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\GraphForm.Designer.cs">
+      <DependentUpon>GraphForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\HandleScanForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\ImagePickerForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\InputForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\InputForm.Designer.cs">
+      <DependentUpon>InputForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\ListBoxForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\MainAppForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\MdiBaseForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\MdiBaseForm.Designer.cs">
+      <DependentUpon>MdiBaseForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\MdiChildForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\MdiChildForm.Designer.cs">
+      <DependentUpon>MdiChildForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\NativeRibbonForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\RibbonForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AdapterNephrite.cs" />
+    <Compile Include="Forms\MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\MainForm.Designer.cs">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\MdiDocument.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Forms\MdiParentForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\MdiParentForm.Designer.cs">
+      <DependentUpon>MdiParentForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\TestSvgForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\ThreadTestForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\TreeBgrForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\WebView2Form.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Components\SplitterControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Components\TabHeaderStrip.cs" />
+    <EmbeddedResource Include="Forms\GraphForm.resx">
+      <DependentUpon>GraphForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\InputForm.resx">
+      <DependentUpon>InputForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\MainForm.resx">
+      <DependentUpon>MainForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <SubType>Designer</SubType>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <Content Include="AsolDX\XML\dw_faktura_dosla_config.frm.xml" />
+    <Content Include="AsolDX\XML\dw_faktura_dosla_hlavicka_form.data.xml" />
+    <Content Include="AsolDX\XML\dw_faktura_dosla_hlavicka_form.E5.frm.xml" />
+    <Content Include="AsolDX\XML\dw_faktura_dosla_hlavicka_form.msg.xml" />
+    <Content Include="AsolDX\XML\dw_faktura_dosla_image_V1.png" />
+    <Content Include="AsolDX\XML\dw_faktura_dosla_image_V2.png" />
+    <Content Include="AsolDX\XML\dw_test_all.frm.xml" />
+    <None Include="AsolDX\XSD\DataForm.Frm.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="AsolDX\XSD\DfDataFormat.Frm.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\address-book-new%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\address-book-new-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\address-book-new-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\address-book-new-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\add-to-desktop%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\align-horizontal-bottom-out%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\align-horizontal-center-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\align-horizontal-left%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\align-horizontal-left-out%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\align-horizontal-right-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\align-horizontal-right-out%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\align-horizontal-top-out%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\align-vertical-bottom-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\align-vertical-center-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\align-vertical-top-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\application-exit%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\application-exit-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\application-exit-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\application-exit-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\application-exit-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\appointment-new%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\appointment-new-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\appointment-new-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\appointment-new-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\appointment-new-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\archive-extract-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\archive-extract-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\archive-insert-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\archive-insert-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\archive-insert-directory-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\archive-remove%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-down%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-down-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-down-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-down-double%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-down-double-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-down-double-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-left%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-left-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-left-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-left-double%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-left-double-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-left-double-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-right%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-right-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-right-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-right-double%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-right-double-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-right-double-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-up%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-up-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-up-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-up-double%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-up-double-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\arrow-up-double-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-folder%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-folder-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-new%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-new-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-new-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-new-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-new-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-new-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-new-7%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-new-list%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-new-list-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-new-list-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-new-list-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-silver%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmarks-organize%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-toolbar%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-toolbar-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-toolbar-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\bookmark-toolbar-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\call-start%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\call-stop%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\click%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\code-block%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\code-class%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\code-context%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\code-function%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\code-variable%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\color-fill%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\colorize%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\colorize-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\color-picker%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\color-picker-black%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\color-picker-grey%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\color-picker-white%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\configure%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\configure-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\configure-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\configure-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\configure-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\configure-shortcuts%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\configure-toolbars%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\contact-new%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\contact-new-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\contact-new-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\contact-new-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dashboard-show%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\db%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\db_add%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\db_add-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\db_comit%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\db_comit-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\db_remove%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\db_remove-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\db_status%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\db_status-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\db_update%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\db_update-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\debug-step-instruction%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\debug-step-into%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\debug-step-into-instruction%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\debug-step-out%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\debug-step-over%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\delete_table_col%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\delete_table_row%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-accept%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-apply%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-block%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-cancel%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-cancel-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-cancel-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-cancel-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-cancel-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-cancel-7%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-close%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-close-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-disable%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-fewer%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-more%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-no%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-no-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-no-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-ok%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-ok-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-ok-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-ok-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-ok-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-ok-apply%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-ok-apply-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-ok-apply-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-ok-apply-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-ok-apply-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-ok-apply-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\dialog-yes%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\distribute-horizontal-center%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\distribute-horizontal-equal%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\distribute-horizontal-left%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\distribute-horizontal-margin%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\distribute-horizontal-right%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\distribute-horizontal-x%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\distribute-horozontal-page%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\distribute-vertical-bottom%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\distribute-vertical-center%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\distribute-vertical-equal%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\distribute-vertical-margin%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\distribute-vertical-page%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\distribute-vertical-top%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\distribute-vertical-y%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\documentation%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-close%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-close-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-close-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-close-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-decrypt%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-decrypt-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-decrypt-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-decrypt-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-edit%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-encrypt%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-encrypt-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-encrypt-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-encrypt-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-export%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-export-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-export-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-export-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-import%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-import-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-new%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-new-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-new-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-new-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-new-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-new-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-new-7%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-new-8%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-open%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-open-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-open-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-open-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-open-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-open-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-open-7%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-open-8%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-open-folder%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-open-recent%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-open-recent-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-open-recent-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-open-remote%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-page-setup%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-preview%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-preview-archive%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-print%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-print-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-print-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-print-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-print-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-print-frame%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-print-frame-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-print-frame-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-print-frame-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-print-preview%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-print-preview-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-print-preview-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-print-preview-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-print-preview-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-properties%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-properties-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-properties-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-properties-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-quick_restart%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-quickprint%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-quickprint-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-quickprint-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-quickprint-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-quickprint-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-revert%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-revert-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-revert-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-revert-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-revert-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-save%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-save-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-save-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-save-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-save-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-save-7%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-save-all%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-save-as%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-save-as-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-save-as-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-save-as-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-save-as-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-save-as-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-send%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-sign%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-sign-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\document-sign-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\download%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\download-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\download-later%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-arrow-back%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-arrow-down%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-arrow-forward%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-arrow-up%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-bezier-curves%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-blend-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-brush%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-circle-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-cross%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-donut%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-ellipse-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-eraser-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-fill-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-freehand%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-halfcircle1%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-halfcircle2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-halfcircle3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-halfcircle4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-line-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-path%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-polygon-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-polyline-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-rectangle-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-spiral-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-square-inverted-corners%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-star-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-text-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-triangle%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-triangle1%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-triangle2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-triangle3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\draw-triangle4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-add%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-add-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-add-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-add-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-bomb%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-clear%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-clear-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-clear-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-clear-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-clear-history%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-clear-history-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-clear-history-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-clear-list%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-clear-locationbar-ltr%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-clear-locationbar-rtl%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-copy%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-copy-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-copy-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-copy-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-copy-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-copy-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-copy-8%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-copy-9%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-cut%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-cut-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-cut-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-cut-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-cut-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-cut-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-cut-8%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-cut-9%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-delete%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-delete-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-delete-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-delete-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-delete-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-delete-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-delete-8%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-delete-9%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-delete-shred%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-destroy%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-find%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-find-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-find-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-find-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-find-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-find-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-find-7%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-find-9%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-find-10%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-find-and-replace%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-find-and-replace-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-find-and-replace-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-find-mail%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-find-project%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-find-replace-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-find-user%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-group%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-guides%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-history%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-history-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-history-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-history-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-node%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-paste%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-paste-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-paste-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-paste-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-paste-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-paste-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-paste-8%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-paste-9%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-redo%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-redo-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-redo-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-redo-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-redo-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-redo-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-redo-7%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-redo-8%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-remove%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-remove-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-remove-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-rename%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-select%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-select-all%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-select-all-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-select-all-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-select-all-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-shred%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-sort-az%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-text-frame-update%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-undelete%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-undo%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-undo-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-undo-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-undo-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-undo-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-undo-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-undo-7%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-undo-8%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\edit-user%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\family%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\family-off%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\feed-subscribe%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\fileview-preview%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\filter%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\flag%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\flag-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\flag-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\flag-black%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\flag-blue%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\flag-green%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\flag-red%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\flag-yellow%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\folder-new%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\folder-new-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\folder-new-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\folder-new-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\folder-new-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\folder-new-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\folder-new-7%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\folder-new-8%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\folder-sync%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\fork%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-add-node%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-break-node%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-connect-node%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-disconnect-node%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-fill-color%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-font%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-font-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-font-size-less%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-font-size-more%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-indent-less%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-indent-less-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-indent-less-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-indent-less-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-indent-less-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-indent-more%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-indent-more-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-indent-more-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-indent-more-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-indent-more-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-join-node%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-center%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-center-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-center-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-center-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-center-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-fill%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-fill-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-fill-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-fill-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-fill-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-left%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-left-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-left-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-left-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-left-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-left-last%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-right%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-right-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-right-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-right-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-right-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-justify-right-last%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-line-spacing-double%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-line-spacing-normal%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-line-spacing-triple%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-list-ordered%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-list-unordered%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-remove-node%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-stroke-color%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-bold%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-bold-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-bold-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-bold-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-bold-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-color%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-direction-ltr%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-direction-ltr-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-direction-rtl%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-direction-rtl-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-italic%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-italic-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-italic-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-italic-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-italic-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-strikethrough%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-strikethrough-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-strikethrough-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-strikethrough-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-subscript-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-superscript-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-underline%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-underline-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-underline-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-underline-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-text-underline-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\format-wordwrap%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\games-config-background%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\games-config-board%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\games-config-custom%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\games-config-options%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\games-config-theme%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\games-config-tiles%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\games-difficult%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\games-endturn%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\games-endturn-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\games-highscores%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\games-hint%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\games-solve%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-bottom%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-bottom-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-bottom-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-bottom-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-bottom-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-bottom-8%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-down%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-down-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-down-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-down-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-down-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-down-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-down-7%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-down-9%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-down-10%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-down-search%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-first%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-first-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-first-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-first-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-first-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-first-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-first-view%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-first-view-page%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-frist-view%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-home%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-home-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-home-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-home-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-home-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-home-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-home-7%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-home-8%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-home-9%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-home-10%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-jump%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-jump-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-jump-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-jump-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-jump-declaration%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-jump-definition%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-jump-locationbar%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-jump-today%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-last%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-last-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-last-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-last-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-last-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-last-view%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-last-view-page%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-next%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-next-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-next-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-next-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-next-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-next-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-next-7%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-next-8%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-next-9%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-next-context%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-next-use%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-next-view%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-next-view-page%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-previous%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-previous-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-previous-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-previous-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-previous-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-previous-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-previous-7%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-previous-8%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-previous-9%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-previous-context%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-previous-use%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-previous-view%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-previous-view-page%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\goto%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-top%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-top-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-top-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-top-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-top-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-top-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-top-8%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-up%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-up-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-up-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-up-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-up-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-up-6%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-up-7%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-up-9%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-up-10%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\go-up-search%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\halfencrypted%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\help%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\help-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\help-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\help-about%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\help-about-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\help-about-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\help-about-kde%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\help-about-kde-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\help-about-kde-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\help-contents%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\help-contents-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\help-contents-3%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\help-contents-4%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\help-contents-5%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\help-contextual%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\help-contextual-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\help-faq%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\help-hint%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\homepage%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\hwinfo%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\character-set%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\checkbox-2%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions48\help-hint%2848%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Menu1.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Menu2.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\lock-5_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball01_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball02_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball03_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball04_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball05_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball06_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball07_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball08_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball09_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball10_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball11_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball12_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball13_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball14_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball15_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball16_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball17_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball18_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball19_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball20_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball21_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball22_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\Ball23_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\edit-add-4_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\hourglass_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\list-add-3_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\msn-blocked_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\object-locked-2_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\object-unlocked-2_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Actions24\select-rectangular%2824%29.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Czech-Republic.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Home - 1.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Home - 2.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Home - 3.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Home - 4.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Home - 5.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Home - 6.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\move_task_down_16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Svg\homer-simpson.svg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Svg\AssecoPatka.svg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\AssecoPatka.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\AssecoPatka33.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\earth-globe-sphere-20.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Moon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Moon10.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Bart 01b.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Bart 01c.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Homer 01b.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Homer 01c.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Lisa 01b.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Lisa 01c.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Marge 01b.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Marge 01c.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Bart 01bt.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AsolDX\News\FontSizes.cs" />
+    <Content Include="AsolDX\XML\dw_doklad_V1_form.frm.xml" />
+    <Content Include="AsolDX\XML\dw_organizace_form.frm.xml" />
+    <Content Include="AsolDX\XML\dw_sample_form.frm.xml" />
+    <Content Include="AsolDX\XML\dw_nested_dph.frm.xml" />
+    <Content Include="AsolDX\XML\dw_simple_1.frm.xml" />
+    <Content Include="AsolDX\XML\dw_test_single.frm.xml" />
+    <Content Include="AsolDX\XML\dw_test_IG.frm.xml" />
+    <Content Include="AsolDX\XML\nested_sazbova_tabulka_fv3.E5.frm.xml" />
+    <Content Include="AsolDX\XML\nested_sazbova_tabulka_fv3.msg.xml" />
+    <Content Include="TestDevExpress.ico" />
+    <None Include="_Icons\Nephrite_15.ico" />
+    <None Include="_Icons\Nephrite_14.ico" />
+    <None Include="_Icons\Nephrite_13.ico" />
+    <None Include="_Icons\Nephrite_12.ico" />
+    <None Include="_Icons\Nephrite_11.ico" />
+    <None Include="_Icons\Nephrite_10.ico" />
+    <None Include="_Icons\Nephrite_9.ico" />
+    <None Include="_Icons\Nephrite_8.ico" />
+    <None Include="_Icons\Nephrite_7.ico" />
+    <None Include="_Icons\Nephrite_6.ico" />
+    <None Include="_Icons\Nephrite_5.ico" />
+    <None Include="_Icons\Nephrite_4.ico" />
+    <None Include="_Icons\Nephrite_3.ico" />
+    <None Include="_Icons\Nephrite_2.ico" />
+    <None Include="_Icons\Nephrite_1.ico" />
+    <None Include="_Icons\Nephrite_0.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="stdole">
+      <Guid>{00020430-0000-0000-C000-000000000046}</Guid>
+      <VersionMajor>2</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="packages\Microsoft.Web.WebView2.1.0.2535.41\build\Microsoft.Web.WebView2.targets" Condition="Exists('packages\Microsoft.Web.WebView2.1.0.2535.41\build\Microsoft.Web.WebView2.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('packages\Microsoft.Web.WebView2.1.0.2535.41\build\Microsoft.Web.WebView2.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.Web.WebView2.1.0.2535.41\build\Microsoft.Web.WebView2.targets'))" />
+    <Error Condition="!Exists('packages\chromiumembeddedframework.runtime.win-x64.124.3.8\build\chromiumembeddedframework.runtime.win-x64.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\chromiumembeddedframework.runtime.win-x64.124.3.8\build\chromiumembeddedframework.runtime.win-x64.props'))" />
+    <Error Condition="!Exists('packages\chromiumembeddedframework.runtime.win-x86.124.3.8\build\chromiumembeddedframework.runtime.win-x86.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\chromiumembeddedframework.runtime.win-x86.124.3.8\build\chromiumembeddedframework.runtime.win-x86.props'))" />
+    <Error Condition="!Exists('packages\CefSharp.Common.124.3.80\build\CefSharp.Common.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\CefSharp.Common.124.3.80\build\CefSharp.Common.props'))" />
+    <Error Condition="!Exists('packages\CefSharp.Common.124.3.80\build\CefSharp.Common.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\CefSharp.Common.124.3.80\build\CefSharp.Common.targets'))" />
+  </Target>
+  <Import Project="packages\CefSharp.Common.124.3.80\build\CefSharp.Common.targets" Condition="Exists('packages\CefSharp.Common.124.3.80\build\CefSharp.Common.targets')" />
+</Project>
