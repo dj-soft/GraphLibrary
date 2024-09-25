@@ -34,6 +34,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         bool ISystemAdapter.CanRenderSvgImages { get { return false; } }
         Image ISystemAdapter.RenderSvgImage(SvgImage svgImage, Size size, ISvgPaletteProvider svgPalette) { return null; }
         System.ComponentModel.ISynchronizeInvoke ISystemAdapter.Host { get { return DxComponent.MainForm ?? WinForm.Form.ActiveForm; } }
+        string ISystemAdapter.LocalUserDataPath { get { return AdapterSupport.LocalUserDataPath; } }
         WinForm.Shortcut ISystemAdapter.GetShortcutKeys(string shortCut) { return WinForm.Shortcut.None; }
         void ISystemAdapter.TraceText(TraceLevel level, Type type, string method, string keyword, params object[] arguments) { }
         /// <summary>
@@ -238,6 +239,44 @@ namespace Noris.Clients.Win.Components.AsolDX
             return styleName + (isDark.HasValue ? (isDark.Value ? "~D" : "~L") : "~N");
         }
         private static Dictionary<string, StyleInfo> _Styles;
+        /// <summary>
+        /// Adresář na lokálním klientu, kam může aplikace volně zapisovat User data, aniž by byly často smazány. Včetně DLL souborů.
+        /// </summary>
+        public static string LocalUserDataPath 
+        {
+            get 
+            {
+                if (__LocalUserDataPath == null)
+                    __LocalUserDataPath = _GetLocalUserDataPath();
+                return __LocalUserDataPath;
+            }
+        }
+        private static string __LocalUserDataPath;
+        private static string _GetLocalUserDataPath()
+        {
+            string appPath = System.Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);         // C:\Users\{user}\AppData\Local
+
+            var path = System.IO.Path.Combine(appPath, "Asseco Solutions", "MsWebView2", "UserData");                  // C:\Users\{user}\AppData\Local\Asseco Solutions\MsWebView2\UserData
+            if (verifyPath(path)) return path;
+            
+            path = System.IO.Path.Combine(appPath, "Microsoft", "Windows", "WebCacheW2");                              // C:\Users\{user}\AppData\Local\Microsoft\Windows\WebCacheW2
+            if (verifyPath(path)) return path;
+            
+            return appPath;
+
+
+            bool verifyPath(string path)
+            {
+                try
+                {
+                    if (!System.IO.Directory.Exists(path))
+                        System.IO.Directory.CreateDirectory(path);
+                    if (System.IO.Directory.Exists(path)) return true;
+                }
+                catch { }
+                return false;
+            }
+        }
     }
     #endregion
     #region class DataResources

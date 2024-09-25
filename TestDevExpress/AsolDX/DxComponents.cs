@@ -9032,6 +9032,10 @@ White
         /// </summary>
         public static System.ComponentModel.ISynchronizeInvoke Host { get { return Current.Host; } }
         /// <summary>
+        /// Adresář na lokálním klientu, kam může aplikace volně zapisovat User data, aniž by byly často smazány. Včetně DLL souborů.
+        /// </summary>
+        public static string LocalUserDataPath { get { return Current.LocalUserDataPath; } }
+        /// <summary>
         /// Vrací klávesovou zkratku pro daný string, typicky na vstupu je "Ctrl+C", na výstupu je <see cref="System.Windows.Forms.Keys.Control"/> | <see cref="System.Windows.Forms.Keys.C"/>
         /// </summary>
         /// <param name="shortCut"></param>
@@ -9146,6 +9150,10 @@ White
         /// Nějaký control, který slouží pouze pro přístup do GUI threadu. Typicky je to main okno aplikace.
         /// </summary>
         System.ComponentModel.ISynchronizeInvoke Host { get; }
+        /// <summary>
+        /// Adresář na lokálním klientu, kam může aplikace volně zapisovat User data, aniž by byly často smazány. Včetně DLL souborů.
+        /// </summary>
+        string LocalUserDataPath { get; }
         /// <summary>
         /// Vrací klávesovou zkratku pro daný string, typicky na vstupu je "Ctrl+C", na výstupu je <see cref="System.Windows.Forms.Keys.Control"/> | <see cref="System.Windows.Forms.Keys.C"/>
         /// </summary>

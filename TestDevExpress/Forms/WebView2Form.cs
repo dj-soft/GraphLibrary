@@ -53,7 +53,7 @@ namespace TestDevExpress.Forms
         /// <param name="e"></param>
         private void _MsWebCurrentDocumentTitleChanged(object sender, EventArgs e)
         {
-            var docTitle = __WebViewPanel.MsWebProperties.DocumentTitle ?? "";
+            var docTitle = __WebViewPanel.WebProperties.DocumentTitle ?? "";
             if (docTitle.Length > 53) docTitle = docTitle.Substring(0, 50) + "...";
             this.SetGuiValue(t => this.Text = t, docTitle);
         }
@@ -136,18 +136,18 @@ m.addControl(sync);
 </script>
 </html>
 ";
-                    webPanel.MsWebProperties.HtmlContent = html;
+                    webPanel.WebProperties.HtmlContent = html;
                 }
                 else
                 {
-                    webPanel.MsWebProperties.UrlAdress = text;
+                    webPanel.WebProperties.UrlAdress = text;
                 }
             }
         }
 
         private void _ClickButtonStaticImage(object sender, EventArgs e)
         {
-            var properties = __WebViewPanel.MsWebProperties;
+            var properties = __WebViewPanel.WebProperties;
             var isStatic = !properties.IsStaticPicture;
             if (sender is DxSimpleButton button)
             {

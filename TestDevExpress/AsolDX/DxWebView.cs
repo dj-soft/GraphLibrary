@@ -1,5 +1,8 @@
-﻿using System;
+﻿using DevExpress.Pdf.ContentGeneration;
+using DevExpress.PivotGrid.Internal.ThinClientDataSource;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -103,7 +106,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _DoLayout()
         {
-            var properties = this.MsWebProperties;
+            var properties = this.WebProperties;
 
             var size = this.ClientSize;
             int left = 0;
@@ -167,7 +170,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // Statusbar:
-            bool isStatusVisible = this.MsWebProperties.IsStatusRowVisible;
+            bool isStatusVisible = this.WebProperties.IsStatusRowVisible;
             this.__StatusBar.Visible = isStatusVisible;
             if (isStatusVisible) 
             {
@@ -208,7 +211,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _DoEnabled()
         {
-            var properties = this.MsWebProperties;
+            var properties = this.WebProperties;
 
             // Toolbar
             bool isToolbarVisible = properties.IsToolbarVisible;
@@ -236,12 +239,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Aktualizuje Picture z okna živého webu, podle nastavení <see cref="MsWebProperties"/>: <see cref="MsWebView.PropertiesInfo.IsStaticPicture"/>
+        /// Aktualizuje Picture z okna živého webu, podle nastavení <see cref="WebProperties"/>: <see cref="MsWebView.PropertiesInfo.IsStaticPicture"/>
         /// Musí být voláno v GUI threadu.
         /// </summary>
         private void _DoShowStaticPicture()
         {
-            var properties = this.MsWebProperties;
+            var properties = this.WebProperties;
             bool isStaticPicture = properties.IsStaticPicture;
             if (isStaticPicture)
             {   // Static => požádáme o zachycení Image a pak jej vykreslíme:
@@ -266,7 +269,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _DoShowSourceUrl()
         {
-            var properties = this.MsWebProperties;
+            var properties = this.WebProperties;
             bool isVisible = properties.IsToolbarVisible && properties.IsAdressEditorVisible;
             bool isInEditState = isVisible && properties.IsAdressEditorEditable && this.__AdressEditorHasFocus;
             if (isVisible && !isInEditState)
@@ -281,7 +284,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _DoShowStatusText()
         {
-            var properties = this.MsWebProperties;
+            var properties = this.WebProperties;
             if (properties.IsStatusRowVisible)
             {
                 string statusText = properties.CurrentStatusText;
@@ -348,7 +351,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private void _AdressKeyDown(object sender, System.Windows.Forms.KeyEventArgs e)
         {
-            var properties = this.MsWebProperties;
+            var properties = this.WebProperties;
             if ((properties.IsAdressEditorVisible && properties.IsAdressEditorEditable) && (e.KeyCode == System.Windows.Forms.Keys.Enter))
                 this._AdressNavigate();
         }
@@ -362,13 +365,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private void _GoToClick(object sender, EventArgs args)
         {
-            var properties = this.MsWebProperties;
+            var properties = this.WebProperties;
             if (properties.IsAdressEditorVisible && properties.IsAdressEditorEditable)
                 this._AdressNavigate();
         }
         private void _AdressNavigate()
         {
-            var properties = this.MsWebProperties;
+            var properties = this.WebProperties;
             properties.UrlAdress = __AdressText.Text;
             this.__MsWebView.Focus();
         }
@@ -399,11 +402,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             MsWebCurrentCanGoEnabledChanged?.Invoke(this, EventArgs.Empty);
         }
         /// <summary>
-        /// Volá se při změně v historii navigace, kdy se mění Enabled v proměnných <see cref="MsWebProperties"/>: <see cref="MsWebView.PropertiesInfo.CanGoBack"/> nebo <see cref="MsWebView.PropertiesInfo.CanGoForward"/>.
+        /// Volá se při změně v historii navigace, kdy se mění Enabled v proměnných <see cref="WebProperties"/>: <see cref="MsWebView.PropertiesInfo.CanGoBack"/> nebo <see cref="MsWebView.PropertiesInfo.CanGoForward"/>.
         /// </summary>
         protected virtual void OnMsWebCurrentCanGoEnabledChanged() { }
         /// <summary>
-        /// Event při změně v historii navigace, kdy se mění Enabled v proměnných <see cref="MsWebProperties"/>: <see cref="MsWebView.PropertiesInfo.CanGoBack"/> nebo <see cref="MsWebView.PropertiesInfo.CanGoForward"/>.
+        /// Event při změně v historii navigace, kdy se mění Enabled v proměnných <see cref="WebProperties"/>: <see cref="MsWebView.PropertiesInfo.CanGoBack"/> nebo <see cref="MsWebView.PropertiesInfo.CanGoForward"/>.
         /// </summary>
         public event EventHandler MsWebCurrentCanGoEnabledChanged;
 
@@ -552,11 +555,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _TryInternalCaptureMsWebImage()
         {
-            var properties = this.MsWebProperties;
+            var properties = this.WebProperties;
             bool isStaticPicture = properties.IsStaticPicture;
             if (!isStaticPicture) return;
 
-            string url = __MsWebView.MsWebProperties.UrlAdress;
+            string url = __MsWebView.WebProperties.UrlAdress;
             if (String.IsNullOrEmpty(url)) return;
 
             this.SuspendLayout();
@@ -577,7 +580,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Pokud jsme ve stavu, kdy probíhá navigace = načítá se obsah stránky (ještě nedoběhl event _MsWebNavigationCompleted), tak nebudeme snímat Image:
             if (__NavigationInProgress) return;
 
-            var properties = this.MsWebProperties;
+            var properties = this.WebProperties;
             bool isStaticPicture = properties.IsStaticPicture;
             if (!isStaticPicture) return;
 
@@ -651,7 +654,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Souhrn vlastností <see cref="MsWebView"/>, tak aby byly k dosažení v jednom místě.
         /// </summary>
-        public MsWebView.PropertiesInfo MsWebProperties { get { return __MsWebView.MsWebProperties; } }
+        public MsWebView.PropertiesInfo WebProperties { get { return __MsWebView.WebProperties; } }
         #endregion
     }
     /// <summary>
@@ -675,26 +678,30 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.SuspendLayout();
 
             __MapProperties = new MapPropertiesInfo(this);
+            __MapCoordinates = new DxMapCoordinates();
+            _MapCoordinatesInitEvents();
 
             __ToolPanel = new DxPanelControl() { BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
-            __OpenExternalBrowserButton = DxComponent.CreateDxSimpleButton(3, 3, 24, 24, __ToolPanel, "", _ShowMapClick, DevExpress.XtraEditors.Controls.PaintStyles.Light, resourceName: ImageNameBackDisabled);
-            __SearchCoordinatesButton = DxComponent.CreateDxSimpleButton(30, 3, 24, 24, __ToolPanel, "", _FindAdressClick, DevExpress.XtraEditors.Controls.PaintStyles.Light, resourceName: ImageNameForwardDisabled);
+            __OpenExternalBrowserButton = DxComponent.CreateDxSimpleButton(3, 3, 24, 24, __ToolPanel, "", _ShowMapClick, DevExpress.XtraEditors.Controls.PaintStyles.Light, resourceName: ImageNameOpenExternalBrowser);
+            __SearchCoordinatesButton = DxComponent.CreateDxSimpleButton(30, 3, 24, 24, __ToolPanel, "", _FindAdressClick, DevExpress.XtraEditors.Controls.PaintStyles.Light, resourceName: ImageNameSearchCoordinates);
             __CoordinatesText = DxComponent.CreateDxTextEdit(96, 3, 250, __ToolPanel);
-            __CoordSystemSpin = DxComponent.CreateDxSpinEdit(350, 3, 30, __ToolPanel);
+            __CoordinateFormatSpin = DxComponent.CreateDxSpinEdit(350, 3, 30, __ToolPanel);
 
             __OpenExternalBrowserButton.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat;
             __OpenExternalBrowserButton.TabStop = false;
             __SearchCoordinatesButton.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat;
             __SearchCoordinatesButton.TabStop = false;
-            __CoordinatesText.Enter += _AdressEntered;
-            __CoordinatesText.KeyDown += _AdressKeyDown;
-            __CoordinatesText.KeyPress += _AdressKeyPress;
-            __CoordinatesText.Leave += _AdressLeaved;
-            __CoordinatesText.LostFocus += _AdressLostFocus;
+            __CoordinatesText.Enter += _CoordinatesEntered;
+            __CoordinatesText.KeyDown += _CoordinatesKeyDown;
+            __CoordinatesText.KeyPress += _CoordinatesKeyPress;
+            __CoordinatesText.Leave += _CoordinatesLeaved;
+            __CoordinatesText.LostFocus += _CoordinatesLostFocus;
             __CoordinatesText.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat;
             __CoordinatesText.TabStop = false;
-            __CoordSystemSpin.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat;
-            __CoordSystemSpin.TabStop = false;
+
+            _CoordinatesFormatInit();
+            __CoordinateFormatSpin.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat;
+            __CoordinateFormatSpin.TabStop = false;
 
             __MsWebView = new MsWebView();
             _MsWebInitEvents();
@@ -749,7 +756,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _DoLayout()
         {
-            var webProperties = this.MsWebProperties;
+            var webProperties = this.WebProperties;
             var mapProperties = this.MapProperties;
 
             var size = this.ClientSize;
@@ -789,16 +796,16 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 bool isCoordinatesTextVisible = mapProperties.IsCoordinatesTextVisible;
                 __CoordinatesText.Visible = isCoordinatesTextVisible;
-                __CoordSystemSpin.Visible = isCoordinatesTextVisible;
+                __CoordinateFormatSpin.Visible = isCoordinatesTextVisible;
                 if (isCoordinatesTextVisible)
-                {
+                {   // TextBox a sousední Spinner
                     int ctHeight = __CoordinatesText.Bounds.Height;
                     int ctTop = buttonTop + buttonSize - ctHeight - 1;
                     int ctWidth = 250;
                     __CoordinatesText.Bounds = new System.Drawing.Rectangle(toolLeft, ctTop, ctWidth, ctHeight);
-                    toolLeft += (ctWidth + distanceX);
+                    toolLeft += ctWidth - 2;
 
-                    __CoordSystemSpin.Bounds = new System.Drawing.Rectangle(toolLeft, buttonTop, buttonSize, buttonSize);
+                    __CoordinateFormatSpin.Bounds = new System.Drawing.Rectangle(toolLeft, ctTop, buttonSize, ctHeight);
                     toolLeft += shiftX;
                 }
 
@@ -807,7 +814,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // Statusbar:
-            bool isStatusVisible = this.MsWebProperties.IsStatusRowVisible;
+            bool isStatusVisible = this.WebProperties.IsStatusRowVisible;
             this.__StatusBar.Visible = isStatusVisible;
             if (isStatusVisible)
             {
@@ -834,24 +841,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _DoEnabled()
         {
-            var webProperties = this.MsWebProperties;
+            var webProperties = this.WebProperties;
             var mapProperties = this.MapProperties;
+
+            bool isMapEditable = mapProperties.IsMapEditable;
 
             // Toolbar
             bool isToolbarVisible = webProperties.IsToolbarVisible;
             if (isToolbarVisible)
             {
-                bool isMapEditable = mapProperties.IsMapEditable;
                 __CoordinatesText.Enabled = isMapEditable;
             }
+
+            // Mapa:
         }
         /// <summary>
-        /// Aktualizuje Picture z okna živého webu, podle nastavení <see cref="MsWebProperties"/>: <see cref="MsWebView.PropertiesInfo.IsStaticPicture"/>
+        /// Aktualizuje Picture z okna živého webu, podle nastavení <see cref="WebProperties"/>: <see cref="MsWebView.PropertiesInfo.IsStaticPicture"/>
         /// Musí být voláno v GUI threadu.
         /// </summary>
         private void _DoShowStaticPicture()
         {
-            var properties = this.MsWebProperties;
+            var properties = this.WebProperties;
             bool isStaticPicture = properties.IsStaticPicture;
             if (isStaticPicture)
             {   // Static => požádáme o zachycení Image a pak jej vykreslíme:
@@ -876,7 +886,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _DoShowSourceUrl()
         {
-            var properties = this.MsWebProperties;
+            var properties = this.WebProperties;
             bool isVisible = properties.IsToolbarVisible && properties.IsAdressEditorVisible;
             bool isInEditState = isVisible && properties.IsAdressEditorEditable && this.__AdressEditorHasFocus;
             if (isVisible && !isInEditState)
@@ -891,13 +901,91 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _DoShowStatusText()
         {
-            var properties = this.MsWebProperties;
+            var properties = this.WebProperties;
             if (properties.IsStatusRowVisible)
             {
                 string statusText = properties.CurrentStatusText;
                 this.__StatusText.Text = statusText;
             }
         }
+
+        /// <summary>
+        /// Inicializuje objekt <see cref="__CoordinateFormatSpin"/> pro validní práci s formáty <see cref="DxMapCoordinatesFormat"/>
+        /// </summary>
+        private void _CoordinatesFormatInit()
+        {
+            __CoordinateFormats = new DxMapCoordinatesFormat[]
+            {
+                DxMapCoordinatesFormat.Basic,
+                DxMapCoordinatesFormat.Extended,
+                DxMapCoordinatesFormat.GeoDecimalSuffix,
+                DxMapCoordinatesFormat.GeoDecimalPrefix,
+                DxMapCoordinatesFormat.GeoGradeSuffix,
+                DxMapCoordinatesFormat.GeoGradePrefix,
+                DxMapCoordinatesFormat.Matrix1,
+                DxMapCoordinatesFormat.Matrix2
+            };
+
+            __CoordinateFormatSpin.Properties.MinValue = 0;
+            __CoordinateFormatSpin.Properties.MaxValue = __CoordinateFormats.Length - 1;
+            __CoordinateFormatSpin.Properties.Increment = 1;
+            __CoordinateFormatSpin.Properties.AllowMouseWheel = true;
+            __CoordinateFormatSpin.Value = 0;
+            __CoordinateFormatSpin.ValueChanged += _CoordinateFormatSpinChanged;
+        }
+        /// <summary>
+        /// Obsahuje aktuálně zvolený formát koordinátů ve spinneru <see cref="__CoordinateFormatSpin"/>.
+        /// </summary>
+        private DxMapCoordinatesFormat _CoordinateFormatCurrent 
+        {
+            get
+            {
+                var formats = __CoordinateFormats;
+                int count = formats?.Length ?? 0;
+                if (count > 0)
+                {
+                    int index = (int)__CoordinateFormatSpin.Value;
+                    if (index >= 0 && index < count)
+                        return formats[index];
+                }
+                return DxMapCoordinatesFormat.Basic;
+            }
+            set 
+            {
+                var formats = __CoordinateFormats;
+                int count = formats?.Length ?? 0;
+                if (count > 0 && (formats.TryFindFirstIndex(f => f == value, out int index)))
+                    __CoordinateFormatSpin.Value = index;
+            }
+        }
+        /// <summary>
+        /// Po změně formátu ve spinneru <see cref="__CoordinateFormatSpin"/>.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _CoordinateFormatSpinChanged(object sender, EventArgs e)
+        {
+            var format = _CoordinateFormatCurrent;
+
+        }
+        /// <summary>
+        /// Uživateli dostupné formáty <see cref="DxMapCoordinatesFormat"/>.
+        /// </summary>
+        private DxMapCoordinatesFormat[] __CoordinateFormats;
+
+        /// <summary>
+        /// Inicializuje eventy koordinátů
+        /// </summary>
+        private void _MapCoordinatesInitEvents()
+        {
+            var mapCoordinates = __MapCoordinates;
+            // mapCoordinates.CoordinatesChanged += ;
+            // mapCoordinates.Coordinates
+            // mapCoordinates.UrlAdressChanged += ;
+            // mapCoordinates.UrlAdress
+
+        }
+
         /// <summary>
         /// Dispose
         /// </summary>
@@ -911,74 +999,56 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DxSimpleButton __OpenExternalBrowserButton;
         private DxSimpleButton __SearchCoordinatesButton;
         private DxTextEdit __CoordinatesText;
-        private DxSpinEdit __CoordSystemSpin;
+        private DxSpinEdit __CoordinateFormatSpin;
         private MsWebView __MsWebView;
         private PictureBox __PictureWeb;
         private DxPanelControl __StatusBar;
         private DxLabelControl __StatusText;
 
-        private const string ImageNameBackEnabled = "images/xaf/templatesv2images/action_navigation_history_back.svg";
-        private const string ImageNameBackDisabled = "images/xaf/templatesv2images/action_navigation_history_back_disabled.svg";
-        private const string ImageNameForwardEnabled = "images/xaf/templatesv2images/action_navigation_history_forward.svg";
-        private const string ImageNameForwardDisabled = "images/xaf/templatesv2images/action_navigation_history_forward_disabled.svg";
-        private const string ImageNameRefreshEnabled = "images/xaf/templatesv2images/action_refresh.svg";
-        private const string ImageNameRefreshDisabled = "images/xaf/templatesv2images/action_refresh_disabled.svg";
-        private const string ImageNameGoTo1 = "images/xaf/templatesv2images/action_simpleaction.svg";
-        private const string ImageNameGoTo2 = "devav/actions/pagenext.svg";
-        private const string ImageNameGoTo3 = "svgimages/arrows/next.svg";
-        private const string ImageNameGoTo4 = "svgimages/business%20objects/bo_validation.svg";
-        private const string ImageNameGoTo = ImageNameGoTo2;
-        private const string ImageNameValidateEnabled = "images/xaf/templatesv2images/action_validation_validate.svg";
-        private const string ImageNameValidateDisabled = "images/xaf/templatesv2images/action_validation_validate_disabled.svg";
+        private const string ImageNameOpenExternalBrowser = "svgimages/xaf/action_popupwindowshowaction.svg";
+        private const string ImageNameSearchCoordinates = "svgimages/xaf/action_search.svg";
         #endregion
         #region Privátní život - buttony a adresní editor
         private void _ShowMapClick(object sender, EventArgs args)
         {
-            this.__MsWebView.GoBack();
+            // 
             this.__MsWebView.Focus();
         }
         private void _FindAdressClick(object sender, EventArgs args)
         {
-            this.__MsWebView.GoForward();
+            // 
             this.__MsWebView.Focus();
         }
-        private void _RefreshClick(object sender, EventArgs args)
-        {
-            this.__MsWebView.Reload();
-            this.__MsWebView.Focus();
-        }
-        private void _AdressEntered(object sender, EventArgs args)
+        private void _CoordinatesEntered(object sender, EventArgs args)
         {
             __AdressEditorHasFocus = true;
             __AdressValueOnEnter = __CoordinatesText.Text;
         }
-        private void _AdressKeyPress(object sender, System.Windows.Forms.KeyPressEventArgs e)
+        private void _CoordinatesKeyPress(object sender, System.Windows.Forms.KeyPressEventArgs e)
         {
         }
-        private void _AdressKeyDown(object sender, System.Windows.Forms.KeyEventArgs e)
+        private void _CoordinatesKeyDown(object sender, System.Windows.Forms.KeyEventArgs e)
         {
-            var properties = this.MsWebProperties;
+            var properties = this.WebProperties;
             if ((properties.IsAdressEditorVisible && properties.IsAdressEditorEditable) && (e.KeyCode == System.Windows.Forms.Keys.Enter))
-                this._AdressNavigate();
+                this._CoordinatesAccept();
         }
-        private void _AdressLostFocus(object sender, EventArgs e)
+        private void _CoordinatesLostFocus(object sender, EventArgs e)
         {
             __AdressEditorHasFocus = false;
         }
-        private void _AdressLeaved(object sender, EventArgs args)
+        private void _CoordinatesLeaved(object sender, EventArgs args)
         {
             __AdressEditorHasFocus = false;
         }
-        private void _GoToClick(object sender, EventArgs args)
+        private void _CoordinatesAccept()
         {
-            var properties = this.MsWebProperties;
-            if (properties.IsAdressEditorVisible && properties.IsAdressEditorEditable)
-                this._AdressNavigate();
-        }
-        private void _AdressNavigate()
-        {
-            var properties = this.MsWebProperties;
-            properties.UrlAdress = __CoordinatesText.Text;
+            var coordinates = __CoordinatesText.Text;
+            var mapCoordinates = this.MapCoordinates;
+            mapCoordinates.Coordinates = coordinates;
+            var urlAdress = mapCoordinates.UrlAdress;
+            var webProperties = this.WebProperties;
+            webProperties.UrlAdress = urlAdress;
             this.__MsWebView.Focus();
         }
         private string __AdressValueOnEnter;
@@ -1008,11 +1078,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             MsWebCurrentCanGoEnabledChanged?.Invoke(this, EventArgs.Empty);
         }
         /// <summary>
-        /// Volá se při změně v historii navigace, kdy se mění Enabled v proměnných <see cref="MsWebProperties"/>: <see cref="MsWebView.PropertiesInfo.CanGoBack"/> nebo <see cref="MsWebView.PropertiesInfo.CanGoForward"/>.
+        /// Volá se při změně v historii navigace, kdy se mění Enabled v proměnných <see cref="WebProperties"/>: <see cref="MsWebView.PropertiesInfo.CanGoBack"/> nebo <see cref="MsWebView.PropertiesInfo.CanGoForward"/>.
         /// </summary>
         protected virtual void OnMsWebCurrentCanGoEnabledChanged() { }
         /// <summary>
-        /// Event při změně v historii navigace, kdy se mění Enabled v proměnných <see cref="MsWebProperties"/>: <see cref="MsWebView.PropertiesInfo.CanGoBack"/> nebo <see cref="MsWebView.PropertiesInfo.CanGoForward"/>.
+        /// Event při změně v historii navigace, kdy se mění Enabled v proměnných <see cref="WebProperties"/>: <see cref="MsWebView.PropertiesInfo.CanGoBack"/> nebo <see cref="MsWebView.PropertiesInfo.CanGoForward"/>.
         /// </summary>
         public event EventHandler MsWebCurrentCanGoEnabledChanged;
 
@@ -1161,11 +1231,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _TryInternalCaptureMsWebImage()
         {
-            var properties = this.MsWebProperties;
+            var properties = this.WebProperties;
             bool isStaticPicture = properties.IsStaticPicture;
             if (!isStaticPicture) return;
 
-            string url = __MsWebView.MsWebProperties.UrlAdress;
+            string url = __MsWebView.WebProperties.UrlAdress;
             if (String.IsNullOrEmpty(url)) return;
 
             this.SuspendLayout();
@@ -1186,7 +1256,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Pokud jsme ve stavu, kdy probíhá navigace = načítá se obsah stránky (ještě nedoběhl event _MsWebNavigationCompleted), tak nebudeme snímat Image:
             if (__NavigationInProgress) return;
 
-            var properties = this.MsWebProperties;
+            var properties = this.WebProperties;
             bool isStaticPicture = properties.IsStaticPicture;
             if (!isStaticPicture) return;
 
@@ -1260,11 +1330,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Souhrn vlastností <see cref="MsWebView"/>, tak aby byly k dosažení v jednom místě.
         /// </summary>
-        public MsWebView.PropertiesInfo MsWebProperties { get { return __MsWebView.MsWebProperties; } }
+        public MsWebView.PropertiesInfo WebProperties { get { return __MsWebView.WebProperties; } }
         /// <summary>
         /// Vlastnosti mapy (souřadnice, zoom)
         /// </summary>
         public MapPropertiesInfo MapProperties { get { return __MapProperties; } } private MapPropertiesInfo __MapProperties;
+        /// <summary>
+        /// Vlastní souřadnice mapy a další vlastnosti
+        /// </summary>
+        public DxMapCoordinates MapCoordinates { get { return __MapCoordinates; } } private DxMapCoordinates __MapCoordinates;
         /// <summary>
         /// Definice vlastností mapy v <see cref="DxMapViewPanel"/>
         /// </summary>
@@ -1313,6 +1387,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 __IsOpenExternalBrowserVisible = true;
                 __IsMapEditable = true;
                 __IsSearchCoordinatesVisible = true;
+                __IsCoordinatesTextVisible = true;
             }
             /// <summary>
             /// Je možné otevřít mapu v externím prohlížeči (tlačítkem).
@@ -1330,178 +1405,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Je možné editovat pozici na mapě v controlu.
             /// </summary>
             public bool IsMapEditable { get { return __IsMapEditable; } set { _SetValueDoAction(value, ref __IsMapEditable, DxWebViewActionType.DoEnabled); } } private bool __IsMapEditable;
-
         }
         #endregion
-    }
-    public class DxMapCoordinates
-    {
-        public DxMapCoordinates()
-        {
-            __DotChar = System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
-
-            _Reset();
-        }
-        /// <summary>
-        /// Oddělovač desetinných míst v aktuální kultuře, pracuje s ním <see cref="Decimal.TryParse(string, out decimal)"/>
-        /// </summary>
-        private string __DotChar;
-        public string Coordinates { get { return _GetCoordinates(); } set { _SetCoordinates(value); } }
-        public string UrlAdress { get { return _GetUrlAdress(); } set { _SetUrlAdress(value); } }
-
-        public decimal CenterX { get { return __CenterX; } set { __CenterX = _Align((value % 360m), 0m, 360m); } } private decimal __CenterX;
-        public decimal CenterY { get { return __CenterY; } set { __CenterY = _Align((value % 360m), -180m, 180m); } } private decimal __CenterY;
-        public int Zoom { get { return __Zoom; } set { __Zoom = _Align(value, 1, 19); } } private int __Zoom;
-        public bool HasPoint { get { return (this.PointX.HasValue && this.PointY.HasValue); } }
-        public decimal? PointX { get { return __PointX; } set { __PointX = _Align((value % 360m), 0m, 360m); } } private decimal? __PointX;
-        public decimal? PointY { get { return __PointY; } set { __PointY = _Align((value % 360m), -180m, 180m); } } private decimal? __PointY;
-
-
-        private static int _Align(int value, int min, int max) { return (value < min ? min : (value > max ? max : value)); }
-        private static decimal _Align(decimal value, decimal min, decimal max) { return (value < min ? min : (value > max ? max : value)); }
-        private static decimal? _Align(decimal? value, decimal min, decimal max) { return (value.HasValue ? (decimal?)(value.Value < min ? min : (value.Value > max ? max : value.Value)) : (decimal?)null); }
-        private void _SetCoordinates(string coordinates)
-        {
-            _Reset();
-            if (String.IsNullOrEmpty(coordinates)) return;
-
-            //  Varianty:
-            // 15.7951729;49.9499113;15
-            // 14.4289607, 50.0395802
-            // 50.0395802N, 14.4289607E
-            // N 50.0395802, E 14.4289607
-            // 50°2'22,49"N, 14°25'44,26"E
-            // N 50°2'22,49", E 14°25'44,26"
-            // +9F2P.2CQHRH
-            // 9F2P2CQH+RH
-            coordinates = coordinates.Replace(" ", "").ToUpper();
-
-            bool hasSemiColon = coordinates.Contains(";");
-            bool hasColon = coordinates.Contains(",");
-            bool hasGrade = coordinates.Contains("°");
-            bool hasNSEW = (coordinates.Contains("N") || coordinates.Contains("S") || coordinates.Contains("E") || coordinates.Contains("W"));
-            bool beginNS = (coordinates.StartsWith("N") || coordinates.StartsWith("S"));
-
-            // Vyhodnocení varianty zadání:
-
-            // Analýza dat konkrétní varianty:
-
-            var parts = coordinates.Split(';');
-            int count = parts.Length;
-            if (count >= 2)
-            {
-                this.CenterX = _ParseDecimal(parts[0]);
-                this.CenterY = _ParseDecimal(parts[1]);
-                this.Zoom = (count >= 3 ? _ParseInt(parts[2]) : 12);
-                this.PointX = (count >= 5 ? _ParseDecimalN(parts[3]) : (decimal?)null);
-                this.PointY = (count >= 5 ? _ParseDecimalN(parts[4]) : (decimal?)null);
-                return;
-            }
-
-            // Nevalidní:
-            return;
-
-
-        }
-        private string _GetCoordinates()
-        {
-            string text = $"{this.CenterX}; {this.CenterY}; {this.Zoom}";
-            if (this.HasPoint) text += $";{this.PointX}; {this.PointY}";
-            text = text.Replace(",", ".");
-            return text;
-        }
-        private void _Reset()
-        {
-            // https://mapy.cz/turisticka?l=0&x=15.7435513&y=49.8152928&z=8
-            this.CenterX = 15.7435513m;
-            this.CenterY = 49.8152928m;
-            this.PointX = null;
-            this.PointY = null;
-            this.Zoom = 8;
-        }
-
-        //   https://mapy.cz/zakladni?x=15.7701152&y=49.9681588&z=10               základní
-        //   https://mapy.cz/letecka?x=15.7701152&y=49.9681588&z=10                letecká
-        //   https://mapy.cz/turisticka?x=15.7701152&y=49.9681588&z=10             turistická
-        //   https://mapy.cz/dopravni?x=15.7701152&y=49.9681588&z=10               dopravní
-        //   https://mapy.cz/zakladni?l=0&x=15.7701152&y=49.9681588&z=10               základní bez postranního panelu
-        //   https://mapy.cz/zakladni?source=coor&id=15.936798397021448%2C50.06913748494087&x=15.9456819&y=50.0629944&z=14           co je zde - bodově
-        //   https://mapy.cz/zakladni?source=muni&id=2560&x=15.8354324&y=50.0215148&z=12                                             co je zde - obec
-        //   https://mapy.cz/zakladni?source=stre&id=112413&x=15.9639638&y=50.0608455&z=14                                           co je zde - ulice
-        //   https://mapy.cz/zakladni?source=addr&id=12769313&x=15.9154587&y=50.0302891&z=16                                         co je zde - číslo popisné, adresa s fotkou
-        //   https://mapy.cz/zakladni?l=0&source=coor&id=15.90928966136471%2C50.03222574216687&x=15.9146702&y=50.0303891&z=17        co je zde - bez pravého panelu, ale bod zájmu tam je
-
-
-        //   https://www.google.cz/maps/@49.9464515,15.7884627,15z?entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D
-        //   https://www.google.com/maps/@49.296045,17.390038,15z?hl=cs-CZ
-        //   https://www.google.com/maps/@49.296045,17.390038,15z?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D                      základní
-        //   https://www.google.com/maps/@49.296045,17.390038,2823m/data=!3m1!1e3?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D      fotomapa
-        //   https://www.google.com/maps/@49.296045,17.390038,15z/data=!5m1!1e1?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D        provoz
-        //   https://www.google.com/maps/@49.296045,17.390038,15z/data=!5m1!1e2?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D        veřejná doprava
-        //   https://www.google.com/maps/@49.296045,17.390038,15z/data=!5m2!1e4!1e2?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D    terén
-
-        //   https://www.openstreetmap.org/#map=14/49.94349/15.79452&layers=N
-        //   https://www.openstreetmap.org/#map=12/49.9320/15.7875&layers=N
-
-        private string _GetUrlAdress() 
-        {
-            string web = "https://mapy.cz/";
-            string variant = "zakladni";                // turisticka  letecka  dopravni
-            string centerX = _FormatDecimal(this.CenterX);
-            string centerY = _FormatDecimal(this.CenterY);
-            string pointX = _FormatDecimalN(this.PointX);
-            string pointY = _FormatDecimalN(this.PointY);
-            string zoom = _FormatInt(this.Zoom);
-
-            string urlAdress;
-
-            // https://mapy.cz/zakladni?l=0&source=coor&id=15.782303855847147%2C49.990992469096604&x=15.7821322&y=49.9893301&z=16
-            pointX = centerX;
-            pointY = centerY;
-            string point = $"&source=coor&id={pointX}%2C{pointY}";
-
-            urlAdress = $"{web}{variant}?l=0{point}&x={centerX}&y={centerY}&z={zoom}";
-
-            return urlAdress;
-        }
-        private void _SetUrlAdress(string urlAdress)
-        { }
-
-
-
-        private decimal _ParseDecimal(string text)
-        {
-            var value = _ParseDecimalN(text);
-            return value ?? 0m;
-        }
-        private decimal? _ParseDecimalN(string text)
-        {
-            if (!String.IsNullOrEmpty(text))
-            {
-                if (text.Contains(".") && __DotChar != ".") text = text.Replace(".", __DotChar);
-                if (Decimal.TryParse(text, out decimal value)) return value;
-            }
-            return null;
-        }
-        private int _ParseInt(string text)
-        {
-            if (!String.IsNullOrEmpty(text) && Int32.TryParse(text, out int value)) return value;
-            return 0;
-        }
-        private string _FormatDecimal(decimal value)
-        {
-            string text = value.ToString();
-            return text.Replace(__DotChar, ".").Replace(" ", "");
-        }
-        private string _FormatDecimalN(decimal? value)
-        {
-            return (value.HasValue ? _FormatDecimal(value.Value) : "");
-        }
-        private string _FormatInt(int value)
-        {
-            string text = value.ToString();
-            return text.Replace(" ", "");
-        }
     }
     /// <summary>
     /// Potomek třídy <see cref="Microsoft.Web.WebView2.WinForms.WebView2"/>
@@ -1541,9 +1446,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Lazy inicializace, Web events, navigace, atd...
-
-        // public static string 
-
+        /// <summary>
+        /// Adresář, kde jsou ukládany režijní soubory WebView2 (aplikace + cache)
+        /// </summary>
+        public static string AppDataPath
+        {
+            get
+            {
+                if (__AppDataPath == null)
+                    __AppDataPath = SystemAdapter.LocalUserDataPath;
+                return __AppDataPath;
+            }
+            set
+            {
+                __AppDataPath = value;
+            }
+        }
+        /// <summary>
+        /// Adresář, kde jsou ukládany režijní soubory WebView2 (aplikace + cache)
+        /// </summary>
+        private static string __AppDataPath;
         /// <summary>
         /// Provede start inicializace EnsureCoreWebView2Async
         /// </summary>
@@ -1552,7 +1474,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.__CoreWebInitializerCounter = 1;
             this.CreationProperties = new Microsoft.Web.WebView2.WinForms.CoreWebView2CreationProperties()
             {
-                UserDataFolder = @"c:\Shared\TestDevExpress\WebView_UserData"
+                UserDataFolder = SystemAdapter.LocalUserDataPath
             };
 
             this.CoreWebView2InitializationCompleted += _CoreWebView2InitializationCompleted;
@@ -1640,7 +1562,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _CoreWeb_NewWindowRequested(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NewWindowRequestedEventArgs e)
         {
-            var properties = this.MsWebProperties;
+            var properties = this.WebProperties;
             if (properties.CanOpenNewWindow)
                 e.NewWindow = this.CoreWebView2;
         }
@@ -2030,7 +1952,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Souhrn vlastností <see cref="MsWebView"/>, tak aby byly k dosažení v jednom místě.
         /// </summary>
-        public PropertiesInfo MsWebProperties { get { return __MsWebProperties; } } private PropertiesInfo __MsWebProperties;
+        public PropertiesInfo WebProperties { get { return __MsWebProperties; } } private PropertiesInfo __MsWebProperties;
         /// <summary>
         /// Definice vlastností <see cref="MsWebView"/>
         /// </summary>
@@ -2169,6 +2091,436 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
+    #region class DxMapCoordinates : správce souřadnic, kodér + dekodér stringu i URL odkazu na mapy různých zdrojů
+    /// <summary>
+    /// <see cref="DxMapCoordinates"/> : správce souřadnic, kodér + dekodér stringu i URL odkazu na mapy různých zdrojů
+    /// </summary>
+    public class DxMapCoordinates
+    {
+        #region Konstrukce
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxMapCoordinates()
+        {
+            _Reset(true);
+        }
+        /// <summary>
+        /// Resetuje hodnoty před vložením nových
+        /// </summary>
+        /// <param name="setDefaults"></param>
+        private void _Reset(bool setDefaults)
+        {
+            if (setDefaults)
+            {
+                this.__DotChar = System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
+
+                this.CoordinatesFormatDefault = DxMapCoordinatesFormat.GeoDecimalSuffix;
+                this.ZoomDefault = 8;
+                this.ProviderDefault = DxMapCoordinatesProvider.SeznamMapy;
+                this.MapTypeDefault = DxMapCoordinatesMapType.Standard;
+            }
+
+            // Resetuji na pozici: celá ČR 
+            this.CenterX = 15.7435513m;                 // https://mapy.cz/turisticka?l=0&x=15.7435513&y=49.8152928&z=8
+            this.CenterY = 49.8152928m;
+            this.PointX = null;
+            this.PointY = null;
+            this.Zoom = 8;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return _GetCoordinates(DxMapCoordinatesFormat.GeoGradePrefix);
+        }
+        /// <summary>
+        /// Oddělovač desetinných míst v aktuální kultuře, pracuje s ním <see cref="Decimal.TryParse(string, out decimal)"/>
+        /// </summary>
+        private string __DotChar;
+        #endregion
+        #region Public proměnné základní = jednotlivé : Souřadnice X:Y, Střed, Bod, Zoom, Provider, Typ mapy, Defaulty
+        public DxMapCoordinatesFormat? CoordinatesFormat { get { return __CoordinatesFormat; } set { __CoordinatesFormat = value; } } private DxMapCoordinatesFormat? __CoordinatesFormat;
+        public decimal CenterX { get { return __CenterX; } set { __CenterX = _Align((value % 360m), 0m, 360m); } } private decimal __CenterX;
+        public decimal CenterY { get { return __CenterY; } set { __CenterY = _Align((value % 360m), -180m, 180m); } } private decimal __CenterY;
+        public int Zoom { get { return __Zoom; } set { __Zoom = _Align(value, 1, 20); } } private int __Zoom;
+        public bool HasPoint { get { return (this.PointX.HasValue && this.PointY.HasValue); } }
+        public decimal? PointX { get { return __PointX; } set { var coordinatesOld = _CoordinatesSerial; __PointX = _Align((value % 360m), 0m, 360m); _CheckCoordinatesChanged(coordinatesOld); } } private decimal? __PointX;
+        public decimal? PointY { get { return __PointY; } set { __PointY = _Align((value % 360m), -180m, 180m); } } private decimal? __PointY;
+
+
+        public DxMapCoordinatesProvider Provider { get { return __Provider; } set { __Provider = value; } } private DxMapCoordinatesProvider __Provider;
+        public DxMapCoordinatesMapType MapType { get { return __MapType; } set { __MapType = value; } } private DxMapCoordinatesMapType __MapType;
+        
+
+        public DxMapCoordinatesFormat CoordinatesFormatDefault { get { return __CoordinatesFormatDefault; } set { __CoordinatesFormatDefault = value; } } private DxMapCoordinatesFormat __CoordinatesFormatDefault;
+        public int ZoomDefault { get { return __ZoomDefault; } set { __ZoomDefault = _Align(value, 1, 20); } } private int __ZoomDefault;
+        public DxMapCoordinatesProvider ProviderDefault { get { return __ProviderDefault; } set { __ProviderDefault = value; } } private DxMapCoordinatesProvider __ProviderDefault;
+        public DxMapCoordinatesMapType MapTypeDefault { get { return __MapTypeDefault; } set { __MapTypeDefault = value; } } private DxMapCoordinatesMapType __MapTypeDefault;
+        #endregion
+        #region Práce se souřadnicemi : Coordinates, set a get, event o změně
+        /// <summary>
+        /// Souřadnice v relativně čitelném stringu pro uživatele, v aktuálním formátu
+        /// </summary>
+        public string Coordinates { get { return _GetCoordinates(); } set { _SetCoordinates(value); } }
+        /// <summary>
+        /// Vrátí textové vyjádření souřadnic v daném / aktuálním formátu
+        /// </summary>
+        /// <param name="format"></param>
+        /// <returns></returns>
+        public string GetCoordinates(DxMapCoordinatesFormat? format = null)
+        {
+            return _GetCoordinates(format);
+        }
+        private void _SetCoordinates(string coordinates)
+        {
+            var coordinatesOld = _CoordinatesSerial;
+
+            _Reset(false);
+            if (!String.IsNullOrEmpty(coordinates))
+            {
+                __IsSuppressedChanges = true;
+                try
+                {
+                    _SetCoordinatesAction(coordinates);
+                }
+                finally
+                {
+                    __IsSuppressedChanges = false;
+                }
+            }
+
+            // Pokud nynější souřadnice jsou změněny, vyvoláme event o změně:
+            _CheckCoordinatesChanged(coordinatesOld);
+        }
+        private void _SetCoordinatesAction(string coordinates)
+        {
+            //  Varianty:
+            // 15.7951729;49.9499113;15
+            // 14.4289607, 50.0395802
+            // 50.0395802N, 14.4289607E
+            // N 50.0395802, E 14.4289607
+            // 50°2'22,49"N, 14°25'44,26"E
+            // N 50°2'22,49", E 14°25'44,26"
+            // +9F2P.2CQHRH
+            // 9F2P2CQH+RH
+            coordinates = coordinates.Replace(" ", "").ToUpper();
+
+            bool hasSemiColon = coordinates.Contains(";");
+            bool hasColon = coordinates.Contains(",");
+            bool hasGrade = coordinates.Contains("°");
+            bool hasNSEW = (coordinates.Contains("N") || coordinates.Contains("S") || coordinates.Contains("E") || coordinates.Contains("W"));
+            bool beginNS = (coordinates.StartsWith("N") || coordinates.StartsWith("S"));
+
+            // Vyhodnocení varianty zadání:
+
+            // Analýza dat konkrétní varianty:
+
+            var parts = coordinates.Split(';');
+            int count = parts.Length;
+            if (count >= 2)
+            {
+                this.CenterX = _ParseDecimal(parts[0]);
+                this.CenterY = _ParseDecimal(parts[1]);
+                this.Zoom = (count >= 3 ? _ParseInt(parts[2]) : 12);
+                string mapType = (count >= 4 ? parts[3] : "S");
+                bool hasPoint = (count >= 6);
+                this.PointX = (hasPoint ? _ParseDecimalN(parts[4]) : (decimal?)null);
+                this.PointY = (hasPoint ? _ParseDecimalN(parts[5]) : (decimal?)null);
+                return;
+            }
+
+            // Nevalidní:
+            return;
+
+
+        }
+        /// <summary>
+        /// Aktuální souřadnice v jednoduchém stringu, pro detekci změny
+        /// </summary>
+        private string _CoordinatesSerial
+        {
+            get
+            {
+                string text = $"{_FormatDecimal(this.CenterX, 7)};{_FormatDecimal(this.CenterY, 7)};{_FormatInt(this.Zoom)};";
+                if (this.HasPoint)
+                    text += $"{_FormatDecimalN(this.PointX, 15)};{_FormatDecimalN(this.PointY, 15)};";
+                return text;
+            }
+        }
+        /// <summary>
+        /// Potlačení eventů o změně, pokud zde bude hodnota true.
+        /// </summary>
+        private bool __IsSuppressedChanges;
+        /// <summary>
+        /// Pokud aktuální hodnota <see cref="_CoordinatesSerial"/> je odlišná od dodané hodnoty (před změnami), a pokud není potlačeno <see cref="__IsSuppressedChanges"/>, pak vyvolá události o změně souřadnic
+        /// </summary>
+        /// <param name="coordinatesOld"></param>
+        private void _CheckCoordinatesChanged(string coordinatesOld)
+        {
+            if (__IsSuppressedChanges) return;
+            string coordinatesNew = _CoordinatesSerial;
+            if (String.Equals(coordinatesOld, coordinatesNew)) return;
+
+            _RunCoordinatesChanged();
+        }
+        /// <summary>
+        /// Vyvolá event <see cref="CoordinatesChanged"/>, pokud nejsou eventy potlačeny <see cref="__IsSuppressedChanges"/>.
+        /// </summary>
+        private void _RunCoordinatesChanged()
+        {
+            if (__IsSuppressedChanges) return;
+            CoordinatesChanged?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Událost volaná po změně souřadnic
+        /// </summary>
+        public event EventHandler CoordinatesChanged;
+        /// <summary>
+        /// Vrátí textové vyjádření souřadnic v daném / aktuálním formátu
+        /// </summary>
+        /// <param name="format"></param>
+        /// <returns></returns>
+        private string _GetCoordinates(DxMapCoordinatesFormat? format = null)
+        {
+            if (!format.HasValue) format = this.CoordinatesFormat;
+
+            string text = $"{this.CenterX}; {this.CenterY}; {this.Zoom}";
+            if (this.HasPoint) text += $";{this.PointX}; {this.PointY}";
+            text = text.Replace(",", ".");
+            return text;
+        }
+        //   https://mapy.cz/zakladni?x=15.7701152&y=49.9681588&z=10               základní
+        //   https://mapy.cz/letecka?x=15.7701152&y=49.9681588&z=10                letecká
+        //   https://mapy.cz/turisticka?x=15.7701152&y=49.9681588&z=10             turistická
+        //   https://mapy.cz/dopravni?x=15.7701152&y=49.9681588&z=10               dopravní
+        //   https://mapy.cz/zakladni?l=0&x=15.7701152&y=49.9681588&z=10               základní bez postranního panelu
+        //   https://mapy.cz/zakladni?source=coor&id=15.936798397021448%2C50.06913748494087&x=15.9456819&y=50.0629944&z=14           co je zde - bodově
+        //   https://mapy.cz/zakladni?source=muni&id=2560&x=15.8354324&y=50.0215148&z=12                                             co je zde - obec
+        //   https://mapy.cz/zakladni?source=stre&id=112413&x=15.9639638&y=50.0608455&z=14                                           co je zde - ulice
+        //   https://mapy.cz/zakladni?source=addr&id=12769313&x=15.9154587&y=50.0302891&z=16                                         co je zde - číslo popisné, adresa s fotkou
+        //   https://mapy.cz/zakladni?l=0&source=coor&id=15.90928966136471%2C50.03222574216687&x=15.9146702&y=50.0303891&z=17        co je zde - bez pravého panelu, ale bod zájmu tam je
+
+
+        //   https://www.google.cz/maps/@49.9464515,15.7884627,15z?entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D
+        //   https://www.google.com/maps/@49.296045,17.390038,15z?hl=cs-CZ
+        //   https://www.google.com/maps/@49.296045,17.390038,15z?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D                      základní
+        //   https://www.google.com/maps/@49.296045,17.390038,2823m/data=!3m1!1e3?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D      fotomapa
+        //   https://www.google.com/maps/@49.296045,17.390038,15z/data=!5m1!1e1?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D        provoz
+        //   https://www.google.com/maps/@49.296045,17.390038,15z/data=!5m1!1e2?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D        veřejná doprava
+        //   https://www.google.com/maps/@49.296045,17.390038,15z/data=!5m2!1e4!1e2?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D    terén
+
+        //   https://www.openstreetmap.org/#map=14/49.94349/15.79452&layers=N
+        //   https://www.openstreetmap.org/#map=12/49.9320/15.7875&layers=N
+        #endregion
+        #region Práce s URL adresou : UrlAdress, set, get, analýza i syntéza, event o změně
+        /// <summary>
+        /// URL adresa mapy
+        /// </summary>
+        public string UrlAdress { get { return _GetUrlAdress(); } set { _SetUrlAdress(value); } }
+        /// <summary>
+        /// Vygeneruje a vrátí URL pro daný / aktuální provider (Seznam / Google / OpenStreet) a daný / aktuální typ mapy.
+        /// </summary>
+        /// <returns></returns>
+        private string _GetUrlAdress(DxMapCoordinatesProvider? provider = null, DxMapCoordinatesMapType? mapType = null)
+        {
+            if (!provider.HasValue) provider = this.Provider;
+
+            switch (provider.Value)
+            {
+                case DxMapCoordinatesProvider.SeznamMapy:
+                    return _GetUrlAdressSeznamMapy(mapType);
+                case DxMapCoordinatesProvider.GoogleMaps:
+                    return _GetUrlAdressGoogleMaps(mapType);
+                case DxMapCoordinatesProvider.OpenStreetMap:
+                    return _GetUrlAdressOpenStreetMap(mapType);
+                default:
+                    return _GetUrlAdressSeznamMapy(mapType);
+            }
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí URL pro provider Seznam a daný / aktuální typ mapy.
+        /// </summary>
+        /// <param name="mapType"></param>
+        /// <returns></returns>
+        private string _GetUrlAdressSeznamMapy(DxMapCoordinatesMapType? mapType = null)
+        {
+            if (!mapType.HasValue) mapType = this.MapType;
+
+            string web = "https://mapy.cz/";
+            string variant = "zakladni";                // turisticka  letecka  dopravni
+            string centerX = _FormatDecimal(this.CenterX, 7);
+            string centerY = _FormatDecimal(this.CenterY, 7);
+            string zoom = _FormatInt(this.Zoom);
+
+            string urlAdress;
+
+            bool withPanel = true;
+            string panel = (withPanel ? "?" : "?l=0");
+
+            bool withPoint = true;
+            string point = "";
+            if (withPoint)
+            {
+                string pointX = (this.HasPoint ? _FormatDecimalN(this.PointX, 15) : _FormatDecimal(this.CenterX, 15));
+                string pointY = (this.HasPoint ? _FormatDecimalN(this.PointY, 15) : _FormatDecimal(this.CenterY, 15));
+                point = $"&source=coor&id={pointX}%2C{pointY}";
+            }
+
+            // https://mapy.cz/zakladni?l=0&source=coor&id=15.782303855847147%2C49.990992469096604&x=15.7821322&y=49.9893301&z=16
+            urlAdress = $"{web}{variant}{panel}{point}&x={centerX}&y={centerY}&z={zoom}";
+            return urlAdress;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí URL pro provider Google a daný / aktuální typ mapy.
+        /// </summary>
+        /// <param name="mapType"></param>
+        /// <returns></returns>
+        private string _GetUrlAdressGoogleMaps(DxMapCoordinatesMapType? mapType = null)
+        {
+            return _GetUrlAdressSeznamMapy(mapType);
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí URL pro provider OpenStreet a daný / aktuální typ mapy.
+        /// </summary>
+        /// <param name="mapType"></param>
+        /// <returns></returns>
+        private string _GetUrlAdressOpenStreetMap(DxMapCoordinatesMapType? mapType = null)
+        {
+            return _GetUrlAdressSeznamMapy(mapType);
+        }
+        private void _SetUrlAdress(string urlAdress)
+        { }
+        #endregion
+        #region Privátní support (Parse, Format, Align)
+        private decimal _ParseDecimal(string text)
+        {
+            var value = _ParseDecimalN(text);
+            return value ?? 0m;
+        }
+        private decimal? _ParseDecimalN(string text)
+        {
+            if (!String.IsNullOrEmpty(text))
+            {
+                if (text.Contains(".") && __DotChar != ".") text = text.Replace(".", __DotChar);
+                if (Decimal.TryParse(text, out decimal value)) return value;
+            }
+            return null;
+        }
+        private int _ParseInt(string text)
+        {
+            if (!String.IsNullOrEmpty(text) && Int32.TryParse(text, out int value)) return value;
+            return 0;
+        }
+        private string _FormatDecimal(decimal value, int decimals = 7)
+        {
+            string format = "###0." + "".PadRight(decimals, '0');
+            string text = value.ToString(format);
+            return text.Replace(__DotChar, ".").Replace(" ", "");
+        }
+        private string _FormatDecimalN(decimal? value, int decimals = 7)
+        {
+            return (value.HasValue ? _FormatDecimal(value.Value, decimals) : "");
+        }
+        private string _FormatInt(int value)
+        {
+            string text = value.ToString();
+            return text.Replace(" ", "");
+        }
+        private static int _Align(int value, int min, int max) { return (value < min ? min : (value > max ? max : value)); }
+        private static decimal _Align(decimal value, decimal min, decimal max) { return (value < min ? min : (value > max ? max : value)); }
+        private static decimal? _Align(decimal? value, decimal min, decimal max) { return (value.HasValue ? (decimal?)(value.Value < min ? min : (value.Value > max ? max : value.Value)) : (decimal?)null); }
+        #endregion
+    }
+    #region Enumy pro mapy
+    /// <summary>
+    /// Formát koordinátů
+    /// </summary>
+    public enum DxMapCoordinatesFormat
+    {
+        /// <summary>
+        /// Vypsané uživateli: "14.4289607, 50.0395802"      (doprava, nahoru)
+        /// </summary>
+        Basic,
+        /// <summary>
+        /// Rozšířené o Zoom; Typ mapy; PointXY: "15.7951729;49.9499113;12;S;15.936798397021448;50.06913748494087"
+        /// </summary>
+        Extended,
+        /// <summary>
+        /// Znaky NS + WE vypsané za desetinným číslem: "50.0395802N, 14.4289607E" (doprava, nahoru).
+        /// Ukládá se do databáze.
+        /// </summary>
+        GeoDecimalSuffix,
+        /// <summary>
+        /// Znaky NS + WE vypsané před desetinným číslem: "N 50.0395802, E 14.4289607"
+        /// </summary>
+        GeoDecimalPrefix,
+        /// <summary>
+        /// Znaky NS + WE vypsané za úhlovým řetězcem: "50°2'22,49"N, 14°25'44,26"E"
+        /// Ukládá se do databáze.
+        /// </summary>
+        GeoGradeSuffix,
+        /// <summary>
+        /// Znaky NS + WE vypsané před úhlovým řetězcem: "N 50°2'22,49", E 14°25'44,26""
+        /// </summary>
+        GeoGradePrefix,
+        /// <summary>
+        /// Číselná matice do QR kódů 1: "+9F2P.2CQHRH"
+        /// </summary>
+        Matrix1,
+        /// <summary>
+        /// Číselná matice do QR kódů 2: "9F2P2CQH+RH"
+        /// </summary>
+        Matrix2
+    }
+    /// <summary>
+    /// Poskytovatel mapy
+    /// </summary>
+    public enum DxMapCoordinatesProvider
+    {
+        /// <summary>
+        /// Žádná
+        /// </summary>
+        None,
+        /// <summary>
+        /// https://mapy.cz/
+        /// </summary>
+        SeznamMapy,
+        /// <summary>
+        /// https://www.google.com/maps
+        /// </summary>
+        GoogleMaps,
+        /// <summary>
+        /// https://www.openstreetmap.org/
+        /// </summary>
+        OpenStreetMap
+    }
+    /// <summary>
+    /// Varianta mapy
+    /// </summary>
+    public enum DxMapCoordinatesMapType
+    {
+        /// <summary>
+        /// Základní
+        /// </summary>
+        Standard,
+        /// <summary>
+        /// Fotomapa
+        /// </summary>
+        Photo,
+        /// <summary>
+        /// Dopravní provoz
+        /// </summary>
+        Traffic,
+        /// <summary>
+        /// Turistická / přírodní
+        /// </summary>
+        Nature
+    }
+    #endregion
+    #endregion
     #region Enumy, servisní třídy...
     /// <summary>
     /// Typy akcí, které má provést Parent panel

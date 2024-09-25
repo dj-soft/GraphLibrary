@@ -24,7 +24,7 @@ namespace TestDevExpress.Forms
             __NavButtons = new List<DxSimpleButton>();
 
             createButton("Chrudim", "15.7951729;49.9499113;15", _ClickButtonNavigate);
-            createButton("Pardubice", "15.7713549;50.0323932;14", _ClickButtonNavigate);
+            createButton("Pardubice", "15.7765933;50.0379536;18;S;15.778977738020302;50.03852988019973", _ClickButtonNavigate);              // https://mapy.cz/zakladni?source=coor&id=15.778977738020302%2C50.03852988019973&x=15.7794498&y=50.0384170&z=19
             createButton("Hradec Králové", "15.8304922;50.2072337;14", _ClickButtonNavigate);
             createButton("Staré Ransko", "15.8308731;49.6790662;18;F", _ClickButtonNavigate);
             createButton("Orlické hory", "16.2956143;50.2435940;11", _ClickButtonNavigate);
@@ -32,7 +32,7 @@ namespace TestDevExpress.Forms
 
             // Vlastní WebView:
             __MapViewPanel = new DxMapViewPanel();
-            // __MapViewPanel.MsWebCurrentDocumentTitleChanged += _MsWebCurrentDocumentTitleChanged;
+            __MapViewPanel.MsWebCurrentDocumentTitleChanged += _MsWebCurrentDocumentTitleChanged;
             this.DxMainPanel.Controls.Add(__MapViewPanel);
 
             _DoContentLayout();
@@ -50,7 +50,7 @@ namespace TestDevExpress.Forms
         /// <param name="e"></param>
         private void _MsWebCurrentDocumentTitleChanged(object sender, EventArgs e)
         {
-            var docTitle = __MapViewPanel.MsWebProperties.DocumentTitle ?? "";
+            var docTitle = __MapViewPanel.WebProperties.DocumentTitle ?? "";
             if (docTitle.Length > 53) docTitle = docTitle.Substring(0, 50) + "...";
             this.SetGuiValue(t => this.Text = t, docTitle);
         }
@@ -101,14 +101,14 @@ namespace TestDevExpress.Forms
                 var coordinates = new DxMapCoordinates();
                 coordinates.Coordinates = text;
                 string url = coordinates.UrlAdress;
-                webPanel.MsWebProperties.UrlAdress = url;
+                webPanel.WebProperties.UrlAdress = url;
 
             }
         }
 
         private void _ClickButtonStaticImage(object sender, EventArgs e)
         {
-            var properties = __MapViewPanel.MsWebProperties;
+            var properties = __MapViewPanel.WebProperties;
             var isStatic = !properties.IsStaticPicture;
             if (sender is DxSimpleButton button)
             {
