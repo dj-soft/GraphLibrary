@@ -98,11 +98,12 @@ namespace TestDevExpress.Forms
             var webPanel = __MapViewPanel;
             if (sender is Control control && control.Tag is string text)
             {
-                var coordinates = new DxMapCoordinates();
-                coordinates.Coordinates = text;
-                string url = coordinates.UrlAdress;
-                webPanel.WebProperties.UrlAdress = url;
+                webPanel.MapCoordinates.Coordinates = text;
 
+                //var coordinates = new DxMapCoordinates();
+                //coordinates.Coordinates = text;
+                //string url = coordinates.UrlAdress;
+                //webPanel.WebProperties.UrlAdress = url;
             }
         }
 

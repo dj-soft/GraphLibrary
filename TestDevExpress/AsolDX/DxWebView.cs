@@ -805,7 +805,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     __CoordinatesText.Bounds = new System.Drawing.Rectangle(toolLeft, ctTop, ctWidth, ctHeight);
                     toolLeft += ctWidth - 2;
 
-                    __CoordinateFormatSpin.Bounds = new System.Drawing.Rectangle(toolLeft, ctTop, buttonSize, ctHeight);
+                    int spWidth = __CoordinateFormatSpin.SpinnerWidth;
+                    __CoordinateFormatSpin.Bounds = new System.Drawing.Rectangle(toolLeft, ctTop, spWidth, ctHeight);
                     toolLeft += shiftX;
                 }
 
@@ -979,7 +980,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _MapCoordinatesInitEvents()
         {
             var mapCoordinates = __MapCoordinates;
-            // mapCoordinates.CoordinatesChanged += ;
+            mapCoordinates.CoordinatesChanged += _MapCoordinatesChanged;
             // mapCoordinates.Coordinates
             // mapCoordinates.UrlAdressChanged += ;
             // mapCoordinates.UrlAdress
@@ -1041,8 +1042,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             __AdressEditorHasFocus = false;
         }
+        /// <summary>
+        /// Metoda akceptuje souřadnice zadané do textboxu <see cref="__CoordinatesText"/> a vloží je do koordinátů <see cref="MapCoordinates"/>,
+        /// což pravděpodobně vyvolá event <see cref="DxMapCoordinates.CoordinatesChanged"/> a následně nové nastavení URL adresy ve WebView
+        /// </summary>
         private void _CoordinatesAccept()
         {
+            // Převezmu text zadaný do textboxu __CoordinatesText, a vložím jej do MapCoordinates.Coordinates.
+            // Tam se zpracuje a vyhodnotí, a pokud dojde k reálné změně hodnot, pak se vyvolá událost MapCoordinates.CoordinatesChanged  =>  _MapCoordinatesChanged;
+            // V eventhandleru se jednoduše převezme UrlAdresa z MapCoordinates a vloží se jako adresa do WebView...
+            this.MapCoordinates.Coordinates = __CoordinatesText.Text;
+        }
+            /*
+            
             var coordinates = __CoordinatesText.Text;
             var mapCoordinates = this.MapCoordinates;
             mapCoordinates.Coordinates = coordinates;
@@ -1050,6 +1062,25 @@ namespace Noris.Clients.Win.Components.AsolDX
             var webProperties = this.WebProperties;
             webProperties.UrlAdress = urlAdress;
             this.__MsWebView.Focus();
+            *//*
+                var coordinates = new DxMapCoordinates();
+                coordinates.Coordinates = text;
+                string url = coordinates.UrlAdress;
+                webPanel.WebProperties.UrlAdress = url;
+            */
+
+        /// <summary>
+        /// Eventhandler změny koordinátů v <see cref="MapCoordinates"/>: získá odpovídající URL adresu a vloží ji do WebView
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MapCoordinatesChanged(object sender, EventArgs e)
+        {
+            __CoordinatesText.Text = this.MapCoordinates.Coordinates;          // Setování textu nevyvolá event o změně
+
+            var webView = this.__MsWebView;
+            webView.MsWebUrlAdress = this.MapCoordinates.UrlAdress;
+            webView.Focus();
         }
         private string __AdressValueOnEnter;
         private bool __AdressEditorHasFocus;

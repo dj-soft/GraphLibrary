@@ -2757,6 +2757,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
         #endregion
+        public int SpinnerWidth
+        {
+            get
+            {
+                int width = 20;
+                var viewInfo = this.ViewInfo;
+                if (viewInfo != null)
+                {
+                    
+                }
+                return width;
+            }
+        }
         #region HasMouse
         /// <summary>
         /// Panel má na sobě myš?
