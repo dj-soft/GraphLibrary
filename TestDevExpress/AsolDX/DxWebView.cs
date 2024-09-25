@@ -1355,6 +1355,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         public bool HasPoint { get { return (this.PointX.HasValue && this.PointY.HasValue); } }
         public decimal? PointX { get { return __PointX; } set { __PointX = _Align((value % 360m), 0m, 360m); } } private decimal? __PointX;
         public decimal? PointY { get { return __PointY; } set { __PointY = _Align((value % 360m), -180m, 180m); } } private decimal? __PointY;
+
+
         private static int _Align(int value, int min, int max) { return (value < min ? min : (value > max ? max : value)); }
         private static decimal _Align(decimal value, decimal min, decimal max) { return (value < min ? min : (value > max ? max : value)); }
         private static decimal? _Align(decimal? value, decimal min, decimal max) { return (value.HasValue ? (decimal?)(value.Value < min ? min : (value.Value > max ? max : value.Value)) : (decimal?)null); }
@@ -1417,6 +1419,28 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.PointY = null;
             this.Zoom = 8;
         }
+
+        //   https://mapy.cz/zakladni?x=15.7701152&y=49.9681588&z=10               základní
+        //   https://mapy.cz/letecka?x=15.7701152&y=49.9681588&z=10                letecká
+        //   https://mapy.cz/turisticka?x=15.7701152&y=49.9681588&z=10             turistická
+        //   https://mapy.cz/dopravni?x=15.7701152&y=49.9681588&z=10               dopravní
+        //   https://mapy.cz/zakladni?l=0&x=15.7701152&y=49.9681588&z=10               základní bez postranního panelu
+        //   https://mapy.cz/zakladni?source=coor&id=15.936798397021448%2C50.06913748494087&x=15.9456819&y=50.0629944&z=14           co je zde - bodově
+        //   https://mapy.cz/zakladni?source=muni&id=2560&x=15.8354324&y=50.0215148&z=12                                             co je zde - obec
+        //   https://mapy.cz/zakladni?source=stre&id=112413&x=15.9639638&y=50.0608455&z=14                                           co je zde - ulice
+        //   https://mapy.cz/zakladni?source=addr&id=12769313&x=15.9154587&y=50.0302891&z=16                                         co je zde - číslo popisné, adresa s fotkou
+
+
+        //   https://www.google.cz/maps/@49.9464515,15.7884627,15z?entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D
+        //   https://www.google.com/maps/@49.296045,17.390038,15z?hl=cs-CZ
+        //   https://www.google.com/maps/@49.296045,17.390038,15z?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D                      základní
+        //   https://www.google.com/maps/@49.296045,17.390038,2823m/data=!3m1!1e3?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D      fotomapa
+        //   https://www.google.com/maps/@49.296045,17.390038,15z/data=!5m1!1e1?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D        provoz
+        //   https://www.google.com/maps/@49.296045,17.390038,15z/data=!5m1!1e2?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D        veřejná doprava
+        //   https://www.google.com/maps/@49.296045,17.390038,15z/data=!5m2!1e4!1e2?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D    terén
+
+        //   https://www.openstreetmap.org/#map=14/49.94349/15.79452&layers=N
+        //   https://www.openstreetmap.org/#map=12/49.9320/15.7875&layers=N
 
         private string _GetUrlAdress() 
         {
