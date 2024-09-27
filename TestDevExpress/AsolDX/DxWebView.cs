@@ -805,7 +805,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     int ctTop = buttonTop + buttonSize - ctHeight - 1;
                     int ctWidth = 280;
                     __CoordinatesText.Bounds = new System.Drawing.Rectangle(toolLeft, ctTop, ctWidth, ctHeight);
-                    toolLeft += ctWidth - 2;
+                    toolLeft += ctWidth + 0;
 
                     __SwitchCoordinatesButton.Bounds = new System.Drawing.Rectangle(toolLeft, buttonTop, buttonSize, buttonSize);
                     toolLeft += shiftX;
@@ -1009,12 +1009,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _MapCoordinatesChanged(object sender, EventArgs e)
         {
+            _ReloadMap();
+        }
+        /// <summary>
+        /// Přenačte souřadnice do textboxu a zobrazí aktuální mapu
+        /// </summary>
+        private void _ReloadMap(bool force = false)
+        {
             _MapCoordinatesShowText(this.MapCoordinates);                      // Setování textu do __CoordinatesText nevyvolá event o změně, protože tamní změnu řešíme jen po klávese Enter.
 
             var webView = this.__MsWebView;
             string urlAdressNew = this.MapCoordinates.UrlAdress;               // URL adresa odpovídající aktuálním koordinátům
             string urlAdressOld = webView.MsWebCurrentUrlAdress;
-            if (String.Equals(urlAdressNew, urlAdressOld)) return;             // Není změna URL adresy
+            if (!force && String.Equals(urlAdressNew, urlAdressOld)) return;   // Není force, a není změna URL adresy
+
+            if (System.Diagnostics.Debugger.IsAttached) System.Windows.Forms.Clipboard.SetText(urlAdressNew);
 
             this.__MapCoordinateToUrlAdressChangeInProgress = true;
             this.__MapCoordinateUrlAdress = urlAdressNew;
@@ -1423,6 +1432,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vlastní souřadnice mapy a další vlastnosti
         /// </summary>
         public DxMapCoordinates MapCoordinates { get { return __MapCoordinates; } } private DxMapCoordinates __MapCoordinates;
+        /// <summary>
+        /// Povinně přenačte mapu
+        /// </summary>
+        public void ReloadMap()
+        {
+            _ReloadMap(true);
+        }
         /// <summary>
         /// Definice vlastností mapy v <see cref="DxMapViewPanel"/>
         /// </summary>
@@ -2488,7 +2504,39 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             string host = uri.Host;
             if (!String.Equals(host, "mapy.cz")) return false;
-            
+
+            return _TryParseUriAsSeznamCommon(uri, ref coordinates, DxMapCoordinatesProvider.SeznamMapy);
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí URL pro provider SeznamMapy a daný / aktuální typ mapy.
+        /// </summary>
+        /// <param name="mapType"></param>
+        /// <returns></returns>
+        private string _GetUrlAdressSeznamMapy(DxMapCoordinatesMapType? mapType = null)
+        {
+            return _GetUrlAdressSeznamCommon(mapType, "https://mapy.cz/", DxMapCoordinatesProvider.SeznamMapy);
+        }
+
+        //   https://mapy.cz/zakladni?x=15.7701152&y=49.9681588&z=10               základní
+        //   https://mapy.cz/letecka?x=15.7701152&y=49.9681588&z=10                letecká
+        //   https://mapy.cz/turisticka?x=15.7701152&y=49.9681588&z=10             turistická
+        //   https://mapy.cz/dopravni?x=15.7701152&y=49.9681588&z=10               dopravní
+        //   https://mapy.cz/zakladni?l=0&x=15.7701152&y=49.9681588&z=10               základní bez postranního panelu
+        //   https://mapy.cz/zakladni?source=coor&id=15.936798397021448%2C50.06913748494087&x=15.9456819&y=50.0629944&z=14           co je zde - bodově
+        //   https://mapy.cz/zakladni?source=muni&id=2560&x=15.8354324&y=50.0215148&z=12                                             co je zde - obec
+        //   https://mapy.cz/zakladni?source=stre&id=112413&x=15.9639638&y=50.0608455&z=14                                           co je zde - ulice
+        //   https://mapy.cz/zakladni?source=addr&id=12769313&x=15.9154587&y=50.0302891&z=16                                         co je zde - číslo popisné, adresa s fotkou
+        //   https://mapy.cz/zakladni?l=0&source=coor&id=15.90928966136471%2C50.03222574216687&x=15.9146702&y=50.0303891&z=17        co je zde - bez pravého panelu, ale bod zájmu tam je
+
+        /// <summary>
+        /// Pokusí se analyzovat URI obsahující URL adresu, jako souřadnice v provideru SeznamMapy nebo FrameMapy
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <param name="coordinates"></param>
+        /// <param name="provider"></param>
+        /// <returns></returns>
+        private static bool _TryParseUriAsSeznamCommon(Uri uri, ref DxMapCoordinates coordinates, DxMapCoordinatesProvider provider)
+        {
             string localPath = uri.LocalPath;
             DxMapCoordinatesMapType mapType =
                 (String.Equals(localPath, "/zakladni") ? DxMapCoordinatesMapType.Standard :
@@ -2500,15 +2548,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             var queryData = _ParseQuery(uri.Query, '?', '&');                  // ?&source=coor&id=15.795172900000000%2C49.949911300000000&x=15.7951729&y=49.9499113&z=8
             if (queryData is null) return false;
-
-            /*
-+		[0]	{[source, coor]}	System.Collections.Generic.KeyValuePair<string, string>
-+		[1]	{[id, 15.778977738020302%2C50.038529880199730]}	System.Collections.Generic.KeyValuePair<string, string>
-+		[2]	{[x, 15.7767167]}	System.Collections.Generic.KeyValuePair<string, string>
-+		[3]	{[y, 50.0379777]}	System.Collections.Generic.KeyValuePair<string, string>
-+		[4]	{[z, 18]}	System.Collections.Generic.KeyValuePair<string, string>
-
-            */
 
             _SearchValue("source", queryData, out string source, out bool hasSource);
             _SearchValue("id", queryData, out string id, out bool hasId);
@@ -2539,17 +2578,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             return true;
         }
         /// <summary>
-        /// Vygeneruje a vrátí URL pro provider SeznamMapy a daný / aktuální typ mapy.
+        /// Vygeneruje a vrátí URL pro provider SeznamMapy nebo FrameMapy a daný / aktuální typ mapy.
         /// </summary>
         /// <param name="mapType"></param>
+        /// <param name="web"></param>
+        /// <param name="provider"></param>
         /// <returns></returns>
-        private string _GetUrlAdressSeznamMapy(DxMapCoordinatesMapType? mapType = null)
+        private string _GetUrlAdressSeznamCommon(DxMapCoordinatesMapType? mapType, string web, DxMapCoordinatesProvider provider)
         {
             if (!mapType.HasValue) mapType = this.MapType;
 
             // https://mapy.cz/zakladni?l=0&source=coor&id=15.782303855847147%2C49.990992469096604&x=15.7821322&y=49.9893301&z=16
 
-            string web = "https://mapy.cz/";
             string variant = (mapType.Value == DxMapCoordinatesMapType.Standard ? "zakladni" :
                              (mapType.Value == DxMapCoordinatesMapType.Photo ? "letecka" :
                              (mapType.Value == DxMapCoordinatesMapType.Nature ? "turisticka" :
@@ -2560,11 +2600,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             string centerY = _FormatDecimal(this.CenterY, 7);
             string zoom = _FormatInt(this.Zoom);
 
-            string urlAdress;
-
-            bool withPanel = true;
-            string panel = (withPanel ? "?" : "?l=0");
-
             bool withPoint = true;
             string point = "";
             if (withPoint)
@@ -2574,21 +2609,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 point = $"&source=coor&id={pointX}%2C{pointY}";
             }
 
-            urlAdress = $"{web}{variant}{panel}{point}&x={centerX}&y={centerY}&z={zoom}";
+            bool withPanel = true;
+            string panel = (withPanel ? "?" : "?l=0");
+
+
+
+            string urlAdress = $"{web}{variant}{panel}{point}&x={centerX}&y={centerY}&z={zoom}";
             return urlAdress;
         }
-
-        //   https://mapy.cz/zakladni?x=15.7701152&y=49.9681588&z=10               základní
-        //   https://mapy.cz/letecka?x=15.7701152&y=49.9681588&z=10                letecká
-        //   https://mapy.cz/turisticka?x=15.7701152&y=49.9681588&z=10             turistická
-        //   https://mapy.cz/dopravni?x=15.7701152&y=49.9681588&z=10               dopravní
-        //   https://mapy.cz/zakladni?l=0&x=15.7701152&y=49.9681588&z=10               základní bez postranního panelu
-        //   https://mapy.cz/zakladni?source=coor&id=15.936798397021448%2C50.06913748494087&x=15.9456819&y=50.0629944&z=14           co je zde - bodově
-        //   https://mapy.cz/zakladni?source=muni&id=2560&x=15.8354324&y=50.0215148&z=12                                             co je zde - obec
-        //   https://mapy.cz/zakladni?source=stre&id=112413&x=15.9639638&y=50.0608455&z=14                                           co je zde - ulice
-        //   https://mapy.cz/zakladni?source=addr&id=12769313&x=15.9154587&y=50.0302891&z=16                                         co je zde - číslo popisné, adresa s fotkou
-        //   https://mapy.cz/zakladni?l=0&source=coor&id=15.90928966136471%2C50.03222574216687&x=15.9146702&y=50.0303891&z=17        co je zde - bez pravého panelu, ale bod zájmu tam je
-
         #endregion
         #region FrameMapy
         /// <summary>
@@ -2602,20 +2630,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             string host = uri.Host;
             if (!String.Equals(host, "frame.mapy.cz")) return false;
 
-            string localPath = uri.LocalPath;
-            DxMapCoordinatesMapType mapType =
-                (String.Equals(localPath, "/zakladni") ? DxMapCoordinatesMapType.Standard :
-                (String.Equals(localPath, "/letecka") ? DxMapCoordinatesMapType.Photo :
-                (String.Equals(localPath, "/turisticka") ? DxMapCoordinatesMapType.Nature :
-                (String.Equals(localPath, "/dopravni") ? DxMapCoordinatesMapType.Traffic :
-                (String.Equals(localPath, "/humanitarni") ? DxMapCoordinatesMapType.Specific : DxMapCoordinatesMapType.None)))));
-            if (mapType == DxMapCoordinatesMapType.None) return false;
-
-            var queryData = _ParseQuery(uri.Query, '?', '&');                  // ?&source=coor&id=15.795172900000000%2C49.949911300000000&x=15.7951729&y=49.9499113&z=8
-            if (queryData is null) return false;
-
-
-            return false;
+            return _TryParseUriAsSeznamCommon(uri, ref coordinates, DxMapCoordinatesProvider.FrameMapy);
         }
         /// <summary>
         /// Vygeneruje a vrátí URL pro provider FrameMapy a daný / aktuální typ mapy.
@@ -2624,37 +2639,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private string _GetUrlAdressFrameMapy(DxMapCoordinatesMapType? mapType = null)
         {
-            if (!mapType.HasValue) mapType = this.MapType;
-
-            // https://frame.mapy.cz/zakladni?l=0&source=coor&id=15.782303855847147%2C49.990992469096604&x=15.7821322&y=49.9893301&z=16
-
-            string web = "https://frame.mapy.cz/";
-            string variant = (mapType.Value == DxMapCoordinatesMapType.Standard ? "zakladni" :
-                             (mapType.Value == DxMapCoordinatesMapType.Photo ? "letecka" :
-                             (mapType.Value == DxMapCoordinatesMapType.Nature ? "turisticka" :
-                             (mapType.Value == DxMapCoordinatesMapType.Traffic ? "dopravni" :
-                             (mapType.Value == DxMapCoordinatesMapType.Specific ? "humanitarni" : "zakladni")))));
-
-            string centerX = _FormatDecimal(this.CenterX, 7);
-            string centerY = _FormatDecimal(this.CenterY, 7);
-            string zoom = _FormatInt(this.Zoom);
-
-            string urlAdress;
-
-            bool withPanel = true;
-            string panel = (withPanel ? "?" : "?l=0");
-
-            bool withPoint = true;
-            string point = "";
-            if (withPoint)
-            {
-                string pointX = (this.HasPoint ? _FormatDecimalN(this.PointX, 15) : _FormatDecimal(this.CenterX, 15));
-                string pointY = (this.HasPoint ? _FormatDecimalN(this.PointY, 15) : _FormatDecimal(this.CenterY, 15));
-                point = $"&source=coor&id={pointX}%2C{pointY}";
-            }
-
-            urlAdress = $"{web}{variant}{panel}{point}&x={centerX}&y={centerY}&z={zoom}";
-            return urlAdress;
+            return _GetUrlAdressSeznamCommon(mapType, "https://frame.mapy.cz/", DxMapCoordinatesProvider.SeznamMapy);
         }
         //   https://mapy.cz/zakladni?x=15.7701152&y=49.9681588&z=10               základní
         //   https://mapy.cz/letecka?x=15.7701152&y=49.9681588&z=10                letecká
@@ -2747,7 +2732,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!mapType.HasValue) mapType = this.MapType;
 
-            // https://www.openstreetmap.org/#map=14/49.94349/15.79452&layers=N
 
             string web = "https://www.openstreetmap.org/";
             string variant = (mapType.Value == DxMapCoordinatesMapType.Standard ? "zakladni" :
@@ -2756,14 +2740,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                              (mapType.Value == DxMapCoordinatesMapType.Traffic ? "dopravni" :
                              (mapType.Value == DxMapCoordinatesMapType.Specific ? "humanitarni" : "zakladni")))));
 
-            string centerX = _FormatDecimal(this.CenterX, 6);
-            string centerY = _FormatDecimal(this.CenterY, 6);
+            string centerX = _FormatDecimal(this.CenterX, 7);
+            string centerY = _FormatDecimal(this.CenterY, 7);
             string zoom = _FormatInt(this.Zoom);
-
-            string urlAdress;
-
-            bool withPanel = true;
-            string panel = (withPanel ? "?" : "?l=0");
 
             bool withPoint = true;
             string point = "";
@@ -2771,19 +2750,25 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 string pointX = (this.HasPoint ? _FormatDecimalN(this.PointX, 15) : _FormatDecimal(this.CenterX, 15));
                 string pointY = (this.HasPoint ? _FormatDecimalN(this.PointY, 15) : _FormatDecimal(this.CenterY, 15));
-                point = $"&source=coor&id={pointX}%2C{pointY}";
+                point = $"?mlat={pointY}&mlon={pointX}";
             }
 
-            urlAdress = $"{web}#map={zoom}/{CenterY}/{centerX}&layers=N";
+            bool withPanel = true;
+            string panel = (withPanel ? "?" : "?l=0");
+            string layers = "";           // &layers=N
+
+            string urlAdress = $"{web}{point}#map={zoom}/{centerY}/{centerX}{layers}";
             return urlAdress;
         }
+
+        //   https://www.openstreetmap.org/#map=14/49.94349/15.79452&layers=N
         //   https://www.openstreetmap.org/?mlat=49.999988&mlon=15.757273#map=19/49.999988/15.757271&layers=T          obsahuje umístěnou značku - a bez postranních panelů a bez cizích poznámek
         //   https://www.openstreetmap.org/?mlat=49.999988&mlon=15.757273#map=16/50.04246/15.82406                     jiné měřítko, std mapa
         //   https://www.openstreetmap.org/#map=14/49.94349/15.79452&layers=N
         //   https://www.openstreetmap.org/#map=12/49.9320/15.7875&layers=N
 
         #endregion
-        #region SUpport pro analýzu UrlQuery
+        #region Support pro analýzu UrlQuery
         /// <summary>
         /// Dodaný string (query z URL) rozdělí (danými separátory) na jednotlivé hodnoty (Key = Value) a jejich seznam vrátí. Prázdné prvky do seznamu nedává.
         /// Pokud by výsledný seznam měl 0 prvků, vrátí null. Jinými slovy, pokud na výstupu není null, pak je tam alespoň jeden prvek.
@@ -2833,7 +2818,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 found = false;
             }
         }
-
         private static void _SearchValue(string key, List<KeyValuePair<string, string>> queryData, out decimal value, out bool found)
         {
             if (_TrySearchPair(key, queryData, out var pair) && _TryParseDecimal(pair.Value, out var number))

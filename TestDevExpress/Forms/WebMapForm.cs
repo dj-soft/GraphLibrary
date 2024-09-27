@@ -126,7 +126,7 @@ namespace TestDevExpress.Forms
             if (sender is Control control && control.Tag is string text)
             {
                 __CurrentCoordinates = text;
-                _GoToMap();
+                _GoToMap(true);
             }
         }
 
@@ -137,16 +137,18 @@ namespace TestDevExpress.Forms
             {
                 button.Text = provider.ToString();
                 __CurrentProvider = provider;
-                _GoToMap();
+                _GoToMap(true);
             }
         }
-        private void _GoToMap()
+        private void _GoToMap(bool forceUrl)
         {
             var webPanel = __MapViewPanel;
             if (webPanel != null && !String.IsNullOrEmpty(__CurrentCoordinates))
             {
                 webPanel.MapCoordinates.Provider = __CurrentProvider;
                 webPanel.MapCoordinates.Coordinates = __CurrentCoordinates;
+                if (forceUrl)
+                    webPanel.ReloadMap();
             }
         }
         private void _ClickButtonStaticImage(object sender, EventArgs e)
