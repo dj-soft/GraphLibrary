@@ -20,15 +20,18 @@ namespace TestDevExpress.Forms
         #region Konstrukce
         protected override void DxMainContentPrepare()
         {
-            // Buttony, které reprezentují "oblíbené pozice":
-            __NavButtons = new List<DxSimpleButton>();
+            __NavControls = new List<Control>();
 
-            createButton("Chrudim", "15.7951729;49.9499113;15", _ClickButtonNavigate);
-            createButton("Pardubice", "15.7765933;50.0379536;18;S;15.778977738020302;50.03852988019973", _ClickButtonNavigate);              // https://mapy.cz/zakladni?source=coor&id=15.778977738020302%2C50.03852988019973&x=15.7794498&y=50.0384170&z=19
-            createButton("Hradec Králové", "15.8304922;50.2072337;14", _ClickButtonNavigate);
-            createButton("Staré Ransko", "15.8308731;49.6790662;18;F", _ClickButtonNavigate);
-            createButton("Orlické hory", "16.2956143;50.2435940;11", _ClickButtonNavigate);
-            createButton("Gargano", "15.7868100;41.7842548;10", _ClickButtonNavigate);
+            // Buttony, které reprezentují "oblíbené pozice":
+            createButton(_ClickButtonNavigate, "Chrudim", "15.7951729;49.9499113;15");
+            createButton(_ClickButtonNavigate, "Pardubice", "15.7765933;50.0379536;18;S;15.778977738020302;50.03852988019973");              // https://mapy.cz/zakladni?source=coor&id=15.778977738020302%2C50.03852988019973&x=15.7794498&y=50.0384170&z=19
+            createButton(_ClickButtonNavigate, "Hradec Králové", "15.8304922;50.2072337;14");
+            createButton(_ClickButtonNavigate, "Staré Ransko", "15.8324115; 49.6787496; 17; F; 15.832009125041111; 49.67868715559161");
+            createButton(_ClickButtonNavigate, "Orlické hory", "16.2956143;50.2435940;11");
+            createButton(_ClickButtonNavigate, "Gargano", "15.7868100;41.7842548;10");
+
+            // Další v řadě:
+            __ProviderButton = createDropDownButton(_SelectProviderChange, DxMapCoordinatesProvider.SeznamMapy, DxMapCoordinatesProvider.FrameMapy, DxMapCoordinatesProvider.GoogleMaps, DxMapCoordinatesProvider.OpenStreetMap);
 
             // Vlastní WebView:
             __MapViewPanel = new DxMapViewPanel();
@@ -37,10 +40,31 @@ namespace TestDevExpress.Forms
 
             _DoContentLayout();
 
-            void createButton(string text, string url, EventHandler click)
+            DxSimpleButton createButton(EventHandler clickHandler, string text, string url)
             {
-                var button = DxComponent.CreateDxSimpleButton(0, 0, 150, 32, this.DxMainPanel, text, click, tag: url);
-                __NavButtons.Add(button);
+                var button = DxComponent.CreateDxSimpleButton(0, 0, 150, 32, this.DxMainPanel, text, clickHandler, tag: url);
+                __NavControls.Add(button);
+                return button;
+            }
+
+            DxImageComboBoxEdit createCombo(EventHandler changeHandler, params string[] items)
+            {
+                var combo = DxComponent.CreateDxImageComboBox(0, 0, 150, this.DxMainPanel, changeHandler, items.ToOneString("\t"));
+                __NavControls.Add(combo);
+                combo.SelectedIndex = 0;                   // Vyvolá se handler (changeHandler) a nastaví se odpovídající hodnota
+                return combo;
+            }
+            DxDropDownButton createDropDownButton(EventHandler<TEventArgs<IMenuItem>> itemClickHandler, params object[] values)
+            {
+                var items = values.Select(v => (IMenuItem)new DataMenuItem() { Text = v.ToString(), Tag = v }).ToArray();
+                var button = DxComponent.CreateDxDropDownButton(0, 0, 150, 32, this.DxMainPanel, "", null, itemClickHandler, subItems: items);
+                button.OpenDropDownOnButtonClick = true;
+                __NavControls.Add(button);
+
+                if (items.Length > 0)
+                    itemClickHandler(button, new TEventArgs<IMenuItem>(items[0]));
+
+                return button;
             }
         }
         /// <summary>
@@ -54,7 +78,11 @@ namespace TestDevExpress.Forms
             if (docTitle.Length > 53) docTitle = docTitle.Substring(0, 50) + "...";
             this.SetGuiValue(t => this.Text = t, docTitle);
         }
-        private List<DxSimpleButton> __NavButtons;
+        private string __CurrentCoordinates;
+        private string __CurrentUrlAdress;
+        private DxMapCoordinatesProvider __CurrentProvider;
+        private DxDropDownButton __ProviderButton;
+        private List<Control> __NavControls;
         private DxMapViewPanel __MapViewPanel;
         /// <summary>
         /// Provede se po změně velikosti ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/>
@@ -79,7 +107,7 @@ namespace TestDevExpress.Forms
 
             int bx = x0;
             int by = y0;
-            foreach (var button in __NavButtons)
+            foreach (var button in __NavControls)
             {
                 button.Bounds = new Rectangle(bx, by, bw, bh);
                 bx += (bw + dw);
@@ -95,18 +123,32 @@ namespace TestDevExpress.Forms
 
         private void _ClickButtonNavigate(object sender, EventArgs e)
         {
-            var webPanel = __MapViewPanel;
             if (sender is Control control && control.Tag is string text)
             {
-                webPanel.MapCoordinates.Coordinates = text;
-
-                //var coordinates = new DxMapCoordinates();
-                //coordinates.Coordinates = text;
-                //string url = coordinates.UrlAdress;
-                //webPanel.WebProperties.UrlAdress = url;
+                __CurrentCoordinates = text;
+                _GoToMap();
             }
         }
 
+        private void _SelectProviderChange(object sender, TEventArgs<IMenuItem> e)
+        {
+            var button = (sender as DxDropDownButton) ?? __ProviderButton;
+            if (button != null && e.Item.Tag is DxMapCoordinatesProvider provider)
+            {
+                button.Text = provider.ToString();
+                __CurrentProvider = provider;
+                _GoToMap();
+            }
+        }
+        private void _GoToMap()
+        {
+            var webPanel = __MapViewPanel;
+            if (webPanel != null && !String.IsNullOrEmpty(__CurrentCoordinates))
+            {
+                webPanel.MapCoordinates.Provider = __CurrentProvider;
+                webPanel.MapCoordinates.Coordinates = __CurrentCoordinates;
+            }
+        }
         private void _ClickButtonStaticImage(object sender, EventArgs e)
         {
             var properties = __MapViewPanel.WebProperties;

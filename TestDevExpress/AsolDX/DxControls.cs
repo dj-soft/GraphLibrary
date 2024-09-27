@@ -3138,6 +3138,26 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxDropDownButton : DevExpress.XtraEditors.DropDownButton
     {
+        /// <summary>
+        /// Rozbalit DropDown menu po kliknutí na Button?
+        /// </summary>
+        public bool OpenDropDownOnButtonClick { get; set; }
+        protected override void OnClick(EventArgs e)
+        {
+            base.OnClick(e);
+            if (this.OpenDropDownOnButtonClick)
+            {
+                this.DoShowDropDown();
+            }
+        }
+        protected override void OnMouseClick(MouseEventArgs e)
+        {
+            base.OnMouseClick(e);
+            if (this.OpenDropDownOnButtonClick) 
+            {
+                this.DoShowDropDown();
+            }
+        }
         #region Rozšířené property
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.

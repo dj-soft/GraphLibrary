@@ -2851,7 +2851,9 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             dropDownButton.SetToolTip(toolTipTitle, toolTipText, text);
 
-            dropDownButton.DropDownControl = CreateDxDropDownControl(dropDownControl, subItemsText, subItems, itemClick);
+            var dropMenu = CreateDxDropDownControl(dropDownControl, subItemsText, subItems, itemClick);
+            // dropMenu.
+            dropDownButton.DropDownControl = dropMenu;
 
             if (click != null) dropDownButton.Click += click;
             if (parent != null) parent.Controls.Add(dropDownButton);
