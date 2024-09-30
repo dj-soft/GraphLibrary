@@ -2502,10 +2502,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private static bool _TryParseUriAsSeznamMapy(Uri uri, ref DxMapCoordinates coordinates)
         {
-            string host = uri.Host;
-            if (!String.Equals(host, "mapy.cz")) return false;
-
-            return _TryParseUriAsSeznamCommon(uri, ref coordinates, DxMapCoordinatesProvider.SeznamMapy);
+            return _TryParseUriAsSeznamCommon(uri, "mapy.cz", ref coordinates, DxMapCoordinatesProvider.SeznamMapy);
         }
         /// <summary>
         /// Vygeneruje a vrátí URL pro provider SeznamMapy a daný / aktuální typ mapy.
@@ -2532,11 +2529,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokusí se analyzovat URI obsahující URL adresu, jako souřadnice v provideru SeznamMapy nebo FrameMapy
         /// </summary>
         /// <param name="uri"></param>
+        /// <param name="web"></param>
         /// <param name="coordinates"></param>
         /// <param name="provider"></param>
         /// <returns></returns>
-        private static bool _TryParseUriAsSeznamCommon(Uri uri, ref DxMapCoordinates coordinates, DxMapCoordinatesProvider provider)
+        private static bool _TryParseUriAsSeznamCommon(Uri uri, string web, ref DxMapCoordinates coordinates, DxMapCoordinatesProvider provider)
         {
+            string host = uri.Host;
+            if (!String.Equals(host, web)) return false;
+
             string localPath = uri.LocalPath;
             DxMapCoordinatesMapType mapType =
                 (String.Equals(localPath, "/zakladni") ? DxMapCoordinatesMapType.Standard :
@@ -2549,19 +2550,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             var queryData = _ParseQuery(uri.Query, '?', '&');                  // ?&source=coor&id=15.795172900000000%2C49.949911300000000&x=15.7951729&y=49.9499113&z=8
             if (queryData is null) return false;
 
-            _SearchValue("source", queryData, out string source, out bool hasSource);
-            _SearchValue("id", queryData, out string id, out bool hasId);
-            _SearchValue("x", queryData, out decimal x, out bool hasX);
-            _SearchValue("y", queryData, out decimal y, out bool hasY);
-            _SearchValue("z", queryData, out int zoom, out bool hasZoom);
 
+            // Pokud najdu X a Y, pak máme souřadnice, jinak nikoliv.
+            _SearchValue("x", queryData, out decimal centerX, out bool hasX);
+            _SearchValue("y", queryData, out decimal centerY, out bool hasY);
             bool hasXY = hasX && hasY;
             if (!hasXY) return false;
 
-            // Pokud najdu X a Y, pak máme souřadnice. Další atributy jsou optional.
+            //  Další atributy jsou optional.
+            _SearchValue("source", queryData, out string source, out bool hasSource);
+            _SearchValue("id", queryData, out string id, out bool hasId);
+            _SearchValue("z", queryData, out int zoom, out bool hasZoom);
+
             coordinates = new DxMapCoordinates();
-            coordinates.CenterX = x;
-            coordinates.CenterY = y;
+            coordinates.CenterX = centerX;
+            coordinates.CenterY = centerY;
             if (hasZoom) coordinates.Zoom = zoom;
 
             if (hasSource && String.Equals(source, "coor") && hasId && !String.IsNullOrEmpty(id) && id.Contains("%2C"))
@@ -2627,10 +2630,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private static bool _TryParseUriAsFrameMapy(Uri uri, ref DxMapCoordinates coordinates)
         {
-            string host = uri.Host;
-            if (!String.Equals(host, "frame.mapy.cz")) return false;
-
-            return _TryParseUriAsSeznamCommon(uri, ref coordinates, DxMapCoordinatesProvider.FrameMapy);
+            return _TryParseUriAsSeznamCommon(uri, "frame.mapy.cz", ref coordinates, DxMapCoordinatesProvider.FrameMapy);
         }
         /// <summary>
         /// Vygeneruje a vrátí URL pro provider FrameMapy a daný / aktuální typ mapy.
