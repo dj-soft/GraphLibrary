@@ -1044,7 +1044,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private bool __CoordinatesTextHasFocus;
         #endregion
-        #region SpinEdit - vizuální forma zobrazených koordinátů, nemá vliv na hodnotu souřadnic ani na pozici v mapě
+        #region Format - vizuální forma zobrazených koordinátů, nemá vliv na hodnotu souřadnic ani na pozici v mapě
         /// <summary>
         /// Inicializuje objekt <see cref="__CoordinateFormatSpin"/> pro validní práci s formáty <see cref="DxMapCoordinatesFormat"/>
         /// </summary>
@@ -1106,6 +1106,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Zobrazíme aktuální koordináty v nově určeném formátu:
             _MapCoordinatesShowText(this.MapCoordinates);                      // Setování textu do __CoordinatesText nevyvolá event o změně, protože tamní změnu řešíme jen po klávese Enter.
+
+            __CoordinatesText.Focus();
         }
         /// <summary>
         /// Uživateli dostupné formáty <see cref="DxMapCoordinatesFormat"/>.
@@ -3175,12 +3177,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             value = (isNegative ? -result : result);
             return true;
         }
-        private static string _FormatDecimal(decimal value, int decimals = 7)
-        {
-            string format = "###0." + "".PadRight(decimals, '0');
-            string text = value.ToString(format);
-            return text.Replace(_DotChar, ".").Replace(" ", "");
-        }
         private static string _FormatGeoDecimal(decimal value, GeoAxis axis, DxMapCoordinatesFormat format, int decimals = 7)
         {
             bool usePrefix = (format == DxMapCoordinatesFormat.Wgs84DecimalPrefix);
@@ -3198,7 +3194,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return text;
             }
         }
-
         private static string _FormatGeoGrade(decimal value, GeoAxis axis, DxMapCoordinatesFormat format)
         {
             bool usePrefix = (format == DxMapCoordinatesFormat.Wgs84MinutePrefix || format == DxMapCoordinatesFormat.Wgs84ArcSecPrefix);
@@ -3220,7 +3215,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private static string _FormatGrade(decimal value, bool useArc)
         {
-            return ""; 
+            bool isNegative = (value < 0m);
+            if (isNegative) value = -value;
+            string neg = (isNegative ? "-" : "");                    // "-" pro negativní čísla
+            decimal grd = Math.Floor(value);                         // 16.75844  =>  16         
+            value = 60m * (value - grd);                             // 16.75844  =>   0.75844    =>  45.5064
+            if (!useArc)
+            {   // 16°45.5064'
+                return $"{neg}{_FormatDecimal(grd, 1, 0)}°{_FormatDecimal(value, 2, 5)}'";
+            }
+            else
+            {   // 16°45'30.51
+                decimal min = Math.Floor(value);                     // 45.5064   =>  45
+                value = 60m * (value - min);                         // 45.5064   =>   0.5064     =>  30.384
+                return $"{neg}{_FormatDecimal(grd, 1, 0)}°{_FormatDecimal(min, 2, 0)}'{_FormatDecimal(value, 2, 2)}''";
+            }
         }
         /// <summary>
         /// Vrátí kvadrant : N (North) nebo S (South) nebo E (East) nebo W (West) pro danou souřadnici
@@ -3246,6 +3255,25 @@ namespace Noris.Clients.Win.Components.AsolDX
                     return (isWest ? "W" : "E");
             }
             return "X";
+        }
+        private static string _FormatDecimal(decimal value, int decimals = 7)
+        {
+            decimals = _Align(decimals, 0, 12);
+            string fmt1 = "".PadRight(1, '0').PadLeft(12, '#');
+            string fmt2 = "".PadRight(decimals, '0');
+            string format = $"{fmt1}.{fmt2}";
+            string text = (Math.Round(value, decimals)).ToString(format);
+            return text.Replace(_DotChar, ".").Replace(" ", "");
+        }
+        private static string _FormatDecimal(decimal value, int leadings, int decimals = 7)
+        {
+            leadings = _Align(leadings, 0, 12);
+            decimals = _Align(decimals, 0, 12);
+            string fmt1 = "".PadRight(leadings, '0').PadLeft(12, '#');
+            string fmt2 = "".PadRight(decimals, '0');
+            string format = $"{fmt1}.{fmt2}";
+            string text = (Math.Round(value, decimals)).ToString(format);
+            return text.Replace(_DotChar, ".").Replace(" ", "");
         }
         private static string _FormatDecimalN(decimal? value, int decimals = 7)
         {
