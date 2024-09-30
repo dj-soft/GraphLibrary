@@ -1052,14 +1052,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             __CoordinateFormats = new DxMapCoordinatesFormat[]
             {
-                DxMapCoordinatesFormat.Basic,
+                DxMapCoordinatesFormat.Nephrite,
                 DxMapCoordinatesFormat.Extended,
-                DxMapCoordinatesFormat.GeoDecimalSuffix,
-                DxMapCoordinatesFormat.GeoDecimalPrefix,
-                DxMapCoordinatesFormat.GeoGradeSuffix,
-                DxMapCoordinatesFormat.GeoGradePrefix,
-                DxMapCoordinatesFormat.Matrix1,
-                DxMapCoordinatesFormat.Matrix2
+                DxMapCoordinatesFormat.Wgs84Decimal,
+                DxMapCoordinatesFormat.Wgs84DecimalSuffix,
+                DxMapCoordinatesFormat.Wgs84DecimalPrefix,
+                DxMapCoordinatesFormat.Wgs84ArcSecSuffix,
+                DxMapCoordinatesFormat.Wgs84ArcSecPrefix
             };
             __CoordinateFormatCurrentIndex = 0;
         }
@@ -1078,7 +1077,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (index >= 0 && index < count)
                         return formats[index];
                 }
-                return DxMapCoordinatesFormat.Basic;
+                return DxMapCoordinatesFormat.Nephrite;
             }
             set
             {
@@ -2203,28 +2202,56 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxMapCoordinates()
         {
-            _Reset(true);
+            _Reset(ResetSource.Instance);
         }
         /// <summary>
         /// Resetuje hodnoty před vložením nových
         /// </summary>
-        /// <param name="setDefaults"></param>
-        private void _Reset(bool setDefaults)
+        /// <param name="source"></param>
+        private void _Reset(ResetSource source)
         {
-            if (setDefaults)
-            {
-                this.CoordinatesFormatDefault = DxMapCoordinatesFormat.GeoDecimalSuffix;
-                this.ZoomDefault = 8;
-                this.ProviderDefault = DxMapCoordinatesProvider.SeznamMapy;
-                this.MapTypeDefault = DxMapCoordinatesMapType.Standard;
-            }
-
             // Resetuji na pozici: celá ČR 
-            this.CenterX = 15.7435513m;                 // https://mapy.cz/turisticka?l=0&x=15.7435513&y=49.8152928&z=8
+            this.CenterX = 15.7435513m;                    // Zkus tohle:  https://mapy.cz/turisticka?l=0&x=15.7435513&y=49.8152928&z=8
             this.CenterY = 49.8152928m;
             this.PointX = null;
             this.PointY = null;
-            this.Zoom = 8;
+            this.Zoom = this.ZoomDefault;
+
+            if (source == ResetSource.Instance)
+            {   // Tvorba instance:
+                this.CoordinatesFormatDefault = DxMapCoordinatesFormat.Wgs84DecimalSuffix;
+                this.ZoomDefault = 8;
+                this.ProviderDefault = DxMapCoordinatesProvider.SeznamMapy;
+                this.MapTypeDefault = DxMapCoordinatesMapType.Standard;
+                this.InfoPanelVisibleDefault = true;
+                this.ShowPinInCenter = true;
+
+                this.CoordinatesFormat = null;
+                this.Provider = null;
+                this.MapType = null;
+                this.InfoPanelVisible = null;
+            }
+
+            if (source == ResetSource.Coordinate)
+            {   // Setování koordinátů nemění defaulty, nemění providera ani typ mapy:
+                this.CoordinatesFormat = null;
+            }
+
+            if (source == ResetSource.UrlAdress)
+            {   // Setování URL adresy nemění formát koordinátů, ale resetuje providera i typ mapy:
+                this.Provider = null;
+                this.MapType = null;
+                this.InfoPanelVisible = null;
+            }
+        }
+        /// <summary>
+        /// Kdo volá Reset hodnot?
+        /// </summary>
+        private enum ResetSource
+        {
+            Instance,
+            Coordinate,
+            UrlAdress
         }
         /// <summary>
         /// Vizualizace
@@ -2232,7 +2259,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString()
         {
-            return _GetCoordinates(DxMapCoordinatesFormat.GeoGradePrefix);
+            return _GetCoordinates(DxMapCoordinatesFormat.Wgs84ArcSecPrefix);
         }
         /// <summary>
         /// Oddělovač desetinných míst v aktuální kultuře, pracuje s ním <see cref="Decimal.TryParse(string, out decimal)"/>
@@ -2240,29 +2267,90 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static string _DotChar { get { return System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator; } }
         #endregion
         #region Public proměnné základní = jednotlivé : Souřadnice X:Y, Střed, Bod, Zoom, Provider, Typ mapy, Defaulty
-        public DxMapCoordinatesFormat? CoordinatesFormat { get { return __CoordinatesFormat; } set { __CoordinatesFormat = value; } } private DxMapCoordinatesFormat? __CoordinatesFormat;
-        public decimal CenterX { get { return __CenterX; } set { __CenterX = _Align((value % 360m), 0m, 360m); } } private decimal __CenterX;
-        public decimal CenterY { get { return __CenterY; } set { __CenterY = _Align((value % 360m), -180m, 180m); } } private decimal __CenterY;
-        public int Zoom { get { return __Zoom; } set { __Zoom = _Align(value, 1, 20); } } private int __Zoom;
-        public bool HasPoint { get { return (this.PointX.HasValue && this.PointY.HasValue); } }
-        public decimal? PointX { get { return __PointX; } set { var coordinatesOld = _CoordinatesSerial; __PointX = _Align((value % 360m), 0m, 360m); _CheckCoordinatesChanged(coordinatesOld); } } private decimal? __PointX;
-        public decimal? PointY { get { return __PointY; } set { __PointY = _Align((value % 360m), -180m, 180m); } } private decimal? __PointY;
-
-
-        public DxMapCoordinatesProvider Provider { get { return __Provider; } set { __Provider = value; } } private DxMapCoordinatesProvider __Provider;
-        public DxMapCoordinatesMapType MapType { get { return __MapType; } set { __MapType = value; } } private DxMapCoordinatesMapType __MapType;
-        
-
-        public DxMapCoordinatesFormat CoordinatesFormatDefault { get { return __CoordinatesFormatDefault; } set { __CoordinatesFormatDefault = value; } } private DxMapCoordinatesFormat __CoordinatesFormatDefault;
-        public int ZoomDefault { get { return __ZoomDefault; } set { __ZoomDefault = _Align(value, 1, 20); } } private int __ZoomDefault;
-        public DxMapCoordinatesProvider ProviderDefault { get { return __ProviderDefault; } set { __ProviderDefault = value; } } private DxMapCoordinatesProvider __ProviderDefault;
-        public DxMapCoordinatesMapType MapTypeDefault { get { return __MapTypeDefault; } set { __MapTypeDefault = value; } } private DxMapCoordinatesMapType __MapTypeDefault;
-        #endregion
-        #region Práce se souřadnicemi : Coordinates, set a get, event o změně
         /// <summary>
-        /// Souřadnice v relativně čitelném stringu pro uživatele, v aktuálním formátu
+        /// Formát koordinátů (ve formě jednoho stringu) v <see cref="Coordinates"/>.
+        /// Lze setovat null, ale při čtení se namísto null čte <see cref="CoordinatesFormatDefault"/>.
+        /// </summary>
+        public DxMapCoordinatesFormat? CoordinatesFormat { get { return __CoordinatesFormat ?? __CoordinatesFormatDefault; } set { __CoordinatesFormat = value; } } private DxMapCoordinatesFormat? __CoordinatesFormat;
+        /// <summary>
+        /// Střed mapy X, v rozsahu -180° až +180°
+        /// </summary>
+        public decimal CenterX { get { return __CenterX; } set { var coordinatesOld = _CoordinatesSerial; __CenterX = _Align((value % 360m), -180m, 180m); _CheckCoordinatesChanged(coordinatesOld); } } private decimal __CenterX;
+        /// <summary>
+        /// Střed mapy Y, v rozsahu -90° (Jih) až +90° (Sever)
+        /// </summary>
+        public decimal CenterY { get { return __CenterY; } set { var coordinatesOld = _CoordinatesSerial; __CenterY = _Align((value % 180m), -90m, 90m); _CheckCoordinatesChanged(coordinatesOld); } } private decimal __CenterY;
+        /// <summary>
+        /// Zoom, v rozsahu 1 (celá planeta) až 20 (jeden pokojíček). Zoom roste exponenciálně, rozdíl 1 číslo je 2-násobek.
+        /// Lze setovat null, ale při čtení se namísto null čte <see cref="ProviderDefault"/>.
+        /// </summary>
+        public int? Zoom { get { return __Zoom ?? __ZoomDefault; } set { var coordinatesOld = _CoordinatesSerial; __Zoom = _AlignN(value, 1, 20); _CheckCoordinatesChanged(coordinatesOld); } } private int? __Zoom;
+        /// <summary>
+        /// Je definován exaktní bod { <see cref="PointX"/>, <see cref="PointY"/> } ?<br/>
+        /// Pokud ne, pak pozici bodu zastává střed mapy { <see cref="CenterX"/>, <see cref="CenterY"/> }
+        /// </summary>
+        public bool HasPoint { get { return (this.PointX.HasValue && this.PointY.HasValue); } }
+        /// <summary>
+        /// Exaktní bod souřadnic X, v rozsahu -180° až +180°
+        /// </summary>
+        public decimal? PointX { get { return __PointX; } set { var coordinatesOld = _CoordinatesSerial; __PointX = _Align((value % 360m), -180m, 180m); _CheckCoordinatesChanged(coordinatesOld); } } private decimal? __PointX;
+        /// <summary>
+        /// Exaktní bod souřadnic Y, v rozsahu -90° (Jih) až +90° (Sever)
+        /// </summary>
+        public decimal? PointY { get { return __PointY; } set { var coordinatesOld = _CoordinatesSerial; __PointY = _Align((value % 180m), -90m, 90m); _CheckCoordinatesChanged(coordinatesOld); } } private decimal? __PointY;
+
+        /// <summary>
+        /// Provider mapy (webová stránka).
+        /// Lze setovat null, ale při čtení se namísto null čte <see cref="ProviderDefault"/>.
+        /// </summary>
+        public DxMapCoordinatesProvider? Provider { get { return __Provider ?? __ProviderDefault; } set { __Provider = value; } } private DxMapCoordinatesProvider? __Provider;
+        /// <summary>
+        /// Typ mapy (standardní, dopravní, turistická, fotoletecká).
+        /// Lze setovat null, ale při čtení se namísto null čte <see cref="MapTypeDefault"/>.
+        /// </summary>
+        public DxMapCoordinatesMapType? MapType { get { return __MapType ?? __MapTypeDefault; } set { __MapType = value; } } private DxMapCoordinatesMapType? __MapType;
+        /// <summary>
+        /// Viditelnost bočního panelu s detaily.
+        /// Lze setovat null, ale při čtení se namísto null čte <see cref="InfoPanelVisibleDefault"/>.
+        /// </summary>
+        public bool? InfoPanelVisible { get { return __InfoPanelVisible ?? __InfoPanelVisibleDefault; } set { __InfoPanelVisible = value; } } private bool? __InfoPanelVisible;
+
+        /// <summary>
+        /// Defaultní formát souřadnic
+        /// </summary>
+        public DxMapCoordinatesFormat CoordinatesFormatDefault { get { return __CoordinatesFormatDefault; } set { __CoordinatesFormatDefault = value; } } private DxMapCoordinatesFormat __CoordinatesFormatDefault;
+        /// <summary>
+        /// Defaultní Zoom
+        /// </summary>
+        public int ZoomDefault { get { return __ZoomDefault; } set { __ZoomDefault = _Align(value, 1, 20); } } private int __ZoomDefault;
+        /// <summary>
+        /// Defaultní provider
+        /// </summary>
+        public DxMapCoordinatesProvider ProviderDefault { get { return __ProviderDefault; } set { __ProviderDefault = value; } } private DxMapCoordinatesProvider __ProviderDefault;
+        /// <summary>
+        /// Defaultní typ mapy
+        /// </summary>
+        public DxMapCoordinatesMapType MapTypeDefault { get { return __MapTypeDefault; } set { __MapTypeDefault = value; } } private DxMapCoordinatesMapType __MapTypeDefault;
+        /// <summary>
+        /// Defaultní viditelnost bočního panelu s detaily.
+        /// </summary>
+        public bool InfoPanelVisibleDefault { get { return __InfoPanelVisibleDefault; } set { __InfoPanelVisibleDefault = value; } } private bool __InfoPanelVisibleDefault;
+        /// <summary>
+        /// Vložit špendlík na pozici středu mapy (do URL adresy), pokud není střed definován exaktní bod (když <see cref="HasPoint"/> je false). 
+        /// Výchozí je true, odpovídá to chování, kdy máme dán jednoduchý koordinát a chceme jej vidět jako exaktní špendlík, nejen jako mapu v jeho okolí.
+        /// </summary>
+        public bool ShowPinInCenter { get { return __ShowPinInCenter; } set { __ShowPinInCenter = value; } } private bool __ShowPinInCenter;
+        #endregion
+        #region Coordinates : Práce se souřadnicemi (set a get, event o změně)
+        /// <summary>
+        /// Souřadnice v relativně čitelném stringu pro uživatele, v aktuálním formátu <see cref="CoordinatesFormat"/>
         /// </summary>
         public string Coordinates { get { return _GetCoordinates(); } set { _SetCoordinates(value); } }
+        /// <summary>
+        /// Souřadnice ve formě Nephrite: <b>50.0395802N, 14.4289607E</b>.
+        /// Lze setovat libovolný formát, ale načten zpátky bude tento konkrétní formát.
+        /// </summary>
+        public string CoordinatesNephrite { get { return _GetCoordinates(DxMapCoordinatesFormat.Nephrite); } set { _SetCoordinates(value); } }
         /// <summary>
         /// Vrátí textové vyjádření souřadnic v daném / aktuálním formátu
         /// </summary>
@@ -2295,20 +2383,29 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!isSilent)
                 _CheckCoordinatesChanged(coordinatesOld);
         }
+        /// <summary>
+        /// Opíše do sebe informace z dodaného objektu
+        /// </summary>
+        /// <param name="newCoordinates"></param>
         private void _FillFromAction(DxMapCoordinates newCoordinates)
         {
             if (newCoordinates != null)
             {
-                this.CenterX = newCoordinates.CenterX;
-                this.CenterY = newCoordinates.CenterY;
-                this.Zoom = newCoordinates.Zoom;
-                this.ZoomDefault = newCoordinates.ZoomDefault;
-                this.PointX = newCoordinates.PointX;
-                this.PointY = newCoordinates.PointY;
-                this.MapType = newCoordinates.MapType;
-                this.MapTypeDefault = newCoordinates.MapTypeDefault;
+                // Přenášíme hodnoty proměnných, tím vynecháváme vyhodnocování defaultů = defaulty akceptujeme naše. Máme přenést fyzické hodnoty načtených koordinátů, a ne jejich defaulty!
+                this.__CenterX = newCoordinates.__CenterX;
+                this.__CenterY = newCoordinates.__CenterY;
+                this.__Zoom = newCoordinates.__Zoom;
+                this.__PointX = newCoordinates.__PointX;
+                this.__PointY = newCoordinates.__PointY;
+                this.__Provider = newCoordinates.__Provider;
+                this.__MapType = newCoordinates.__MapType;
+                this.__InfoPanelVisible = newCoordinates.__InfoPanelVisible;
             }
         }
+        /// <summary>
+        /// Vloží dodané souřadnice. Poté vyvolá event o změně, pokud reálně došlo ke změně.
+        /// </summary>
+        /// <param name="coordinates"></param>
         private void _SetCoordinates(string coordinates)
         {
             var coordinatesOld = _CoordinatesSerial;
@@ -2316,7 +2413,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             try
             {
                 __IsSuppressedChanges = true;
-                _Reset(false);
+                _Reset(ResetSource.Coordinate);
                 if (!String.IsNullOrEmpty(coordinates))
                     _SetCoordinatesAction(coordinates);
             }
@@ -2328,48 +2425,128 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Pokud nynější souřadnice jsou změněny, vyvoláme event o změně:
             _CheckCoordinatesChanged(coordinatesOld);
         }
+        /// <summary>
+        /// Vloží dodané souřadnice. Neřeší event o změně, jen řeší hodnoty.
+        /// </summary>
+        /// <param name="coordinates"></param>
         private void _SetCoordinatesAction(string coordinates)
         {
             //  Varianty:
-            // 15.7951729; 49.9499113; 15; S; PointX; PointY
-            // 14.4289607, 50.0395802
-            // 50.0395802N, 14.4289607E
-            // N 50.0395802, E 14.4289607
-            // 50°2'22,49"N, 14°25'44,26"E
-            // N 50°2'22,49", E 14°25'44,26"
-            // +9F2P.2CQHRH
-            // 9F2P2CQH+RH
-            coordinates = coordinates.Replace(" ", "").ToUpper();
+            //     Databáze Nephrite
+            //                                  50.0395802N, 14.4289607E
+            //                                  POINT (14.4009383 50.0694664)
+            //     Seznam:
+            //  WGS84 stupně                    50.2091744N, 15.8317075E
+            //  WGS84 stupně minuty             N 50°12.55047', E 15°49.90245'
+            //  WGS84 stupně minuty vteřiny     50°12'33.028"N, 15°49'54.147"E
+            //  OLC                             9F2Q6R5J+MM
+            //  MGRS                            33UWR
+            //     Google:
+            //  Souřadnice                      50.20907681751956, 15.831757887689303
+            //  Plus code                       6R5M+R26 Hradec Králové
+            //     Další matrixy
+            //                                  +9F2P.2CQHRH
+            //                                  9F2P2CQH+RH
 
-            bool beginPoint = coordinates.StartsWith("POINT", StringComparison.InvariantCultureIgnoreCase);
+            // Velká písmena, odebrat krajní mezery, a pokud není formát "POINT" tak i vnitřní mezery (protože detekujeme jiné oddělovače):
+            coordinates = coordinates.Trim().ToUpper();
+            bool beginPoint = coordinates.StartsWith("POINT", StringComparison.InvariantCultureIgnoreCase) && (coordinates.Length > 7);
+            if (!beginPoint)
+                coordinates = coordinates.Replace(" ", "").ToUpper();
+
             bool hasSemiColon = coordinates.Contains(";");
             bool hasColon = coordinates.Contains(",");
+            bool hasDot = coordinates.Contains(".");
             bool hasGrade = coordinates.Contains("°");
-            bool hasNSEW = (coordinates.Contains("N") || coordinates.Contains("S") || coordinates.Contains("E") || coordinates.Contains("W"));
-            bool beginNS = (coordinates.StartsWith("N") || coordinates.StartsWith("S"));
+            bool hasN = coordinates.Contains("N");
+            bool hasS = coordinates.Contains("S");
+            bool hasE = coordinates.Contains("E");
+            bool hasW = coordinates.Contains("W");
+            bool hasQ = (hasN || hasS) && (hasE || hasW);         // Máme validní sadu kvadrantů
 
-            // Vyhodnocení varianty zadání:
+            decimal centerX, centerY, pointX, pointY;
 
-            // Analýza dat konkrétní varianty:
-
-            var parts = coordinates.Split(';');
-            int count = parts.Length;
-            if (count >= 2)
-            {
-                this.CenterX = _ParseDecimal(parts[0]);
-                this.CenterY = _ParseDecimal(parts[1]);
-                this.Zoom = (count >= 3 ? _ParseInt(parts[2]) : 12);
-                string mapType = (count >= 4 ? parts[3] : "S");
-                bool hasPoint = (count >= 6);
-                this.PointX = (hasPoint ? _ParseDecimalN(parts[4]) : (decimal?)null);
-                this.PointY = (hasPoint ? _ParseDecimalN(parts[5]) : (decimal?)null);
-                return;
+            // Desetinná čárka => tečka?
+            if (!hasDot && hasColon && !hasGrade)
+            {   // Nenalezena tečka, ale máme čárku => mohlo by jít o záměnu desetinného oddělovače
+                // Ale jen když nejsou použity stupně, tam nemusí být desetinné číslo, když se používají úhlové vteřiny!
+                coordinates = coordinates.Replace(",", ".");
+                hasColon = false;
+                hasDot = true;
             }
 
-            // Nevalidní:
-            return;
+            // Vyhodnocení varianty zadání:
+            if (beginPoint)
+            {   // Point má speciální větev:
+                coordinates = coordinates.Substring(5).Replace("(", "").Replace(")", "").Trim();      // "POINT (14.4009383 50.0694664)"  =>  "14.4009383 50.0694664"
+                var pointParts = coordinates.Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+                if (pointParts.Length == 2 && _TryParseDecimal(pointParts[0], out pointX) && _TryParseDecimal(pointParts[1], out pointY))
+                {
+                    this.CoordinatesFormat = DxMapCoordinatesFormat.NephritePoint;
+                    this.CenterX = pointX;
+                    this.CenterY = pointY;
+                }
+            }
+            else if (hasSemiColon)
+            {   // Extended jediný má oddělovač ';' :
+                var extendedParts = coordinates.Split(';');
+                if (extendedParts.Length >= 2 && _TryParseDecimal(extendedParts[0], out centerX) && _TryParseDecimal(extendedParts[1], out centerY))
+                {
+                    this.CoordinatesFormat = DxMapCoordinatesFormat.Extended;
+                    this.CenterX = centerX;
+                    this.CenterY = centerY;
 
+                    if (extendedParts.Length >= 3 && _TryParseInt(extendedParts[2], out var zoom) && zoom > 0 && zoom <= 20)
+                        this.Zoom = zoom;
 
+                    if (extendedParts.Length >= 4)
+                    {
+                        string mapType = extendedParts[3].Trim().ToUpper();
+                        this.MapType = (mapType == "F" ? DxMapCoordinatesMapType.Photo :
+                                       (mapType == "PHOTO" ? DxMapCoordinatesMapType.Photo :
+                                       (mapType == "D" ? DxMapCoordinatesMapType.Traffic :
+                                       (mapType == "TRAFFIC" ? DxMapCoordinatesMapType.Traffic :
+                                       (mapType == "N" ? DxMapCoordinatesMapType.Nature :
+                                       (mapType == "NATURE" ? DxMapCoordinatesMapType.Nature : DxMapCoordinatesMapType.Standard))))));
+                    }
+
+                    if (extendedParts.Length >= 6 && _TryParseDecimal(extendedParts[4], out pointX) && _TryParseDecimal(extendedParts[5], out pointY))
+                    {
+                        this.PointX = pointX;
+                        this.PointY = pointY;
+                    }
+                }
+                else if (hasGrade)
+                {   // Stupně mají 4 varianty: Wgs84MinuteSuffix, Wgs84MinutePrefix, Wgs84ArcSecSuffix, Wgs84ArcSecPrefix; a musí mít kvadrant:
+                    if (hasQ)
+                    {   // Máme validní kvadrant:
+                        // Používají tečku jako desetinnou, a čárku k oddělení prvků:
+                        var gradeParts = coordinates.Split(',');
+                        if (gradeParts.Length == 2 && _TryParseGeoGrade(gradeParts[0], out var fmtX, out centerX) && _TryParseGeoGrade(gradeParts[1], out var fmtY, out centerY))
+                        {
+                            this.CoordinatesFormat = fmtX ?? fmtY ?? DxMapCoordinatesFormat.Wgs84ArcSecSuffix;
+                            this.CenterX = centerX;
+                            this.CenterY = centerY;
+                        }
+                    }
+                }
+                else if (hasColon)
+                {   // Máme oddělovač, máme tedy hodnotu před a za ním => Decimal má dvě varianty: 
+                    // Nemusíme mít kvadrant (připouštíme zadání se zápornými souřadnicemi, tedy celkem: 50.2091744N   N50.2091744   50.2091744)
+
+                    var decimalParts = coordinates.Split(',');
+                    if (decimalParts.Length == 2 && _TryParseGeoDecimal(decimalParts[0], out var fmtX, out centerX) && _TryParseGeoDecimal(decimalParts[1], out var fmtY, out centerY))
+                    {
+                        this.CoordinatesFormat = fmtX ?? fmtY ?? DxMapCoordinatesFormat.Wgs84Decimal;
+                        this.CenterX = centerX;
+                        this.CenterY = centerY;
+                    }
+                }
+                else
+                {   // Matrix kódy ještě neumím...
+
+                }
+            }
         }
         /// <summary>
         /// Vrátí textové vyjádření souřadnic v daném / aktuálním formátu
@@ -2379,12 +2556,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         private string _GetCoordinates(DxMapCoordinatesFormat? format = null)
         {
             if (!format.HasValue) format = this.CoordinatesFormat;
-
-            bool hasPoint = this.HasPoint;
-
+            /*
             string centerX = _FormatDecimal(this.CenterX, 7);
             string centerY = _FormatDecimal(this.CenterY, 7);
-            string zoom = _FormatInt(this.Zoom);
+            string zoom = _FormatIntN(this.Zoom);
             string pointX = "";
             string pointY = "";
             if (hasPoint)
@@ -2392,11 +2567,44 @@ namespace Noris.Clients.Win.Components.AsolDX
                 pointX = _FormatDecimalN(this.PointX, 15);
                 pointY = _FormatDecimalN(this.PointY, 15);
             }
+            */
 
-            // 15.7951729; 49.9499113; 15; S; PointX; PointY
-            string text = $"{centerX}; {centerY}; {zoom}; S";
-            if (hasPoint) text += $"; {pointX}; {pointY}";
-            return text;
+            bool hasPoint = this.HasPoint;
+            decimal pointX = (hasPoint ? this.PointX.Value : this.CenterX);
+            decimal pointY = (hasPoint ? this.PointY.Value : this.CenterY);
+
+            var fmt = format.Value;
+            switch (fmt)
+            {
+                case DxMapCoordinatesFormat.Nephrite:
+                    return $"{_FormatGeoDecimal(pointY, GeoAxis.Latitude, fmt, 12)}, {_FormatGeoDecimal(pointX, GeoAxis.Longitude, fmt, 12)}";
+                case DxMapCoordinatesFormat.NephritePoint:
+                    return $"POINT ({_FormatGeoDecimal(pointY, GeoAxis.Longitude, fmt, 12)} {_FormatGeoDecimal(pointX, GeoAxis.Latitude, fmt, 12)})";
+
+                case DxMapCoordinatesFormat.Wgs84Decimal:
+                    return $"{_FormatGeoDecimal(pointY, GeoAxis.Latitude, fmt, 12)}, {_FormatGeoDecimal(pointX, GeoAxis.Longitude, fmt, 12)}";
+                case DxMapCoordinatesFormat.Wgs84DecimalSuffix:
+                    return $"{_FormatGeoDecimal(pointY, GeoAxis.Latitude, fmt, 12)}, {_FormatGeoDecimal(pointX, GeoAxis.Longitude, fmt, 12)}";
+                case DxMapCoordinatesFormat.Wgs84DecimalPrefix:
+                    return $"{_FormatGeoDecimal(pointY, GeoAxis.Latitude, fmt, 12)}, {_FormatGeoDecimal(pointX, GeoAxis.Longitude, fmt, 12)}";
+
+                case DxMapCoordinatesFormat.Wgs84MinuteSuffix:
+                    return $"{_FormatGeoGrade(pointY, GeoAxis.Latitude, fmt)}, {_FormatGeoGrade(pointX, GeoAxis.Longitude, fmt)}";
+                case DxMapCoordinatesFormat.Wgs84MinutePrefix:
+                    return $"{_FormatGeoGrade(pointY, GeoAxis.Latitude, fmt)}, {_FormatGeoGrade(pointX, GeoAxis.Longitude, fmt)}";
+                case DxMapCoordinatesFormat.Wgs84ArcSecSuffix:
+                    return $"{_FormatGeoGrade(pointY, GeoAxis.Latitude, fmt)}, {_FormatGeoGrade(pointX, GeoAxis.Longitude, fmt)}";
+                case DxMapCoordinatesFormat.Wgs84ArcSecPrefix:
+                    return $"{_FormatGeoGrade(pointY, GeoAxis.Latitude, fmt)}, {_FormatGeoGrade(pointX, GeoAxis.Longitude, fmt)}";
+
+                case DxMapCoordinatesFormat.Extended:
+                    string extendedText = $"{_FormatGeoDecimal(this.CenterX, GeoAxis.Longitude, fmt, 7)}; {_FormatGeoDecimal(this.CenterY, GeoAxis.Latitude, fmt, 7)}; {_FormatIntN(this.Zoom)}; S";
+                    if (hasPoint)
+                        extendedText += $"; {_FormatGeoDecimal(this.PointX.Value, GeoAxis.Latitude, fmt, 12)}; {_FormatGeoDecimal(this.PointY.Value, GeoAxis.Latitude, fmt, 12)}";
+                    return extendedText;
+            }
+
+            return "";
         }
         /// <summary>
         /// Pokud aktuální hodnota <see cref="_CoordinatesSerial"/> je odlišná od dodané hodnoty (před změnami), a pokud není potlačeno <see cref="__IsSuppressedChanges"/>, pak vyvolá události o změně souřadnic
@@ -2423,10 +2631,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Událost volaná po změně souřadnic
         /// </summary>
         public event EventHandler CoordinatesChanged;
-
-
-        //   https://www.google.cz/maps/@49.9464515,15.7884627,15z?entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D
-
         /// <summary>
         /// Aktuální souřadnice v jednoduchém stringu, pro detekci změny
         /// </summary>
@@ -2434,7 +2638,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                string text = $"{_FormatDecimal(this.CenterX, 7)};{_FormatDecimal(this.CenterY, 7)};{_FormatInt(this.Zoom)};";
+                string text = $"{_FormatDecimal(this.CenterX, 7)};{_FormatDecimal(this.CenterY, 7)};{_FormatIntN(this.Zoom)};";
                 if (this.HasPoint)
                     text += $"{_FormatDecimalN(this.PointX, 15)};{_FormatDecimalN(this.PointY, 15)};";
                 return text;
@@ -2445,7 +2649,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private bool __IsSuppressedChanges;
         #endregion
-        #region Práce s URL adresou : UrlAdress, set, get, analýza i syntéza, event o změně
+        #region UrlAdress : Práce s URL adresou (set, get, analýza i syntéza, event o změně), konkrétní providery (Seznam, Google, OpenMap)
         /// <summary>
         /// Metoda se pokusí analyzovat dodanou URL adresu a naplnit z ní data do new instance
         /// </summary>
@@ -2513,18 +2717,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             return _GetUrlAdressSeznamCommon(mapType, "https://mapy.cz/", DxMapCoordinatesProvider.SeznamMapy);
         }
-
-        //   https://mapy.cz/zakladni?x=15.7701152&y=49.9681588&z=10               základní
-        //   https://mapy.cz/letecka?x=15.7701152&y=49.9681588&z=10                letecká
-        //   https://mapy.cz/turisticka?x=15.7701152&y=49.9681588&z=10             turistická
-        //   https://mapy.cz/dopravni?x=15.7701152&y=49.9681588&z=10               dopravní
-        //   https://mapy.cz/zakladni?l=0&x=15.7701152&y=49.9681588&z=10               základní bez postranního panelu
-        //   https://mapy.cz/zakladni?source=coor&id=15.936798397021448%2C50.06913748494087&x=15.9456819&y=50.0629944&z=14           co je zde - bodově
-        //   https://mapy.cz/zakladni?source=muni&id=2560&x=15.8354324&y=50.0215148&z=12                                             co je zde - obec
-        //   https://mapy.cz/zakladni?source=stre&id=112413&x=15.9639638&y=50.0608455&z=14                                           co je zde - ulice
-        //   https://mapy.cz/zakladni?source=addr&id=12769313&x=15.9154587&y=50.0302891&z=16                                         co je zde - číslo popisné, adresa s fotkou
-        //   https://mapy.cz/zakladni?l=0&source=coor&id=15.90928966136471%2C50.03222574216687&x=15.9146702&y=50.0303891&z=17        co je zde - bez pravého panelu, ale bod zájmu tam je
-
         /// <summary>
         /// Pokusí se analyzovat URI obsahující URL adresu, jako souřadnice v provideru SeznamMapy nebo FrameMapy
         /// </summary>
@@ -2563,6 +2755,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _SearchValue("z", queryData, out int zoom, out bool hasZoom);
 
             coordinates = new DxMapCoordinates();
+            coordinates.Provider = provider;
             coordinates.CenterX = centerX;
             coordinates.CenterY = centerY;
             if (hasZoom) coordinates.Zoom = zoom;
@@ -2577,6 +2770,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
 
+            // Postranní panel:
+            bool hasPanel = false;
+            if (provider == DxMapCoordinatesProvider.SeznamMapy)
+            {   // Parametr "l" má hodnotu "0" = nezobrazit panel; nepřítomnost parametru = zobrazit panel
+                _SearchValue("l", queryData, out string sidePanel, out bool hasSidePanel);
+                hasPanel = !hasSidePanel || (hasSidePanel && !String.Equals(sidePanel, "0"));
+            }
+            coordinates.InfoPanelVisible = hasPanel;
+
             // OK:
             return true;
         }
@@ -2589,37 +2791,57 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private string _GetUrlAdressSeznamCommon(DxMapCoordinatesMapType? mapType, string web, DxMapCoordinatesProvider provider)
         {
-            if (!mapType.HasValue) mapType = this.MapType;
-
             // https://mapy.cz/zakladni?l=0&source=coor&id=15.782303855847147%2C49.990992469096604&x=15.7821322&y=49.9893301&z=16
 
-            string variant = (mapType.Value == DxMapCoordinatesMapType.Standard ? "zakladni" :
-                             (mapType.Value == DxMapCoordinatesMapType.Photo ? "letecka" :
-                             (mapType.Value == DxMapCoordinatesMapType.Nature ? "turisticka" :
-                             (mapType.Value == DxMapCoordinatesMapType.Traffic ? "dopravni" :
-                             (mapType.Value == DxMapCoordinatesMapType.Specific ? "humanitarni" : "zakladni")))));
+            // Typ mapy:
+            if (!mapType.HasValue) mapType = this.MapType;
+            string mapTypeUrl = (mapType.Value == DxMapCoordinatesMapType.Standard ? "zakladni" :
+                                (mapType.Value == DxMapCoordinatesMapType.Photo ? "letecka" :
+                                (mapType.Value == DxMapCoordinatesMapType.Nature ? "turisticka" :
+                                (mapType.Value == DxMapCoordinatesMapType.Traffic ? "dopravni" :
+                                (mapType.Value == DxMapCoordinatesMapType.Specific ? "humanitarni" : "zakladni")))));
 
-            string centerX = _FormatDecimal(this.CenterX, 7);
-            string centerY = _FormatDecimal(this.CenterY, 7);
-            string zoom = _FormatInt(this.Zoom);
+            // Následují parametry v Query. Typicky začínají (názvem proměnné) = (hodnota proměnné) a končí &
+            // Poslední & bude nakonec odebrán.
 
-            bool withPoint = true;
-            string point = "";
+            // Postranní panel? Pouze u providera Seznam. (Provider Frame nemá panel z principu).
+            bool withPanel = this.InfoPanelVisible.Value && provider == DxMapCoordinatesProvider.SeznamMapy;
+            string sidePanel = (withPanel ? "" : "l=0&");
+
+            // Umístit špendlík? Na střed mapy / do exaktního bodu:
+            string pinPoint = "";
+            bool withPoint = this.ShowPinInCenter || this.HasPoint;
             if (withPoint)
             {
-                string pointX = (this.HasPoint ? _FormatDecimalN(this.PointX, 15) : _FormatDecimal(this.CenterX, 15));
-                string pointY = (this.HasPoint ? _FormatDecimalN(this.PointY, 15) : _FormatDecimal(this.CenterY, 15));
-                point = $"&source=coor&id={pointX}%2C{pointY}";
+                bool hasPoint = this.HasPoint;
+                string pointX = (hasPoint ? _FormatDecimalN(this.PointX, 15) : _FormatDecimal(this.CenterX, 15));
+                string pointY = (hasPoint ? _FormatDecimalN(this.PointY, 15) : _FormatDecimal(this.CenterY, 15));
+                pinPoint = $"source=coor&id={pointX}%2C{pointY}&";
             }
 
-            bool withPanel = true;
-            string panel = (withPanel ? "?" : "?l=0");
+            // Střed mapy a Zoom:
+            string centerX = $"x={_FormatDecimal(this.CenterX, 7)}&";
+            string centerY = $"y={_FormatDecimal(this.CenterY, 7)}&";
+            string zoom = $"z={_FormatIntN(this.Zoom)}&";
+            string mapData = $"{centerX}{centerY}{zoom}";
 
-
-
-            string urlAdress = $"{web}{variant}{panel}{point}&x={centerX}&y={centerY}&z={zoom}";
+            // Složit URL:
+            string urlAdress = $"{web}{mapTypeUrl}?{sidePanel}{pinPoint}{mapData}";
+            if (urlAdress.EndsWith("&")) urlAdress = urlAdress.Substring(0, urlAdress.Length - 1);
             return urlAdress;
         }
+
+        //   https://mapy.cz/zakladni?x=15.7701152&y=49.9681588&z=10               základní
+        //   https://mapy.cz/letecka?x=15.7701152&y=49.9681588&z=10                letecká
+        //   https://mapy.cz/turisticka?x=15.7701152&y=49.9681588&z=10             turistická
+        //   https://mapy.cz/dopravni?x=15.7701152&y=49.9681588&z=10               dopravní
+        //   https://mapy.cz/zakladni?l=0&x=15.7701152&y=49.9681588&z=10               základní bez postranního panelu
+        //   https://mapy.cz/zakladni?source=coor&id=15.936798397021448%2C50.06913748494087&x=15.9456819&y=50.0629944&z=14           co je zde - bodově
+        //   https://mapy.cz/zakladni?source=muni&id=2560&x=15.8354324&y=50.0215148&z=12                                             co je zde - obec
+        //   https://mapy.cz/zakladni?source=stre&id=112413&x=15.9639638&y=50.0608455&z=14                                           co je zde - ulice
+        //   https://mapy.cz/zakladni?source=addr&id=12769313&x=15.9154587&y=50.0302891&z=16                                         co je zde - číslo popisné, adresa s fotkou
+        //   https://mapy.cz/zakladni?l=0&source=coor&id=15.90928966136471%2C50.03222574216687&x=15.9146702&y=50.0303891&z=17        co je zde - bez pravého panelu, ale bod zájmu tam je
+
         #endregion
         #region FrameMapy
         /// <summary>
@@ -2641,17 +2863,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             return _GetUrlAdressSeznamCommon(mapType, "https://frame.mapy.cz/", DxMapCoordinatesProvider.SeznamMapy);
         }
-        //   https://mapy.cz/zakladni?x=15.7701152&y=49.9681588&z=10               základní
-        //   https://mapy.cz/letecka?x=15.7701152&y=49.9681588&z=10                letecká
-        //   https://mapy.cz/turisticka?x=15.7701152&y=49.9681588&z=10             turistická
-        //   https://mapy.cz/dopravni?x=15.7701152&y=49.9681588&z=10               dopravní
-        //   https://mapy.cz/zakladni?l=0&x=15.7701152&y=49.9681588&z=10               základní bez postranního panelu
-        //   https://mapy.cz/zakladni?source=coor&id=15.936798397021448%2C50.06913748494087&x=15.9456819&y=50.0629944&z=14           co je zde - bodově
-        //   https://mapy.cz/zakladni?source=muni&id=2560&x=15.8354324&y=50.0215148&z=12                                             co je zde - obec
-        //   https://mapy.cz/zakladni?source=stre&id=112413&x=15.9639638&y=50.0608455&z=14                                           co je zde - ulice
-        //   https://mapy.cz/zakladni?source=addr&id=12769313&x=15.9154587&y=50.0302891&z=16                                         co je zde - číslo popisné, adresa s fotkou
-        //   https://mapy.cz/zakladni?l=0&source=coor&id=15.90928966136471%2C50.03222574216687&x=15.9146702&y=50.0303891&z=17        co je zde - bez pravého panelu, ale bod zájmu tam je
-
         #endregion
         #region GoogleMaps
         /// <summary>
@@ -2686,7 +2897,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             string centerX = _FormatDecimal(this.CenterX, 6);
             string centerY = _FormatDecimal(this.CenterY, 6);
-            string zoom = _FormatInt(this.Zoom);
+            string zoom = _FormatIntN(this.Zoom);
 
             string urlAdress;
 
@@ -2732,32 +2943,36 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!mapType.HasValue) mapType = this.MapType;
 
-
             string web = "https://www.openstreetmap.org/";
-            string variant = (mapType.Value == DxMapCoordinatesMapType.Standard ? "zakladni" :
-                             (mapType.Value == DxMapCoordinatesMapType.Photo ? "letecka" :
-                             (mapType.Value == DxMapCoordinatesMapType.Nature ? "turisticka" :
-                             (mapType.Value == DxMapCoordinatesMapType.Traffic ? "dopravni" :
-                             (mapType.Value == DxMapCoordinatesMapType.Specific ? "humanitarni" : "zakladni")))));
+            string mapTypeLayer = (mapType.Value == DxMapCoordinatesMapType.Traffic ? "T" : "");
 
-            string centerX = _FormatDecimal(this.CenterX, 7);
-            string centerY = _FormatDecimal(this.CenterY, 7);
-            string zoom = _FormatInt(this.Zoom);
-
-            bool withPoint = true;
-            string point = "";
+            // Umístit špendlík? Na střed mapy / do exaktního bodu:
+            string pinPoint = "";
+            string pinPointLayer = "";
+            bool withPoint = this.ShowPinInCenter || this.HasPoint;
             if (withPoint)
             {
-                string pointX = (this.HasPoint ? _FormatDecimalN(this.PointX, 15) : _FormatDecimal(this.CenterX, 15));
-                string pointY = (this.HasPoint ? _FormatDecimalN(this.PointY, 15) : _FormatDecimal(this.CenterY, 15));
-                point = $"?mlat={pointY}&mlon={pointX}";
+                bool hasPoint = this.HasPoint;
+                string pointX = (hasPoint ? _FormatDecimalN(this.PointX, 15) : _FormatDecimal(this.CenterX, 15));
+                string pointY = (hasPoint ? _FormatDecimalN(this.PointY, 15) : _FormatDecimal(this.CenterY, 15));
+                pinPoint = $"?mlat={pointY}&mlon={pointX}";
+                pinPointLayer = "";
             }
 
-            bool withPanel = true;
-            string panel = (withPanel ? "?" : "?l=0");
-            string layers = "";           // &layers=N
+            // Střed mapy a Zoom:
+            string centerX = _FormatDecimal(this.CenterX, 7);
+            string centerY = _FormatDecimal(this.CenterY, 7);
+            string zoom = _FormatIntN(this.Zoom);
+            string mapData = $"#map={zoom}/{centerY}/{centerX}";
 
-            string urlAdress = $"{web}{point}#map={zoom}/{centerY}/{centerX}{layers}";
+            // Vrstvy:
+            string layers = mapTypeLayer + pinPointLayer;
+            if (layers.Length > 0)
+                layers = "&layers=" + layers;           // &layers=N
+
+
+            // Složit URL:
+            string urlAdress = $"{web}{pinPoint}{mapData}{layers}";
             return urlAdress;
         }
 
@@ -2766,6 +2981,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         //   https://www.openstreetmap.org/?mlat=49.999988&mlon=15.757273#map=16/50.04246/15.82406                     jiné měřítko, std mapa
         //   https://www.openstreetmap.org/#map=14/49.94349/15.79452&layers=N
         //   https://www.openstreetmap.org/#map=12/49.9320/15.7875&layers=N
+        //   https://www.openstreetmap.org/directions?from=&to=50.0238%2C15.6009#map=12/50.0280/15.6105&layers=P       Zadaný cíl cesty (From-To), a malý panel vlevo
 
         #endregion
         #region Support pro analýzu UrlQuery
@@ -2882,11 +3098,154 @@ namespace Noris.Clients.Win.Components.AsolDX
             value = 0;
             return false;
         }
+        private static bool _TryParseGeoDecimal(string text, out DxMapCoordinatesFormat? format, out decimal value)
+        {
+            format = null;
+            value = 0m;
+
+            // Západ a Jih jsou záporné hodnoty:
+            bool isNegative = (text.Contains("W") || text.Contains("S"));
+            text = text.Trim();
+
+            // Začínáme nebo končíme značkou světové strany?  Detekujeme a poté ji odebereme:
+            //  "50°12'45.612''N"   =>   "50°12'45.612''"
+            bool startWith = (text.StartsWith("N") || text.StartsWith("S") || text.StartsWith("E") || text.StartsWith("W"));
+            bool endsWith = (text.EndsWith("N") || text.EndsWith("S") || text.EndsWith("E") || text.EndsWith("W"));
+            if (startWith && endsWith) return false;
+            text = text.Replace("N", "")
+                       .Replace("S", "")
+                       .Replace("E", "")
+                       .Replace("W", "");
+            if (text.Length == 0) return false;
+
+            // Nyní máme obyčejné číslo "50.2091744"
+            if (!_TryParseDecimal(text, out var number)) return false;
+
+            // OK: odvodíme formát a určíme výslednou hodnotu (aplikujeme negativní pro Sourh / West):
+            format = (startWith ? DxMapCoordinatesFormat.Wgs84DecimalPrefix : (endsWith ? DxMapCoordinatesFormat.Wgs84DecimalSuffix : DxMapCoordinatesFormat.Wgs84Decimal));
+            value = (isNegative ? -number : number);
+            return true;
+        }
+        private static bool _TryParseGeoGrade(string text, out DxMapCoordinatesFormat? format, out decimal value)
+        {
+            format = null;
+            value = 0m;
+
+            // Západ a Jih jsou záporné hodnoty:
+            bool isNegative = (text.Contains("W") || text.Contains("S"));
+            text = text.Trim();
+
+            // Začínáme nebo končíme značkou světové strany?  Detekujeme a poté ji odebereme:
+            //  "50°12'45.612''N"   =>   "50°12'45.612''"
+            bool startWith = (text.StartsWith("N") || text.StartsWith("S") || text.StartsWith("E") || text.StartsWith("W"));
+            bool endsWith = (text.EndsWith("N") || text.EndsWith("S") || text.EndsWith("E") || text.EndsWith("W"));
+            if (startWith && endsWith) return false;
+            text = text.Replace("N", "")
+                       .Replace("S", "")
+                       .Replace("E", "")
+                       .Replace("W", "");
+            if (text.Length == 0) return false;
+
+            // Obsahujeme sekundy?  Detekujeme a poté sjednotíme oddělovače:
+            //   "50°12'45.612''"   =>  "50;12;45.612;"
+            bool hasArcSec = text.Contains("''");
+            text = text.Replace("°", ";")
+                       .Replace("''", ";")
+                       .Replace("'", ";");
+
+            // Text (konvertovaný na sekvenci "50;12;45.612;") rozdělíme na:  50   12   45.612
+            //  a postupně převedeme na jedno decimal číslo (za každý další dílec přičítáme hodnotu dělenou dělitelem 1, 60, 3600:
+            bool hasValidParts = false;
+            var numParts = text.Split(';');
+            decimal result = 0m;
+            decimal divider = 1m;
+            foreach (var numPart in numParts)
+            {
+                if (numPart.Length > 0 && _TryParseDecimal(numPart, out var number))
+                {
+                    result = (divider == 1m ? number : (number / divider));
+                    hasValidParts = true;
+                }
+                divider = divider * 60m;
+            }
+            if (!hasValidParts) return false;
+
+            // OK: odvodíme formát a určíme výslednou hodnotu (aplikujeme negativní pro Sourh / West):
+            format = (startWith ? (hasArcSec ? DxMapCoordinatesFormat.Wgs84ArcSecPrefix : DxMapCoordinatesFormat.Wgs84MinutePrefix) : (hasArcSec ? DxMapCoordinatesFormat.Wgs84ArcSecSuffix : DxMapCoordinatesFormat.Wgs84MinuteSuffix));
+            value = (isNegative ? -result : result);
+            return true;
+        }
         private static string _FormatDecimal(decimal value, int decimals = 7)
         {
             string format = "###0." + "".PadRight(decimals, '0');
             string text = value.ToString(format);
             return text.Replace(_DotChar, ".").Replace(" ", "");
+        }
+        private static string _FormatGeoDecimal(decimal value, GeoAxis axis, DxMapCoordinatesFormat format, int decimals = 7)
+        {
+            bool usePrefix = (format == DxMapCoordinatesFormat.Wgs84DecimalPrefix);
+            bool useSuffix = (format == DxMapCoordinatesFormat.Nephrite || format == DxMapCoordinatesFormat.Wgs84DecimalSuffix);
+            if (usePrefix || useSuffix)
+            {
+                string quadrant = _FormatGeoQuadrant(ref value, axis);                   // Zajistí kladnou hodnotu value, a vrátí znak S/N | W/E pro hodnotu a osu GeoAxis
+                string text = _FormatDecimal(value, decimals);
+                return (usePrefix ? $"{quadrant}{text}" : $"{text}{quadrant}");          // N50.2091744  nebo  50.2091744N
+            }
+            else
+            {
+                value = _Align(value, axis);
+                string text = _FormatDecimal(value, decimals);                           // -180 až 180  nebo  -90 až 90
+                return text;
+            }
+        }
+
+        private static string _FormatGeoGrade(decimal value, GeoAxis axis, DxMapCoordinatesFormat format)
+        {
+            bool usePrefix = (format == DxMapCoordinatesFormat.Wgs84MinutePrefix || format == DxMapCoordinatesFormat.Wgs84ArcSecPrefix);
+            bool useSuffix = (format == DxMapCoordinatesFormat.Wgs84MinuteSuffix || format == DxMapCoordinatesFormat.Wgs84ArcSecSuffix);
+            bool useArcSec = (format == DxMapCoordinatesFormat.Wgs84ArcSecSuffix || format == DxMapCoordinatesFormat.Wgs84ArcSecPrefix);
+
+            if (usePrefix || useSuffix)
+            {
+                string quadrant = _FormatGeoQuadrant(ref value, axis);                   // Zajistí kladnou hodnotu value, a vrátí znak S/N | W/E pro hodnotu a osu GeoAxis
+                string text = _FormatGrade(value, useArcSec);
+                return (usePrefix ? $"{quadrant} {text}" : $"{text} {quadrant}");        // N 50°12'45.2''  nebo  50°12'45.2'' N
+            }
+            else
+            {
+                value = _Align(value, axis);
+                string text = _FormatGrade(value, useArcSec);
+                return text;
+            }
+        }
+        private static string _FormatGrade(decimal value, bool useArc)
+        {
+            return ""; 
+        }
+        /// <summary>
+        /// Vrátí kvadrant : N (North) nebo S (South) nebo E (East) nebo W (West) pro danou souřadnici
+        /// </summary>
+        /// <param name="position"></param>
+        /// <param name="axis"></param>
+        /// <returns></returns>
+        private static string _FormatGeoQuadrant(ref decimal position, GeoAxis axis)
+        {
+            switch (axis)
+            {
+                case GeoAxis.Latitude:
+                    // Rozsah -90 (jižní) až +90° (severní) pól:
+                    bool isSouth = (position < 0m);
+                    if (isSouth) position = -position;
+                    if (position > 90m) position = 90m;
+                    return (isSouth ? "S" : "N");
+                case GeoAxis.Longitude:
+                    // Rozsah -180 (západní) až +180° (východní) polokoule:
+                    bool isWest = (position < 0m);
+                    if (isWest) position = -position;
+                    if (position > 180m) position = 180m;
+                    return (isWest ? "W" : "E");
+            }
+            return "X";
         }
         private static string _FormatDecimalN(decimal? value, int decimals = 7)
         {
@@ -2897,9 +3256,47 @@ namespace Noris.Clients.Win.Components.AsolDX
             string text = value.ToString();
             return text.Replace(" ", "");
         }
+        private static string _FormatIntN(int? value)
+        {
+            return (value.HasValue ? _FormatInt(value.Value) : "");
+        }
         private static int _Align(int value, int min, int max) { return (value < min ? min : (value > max ? max : value)); }
+        private static int? _AlignN(int? value, int min, int max) { return (value.HasValue ? (int?)(value < min ? min : (value > max ? max : value)) : (int?)null); }
         private static decimal _Align(decimal value, decimal min, decimal max) { return (value < min ? min : (value > max ? max : value)); }
+        private static decimal _Align(decimal value, GeoAxis axis)
+        {
+            switch (axis)
+            {
+                case GeoAxis.Latitude:
+                    // Rozsah -90 (jižní) až +90° (severní) pól:
+                    return _Align(value, -90m, 90m);
+                case GeoAxis.Longitude:
+                    // Rozsah -180 (západní) až +180° (východní) polokoule:
+                    return _Align(value, -180m, 180m);
+            }
+            return value;
+        }
         private static decimal? _Align(decimal? value, decimal min, decimal max) { return (value.HasValue ? (decimal?)(value.Value < min ? min : (value.Value > max ? max : value.Value)) : (decimal?)null); }
+        /// <summary>
+        /// Osy zeměpisné
+        /// </summary>
+        private enum GeoAxis 
+        {
+            /// <summary>
+            /// Neurčeno
+            /// </summary>
+            None,
+            /// <summary>
+            /// Zeměpisná pozice Y od rovníku (0) na sever k pólu (+90 = severní pól) a na jih (-90 = jižní pól).<br/>
+            /// Praha má cca 50°
+            /// </summary>
+            Latitude,
+            /// <summary>
+            /// Zeměpisná pozice X od Greenwiche (0) na východ (+180 = přes Východní Evropu a Asii) nebo na západ (-180 = přes Portugalsko, Grónsko k Americe a na Havaj).<br/>
+            /// Praha má cca 14.4°
+            /// </summary>
+            Longitude
+        }
         #endregion
     }
     #region Enumy pro mapy
@@ -2908,40 +3305,67 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public enum DxMapCoordinatesFormat
     {
+        //     Databáze Nephrite
+        //                                  50.0395802N, 14.4289607E
+        //                                  POINT (14.4009383 50.0694664)
+        //     Seznam:
+        //  WGS84 stupně                    50.2091744N, 15.8317075E
+        //  WGS84 stupně minuty             N 50°12.55047', E 15°49.90245'
+        //  WGS84 stupně minuty vteřiny     50°12'33.028"N, 15°49'54.147"E
+        //  OLC                             9F2Q6R5J+MM
+        //  MGRS                            33UWR
+        //     Google:
+        //  Souřadnice                      50.20907681751956, 15.831757887689303
+        //  Plus code                       6R5M+R26 Hradec Králové
+
         /// <summary>
-        /// Vypsané uživateli: "14.4289607, 50.0395802"      (doprava, nahoru)
+        /// Nephrite: <b>50.0395802N, 14.4289607E</b>
         /// </summary>
-        Basic,
+        Nephrite,
         /// <summary>
-        /// Rozšířené o Zoom; Typ mapy; PointXY: "15.7951729;49.9499113;12;S;15.936798397021448;50.06913748494087"
+        /// Nephrite Point: <b>POINT (14.4009383 50.0694664)</b>
         /// </summary>
-        Extended,
+        NephritePoint,
         /// <summary>
-        /// Znaky NS + WE vypsané za desetinným číslem: "50.0395802N, 14.4289607E" (doprava, nahoru).
-        /// Ukládá se do databáze.
+        /// WGS84 desetinný bez kvadrantu: <b>50.2091744, -15.8317075</b>
         /// </summary>
-        GeoDecimalSuffix,
+        Wgs84Decimal,
         /// <summary>
-        /// Znaky NS + WE vypsané před desetinným číslem: "N 50.0395802, E 14.4289607"
+        /// WGS84 desetinný s kvadrantem za číslem: <b>50.2091744N, 15.8317075E</b>
         /// </summary>
-        GeoDecimalPrefix,
+        Wgs84DecimalSuffix,
         /// <summary>
-        /// Znaky NS + WE vypsané za úhlovým řetězcem: "50°2'22,49"N, 14°25'44,26"E"
-        /// Ukládá se do databáze.
+        /// WGS84 desetinný s kvadrantem před číslem: <b>N50.2091744, E15.8317075</b>
         /// </summary>
-        GeoGradeSuffix,
+        Wgs84DecimalPrefix,
         /// <summary>
-        /// Znaky NS + WE vypsané před úhlovým řetězcem: "N 50°2'22,49", E 14°25'44,26""
+        /// WGS84 stupně a minuty s kvadrantem za číslem: <b>50°12.45612'N, 15°45.252'E</b>
         /// </summary>
-        GeoGradePrefix,
+        Wgs84MinuteSuffix,
+        /// <summary>
+        /// WGS84 stupně a minuty s kvadrantem před číslem: <b>N 50°12.45612', E 15°45.252'</b>
+        /// </summary>
+        Wgs84MinutePrefix,
+        /// <summary>
+        /// WGS84 stupně a minuty a vteřiny s kvadrantem za číslem: <b>50°12'45.612''N, 15°45'25.25''E</b>
+        /// </summary>
+        Wgs84ArcSecSuffix,
+        /// <summary>
+        /// WGS84 stupně a minuty a vteřiny s kvadrantem před číslem: <b>N 50°12'45.612'', E 15°45'25.25''</b>
+        /// </summary>
+        Wgs84ArcSecPrefix,
         /// <summary>
         /// Číselná matice do QR kódů 1: "+9F2P.2CQHRH"
         /// </summary>
-        Matrix1,
+        OlcCode,
         /// <summary>
         /// Číselná matice do QR kódů 2: "9F2P2CQH+RH"
         /// </summary>
-        Matrix2
+        PlusCode,
+        /// <summary>
+        /// Rozšířený: <b>15.7765933;50.0379536;18;S;15.778977738020302;50.03852988019973</b> (pořadí: CenterX; CenterY; Zoom; MapType; PointX; PointY)
+        /// </summary>
+        Extended
     }
     /// <summary>
     /// Poskytovatel mapy

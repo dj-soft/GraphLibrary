@@ -22,6 +22,12 @@ namespace TestDevExpress.Forms
         {
             __NavControls = new List<Control>();
 
+            // Vlastní WebView:
+            __MapViewPanel = new DxMapViewPanel();
+            __MapViewPanel.MapCoordinates.ShowPinInCenter = true;
+            __MapViewPanel.MsWebCurrentDocumentTitleChanged += _MsWebCurrentDocumentTitleChanged;
+            this.DxMainPanel.Controls.Add(__MapViewPanel);
+
             // Buttony, které reprezentují "oblíbené pozice":
             createButton(_ClickButtonNavigate, "Chrudim", "15.7951729;49.9499113;15");
             createButton(_ClickButtonNavigate, "Pardubice", "15.7765933;50.0379536;18;S;15.778977738020302;50.03852988019973");              // https://mapy.cz/zakladni?source=coor&id=15.778977738020302%2C50.03852988019973&x=15.7794498&y=50.0384170&z=19
@@ -32,11 +38,6 @@ namespace TestDevExpress.Forms
 
             // Další v řadě:
             __ProviderButton = createDropDownButton(_SelectProviderChange, DxMapCoordinatesProvider.SeznamMapy, DxMapCoordinatesProvider.FrameMapy, DxMapCoordinatesProvider.GoogleMaps, DxMapCoordinatesProvider.OpenStreetMap);
-
-            // Vlastní WebView:
-            __MapViewPanel = new DxMapViewPanel();
-            __MapViewPanel.MsWebCurrentDocumentTitleChanged += _MsWebCurrentDocumentTitleChanged;
-            this.DxMainPanel.Controls.Add(__MapViewPanel);
 
             _DoContentLayout();
 
@@ -91,6 +92,9 @@ namespace TestDevExpress.Forms
         {
             _DoContentLayout();
         }
+        /// <summary>
+        /// Zajistí umístění prvků do layoutu po Resize atd:
+        /// </summary>
         private void _DoContentLayout()
         {
             var webPanel = __MapViewPanel;
@@ -99,26 +103,30 @@ namespace TestDevExpress.Forms
             var clientSize = this.DxMainPanel.ClientSize;
 
             int currentDpi = this.CurrentDpi;
-            int x0 = DxComponent.ZoomToGui(6, currentDpi);
-            int y0 = DxComponent.ZoomToGui(6, currentDpi);
-            int bw = DxComponent.ZoomToGui(140, currentDpi);
-            int bh = DxComponent.ZoomToGui(28, currentDpi);
-            int dw = DxComponent.ZoomToGui(4, currentDpi);
+            int paddingH = DxComponent.ZoomToGui(6, currentDpi);
+            int paddingV = DxComponent.ZoomToGui(6, currentDpi);
+            int buttonWidth = DxComponent.ZoomToGui(140, currentDpi);
+            int toolHeight = DxComponent.ZoomToGui(28, currentDpi);
+            int distanceX = DxComponent.ZoomToGui(4, currentDpi);
+            int dropDownWidth = DxComponent.ZoomToGui(160, currentDpi);
 
-            int bx = x0;
-            int by = y0;
-            foreach (var button in __NavControls)
+            // Controly v Toolbaru:
+            int controlX = paddingH;
+            int controlY = paddingV;
+            foreach (var control in __NavControls)
             {
-                button.Bounds = new Rectangle(bx, by, bw, bh);
-                bx += (bw + dw);
+                int controlWidth = ((control is DxDropDownButton) ? dropDownWidth : buttonWidth);
+                control.Bounds = new Rectangle(controlX, controlY, controlWidth, toolHeight);
+                controlX += (controlWidth + distanceX);
             }
 
-            int ws = DxComponent.ZoomToGui(3, currentDpi);
-            int wx = x0;
-            int wy = y0 + bh + ws;
-            int ww = clientSize.Width - wx - wx;
-            int wh = clientSize.Height - y0 - wy;
-            webPanel.Bounds = new Rectangle(wx, wy, ww, wh);
+            // WebView:
+            int distanceY = DxComponent.ZoomToGui(3, currentDpi);
+            int webX = paddingH;
+            int webY = paddingV + toolHeight + distanceY;
+            int webWidth = clientSize.Width - webX - webX;
+            int webHeight = clientSize.Height - paddingV - webY;
+            webPanel.Bounds = new Rectangle(webX, webY, webWidth, webHeight);
         }
 
         private void _ClickButtonNavigate(object sender, EventArgs e)
