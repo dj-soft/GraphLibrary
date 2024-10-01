@@ -1762,6 +1762,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             ParentWebView?.DoAction(actionTypes);
         }
+        /// <summary>
+        /// Je inicializováno
+        /// </summary>
+        public bool IsInitialized { get { return __IsInitialized; } } private bool __IsInitialized;
         #endregion
         #region Lazy inicializace, Web events, navigace, atd...
         /// <summary>
@@ -1789,6 +1793,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _InitWebCore()
         {
+            this.__IsInitialized = false;
             this.__CoreWebInitializerCounter = 1;
             this.CreationProperties = new Microsoft.Web.WebView2.WinForms.CoreWebView2CreationProperties()
             {
@@ -1832,6 +1837,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     this.CoreWebView2.NavigationStarting += _CoreWeb_NavigationStarting;
                     this.CoreWebView2.NavigationCompleted += _CoreWeb_NavigationCompleted;
                     this.CoreWebView2.DocumentTitleChanged += _CoreWeb_DocumentTitleChanged;
+
+                    this.__IsInitialized = true;
 
                     // Navigace na URL, která byla zachycena, ale nebyla realizována:
                     this._DoNavigate();
@@ -2256,10 +2263,56 @@ namespace Noris.Clients.Win.Components.AsolDX
                     _RunMsWebNavigationBefore();                     // Událost před tím, než začneme aktivně měnit URL
                     __MsWebIsInNavigateState = true;
                     if (!String.IsNullOrEmpty(__MsWebRequestedUrlAdress))
-                        this.Source = new Uri(__MsWebRequestedUrlAdress);
+                        this.UrlSource = __MsWebRequestedUrlAdress;
                     else if (!String.IsNullOrEmpty(__MsWebHtmlContent))
                         this.NavigateToString(__MsWebHtmlContent);
                     _RunMsWebNavigationStarted();                    // Událost po startu aktivní změny URL
+                }
+            }
+        }
+        /// <summary>
+        /// URL zobrazené stránky
+        /// </summary>
+        public string UrlSource
+        {
+            get
+            {
+                var source = this.Source;
+                if (source is null || !source.IsAbsoluteUri) return null;
+                return source.AbsoluteUri;
+            }
+            set
+            {
+                if (!this.IsInitialized)
+                {
+                    EnsureCoreWebView2Async();
+                    return;
+                }
+                if (String.IsNullOrEmpty(value))
+                {
+                    this.NavigateToString("");
+                    return;
+                }
+                if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
+                {
+                    this.NavigateToString("");
+                    return;
+                }
+
+                // Význam následujícího je zřejmý po nastudování vnitřního kódu Source.Set:
+                //  a) Setovaná hodnota se vepisuje do _source (a to já jako potomek nezajistím);
+                //  b) Pokud se setuje shodný text URL jaký už tam je, pak se neprovádí force navigování na zadaný odkaz
+                // Takže:
+                //  -  Pokud nyní dávám URL jiný než dosud, pak musím setovat Source (aby se dostal do _source)
+                //  -  Pokud nyní mám stejný URL jako dosud, pak nemůžu setovat Source protože při stejném URL se neprovede navigace => pak musím provést navigaci ručně zde.
+                //       A klidně mohu vynechat setování _source, protože aktuální hodnota tam už je.
+                var source = this.Source;
+                if (source is null || !source.IsAbsoluteUri || source.AbsoluteUri != value)
+                    this.Source = uri;
+                else
+                {
+                    CoreWebView2.Navigate(value);
+                    CoreWebView2.Reload();
                 }
             }
         }

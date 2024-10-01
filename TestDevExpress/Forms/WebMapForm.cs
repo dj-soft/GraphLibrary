@@ -156,8 +156,8 @@ namespace TestDevExpress.Forms
             {
                 webPanel.MapProperties.CoordinatesProvider = __CurrentProvider;
                 webPanel.MapProperties.Coordinates = __CurrentCoordinates;
-                if (forceUrl)
-                    webPanel.RefreshMap();
+                // if (forceUrl)
+                //    webPanel.RefreshMap();
             }
         }
         private void _ClickButtonStaticImage(object sender, EventArgs e)
