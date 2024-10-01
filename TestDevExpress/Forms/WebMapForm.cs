@@ -24,17 +24,18 @@ namespace TestDevExpress.Forms
 
             // Vlastní WebView:
             __MapViewPanel = new DxMapViewPanel();
-            __MapViewPanel.MapCoordinates.ShowPinInCenter = true;
+            __MapViewPanel.MapProperties.ShowPinAtPoint = true;
+            __MapViewPanel.MapProperties.IsSearchCoordinatesVisible = true;
             __MapViewPanel.MsWebCurrentDocumentTitleChanged += _MsWebCurrentDocumentTitleChanged;
             this.DxMainPanel.Controls.Add(__MapViewPanel);
 
             // Buttony, které reprezentují "oblíbené pozice":
-            createButton(_ClickButtonNavigate, "Chrudim", "15.7951729;49.9499113;15");
-            createButton(_ClickButtonNavigate, "Pardubice", "15.7765933;50.0379536;18;S;15.778977738020302;50.03852988019973");              // https://mapy.cz/zakladni?source=coor&id=15.778977738020302%2C50.03852988019973&x=15.7794498&y=50.0384170&z=19
-            createButton(_ClickButtonNavigate, "Hradec Králové", "15.8304922;50.2072337;14");
-            createButton(_ClickButtonNavigate, "Staré Ransko", "15.8324115; 49.6787496; 17; F; 15.832009125041111; 49.67868715559161");
-            createButton(_ClickButtonNavigate, "Orlické hory", "16.2956143;50.2435940;11");
-            createButton(_ClickButtonNavigate, "Gargano", "15.7868100;41.7842548;10");
+            createButton(_ClickButtonNavigate, "Chrudim", "49.95117118051981N, 15.794821530619032E");
+            createButton(_ClickButtonNavigate, "Pardubice", "50.03852988019973N, 15.778977738020302E");
+            createButton(_ClickButtonNavigate, "Hradec Králové", "50.2072337N, 15.8304922E");
+            createButton(_ClickButtonNavigate, "Staré Ransko", "49.67868715559161N, 15.832009125041111E");
+            createButton(_ClickButtonNavigate, "Orlické hory", "50.2435940N, 16.2956143E");
+            createButton(_ClickButtonNavigate, "Gargano", "41.7842548, 15.7868100E");
 
             // Další v řadě:
             __ProviderButton = createDropDownButton(_SelectProviderChange, DxMapCoordinatesProvider.SeznamMapy, DxMapCoordinatesProvider.FrameMapy, DxMapCoordinatesProvider.GoogleMaps, DxMapCoordinatesProvider.OpenStreetMap);
@@ -153,10 +154,10 @@ namespace TestDevExpress.Forms
             var webPanel = __MapViewPanel;
             if (webPanel != null && !String.IsNullOrEmpty(__CurrentCoordinates))
             {
-                webPanel.MapCoordinates.Provider = __CurrentProvider;
-                webPanel.MapCoordinates.Coordinates = __CurrentCoordinates;
+                webPanel.MapProperties.CoordinatesProvider = __CurrentProvider;
+                webPanel.MapProperties.Coordinates = __CurrentCoordinates;
                 if (forceUrl)
-                    webPanel.ReloadMap();
+                    webPanel.RefreshMap();
             }
         }
         private void _ClickButtonStaticImage(object sender, EventArgs e)

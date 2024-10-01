@@ -2162,20 +2162,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
         #region Buttony mohou být viditelné jen na 'aktivním' prvku
         /// <summary>
-        /// Viditelnost buttonů z hlediska aktivity
+        /// Viditelnost buttonů z hlediska aktivity. Implicitní je <see cref="DxChildControlVisibility.Allways"/>
         /// </summary>
         public DxChildControlVisibility ButtonsVisibility { get { return _ButtonsVisibility; } set { _ButtonsVisibility = value; RefreshButtonsVisibility(); } }
         private DxChildControlVisibility _ButtonsVisibility;
         /// <summary>
-        /// Předdefinovaný druh prvního buttonu
+        /// Předdefinovaný druh prvního buttonu. 
+        /// Slouží k jednoduchému nastavení pro jednobuttonový prvek. Interně pracuje s <see cref="DxButtonEdit"/>.Properties.Buttons[0]
         /// </summary>
         public DevExpress.XtraEditors.Controls.ButtonPredefines ButtonKind
         {
-            get { return this.Properties.Buttons[0].Kind; }
-            set { this.Properties.Buttons[0].Kind = value; }
+            get 
+            {
+                if (this.Properties.Buttons.Count == 0) return ButtonPredefines.Separator;
+                return this.Properties.Buttons[0].Kind; 
+            }
+            set 
+            {
+                if (this.Properties.Buttons.Count == 0)
+                    this.Properties.Buttons.Add(new EditorButton(value));
+                else
+                    this.Properties.Buttons[0].Kind = value;
+            }
         }
         /// <summary>
         /// Jméno obrázku prvního buttonu (na indexu [0]). Lze číst i zapisovat. Setování NULL skryje button.<br/>
+        /// Slouží k jednoduchému nastavení pro jednobuttonový prvek. Interně pracuje s <see cref="DxButtonEdit"/>.Properties.Buttons[0]
+        /// <para/>
         /// Poznámka: viditelnost buttonů v závislosti na MouseOn nebo Focus řídí property <see cref="ButtonsVisibility"/>.
         /// <para/>
         /// Pokud aplikace přidá více buttonů, pak ostatní buttony nejsou setováním ovlivněny.<br/>
@@ -2225,7 +2238,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private string __ButtonImage;
         /// <summary>
-        /// Předdefinovaný styl zobrazení buttonů
+        /// Předdefinovaný styl zobrazení buttonů. 
         /// </summary>
         public DevExpress.XtraEditors.Controls.BorderStyles ButtonsStyle
         {
@@ -2248,6 +2261,38 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private bool? _ButtonsIsVisible;
+        #endregion
+        #region Buttony obecně
+        /// <summary>
+        /// Přidá button
+        /// </summary>
+        /// <param name="kind"></param>
+        /// <param name="toolTip"></param>
+        /// <param name="isLeft"></param>
+        /// <param name="tag"></param>
+        /// <param name="width"></param>
+        public void AddButton(DevExpress.XtraEditors.Controls.ButtonPredefines kind, string toolTip = null, bool isLeft = false, object tag = null, int? width = null)
+        {
+            var button = new EditorButton(kind) { ToolTip = toolTip, IsLeft = isLeft, Tag = tag };
+            if (width.HasValue && width.Value > 0) button.Width = width.Value;
+            this.Properties.Buttons.Add(button);
+        }
+        /// <summary>
+        /// Přidá button
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="toolTip"></param>
+        /// <param name="isLeft"></param>
+        /// <param name="tag"></param>
+        /// <param name="width"></param>
+        public void AddButton(string imageName, string toolTip = null, bool isLeft = false, object tag = null, int? width = null)
+        {
+            var button = new EditorButton(ButtonPredefines.Glyph) { ToolTip = toolTip, IsLeft = isLeft, Tag = tag };
+            if (!String.IsNullOrEmpty(imageName))
+                DxComponent.ApplyImage(button.ImageOptions, imageName, sizeType: ResourceImageSizeType.Small);
+            if (width.HasValue && width.Value > 0) button.Width = width.Value;
+            this.Properties.Buttons.Add(button);
+        }
         #endregion
         #region HasMouse
         /// <summary>
@@ -2342,6 +2387,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             base.OnLeave(e);
             this.HasFocus = false;
         }
+        #endregion
+        #region ToolTip
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="title">Titulek</param>
+        /// <param name="text">Text</param>
+        /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
+        public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
     }
     #endregion

@@ -2031,6 +2031,75 @@ namespace Noris.Clients.Win.Components.AsolDX
             return memoEdit;
         }
         /// <summary>
+        /// Vytvoří a vrátí DxButtonEdit s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="parent"></param>
+        /// <param name="textChanged"></param>
+        /// <param name="maskType"></param>
+        /// <param name="editMask"></param>
+        /// <param name="useMaskAsDisplayFormat"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="readOnly"></param>
+        /// <param name="tabStop"></param>
+        /// <returns></returns>
+        public static DxButtonEdit CreateDxButtonEdit(int x, int y, int w, Control parent, EventHandler textChanged = null,
+            DevExpress.XtraEditors.Mask.MaskType? maskType = null, string editMask = null, bool? useMaskAsDisplayFormat = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? visible = null, bool? readOnly = null, bool? tabStop = null)
+        {
+            return CreateDxButtonEdit(x, ref y, w, parent, textChanged,
+                maskType, editMask, useMaskAsDisplayFormat,
+                toolTipTitle, toolTipText,
+                visible, readOnly, tabStop, false);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí DxButtonEdit s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="parent"></param>
+        /// <param name="textChanged"></param>
+        /// <param name="maskType"></param>
+        /// <param name="editMask"></param>
+        /// <param name="useMaskAsDisplayFormat"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="readOnly"></param>
+        /// <param name="tabStop"></param>
+        /// <param name="shiftY"></param>
+        /// <returns></returns>
+        public static DxButtonEdit CreateDxButtonEdit(int x, ref int y, int w, Control parent, EventHandler textChanged = null,
+            DevExpress.XtraEditors.Mask.MaskType? maskType = null, string editMask = null, bool? useMaskAsDisplayFormat = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
+        {
+            var inst = Instance;
+
+            var buttonEdit = new DxButtonEdit() { Bounds = new Rectangle(x, y, w, inst._DetailYHeightText) };
+            buttonEdit.StyleController = inst._InputStyle;
+            if (visible.HasValue) buttonEdit.Visible = visible.Value;
+            if (readOnly.HasValue) buttonEdit.ReadOnly = readOnly.Value;
+            if (tabStop.HasValue) buttonEdit.TabStop = tabStop.Value;
+
+            if (maskType.HasValue) buttonEdit.Properties.Mask.MaskType = maskType.Value;
+            if (editMask != null) buttonEdit.Properties.Mask.EditMask = editMask;
+            if (useMaskAsDisplayFormat.HasValue) buttonEdit.Properties.Mask.UseMaskAsDisplayFormat = useMaskAsDisplayFormat.Value;
+
+            buttonEdit.SetToolTip(toolTipTitle, toolTipText);
+
+            if (textChanged != null) buttonEdit.TextChanged += textChanged;
+            if (parent != null) parent.Controls.Add(buttonEdit);
+            if (shiftY) y = y + buttonEdit.Height + inst._DetailYSpaceText;
+            return buttonEdit;
+        }
+        /// <summary>
         /// Vytvoří a vrátí DxImageComboBoxEdit s danými parametry
         /// </summary>
         /// <param name="x"></param>
@@ -6832,6 +6901,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aktuální hodnota UHD Paint
         /// </summary>
         private bool _UhdPaintEnabled;
+        /// <summary>
+        /// Nastartuje proces systému Windows na klientu
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="arguments"></param>
+        public static void StartProcess(string fileName, string arguments = null)
+        {
+            System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo(fileName, arguments);
+            var process = System.Diagnostics.Process.Start(psi);
+        }
         #region class WinProcessInfo : Informace o využití zdrojů operačního systému
         /// <summary>
         /// <see cref="WinProcessInfo"/> : Informace o využití zdrojů operačního systému
@@ -8857,7 +8936,44 @@ White
         TxtNumberValueNotValid,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Pro zadanou skupinu ještě nejsou načtena všechna data.")]
-        ClientBrowse_Grouping_DataNotLoaded
+        ClientBrowse_Grouping_DataNotLoaded,
+
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Otevřít v prohlížeči")]
+        DxMapOpenExternalBrowserTitle,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Aktuální mapu otevře v internetovém prohlížeči. Změny mapy v prohlížeči nelze načíst zpět do formuláře.")]
+        DxMapOpenExternalBrowserText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Najdi adresu")]
+        DxMapSearchCoordinatesTitle,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Získá adresu z formuláře a vyhledá ji na mapě.")]
+        DxMapSearchCoordinatesText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Souřadnice")]
+        DxMapCoordinatesTitle,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Souřadnice zadané do formuláře. Tlačítky po stranách lze změnit jejich formát. Tlačítko vpravo znovu vyhledá zadané souřadnice.")]
+        DxMapCoordinatesText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Změna formát zobrazené souřadnice")]
+        DxMapCoordinatesButtonTitle,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Změní formát zobrazené souřadnice, ale nezmění její hodnotu (pozici na mapě).")]
+        DxMapCoordinatesButtonText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Ukaž na mapě")]
+        DxMapReloadMapTitle,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Nastaví mapu tak, aby znovu zobrazila zadanou souřadnici. Použijte po posunutí mapy nebo změně označené souřadnice, pro návrat na zadanou souřadnici.")]
+        DxMapReloadMapText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Převezmi z mapy")]
+        DxMapAcceptCoordinatesTitle,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Pozici (bod) aktuálně označenou na mapě převezme do formuláře. Změní tedy souřadnici aktuálního záznamu.")]
+        DxMapAcceptCoordinatesText
 
 
         // Nové kódy přidej do Messages.xml v klientu!!!     Do AdapterTest.cs není nutno, tam se načítá hodnota atributu DefaultMessageText() !
