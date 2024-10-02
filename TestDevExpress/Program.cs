@@ -46,7 +46,7 @@ namespace TestDevExpress
                 var moon10 = DxComponent.CreateBitmapImage("Images/Moon10.png");
 
                 bool isImages = DxComponent.ApplicationArgumentsContains("images");
-                bool isTabView = DxComponent.ApplicationArgumentsContains("tabview");
+                bool isTabView = !DxComponent.ApplicationArgumentsContains("oldform");
                 var appFormType = (isImages ? typeof(TestDevExpress.Forms.ImagePickerForm) :
                                   (isTabView ? typeof(TestDevExpress.Forms.MainAppForm) :
                                   typeof(TestDevExpress.Forms.MainForm)));

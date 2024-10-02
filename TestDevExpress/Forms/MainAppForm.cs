@@ -108,6 +108,7 @@ namespace TestDevExpress.Forms
         protected override void InitializeDockPanelsContent()
         {
             LogActivityDockPanel = new TestDevExpress.Components.AppLogPanel();
+            var logVisibility = (DxComponent.LogActive ? DevExpress.XtraBars.Docking.DockVisibility.Visible : DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
 
             DockPanelLayoutInfo dockPanelLayout = new DockPanelLayoutInfo();
             dockPanelLayout.DockStyle = DevExpress.XtraBars.Docking.DockingStyle.Right;
@@ -115,10 +116,12 @@ namespace TestDevExpress.Forms
             dockPanelLayout.Definition = DxComponent.Settings.GetRawValue("Components", "AppLogPanelPosition");        // Pokud v Settings nebude hodnota, najde se null a vloží se do dockPanelLayout, tam vložení hodnoty null je ignorováno.
             dockPanelLayout.UserControl = LogActivityDockPanel;
             dockPanelLayout.PanelTitle = "Log aplikace";
-            dockPanelLayout.Visibility = (DxComponent.LogActive ? DevExpress.XtraBars.Docking.DockVisibility.Visible : DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
+            dockPanelLayout.Visibility = logVisibility;
             dockPanelLayout.ImageName = "svgimages/xaf/action_aboutinfo.svg";
 
             this.AddControlToDockPanels(dockPanelLayout);
+
+            dockPanelLayout.Visibility = logVisibility;
 
             dockPanelLayout.LayoutChanged += _LogActivityPanel_LayoutChanged;
 

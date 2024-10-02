@@ -2267,31 +2267,54 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Přidá button
         /// </summary>
         /// <param name="kind"></param>
-        /// <param name="toolTip"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="toolTipTitle"></param>
         /// <param name="isLeft"></param>
         /// <param name="tag"></param>
         /// <param name="width"></param>
-        public void AddButton(DevExpress.XtraEditors.Controls.ButtonPredefines kind, string toolTip = null, bool isLeft = false, object tag = null, int? width = null)
+        public void AddButton(DevExpress.XtraEditors.Controls.ButtonPredefines kind, bool isLeft = false, string toolTipText = null, string toolTipTitle = null, object tag = null, int? width = null)
         {
-            var button = new EditorButton(kind) { ToolTip = toolTip, IsLeft = isLeft, Tag = tag };
-            if (width.HasValue && width.Value > 0) button.Width = width.Value;
+            var button = _CreateEditorButton(kind, null, isLeft, toolTipText, toolTipTitle, tag, width);
             this.Properties.Buttons.Add(button);
         }
         /// <summary>
         /// Přidá button
         /// </summary>
         /// <param name="imageName"></param>
-        /// <param name="toolTip"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="toolTipTitle"></param>
         /// <param name="isLeft"></param>
         /// <param name="tag"></param>
         /// <param name="width"></param>
-        public void AddButton(string imageName, string toolTip = null, bool isLeft = false, object tag = null, int? width = null)
+        public void AddButton(string imageName, bool isLeft = false, string toolTipText = null, string toolTipTitle = null, object tag = null, int? width = null)
         {
-            var button = new EditorButton(ButtonPredefines.Glyph) { ToolTip = toolTip, IsLeft = isLeft, Tag = tag };
-            if (!String.IsNullOrEmpty(imageName))
-                DxComponent.ApplyImage(button.ImageOptions, imageName, sizeType: ResourceImageSizeType.Small);
-            if (width.HasValue && width.Value > 0) button.Width = width.Value;
+            var button = _CreateEditorButton(ButtonPredefines.Glyph, imageName, isLeft, toolTipText, toolTipTitle, tag, width);
             this.Properties.Buttons.Add(button);
+        }
+        private static EditorButton _CreateEditorButton(ButtonPredefines kind, string imageName, bool isLeft = false, string toolTipText = null, string toolTipTitle = null, object tag = null, int? width = null)
+        {
+            EditorButton button = new EditorButton();
+
+            button.Kind = kind;
+            if (kind == ButtonPredefines.Glyph && !String.IsNullOrEmpty(imageName))
+                DxComponent.ApplyImage(button.ImageOptions, imageName, sizeType: ResourceImageSizeType.Small);
+
+            // ToolTip může být s titulkem nebo bez něj:
+            if (DxComponent.PrepareToolTipTexts(toolTipTitle, toolTipText, null, out var tipTitle, out var tipText))
+            {
+                if (!String.IsNullOrEmpty(tipTitle))
+                    button.SuperTip = DxComponent.CreateDxSuperTip(tipTitle, tipText);
+                else
+                    button.ToolTip = tipText;
+                button.ToolTipAnchor = ToolTipAnchor.Cursor;
+            }
+
+            button.IsLeft = isLeft;
+            button.Tag = tag;
+            if (width.HasValue && width.Value > 0) 
+                button.Width = width.Value;
+
+            return button;
         }
         #endregion
         #region HasMouse

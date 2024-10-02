@@ -660,7 +660,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     /// <summary>
-    /// Panel obsahující <see cref="MsWebView"/> pro zobrazení mapy, a jednoduchý toolbar pro zadání / editaci adresy
+    /// Panel obsahující <see cref="MsWebView"/> pro zobrazení mapy, a jednoduchý toolbar pro zadání / editaci adresy.
+    /// <para/>
+    /// Tento Control obsahuje instanci <see cref="MapProperties"/>, pomocí které se control nastavuje a komunikuje s ním.<br/>
+    /// Je možno nastavit touto cestou vlastosti:<br/>
+    /// <see cref="MapPropertiesInfo.Coordinates"/> = text souřadnice;<br/>
+    /// <see cref="MapPropertiesInfo.CoordinatesProvider"/> = Provider = webová stránka s mapami;<br/>
+    /// <see cref="MapPropertiesInfo.CoordinatesMapType"/> = Druh mapy;<br/>
+    /// <see cref="MapPropertiesInfo.CoordinatesFormat"/> = Formát textu souřadnic při jejich čtení;<br/>
+    /// <see cref="MapPropertiesInfo.CoordinatesChanged"/> = Událost, když uživatel interaktivně změní souřadnice;<br/>
     /// </summary>
     public class DxMapViewPanel : DxPanelControl
     {
@@ -819,6 +827,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 setBounds(__CoordinatesText, true, ref toolLeft, buttonBottom, textWidth, __CoordinatesText.Height, 1, distanceX);
                 setBounds(__ReloadMapButton, isRelaodMapVisible, ref toolLeft, buttonBottom, buttonSize, buttonSize, 0, distanceX);
                 setBounds(__AcceptCoordinatesButton, isAcceptCoordinatesVisible, ref toolLeft, buttonBottom, buttonSize, buttonSize, 0, distanceX);
+                __AcceptCoordinatesButtonVisible = isAcceptCoordinatesVisible;
 
                 __ToolPanel.Bounds = new System.Drawing.Rectangle(left, top, width, toolHeight);
                 top = top + toolHeight;
@@ -877,7 +886,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isToolbarVisible = webProperties.IsToolbarVisible;
             if (isToolbarVisible)
             {
-                __CoordinatesText.Enabled = isMapEditable;
+                __CoordinatesText.Enabled = true;
+                __CoordinatesText.ReadOnly = !isMapEditable;
+
+                // Button __AcceptCoordinatesButton má být viditelný podle hodnoty isMapEditable. Pokud se jeho Visible neshoduje s isMapEditable, pak provedu _DoLayout, tam se mu nastaví nejen Visible, ale provede se i správné umístění prvků: 
+                if (__AcceptCoordinatesButtonVisible != isMapEditable)
+                    _DoLayout();
+
+                if (isMapEditable)
+                    _RefreshAcceptButtonState();
             }
 
             // Mapa:
@@ -965,6 +982,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DxButtonEdit __CoordinatesText;
         private DxSimpleButton __ReloadMapButton;
         private DxSimpleButton __AcceptCoordinatesButton;
+        /// <summary>
+        /// Nativní viditelnost prvku <see cref="__AcceptCoordinatesButton"/>.
+        /// Tato viditelnost se vyhodnocuje i v <see cref="_DoEnabled"/>, a protože WinForm do viditelnosti konkrétního controlu zahrnují i jeho Parenty, tak si ji eviduje separátně...
+        /// </summary>
+        private bool __AcceptCoordinatesButtonVisible;
         private MsWebView __MsWebView;
         private PictureBox __PictureWeb;
         private DxPanelControl __StatusBar;
@@ -1096,8 +1118,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _CoordinatesFormatInit()
         {
             __CoordinatesText.Properties.Buttons.Clear();
-            __CoordinatesText.AddButton(DevExpress.XtraEditors.Controls.ButtonPredefines.SpinLeft, DxComponent.Localize(MsgCode.DxMapCoordinatesButtonText), true);
-            __CoordinatesText.AddButton(DevExpress.XtraEditors.Controls.ButtonPredefines.SpinRight, DxComponent.Localize(MsgCode.DxMapCoordinatesButtonText), false);
+            __CoordinatesText.AddButton(DevExpress.XtraEditors.Controls.ButtonPredefines.SpinLeft, true, DxComponent.Localize(MsgCode.DxMapCoordinatesButtonText), DxComponent.Localize(MsgCode.DxMapCoordinatesButtonTitle));
+            __CoordinatesText.AddButton(DevExpress.XtraEditors.Controls.ButtonPredefines.SpinRight, false, DxComponent.Localize(MsgCode.DxMapCoordinatesButtonText), DxComponent.Localize(MsgCode.DxMapCoordinatesButtonTitle));
+            __CoordinatesText.AddButton("devav/actions/copy.svg", false, DxComponent.Localize(MsgCode.DxKeyActionClipCopyText), DxComponent.Localize(MsgCode.DxKeyActionClipCopyTitle), "Copy");
+
             __CoordinatesText.ButtonClick += _CoordinatesTextButtonClick;
 
             // Toto jsou formáty, ve kterých lze zobrazit souřadnice. Až někdo přidá konvertory na další formáty (OLC, PlusPoint), pak se sem přidají...
@@ -1108,7 +1132,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 DxMapCoordinatesFormat.Wgs84ArcSecPrefix,
                 DxMapCoordinatesFormat.Wgs84Decimal,
                 DxMapCoordinatesFormat.Wgs84DecimalSuffix,
-                DxMapCoordinatesFormat.Wgs84DecimalPrefix
+                DxMapCoordinatesFormat.Wgs84DecimalPrefix,
+                DxMapCoordinatesFormat.OpenLocationCode
             };
             __CoordinateFormatCurrentIndex = 1;
         }
@@ -1121,22 +1146,31 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var buttonKind = e.Button.Kind;
 
-            bool isLeft = (buttonKind == DevExpress.XtraEditors.Controls.ButtonPredefines.SpinLeft || buttonKind == DevExpress.XtraEditors.Controls.ButtonPredefines.SpinDown ||
-                          (buttonKind == DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph && e.Button.Tag is String text1 && String.Equals(text1, "Left")));
-            bool isRight = (buttonKind == DevExpress.XtraEditors.Controls.ButtonPredefines.SpinRight || buttonKind == DevExpress.XtraEditors.Controls.ButtonPredefines.SpinUp ||
-                           (buttonKind == DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph && e.Button.Tag is String text2 && String.Equals(text2, "Right")));
-
-            int shift = (isLeft ? -1 : (isRight ? +1 : 0));
-            if (shift != 0)
+            bool isCopy = (buttonKind == DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph && e.Button.Tag is String textC && String.Equals(textC, "Copy"));
+            if (isCopy)
             {
-                int count = __CoordinateFormats.Length;
-                __CoordinateFormatCurrentIndex = (__CoordinateFormatCurrentIndex + shift) % count;
+                string text = (__CoordinatesText.Text ?? "").Trim();
+                DxComponent.TryRun(() => System.Windows.Forms.Clipboard.SetText(text), true);
+            }
+            else
+            {
+                bool isLeft = (buttonKind == DevExpress.XtraEditors.Controls.ButtonPredefines.SpinLeft || buttonKind == DevExpress.XtraEditors.Controls.ButtonPredefines.SpinDown ||
+                              (buttonKind == DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph && e.Button.Tag is String textL && String.Equals(textL, "Left")));
+                bool isRight = (buttonKind == DevExpress.XtraEditors.Controls.ButtonPredefines.SpinRight || buttonKind == DevExpress.XtraEditors.Controls.ButtonPredefines.SpinUp ||
+                               (buttonKind == DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph && e.Button.Tag is String textR && String.Equals(textR, "Right")));
 
-                // Zobrazíme aktuální koordináty v aktuálním (nově určeném) formátu:
-                var mapCoordinates = this.IMapProperties.MapCoordinates;
-                _ReloadCoordinatesText(mapCoordinates);                      // Setování textu do __CoordinatesText nevyvolá event o změně, protože tamní změnu řešíme jen po klávese Enter.
+                int shift = (isLeft ? -1 : (isRight ? +1 : 0));
+                if (shift != 0)
+                {
+                    int count = __CoordinateFormats.Length;
+                    __CoordinateFormatCurrentIndex = (__CoordinateFormatCurrentIndex + shift) % count;
 
-                // Tato metoda nemění hodnotu souřadnic (mění jen její formální vyjádření), proto neprovádíme reload mapy ani refresh Accept buttonu...
+                    // Zobrazíme aktuální koordináty v aktuálním (nově určeném) formátu:
+                    var mapCoordinates = this.IMapProperties.MapCoordinates;
+                    _ReloadCoordinatesText(mapCoordinates);                      // Setování textu do __CoordinatesText nevyvolá event o změně, protože tamní změnu řešíme jen po klávese Enter.
+
+                    // Tato metoda nemění hodnotu souřadnic (mění jen její formální vyjádření), proto neprovádíme reload mapy ani refresh Accept buttonu...
+                }
             }
         }
         /// <summary>
@@ -1319,15 +1353,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _RefreshAcceptButtonState()
         {
             var mapProperties = this.MapProperties;
-            if (!mapProperties.IsMapEditable) return;                // Mapa není editovatelná, pak není třeba řešit Accept button a jeho stav
+            if (!mapProperties.IsMapEditable) return;                          // Mapa není editovatelná, pak není třeba řešit Accept button a jeho stav
 
-            var mapCoordinates = this.IMapProperties.MapCoordinates; // Souřadnice požadovaná z aplikace, anebo naposledy akceptovaná
-            var webCoordinates = this.WebCoordinates;                // Souřadnice právě nyní zobrazená
-            var mapPoint = mapCoordinates?.Point;
-            var webPoint = webCoordinates?.Point;
-            bool isEqual = String.Equals(mapPoint, webPoint, StringComparison.Ordinal);   // true = shodné souřadnice = žádná změna
+            bool isAcceptEnabled = false;
 
-            this.__AcceptCoordinatesButton.Enabled = !isEqual;
+            var webCoordinates = this.WebCoordinates;                          // Souřadnice právě nyní zobrazená
+            if (!webCoordinates.IsEmpty)
+            {
+                var mapCoordinates = this.IMapProperties.MapCoordinates;       // Souřadnice požadovaná z aplikace, anebo naposledy akceptovaná
+                var mapPoint = mapCoordinates?.Point;
+                var webPoint = webCoordinates?.Point;
+                bool isEqual = String.Equals(mapPoint, webPoint, StringComparison.Ordinal);
+                isAcceptEnabled = !isEqual;                                    // Shodné souřadnice (isEqual = true) => nepovolíme Accept button (není změna adresy)
+            }
+
+            this.__AcceptCoordinatesButton.Enabled = isAcceptEnabled;
         }
         /// <summary>
         /// Metoda akceptuje souřadnici nalezenou v mapě (<see cref="WebCoordinates"/>) a vloží ji do textboxu CoordinatesText a do <see cref="IMapProperties"/>.MapCoordinates.
@@ -1614,7 +1654,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var newPoint = this.__MapCoordinates.Point;
                 var isChanged = !String.Equals(oldPoint, newPoint, StringComparison.Ordinal);                // Máme reálnou změnu souřadnice?
 
-                if (callEventChanged && isChanged) this.CoordinatesChanged?.Invoke(this, EventArgs.Empty);   // Event do vnějšího světa
+                if (callEventChanged && isChanged) this._RunCoordinatesChanged();                            // Event do vnějšího světa
                 if (callChangeMapView) this.__Owner.RefreshMap();                                            // Překreslení mapy
             }
             /// <summary>
@@ -1649,6 +1689,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             private DxMapCoordinates __MapCoordinates;
             /// <summary>
+            /// Vyvolá event <see cref="CoordinatesChanged"/>
+            /// </summary>
+            private void _RunCoordinatesChanged()
+            {
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"MapPropertiesInfo.CoordinatesChanged() : {this.__MapCoordinates.CoordinatesDebug}");
+                this.CoordinatesChanged?.Invoke(this, EventArgs.Empty);
+            }
+            /// <summary>
             /// Událost vyvolaná po změně validované pozice v mapě <see cref="Coordinates"/>.
             /// </summary>
             public event EventHandler CoordinatesChanged;
@@ -1658,15 +1706,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public DxMapCoordinatesFormat CoordinatesFormat { get { return __CoordinatesFormat; } set { __CoordinatesFormat = value; } } private DxMapCoordinatesFormat __CoordinatesFormat;
             /// <summary>
-            /// Mapový provider. 
+            /// Mapový provider.<br/>
             /// Změna této hodnoty nezmění interaktivně mapu (mapu změní pouze setování <see cref="Coordinates"/>). 
-            /// Mapu lze refreshnout pomocí <see cref="DxMapViewPanel.RefreshMap"/> nebo 
+            /// Mapu lze refreshnout pomocí <see cref="DxMapViewPanel.RefreshMap"/> anebo <see cref="CoordinatesRefresh"/>.
             /// </summary>
             public DxMapCoordinatesProvider CoordinatesProvider { get { return __MapCoordinates.Provider.Value; } set { __MapCoordinates.Provider = value; } }
             /// <summary>
+            /// Typ mapy (standardní, dopravní, turistická, fotoletecká).<br/>
+            /// Změna této hodnoty nezmění interaktivně mapu (mapu změní pouze setování <see cref="Coordinates"/>). 
+            /// Mapu lze refreshnout pomocí <see cref="DxMapViewPanel.RefreshMap"/> anebo <see cref="CoordinatesRefresh"/>.
+            /// </summary>
+            public DxMapCoordinatesMapType CoordinatesMapType { get { return __MapCoordinates.MapType.Value; } set { __MapCoordinates.MapType = value; } }
+            /// <summary>
             /// Zobrazovat Pin na souřadnici mapy. Default = true.
             /// Změna této hodnoty nezmění interaktivně mapu (mapu změní pouze setování <see cref="Coordinates"/>). 
-            /// Mapu lze refreshnout pomocí <see cref="DxMapViewPanel.RefreshMap"/> nebo 
+            /// Mapu lze refreshnout pomocí <see cref="DxMapViewPanel.RefreshMap"/> anebo <see cref="CoordinatesRefresh"/>.
             /// </summary>
             public bool ShowPinAtPoint { get { return __MapCoordinates.ShowPinAtPoint; } set { __MapCoordinates.ShowPinAtPoint = value;; } }
             /// <summary>
@@ -2462,9 +2516,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
-    #region class DxMapCoordinates : správce souřadnic, kodér + dekodér stringu i URL odkazu na mapy různých zdrojů
+    #region class DxMapCoordinates : správce souřadnic, kodér + dekodér stringu souřadnic i URL odkazu na mapy různých providerů
     /// <summary>
-    /// <see cref="DxMapCoordinates"/> : správce souřadnic, kodér + dekodér stringu i URL odkazu na mapy různých zdrojů
+    /// <see cref="DxMapCoordinates"/> : správce souřadnic, kodér + dekodér stringu souřadnic i URL odkazu na mapy různých providerů
     /// </summary>
     public class DxMapCoordinates
     {
@@ -2483,16 +2537,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _Reset(ResetSource source)
         {
             // Resetuji na pozici: celá ČR 
-            this.PointX = 15.7435513m;                     // Zkus tohle:  https://mapy.cz/turisticka?l=0&x=15.7435513&y=49.8152928&z=8
-            this.PointY = 49.8152928m;
-            this.Zoom = _ZoomState;                        // Zobrazuje cca celou republiku
-            this.CenterX = null;
-            this.CenterY = null;
+            this._PointX = 15.7435513m;                    // Zkus tohle:  https://mapy.cz/turisticka?l=0&x=15.7435513&y=49.8152928&z=8
+            this._PointY = 49.8152928m;
+            this._Zoom = null;                             // Převezme default, což je Town = cca 10 km
+            this._CenterX = null;
+            this._CenterY = null;
 
             if (source == ResetSource.Instance)
             {   // Tvorba instance:
                 this.CoordinatesFormatDefault = DxMapCoordinatesFormat.Wgs84DecimalSuffix;
                 this.ZoomDefault = _ZoomTown;              // Zobrazuje cca 10 km na šířku běžného okna
+                this._Zoom = _ZoomFull;                    // Zobrazuje cca celou republiku
                 this.ProviderDefault = DxMapCoordinatesProvider.SeznamMapy;
                 this.MapTypeDefault = DxMapCoordinatesMapType.Standard;
                 this.InfoPanelVisibleDefault = true;
@@ -2507,6 +2562,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (source == ResetSource.Coordinate)
             {   // Setování koordinátů nemění defaulty, nemění providera ani typ mapy:
                 this.CoordinatesFormat = null;
+                this._Zoom = null;                         // Převezme default, což je Town = cca 10 km
             }
 
             if (source == ResetSource.UrlAdress)
@@ -2515,6 +2571,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.MapType = null;
                 this.InfoPanelVisible = null;
             }
+
+            this.__IsEmpty = true;
         }
         /// <summary>
         /// Kdo volá Reset hodnot?
@@ -2540,82 +2598,135 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Zoom pro mapu na celou ČR
         /// </summary>
-        private const int _ZoomState = 8;
+        private const int _ZoomFull = 8;
         /// <summary>
         /// Zoom pro mapu na jedno město
         /// </summary>
         private const int _ZoomTown = 14;
         #endregion
-        #region Public proměnné základní = jednotlivé : Souřadnice X:Y, Střed, Bod, Zoom, Provider, Typ mapy, Defaulty
+        #region Public proměnné základní = jednotlivé : Souřadnice {X:Y}: Bod souřadnice, Zoom, Střed mapy, Provider, Typ mapy, Defaulty
         /// <summary>
         /// Formát koordinátů (ve formě jednoho stringu) v <see cref="Coordinates"/>.
+        /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// Lze setovat null, ale při čtení se namísto null čte <see cref="CoordinatesFormatDefault"/>.
         /// </summary>
         public DxMapCoordinatesFormat? CoordinatesFormat { get { return __CoordinatesFormat ?? __CoordinatesFormatDefault; } set { __CoordinatesFormat = value; } } private DxMapCoordinatesFormat? __CoordinatesFormat;
+
         /// <summary>
-        /// Exaktní bod souřadnic X, v rozsahu -180° až +180°
+        /// Exaktní bod souřadnic X, v rozsahu -180° až +180°.
+        /// Změna hodnoty <b>vyvolá</b> event o změně!
         /// </summary>
-        public decimal PointX { get { return __PointX; } set { var coordinatesOld = _CoordinatesSerial; __PointX = _Align((value % 360m), -180m, 180m); _CheckCoordinatesChanged(coordinatesOld); } } private decimal __PointX;
+        public decimal PointX { get { return _PointX; } set { var coordinatesOld = _CoordinatesSerial; _PointX = value; _CheckCoordinatesChanged(coordinatesOld); } }
         /// <summary>
-        /// Exaktní bod souřadnic Y, v rozsahu -90° (Jih) až +90° (Sever)
+        /// Exaktní bod souřadnic X, v rozsahu -180° až +180°.
+        /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// </summary>
-        public decimal PointY { get { return __PointY; } set { var coordinatesOld = _CoordinatesSerial; __PointY = _Align((value % 180m), -90m, 90m); _CheckCoordinatesChanged(coordinatesOld); } } private decimal __PointY;
+        protected decimal _PointX { get { return __PointX; } set { __PointX = _Align((value % 360m), -180m, 180m); __IsEmpty = false; } } private decimal __PointX;
+
         /// <summary>
-        /// Střed mapy X, v rozsahu -180° až +180°
+        /// Exaktní bod souřadnic Y, v rozsahu -90° (Jih) až +90° (Sever).
+        /// Změna hodnoty <b>vyvolá</b> event o změně!
         /// </summary>
-        public decimal? CenterX { get { return __CenterX; } set { var coordinatesOld = _CoordinatesSerial; __CenterX = _Align((value % 360m), -180m, 180m); _CheckCoordinatesChanged(coordinatesOld); } } private decimal? __CenterX;
+        public decimal PointY { get { return _PointY; } set { var coordinatesOld = _CoordinatesSerial; _PointY = value; _CheckCoordinatesChanged(coordinatesOld); } }
         /// <summary>
-        /// Střed mapy Y, v rozsahu -90° (Jih) až +90° (Sever)
+        /// Exaktní bod souřadnic Y, v rozsahu -90° (Jih) až +90° (Sever).
+        /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// </summary>
-        public decimal? CenterY { get { return __CenterY; } set { var coordinatesOld = _CoordinatesSerial; __CenterY = _Align((value % 180m), -90m, 90m); _CheckCoordinatesChanged(coordinatesOld); } } private decimal? __CenterY;
+        protected decimal _PointY { get { return __PointY; } set { __PointY = _Align((value % 180m), -90m, 90m); __IsEmpty = false; } } private decimal __PointY;
+
+        /// <summary>
+        /// Střed mapy X, v rozsahu -180° až +180°.
+        /// Změna hodnoty <b>vyvolá</b> event o změně!
+        /// </summary>
+        public decimal? CenterX { get { return _CenterX; } set { var coordinatesOld = _CoordinatesSerial; _CenterX = value; _CheckCoordinatesChanged(coordinatesOld); } }
+        /// <summary>
+        /// Střed mapy X, v rozsahu -180° až +180°.
+        /// Změna hodnoty <b>nevyvolá</b> event o změně!
+        /// </summary>
+        protected decimal? _CenterX { get { return __CenterX; } set { __CenterX = _Align((value % 360m), -180m, 180m); __IsEmpty = false; } } private decimal? __CenterX;
+
+        /// <summary>
+        /// Střed mapy Y, v rozsahu -90° (Jih) až +90° (Sever).
+        /// Změna hodnoty <b>vyvolá</b> event o změně!
+        /// </summary>
+        public decimal? CenterY { get { return _CenterY; } set { var coordinatesOld = _CoordinatesSerial; _CenterY = value; _CheckCoordinatesChanged(coordinatesOld); } }
+        /// <summary>
+        /// Střed mapy Y, v rozsahu -90° (Jih) až +90° (Sever).
+        /// Změna hodnoty <b>nevyvolá</b> event o změně!
+        /// </summary>
+        protected decimal? _CenterY { get { return __CenterY; } set { __CenterY = _Align((value % 180m), -90m, 90m); __IsEmpty = false; } } private decimal? __CenterY;
+
         /// <summary>
         /// Zoom, v rozsahu 1 (celá planeta) až 20 (jeden pokojíček). Zoom roste exponenciálně, rozdíl 1 číslo je 2-násobek.
-        /// Lze setovat null, ale při čtení se namísto null čte <see cref="ProviderDefault"/>.
+        /// Změna hodnoty <b>vyvolá</b> event o změně!
+        /// Lze setovat null, ale při čtení se namísto null čte <see cref="ZoomDefault"/>.
         /// </summary>
-        public int? Zoom { get { return __Zoom ?? __ZoomDefault; } set { var coordinatesOld = _CoordinatesSerial; __Zoom = _AlignN(value, 1, 20); _CheckCoordinatesChanged(coordinatesOld); } } private int? __Zoom;
+        public int? Zoom { get { return _Zoom; } set { var coordinatesOld = _CoordinatesSerial; _Zoom = value; _CheckCoordinatesChanged(coordinatesOld); } }
+        /// <summary>
+        /// Zoom, v rozsahu 1 (celá planeta) až 20 (jeden pokojíček). Zoom roste exponenciálně, rozdíl 1 číslo je 2-násobek.
+        /// Změna hodnoty <b>nevyvolá</b> event o změně!
+        /// Lze setovat null, ale při čtení se namísto null čte <see cref="ZoomDefault"/>.
+        /// </summary>
+        protected int? _Zoom { get { return __Zoom ?? __ZoomDefault; } set { __Zoom = _AlignN(value, 1, 20); } } private int? __Zoom;
+
         /// <summary>
         /// Je definován i střed mapy?
         /// </summary>
         public bool HasCenter { get { return (this.__CenterX.HasValue && this.__CenterY.HasValue); } }
 
         /// <summary>
+        /// Obsahuje true po resetu.
+        /// Po vložení nějaké validní hodnoty je false.
+        /// </summary>
+        public bool IsEmpty { get { return this.__IsEmpty; } } private bool __IsEmpty;
+
+        /// <summary>
         /// Provider mapy (webová stránka).
+        /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// Lze setovat null, ale při čtení se namísto null čte <see cref="ProviderDefault"/>.
         /// </summary>
         public DxMapCoordinatesProvider? Provider { get { return __Provider ?? __ProviderDefault; } set { __Provider = value; } } private DxMapCoordinatesProvider? __Provider;
         /// <summary>
         /// Typ mapy (standardní, dopravní, turistická, fotoletecká).
+        /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// Lze setovat null, ale při čtení se namísto null čte <see cref="MapTypeDefault"/>.
         /// </summary>
         public DxMapCoordinatesMapType? MapType { get { return __MapType ?? __MapTypeDefault; } set { __MapType = value; } } private DxMapCoordinatesMapType? __MapType;
         /// <summary>
         /// Viditelnost bočního panelu s detaily.
+        /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// Lze setovat null, ale při čtení se namísto null čte <see cref="InfoPanelVisibleDefault"/>.
         /// </summary>
         public bool? InfoPanelVisible { get { return __InfoPanelVisible ?? __InfoPanelVisibleDefault; } set { __InfoPanelVisible = value; } } private bool? __InfoPanelVisible;
 
         /// <summary>
-        /// Defaultní formát souřadnic
+        /// Defaultní formát souřadnic.
+        /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// </summary>
         public DxMapCoordinatesFormat CoordinatesFormatDefault { get { return __CoordinatesFormatDefault; } set { __CoordinatesFormatDefault = value; } } private DxMapCoordinatesFormat __CoordinatesFormatDefault;
         /// <summary>
-        /// Defaultní Zoom
+        /// Defaultní Zoom.
+        /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// </summary>
         public int ZoomDefault { get { return __ZoomDefault; } set { __ZoomDefault = _Align(value, 1, 20); } } private int __ZoomDefault;
         /// <summary>
-        /// Defaultní provider
+        /// Defaultní provider.
+        /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// </summary>
         public DxMapCoordinatesProvider ProviderDefault { get { return __ProviderDefault; } set { __ProviderDefault = value; } } private DxMapCoordinatesProvider __ProviderDefault;
         /// <summary>
-        /// Defaultní typ mapy
+        /// Defaultní typ mapy.
+        /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// </summary>
         public DxMapCoordinatesMapType MapTypeDefault { get { return __MapTypeDefault; } set { __MapTypeDefault = value; } } private DxMapCoordinatesMapType __MapTypeDefault;
         /// <summary>
         /// Defaultní viditelnost bočního panelu s detaily.
+        /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// </summary>
         public bool InfoPanelVisibleDefault { get { return __InfoPanelVisibleDefault; } set { __InfoPanelVisibleDefault = value; } } private bool __InfoPanelVisibleDefault;
         /// <summary>
         /// Vložit špendlík na pozici Point (do URL adresy).
+        /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// Výchozí je true, odpovídá to chování, kdy máme dán jednoduchý koordinát a chceme jej vidět jako exaktní špendlík, nejen jako mapu v jeho okolí.
         /// </summary>
         public bool ShowPinAtPoint { get { return __ShowPinAtPoint; } set { __ShowPinAtPoint = value; } } private bool __ShowPinAtPoint;
@@ -2633,7 +2744,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Souřadnice v jednom stringu pevné struktury, lze porovnávat dvě různé souřadnice pomocí tohoto stringu.
         /// </summary>
-        public string Point { get { return $"X:{_FormatDecimal(this.PointX, 12)}; Y:{_FormatDecimal(this.PointY, 12)}"; } }
+        public string Point { get { return $"X:{_FormatDecimal(this._PointX, 12)}; Y:{_FormatDecimal(this._PointY, 12)}"; } }
         /// <summary>
         /// Vrátí textové vyjádření souřadnic v daném / aktuálním formátu
         /// </summary>
@@ -2646,21 +2757,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Opíše do sebe informace z dodaného objektu, volitelně potlačí event 
         /// </summary>
-        /// <param name="newCoordinates"></param>
-        /// <param name="isSilent"></param>
-        public void FillFrom(DxMapCoordinates newCoordinates, bool isSilent = false)
+        /// <param name="sourceCoordinates">Zdrojové souřadnice</param>
+        /// <param name="isSilent">Nevolat událost <see cref="CoordinatesChanged"/> po případné změně</param>
+        public void FillFrom(DxMapCoordinates sourceCoordinates, bool isSilent = false)
         {
             var coordinatesOld = _CoordinatesSerial;
-
-            try
-            {
-                __IsSuppressedChanges = true;
-                _FillFromAction(newCoordinates);
-            }
-            finally
-            {
-                __IsSuppressedChanges = false;
-            }
+            _FillFromAction(sourceCoordinates);
 
             // Pokud nynější souřadnice jsou změněny a není Silent, vyvoláme event o změně:
             if (!isSilent)
@@ -2683,30 +2785,25 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.__Provider = newCoordinates.__Provider;
                 this.__MapType = newCoordinates.__MapType;
                 this.__InfoPanelVisible = newCoordinates.__InfoPanelVisible;
+                this.__ShowPinAtPoint = newCoordinates.__ShowPinAtPoint;
+                this.__IsEmpty = newCoordinates.__IsEmpty;
             }
         }
         /// <summary>
         /// Vloží dodané souřadnice. Poté vyvolá event o změně, pokud reálně došlo ke změně.
         /// </summary>
-        /// <param name="coordinates"></param>
-        private void _SetCoordinates(string coordinates)
+        /// <param name="coordinates">Vkládané souřadnice</param>
+        /// <param name="isSilent">Nevolat událost <see cref="CoordinatesChanged"/> po případné změně</param>
+        private void _SetCoordinates(string coordinates, bool isSilent = false)
         {
             var coordinatesOld = _CoordinatesSerial;
-
-            try
-            {
-                __IsSuppressedChanges = true;
-                _Reset(ResetSource.Coordinate);
-                if (!String.IsNullOrEmpty(coordinates))
-                    _SetCoordinatesAction(coordinates);
-            }
-            finally
-            {
-                __IsSuppressedChanges = false;
-            }
+            _Reset(ResetSource.Coordinate);
+            if (!String.IsNullOrEmpty(coordinates))
+                _SetCoordinatesAction(coordinates);
 
             // Pokud nynější souřadnice jsou změněny, vyvoláme event o změně:
-            _CheckCoordinatesChanged(coordinatesOld);
+            if (!isSilent)
+                _CheckCoordinatesChanged(coordinatesOld);
         }
         /// <summary>
         /// Vloží dodané souřadnice. Neřeší event o změně, jen řeší hodnoty.
@@ -2732,6 +2829,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             //                                  +9F2P.2CQHRH
             //                                  9F2P2CQH+RH
 
+            // Center a Zoom nechám null (po Resetu), protože data vkládám do Point.
+            decimal pointX, pointY;
+
+            // Kódy OpenLocationCode testuji předem, před úpravami textu 'coordinates' :
+            if (OpenLocationCodeConvertor.TryParse(coordinates, out pointX, out pointY))
+            {
+                this.CoordinatesFormat = DxMapCoordinatesFormat.OpenLocationCode;
+                this._PointX = pointX;
+                this._PointY = pointY;
+                return;
+            }
+
+            // Následuje zdejší pracné parsování a detekování formátů:
+
             // Velká písmena, odebrat krajní mezery, a pokud není formát "POINT" tak i vnitřní mezery (protože detekujeme jiné oddělovače):
             coordinates = coordinates.Trim().ToUpper();
             bool beginPoint = coordinates.StartsWith("POINT", StringComparison.InvariantCultureIgnoreCase) && (coordinates.Length > 7);
@@ -2747,12 +2858,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool hasE = coordinates.Contains("E");
             bool hasW = coordinates.Contains("W");
             bool hasQ = (hasN || hasS) && (hasE || hasW);            // Máme validní sadu kvadrantů
-
-            decimal pointX, pointY;
-
-            // Center nuluji, protože data vkládám do Point:
-            this.CenterX = null;
-            this.CenterY = null;
 
             // Desetinná čárka => tečka?
             if (!hasDot && hasColon && !hasGrade)
@@ -2771,9 +2876,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (pointParts.Length == 2 && _TryParseDecimal(pointParts[0], out pointX) && _TryParseDecimal(pointParts[1], out pointY))
                 {
                     this.CoordinatesFormat = DxMapCoordinatesFormat.NephritePoint;
-                    this.PointX = pointX;
-                    this.PointY = pointY;
-                    this.Zoom = null;                                // null převezme default, což je _ZoomTown
+                    this._PointX = pointX;
+                    this._PointY = pointY;
                 }
             }
             else if (hasGrade)
@@ -2785,9 +2889,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (gradeParts.Length == 2 && _TryParseGeoGrade(gradeParts[1], out var fmtX, out pointX) && _TryParseGeoGrade(gradeParts[0], out var fmtY, out pointY))
                     {
                         this.CoordinatesFormat = fmtX ?? fmtY ?? DxMapCoordinatesFormat.Wgs84ArcSecSuffix;
-                        this.PointX = pointX;
-                        this.PointY = pointY;
-                        this.Zoom = null;                                // null převezme default, což je _ZoomTown
+                        this._PointX = pointX;
+                        this._PointY = pointY;
                     }
                 }
             }
@@ -2798,14 +2901,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (decimalParts.Length == 2 && _TryParseGeoDecimal(decimalParts[1], out var fmtX, out pointX) && _TryParseGeoDecimal(decimalParts[0], out var fmtY, out pointY))
                 {
                     this.CoordinatesFormat = fmtX ?? fmtY ?? DxMapCoordinatesFormat.Wgs84Decimal;
-                    this.PointX = pointX;
-                    this.PointY = pointY;
-                    this.Zoom = null;                                // null převezme default, což je _ZoomTown
+                    this._PointX = pointX;
+                    this._PointY = pointY;
                 }
-            }
-            else
-            {   // Matrix kódy ještě neumím...
-
             }
         }
         /// <summary>
@@ -2816,8 +2914,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private string _GetCoordinates(DxMapCoordinatesFormat? format = null)
         {
             if (!format.HasValue) format = this.CoordinatesFormat;
-            decimal pointX = this.PointX;
-            decimal pointY = this.PointY;
+            decimal pointX = this._PointX;
+            decimal pointY = this._PointY;
 
             var fmt = format.Value;
             switch (fmt)
@@ -2842,33 +2940,33 @@ namespace Noris.Clients.Win.Components.AsolDX
                     return $"{_FormatGeoGrade(pointY, GeoAxis.Latitude, fmt)}, {_FormatGeoGrade(pointX, GeoAxis.Longitude, fmt)}";
                 case DxMapCoordinatesFormat.Wgs84ArcSecPrefix:
                     return $"{_FormatGeoGrade(pointY, GeoAxis.Latitude, fmt)}, {_FormatGeoGrade(pointX, GeoAxis.Longitude, fmt)}";
+
+                case DxMapCoordinatesFormat.OpenLocationCode:
+                    return OpenLocationCodeConvertor.Encode(pointX, pointY, 12);
             }
 
             return "";
         }
         /// <summary>
-        /// Pokud aktuální hodnota <see cref="_CoordinatesSerial"/> je odlišná od dodané hodnoty (před změnami), a pokud není potlačeno <see cref="__IsSuppressedChanges"/>, pak vyvolá události o změně souřadnic
+        /// Pokud aktuální hodnota <see cref="_CoordinatesSerial"/> je odlišná od dodané hodnoty (před změnami), vyvolá události o změně souřadnic.
         /// </summary>
         /// <param name="coordinatesOld"></param>
         private void _CheckCoordinatesChanged(string coordinatesOld)
         {
-            if (__IsSuppressedChanges) return;
-
             string coordinatesNew = _CoordinatesSerial;
-            if (String.Equals(coordinatesOld, coordinatesNew)) return;
-
-            _RunCoordinatesChanged();
+            if (!String.Equals(coordinatesOld, coordinatesNew))
+                _RunCoordinatesChanged();
         }
         /// <summary>
-        /// Vyvolá event <see cref="CoordinatesChanged"/>, pokud nejsou eventy potlačeny <see cref="__IsSuppressedChanges"/>.
+        /// Vyvolá event <see cref="CoordinatesChanged"/>.
         /// </summary>
         private void _RunCoordinatesChanged()
         {
-            if (__IsSuppressedChanges) return;
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"DxMapCoordinates.CoordinatesChanged() : {CoordinatesDebug}");
             CoordinatesChanged?.Invoke(this, EventArgs.Empty);
         }
         /// <summary>
-        /// Událost volaná po změně souřadnic
+        /// Událost volaná po změně souřadnic <see cref="Coordinates"/>
         /// </summary>
         public event EventHandler CoordinatesChanged;
         /// <summary>
@@ -2878,40 +2976,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                string text = $"{_FormatDecimal(this.PointX, 12)};{_FormatDecimal(this.PointY, 12)};{_FormatIntN(this.Zoom)};";
+                string text = $"{_FormatDecimal(this._PointX, 12)};{_FormatDecimal(this._PointY, 12)};{_FormatIntN(this._Zoom)};";
                 if (this.HasCenter)
-                    text += $"{_FormatDecimalN(this.CenterX, 7)};{_FormatDecimalN(this.CenterY, 7)};";
+                    text += $"{_FormatDecimalN(this._CenterX, 7)};{_FormatDecimalN(this._CenterY, 7)};";
                 return text;
             }
         }
         /// <summary>
-        /// Potlačení eventů o změně, pokud zde bude hodnota true.
+        /// Text pro Debug (ve formátu <see cref="DxMapCoordinatesFormat.Wgs84ArcSecPrefix"/>)
         /// </summary>
-        private bool __IsSuppressedChanges;
+        internal string CoordinatesDebug { get { return this._GetCoordinates(DxMapCoordinatesFormat.Wgs84ArcSecPrefix); } }
         #endregion
         #region UrlAdress : Práce s URL adresou (set, get, analýza i syntéza, event o změně), konkrétní providery (Seznam, Google, OpenMap)
         /// <summary>
-        /// Metoda se pokusí analyzovat dodanou URL adresu a naplnit z ní data do new instance
+        /// Metoda se pokusí analyzovat dodanou URL adresu a naplnit z ní data do new instance <see cref="DxMapCoordinates"/>.
         /// </summary>
         /// <param name="urlAdress"></param>
         /// <param name="coordinates"></param>
         /// <returns></returns>
         public static bool TryParseUrlAdress(string urlAdress, out DxMapCoordinates coordinates)
         {
-            coordinates = null;
-            if (!Uri.TryCreate(urlAdress, UriKind.RelativeOrAbsolute, out var uri)) return false;
-
-            if (_TryParseUriAsSeznamMapy(uri, ref coordinates)) return true;
-            if (_TryParseUriAsFrameMapy(uri, ref coordinates)) return true;
-            if (_TryParseUriAsGoogleMaps(uri, ref coordinates)) return true;
-            if (_TryParseUriAsOpenStreetMap(uri, ref coordinates)) return true;
-
-            return false;
+            return _TryParseUrlAdress(urlAdress, out coordinates);
         }
         /// <summary>
-        /// URL adresa mapy
+        /// URL adresa mapy.
+        /// Vložení takové hodnoty, která změní souřadnice, <b>vyvolá</b> event o změně <see cref="CoordinatesChanged"/>!
         /// </summary>
         public string UrlAdress { get { return _GetUrlAdress(); } set { _SetUrlAdress(value); } }
+        /// <summary>
+        /// URL adresa mapy.
+        /// Vložení takové hodnoty, která změní souřadnice, <b>nevyvolá</b> event o změně <see cref="CoordinatesChanged"/>!
+        /// </summary>
+        protected string _UrlAdress { get { return _GetUrlAdress(); } set { _SetUrlAdress(value, true); } }
         /// <summary>
         /// Vygeneruje a vrátí URL pro daný / aktuální provider (Seznam / Google / OpenStreet) a daný / aktuální typ mapy.
         /// </summary>
@@ -2938,8 +3034,31 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vloží dodanou URL adresu do koordinátů
         /// </summary>
         /// <param name="urlAdress"></param>
-        private void _SetUrlAdress(string urlAdress)
+        /// <param name="isSilent">Nevolat událost <see cref="CoordinatesChanged"/> po případné změně</param>
+        private void _SetUrlAdress(string urlAdress, bool isSilent = false)
         {
+            if (_TryParseUrlAdress(urlAdress, out var coordinates))
+            {
+                this.FillFrom(coordinates, isSilent);
+            }
+        }
+        /// <summary>
+        /// Metoda se pokusí analyzovat dodanou URL adresu a naplnit z ní data do new instance <see cref="DxMapCoordinates"/>.
+        /// </summary>
+        /// <param name="urlAdress"></param>
+        /// <param name="coordinates"></param>
+        /// <returns></returns>
+        private static bool _TryParseUrlAdress(string urlAdress, out DxMapCoordinates coordinates)
+        {
+            coordinates = null;
+            if (!Uri.TryCreate(urlAdress, UriKind.RelativeOrAbsolute, out var uri)) return false;
+
+            if (_TryParseUriAsSeznamMapy(uri, ref coordinates)) return true;
+            if (_TryParseUriAsFrameMapy(uri, ref coordinates)) return true;
+            if (_TryParseUriAsGoogleMaps(uri, ref coordinates)) return true;
+            if (_TryParseUriAsOpenStreetMap(uri, ref coordinates)) return true;
+
+            return false;
         }
         #region SeznamMapy
         /// <summary>
@@ -2995,13 +3114,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             //  Další atributy jsou optional a budeme je řešit podle toho, zda je najdeme:
             coordinates = new DxMapCoordinates();
             coordinates.Provider = provider;
-            coordinates.CenterX = centerX;
-            coordinates.CenterY = centerY;
+            coordinates._CenterX = centerX;
+            coordinates._CenterY = centerY;
             bool hasPoint = false;
 
             //  Další atributy jsou optional:
             _SearchValue("z", queryData, out int zoom, out bool hasZoom);
-            if (hasZoom) coordinates.Zoom = zoom;
+            if (hasZoom) coordinates._Zoom = zoom;
 
             _SearchValue("source", queryData, out string source, out bool hasSource);
             _SearchValue("id", queryData, out string id, out bool hasId);
@@ -3010,8 +3129,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var coords = id.Split(new string[] { "%2C" }, StringSplitOptions.RemoveEmptyEntries);
                 if (coords.Length == 2 && _TryParseDecimal(coords[0], out var pointX) && _TryParseDecimal(coords[1], out var pointY))
                 {
-                    coordinates.PointX = pointX;
-                    coordinates.PointY = pointY;
+                    coordinates._PointX = pointX;
+                    coordinates._PointY = pointY;
                     hasPoint = true;
                 }
             }
@@ -3019,8 +3138,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Není dán explicitní bod => jako Point akceptuji Center, ten je spolehlivě načten:
             if (!hasPoint)
             {
-                coordinates.PointX = coordinates.CenterX.Value;
-                coordinates.PointY = coordinates.CenterY.Value;
+                coordinates._PointX = coordinates._CenterX.Value;
+                coordinates._PointY = coordinates._CenterY.Value;
             }
 
             // Postranní panel:
@@ -3063,10 +3182,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Střed mapy: pokud je dán exaktně (HasCenter) pak jej akceptuji, jinak Pin:
             bool hasCenter = this.HasCenter;
-            decimal pointX = this.PointX;
-            decimal pointY = this.PointY;
-            decimal centerX = (hasCenter ? this.CenterX.Value : pointX);
-            decimal centerY = (hasCenter ? this.CenterY.Value : pointY);
+            decimal pointX = this._PointX;
+            decimal pointY = this._PointY;
+            decimal centerX = (hasCenter ? this._CenterX.Value : pointX);
+            decimal centerY = (hasCenter ? this._CenterY.Value : pointY);
             int zoom = this.Zoom.Value;
 
             // Umístit špendlík do bodu Point? Ano pokud je požadováno, anebo pokud je dán střed (pak Point může být jinde):
@@ -3147,10 +3266,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Střed mapy: pokud je dán exaktně (HasCenter) pak jej akceptuji, jinak Pin:
             bool hasCenter = this.HasCenter;
-            decimal pointX = this.PointX;
-            decimal pointY = this.PointY;
-            decimal centerX = (hasCenter ? this.CenterX.Value : pointX);
-            decimal centerY = (hasCenter ? this.CenterY.Value : pointY);
+            decimal pointX = this._PointX;
+            decimal pointY = this._PointY;
+            decimal centerX = (hasCenter ? this._CenterX.Value : pointX);
+            decimal centerY = (hasCenter ? this._CenterY.Value : pointY);
             int zoom = this.Zoom.Value;
 
             // Umístit špendlík do bodu Point? Ano pokud je požadováno, anebo pokud je dán střed (pak Point může být jinde):
@@ -3223,11 +3342,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Výstup:
             coordinates = new DxMapCoordinates();
             coordinates.Provider = DxMapCoordinatesProvider.OpenStreetMap;
-            coordinates.PointX = pointX;
-            coordinates.PointY = pointY;
-            coordinates.CenterX = centerX;
-            coordinates.CenterY = centerY;
-            coordinates.Zoom = zoom;
+            coordinates._PointX = pointX;
+            coordinates._PointY = pointY;
+            coordinates._CenterX = centerX;
+            coordinates._CenterY = centerY;
+            coordinates._Zoom = zoom;
 
             return true;
         }
@@ -3245,10 +3364,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Střed mapy: pokud je dán exaktně (HasCenter) pak jej akceptuji, jinak Pin:
             bool hasCenter = this.HasCenter;
-            decimal pointX = this.PointX;
-            decimal pointY = this.PointY;
-            decimal centerX = (hasCenter ? this.CenterX.Value : pointX);
-            decimal centerY = (hasCenter ? this.CenterY.Value : pointY);
+            decimal pointX = this._PointX;
+            decimal pointY = this._PointY;
+            decimal centerX = (hasCenter ? this._CenterX.Value : pointX);
+            decimal centerY = (hasCenter ? this._CenterY.Value : pointY);
             int zoom = this.Zoom.Value;
 
             // Umístit špendlík do bodu Point? Ano pokud je požadováno, anebo pokud je dán střed (pak Point může být jinde):
@@ -3560,12 +3679,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             string fmt2 = "".PadRight(decimals, '0');
             string format = $"{fmt1}.{fmt2}";
             string text = (Math.Round(value, decimals)).ToString(format);
-            text = text.Replace(_DotChar, ".").Replace(" ", "");
-            if (text.Contains(".") && decimals > 0)
-            {
-                while (text.Length > 1 && text.EndsWith("0"))
-                    text = text.Substring(0, (text.Length - 1));
-            }
+            text = _FormatEndsZeros(text);
             return text;
         }
         private static string _FormatDecimal(decimal value, int leadings, int decimals = 7)
@@ -3576,11 +3690,34 @@ namespace Noris.Clients.Win.Components.AsolDX
             string fmt2 = "".PadRight(decimals, '0');
             string format = $"{fmt1}.{fmt2}";
             string text = (Math.Round(value, decimals)).ToString(format);
+            text = _FormatEndsZeros(text);
+            return text;
+        }
+        private static string _FormatEndsZeros(string text)
+        {
             text = text.Replace(_DotChar, ".").Replace(" ", "");
-            if (text.Contains(".") && decimals > 0)
+            if (text.Contains("."))
             {
                 while (text.Length > 1 && text.EndsWith("0"))
-                    text = text.Substring(0, (text.Length - 1));
+                {
+                    if (text.Length >= 2 && text.EndsWith(".0"))
+                    {   // "xxxx.0"     =>  "0"     a konec  :
+                        if (text.Length == 2)
+                        {   // ".0"
+                            text = "0";
+                            break;
+                        }
+                        else
+                        {   // "123.0"  =>  "123"   a konec :
+                            text = text.Substring(0, (text.Length - 2));
+                            break;
+                        }
+                    }
+                    else
+                    {   // "456.250"    => "456.25" a jdeme dál  ...
+                        text = text.Substring(0, (text.Length - 1));
+                    }
+                }
             }
             return text;
         }
@@ -3692,13 +3829,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         Wgs84ArcSecPrefix,
         /// <summary>
-        /// Číselná matice do QR kódů 1: "+9F2P.2CQHRH"
+        /// OpenLocationCode od Google: <b>9F2Q6R5M+M3</b>
         /// </summary>
-        OlcCode,
-        /// <summary>
-        /// Číselná matice do QR kódů 2: "9F2P2CQH+RH"
-        /// </summary>
-        PlusCode
+        OpenLocationCode
     }
     /// <summary>
     /// Poskytovatel mapy
@@ -3757,6 +3890,1146 @@ namespace Noris.Clients.Win.Components.AsolDX
         Specific
     }
     #endregion
+    #endregion
+    #region class OpenLocationCodeConvertor : třída obsahující kodér a dekodér souřadnic ve formátu OpenLocationCode
+    /// <summary>
+    /// <see cref="OpenLocationCodeConvertor"/> zajišťuje konverze stringu ve formátu <b>OpenLocationCode</b> na zeměpisné souřadnice (Longitude = X, a Latitude = Y) tam i zpět.
+    /// </summary>
+    public class OpenLocationCodeConvertor
+    {
+        /// <summary>
+        /// Vrátí true, pokud daný string je validní souřadnice.
+        /// </summary>
+        /// <param name="coordinates"></param>
+        /// <returns></returns>
+        public static bool IsValid(string coordinates)
+        {
+            return OpenLocationCode.IsValid(coordinates);
+        }
+        /// <summary>
+        /// Zkusí dekódovat danou souřadnici a vrátit její pozici (střed).
+        /// </summary>
+        /// <param name="coordinates">Souřadnice</param>
+        /// <param name="pointX">X = Longitude = Zeměpisná pozice X od Greenwiche (0) na východ (+180 = přes Východní Evropu a Asii) nebo na západ (-180 = přes Portugalsko, Grónsko k Americe a na Havaj).<br/>
+        /// Praha má cca 14.4°</param>
+        /// <param name="pointY">Y = Latitude = Zeměpisná pozice Y od rovníku (0) na sever k pólu (+90 = severní pól) a na jih (-90 = jižní pól).<br/>
+        /// Praha má cca 50°</param>
+        /// <returns></returns>
+        public static bool TryParse(string coordinates, out decimal pointX, out decimal pointY)
+        {
+            pointX = 0m;
+            pointY = 0m;
+            if (String.IsNullOrEmpty(coordinates) || coordinates.Contains(",") || coordinates.Trim().Contains(".") || coordinates.Trim().Contains(" ")) return false;   // Před-filtr
+            if (!OpenLocationCode.IsValid(coordinates)) return false;
+            var codeArea = OpenLocationCode.Decode(coordinates);
+            pointX = (decimal)codeArea.CenterLongitude;
+            pointY = (decimal)codeArea.CenterLatitude;
+            return true;
+        }
+        /// <summary>
+        /// Vrátí <b>OpenLocationCode</b> pro zadanou souřadnici, v dané přesnosti
+        /// </summary>
+        /// <param name="pointX"></param>
+        /// <param name="pointY"></param>
+        /// <param name="codeLength"></param>
+        /// <returns></returns>
+        public static string Encode(decimal pointX, decimal pointY, int? codeLength = null)
+        {
+            string code = null;
+            if (codeLength.HasValue)
+                code = OpenLocationCode.Encode((double)pointY, (double)pointX, codeLength.Value);
+            else
+                code = OpenLocationCode.Encode((double)pointY, (double)pointX);
+            return code;
+        }
+        // Následující třídy pochází od JonMcPherson:
+        //   https://github.com/JonMcPherson/open-location-code/
+        //   https://www.nuget.org/packages/OpenLocationCode
+        // Kód nemá licenční omezení.
+        #region OpenLocationCode
+        /// <summary>
+        /// Convert locations to and from convenient codes known as Open Location Codes
+        /// or <see href="https://plus.codes/">Plus Codes</see>
+        /// <para>
+        /// Open Location Codes are short, ~10 character codes that can be used instead of street
+        /// addresses. The codes can be generated and decoded offline, and use a reduced character set that
+        /// minimises the chance of codes including words.
+        /// </para>
+        /// The <see href="https://github.com/google/open-location-code/blob/master/API.txt">Open Location Code API</see>
+        /// is implemented through the static methods:
+        /// <list type="bullet">
+        /// <item><see cref="IsValid(string)"/></item>
+        /// <item><see cref="IsShort(string)"/></item>
+        /// <item><see cref="IsFull(string)"/></item>
+        /// <item><see cref="Encode(double, double, int)"/></item>
+        /// <item><see cref="Decode(string)"/></item>
+        /// <item><see cref="Shorten(string, double, double)"/></item>
+        /// <item><see cref="ShortCode.RecoverNearest(string, double, double)"/></item>
+        /// </list>
+        /// Additionally an object type is provided which can be created using the constructors:
+        /// <list type="bullet">
+        /// <item><see cref="OpenLocationCode(string)"/></item>
+        /// <item><see cref="OpenLocationCode(double, double, int)"/></item>
+        /// <item><see cref="ShortCode(string)"/></item>
+        /// </list>
+        /// <example><code>
+        /// OpenLocationCode code = new OpenLocationCode("7JVW52GR+2V");
+        /// OpenLocationCode code = new OpenLocationCode(27.175063, 78.042188);
+        /// OpenLocationCode code = new OpenLocationCode(27.175063, 78.042188, 11);
+        /// OpenLocationCode.ShortCode shortCode = new OpenLocationCode.ShortCode("52GR+2V");
+        /// </code></example>
+        /// 
+        /// With a code object you can invoke the various methods such as to shorten the code
+        /// or decode the <see cref="CodeArea"/> coordinates.
+        /// <example><code>
+        /// OpenLocationCode.ShortCode shortCode = code.shorten(27.176, 78.05);
+        /// OpenLocationCode recoveredCode = shortCode.recoverNearest(27.176, 78.05);
+        /// 
+        /// CodeArea codeArea = code.decode()
+        /// </code></example>
+        /// </summary>
+        protected sealed class OpenLocationCode
+        {
+
+            /// <summary>
+            /// Provides a normal precision code, approximately 14x14 meters.<br/>
+            /// Used to specify encoded code length (<see cref="Encode(double,double,int)"/>)
+            /// </summary>
+            public const int CodePrecisionNormal = 10;
+
+            /// <summary>
+            /// Provides an extra precision code length, approximately 2x3 meters.<br/>
+            /// Used to specify encoded code length (<see cref="Encode(double,double,int)"/>)
+            /// </summary>
+            public const int CodePrecisionExtra = 11;
+
+
+            // A separator used to break the code into two parts to aid memorability.
+            private const char SeparatorCharacter = '+';
+
+            // The number of characters to place before the separator.
+            private const int SeparatorPosition = 8;
+
+            // The character used to pad codes.
+            private const char PaddingCharacter = '0';
+
+            // The character set used to encode the digit values.
+            internal const string CodeAlphabet = "23456789CFGHJMPQRVWX";
+
+            // The base to use to convert numbers to/from.
+            private const int EncodingBase = 20; // CodeAlphabet.Length;
+
+            // The encoding base squared also rep
+            private const int EncodingBaseSquared = EncodingBase * EncodingBase;
+
+            // The maximum value for latitude in degrees.
+            private const int LatitudeMax = 90;
+
+            // The maximum value for longitude in degrees.
+            private const int LongitudeMax = 180;
+
+            // Maximum code length using just lat/lng pair encoding.
+            private const int PairCodeLength = 10;
+
+            // Number of digits in the grid coding section.
+            private const int GridCodeLength = MaxDigitCount - PairCodeLength;
+
+            // Maximum code length for any plus code
+            private const int MaxDigitCount = 15;
+
+            // Number of columns in the grid refinement method.
+            private const int GridColumns = 4;
+
+            // Number of rows in the grid refinement method.
+            private const int GridRows = 5;
+
+            // The maximum latitude digit value for the first grid layer
+            private const int FirstLatitudeDigitValueMax = 8; // lat -> 90
+
+            // The maximum longitude digit value for the first grid layer
+            private const int FirstLongitudeDigitValueMax = 17; // lon -> 180
+
+
+            private const long GridRowsMultiplier = 3125; // Pow(GridRows, GridCodeLength)
+
+            private const long GridColumnsMultiplier = 1024; // Pow(GridColumns, GridCodeLength)
+
+            // Value to multiple latitude degrees to convert it to an integer with the maximum encoding
+            // precision. I.e. ENCODING_BASE**3 * GRID_ROWS**GRID_CODE_LENGTH
+            private const long LatIntegerMultiplier = 8000 * GridRowsMultiplier;
+
+            // Value to multiple longitude degrees to convert it to an integer with the maximum encoding
+            // precision. I.e. ENCODING_BASE**3 * GRID_COLUMNS**GRID_CODE_LENGTH
+            private const long LngIntegerMultiplier = 8000 * GridColumnsMultiplier;
+
+            // Value of the most significant latitude digit after it has been converted to an integer.
+            private const long LatMspValue = LatIntegerMultiplier * EncodingBaseSquared;
+
+            // Value of the most significant longitude digit after it has been converted to an integer.
+            private const long LngMspValue = LngIntegerMultiplier * EncodingBaseSquared;
+
+
+
+            // The ASCII integer of the minimum digit character used as the offset for indexed code digits
+            private static readonly int IndexedDigitValueOffset = CodeAlphabet[0]; // 50
+
+            // The digit values indexed by the character ASCII integer for efficient lookup of a digit value by its character
+            private static readonly int[] IndexedDigitValues = new int[CodeAlphabet[CodeAlphabet.Length - 1] - IndexedDigitValueOffset + 1]; // int[38]
+
+            static OpenLocationCode()
+            {
+                for (int i = 0, digitVal = 0; i < IndexedDigitValues.Length; i++)
+                {
+                    int digitIndex = CodeAlphabet[digitVal] - IndexedDigitValueOffset;
+                    IndexedDigitValues[i] = (digitIndex == i) ? digitVal++ : -1;
+                }
+            }
+
+
+            /// <summary>
+            /// Creates an <see cref="OpenLocationCode"/> object for the provided full code (or <see cref="CodeDigits"/>).
+            /// Use <see cref="ShortCode(string)"/> for short codes.
+            /// </summary>
+            /// <param name="code">A valid full Open Location Code or <see cref="CodeDigits"/></param>
+            /// <exception cref="ArgumentException">If the code is null, not valid, or not full.</exception>
+            public OpenLocationCode(string code)
+            {
+                if (code == null)
+                {
+                    throw new ArgumentException("code cannot be null");
+                }
+                Code = NormalizeCode(code.ToUpper());
+                if (!IsValidUpperCase(Code) || !IsCodeFull(Code))
+                {
+                    throw new ArgumentException($"code '{code}' is not a valid full Open Location Code (or code digits).");
+                }
+                CodeDigits = TrimCode(Code);
+            }
+
+            /// <summary>
+            /// Creates an <see cref="OpenLocationCode"/> object encoded from the provided latitude/longitude coordinates
+            /// and having the provided code length (precision).
+            /// </summary>
+            /// <param name="latitude">The latitude coordinate in decimal degrees.</param>
+            /// <param name="longitude">The longitude coordinate in decimal degrees.</param>
+            /// <param name="codeLength">The number of digits in the code (Default: <see cref="CodePrecisionNormal"/>).</param>
+            /// <exception cref="ArgumentException">If the code length is invalid (valid lengths: <c>4</c>, <c>6</c>, <c>8</c>, or <c>10+</c>).</exception>
+            public OpenLocationCode(double latitude, double longitude, int codeLength = CodePrecisionNormal)
+            {
+                Code = Encode(latitude, longitude, codeLength);
+                CodeDigits = TrimCode(Code);
+            }
+
+            /// <summary>
+            /// Creates an <see cref="OpenLocationCode"/> object encoded from the provided geographic point coordinates
+            /// with the provided code length.
+            /// </summary>
+            /// <param name="point">The geographic coordinate point.</param>
+            /// <param name="codeLength">The desired number of digits in the code (Default: <see cref="CodePrecisionNormal"/>).</param>
+            /// /// <exception cref="ArgumentException">If the code length is not valid.</exception>
+            /// <remarks>Alternative to <see cref="OpenLocationCode(double, double, int)"/></remarks>
+            public OpenLocationCode(GeoPoint point, int codeLength = CodePrecisionNormal) :
+                this(point.Latitude, point.Longitude, codeLength)
+            { }
+
+
+            /// <summary>
+            /// The code which is a valid full Open Location Code (plus code).
+            /// </summary>
+            /// <value>The string representation of the code.</value>
+            public string Code { get; }
+
+            /// <summary>
+            /// The digits of the full code which excludes the separator '+' character and any padding '0' characters.
+            /// This is useful to more concisely represent or encode a full Open Location Code
+            /// since the code digits can be normalized back into a valid full code.
+            /// </summary>
+            /// <example>"8FWC2300+" -> "8FWC23", "8FWC2345+G6" -> "8FWC2345G6"</example>
+            /// <value>The string representation of the code digits.</value>
+            /// <remarks>This is a nonstandard code format.</remarks>
+            public string CodeDigits { get; }
+
+
+            /// <summary>
+            /// Decodes this full Open Location Code into a <see cref="CodeArea"/> object
+            /// encapsulating the latitude/longitude coordinates of the area bounding box.
+            /// </summary>
+            /// <returns>The decoded CodeArea for this Open Location Code.</returns>
+            public CodeArea Decode()
+            {
+                return DecodeValid(CodeDigits);
+            }
+
+
+            /// <summary>
+            /// Determines if this full Open Location Code is padded which is defined by <see cref="IsPadded(string)"/>.
+            /// </summary>
+            /// <returns><c>true</c>, if this Open Location Code is a padded, <c>false</c> otherwise.</returns>
+            public bool IsPadded()
+            {
+                return IsCodePadded(Code);
+            }
+
+
+            /// <summary>
+            /// Shorten this full Open Location Code by removing four or six digits (depending on the provided reference point).
+            /// It removes as many digits as possible.
+            /// </summary>
+            /// <returns>A new <see cref="ShortCode"/> instance shortened from this Open Location Code.</returns>
+            /// <param name="referenceLatitude">The reference latitude in decimal degrees.</param>
+            /// <param name="referenceLongitude">The reference longitude in decimal degrees.</param>
+            /// <exception cref="InvalidOperationException">If this code is padded (<see cref="IsPadded()"/>).</exception>
+            /// <exception cref="ArgumentException">If the reference point is too far from this code's center point.</exception>
+            public ShortCode Shorten(double referenceLatitude, double referenceLongitude)
+            {
+                return ShortenValid(Decode(), Code, referenceLatitude, referenceLongitude);
+            }
+
+            /// <summary>
+            /// Shorten this full Open Location Code by removing four or six digits (depending on the provided reference point).
+            /// It removes as many digits as possible.
+            /// </summary>
+            /// <returns>A new <see cref="ShortCode"/> instance shortened from this Open Location Code.</returns>
+            /// <param name="referencePoint">The reference point coordinates</param>
+            /// <exception cref="InvalidOperationException">If this code is padded (<see cref="IsPadded()"/>).</exception>
+            /// <exception cref="ArgumentException">If the reference point is too far from this code's center point.</exception>
+            /// <remarks>Convenient alternative to <see cref="Shorten(double, double)"/></remarks>
+            public ShortCode Shorten(GeoPoint referencePoint)
+            {
+                return Shorten(referencePoint.Latitude, referencePoint.Longitude);
+            }
+
+
+            /// <inheritdoc />
+            /// <summary>
+            /// Determines whether the provided object is an OpenLocationCode with the same <see cref="Code"/> as this OpenLocationCode.
+            /// </summary>
+            public override bool Equals(object obj)
+            {
+                return this == obj || (obj is OpenLocationCode olc && olc.Code == Code);
+            }
+
+            /// <returns>The hashcode of the <see cref="Code"/> string.</returns>
+            public override int GetHashCode()
+            {
+                return Code.GetHashCode();
+            }
+
+            /// <returns>The <see cref="Code"/> string.</returns>
+            public override string ToString()
+            {
+                return Code;
+            }
+
+
+            // API Spec Implementation
+
+            /// <summary>
+            /// Determines if the provided string is a valid Open Location Code sequence.
+            /// A valid Open Location Code can be either full or short (XOR).
+            /// </summary>
+            /// <returns><c>true</c>, if the provided code is a valid Open Location Code, <c>false</c> otherwise.</returns>
+            /// <param name="code">The code string to check.</param>
+            public static bool IsValid(string code)
+            {
+                return code != null && IsValidUpperCase(code.ToUpper());
+            }
+
+            private static bool IsValidUpperCase(string code)
+            {
+                if (code.Length < 2)
+                {
+                    return false;
+                }
+
+                // There must be exactly one separator.
+                int separatorIndex = code.IndexOf(SeparatorCharacter);
+                if (separatorIndex == -1)
+                {
+                    return false;
+                }
+                if (separatorIndex != code.LastIndexOf(SeparatorCharacter))
+                {
+                    return false;
+                }
+                // There must be an even number of at most eight characters before the separator.
+                if (separatorIndex % 2 != 0 || separatorIndex > SeparatorPosition)
+                {
+                    return false;
+                }
+
+                // Check first two characters: only some values from the alphabet are permitted.
+                if (separatorIndex == SeparatorPosition)
+                {
+                    // First latitude character can only have first 9 values.
+                    if (CodeAlphabet.IndexOf(code[0]) > FirstLatitudeDigitValueMax)
+                    {
+                        return false;
+                    }
+
+                    // First longitude character can only have first 18 values.
+                    if (CodeAlphabet.IndexOf(code[1]) > FirstLongitudeDigitValueMax)
+                    {
+                        return false;
+                    }
+                }
+
+                // Check the characters before the separator.
+                bool paddingStarted = false;
+                for (int i = 0; i < separatorIndex; i++)
+                {
+                    if (paddingStarted)
+                    {
+                        // Once padding starts, there must not be anything but padding.
+                        if (code[i] != PaddingCharacter)
+                        {
+                            return false;
+                        }
+                    }
+                    else if (code[i] == PaddingCharacter)
+                    {
+                        paddingStarted = true;
+                        // Short codes cannot have padding
+                        if (separatorIndex < SeparatorPosition)
+                        {
+                            return false;
+                        }
+                        // Padding can start on even character: 2, 4 or 6.
+                        if (i != 2 && i != 4 && i != 6)
+                        {
+                            return false;
+                        }
+                    }
+                    else if (CodeAlphabet.IndexOf(code[i]) == -1)
+                    {
+                        return false; // Illegal character.
+                    }
+                }
+
+                // Check the characters after the separator.
+                if (code.Length > separatorIndex + 1)
+                {
+                    if (paddingStarted)
+                    {
+                        return false;
+                    }
+                    // Only one character after separator is forbidden.
+                    if (code.Length == separatorIndex + 2)
+                    {
+                        return false;
+                    }
+                    for (int i = separatorIndex + 1; i < code.Length; i++)
+                    {
+                        if (CodeAlphabet.IndexOf(code[i]) == -1)
+                        {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+
+            /// <summary>
+            /// Determines if a code is a valid short Open Location Code.
+            /// <para>
+            /// A short Open Location Code is a sequence created by removing an even number
+            /// of characters from the start of a full Open Location Code. Short codes must
+            /// include the separator character and it must be before eight or less characters.
+            /// </para>
+            /// </summary>
+            /// <returns><c>true</c>, if the provided code is a valid short Open Location Code, <c>false</c> otherwise.</returns>
+            /// <param name="code">The code string to check.</param>
+            public static bool IsShort(string code)
+            {
+                return IsValid(code) && IsCodeShort(code);
+            }
+
+            private static bool IsCodeShort(string code)
+            {
+                int separatorIndex = code.IndexOf(SeparatorCharacter);
+                return separatorIndex >= 0 && separatorIndex < SeparatorPosition;
+            }
+
+            /// <summary>
+            /// Determines if a code is a valid full Open Location Code.
+            /// <para>
+            /// Full codes must include the separator character and it must be after eight characters.
+            /// </para>
+            /// </summary>
+            /// <returns><c>true</c>, if the provided code is a valid full Open Location Code, <c>false</c> otherwise.</returns>
+            /// <param name="code">The code string to check.</param>
+            public static bool IsFull(string code)
+            {
+                return IsValid(code) && IsCodeFull(code);
+            }
+
+            private static bool IsCodeFull(string code)
+            {
+                return code.IndexOf(SeparatorCharacter) == SeparatorPosition;
+            }
+
+            /// <summary>
+            /// Determines if a code is a valid padded Open Location Code.
+            /// <para>
+            /// An Open Location Code is padded when it has only 2, 4, or 6 valid digits
+            /// followed by zero <c>'0'</c> as padding to form a full 8 digit code.
+            /// If this returns <c>true</c> that the code is padded, then it is also implied
+            /// to be full since short codes cannot be padded.
+            /// </para>
+            /// </summary>
+            /// <returns><c>true</c>, if the provided code is a valid padded Open Location Code, <c>false</c> otherwise.</returns>
+            /// <param name="code">The code string to check.</param>
+            /// <remarks>
+            /// This is not apart of the API specification but it is useful to check if a code can
+            /// <see cref="Shorten(string, double, double)"/> since padded codes cannot be shortened.
+            /// </remarks>
+            public static bool IsPadded(string code)
+            {
+                return IsValid(code) && IsCodePadded(code);
+            }
+
+            private static bool IsCodePadded(string code)
+            {
+                return code.IndexOf(PaddingCharacter) >= 0;
+            }
+
+
+            /// <summary>
+            /// Encodes latitude/longitude coordinates into a full Open Location Code of the provided length.
+            /// </summary>
+            /// <returns>The encoded Open Location Code.</returns>
+            /// <param name="latitude">The latitude in decimal degrees.</param>
+            /// <param name="longitude">The longitude in decimal degrees.</param>
+            /// <param name="codeLength">The number of digits in the code (Default: <see cref="CodePrecisionNormal"/>).</param>
+            /// <exception cref="ArgumentException">If the code length is not valid.</exception>
+            public static string Encode(double latitude, double longitude, int codeLength = CodePrecisionNormal)
+            {
+                // Limit the maximum number of digits in the code.
+                codeLength = Math.Min(codeLength, MaxDigitCount);
+                // Check that the code length requested is valid.
+                if (codeLength < 2 || (codeLength < PairCodeLength && codeLength % 2 == 1))
+                {
+                    throw new ArgumentException($"Illegal code length {codeLength}.");
+                }
+                // Ensure that latitude and longitude are valid.
+                latitude = ClipLatitude(latitude);
+                longitude = NormalizeLongitude(longitude);
+
+                // Latitude 90 needs to be adjusted to be just less, so the returned code can also be decoded.
+                if ((int)latitude == LatitudeMax)
+                {
+                    latitude -= 0.9 * ComputeLatitudePrecision(codeLength);
+                }
+
+                // Store the code - we build it in reverse and reorder it afterwards.
+                StringBuilder reverseCodeBuilder = new StringBuilder();
+
+                // Compute the code.
+                // This approach converts each value to an integer after multiplying it by
+                // the final precision. This allows us to use only integer operations, so
+                // avoiding any accumulation of floating point representation errors.
+
+                // Multiply values by their precision and convert to positive. Rounding
+                // avoids/minimises errors due to floating point precision.
+                long latVal = (long)(Math.Round((latitude + LatitudeMax) * LatIntegerMultiplier * 1e6) / 1e6);
+                long lngVal = (long)(Math.Round((longitude + LongitudeMax) * LngIntegerMultiplier * 1e6) / 1e6);
+
+                if (codeLength > PairCodeLength)
+                {
+                    for (int i = 0; i < GridCodeLength; i++)
+                    {
+                        long latDigit = latVal % GridRows;
+                        long lngDigit = lngVal % GridColumns;
+                        int ndx = (int)(latDigit * GridColumns + lngDigit);
+                        reverseCodeBuilder.Append(CodeAlphabet[ndx]);
+                        latVal /= GridRows;
+                        lngVal /= GridColumns;
+                    }
+                }
+                else
+                {
+                    latVal /= GridRowsMultiplier;
+                    lngVal /= GridColumnsMultiplier;
+                }
+                // Compute the pair section of the code.
+                for (int i = 0; i < PairCodeLength / 2; i++)
+                {
+                    reverseCodeBuilder.Append(CodeAlphabet[(int)(lngVal % EncodingBase)]);
+                    reverseCodeBuilder.Append(CodeAlphabet[(int)(latVal % EncodingBase)]);
+                    latVal /= EncodingBase;
+                    lngVal /= EncodingBase;
+                    // If we are at the separator position, add the separator.
+                    if (i == 0)
+                    {
+                        reverseCodeBuilder.Append(SeparatorCharacter);
+                    }
+                }
+                // Reverse the code.
+                char[] reversedCode = reverseCodeBuilder.ToString().ToCharArray();
+                Array.Reverse(reversedCode);
+                StringBuilder codeBuilder = new StringBuilder(new string(reversedCode));
+
+                // If we need to pad the code, replace some of the digits.
+                if (codeLength < SeparatorPosition)
+                {
+                    codeBuilder.Remove(codeLength, SeparatorPosition - codeLength);
+                    for (int i = codeLength; i < SeparatorPosition; i++)
+                    {
+                        codeBuilder.Insert(i, PaddingCharacter);
+                    }
+                }
+                return codeBuilder.ToString(0, Math.Max(SeparatorPosition + 1, codeLength + 1));
+            }
+
+            /// <summary>
+            /// Encodes geographic point coordinates into a full Open Location Code of the provided length.
+            /// </summary>
+            /// <returns>The encoded Open Location Code.</returns>
+            /// <param name="point">The geographic point coordinates.</param>
+            /// <param name="codeLength">The number of digits in the code (Default: <see cref="CodePrecisionNormal"/>).</param>
+            /// <exception cref="ArgumentException">If the code length is not valid.</exception>
+            /// <remarks>Alternative too <see cref="Encode(double, double, int)"/></remarks>
+            public static string Encode(GeoPoint point, int codeLength = CodePrecisionNormal)
+            {
+                return Encode(point.Latitude, point.Longitude, codeLength);
+            }
+
+            /// <summary>
+            /// Decodes a full Open Location Code into a <see cref="CodeArea"/> object
+            /// encapsulating the latitude/longitude coordinates of the area bounding box.
+            /// </summary>
+            /// <returns>The decoded CodeArea for the given location code.</returns>
+            /// <param name="code">The Open Location Code to be decoded.</param>
+            /// <exception cref="ArgumentException">If the code is not valid or not full.</exception>
+            public static CodeArea Decode(string code)
+            {
+                code = ValidateCode(code);
+                if (!IsCodeFull(code))
+                {
+                    throw new ArgumentException($"{nameof(Decode)}(code: {code}) - code cannot be short.");
+                }
+                return DecodeValid(TrimCode(code));
+            }
+
+            private static CodeArea DecodeValid(string codeDigits)
+            {
+                // Initialise the values. We work them out as integers and convert them to doubles at the end.
+                long latVal = -LatitudeMax * LatIntegerMultiplier;
+                long lngVal = -LongitudeMax * LngIntegerMultiplier;
+                // Define the place value for the digits. We'll divide this down as we work through the code.
+                long latPlaceVal = LatMspValue;
+                long lngPlaceVal = LngMspValue;
+
+                int pairPartLength = Math.Min(codeDigits.Length, PairCodeLength);
+                int codeLength = Math.Min(codeDigits.Length, MaxDigitCount);
+                for (int i = 0; i < pairPartLength; i += 2)
+                {
+                    latPlaceVal /= EncodingBase;
+                    lngPlaceVal /= EncodingBase;
+                    latVal += DigitValueOf(codeDigits[i]) * latPlaceVal;
+                    lngVal += DigitValueOf(codeDigits[i + 1]) * lngPlaceVal;
+                }
+                for (int i = PairCodeLength; i < codeLength; i++)
+                {
+                    latPlaceVal /= GridRows;
+                    lngPlaceVal /= GridColumns;
+                    int digit = DigitValueOf(codeDigits[i]);
+                    int row = digit / GridColumns;
+                    int col = digit % GridColumns;
+                    latVal += row * latPlaceVal;
+                    lngVal += col * lngPlaceVal;
+                }
+                return new CodeArea(
+                    (double)latVal / LatIntegerMultiplier,
+                    (double)lngVal / LngIntegerMultiplier,
+                    (double)(latVal + latPlaceVal) / LatIntegerMultiplier,
+                    (double)(lngVal + lngPlaceVal) / LngIntegerMultiplier,
+                    codeLength
+                );
+            }
+
+            /// <summary>
+            /// Shorten a full Open Location Code by removing four or six digits (depending on the provided reference point).
+            /// It removes as many digits as possible.
+            /// </summary>
+            /// <returns>A new <see cref="ShortCode"/> instance shortened from the the provided Open Location Code.</returns>
+            /// <param name="code">The Open Location Code to shorten.</param>
+            /// <param name="referenceLatitude">The reference latitude in decimal degrees.</param>
+            /// <param name="referenceLongitude">The reference longitude in decimal degrees.</param>
+            /// <exception cref="ArgumentException">If the code is not valid, not full, or is padded.</exception>
+            /// <exception cref="ArgumentException">If the reference point is too far from the code's center point.</exception>
+            public static ShortCode Shorten(string code, double referenceLatitude, double referenceLongitude)
+            {
+                code = ValidateCode(code);
+                if (!IsCodeFull(code))
+                {
+                    throw new ArgumentException($"{nameof(Shorten)}(code: \"{code}\") - code cannot be short.");
+                }
+                if (IsCodePadded(code))
+                {
+                    throw new ArgumentException($"{nameof(Shorten)}(code: \"{code}\") - code cannot be padded.");
+                }
+                return ShortenValid(Decode(code), code, referenceLatitude, referenceLongitude);
+            }
+
+            private static ShortCode ShortenValid(CodeArea codeArea, string code, double referenceLatitude, double referenceLongitude)
+            {
+                GeoPoint center = codeArea.Center;
+                double range = Math.Max(
+                    Math.Abs(referenceLatitude - center.Latitude),
+                    Math.Abs(referenceLongitude - center.Longitude)
+                );
+                // We are going to check to see if we can remove three pairs, two pairs or just one pair of
+                // digits from the code.
+                for (int i = 4; i >= 1; i--)
+                {
+                    // Check if we're close enough to shorten. The range must be less than 1/2
+                    // the precision to shorten at all, and we want to allow some safety, so
+                    // use 0.3 instead of 0.5 as a multiplier.
+                    if (range < (ComputeLatitudePrecision(i * 2) * 0.3))
+                    {
+                        // We're done.
+                        return new ShortCode(code.Substring(i * 2), valid: true);
+                    }
+                }
+                throw new ArgumentException("Reference location is too far from the Open Location Code center.");
+            }
+
+            private static string ValidateCode(string code)
+            {
+                if (code == null)
+                {
+                    throw new ArgumentException("code cannot be null");
+                }
+                code = code.ToUpper();
+                if (!IsValidUpperCase(code))
+                {
+                    throw new ArgumentException($"code '{code}' is not a valid Open Location Code.");
+                }
+                return code;
+            }
+
+
+            // Private static utility methods.
+
+            internal static int DigitValueOf(char digitChar)
+            {
+                return IndexedDigitValues[digitChar - IndexedDigitValueOffset];
+            }
+
+            private static double ClipLatitude(double latitude)
+            {
+                return Math.Min(Math.Max(latitude, -LatitudeMax), LatitudeMax);
+            }
+
+            private static double NormalizeLongitude(double longitude)
+            {
+                while (longitude < -LongitudeMax)
+                {
+                    longitude += LongitudeMax * 2;
+                }
+                while (longitude >= LongitudeMax)
+                {
+                    longitude -= LongitudeMax * 2;
+                }
+                return longitude;
+            }
+
+            /// <summary>
+            /// Normalize a location code by adding the separator '+' character and any padding '0' characters
+            /// that are necessary to form a valid location code.
+            /// </summary>
+            private static string NormalizeCode(string code)
+            {
+                if (code.Length < SeparatorPosition)
+                {
+                    return code + new string(PaddingCharacter, SeparatorPosition - code.Length) + SeparatorCharacter;
+                }
+                else if (code.Length == SeparatorPosition)
+                {
+                    return code + SeparatorCharacter;
+                }
+                else if (code[SeparatorPosition] != SeparatorCharacter)
+                {
+                    return code.Substring(0, SeparatorPosition) + SeparatorCharacter + code.Substring(SeparatorPosition);
+                }
+                return code;
+            }
+
+            /// <summary>
+            /// Trim a location code by removing the separator '+' character and any padding '0' characters
+            /// resulting in only the code digits.
+            /// </summary>
+            internal static string TrimCode(string code)
+            {
+                StringBuilder codeBuilder = new StringBuilder();
+                foreach (char c in code)
+                {
+                    if (c != PaddingCharacter && c != SeparatorCharacter)
+                    {
+                        codeBuilder.Append(c);
+                    }
+                }
+                return codeBuilder.Length != code.Length ? codeBuilder.ToString() : code;
+            }
+
+            /// <summary>
+            /// Compute the latitude precision value for a given code length. Lengths &lt;= 10 have the same
+            /// precision for latitude and longitude, but lengths > 10 have different precisions due to the
+            /// grid method having fewer columns than rows.
+            /// </summary>
+            /// <remarks>Copied from the JS implementation.</remarks>
+            private static double ComputeLatitudePrecision(int codeLength)
+            {
+                if (codeLength <= CodePrecisionNormal)
+                {
+                    return Math.Pow(EncodingBase, codeLength / -2 + 2);
+                }
+                return Math.Pow(EncodingBase, -3) / Math.Pow(GridRows, codeLength - PairCodeLength);
+            }
+            /// <summary>
+            /// A class representing a short Open Location Code which is defined by <see cref="IsShort(string)"/>.
+            /// <para>
+            /// A ShortCode instance can be created the following ways:
+            /// <list type="bullet">
+            /// <item><see cref="Shorten(double, double)"/> - Shorten a full Open Location Code</item>
+            /// <item><see cref="ShortCode(string)"/> - Construct for a valid short Open Location Code</item>
+            /// </list>
+            /// </para>
+            /// A ShortCode can be recovered back to a full Open Location Code using <see cref="RecoverNearest(double, double)"/>
+            /// or using the static method <see cref="RecoverNearest(string, double, double)"/> (as defined by the spec).
+            /// </summary>
+            public class ShortCode
+            {
+
+                /// <summary>
+                /// Creates a <see cref="ShortCode"/> object for the provided short Open Location Code.
+                /// Use <see cref="OpenLocationCode(string)"/> for full codes.
+                /// </summary>
+                /// <param name="shortCode">A valid short Open Location Code.</param>
+                /// <exception cref="ArgumentException">If the code is null, not valid, or not short.</exception>
+                public ShortCode(string shortCode)
+                {
+                    Code = ValidateShortCode(ValidateCode(shortCode));
+                }
+
+                // Used internally for short codes which are guaranteed to be valid
+                // ReSharper disable once UnusedParameter.Local - because public constructor 
+                internal ShortCode(string shortCode, bool valid)
+                {
+                    Code = shortCode;
+                }
+
+                /// <summary>
+                /// The code which is a valid short Open Location Code (plus code).
+                /// </summary>
+                /// <example>9QCJ+2VX</example>
+                /// <value>The string representation of the short code.</value>
+                public string Code { get; }
+
+
+                /// <returns>
+                /// A new OpenLocationCode instance representing a full Open Location Code
+                /// recovered from this (short) Open Location Code, given the reference location.
+                /// </returns>
+                /// <param name="referenceLatitude">The reference latitude in decimal degrees.</param>
+                /// <param name="referenceLongitude">The reference longitude in decimal degrees.</param>
+                public OpenLocationCode RecoverNearest(double referenceLatitude, double referenceLongitude)
+                {
+                    return RecoverNearestValid(Code, referenceLatitude, referenceLongitude);
+                }
+
+
+                /// <inheritdoc />
+                /// <summary>
+                /// Determines whether the provided object is a ShortCode with the same <see cref="Code"/> as this ShortCode.
+                /// </summary>
+                public override bool Equals(object obj)
+                {
+                    return obj == this || (obj is ShortCode shortCode && shortCode.Code == Code);
+                }
+
+                /// <returns>The hashcode of the <see cref="Code"/> string.</returns>
+                public override int GetHashCode()
+                {
+                    return Code.GetHashCode();
+                }
+
+                /// <returns>The <see cref="Code"/> string.</returns>
+                public override string ToString()
+                {
+                    return Code;
+                }
+
+
+                /// <remarks>
+                /// Note: if shortCode is already a valid full code,
+                /// this will immediately return a new OpenLocationCode instance with that code
+                /// </remarks>
+                /// <returns>
+                /// A new OpenLocationCode instance representing a full Open Location Code
+                /// recovered from the provided short Open Location Code, given the reference location.
+                /// </returns>
+                /// <param name="shortCode">The valid short Open Location Code to recover</param>
+                /// <param name="referenceLatitude">The reference latitude in decimal degrees.</param>
+                /// <param name="referenceLongitude">The reference longitude in decimal degrees.</param>
+                /// <exception cref="ArgumentException">If the code is null or not valid.</exception>
+                public static OpenLocationCode RecoverNearest(string shortCode, double referenceLatitude, double referenceLongitude)
+                {
+                    string validCode = ValidateCode(shortCode);
+                    if (IsCodeFull(validCode)) return new OpenLocationCode(validCode);
+
+                    return RecoverNearestValid(ValidateShortCode(validCode), referenceLatitude, referenceLongitude);
+                }
+
+                private static OpenLocationCode RecoverNearestValid(string shortCode, double referenceLatitude, double referenceLongitude)
+                {
+                    referenceLatitude = ClipLatitude(referenceLatitude);
+                    referenceLongitude = NormalizeLongitude(referenceLongitude);
+
+                    int digitsToRecover = SeparatorPosition - shortCode.IndexOf(SeparatorCharacter);
+                    // The precision (height and width) of the missing prefix in degrees.
+                    double prefixPrecision = Math.Pow(EncodingBase, 2 - (digitsToRecover / 2));
+
+                    // Use the reference location to generate the prefix.
+                    string recoveredPrefix =
+                        new OpenLocationCode(referenceLatitude, referenceLongitude).Code.Substring(0, digitsToRecover);
+                    // Combine the prefix with the short code and decode it.
+                    OpenLocationCode recovered = new OpenLocationCode(recoveredPrefix + shortCode);
+                    GeoPoint recoveredCodeAreaCenter = recovered.Decode().Center;
+                    // Work out whether the new code area is too far from the reference location. If it is, we
+                    // move it. It can only be out by a single precision step.
+                    double recoveredLatitude = recoveredCodeAreaCenter.Latitude;
+                    double recoveredLongitude = recoveredCodeAreaCenter.Longitude;
+
+                    // Move the recovered latitude by one precision up or down if it is too far from the reference,
+                    // unless doing so would lead to an invalid latitude.
+                    double latitudeDiff = recoveredLatitude - referenceLatitude;
+                    if (latitudeDiff > prefixPrecision / 2 && recoveredLatitude - prefixPrecision > -LatitudeMax)
+                    {
+                        recoveredLatitude -= prefixPrecision;
+                    }
+                    else if (latitudeDiff < -prefixPrecision / 2 && recoveredLatitude + prefixPrecision < LatitudeMax)
+                    {
+                        recoveredLatitude += prefixPrecision;
+                    }
+
+                    // Move the recovered longitude by one precision up or down if it is too far from the reference.
+                    double longitudeDiff = recoveredCodeAreaCenter.Longitude - referenceLongitude;
+                    if (longitudeDiff > prefixPrecision / 2)
+                    {
+                        recoveredLongitude -= prefixPrecision;
+                    }
+                    else if (longitudeDiff < -prefixPrecision / 2)
+                    {
+                        recoveredLongitude += prefixPrecision;
+                    }
+
+                    return new OpenLocationCode(recoveredLatitude, recoveredLongitude, recovered.CodeDigits.Length);
+                }
+
+                private static string ValidateShortCode(string shortCode)
+                {
+                    if (!IsCodeShort(shortCode))
+                    {
+                        throw new ArgumentException($"code '{shortCode}' is not a valid short Open Location Code.");
+                    }
+                    return shortCode;
+                }
+
+            }
+        }
+        #endregion
+        #region SubClasses
+        /// <summary>
+        /// A square <see cref="GeoArea"/> for the coordinates of a decoded Open Location Code area.
+        /// The <see cref="CodeLength"/> of the decoded Open Location Code is also included.
+        /// </summary>
+        protected class CodeArea : GeoArea
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="southLatitude"></param>
+            /// <param name="westLongitude"></param>
+            /// <param name="northLatitude"></param>
+            /// <param name="eastLongitude"></param>
+            /// <param name="codeLength"></param>
+            /// <exception cref="ArgumentException"></exception>
+            internal CodeArea(double southLatitude, double westLongitude, double northLatitude, double eastLongitude, int codeLength) :
+                base(southLatitude, westLongitude, northLatitude, eastLongitude)
+            {
+                if (southLatitude >= northLatitude || westLongitude >= eastLongitude)
+                {
+                    throw new ArgumentException("min must be less than max");
+                }
+
+                CodeLength = codeLength;
+            }
+            /// <summary>
+            /// Create a new copy of the provided CodeArea
+            /// </summary>
+            /// <param name="other">The other CodeArea to copy</param>
+            public CodeArea(CodeArea other) : base(other)
+            {
+                CodeLength = other.CodeLength;
+            }
+            /// <summary>
+            /// The length of the decoded Open Location Code.
+            /// </summary>
+            public int CodeLength { get; }
+        }
+        /// <summary>
+        /// A rectangular area on the geographic coordinate system specified by the minimum and maximum <see cref="GeoPoint"/> coordinates.
+        /// The coordinates include the latitude and longitude of the lower left (south west) and upper right (north east) corners.
+        /// <para>
+        /// Additional properties exist to calculate the <see cref="Center"/> of the bounding box,
+        /// and the <see cref="LatitudeHeight"/> or <see cref="LongitudeWidth"/> area dimensions in degrees.
+        /// </para>
+        /// </summary>
+        protected class GeoArea
+        {
+            /// <summary>
+            /// Create a new rectangular GeoArea of the provided min and max geo points.
+            /// </summary>
+            /// <param name="min">The minimum GeoPoint</param>
+            /// <param name="max">The maximum GeoPoint</param>
+            /// <exception cref="ArgumentException">If min is greater than or equal to max.</exception>
+            public GeoArea(GeoPoint min, GeoPoint max)
+            {
+                if (min.Latitude >= max.Latitude || min.Longitude >= max.Longitude)
+                {
+                    throw new ArgumentException("min must be less than max");
+                }
+                Min = min;
+                Max = max;
+            }
+            /// <summary>
+            /// Create a new rectangular GeoArea of the provided min and max geo coordinates.
+            /// </summary>
+            /// <param name="southLatitude">The minimum south latitude</param>
+            /// <param name="westLongitude">The minimum west longitude</param>
+            /// <param name="northLatitude">The maximum north latitude</param>
+            /// <param name="eastLongitude">The maximum east longitude</param>
+            public GeoArea(double southLatitude, double westLongitude, double northLatitude, double eastLongitude) :
+                this(new GeoPoint(southLatitude, westLongitude), new GeoPoint(northLatitude, eastLongitude))
+            { }
+            /// <summary>
+            /// Create a new copy of the provided GeoArea
+            /// </summary>
+            /// <param name="other">The other GeoArea to copy</param>
+            public GeoArea(GeoArea other) : this(other.Min, other.Max) { }
+            /// <summary>
+            /// The min (south west) point coordinates of the area bounds.
+            /// </summary>
+            public GeoPoint Min { get; }
+            /// <summary>
+            /// The max (north east) point coordinates of the area bounds.
+            /// </summary>
+            public GeoPoint Max { get; }
+            /// <summary>
+            /// The center point of the area which is equidistant between <see cref="Min"/> and <see cref="Max"/>.
+            /// </summary>
+            public GeoPoint Center => new GeoPoint(CenterLatitude, CenterLongitude);
+            /// <summary>
+            /// The width of the area in longitude degrees.
+            /// </summary>
+            public double LongitudeWidth => (double)((decimal)Max.Longitude - (decimal)Min.Longitude);
+            /// <summary>
+            /// The height of the area in latitude degrees.
+            /// </summary>
+            public double LatitudeHeight => (double)((decimal)Max.Latitude - (decimal)Min.Latitude);
+            /// <summary>The south (min) latitude coordinate in decimal degrees.</summary>
+            /// <remarks>Alias to <see cref="Min"/>.<see cref="GeoPoint.Latitude">Latitude</see></remarks>
+            public double SouthLatitude => Min.Latitude;
+            /// <summary>The west (min) longitude coordinate in decimal degrees.</summary>
+            /// <remarks>Alias to <see cref="Min"/>.<see cref="GeoPoint.Longitude">Longitude</see></remarks>
+            public double WestLongitude => Min.Longitude;
+            /// <summary>The north (max) latitude coordinate in decimal degrees.</summary>
+            /// <remarks>Alias to <see cref="Max"/>.<see cref="GeoPoint.Latitude">Latitude</see></remarks>
+            public double NorthLatitude => Max.Latitude;
+            /// <summary>The east (max) longitude coordinate in decimal degrees.</summary>
+            /// <remarks>Alias to <see cref="Max"/>.<see cref="GeoPoint.Longitude">Longitude</see></remarks>
+            public double EastLongitude => Max.Longitude;
+            /// <summary>The center latitude coordinate in decimal degrees.</summary>
+            /// <remarks>Alias to <see cref="Center"/>.<see cref="GeoPoint.Latitude">Latitude</see></remarks>
+            public double CenterLatitude => (Min.Latitude + Max.Latitude) / 2;
+            /// <summary>The center longitude coordinate in decimal degrees.</summary>
+            /// <remarks>Alias to <see cref="Center"/>.<see cref="GeoPoint.Longitude">Longitude</see></remarks>
+            public double CenterLongitude => (Min.Longitude + Max.Longitude) / 2;
+            /// <returns><c>true</c> if this geo area contains the provided point, <c>false</c> otherwise.</returns>
+            /// <param name="point">The point coordinates to check.</param>
+            public bool Contains(GeoPoint point)
+            {
+                return Contains(point.Latitude, point.Longitude);
+            }
+            /// <returns><c>true</c> if this geo area contains the provided point, <c>false</c> otherwise.</returns>
+            /// <param name="latitude">The latitude coordinate of the point to check.</param>
+            /// <param name="longitude">The longitude coordinate of the point to check.</param>
+            public bool Contains(double latitude, double longitude)
+            {
+                return Min.Latitude <= latitude && latitude < Max.Latitude
+                    && Min.Longitude <= longitude && longitude < Max.Longitude;
+            }
+        }
+        /// <summary>
+        /// A point on the geographic coordinate system specified by latitude and longitude coordinates in degrees.
+        /// </summary>
+        public struct GeoPoint : IEquatable<GeoPoint>
+        {
+            /// <param name="latitude">The latitude coordinate in decimal degrees.</param>
+            /// <param name="longitude">The longitude coordinate in decimal degrees.</param>
+            /// <exception cref="ArgumentException">If latitude is out of range -90 to 90.</exception>
+            /// <exception cref="ArgumentException">If longitude is out of range -180 to 180.</exception>
+            public GeoPoint(double latitude, double longitude)
+            {
+                if (latitude < -90 || latitude > 90) throw new ArgumentException("latitude is out of range -90 to 90");
+                if (longitude < -180 || longitude > 180) throw new ArgumentException("longitude is out of range -180 to 180");
+
+                Latitude = latitude;
+                Longitude = longitude;
+            }
+            /// <summary>
+            /// The latitude coordinate in decimal degrees (y axis).
+            /// </summary>
+            public double Latitude { get; }
+            /// <summary>
+            /// The longitude coordinate in decimal degrees (x axis).
+            /// </summary>
+            public double Longitude { get; }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns>A human readable representation of this GeoPoint coordinates.</returns>
+            public override string ToString() => $"[Latitude:{Latitude},Longitude:{Longitude}]";
+            /// <summary>
+            /// Hashcode
+            /// </summary>
+            /// <returns>The hash code for this GeoPoint coordinates.</returns>
+            public override int GetHashCode() => Latitude.GetHashCode() ^ Longitude.GetHashCode();
+            /// <inheritdoc />
+            /// <summary>
+            /// Determines whether the provided object is a GeoPoint with the same
+            /// <see cref="Latitude"/> and <see cref="Longitude"/> as this GeoPoint.
+            /// </summary>
+            public override bool Equals(object obj) => obj is GeoPoint coord && Equals(coord);
+            /// <inheritdoc />
+            /// <summary>
+            /// Determines whether the provided GoePoint has the same
+            /// <see cref="Latitude"/> and <see cref="Longitude"/> as this GeoPoint.
+            /// </summary>
+            public bool Equals(GeoPoint other) => this == other;
+            /// <summary>
+            /// Equality comparison of 2 GeoPoint coordinates.
+            /// </summary>
+            public static bool operator ==(GeoPoint a, GeoPoint b) => a.Latitude == b.Latitude && a.Longitude == b.Longitude;
+            /// <summary>
+            /// Inequality comparison of 2 Geopoint coordinates.
+            /// </summary>
+            public static bool operator !=(GeoPoint a, GeoPoint b) => !(a == b);
+        }
+        #endregion
+    }
     #endregion
     #region Enumy, servisní třídy...
     /// <summary>
