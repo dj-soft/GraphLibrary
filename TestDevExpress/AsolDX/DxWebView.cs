@@ -3154,6 +3154,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             int zoom = this.Zoom.Value;
 
             // Umístit špendlík do bodu Point? Ano pokud je požadováno, anebo pokud je dán střed (pak Point může být jinde):
+            //   Jak na to:   https://developers.google.com/maps/documentation/embed/embedding-map
+            //                https://blog.hubspot.com/website/how-to-embed-google-map-in-html
+            //   iframe   
+            //  <iframe src="https://www.google.com/maps/embed?pb=!1m10!1m8!1m3!1d5134.491529403346!2d15.812057030195488!3d49.95049212566805!3m2!1i1024!2i768!4f13.1!5e0!3m2!1scs!2scz!4v1727839457077!5m2!1scs!2scz" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
             string pinPoint = "";
             bool addPoint = this.ShowPinAtPoint || hasCenter;
             if (addPoint)
