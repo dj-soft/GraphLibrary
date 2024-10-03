@@ -2947,19 +2947,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
         #endregion
-        public int SpinnerWidth
-        {
-            get
-            {
-                int width = 20;
-                var viewInfo = this.ViewInfo;
-                if (viewInfo != null)
-                {
-                    
-                }
-                return width;
-            }
-        }
         #region HasMouse
         /// <summary>
         /// Panel má na sobě myš?
@@ -3328,10 +3315,15 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxDropDownButton : DevExpress.XtraEditors.DropDownButton
     {
+        #region Specifické property
         /// <summary>
         /// Rozbalit DropDown menu po kliknutí na Button?
         /// </summary>
         public bool OpenDropDownOnButtonClick { get; set; }
+        /// <summary>
+        /// Po kliknutí na samotný Button může dojít k rozbalení DropDown menu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnClick(EventArgs e)
         {
             base.OnClick(e);
@@ -3340,6 +3332,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.DoShowDropDown();
             }
         }
+        /// <summary>
+        /// Po kliknutí na samotný Button může dojít k rozbalení DropDown menu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnMouseClick(MouseEventArgs e)
         {
             base.OnMouseClick(e);
@@ -3348,6 +3344,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.DoShowDropDown();
             }
         }
+        #endregion
         #region Rozšířené property
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.

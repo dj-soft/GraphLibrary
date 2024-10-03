@@ -1,10 +1,12 @@
-﻿using DevExpress.Pdf.ContentGeneration;
-using DevExpress.PivotGrid.Internal.ThinClientDataSource;
+﻿// Supervisor: David Janáček, od 01.02.2021
+// Part of Helios Nephrite, proprietary software, (c) Asseco Solutions, a. s.
+// Redistribution and use in source and binary forms, with or without modification, 
+// is not permitted without valid contract with Asseco Solutions, a. s.
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -664,6 +666,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <para/>
     /// Tento Control obsahuje instanci <see cref="MapProperties"/>, pomocí které se control nastavuje a komunikuje s ním.<br/>
     /// Je možno nastavit touto cestou vlastosti:<br/>
+    /// <see cref="Value"/> = text souřadnice, pro snadné zadávání hodnoty, shodný jako <see cref="MapPropertiesInfo.Coordinates"/>;<br/>
     /// <see cref="MapPropertiesInfo.Coordinates"/> = text souřadnice;<br/>
     /// <see cref="MapPropertiesInfo.CoordinatesProvider"/> = Provider = webová stránka s mapami;<br/>
     /// <see cref="MapPropertiesInfo.CoordinatesMapType"/> = Druh mapy;<br/>
@@ -681,7 +684,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             CreateContent();
         }
         /// <summary>
-        /// Vytvoří kompletní obsah a vyvolá <see cref="DoLayout"/>
+        /// Vytvoří kompletní obsah a vyvolá <see cref="_DoLayout"/>
         /// </summary>
         protected void CreateContent()
         {
@@ -1038,6 +1041,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             string coordinatesNew = __CoordinatesText.Text;
             if (String.Equals(coordinatesNew, coordinatesOld)) return;         // Není změna textu
 
+            // Pokud uživatel změní hodnotu textu, jde o změnu aplikační hodnoty (nikoli o prostý posun mapy):
             var mapProperties = this.MapProperties;
             if (mapProperties.IsMapEditable)
                 this._CoordinatesAccept(coordinatesNew);                       // Pokud je mapa editovatelná, pak akceptuji nově vepsané koordináty
@@ -1061,7 +1065,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Převezmu koordináty zadané v parametru (pochází z '__CoordinatesText.Text'), a vložím je do this.MapProperties.SetCoordinates().
             // To je "vnější hodnota" = obdoba Value nebo Text.
             // Její změna vyvolá event CoordinatesChanged a zavolá reload mapy => this.RefreshMap():
-            this.IMapProperties.SetCoordinates(coordinates, true, true);
+            this.IMapProperties.SetCoordinates(coordinates, true, true);       // Proběhne parsování souřadnic, po změně se vyvolá RefreshMap(), tam odtud pak _ReloadCoordinatesText(), tam se používá formát CoordinatesUserFormat
+            this._RefreshCurrentUserFormat();                                  // Tady převezmu formát souřadnice z this.IMapProperties.MapCoordinates.CoordinatesFormat do this.CoordinatesUserFormat, a volá se event o změně UserFormat
+            this._ReloadCoordinatesText();                                     // Tady znovu naformátuji text souřadnice this.IMapProperties.MapCoordinates podle nově nastaveného UserFormatu = tak jak to uživatel reálně vepsal
             this._RefreshAcceptButtonState();
         }
         /// <summary>
@@ -1069,10 +1075,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _RefreshMap(bool force = false)
         {
-            var mapCoordinates = this.IMapProperties.MapCoordinates;           // Požadovaná souřadnice
-            _ReloadCoordinatesText(mapCoordinates);                            // Zobrazím do TextBoxu (bez eventu o změně)
+            _ReloadCoordinatesText();                                          // Zobrazím do TextBoxu (bez eventu o změně) souřadnice Požadovaná souřadnice
 
             // Přenesu požadované souřadnice z this.MapProperties.MapCoordinates do WebCoordinates:
+            var mapCoordinates = this.IMapProperties.MapCoordinates;           // Požadovaná souřadnice
             var webCoordinates = this.WebCoordinates;
             webCoordinates.FillFrom(mapCoordinates, true);
 
@@ -1081,8 +1087,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             var webView = this.__MsWebView;
             string urlAdressOld = webView.MsWebCurrentUrlAdress;
             if (!force && String.Equals(urlAdressNew, urlAdressOld)) return;   // Není force, a není změna URL adresy
-
-            // if (System.Diagnostics.Debugger.IsAttached) System.Windows.Forms.Clipboard.SetText(urlAdressNew);
 
             this.__MapCoordinateToUrlAdressChangeInProgress = true;
             this.__MapCoordinateUrlAdress = urlAdressNew;
@@ -1093,13 +1097,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             webView.Focus();
         }
         /// <summary>
-        /// Do textboxu vepíše souřadnice z dodaného koordinátu, v aktuálním formátu <see cref="_CoordinateFormatCurrent"/>
+        /// Do textboxu vepíše souřadnice z dodaného koordinátu, v aktuálním formátu <see cref="CoordinatesUserFormat"/>.
+        /// Změna textu do __CoordinatesText (setování) nevyvolá event o změně, protože tamní změnu řešíme jen po interaktivní klávese Enter.
         /// </summary>
         /// <param name="mapCoordinates"></param>
-        private void _ReloadCoordinatesText(DxMapCoordinates mapCoordinates)
+        private void _ReloadCoordinatesText(DxMapCoordinates mapCoordinates = null)
         {
             // Setování textu do __CoordinatesText nevyvolá event o změně, protože tamní změnu řešíme jen po klávese Enter.
-            this.__CoordinatesText.Text = mapCoordinates.GetCoordinates(this._CoordinateFormatCurrent);
+            if (mapCoordinates is null) mapCoordinates = this.IMapProperties.MapCoordinates;
+            this.__CoordinatesText.Text = mapCoordinates.GetCoordinates(this.CoordinatesUserFormat);
             this._RefreshAcceptButtonState();
         }
         /// <summary>
@@ -1120,7 +1126,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             __CoordinatesText.Properties.Buttons.Clear();
             __CoordinatesText.AddButton(DevExpress.XtraEditors.Controls.ButtonPredefines.SpinLeft, true, DxComponent.Localize(MsgCode.DxMapCoordinatesButtonText), DxComponent.Localize(MsgCode.DxMapCoordinatesButtonTitle));
             __CoordinatesText.AddButton(DevExpress.XtraEditors.Controls.ButtonPredefines.SpinRight, false, DxComponent.Localize(MsgCode.DxMapCoordinatesButtonText), DxComponent.Localize(MsgCode.DxMapCoordinatesButtonTitle));
-            __CoordinatesText.AddButton("devav/actions/copy.svg", false, DxComponent.Localize(MsgCode.DxKeyActionClipCopyText), DxComponent.Localize(MsgCode.DxKeyActionClipCopyTitle), "Copy");
+
+            // Copy ... a Paste?
+            // __CoordinatesText.AddButton("devav/actions/copy.svg", false, DxComponent.Localize(MsgCode.DxKeyActionClipCopyText), DxComponent.Localize(MsgCode.DxKeyActionClipCopyTitle), "Copy");
 
             __CoordinatesText.ButtonClick += _CoordinatesTextButtonClick;
 
@@ -1162,21 +1170,42 @@ namespace Noris.Clients.Win.Components.AsolDX
                 int shift = (isLeft ? -1 : (isRight ? +1 : 0));
                 if (shift != 0)
                 {
-                    int count = __CoordinateFormats.Length;
-                    __CoordinateFormatCurrentIndex = (__CoordinateFormatCurrentIndex + shift) % count;
+                    // Property '_CoordinateFormatCurrentIndex ' si sama hlídá validní rozsah 0 až __CoordinateFormats.Length:
+                    _CoordinateFormatCurrentIndex = _CoordinateFormatCurrentIndex + shift;
 
-                    // Zobrazíme aktuální koordináty v aktuálním (nově určeném) formátu:
-                    var mapCoordinates = this.IMapProperties.MapCoordinates;
-                    _ReloadCoordinatesText(mapCoordinates);                      // Setování textu do __CoordinatesText nevyvolá event o změně, protože tamní změnu řešíme jen po klávese Enter.
+                    // Zobrazíme aktuální koordináty (IMapProperties.MapCoordinates) v aktuálním (= nově určeném) formátu:
+                    _ReloadCoordinatesText();
 
                     // Tato metoda nemění hodnotu souřadnic (mění jen její formální vyjádření), proto neprovádíme reload mapy ani refresh Accept buttonu...
+
+                    // Zde jsme provedli změnu formátu, proto zavoláme event do aplikačního kódu:
+                    this.IMapProperties.RunCoordinatesUserFormatChanged();
                 }
             }
         }
         /// <summary>
-        /// Obsahuje aktuálně zvolený formát koordinátů (zadaný pomocí spinnerů v <see cref="__CoordinatesText"/>).
+        /// Metoda zajistí převzetí formátu mapové souřadnice z .
+        /// Volá se po změně textu uživatelem a jeho akceptování jako souřadnice.
+        /// Formát se získá z this.IMapProperties
         /// </summary>
-        private DxMapCoordinatesFormat _CoordinateFormatCurrent
+        /// <param name="isSilent"></param>
+        private void _RefreshCurrentUserFormat(bool isSilent = false)
+        {
+            var mapCoordinates = this.IMapProperties.MapCoordinates;
+            var mapFormat = mapCoordinates.CoordinatesFormat.Value;            // Takhle je zadaná nová souřadnice
+            var oldFormat = this.CoordinatesUserFormat;                        // Tohle je aktuální stav
+            if (oldFormat != mapFormat)
+            {
+                this.CoordinatesUserFormat = mapFormat;
+                if (!isSilent)
+                    this.IMapProperties.RunCoordinatesUserFormatChanged();
+            }
+        }
+        /// <summary>
+        /// Obsahuje aktuálně zvolený formát koordinátů (zadaný pomocí spinnerů v <see cref="__CoordinatesText"/>). V tomto formátu je vidí uživatel.
+        /// Změna této property nevyvolá událost o změně.
+        /// </summary>
+        protected DxMapCoordinatesFormat CoordinatesUserFormat
         {
             get
             {
@@ -1184,7 +1213,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 int count = formats?.Length ?? 0;
                 if (count > 0)
                 {
-                    int index = __CoordinateFormatCurrentIndex;
+                    int index = _CoordinateFormatCurrentIndex;
                     if (index >= 0 && index < count)
                         return formats[index];
                 }
@@ -1195,17 +1224,53 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var formats = __CoordinateFormats;
                 int count = formats?.Length ?? 0;
                 if (count > 0 && (formats.TryFindFirstIndex(f => f == value, out int index)))
-                    __CoordinateFormatCurrentIndex = index;
+                    _CoordinateFormatCurrentIndex = index;
             }
         }
         /// <summary>
-        /// Index aktuálně platného formátu koordinátů (index do pole <see cref="__CoordinateFormats"/>, kde tento prvek obsahuje hodnotu <see cref="_CoordinateFormatCurrent"/>)
+        /// Index aktuálně platného formátu koordinátů (index do pole <see cref="__CoordinateFormats"/>, kde tento prvek obsahuje hodnotu <see cref="CoordinatesUserFormat"/>)
+        /// </summary>
+        private int _CoordinateFormatCurrentIndex
+        {
+            get { return __CoordinateFormatCurrentIndex; }
+            set
+            {
+                __CoordinateFormatCurrentIndex = CycleNumber(value, __CoordinateFormats.Length);       // Cykluje číslo (i záporné) do rozmezí { 0 až count )
+            }
+        }
+        /// <summary>
+        /// Index aktuálně platného formátu koordinátů (index do pole <see cref="__CoordinateFormats"/>, kde tento prvek obsahuje hodnotu <see cref="CoordinatesUserFormat"/>)
         /// </summary>
         private int __CoordinateFormatCurrentIndex;
         /// <summary>
         /// Uživateli dostupné formáty <see cref="DxMapCoordinatesFormat"/>.
         /// </summary>
         private DxMapCoordinatesFormat[] __CoordinateFormats;
+        /// <summary>
+        /// Cykluje číslo do rozmezí 0 (včetně) až count (mimo).<br/>
+        /// Pro kladná čísla je shodné s operátorem Modulo: <c>result = number % count;</c><br/>
+        /// Pro záporná čísla ale funguje opačně: pro hodnotu -1 vrátí (count - 1) atd.
+        /// <para/>
+        /// <b>Příklady:</b><br/>
+        /// <c>CycleNumber(0, 5) = 0;</c><br/>
+        /// <c>CycleNumber(2, 5) = 2;</c><br/>
+        /// <c>CycleNumber(4, 5) = 4;</c><br/>
+        /// <c>CycleNumber(5, 5) = 0;</c><br/>
+        /// <c>CycleNumber(6, 5) = 1;</c><br/>
+        /// <c>CycleNumber(-1, 5) = 4;</c><br/>
+        /// <c>CycleNumber(-2, 5) = 3;</c><br/>
+        /// <c>CycleNumber(-5, 5) = 0;</c><br/>
+        /// <c>CycleNumber(-6, 5) = 4;</c><br/>
+        /// </summary>
+        /// <param name="number"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        protected static int CycleNumber(int number, int count)
+        {
+            int result = number % count;                   // Výsledek pro záporná čísla je záporný: (-2 % 5) = -2;   (-6 % 5) = -1; atd
+            if (result < 0) result = count + result;       // Pro záporná čísla přidám count a tím cykluji v rozmezí 0 až count...
+            return result;
+        }
         #endregion
         #region Události z WebView a jejich vliv na koordináty
         /// <summary>
@@ -1381,7 +1446,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var coordinates = webCoordinates.Coordinates;
 
             this.IMapProperties.SetCoordinates(coordinates, true, false);     // Event do vnějšího světa, bez reloadu mapy (ta je právě zdrojem dat)
-            _ReloadCoordinatesText(this.IMapProperties.MapCoordinates);       // Setování textu do __CoordinatesText nevyvolá event o změně, protože tamní změnu řešíme jen po klávese Enter.
+            _ReloadCoordinatesText();
         }
         #endregion
         #endregion
@@ -1579,7 +1644,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Public vlastnosti
         /// <summary>
+        /// Value tohoto panelu = souřadnice zadaného bodu.
+        /// Obsahuje totéž jako <see cref="MapPropertiesInfo.Coordinates"/>.
+        /// </summary>
+        public string Value { get { return this.MapProperties.Coordinates; } set { this.MapProperties.Coordinates = value; } }
+        /// <summary>
         /// Souhrn vlastností <see cref="MsWebView"/>, tak aby byly k dosažení v jednom místě.
+        /// Pro mapy obecně není důležitý.
         /// </summary>
         public MsWebView.PropertiesInfo WebProperties { get { return __MsWebView.WebProperties; } }
         /// <summary>
@@ -1592,6 +1663,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected IMapPropertiesInfoWorking IMapProperties { get { return __MapProperties; } }
         /// <summary>
         /// Mapové souřadnice použité pro fyzické zobrazování mapy = reálná pozice mapy.
+        /// Může se lišit od dat v <see cref="MapProperties"/>, protože tam jsou souřadnice zvenku požadované a navenek akceptované.
         /// </summary>
         protected DxMapCoordinates WebCoordinates { get { return __WebCoordinates; } } private DxMapCoordinates __WebCoordinates;
         /// <summary>
@@ -1703,8 +1775,34 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Formát souřadnic, jaký je čten v property <see cref="Coordinates"/>.
             /// Setovat lze formát libovolný. Změna formátu nemá vliv na mapu (na souřadnice).
+            /// Typicky jde o formát, který je čten a hlavně ukládán do Value a do databáze.
+            /// <para/>
+            /// Uživatel má zvolen svůj formát zobrazení souřadnice = pro svoji vizualizaci v controlu: <see cref="CoordinatesUserFormat"/>.
+            /// Tuto hodnotu lze zvenku nasetovat (typicky po vytvoření controlu po načtení formátu z konfigurace).
+            /// Pokud uživatel interaktivně změní svůj formát, je vyvolána událost <see cref="CoordinatesUserFormatChanged"/>.
             /// </summary>
             public DxMapCoordinatesFormat CoordinatesFormat { get { return __CoordinatesFormat; } set { __CoordinatesFormat = value; } } private DxMapCoordinatesFormat __CoordinatesFormat;
+            /// <summary>
+            /// Formát souřadnic, který aktuálně používá uživatel pro zobrazení souřadnic.
+            /// Může se lišit od <see cref="CoordinatesFormat"/> (ten se vztahuje k formátu, který používá programový kód), ale skutečná hodnota souřadnic je vždy tatáž.
+            /// <para/>
+            /// Změna tohoto formátu změní vzhled, který vidí a používá uživatel. Nevyvolá ale event <see cref="CoordinatesUserFormatChanged"/>.
+            /// </summary>
+            public DxMapCoordinatesFormat CoordinatesUserFormat { get { return __Owner.CoordinatesUserFormat; } set { __Owner.CoordinatesUserFormat = value; } }
+            /// <summary>
+            /// Uživatel změnil formát souřadnic, který používá pro vizualizaci.
+            /// Vyvolá se event do aplikace.
+            /// </summary>
+            private void _RunCoordinatesUserFormatChanged()
+            {
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"MapPropertiesInfo.CoordinatesUserFormatChanged() : {this.CoordinatesUserFormat.ToString()}");
+                this.CoordinatesUserFormatChanged?.Invoke(this, EventArgs.Empty);
+            }
+            /// <summary>
+            /// Uživatel interaktivně změnil formát souřadnic.
+            /// Pokud aplikační kód chce jeho uživatelský formát ukládat např. do konfigurace, může zde reagovat a zpracovat hodnotu <see cref="CoordinatesUserFormat"/>.
+            /// </summary>
+            public event EventHandler CoordinatesUserFormatChanged;
             /// <summary>
             /// Mapový provider.<br/>
             /// Změna této hodnoty nezmění interaktivně mapu (mapu změní pouze setování <see cref="Coordinates"/>). 
@@ -1717,6 +1815,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Mapu lze refreshnout pomocí <see cref="DxMapViewPanel.RefreshMap"/> anebo <see cref="CoordinatesRefresh"/>.
             /// </summary>
             public DxMapCoordinatesMapType CoordinatesMapType { get { return __MapCoordinates.MapType.Value; } set { __MapCoordinates.MapType = value; } }
+            /// <summary>
+            /// Viditelnost bočního panelu s detaily.
+            /// Změna této hodnoty nezmění interaktivně mapu (mapu změní pouze setování <see cref="Coordinates"/>). 
+            /// Mapu lze refreshnout pomocí <see cref="DxMapViewPanel.RefreshMap"/> anebo <see cref="CoordinatesRefresh"/>.
+            /// </summary>            
+            public bool InfoPanelVisible { get { return __MapCoordinates.InfoPanelVisible.Value; } set { __MapCoordinates.InfoPanelVisible = value; } }
             /// <summary>
             /// Zobrazovat Pin na souřadnici mapy. Default = true.
             /// Změna této hodnoty nezmění interaktivně mapu (mapu změní pouze setování <see cref="Coordinates"/>). 
@@ -1759,7 +1863,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Interface member
             /// </summary>
             DxMapCoordinates IMapPropertiesInfoWorking.MapCoordinates { get { return __MapCoordinates; } }
-
+            /// <summary>
+            /// Uživatel změnil formát souřadnic, který používá pro vizualizaci.
+            /// Vyvolá se event do aplikace.
+            /// </summary>
+            void IMapPropertiesInfoWorking.RunCoordinatesUserFormatChanged() { _RunCoordinatesUserFormatChanged(); }
         }
         /// <summary>
         /// Pracovní interface do <see cref="MapProperties"/>
@@ -1777,6 +1885,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Souřadnice dané aplikací
             /// </summary>
             DxMapCoordinates MapCoordinates { get; }
+            /// <summary>
+            /// Uživatel změnil formát souřadnic, který používá pro vizualizaci.
+            /// Vyvolá se event do aplikace.
+            /// </summary>
+            void RunCoordinatesUserFormatChanged();
         }
         #endregion
     }
@@ -2550,7 +2663,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this._Zoom = _ZoomFull;                    // Zobrazuje cca celou republiku
                 this.ProviderDefault = DxMapCoordinatesProvider.SeznamMapy;
                 this.MapTypeDefault = DxMapCoordinatesMapType.Standard;
-                this.InfoPanelVisibleDefault = true;
+                this.InfoPanelVisibleDefault = false;
                 this.ShowPinAtPoint = true;
 
                 this.CoordinatesFormat = null;
@@ -3216,6 +3329,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         //   https://mapy.cz/zakladni?source=addr&id=12769313&x=15.9154587&y=50.0302891&z=16                                         co je zde - číslo popisné, adresa s fotkou
         //   https://mapy.cz/zakladni?l=0&source=coor&id=15.90928966136471%2C50.03222574216687&x=15.9146702&y=50.0303891&z=17        co je zde - bez pravého panelu, ale bod zájmu tam je
 
+        // Více bodů najednou:
+        //   https://mapy.cz/zakladni?vlastni-body&l=0&ut=M%C3%ADsto%20%C3%BAtoku&ut=M%C3%ADsto%20zadr%C5%BEen%C3%AD&uc=9hBKDxXwmmcORbET&ud=Na%20P%C5%99%C3%ADkop%C4%9B%20958%2F25%2C%20Praha%2C%20110%2000%2C%20Hlavn%C3%AD%20m%C4%9Bsto%20Praha&ud=Kov%C3%A1k%C5%AF%2C%20Praha%2C%20Hlavn%C3%AD%20m%C4%9Bsto%20Praha&x=14.4139961&y=50.0828279&z=14
+
         #endregion
         #region FrameMapy
         /// <summary>
@@ -3293,6 +3409,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             string urlAdress = $"{web}{mapData}?{lang}";
             return urlAdress;
         }
+        // Se špendlíkem
+        //   https://www.google.com/maps/place/3%C2%B040'44.0%22S+40%C2%B020'12.0%22W/@-3.678889,-40.336667,14z/data=!4m4!3m3!8m2!3d-3.678889!4d-40.336667?hl=en&entry=ttu&g_ep=EgoyMDI0MDkzMC4wIKXMDSoASAFQAw%3D%3D
+
         //   https://www.google.com/maps/@49.296045,17.390038,15z?hl=cs-CZ
         //   https://www.google.com/maps/@49.296045,17.390038,15z?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D                      základní
         //   https://www.google.com/maps/@49.296045,17.390038,2823m/data=!3m1!1e3?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D      fotomapa
