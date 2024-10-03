@@ -8957,7 +8957,7 @@ White
         [DefaultMessageText("Souřadnice zadané do formuláře. Tlačítky po stranách lze změnit jejich formát. Tlačítko vpravo znovu vyhledá zadané souřadnice.")]
         DxMapCoordinatesText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Změna formát zobrazené souřadnice")]
+        [DefaultMessageText("Změna formátu zobrazené souřadnice")]
         DxMapCoordinatesButtonTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Změní formát zobrazené souřadnice, ale nezmění její hodnotu (pozici na mapě).")]
