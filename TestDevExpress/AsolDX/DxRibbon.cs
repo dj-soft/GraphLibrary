@@ -8184,6 +8184,18 @@ namespace Noris.Clients.Win.Components.AsolDX
                     ClickAction = _SetLogActivity
                 });
 
+            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.NotCaptureWindows))
+                iGroup.Items.Add(new DataRibbonItem()
+                {
+                    ItemId = DesignRibbonItemNotCaptureWindowsId,
+                    Text = "Hide Capture",
+                    ToolTipText = "Zapíná / vypíná možnost skrývat obsah oken pro Capture programy (Teams, VideoRecording, PrintScreen). Aktivní button (orámovaný) = true = obsah oken není možno zachycovat.",
+                    ItemType = RibbonItemType.CheckButton,
+                    ImageName = "images/xaf/templatesv2images/state_itemvisibility_hide.svg",
+                    Checked = DxComponent.LogActive,
+                    ClickAction = _SetNotCaptureWindows
+                });
+
             return iGroup;
         }
         internal const string DesignRibbonGroupId = "_SYS__DevExpress_Design";
@@ -8193,6 +8205,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal const string DesignRibbonItemLogUhdSupport = "_SYS__DevExpress_UhdSupportCheckBox";
         internal const string DesignRibbonItemLogImageGallery = "_SYS__DevExpress_DxImageGallery";
         internal const string DesignRibbonItemLogActivityId = "_SYS__DevExpress_SetLogActivity";
+        internal const string DesignRibbonItemNotCaptureWindowsId = "_SYS__DevExpress_SetNotCaptureWindows";
+
 
         /// <summary>
         /// Nastaví UHD paint. Pouze v Testovací aplikaci.
@@ -8202,7 +8216,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
 #if Compile_TestDevExpress
             DxComponent.UhdPaintEnabled = (menuItem?.Checked ?? false);
-            DxComponent.Settings.SetRawValue("Components", "UhdPaintEnabled", DxComponent.UhdPaintEnabled ? "True" : "False");
+            DxComponent.Settings.SetRawValue("Components", DxComponent.UhdPaintEnabledCfgName, DxComponent.UhdPaintEnabled ? "True" : "False");
             DxComponent.ApplicationRestart();
 #endif
         }
@@ -8224,7 +8238,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
 #if Compile_TestDevExpress
             DxComponent.LogActive = (menuItem?.Checked ?? false);
-            DxComponent.Settings.SetRawValue("Components", "AppLogActive", DxComponent.LogActive ? "True" : "False");
+            DxComponent.Settings.SetRawValue("Components", DxComponent.LogActiveCfgName, DxComponent.LogActive ? "True" : "False");
+#endif
+        }
+        /// <summary>
+        /// Aktivuje / deaktivuje NotCaptureWindows. Pouze v Testovací aplikaci.
+        /// </summary>
+        /// <param name="menuItem"></param>
+        private static void _SetNotCaptureWindows(IMenuItem menuItem)
+        {
+#if Compile_TestDevExpress
+            DxComponent.ExcludeFromCaptureContent = (menuItem?.Checked ?? false);
+            DxComponent.Settings.SetRawValue("Components", DxComponent.ExcludeFromCaptureContentCfgName, DxComponent.LogActive ? "True" : "False");
 #endif
         }
         /// <summary>

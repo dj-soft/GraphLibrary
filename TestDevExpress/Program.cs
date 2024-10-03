@@ -32,16 +32,19 @@ namespace TestDevExpress
                 var styleListener = new SkinConfigStyle();
                 styleListener.ActivateConfigStyle();
 
-                string uhdPaint = DxComponent.Settings.GetRawValue("Components", "UhdPaintEnabled");
+                string uhdPaint = DxComponent.Settings.GetRawValue("Components", DxComponent.UhdPaintEnabledCfgName);
                 DxComponent.UhdPaintEnabled = (uhdPaint != null && uhdPaint == "True");
 
-                string logActive = DxComponent.Settings.GetRawValue("Components", "AppLogActive");
+                string logActive = DxComponent.Settings.GetRawValue("Components", DxComponent.LogActiveCfgName);
                 DxComponent.LogActive = (logActive != null && logActive == "True");
 
-                string logActivitiesKind = DxComponent.Settings.GetRawValue("Components", "AppLogActivitiesKind");
+                string logActivitiesKind = DxComponent.Settings.GetRawValue("Components", DxComponent.LogActivitiesKindCfgName);
                 Int64 logActivities = 0;
                 bool hasActivities = (!String.IsNullOrEmpty(logActivitiesKind) && Int64.TryParse(logActivitiesKind, out logActivities));
                 DxComponent.LogActivities = (hasActivities ? (LogActivityKind)logActivities: LogActivityKind.Default);
+
+                string notCaptureWindows = DxComponent.Settings.GetRawValue("Components", DxComponent.ExcludeFromCaptureContentCfgName);
+                DxComponent.ExcludeFromCaptureContent = (notCaptureWindows != null && notCaptureWindows == "True");
 
                 var moon10 = DxComponent.CreateBitmapImage("Images/Moon10.png");
 

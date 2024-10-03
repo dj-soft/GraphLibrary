@@ -4834,7 +4834,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     DxComponent.LogActivities = newKind;
 #if Compile_TestDevExpress
-                    DxComponent.Settings.SetRawValue("Components", "AppLogActivitiesKind", ((Int64)DxComponent.LogActivities).ToString());
+                    DxComponent.Settings.SetRawValue("Components", DxComponent.LogActivitiesKindCfgName, ((Int64)DxComponent.LogActivities).ToString());
 #endif
                 }
             }
@@ -5103,6 +5103,96 @@ namespace Noris.Clients.Win.Components.AsolDX
         private long __LogStartTicks;
         private long __LogLastWriteTicks;
         private long __LogTimeSpanForEmptyRow;
+        /// <summary>
+        /// Jméno položky v konfiguraci pro <see cref="DxComponent.LogActive"/>
+        /// </summary>
+        internal const string LogActiveCfgName = "AppLogActive";
+        /// <summary>
+        /// Jméno položky v konfiguraci pro <see cref="DxComponent.LogActivities"/>
+        /// </summary>
+        internal const string LogActivitiesKindCfgName = "AppLogActivitiesKind";
+        #endregion
+        #region NotCaptureWindows - znemožní zachycení obsahu oken v Capture aplikacích
+        /// <summary>
+        /// <see cref="ExcludeFromCaptureContent"/> - znemožní zachycení obsahu oken v Capture aplikacích (sdílení obrazovky v Teams atd, nahrávání videa, PrintScreen).<br/>
+        /// Hodnota false (default) = obsah okna bude normálně zobrazen při nahrávání / sdílení / zachycení. <br/>
+        /// Hodnota true = obsah okna nebude zobrazen při nahrávání / sdílení / zachycení.
+        /// </summary>
+        public static bool ExcludeFromCaptureContent { get { return Instance._ExcludeFromCaptureContent; } set { Instance._ExcludeFromCaptureContent = value; } }
+        /// <summary>
+        /// Znemožní zachycení obsahu oken v Capture aplikacích.
+        /// Změna hodnoty je odeslána jako událost do všech Listenerů
+        /// </summary>
+        private bool _ExcludeFromCaptureContent
+        {
+            get { return __ExcludeFromCaptureContent; }
+            set
+            {
+                if (value != __ExcludeFromCaptureContent)
+                {   // Po změně hodnoty tuto novou hodnotu uložím, a zavolám všechny stále živé posluchače události IListenerNotCaptureWindows,
+                    //  ti si (většinou jde o Formuláře) aktualizují svoji odpovídající vlastnost:
+                    __ExcludeFromCaptureContent = value;
+                    this._CallListeners<IListenerExcludeFromCaptureContentChanged>();
+                }
+            }
+        }
+        /// <summary>
+        /// Proměnná pro <see cref="_ExcludeFromCaptureContent"/>
+        /// </summary>
+        private bool __ExcludeFromCaptureContent;
+        /// <summary>
+        /// Pro dodaný control <paramref name="control"/> (typicky Form) nastaví jeho vlastnost <c>WindowDisplayAffinity</c> podle <paramref name="excludeFromCapture"/>:<br/>
+        /// Pro true nastaví <c>WDA_EXCLUDEFROMCAPTURE</c> = The window is displayed only on a monitor. Everywhere else, the window does not appear at all. 
+        /// One use for this affinity is for windows that show video recording controls, so that the controls are not included in the capture.<br/>
+        /// Pro false nastaví <c>WDA_NONE</c> = Imposes no restrictions on where the window can be displayed.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="excludeFromCapture"></param>
+        public static void SetWindowDisplayAffinity(Control control, bool excludeFromCapture)
+        {
+            if (control is null) return;
+            if (!control.IsHandleCreated) return;
+
+            try
+            {
+                if (excludeFromCapture)
+                    // Vyloučit ze zachycení obsahu:
+                    SetWindowDisplayAffinity(control.Handle, WDA_EXCLUDEFROMCAPTURE);
+                else
+                    // Běžné zobrazení:
+                    SetWindowDisplayAffinity(control.Handle, WDA_NONE);
+            }
+            catch { }
+        }
+        /// <summary>
+        /// Vrátí true, pokud dané okno <paramref name="control"/> má zakázané zobrazení obsahu pro ScreenRecordery.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <returns></returns>
+        public static bool? GetWindowDisplayAffinity(Control control)
+        {
+            if (control is null) return null;
+            if (!control.IsHandleCreated) return null;
+
+            try
+            {
+                GetWindowDisplayAffinity(control.Handle, out uint dwAffinity);
+                return (dwAffinity == WDA_NONE ? false : true);
+            }
+            catch { }
+            return null;
+        }
+        /// <summary>
+        /// Jméno položky v konfiguraci pro <see cref="DxComponent.ExcludeFromCaptureContent"/>
+        /// </summary>
+        internal const string ExcludeFromCaptureContentCfgName = "AppExcludeFromCaptureContent";
+        [DllImport("user32.dll")]
+        private static extern uint SetWindowDisplayAffinity(IntPtr hwnd, uint dwAffinity);
+        [DllImport("user32.dll")]
+        private static extern uint GetWindowDisplayAffinity(IntPtr hwnd, out uint dwAffinity);
+        private const uint WDA_NONE = 0x00000000;
+        private const uint WDA_MONITOR = 0x00000001;
+        private const uint WDA_EXCLUDEFROMCAPTURE = 0x00000011;
         #endregion
         #region Draw metody a instance
         /// <summary>
@@ -6901,6 +6991,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aktuální hodnota UHD Paint
         /// </summary>
         private bool _UhdPaintEnabled;
+        /// <summary>
+        /// Jméno položky v konfiguraci pro <see cref="DxComponent.UhdPaintEnabled"/>
+        /// </summary>
+        internal const string UhdPaintEnabledCfgName = "UhdPaintEnabled";
         /// <summary>
         /// Nastartuje proces systému Windows na klientu
         /// </summary>
@@ -9048,6 +9142,19 @@ White
         /// Metoda je volaná v situaci, kdy aplikační kontext nemá co dělat
         /// </summary>
         void ApplicationIdle();
+    }
+    /// <summary>
+    /// Interface pro listener události Změna hodnoty <see cref="DxComponent.ExcludeFromCaptureContent"/>.
+    /// <para/>
+    /// Listenerem je typicky Formulář, který na základě této hodnoty nastaví svůj příznak <c>WinApi.SetWindowDisplayAffinity</c>.<br/>
+    /// Takový formulář si uvedený příznak podle této hodnoty nastavuje i v konstruktoru (=tím platí pro nově vytvořená okna), a pomocí Listeneru si tento příznak změní i za svého života.
+    /// </summary>
+    public interface IListenerExcludeFromCaptureContentChanged : IListener
+    {
+        /// <summary>
+        /// Metoda je volaná v situaci, kdy došlo ke změně hodnoty <see cref="DxComponent.ExcludeFromCaptureContent"/>.
+        /// </summary>
+        void ExcludeFromCaptureContentChanged();
     }
     #endregion
     #region class SystemAdapter - přístupový bod k adapteru na aktuální aplikační systém

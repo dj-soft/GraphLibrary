@@ -77,7 +77,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Základní formulář bez Ribbonu a StatusBaru
     /// </summary>
-    public class DxStdForm : DevExpress.XtraEditors.XtraForm, IDxControlWithIcons, IListenerZoomChange, IListenerStyleChanged, IListenerApplicationIdle
+    public class DxStdForm : DevExpress.XtraEditors.XtraForm, IDxControlWithIcons, IListenerZoomChange, IListenerStyleChanged, IListenerExcludeFromCaptureContentChanged, IListenerApplicationIdle
     {
         #region Konstruktor a základní vlastnosti
         /// <summary>
@@ -251,6 +251,57 @@ namespace Noris.Clients.Win.Components.AsolDX
         public string ImageNameAdd { get { return _ImageNameAdd; } set { _ImageNameAdd = value; } } private string _ImageNameAdd;
         string IDxControlWithIcons.IconNameBasic { get { return ImageName; } }
         string IDxControlWithIcons.IconNameAdd { get { return ImageNameAdd; } }
+        #endregion
+        #region Skrývání obsahu formuláře pro externí aplikace nahrávající obsah (Capture content), listener IListenerNotCaptureWindowsChanged
+        /// <summary>
+        /// Pokud je true, pak obsah tohoto okna nebude zachycen aplikacemi jako Teams, Recording, PrintScreen atd.<br/>
+        /// Výchozí je hodnota odpovídající (! <see cref="DxComponent.ExcludeFromCaptureContent"/>).
+        /// <para/>
+        /// Okno <see cref="DxRibbonForm"/> implementuje <see cref="IListenerExcludeFromCaptureContentChanged"/> a reaguje tak na hodnotu <see cref="DxComponent.ExcludeFromCaptureContent"/>,<br/>
+        /// automaticky tedy nastavuje zdejší hodnotu <see cref="ExcludeFromCaptureContent"/> podle ! <see cref="DxComponent.ExcludeFromCaptureContent"/>.
+        /// <para/>
+        /// Využívá SetWindowDisplayAffinity : <see href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity"/>
+        /// </summary>
+        public bool ExcludeFromCaptureContent
+        {
+            get { return __ExcludeFromCaptureContent; }
+            set
+            {
+                bool currentValue = __ExcludeFromCaptureContent;
+                if (value != currentValue)
+                {
+                    __ExcludeFromCaptureContent = value;
+                    AcceptExcludeFromCaptureContent();
+                }
+            }
+        }
+        private bool __ExcludeFromCaptureContent;
+        /// <summary>
+        /// Metoda zajistí, že toto okno bude mít nastavenu reálnou vlastnost <c>Winapi.WindowDisplayAffinity</c> podle zdejší hodnoty <see cref="__ExcludeFromCaptureContent"/>.
+        /// </summary>
+        protected void AcceptExcludeFromCaptureContent()
+        {
+            if (this.IsHandleCreated && !this.IsDisposed)
+                DxComponent.SetWindowDisplayAffinity(this, __ExcludeFromCaptureContent);
+        }
+        void IListenerExcludeFromCaptureContentChanged.ExcludeFromCaptureContentChanged() { OnExcludeFromCaptureContentChanged(); }
+        /// <summary>
+        /// Zavolá se tehdy, když aplikace změnila hodnotu v <see cref="DxComponent.ExcludeFromCaptureContent"/> = mění se stav <c>WinApi.SetWindowDisplayAffinity</c> (pomocí listeneru <see cref="IListenerExcludeFromCaptureContentChanged"/>).
+        /// </summary>
+        protected virtual void OnExcludeFromCaptureContentChanged()
+        {
+            this.ExcludeFromCaptureContent = DxComponent.ExcludeFromCaptureContent;
+        }
+        /// <summary>
+        /// Po vytvoření Handle pro formulář si pro toto Window aktualizujeme <c>WindowDisplayAffinity</c>
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            __ExcludeFromCaptureContent = DxComponent.ExcludeFromCaptureContent;
+            AcceptExcludeFromCaptureContent();
+        }
         #endregion
         #region Stav okna, změny stavu
         /// <summary>
@@ -475,7 +526,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Formulář s ribbonem.
     /// Obsahuje připravený Ribbon <see cref="DxRibbon"/> a připravený StatusBar <see cref="DxStatusBar"/>.
     /// </summary>
-    public abstract class DxRibbonBaseForm : DevExpress.XtraBars.Ribbon.RibbonForm, IDxControlWithIcons, IListenerZoomChange, IListenerStyleChanged, IListenerApplicationIdle
+    public abstract class DxRibbonBaseForm : DevExpress.XtraBars.Ribbon.RibbonForm, IDxControlWithIcons, IListenerZoomChange, IListenerStyleChanged, IListenerApplicationIdle, IListenerExcludeFromCaptureContentChanged
     {
         #region Konstruktor a základní vlastnosti
         /// <summary>
@@ -615,6 +666,59 @@ namespace Noris.Clients.Win.Components.AsolDX
         public string ImageNameAdd { get { return _ImageNameAdd; } set { _ImageNameAdd = value; } } private string _ImageNameAdd;
         string IDxControlWithIcons.IconNameBasic { get { return ImageName; } }
         string IDxControlWithIcons.IconNameAdd { get { return ImageNameAdd; } }
+        #endregion
+        #region Skrývání obsahu formuláře pro externí aplikace nahrávající obsah (Capture content), listener IListenerNotCaptureWindowsChanged
+        /// <summary>
+        /// Pokud je true, pak obsah tohoto okna nebude zachycen aplikacemi jako Teams, Recording, PrintScreen atd.<br/>
+        /// Výchozí je hodnota odpovídající (! <see cref="DxComponent.ExcludeFromCaptureContent"/>).
+        /// <para/>
+        /// Okno <see cref="DxRibbonForm"/> implementuje <see cref="IListenerExcludeFromCaptureContentChanged"/> a reaguje tak na hodnotu <see cref="DxComponent.ExcludeFromCaptureContent"/>,<br/>
+        /// automaticky tedy nastavuje zdejší hodnotu <see cref="ExcludeFromCaptureContent"/> podle ! <see cref="DxComponent.ExcludeFromCaptureContent"/>.
+        /// <para/>
+        /// Využívá SetWindowDisplayAffinity : <see href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity"/>
+        /// </summary>
+        public bool ExcludeFromCaptureContent
+        {
+            get { return __ExcludeFromCaptureContent; }
+            set
+            {
+                bool currentValue = __ExcludeFromCaptureContent;
+                if (value != currentValue)
+                {
+                    __ExcludeFromCaptureContent = value;
+                    AcceptExcludeFromCaptureContent();
+                }
+            }
+        }
+        private bool __ExcludeFromCaptureContent;
+        /// <summary>
+        /// Metoda zajistí, že toto okno bude mít nastavenu reálnou vlastnost <c>Winapi.WindowDisplayAffinity</c> podle zdejší hodnoty <see cref="__ExcludeFromCaptureContent"/>.
+        /// </summary>
+        protected void AcceptExcludeFromCaptureContent()
+        {
+            if (this.IsHandleCreated && !this.IsDisposed)
+            {
+                DxComponent.SetWindowDisplayAffinity(this, __ExcludeFromCaptureContent);
+            }
+        }
+        void IListenerExcludeFromCaptureContentChanged.ExcludeFromCaptureContentChanged() { OnExcludeFromCaptureContentChanged(); }
+        /// <summary>
+        /// Zavolá se tehdy, když aplikace změnila hodnotu v <see cref="DxComponent.ExcludeFromCaptureContent"/> = mění se stav <c>WinApi.SetWindowDisplayAffinity</c> (pomocí listeneru <see cref="IListenerExcludeFromCaptureContentChanged"/>).
+        /// </summary>
+        protected virtual void OnExcludeFromCaptureContentChanged()
+        {
+            this.ExcludeFromCaptureContent = DxComponent.ExcludeFromCaptureContent;
+        }
+        /// <summary>
+        /// Po vytvoření Handle pro formulář si pro toto Window aktualizujeme <c>WindowDisplayAffinity</c>
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            __ExcludeFromCaptureContent = DxComponent.ExcludeFromCaptureContent;
+            AcceptExcludeFromCaptureContent();
+        }
         #endregion
         #region Pozice okna
         /// <summary>
@@ -949,7 +1053,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler<TEventValueChangedArgs<WindowActivityState>> ActivityStateChanged;
         #endregion
-        #region Style & Zoom Changed
+        #region Listener: Style, Zoom, NotCaptureWindows Changed; ApplicationIdle
         void IListenerZoomChange.ZoomChanged() { OnZoomChanged(); }
         /// <summary>
         /// Volá se po změně zoomu
@@ -1098,6 +1202,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aktivita systémového logu
         /// </summary>
         LogActivity = 0x0040,
+        /// <summary>
+        /// Zakázat zachycování oken (Capture: Printscreen / Recording / Teams)
+        /// </summary>
+        NotCaptureWindows = 0x0080,
 
         /// <summary>
         /// Základ = <see cref="SkinButton"/> + <see cref="PaletteButton"/> + <see cref="ImageGallery"/>
@@ -1110,7 +1218,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Všechno = <see cref="SkinButton"/> + <see cref="PaletteButton"/> + <see cref="UhdSupport"/> + <see cref="ImageGallery"/> + <see cref="LogActivity"/>
         /// </summary>
-        All = SkinButton | PaletteButton | UhdSupport | ImageGallery | LogActivity,
+        All = SkinButton | PaletteButton | UhdSupport | ImageGallery | LogActivity | NotCaptureWindows,
     }
     /// <summary>
     /// Režim viditelnosti titulkového řádku okna a Ribbonu
