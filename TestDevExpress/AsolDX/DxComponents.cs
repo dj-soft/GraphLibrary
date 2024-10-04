@@ -1731,7 +1731,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// true pokud je objekt použitelný
             /// </summary>
-            public bool IsAlive { get { return __Listener.IsAlive; } }
+            public bool IsAlive { get { return __Listener?.IsAlive ?? false; } }
             /// <summary>
             /// Reference na instanci
             /// </summary>

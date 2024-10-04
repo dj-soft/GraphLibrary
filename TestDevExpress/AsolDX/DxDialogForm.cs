@@ -20,7 +20,7 @@ namespace Noris.Clients.Win.Components
     /// <summary>
     /// Univerzální dialogové okno
     /// </summary>
-    public class DialogForm : DevExpress.XtraEditors.XtraForm, IEscapeHandler
+    public class DialogForm : DevExpress.XtraEditors.XtraForm, IListenerExcludeFromCaptureContentChanged, IEscapeHandler
     {
         #region Public aktivace, konstruktor, interní události
         /// <summary>
@@ -105,6 +105,7 @@ namespace Noris.Clients.Win.Components
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
             this.BoundsStdText = null;
             this.BoundsAltText = null;
+            DxComponent.RegisterListener(this);
             _Buttons = new List<DevExpress.XtraEditors.SimpleButton>();
             ZoomRatio = 1f;
         }
@@ -220,12 +221,74 @@ namespace Noris.Clients.Win.Components
             var debugAction = _DialogArgs?.DebugAction;
             if (debugAction != null) debugAction(text);
         }
+        /// <summary>
+        /// Dispose okna
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            DxComponent.UnregisterListener(this);
+            base.Dispose(disposing);
+        }
         #endregion
         #region Public data
         /// <summary>
         /// Definice okna dialogu
         /// </summary>
         public DialogArgs DialogArgs { get { return _DialogArgs; } }
+        #endregion
+        #region Skrývání obsahu formuláře pro externí aplikace nahrávající obsah (Capture content), listener IListenerNotCaptureWindowsChanged
+        /// <summary>
+        /// Pokud je true, pak obsah tohoto okna nebude zachycen aplikacemi jako Teams, Recording, PrintScreen atd.<br/>
+        /// Výchozí je hodnota odpovídající (! <see cref="DxComponent.ExcludeFromCaptureContent"/>).
+        /// <para/>
+        /// Okno <see cref="DxRibbonForm"/> implementuje <see cref="IListenerExcludeFromCaptureContentChanged"/> a reaguje tak na hodnotu <see cref="DxComponent.ExcludeFromCaptureContent"/>,<br/>
+        /// automaticky tedy nastavuje zdejší hodnotu <see cref="ExcludeFromCaptureContent"/> podle ! <see cref="DxComponent.ExcludeFromCaptureContent"/>.
+        /// <para/>
+        /// Využívá SetWindowDisplayAffinity : <see href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity"/>
+        /// </summary>
+        public bool ExcludeFromCaptureContent
+        {
+            get { return __ExcludeFromCaptureContent; }
+            set
+            {
+                bool currentValue = __ExcludeFromCaptureContent;
+                if (value != currentValue)
+                {
+                    __ExcludeFromCaptureContent = value;
+                    AcceptExcludeFromCaptureContent();
+                }
+            }
+        }
+        private bool __ExcludeFromCaptureContent;
+        /// <summary>
+        /// Metoda zajistí, že toto okno bude mít nastavenu reálnou vlastnost <c>Winapi.WindowDisplayAffinity</c> podle zdejší hodnoty <see cref="__ExcludeFromCaptureContent"/>.
+        /// </summary>
+        protected void AcceptExcludeFromCaptureContent()
+        {
+            if (this.IsHandleCreated && !this.IsDisposed)
+            {
+                DxComponent.SetWindowDisplayAffinity(this, __ExcludeFromCaptureContent);
+            }
+        }
+        void IListenerExcludeFromCaptureContentChanged.ExcludeFromCaptureContentChanged() { OnExcludeFromCaptureContentChanged(); }
+        /// <summary>
+        /// Zavolá se tehdy, když aplikace změnila hodnotu v <see cref="DxComponent.ExcludeFromCaptureContent"/> = mění se stav <c>WinApi.SetWindowDisplayAffinity</c> (pomocí listeneru <see cref="IListenerExcludeFromCaptureContentChanged"/>).
+        /// </summary>
+        protected virtual void OnExcludeFromCaptureContentChanged()
+        {
+            this.ExcludeFromCaptureContent = DxComponent.ExcludeFromCaptureContent;
+        }
+        /// <summary>
+        /// Po vytvoření Handle pro formulář si pro toto Window aktualizujeme <c>WindowDisplayAffinity</c>
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            __ExcludeFromCaptureContent = DxComponent.ExcludeFromCaptureContent;
+            AcceptExcludeFromCaptureContent();
+        }
         #endregion
         #region Interaktivita
         /// <summary>
