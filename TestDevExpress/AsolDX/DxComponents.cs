@@ -4411,7 +4411,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         #endregion
-
         #region Temp Directory
         /// <summary>
         /// Aplikace zde najde fullname adresáře Temp, v podobě: "C:\User\Jméno\...\".
@@ -5157,7 +5156,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (excludeFromCapture)
                     // Vyloučit ze zachycení obsahu:
-                    SetWindowDisplayAffinity(control.Handle, WDA_EXCLUDEFROMCAPTURE);
+                    SetWindowDisplayAffinity(control.Handle, WDA_MONITOR);   // WDA_EXCLUDEFROMCAPTURE: Skryje obsah na lokálním monitoru před PrintScreenem, ale na RDP se obsah ukazuje
                 else
                     // Běžné zobrazení:
                     SetWindowDisplayAffinity(control.Handle, WDA_NONE);
@@ -5190,8 +5189,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static extern uint SetWindowDisplayAffinity(IntPtr hwnd, uint dwAffinity);
         [DllImport("user32.dll")]
         private static extern uint GetWindowDisplayAffinity(IntPtr hwnd, out uint dwAffinity);
+        /// <summary>
+        /// Chování okna při PrintScreen, VideoCapture, Teams sdílení...:<br/>
+        /// Okno je vždy normálně viditelné, na lokálním PC i na RDP.
+        /// </summary>
         private const uint WDA_NONE = 0x00000000;
+        /// <summary>
+        /// Chování okna při PrintScreen, VideoCapture, Teams sdílení...:<br/>
+        /// Na lokálním PC: <br/>
+        /// Na RDP: Okno má vidět rám, ale obsah je černý.
+        /// </summary>
         private const uint WDA_MONITOR = 0x00000001;
+        /// <summary>
+        /// Chování okna při PrintScreen, VideoCapture, Teams sdílení...:<br/>
+        /// Na lokálním PC: Okno není vidět, ani jeho rám. Pouze pod DevExpress okny je vystínovaný Border.<br/>
+        /// Na RDP: Okno je viditelné i s čitelným obsahem.
+        /// </summary>
         private const uint WDA_EXCLUDEFROMCAPTURE = 0x00000011;
         #endregion
         #region Draw metody a instance
