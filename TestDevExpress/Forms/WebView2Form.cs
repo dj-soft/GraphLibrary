@@ -148,14 +148,16 @@ m.addControl(sync);
         private void _ClickButtonStaticImage(object sender, EventArgs e)
         {
             var properties = __WebViewPanel.WebProperties;
-            var isStatic = !properties.IsStaticPicture;
+            var displayMode = properties.DisplayMode;
+            // Změnit hodnotu po kliknutí:
+            displayMode = (displayMode == DxWebViewDisplayMode.Live ? DxWebViewDisplayMode.CaptureAsync : DxWebViewDisplayMode.Live);
             if (sender is DxSimpleButton button)
-            {
-                string checkImage = "svgimages/diagramicons/check.svg";
-                button.Appearance.FontStyleDelta = (isStatic ? (FontStyle.Bold | FontStyle.Underline) : FontStyle.Regular);
-                button.ImageName = (isStatic ? checkImage : null);
+            {   // Button: pro režim Capture bude mít ikonu Check, a text bude Bold; opačně pro Live bude bez ikony a Regular:
+                bool isCapture = (displayMode == DxWebViewDisplayMode.CaptureAsync || displayMode == DxWebViewDisplayMode.CaptureSync);
+                button.ImageName = (isCapture ? "svgimages/diagramicons/check.svg" : null);
+                button.Appearance.FontStyleDelta = (isCapture ? (FontStyle.Bold | FontStyle.Underline) : FontStyle.Regular);
             }
-            properties.IsStaticPicture = isStatic;
+            properties.DisplayMode = displayMode;
         }
         #endregion
     }

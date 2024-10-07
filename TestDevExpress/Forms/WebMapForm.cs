@@ -40,7 +40,7 @@ namespace TestDevExpress.Forms
             // Další controly v řadě:
             __ProviderButton = createDropDownButton(_SelectProviderChange, DxMapCoordinatesProvider.SeznamMapy, DxMapCoordinatesProvider.FrameMapy, DxMapCoordinatesProvider.GoogleMaps, DxMapCoordinatesProvider.OpenStreetMap);
             __MapTypeButton = createDropDownButton(_SelectMapTypeChange, DxMapCoordinatesMapType.Standard, DxMapCoordinatesMapType.Photo, DxMapCoordinatesMapType.Traffic);
-            __ReadOnlyButton = createDropDownButton(_SelectReadOnlyChange, MapEditableType.Editable, MapEditableType.ReadOnly);
+            __ReadOnlyButton = createDropDownButton(_SelectReadOnlyChange, MapEditableType.Editable, MapEditableType.ReadOnly, MapEditableType.StaticAsync, MapEditableType.StaticSync);
 
             _DoContentLayout();
 
@@ -49,14 +49,6 @@ namespace TestDevExpress.Forms
                 var button = DxComponent.CreateDxSimpleButton(0, 0, 150, 32, this.DxMainPanel, text, clickHandler, tag: url);
                 __NavControls.Add(button);
                 return button;
-            }
-
-            DxImageComboBoxEdit createCombo(EventHandler changeHandler, params string[] items)
-            {
-                var combo = DxComponent.CreateDxImageComboBox(0, 0, 150, this.DxMainPanel, changeHandler, items.ToOneString("\t"));
-                __NavControls.Add(combo);
-                combo.SelectedIndex = 0;                   // Vyvolá se handler (changeHandler) a nastaví se odpovídající hodnota
-                return combo;
             }
             DxDropDownButton createDropDownButton(EventHandler<TEventArgs<IMenuItem>> itemClickHandler, params object[] values)
             {
@@ -79,7 +71,7 @@ namespace TestDevExpress.Forms
         /// <param name="e"></param>
         private void _MsWebCurrentDocumentTitleChanged(object sender, EventArgs e)
         {
-            var docTitle = __MapViewPanel.WebProperties.DocumentTitle ?? "";
+            var docTitle = __MapViewPanel.MapProperties.DocumentTitle ?? "";
             if (docTitle.Length > 53) docTitle = docTitle.Substring(0, 50) + "...";
             this.SetGuiValue(t => this.Text = t, docTitle);
         }
@@ -183,7 +175,11 @@ namespace TestDevExpress.Forms
                 button.Text = editableType.ToString();
                 __CurrentEditableType = editableType;
                 var mapPanel = __MapViewPanel;
-                mapPanel.MapProperties.IsMapEditable = (__CurrentEditableType == MapEditableType.Editable);
+                mapPanel.MapProperties.IsMapEditable = (editableType == MapEditableType.Editable);
+                mapPanel.MapProperties.DisplayMode = (editableType == MapEditableType.Editable ? DxWebViewDisplayMode.Live :
+                                                     (editableType == MapEditableType.ReadOnly ? DxWebViewDisplayMode.Live :
+                                                     (editableType == MapEditableType.StaticAsync ? DxWebViewDisplayMode.CaptureAsync :
+                                                     (editableType == MapEditableType.StaticSync ? DxWebViewDisplayMode.CaptureSync : DxWebViewDisplayMode.Live))));
             }
         }
         private void _GoToMap(bool forceUrl)
@@ -197,6 +193,7 @@ namespace TestDevExpress.Forms
                 mapPanel.MapProperties.Coordinates = __CurrentCoordinates;               // Zde se vyvolá Reload mapy
             }
         }
+        /*
         private void _ClickButtonStaticImage(object sender, EventArgs e)
         {
             var webProperties = __MapViewPanel.WebProperties;
@@ -209,10 +206,13 @@ namespace TestDevExpress.Forms
             }
             webProperties.IsStaticPicture = isStatic;
         }
+        */
         private enum MapEditableType
         {
             Editable,
-            ReadOnly
+            ReadOnly,
+            StaticAsync,
+            StaticSync
         }
         #endregion
     }

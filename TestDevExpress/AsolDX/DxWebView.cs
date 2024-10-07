@@ -3,11 +3,13 @@
 // Redistribution and use in source and binary forms, with or without modification, 
 // is not permitted without valid contract with Asseco Solutions, a. s.
 
+using DevExpress.XtraRichEdit.Model.History;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -15,8 +17,18 @@ namespace Noris.Clients.Win.Components.AsolDX
 {
     /// <summary>
     /// Panel obsahující <see cref="MsWebView"/> a jednoduchý toolbar (Back - Forward - Refresh - Adresa - Go)
+    /// <para/>
+    /// Tento Control obsahuje instanci <see cref="WebProperties"/>, pomocí které se control nastavuje a komunikuje s ním.<br/>
+    /// Je možno nastavit touto cestou vlastosti:<br/>
+    /// <see cref="Value"/> = text URL adresy, pro snadné zadávání hodnoty, shodný jako v <see cref="WebProperties"/> : <see cref="MsWebView.WebPropertiesInfo.UrlAdress"/>;<br/>
+    /// <see cref="MapPropertiesInfo.Coordinates"/> = text souřadnice;<br/>
+    /// <see cref="MapPropertiesInfo.CoordinatesProvider"/> = Provider = webová stránka s mapami;<br/>
+    /// <see cref="MapPropertiesInfo.CoordinatesMapType"/> = Druh mapy;<br/>
+    /// <see cref="MapPropertiesInfo.CoordinatesFormat"/> = Formát textu souřadnic při jejich čtení;<br/>
+    /// <see cref="MapPropertiesInfo.CoordinatesChanged"/> = Událost, když uživatel interaktivně změní souřadnice;<br/>
     /// </summary>
-    public class DxWebViewPanel : DxPanelControl
+    /// </summary>
+    public class DxWebViewPanel : DxPanelControl, IDxWebViewParentPanel
     {
         #region Konstruktor, tvorba vnitřních controlů, DoLayout, Dispose, proměnné
         /// <summary>
@@ -84,19 +96,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Provede požadované akce. Je povoleno volat z threadu mimo GUI.
         /// </summary>
         /// <param name="actionTypes"></param>
-        internal void DoAction(DxWebViewActionType actionTypes)
+        void IDxWebViewParentPanel.DoAction(DxWebViewActionType actionTypes) { _DoAction(actionTypes); }
+        /// <summary>
+        /// Provede požadované akce. Je povoleno volat z threadu mimo GUI.
+        /// </summary>
+        /// <param name="actionTypes"></param>
+        private void _DoAction(DxWebViewActionType actionTypes)
         {
             if (actionTypes == DxWebViewActionType.None) return;               // Pokud není co dělat, není třeba ničehož invokovati !
 
             if (this.InvokeRequired)
             {   // 1x invokace na případně vícero akci
-                this.BeginInvoke(new Action<DxWebViewActionType>(DoAction), actionTypes);
+                this.BeginInvoke(new Action<DxWebViewActionType>(_DoAction), actionTypes);
             }
             else
             {
                 if (actionTypes.HasFlag(DxWebViewActionType.DoLayout)) this._DoLayout();
                 if (actionTypes.HasFlag(DxWebViewActionType.DoEnabled)) this._DoEnabled();
-                if (actionTypes.HasFlag(DxWebViewActionType.DoShowStaticPicture)) this._DoShowStaticPicture();
+                if (actionTypes.HasFlag(DxWebViewActionType.DoChangeDisplayMode)) this._DoChangeDisplayMode();
                 if (actionTypes.HasFlag(DxWebViewActionType.DoChangeDocumentTitle)) this._DoShowDocumentTitle();
                 if (actionTypes.HasFlag(DxWebViewActionType.DoChangeSourceUrl)) this._DoShowSourceUrl();
                 if (actionTypes.HasFlag(DxWebViewActionType.DoChangeStatusText)) this._DoShowStatusText();
@@ -241,26 +258,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Aktualizuje Picture z okna živého webu, podle nastavení <see cref="WebProperties"/>: <see cref="MsWebView.PropertiesInfo.IsStaticPicture"/>
-        /// Musí být voláno v GUI threadu.
-        /// </summary>
-        private void _DoShowStaticPicture()
-        {
-            var properties = this.WebProperties;
-            bool isStaticPicture = properties.IsStaticPicture;
-            if (isStaticPicture)
-            {   // Static => požádáme o zachycení Image a pak jej vykreslíme:
-                this._TryInternalCaptureMsWebImage();
-            }
-            else
-            {   // Živý web => zobrazíme Web a skryjeme Picture:
-                if (!this.__MsWebView.Visible)
-                    this.__MsWebView.Visible = true;
-                if (this.__PictureWeb.Visible)
-                    this.__PictureWeb.Visible = false;
-            }
-        }
-        /// <summary>
         /// Aktualizuje titulek po jeho změně v <see cref="MsWebView"/>.
         /// </summary>
         private void _DoShowDocumentTitle()
@@ -395,20 +392,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             __MsWebView.MsWebNavigationStarting += _MsWebNavigationStarted;
             __MsWebView.MsWebNavigationCompleted += _MsWebNavigationCompleted;
             __MsWebView.MsWebImageCaptured += _MsWebImageCaptured;
+            // __MsWebView.MsWebNavigatedImageCaptured += _MsWebNavigationCaptured;
         }
 
         private void _MsWebHistoryChanged(object sender, EventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.HistoryChanged");
             OnMsWebCurrentCanGoEnabledChanged();
             MsWebCurrentCanGoEnabledChanged?.Invoke(this, EventArgs.Empty);
         }
         /// <summary>
-        /// Volá se při změně v historii navigace, kdy se mění Enabled v proměnných <see cref="WebProperties"/>: <see cref="MsWebView.PropertiesInfo.CanGoBack"/> nebo <see cref="MsWebView.PropertiesInfo.CanGoForward"/>.
+        /// Volá se při změně v historii navigace, kdy se mění Enabled v proměnných <see cref="WebProperties"/>: <see cref="MsWebView.WebPropertiesInfo.CanGoBack"/> nebo <see cref="MsWebView.WebPropertiesInfo.CanGoForward"/>.
         /// </summary>
         protected virtual void OnMsWebCurrentCanGoEnabledChanged() { }
         /// <summary>
-        /// Event při změně v historii navigace, kdy se mění Enabled v proměnných <see cref="WebProperties"/>: <see cref="MsWebView.PropertiesInfo.CanGoBack"/> nebo <see cref="MsWebView.PropertiesInfo.CanGoForward"/>.
+        /// Event při změně v historii navigace, kdy se mění Enabled v proměnných <see cref="WebProperties"/>: <see cref="MsWebView.WebPropertiesInfo.CanGoBack"/> nebo <see cref="MsWebView.WebPropertiesInfo.CanGoForward"/>.
         /// </summary>
         public event EventHandler MsWebCurrentCanGoEnabledChanged;
 
@@ -431,7 +428,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         private void _MsWebCurrentUrlAdressChanged(object sender, EventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.SourceUrlChanged");
             _TryInternalCaptureMsWebImage();
             OnMsWebCurrentUrlAdressChanged();
             MsWebCurrentUrlAdressChanged?.Invoke(this, EventArgs.Empty);
@@ -447,7 +443,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         private void _MsWebCurrentStatusTextChanged(object sender, EventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.StatusTextChanged");
             OnMsWebCurrentStatusTextChanged();
             MsWebCurrentStatusTextChanged?.Invoke(this, EventArgs.Empty);
         }
@@ -462,9 +457,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         private void _MsWebNavigationBefore(object sender, EventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.NavigationBefore");
             __NavigationInProgress = true;
-            _ShowWebViewNavigationBefore();
             OnMsWebNavigationBefore();
             MsWebNavigationBefore?.Invoke(this, EventArgs.Empty);
         }
@@ -482,8 +475,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _MsWebNavigationStarted(object sender, EventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.NavigationStarted");
-            _ShowWebViewNavigationStarted();
+            _ShowWebViewControl();
             OnMsWebNavigationStarted();
             MsWebNavigationStarted?.Invoke(this, EventArgs.Empty);
         }
@@ -498,7 +490,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         private void _MsWebNavigationCompleted(object sender, EventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.NavigationCompleted");
             __NavigationInProgress = false;
             _TryInternalCaptureMsWebImage();
             OnMsWebNavigationCompleted();
@@ -519,38 +510,40 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Zachycování statického obrázku z WebView
         /// <summary>
-        /// Captures an image of what WebView is displaying.<br/>
-        /// Získá obrázek aktuálního stavu WebView a uloží jej do <see cref="LastCapturedWebViewImage"/>. 
-        /// Jde o asynchronní metodu: řízení vrátí ihned, a po dokončení akce vyvolá event <see cref="MsWebImageCaptured"/>.
+        /// Získá obrázek aktuálního stavu WebView, a po jeho získání volá event event <see cref="MsWebImageCaptured"/>, kde bude načtený obrázek k dispozici.
+        /// Jde o asynchronní metodu: řízení vrátí ihned, a až po dokončení akce vyvolá event <see cref="MsWebImageCaptured"/>.
         /// </summary>
         public void CaptureMsWebImage(object requestId)
         {
-            this.__MsWebView.CaptureMsWebImage(requestId);           // Zahájí se async načítání, po načtení obrázku bude vyvolán event __MsWebView.MsWebImageCaptured => _MsWebImageCaptured()
+            // Zahájí se async načítání obrázku z existujícího WebView a jeho aktuální adresy:
+            this.__MsWebView.LoadMsWebImageAsync(requestId);
+            // po načtení obrázku (async) bude vyvolán event __MsWebView.MsWebImageCaptured => _MsWebImageCaptured()
         }
         /// <summary>
-        /// Metoda zobrazí živý WebView pokud je statický režim, před zahájením aktivní navigace.
-        /// Účelem je to, aby živý WebView control mohl plynule zobrazit navigaci.
+        /// Reaguje na změnu <see cref="MsWebView.WebPropertiesInfo.DisplayMode"/>.
+        /// Po změně režimu na statický obrázek si vyžádá jeho získání z WebView, poté bude asynchronně obrázek zobrazen.
+        /// Aktualizuje Picture z okna živého webu, podle nastavení <see cref="WebProperties"/>: <see cref="MsWebView.WebPropertiesInfo.DisplayMode"/>
+        /// Musí být voláno v GUI threadu.
         /// </summary>
-        private void _ShowWebViewNavigationBefore()
+        private void _DoChangeDisplayMode()
         {
-            //this.SuspendLayout();
-            //if (!this.__MsWebView.IsControlVisible) this.__MsWebView.Visible = true;
-            //if (this.__PictureWeb.Visible) this.__PictureWeb.Visible = false;
-            //this.ResumeLayout();
-        }
-        /// <summary>
-        /// Proběhne poté, kdy WebView dostal novou URL a začíná jeho navigace
-        /// </summary>
-        private void _ShowWebViewNavigationStarted()
-        {
-            this.SuspendLayout();
-            if (!this.__MsWebView.IsControlVisible) this.__MsWebView.Visible = true;
-            if (this.__PictureWeb.Visible) this.__PictureWeb.Visible = false;
-            this.ResumeLayout();
+            var webProperties = this.WebProperties;
+            bool useStaticPicture = webProperties.UseStaticPicture;
+            if (useStaticPicture)
+            {   // Static => požádáme o zachycení Image a pak jej vykreslíme:
+                this._TryInternalCaptureMsWebImage();
+            }
+            else
+            {   // Živý web => zobrazíme Web a skryjeme Picture:
+                if (!this.__MsWebView.Visible)
+                    this.__MsWebView.Visible = true;
+                if (this.__PictureWeb.Visible)
+                    this.__PictureWeb.Visible = false;
+            }
         }
         /// <summary>
         /// Metodu volá zdejší panel vždy, když mohlo dojít ke změně obrázku, pokud je statický.
-        /// Tedy: při změně velikosti controlu, při doběhnutí navigace, při vložená hodnoty <see cref="MsWebView.PropertiesInfo.IsStaticPicture"/> = true, atd<br/>
+        /// Tedy: při změně velikosti controlu, při doběhnutí navigace, při vložení hodnoty <see cref="MsWebView.WebPropertiesInfo.DisplayMode"/> = true, atd<br/>
         /// Zdejší metoda sama otestuje, zda je vhodné získat Image, a pokud ano, pak o něj požádá <see cref="__MsWebView"/>. 
         /// <para/>
         /// Jde o asynchronní operaci, zdejší metoda tedy skončí okamžitě. 
@@ -559,20 +552,55 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _TryInternalCaptureMsWebImage()
         {
-            var properties = this.WebProperties;
-            bool isStaticPicture = properties.IsStaticPicture;
-            if (!isStaticPicture) return;
+            var webProperties = this.WebProperties;
+            bool useStaticPicture = webProperties.UseStaticPicture;
+            if (!useStaticPicture) return;
 
             string url = __MsWebView.WebProperties.UrlAdress;
             if (String.IsNullOrEmpty(url)) return;
 
+            this._ShowWebViewControl();
+            this.__PictureWeb.Image = null;
+
+            // Zahájí se async načítání dat (Bitmapa) obrázku z WebView:
+            this.__MsWebView.LoadMsWebImageAsync(_InternalCaptureRequestId);
+            // Po načtení obrázku bude vyvolán event __MsWebView.MsWebImageCaptured => _MsWebImageCaptured()
+        }
+        /// <summary>
+        /// WebView dokončil získání Bitmapy = obraz webové stránky, je dodán v argumentu.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _MsWebImageCaptured(object sender, MsWebImageCapturedArgs args)
+        {
+            // Tato událost je volaná vždy, když __MsWebView dokončí načítání Image.
+            //  To může být vyžádáno buď interně pro naší komponentu, viz _TryInternalCaptureMsWebImage(),
+            //  Anebo externě z public metody CaptureMsWebImage().
+            // Každý požadavek může nést svoje ID, předávané v args.RequestId. 
+            // To odlišuje, kdo žádal. Detekujeme naše interní ID a to řešíme pomocí _ReloadInternalMsWebImageCaptured();
+            //  a externí, to posíláme do eventu:
+            if (_InternalCaptureRequestExists && args.RequestId != null && args.RequestId is Guid guid && guid == _InternalCaptureRequestId)
+            {   // Interní request:
+                _ReloadInternalMsWebImageCaptured(args);
+            }
+            else
+            {   // Externí požadavek, z public metody CaptureMsWebImage(object requestId):
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebViewPanel.ExternalImageCaptured");
+                OnMsWebImageCaptured(args);
+                MsWebImageCaptured?.Invoke(this, args);
+            }
+        }
+        /// <summary>
+        /// Zajistí fyzické zobrazení controlu WebView, proto aby mohla proběhnout navigace na cílovou URL adresu.
+        /// WebView musí být Visible, jinak nic nedělá. 
+        /// Pokud tedy aktuální DisplayMode je nějaký Capture, pak WebView byl dosud Invisible a je třeba jej zviditelnit = právě nyní!
+        /// </summary>
+        private void _ShowWebViewControl()
+        {
             this.SuspendLayout();
             if (!this.__MsWebView.IsControlVisible) this.__MsWebView.Visible = true;     // Musí být Visible, jinak nic nenačte
-            if (this.__PictureWeb.Visible) this.__PictureWeb.Visible = false;            // Necháme visible jen živý Web
-            this.__PictureWeb.Image = null;
+            if (this.__PictureWeb.Visible) this.__PictureWeb.Visible = false;            // Picture skryjeme, ponecháme Visible jen pro živý Web
             this.ResumeLayout();
-
-            this.__MsWebView.CaptureMsWebImage(_InternalCaptureRequestId);               // Zahájí se async načítání, po načtení obrázku bude vyvolán event __MsWebView.MsWebImageCaptured => _MsWebImageCaptured()
         }
         /// <summary>
         /// Metoda je volaná po získání dat CapturedImage (jsou dodána v argumentu) pro interní účely, na základě požadavku z metody <see cref="_TryInternalCaptureMsWebImage"/>.
@@ -584,11 +612,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Pokud jsme ve stavu, kdy probíhá navigace = načítá se obsah stránky (ještě nedoběhl event _MsWebNavigationCompleted), tak nebudeme snímat Image:
             if (__NavigationInProgress) return;
 
-            var properties = this.WebProperties;
-            bool isStaticPicture = properties.IsStaticPicture;
-            if (!isStaticPicture) return;
+            var webProperties = this.WebProperties;
+            bool useStaticPicture = webProperties.UseStaticPicture;
+            if (!useStaticPicture) return;
 
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.ImageCaptured");
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebViewPanel.InternalImageCaptured");
 
             // Any Thread => GUI:
             if (this.InvokeRequired) this.BeginInvoke(new Action(reloadMsWebImageCaptured));
@@ -597,12 +625,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Fyzické načtení Image a další akce, v GUI threadu
             void reloadMsWebImageCaptured()
             {
-                this.SuspendLayout();
-                this.__PictureWeb.Image = System.Drawing.Image.FromStream(new System.IO.MemoryStream(args.ImageData));
-                if (this.__PictureWeb.Visible) this.__PictureWeb.Refresh();
-                if (!this.__PictureWeb.Visible) this.__PictureWeb.Visible = true;
-                if (this.__MsWebView.Visible) this.__MsWebView.Visible = false;
-                this.ResumeLayout();
+                try
+                {
+                    this.SuspendLayout();
+                    this.__PictureWeb.Image = args.GetImage();
+                    if (this.__PictureWeb.Visible) this.__PictureWeb.Refresh();
+                    if (!this.__PictureWeb.Visible) this.__PictureWeb.Visible = true;
+                    if (this.__MsWebView.Visible) this.__MsWebView.Visible = false;
+                }
+                catch { }
+                finally
+                {
+                    this.ResumeLayout();
+                }
             }
         }
         /// <summary>
@@ -622,29 +657,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private Guid? __InternalCaptureRequestId;
-        private void _MsWebImageCaptured(object sender, MsWebImageCapturedArgs args)
-        {
-            // Tato událost je volaná vždy, když __MsWebView dokončí načítání Image.
-            //  To může být vyžádáno buď interně pro naší komponentu, viz _TryInternalCaptureMsWebImage(),
-            //  Anebo externě z public metody CaptureMsWebImage().
-            // Každý požadavek může nést svoje ID, předávané v args.RequestId. 
-            // To odlišuje, kdo žádal. Detekujeme naše interní ID a to řešíme pomocí _ReloadInternalMsWebImageCaptured();
-            //  a externí, to posíláme do eventu:
-            if (_InternalCaptureRequestExists && args.RequestId != null && args.RequestId is Guid guid && guid == _InternalCaptureRequestId)
-            {   // Interní request:
-                _ReloadInternalMsWebImageCaptured(args);
-            }
-            else
-            {   // Externí:
-                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.ImageCaptured");
-                OnMsWebImageCaptured(args);
-                MsWebImageCaptured?.Invoke(this, args);
-            }
-        }
         /// <summary>
         /// Obsah obrázku posledně zachyceného metodou <see cref="CaptureMsWebImage"/>
         /// </summary>
-        public byte[] LastCapturedWebViewImage { get { return __MsWebView.LastCapturedWebViewImage; } }
+        public byte[] LastCapturedWebViewImage { get { return __MsWebView.LastCapturedWebViewImageData; } }
         /// <summary>
         /// Volá se po získání ImageCapture.
         /// </summary>
@@ -656,9 +672,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Public vlastnosti
         /// <summary>
+        /// Value tohoto panelu = souřadnice zadaného bodu.
+        /// Obsahuje totéž jako <see cref="WebProperties"/> : <see cref="MsWebView.WebPropertiesInfo.UrlAdress"/>.
+        /// </summary>
+        public string Value { get { return this.WebProperties.UrlAdress; } set { this.WebProperties.UrlAdress = value; } }
+        /// <summary>
         /// Souhrn vlastností <see cref="MsWebView"/>, tak aby byly k dosažení v jednom místě.
         /// </summary>
-        public MsWebView.PropertiesInfo WebProperties { get { return __MsWebView.WebProperties; } }
+        public MsWebView.WebPropertiesInfo WebProperties { get { return __MsWebView.WebProperties; } }
         #endregion
     }
     /// <summary>
@@ -673,7 +694,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <see cref="MapPropertiesInfo.CoordinatesFormat"/> = Formát textu souřadnic při jejich čtení;<br/>
     /// <see cref="MapPropertiesInfo.CoordinatesChanged"/> = Událost, když uživatel interaktivně změní souřadnice;<br/>
     /// </summary>
-    public class DxMapViewPanel : DxPanelControl
+    public class DxMapViewPanel : DxPanelControl, IDxWebViewParentPanel
     {
         #region Konstruktor, tvorba vnitřních controlů, DoLayout, Dispose, proměnné
         /// <summary>
@@ -758,19 +779,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Provede požadované akce. Je povoleno volat z threadu mimo GUI.
         /// </summary>
         /// <param name="actionTypes"></param>
-        internal void DoAction(DxWebViewActionType actionTypes)
+        void IDxWebViewParentPanel.DoAction(DxWebViewActionType actionTypes) { _DoAction(actionTypes); }
+        /// <summary>
+        /// Provede požadované akce. Je povoleno volat z threadu mimo GUI.
+        /// </summary>
+        /// <param name="actionTypes"></param>
+        private void _DoAction(DxWebViewActionType actionTypes)
         {
             if (actionTypes == DxWebViewActionType.None) return;               // Pokud není co dělat, není třeba ničehož invokovati !
 
             if (this.InvokeRequired)
             {   // 1x invokace na případně vícero akci
-                this.BeginInvoke(new Action<DxWebViewActionType>(DoAction), actionTypes);
+                this.BeginInvoke(new Action<DxWebViewActionType>(_DoAction), actionTypes);
             }
             else
             {
                 if (actionTypes.HasFlag(DxWebViewActionType.DoLayout)) this._DoLayout();
                 if (actionTypes.HasFlag(DxWebViewActionType.DoEnabled)) this._DoEnabled();
-                if (actionTypes.HasFlag(DxWebViewActionType.DoShowStaticPicture)) this._DoShowStaticPicture();
+                if (actionTypes.HasFlag(DxWebViewActionType.DoChangeDisplayMode)) this._DoChangeDisplayMode();
                 if (actionTypes.HasFlag(DxWebViewActionType.DoChangeDocumentTitle)) this._DoShowDocumentTitle();
                 if (actionTypes.HasFlag(DxWebViewActionType.DoChangeSourceUrl)) this._DoShowSourceUrl();
                 if (actionTypes.HasFlag(DxWebViewActionType.DoChangeStatusText)) this._DoShowStatusText();
@@ -856,7 +882,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             this.__MsWebView.Bounds = newWebBounds;
             this.__PictureWeb.Bounds = newPicBounds;
-            if (newPicBounds != oldPicBounds) _TryInternalCaptureMsWebImage();
+            // MsWebView by měl v případě potřeby detekovat změnu velikosti a vyvolat znovunačtení obrázku a nakonec událost ...
 
 
             int getWidth(bool isVisible, int size, int distance)
@@ -901,26 +927,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // Mapa:
-        }
-        /// <summary>
-        /// Aktualizuje Picture z okna živého webu, podle nastavení <see cref="WebProperties"/>: <see cref="MsWebView.PropertiesInfo.IsStaticPicture"/>
-        /// Musí být voláno v GUI threadu.
-        /// </summary>
-        private void _DoShowStaticPicture()
-        {
-            var properties = this.WebProperties;
-            bool isStaticPicture = properties.IsStaticPicture;
-            if (isStaticPicture)
-            {   // Static => požádáme o zachycení Image a pak jej vykreslíme:
-                this._TryInternalCaptureMsWebImage();
-            }
-            else
-            {   // Živý web => zobrazíme Web a skryjeme Picture:
-                if (!this.__MsWebView.Visible)
-                    this.__MsWebView.Visible = true;
-                if (this.__PictureWeb.Visible)
-                    this.__PictureWeb.Visible = false;
-            }
         }
         /// <summary>
         /// Aktualizuje titulek po jeho změně v <see cref="MsWebView"/>.
@@ -1285,7 +1291,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             __MsWebView.MsWebNavigationStarted += _MsWebNavigationStarted;
             __MsWebView.MsWebNavigationStarting += _MsWebNavigationStarted;
             __MsWebView.MsWebNavigationCompleted += _MsWebNavigationCompleted;
+            __MsWebView.MsWebNavigationTotalCompleted += __MsWebNavigationTotalCompleted;
             __MsWebView.MsWebImageCaptured += _MsWebImageCaptured;
+            __MsWebView.MsWebDisplayImageCaptured += _MsWebDisplayImageCaptured;
+            __MsWebView.WebProperties.DelayedResponseWaitingMs = 120;
         }
         /// <summary>
         /// Vyvoláno po události při změně titulku dokumentu.
@@ -1300,10 +1309,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _MsWebCurrentUrlAdressChanged(object sender, EventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.SourceUrlChanged");
-
             var isChangeForCoordinate = __MapCoordinateToUrlAdressChangeInProgress;
-            _TryInternalCaptureMsWebImage();
             OnMsWebCurrentUrlAdressChanged();
             MsWebCurrentUrlAdressChanged?.Invoke(this, EventArgs.Empty);
 
@@ -1316,7 +1322,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _MsWebCurrentStatusTextChanged(object sender, EventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.StatusTextChanged");
             OnMsWebCurrentStatusTextChanged();
             MsWebCurrentStatusTextChanged?.Invoke(this, EventArgs.Empty);
         }
@@ -1325,9 +1330,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _MsWebNavigationBefore(object sender, EventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.NavigationBefore");
             __NavigationInProgress = true;
-            _ShowWebViewNavigationBefore();
             OnMsWebNavigationBefore();
             MsWebNavigationBefore?.Invoke(this, EventArgs.Empty);
         }
@@ -1336,8 +1339,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _MsWebNavigationStarted(object sender, EventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.NavigationStarted");
-            _ShowWebViewNavigationStarted();
+            _ShowWebViewControl();
             OnMsWebNavigationStarted();
             MsWebNavigationStarted?.Invoke(this, EventArgs.Empty);
         }
@@ -1349,18 +1351,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _MsWebNavigationCompleted(object sender, EventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.NavigationCompleted");
-
             var isChangeForCoordinate = __MapCoordinateToUrlAdressChangeInProgress;
             __MapCoordinateToUrlAdressChangeInProgress = false;
             __NavigationInProgress = false;
-            _TryInternalCaptureMsWebImage();
             OnMsWebNavigationCompleted();
             MsWebNavigationCompleted?.Invoke(this, EventArgs.Empty);
 
             if (!isChangeForCoordinate)
                 // Změna URL adresy NEBYLA prováděna z důvodu změny koordinátů => URL adresu změnil interaktivně uživatel => měli bychom detekovat nové koordináty:
                 _ConvertUrlAdressToCoordinates();
+        }
+        /// <summary>
+        /// Po dokončení navigace = WebView změnil obsah dokumentu (webová stránka) a má hotovo, včetně donačtení Delayed WebResponses.
+        /// Důvody jsou různé: programová změna URL adresy (=změna koordinátů) anebo uživatelovo klikání a myší přetahování.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void __MsWebNavigationTotalCompleted(object sender, EventArgs e)
+        {
+            OnMsWebNavigationTotalCompleted();
+            MsWebNavigationTotalCompleted?.Invoke(this, EventArgs.Empty);
         }
         /// <summary>
         /// Metoda je volaná poté, kdy uživatel interaktivně změní URL adresu. Možná došlo ke změně souřadnic?
@@ -1504,41 +1514,52 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Event při dokončení navigace.
         /// </summary>
         public event EventHandler MsWebNavigationCompleted;
+
+        /// <summary>
+        /// Volá se při dokončení navigace včetně DelayedRequest.
+        /// </summary>
+        protected virtual void OnMsWebNavigationTotalCompleted() { }
+        /// <summary>
+        /// Event při dokončení navigace včetně DelayedRequest.
+        /// </summary>
+        public event EventHandler MsWebNavigationTotalCompleted;
         #endregion
         #region Zachycování statického obrázku z WebView
         /// <summary>
-        /// Captures an image of what WebView is displaying.<br/>
-        /// Získá obrázek aktuálního stavu WebView a uloží jej do <see cref="LastCapturedWebViewImage"/>. 
-        /// Jde o asynchronní metodu: řízení vrátí ihned, a po dokončení akce vyvolá event <see cref="MsWebImageCaptured"/>.
+        /// Získá obrázek aktuálního stavu WebView, a po jeho získání volá event event <see cref="MsWebImageCaptured"/>, kde bude načtený obrázek k dispozici.
+        /// Jde o asynchronní metodu: řízení vrátí ihned, a až po dokončení akce vyvolá event <see cref="MsWebImageCaptured"/>.
         /// </summary>
-        public void CaptureMsWebImage(object requestId)
+        public void LoadMsWebImageAsync(object requestId)
         {
-            this.__MsWebView.CaptureMsWebImage(requestId);           // Zahájí se async načítání, po načtení obrázku bude vyvolán event __MsWebView.MsWebImageCaptured => _MsWebImageCaptured()
+            // Zahájí se async načítání obrázku z existujícího WebView a jeho aktuální adresy:
+            this.__MsWebView.LoadMsWebImageAsync(requestId);
+            // po načtení obrázku (async) bude vyvolán event __MsWebView.MsWebImageCaptured => _MsWebImageCaptured()
         }
         /// <summary>
-        /// Metoda zobrazí živý WebView pokud je statický režim, před zahájením aktivní navigace.
-        /// Účelem je to, aby živý WebView control mohl plynule zobrazit navigaci.
+        /// Reaguje na změnu <see cref="MsWebView.WebPropertiesInfo.DisplayMode"/>.
+        /// Po změně režimu na statický obrázek si vyžádá jeho získání z WebView, poté bude asynchronně obrázek zobrazen.
+        /// Aktualizuje Picture z okna živého webu, podle nastavení <see cref="WebProperties"/>: <see cref="MsWebView.WebPropertiesInfo.DisplayMode"/>
+        /// Musí být voláno v GUI threadu.
         /// </summary>
-        private void _ShowWebViewNavigationBefore()
+        private void _DoChangeDisplayMode()
         {
-            //this.SuspendLayout();
-            //if (!this.__MsWebView.IsControlVisible) this.__MsWebView.Visible = true;
-            //if (this.__PictureWeb.Visible) this.__PictureWeb.Visible = false;
-            //this.ResumeLayout();
-        }
-        /// <summary>
-        /// Proběhne poté, kdy WebView dostal novou URL a začíná jeho navigace
-        /// </summary>
-        private void _ShowWebViewNavigationStarted()
-        {
-            this.SuspendLayout();
-            if (!this.__MsWebView.IsControlVisible) this.__MsWebView.Visible = true;
-            if (this.__PictureWeb.Visible) this.__PictureWeb.Visible = false;
-            this.ResumeLayout();
+            var webProperties = this.WebProperties;
+            bool useStaticPicture = webProperties.UseStaticPicture;
+            if (useStaticPicture)
+            {   // Static => požádáme o zachycení Image a pak jej vykreslíme:
+                this._TryInternalCaptureMsWebImage();
+            }
+            else
+            {   // Živý web => zobrazíme Web a skryjeme Picture:
+                if (!this.__MsWebView.Visible)
+                    this.__MsWebView.Visible = true;
+                if (this.__PictureWeb.Visible)
+                    this.__PictureWeb.Visible = false;
+            }
         }
         /// <summary>
         /// Metodu volá zdejší panel vždy, když mohlo dojít ke změně obrázku, pokud je statický.
-        /// Tedy: při změně velikosti controlu, při doběhnutí navigace, při vložená hodnoty <see cref="MsWebView.PropertiesInfo.IsStaticPicture"/> = true, atd<br/>
+        /// Tedy: při změně velikosti controlu, při doběhnutí navigace, při vložení hodnoty <see cref="MsWebView.WebPropertiesInfo.DisplayMode"/> = true, atd<br/>
         /// Zdejší metoda sama otestuje, zda je vhodné získat Image, a pokud ano, pak o něj požádá <see cref="__MsWebView"/>. 
         /// <para/>
         /// Jde o asynchronní operaci, zdejší metoda tedy skončí okamžitě. 
@@ -1548,19 +1569,65 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _TryInternalCaptureMsWebImage()
         {
             var properties = this.WebProperties;
-            bool isStaticPicture = properties.IsStaticPicture;
-            if (!isStaticPicture) return;
+            bool useStaticPicture = properties.UseStaticPicture;
+            if (!useStaticPicture) return;
 
             string url = __MsWebView.WebProperties.UrlAdress;
             if (String.IsNullOrEmpty(url)) return;
 
-            this.SuspendLayout();
-            if (!this.__MsWebView.IsControlVisible) this.__MsWebView.Visible = true;     // Musí být Visible, jinak nic nenačte
-            if (this.__PictureWeb.Visible) this.__PictureWeb.Visible = false;            // Necháme visible jen živý Web
+            _ShowWebViewControl();
             this.__PictureWeb.Image = null;
-            this.ResumeLayout();
 
-            this.__MsWebView.CaptureMsWebImage(_InternalCaptureRequestId);               // Zahájí se async načítání, po načtení obrázku bude vyvolán event __MsWebView.MsWebImageCaptured => _MsWebImageCaptured()
+            // Zahájí se Async nebo Sync načítání dat (Bitmapa) obrázku z WebView:
+            this.__MsWebView.StartCapturedImage();
+            // Po načtení obrázku bude vyvolán event __MsWebView.MsWebDisplayImageCaptured => _MsWebDisplayImageCaptured()
+            //  a tam si převezmeme Image a zobrazíme:
+        }
+        /// <summary>
+        /// WebView dokončil získání Bitmapy = obraz webové stránky, je dodán v argumentu.
+        /// Proběhne pouze po načítání pomocí <see cref="LoadMsWebImageAsync(object)"/>. 
+        /// Nikoli pro načtení Image pro DisplayMode = Capture...
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _MsWebImageCaptured(object sender, MsWebImageCapturedArgs args)
+        {
+            // Externí událost:
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"MapViewPanel.ExternalImageCaptured");
+            OnMsWebImageCaptured(args);
+            MsWebImageCaptured?.Invoke(this, args);
+        }
+        /// <summary>
+        /// WebView dokončil získání Bitmapy = obraz webové stránky, je dodán v argumentu.
+        /// Používá se pro načtení Image pro DisplayMode = Capture...
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _MsWebDisplayImageCaptured(object sender, MsWebImageCapturedArgs args)
+        {
+            // Interní získání Image podle DisplayMode:
+            _ReloadInternalMsWebImageCaptured(args);
+        }
+        /// <summary>
+        /// Zajistí fyzické zobrazení controlu WebView, proto aby mohla proběhnout navigace na cílovou URL adresu.
+        /// WebView musí být Visible, jinak nic nedělá. 
+        /// Pokud tedy aktuální DisplayMode je nějaký Capture, pak WebView byl dosud Invisible a je třeba jej zviditelnit = právě nyní!
+        /// </summary>
+        private void _ShowWebViewControl()
+        {
+            if (!this.__MsWebView.IsControlVisible || this.__PictureWeb.Visible)
+            {
+                try
+                {
+                    this.SuspendLayout();
+                    if (!this.__MsWebView.IsControlVisible) this.__MsWebView.Visible = true;
+                    if (this.__PictureWeb.Visible) this.__PictureWeb.Visible = false;
+                }
+                finally
+                {
+                    this.ResumeLayout();
+                }
+            }
         }
         /// <summary>
         /// Metoda je volaná po získání dat CapturedImage (jsou dodána v argumentu) pro interní účely, na základě požadavku z metody <see cref="_TryInternalCaptureMsWebImage"/>.
@@ -1569,14 +1636,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args"></param>
         private void _ReloadInternalMsWebImageCaptured(MsWebImageCapturedArgs args)
         {
-            // Pokud jsme ve stavu, kdy probíhá navigace = načítá se obsah stránky (ještě nedoběhl event _MsWebNavigationCompleted), tak nebudeme snímat Image:
-            if (__NavigationInProgress) return;
-
-            var properties = this.WebProperties;
-            bool isStaticPicture = properties.IsStaticPicture;
-            if (!isStaticPicture) return;
-
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.ImageCaptured");
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"MapViewPanel.InternalImageCaptured");
 
             // Any Thread => GUI:
             if (this.InvokeRequired) this.BeginInvoke(new Action(reloadMsWebImageCaptured));
@@ -1585,54 +1645,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Fyzické načtení Image a další akce, v GUI threadu
             void reloadMsWebImageCaptured()
             {
-                this.SuspendLayout();
-                this.__PictureWeb.Image = System.Drawing.Image.FromStream(new System.IO.MemoryStream(args.ImageData));
-                if (this.__PictureWeb.Visible) this.__PictureWeb.Refresh();
-                if (!this.__PictureWeb.Visible) this.__PictureWeb.Visible = true;
-                if (this.__MsWebView.Visible) this.__MsWebView.Visible = false;
-                this.ResumeLayout();
+                try
+                {
+                    this.SuspendLayout();
+                    this.__PictureWeb.Image = args.GetImage();
+                    if (this.__PictureWeb.Visible) this.__PictureWeb.Refresh();
+                    if (!this.__PictureWeb.Visible) this.__PictureWeb.Visible = true;
+                    if (this.__MsWebView.Visible) this.__MsWebView.Visible = false;
+                }
+                catch { }
+                finally
+                {
+                    this.ResumeLayout();
+                }
             }
         }
         /// <summary>
-        /// Obsahuje true, pokud my jsmew už vydali požadavek na CaptureImage. Pak existuje <see cref="_InternalCaptureRequestId"/>.
+        /// Obsah obrázku posledně zachyceného metodou <see cref="LoadMsWebImageAsync"/>
         /// </summary>
-        private bool _InternalCaptureRequestExists { get { return __InternalCaptureRequestId.HasValue; } }
-        /// <summary>
-        /// RequestId pro náš interní požadavek na <see cref="CaptureMsWebImage(object)"/>, odlišuje náš požadavek od požadavků externích
-        /// </summary>
-        private Guid _InternalCaptureRequestId
-        {
-            get
-            {
-                if (!__InternalCaptureRequestId.HasValue)
-                    __InternalCaptureRequestId = Guid.NewGuid();
-                return __InternalCaptureRequestId.Value;
-            }
-        }
-        private Guid? __InternalCaptureRequestId;
-        private void _MsWebImageCaptured(object sender, MsWebImageCapturedArgs args)
-        {
-            // Tato událost je volaná vždy, když __MsWebView dokončí načítání Image.
-            //  To může být vyžádáno buď interně pro naší komponentu, viz _TryInternalCaptureMsWebImage(),
-            //  Anebo externě z public metody CaptureMsWebImage().
-            // Každý požadavek může nést svoje ID, předávané v args.RequestId. 
-            // To odlišuje, kdo žádal. Detekujeme naše interní ID a to řešíme pomocí _ReloadInternalMsWebImageCaptured();
-            //  a externí, to posíláme do eventu:
-            if (_InternalCaptureRequestExists && args.RequestId != null && args.RequestId is Guid guid && guid == _InternalCaptureRequestId)
-            {   // Interní request:
-                _ReloadInternalMsWebImageCaptured(args);
-            }
-            else
-            {   // Externí:
-                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.ImageCaptured");
-                OnMsWebImageCaptured(args);
-                MsWebImageCaptured?.Invoke(this, args);
-            }
-        }
-        /// <summary>
-        /// Obsah obrázku posledně zachyceného metodou <see cref="CaptureMsWebImage"/>
-        /// </summary>
-        public byte[] LastCapturedWebViewImage { get { return __MsWebView.LastCapturedWebViewImage; } }
+        public byte[] LastCapturedWebViewImage { get { return __MsWebView.LastCapturedWebViewImageData; } }
+
         /// <summary>
         /// Volá se po získání ImageCapture.
         /// </summary>
@@ -1652,7 +1684,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Souhrn vlastností <see cref="MsWebView"/>, tak aby byly k dosažení v jednom místě.
         /// Pro mapy obecně není důležitý.
         /// </summary>
-        public MsWebView.PropertiesInfo WebProperties { get { return __MsWebView.WebProperties; } }
+        protected MsWebView.WebPropertiesInfo WebProperties { get { return __MsWebView.WebProperties; } }
         /// <summary>
         /// Vlastnosti mapy: validní souřadnice, provider atd. Určuje chování mapového controlu.
         /// </summary>
@@ -1688,7 +1720,17 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _InitValues();
             }
             /// <summary>
-            /// Vlastník = <see cref="DxMapViewPanel"/>
+            /// Vlastník = <see cref="DxMapViewPanel"/>.
+            /// Na rozdíl od sousedních webových <see cref="MsWebView.WebPropertiesInfo"/> (ty jsou součástí web controlu <see cref="MsWebView"/>) 
+            /// jsou zdejší mapové properties <see cref="MapPropertiesInfo"/> součástí finálního mapového panelu.
+            /// <para/>
+            /// Důvody: <br/>
+            /// - Webové properties ovlivňují jak vlastní webový prohlížeč, tak i jeho použití pro mapy (obojí se prohlíží ve WebView);<br/>
+            /// - Mapové properties nejsou vlastnostmi Webu (tedy <see cref="MsWebView"/>), ale mapového controlu = panelu. Jde o souřadnice a generátor URL.
+            /// <para/>
+            /// Z toho plyne několik rozdílů:
+            /// <see cref="MsWebView.WebPropertiesInfo"/> má ownera <see cref="MsWebView"/>, ale může mít různé Parent panely; proto jeho 
+            /// <see cref="DxMapViewPanel.MapPropertiesInfo"/> má Ownera = konkrétní mapový Panel <see cref="DxMapViewPanel"/>.
             /// </summary>
             private DxMapViewPanel __Owner;
             /// <summary>
@@ -1699,8 +1741,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                 __Owner = null;
             }
             /// <summary>
+            /// Owner panel typovaný na interface <see cref="IDxWebViewParentPanel"/>, nebo null
+            /// </summary>
+            protected IDxWebViewParentPanel IParentPanel { get { return this.__Owner as IDxWebViewParentPanel; } }
+            /// <summary>
             /// Pokud se dodaná hodnota <paramref name="value"/> liší od hodnoty v proměnné <paramref name="variable"/>, 
-            /// pak do proměnné vloží hodnotu a vyvolá <see cref="DoAction(DxWebViewActionType)"/>.
+            /// pak do proměnné vloží hodnotu a vyvolá <see cref="_DoAction(DxWebViewActionType)"/>.
             /// </summary>
             /// <typeparam name="T"></typeparam>
             /// <param name="value">hodnota do proměnné</param>
@@ -1711,7 +1757,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (!actionForce && Object.Equals(value, variable)) return;
                 variable = value;
-                __Owner.DoAction(actionType);
+                IParentPanel?.DoAction(actionType);
             }
             /// <summary>
             /// Vloží dodané souřadnice, zajistí vyvolání požadovaných reakcí.
@@ -1831,6 +1877,33 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Zajistí přenačtení vizuální mapy s akceptováním zadaného providera, Zoomu atd...
             /// </summary>
             public void CoordinatesRefresh() { this.__Owner.RefreshMap(); }
+            /// <summary>
+            /// Titulek dokumentu.
+            /// </summary>
+            public string DocumentTitle { get { return this.__Owner.WebProperties.DocumentTitle; } }
+            /// <summary>
+            /// Režim zobrazení webové stránky = práce s fyzickým prvkem WebView.<br/>
+            /// Hodnota <see cref="DxWebViewDisplayMode.Live"/> = pro interaktivní práci (defaultní).
+            /// Pokud je <see cref="DxWebViewDisplayMode.CaptureAsync"/> nebo <see cref="DxWebViewDisplayMode.CaptureSync"/>, pak Parent má používat pro zobrazení obrázku Picture.<br/>
+            /// Pokud je <see cref="DxWebViewDisplayMode.CaptureSync"/>, pak po setování URL adresy je vlákno pozdrženo až do dokončení načítání Picture.<br/>
+            /// </summary>
+            public DxWebViewDisplayMode DisplayMode { get { return this.__Owner.WebProperties.DisplayMode; } set { this.__Owner.WebProperties.DisplayMode = value; } }
+            /// <summary>
+            /// Doba čekání (v milisekundách) na opožděné <b><u>WebResourceResponse</u></b> = data (response), které do WebView přicházejí ze serveru i poté, kdy už proběhl event <see cref="MsWebView.MsWebNavigationCompleted"/>.
+            /// Tedy: už je načten základ obsahu z požadované URL adresy, ale různé skripty ještě donačítají další data = z hlediska aktivity prohlížeče "na pozadí".
+            /// <para/>
+            /// Pokud je tato doba null (nebo nula nebo záporné), pak neočekáváme dodání opožděných dat, a ihned po eventu <see cref="MsWebView.MsWebNavigationCompleted"/> proběhne event <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+            /// <para/>
+            /// Pokud je zde kladné číslo, pak nejprve proběhne event <see cref="MsWebView.MsWebNavigationCompleted"/> (ten je dán stejnou událostí ve WebView), a poté čekáme na příchozí data <b><u>WebResourceResponse</u></b>.
+            /// Čekáme nejdéle zda zadanou dobu, a když po danou dobu žádná data nepřijdou, pak vyvoláme event <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+            /// Pokud nějaké Response přijdou, tak od jejich příchodu resetujeme čas čekání = čekáme tedy vždy <see cref="DelayedResponseWaitingMs"/> od poslední <b><u>WebResourceResponse</u></b>.
+            /// <para/>
+            /// Slouží to primárně k tomu, abychom provedli CaptureImage až po naplnění všech dat ze zadané URL adresy. 
+            /// Některé webové adresy načtou kostru webové stránky téměř ihned a ohlásí, že mají hotovo = <see cref="MsWebView.MsWebNavigationCompleted"/>.
+            /// A přitom jejich stránka vůbec není kompletní, neobsahují obrázky atd. Ty dotékají opožděně formou těchto <b><u>WebResourceResponse</u></b>.
+            /// A až poté proběhne <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+            /// </summary>
+            public int? DelayedResponseWaitingMs { get { return this.__Owner.WebProperties.DelayedResponseWaitingMs; } set { this.__Owner.WebProperties.DelayedResponseWaitingMs = value; } }
 
             /// <summary>
             /// Je možné otevřít mapu v externím prohlížeči (tlačítkem).
@@ -1904,8 +1977,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public MsWebView()
         {
-            __MsWebProperties = new PropertiesInfo(this);
+            __MsWebProperties = new WebPropertiesInfo(this);
+            this.SizeChanged += _SizeChanged;
             _InitWebCore();
+        }
+        /// <summary>
+        /// Po změně velikosti controlu resetuje paměť načteného Image
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _SizeChanged(object sender, EventArgs e)
+        {
+            __LastCapturedWebViewImageReset();
         }
         /// <summary>
         /// Dispose
@@ -1918,16 +2001,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             __MsWebProperties = null;
         }
         /// <summary>
-        /// Parent typovaný na <see cref="DxWebViewPanel"/>, nebo null
+        /// Parent typovaný na interface <see cref="IDxWebViewParentPanel"/>, nebo null
         /// </summary>
-        protected DxWebViewPanel ParentWebView { get { return this.Parent as DxWebViewPanel; } }
+        protected IDxWebViewParentPanel IParentPanel { get { return this.Parent as IDxWebViewParentPanel; } }
         /// <summary>
         /// Vyvolá v parentu akci definovanou parametrem <paramref name="actionTypes"/>
         /// </summary>
         /// <param name="actionTypes"></param>
         private void DoActionInParent(DxWebViewActionType actionTypes)
         {
-            ParentWebView?.DoAction(actionTypes);
+            IParentPanel?.DoAction(actionTypes);
         }
         /// <summary>
         /// Je inicializováno
@@ -1986,7 +2069,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (this.CoreWebView2 is null)
                 {
-                    DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebView2.CoreWebView2InitializationCompleted: IS NULL; Counter: {__CoreWebInitializerCounter}!");
+                    DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebViewCore.CoreWebView2InitializationCompleted: IS NULL; Counter: {__CoreWebInitializerCounter}!");
                     // Možná bych dal druhý pokus?  Ale jen druhý, nikoli nekonečný:
                     if (__CoreWebInitializerCounter == 1)
                     {
@@ -2004,6 +2087,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     this.CoreWebView2.NavigationStarting += _CoreWeb_NavigationStarting;
                     this.CoreWebView2.NavigationCompleted += _CoreWeb_NavigationCompleted;
                     this.CoreWebView2.DocumentTitleChanged += _CoreWeb_DocumentTitleChanged;
+                    this.CoreWebView2.FrameNavigationCompleted += _CoreWeb_FrameNavigationCompleted;
+                    this.CoreWebView2.WebResourceResponseReceived += _CoreWeb_WebResourceResponseReceived;
 
                     this.__IsInitialized = true;
 
@@ -2026,6 +2111,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _CoreWeb_SourceChanged(object sender, Microsoft.Web.WebView2.Core.CoreWebView2SourceChangedEventArgs e)
         {
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.SourceChanged");
             _DetectChanges();
         }
         /// <summary>
@@ -2035,6 +2121,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _CoreWeb_StatusTextChanged(object sender, object e)
         {
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.StatusBarTextChanged");
             _DetectChanges();
         }
         /// <summary>
@@ -2044,16 +2131,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _CoreWeb_HistoryChanged(object sender, object e)
         {
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.HistoryChanged");
             _DetectChanges();
         }
         /// <summary>
         /// Eventhandler při požadavku na otevření nového okna prohlížeče.
-        /// Může reagovat na nastavení <see cref="PropertiesInfo.CanOpenNewWindow"/> a pokud není povoleno, pak zajistí otevření nového odkazu v aktuálním controlu namísto v novém okně.
+        /// Může reagovat na nastavení <see cref="WebPropertiesInfo.CanOpenNewWindow"/> a pokud není povoleno, pak zajistí otevření nového odkazu v aktuálním controlu namísto v novém okně.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void _CoreWeb_NewWindowRequested(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NewWindowRequestedEventArgs e)
         {
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.NewWindowRequested");
             var properties = this.WebProperties;
             if (properties.CanOpenNewWindow)
                 e.NewWindow = this.CoreWebView2;
@@ -2065,7 +2154,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _CoreWeb_NavigationStarting(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs e)
         {
-            __MsWebIsInNavigateState = true;
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.NavigationStarting");
+            __MsWebIsInNavigateState = true;               // Běží navigace základní URL
+            __MsWebIsInNavigateTotalState = true;          // Běží navigace pro přídavné Responses
+            __MsWebWaitingForResponses = false;            // Zatím nečekáme na DelayedResponses
+            WatchTimer.Remove(__DelayedResponseTimerGuid); // Vypneme budík pro DelayedResponse
+            __DelayedResponseTimerGuid = null;             // Zapomeneme na budík pro DelayedResponse.
             _RunMsWebNavigationStarting();
         }
         /// <summary>
@@ -2075,9 +2169,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _CoreWeb_NavigationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs e)
         {
-            __MsWebIsInNavigateState = false;
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.NavigationCompleted");
+            __MsWebIsInNavigateState = false;              // Doběhla navigace základní URL, ale přídavné Responses stále mohou běžet
             _DetectChanges();
             _RunMsWebNavigationCompleted();
+            _CheckDelayedResponse();                       // Tam se ověří, zda budeme čekat na doběhnutí dalších Responses (odpovědi ze serveru, které přicházejí po NavigationCompleted)
+        }
+        /// <summary>
+        /// Eventhandler při dokončení navigace - včetně čekání na opožděné <b><u>WebResourceResponse</u></b> .
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _CoreWeb_NavigationTotalCompleted(object sender, EventArgs e)
+        {
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.NavigationTotalCompleted");
+            __MsWebIsInNavigateTotalState = false;         // Doběhla navigace pro přídavné Responses
+            __MsWebWaitingForResponses = false;            // Již nečekáme na DelayedResponses
+            _DetectChanges();
+            _RunMsWebNavigationTotalCompleted();
         }
         /// <summary>
         /// Po změně titulku dokumentu
@@ -2086,8 +2195,92 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _CoreWeb_DocumentTitleChanged(object sender, object e)
         {
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.DocumentTitleChanged");
             _DetectChanges();
         }
+        /// <summary>
+        /// Po dokončení navigace Frame
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _CoreWeb_FrameNavigationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs e)
+        {
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.FrameNavigationCompleted");
+        }
+        /// <summary>
+        /// Po donačtení dat z webu = přišla další Response
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _CoreWeb_WebResourceResponseReceived(object sender, Microsoft.Web.WebView2.Core.CoreWebView2WebResourceResponseReceivedEventArgs e)
+        {
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.WebResourceResponseReceived");
+            _CheckDelayedResponse();                       // Tam se ověří, zda budeme čekat na doběhnutí dalších Responses (odpovědi ze serveru, které přicházejí po NavigationCompleted)
+        }
+        /// <summary>
+        /// Metoda je volaná po dokončení základní navigace (<see cref="_CoreWeb_NavigationCompleted(object, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs)"/>) 
+        /// i po příchodu WebResponse (<see cref="_CoreWeb_WebResourceResponseReceived(object, Microsoft.Web.WebView2.Core.CoreWebView2WebResourceResponseReceivedEventArgs)"/>).
+        /// Metoda určí, zda je v parametrech zadané časové okno pro "čekání na opožděné Response" v <see cref="MsWebView.WebPropertiesInfo.DelayedResponseWaitingMs"/>
+        /// </summary>
+        private void _CheckDelayedResponse()
+        {
+            if (__MsWebIsInNavigateState) return;          // Pokud stále čekám na konec základní navigace, tak neřeším čekání na Delayed responses
+            if (!__MsWebIsInNavigateTotalState) return;    // Jsem už ve stavu, kdy na Delayed responses nečekáme = už jsme čekání skončili.
+
+            var delay = this.WebProperties.DelayedResponseWaitingMs;           // Máme čekat na Delayed responses?
+            if (delay.HasValue && delay.Value > 0)
+            {
+                if (!__MsWebWaitingForResponses)
+                    __MsWebWaitingForResponses = true;     // Nyní jsem v časovém okně, kdy očekávám DelayedResponses
+
+                // Od teď, což je buď čas dokončení základní navigace (_CoreWeb_NavigationCompleted)
+                //  anebo čas příchodu nějaké DelayedResponse (_CoreWeb_WebResourceResponseReceived) počkáme nějakou dobu (delay milisekund):
+                // načasujeme "náš" budík (použijeme identifikátor __DelayedResponseTimerGuid).
+                // Pokud v mezidobí přijde další DelayedResponse, pak tento budík (__DelayedResponseTimerGuid) zresetujeme na zadaný čas.
+                // Pokud nic nepřijde, uplyne interval budíku a zavolá se akce (_CheckDelayedResponseTimerOut) :
+                __DelayedResponseTimerGuid = WatchTimer.CallMeAfter(_CheckDelayedResponseTimerOut, delay.Value, id: __DelayedResponseTimerGuid);
+            }
+            else
+            {   // Nemáme čekat na Delayed responses => vyvoláme NavigationTotalCompleted nyní:
+                _DoNavigationTotalCompleted();
+            }
+        }
+        /// <summary>
+        /// Uplynul čas budíku <see cref="__DelayedResponseTimerGuid"/>, který čeká na opoždění Responses, a v nastaveném čase už žádná nepřišla.
+        /// Vyvoláme akci <b><u>NavigationTotalCompleted</u></b>.
+        /// </summary>
+        private void _CheckDelayedResponseTimerOut()
+        {
+            _DoNavigationTotalCompleted();
+        }
+        /// <summary>
+        /// Zajistí provedení akcí při <b><u>NavigationTotalCompleted</u></b>.
+        /// </summary>
+        private void _DoNavigationTotalCompleted()
+        {
+            if (this.InvokeRequired)
+                this.Invoke(new Action(doNavigationTotalCompleted));
+            else
+                doNavigationTotalCompleted();
+
+            // Až po eventu NavigationTotalCompleted:
+            _RunCaptureImageOnTotalCompleted();
+
+
+            // NavigationTotalCompleted - v GUI threadu:
+            void doNavigationTotalCompleted()
+            {
+                __MsWebIsInNavigateTotalState = false;         // Total navigace je dokončena
+                __MsWebWaitingForResponses = false;            // Již nečekáme na DelayedResponses
+                __DelayedResponseTimerGuid = null;
+                _CoreWeb_NavigationTotalCompleted(this, EventArgs.Empty);
+            }
+        }
+        /// <summary>
+        /// Guid požadavku na <see cref="WatchTimer"/>, který odměřuje čas čekání na Delayed Responses
+        /// </summary>
+        private Guid? __DelayedResponseTimerGuid;
         /// <summary>
         /// Vynuluje všechny proměnné související s aktuální i požadovanou adresou a statustextem.
         /// Volá se před tím, než se nastaví nový cíl navigace.
@@ -2097,13 +2290,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             __MsWebRequestedUrlAdress = null;
             __MsWebHtmlContent = null;
             __MsWebNeedNavigate = false;
+            __MsWebIsInNavigateState = false;
+            __MsWebIsInNavigateTotalState = false;
+            __DelayedResponseTimerGuid = null;
             __MsWebCurrentUrlAdress = null;
             __MsWebCurrentStatusText = null;
             _RunMsWebCurrentUrlAdressChanged();
             _RunMsWebCurrentStatusTextChanged();
         }
         /// <summary>
-        /// Detekuje změny aktuálního 
+        /// Detekuje změny aktuálního URL, titulku, status baru, možností Back/Forward; a vyvolá odpovídající reakce
         /// </summary>
         private void _DetectChanges()
         {
@@ -2283,13 +2479,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler MsWebNavigationCompleted;
 
+        /// <summary>
+        /// Vyvolá události při dokončení navigace včetně donačtení opožděných <b><u>WebResourceResponse</u></b> (pokud jsou očekávané dle <see cref="MsWebView.WebPropertiesInfo.DelayedResponseWaitingMs"/>).
+        /// </summary>
+        private void _RunMsWebNavigationTotalCompleted()
+        {
+            OnMsWebNavigationTotalCompleted();
+            MsWebNavigationTotalCompleted?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Volá se při dokončení navigace včetně donačtení opožděných <b><u>WebResourceResponse</u></b> (pokud jsou očekávané dle <see cref="MsWebView.WebPropertiesInfo.DelayedResponseWaitingMs"/>).
+        /// </summary>
+        protected virtual void OnMsWebNavigationTotalCompleted() { }
+        /// <summary>
+        /// Event při dokončení navigace, včetně donačtení opožděných <b><u>WebResourceResponse</u></b> (pokud jsou očekávané dle <see cref="MsWebView.WebPropertiesInfo.DelayedResponseWaitingMs"/>).
+        /// </summary>
+        public event EventHandler MsWebNavigationTotalCompleted;
+
         private string __MsWebCurrentDocumentTitle;
         private string __MsWebCurrentUrlAdress;
         private string __MsWebCurrentStatusText;
         private bool __MsWebCanGoBack;
         private bool __MsWebCanGoForward;
         #endregion
-        #region CaptureImage: zachycení statického Image celého WebView
+        #region LoadMsWebImageAsync a GetMsWebImageSync : zachycení statického Image celého WebView
         /// <summary>
         /// Obsahuje true, pokud tento samotný Control je Visible, bez ohledu na Visible jeho Parentů.
         /// WinForm control může mít nastaveno Visible = true, ale pokud jeho Parenti nejsou Visible, pak control bude vracet Visible = false.
@@ -2297,16 +2510,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool IsControlVisible { get { return this.IsSetVisible(); } }
         /// <summary>
-        /// Captures an image of what WebView is displaying.<br/>
-        /// Získá obrázek aktuálního stavu WebView a uloží jej do <see cref="LastCapturedWebViewImage"/>. 
+        /// Zajistí načtení Image pro aktuální web.<br/>
+        /// Získá obrázek aktuálního stavu WebView a uloží jej do <see cref="LastCapturedWebViewImageData"/>. 
         /// Jde o asynchronní metodu: řízení vrátí ihned, a po dokončení akce vyvolá event <see cref="MsWebImageCaptured"/>.
         /// <para/>
         /// Pozor: pokud control není Visible, pak tato metoda nic neprovede a event se nevyvolá!
         /// </summary>
-        /// <param name="requestId"></param>
-        public async void CaptureMsWebImage(object requestId = null)
+        /// <param name="requestId">Identifikátor požadavku</param>
+        /// <param name="callback">Metoda, která bude volaná po načtení Image.
+        /// null = nebude se volat metoda, ale proběhne standardní event <see cref="MsWebImageCaptured"/>.
+        /// Pokud je dodán <paramref name="callback"/>, pak event <see cref="MsWebImageCaptured"/> neproběhne !!!</param>
+        public async void LoadMsWebImageAsync(object requestId = null, Action<MsWebImageCapturedArgs> callback = null)
         {
             if (this.IsDisposed || this.Disposing) return;
+
+            if (_TryGetValidLastCapturedWebViewImage(out var lastData))
+            {   // Pokud už máme zachycen Last Image, který je dosud platný, tak nemusíme nic aktuálně načítat, a naše lastData pošleme do eventů:
+                callTarget(callback, requestId, lastData, false);
+                return;
+            }
+
             if (this.CoreWebView2 is null)
             {   // Požadavek přišel dřív, než byla dokončena inicializace Core => uložíme request do fronty:
                 //   fakt fronta ???
@@ -2319,21 +2542,84 @@ namespace Noris.Clients.Win.Components.AsolDX
                 Task task = this.CoreWebView2.CapturePreviewAsync(Microsoft.Web.WebView2.Core.CoreWebView2CapturePreviewImageFormat.Png, ms);
                 // V řádku 'await' se věci rozdělí:
                 await task;
-                //  - aktuální metoda vrátí řízení volajícímu, ten si normálně ihned pokračuje svým dalším kódem; 
+                //  - aktuální metoda v aktuálním threadu vrátí řízení volajícímu, ten si normálně ihned pokračuje svým dalším kódem; 
                 //     a zdejší metoda zde "čeká" = očekává impuls od threadu na pozadí...
-                //  - až doběhne task, přejde tato metoda  >> v jiném threadu! <<  na další řádek => uloží obsah streamu a vyvolá event:
+                //  - až doběhne task, přejde tato metoda  >> v tomtéž threadu! <<  na další řádek => uloží obsah streamu do imageData a do args, a vyvolá event MsWebImageCaptured:
                 var imageData = ms.GetBuffer();
-                __LastCapturedWebViewImage = imageData;
-                MsWebImageCapturedArgs args = new MsWebImageCapturedArgs(requestId, imageData);
-                _RunMsWebImageCaptured(args);
+                callTarget(callback, requestId, lastData, true);
+            }
+
+            // Zavolá patřičné cílové metody a předá jim data načteného Image. Uloží dodaná ImageData a aktuální velikost Controlu jako hodnoty Last.
+            void callTarget(Action<MsWebImageCapturedArgs> callMethod, object reqId, byte[] imgData, bool setAsLast)
+            {
+                if (setAsLast)
+                    __LastCapturedWebViewImageSet(imgData);
+
+                MsWebImageCapturedArgs args = new MsWebImageCapturedArgs(reqId, imgData);
+                if (callMethod != null)
+                    callMethod(args);
+                else
+                    _RunMsWebImageCaptured(args);
             }
         }
         /// <summary>
-        /// Obsah obrázku posledně zachyceného metodou <see cref="CaptureMsWebImage"/>
+        /// Získá obrázek aktuálního stavu WebView a vrátí jej, počká si na jeho výsledek.
+        /// Jde o synchronní metodu: čeká a vrací výsledke, blokuje thread.
+        /// <para/>
+        /// Pozor: pokud control není Visible, pak tato metoda nic neprovede a event se nevyvolá!
         /// </summary>
-        public byte[] LastCapturedWebViewImage { get { return __LastCapturedWebViewImage; } } private byte[] __LastCapturedWebViewImage;
+        /// <param name="callback">Metoda, která bude volaná po načtení Image.
+        /// null = nebude se volat metoda, ale výstupem metody bude Image..
+        /// Pokud je dodán <paramref name="callback"/>, výstupem metody bude null !!!</param>
+        public System.Drawing.Image GetMsWebImageSync(Action<MsWebImageCapturedArgs> callback = null)
+        {
+            System.Drawing.Image image = null;
+            if (this.IsDisposed || this.Disposing) return image;
+
+            if (_TryGetValidLastCapturedWebViewImage(out var lastData))
+            {   // Pokud už máme zachycen Last Image, který je dosud platný, tak nemusíme nic aktuálně načítat, a naše lastData vrátíme jako Image:
+                image = processTarget(callback, lastData, false);
+                return image;
+            }
+
+            if (this.CoreWebView2 is null)
+            {   // Požadavek přišel dřív, než byla dokončena inicializace Core => uložíme request do fronty:
+                //   fakt fronta ???
+                return image;
+            }
+            if (!this.IsControlVisible) return image;
+
+            using (var ms = new System.IO.MemoryStream())
+            {
+                Task task = this.CoreWebView2.CapturePreviewAsync(Microsoft.Web.WebView2.Core.CoreWebView2CapturePreviewImageFormat.Png, ms);
+                var isFinished = task.Wait(7000);
+                if (!isFinished) return image;
+
+                var imageData = ms.GetBuffer();
+                image = processTarget(callback, lastData, false);
+            }
+            return image;
+
+
+            // Pokud je dán callback, pak jej zavolá a předá mu dodaná data.
+            // Pokud callback není dán, pak z dodaných dat vytvoří Image a ten vrátí = jde o výstup celé metody.
+            // Uloží dodaná ImageData a aktuální velikost Controlu jako hodnoty Last, podle setAsLast.
+            System.Drawing.Image processTarget(Action<MsWebImageCapturedArgs> callMethod, byte[] imgData, bool setAsLast)
+            {
+                if (setAsLast)
+                    __LastCapturedWebViewImageSet(imgData);
+
+                System.Drawing.Image img = null;
+                if (callMethod != null)
+                    callMethod(new MsWebImageCapturedArgs(null, imgData));
+                else
+                    img = MsWebImageCapturedArgs.CreateImage(imgData);
+
+                return img;
+            }
+        }
         /// <summary>
-        /// Vyvolá událost 'MsWebImageCaptured'
+        /// Vyvolá událost <see cref="MsWebImageCaptured"/>.
         /// </summary>
         /// <param name="args"></param>
         private void _RunMsWebImageCaptured(MsWebImageCapturedArgs args)
@@ -2342,13 +2628,170 @@ namespace Noris.Clients.Win.Components.AsolDX
             MsWebImageCaptured?.Invoke(this, args);
         }
         /// <summary>
-        /// Volá se po získání ImageCapture.
+        /// Volá se po získání Image v asynchronní metodě <see cref="LoadMsWebImageAsync(object, Action{MsWebImageCapturedArgs})"/>.
+        /// Tento event se nevolá při automatickém načtení Image pro DisplayMode = nějaký Capture... (<see cref="MsWebView.WebPropertiesInfo.DisplayMode"/> : <see cref="DxWebViewDisplayMode.CaptureAsync"/> nebo <see cref="DxWebViewDisplayMode.CaptureSync"/>), 
+        /// tam se volá event <see cref="MsWebDisplayImageCaptured"/>.
         /// </summary>
         protected virtual void OnMsWebImageCaptured(MsWebImageCapturedArgs args) { }
         /// <summary>
-        /// Event po získání ImageCapture.
+        /// Event po získání Image v asynchronní metodě <see cref="LoadMsWebImageAsync(object, Action{MsWebImageCapturedArgs})"/>.
+        /// Tento event se nevolá při automatickém načtení Image pro DisplayMode = nějaký Capture... (<see cref="MsWebView.WebPropertiesInfo.DisplayMode"/> : <see cref="DxWebViewDisplayMode.CaptureAsync"/> nebo <see cref="DxWebViewDisplayMode.CaptureSync"/>), 
+        /// tam se volá event <see cref="MsWebDisplayImageCaptured"/>.
         /// </summary>
         public event MsWebImageCapturedHandler MsWebImageCaptured;
+
+        /// <summary>
+        /// Vyvolá událost <see cref="MsWebDisplayImageCaptured"/>.
+        /// Volá se po automatickém získání Image po načtení obsahu v režimu DisplayMode = nějaký Capture... (<see cref="MsWebView.WebPropertiesInfo.DisplayMode"/> : <see cref="DxWebViewDisplayMode.CaptureAsync"/> nebo <see cref="DxWebViewDisplayMode.CaptureSync"/>).
+        /// </summary>
+        /// <param name="args"></param>
+        private void _RunDisplayImageCaptured(MsWebImageCapturedArgs args)
+        {
+            OnMsWebDisplayImageCaptured(args);
+            MsWebDisplayImageCaptured?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Volá se po automatickém získání Image po načtení obsahu v režimu DisplayMode = nějaký Capture... (<see cref="MsWebView.WebPropertiesInfo.DisplayMode"/> : <see cref="DxWebViewDisplayMode.CaptureAsync"/> nebo <see cref="DxWebViewDisplayMode.CaptureSync"/>).
+        /// </summary>
+        protected virtual void OnMsWebDisplayImageCaptured(MsWebImageCapturedArgs args) { }
+        /// <summary>
+        /// Event po získání Image po načtení obsahu v režimu DisplayMode = Capture... (<see cref="MsWebView.WebPropertiesInfo.DisplayMode"/> : <see cref="DxWebViewDisplayMode.CaptureAsync"/> nebo <see cref="DxWebViewDisplayMode.CaptureSync"/>).
+        /// </summary>
+        public event MsWebImageCapturedHandler MsWebDisplayImageCaptured;
+        #endregion
+        #region Automatické zachycení Image podle DisplayMode: CaptureAsync a CaptureSync - blokování Sync threadu, odchycení OnTotalCompleted, volání eventu _RunDisplayImageCaptured
+        /// <summary>
+        /// Pokud this control je použit v režimu <see cref="MsWebView.WebPropertiesInfo.DisplayMode"/> == <see cref="DxWebViewDisplayMode.CaptureSync"/>,
+        /// tak v této metodě počká, až doběhne proces <b><u>NavigationTotal</u></b> = úplné dokončení navigace a následné synchronní získání Image.
+        /// Pak teprve vrátí řízení.<br/>
+        /// Pokud je jiný režim zobrazování, pak vrátí řízení ihned.
+        /// </summary>
+        public void StartCapturedImage()
+        {
+            _StartCapturedImage();
+        }
+        /// <summary>
+        /// Pokud this control je použit v režimu <see cref="MsWebView.WebPropertiesInfo.DisplayMode"/> == <see cref="DxWebViewDisplayMode.CaptureSync"/>,
+        /// tak v této metodě počká, až doběhne proces <b><u>NavigationTotal</u></b> = úplné dokončení navigace a následné synchronní získání Image.
+        /// Pak teprve vrátí řízení.<br/>
+        /// Pokud je jiný režim zobrazování, pak vrátí řízení ihned.
+        /// </summary>
+        private void _StartCapturedImage()
+        {
+            switch (this.WebProperties.DisplayMode)
+            {   // Pokud jsem v režimu Capture... :
+                case DxWebViewDisplayMode.CaptureAsync:
+                    // Asynchronní => aktuální thread nebudeme blokovat, ale v události _RunCaptureImageOnTotalCompleted() nastartujeme asynchronní získání Image.
+                    break;
+                case DxWebViewDisplayMode.CaptureSync:
+                    _StartCapturedImageWaitSync();
+                    break;
+            }
+        }
+        /// <summary>
+        /// V této metodě počká volající (GUI) thread na Total dokončení navigace i na následné synchronní získání Image.
+        /// </summary>
+        private void _StartCapturedImageWaitSync(double timeOutSeconds = 7)
+        {
+            _WaitNavigationSignal.Reset();
+            var timeOut = DateTime.Now.AddSeconds(timeOutSeconds);
+            while (DateTime.Now < timeOut)
+            {
+                _WaitNavigationSignal.WaitOne(250);                  // Zde fyzicky čekáme na signál, nejdéle po dobu 1/4 sekundy. Pokud signál přijde dřív (_WaitNavigationSignal.Set()), pak čekání skončí ihned.
+                if (!__MsWebIsInNavigateTotalState) break;           // Pokud nyní už je vše načteno = Total, pak můžeme odejít z čekací smyčky...
+            }
+            // Získáme synchronní Image = aktuální vlákno si v metodě GetMsWebImageSync() počká na načtení Image (pomocí Task.Wait):
+            // A odešleme event do Parenta, že máme CapturedImage = synchronní:
+            this.GetMsWebImageSync(this._RunDisplayImageCaptured);
+            
+            // A teprve nyní pustíme aktuální Thread dále:
+        }
+        /// <summary>
+        /// Podle režimu DisplayMode zajistí zachycení Image pro režimy <see cref="DxWebViewDisplayMode.CaptureAsync"/> a <see cref="DxWebViewDisplayMode.CaptureSync"/>:<br/>
+        /// Pro <see cref="DxWebViewDisplayMode.CaptureAsync"/>: nastartuje asynchronní načtení Image a návazné vyvolání události ...;<br/>
+        /// Pro <see cref="DxWebViewDisplayMode.CaptureSync"/>: ukončí čekání synchronního vlákna v metodě <see cref="_StartCapturedImageWaitSync"/>;<br/>
+        /// </summary>
+        private void _RunCaptureImageOnTotalCompleted()
+        {
+            switch (this.WebProperties.DisplayMode)
+            {   // Pokud jsem v režimu Capture... :
+                case DxWebViewDisplayMode.CaptureAsync:
+                    // Asynchronní capture: zdejší vlákno nebudeme blokovat, vyžádáme načtení Image pomocí asynchronní metody (tam se použije async Task).
+                    // Předáme callback = , ten bude vyvolán po dokončení načítání Image, a ten vyvolá událost ...
+                    this.LoadMsWebImageAsync(null, this._RunDisplayImageCaptured);
+                    break;
+                case DxWebViewDisplayMode.CaptureSync:
+                    // Synchronní capture: volající vlákno čeká v metodě _StartCapturedImageWaitSync() (s nějakým TimeOutem), 
+                    //  má tam probouzecí kontrolní cykly 250ms (dané semaforem _WaitNavigationSignal).
+                    // Předáme tam mezivláknový signál pomocí semaforu, čekající thread v tuto chvíli bude uvolněn,
+                    //  zjistí že __MsWebIsInNavigateTotalState je true 
+                    if (_HasWaitNavigationSignal)
+                        _WaitNavigationSignal.Set();
+                    break;
+            }
+        }
+        /// <summary>
+        /// Obsahuje true pokud existuje Mezivláknový semafor <see cref="_WaitNavigationSignal"/>.
+        /// </summary>
+        private bool _HasWaitNavigationSignal { get { return (__WaitNavigationSignal != null); } }
+        /// <summary>
+        /// Mezivláknový semafor
+        /// </summary>
+        private AutoResetEvent _WaitNavigationSignal
+        {
+            get
+            {
+                if (__WaitNavigationSignal is null)
+                    __WaitNavigationSignal = new AutoResetEvent(false);
+                return __WaitNavigationSignal;
+            }
+        }
+        private AutoResetEvent __WaitNavigationSignal;
+        /// <summary>
+        /// Resetuje paměť posledně načteného Image v <see cref="LastCapturedWebViewImageData"/> a tedy i v <see cref="__LastCapturedWebViewImageSize"/>.
+        /// </summary>
+        private void __LastCapturedWebViewImageReset()
+        {
+            __LastCapturedWebViewImageSize = null;
+            __LastCapturedWebViewImageData = null;
+        }
+        /// <summary>
+        /// Do paměti posledně načteného Image v <see cref="LastCapturedWebViewImageData"/> a tedy i v <see cref="__LastCapturedWebViewImageSize"/> uloží dodaná data a aktuální velikost Controlu.
+        /// </summary>
+        private void __LastCapturedWebViewImageSet(byte[] imageData)
+        {
+            __LastCapturedWebViewImageSize = this.Size;
+            __LastCapturedWebViewImageData = imageData;
+        }
+        /// <summary>
+        /// Velikost obrázku <see cref="__LastCapturedWebViewImageData"/>
+        /// </summary>
+        private System.Drawing.Size? __LastCapturedWebViewImageSize;
+        /// <summary>
+        /// Obsah obrázku posledně zachyceného metodou <see cref="LoadMsWebImageAsync"/>
+        /// </summary>
+        public byte[] LastCapturedWebViewImageData { get { return (_TryGetValidLastCapturedWebViewImage(out var imageData) ? imageData : null); } } private byte[] __LastCapturedWebViewImageData;
+        /// <summary>
+        /// Image vygenerovaný z dat <see cref="LastCapturedWebViewImageData"/>
+        /// </summary>
+        public System.Drawing.Image LastCapturedWebViewImage { get { return (_TryGetValidLastCapturedWebViewImage(out var imageData) ? MsWebImageCapturedArgs.CreateImage(imageData) : null); } }
+        /// <summary>
+        /// Metoda zkusí získat data validního Image z <see cref="LastCapturedWebViewImageData"/>.
+        /// Tedy: pokud jsou nějaká data uložena, a jsou uložena pro aktuální velikost controlu.
+        /// </summary>
+        /// <param name="imageData"></param>
+        /// <returns></returns>
+        private bool _TryGetValidLastCapturedWebViewImage(out byte[] imageData)
+        {
+            imageData = null;
+            var lastSize = __LastCapturedWebViewImageSize;
+            var lastData = __LastCapturedWebViewImageData;
+            if (!lastSize.HasValue || lastData is null) return false;
+            var currSize = this.Size;
+            if (currSize != lastSize.Value) return false;
+            imageData = lastData;
+            return true;
+        }
         #endregion
         #region URL adresa, Status bar, navigace, atd...
         /// <summary>
@@ -2394,6 +2837,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private string __MsWebHtmlContent;
         /// <summary>
+        /// Režim zobrazení webové stránky = práce s fyzickým prvkem WebView.<br/>
+        /// Hodnota <see cref="DxWebViewDisplayMode.Live"/> = pro interaktivní práci (defaultní).
+        /// Pokud je <see cref="DxWebViewDisplayMode.CaptureAsync"/> nebo <see cref="DxWebViewDisplayMode.CaptureSync"/>, pak Parent má používat pro zobrazení obrázku Picture.<br/>
+        /// Pokud je <see cref="DxWebViewDisplayMode.CaptureSync"/>, pak po setování URL adresy je vlákno pozdrženo až do dokončení načítání Picture.<br/>
+        /// </summary>
+        public DxWebViewDisplayMode MsWebDisplayMode { get { return this.__MsWebProperties.DisplayMode; } set { this.__MsWebProperties.DisplayMode = value; } }
+        /// <summary>
         /// Aktuální stav Enabled pro button Go Back
         /// </summary>
         public bool MsWebCanGoBack { get { return __MsWebCanGoBack; } }
@@ -2428,12 +2878,17 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     __MsWebNeedNavigate = false;                     // Pokud by nás někdo volal odteď, pak zdejší metoda nic neprovede.
                     _RunMsWebNavigationBefore();                     // Událost před tím, než začneme aktivně měnit URL
-                    __MsWebIsInNavigateState = true;
+                    __MsWebIsInNavigateState = true;                 // Očekáváme konec standardní navigace
+                    __MsWebIsInNavigateTotalState = true;            // Očekáváme konec přidaných WebResponses
+                    __LastCapturedWebViewImageReset();
+
                     if (!String.IsNullOrEmpty(__MsWebRequestedUrlAdress))
                         this.UrlSource = __MsWebRequestedUrlAdress;
                     else if (!String.IsNullOrEmpty(__MsWebHtmlContent))
                         this.NavigateToString(__MsWebHtmlContent);
+                    
                     _RunMsWebNavigationStarted();                    // Událost po startu aktivní změny URL
+                    _StartCapturedImage();                           // Řeší DisplayMode: CaptureSync i CaptureAsync (pro CaptureSync pozastaví aktuální Thread => až do doběhnutí navigace, které běží OnBackground)
                 }
             }
         }
@@ -2483,30 +2938,76 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
         }
+        /// <summary>
+        /// Má se provést navigace?
+        /// <para/>
+        /// Je nastaveno na true při setování neprázdné URL adresy do <see cref="MsWebRequestedUrlAdress"/> nebo <see cref="MsWebHtmlContent"/>.
+        /// Značí, že je potřeba provést navigaci na daný obsah.
+        /// Je nastaveno na false při Clear: <see cref="_RunMsWebCurrentClear"/>, a těsně před zahájením navigace na cílový obsah v <see cref="_DoNavigate"/>.
+        /// Pokud je false před započetím <see cref="_DoNavigate"/>, pak se nikam nenaviguje, protože navigace už běží.
+        /// </summary>
         private bool __MsWebNeedNavigate;
-        private bool __MsWebIsInNavigateState;
+        /// <summary>
+        /// Právě probíhá stahování <b><u>základního obsahu</u></b> zadané URL.<br/>
+        /// Po jeho stažení proběhne event <see cref="_CoreWeb_NavigationCompleted(object, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs)"/>.
+        /// <para/>
+        /// Je nastaveno na true při začátku navigování na obsah, v eventu <see cref="_CoreWeb_NavigationStarting(object, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs)"/>
+        /// a při explicitním zahájení navigace v metodě <see cref="_DoNavigate"/>.
+        /// Hodnota true značí, že aktuálně běží navigování.
+        /// Na false je přepnuto v eventu <see cref="_CoreWeb_NavigationCompleted(object, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs)"/> = navigace na URL je dokončena.
+        /// Nicméně i poté mohou do WebView dotékat další data, to hlídá <see cref="__MsWebIsInNavigateTotalState"/>.
+        /// </summary>
+        private volatile bool __MsWebIsInNavigateState;
+        /// <summary>
+        /// Právě probíhá stahování základního obsahu zadané URL plus <b><u>očekáváme příchod dalších Responses</u></b>.
+        /// Po jeho dokončení proběhne event <see cref="_CoreWeb_NavigationTotalCompleted(object, EventArgs)"/>.
+        /// <para/>
+        /// Je nastaveno na true při začátku navigování na obsah, v eventu <see cref="_CoreWeb_NavigationStarting(object, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs)"/>
+        /// a při explicitním zahájení navigace v metodě <see cref="_DoNavigate"/>. Stejně jako vkládání true do <see cref="__MsWebIsInNavigateState"/>.
+        /// Hodnota true značí, že aktuálně běží navigování a možná i doplňování dat po dokončení navigace.
+        /// Tato hodnota se nepřepíná na false v eventu <see cref="_CoreWeb_NavigationCompleted(object, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs)"/>, kdy je oficiálně dokončena samotná navigace.
+        /// Od té chvíle (tj. od dokončení navigace) zde běží časové okno <see cref="__MsWebWaitingForResponses"/>, 
+        /// kdy každá příchozí Response v eventu <see cref="_CoreWeb_WebResourceResponseReceived(object, Microsoft.Web.WebView2.Core.CoreWebView2WebResourceResponseReceivedEventArgs)"/>
+        /// má význam "Ještě mi přicházejí další data do stránky, a její obraz tak není kompletní".
+        /// Více u proměnné <see cref="__MsWebWaitingForResponses"/>.
+        /// </summary>
+        private volatile bool __MsWebIsInNavigateTotalState;
+        /// <summary>
+        /// Již jsme stáhli základní obsah zadané URL, a nyní očekáváme dokončení stahování <b><u>dalších DelayedResponses</u></b>.
+        /// </summary>
+        private volatile bool __MsWebWaitingForResponses;
         #endregion
         #region class PropertiesInfo : Souhrn vlastností, tak aby byly k dosažení pod jedním místem
         /// <summary>
         /// Souhrn vlastností <see cref="MsWebView"/>, tak aby byly k dosažení v jednom místě.
         /// </summary>
-        public PropertiesInfo WebProperties { get { return __MsWebProperties; } } private PropertiesInfo __MsWebProperties;
+        public WebPropertiesInfo WebProperties { get { return __MsWebProperties; } } private WebPropertiesInfo __MsWebProperties;
         /// <summary>
         /// Definice vlastností <see cref="MsWebView"/>
         /// </summary>
-        public class PropertiesInfo : IDisposable
+        public class WebPropertiesInfo : IDisposable
         {
             /// <summary>
             /// Konstruktor
             /// </summary>
             /// <param name="owner"></param>
-            public PropertiesInfo(MsWebView owner)
+            public WebPropertiesInfo(MsWebView owner)
             {
                 __Owner = owner;
                 _InitValues();
             }
             /// <summary>
-            /// Vlastník = <see cref="MsWebView"/>
+            /// Vlastník = <see cref="MsWebView"/>.
+            /// Na rozdíl od sousedních mapových <see cref="DxMapViewPanel.MapPropertiesInfo"/> (ty jsou součástí panelu <see cref="DxMapViewPanel"/>) 
+            /// jsou zdejší webové properties <see cref="WebPropertiesInfo"/> součástí vlastní komponenty WebView.
+            /// <para/>
+            /// Důvody: <br/>
+            /// - Webové properties ovlivňují jak vlastní webový prohlížeč, tak i jeho použití pro mapy (obojí se prohlíží ve WebView);<br/>
+            /// - Mapové properties nejsou vlastnostmi Webu (tedy <see cref="MsWebView"/>), ale mapového controlu = panelu. Jde o souřadnice a generátor URL.
+            /// <para/>
+            /// Z toho plyne několik rozdílů:
+            /// <see cref="MsWebView.WebPropertiesInfo"/> má ownera <see cref="MsWebView"/>, ale může mít různé Parent panely;
+            /// <see cref="DxMapViewPanel.MapPropertiesInfo"/> má Ownera = konkrétní mapový Panel <see cref="DxMapViewPanel"/>.
             /// </summary>
             private MsWebView __Owner;
             /// <summary>
@@ -2543,6 +3044,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 __IsAdressEditorEditable = true;
                 __IsStatusRowVisible = false;
                 __CanOpenNewWindow = true;
+                __DisplayMode = DxWebViewDisplayMode.Live;
             }
             /// <summary>
             /// Je toolbar viditelný?
@@ -2581,15 +3083,40 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public bool CanOpenNewWindow { get { return __CanOpenNewWindow; } set { _SetValueDoAction(value, ref __CanOpenNewWindow, DxWebViewActionType.None); } } private bool __CanOpenNewWindow;
             /// <summary>
-            /// Použít statický výsledek = navigovat na URL, po dokončení navigace získat obraz a ten zobrazovat namísto živého webu.
-            /// Default = false = standardní webový prohlížeč.
-            /// <para/>
-            /// Setování hodnoty true (i když už hodnota true je nasetovaná) vyvolá získání aktuálního Image z WebView a jeho promítnutí do panelu.
+            /// Aktuální <see cref="DisplayMode"/> má hodnotu odpovídající statickému obrázku (<see cref="DxWebViewDisplayMode.CaptureAsync"/> nebo <see cref="DxWebViewDisplayMode.CaptureSync"/>).
+            /// V takovém režimu se řeší automatické získání Picture a jeho promítnutí namísto WebView.
             /// <para/>
             /// Tato hodnota není použitelná pro samotný webový control <see cref="MsWebView"/> (ten vždy reprezentuje živý web), ale pouze pro komplexní panel <see cref="DxWebViewPanel"/> 
             /// - ten může zajišťovat získání Image a jeho zobrazení v Panelu namísto živého WebView.
             /// </summary>
-            public bool IsStaticPicture { get { return __IsStaticPicture; } set { _SetValueDoAction(value, ref __IsStaticPicture, DxWebViewActionType.DoShowStaticPicture, value); } } private bool __IsStaticPicture;
+            public bool UseStaticPicture { get { var mode = this.DisplayMode; return (mode == DxWebViewDisplayMode.CaptureAsync || mode == DxWebViewDisplayMode.CaptureSync); } }
+            /// <summary>
+            /// Režim zobrazení webové stránky = práce s fyzickým prvkem WebView.<br/>
+            /// Hodnota <see cref="DxWebViewDisplayMode.Live"/> = pro interaktivní práci (defaultní).
+            /// Pokud je <see cref="DxWebViewDisplayMode.CaptureAsync"/> nebo <see cref="DxWebViewDisplayMode.CaptureSync"/>, pak Parent má používat pro zobrazení obrázku Picture.<br/>
+            /// Pokud je <see cref="DxWebViewDisplayMode.CaptureSync"/>, pak po setování URL adresy je vlákno pozdrženo až do dokončení načítání Picture.<br/>
+            /// <para/>
+            /// Tato hodnota není použitelná pro samotný webový control <see cref="MsWebView"/> (ten vždy reprezentuje živý web), ale pouze pro komplexní panel <see cref="DxWebViewPanel"/> 
+            /// - ten může zajišťovat získání Image a jeho zobrazení v Panelu namísto živého WebView.
+            /// </summary>
+            public DxWebViewDisplayMode DisplayMode { get { return __DisplayMode; } set { _SetValueDoAction(value, ref __DisplayMode, DxWebViewActionType.DoChangeDisplayMode, true); } } private DxWebViewDisplayMode __DisplayMode;
+            /// <summary>
+            /// Doba čekání (v milisekundách) na opožděné <b><u>WebResourceResponse</u></b> = data (response), které do WebView přicházejí ze serveru i poté, kdy už proběhl event <see cref="MsWebView.MsWebNavigationCompleted"/>.
+            /// Tedy: už je načten základ obsahu z požadované URL adresy, ale různé skripty ještě donačítají další data = z hlediska aktivity prohlížeče "na pozadí".
+            /// <para/>
+            /// Pokud je tato doba null (nebo nula nebo záporné), pak neočekáváme dodání opožděných dat, a ihned po eventu <see cref="MsWebView.MsWebNavigationCompleted"/> proběhne event <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+            /// <para/>
+            /// Pokud je zde kladné číslo, pak nejprve proběhne event <see cref="MsWebView.MsWebNavigationCompleted"/> (ten je dán stejnou událostí ve WebView), a poté čekáme na příchozí data <b><u>WebResourceResponse</u></b>.
+            /// Čekáme nejdéle zda zadanou dobu, a když po danou dobu žádná data nepřijdou, pak vyvoláme event <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+            /// Pokud nějaké Response přijdou, tak od jejich příchodu resetujeme čas čekání = čekáme tedy vždy <see cref="DelayedResponseWaitingMs"/> od poslední <b><u>WebResourceResponse</u></b>.
+            /// <para/>
+            /// Slouží to primárně k tomu, abychom provedli CaptureImage až po naplnění všech dat ze zadané URL adresy. 
+            /// Některé webové adresy načtou kostru webové stránky téměř ihned a ohlásí, že mají hotovo = <see cref="MsWebView.MsWebNavigationCompleted"/>.
+            /// A přitom jejich stránka vůbec není kompletní, neobsahují obrázky atd. Ty dotékají opožděně formou těchto <b><u>WebResourceResponse</u></b>.
+            /// A až poté proběhne <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+            /// </summary>
+            public int? DelayedResponseWaitingMs { get { return __DelayedResponseWaitingMs; } set { _SetValueDoAction(value, ref __DelayedResponseWaitingMs, DxWebViewActionType.None); } } private int? __DelayedResponseWaitingMs;
+
             /// <summary>
             /// WebView je v procesu probíhající navigace
             /// </summary>
@@ -2609,7 +3136,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Externě vložený HTML obsah k zobrazení v prvku.
             /// </summary>
             public string HtmlContent { get { return __Owner.MsWebHtmlContent; } set { __Owner.MsWebHtmlContent = value; } }
-
             /// <summary>
             /// Aktuální stav Enabled pro button Go Back
             /// </summary>
@@ -5152,10 +5678,50 @@ namespace Noris.Clients.Win.Components.AsolDX
     #endregion
     #region Enumy, servisní třídy...
     /// <summary>
+    /// Rozhraní pro parenty prvku <see cref="MsWebView"/>, 
+    /// </summary>
+    public interface IDxWebViewParentPanel
+    {
+        /// <summary>
+        /// Parent panel provede požadovanou akci, kterou vyvolává WebView komponenta nebo změna hodnoty v Properties
+        /// </summary>
+        /// <param name="actionTypes"></param>
+        void DoAction(DxWebViewActionType actionTypes);
+    }
+    /// <summary>
+    /// Režim zobrazení webové stránky.
+    /// 
+    /// </summary>
+    public enum DxWebViewDisplayMode
+    {
+        /// <summary>
+        /// Neurčeno / nezobrazeno
+        /// </summary>
+        None,
+        /// <summary>
+        /// Standardní živý control.
+        /// <para/>
+        /// Nelze použít tam, kde se z controlu pořídí Bitmapa a ta se poté promítá (Infragistic i DX DataForm).
+        /// Protože WebView se nevykreslí do Bitmapy standardním WinForm procesem.<br/>
+        /// Tam je třeba použít pravděpodobně <see cref="CaptureSync"/>.
+        /// </summary>
+        Live,
+        /// <summary>
+        /// Po změně hodnoty / URL adresy se má zachytit Bitmapa z WebView (specializovaný proces) a ta se následně použije do Parent controlu.<br/>
+        /// Asynchronní proces: po získání WebView bitmapy je volán asynchronní event, který bitmapu převezme a zobrazí.
+        /// </summary>
+        CaptureAsync,
+        /// <summary>
+        /// Po změně hodnoty / URL adresy se má zachytit Bitmapa z WebView (specializovaný proces) a ta se následně použije do Parent controlu.<br/>
+        /// Synchronní proces: po změně hodnot (Value / URL) volající thread je pozastaven až do získání bitmapy.
+        /// </summary>
+        CaptureSync
+    }
+    /// <summary>
     /// Typy akcí, které má provést Parent panel
     /// </summary>
     [Flags]
-    internal enum DxWebViewActionType
+    public enum DxWebViewActionType
     {
         /// <summary>
         /// Nic
@@ -5172,7 +5738,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Zobrazit statický obrázek
         /// </summary>
-        DoShowStaticPicture = 0x0010,
+        DoChangeDisplayMode = 0x0010,
         /// <summary>
         /// Proveď změnu URL adresy
         /// </summary>
@@ -5213,6 +5779,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Data obrázku
         /// </summary>
         public byte[] ImageData { get; private set; }
+        /// <summary>
+        /// Vytvoří a vrátí obrázek z <see cref="ImageData"/>.
+        /// Vždy je vytvořen new objekt.
+        /// Chyba je ututlána a v tom případě je vrácen null.
+        /// </summary>
+        public System.Drawing.Image GetImage()
+        {
+            return CreateImage(ImageData);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí obrázek z <paramref name="imageData"/>.
+        /// Vždy je vytvořen new objekt.
+        /// Chyba je ututlána a v tom případě je vrácen null.
+        /// </summary>
+        /// <param name="imageData">Data obrázku</param>
+        /// <returns></returns>
+        public static System.Drawing.Image CreateImage(byte[] imageData)
+        {
+            if (imageData is null || imageData.Length < 12) return null;
+            try
+            {
+                using (var ms = new System.IO.MemoryStream(imageData))
+                    return System.Drawing.Image.FromStream(ms);
+            }
+            catch
+            {
+                return null;
+            }
+        }
     }
     /// <summary>
     /// Předpis pro handler události CaptureImage
