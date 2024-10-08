@@ -101,6 +101,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _DoAction(DxWebViewActionType actionTypes)
         {
             if (actionTypes == DxWebViewActionType.None) return;               // Pokud není co dělat, není třeba ničehož invokovati !
+            if (this.IsDispose) return;
 
             if (this.InvokeRequired)
             {   // 1x invokace na případně vícero akci
@@ -122,7 +123,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _DoLayout()
         {
-            var properties = this.WebProperties;
+            if (this.IsDispose) return;
+
+            var webProperties = this.WebProperties;
 
             var size = this.ClientSize;
             int left = 0;
@@ -134,52 +137,41 @@ namespace Noris.Clients.Win.Components.AsolDX
             int toolHeight = DxComponent.ZoomToGui(30, this.CurrentDpi);
             int buttonTop = (toolHeight - buttonSize) / 2;
             int paddingX = 0; // buttonTop;
+            int textMinWidth = DxComponent.ZoomToGui(200, this.CurrentDpi);
+            int textMaxWidth = width;
+            int shiftX = buttonSize * 9 / 8;
+            int distanceX = shiftX - buttonSize;
 
             // Toolbar
-            bool isToolbarVisible = properties.IsToolbarVisible;
+            bool isToolbarVisible = webProperties.IsToolbarVisible;
             this.__ToolPanel.Visible = isToolbarVisible;
             if (isToolbarVisible)
             {
+                // Viditelnost prvků Toolbaru:
+                bool isBackForwardVisible = webProperties.IsBackForwardButtonsVisible;
+                bool isRefreshVisible = webProperties.IsRefreshButtonVisible;
+                bool isAdressVisible = webProperties.IsAdressEditorVisible;
+                bool isAdressEditable = webProperties.IsAdressEditorEditable;
+                bool isGoToVisible = isAdressVisible && isAdressEditable;
+
+                // Sumární šířka zobrazených buttonů včetně distance X:
+                int buttonsWidth = getWidth(isBackForwardVisible, buttonSize, distanceX) +           /* Back    */
+                                   getWidth(isBackForwardVisible, buttonSize, distanceX) +           /* Forward */
+                                   getWidth(isRefreshVisible, buttonSize, distanceX) +               /* Refresh */
+                                   getWidth(isGoToVisible, buttonSize, distanceX);                   /* GoTo    */
+
+                // Šířka textu, zarovnaná do Min - Max:
+                int textWidth = width - buttonsWidth;
+                textWidth = (textWidth < textMinWidth ? textMinWidth : (textWidth > textMaxWidth ? textMaxWidth : textWidth));
+
+                // Postupně umístíme buttony a textbox:
                 int toolLeft = paddingX;
-                int shiftX = buttonSize * 9 / 8;
-                int distanceX = shiftX - buttonSize;
-
-                bool isBackForwardVisible = properties.IsBackForwardButtonsVisible;
-                __BackButton.Visible = isBackForwardVisible;
-                __ForwardButton.Visible = isBackForwardVisible;
-                if (isBackForwardVisible)
-                {
-                    __BackButton.Bounds = new System.Drawing.Rectangle(toolLeft, buttonTop, buttonSize, buttonSize);
-                    toolLeft += shiftX;
-                    __ForwardButton.Bounds = new System.Drawing.Rectangle(toolLeft, buttonTop, buttonSize, buttonSize);
-                    toolLeft += shiftX;
-                }
-
-                bool isRefreshVisible = properties.IsRefreshButtonVisible;
-                __RefreshButton.Visible = isRefreshVisible;
-                if (isRefreshVisible)
-                {
-                    __RefreshButton.Bounds = new System.Drawing.Rectangle(toolLeft, buttonTop, buttonSize, buttonSize);
-                    toolLeft += shiftX;
-                }
-
-                int toolRight = width - paddingX;
-                bool isAdressVisible = properties.IsAdressEditorVisible;
-                bool isAdressEditable = properties.IsAdressEditorEditable;
-                __AdressText.Visible = isAdressVisible;
-                __GoToButton.Visible = isAdressVisible && isAdressEditable;
-                if (isAdressVisible)
-                {
-                    if (isAdressEditable)
-                    {
-                        __GoToButton.Bounds = new System.Drawing.Rectangle((toolRight - buttonSize), buttonTop, buttonSize, buttonSize);
-                        toolRight -= shiftX;
-                    }
-
-                    int editorHeight = __AdressText.Bounds.Height;
-                    int editorTop = buttonTop + buttonSize - editorHeight - 1;
-                    __AdressText.Bounds = new System.Drawing.Rectangle(toolLeft, editorTop, (toolRight - toolLeft), editorHeight);
-                }
+                int buttonBottom = buttonTop + buttonSize;
+                setBounds(__BackButton, isBackForwardVisible, ref toolLeft, buttonBottom, buttonSize, buttonSize, 0, distanceX);
+                setBounds(__ForwardButton, isBackForwardVisible, ref toolLeft, buttonBottom, buttonSize, buttonSize, 0, distanceX);
+                setBounds(__RefreshButton, isRefreshVisible, ref toolLeft, buttonBottom, buttonSize, buttonSize, 0, distanceX);
+                setBounds(__AdressText, isAdressVisible, ref toolLeft, buttonBottom, textWidth, __AdressText.Height, 1, distanceX);
+                setBounds(__GoToButton, isGoToVisible, ref toolLeft, buttonBottom, buttonSize, buttonSize, 0, distanceX);
 
                 __ToolPanel.Bounds = new System.Drawing.Rectangle(left, top, width, toolHeight);
                 top = top + toolHeight;
@@ -198,28 +190,30 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // Web + Picture:
-            int wh = bottom - top;
+            int webHeight = bottom - top;
             var oldPicBounds = this.__PictureWeb.Bounds;
-            var newWebBounds = new System.Drawing.Rectangle(left, top, width, wh);
+            var newWebBounds = new System.Drawing.Rectangle(left, top, width, webHeight);
             var newPicBounds = newWebBounds;
-
-            // Debug: živý web nechám vlevo nahoře přes 3/4 plochy, a Picture vpravo dole, s tím že prostřední 1/2 se překrývá:
-            /*
-            int w4 = width / 4;
-            int h4 = wh / 4;
-            newWebBounds.Width -= w4;
-            newWebBounds.Height -= h4;
-
-            newPicBounds.X += w4;
-            newPicBounds.Y += h4;
-            newPicBounds.Width -= w4;
-            newPicBounds.Height -= h4;
-            */
-            // Debug konec.
 
             this.__MsWebView.Bounds = newWebBounds;
             this.__PictureWeb.Bounds = newPicBounds;
-            if (newPicBounds != oldPicBounds) _CaptureDisplayImage();
+            // MsWebView by měl v případě potřeby detekovat změnu velikosti a vyvolat znovunačtení obrázku a nakonec událost  ... namísto:   if (newPicBounds != oldPicBounds) _CaptureDisplayImage();
+
+
+            int getWidth(bool isVisible, int size, int distance)
+            {
+                return (isVisible ? (size + distance) : 0);
+            }
+            void setBounds(Control control, bool isVisible, ref int boundsLeft, int buttonBottom, int boundsWidth, int boundsHeight, int bottomOffset, int distanceX)
+            {
+                control.Visible = isVisible;
+                if (isVisible)
+                {
+                    int boundsTop = buttonBottom - bottomOffset - boundsHeight;
+                    control.Bounds = new System.Drawing.Rectangle(boundsLeft, boundsTop, boundsWidth, boundsHeight);
+                    boundsLeft = boundsLeft + boundsWidth + distanceX;
+                }
+            }
         }
         /// <summary>
         /// Nastaví Enabled na patřičné prvky, odpovídající aktuálnímu stavu MsWebView.
@@ -399,6 +393,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             __MsWebView.MsWebNavigationTotalCompleted += __MsWebNavigationTotalCompleted;
             __MsWebView.MsWebImageCaptured += _MsWebImageCaptured;
             __MsWebView.MsWebDisplayImageCaptured += _MsWebDisplayImageCaptured;
+
+            __MsWebView.WebProperties.DelayedResponseWaitingMs = 100;
         }
         /// <summary>
         /// Vyvoláno po události při změně stavu historie
@@ -718,7 +714,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Value tohoto panelu = souřadnice zadaného bodu.
         /// Obsahuje totéž jako <see cref="WebProperties"/> : <see cref="MsWebView.WebPropertiesInfo.UrlAdress"/>.
         /// </summary>
-        public string Value { get { return this.WebProperties.UrlAdress; } set { this.WebProperties.UrlAdress = value; } }
+        public string Value { get { return this.WebProperties.UrlAdress; } set { if (!this.IsDispose) this.WebProperties.UrlAdress = value; } }
         /// <summary>
         /// Souhrn vlastností <see cref="MsWebView"/>, tak aby byly k dosažení v jednom místě.
         /// </summary>
@@ -830,6 +826,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _DoAction(DxWebViewActionType actionTypes)
         {
             if (actionTypes == DxWebViewActionType.None) return;               // Pokud není co dělat, není třeba ničehož invokovati !
+            if (this.IsDispose) return;
 
             if (this.InvokeRequired)
             {   // 1x invokace na případně vícero akci
@@ -852,6 +849,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _DoLayout()
         {
+            if (this.IsDispose) return;
+
             var webProperties = this.WebProperties;
             var mapProperties = this.MapProperties;
 
@@ -876,6 +875,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.__ToolPanel.Visible = isToolbarVisible;
             if (isToolbarVisible)
             {
+                // Viditelnost prvků Toolbaru:
                 bool isOpenExternalBrowserVisible = mapProperties.IsOpenExternalBrowserVisible;
                 bool isSearchCoordinatesVisible = mapProperties.IsSearchCoordinatesVisible;
                 bool isRelaodMapVisible = true;
@@ -925,7 +925,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             this.__MsWebView.Bounds = newWebBounds;
             this.__PictureWeb.Bounds = newPicBounds;
-            // MsWebView by měl v případě potřeby detekovat změnu velikosti a vyvolat znovunačtení obrázku a nakonec událost ...
+            // MsWebView by měl v případě potřeby detekovat změnu velikosti a vyvolat znovunačtení obrázku a nakonec událost  ... namísto:   if (newPicBounds != oldPicBounds) _CaptureDisplayImage();
 
 
             int getWidth(bool isVisible, int size, int distance)
@@ -1127,6 +1127,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _RefreshMap(bool force = false)
         {
+            if (this.IsDispose) return;
+
             _ReloadCoordinatesText();                                          // Zobrazím do TextBoxu (bez eventu o změně) souřadnice Požadovaná souřadnice
 
             // Přenesu požadované souřadnice z this.MapProperties.MapCoordinates do WebCoordinates:
@@ -1155,6 +1157,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="mapCoordinates"></param>
         private void _ReloadCoordinatesText(DxMapCoordinates mapCoordinates = null)
         {
+            if (this.IsDispose) return;
+
             // Setování textu do __CoordinatesText nevyvolá event o změně, protože tamní změnu řešíme jen po klávese Enter.
             if (mapCoordinates is null) mapCoordinates = this.IMapProperties.MapCoordinates;
             this.__CoordinatesText.Text = mapCoordinates.GetCoordinates(this.CoordinatesUserFormat);
@@ -1423,6 +1427,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _ConvertUrlAdressToCoordinates()
         {
+            if (this.IsDispose) return;
+
             var webView = this.__MsWebView;
             string urlAdress = webView.MsWebCurrentUrlAdress;                  // URL adresa ve WebView
 
@@ -1447,7 +1453,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _RefreshAcceptButtonState();
         }
-
         /// <summary>
         /// URL adresa odpovídající posledně platným koordinátům
         /// </summary>
@@ -1473,6 +1478,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _RefreshAcceptButtonState()
         {
+            if (this.IsDispose) return;
+
             var mapProperties = this.MapProperties;
             if (!mapProperties.IsMapEditable) return;                          // Mapa není editovatelná, pak není třeba řešit Accept button a jeho stav
 
@@ -1495,6 +1502,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _AcceptWebViewCoordinate()
         {
+            if (this.IsDispose) return;
+
             var mapProperties = this.MapProperties;
             if (!mapProperties.IsMapEditable) return;                // Mapa není editovatelná, pak není třeba řešit Accept button a jeho stav
 
@@ -1586,6 +1595,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void LoadMsWebImageAsync(object requestId)
         {
+            if (this.IsDispose) return;
+
             // Zahájí se async načítání obrázku z existujícího WebView a jeho aktuální adresy:
             this.__MsWebView.LoadMsWebImageAsync(requestId);
             // po načtení obrázku (async) bude vyvolán event __MsWebView.MsWebImageCaptured => _MsWebImageCaptured()
@@ -1599,6 +1610,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args"></param>
         private void _MsWebImageCaptured(object sender, MsWebImageCapturedArgs args)
         {
+            if (this.IsDispose) return;
+
             // Externí událost:
             DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"MapViewPanel.ExternalImageCaptured");
             OnMsWebImageCaptured(args);
@@ -1723,7 +1736,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Value tohoto panelu = souřadnice zadaného bodu.
         /// Obsahuje totéž jako <see cref="MapPropertiesInfo.Coordinates"/>.
         /// </summary>
-        public string Value { get { return this.MapProperties.Coordinates; } set { this.MapProperties.Coordinates = value; } }
+        public string Value { get { return this.MapProperties.Coordinates; } set { if (!this.IsDispose) this.MapProperties.Coordinates = value; } }
         /// <summary>
         /// Souhrn vlastností <see cref="MsWebView"/>, tak aby byly k dosažení v jednom místě.
         /// Pro mapy obecně není důležitý.

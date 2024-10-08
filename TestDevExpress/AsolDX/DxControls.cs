@@ -1366,6 +1366,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
+            this.__IsDispose = true;
             DxComponent.UnregisterListener(this);
             DestroyContent();
             this.DisposeContent();
@@ -1732,6 +1733,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Obsahuje true pro panel, který je nebo již byl disposován.
+        /// Používejme přednostně před <see cref="Control.Disposing"/> nebo <see cref="Control.IsDisposed"/>.
+        /// </summary>
+        public bool IsDispose { get { return (__IsDispose || Disposing || IsDisposed); } } private bool __IsDispose;
         /// <summary>
         /// Vizualizace
         /// </summary>
