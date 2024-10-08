@@ -325,9 +325,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                     wsc.AutoScroll = false;
                 }
 
-                control.Controls.Remove(child);
-
-                try { child.Dispose(); }
+                try 
+                {
+                    control.Controls.Remove(child);
+                    child.Dispose(); 
+                }
                 catch { }
             }
 

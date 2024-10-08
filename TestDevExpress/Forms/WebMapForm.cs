@@ -40,7 +40,7 @@ namespace TestDevExpress.Forms
             // Další controly v řadě:
             __ProviderButton = createDropDownButton(_SelectProviderChange, DxMapCoordinatesProvider.SeznamMapy, DxMapCoordinatesProvider.FrameMapy, DxMapCoordinatesProvider.GoogleMaps, DxMapCoordinatesProvider.OpenStreetMap);
             __MapTypeButton = createDropDownButton(_SelectMapTypeChange, DxMapCoordinatesMapType.Standard, DxMapCoordinatesMapType.Photo, DxMapCoordinatesMapType.Traffic);
-            __ReadOnlyButton = createDropDownButton(_SelectReadOnlyChange, MapEditableType.Editable, MapEditableType.ReadOnly, MapEditableType.StaticAsync, MapEditableType.StaticSync);
+            __WebDisplayModeButton = createDropDownButton(_SelectDisplayModeChange, WebDisplayType.Editable, WebDisplayType.ReadOnly, WebDisplayType.StaticAsync, WebDisplayType.StaticSync);
 
             _DoContentLayout();
 
@@ -79,12 +79,12 @@ namespace TestDevExpress.Forms
         private string __CurrentUrlAdress;
         private DxMapCoordinatesProvider __CurrentProvider;
         private DxMapCoordinatesMapType __CurrentMapType;
-        private MapEditableType __CurrentEditableType;
-        private DxDropDownButton __ProviderButton;
-        private DxDropDownButton __MapTypeButton;
-        private DxDropDownButton __ReadOnlyButton;
+        private WebDisplayType __CurrentEditableType;
         private List<Control> __NavControls;
         private DxMapViewPanel __MapViewPanel;
+        private DxDropDownButton __ProviderButton;
+        private DxDropDownButton __MapTypeButton;
+        private DxDropDownButton __WebDisplayModeButton;
         /// <summary>
         /// Provede se po změně velikosti ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/>
         /// </summary>
@@ -167,19 +167,19 @@ namespace TestDevExpress.Forms
                 _GoToMap(true);
             }
         }
-        private void _SelectReadOnlyChange(object sender, TEventArgs<IMenuItem> e)
+        private void _SelectDisplayModeChange(object sender, TEventArgs<IMenuItem> e)
         {
-            var button = (sender as DxDropDownButton) ?? __ReadOnlyButton;
-            if (button != null && e.Item.Tag is MapEditableType editableType)
+            var button = (sender as DxDropDownButton) ?? __WebDisplayModeButton;
+            if (button != null && e.Item.Tag is WebDisplayType editableType)
             {
                 button.Text = editableType.ToString();
                 __CurrentEditableType = editableType;
                 var mapPanel = __MapViewPanel;
-                mapPanel.MapProperties.IsMapEditable = (editableType == MapEditableType.Editable);
-                mapPanel.MapProperties.DisplayMode = (editableType == MapEditableType.Editable ? DxWebViewDisplayMode.Live :
-                                                     (editableType == MapEditableType.ReadOnly ? DxWebViewDisplayMode.Live :
-                                                     (editableType == MapEditableType.StaticAsync ? DxWebViewDisplayMode.CaptureAsync :
-                                                     (editableType == MapEditableType.StaticSync ? DxWebViewDisplayMode.CaptureSync : DxWebViewDisplayMode.Live))));
+                mapPanel.MapProperties.IsMapEditable = (editableType == WebDisplayType.Editable);
+                mapPanel.MapProperties.DisplayMode = (editableType == WebDisplayType.Editable ? DxWebViewDisplayMode.Live :
+                                                     (editableType == WebDisplayType.ReadOnly ? DxWebViewDisplayMode.Live :
+                                                     (editableType == WebDisplayType.StaticAsync ? DxWebViewDisplayMode.CaptureAsync :
+                                                     (editableType == WebDisplayType.StaticSync ? DxWebViewDisplayMode.CaptureSync : DxWebViewDisplayMode.Live))));
             }
         }
         private void _GoToMap(bool forceUrl)
@@ -187,27 +187,16 @@ namespace TestDevExpress.Forms
             var mapPanel = __MapViewPanel;
             if (mapPanel != null && !String.IsNullOrEmpty(__CurrentCoordinates))
             {
-                mapPanel.MapProperties.IsMapEditable = (__CurrentEditableType == MapEditableType.Editable);
+                mapPanel.MapProperties.IsMapEditable = (__CurrentEditableType == WebDisplayType.Editable);
                 mapPanel.MapProperties.CoordinatesProvider = __CurrentProvider;
                 mapPanel.MapProperties.CoordinatesMapType = __CurrentMapType;
                 mapPanel.MapProperties.Coordinates = __CurrentCoordinates;               // Zde se vyvolá Reload mapy
             }
         }
-        /*
-        private void _ClickButtonStaticImage(object sender, EventArgs e)
-        {
-            var webProperties = __MapViewPanel.WebProperties;
-            var isStatic = !webProperties.IsStaticPicture;
-            if (sender is DxSimpleButton button)
-            {
-                string checkImage = "svgimages/diagramicons/check.svg";
-                button.Appearance.FontStyleDelta = (isStatic ? (FontStyle.Bold | FontStyle.Underline) : FontStyle.Regular);
-                button.ImageName = (isStatic ? checkImage : null);
-            }
-            webProperties.IsStaticPicture = isStatic;
-        }
-        */
-        private enum MapEditableType
+        /// <summary>
+        /// Režimy DisplayMode controlu
+        /// </summary>
+        private enum WebDisplayType
         {
             Editable,
             ReadOnly,

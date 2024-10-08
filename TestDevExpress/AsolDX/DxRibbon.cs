@@ -2497,7 +2497,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Přidá prvky do this Ribbonu z dodané kolekce, v daném režimu LazyLoad
         /// </summary>
         /// <param name="iRibbonPages"></param>
-        /// <param name="reloadQatToRibbon">Na závěr zavolat <see cref="AddQATUserListToRibbon()"/>?</param>
+        /// <param name="reloadQatToRibbon">Na závěr zavolat <see cref="AddQATUserListToRibbon(Dictionary{string, Tuple{BarItem, IRibbonItem}})"/>?</param>
         /// <param name="createMode">Režim přidávání prvků</param>
         /// <param name="logText"></param>
         private void _AddPages(IEnumerable<IRibbonPage> iRibbonPages, bool reloadQatToRibbon, DxRibbonCreateContentMode createMode, string logText)
@@ -2823,7 +2823,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonPages"></param>
         /// <param name="iRibbonGroups"></param>
         /// <param name="iRibbonItems"></param>
-        /// <param name="reloadQatToRibbon">Na závěr zavolat <see cref="AddQATUserListToRibbon()"/>?</param>
+        /// <param name="reloadQatToRibbon">Na závěr zavolat <see cref="AddQATUserListToRibbon(Dictionary{string, Tuple{BarItem, IRibbonItem}})"/>?</param>
         private void _RefreshObjects(List<IRibbonPage> iRibbonPages, List<IRibbonGroup> iRibbonGroups, List<IRibbonItem> iRibbonItems, bool reloadQatToRibbon)
         {
             if (iRibbonPages.Count > 0) _RefreshPages(iRibbonPages, false);
@@ -2836,7 +2836,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Ribbon je unmergován.
         /// </summary>
         /// <param name="iRibbonPages"></param>
-        /// <param name="reloadQatToRibbon">Na závěr zavolat <see cref="AddQATUserListToRibbon()"/>?</param>
+        /// <param name="reloadQatToRibbon">Na závěr zavolat <see cref="AddQATUserListToRibbon(Dictionary{string, Tuple{BarItem, IRibbonItem}})"/>?</param>
         private void _RefreshPages(IEnumerable<IRibbonPage> iRibbonPages, bool reloadQatToRibbon)
         {
             if (this.IsDisposed) return;
@@ -2852,7 +2852,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Refresh sady skupin, data fyzické grupy jsou dodána, ribbon je unmergován.
         /// </summary>
         /// <param name="iRibbonGroups"></param>
-        /// <param name="reloadQatToRibbon">Na závěr zavolat <see cref="AddQATUserListToRibbon()"/>?</param>
+        /// <param name="reloadQatToRibbon">Na závěr zavolat <see cref="AddQATUserListToRibbon(Dictionary{string, Tuple{BarItem, IRibbonItem}})"/>?</param>
         private void _RefreshGroups(IEnumerable<IRibbonGroup> iRibbonGroups, bool reloadQatToRibbon)
         {
             var startTime = DxComponent.LogTimeCurrent;
@@ -2921,7 +2921,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonGroup"></param>
         /// <param name="dxGroup"></param>
         /// <param name="dxPage">Stránka. Je dodána jen tehdy, když grupa <paramref name="dxGroup"/> dosud v Ribbonu neexistuje, v tom případě je ověřeno, že tato stránka existuje.</param>
-        /// <param name="reloadQatToRibbon">Na závěr zavolat <see cref="AddQATUserListToRibbon()"/>?</param>
+        /// <param name="reloadQatToRibbon">Na závěr zavolat <see cref="AddQATUserListToRibbon(Dictionary{string, Tuple{BarItem, IRibbonItem}})"/>?</param>
         private void _RefreshGroup(IRibbonGroup iRibbonGroup, DxRibbonGroup dxGroup, DxRibbonPage dxPage, bool reloadQatToRibbon)
         {
             var startTime = DxComponent.LogTimeCurrent;
@@ -5541,7 +5541,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected bool ExistsAnyQat { get { return ((_QATUserItems?.Count ?? 0) > 0); } }
         /// <summary>
         /// Metoda je volána v procesu tvorby nových prvků Ribbonu, když je vytvořen prvek BarItem, který má být obsažen v QAT.
-        /// Tato metoda si zaeviduje odkaz na tento BarItem v interním poli, z něhož následně (v metodě <see cref="AddQATUserListToRibbon()"/>) 
+        /// Tato metoda si zaeviduje odkaz na tento BarItem v interním poli, z něhož následně (v metodě <see cref="AddQATUserListToRibbon(Dictionary{string, Tuple{BarItem, IRibbonItem}})"/>) 
         /// všechny patřičné prvky uloží do fyzického ToolBaru QAT.
         /// Tato metoda tedy dodaný prvek nevloží okamžitě do ToolBaru.
         /// Tato metoda, pokud je volána pro prvek který v QAT nemá být, nepřidá tento prvek 

@@ -28,7 +28,13 @@ namespace Noris.Clients.Controllers
             /// </summary>
             public class LabeledTabInfo
             {
+                /// <summary>
+                /// Jméno
+                /// </summary>
                 public string Name;
+                /// <summary>
+                /// Popisek
+                /// </summary>
                 public string Label;
             }
         }

@@ -4700,7 +4700,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static event EventHandler LogTextChanged { add { Instance.__LogTextChanged += value; } remove { Instance.__LogTextChanged -= value; } }
         /// <summary>
         /// Obsahuje přesný aktuální čas jako Int64. 
-        /// Lze ho následně použít jako parametr 'long startTime' v metodě <see cref="LogAddLineTime(string, long?)"/> pro zápis uplynulého času.
+        /// Lze ho následně použít jako parametr 'long startTime' v metodě <see cref="LogAddLineTime(LogActivityKind, string, long?)"/> pro zápis uplynulého času.
         /// </summary>
         /// <returns></returns>
         public static long LogTimeCurrent { get { return Instance._LogTimeCurrent; } }
@@ -4748,15 +4748,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public static string LogLastLine { get { return Instance._LogLastLine; } }
         /// <summary>
-        /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(string, long?)"/>, za který se dosadí uplynulý čas v sekundách, včetně jednotky " sec"
+        /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(LogActivityKind, string, long?)"/>, za který se dosadí uplynulý čas v sekundách, včetně jednotky " sec"
         /// </summary>
         public static string LogTokenTimeSec { get { return _LogTokenTimeSec; } } private const string _LogTokenTimeSec = "{SEC}";
         /// <summary>
-        /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(string, long?)"/>, za který se dosadí uplynulý čas v milisekundách, včetně jednotky " ms"
+        /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(LogActivityKind, string, long?)"/>, za který se dosadí uplynulý čas v milisekundách, včetně jednotky " ms"
         /// </summary>
         public static string LogTokenTimeMilisec { get { return _LogTokenTimeMilisec; } } private const string _LogTokenTimeMilisec = "{MILISEC}";
         /// <summary>
-        /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(string, long?)"/>, za který se dosadí uplynulý čas v mikrosekundách, včetně jednotky " μs"
+        /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(LogActivityKind, string, long?)"/>, za který se dosadí uplynulý čas v mikrosekundách, včetně jednotky " μs"
         /// </summary>
         public static string LogTokenTimeMicrosec { get { return _LogTokenTimeMicrosec; } } private const string _LogTokenTimeMicrosec = "{MICROSEC}";
         /// <summary>
@@ -5598,7 +5598,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Vykreslí string.
-        /// Písmo je vhodné získat metodou <see cref="GetFont(Font, FontStyle?)"/>.
+        /// Písmo je vhodné získat metodou <see cref="GetFont(Font, FontStyle?, int?)"/>.
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="text"></param>
@@ -6105,6 +6105,47 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (test.Contains("<href") && test.Contains(">")) return true;
 
             return false;
+        }
+        #endregion
+        #region SleepUntil - pozastavit thread do splnění podmínky
+        /// <summary>
+        /// Tato metoda pozastaví aktuální thread do té doby, než bude splněna podmínka <paramref name="wakeUpCondition"/> pro probuzení.
+        /// Pozastavený thread nebrání činnosti na pozadí, thread není úplně zablokován (používá se <see cref="System.Threading.Thread.Sleep(TimeSpan)"/>).
+        /// <para/>
+        /// Zadaná metoda s podmínkou <paramref name="wakeUpCondition"/> bude volaná v pravidelném intervalu <paramref name="wakeUpCheckIntervalMs"/> [milisekund], to je doba jednoho dílu spánku.
+        /// Pokud metoda <paramref name="wakeUpCondition"/> vrátí true, pak bude spánek ukončen a tato metoda vrací řízení.<br/>
+        /// Metoda nemůže být null, v takovém případě použijme <see cref="System.Threading.Thread.Sleep(TimeSpan)"/> s timeoutem.
+        /// <para/>
+        /// Tato metoda vrátí true, pokud byla ukončena protože jsme se dočkali správného stavu (metoda <paramref name="wakeUpCondition"/> vrátila true), anebo vrací false, když byla ukončena timeoutem <paramref name="maxSleepTime"/>.
+        /// </summary>
+        /// <param name="wakeUpCondition">Pravidelně volaná metoda, která testuje zda už je splněna podmínka pro probuzení. Metoda je volaná v intervalu <paramref name="wakeUpCheckIntervalMs"/> [milisekund]. Když vrátí true, spánek končí a metoda vrací řízení.</param>
+        /// <param name="maxSleepTime">Timeout spánku, po kterém bude metoda ukončena i při nesplnění podmínky. Default = 15 sekund.</param>
+        /// <param name="wakeUpCheckIntervalMs">Interval, v kterém bude opakovaně volána metoda <paramref name="wakeUpCondition"/>, v milisekundách. Default = 100 ms. Povolené rozmezí 25 - 2000.</param>
+        internal static bool SleepUntil(Func<bool> wakeUpCondition, TimeSpan? maxSleepTime = null, int? wakeUpCheckIntervalMs = null)
+        {
+            if (wakeUpCondition is null) throw new ArgumentNullException($"DxComponent.SleepUntil() : wakeUpCondition is null.");
+
+            TimeSpan timeOut = maxSleepTime ?? TimeSpan.FromSeconds(15d);
+            if (timeOut.TotalSeconds < 1d) timeOut = TimeSpan.FromSeconds(1d);
+            else if (timeOut.TotalMinutes > 60d) timeOut = TimeSpan.FromMinutes(60d);
+
+            int interval = wakeUpCheckIntervalMs ?? 100;
+            if (interval < 25) interval = 25;
+            else if (interval > 2000) interval = 2000;
+
+            var timeEnd = DateTime.Now.Add(timeOut);
+            while (true)
+            {
+                Application.DoEvents();
+                if (wakeUpCondition()) return true;                  // OK
+
+                System.Threading.Thread.Sleep(100);                  // Počkám, tak abych neblokoval práci v current threadu.
+
+                Application.DoEvents();
+                if (wakeUpCondition()) return true;                  // OK
+
+                if (DateTime.Now >= timeEnd) return false;           // TimeOut = false
+            }
         }
         #endregion
         #region SystemSounds
@@ -8664,19 +8705,61 @@ White
         /// Nic
         /// </summary>
         None = 0x00000000,
+        /// <summary>
+        /// Zprávy od WinApi
+        /// </summary>
         WinMessage = 0x00000001,
+        /// <summary>
+        /// Zprávy od DevExpress komponent
+        /// </summary>
         DevExpressEvents = 0x00000002,
+        /// <summary>
+        /// Zprávy od interaktivních přesunů prvků
+        /// </summary>
         InteractiveMove = 0x00000010,
+        /// <summary>
+        /// Zprávy od interaktivních clicků
+        /// </summary>
         InteractiveClick = 0x00000020,
+        /// <summary>
+        /// Zprávy od interaktivních DragAndDrop
+        /// </summary>
         InteractiveDrag = 0x00000040,
+        /// <summary>
+        /// Zprávy o Scrool obsahu
+        /// </summary>
         Scroll = 0x00000100,
+        /// <summary>
+        /// Zprávy o změnách virtuálních containerů
+        /// </summary>
         VirtualChanges = 0x00000200,
+        /// <summary>
+        /// Zprávy o Paint v DataFormu
+        /// </summary>
         Paint = 0x00000800,
+        /// <summary>
+        /// Zprávy o práci s Repository v DataFormu
+        /// </summary>
         DataFormRepository = 0x00001000,
+        /// <summary>
+        /// Zprávy o událostech v DataFormu
+        /// </summary>
         DataFormEvents = 0x00002000,
+        /// <summary>
+        /// Zprávy o událostech v Ribbonu
+        /// </summary>
         Ribbon = 0x00004000,
+        /// <summary>
+        /// Zprávy o událostech v LayoutPanelu
+        /// </summary>
         LayoutPanel = 0x00008000,
+        /// <summary>
+        /// Zprávy o událostech v DocumentManageru
+        /// </summary>
         DocumentManager = 0x00010000,
+        /// <summary>
+        /// Zprávy o událostech v ThreadManageru
+        /// </summary>
         ThreadManager = 0x00020000,
 
         /// <summary>
@@ -10822,7 +10905,7 @@ White
         /// </summary>
         public bool PermanentCodes { get { return __PermanentCodes; } }
         /// <summary>
-        /// Systém zpráv je připraven přijímat zprávy a ukládat je? Je nastaveno po <see cref="Reset"/>, na konci musí být volána metoda <see cref="Show()"/>!
+        /// Systém zpráv je připraven přijímat zprávy a ukládat je? Je nastaveno po <see cref="Reset()"/>, na konci musí být volána metoda <see cref="Show(string)"/>!
         /// false = každá zpráva bude přímo ohlášena.
         /// </summary>
         public bool MessagesReady { get { return __MessagesReady; } }
@@ -10877,16 +10960,6 @@ White
         /// Chyba na straně aplikace (nečekaná NULL hodnota, volání metody před inicializací nebo po Dispose, atd)
         /// </summary>
         SystemError
-    }
-    #endregion
-    #region class UnZipper
-    public class UnZipper
-    {
-        public void UnZip(string file)
-        {
-            // Microsoft.Deployment.Compression.Cab
-//             System.IO.Compression.DeflateStream
-        }
     }
     #endregion
     #region class DxStyleToConfigListener : spojovací prvek mezi stylem (skin + paleta) z DevExpress a (abstract) konfigurací

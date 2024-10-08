@@ -20,30 +20,45 @@ namespace TestDevExpress.Forms
         #region Konstrukce
         protected override void DxMainContentPrepare()
         {
-            // Buttony, které reprezentují "oblíbené stránky":
-            __NavButtons = new List<DxSimpleButton>();
-
-            createButton("seznam", "https://www.seznam.cz/", _ClickButtonNavigate);
-            createButton("mapy A", "https://www.mapy.cz/", _ClickButtonNavigate);
-            createButton("mapy B", @"https://mapy.cz/dopravni?x=14.5802973&y=50.5311090&z=14", _ClickButtonNavigate);
-            createButton("mapy C", @"https://mapy.cz/dopravni?l=0&x=15.8629028&y=50.2145999&z=17", _ClickButtonNavigate);
-            createButton("mapy D", @"https://mapy.cz/dopravni?vlastni-body&ut=Nový bod&uc=9kFczxY5mZ&ud=15°51%2742.665""E 50°12%2754.179""N&x=15.8629028&y=50.2145999&z=17", _ClickButtonNavigate);
-            createButton("google", "https://www.google.com/", _ClickButtonNavigate);
-            createButton("meteo", "https://www.chmi.cz/files/portal/docs/meteo/rad/inca-cz/short.html?display=var&gmap_zoom=7&prod=czrad_maxz_celdn_masked&opa1=0.6&opa2=0.7&nselect=14&nselect_fct=6&di=1&rep=2&add=4&update=4&lat=49.951&lon=15.797&lang=CZ", _ClickButtonNavigate);
-            createButton("GreenMapa", "<GreenMapa>", _ClickButtonNavigate);
-            createButton("Static", null, _ClickButtonStaticImage);
+            __NavControls = new List<Control>();
 
             // Vlastní WebView:
             __WebViewPanel = new DxWebViewPanel();
             __WebViewPanel.MsWebCurrentDocumentTitleChanged += _MsWebCurrentDocumentTitleChanged;
             this.DxMainPanel.Controls.Add(__WebViewPanel);
 
+            // Buttony, které reprezentují "oblíbené stránky":
+            createButton(_ClickButtonNavigate, "seznam", "https://www.seznam.cz/");
+            createButton(_ClickButtonNavigate, "mapy A", "https://www.mapy.cz/");
+            createButton(_ClickButtonNavigate, "mapy B", @"https://mapy.cz/dopravni?x=14.5802973&y=50.5311090&z=14");
+            createButton(_ClickButtonNavigate, "mapy C", @"https://mapy.cz/dopravni?l=0&x=15.8629028&y=50.2145999&z=17");
+            createButton(_ClickButtonNavigate, "mapy D", @"https://mapy.cz/dopravni?vlastni-body&ut=Nový bod&uc=9kFczxY5mZ&ud=15°51%2742.665""E 50°12%2754.179""N&x=15.8629028&y=50.2145999&z=17");
+            createButton(_ClickButtonNavigate, "google", "https://www.google.com/");
+            createButton(_ClickButtonNavigate, "meteo", "https://www.chmi.cz/files/portal/docs/meteo/rad/inca-cz/short.html?display=var&gmap_zoom=7&prod=czrad_maxz_celdn_masked&opa1=0.6&opa2=0.7&nselect=14&nselect_fct=6&di=1&rep=2&add=4&update=4&lat=49.951&lon=15.797&lang=CZ");
+            createButton(_ClickButtonNavigate, "GreenMapa", "<GreenMapa>");
+
+            // Další controly v řadě:
+            __WebDisplayModeButton = createDropDownButton(_SelectDisplayModeChange, WebDisplayType.Editable, WebDisplayType.ReadOnly, WebDisplayType.StaticAsync, WebDisplayType.StaticSync);
+
             _DoContentLayout();
 
-            void createButton(string text, string url, EventHandler click)
+            void createButton(EventHandler click, string text, string url)
             {
                 var button = DxComponent.CreateDxSimpleButton(0, 0, 150, 32, this.DxMainPanel, text, click, tag: url);
-                __NavButtons.Add(button);
+                __NavControls.Add(button);
+            }
+            DxDropDownButton createDropDownButton(EventHandler<TEventArgs<IMenuItem>> itemClickHandler, params object[] values)
+            {
+                var items = values.Select(v => (IMenuItem)new DataMenuItem() { Text = v.ToString(), Tag = v }).ToArray();
+                var button = DxComponent.CreateDxDropDownButton(0, 0, 150, 32, this.DxMainPanel, "", null, itemClickHandler, subItems: items);
+                button.OpenDropDownOnButtonClick = true;
+                __NavControls.Add(button);
+
+                // Aktivujeme první položku:
+                if (items.Length > 0)
+                    itemClickHandler(button, new TEventArgs<IMenuItem>(items[0]));
+
+                return button;
             }
         }
         /// <summary>
@@ -58,8 +73,10 @@ namespace TestDevExpress.Forms
             this.SetGuiValue(t => this.Text = t, docTitle);
         }
 
-        private List<DxSimpleButton> __NavButtons;
+        private WebDisplayType __CurrentEditableType;
+        private List<Control> __NavControls;
         private DxWebViewPanel __WebViewPanel;
+        private DxDropDownButton __WebDisplayModeButton;
         /// <summary>
         /// Provede se po změně velikosti ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/>
         /// </summary>
@@ -75,26 +92,39 @@ namespace TestDevExpress.Forms
             var clientSize = this.DxMainPanel.ClientSize;
 
             int currentDpi = this.CurrentDpi;
-            int x0 = DxComponent.ZoomToGui(6, currentDpi);
-            int y0 = DxComponent.ZoomToGui(6, currentDpi);
-            int bw = DxComponent.ZoomToGui(140, currentDpi);
-            int bh = DxComponent.ZoomToGui(28, currentDpi);
-            int dw = DxComponent.ZoomToGui(4, currentDpi);
+            int paddingH = DxComponent.ZoomToGui(6, currentDpi);
+            int paddingV = DxComponent.ZoomToGui(6, currentDpi);
+            int buttonWidth = DxComponent.ZoomToGui(125, currentDpi);
+            int toolHeight = DxComponent.ZoomToGui(28, currentDpi);
+            int distanceX = DxComponent.ZoomToGui(4, currentDpi);
+            int separatorX = DxComponent.ZoomToGui(12, currentDpi);
+            int dropDownWidth = DxComponent.ZoomToGui(140, currentDpi);
 
-            int bx = x0;
-            int by = y0;
-            foreach (var button in __NavButtons)
+            // Controly v Toolbaru:
+            int controlX = paddingH;
+            int controlY = paddingV;
+            Type lastType = null;
+            foreach (var control in __NavControls)
             {
-                button.Bounds = new Rectangle(bx, by, bw, bh);
-                bx += (bw + dw);
+                // Oddělit mezerou odlišné typy (Button a DropDown):
+                Type currType = control.GetType();
+                if (lastType != null && currType != lastType)
+                    controlX += separatorX;
+                lastType = currType;
+
+                // Souřadnice:
+                int controlWidth = ((control is DxDropDownButton) ? dropDownWidth : buttonWidth);
+                control.Bounds = new Rectangle(controlX, controlY, controlWidth, toolHeight);
+                controlX += (controlWidth + distanceX);
             }
 
-            int ws = DxComponent.ZoomToGui(3, currentDpi);
-            int wx = x0;
-            int wy = y0 + bh + ws;
-            int ww = clientSize.Width - wx - wx;
-            int wh = clientSize.Height - y0 - wy;
-            webPanel.Bounds = new Rectangle(wx, wy, ww, wh);
+            // WebView:
+            int distanceY = DxComponent.ZoomToGui(3, currentDpi);
+            int webX = paddingH;
+            int webY = paddingV + toolHeight + distanceY;
+            int webWidth = clientSize.Width - webX - webX;
+            int webHeight = clientSize.Height - paddingV - webY;
+            webPanel.Bounds = new Rectangle(webX, webY, webWidth, webHeight);
         }
 
         private void _ClickButtonNavigate(object sender, EventArgs e)
@@ -158,6 +188,32 @@ m.addControl(sync);
                 button.Appearance.FontStyleDelta = (isCapture ? (FontStyle.Bold | FontStyle.Underline) : FontStyle.Regular);
             }
             properties.DisplayMode = displayMode;
+        }
+
+        private void _SelectDisplayModeChange(object sender, TEventArgs<IMenuItem> e)
+        {
+            var button = (sender as DxDropDownButton) ?? __WebDisplayModeButton;
+            if (button != null && e.Item.Tag is WebDisplayType editableType)
+            {
+                button.Text = editableType.ToString();
+                __CurrentEditableType = editableType;
+                var webPanel = __WebViewPanel;
+                // webPanel.MapProperties.IsMapEditable = (editableType == WebDisplayType.Editable);
+                webPanel.WebProperties.DisplayMode = (editableType == WebDisplayType.Editable ? DxWebViewDisplayMode.Live :
+                                                     (editableType == WebDisplayType.ReadOnly ? DxWebViewDisplayMode.Live :
+                                                     (editableType == WebDisplayType.StaticAsync ? DxWebViewDisplayMode.CaptureAsync :
+                                                     (editableType == WebDisplayType.StaticSync ? DxWebViewDisplayMode.CaptureSync : DxWebViewDisplayMode.Live))));
+            }
+        }
+        /// <summary>
+        /// Režimy DisplayMode controlu
+        /// </summary>
+        private enum WebDisplayType
+        {
+            Editable,
+            ReadOnly,
+            StaticAsync,
+            StaticSync
         }
         #endregion
     }

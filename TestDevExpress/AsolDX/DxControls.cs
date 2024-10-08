@@ -1361,17 +1361,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxComponent.RegisterListener(this);
         }
         /// <summary>
-        /// Dispose panelu
+        /// Dispose panelu a všech Child prvků.
         /// </summary>
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
             DxComponent.UnregisterListener(this);
             DestroyContent();
+            this.DisposeContent();
             base.Dispose(disposing);
         }
         /// <summary>
-        /// Zruší veškerý svůj obsah v procesu Dispose. Volá base.DestroyContent() !!!
+        /// Zruší veškerý svůj obsah v procesu Dispose.
         /// </summary>
         protected virtual void DestroyContent()
         {
