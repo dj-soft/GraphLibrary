@@ -38,7 +38,8 @@ namespace TestDevExpress.Forms
             createButton(_ClickButtonNavigate, "Gargano", "41.8835225N, 16.1818136E");
 
             // Další controly v řadě:
-            __ProviderButton = createDropDownButton(_SelectProviderChange, DxMapCoordinatesProvider.SeznamMapy, DxMapCoordinatesProvider.FrameMapy, DxMapCoordinatesProvider.GoogleMaps, DxMapCoordinatesProvider.OpenStreetMap);
+            var mapProviders = MapProvider.AllProviders;
+            __ProviderButton = createDropDownButton(_SelectProviderChange, mapProviders);
             __MapTypeButton = createDropDownButton(_SelectMapTypeChange, DxMapCoordinatesMapType.Standard, DxMapCoordinatesMapType.Photo, DxMapCoordinatesMapType.Traffic);
             __WebDisplayModeButton = createDropDownButton(_SelectDisplayModeChange, WebDisplayType.Editable, WebDisplayType.ReadOnly, WebDisplayType.StaticAsync, WebDisplayType.StaticSync);
 
@@ -77,7 +78,7 @@ namespace TestDevExpress.Forms
         }
         private string __CurrentCoordinates;
         private string __CurrentUrlAdress;
-        private DxMapCoordinatesProvider __CurrentProvider;
+        private IMapProvider __CurrentProvider;
         private DxMapCoordinatesMapType __CurrentMapType;
         private WebDisplayType __CurrentEditableType;
         private List<Control> __NavControls;
@@ -150,7 +151,7 @@ namespace TestDevExpress.Forms
         private void _SelectProviderChange(object sender, TEventArgs<IMenuItem> e)
         {
             var button = (sender as DxDropDownButton) ?? __ProviderButton;
-            if (button != null && e.Item.Tag is DxMapCoordinatesProvider provider)
+            if (button != null && e.Item.Tag is IMapProvider provider)
             {
                 button.Text = provider.ToString();
                 __CurrentProvider = provider;
@@ -188,7 +189,7 @@ namespace TestDevExpress.Forms
             if (mapPanel != null && !String.IsNullOrEmpty(__CurrentCoordinates))
             {
                 mapPanel.MapProperties.IsMapEditable = (__CurrentEditableType == WebDisplayType.Editable);
-                mapPanel.MapProperties.CoordinatesProvider = __CurrentProvider;
+                mapPanel.MapProperties.CoordinatesProvider = DxMapCoordinatesProvider.SeznamMapy;               //  __CurrentProvider;
                 mapPanel.MapProperties.CoordinatesMapType = __CurrentMapType;
                 mapPanel.MapProperties.Coordinates = __CurrentCoordinates;               // Zde se vyvolá Reload mapy
             }

@@ -5778,6 +5778,255 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
+    #region class MapProvider : třída/y, poskytující přístup na mapové podklady na základě daných souřadnic
+    /// <summary>
+    /// Abstraktní předek pro mapové providery, nepovinný
+    /// </summary>
+    public abstract class MapProvider : IMapProvider
+    {
+        #region Explicitní implementace IMapProvider => abstraktní protected prvky
+        string IMapProvider.ProviderId { get { return this.ProviderId; } }
+        string IMapProvider.ProviderName { get { return this.ProviderName; } }
+        int IMapProvider.SortOrder { get { return this.SortOrder; } }
+        string IMapProvider.CreateUrlAdress(MapProvider.MapDataInfo data) { return this.CreateUrlAdress(data); }
+        bool IMapProvider.TryParseUrlAdress(Uri uri, out MapProvider.MapDataInfo data) { return this.TryParseUrlAdress(uri, out data); }
+        /// <summary>
+        /// ID provideru: pod tímto ID může být uložen provider např. v kódu / v konfiguraci
+        /// </summary>
+        protected abstract string ProviderId { get; }
+        /// <summary>
+        /// Název provideru: pod tímto názvem bude provider nabízen uživateli
+        /// </summary>
+        protected abstract string ProviderName { get; }
+        /// <summary>
+        /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
+        /// </summary>
+        protected abstract int SortOrder { get; }
+        /// <summary>
+        /// Z dodaných dat o mapě <see cref="MapProvider.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        protected abstract string CreateUrlAdress(MapProvider.MapDataInfo data);
+        /// <summary>
+        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProvider.MapDataInfo"/>.
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        protected abstract bool TryParseUrlAdress(Uri uri, out MapProvider.MapDataInfo data);
+        /// <summary>
+        /// Vizualizace = název provideru
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return this.ProviderName;
+        }
+        #endregion
+        #region Static získání a seznam dostupných providerů v aktuální assembly
+        /// <summary>
+        /// Pole všech mapových providerů, které jsou dostupné v aktuální assembly
+        /// </summary>
+        public static IMapProvider[] AllProviders
+        {
+            get
+            {
+                if (__AllProviders is null)
+                    __AllProviders = _GetAllProviders();
+                return __AllProviders.ToArray();
+            }
+        }
+        /// <summary>
+        /// Úložiště pole <see cref="AllProviders"/>
+        /// </summary>
+        private static IMapProvider[] __AllProviders;
+        /// <summary>
+        /// Z aktuální assembly načte všechny konkrétní mapové providery, a vrátí pole jejich instancí.
+        /// </summary>
+        /// <returns></returns>
+        private static IMapProvider[] _GetAllProviders()
+        {
+            Type iMapProviderInterface = typeof(IMapProvider);                                               // Typ hledaného interface
+            var providerTypes = typeof(MapProvider).Assembly.GetTypes().Where(isMapProvider).ToArray();      // Typy popisující hledané třídy, které řádně implementují IMapProvider
+
+            var providers = new List<IMapProvider>();
+            foreach (var providerType in providerTypes)
+            {
+                var provider = createProvider(providerType);
+                if (provider != null)
+                    providers.Add(provider);
+            }
+            // ORDER BY SortOrder ASC:
+            if (providers.Count > 1)
+                providers.Sort((a, b) => a.SortOrder.CompareTo(b.SortOrder));
+
+            return providers.ToArray();
+
+
+            // Vrátí true, pokud daný typ reprezentuje požadovanou třídu (neabstraktní class, implementuje IMapProvider, má public bezparametrický konstruktor)
+            bool isMapProvider(Type type)
+            {
+                try
+                {
+                    // Hledáme typ, který je Class a není abstraktní:
+                    if (type is null || !type.IsClass || type.IsAbstract) return false;
+
+                    // Typ musí implementovat náš interface:
+                    bool hasInterface = type.GetInterfaces().Any(i => i == iMapProviderInterface);
+                    if (!hasInterface) return false;
+
+                    // Typ musí mít public bezparametrický konstruktor:
+                    bool hasConstructor = type.GetConstructors().Any(c => c.IsPublic && c.GetParameters().Length == 0);
+                    if (!hasConstructor) return false;
+
+                    return true;
+                }
+                catch { /* Nevyhodnotitelný typ může být například takový, který se odkazuje na nepřítomnou DLLku, pak mám exception "Assembly Xxx not found" */ }
+                return false;
+            }
+            // Vytvoří instanci daného typu a vrátí ji jako IMapProvider
+            IMapProvider createProvider(Type type)
+            {
+                try
+                {
+                    var instance = System.Activator.CreateInstance(type);
+                    if (instance != null && instance is IMapProvider mapProvider) return mapProvider;
+                }
+                catch { /*  */ }
+                return null;
+            }
+        }
+        #endregion
+        #region Static support pro parsování / formátování číselných dat souřadnic
+
+        #endregion
+        #region class MapDataInfo : souřadnice a další parametry mapy
+        /// <summary>
+        /// <see cref="MapDataInfo"/> : souřadnice a další parametry mapy
+        /// </summary>
+        public class MapDataInfo
+        {
+            public decimal PointX { get; set; }
+            public decimal PointY { get; set; }
+            public int? Zoom { get; set; }
+            public bool? ShowPointPin { get; set; }
+            public bool? ShowInfoPanel { get; set; }
+            public DxMapCoordinatesMapType? MapType { get; set; }
+        }
+        #endregion
+    }
+    /// <summary>
+    /// Předpis pro třídy, které reprezentují provider mapových podkladů pro konkrétní stránku
+    /// </summary>
+    public interface IMapProvider
+    {
+        /// <summary>
+        /// ID provideru: pod tímto ID může být uložen provider např. v kódu / v konfiguraci
+        /// </summary>
+        string ProviderId { get; }
+        /// <summary>
+        /// Název provideru: pod tímto názvem bude provider nabízen uživateli
+        /// </summary>
+        string ProviderName { get; }
+        /// <summary>
+        /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
+        /// </summary>
+        int SortOrder { get; }
+        /// <summary>
+        /// Z dodaných dat o mapě <see cref="MapProvider.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        string CreateUrlAdress(MapProvider.MapDataInfo data);
+        /// <summary>
+        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProvider.MapDataInfo"/>.
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        bool TryParseUrlAdress(Uri uri, out MapProvider.MapDataInfo data);
+
+    }
+    /// <summary>
+    /// Provider map <b><u>SeznamMapy</u></b>, implementuje <see cref="IMapProvider"/>
+    /// </summary>
+    public class MapProviderSeznamMapy : MapProvider, IMapProvider
+    {
+        /// <summary>
+        /// ID provideru: pod tímto ID může být uložen provider např. v kódu / v konfiguraci
+        /// </summary>
+        protected override string ProviderId { get { return "SeznamMapy"; } }
+        /// <summary>
+        /// Název provideru: pod tímto názvem bude provider nabízen uživateli
+        /// </summary>
+        protected override string ProviderName { get { return "Seznam mapy"; } }
+        /// <summary>
+        /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
+        /// </summary>
+        protected override int SortOrder { get { return 100; } }
+        /// <summary>
+        /// Z dodaných dat o mapě <see cref="MapProvider.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        protected override string CreateUrlAdress(MapDataInfo data)
+        {
+            return "";
+        }
+        /// <summary>
+        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProvider.MapDataInfo"/>.
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        protected override bool TryParseUrlAdress(Uri uri, out MapDataInfo data)
+        {
+            data = null;
+            return false;
+        }
+    }
+
+
+    /// <summary>
+    /// Provider map <b><u>OpenStreetMap</u></b>, implementuje <see cref="IMapProvider"/>
+    /// </summary>
+    public class MapProviderOpenStreetMap : MapProvider, IMapProvider
+    {
+        /// <summary>
+        /// ID provideru: pod tímto ID může být uložen provider např. v kódu / v konfiguraci
+        /// </summary>
+        protected override string ProviderId { get { return "OpenStreetMap"; } }
+        /// <summary>
+        /// Název provideru: pod tímto názvem bude provider nabízen uživateli
+        /// </summary>
+        protected override string ProviderName { get { return "Open Street Map"; } }
+        /// <summary>
+        /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
+        /// </summary>
+        protected override int SortOrder { get { return 110; } }
+        /// <summary>
+        /// Z dodaných dat o mapě <see cref="MapProvider.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        protected override string CreateUrlAdress(MapDataInfo data)
+        {
+            return "";
+        }
+        /// <summary>
+        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProvider.MapDataInfo"/>.
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        protected override bool TryParseUrlAdress(Uri uri, out MapDataInfo data)
+        {
+            data = null;
+            return false;
+        }
+    }
+    #endregion
     #region Enumy, servisní třídy...
     /// <summary>
     /// Rozhraní pro parenty prvku <see cref="MsWebView"/>, 
