@@ -2546,7 +2546,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 //     a zdejší metoda zde "čeká" = očekává impuls od threadu na pozadí...
                 //  - až doběhne task, přejde tato metoda  >> v tomtéž threadu! <<  na další řádek => uloží obsah streamu do imageData a do args, a vyvolá event MsWebImageCaptured:
                 var imageData = ms.GetBuffer();
-                callTarget(callback, requestId, lastData, true);
+                callTarget(callback, requestId, imageData, true);
             }
 
             // Zavolá patřičné cílové metody a předá jim data načteného Image. Uloží dodaná ImageData a aktuální velikost Controlu jako hodnoty Last.
