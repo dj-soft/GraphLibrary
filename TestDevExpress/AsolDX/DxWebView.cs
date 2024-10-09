@@ -6005,92 +6005,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         //
         // Summary:
-        //     Adds the specified System.Drawing.Size to the specified System.Drawing.Point.
-        //
-        //
-        // Parameters:
-        //   pt:
-        //     The System.Drawing.Point to add.
-        //
-        //   sz:
-        //     The System.Drawing.Size to add
-        //
-        // Returns:
-        //     The System.Drawing.Point that is the result of the addition operation.
-        public static Point Add(Point pt, Size sz)
-        {
-            return new Point(pt.X + sz.Width, pt.Y + sz.Height);
-        }
-
-        //
-        // Summary:
-        //     Returns the result of subtracting specified System.Drawing.Size from the specified
-        //     System.Drawing.Point.
-        //
-        // Parameters:
-        //   pt:
-        //     The System.Drawing.Point to be subtracted from.
-        //
-        //   sz:
-        //     The System.Drawing.Size to subtract from the System.Drawing.Point.
-        //
-        // Returns:
-        //     The System.Drawing.Point that is the result of the subtraction operation.
-        public static Point Subtract(Point pt, Size sz)
-        {
-            return new Point(pt.X - sz.Width, pt.Y - sz.Height);
-        }
-
-        //
-        // Summary:
-        //     Converts the specified System.Drawing.PointF to a System.Drawing.Point by rounding
-        //     the values of the System.Drawing.PointF to the next higher integer values.
-        //
-        // Parameters:
-        //   value:
-        //     The System.Drawing.PointF to convert.
-        //
-        // Returns:
-        //     The System.Drawing.Point this method converts to.
-        public static Point Ceiling(PointF value)
-        {
-            return new Point((int)Math.Ceiling(value.X), (int)Math.Ceiling(value.Y));
-        }
-
-        //
-        // Summary:
-        //     Converts the specified System.Drawing.PointF to a System.Drawing.Point by truncating
-        //     the values of the System.Drawing.Point.
-        //
-        // Parameters:
-        //   value:
-        //     The System.Drawing.PointF to convert.
-        //
-        // Returns:
-        //     The System.Drawing.Point this method converts to.
-        public static Point Truncate(PointF value)
-        {
-            return new Point((int)value.X, (int)value.Y);
-        }
-
-        //
-        // Summary:
-        //     Converts the specified System.Drawing.PointF to a System.Drawing.Point object
-        //     by rounding the System.Drawing.Point values to the nearest integer.
-        //
-        // Parameters:
-        //   value:
-        //     The System.Drawing.PointF to convert.
-        //
-        // Returns:
-        //     The System.Drawing.Point this method converts to.
-        public static Point Round(PointF value)
-        {
-            return new Point((int)Math.Round(value.X), (int)Math.Round(value.Y));
-        }
-
-        //
-        // Summary:
         //     Specifies whether this System.Drawing.Point contains the same coordinates as
         //     the specified System.Object.
         //
@@ -6102,7 +6016,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         //     true if obj is a System.Drawing.Point and has the same coordinates as this System.Drawing.Point.
         public override bool Equals(object obj)
         {
-            if (!(obj is Point point))
+            if (!(obj is PointD point))
             {
                 return false;
             }
@@ -6123,7 +6037,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         //     An integer value that specifies a hash value for this System.Drawing.Point.
         public override int GetHashCode()
         {
-            return x ^ y;
+            return x.GetHashCode() ^ y.GetHashCode();
         }
 
         //
@@ -6136,7 +6050,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         //
         //   dy:
         //     The amount to offset the y-coordinate.
-        public void Offset(int dx, int dy)
+        public void Offset(decimal dx, decimal dy)
         {
             X += dx;
             Y += dy;
@@ -6149,7 +6063,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         // Parameters:
         //   p:
         //     The System.Drawing.Point used offset this System.Drawing.Point.
-        public void Offset(Point p)
+        public void Offset(PointD p)
         {
             Offset(p.X, p.Y);
         }
@@ -6162,7 +6076,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         //     A string that represents this System.Drawing.Point.
         public override string ToString()
         {
-            return "{X=" + X.ToString(CultureInfo.CurrentCulture) + ",Y=" + Y.ToString(CultureInfo.CurrentCulture) + "}";
+            return "{ X=" + X.ToString(System.Globalization.CultureInfo.CurrentCulture) + "; Y=" + Y.ToString(System.Globalization.CultureInfo.CurrentCulture) + " }";
         }
 
     }
