@@ -5909,12 +5909,262 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             public decimal PointX { get; set; }
             public decimal PointY { get; set; }
+            public decimal? CenterX { get; set; }
+            public decimal? CenterY { get; set; }
             public int? Zoom { get; set; }
             public bool? ShowPointPin { get; set; }
             public bool? ShowInfoPanel { get; set; }
             public DxMapCoordinatesMapType? MapType { get; set; }
         }
         #endregion
+    }
+    public struct PointD
+    {
+        /// <summary>
+        /// Represents a System.Drawing.Point that has System.Drawing.Point.X and System.Drawing.Point.Y //     values set to zero.
+        /// </summary>
+        public static readonly PointD Empty = new PointD(0m, 0m);
+        private decimal x;
+        private decimal y;
+        /// <summary>
+        /// Gets a value indicating whether this System.Drawing.Point is empty.
+        /// </summary>
+        public bool IsEmpty { get { return x == 0m && y == 0m; } }
+        /// <summary>
+        /// Gets or sets the X-coordinate of this System.Drawing.Point.
+        /// </summary>
+        public decimal X { get { return x; } set { x = value; } }
+        /// <summary>
+        /// Gets or sets the Y-coordinate of this System.Drawing.Point.
+        /// </summary>
+        public decimal Y { get { return y; } set { y = value; } }
+        /// <summary>
+        /// Initializes a new instance of the System.Drawing.Point class with the specified coordinates.
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        public PointD(decimal x, decimal y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+        /// <summary>
+        /// Converts the specified System.Drawing.Point structure to a System.Drawing.PointF structure.
+        /// </summary>
+        /// <param name="p"></param>
+        public static implicit operator PointD(System.Drawing.Point p)
+        {
+            return new PointD(p.X, p.Y);
+        }
+        //
+        // Summary:
+        //     Compares two System.Drawing.Point objects. The result specifies whether the values
+        //     of the System.Drawing.Point.X and System.Drawing.Point.Y properties of the two
+        //     System.Drawing.Point objects are equal.
+        //
+        // Parameters:
+        //   left:
+        //     A System.Drawing.Point to compare.
+        //
+        //   right:
+        //     A System.Drawing.Point to compare.
+        //
+        // Returns:
+        //     true if the System.Drawing.Point.X and System.Drawing.Point.Y values of left
+        //     and right are equal; otherwise, false.
+        public static bool operator ==(PointD left, PointD right)
+        {
+            if (left.X == right.X)
+            {
+                return left.Y == right.Y;
+            }
+
+            return false;
+        }
+
+        //
+        // Summary:
+        //     Compares two System.Drawing.Point objects. The result specifies whether the values
+        //     of the System.Drawing.Point.X or System.Drawing.Point.Y properties of the two
+        //     System.Drawing.Point objects are unequal.
+        //
+        // Parameters:
+        //   left:
+        //     A System.Drawing.Point to compare.
+        //
+        //   right:
+        //     A System.Drawing.Point to compare.
+        //
+        // Returns:
+        //     true if the values of either the System.Drawing.Point.X properties or the System.Drawing.Point.Y
+        //     properties of left and right differ; otherwise, false.
+        public static bool operator !=(PointD left, PointD right)
+        {
+            return !(left == right);
+        }
+
+        //
+        // Summary:
+        //     Adds the specified System.Drawing.Size to the specified System.Drawing.Point.
+        //
+        //
+        // Parameters:
+        //   pt:
+        //     The System.Drawing.Point to add.
+        //
+        //   sz:
+        //     The System.Drawing.Size to add
+        //
+        // Returns:
+        //     The System.Drawing.Point that is the result of the addition operation.
+        public static Point Add(Point pt, Size sz)
+        {
+            return new Point(pt.X + sz.Width, pt.Y + sz.Height);
+        }
+
+        //
+        // Summary:
+        //     Returns the result of subtracting specified System.Drawing.Size from the specified
+        //     System.Drawing.Point.
+        //
+        // Parameters:
+        //   pt:
+        //     The System.Drawing.Point to be subtracted from.
+        //
+        //   sz:
+        //     The System.Drawing.Size to subtract from the System.Drawing.Point.
+        //
+        // Returns:
+        //     The System.Drawing.Point that is the result of the subtraction operation.
+        public static Point Subtract(Point pt, Size sz)
+        {
+            return new Point(pt.X - sz.Width, pt.Y - sz.Height);
+        }
+
+        //
+        // Summary:
+        //     Converts the specified System.Drawing.PointF to a System.Drawing.Point by rounding
+        //     the values of the System.Drawing.PointF to the next higher integer values.
+        //
+        // Parameters:
+        //   value:
+        //     The System.Drawing.PointF to convert.
+        //
+        // Returns:
+        //     The System.Drawing.Point this method converts to.
+        public static Point Ceiling(PointF value)
+        {
+            return new Point((int)Math.Ceiling(value.X), (int)Math.Ceiling(value.Y));
+        }
+
+        //
+        // Summary:
+        //     Converts the specified System.Drawing.PointF to a System.Drawing.Point by truncating
+        //     the values of the System.Drawing.Point.
+        //
+        // Parameters:
+        //   value:
+        //     The System.Drawing.PointF to convert.
+        //
+        // Returns:
+        //     The System.Drawing.Point this method converts to.
+        public static Point Truncate(PointF value)
+        {
+            return new Point((int)value.X, (int)value.Y);
+        }
+
+        //
+        // Summary:
+        //     Converts the specified System.Drawing.PointF to a System.Drawing.Point object
+        //     by rounding the System.Drawing.Point values to the nearest integer.
+        //
+        // Parameters:
+        //   value:
+        //     The System.Drawing.PointF to convert.
+        //
+        // Returns:
+        //     The System.Drawing.Point this method converts to.
+        public static Point Round(PointF value)
+        {
+            return new Point((int)Math.Round(value.X), (int)Math.Round(value.Y));
+        }
+
+        //
+        // Summary:
+        //     Specifies whether this System.Drawing.Point contains the same coordinates as
+        //     the specified System.Object.
+        //
+        // Parameters:
+        //   obj:
+        //     The System.Object to test.
+        //
+        // Returns:
+        //     true if obj is a System.Drawing.Point and has the same coordinates as this System.Drawing.Point.
+        public override bool Equals(object obj)
+        {
+            if (!(obj is Point point))
+            {
+                return false;
+            }
+
+            if (point.X == X)
+            {
+                return point.Y == Y;
+            }
+
+            return false;
+        }
+
+        //
+        // Summary:
+        //     Returns a hash code for this System.Drawing.Point.
+        //
+        // Returns:
+        //     An integer value that specifies a hash value for this System.Drawing.Point.
+        public override int GetHashCode()
+        {
+            return x ^ y;
+        }
+
+        //
+        // Summary:
+        //     Translates this System.Drawing.Point by the specified amount.
+        //
+        // Parameters:
+        //   dx:
+        //     The amount to offset the x-coordinate.
+        //
+        //   dy:
+        //     The amount to offset the y-coordinate.
+        public void Offset(int dx, int dy)
+        {
+            X += dx;
+            Y += dy;
+        }
+
+        //
+        // Summary:
+        //     Translates this System.Drawing.Point by the specified System.Drawing.Point.
+        //
+        // Parameters:
+        //   p:
+        //     The System.Drawing.Point used offset this System.Drawing.Point.
+        public void Offset(Point p)
+        {
+            Offset(p.X, p.Y);
+        }
+
+        //
+        // Summary:
+        //     Converts this System.Drawing.Point to a human-readable string.
+        //
+        // Returns:
+        //     A string that represents this System.Drawing.Point.
+        public override string ToString()
+        {
+            return "{X=" + X.ToString(CultureInfo.CurrentCulture) + ",Y=" + Y.ToString(CultureInfo.CurrentCulture) + "}";
+        }
+
     }
     /// <summary>
     /// Předpis pro třídy, které reprezentují provider mapových podkladů pro konkrétní stránku
