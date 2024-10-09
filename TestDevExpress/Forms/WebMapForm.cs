@@ -189,7 +189,7 @@ namespace TestDevExpress.Forms
             if (mapPanel != null && !String.IsNullOrEmpty(__CurrentCoordinates))
             {
                 mapPanel.MapProperties.IsMapEditable = (__CurrentEditableType == WebDisplayType.Editable);
-                mapPanel.MapProperties.CoordinatesProvider = DxMapCoordinatesProvider.SeznamMapy;               //  __CurrentProvider;
+                mapPanel.MapProperties.CoordinatesProvider = __CurrentProvider;
                 mapPanel.MapProperties.CoordinatesMapType = __CurrentMapType;
                 mapPanel.MapProperties.Coordinates = __CurrentCoordinates;               // Zde se vyvolá Reload mapy
             }

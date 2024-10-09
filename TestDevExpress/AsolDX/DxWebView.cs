@@ -1432,12 +1432,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             var webView = this.__MsWebView;
             string urlAdress = webView.MsWebCurrentUrlAdress;                  // URL adresa ve WebView
 
-            if (DxMapCoordinates.TryParseUrlAdress(urlAdress, out var newCoordinates))
+            if (DxMapCoordinates.TryParseUrlAdress(urlAdress, out var mapData))
             {   // Uživatel změnil URL adresu na mapě, a my jsme z ní detekovali nové koordináty (souřadnice, zoom, typ mapy atd):
 
                 // Uložíme si nově získané hodnoty (newCoordinates) do naší instance WebCoordinates, tím dojde k události WebCoordinates.CoordinatesChanged => _WebCoordinatesChanged.
                 var webCoordinates = this.WebCoordinates;
-                webCoordinates.FillFrom(newCoordinates);
+                webCoordinates.FillFrom(mapData);
 
                 _RefreshAcceptButtonState();
                 // Změna pozice na mapě se nepromítá automaticky do CoordinateText, tam svítí vnější datová hodnota!
@@ -1838,7 +1838,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             private void _InitValues()
             {
                 __MapCoordinates = new DxMapCoordinates();
-                __MapCoordinates.ProviderDefault = DxMapCoordinatesProvider.FrameMapy;
+                __MapCoordinates.ProviderDefault = MapProvider.DefaultProvider;
                 __MapCoordinates.ShowPinAtPoint = true;
                 __CoordinatesFormat = DxMapCoordinatesFormat.Nephrite;
 
@@ -1911,7 +1911,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Změna této hodnoty nezmění interaktivně mapu (mapu změní pouze setování <see cref="Coordinates"/>). 
             /// Mapu lze refreshnout pomocí <see cref="DxMapViewPanel.RefreshMap"/> anebo <see cref="CoordinatesRefresh"/>.
             /// </summary>
-            public DxMapCoordinatesProvider CoordinatesProvider { get { return __MapCoordinates.Provider.Value; } set { __MapCoordinates.Provider = value; } }
+            public IMapProvider CoordinatesProvider { get { return __MapCoordinates.Provider; } set { __MapCoordinates.Provider = value; } }
             /// <summary>
             /// Typ mapy (standardní, dopravní, turistická, fotoletecká).<br/>
             /// Změna této hodnoty nezmění interaktivně mapu (mapu změní pouze setování <see cref="Coordinates"/>). 
@@ -3287,7 +3287,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.CoordinatesFormatDefault = DxMapCoordinatesFormat.Wgs84DecimalSuffix;
                 this.ZoomDefault = _ZoomTown;              // Zobrazuje cca 10 km na šířku běžného okna
                 this._Zoom = _ZoomFull;                    // Zobrazuje cca celou republiku
-                this.ProviderDefault = DxMapCoordinatesProvider.SeznamMapy;
+                this.ProviderDefault = MapProvider.CurrentProvider;
                 this.MapTypeDefault = DxMapCoordinatesMapType.Standard;
                 this.InfoPanelVisibleDefault = false;
                 this.ShowPinAtPoint = true;
@@ -3449,7 +3449,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// Lze setovat null, ale při čtení se namísto null čte <see cref="ProviderDefault"/>.
         /// </summary>
-        public DxMapCoordinatesProvider? Provider { get { return __Provider ?? __ProviderDefault; } set { __Provider = value; } } private DxMapCoordinatesProvider? __Provider;
+        public IMapProvider Provider { get { return __Provider ?? __ProviderDefault ?? MapProvider.CurrentProvider; } set { __Provider = value; } } private IMapProvider __Provider;
         /// <summary>
         /// Typ mapy (standardní, dopravní, turistická, fotoletecká).
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
@@ -3477,7 +3477,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Defaultní provider.
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// </summary>
-        public DxMapCoordinatesProvider ProviderDefault { get { return __ProviderDefault; } set { __ProviderDefault = value; } } private DxMapCoordinatesProvider __ProviderDefault;
+        public IMapProvider ProviderDefault { get { return __ProviderDefault; } set { __ProviderDefault = value; } } private IMapProvider __ProviderDefault;
         /// <summary>
         /// Defaultní typ mapy.
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
@@ -3521,6 +3521,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Opíše do sebe informace z dodaného objektu, volitelně potlačí event 
         /// </summary>
+        /// <param name="mapData">Zdrojové souřadnice</param>
+        /// <param name="isSilent">Nevolat událost <see cref="CoordinatesChanged"/> po případné změně</param>
+        public void FillFrom(MapProvider.MapDataInfo mapData, bool isSilent = false)
+        {
+            var coordinatesOld = _CoordinatesSerial;
+            _FillFromAction(mapData);
+
+            // Pokud nynější souřadnice jsou změněny a není Silent, vyvoláme event o změně:
+            if (!isSilent)
+                _CheckCoordinatesChanged(coordinatesOld);
+        }
+        /// <summary>
+        /// Opíše do sebe informace z dodaného objektu, volitelně potlačí event 
+        /// </summary>
         /// <param name="sourceCoordinates">Zdrojové souřadnice</param>
         /// <param name="isSilent">Nevolat událost <see cref="CoordinatesChanged"/> po případné změně</param>
         public void FillFrom(DxMapCoordinates sourceCoordinates, bool isSilent = false)
@@ -3531,6 +3545,25 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Pokud nynější souřadnice jsou změněny a není Silent, vyvoláme event o změně:
             if (!isSilent)
                 _CheckCoordinatesChanged(coordinatesOld);
+        }
+        /// <summary>
+        /// Opíše do sebe informace z dodaného objektu
+        /// </summary>
+        /// <param name="mapData">Zdrojové souřadnice</param>
+        private void _FillFromAction(MapProvider.MapDataInfo mapData)
+        {
+            if (mapData != null)
+            {
+                // Přenášíme hodnoty proměnných, tím vynecháváme vyhodnocování defaultů = defaulty akceptujeme naše. Máme přenést fyzické hodnoty načtených koordinátů, a ne jejich defaulty!
+                this.__Point = mapData.Point;
+                this.__Zoom = mapData.Zoom;
+                this.__Center = mapData.Center;
+                this.__MapType = mapData.MapType;
+                this.__InfoPanelVisible = mapData.ShowInfoPanel;
+                this.__ShowPinAtPoint = mapData.ShowPointPin ?? false;
+                if (mapData.MapProvider != null) this.__Provider = mapData.MapProvider;
+                this.__IsEmpty = false;
+            }
         }
         /// <summary>
         /// Opíše do sebe informace z dodaného objektu
@@ -3760,14 +3793,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region UrlAdress : Práce s URL adresou (set, get, analýza i syntéza, event o změně), konkrétní providery (Seznam, Google, OpenMap)
         /// <summary>
-        /// Metoda se pokusí analyzovat dodanou URL adresu a naplnit z ní data do new instance <see cref="DxMapCoordinates"/>.
+        /// Metoda se pokusí analyzovat dodanou URL adresu a naplnit z ní data do instance <see cref="MapProvider.MapDataInfo"/>.
         /// </summary>
         /// <param name="urlAdress"></param>
-        /// <param name="coordinates"></param>
+        /// <param name="mapData"></param>
         /// <returns></returns>
-        public static bool TryParseUrlAdress(string urlAdress, out DxMapCoordinates coordinates)
+        public static bool TryParseUrlAdress(string urlAdress, out MapProvider.MapDataInfo mapData)
         {
-            return _TryParseUrlAdress(urlAdress, out coordinates);
+            return _TryParseUrlAdress(urlAdress, out mapData);
         }
         /// <summary>
         /// URL adresa mapy.
@@ -3783,23 +3816,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vygeneruje a vrátí URL pro daný / aktuální provider (Seznam / Google / OpenStreet) a daný / aktuální typ mapy.
         /// </summary>
         /// <returns></returns>
-        private string _GetUrlAdress(DxMapCoordinatesProvider? provider = null, DxMapCoordinatesMapType? mapType = null)
+        private string _GetUrlAdress(IMapProvider provider = null, DxMapCoordinatesMapType? mapType = null)
         {
-            if (!provider.HasValue) provider = this.Provider;
-
-            switch (provider.Value)
-            {
-                case DxMapCoordinatesProvider.SeznamMapy:
-                    return _GetUrlAdressSeznamMapy(mapType);
-                case DxMapCoordinatesProvider.FrameMapy:
-                    return _GetUrlAdressFrameMapy(mapType);
-                case DxMapCoordinatesProvider.GoogleMaps:
-                    return _GetUrlAdressGoogleMaps(mapType);
-                case DxMapCoordinatesProvider.OpenStreetMap:
-                    return _GetUrlAdressOpenStreetMap(mapType);
-                default:
-                    return _GetUrlAdressSeznamMapy(mapType);
-            }
+            if (provider is null) provider = this.Provider;
+            if (provider is null) return null;
+            return provider.GetUrlAdress(this._MapData);
         }
         /// <summary>
         /// Vloží dodanou URL adresu do koordinátů
@@ -3808,27 +3829,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="isSilent">Nevolat událost <see cref="CoordinatesChanged"/> po případné změně</param>
         private void _SetUrlAdress(string urlAdress, bool isSilent = false)
         {
-            if (_TryParseUrlAdress(urlAdress, out var coordinates))
+            if (_TryParseUrlAdress(urlAdress, out var mapData))
             {
-                this.FillFrom(coordinates, isSilent);
+                this.FillFrom(mapData, isSilent);
             }
         }
         /// <summary>
         /// Metoda se pokusí analyzovat dodanou URL adresu a naplnit z ní data do new instance <see cref="DxMapCoordinates"/>.
         /// </summary>
         /// <param name="urlAdress"></param>
-        /// <param name="coordinates"></param>
+        /// <param name="mapData"></param>
         /// <returns></returns>
-        private static bool _TryParseUrlAdress(string urlAdress, out DxMapCoordinates coordinates)
+        private static bool _TryParseUrlAdress(string urlAdress, out MapProvider.MapDataInfo mapData)
         {
-            coordinates = null;
+            mapData = null;
             if (!Uri.TryCreate(urlAdress, UriKind.RelativeOrAbsolute, out var uri)) return false;
 
-            if (_TryParseUriAsSeznamMapy(uri, ref coordinates)) return true;
-            if (_TryParseUriAsFrameMapy(uri, ref coordinates)) return true;
-            if (_TryParseUriAsGoogleMaps(uri, ref coordinates)) return true;
-            if (_TryParseUriAsOpenStreetMap(uri, ref coordinates)) return true;
-
+            var providers = MapProvider.AllProviders;
+            foreach (var provider in providers)
+            {
+                if (provider.TryParseUrlAdress(uri, out mapData))
+                {
+                    mapData.MapProvider = provider;
+                    return true;
+                }
+            }
+            mapData = null;
             return false;
         }
         /// <summary>
@@ -3844,189 +3870,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                     Zoom = this.Zoom,
                     Center = this.Center,
                     MapType = this.MapType,
+                    MapProvider = this.Provider,
                     ShowPointPin = this.ShowPinAtPoint,
                     ShowInfoPanel = this.InfoPanelVisible
                 };
                 return mapData;
             }
-
         }
-
-        #region SeznamMapy
-        /// <summary>
-        /// Pokusí se analyzovat URI obsahující URL adresu, jako souřadnice v provideru SeznamMapy
-        /// </summary>
-        /// <param name="uri"></param>
-        /// <param name="mapData"></param>
-        /// <returns></returns>
-        private static bool _TryParseUriAsSeznamMapy(Uri uri, out MapProvider.MapDataInfo mapData)
-        {
-            return MapProviderSeznamMapy.TryAnalyzeUrlAdress(uri, out mapData);
-        }
-        /// <summary>
-        /// Vygeneruje a vrátí URL pro provider SeznamMapy a daný / aktuální typ mapy.
-        /// </summary>
-        /// <param name="mapType"></param>
-        /// <returns></returns>
-        private string _GetUrlAdressSeznamMapy(DxMapCoordinatesMapType? mapType = null)
-        {
-            return MapProviderSeznamMapy.CreateUrlAdress(_MapData);
-        }
-        #endregion
-        #region FrameMapy
-        /// <summary>
-        /// Pokusí se analyzovat URI obsahující URL adresu, jako souřadnice v provideru FrameMapy
-        /// </summary>
-        /// <param name="uri"></param>
-        /// <param name="mapData"></param>
-        /// <returns></returns>
-        private static bool _TryParseUriAsFrameMapy(Uri uri, out MapProvider.MapDataInfo mapData)
-        {
-            return MapProviderSeznamFrameMapy.TryAnalyzeUrlAdress(uri, out mapData);
-        }
-        /// <summary>
-        /// Vygeneruje a vrátí URL pro provider FrameMapy a daný / aktuální typ mapy.
-        /// </summary>
-        /// <param name="mapType"></param>
-        /// <returns></returns>
-        private string _GetUrlAdressFrameMapy(DxMapCoordinatesMapType? mapType = null)
-        {
-            return MapProviderSeznamFrameMapy.CreateUrlAdress(_MapData);
-        }
-        #endregion
-        #region GoogleMaps
-        /// <summary>
-        /// Pokusí se analyzovat URI obsahující URL adresu, jako souřadnice v provideru GoogleMaps
-        /// </summary>
-        /// <param name="uri"></param>
-        /// <param name="mapData"></param>
-        /// <returns></returns>
-        private static bool _TryParseUriAsGoogleMaps(Uri uri, out MapProvider.MapDataInfo mapData)
-        {
-            return MapProviderGoogleMaps.TryAnalyzeUrlAdress(uri, out mapData);
-        }
-        /// <summary>
-        /// Vygeneruje a vrátí URL pro provider GoogleMaps a daný / aktuální typ mapy.
-        /// </summary>
-        /// <param name="mapType"></param>
-        /// <returns></returns>
-        private string _GetUrlAdressGoogleMaps(DxMapCoordinatesMapType? mapType = null)
-        {
-            return MapProviderGoogleMaps.CreateUrlAdress(_MapData);
-        }
-        // Se špendlíkem
-        //   https://www.google.com/maps/place/3%C2%B040'44.0%22S+40%C2%B020'12.0%22W/@-3.678889,-40.336667,14z/data=!4m4!3m3!8m2!3d-3.678889!4d-40.336667?hl=en&entry=ttu&g_ep=EgoyMDI0MDkzMC4wIKXMDSoASAFQAw%3D%3D
-
-        //   https://www.google.com/maps/@49.296045,17.390038,15z?hl=cs-CZ
-        //   https://www.google.com/maps/@49.296045,17.390038,15z?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D                      základní
-        //   https://www.google.com/maps/@49.296045,17.390038,2823m/data=!3m1!1e3?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D      fotomapa
-        //   https://www.google.com/maps/@49.296045,17.390038,15z/data=!5m1!1e1?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D        provoz
-        //   https://www.google.com/maps/@49.296045,17.390038,15z/data=!5m1!1e2?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D        veřejná doprava
-        //   https://www.google.com/maps/@49.296045,17.390038,15z/data=!5m2!1e4!1e2?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D    terén
-        //   https://www.google.com/maps/@49.3012574,17.345449,16z?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MDkyMi4wIKXMDSoASAFQAw%3D%3D
-        #endregion
-        #region OpenStreetMap
-        /// <summary>
-        /// Pokusí se analyzovat URI obsahující URL adresu, jako souřadnice v provideru OpenStreetMap
-        /// </summary>
-        /// <param name="uri"></param>
-        /// <param name="mapData"></param>
-        /// <returns></returns>
-        private static bool _TryParseUriAsOpenStreetMap(Uri uri, out MapProvider.MapDataInfo mapData)
-        {
-            return MapProviderOpenStreetMap.TryAnalyzeUrlAdress(uri, out mapData);
-        }
-        /// <summary>
-        /// Vygeneruje a vrátí URL pro provider OpenStreetMap a daný / aktuální typ mapy.
-        /// </summary>
-        /// <param name="mapType"></param>
-        /// <returns></returns>
-        private string _GetUrlAdressOpenStreetMap(DxMapCoordinatesMapType? mapType = null)
-        {
-            return MapProviderOpenStreetMap.CreateUrlAdress(_MapData);
-        }
-        #endregion
-        #region Support pro analýzu UrlQuery
-        /// <summary>
-        /// Dodaný string (query z URL) rozdělí (danými separátory) na jednotlivé hodnoty (Key = Value) a jejich seznam vrátí. Prázdné prvky do seznamu nedává.
-        /// Pokud by výsledný seznam měl 0 prvků, vrátí null. Jinými slovy, pokud na výstupu není null, pak je tam alespoň jeden prvek.
-        /// </summary>
-        /// <param name="query"></param>
-        /// <param name="separators"></param>
-        /// <returns></returns>
-        private static List<KeyValuePair<string, string>> _ParseQuery(string query, params char[] separators)
-        {
-            if (String.IsNullOrEmpty(query)) return null;
-            var result = new List<KeyValuePair<string, string>>();
-            var parts = query.Split(separators);
-
-            foreach (var part in parts)
-            {
-                int length = part.Length;
-                if (length > 0)
-                {
-                    int eqx = part.IndexOf('=');
-                    if (eqx < 0)                                                              // 15.29z
-                        result.Add(new KeyValuePair<string, string>(part, null));
-                    else if (eqx == 0 && length == 1)                                         // =
-                        result.Add(new KeyValuePair<string, string>(part, null));
-                    else if (eqx == 0 && length > 1)                                          // =abcd
-                        result.Add(new KeyValuePair<string, string>("", part.Substring(1)));
-                    else if (eqx > 0 && eqx < (length - 1))                                   // x=15.7967442
-                        result.Add(new KeyValuePair<string, string>(part.Substring(0, eqx), part.Substring(eqx + 1)));
-                    else if (eqx > 0 && eqx == (length - 1))                                  // 15.7967442=
-                        result.Add(new KeyValuePair<string, string>(part, null));
-                    else
-                        result.Add(new KeyValuePair<string, string>(part, null));
-                }
-            }
-
-            return (result.Count > 0 ? result : null);
-        }
-        private static void _SearchValue(string key, List<KeyValuePair<string, string>> queryData, out string value, out bool found)
-        {
-            if (_TrySearchPair(key, queryData, out var pair))
-            {
-                value = pair.Value;
-                found = true;
-            }
-            else
-            {
-                value = null;
-                found = false;
-            }
-        }
-        private static void _SearchValue(string key, List<KeyValuePair<string, string>> queryData, out decimal value, out bool found)
-        {
-            if (_TrySearchPair(key, queryData, out var pair) && _TryParseDecimal(pair.Value, out var number))
-            {
-                value = number;
-                found = true;
-            }
-            else
-            {
-                value = 0m;
-                found = false;
-            }
-        }
-        private static void _SearchValue(string key, List<KeyValuePair<string, string>> queryData, out int value, out bool found)
-        {
-            if (_TrySearchPair(key, queryData, out var pair) && _TryParseInt(pair.Value, out var number))
-            {
-                value = number;
-                found = true;
-            }
-            else
-            {
-                value = 0;
-                found = false;
-            }
-        }
-        private static bool _TrySearchPair(string key, List<KeyValuePair<string, string>> queryData, out KeyValuePair<string, string> value)
-        {
-            return (queryData.TryGetFirst(kvp => String.Equals(kvp.Key, key), out value));
-        }
-        #endregion
         #endregion
         #region Privátní support (Parse, Format, Align)
         private static decimal _ParseDecimal(string text)
@@ -4323,19 +4173,6 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public enum DxMapCoordinatesFormat
     {
-        //     Databáze Nephrite
-        //                                  50.0395802N, 14.4289607E
-        //                                  POINT (14.4009383 50.0694664)
-        //     Seznam:
-        //  WGS84 stupně                    50.2091744N, 15.8317075E
-        //  WGS84 stupně minuty             N 50°12.55047', E 15°49.90245'
-        //  WGS84 stupně minuty vteřiny     50°12'33.028"N, 15°49'54.147"E
-        //  OLC                             9F2Q6R5J+MM
-        //  MGRS                            33UWR
-        //     Google:
-        //  Souřadnice                      50.20907681751956, 15.831757887689303
-        //  Plus code                       6R5M+R26 Hradec Králové
-
         /// <summary>
         /// Nephrite: <b>50.0395802N, 14.4289607E</b>
         /// </summary>
@@ -4376,32 +4213,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// OpenLocationCode od Google: <b>9F2Q6R5M+M3</b>
         /// </summary>
         OpenLocationCode
-    }
-    /// <summary>
-    /// Poskytovatel mapy
-    /// </summary>
-    public enum DxMapCoordinatesProvider
-    {
-        /// <summary>
-        /// Žádná
-        /// </summary>
-        None,
-        /// <summary>
-        /// https://mapy.cz/
-        /// </summary>
-        SeznamMapy,
-        /// <summary>
-        /// https://frame.mapy.cz/
-        /// </summary>
-        FrameMapy,
-        /// <summary>
-        /// https://www.google.com/maps
-        /// </summary>
-        GoogleMaps,
-        /// <summary>
-        /// https://www.openstreetmap.org/
-        /// </summary>
-        OpenStreetMap
     }
     /// <summary>
     /// Varianta mapy
@@ -5624,6 +5435,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Static získání a seznam dostupných providerů v aktuální assembly
         /// <summary>
+        /// Implicitní provider mapových podkladů, první provider v poli <see cref="AllProviders"/>
+        /// </summary>
+        public static IMapProvider DefaultProvider { get { var allProviders = AllProviders; return (allProviders.Length > 0 ? allProviders[0] : null); } }
+        /// <summary>
+        /// Aktuálně vybraná provider, nebo <see cref="DefaultProvider"/>.
+        /// </summary>
+        public static IMapProvider CurrentProvider { get { return __CurrentProvider ?? DefaultProvider; } set { __CurrentProvider = value; } } 
+        private static IMapProvider __CurrentProvider;
+        /// <summary>
         /// Pole všech mapových providerů, které jsou dostupné v aktuální assembly
         /// </summary>
         public static IMapProvider[] AllProviders
@@ -6312,6 +6132,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public bool? ShowInfoPanel { get; set; }
             /// <summary>
+            /// Detekovaný provider mapy. Naplní se při parsování URI.
+            /// </summary>
+            public IMapProvider MapProvider { get; set; }
+            /// <summary>
             /// Typ mapy
             /// </summary>
             public DxMapCoordinatesMapType? MapType { get; set; }
@@ -6348,7 +6172,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="data"></param>
         /// <returns></returns>
         bool TryParseUrlAdress(Uri uri, out MapProvider.MapDataInfo data);
-
     }
     /// <summary>
     /// Provider map <b><u>SeznamMapy</u></b>, implementuje <see cref="IMapProvider"/>
@@ -6545,8 +6368,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         // Více bodů najednou:
         //   https://mapy.cz/zakladni?vlastni-body&l=0&ut=M%C3%ADsto%20%C3%BAtoku&ut=M%C3%ADsto%20zadr%C5%BEen%C3%AD&uc=9hBKDxXwmmcORbET&ud=Na%20P%C5%99%C3%ADkop%C4%9B%20958%2F25%2C%20Praha%2C%20110%2000%2C%20Hlavn%C3%AD%20m%C4%9Bsto%20Praha&ud=Kov%C3%A1k%C5%AF%2C%20Praha%2C%20Hlavn%C3%AD%20m%C4%9Bsto%20Praha&x=14.4139961&y=50.0828279&z=14
-
-
     }
     /// <summary>
     /// Provider map <b><u>SeznamFrameMapy</u></b>, implementuje <see cref="IMapProvider"/>
@@ -6709,7 +6530,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         internal static bool TryAnalyzeUrlAdress(Uri uri, string providerId, out MapDataInfo data)
         {
-            var queryData = ParseUriQuery(uri.Query, '@', ',', '&', '?', '/');                  // ?&source=coor&id=15.795172900000000%2C49.949911300000000&x=15.7951729&y=49.9499113&z=8
+            data = null;
+
+            // Web:
+            string web = "www.google.com";
+            string host = uri.Host;
+            if (!String.Equals(host, web, StringComparison.OrdinalIgnoreCase)) return false;
+
+            var parts = ParseUriQuery(uri.PathAndQuery, '/', '?', '&');
+
+            //  https://www.google.com/maps/@49.6835743,15.8558701,4854m/data=!3m1!1e3?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MTAwNS4yIKXMDSoASAFQAw%3D%3D
+
             data = null;
             return false;
         }
@@ -6875,7 +6706,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         //   https://www.openstreetmap.org/#map=14/49.94349/15.79452&layers=N
         //   https://www.openstreetmap.org/#map=12/49.9320/15.7875&layers=N
         //   https://www.openstreetmap.org/directions?from=&to=50.0238%2C15.6009#map=12/50.0280/15.6105&layers=P       Zadaný cíl cesty (From-To), a malý panel vlevo
-
     }
     #endregion
     #region struct PointD a PointM : souřadnice bodu Double a Decimal
