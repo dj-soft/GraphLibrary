@@ -15,6 +15,8 @@ using System.Windows.Forms;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
+    using Noris.Clients.Win.Components.AsolDX.Map;
+
     /// <summary>
     /// Panel obsahující <see cref="MsWebView"/> a jednoduchý toolbar (Back - Forward - Refresh - Adresa - Go)
     /// <para/>
@@ -3257,6 +3259,150 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
+    #region Enumy, servisní třídy...
+    /// <summary>
+    /// Rozhraní pro parenty prvku <see cref="MsWebView"/>, 
+    /// </summary>
+    public interface IDxWebViewParentPanel
+    {
+        /// <summary>
+        /// Parent panel provede požadovanou akci, kterou vyvolává WebView komponenta nebo změna hodnoty v Properties
+        /// </summary>
+        /// <param name="actionTypes"></param>
+        void DoAction(DxWebViewActionType actionTypes);
+    }
+    /// <summary>
+    /// Režim zobrazení webové stránky.
+    /// 
+    /// </summary>
+    public enum DxWebViewDisplayMode
+    {
+        /// <summary>
+        /// Neurčeno / nezobrazeno
+        /// </summary>
+        None,
+        /// <summary>
+        /// Standardní živý control.
+        /// <para/>
+        /// Nelze použít tam, kde se z controlu pořídí Bitmapa a ta se poté promítá (Infragistic i DX DataForm).
+        /// Protože WebView se nevykreslí do Bitmapy standardním WinForm procesem.<br/>
+        /// Tam je třeba použít pravděpodobně <see cref="CaptureSync"/>.
+        /// </summary>
+        Live,
+        /// <summary>
+        /// Po změně hodnoty / URL adresy se má zachytit Bitmapa z WebView (specializovaný proces) a ta se následně použije do Parent controlu.<br/>
+        /// Asynchronní proces: po získání WebView bitmapy je volán asynchronní event, který bitmapu převezme a zobrazí.
+        /// </summary>
+        CaptureAsync,
+        /// <summary>
+        /// Po změně hodnoty / URL adresy se má zachytit Bitmapa z WebView (specializovaný proces) a ta se následně použije do Parent controlu.<br/>
+        /// Synchronní proces: po změně hodnot (Value / URL) volající thread je pozastaven až do získání bitmapy.
+        /// </summary>
+        CaptureSync
+    }
+    /// <summary>
+    /// Typy akcí, které má provést Parent panel
+    /// </summary>
+    [Flags]
+    public enum DxWebViewActionType
+    {
+        /// <summary>
+        /// Nic
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Přepočítej layout controlů
+        /// </summary>
+        DoLayout = 0x0001,
+        /// <summary>
+        /// Přenačti Enabled
+        /// </summary>
+        DoEnabled = 0x0002,
+        /// <summary>
+        /// Zobrazit statický obrázek
+        /// </summary>
+        DoChangeDisplayMode = 0x0010,
+        /// <summary>
+        /// Proveď změnu URL adresy
+        /// </summary>
+        DoChangeSourceUrl = 0x0020,
+        /// <summary>
+        /// Proveď změnu textu ve StatusBaru
+        /// </summary>
+        DoChangeStatusText = 0x0040,
+        /// <summary>
+        /// Proveď změnu titulku
+        /// </summary>
+        DoChangeDocumentTitle = 0x0080,
+        /// <summary>
+        /// Znovu načti hodnotu a zobraz ji
+        /// </summary>
+        DoReloadValue = 0x0100
+    }
+    /// <summary>
+    /// Data pro událost o načtení dat CaptureImage
+    /// </summary>
+    public class MsWebImageCapturedArgs : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="requestId"></param>
+        /// <param name="imageData"></param>
+        public MsWebImageCapturedArgs(object requestId, byte[] imageData)
+        {
+            this.RequestId = requestId;
+            this.ImageData = imageData;
+        }
+        /// <summary>
+        /// ID požadavku
+        /// </summary>
+        public object RequestId { get; private set; }
+        /// <summary>
+        /// Data obrázku
+        /// </summary>
+        public byte[] ImageData { get; private set; }
+        /// <summary>
+        /// Vytvoří a vrátí obrázek z <see cref="ImageData"/>.
+        /// Vždy je vytvořen new objekt.
+        /// Chyba je ututlána a v tom případě je vrácen null.
+        /// </summary>
+        public System.Drawing.Image GetImage()
+        {
+            return CreateImage(ImageData);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí obrázek z <paramref name="imageData"/>.
+        /// Vždy je vytvořen new objekt.
+        /// Chyba je ututlána a v tom případě je vrácen null.
+        /// </summary>
+        /// <param name="imageData">Data obrázku</param>
+        /// <returns></returns>
+        public static System.Drawing.Image CreateImage(byte[] imageData)
+        {
+            if (imageData is null || imageData.Length < 12) return null;
+            try
+            {
+                using (var ms = new System.IO.MemoryStream(imageData))
+                    return System.Drawing.Image.FromStream(ms);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+    /// <summary>
+    /// Předpis pro handler události CaptureImage
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="args"></param>
+    public delegate void MsWebImageCapturedHandler(object sender, MsWebImageCapturedArgs args);
+    #endregion
+}
+
+namespace Noris.Clients.Win.Components.AsolDX.Map
+{
     #region class DxMapCoordinates : správce souřadnic, kodér + dekodér stringu souřadnic i URL odkazu na mapy různých providerů
     /// <summary>
     /// <see cref="DxMapCoordinates"/> : správce souřadnic, kodér + dekodér stringu souřadnic i URL odkazu na mapy různých providerů
@@ -3349,7 +3495,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// Lze setovat null, ale při čtení se namísto null čte <see cref="CoordinatesFormatDefault"/>.
         /// </summary>
-        public DxMapCoordinatesFormat? CoordinatesFormat { get { return __CoordinatesFormat ?? __CoordinatesFormatDefault; } set { __CoordinatesFormat = value; } } private DxMapCoordinatesFormat? __CoordinatesFormat;
+        public DxMapCoordinatesFormat? CoordinatesFormat { get { return __CoordinatesFormat ?? __CoordinatesFormatDefault; } set { __CoordinatesFormat = value; } }
+        private DxMapCoordinatesFormat? __CoordinatesFormat;
 
         /// <summary>
         /// Exaktní cílový bod souřadnic, v patřičném Geo rozsahu.
@@ -3360,7 +3507,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Exaktní cílový bod souřadnic, v patřičném Geo rozsahu.
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// </summary>
-        protected PointD _Point { get { return __Point; } set { __Point = MapProviderBase.AlignGeo(value); __IsEmpty = false; } } private PointD __Point;
+        protected PointD _Point { get { return __Point; } set { __Point = MapProviderBase.AlignGeo(value); __IsEmpty = false; } }
+        private PointD __Point;
 
         /// <summary>
         /// Exaktní bod středu mapy, v patřičném Geo rozsahu.
@@ -3371,7 +3519,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Exaktní bod středu mapy, v patřičném Geo rozsahu.
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// </summary>
-        protected PointD? _Center { get { return __Center; } set { __Center = MapProviderBase.AlignGeoN(value); __IsEmpty = false; } } private PointD? __Center;
+        protected PointD? _Center { get { return __Center; } set { __Center = MapProviderBase.AlignGeoN(value); __IsEmpty = false; } }
+        private PointD? __Center;
 
         /// <summary>
         /// Zoom, v rozsahu 1 (celá planeta) až 20 (jeden pokojíček). Zoom roste exponenciálně, rozdíl 1 číslo je 2-násobek.
@@ -3384,7 +3533,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// Lze setovat null, ale při čtení se namísto null čte <see cref="ZoomDefault"/>.
         /// </summary>
-        protected int? _Zoom { get { return __Zoom ?? __ZoomDefault; } set { __Zoom = _AlignN(value, 1, 20); } } private int? __Zoom;
+        protected int? _Zoom { get { return __Zoom ?? __ZoomDefault; } set { __Zoom = _AlignN(value, 1, 20); } }
+        private int? __Zoom;
 
         /// <summary>
         /// Je definován i střed mapy?
@@ -3395,58 +3545,68 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje true po resetu.
         /// Po vložení nějaké validní hodnoty je false.
         /// </summary>
-        public bool IsEmpty { get { return this.__IsEmpty; } } private bool __IsEmpty;
+        public bool IsEmpty { get { return this.__IsEmpty; } }
+        private bool __IsEmpty;
 
         /// <summary>
         /// Provider mapy (webová stránka).
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// Lze setovat null, ale při čtení se namísto null čte <see cref="ProviderDefault"/>.
         /// </summary>
-        public IMapProvider Provider { get { return __Provider ?? __ProviderDefault ?? MapProviders.CurrentProvider; } set { __Provider = value; } } private IMapProvider __Provider;
+        public IMapProvider Provider { get { return __Provider ?? __ProviderDefault ?? MapProviders.CurrentProvider; } set { __Provider = value; } }
+        private IMapProvider __Provider;
         /// <summary>
         /// Typ mapy (standardní, dopravní, turistická, fotoletecká).
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// Lze setovat null, ale při čtení se namísto null čte <see cref="MapTypeDefault"/>.
         /// </summary>
-        public DxMapCoordinatesMapType? MapType { get { return __MapType ?? __MapTypeDefault; } set { __MapType = value; } } private DxMapCoordinatesMapType? __MapType;
+        public DxMapCoordinatesMapType? MapType { get { return __MapType ?? __MapTypeDefault; } set { __MapType = value; } }
+        private DxMapCoordinatesMapType? __MapType;
         /// <summary>
         /// Viditelnost bočního panelu s detaily.
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// Lze setovat null, ale při čtení se namísto null čte <see cref="InfoPanelVisibleDefault"/>.
         /// </summary>
-        public bool? InfoPanelVisible { get { return __InfoPanelVisible ?? __InfoPanelVisibleDefault; } set { __InfoPanelVisible = value; } } private bool? __InfoPanelVisible;
+        public bool? InfoPanelVisible { get { return __InfoPanelVisible ?? __InfoPanelVisibleDefault; } set { __InfoPanelVisible = value; } }
+        private bool? __InfoPanelVisible;
 
         /// <summary>
         /// Defaultní formát souřadnic.
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// </summary>
-        public DxMapCoordinatesFormat CoordinatesFormatDefault { get { return __CoordinatesFormatDefault; } set { __CoordinatesFormatDefault = value; } } private DxMapCoordinatesFormat __CoordinatesFormatDefault;
+        public DxMapCoordinatesFormat CoordinatesFormatDefault { get { return __CoordinatesFormatDefault; } set { __CoordinatesFormatDefault = value; } }
+        private DxMapCoordinatesFormat __CoordinatesFormatDefault;
         /// <summary>
         /// Defaultní Zoom.
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// </summary>
-        public int ZoomDefault { get { return __ZoomDefault; } set { __ZoomDefault = _Align(value, 1, 20); } } private int __ZoomDefault;
+        public int ZoomDefault { get { return __ZoomDefault; } set { __ZoomDefault = _Align(value, 1, 20); } }
+        private int __ZoomDefault;
         /// <summary>
         /// Defaultní provider.
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// </summary>
-        public IMapProvider ProviderDefault { get { return __ProviderDefault; } set { __ProviderDefault = value; } } private IMapProvider __ProviderDefault;
+        public IMapProvider ProviderDefault { get { return __ProviderDefault; } set { __ProviderDefault = value; } }
+        private IMapProvider __ProviderDefault;
         /// <summary>
         /// Defaultní typ mapy.
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// </summary>
-        public DxMapCoordinatesMapType MapTypeDefault { get { return __MapTypeDefault; } set { __MapTypeDefault = value; } } private DxMapCoordinatesMapType __MapTypeDefault;
+        public DxMapCoordinatesMapType MapTypeDefault { get { return __MapTypeDefault; } set { __MapTypeDefault = value; } }
+        private DxMapCoordinatesMapType __MapTypeDefault;
         /// <summary>
         /// Defaultní viditelnost bočního panelu s detaily.
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// </summary>
-        public bool InfoPanelVisibleDefault { get { return __InfoPanelVisibleDefault; } set { __InfoPanelVisibleDefault = value; } } private bool __InfoPanelVisibleDefault;
+        public bool InfoPanelVisibleDefault { get { return __InfoPanelVisibleDefault; } set { __InfoPanelVisibleDefault = value; } }
+        private bool __InfoPanelVisibleDefault;
         /// <summary>
         /// Vložit špendlík na pozici Point (do URL adresy).
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// Výchozí je true, odpovídá to chování, kdy máme dán jednoduchý koordinát a chceme jej vidět jako exaktní špendlík, nejen jako mapu v jeho okolí.
         /// </summary>
-        public bool ShowPinAtPoint { get { return __ShowPinAtPoint; } set { __ShowPinAtPoint = value; } } private bool __ShowPinAtPoint;
+        public bool ShowPinAtPoint { get { return __ShowPinAtPoint; } set { __ShowPinAtPoint = value; } }
+        private bool __ShowPinAtPoint;
         #endregion
         #region Coordinates : Práce se souřadnicemi (set a get, event o změně)
         /// <summary>
@@ -3590,7 +3750,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {   // Ostatní formáty mají jako oddělovač čárku, používají desetinnou tečku a mají pořadí Y, X. Mezery nepotřebujeme. Dokážeme parsovat různé formáty v jedné metodě:
                 coordinates = coordinates.Replace(" ", "").ToUpper();
                 var coordParts = coordinates.Split(',');
-                if (coordParts.Length == 2 && 
+                if (coordParts.Length == 2 &&
                     MapProviderBase.TryParseGeoDouble(coordParts[0], MapProviderBase.GeoAxis.Latitude, out MapProviderBase.GeoAxis axis0, out var fmt0, out var point0) &&
                     MapProviderBase.TryParseGeoDouble(coordParts[1], MapProviderBase.GeoAxis.Longitude, out MapProviderBase.GeoAxis axis1, out var fmt1, out var point1))
                 {   // Souřadnice mají defaultní pořadí Y, X. Ale pro jistotu jsme detekovali reálně nalezené značky kvadrantů axis1 a axis0, a hodnoty jsme uložili do fmt1 a fmt0, point1 a point0.
@@ -4101,7 +4261,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Osy zeměpisné
         /// </summary>
-        private enum GeoAxis 
+        private enum GeoAxis
         {
             /// <summary>
             /// Neurčeno
@@ -5618,7 +5778,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     hasResult = true;
                 }
                 if (tryGetDoubleBefore(ref grades, "''", out var arcSec))
-                { 
+                {
                     result += (arcSec / 3600d);
                     hasResult = true;
                 }
@@ -6957,145 +7117,5 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public string Text { get { return $"X: {MapProviderBase.FormatDecimal(this.X)}; Y: {MapProviderBase.FormatDecimal(this.Y)}"; } }
     }
-    #endregion
-    #region Enumy, servisní třídy...
-    /// <summary>
-    /// Rozhraní pro parenty prvku <see cref="MsWebView"/>, 
-    /// </summary>
-    public interface IDxWebViewParentPanel
-    {
-        /// <summary>
-        /// Parent panel provede požadovanou akci, kterou vyvolává WebView komponenta nebo změna hodnoty v Properties
-        /// </summary>
-        /// <param name="actionTypes"></param>
-        void DoAction(DxWebViewActionType actionTypes);
-    }
-    /// <summary>
-    /// Režim zobrazení webové stránky.
-    /// 
-    /// </summary>
-    public enum DxWebViewDisplayMode
-    {
-        /// <summary>
-        /// Neurčeno / nezobrazeno
-        /// </summary>
-        None,
-        /// <summary>
-        /// Standardní živý control.
-        /// <para/>
-        /// Nelze použít tam, kde se z controlu pořídí Bitmapa a ta se poté promítá (Infragistic i DX DataForm).
-        /// Protože WebView se nevykreslí do Bitmapy standardním WinForm procesem.<br/>
-        /// Tam je třeba použít pravděpodobně <see cref="CaptureSync"/>.
-        /// </summary>
-        Live,
-        /// <summary>
-        /// Po změně hodnoty / URL adresy se má zachytit Bitmapa z WebView (specializovaný proces) a ta se následně použije do Parent controlu.<br/>
-        /// Asynchronní proces: po získání WebView bitmapy je volán asynchronní event, který bitmapu převezme a zobrazí.
-        /// </summary>
-        CaptureAsync,
-        /// <summary>
-        /// Po změně hodnoty / URL adresy se má zachytit Bitmapa z WebView (specializovaný proces) a ta se následně použije do Parent controlu.<br/>
-        /// Synchronní proces: po změně hodnot (Value / URL) volající thread je pozastaven až do získání bitmapy.
-        /// </summary>
-        CaptureSync
-    }
-    /// <summary>
-    /// Typy akcí, které má provést Parent panel
-    /// </summary>
-    [Flags]
-    public enum DxWebViewActionType
-    {
-        /// <summary>
-        /// Nic
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Přepočítej layout controlů
-        /// </summary>
-        DoLayout = 0x0001,
-        /// <summary>
-        /// Přenačti Enabled
-        /// </summary>
-        DoEnabled = 0x0002,
-        /// <summary>
-        /// Zobrazit statický obrázek
-        /// </summary>
-        DoChangeDisplayMode = 0x0010,
-        /// <summary>
-        /// Proveď změnu URL adresy
-        /// </summary>
-        DoChangeSourceUrl = 0x0020,
-        /// <summary>
-        /// Proveď změnu textu ve StatusBaru
-        /// </summary>
-        DoChangeStatusText = 0x0040,
-        /// <summary>
-        /// Proveď změnu titulku
-        /// </summary>
-        DoChangeDocumentTitle = 0x0080,
-        /// <summary>
-        /// Znovu načti hodnotu a zobraz ji
-        /// </summary>
-        DoReloadValue = 0x0100
-    }
-    /// <summary>
-    /// Data pro událost o načtení dat CaptureImage
-    /// </summary>
-    public class MsWebImageCapturedArgs : EventArgs
-    {
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="requestId"></param>
-        /// <param name="imageData"></param>
-        public MsWebImageCapturedArgs(object requestId, byte[] imageData)
-        {
-            this.RequestId = requestId;
-            this.ImageData = imageData;
-        }
-        /// <summary>
-        /// ID požadavku
-        /// </summary>
-        public object RequestId { get; private set; }
-        /// <summary>
-        /// Data obrázku
-        /// </summary>
-        public byte[] ImageData { get; private set; }
-        /// <summary>
-        /// Vytvoří a vrátí obrázek z <see cref="ImageData"/>.
-        /// Vždy je vytvořen new objekt.
-        /// Chyba je ututlána a v tom případě je vrácen null.
-        /// </summary>
-        public System.Drawing.Image GetImage()
-        {
-            return CreateImage(ImageData);
-        }
-        /// <summary>
-        /// Vytvoří a vrátí obrázek z <paramref name="imageData"/>.
-        /// Vždy je vytvořen new objekt.
-        /// Chyba je ututlána a v tom případě je vrácen null.
-        /// </summary>
-        /// <param name="imageData">Data obrázku</param>
-        /// <returns></returns>
-        public static System.Drawing.Image CreateImage(byte[] imageData)
-        {
-            if (imageData is null || imageData.Length < 12) return null;
-            try
-            {
-                using (var ms = new System.IO.MemoryStream(imageData))
-                    return System.Drawing.Image.FromStream(ms);
-            }
-            catch
-            {
-                return null;
-            }
-        }
-    }
-    /// <summary>
-    /// Předpis pro handler události CaptureImage
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="args"></param>
-    public delegate void MsWebImageCapturedHandler(object sender, MsWebImageCapturedArgs args);
     #endregion
 }

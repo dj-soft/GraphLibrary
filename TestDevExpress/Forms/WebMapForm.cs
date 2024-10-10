@@ -1,5 +1,4 @@
-﻿using Noris.Clients.Win.Components.AsolDX;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -8,6 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+
+using Noris.Clients.Win.Components.AsolDX;
+using Noris.Clients.Win.Components.AsolDX.Map;
 
 namespace TestDevExpress.Forms
 {
