@@ -42,7 +42,7 @@ namespace TestDevExpress.Forms
             // Další controly v řadě:
             var mapProviders = MapProviders.AllProviders;
             __ProviderButton = createDropDownButton(_SelectProviderChange, mapProviders);
-            __MapTypeButton = createDropDownButton(_SelectMapTypeChange, DxMapCoordinatesMapType.Standard, DxMapCoordinatesMapType.Photo, DxMapCoordinatesMapType.Traffic);
+            __MapTypeButton = createDropDownButton(_SelectMapTypeChange, MapCoordinatesMapType.Standard, MapCoordinatesMapType.Photo, MapCoordinatesMapType.Traffic);
             __WebDisplayModeButton = createDropDownButton(_SelectDisplayModeChange, WebDisplayType.Editable, WebDisplayType.ReadOnly, WebDisplayType.StaticAsync, WebDisplayType.StaticSync);
 
             _DoContentLayout();
@@ -81,7 +81,7 @@ namespace TestDevExpress.Forms
         private string __CurrentCoordinates;
         private string __CurrentUrlAdress;
         private IMapProvider __CurrentProvider;
-        private DxMapCoordinatesMapType __CurrentMapType;
+        private MapCoordinatesMapType __CurrentMapType;
         private WebDisplayType __CurrentEditableType;
         private List<Control> __NavControls;
         private DxMapViewPanel __MapViewPanel;
@@ -163,7 +163,7 @@ namespace TestDevExpress.Forms
         private void _SelectMapTypeChange(object sender, TEventArgs<IMenuItem> e)
         {
             var button = (sender as DxDropDownButton) ?? __MapTypeButton;
-            if (button != null && e.Item.Tag is DxMapCoordinatesMapType mapType)
+            if (button != null && e.Item.Tag is MapCoordinatesMapType mapType)
             {
                 button.Text = mapType.ToString();
                 __CurrentMapType = mapType;
