@@ -38,7 +38,7 @@ namespace TestDevExpress.Forms
             createButton(_ClickButtonNavigate, "Gargano", "41.8835225N, 16.1818136E");
 
             // Další controly v řadě:
-            var mapProviders = MapProvider.AllProviders;
+            var mapProviders = MapProviders.AllProviders;
             __ProviderButton = createDropDownButton(_SelectProviderChange, mapProviders);
             __MapTypeButton = createDropDownButton(_SelectMapTypeChange, DxMapCoordinatesMapType.Standard, DxMapCoordinatesMapType.Photo, DxMapCoordinatesMapType.Traffic);
             __WebDisplayModeButton = createDropDownButton(_SelectDisplayModeChange, WebDisplayType.Editable, WebDisplayType.ReadOnly, WebDisplayType.StaticAsync, WebDisplayType.StaticSync);

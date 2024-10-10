@@ -1838,7 +1838,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             private void _InitValues()
             {
                 __MapCoordinates = new DxMapCoordinates();
-                __MapCoordinates.ProviderDefault = MapProvider.DefaultProvider;
+                __MapCoordinates.ProviderDefault = MapProviders.DefaultProvider;
                 __MapCoordinates.ShowPinAtPoint = true;
                 __CoordinatesFormat = DxMapCoordinatesFormat.Nephrite;
 
@@ -3287,7 +3287,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.CoordinatesFormatDefault = DxMapCoordinatesFormat.Wgs84DecimalSuffix;
                 this.ZoomDefault = _ZoomTown;              // Zobrazuje cca 10 km na šířku běžného okna
                 this._Zoom = _ZoomFull;                    // Zobrazuje cca celou republiku
-                this.ProviderDefault = MapProvider.CurrentProvider;
+                this.ProviderDefault = MapProviders.CurrentProvider;
                 this.MapTypeDefault = DxMapCoordinatesMapType.Standard;
                 this.InfoPanelVisibleDefault = false;
                 this.ShowPinAtPoint = true;
@@ -3360,7 +3360,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Exaktní cílový bod souřadnic, v patřičném Geo rozsahu.
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// </summary>
-        protected PointD _Point { get { return __Point; } set { __Point = MapProvider.AlignGeo(value); __IsEmpty = false; } } private PointD __Point;
+        protected PointD _Point { get { return __Point; } set { __Point = MapProviderBase.AlignGeo(value); __IsEmpty = false; } } private PointD __Point;
 
         /// <summary>
         /// Exaktní bod středu mapy, v patřičném Geo rozsahu.
@@ -3371,54 +3371,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Exaktní bod středu mapy, v patřičném Geo rozsahu.
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// </summary>
-        protected PointD? _Center { get { return __Center; } set { __Center = MapProvider.AlignGeoN(value); __IsEmpty = false; } } private PointD? __Center;
-
-        /*
-        /// <summary>
-        /// Exaktní bod souřadnic X, v rozsahu -180° až +180°.
-        /// Změna hodnoty <b>vyvolá</b> event o změně!
-        /// </summary>
-        public decimal PointX { get { return _PointX; } set { var coordinatesOld = _CoordinatesSerial; _PointX = value; _CheckCoordinatesChanged(coordinatesOld); } }
-        /// <summary>
-        /// Exaktní bod souřadnic X, v rozsahu -180° až +180°.
-        /// Změna hodnoty <b>nevyvolá</b> event o změně!
-        /// </summary>
-        protected decimal _PointX { get { return __PointX; } set { __PointX = _Align((value % 360m), -180m, 180m); __IsEmpty = false; } } private decimal __PointX;
-
-        /// <summary>
-        /// Exaktní bod souřadnic Y, v rozsahu -90° (Jih) až +90° (Sever).
-        /// Změna hodnoty <b>vyvolá</b> event o změně!
-        /// </summary>
-        public decimal PointY { get { return _PointY; } set { var coordinatesOld = _CoordinatesSerial; _PointY = value; _CheckCoordinatesChanged(coordinatesOld); } }
-        /// <summary>
-        /// Exaktní bod souřadnic Y, v rozsahu -90° (Jih) až +90° (Sever).
-        /// Změna hodnoty <b>nevyvolá</b> event o změně!
-        /// </summary>
-        protected decimal _PointY { get { return __PointY; } set { __PointY = _Align((value % 180m), -90m, 90m); __IsEmpty = false; } } private decimal __PointY;
-
-        /// <summary>
-        /// Střed mapy X, v rozsahu -180° až +180°.
-        /// Změna hodnoty <b>vyvolá</b> event o změně!
-        /// </summary>
-        public decimal? CenterX { get { return _CenterX; } set { var coordinatesOld = _CoordinatesSerial; _CenterX = value; _CheckCoordinatesChanged(coordinatesOld); } }
-        /// <summary>
-        /// Střed mapy X, v rozsahu -180° až +180°.
-        /// Změna hodnoty <b>nevyvolá</b> event o změně!
-        /// </summary>
-        protected decimal? _CenterX { get { return __CenterX; } set { __CenterX = _Align((value % 360m), -180m, 180m); __IsEmpty = false; } } private decimal? __CenterX;
-
-        /// <summary>
-        /// Střed mapy Y, v rozsahu -90° (Jih) až +90° (Sever).
-        /// Změna hodnoty <b>vyvolá</b> event o změně!
-        /// </summary>
-        public decimal? CenterY { get { return _CenterY; } set { var coordinatesOld = _CoordinatesSerial; _CenterY = value; _CheckCoordinatesChanged(coordinatesOld); } }
-        /// <summary>
-        /// Střed mapy Y, v rozsahu -90° (Jih) až +90° (Sever).
-        /// Změna hodnoty <b>nevyvolá</b> event o změně!
-        /// </summary>
-        protected decimal? _CenterY { get { return __CenterY; } set { __CenterY = _Align((value % 180m), -90m, 90m); __IsEmpty = false; } } private decimal? __CenterY;
-
-        */
+        protected PointD? _Center { get { return __Center; } set { __Center = MapProviderBase.AlignGeoN(value); __IsEmpty = false; } } private PointD? __Center;
 
         /// <summary>
         /// Zoom, v rozsahu 1 (celá planeta) až 20 (jeden pokojíček). Zoom roste exponenciálně, rozdíl 1 číslo je 2-násobek.
@@ -3449,7 +3402,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
         /// Lze setovat null, ale při čtení se namísto null čte <see cref="ProviderDefault"/>.
         /// </summary>
-        public IMapProvider Provider { get { return __Provider ?? __ProviderDefault ?? MapProvider.CurrentProvider; } set { __Provider = value; } } private IMapProvider __Provider;
+        public IMapProvider Provider { get { return __Provider ?? __ProviderDefault ?? MapProviders.CurrentProvider; } set { __Provider = value; } } private IMapProvider __Provider;
         /// <summary>
         /// Typ mapy (standardní, dopravní, turistická, fotoletecká).
         /// Změna hodnoty <b>nevyvolá</b> event o změně!
@@ -3523,7 +3476,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="mapData">Zdrojové souřadnice</param>
         /// <param name="isSilent">Nevolat událost <see cref="CoordinatesChanged"/> po případné změně</param>
-        public void FillFrom(MapProvider.MapDataInfo mapData, bool isSilent = false)
+        public void FillFrom(MapProviderBase.MapDataInfo mapData, bool isSilent = false)
         {
             var coordinatesOld = _CoordinatesSerial;
             _FillFromAction(mapData);
@@ -3550,7 +3503,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Opíše do sebe informace z dodaného objektu
         /// </summary>
         /// <param name="mapData">Zdrojové souřadnice</param>
-        private void _FillFromAction(MapProvider.MapDataInfo mapData)
+        private void _FillFromAction(MapProviderBase.MapDataInfo mapData)
         {
             if (mapData != null)
             {
@@ -3627,7 +3580,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {   // Point má speciální větev:
                 coordinates = coordinates.Substring(5).Replace("(", "").Replace(")", "").Trim();      // "POINT (14.4009383 50.0694664)"  =>  "14.4009383 50.0694664"
                 var pointParts = coordinates.Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
-                if (pointParts.Length == 2 && MapProvider.TryParseDouble(pointParts[0], out pointX) && MapProvider.TryParseDouble(pointParts[1], out pointY))
+                if (pointParts.Length == 2 && MapProviderBase.TryParseDouble(pointParts[0], out pointX) && MapProviderBase.TryParseDouble(pointParts[1], out pointY))
                 {   // POINT má pořadí dat: X, Y
                     this.CoordinatesFormat = DxMapCoordinatesFormat.NephritePoint;
                     this._Point = new PointD(pointX, pointY);
@@ -3638,8 +3591,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 coordinates = coordinates.Replace(" ", "").ToUpper();
                 var coordParts = coordinates.Split(',');
                 if (coordParts.Length == 2 && 
-                    MapProvider.TryParseGeoDouble(coordParts[0], MapProvider.GeoAxis.Latitude, out MapProvider.GeoAxis axis0, out var fmt0, out var point0) &&
-                    MapProvider.TryParseGeoDouble(coordParts[1], MapProvider.GeoAxis.Longitude, out MapProvider.GeoAxis axis1, out var fmt1, out var point1))
+                    MapProviderBase.TryParseGeoDouble(coordParts[0], MapProviderBase.GeoAxis.Latitude, out MapProviderBase.GeoAxis axis0, out var fmt0, out var point0) &&
+                    MapProviderBase.TryParseGeoDouble(coordParts[1], MapProviderBase.GeoAxis.Longitude, out MapProviderBase.GeoAxis axis1, out var fmt1, out var point1))
                 {   // Souřadnice mají defaultní pořadí Y, X. Ale pro jistotu jsme detekovali reálně nalezené značky kvadrantů axis1 a axis0, a hodnoty jsme uložili do fmt1 a fmt0, point1 a point0.
                     // Nyní provedeme detekci pořadí a výsledného formátu:
                     detectCoordinates(axis0, fmt0, point0, axis1, fmt1, point1, out var format, out point);
@@ -3649,11 +3602,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // Metoda analyzuje určené hodnoty souřadnic, formátů a os ze souřadnice [0] a [1], a určí formát a souřadný bod (X,Y)
-            void detectCoordinates(MapProvider.GeoAxis axis0, DxMapCoordinatesFormat? format0, Double value0, MapProvider.GeoAxis axis1, DxMapCoordinatesFormat? format1, Double value1, out DxMapCoordinatesFormat format, out PointD pointXY)
+            void detectCoordinates(MapProviderBase.GeoAxis axis0, DxMapCoordinatesFormat? format0, Double value0, MapProviderBase.GeoAxis axis1, DxMapCoordinatesFormat? format1, Double value1, out DxMapCoordinatesFormat format, out PointD pointXY)
             {
                 // Nativní pořadí je: 0 = Y,  1 = X
                 // Pokud bych ale pro obě souřadnice určil pořadí reverzní (0 = X, 1 = Y), pak je budeme brát opačně:
-                bool isNativeOrder = !(axis0 == MapProvider.GeoAxis.Longitude && axis1 == MapProvider.GeoAxis.Latitude);
+                bool isNativeOrder = !(axis0 == MapProviderBase.GeoAxis.Longitude && axis1 == MapProviderBase.GeoAxis.Latitude);
 
                 // Bod v nativním pořadí má 0=Y, 1=X;  v reverzním opačně:
                 pointXY = isNativeOrder ? new PointD(value1, value0) : new PointD(value0, value1);
@@ -3733,7 +3686,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             switch (fmt)
             {
                 case DxMapCoordinatesFormat.NephritePoint:
-                    return $"POINT ({MapProvider.FormatGeoDouble(point.X, MapProvider.GeoAxis.Longitude, fmt, 12)} {MapProvider.FormatGeoDouble(point.Y, MapProvider.GeoAxis.Latitude, fmt, 12)})";
+                    return $"POINT ({MapProviderBase.FormatGeoDouble(point.X, MapProviderBase.GeoAxis.Longitude, fmt, 12)} {MapProviderBase.FormatGeoDouble(point.Y, MapProviderBase.GeoAxis.Latitude, fmt, 12)})";
 
                 case DxMapCoordinatesFormat.Nephrite:
                 case DxMapCoordinatesFormat.Wgs84Decimal:
@@ -3743,7 +3696,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case DxMapCoordinatesFormat.Wgs84MinutePrefix:
                 case DxMapCoordinatesFormat.Wgs84ArcSecSuffix:
                 case DxMapCoordinatesFormat.Wgs84ArcSecPrefix:
-                    return $"{MapProvider.FormatGeoDouble(point.Y, MapProvider.GeoAxis.Latitude, fmt, 12)}, {MapProvider.FormatGeoDouble(point.X, MapProvider.GeoAxis.Longitude, fmt, 12)}";
+                    return $"{MapProviderBase.FormatGeoDouble(point.Y, MapProviderBase.GeoAxis.Latitude, fmt, 12)}, {MapProviderBase.FormatGeoDouble(point.X, MapProviderBase.GeoAxis.Longitude, fmt, 12)}";
 
                 case DxMapCoordinatesFormat.OpenLocationCode:
                     return OpenLocationCodeConvertor.Encode(point.X, point.Y, 12);
@@ -3793,12 +3746,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region UrlAdress : Práce s URL adresou (set, get, analýza i syntéza, event o změně), konkrétní providery (Seznam, Google, OpenMap)
         /// <summary>
-        /// Metoda se pokusí analyzovat dodanou URL adresu a naplnit z ní data do instance <see cref="MapProvider.MapDataInfo"/>.
+        /// Metoda se pokusí analyzovat dodanou URL adresu a naplnit z ní data do instance <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="urlAdress"></param>
         /// <param name="mapData"></param>
         /// <returns></returns>
-        public static bool TryParseUrlAdress(string urlAdress, out MapProvider.MapDataInfo mapData)
+        public static bool TryParseUrlAdress(string urlAdress, out MapProviderBase.MapDataInfo mapData)
         {
             return _TryParseUrlAdress(urlAdress, out mapData);
         }
@@ -3840,12 +3793,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="urlAdress"></param>
         /// <param name="mapData"></param>
         /// <returns></returns>
-        private static bool _TryParseUrlAdress(string urlAdress, out MapProvider.MapDataInfo mapData)
+        private static bool _TryParseUrlAdress(string urlAdress, out MapProviderBase.MapDataInfo mapData)
         {
             mapData = null;
             if (!Uri.TryCreate(urlAdress, UriKind.RelativeOrAbsolute, out var uri)) return false;
 
-            var providers = MapProvider.AllProviders;
+            var providers = MapProviders.AllProviders;
             foreach (var provider in providers)
             {
                 if (provider.TryParseUrlAdress(uri, out mapData))
@@ -3860,11 +3813,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aktuální data zdejších koordinátů ve formě MapData pro providery <see cref="IMapProvider"/>
         /// </summary>
-        private MapProvider.MapDataInfo _MapData
+        private MapProviderBase.MapDataInfo _MapData
         {
             get
             {
-                var mapData = new MapProvider.MapDataInfo()
+                var mapData = new MapProviderBase.MapDataInfo()
                 {
                     Point = this.Point,
                     Zoom = this.Zoom,
@@ -5387,52 +5340,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
-    #region class MapProvider : třída/y, poskytující přístup na mapové podklady na základě daných souřadnic
+    #region class MapProviders : třída/y, poskytující přístup na mapové podklady na základě daných souřadnic
     /// <summary>
-    /// Abstraktní předek pro mapové providery, nepovinný
+    /// Soupis providerů map, výběr aktuálního providera
     /// </summary>
-    public abstract class MapProvider : IMapProvider
+    public class MapProviders
     {
-        #region Explicitní implementace IMapProvider => abstraktní protected prvky
-        string IMapProvider.ProviderId { get { return this.ProviderId; } }
-        string IMapProvider.ProviderName { get { return this.ProviderName; } }
-        int IMapProvider.SortOrder { get { return this.SortOrder; } }
-        string IMapProvider.GetUrlAdress(MapProvider.MapDataInfo data) { return this.GetUrlAdress(data); }
-        bool IMapProvider.TryParseUrlAdress(Uri uri, out MapProvider.MapDataInfo data) { return this.TryParseUrlAdress(uri, out data); }
-        /// <summary>
-        /// ID provideru: pod tímto ID může být uložen provider např. v kódu / v konfiguraci
-        /// </summary>
-        protected abstract string ProviderId { get; }
-        /// <summary>
-        /// Název provideru: pod tímto názvem bude provider nabízen uživateli
-        /// </summary>
-        protected abstract string ProviderName { get; }
-        /// <summary>
-        /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
-        /// </summary>
-        protected abstract int SortOrder { get; }
-        /// <summary>
-        /// Z dodaných dat o mapě <see cref="MapProvider.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
-        /// </summary>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        protected abstract string GetUrlAdress(MapProvider.MapDataInfo data);
-        /// <summary>
-        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProvider.MapDataInfo"/>.
-        /// </summary>
-        /// <param name="uri"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        protected abstract bool TryParseUrlAdress(Uri uri, out MapProvider.MapDataInfo data);
-        /// <summary>
-        /// Vizualizace = název provideru
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            return this.ProviderName;
-        }
-        #endregion
         #region Static získání a seznam dostupných providerů v aktuální assembly
         /// <summary>
         /// Implicitní provider mapových podkladů, první provider v poli <see cref="AllProviders"/>
@@ -5441,10 +5354,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aktuálně vybraná provider, nebo <see cref="DefaultProvider"/>.
         /// </summary>
-        public static IMapProvider CurrentProvider { get { return __CurrentProvider ?? DefaultProvider; } set { __CurrentProvider = value; } } 
+        public static IMapProvider CurrentProvider { get { return __CurrentProvider ?? DefaultProvider; } set { __CurrentProvider = value; } }
         private static IMapProvider __CurrentProvider;
         /// <summary>
-        /// Pole všech mapových providerů, které jsou dostupné v aktuální assembly
+        /// Pole všech mapových providerů, které jsou dostupné v aktuální assembly. 
+        /// Toto pole obsahuje i providery, které mají <see cref="IMapProvider.IsUserAccessible"/> = false.
+        /// <para/>
+        /// Uživatelskou nabídku obsahuje pole <see cref="UserAccessibleProviders"/>.
         /// </summary>
         public static IMapProvider[] AllProviders
         {
@@ -5456,6 +5372,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Pole těch mapových providerů, které se mohou nabídnout uživateli.
+        /// Toto pole obsahuje pouze takové providery, které mají <see cref="IMapProvider.IsUserAccessible"/> = true.
+        /// <para/>
+        /// Kompletní nabídku všech providerů obsahuje pole <see cref="AllProviders"/>.
+        /// </summary>
+        public static IMapProvider[] UserAccessibleProviders { get { return AllProviders.Where(p => p.IsUserAccessible).ToArray(); } }
+        /// <summary>
         /// Úložiště pole <see cref="AllProviders"/>
         /// </summary>
         private static IMapProvider[] __AllProviders;
@@ -5466,7 +5389,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static IMapProvider[] _GetAllProviders()
         {
             Type iMapProviderInterface = typeof(IMapProvider);                                               // Typ hledaného interface
-            var providerTypes = typeof(MapProvider).Assembly.GetTypes().Where(isMapProvider).ToArray();      // Typy popisující hledané třídy, které řádně implementují IMapProvider
+            var providerTypes = typeof(MapProviderBase).Assembly.GetTypes().Where(isMapProvider).ToArray();      // Typy popisující hledané třídy, které řádně implementují IMapProvider
 
             var providers = new List<IMapProvider>();
             foreach (var providerType in providerTypes)
@@ -5514,6 +5437,58 @@ namespace Noris.Clients.Win.Components.AsolDX
                 catch { /*  */ }
                 return null;
             }
+        }
+        #endregion
+    }
+    /// <summary>
+    /// Abstraktní předek pro mapové providery, nepovinný
+    /// </summary>
+    public abstract class MapProviderBase : IMapProvider
+    {
+        #region Explicitní implementace IMapProvider => abstraktní protected prvky
+        string IMapProvider.ProviderId { get { return this.ProviderId; } }
+        string IMapProvider.ProviderName { get { return this.ProviderName; } }
+        bool IMapProvider.IsUserAccessible { get { return this.IsUserAccessible; } }
+        int IMapProvider.SortOrder { get { return this.SortOrder; } }
+        string IMapProvider.GetUrlAdress(MapProviderBase.MapDataInfo data) { return this.GetUrlAdress(data); }
+        bool IMapProvider.TryParseUrlAdress(Uri uri, out MapProviderBase.MapDataInfo data) { return this.TryParseUrlAdress(uri, out data); }
+        /// <summary>
+        /// ID provideru: pod tímto ID může být uložen provider např. v kódu / v konfiguraci
+        /// </summary>
+        protected abstract string ProviderId { get; }
+        /// <summary>
+        /// Název provideru: pod tímto názvem bude provider nabízen uživateli
+        /// </summary>
+        protected abstract string ProviderName { get; }
+        /// <summary>
+        /// Tohoto providera je možno nabízet uživateli ve výběru providerů?
+        /// Některé providery nechceme aktivně nabízet, ale umíme s nimi pracovat.
+        /// </summary>
+        protected abstract bool IsUserAccessible { get; }
+        /// <summary>
+        /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
+        /// </summary>
+        protected abstract int SortOrder { get; }
+        /// <summary>
+        /// Z dodaných dat o mapě <see cref="MapProviderBase.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        protected abstract string GetUrlAdress(MapProviderBase.MapDataInfo data);
+        /// <summary>
+        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        protected abstract bool TryParseUrlAdress(Uri uri, out MapProviderBase.MapDataInfo data);
+        /// <summary>
+        /// Vizualizace = název provideru
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return this.ProviderName;
         }
         #endregion
         #region Static support pro parsování / formátování číselných dat souřadnic
@@ -6156,27 +6131,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         string ProviderName { get; }
         /// <summary>
+        /// Tohoto providera je možno nabízet uživateli ve výběru providerů?
+        /// Některé providery nechceme aktivně nabízet, ale umíme s nimi pracovat.
+        /// </summary>
+        bool IsUserAccessible { get; }
+        /// <summary>
         /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
         /// </summary>
         int SortOrder { get; }
         /// <summary>
-        /// Z dodaných dat o mapě <see cref="MapProvider.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
+        /// Z dodaných dat o mapě <see cref="MapProviderBase.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        string GetUrlAdress(MapProvider.MapDataInfo data);
+        string GetUrlAdress(MapProviderBase.MapDataInfo data);
         /// <summary>
-        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProvider.MapDataInfo"/>.
+        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        bool TryParseUrlAdress(Uri uri, out MapProvider.MapDataInfo data);
+        bool TryParseUrlAdress(Uri uri, out MapProviderBase.MapDataInfo data);
     }
     /// <summary>
     /// Provider map <b><u>SeznamMapy</u></b>, implementuje <see cref="IMapProvider"/>
     /// </summary>
-    public class MapProviderSeznamMapy : MapProvider, IMapProvider
+    public class MapProviderSeznamMapy : MapProviderBase, IMapProvider
     {
         /// <summary>
         /// ID tohoto konkrétního provideru
@@ -6191,30 +6171,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected override string ProviderName { get { return "Seznam mapy"; } }
         /// <summary>
+        /// Tohoto providera je možno nabízet uživateli ve výběru providerů?
+        /// Některé providery nechceme aktivně nabízet, ale umíme s nimi pracovat.
+        /// </summary>
+        protected override bool IsUserAccessible { get { return true; } }
+        /// <summary>
         /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
         /// </summary>
         protected override int SortOrder { get { return 100; } }
         /// <summary>
-        /// Z dodaných dat o mapě <see cref="MapProvider.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
+        /// Z dodaných dat o mapě <see cref="MapProviderBase.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
         protected override string GetUrlAdress(MapDataInfo data) { return CreateUrlAdress(data); }
         /// <summary>
-        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProvider.MapDataInfo"/>.
+        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="data"></param>
         /// <returns></returns>
         protected override bool TryParseUrlAdress(Uri uri, out MapDataInfo data) { return TryAnalyzeUrlAdress(uri, out data); }
         /// <summary>
-        /// Z dodaných dat o mapě <see cref="MapProvider.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
+        /// Z dodaných dat o mapě <see cref="MapProviderBase.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
         internal static string CreateUrlAdress(MapDataInfo data) { return MapProviderSeznamMapy.CreateUrlAdress(data, Id); }
         /// <summary>
-        /// Z dodaných dat o mapě <see cref="MapProvider.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
+        /// Z dodaných dat o mapě <see cref="MapProviderBase.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
         /// </summary>
         /// <param name="data"></param>
         /// <param name="providerId"></param>
@@ -6225,7 +6210,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Web:
             string web = (providerId == MapProviderSeznamMapy.Id ? "https://mapy.cz/" :
-                         (providerId == MapProviderSeznamMapy.Id ? "https://frame.mapy.cz/" : "https://mapy.cz/"));
+                         (providerId == MapProviderSeznamFrameMapy.Id ? "https://frame.mapy.cz/" : "https://mapy.cz/"));
 
             // Typ mapy:
             var mapType = data.MapType.Value;
@@ -6267,14 +6252,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             return urlAdress;
         }
         /// <summary>
-        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProvider.MapDataInfo"/>.
+        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="data"></param>
         /// <returns></returns>
         internal static bool TryAnalyzeUrlAdress(Uri uri, out MapDataInfo data) { return TryAnalyzeUrlAdress(uri, Id, out data); }
         /// <summary>
-        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProvider.MapDataInfo"/>.
+        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="providerId"></param>
@@ -6286,7 +6271,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Web:
             string web = (providerId == MapProviderSeznamMapy.Id ? "mapy.cz" :
-                         (providerId == MapProviderSeznamMapy.Id ? "frame.mapy.cz/" : "mapy.cz"));
+                         (providerId == MapProviderSeznamFrameMapy.Id ? "frame.mapy.cz/" : "mapy.cz"));
             string host = uri.Host;
             if (!String.Equals(host, web, StringComparison.OrdinalIgnoreCase)) return false;
 
@@ -6372,7 +6357,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Provider map <b><u>SeznamFrameMapy</u></b>, implementuje <see cref="IMapProvider"/>
     /// </summary>
-    public class MapProviderSeznamFrameMapy : MapProvider, IMapProvider
+    public class MapProviderSeznamFrameMapy : MapProviderBase, IMapProvider
     {
         /// <summary>
         /// ID tohoto konkrétního provideru
@@ -6387,44 +6372,49 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected override string ProviderName { get { return "Seznam Frame mapy"; } }
         /// <summary>
+        /// Tohoto providera je možno nabízet uživateli ve výběru providerů?
+        /// Některé providery nechceme aktivně nabízet, ale umíme s nimi pracovat.
+        /// </summary>
+        protected override bool IsUserAccessible { get { return true; } }
+        /// <summary>
         /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
         /// </summary>
         protected override int SortOrder { get { return 110; } }
         /// <summary>
-        /// Z dodaných dat o mapě <see cref="MapProvider.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
+        /// Z dodaných dat o mapě <see cref="MapProviderBase.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
         protected override string GetUrlAdress(MapDataInfo data) { return CreateUrlAdress(data); }
         /// <summary>
-        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProvider.MapDataInfo"/>.
+        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="data"></param>
         /// <returns></returns>
         protected override bool TryParseUrlAdress(Uri uri, out MapDataInfo data) { return TryAnalyzeUrlAdress(uri, out data); }
         /// <summary>
-        /// Z dodaných dat o mapě <see cref="MapProvider.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
+        /// Z dodaných dat o mapě <see cref="MapProviderBase.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
         internal static string CreateUrlAdress(MapDataInfo data) { return CreateUrlAdress(data, Id); }
         /// <summary>
-        /// Z dodaných dat o mapě <see cref="MapProvider.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
+        /// Z dodaných dat o mapě <see cref="MapProviderBase.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
         /// </summary>
         /// <param name="data"></param>
         /// <param name="providerId"></param>
         /// <returns></returns>
         internal static string CreateUrlAdress(MapDataInfo data, string providerId) { return MapProviderSeznamMapy.CreateUrlAdress(data, providerId); }
         /// <summary>
-        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProvider.MapDataInfo"/>.
+        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="data"></param>
         /// <returns></returns>
         internal static bool TryAnalyzeUrlAdress(Uri uri, out MapDataInfo data) { return TryAnalyzeUrlAdress(uri, Id, out data); }
         /// <summary>
-        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProvider.MapDataInfo"/>.
+        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="providerId"></param>
@@ -6435,7 +6425,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Provider map <b><u>GoogleMaps</u></b>, implementuje <see cref="IMapProvider"/>
     /// </summary>
-    public class MapProviderGoogleMaps : MapProvider, IMapProvider
+    public class MapProviderGoogleMaps : MapProviderBase, IMapProvider
     {
         /// <summary>
         /// ID tohoto konkrétního provideru
@@ -6450,30 +6440,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected override string ProviderName { get { return "GoogleMaps"; } }
         /// <summary>
+        /// Tohoto providera je možno nabízet uživateli ve výběru providerů?
+        /// Některé providery nechceme aktivně nabízet, ale umíme s nimi pracovat.
+        /// </summary>
+        protected override bool IsUserAccessible { get { return true; } }
+        /// <summary>
         /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
         /// </summary>
         protected override int SortOrder { get { return 300; } }
         /// <summary>
-        /// Z dodaných dat o mapě <see cref="MapProvider.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
+        /// Z dodaných dat o mapě <see cref="MapProviderBase.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
         protected override string GetUrlAdress(MapDataInfo data) { return CreateUrlAdress(data); }
         /// <summary>
-        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProvider.MapDataInfo"/>.
+        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="data"></param>
         /// <returns></returns>
         protected override bool TryParseUrlAdress(Uri uri, out MapDataInfo data) { return TryAnalyzeUrlAdress(uri, out data); }
         /// <summary>
-        /// Z dodaných dat o mapě <see cref="MapProvider.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
+        /// Z dodaných dat o mapě <see cref="MapProviderBase.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
         internal static string CreateUrlAdress(MapDataInfo data) { return MapProviderGoogleMaps.CreateUrlAdress(data, Id); }
         /// <summary>
-        /// Z dodaných dat o mapě <see cref="MapProvider.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
+        /// Z dodaných dat o mapě <see cref="MapProviderBase.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
         /// </summary>
         /// <param name="data"></param>
         /// <param name="providerId"></param>
@@ -6515,14 +6510,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             return urlAdress;
         }
         /// <summary>
-        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProvider.MapDataInfo"/>.
+        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="data"></param>
         /// <returns></returns>
         internal static bool TryAnalyzeUrlAdress(Uri uri, out MapDataInfo data) { return TryAnalyzeUrlAdress(uri, Id, out data); }
         /// <summary>
-        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProvider.MapDataInfo"/>.
+        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="providerId"></param>
@@ -6548,7 +6543,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Provider map <b><u>OpenStreetMap</u></b>, implementuje <see cref="IMapProvider"/>
     /// </summary>
-    public class MapProviderOpenStreetMap : MapProvider, IMapProvider
+    public class MapProviderOpenStreetMap : MapProviderBase, IMapProvider
     {
         /// <summary>
         /// ID tohoto konkrétního provideru
@@ -6563,30 +6558,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected override string ProviderName { get { return "Open Street Map"; } }
         /// <summary>
+        /// Tohoto providera je možno nabízet uživateli ve výběru providerů?
+        /// Některé providery nechceme aktivně nabízet, ale umíme s nimi pracovat.
+        /// </summary>
+        protected override bool IsUserAccessible { get { return true; } }
+        /// <summary>
         /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
         /// </summary>
         protected override int SortOrder { get { return 400; } }
         /// <summary>
-        /// Z dodaných dat o mapě <see cref="MapProvider.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
+        /// Z dodaných dat o mapě <see cref="MapProviderBase.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
         protected override string GetUrlAdress(MapDataInfo data) { return CreateUrlAdress(data); }
         /// <summary>
-        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProvider.MapDataInfo"/>.
+        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="data"></param>
         /// <returns></returns>
         protected override bool TryParseUrlAdress(Uri uri, out MapDataInfo data) { return TryAnalyzeUrlAdress(uri, out data); }
         /// <summary>
-        /// Z dodaných dat o mapě <see cref="MapProvider.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
+        /// Z dodaných dat o mapě <see cref="MapProviderBase.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
         internal static string CreateUrlAdress(MapDataInfo data) { return CreateUrlAdress(data, Id); }
         /// <summary>
-        /// Z dodaných dat o mapě <see cref="MapProvider.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
+        /// Z dodaných dat o mapě <see cref="MapProviderBase.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
         /// </summary>
         /// <param name="data"></param>
         /// <param name="providerId"></param>
@@ -6631,14 +6631,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             return urlAdress;
         }
         /// <summary>
-        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProvider.MapDataInfo"/>.
+        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="data"></param>
         /// <returns></returns>
         internal static bool TryAnalyzeUrlAdress(Uri uri, out MapDataInfo data) { return TryAnalyzeUrlAdress(uri, Id, out data); }
         /// <summary>
-        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProvider.MapDataInfo"/>.
+        /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="providerId"></param>
@@ -6831,7 +6831,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Fixní stringový výraz obsahující souřadnice X i Y, pro jednoznačné srovnání
         /// </summary>
-        public string Text { get { return $"X: {MapProvider.FormatDouble(this.X)}; Y: {MapProvider.FormatDouble(this.Y)}"; } }
+        public string Text { get { return $"X: {MapProviderBase.FormatDouble(this.X)}; Y: {MapProviderBase.FormatDouble(this.Y)}"; } }
     }
     /// <summary>
     /// Souřadnice bodu Decimal
@@ -6955,7 +6955,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Fixní stringový výraz obsahující souřadnice X i Y, pro jednoznačné srovnání
         /// </summary>
-        public string Text { get { return $"X: {MapProvider.FormatDecimal(this.X)}; Y: {MapProvider.FormatDecimal(this.Y)}"; } }
+        public string Text { get { return $"X: {MapProviderBase.FormatDecimal(this.X)}; Y: {MapProviderBase.FormatDecimal(this.Y)}"; } }
     }
     #endregion
     #region Enumy, servisní třídy...
