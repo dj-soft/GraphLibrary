@@ -1434,12 +1434,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             var webView = this.__MsWebView;
             string urlAdress = webView.MsWebCurrentUrlAdress;                  // URL adresa ve WebView
 
-            if (MapCoordinates.TryParseUrlAdress(urlAdress, out var mapData))
+            var currentData = this.IMapProperties.MapCoordinates.MapData;
+            if (MapCoordinates.TryParseUrlAdress(urlAdress, currentData, out var parsedData))
             {   // Uživatel změnil URL adresu na mapě, a my jsme z ní detekovali nové koordináty (souřadnice, zoom, typ mapy atd):
 
                 // Uložíme si nově získané hodnoty (newCoordinates) do naší instance WebCoordinates, tím dojde k události WebCoordinates.CoordinatesChanged => _WebCoordinatesChanged.
                 var webCoordinates = this.WebCoordinates;
-                webCoordinates.FillFrom(mapData);
+                webCoordinates.FillFrom(parsedData);
 
                 _RefreshAcceptButtonState();
                 // Změna pozice na mapě se nepromítá automaticky do CoordinateText, tam svítí vnější datová hodnota!
@@ -3909,11 +3910,12 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Metoda se pokusí analyzovat dodanou URL adresu a naplnit z ní data do instance <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="urlAdress"></param>
-        /// <param name="mapData"></param>
+        /// <param name="currentData">Aktuální pozice v mapě</param>
+        /// <param name="parsedData"></param>
         /// <returns></returns>
-        public static bool TryParseUrlAdress(string urlAdress, out MapProviderBase.MapDataInfo mapData)
+        public static bool TryParseUrlAdress(string urlAdress, MapProviderBase.MapDataInfo currentData, out MapProviderBase.MapDataInfo parsedData)
         {
-            return _TryParseUrlAdress(urlAdress, out mapData);
+            return _TryParseUrlAdress(urlAdress, currentData, out parsedData);
         }
         /// <summary>
         /// URL adresa mapy.
@@ -3942,7 +3944,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// <param name="isSilent">Nevolat událost <see cref="CoordinatesChanged"/> po případné změně</param>
         private void _SetUrlAdress(string urlAdress, bool isSilent = false)
         {
-            if (_TryParseUrlAdress(urlAdress, out var mapData))
+            if (_TryParseUrlAdress(urlAdress, this._MapData, out var mapData))
             {
                 this.FillFrom(mapData, isSilent);
             }
@@ -3951,25 +3953,30 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Metoda se pokusí analyzovat dodanou URL adresu a naplnit z ní data do new instance <see cref="MapCoordinates"/>.
         /// </summary>
         /// <param name="urlAdress"></param>
-        /// <param name="mapData"></param>
+        /// <param name="currentData">Aktuální pozice v mapě</param>
+        /// <param name="parsedData"></param>
         /// <returns></returns>
-        private static bool _TryParseUrlAdress(string urlAdress, out MapProviderBase.MapDataInfo mapData)
+        private static bool _TryParseUrlAdress(string urlAdress, MapProviderBase.MapDataInfo currentData, out MapProviderBase.MapDataInfo parsedData)
         {
-            mapData = null;
+            parsedData = null;
             if (!Uri.TryCreate(urlAdress, UriKind.RelativeOrAbsolute, out var uri)) return false;
 
             var providers = MapProviders.AllProviders;
             foreach (var provider in providers)
             {
-                if (provider.TryParseUrlAdress(uri, out mapData))
+                if (provider.TryParseUrlAdress(uri, currentData, out parsedData))
                 {
-                    mapData.MapProvider = provider;
+                    parsedData.MapProvider = provider;
                     return true;
                 }
             }
-            mapData = null;
+            parsedData = null;
             return false;
         }
+        /// <summary>
+        /// Aktuální data zdejších koordinátů ve formě MapData pro providery <see cref="IMapProvider"/>
+        /// </summary>
+        public MapProviderBase.MapDataInfo MapData { get { return _MapData; } }
         /// <summary>
         /// Aktuální data zdejších koordinátů ve formě MapData pro providery <see cref="IMapProvider"/>
         /// </summary>
@@ -3981,7 +3988,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
                 {
                     Point = this.Point,
                     Zoom = this.Zoom,
-                    Center = this.Center,
+                    Center = this.Point,
                     MapType = this.MapType,
                     MapProvider = this.Provider,
                     ShowPointPin = this.ShowPinAtPoint,
@@ -4470,7 +4477,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         bool IMapProvider.IsUserAccessible { get { return this.IsUserAccessible; } }
         int IMapProvider.SortOrder { get { return this.SortOrder; } }
         string IMapProvider.GetUrlAdress(MapProviderBase.MapDataInfo data) { return this.GetUrlAdress(data); }
-        bool IMapProvider.TryParseUrlAdress(Uri uri, out MapProviderBase.MapDataInfo data) { return this.TryParseUrlAdress(uri, out data); }
+        bool IMapProvider.TryParseUrlAdress(Uri uri, MapDataInfo currentData, out MapProviderBase.MapDataInfo parsedData) { return this.TryParseUrlAdress(uri, currentData, out parsedData); }
         /// <summary>
         /// ID provideru: pod tímto ID může být uložen provider např. v kódu / v konfiguraci
         /// </summary>
@@ -4498,16 +4505,17 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
-        /// <param name="data"></param>
+        /// <param name="currentData">Aktuální pozice v mapě</param>
+        /// <param name="parsedData"></param>
         /// <returns></returns>
-        protected abstract bool TryParseUrlAdress(Uri uri, out MapProviderBase.MapDataInfo data);
+        protected abstract bool TryParseUrlAdress(Uri uri, MapDataInfo currentData, out MapProviderBase.MapDataInfo parsedData);
         /// <summary>
         /// Vizualizace = název provideru
         /// </summary>
         /// <returns></returns>
         public override string ToString()
         {
-            return this.ProviderName;
+            return $"{this.ProviderName} ({this.ProviderId})";
         }
         #endregion
         #region Static support pro parsování / formátování číselných dat souřadnic
@@ -5168,10 +5176,19 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
-        /// <param name="data"></param>
+        /// <param name="currentData">Aktuální pozice v mapě</param>
+        /// <param name="parsedData"></param>
         /// <returns></returns>
-        bool TryParseUrlAdress(Uri uri, out MapProviderBase.MapDataInfo data);
+        bool TryParseUrlAdress(Uri uri, MapProviderBase.MapDataInfo currentData, out MapProviderBase.MapDataInfo parsedData);
     }
+    #region Konkrétní provideři: pro zadanou souřadnici vygenerují URL, anebo ze zadané URL parsují souřadnici (a další informace)
+    /*  Provider implementuje IMapProvider a tím může být použit jako obecný zdroj, nemusí být potomkem MapProviderBase
+       * Provider je nalezen v aktuální assembly pouze podle přítomnosti interface IMapProvider, pomocí reflexe
+       * Nabízí nějakou svoji identifikaci (kódovou, uživatelskou, přítomnost v nabídce a pořadí v ní)
+       * Umí sestavit ze souřadnice cílovou URL,
+       * Umí z URL adresy přečíst souřadnice - obě metody jsou volané přes interface
+       * Nad rámec metod volaných přes interface může svoje služby nabídnout jako static metody
+    */
     /// <summary>
     /// Provider map <b><u>SeznamMapy</u></b>, implementuje <see cref="IMapProvider"/>
     /// </summary>
@@ -5208,9 +5225,10 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
-        /// <param name="data"></param>
+        /// <param name="currentData">Aktuální pozice v mapě</param>
+        /// <param name="parsedData"></param>
         /// <returns></returns>
-        protected override bool TryParseUrlAdress(Uri uri, out MapDataInfo data) { return TryAnalyzeUrlAdress(uri, out data); }
+        protected override bool TryParseUrlAdress(Uri uri, MapDataInfo currentData, out MapDataInfo parsedData) { return TryAnalyzeUrlAdress(uri, currentData, out parsedData); }
         /// <summary>
         /// Z dodaných dat o mapě <see cref="MapProviderBase.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
         /// </summary>
@@ -5274,19 +5292,21 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
-        /// <param name="data"></param>
+        /// <param name="currentData">Aktuální pozice v mapě</param>
+        /// <param name="parsedData"></param>
         /// <returns></returns>
-        internal static bool TryAnalyzeUrlAdress(Uri uri, out MapDataInfo data) { return TryAnalyzeUrlAdress(uri, Id, out data); }
+        internal static bool TryAnalyzeUrlAdress(Uri uri, MapDataInfo currentData, out MapDataInfo parsedData) { return TryAnalyzeUrlAdress(uri, Id, currentData, out parsedData); }
         /// <summary>
         /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="providerId"></param>
-        /// <param name="data"></param>
+        /// <param name="currentData">Aktuální pozice v mapě</param>
+        /// <param name="parsedData"></param>
         /// <returns></returns>
-        internal static bool TryAnalyzeUrlAdress(Uri uri, string providerId, out MapDataInfo data)
+        internal static bool TryAnalyzeUrlAdress(Uri uri, string providerId, MapDataInfo currentData, out MapDataInfo parsedData)
         {
-            data = null;
+            parsedData = null;
 
             // Web:
             string web = (providerId == MapProviderSeznamMapy.Id ? "mapy.cz" :
@@ -5319,10 +5339,13 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
             // Zoom
             SearchUriQueryValue("z", queryData, out int zoom, out bool hasZoom);
 
-            // Souřadnice bodu Point - pokud nebude nalezeno, bude to v souřadnici Center:
+            // Souřadnice bodu Point - výchozí je v souřadnici Center:
             bool hasPoint = false;
             Double pointX = centerX;
             Double pointY = centerY;
+
+            // a) Point nalezený pomocí source=coor;id=(kordináty) :
+            //    To se do mapy vkládá buď Ctrl+Click, anebo Pravá myš:menu Co je zde?
             SearchUriQueryValue("source", queryData, out string source, out bool hasSource);
             SearchUriQueryValue("id", queryData, out string id, out bool hasId);
             if (hasSource && String.Equals(source, "coor") && hasId && !String.IsNullOrEmpty(id) && id.Contains("%2C"))
@@ -5335,6 +5358,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
                     pointY = ptY;
                 }
             }
+            // b) Nebo pokud se uživatel pokusí o "navigování" Pravá myš:trasa sem
 
             // Postranní panel:
             bool hasPanel = false;
@@ -5345,7 +5369,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
             }
 
             // Result:
-            data = new MapDataInfo()
+            parsedData = new MapDataInfo()
             {
                 Point = new PointD(pointX, pointY),
                 Center = new PointD(centerX, centerY),
@@ -5369,6 +5393,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         //   https://mapy.cz/zakladni?source=stre&id=112413&x=15.9639638&y=50.0608455&z=14                                           co je zde - ulice
         //   https://mapy.cz/zakladni?source=addr&id=12769313&x=15.9154587&y=50.0302891&z=16                                         co je zde - číslo popisné, adresa s fotkou
         //   https://mapy.cz/zakladni?l=0&source=coor&id=15.90928966136471%2C50.03222574216687&x=15.9146702&y=50.0303891&z=17        co je zde - bez pravého panelu, ale bod zájmu tam je
+        //   https://mapy.cz/zakladni?moje-mapy&l=0&cat=dashboard&x=15.8010357&y=49.9187780&z=15
 
         // Více bodů najednou:
         //   https://mapy.cz/zakladni?vlastni-body&l=0&ut=M%C3%ADsto%20%C3%BAtoku&ut=M%C3%ADsto%20zadr%C5%BEen%C3%AD&uc=9hBKDxXwmmcORbET&ud=Na%20P%C5%99%C3%ADkop%C4%9B%20958%2F25%2C%20Praha%2C%20110%2000%2C%20Hlavn%C3%AD%20m%C4%9Bsto%20Praha&ud=Kov%C3%A1k%C5%AF%2C%20Praha%2C%20Hlavn%C3%AD%20m%C4%9Bsto%20Praha&x=14.4139961&y=50.0828279&z=14
@@ -5409,9 +5434,10 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
-        /// <param name="data"></param>
+        /// <param name="currentData">Aktuální pozice v mapě</param>
+        /// <param name="parsedData"></param>
         /// <returns></returns>
-        protected override bool TryParseUrlAdress(Uri uri, out MapDataInfo data) { return TryAnalyzeUrlAdress(uri, out data); }
+        protected override bool TryParseUrlAdress(Uri uri, MapDataInfo currentData, out MapDataInfo parsedData) { return TryAnalyzeUrlAdress(uri, currentData, out parsedData); }
         /// <summary>
         /// Z dodaných dat o mapě <see cref="MapProviderBase.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
         /// </summary>
@@ -5429,17 +5455,19 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
-        /// <param name="data"></param>
+        /// <param name="currentData">Aktuální pozice v mapě</param>
+        /// <param name="parsedData"></param>
         /// <returns></returns>
-        internal static bool TryAnalyzeUrlAdress(Uri uri, out MapDataInfo data) { return TryAnalyzeUrlAdress(uri, Id, out data); }
+        internal static bool TryAnalyzeUrlAdress(Uri uri, MapDataInfo currentData, out MapDataInfo parsedData) { return TryAnalyzeUrlAdress(uri, Id, currentData, out parsedData); }
         /// <summary>
         /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="providerId"></param>
-        /// <param name="data"></param>
+        /// <param name="currentData">Aktuální pozice v mapě</param>
+        /// <param name="parsedData"></param>
         /// <returns></returns>
-        internal static bool TryAnalyzeUrlAdress(Uri uri, string providerId, out MapDataInfo data) { return MapProviderSeznamMapy.TryAnalyzeUrlAdress(uri, providerId, out data); }
+        internal static bool TryAnalyzeUrlAdress(Uri uri, string providerId, MapDataInfo currentData, out MapDataInfo parsedData) { return MapProviderSeznamMapy.TryAnalyzeUrlAdress(uri, providerId, currentData, out parsedData); }
     }
     /// <summary>
     /// Provider map <b><u>GoogleMaps</u></b>, implementuje <see cref="IMapProvider"/>
@@ -5477,9 +5505,10 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
-        /// <param name="data"></param>
+        /// <param name="currentData">Aktuální pozice v mapě</param>
+        /// <param name="parsedData"></param>
         /// <returns></returns>
-        protected override bool TryParseUrlAdress(Uri uri, out MapDataInfo data) { return TryAnalyzeUrlAdress(uri, out data); }
+        protected override bool TryParseUrlAdress(Uri uri, MapDataInfo currentData, out MapDataInfo parsedData) { return TryAnalyzeUrlAdress(uri, currentData, out parsedData); }
         /// <summary>
         /// Z dodaných dat o mapě <see cref="MapProviderBase.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
         /// </summary>
@@ -5532,19 +5561,21 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
-        /// <param name="data"></param>
+        /// <param name="currentData">Aktuální pozice v mapě</param>
+        /// <param name="parsedData"></param>
         /// <returns></returns>
-        internal static bool TryAnalyzeUrlAdress(Uri uri, out MapDataInfo data) { return TryAnalyzeUrlAdress(uri, Id, out data); }
+        internal static bool TryAnalyzeUrlAdress(Uri uri, MapDataInfo currentData, out MapDataInfo parsedData) { return TryAnalyzeUrlAdress(uri, Id, currentData, out parsedData); }
         /// <summary>
         /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="providerId"></param>
-        /// <param name="data"></param>
+        /// <param name="currentData">Aktuální pozice v mapě</param>
+        /// <param name="parsedData"></param>
         /// <returns></returns>
-        internal static bool TryAnalyzeUrlAdress(Uri uri, string providerId, out MapDataInfo data)
+        internal static bool TryAnalyzeUrlAdress(Uri uri, string providerId, MapDataInfo currentData, out MapDataInfo parsedData)
         {
-            data = null;
+            parsedData = null;
 
             // Web:
             string web = "www.google.com";
@@ -5555,7 +5586,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
 
             //  https://www.google.com/maps/@49.6835743,15.8558701,4854m/data=!3m1!1e3?hl=cs-CZ&entry=ttu&g_ep=EgoyMDI0MTAwNS4yIKXMDSoASAFQAw%3D%3D
 
-            data = null;
+            parsedData = null;
             return false;
         }
     }
@@ -5595,9 +5626,10 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
-        /// <param name="data"></param>
+        /// <param name="currentData">Aktuální pozice v mapě</param>
+        /// <param name="parsedData"></param>
         /// <returns></returns>
-        protected override bool TryParseUrlAdress(Uri uri, out MapDataInfo data) { return TryAnalyzeUrlAdress(uri, out data); }
+        protected override bool TryParseUrlAdress(Uri uri, MapDataInfo currentData, out MapDataInfo parsedData) { return TryAnalyzeUrlAdress(uri, currentData, out parsedData); }
         /// <summary>
         /// Z dodaných dat o mapě <see cref="MapProviderBase.MapDataInfo"/> (souřadnice, typ, zoom atd) vytvoří URL adresu
         /// </summary>
@@ -5653,19 +5685,21 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
-        /// <param name="data"></param>
+        /// <param name="currentData">Aktuální pozice v mapě</param>
+        /// <param name="parsedData"></param>
         /// <returns></returns>
-        internal static bool TryAnalyzeUrlAdress(Uri uri, out MapDataInfo data) { return TryAnalyzeUrlAdress(uri, Id, out data); }
+        internal static bool TryAnalyzeUrlAdress(Uri uri, MapDataInfo currentData, out MapDataInfo parsedData) { return TryAnalyzeUrlAdress(uri, Id, currentData, out parsedData); }
         /// <summary>
         /// Pokusí se parsovat dodanou URL adresu a vytěžit z ní informace o mapě <see cref="MapProviderBase.MapDataInfo"/>.
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="providerId"></param>
-        /// <param name="data"></param>
+        /// <param name="currentData">Aktuální pozice v mapě</param>
+        /// <param name="parsedData"></param>
         /// <returns></returns>
-        internal static bool TryAnalyzeUrlAdress(Uri uri, string providerId, out MapDataInfo data)
+        internal static bool TryAnalyzeUrlAdress(Uri uri, string providerId, MapDataInfo currentData, out MapDataInfo parsedData)
         {
-            data = null;
+            parsedData = null;
 
             // Web:
             string host = uri.Host;
@@ -5706,7 +5740,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
             var hasPanel = false;
 
             // Result:
-            data = new MapDataInfo()
+            parsedData = new MapDataInfo()
             {
                 Point = new PointD(pointX, pointY),
                 Center = new PointD(centerX, centerY),
@@ -5719,13 +5753,67 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
             return true;
         }
 
+        /*
+
+        Základní mapa, obsahuje Center (ale bez pointu, bez poznámek, základní typ):
+        https://www.openstreetmap.org/#map=14/49.94746/15.80104
+
+        Stejná mapa, ale obsahuje point kousek vedle od středu mapy, bez dalších Note:
+        https://www.openstreetmap.org/?mlat=49.951259217818&mlon=15.794888555225#map=14/49.94746/15.80104
+
+        Stejná mapa ale se zapnutím Navigovat sem (zmizí Center pozice mapy, pamatuje si ji od posledně):
+        https://www.openstreetmap.org/directions?from=&to=49.95072%2C15.81851
+
+        Zapnutá Navigovat sem (vpravo od středu) a poté posunutá = objeví se i Center mapy:
+        https://www.openstreetmap.org/directions?from=&to=49.95072%2C15.81851#map=14/49.94746/15.80190
+
+        Zapnutá Navigovat sem (vpravo od středu) i Navigovat odsud (vlevo od středu) = upravil se Zoom i Center, je doplněn navigační stroj:
+        https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=49.95145%2C15.76959%3B49.95073%2C15.81851#map=15/49.95301/15.79407
+
+        Dopravní mapa na místě první základní mapy:
+        https://www.openstreetmap.org/#map=14/49.94746/15.80104&layers=T
+
+        Layers (&layers=T):
+        ------
+        T = Traffic
+        N = Notes
+        D = Data k mapě
+        G = Veřejné GPS stopy
+        Y = CycloOSM
+        C = Cyklomapy
+        P = Tracestack Topo
+        H = Humanitární
+
+        Navigační engines  (directions?engine=fossgis_valhalla_foot):
+        -----------------
+        graphhopper_car         
+        fossgis_osrm_car
+        fossgis_valhalla_car
+
+        graphhopper_bicycle
+        fossgis_osrm_bike
+        fossgis_valhalla_bicycle
+
+        graphhopper_foot
+        fossgis_osrm_foot
+        fossgis_valhalla_foot           
+
+
+        // Navigace:
+        //   https://www.openstreetmap.org/directions?from=&to=49.95442%2C15.78759#map=16/49.95399/15.79651;
+
+
+        // Značka:
         //   https://www.openstreetmap.org/?mlat=49.999988&mlon=15.757273#map=19/49.999988/15.757271&layers=T          obsahuje umístěnou značku - a bez postranních panelů a bez cizích poznámek
         //   https://www.openstreetmap.org/#map=14/49.94349/15.79452&layers=N
         //   https://www.openstreetmap.org/?mlat=49.999988&mlon=15.757273#map=16/50.04246/15.82406                     jiné měřítko, std mapa
         //   https://www.openstreetmap.org/#map=14/49.94349/15.79452&layers=N
         //   https://www.openstreetmap.org/#map=12/49.9320/15.7875&layers=N
         //   https://www.openstreetmap.org/directions?from=&to=50.0238%2C15.6009#map=12/50.0280/15.6105&layers=P       Zadaný cíl cesty (From-To), a malý panel vlevo
+
+        */
     }
+    #endregion
     #endregion
     #region class OpenLocationCodeConvertor : třída obsahující kodér a dekodér souřadnic ve formátu OpenLocationCode
     /// <summary>
