@@ -4384,7 +4384,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         private static IMapProvider __CurrentProvider;
         /// <summary>
         /// Pole všech mapových providerů, které jsou dostupné v aktuální assembly. 
-        /// Toto pole obsahuje i providery, které mají <see cref="IMapProvider.IsUserAccessible"/> = false.
+        /// Toto pole obsahuje i providery, které mají <see cref="IMapProvider.Activity"/> = false.
         /// <para/>
         /// Uživatelskou nabídku obsahuje pole <see cref="UserAccessibleProviders"/>.
         /// </summary>
@@ -4399,11 +4399,11 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         }
         /// <summary>
         /// Pole těch mapových providerů, které se mohou nabídnout uživateli.
-        /// Toto pole obsahuje pouze takové providery, které mají <see cref="IMapProvider.IsUserAccessible"/> = true.
+        /// Toto pole obsahuje pouze takové providery, které mají <see cref="IMapProvider.Activity"/> = true.
         /// <para/>
         /// Kompletní nabídku všech providerů obsahuje pole <see cref="AllProviders"/>.
         /// </summary>
-        public static IMapProvider[] UserAccessibleProviders { get { return AllProviders.Where(p => p.IsUserAccessible).ToArray(); } }
+        public static IMapProvider[] UserAccessibleProviders { get { return AllProviders.Where(p => (p.Activity == MapProviderActivity.Active || p.Activity == MapProviderActivity.InDevelop)).ToArray(); } }
         /// <summary>
         /// Úložiště pole <see cref="AllProviders"/>
         /// </summary>
@@ -4415,13 +4415,13 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         private static IMapProvider[] _GetAllProviders()
         {
             Type iMapProviderInterface = typeof(IMapProvider);                                               // Typ hledaného interface
-            var providerTypes = typeof(MapProviderBase).Assembly.GetTypes().Where(isMapProvider).ToArray();      // Typy popisující hledané třídy, které řádně implementují IMapProvider
+            var providerTypes = typeof(MapProviderBase).Assembly.GetTypes().Where(isMapProvider).ToArray();  // Typy popisující hledané třídy, které řádně implementují IMapProvider
+            bool isDebugger = System.Diagnostics.Debugger.IsAttached;                                        // Jsme v debuggeru
 
             var providers = new List<IMapProvider>();
             foreach (var providerType in providerTypes)
             {
-                var provider = createProvider(providerType);
-                if (provider != null)
+                if (tryCreateProvider(providerType, out var provider))
                     providers.Add(provider);
             }
             // ORDER BY SortOrder ASC:
@@ -4452,16 +4452,26 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
                 catch { /* Nevyhodnotitelný typ může být například takový, který se odkazuje na nepřítomnou DLLku, pak mám exception "Assembly Xxx not found" */ }
                 return false;
             }
-            // Vytvoří instanci daného typu a vrátí ji jako IMapProvider
-            IMapProvider createProvider(Type type)
+            // Vytvoří instanci daného typu a vrátí ji jako IMapProvider. Pokud provider má Activity = neaktivní (v aktuální situaci), pak vrátí null.
+            bool tryCreateProvider(Type type, out IMapProvider mapProvider)
             {
                 try
                 {
                     var instance = System.Activator.CreateInstance(type);
-                    if (instance != null && instance is IMapProvider mapProvider) return mapProvider;
+                    if (instance != null && instance is IMapProvider prvdr)
+                    {
+                        var activity = prvdr.Activity;
+                        if (activity == MapProviderActivity.Active || activity == MapProviderActivity.Hidden || (activity == MapProviderActivity.InDevelop && isDebugger))
+                        {
+                            mapProvider = prvdr;
+                            return true;
+                        }
+                    }
                 }
                 catch { /*  */ }
-                return null;
+
+                mapProvider = null;
+                return false;
             }
         }
         #endregion
@@ -4474,7 +4484,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         #region Explicitní implementace IMapProvider => abstraktní protected prvky
         string IMapProvider.ProviderId { get { return this.ProviderId; } }
         string IMapProvider.ProviderName { get { return this.ProviderName; } }
-        bool IMapProvider.IsUserAccessible { get { return this.IsUserAccessible; } }
+        MapProviderActivity IMapProvider.Activity { get { return this.Activity; } }
         int IMapProvider.SortOrder { get { return this.SortOrder; } }
         string IMapProvider.GetUrlAdress(MapProviderBase.MapDataInfo data) { return this.GetUrlAdress(data); }
         bool IMapProvider.TryParseUrlAdress(Uri uri, MapDataInfo currentData, out MapProviderBase.MapDataInfo parsedData) { return this.TryParseUrlAdress(uri, currentData, out parsedData); }
@@ -4490,7 +4500,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Tohoto providera je možno nabízet uživateli ve výběru providerů?
         /// Některé providery nechceme aktivně nabízet, ale umíme s nimi pracovat.
         /// </summary>
-        protected abstract bool IsUserAccessible { get; }
+        protected abstract MapProviderActivity Activity { get; }
         /// <summary>
         /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
         /// </summary>
@@ -4515,7 +4525,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// <returns></returns>
         public override string ToString()
         {
-            return $"{this.ProviderName} ({this.ProviderId})";
+            return $"{this.ProviderName}";
         }
         #endregion
         #region Static support pro parsování / formátování číselných dat souřadnic
@@ -5161,7 +5171,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Tohoto providera je možno nabízet uživateli ve výběru providerů?
         /// Některé providery nechceme aktivně nabízet, ale umíme s nimi pracovat.
         /// </summary>
-        bool IsUserAccessible { get; }
+        MapProviderActivity Activity { get; }
         /// <summary>
         /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
         /// </summary>
@@ -5180,6 +5190,28 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// <param name="parsedData"></param>
         /// <returns></returns>
         bool TryParseUrlAdress(Uri uri, MapProviderBase.MapDataInfo currentData, out MapProviderBase.MapDataInfo parsedData);
+    }
+    /// <summary>
+    /// Aktivita provideru
+    /// </summary>
+    public enum MapProviderActivity
+    {
+        /// <summary>
+        /// Neaktivní = vypnutý
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Standardně aktivní (viditelný uživateli, za standardního běhu aplikace)
+        /// </summary>
+        Active,
+        /// <summary>
+        /// V aplikaci aktivní, ale uživateli vizuálně nedostupný
+        /// </summary>
+        Hidden,
+        /// <summary>
+        /// Aktivní pouze v Debug režimu, dostupný uživateli i aplikačnímu kódu
+        /// </summary>
+        InDevelop
     }
     #region Konkrétní provideři: pro zadanou souřadnici vygenerují URL, anebo ze zadané URL parsují souřadnici (a další informace)
     /*  Provider implementuje IMapProvider a tím může být použit jako obecný zdroj, nemusí být potomkem MapProviderBase
@@ -5210,7 +5242,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Tohoto providera je možno nabízet uživateli ve výběru providerů?
         /// Některé providery nechceme aktivně nabízet, ale umíme s nimi pracovat.
         /// </summary>
-        protected override bool IsUserAccessible { get { return true; } }
+        protected override MapProviderActivity Activity { get { return MapProviderActivity.Active; } }
         /// <summary>
         /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
         /// </summary>
@@ -5419,7 +5451,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Tohoto providera je možno nabízet uživateli ve výběru providerů?
         /// Některé providery nechceme aktivně nabízet, ale umíme s nimi pracovat.
         /// </summary>
-        protected override bool IsUserAccessible { get { return true; } }
+        protected override MapProviderActivity Activity { get { return MapProviderActivity.Active; } }
         /// <summary>
         /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
         /// </summary>
@@ -5490,7 +5522,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Tohoto providera je možno nabízet uživateli ve výběru providerů?
         /// Některé providery nechceme aktivně nabízet, ale umíme s nimi pracovat.
         /// </summary>
-        protected override bool IsUserAccessible { get { return true; } }
+        protected override MapProviderActivity Activity { get { return MapProviderActivity.Active; } }
         /// <summary>
         /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
         /// </summary>
@@ -5611,7 +5643,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Tohoto providera je možno nabízet uživateli ve výběru providerů?
         /// Některé providery nechceme aktivně nabízet, ale umíme s nimi pracovat.
         /// </summary>
-        protected override bool IsUserAccessible { get { return true; } }
+        protected override MapProviderActivity Activity { get { return MapProviderActivity.Active; } }
         /// <summary>
         /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
         /// </summary>
