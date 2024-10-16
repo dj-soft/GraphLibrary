@@ -4712,6 +4712,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static decimal LogGetTimeElapsed(long startTime, string logTokenTime = null) { return Instance._LogGetTimeElapsed(startTime, logTokenTime); }
         /// <summary>
+        /// Vrátí true, pokud v uplynulých (<paramref name="miliseconds"/>) milisekundách byl testován daný event.
+        /// Slouží k tomu, aby se do logu nevypisovaly stále stejné eventy, pokud nám u nich stačí jeden zápis za určitý počet milisekund.
+        /// <para/>
+        /// Typické použití je u často po sobě jdoucích eventech typu "Změnil se text do statusbaru" nebo "přišla další webová response".
+        /// Typický kód:
+        /// <code>
+        /// if (!<see cref="DxComponent.LogIsRepeated"/>(50, "WebStatusBarChanged"))
+        ///     <see cref="DxComponent.LogAddLine"/>(<see cref="LogActivityKind.DevExpressEvents"/>, "Událost WebStatusBarChanged");
+        /// </code>
+        /// A má význam: Pokud v posledních 50ms byl evidován test "WebStatusBarChanged", pak vrátí true a NEprovede se zápis do logu.
+        /// </summary>
+        /// <param name="miliseconds"></param>
+        /// <param name="eventName"></param>
+        /// <returns></returns>
+        public static bool LogIsRepeated(int miliseconds, string eventName) { return Instance._LogIsRepeated(miliseconds, eventName); }
+        /// <summary>
         /// Přidá titulek (mezera + daný text ohraničený znaky ===)
         /// </summary>
         /// <param name="kind">Zdroj, filtruje se podle <see cref="LogActivities"/></param>
@@ -4847,6 +4863,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             string userName = (hasDebugger ? System.Environment.UserName?.ToLower() : "");
             bool isDeveloper = (userName == "david.janacek" || userName == "david");
             _LogActive = hasDebugger && isDeveloper;
+            __LogRunningWatch = new System.Diagnostics.Stopwatch();
+            __LogRunningWatch.Start();
+            __LogFrequencyLong = System.Diagnostics.Stopwatch.Frequency;
         }
         /// <summary>
         /// Aktivita logu
@@ -4859,7 +4878,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (value && (__LogWatch == null || __LogSB == null))
                 {   // Inicializace:
                     __LogWatch = new System.Diagnostics.Stopwatch();
-                    __LogFrequencyLong = System.Diagnostics.Stopwatch.Frequency;
                     __LogFrequency = __LogFrequencyLong;
                     __LogTimeSpanForEmptyRow = System.Diagnostics.Stopwatch.Frequency / 10L;   // Pokud mezi dvěma zápisy do logu bude časová pauza 1/10 sekundy a víc, vložím EmptyRow
                     __LogSB = new StringBuilder();
@@ -4958,6 +4976,36 @@ namespace Noris.Clients.Win.Components.AsolDX
                 default:
                     return Math.Round((seconds * 1000000m), 3);
             }
+        }
+        /// <summary>
+        /// Vrátí true, pokud v uplynulých (<paramref name="miliseconds"/>) milisekundách byl testován daný event.
+        /// Slouží k tomu, aby se do logu nevypisovaly stále stejné eventy, pokud nám u nich stačí jeden zápis za určitý počet milisekund.
+        /// <para/>
+        /// Typické použití je u často po sobě jdoucích eventech typu "Změnil se text do statusbaru" nebo "přišla další webová response".
+        /// Typický kód:
+        /// <code>
+        /// if (!<see cref="DxComponent.LogIsRepeated"/>(50, "WebStatusBarChanged"))
+        ///     <see cref="DxComponent.LogAddLine"/>(<see cref="LogActivityKind.DevExpressEvents"/>, "Událost WebStatusBarChanged");
+        /// </code>
+        /// A má význam: Pokud v posledních 50ms byl evidován test "WebStatusBarChanged", pak vrátí true a NEprovede se zápis do logu.
+        /// </summary>
+        /// <param name="miliseconds"></param>
+        /// <param name="eventName"></param>
+        /// <returns></returns>
+        private bool _LogIsRepeated(int miliseconds, string eventName)
+        {
+            if (String.IsNullOrEmpty(eventName)) return false;                 // Bez jména eventu vrátím false = není to opakování.
+
+            // Volání je opakované tehdy, když máme minulé jméno eventu a nynější event je tentýž, a máme minulý čas dotazu a aktuálně uplynulý čas není větší:
+            bool isRepeated = (!String.IsNullOrEmpty(__LogLastRepeatedEventName)
+                             && String.Equals(eventName, __LogLastRepeatedEventName)
+                             && __LogLastRepeatedTime > 0L
+                             && _LogGetMiliseconds(__LogLastRepeatedTime, _LogRunningWatchCurrentTicks) <= miliseconds);
+
+            // Uložíme si aktuální čas jako čas LastRepated, a zapíšu si eventname i kdyby byl shodný...
+            __LogLastRepeatedTime = _LogRunningWatchCurrentTicks;
+            __LogLastRepeatedEventName = eventName;
+            return isRepeated;
         }
         /// <summary>
         /// Přidá dodaný řádek do logu. Umožní do textu vložit uplynulý čas:
@@ -5075,6 +5123,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             return (1000000L * (stop - start)) / __LogFrequencyLong;
         }
+        private long _LogGetMiliseconds(long start, long stop)
+        {
+            return (1000L * (stop - start)) / __LogFrequencyLong;
+        }
         /// <summary>
         /// Vyvolá event <see cref="__LogTextChanged"/>.
         /// </summary>
@@ -5095,6 +5147,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool __LogActive;
         private LogActivityKind __LogActivities;
         private System.Diagnostics.Stopwatch __LogWatch;
+        private long _LogWatchCurrentTicks { get { return __LogWatch.ElapsedTicks; } }
         private decimal __LogFrequency;
         private long __LogFrequencyLong;
         private StringBuilder __LogSB;
@@ -5102,6 +5155,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         private long __LogStartTicks;
         private long __LogLastWriteTicks;
         private long __LogTimeSpanForEmptyRow;
+        /// <summary>
+        /// Stopky stáleběžící, běží i když log není aktivní
+        /// </summary>
+        private System.Diagnostics.Stopwatch __LogRunningWatch;
+        /// <summary>
+        /// Aktuální čas stopek stáleběžících <see cref="__LogRunningWatch"/>
+        /// </summary>
+        private long _LogRunningWatchCurrentTicks { get { return __LogRunningWatch.ElapsedTicks; } }
+        /// <summary>
+        /// Poslední čas dotazu <see cref="_LogIsRepeated(int, string)"/>
+        /// </summary>
+        private long __LogLastRepeatedTime;
+        /// <summary>
+        /// Poslední eventName dotazu <see cref="_LogIsRepeated(int, string)"/>
+        /// </summary>
+        private string __LogLastRepeatedEventName;
         /// <summary>
         /// Jméno položky v konfiguraci pro <see cref="DxComponent.LogActive"/>
         /// </summary>

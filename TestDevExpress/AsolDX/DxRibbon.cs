@@ -8155,21 +8155,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                     Text = "UHD Paint",
                     ToolTipText = "Zapíná podporu pro Full vykreslování na UHD monitoru",
                     ItemType = RibbonItemType.CheckButton,
+                    RibbonStyle = RibbonItemStyles.SmallWithText,
                     ImageName = "svgimages/xaf/action_view_chart.svg",
                     Checked = DxComponent.UhdPaintEnabled,
                     ClickAction = _SetUhdPaint
-                });
-
-            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.ImageGallery))
-                iGroup.Items.Add(new DataRibbonItem()
-                {
-                    ItemId = DesignRibbonItemLogImageGallery,
-                    Text = "DX Images",
-                    ToolTipText = "Otevře okno s nabídkou systémových ikon",
-                    ItemType = RibbonItemType.Button,
-                    RibbonStyle = RibbonItemStyles.Large,
-                    ImageName = "svgimages/icon%20builder/actions_image.svg",
-                    ClickAction = _ShowImages
                 });
 
             if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.LogActivity))
@@ -8179,6 +8168,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     Text = "Log Active",
                     ToolTipText = "Zapíná / vypíná logování aktivity",
                     ItemType = RibbonItemType.CheckButton,
+                    RibbonStyle = RibbonItemStyles.SmallWithText,
                     ImageName = "svgimages/spreadsheet/movepivottable.svg",
                     Checked = DxComponent.LogActive,
                     ClickAction = _SetLogActivity
@@ -8191,9 +8181,22 @@ namespace Noris.Clients.Win.Components.AsolDX
                     Text = "Hide Capture",
                     ToolTipText = "Zapíná / vypíná možnost skrývat obsah oken pro Capture programy (Teams, VideoRecording, PrintScreen). Aktivní button (orámovaný) = true = obsah oken není možno zachycovat.",
                     ItemType = RibbonItemType.CheckButton,
+                    RibbonStyle = RibbonItemStyles.SmallWithText,
                     ImageName = "images/xaf/templatesv2images/state_itemvisibility_hide.svg",
                     Checked = DxComponent.LogActive,
                     ClickAction = _SetNotCaptureWindows
+                });
+
+            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.ImageGallery))
+                iGroup.Items.Add(new DataRibbonItem()
+                {
+                    ItemId = DesignRibbonItemLogImageGallery,
+                    Text = "DX Images",
+                    ToolTipText = "Otevře okno s nabídkou systémových ikon",
+                    ItemType = RibbonItemType.Button,
+                    RibbonStyle = RibbonItemStyles.Large,
+                    ImageName = "svgimages/icon%20builder/actions_image.svg",
+                    ClickAction = _ShowImages
                 });
 
             return iGroup;

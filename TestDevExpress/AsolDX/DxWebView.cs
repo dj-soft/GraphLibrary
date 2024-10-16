@@ -1836,6 +1836,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (callChangeMapView) this.__Owner.RefreshMap();                                            // Překreslení mapy
             }
             /// <summary>
+            /// Z aktuálního providera načte jeho vlastnosti do MapProperties = this (načítá <see cref="IMapProvider.WaitForGetImageSyncMs"/> a <see cref="IMapProvider.DelayedResponseWaitingMs"/>).
+            /// </summary>
+            private void _ReloadMapProvider()
+            {
+                var provider = this.__MapCoordinates.Provider;
+                this.WaitForGetImageSyncMs = provider.WaitForGetImageSyncMs ?? 5000;
+                this.DelayedResponseWaitingMs = provider.DelayedResponseWaitingMs ?? 100;
+            }
+            /// <summary>
             /// Nastaví výchozí hodnoty
             /// </summary>
             private void _InitValues()
@@ -1914,7 +1923,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Změna této hodnoty nezmění interaktivně mapu (mapu změní pouze setování <see cref="Coordinates"/>). 
             /// Mapu lze refreshnout pomocí <see cref="DxMapViewPanel.RefreshMap"/> anebo <see cref="CoordinatesRefresh"/>.
             /// </summary>
-            public IMapProvider CoordinatesProvider { get { return __MapCoordinates.Provider; } set { __MapCoordinates.Provider = value; } }
+            public IMapProvider CoordinatesProvider { get { return __MapCoordinates.Provider; } set { __MapCoordinates.Provider = value; _ReloadMapProvider(); } }
             /// <summary>
             /// Typ mapy (standardní, dopravní, turistická, fotoletecká).<br/>
             /// Změna této hodnoty nezmění interaktivně mapu (mapu změní pouze setování <see cref="Coordinates"/>). 
@@ -1948,6 +1957,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Pokud je <see cref="DxWebViewDisplayMode.CaptureSync"/>, pak po setování URL adresy je vlákno pozdrženo až do dokončení načítání Picture.<br/>
             /// </summary>
             public DxWebViewDisplayMode DisplayMode { get { return this.__Owner.WebProperties.DisplayMode; } set { this.__Owner.WebProperties.DisplayMode = value; } }
+            /// <summary>
+            /// Doba čekání (v milisekundách) na synchronní získání Image
+            /// </summary>
+            public int? WaitForGetImageSyncMs { get { return this.__Owner.WebProperties.WaitForGetImageSyncMs; } set { this.__Owner.WebProperties.WaitForGetImageSyncMs = value; } }
             /// <summary>
             /// Doba čekání (v milisekundách) na opožděné <b><u>WebResourceResponse</u></b> = data (response), které do WebView přicházejí ze serveru i poté, kdy už proběhl event <see cref="MsWebView.MsWebNavigationCompleted"/>.
             /// Tedy: už je načten základ obsahu z požadované URL adresy, ale různé skripty ještě donačítají další data = z hlediska aktivity prohlížeče "na pozadí".
@@ -2171,7 +2184,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _CoreWeb_SourceChanged(object sender, Microsoft.Web.WebView2.Core.CoreWebView2SourceChangedEventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.SourceChanged");
+            if (!DxComponent.LogIsRepeated(5, "WebViewCore.SourceChanged"))
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.SourceChanged");
+
             _DetectChanges();
         }
         /// <summary>
@@ -2181,7 +2196,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _CoreWeb_StatusTextChanged(object sender, object e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.StatusBarTextChanged");
+            if (!DxComponent.LogIsRepeated(5, "WebViewCore.StatusBarTextChanged"))
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.StatusBarTextChanged");
+
             _DetectChanges();
         }
         /// <summary>
@@ -2191,7 +2208,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _CoreWeb_HistoryChanged(object sender, object e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.HistoryChanged");
+            if (!DxComponent.LogIsRepeated(5, "WebViewCore.HistoryChanged"))
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.HistoryChanged");
+
             _DetectChanges();
         }
         /// <summary>
@@ -2202,7 +2221,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _CoreWeb_NewWindowRequested(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NewWindowRequestedEventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.NewWindowRequested");
+            if (!DxComponent.LogIsRepeated(5, "WebViewCore.NewWindowRequested"))
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.NewWindowRequested");
+
             var properties = this.WebProperties;
             if (properties.CanOpenNewWindow)
                 e.NewWindow = this.CoreWebView2;
@@ -2214,7 +2235,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _CoreWeb_NavigationStarting(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.NavigationStarting");
+            if (!DxComponent.LogIsRepeated(5, "WebViewCore.NavigationStarting"))
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.NavigationStarting");
+
             __MsWebIsInNavigateState = true;               // Běží navigace základní URL
             __MsWebIsInNavigateTotalState = true;          // Běží navigace pro přídavné Responses
             __MsWebWaitingForResponses = false;            // Zatím nečekáme na DelayedResponses
@@ -2229,7 +2252,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _CoreWeb_NavigationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.NavigationCompleted");
+            if (!DxComponent.LogIsRepeated(5, "WebViewCore.NavigationCompleted"))
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.NavigationCompleted");
+
             __MsWebIsInNavigateState = false;              // Doběhla navigace základní URL, ale přídavné Responses stále mohou běžet
             _DetectChanges();
             _RunMsWebNavigationCompleted();
@@ -2242,7 +2267,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _CoreWeb_NavigationTotalCompleted(object sender, EventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.NavigationTotalCompleted");
+            if (!DxComponent.LogIsRepeated(5, "WebViewCore.NavigationTotalCompleted"))
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.NavigationTotalCompleted");
+
             __MsWebIsInNavigateTotalState = false;         // Doběhla navigace pro přídavné Responses
             __MsWebWaitingForResponses = false;            // Již nečekáme na DelayedResponses
             _DetectChanges();
@@ -2255,7 +2282,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _CoreWeb_DocumentTitleChanged(object sender, object e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.DocumentTitleChanged");
+            if (!DxComponent.LogIsRepeated(5, "WebViewCore.DocumentTitleChanged"))
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.DocumentTitleChanged");
+
             _DetectChanges();
         }
         /// <summary>
@@ -2266,7 +2295,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <exception cref="NotImplementedException"></exception>
         private void _CoreWeb_FrameNavigationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.FrameNavigationCompleted");
+            if (!DxComponent.LogIsRepeated(5, "WebViewCore.FrameNavigationCompleted"))
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.FrameNavigationCompleted");
         }
         /// <summary>
         /// Po donačtení dat z webu = přišla další Response
@@ -2275,7 +2305,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _CoreWeb_WebResourceResponseReceived(object sender, Microsoft.Web.WebView2.Core.CoreWebView2WebResourceResponseReceivedEventArgs e)
         {
-            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.WebResourceResponseReceived");
+            if (!DxComponent.LogIsRepeated(5, "WebViewCore.WebResourceResponseReceived"))
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.WebResourceResponseReceived");
+
             _CheckDelayedResponse();                       // Tam se ověří, zda budeme čekat na doběhnutí dalších Responses (odpovědi ze serveru, které přicházejí po NavigationCompleted)
         }
         /// <summary>
@@ -2582,7 +2614,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud je dodán <paramref name="callback"/>, pak event <see cref="MsWebImageCaptured"/> neproběhne !!!</param>
         public void LoadMsWebImageAsync(object requestId = null, Action<MsWebImageCapturedArgs> callback = null)
         {
-            if (_TryGetValidLastCapturedWebViewImage(out var lastData))
+            if (_TryGetValidLastCapturedWebViewImage(out var lastData, out var _))
             {   // Pokud už máme zachycen Last Image, který je dosud platný, tak nemusíme nic aktuálně načítat, a naše lastData pošleme do eventů:
                 callTarget(callback, requestId, lastData, false);
                 return;
@@ -2650,7 +2682,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             System.Drawing.Image image = null;
             if (this.IsDisposed || this.Disposing) return image;
 
-            if (_TryGetValidLastCapturedWebViewImage(out var lastData))
+            if (_TryGetValidLastCapturedWebViewImage(out var lastData, out var _))
             {   // Pokud už máme zachycen Last Image, který je dosud platný, tak nemusíme nic aktuálně načítat, a naše lastData vrátíme jako Image:
                 image = processTarget(callback, lastData, false);
                 return image;
@@ -2806,14 +2838,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// V této metodě počká volající (GUI) thread na Total dokončení navigace i na následné synchronní získání Image.
         /// </summary>
-        private void _StartCapturedImageWaitSync(double timeOutSeconds = 7)
+        private void _StartCapturedImageWaitSync(double? waitMaxSeconds = null)
         {
             DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "MsWebView.CaptureSync => Waiting...");
 
             // Slušně počkáme na stav { __MsWebIsInNavigateTotalState == false }, máme daný Timeout:
             if (__MsWebIsInNavigateTotalState)
             {
-                var isNavigated = DxComponent.SleepUntil(() => !__MsWebIsInNavigateTotalState, TimeSpan.FromSeconds(timeOutSeconds), 100);
+                var webPropertiesWait = this.WebProperties.WaitForGetImageSyncMs;
+                double waitSeconds = (waitMaxSeconds.HasValue && waitMaxSeconds.Value > 0d ? waitMaxSeconds.Value :
+                                     (webPropertiesWait.HasValue && webPropertiesWait.Value > 0 ? (((double)webPropertiesWait.Value) / 1000d) : 7d));
+
+                var isNavigated = DxComponent.SleepUntil(() => !__MsWebIsInNavigateTotalState, TimeSpan.FromSeconds(waitSeconds), 100);
                 DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, (isNavigated ? "MsWebView.CaptureSync => TotalCompleted." : "MsWebView.CaptureSync => Timeout expired."));
             }
             else
@@ -2869,34 +2905,49 @@ namespace Noris.Clients.Win.Components.AsolDX
             __LastCapturedWebViewImageData = imageData;
         }
         /// <summary>
-        /// Velikost obrázku <see cref="__LastCapturedWebViewImageData"/>
+        /// Obsahuje true, pokud tento objekt má zachycený validní Image pro svoji adresu a velikost
         /// </summary>
-        private System.Drawing.Size? __LastCapturedWebViewImageSize;
+        public bool HasValidLastCapturedImage { get { return _TryGetValidLastCapturedWebViewImage(out var _, out var _); } }
+        /// <summary>
+        /// Obsahuje velikost obrázku v <see cref="LastCapturedWebViewImage"/>
+        /// </summary>
+        public System.Drawing.Size? LastCapturedWebViewImageSize { get { return (_TryGetValidLastCapturedWebViewImage(out var _, out var imageSize) ? imageSize : null); } }
         /// <summary>
         /// Obsah obrázku posledně zachyceného metodou <see cref="LoadMsWebImageAsync"/>
         /// </summary>
-        public byte[] LastCapturedWebViewImageData { get { return (_TryGetValidLastCapturedWebViewImage(out var imageData) ? imageData : null); } } private byte[] __LastCapturedWebViewImageData;
+        public byte[] LastCapturedWebViewImageData { get { return (_TryGetValidLastCapturedWebViewImage(out var imageData, out var _) ? imageData : null); } }
         /// <summary>
         /// Image vygenerovaný z dat <see cref="LastCapturedWebViewImageData"/>
         /// </summary>
-        public System.Drawing.Image LastCapturedWebViewImage { get { return (_TryGetValidLastCapturedWebViewImage(out var imageData) ? MsWebImageCapturedArgs.CreateImage(imageData) : null); } }
+        public System.Drawing.Image LastCapturedWebViewImage { get { return (_TryGetValidLastCapturedWebViewImage(out var imageData, out var _) ? MsWebImageCapturedArgs.CreateImage(imageData) : null); } }
         /// <summary>
         /// Metoda zkusí získat data validního Image z <see cref="LastCapturedWebViewImageData"/>.
         /// Tedy: pokud jsou nějaká data uložena, a jsou uložena pro aktuální velikost controlu.
         /// </summary>
         /// <param name="imageData"></param>
+        /// <param name="imageSize"></param>
         /// <returns></returns>
-        private bool _TryGetValidLastCapturedWebViewImage(out byte[] imageData)
+        private bool _TryGetValidLastCapturedWebViewImage(out byte[] imageData, out System.Drawing.Size? imageSize)
         {
             imageData = null;
+            imageSize = null;
             var lastSize = __LastCapturedWebViewImageSize;
             var lastData = __LastCapturedWebViewImageData;
             if (!lastSize.HasValue || lastData is null) return false;
             var currSize = this.Size;
             if (currSize != lastSize.Value) return false;
             imageData = lastData;
+            imageSize = lastSize;
             return true;
         }
+        /// <summary>
+        /// Velikost obrázku <see cref="__LastCapturedWebViewImageData"/>
+        /// </summary>
+        private System.Drawing.Size? __LastCapturedWebViewImageSize;
+        /// <summary>
+        /// Data obrázku
+        /// </summary>
+        private byte[] __LastCapturedWebViewImageData;
         #endregion
         #region URL adresa, Status bar, navigace, atd...
         /// <summary>
@@ -3082,7 +3133,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private volatile bool __MsWebWaitingForResponses;
         #endregion
-        #region class PropertiesInfo : Souhrn vlastností, tak aby byly k dosažení pod jedním místem
+        #region class WebPropertiesInfo : Souhrn vlastností, tak aby byly k dosažení pod jedním místem
         /// <summary>
         /// Souhrn vlastností <see cref="MsWebView"/>, tak aby byly k dosažení v jednom místě.
         /// </summary>
@@ -3150,6 +3201,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 __IsStatusRowVisible = false;
                 __CanOpenNewWindow = true;
                 __DisplayMode = DxWebViewDisplayMode.Live;
+                __WaitForGetImageSyncMs = 7000;
+                __DelayedResponseWaitingMs = 15;
             }
             /// <summary>
             /// Je toolbar viditelný?
@@ -3205,6 +3258,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// - ten může zajišťovat získání Image a jeho zobrazení v Panelu namísto živého WebView.
             /// </summary>
             public DxWebViewDisplayMode DisplayMode { get { return __DisplayMode; } set { _SetValueDoAction(value, ref __DisplayMode, DxWebViewActionType.DoChangeDisplayMode, true); } } private DxWebViewDisplayMode __DisplayMode;
+            /// <summary>
+            /// Doba čekání (v milisekundách) na synchronní získání Image
+            /// </summary>
+            public int? WaitForGetImageSyncMs { get { return __WaitForGetImageSyncMs; } set { _SetValueDoAction(value, ref __WaitForGetImageSyncMs, DxWebViewActionType.None); } } private int? __WaitForGetImageSyncMs;
             /// <summary>
             /// Doba čekání (v milisekundách) na opožděné <b><u>WebResourceResponse</u></b> = data (response), které do WebView přicházejí ze serveru i poté, kdy už proběhl event <see cref="MsWebView.MsWebNavigationCompleted"/>.
             /// Tedy: už je načten základ obsahu z požadované URL adresy, ale různé skripty ještě donačítají další data = z hlediska aktivity prohlížeče "na pozadí".
@@ -4485,6 +4542,8 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         string IMapProvider.ProviderId { get { return this.ProviderId; } }
         string IMapProvider.ProviderName { get { return this.ProviderName; } }
         MapProviderActivity IMapProvider.Activity { get { return this.Activity; } }
+        int? IMapProvider.WaitForGetImageSyncMs { get { return this.WaitForGetImageSyncMs; } }
+        int? IMapProvider.DelayedResponseWaitingMs { get { return this.DelayedResponseWaitingMs; } }
         int IMapProvider.SortOrder { get { return this.SortOrder; } }
         string IMapProvider.GetUrlAdress(MapProviderBase.MapDataInfo data) { return this.GetUrlAdress(data); }
         bool IMapProvider.TryParseUrlAdress(Uri uri, MapDataInfo currentData, out MapProviderBase.MapDataInfo parsedData) { return this.TryParseUrlAdress(uri, currentData, out parsedData); }
@@ -4501,6 +4560,26 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Některé providery nechceme aktivně nabízet, ale umíme s nimi pracovat.
         /// </summary>
         protected abstract MapProviderActivity Activity { get; }
+        /// <summary>
+        /// Doba čekání (v milisekundách) na synchronní získání Image
+        /// </summary>
+        protected virtual int? WaitForGetImageSyncMs { get { return null; } }
+        /// <summary>
+        /// Doba čekání (v milisekundách) na opožděné <b><u>WebResourceResponse</u></b> = data (response), které do WebView přicházejí ze serveru i poté, kdy už proběhl event <see cref="MsWebView.MsWebNavigationCompleted"/>.
+        /// Tedy: už je načten základ obsahu z požadované URL adresy, ale různé skripty ještě donačítají další data = z hlediska aktivity prohlížeče "na pozadí".
+        /// <para/>
+        /// Pokud je tato doba null (nebo nula nebo záporné), pak neočekáváme dodání opožděných dat, a ihned po eventu <see cref="MsWebView.MsWebNavigationCompleted"/> proběhne event <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+        /// <para/>
+        /// Pokud je zde kladné číslo, pak nejprve proběhne event <see cref="MsWebView.MsWebNavigationCompleted"/> (ten je dán stejnou událostí ve WebView), a poté čekáme na příchozí data <b><u>WebResourceResponse</u></b>.
+        /// Čekáme nejdéle zda zadanou dobu, a když po danou dobu žádná data nepřijdou, pak vyvoláme event <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+        /// Pokud nějaké Response přijdou, tak od jejich příchodu resetujeme čas čekání = čekáme tedy vždy <see cref="DelayedResponseWaitingMs"/> od poslední <b><u>WebResourceResponse</u></b>.
+        /// <para/>
+        /// Slouží to primárně k tomu, abychom provedli CaptureImage až po naplnění všech dat ze zadané URL adresy. 
+        /// Některé webové adresy načtou kostru webové stránky téměř ihned a ohlásí, že mají hotovo = <see cref="MsWebView.MsWebNavigationCompleted"/>.
+        /// A přitom jejich stránka vůbec není kompletní, neobsahují obrázky atd. Ty dotékají opožděně formou těchto <b><u>WebResourceResponse</u></b>.
+        /// A až poté proběhne <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+        /// </summary>
+        protected virtual int? DelayedResponseWaitingMs { get { return null; } }
         /// <summary>
         /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
         /// </summary>
@@ -5173,6 +5252,26 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// </summary>
         MapProviderActivity Activity { get; }
         /// <summary>
+        /// Doba čekání (v milisekundách) na synchronní získání Image
+        /// </summary>
+        int? WaitForGetImageSyncMs { get; }
+        /// <summary>
+        /// Doba čekání (v milisekundách) na opožděné <b><u>WebResourceResponse</u></b> = data (response), které do WebView přicházejí ze serveru i poté, kdy už proběhl event <see cref="MsWebView.MsWebNavigationCompleted"/>.
+        /// Tedy: už je načten základ obsahu z požadované URL adresy, ale různé skripty ještě donačítají další data = z hlediska aktivity prohlížeče "na pozadí".
+        /// <para/>
+        /// Pokud je tato doba null (nebo nula nebo záporné), pak neočekáváme dodání opožděných dat, a ihned po eventu <see cref="MsWebView.MsWebNavigationCompleted"/> proběhne event <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+        /// <para/>
+        /// Pokud je zde kladné číslo, pak nejprve proběhne event <see cref="MsWebView.MsWebNavigationCompleted"/> (ten je dán stejnou událostí ve WebView), a poté čekáme na příchozí data <b><u>WebResourceResponse</u></b>.
+        /// Čekáme nejdéle zda zadanou dobu, a když po danou dobu žádná data nepřijdou, pak vyvoláme event <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+        /// Pokud nějaké Response přijdou, tak od jejich příchodu resetujeme čas čekání = čekáme tedy vždy <see cref="DelayedResponseWaitingMs"/> od poslední <b><u>WebResourceResponse</u></b>.
+        /// <para/>
+        /// Slouží to primárně k tomu, abychom provedli CaptureImage až po naplnění všech dat ze zadané URL adresy. 
+        /// Některé webové adresy načtou kostru webové stránky téměř ihned a ohlásí, že mají hotovo = <see cref="MsWebView.MsWebNavigationCompleted"/>.
+        /// A přitom jejich stránka vůbec není kompletní, neobsahují obrázky atd. Ty dotékají opožděně formou těchto <b><u>WebResourceResponse</u></b>.
+        /// A až poté proběhne <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+        /// </summary>
+        int? DelayedResponseWaitingMs { get; }
+        /// <summary>
         /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
         /// </summary>
         int SortOrder { get; }
@@ -5243,6 +5342,22 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Některé providery nechceme aktivně nabízet, ale umíme s nimi pracovat.
         /// </summary>
         protected override MapProviderActivity Activity { get { return MapProviderActivity.Active; } }
+        /// <summary>
+        /// Doba čekání (v milisekundách) na opožděné <b><u>WebResourceResponse</u></b> = data (response), které do WebView přicházejí ze serveru i poté, kdy už proběhl event <see cref="MsWebView.MsWebNavigationCompleted"/>.
+        /// Tedy: už je načten základ obsahu z požadované URL adresy, ale různé skripty ještě donačítají další data = z hlediska aktivity prohlížeče "na pozadí".
+        /// <para/>
+        /// Pokud je tato doba null (nebo nula nebo záporné), pak neočekáváme dodání opožděných dat, a ihned po eventu <see cref="MsWebView.MsWebNavigationCompleted"/> proběhne event <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+        /// <para/>
+        /// Pokud je zde kladné číslo, pak nejprve proběhne event <see cref="MsWebView.MsWebNavigationCompleted"/> (ten je dán stejnou událostí ve WebView), a poté čekáme na příchozí data <b><u>WebResourceResponse</u></b>.
+        /// Čekáme nejdéle zda zadanou dobu, a když po danou dobu žádná data nepřijdou, pak vyvoláme event <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+        /// Pokud nějaké Response přijdou, tak od jejich příchodu resetujeme čas čekání = čekáme tedy vždy <see cref="DelayedResponseWaitingMs"/> od poslední <b><u>WebResourceResponse</u></b>.
+        /// <para/>
+        /// Slouží to primárně k tomu, abychom provedli CaptureImage až po naplnění všech dat ze zadané URL adresy. 
+        /// Některé webové adresy načtou kostru webové stránky téměř ihned a ohlásí, že mají hotovo = <see cref="MsWebView.MsWebNavigationCompleted"/>.
+        /// A přitom jejich stránka vůbec není kompletní, neobsahují obrázky atd. Ty dotékají opožděně formou těchto <b><u>WebResourceResponse</u></b>.
+        /// A až poté proběhne <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+        /// </summary>
+        protected override int? DelayedResponseWaitingMs { get { return 250; } }
         /// <summary>
         /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
         /// </summary>
@@ -5391,6 +5506,10 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
                 }
             }
             // b) Nebo pokud se uživatel pokusí o "navigování" Pravá myš:trasa sem
+            if (!hasPoint)
+            {
+
+            }
 
             // Postranní panel:
             bool hasPanel = false;
@@ -5452,6 +5571,22 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Některé providery nechceme aktivně nabízet, ale umíme s nimi pracovat.
         /// </summary>
         protected override MapProviderActivity Activity { get { return MapProviderActivity.Active; } }
+        /// <summary>
+        /// Doba čekání (v milisekundách) na opožděné <b><u>WebResourceResponse</u></b> = data (response), které do WebView přicházejí ze serveru i poté, kdy už proběhl event <see cref="MsWebView.MsWebNavigationCompleted"/>.
+        /// Tedy: už je načten základ obsahu z požadované URL adresy, ale různé skripty ještě donačítají další data = z hlediska aktivity prohlížeče "na pozadí".
+        /// <para/>
+        /// Pokud je tato doba null (nebo nula nebo záporné), pak neočekáváme dodání opožděných dat, a ihned po eventu <see cref="MsWebView.MsWebNavigationCompleted"/> proběhne event <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+        /// <para/>
+        /// Pokud je zde kladné číslo, pak nejprve proběhne event <see cref="MsWebView.MsWebNavigationCompleted"/> (ten je dán stejnou událostí ve WebView), a poté čekáme na příchozí data <b><u>WebResourceResponse</u></b>.
+        /// Čekáme nejdéle zda zadanou dobu, a když po danou dobu žádná data nepřijdou, pak vyvoláme event <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+        /// Pokud nějaké Response přijdou, tak od jejich příchodu resetujeme čas čekání = čekáme tedy vždy <see cref="DelayedResponseWaitingMs"/> od poslední <b><u>WebResourceResponse</u></b>.
+        /// <para/>
+        /// Slouží to primárně k tomu, abychom provedli CaptureImage až po naplnění všech dat ze zadané URL adresy. 
+        /// Některé webové adresy načtou kostru webové stránky téměř ihned a ohlásí, že mají hotovo = <see cref="MsWebView.MsWebNavigationCompleted"/>.
+        /// A přitom jejich stránka vůbec není kompletní, neobsahují obrázky atd. Ty dotékají opožděně formou těchto <b><u>WebResourceResponse</u></b>.
+        /// A až poté proběhne <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+        /// </summary>
+        protected override int? DelayedResponseWaitingMs { get { return 250; } }
         /// <summary>
         /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
         /// </summary>
@@ -5523,6 +5658,22 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Některé providery nechceme aktivně nabízet, ale umíme s nimi pracovat.
         /// </summary>
         protected override MapProviderActivity Activity { get { return MapProviderActivity.Active; } }
+        /// <summary>
+        /// Doba čekání (v milisekundách) na opožděné <b><u>WebResourceResponse</u></b> = data (response), které do WebView přicházejí ze serveru i poté, kdy už proběhl event <see cref="MsWebView.MsWebNavigationCompleted"/>.
+        /// Tedy: už je načten základ obsahu z požadované URL adresy, ale různé skripty ještě donačítají další data = z hlediska aktivity prohlížeče "na pozadí".
+        /// <para/>
+        /// Pokud je tato doba null (nebo nula nebo záporné), pak neočekáváme dodání opožděných dat, a ihned po eventu <see cref="MsWebView.MsWebNavigationCompleted"/> proběhne event <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+        /// <para/>
+        /// Pokud je zde kladné číslo, pak nejprve proběhne event <see cref="MsWebView.MsWebNavigationCompleted"/> (ten je dán stejnou událostí ve WebView), a poté čekáme na příchozí data <b><u>WebResourceResponse</u></b>.
+        /// Čekáme nejdéle zda zadanou dobu, a když po danou dobu žádná data nepřijdou, pak vyvoláme event <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+        /// Pokud nějaké Response přijdou, tak od jejich příchodu resetujeme čas čekání = čekáme tedy vždy <see cref="DelayedResponseWaitingMs"/> od poslední <b><u>WebResourceResponse</u></b>.
+        /// <para/>
+        /// Slouží to primárně k tomu, abychom provedli CaptureImage až po naplnění všech dat ze zadané URL adresy. 
+        /// Některé webové adresy načtou kostru webové stránky téměř ihned a ohlásí, že mají hotovo = <see cref="MsWebView.MsWebNavigationCompleted"/>.
+        /// A přitom jejich stránka vůbec není kompletní, neobsahují obrázky atd. Ty dotékají opožděně formou těchto <b><u>WebResourceResponse</u></b>.
+        /// A až poté proběhne <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+        /// </summary>
+        protected override int? DelayedResponseWaitingMs { get { return 250; } }
         /// <summary>
         /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
         /// </summary>
@@ -5644,6 +5795,22 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         /// Některé providery nechceme aktivně nabízet, ale umíme s nimi pracovat.
         /// </summary>
         protected override MapProviderActivity Activity { get { return MapProviderActivity.Active; } }
+        /// <summary>
+        /// Doba čekání (v milisekundách) na opožděné <b><u>WebResourceResponse</u></b> = data (response), které do WebView přicházejí ze serveru i poté, kdy už proběhl event <see cref="MsWebView.MsWebNavigationCompleted"/>.
+        /// Tedy: už je načten základ obsahu z požadované URL adresy, ale různé skripty ještě donačítají další data = z hlediska aktivity prohlížeče "na pozadí".
+        /// <para/>
+        /// Pokud je tato doba null (nebo nula nebo záporné), pak neočekáváme dodání opožděných dat, a ihned po eventu <see cref="MsWebView.MsWebNavigationCompleted"/> proběhne event <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+        /// <para/>
+        /// Pokud je zde kladné číslo, pak nejprve proběhne event <see cref="MsWebView.MsWebNavigationCompleted"/> (ten je dán stejnou událostí ve WebView), a poté čekáme na příchozí data <b><u>WebResourceResponse</u></b>.
+        /// Čekáme nejdéle zda zadanou dobu, a když po danou dobu žádná data nepřijdou, pak vyvoláme event <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+        /// Pokud nějaké Response přijdou, tak od jejich příchodu resetujeme čas čekání = čekáme tedy vždy <see cref="DelayedResponseWaitingMs"/> od poslední <b><u>WebResourceResponse</u></b>.
+        /// <para/>
+        /// Slouží to primárně k tomu, abychom provedli CaptureImage až po naplnění všech dat ze zadané URL adresy. 
+        /// Některé webové adresy načtou kostru webové stránky téměř ihned a ohlásí, že mají hotovo = <see cref="MsWebView.MsWebNavigationCompleted"/>.
+        /// A přitom jejich stránka vůbec není kompletní, neobsahují obrázky atd. Ty dotékají opožděně formou těchto <b><u>WebResourceResponse</u></b>.
+        /// A až poté proběhne <see cref="MsWebView.MsWebNavigationTotalCompleted"/>.
+        /// </summary>
+        protected override int? DelayedResponseWaitingMs { get { return 180; } }
         /// <summary>
         /// Pořadí provideru v poli mezi ostatními providery, pro nabídky
         /// </summary>

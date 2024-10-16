@@ -21,6 +21,7 @@ using DevExpress.Utils.Drawing;
 using DevExpress.Utils.Text;
 using DevExpress.XtraTab;
 using DevExpress.XtraEditors.Controls;
+using Noris.Clients.Win.Components.Obsoletes.DataForm;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -77,7 +78,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Základní formulář bez Ribbonu a StatusBaru
     /// </summary>
-    public class DxStdForm : DevExpress.XtraEditors.XtraForm, IDxControlWithIcons, IListenerZoomChange, IListenerStyleChanged, IListenerExcludeFromCaptureContentChanged, IListenerApplicationIdle
+    public class DxStdForm : DevExpress.XtraEditors.XtraForm, IDxControlWithIcons, IFormWorking, IListenerZoomChange, IListenerStyleChanged, IListenerExcludeFromCaptureContentChanged, IListenerApplicationIdle
     {
         #region Konstruktor a základní vlastnosti
         /// <summary>
@@ -330,21 +331,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.ActivityState = WindowActivityState.Creating;
 
-            this.Activated += ActivityStateDetect_Activated;
-            this.Deactivate += ActivityStateDetect_Deactivate;
-            this.GotFocus += ActivityStateDetect_GotFocus;
-            this.LostFocus += ActivityStateDetect_LostFocus;
-            this.VisibleChanged += ActivityStateDetect_VisibleChanged;
-            this.SizeChanged += ActivityStateDetect_SizeChanged;
-            this.FormClosing += ActivityStateDetect_FormClosing;
-            this.FormClosed += ActivityStateDetect_FormClosed;
+            this.Activated += _ActivityStateDetect_Activated;
+            this.Deactivate += _ActivityStateDetect_Deactivate;
+            this.GotFocus += _ActivityStateDetect_GotFocus;
+            this.LostFocus += _ActivityStateDetect_LostFocus;
+            this.VisibleChanged += _ActivityStateDetect_VisibleChanged;
+            this.FormClosing += _ActivityStateDetect_FormClosing;
+            this.FormClosed += _ActivityStateDetect_FormClosed;
         }
         /// <summary>
         /// Hlídáme změny stavu <see cref="ActivityState"/>
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ActivityStateDetect_Activated(object sender, EventArgs e)
+        private void _ActivityStateDetect_Activated(object sender, EventArgs e)
         {
             this.ActivityState = WindowActivityState.Active;
         }
@@ -353,7 +353,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ActivityStateDetect_Deactivate(object sender, EventArgs e)
+        private void _ActivityStateDetect_Deactivate(object sender, EventArgs e)
         {
             this.ActivityState = WindowActivityState.Inactive;
         }
@@ -362,7 +362,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ActivityStateDetect_GotFocus(object sender, EventArgs e)
+        private void _ActivityStateDetect_GotFocus(object sender, EventArgs e)
         {
             this.ActivityState = WindowActivityState.Active;
         }
@@ -371,7 +371,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ActivityStateDetect_LostFocus(object sender, EventArgs e)
+        private void _ActivityStateDetect_LostFocus(object sender, EventArgs e)
         {
             this.ActivityState = WindowActivityState.Inactive;
         }
@@ -380,7 +380,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ActivityStateDetect_VisibleChanged(object sender, EventArgs e)
+        private void _ActivityStateDetect_VisibleChanged(object sender, EventArgs e)
         {
             this.ActivityState = (this.Visible ? WindowActivityState.Visible : WindowActivityState.Invisible);
         }
@@ -389,15 +389,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ActivityStateDetect_SizeChanged(object sender, EventArgs e)
-        {
-        }
-        /// <summary>
-        /// Hlídáme změny stavu <see cref="ActivityState"/>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ActivityStateDetect_FormClosing(object sender, FormClosingEventArgs e)
+        private void _ActivityStateDetect_FormClosing(object sender, FormClosingEventArgs e)
         {
             this.ActivityState = WindowActivityState.Closing;
         }
@@ -406,7 +398,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ActivityStateDetect_FormClosed(object sender, FormClosedEventArgs e)
+        private void _ActivityStateDetect_FormClosed(object sender, FormClosedEventArgs e)
         {
             this.ActivityState = WindowActivityState.Closed;
         }
@@ -526,7 +518,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Formulář s ribbonem.
     /// Obsahuje připravený Ribbon <see cref="DxRibbon"/> a připravený StatusBar <see cref="DxStatusBar"/>.
     /// </summary>
-    public abstract class DxRibbonBaseForm : DevExpress.XtraBars.Ribbon.RibbonForm, IDxControlWithIcons, IListenerZoomChange, IListenerStyleChanged, IListenerApplicationIdle, IListenerExcludeFromCaptureContentChanged
+    public abstract class DxRibbonBaseForm : DevExpress.XtraBars.Ribbon.RibbonForm, IDxControlWithIcons, IFormWorking, IListenerZoomChange, IListenerStyleChanged, IListenerApplicationIdle, IListenerExcludeFromCaptureContentChanged
     {
         #region Konstruktor a základní vlastnosti
         /// <summary>
@@ -534,8 +526,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxRibbonBaseForm()
         {
-            this.ActivityStateInit();
-            this.FormPositionInit();
+            this._FormStatusInit();
+            this._ActivityStateInit();
+            this._FormPositionInit();
             this.ImageName = AsolDX.ImageName.DxFormIcon;
             this.InitDxRibbonForm();
             DxComponent.RegisterListener(this);
@@ -556,7 +549,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!_WasShown)
             {
                 this.ActivityState = WindowActivityState.FirstShow;
-                this.FormPositionApply(true);
+                this._FormPositionApply(true);
                 this.OnFirstShownBefore();
                 this.FirstShownBefore?.Invoke(this, EventArgs.Empty);
                 this.ActivityState = WindowActivityState.ShowBefore;
@@ -655,6 +648,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             NextShown = null;
         }
         #endregion
+        #region FormStatus
+        private void _FormStatusInit()
+        {
+            __FormStatus = new FormStatusInfo(this);
+        }
+        private FormStatusInfo __FormStatus;
+        public WindowActivityState ActivityState
+        {
+            get { return __FormStatus.ActivityState; }
+            private set { __FormStatus.ActivityState = value; }
+        }
+        #endregion
         #region Ikona okna
         /// <summary>
         /// Název obrázku, který reprezentuje ikonu tohoto okna
@@ -736,13 +741,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Inicializace hlídání pozice okna
         /// </summary>
-        private void FormPositionInit()
+        private void _FormPositionInit()
         {
-            this.FormPositionRestore();
-            this.SizeChanged += FormPositionChanged;
-            this.LocationChanged += FormPositionChanged;
-            this.FormClosed += FormPosition_FormClosed;
-            this.FormPositionApply(false);
+            this._FormPositionRestore();
+            this.SizeChanged += _FormPositionChanged;
+            this.LocationChanged += _FormPositionChanged;
+            this.FormClosed += _FormPosition_FormClosed;
+            this._FormPositionApply(false);
 
             this.SetStyle(ControlStyles.EnableNotifyMessage, true);
         }
@@ -752,13 +757,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="m">A System.Windows.Forms.Message that represents the Windows message.</param>
         protected override void OnNotifyMessage(Message m)
         {
-            bool logMessage = NeedLogMessage(m);
-
-            string suffix = (logMessage ? ((m.Msg == DxWin32.WM.WINDOWPOSCHANGING || m.Msg == DxWin32.WM.WINDOWPOSCHANGED) ? "; Bounds: " + Convertor.RectangleToString(Bounds) : "") : null);
-
-            if (logMessage) DxComponent.LogAddMessage(m, this, "Start.", suffix);
-            base.OnNotifyMessage(m);
-            if (logMessage) DxComponent.LogAddMessage(m, this, "  End.", suffix);
+            if (NeedLogMessage(m))
+            {   // Včetně logování WinMessages:
+                string suffix = (m.Msg == DxWin32.WM.WINDOWPOSCHANGING || m.Msg == DxWin32.WM.WINDOWPOSCHANGED) ? "; Bounds: " + Convertor.RectangleToString(Bounds) : "";
+                DxComponent.LogAddMessage(m, this, "Start.", suffix);
+                base.OnNotifyMessage(m);
+                DxComponent.LogAddMessage(m, this, "  End.", suffix);
+            }
+            else
+            {   // Bez logování WinMessages:
+                base.OnNotifyMessage(m);
+            }
         }
         /// <summary>
         /// Vrátí true pokud daná message se má logovat
@@ -826,7 +835,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Připraví si pozici okna - načte ji z aplikace pomocí metody <see cref="OnFormPositionLoad()"/> a správně si výsledek zapamatuje.
         /// </summary>
-        private void FormPositionRestore()
+        private void _FormPositionRestore()
         {
             string position = OnFormPositionLoad();
             _FormPositionRegister = position;
@@ -837,7 +846,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Je nutno setovat jednak v konstruktoru, a druhak v OnFirstShownBefore(), kvůli UHD grafice a přepočtu rozměrů !!!
         /// </summary>
         /// <param name="isShown"></param>
-        private void FormPositionApply(bool isShown)
+        private void _FormPositionApply(bool isShown)
         {
             AddLogPosition("FormPositionApply.Before: ");
             var formPosition = _FormPositionInfo;
@@ -876,7 +885,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void FormPositionChanged(object sender, EventArgs e)
+        private void _FormPositionChanged(object sender, EventArgs e)
         {
             this.FormPositionOnChange(false);
         }
@@ -885,7 +894,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void FormPosition_FormClosed(object sender, FormClosedEventArgs e)
+        private void _FormPosition_FormClosed(object sender, FormClosedEventArgs e)
         {
             string text = DxComponent.LogText;
 
@@ -905,7 +914,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Zde formulář umožňuje potomkovi, aby odněkud načetl pozici a stav okna pro obnovení uložené pozice při otevírání okna, a zde ji vrátil.
-        /// Pro uložení pozice okna po interaktivní změně je určena metoda <see cref="DxRibbonBaseForm.FormPositionRestore()"/>.
+        /// Pro uložení pozice okna po interaktivní změně je určena metoda <see cref="DxRibbonBaseForm._FormPositionRestore()"/>.
         /// <para/>
         /// Tato virtual metoda je volaná z konstruktoru - proto nemá smysl, aby existoval párový eventhandler - není kdy ho zaregistrovat (a po provedení konstruktoru je pozdě).
         /// </summary>
@@ -948,24 +957,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Inicializace stavu okna a odpovídajících handlerů
         /// </summary>
-        private void ActivityStateInit()
+        private void _ActivityStateInit()
         {
             this.ActivityState = WindowActivityState.Creating;
-            this.Activated += ActivityStateDetect_Activated;
-            this.Deactivate += ActivityStateDetect_Deactivate;
-            this.GotFocus += ActivityStateDetect_GotFocus;
-            this.LostFocus += ActivityStateDetect_LostFocus;
-            this.VisibleChanged += ActivityStateDetect_VisibleChanged;
-            this.SizeChanged += ActivityStateDetect_SizeChanged;
-            this.FormClosing += ActivityStateDetect_FormClosing;
-            this.FormClosed += ActivityStateDetect_FormClosed;
+
+            this.Activated += _ActivityStateDetect_Activated;
+            this.Deactivate += _ActivityStateDetect_Deactivate;
+            this.GotFocus += _ActivityStateDetect_GotFocus;
+            this.LostFocus += _ActivityStateDetect_LostFocus;
+            this.VisibleChanged += _ActivityStateDetect_VisibleChanged;
+            this.FormClosing += _ActivityStateDetect_FormClosing;
+            this.FormClosed += _ActivityStateDetect_FormClosed;
         }
         /// <summary>
         /// Hlídáme změny stavu <see cref="ActivityState"/>
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ActivityStateDetect_Activated(object sender, EventArgs e)
+        private void _ActivityStateDetect_Activated(object sender, EventArgs e)
         {
             this.ActivityState = WindowActivityState.Active;
         }
@@ -974,7 +983,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ActivityStateDetect_Deactivate(object sender, EventArgs e)
+        private void _ActivityStateDetect_Deactivate(object sender, EventArgs e)
         {
             this.ActivityState = WindowActivityState.Inactive;
         }
@@ -983,7 +992,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ActivityStateDetect_GotFocus(object sender, EventArgs e)
+        private void _ActivityStateDetect_GotFocus(object sender, EventArgs e)
         {
             this.ActivityState = WindowActivityState.Active;
         }
@@ -992,7 +1001,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ActivityStateDetect_LostFocus(object sender, EventArgs e)
+        private void _ActivityStateDetect_LostFocus(object sender, EventArgs e)
         {
             this.ActivityState = WindowActivityState.Inactive;
         }
@@ -1001,7 +1010,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ActivityStateDetect_VisibleChanged(object sender, EventArgs e)
+        private void _ActivityStateDetect_VisibleChanged(object sender, EventArgs e)
         {
             if (this.WasShown)
                 this.ActivityState = (this.Visible ? WindowActivityState.Visible : WindowActivityState.Invisible);
@@ -1011,15 +1020,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ActivityStateDetect_SizeChanged(object sender, EventArgs e)
-        {
-        }
-        /// <summary>
-        /// Hlídáme změny stavu <see cref="ActivityState"/>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ActivityStateDetect_FormClosing(object sender, FormClosingEventArgs e)
+        private void _ActivityStateDetect_FormClosing(object sender, FormClosingEventArgs e)
         {
             this.ActivityState = WindowActivityState.Closing;
         }
@@ -1028,7 +1029,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ActivityStateDetect_FormClosed(object sender, FormClosedEventArgs e)
+        private void _ActivityStateDetect_FormClosed(object sender, FormClosedEventArgs e)
         {
             this.ActivityState = WindowActivityState.Closed;
         }
@@ -1334,6 +1335,264 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Jméno přidané ikony (zobrazuje se v TabHeaderu)
         /// </summary>
         string IconNameAdd { get; }
+    }
+    /// <summary>
+    /// Informace o životním stavu formuláře (proces otevírání, zavírání atd), a o jeho pozici, rozměrech a maximalizaci
+    /// </summary>
+    internal class FormStatusInfo
+    {
+        #region Konstruktor, Owner, Dispose...
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="owner"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public FormStatusInfo(Form owner)
+        {
+            if (owner is null) throw new ArgumentNullException($"FormStatusInfo(Form owner): 'owner' can not be null.");
+
+            this._Owner = owner;
+            owner.Disposed += _Owner_Disposed;
+            this._LinkStatusEvents(owner);
+            this._LinkBoundsEvents(owner);
+        }
+        /// <summary>
+        /// Formulář byl Disposován
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _Owner_Disposed(object sender, EventArgs e)
+        {
+            var owner = _Owner;
+            this._UnLinkStatusEvents(owner);
+            this._UnLinkBoundsEvents(owner);
+            _Owner = null;
+        }
+        /// <summary>
+        /// Vlastník = formulář, ukládá se WeakTarget
+        /// </summary>
+        private Form _Owner
+        {
+            get { return ((__Owner != null && __Owner.IsAlive) ? __Owner.Target : null); }
+            set { __Owner = (value != null ? new WeakTarget<Form>(value) : null); }
+        }
+        /// <summary>
+        /// Vlastník = formulář, pokud implementuje <see cref="IFormWorking"/>. Jinak je null.
+        /// </summary>
+        private IFormWorking _IOwner { get { return _Owner as IFormWorking; } }
+        /// <summary>
+        /// WeakTarget na Vlastník = formulář
+        /// </summary>
+        private WeakTarget<Form> __Owner;
+        /// <summary>
+        /// Obsahuje hodnotu Visible z formuláře <see cref="_Owner"/>
+        /// </summary>
+        private bool _OwnerVisible { get { return (_Owner?.Visible ?? false); } }
+        /// <summary>
+        /// Obsahuje hodnotu WasShown z formuláře <see cref="_Owner"/> (as <see cref="IFormWorking"/>)
+        /// </summary>
+        private bool _OwnerWasShown { get { return (_IOwner?.WasShown ?? false); } }
+        #endregion
+        #region Stav okna v jeho životním cyklu: ActivityState
+        /// <summary>
+        /// Stav aktivity okna. Při změně je volána událost <see cref="ActivityStateChanged"/>.
+        /// </summary>
+        public WindowActivityState ActivityState
+        {
+            get { return __ActivityState; }
+            set
+            {   // Setování může provádět i Owner form:
+                var oldValue = __ActivityState;
+                var newValue = value;
+                if (newValue != oldValue)
+                {
+                    __ActivityState = newValue;
+                    _RunActivityStateChanged(oldValue, newValue);
+                }
+            }
+        }
+        /// <summary>Stav okna</summary>
+        private WindowActivityState __ActivityState;
+        /// <summary>
+        /// Aktivuje svoje eventhandlery do daného fornuláře pro sledování <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="owner"></param>
+        private void _LinkStatusEvents(Form owner)
+        {
+            this.ActivityState = WindowActivityState.Creating;
+
+            if (owner != null)
+            {
+                owner.Activated += _ActivityStateDetect_Activated;
+                owner.Deactivate += _ActivityStateDetect_Deactivate;
+                owner.GotFocus += _ActivityStateDetect_GotFocus;
+                owner.LostFocus += _ActivityStateDetect_LostFocus;
+                owner.VisibleChanged += _ActivityStateDetect_VisibleChanged;
+                owner.FormClosing += _ActivityStateDetect_FormClosing;
+                owner.FormClosed += _ActivityStateDetect_FormClosed;
+            }
+        }
+        /// <summary>
+        /// Deaktivuje svoje eventhandlery z daného fornuláře pro sledování <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="owner"></param>
+        private void _UnLinkStatusEvents(Form owner)
+        {
+            this.ActivityState = WindowActivityState.Creating;
+
+            if (owner != null)
+            {
+                owner.Activated -= _ActivityStateDetect_Activated;
+                owner.Deactivate -= _ActivityStateDetect_Deactivate;
+                owner.GotFocus -= _ActivityStateDetect_GotFocus;
+                owner.LostFocus -= _ActivityStateDetect_LostFocus;
+                owner.VisibleChanged -= _ActivityStateDetect_VisibleChanged;
+                owner.FormClosing -= _ActivityStateDetect_FormClosing;
+                owner.FormClosed -= _ActivityStateDetect_FormClosed;
+            }
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ActivityStateDetect_Activated(object sender, EventArgs e)
+        {
+            this.ActivityState = WindowActivityState.Active;
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ActivityStateDetect_Deactivate(object sender, EventArgs e)
+        {
+            this.ActivityState = WindowActivityState.Inactive;
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ActivityStateDetect_GotFocus(object sender, EventArgs e)
+        {
+            this.ActivityState = WindowActivityState.Active;
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ActivityStateDetect_LostFocus(object sender, EventArgs e)
+        {
+            this.ActivityState = WindowActivityState.Inactive;
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ActivityStateDetect_VisibleChanged(object sender, EventArgs e)
+        {
+            if (this._OwnerWasShown)
+                this.ActivityState = (this._OwnerVisible ? WindowActivityState.Visible : WindowActivityState.Invisible);
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ActivityStateDetect_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            this.ActivityState = WindowActivityState.Closing;
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ActivityStateDetect_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            this.ActivityState = WindowActivityState.Closed;
+        }
+        /// <summary>
+        /// Vyvolá <see cref="OnActivityStateChanged(TEventValueChangedArgs{WindowActivityState})"/> a event <see cref="ActivityStateChanged"/>.
+        /// </summary>
+        /// <param name="oldValue"></param>
+        /// <param name="newValue"></param>
+        private void _RunActivityStateChanged(WindowActivityState oldValue, WindowActivityState newValue)
+        {
+            var args = new TEventValueChangedArgs<WindowActivityState>(EventSource.None, oldValue, newValue);
+            OnActivityStateChanged(args);
+            ActivityStateChanged?.Invoke(_Owner, args);
+        }
+        /// <summary>
+        /// Metoda proběhne při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnActivityStateChanged(TEventValueChangedArgs<WindowActivityState> args) { }
+        /// <summary>
+        /// Událost volaná při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
+        /// </summary>
+        public event EventHandler<TEventValueChangedArgs<WindowActivityState>> ActivityStateChanged;
+        #endregion
+        #region Pozice a velikost okna a jeho WindowState
+        /// <summary>
+        /// Aktivuje svoje eventhandlery do daného fornuláře pro sledování <see cref="Bounds"/>
+        /// </summary>
+        /// <param name="owner"></param>
+        private void _LinkBoundsEvents(Form owner)
+        {
+            this._FormPositionRestore(owner);
+            if (owner != null)
+            {
+                owner.LocationChanged += _Position_LocationChanged;
+                owner.SizeChanged += _Position_SizeChanged;
+                owner.FormClosed += _Position_FormClosed;
+            }
+            this._FormPositionApply(false);
+        }
+        /// <summary>
+        /// Aktivuje svoje eventhandlery do daného fornuláře pro sledování <see cref="Bounds"/>
+        /// </summary>
+        /// <param name="owner"></param>
+        private void _UnLinkBoundsEvents(Form owner)
+        {
+            this._FormPositionRestore(owner);
+            if (owner != null)
+            {
+                owner.LocationChanged += _Position_LocationChanged;
+                owner.SizeChanged += _Position_SizeChanged;
+                owner.FormClosed += _Position_FormClosed;
+            }
+            this._FormPositionApply(false);
+        }
+        private void _Position_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void _Position_SizeChanged(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void _Position_LocationChanged(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+        #endregion
+    }
+    /// <summary>
+    /// Interface popisující rozšířené pracovní vlastnosti Formulářů
+    /// </summary>
+    internal interface IFormWorking
+    {
+        /// <summary>
+        /// Obsahuje true poté, kdy formulář byl zobrazen. 
+        /// Obsahuje true již v metodě <c>OnFirstShownAfter</c> a v eventu <c>FirstShownAfter</c>.
+        /// </summary>
+        bool WasShown { get; }
     }
     #endregion
     #region DxPanelControl + IDxPanelPaintedItem
