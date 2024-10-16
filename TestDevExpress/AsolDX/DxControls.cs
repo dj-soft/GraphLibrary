@@ -938,7 +938,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Stav aktivity okna. Při změně je volána událost <see cref="ActivityStateChanged"/>.
         /// </summary>
-        public WindowActivityState ActivityState
+        public WindowActivityState ____XXX__ActivityState
         {
             get { return _ActivityState; }
             protected set
