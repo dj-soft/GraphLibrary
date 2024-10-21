@@ -606,6 +606,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             FirstShownAfter = null;
             NextShown = null;
         }
+        /// <summary>
+        /// Struktura a rozmístění controlů
+        /// </summary>
+        internal string ControlsStructure { get { return this.GetControlStructure(); } }
         #endregion
         #region FormStatus (stav okna a ukládání pozice), support
         /// <summary>
