@@ -45,7 +45,7 @@ namespace TestDevExpress.Forms
             __MapTypeButton = createDropDownButton(_SelectMapTypeChange, MapCoordinatesMapType.Standard, MapCoordinatesMapType.Photo, MapCoordinatesMapType.Traffic);
             __WebDisplayModeButton = createDropDownButton(_SelectDisplayModeChange, WebDisplayType.Editable, WebDisplayType.ReadOnly, WebDisplayType.StaticAsync, WebDisplayType.StaticSync);
 
-            _DoContentLayout();
+            _DoContentLayout(true);
 
             DxSimpleButton createButton(EventHandler clickHandler, string text, string url)
             {
@@ -88,20 +88,31 @@ namespace TestDevExpress.Forms
         private DxDropDownButton __ProviderButton;
         private DxDropDownButton __MapTypeButton;
         private DxDropDownButton __WebDisplayModeButton;
+
+        protected override string PositionConfigName { get { return "WebMapForm"; } }
+
         /// <summary>
-        /// Provede se po změně velikosti ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/>
+        /// Provede se po změně velikosti ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/> i v jiných situacích.
+        /// Aktuální stav formuláře lze zjistit v <see cref="DxRibbonBaseForm.ActivityState"/>.
+        /// Parametr <paramref name="isSizeChanged"/> říká, zda se od posledního volání této metody změnila velikost Main panelu.
         /// </summary>
-        protected override void DxMainContentDoLayout()
+        /// <param name="isSizeChanged">Pokud je true, pak od posledního volání této metody se změnila velikost panelu <see cref="DxRibbonForm.DxMainPanel"/> 'ClientSize'. Hodnota false = nezměnila se, ale změnilo se okno nebo něco jiného...</param>
+        protected override void DxMainContentDoLayout(bool isSizeChanged)
         {
-            _DoContentLayout();
+            _DoContentLayout(isSizeChanged);
         }
         /// <summary>
         /// Zajistí umístění prvků do layoutu po Resize atd:
         /// </summary>
-        private void _DoContentLayout()
+        /// <param name="isSizeChanged">Pokud je true, pak od posledního volání této metody se změnila velikost panelu <see cref="DxRibbonForm.DxMainPanel"/> 'ClientSize'. Hodnota false = nezměnila se, ale změnilo se okno nebo něco jiného...</param>
+        private void _DoContentLayout(bool isSizeChanged)
         {
             var webPanel = __MapViewPanel;
             if (webPanel is null) return;
+
+            var activityState = this.ActivityState;
+            if (activityState == WindowActivityState.None || activityState == WindowActivityState.Inactive || activityState == WindowActivityState.Creating || activityState == WindowActivityState.FirstShow || activityState == WindowActivityState.ShowBefore)
+                return;
 
             var clientSize = this.DxMainPanel.ClientSize;
 
@@ -139,6 +150,8 @@ namespace TestDevExpress.Forms
             int webWidth = clientSize.Width - webX - webX;
             int webHeight = clientSize.Height - paddingV - webY;
             webPanel.Bounds = new Rectangle(webX, webY, webWidth, webHeight);
+
+            this.DxMainPanel.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple;
         }
 
         private void _ClickButtonNavigate(object sender, EventArgs e)

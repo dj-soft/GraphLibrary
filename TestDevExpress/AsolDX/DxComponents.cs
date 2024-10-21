@@ -4040,7 +4040,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 reloadable.ReloadFrom(ribbonItem);
         }
         #endregion
-        #region Pozice okna
+        #region Pozice okna, a multimonitor
         /// <summary>
         /// Vrátí pozici daného okna. Následně se okno na tuto pozici může umístit voláním metody <see cref="FormPositionSet(Form, string, bool)"/>.
         /// </summary>
@@ -4085,6 +4085,33 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return true;
             }
             return false;
+        }
+        /// <summary>
+        /// Aktuální klíč konfigurace všech monitorů.
+        /// <para/>
+        /// String popisuje všechny aktuálně přítomné monitory, jejich příznak Primární, a jejich souřadnice.<br/>
+        /// String lze použít jako klíč: obsahuje pouze písmena a číslice, nic více.<br/>
+        /// Ze stringu nelze rozumně sestavit souřadnice monitorů, to ale není nutné. <br/>
+        /// String slouží jako suffix klíče pro ukládání souřadnic uživatelských oken, aby bylo možno je ukládat k jednotlivé konfiguraci monitorů.
+        /// Je vhodné ukládat souřadnice pracovních oken pro jejich restorování s klíčem aktuální konfigurace monitorů: 
+        /// uživatel používající různé konfigurace monitorů očekává, že konkrétní okno se mu po otevření zobrazí na konkrétním místě v závislosti na tom, které monitory právě používá.
+        /// </summary>
+        public static string CurrentMonitorsKey { get { return _GetCurrentMonitorsKey(); } }
+        /// <summary>
+        /// Určí a vrátí Aktuální klíč konfigurace všech monitorů.
+        /// </summary>
+        /// <returns></returns>
+        private static string _GetCurrentMonitorsKey()
+        {
+            string key = "";
+            foreach (var screen in System.Windows.Forms.Screen.AllScreens)
+            {
+                // one = "P0019201080"
+                string one = $"{(screen.Primary ? "P" : "S")}{Convertor.RectangleToString(screen.Bounds, ':').Replace(":", "")}]";
+                key += one;
+            }
+            // key = "P0019201080S-1920-68040962080"
+            return key;
         }
         #endregion
         #region Práce s klávesovými kódy - KeyArgs
@@ -6878,6 +6905,96 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             return (value == DefaultBoolean.True ? (bool?)true :
                    (value == DefaultBoolean.False ? (bool?)false : (bool?)null));
+        }
+
+        /// <summary>
+        /// Metoda rozdělí dodaný string na "řádky" obsahující "Klíč a Hodnotu".
+        /// Jsou zadány dva oddělovače: řádkový a hodnotový.
+        /// Neprobíhá plnohodnotné parsování, proto nejsou detekovány stringy v uvozovkách ani komentáře.
+        /// Oddělovače se tedy smí vyskytovat pouze jako oddělovač, nikoli v místě hodnoty (uzavřené v uvozovkách...).
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="itemDelimiter">Oddělovač prvků (řádků)</param>
+        /// <param name="keyValueDelimiter">Oddělovač klíče od hodnoty</param>
+        /// <param name="trimKeys">Odstranit krajní mezery okolo klíče</param>
+        /// <param name="trimValues">Odstranit krajní mezery okolo hodnoty</param>
+        /// <returns></returns>
+        public static KeyValuePair<string, string>[] SplitToKeyValues(string content, string itemDelimiter, string keyValueDelimiter, bool trimKeys = false, bool trimValues = false)
+        {
+            if (content is null) return null;
+            if (String.IsNullOrEmpty(content)) return new KeyValuePair<string, string>[0];
+
+            List<KeyValuePair<string, string>> result = new List<KeyValuePair<string, string>>();
+            var items = content.Split(new string[] { itemDelimiter }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var item in items)
+            {
+                var kvp = SplitToKeyValue(item, keyValueDelimiter, trimKeys, trimValues);
+                if (kvp.HasValue)
+                    result.Add(kvp.Value);
+            }
+            return result.ToArray();
+        }
+        /// <summary>
+        /// Metoda rozdělí dodaný string na "Klíč" a "Hodnotu" v místě oddělovače <paramref name="keyValueDelimiter"/>.
+        /// <para/>
+        /// Příklady pro různé umístění oddělovače, v ukázce znak "="<br/>
+        /// Text <c>"W"</c> rozdělí na klíč: <c>"W"</c> a hodnotu <c>null</c><br/>
+        /// Text <c>"="</c> rozdělí na klíč: <c>""</c> a hodnotu <c>null</c><br/>
+        /// Text <c>"=250"</c> rozdělí na klíč: <c>""</c> a hodnotu <c>"250"</c><br/>
+        /// Text <c>"W=250"</c> rozdělí na klíč: <c>"W"</c> a hodnotu <c>"250"</c><br/>
+        /// Text <c>"W="</c> rozdělí na klíč: <c>"W"</c> a hodnotu <c>""</c><br/>
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="keyValueDelimiter"></param>
+        /// <param name="trimKey"></param>
+        /// <param name="trimValue"></param>
+        /// <returns></returns>
+        public static KeyValuePair<string, string>? SplitToKeyValue(string content, string keyValueDelimiter, bool trimKey = false, bool trimValue = false)
+        {
+            if (content == null || String.IsNullOrEmpty(keyValueDelimiter)) return null;
+            int length = content.Length;
+            if (length > 0)
+            {
+                int index = content.IndexOf(keyValueDelimiter);
+                int delLen = keyValueDelimiter.Length;
+
+                string key, value;
+
+                if (index < 0)
+                {   // "Klíč"               : bez oddělovače
+                    key = content;
+                    value = null;
+                }
+                else if (index == 0 && length == delLen)
+                {   // "="                  : pouze oddělovač
+                    key = "";
+                    value = null;
+                }
+                else if (index == 0 && length > delLen)
+                {   // "=abcd"              : pouze hodnota
+                    key = "";
+                    value = content.Substring(delLen);
+                }
+                else if (index > 0 && index < (length - delLen))
+                {   // "x=15.7967442"       : standardní Key=Value
+                    key = content.Substring(0, index);
+                    value = content.Substring(index + delLen);
+                }
+                else if (index > 0 && index == (length - delLen))
+                {   // "Width="             : Klíč=prázdná hodnota (ale je tam náznak hodnoty)
+                    key = content.Substring(0, index);
+                    value = "";
+                }
+                else
+                {   // "nevímco"
+                    key = content;
+                    value = null;
+                }
+                if (key != null && trimKey) key = key.Trim();
+                if (value != null && trimValue) value = value.Trim();
+                return new KeyValuePair<string, string>(key, value);
+            }
+            return null;
         }
         #endregion
         #region DxClipboard : obálka nad systémovým clipboardem plus support pro DataExchangeContainer

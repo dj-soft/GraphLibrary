@@ -649,29 +649,56 @@ namespace TestDevExpress.Forms
                 }
             }
         }
-        #region Pozice okna
+        #region Ukládání a obnova pozice okna
         /// <summary>
-        /// Zde formulář umožňuje potomkovi, aby odněkud načetl pozici a stav okna pro obnovení uložené pozice při otevírání okna, a zde ji vrátil.
-        /// Pro uložení pozice okna po interaktivní změně je určena metoda "DxRibbonForm.OnFormPositionSave(string, bool)".
+        /// Pokusí se z konfigurace najít a načíst string popisující pozici okna.
+        /// Dostává k dispozici nameSuffix, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory.
         /// <para/>
-        /// Tato virtual metoda je volaná z konstruktoru - proto nemá smysl, aby existoval párový eventhandler - není kdy ho zaregistrovat (a po provedení konstruktoru je pozdě).
+        /// <b><u>Aplikační kód tedy:</u></b><br/>
+        /// 1. Získá vlastní jméno položky konfigurace pro svoje konkrétní okno (např. typ okna).<br/>
+        /// 2. Za toto jméno přidá suffix (začíná podtržítkem a obsahuje XML validní znaky) a vyhledá konfiguraci se suffixem.<br/>
+        /// 3. Pokud nenajde konfiguraci se suffixem, vyhledá konfiguraci bez suffixu = obecná, posledně použití (viz <see cref="PositionSaveToConfig(string, string)"/>).<br/>
+        /// 4. Nalezený string je ten, který byl uložen v metodě <see cref="PositionSaveToConfig(string, string)"/> a je roven parametru 'positionData'. Pokud položku v konfiguraci nenajde, vrátí null (nebo prázdný string).
+        /// <para/>
+        /// Tato technika zajistí, že pro různé konfigurace monitorů (např. při práci na více monitorech a poté přechodu na RDP s jedním monitorem, atd) budou uchovány konfigurace odděleně.
+        /// <para/>
+        /// Konverze formátů: Pokud v konfiguraci budou uložena stringová data ve starším formátu, než dokáže obsloužit zpracující třída <see cref="FormStatusInfo"/>, pak konverzi do jejího formátu musí zajistit aplikační kód (protože on ví, jak zpracovat starý formát).<br/>
+        /// <b><u>Postup:</u></b><br/>
+        /// 1. Po načtení konfigurace se lze dotázat metodou <see cref="FormStatusInfo.IsPositionDataValid(string)"/>, zda načtená data jsou validní.<br/>
+        /// 2. Pokud nejsou validní, pak je volající aplikace zkusí analyzovat svým starším (legacy) postupem na prvočinitele;<br/>
+        /// 3. A pokud je úspěšně rozpoznala, pak ze základních dat sestaví validní konfirurační string s pomocí metody <see cref="FormStatusInfo.CreatePositionData(bool?, FormWindowState?, Rectangle?, Rectangle?)"/>.<br/>
         /// </summary>
+        /// <param name="nameSuffix">Suffix ke jménu konfigurace, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory</param>
         /// <returns></returns>
-        protected override string OnFormPositionLoad()
+        protected override string PositionLoadFromConfig(string nameSuffix)
         {
-            return DxComponent.Settings.GetRawValue("FormPosition", "MainForm");
+            string positionData = DxComponent.Settings.GetRawValue("FormPosition", PositionConfigName + nameSuffix);
+            if (String.IsNullOrEmpty(positionData))
+                positionData = DxComponent.Settings.GetRawValue("FormPosition", PositionConfigName);
+            return positionData;
         }
         /// <summary>
-        /// Zde formulář oznamuje potomkovi, že změnil svoji velikost a pozici, a potomek si ji může uložit do své konfigurace. Současně se potomkovi sděluje parametrem <paramref name="isFinal"/>,
-        /// zda určená pozice je průběžná (při jakékoli změně za života formuláře), anebo již finální (při ukončování formuláře).
+        /// Do konfigurace uloží dodaná data o pozici okna '<paramref name="positionData"/>'.
+        /// Dostává k dispozici nameSuffix, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory.
+        /// <para/>
+        /// <b><u>Aplikační kód tedy:</u></b><br/>
+        /// 1. Získá vlastní jméno položky konfigurace pro svoje konkrétní okno (např. typ okna).<br/>
+        /// 2. Jednak uloží data <paramref name="positionData"/> přímo do položky konfigurace pod svým vlastním jménem bez suffixu = data obecná pro libovolnou konfiguraci monitorů.<br/>
+        /// 3. A dále uloží tato data do položky konfigurace, kde za svoje jméno přidá dodaný suffix <paramref name="nameSuffix"/> = tato hodnota se použije po restore na shodné konfiguraci monitorů.<br/>
+        /// <para/>
+        /// Tato technika zajistí, že pro různé konfigurace monitorů (např. při práci na více monitorech a poté přechodu na RDP s jedním monitorem, atd) budou uchovány konfigurace odděleně.
         /// </summary>
-        /// <param name="position">Pozice okna, tak jak ji následně očekává metoda "DxRibbonForm.OnFormPositionLoad"</param>
-        /// <param name="isFinal">Pozice je finální? false = při každé změně / true = při zavírání formuláře</param>
-        protected override void OnFormPositionSave(string position, bool isFinal)
+        /// <param name="positionData"></param>
+        /// <param name="nameSuffix"></param>
+        protected override void PositionSaveToConfig(string positionData, string nameSuffix)
         {
-            if (isFinal)
-                DxComponent.Settings.SetRawValue("FormPosition", "MainForm", position);
+            DxComponent.Settings.SetRawValue("FormPosition", PositionConfigName, positionData);
+            DxComponent.Settings.SetRawValue("FormPosition", PositionConfigName + nameSuffix, positionData);
         }
+        /// <summary>
+        /// Jméno okna v uložené konfiguraci
+        /// </summary>
+        protected static string PositionConfigName { get { return "MainForm"; } }
         #endregion
         #region Log
 

@@ -76,6 +76,65 @@ namespace TestDevExpress.Forms
             ImagePickerForm.ShowForm();
         }
         #endregion
+        #region Ukládání a obnova pozice okna
+        /// <summary>
+        /// Pokusí se z konfigurace najít a načíst string popisující pozici okna.
+        /// Dostává k dispozici nameSuffix, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory.
+        /// <para/>
+        /// <b><u>Aplikační kód tedy:</u></b><br/>
+        /// 1. Získá vlastní jméno položky konfigurace pro svoje konkrétní okno (např. typ okna).<br/>
+        /// 2. Za toto jméno přidá suffix (začíná podtržítkem a obsahuje XML validní znaky) a vyhledá konfiguraci se suffixem.<br/>
+        /// 3. Pokud nenajde konfiguraci se suffixem, vyhledá konfiguraci bez suffixu = obecná, posledně použití (viz <see cref="PositionSaveToConfig(string, string)"/>).<br/>
+        /// 4. Nalezený string je ten, který byl uložen v metodě <see cref="PositionSaveToConfig(string, string)"/> a je roven parametru 'positionData'. Pokud položku v konfiguraci nenajde, vrátí null (nebo prázdný string).
+        /// <para/>
+        /// Tato technika zajistí, že pro různé konfigurace monitorů (např. při práci na více monitorech a poté přechodu na RDP s jedním monitorem, atd) budou uchovány konfigurace odděleně.
+        /// <para/>
+        /// Konverze formátů: Pokud v konfiguraci budou uložena stringová data ve starším formátu, než dokáže obsloužit zpracující třída <see cref="FormStatusInfo"/>, pak konverzi do jejího formátu musí zajistit aplikační kód (protože on ví, jak zpracovat starý formát).<br/>
+        /// <b><u>Postup:</u></b><br/>
+        /// 1. Po načtení konfigurace se lze dotázat metodou <see cref="FormStatusInfo.IsPositionDataValid(string)"/>, zda načtená data jsou validní.<br/>
+        /// 2. Pokud nejsou validní, pak je volající aplikace zkusí analyzovat svým starším (legacy) postupem na prvočinitele;<br/>
+        /// 3. A pokud je úspěšně rozpoznala, pak ze základních dat sestaví validní konfirurační string s pomocí metody <see cref="FormStatusInfo.CreatePositionData(bool?, WF.FormWindowState?, Rectangle?, Rectangle?)"/>.<br/>
+        /// </summary>
+        /// <param name="nameSuffix">Suffix ke jménu konfigurace, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory</param>
+        /// <returns></returns>
+        protected override string PositionLoadFromConfig(string nameSuffix)
+        {
+            // INFO: tato metoda (a párová PositionSaveToConfig) neproběhne, protože v property PositionConfigName vracíme jméno konfigurace, 
+            //       a předek třídy (resp. support třída FormStatusInfo) řeší načítání a ukládání konfigurace defaultně.
+            //  Zdejší kód je zde jen pro ilustraci funkce:
+            string positionData = DxComponent.Settings.GetRawValue("FormPosition", PositionConfigName + nameSuffix);
+            if (String.IsNullOrEmpty(positionData))
+                positionData = DxComponent.Settings.GetRawValue("FormPosition", PositionConfigName);
+            return positionData;
+        }
+        /// <summary>
+        /// Do konfigurace uloží dodaná data o pozici okna '<paramref name="positionData"/>'.
+        /// Dostává k dispozici nameSuffix, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory.
+        /// <para/>
+        /// <b><u>Aplikační kód tedy:</u></b><br/>
+        /// 1. Získá vlastní jméno položky konfigurace pro svoje konkrétní okno (např. typ okna).<br/>
+        /// 2. Jednak uloží data <paramref name="positionData"/> přímo do položky konfigurace pod svým vlastním jménem bez suffixu = data obecná pro libovolnou konfiguraci monitorů.<br/>
+        /// 3. A dále uloží tato data do položky konfigurace, kde za svoje jméno přidá dodaný suffix <paramref name="nameSuffix"/> = tato hodnota se použije po restore na shodné konfiguraci monitorů.<br/>
+        /// <para/>
+        /// Tato technika zajistí, že pro různé konfigurace monitorů (např. při práci na více monitorech a poté přechodu na RDP s jedním monitorem, atd) budou uchovány konfigurace odděleně.
+        /// </summary>
+        /// <param name="positionData"></param>
+        /// <param name="nameSuffix"></param>
+        protected override void PositionSaveToConfig(string positionData, string nameSuffix)
+        {
+            // INFO: tato metoda (a párová PositionSaveToConfig) neproběhne, protože v property PositionConfigName vracíme jméno konfigurace, 
+            //       a předek třídy (resp. support třída FormStatusInfo) řeší načítání a ukládání konfigurace defaultně.
+            //  Zdejší kód je zde jen pro ilustraci funkce:
+            DxComponent.Settings.SetRawValue("FormPosition", PositionConfigName, positionData);
+            DxComponent.Settings.SetRawValue("FormPosition", PositionConfigName + nameSuffix, positionData);
+        }
+        /// <summary>
+        /// Jméno konfigurace v subsystému AsolDX.
+        /// Pokud bude zde vráceno neprázdné jméno, pak načtení a uložení konfigurace okna zajistí sama třída, která implementuje <see cref="IFormStatusWorking"/>.
+        /// Pokud nebude vráceno jméno, budou používány metody <see cref="DxRibbonBaseForm.PositionLoadFromConfig(string)"/> a <see cref="DxRibbonBaseForm.PositionSaveToConfig(string, string)"/>.
+        /// </summary>
+        protected override string PositionConfigName { get { return "ImagePickerForm"; } }
+        #endregion
         #region WinForm designer
         /// <summary>
         /// Required designer variable.
@@ -93,7 +152,6 @@ namespace TestDevExpress.Forms
             }
             base.Dispose(disposing);
         }
-
         #region Windows Form Designer generated code
         /// <summary>
         /// Required method for Designer support - do not modify
@@ -103,8 +161,11 @@ namespace TestDevExpress.Forms
         {
             this.components = new System.ComponentModel.Container();
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.StartPosition = WF.FormStartPosition.CenterScreen;
-            this.ClientSize = new System.Drawing.Size(500, 920);
+            if (!this.PositionIsFromConfig)
+            {
+                this.StartPosition = WF.FormStartPosition.CenterScreen;
+                this.ClientSize = new System.Drawing.Size(500, 920);
+            }
             this.Text = "DevExpress Resources";
         }
         #endregion

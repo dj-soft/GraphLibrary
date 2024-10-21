@@ -88,13 +88,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Hlavní obsah okna aplikace: DocumentManager, TabbedView, DockManager
-
-
         public DevExpress.XtraBars.Docking2010.DocumentManager DocumentManager { get { return __DocumentManager; } }
         public DevExpress.XtraBars.Docking2010.Views.Tabbed.TabbedView TabbedView { get { return __TabbedView; } }
         public DevExpress.XtraBars.Docking.DockManager DockManager { get { return __DockManager; } }
         public DevExpress.XtraSplashScreen.SplashScreenManager SplashManager { get { return __SplashManager; } }
-
         /// <summary>
         /// Defaultní velikost Resize zóny na komponentě Dockpanel
         /// </summary>
@@ -319,8 +316,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxComponent.LogAddLine(LogActivityKind.DocumentManager, $"DocumentManager.BeginFloating({e.Document.Control?.Text})");
         }
 
-
-
         private void _TabbedViewDocumentAdded(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
         {
             DxComponent.LogAddLine(LogActivityKind.DocumentManager, $"TabbedView.DocumentAdded({e.Document.Control?.Text})");
@@ -409,7 +404,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxComponent.LogAddLine(LogActivityKind.DocumentManager, $"TabbedView.EndDocking({e.Document.Control?.Text})");
         }
 
-
         private void _DockManagerRegisterDockPanel(object sender, DevExpress.XtraBars.Docking.DockPanelEventArgs e)
         {
             DxComponent.LogAddLine(LogActivityKind.DocumentManager, $"DockManager.RegisterDockPanel({e.Panel?.Text})");
@@ -482,7 +476,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             DxComponent.LogAddLine(LogActivityKind.DocumentManager, $"DockManager.ActiveChildChanged({e.Panel?.Text})");
         }
-
 
         private void ActivateRibbonForControl(Control control)
         {

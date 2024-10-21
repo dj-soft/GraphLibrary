@@ -22,6 +22,7 @@ using DevExpress.Utils.Text;
 using DevExpress.XtraTab;
 using DevExpress.XtraEditors.Controls;
 using Noris.Clients.Win.Components.Obsoletes.DataForm;
+using DevExpress.XtraRichEdit.Layout;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -78,7 +79,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Základní formulář bez Ribbonu a StatusBaru
     /// </summary>
-    public class DxStdForm : DevExpress.XtraEditors.XtraForm, IDxControlWithIcons, IFormWorking, IListenerZoomChange, IListenerStyleChanged, IListenerExcludeFromCaptureContentChanged, IListenerApplicationIdle
+    public class DxStdForm : DevExpress.XtraEditors.XtraForm, IDxControlWithIcons, IFormStatusWorking, IListenerZoomChange, IListenerStyleChanged, IListenerExcludeFromCaptureContentChanged, IListenerApplicationIdle
     {
         #region Konstruktor a základní vlastnosti
         /// <summary>
@@ -86,7 +87,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxStdForm()
         {
-            this.ActivityStateInit();
+            this._FormStatusInit();
             this.InitializeForm();
             this.ImageName = AsolDX.ImageName.DxFormIcon;
             DxComponent.RegisterListener(this);
@@ -109,7 +110,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!_WasShown)
             {
-                this.ActivityState = WindowActivityState.FirstShow;
+                this.ActivityState = WindowActivityState.FirstShow;            // Zajistí aplikování souřadnic okna z těch uložených v konfiguraci do živého okna
                 this.OnFirstShownBefore();
                 this.FirstShownBefore?.Invoke(this, EventArgs.Empty);
                 base.OnShown(e);
@@ -171,18 +172,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aktuálně platná hodnota DeviceDpi
         /// </summary>
         public int CurrentDpi { get { return this.DeviceDpi; } }
-        /// <summary>
-        /// Umístí toto okno do viditelných souřadnic monitorů.
-        /// Pokud je parametr <paramref name="force"/> = false (default), 
-        /// pak to provádí jen když pozice okna <see cref="Form.StartPosition"/> je <see cref="FormStartPosition.Manual"/>.
-        /// Pokud parametr <paramref name="force"/> = true, provede to vždy.
-        /// </summary>
-        /// <param name="force"></param>
-        public void MoveToVisibleScreen(bool force = false)
-        {
-            if (!force && this.StartPosition != FormStartPosition.Manual) return;
-            this.Bounds = this.Bounds.FitIntoMonitors(true, false, true);
-        }
         /// <summary>
         /// Najde ovládací prvek odpovídající aktuální klávese.
         /// </summary>
@@ -241,6 +230,101 @@ namespace Noris.Clients.Win.Components.AsolDX
             NextShown = null;
         }
         #endregion
+        #region FormStatus (stav okna a ukládání pozice), support
+        /// <summary>
+        /// Umístí toto okno do viditelných souřadnic monitorů.
+        /// Pokud je parametr <paramref name="force"/> = false (default), 
+        /// pak to provádí jen když pozice okna <see cref="Form.StartPosition"/> je <see cref="FormStartPosition.Manual"/>.
+        /// Pokud parametr <paramref name="force"/> = true, provede to vždy.
+        /// </summary>
+        /// <param name="force"></param>
+        public void MoveToVisibleScreen(bool force = false)
+        {
+            __FormStatus.MoveToVisibleScreen(force);
+        }
+        /// <summary>
+        /// Pozice okna byla nastavena v jeho konstruktoru z dat načtených z konfigurace. Bounds ani WindowState ani StartPosition by neměly být měněny.
+        /// </summary>
+        public bool PositionIsFromConfig { get { return __FormStatus.PositionIsFromConfig; } }
+        /// <summary>
+        /// Inicializace dat pro detekci stavu
+        /// </summary>
+        private void _FormStatusInit()
+        {
+            __FormStatus = new FormStatusInfo(this);                 // Konstruktor si zaregistruje svoje eventhandlery, uloží si WeakReferenci, a zajistí i uvolnění v eventu Disposed
+        }
+        private FormStatusInfo __FormStatus;
+        /// <summary>
+        /// Stav aktivity okna. Při změně je volána událost <see cref="ActivityStateChanged"/>.
+        /// </summary>
+        public WindowActivityState ActivityState
+        {
+            get { return __FormStatus.ActivityState; }
+            private set { __FormStatus.ActivityState = value; }      // Formulář smí měnit svůj stav, když ví jak
+        }
+        /// <summary>
+        /// Metoda proběhne při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnActivityStateChanged(TEventValueChangedArgs<WindowActivityState> args) { }
+        /// <summary>
+        /// Událost volaná při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
+        /// </summary>
+        public event EventHandler<TEventValueChangedArgs<WindowActivityState>> ActivityStateChanged;
+
+        /// <summary>
+        /// Jméno konfigurace v subsystému AsolDX.
+        /// Pokud bude zde vráceno neprázdné jméno, pak načtení a uložení konfigurace okna zajistí sama třída, která implementuje <see cref="IFormStatusWorking"/>.
+        /// Pokud nebude vráceno jméno, budou používány metody <see cref="DxStdForm.PositionLoadFromConfig(string)"/> a <see cref="DxStdForm.PositionSaveToConfig(string, string)"/>.
+        /// </summary>
+        protected virtual string PositionConfigName { get { return null; } }
+        /// <summary>
+        /// Pokusí se z konfigurace najít a načíst string popisující pozici okna.
+        /// Dostává k dispozici nameSuffix, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory.
+        /// <para/>
+        /// <b><u>Aplikační kód tedy:</u></b><br/>
+        /// 1. Získá vlastní jméno položky konfigurace pro svoje konkrétní okno (např. typ okna).<br/>
+        /// 2. Za toto jméno přidá suffix (začíná podtržítkem a obsahuje XML validní znaky) a vyhledá konfiguraci se suffixem.<br/>
+        /// 3. Pokud nenajde konfiguraci se suffixem, vyhledá konfiguraci bez suffixu = obecná, posledně použití (viz <see cref="PositionSaveToConfig(string, string)"/>).<br/>
+        /// 4. Nalezený string je ten, který byl uložen v metodě <see cref="PositionSaveToConfig(string, string)"/> a je roven parametru 'positionData'. Pokud položku v konfiguraci nenajde, vrátí null (nebo prázdný string).
+        /// <para/>
+        /// Tato technika zajistí, že pro různé konfigurace monitorů (např. při práci na více monitorech a poté přechodu na RDP s jedním monitorem, atd) budou uchovány konfigurace odděleně.
+        /// <para/>
+        /// Konverze formátů: Pokud v konfiguraci budou uložena stringová data ve starším formátu, než dokáže obsloužit zpracující třída <see cref="FormStatusInfo"/>, pak konverzi do jejího formátu musí zajistit aplikační kód (protože on ví, jak zpracovat starý formát).<br/>
+        /// <b><u>Postup:</u></b><br/>
+        /// 1. Po načtení konfigurace se lze dotázat metodou <see cref="FormStatusInfo.IsPositionDataValid(string)"/>, zda načtená data jsou validní.<br/>
+        /// 2. Pokud nejsou validní, pak je volající aplikace zkusí analyzovat svým starším (legacy) postupem na prvočinitele;<br/>
+        /// 3. A pokud je úspěšně rozpoznala, pak ze základních dat sestaví validní konfirurační string s pomocí metody <see cref="FormStatusInfo.CreatePositionData(bool?, FormWindowState?, Rectangle?, Rectangle?)"/>.<br/>
+        /// </summary>
+        /// <param name="nameSuffix">Suffix ke jménu konfigurace, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory</param>
+        /// <returns></returns>
+        protected virtual string PositionLoadFromConfig(string nameSuffix) { return null; }
+        /// <summary>
+        /// Do konfigurace uloží dodaná data o pozici okna '<paramref name="positionData"/>'.
+        /// Dostává k dispozici nameSuffix, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory.
+        /// <para/>
+        /// <b><u>Aplikační kód tedy:</u></b><br/>
+        /// 1. Získá vlastní jméno položky konfigurace pro svoje konkrétní okno (např. typ okna).<br/>
+        /// 2. Jednak uloží data <paramref name="positionData"/> přímo do položky konfigurace pod svým vlastním jménem bez suffixu = data obecná pro libovolnou konfiguraci monitorů.<br/>
+        /// 3. A dále uloží tato data do položky konfigurace, kde za svoje jméno přidá dodaný suffix <paramref name="nameSuffix"/> = tato hodnota se použije po restore na shodné konfiguraci monitorů.<br/>
+        /// <para/>
+        /// Tato technika zajistí, že pro různé konfigurace monitorů (např. při práci na více monitorech a poté přechodu na RDP s jedním monitorem, atd) budou uchovány konfigurace odděleně.
+        /// </summary>
+        /// <param name="positionData"></param>
+        /// <param name="nameSuffix"></param>
+        protected virtual void PositionSaveToConfig(string positionData, string nameSuffix) { }
+
+        string IFormStatusWorking.PositionConfigName { get { return PositionConfigName; } }
+        bool IFormStatusWorking.PositionIsFromConfig { get { return PositionIsFromConfig; } }
+        bool? IFormStatusWorking.ConfigIsMdiChild { get { return __FormStatus.ConfigIsMdiChild; } }
+        string IFormStatusWorking.PositionLoadFromConfig(string nameSuffix) { return PositionLoadFromConfig(nameSuffix); }
+        void IFormStatusWorking.PositionSaveToConfig(string positionData, string nameSuffix) { PositionSaveToConfig(positionData, nameSuffix); }
+        void IFormStatusWorking.RunActivityStateChanged(TEventValueChangedArgs<WindowActivityState> args)
+        {
+            OnActivityStateChanged(args);
+            ActivityStateChanged?.Invoke(this, args);
+        }
+        #endregion
         #region Ikona okna
         /// <summary>
         /// Název obrázku, který reprezentuje ikonu tohoto okna
@@ -304,40 +388,773 @@ namespace Noris.Clients.Win.Components.AsolDX
             AcceptExcludeFromCaptureContent();
         }
         #endregion
-        #region Stav okna, změny stavu
+        #region Style & Zoom Changed
+        void IListenerZoomChange.ZoomChanged() { OnZoomChanged(); }
+        /// <summary>
+        /// Volá se po změně zoomu
+        /// </summary>
+        protected virtual void OnZoomChanged() { }
+        void IListenerStyleChanged.StyleChanged() { OnStyleChanged(); }
+        /// <summary>
+        /// Volá se po změně skinu
+        /// </summary>
+        protected virtual void OnStyleChanged() { }
+        void IListenerApplicationIdle.ApplicationIdle() { OnApplicationIdle(); }
+        /// <summary>
+        /// Zavolá se v situaci, kdy aplikace nemá zrovna co na práci
+        /// </summary>
+        protected virtual void OnApplicationIdle() { }
+        #endregion
+    }
+    #endregion
+    #region DxRibbonForm a DxRibbonBaseForm
+    /// <summary>
+    /// Formulář s ribbonem.
+    /// Obsahuje připravený Ribbon <see cref="DxRibbonBaseForm.DxRibbon"/> a připravený StatusBar <see cref="DxRibbonBaseForm.DxStatusBar"/>, 
+    /// a hlavní Panel <see cref="DxMainPanel"/> nacházející se mezi Ribbonem a StatusBarem.
+    /// </summary>
+    public class DxRibbonForm : DxRibbonBaseForm
+    {
+        #region MainPanel
+        /// <summary>
+        /// Hlavní panel, mezi Ribbonem a StatusBarem
+        /// </summary>
+        public DxPanelControl DxMainPanel { get { return __DxMainPanel; } }
+        /// <summary>
+        /// Provede tvorbu hlavního panelu okna <see cref="DxMainPanel"/> a jeho přidání do okna včetně zadokování.
+        /// Provádí se před vytvořením Ribbonu a Status baru, aby <see cref="DxMainPanel"/> byl správně umístěn na Z ose.
+        /// </summary>
+        protected override void DxMainContentCreate()
+        {
+            this.__DxMainPanelLastClientSize = null;
+            this.__DxMainPanel = DxComponent.CreateDxPanel(this, System.Windows.Forms.DockStyle.Fill, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
+            this.__DxMainPanel.ClientSizeChanged += _DxMainPanel_ClientSizeChanged;
+        }
+        /// <summary>
+        /// Provede se po změně velikosti ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _DxMainPanel_ClientSizeChanged(object sender, EventArgs e)
+        {
+            RunDxMainContentDoLayout();
+        }
+        /// <summary>
+        /// Provede přípravu obsahu hlavního panelu <see cref="DxRibbonForm.DxMainPanel"/>. Panel je již vytvořen a umístěn v okně, Ribbon i StatusBar existují.<br/>
+        /// Zde se typicky vytváří obsah do hlavního panelu.
+        /// </summary>
+        protected override void DxMainContentPrepare()
+        {
+            this.__DxMainPanel.Visible = true;
+        }
+        /// <summary>
+        /// Volá se tehdy, když se mohla změnit velikost ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/>.
+        /// </summary>
+        protected override void RunDxMainContentDoLayout()
+        {
+            var previousSize = __DxMainPanelLastClientSize;
+            var currentSize = __DxMainPanel?.ClientSize;
+            bool isSizeChanged = ((previousSize.HasValue != currentSize.HasValue) || (previousSize.HasValue && currentSize.HasValue && previousSize.Value != currentSize.Value));
+            __DxMainPanelLastClientSize = currentSize;
+
+            this.DxMainContentDoLayout(isSizeChanged);
+        }
+        /// <summary>
+        /// Main panel pro data
+        /// </summary>
+        private DxPanelControl __DxMainPanel;
+        /// <summary>
+        /// ClientSize Main panelu při posledním volání metody <see cref="DxRibbonBaseForm.DxMainContentDoLayout(bool)"/>, pro detekci změny příště
+        /// </summary>
+        private Size? __DxMainPanelLastClientSize;
+        #endregion
+    }
+    /// <summary>
+    /// Formulář s ribbonem.
+    /// Obsahuje připravený Ribbon <see cref="DxRibbon"/> a připravený StatusBar <see cref="DxStatusBar"/>.
+    /// </summary>
+    public abstract class DxRibbonBaseForm : DevExpress.XtraBars.Ribbon.RibbonForm, IDxControlWithIcons, IFormStatusWorking, IListenerZoomChange, IListenerStyleChanged, IListenerApplicationIdle, IListenerExcludeFromCaptureContentChanged
+    {
+        #region Konstruktor a základní vlastnosti
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxRibbonBaseForm()
+        {
+            this._FormStatusInit();
+            this.ActivityState = WindowActivityState.Creating;
+            this.ImageName = AsolDX.ImageName.DxFormIcon;
+            this.InitDxRibbonForm();
+            DxComponent.RegisterListener(this);
+            this.RunDxMainContentDoLayout();
+            this.EndInitDxRibbonForm();
+            this.ActivityState = WindowActivityState.Initialized;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
+        /// <summary>
+        /// Při zobrazení okna
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnShown(EventArgs e)
+        {
+            if (!__WasShown)
+            {
+                this.RunDxMainContentDoLayout();
+                this.ActivityState = WindowActivityState.FirstShow;            // Zajistí aplikování souřadnic okna z těch uložených v konfiguraci do živého okna
+                this.OnFirstShownBefore();
+                this.FirstShownBefore?.Invoke(this, EventArgs.Empty);
+                this.ActivityState = WindowActivityState.ShowBefore;
+                this.RibbonVisibility = DevExpress.XtraBars.Ribbon.RibbonVisibility.Visible;
+                this.Ribbon.Visible = true;
+                this.RibbonAlwaysAtBack = true;
+                base.OnShown(e);
+                __WasShown = true;
+                this.OnFirstShownAfter();
+                this.FirstShownAfter?.Invoke(this, EventArgs.Empty);
+                this.ActivityState = WindowActivityState.ShowAfter;
+                this.RunDxMainContentDoLayout();
+            }
+            else
+            {
+                base.OnShown(e);
+                this.OnNextShown();
+                this.NextShown?.Invoke(this, EventArgs.Empty);
+                this.ActivityState = WindowActivityState.ShowAfter;
+            }
+            this.ActivityState = WindowActivityState.Visible;
+        }
+        /// <summary>
+        /// Je vyvoláno jedenkrát v životě okna, těsně před prvním zobrazením okna. Nyní je hodnota <see cref="WasShown"/> = false.
+        /// </summary>
+        protected virtual void OnFirstShownBefore() { }
+        /// <summary>
+        /// Je vyvoláno jedenkrát v životě okna, těsně před prvním zobrazením okna. Nyní je hodnota <see cref="WasShown"/> = false.
+        /// </summary>
+        public event EventHandler FirstShownBefore;
+        /// <summary>
+        /// Je vyvoláno jedenkrát v životě okna, těsně po prvním zobrazením okna. Nyní je hodnota <see cref="WasShown"/> = true.
+        /// </summary>
+        protected virtual void OnFirstShownAfter() { }
+        /// <summary>
+        /// Je vyvoláno jedenkrát v životě okna, těsně po prvním zobrazením okna. Nyní je hodnota <see cref="WasShown"/> = true.
+        /// </summary>
+        public event EventHandler FirstShownAfter;
+        /// <summary>
+        /// Je vyvoláno těsně po druhém a každém dalším zobrazením okna. Nikoli po prvním.
+        /// </summary>
+        protected virtual void OnNextShown() { }
+        /// <summary>
+        /// Je vyvoláno těsně po druhém a každém dalším zobrazením okna. Nikoli po prvním.
+        /// </summary>
+        public event EventHandler NextShown;
+        /// <summary>
+        /// Obsahuje true poté, kdy formulář byl zobrazen. 
+        /// Obsahuje true již v metodě <see cref="OnFirstShownAfter"/> a v eventu <see cref="FirstShownAfter"/>.
+        /// </summary>
+        public bool WasShown { get { return __WasShown; } }
+        /// <summary>
+        /// Okno již bylo zobrazeno?
+        /// </summary>
+        private bool __WasShown = false;
+        /// <summary>
+        /// Obsahuje true v situaci, kdy toto okno již prošlo fází zobrazení (<see cref="WasShown"/> je true) a dosud nebylo disposováno.
+        /// </summary>
+        public bool IsLive { get { return __WasShown && !Disposing && !IsDisposed; } }
+        /// <summary>
+        /// Obsahuje true v situaci, kdy toto okno je ve viditelném stavu = je živé <see cref="IsLive"/> a není minimalizované.
+        /// V tomto stavu má smysl provádět Layout okna.
+        /// </summary>
+        public bool IsDisplayed { get { return IsLive && WindowState != FormWindowState.Minimized; } }
+        /// <summary>
+        /// Aktuálně platná hodnota DeviceDpi
+        /// </summary>
+        public int CurrentDpi { get { return this.DeviceDpi; } }
+        /// <summary>
+        /// Najde ovládací prvek odpovídající aktuální klávese.
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="keyData"></param>
+        /// <returns></returns>
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (DxStdForm.SearchKeyDownButtons(this, keyData))
+                return true;
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+        /// <summary>
+        /// Dispose panelu
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            this.ActivityState = WindowActivityState.Disposing;
+            DxComponent.UnregisterListener(this);
+            DestroyContent();
+            base.Dispose(disposing);
+            this.ActivityState = WindowActivityState.Disposed;
+        }
+        /// <summary>
+        /// Zruší veškerý svůj obsah v procesu Dispose. Volá base.DestroyContent() !!!
+        /// </summary>
+        protected virtual void DestroyContent()
+        {
+            FirstShownBefore = null;
+            FirstShownAfter = null;
+            NextShown = null;
+        }
+        #endregion
+        #region FormStatus (stav okna a ukládání pozice), support
+        /// <summary>
+        /// Umístí toto okno do viditelných souřadnic monitorů.
+        /// Pokud je parametr <paramref name="force"/> = false (default), 
+        /// pak to provádí jen když pozice okna <see cref="Form.StartPosition"/> je <see cref="FormStartPosition.Manual"/>.
+        /// Pokud parametr <paramref name="force"/> = true, provede to vždy.
+        /// </summary>
+        /// <param name="force"></param>
+        public void MoveToVisibleScreen(bool force = false)
+        {
+            __FormStatus.MoveToVisibleScreen(force);
+        }
+        /// <summary>
+        /// Pozice okna byla nastavena v jeho konstruktoru z dat načtených z konfigurace. Bounds ani WindowState ani StartPosition by neměly být měněny.
+        /// </summary>
+        public bool PositionIsFromConfig { get { return __FormStatus.PositionIsFromConfig; } }
+        /// <summary>
+        /// Inicializace dat pro detekci stavu
+        /// </summary>
+        private void _FormStatusInit()
+        {
+            __FormStatus = new FormStatusInfo(this);                 // Konstruktor si zaregistruje svoje eventhandlery, uloží si WeakReferenci, a zajistí i uvolnění v eventu Disposed
+        }
+        private FormStatusInfo __FormStatus;
         /// <summary>
         /// Stav aktivity okna. Při změně je volána událost <see cref="ActivityStateChanged"/>.
         /// </summary>
         public WindowActivityState ActivityState
         {
-            get { return _ActivityState; }
-            protected set
+            get { return __FormStatus.ActivityState; }
+            private set { __FormStatus.ActivityState = value; }      // Formulář smí měnit svůj stav, když ví jak
+        }
+        /// <summary>
+        /// Metoda proběhne při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnActivityStateChanged(TEventValueChangedArgs<WindowActivityState> args) { }
+        /// <summary>
+        /// Událost volaná při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
+        /// </summary>
+        public event EventHandler<TEventValueChangedArgs<WindowActivityState>> ActivityStateChanged;
+
+        /// <summary>
+        /// Jméno konfigurace v subsystému AsolDX.
+        /// Pokud bude zde vráceno neprázdné jméno, pak načtení a uložení konfigurace okna zajistí sama třída, která implementuje <see cref="IFormStatusWorking"/>.
+        /// Pokud nebude vráceno jméno, budou používány metody <see cref="DxRibbonBaseForm.PositionLoadFromConfig(string)"/> a <see cref="DxRibbonBaseForm.PositionSaveToConfig(string, string)"/>.
+        /// </summary>
+        protected virtual string PositionConfigName { get { return null; } }
+        /// <summary>
+        /// Pokusí se z konfigurace najít a načíst string popisující pozici okna.
+        /// Dostává k dispozici nameSuffix, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory.
+        /// <para/>
+        /// <b><u>Aplikační kód tedy:</u></b><br/>
+        /// 1. Získá vlastní jméno položky konfigurace pro svoje konkrétní okno (např. typ okna).<br/>
+        /// 2. Za toto jméno přidá suffix (začíná podtržítkem a obsahuje XML validní znaky) a vyhledá konfiguraci se suffixem.<br/>
+        /// 3. Pokud nenajde konfiguraci se suffixem, vyhledá konfiguraci bez suffixu = obecná, posledně použití (viz <see cref="PositionSaveToConfig(string, string)"/>).<br/>
+        /// 4. Nalezený string je ten, který byl uložen v metodě <see cref="PositionSaveToConfig(string, string)"/> a je roven parametru 'positionData'. Pokud položku v konfiguraci nenajde, vrátí null (nebo prázdný string).
+        /// <para/>
+        /// Tato technika zajistí, že pro různé konfigurace monitorů (např. při práci na více monitorech a poté přechodu na RDP s jedním monitorem, atd) budou uchovány konfigurace odděleně.
+        /// <para/>
+        /// Konverze formátů: Pokud v konfiguraci budou uložena stringová data ve starším formátu, než dokáže obsloužit zpracující třída <see cref="FormStatusInfo"/>, pak konverzi do jejího formátu musí zajistit aplikační kód (protože on ví, jak zpracovat starý formát).<br/>
+        /// <b><u>Postup:</u></b><br/>
+        /// 1. Po načtení konfigurace se lze dotázat metodou <see cref="FormStatusInfo.IsPositionDataValid(string)"/>, zda načtená data jsou validní.<br/>
+        /// 2. Pokud nejsou validní, pak je volající aplikace zkusí analyzovat svým starším (legacy) postupem na prvočinitele;<br/>
+        /// 3. A pokud je úspěšně rozpoznala, pak ze základních dat sestaví validní konfirurační string s pomocí metody <see cref="FormStatusInfo.CreatePositionData(bool?, FormWindowState?, Rectangle?, Rectangle?)"/>.<br/>
+        /// </summary>
+        /// <param name="nameSuffix">Suffix ke jménu konfigurace, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory</param>
+        /// <returns></returns>
+        protected virtual string PositionLoadFromConfig(string nameSuffix) { return null; }
+        /// <summary>
+        /// Do konfigurace uloží dodaná data o pozici okna '<paramref name="positionData"/>'.
+        /// Dostává k dispozici nameSuffix, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory.
+        /// <para/>
+        /// <b><u>Aplikační kód tedy:</u></b><br/>
+        /// 1. Získá vlastní jméno položky konfigurace pro svoje konkrétní okno (např. typ okna).<br/>
+        /// 2. Jednak uloží data <paramref name="positionData"/> přímo do položky konfigurace pod svým vlastním jménem bez suffixu = data obecná pro libovolnou konfiguraci monitorů.<br/>
+        /// 3. A dále uloží tato data do položky konfigurace, kde za svoje jméno přidá dodaný suffix <paramref name="nameSuffix"/> = tato hodnota se použije po restore na shodné konfiguraci monitorů.<br/>
+        /// <para/>
+        /// Tato technika zajistí, že pro různé konfigurace monitorů (např. při práci na více monitorech a poté přechodu na RDP s jedním monitorem, atd) budou uchovány konfigurace odděleně.
+        /// </summary>
+        /// <param name="positionData"></param>
+        /// <param name="nameSuffix"></param>
+        protected virtual void PositionSaveToConfig(string positionData, string nameSuffix) { }
+
+        string IFormStatusWorking.PositionConfigName { get { return PositionConfigName; } }
+        bool IFormStatusWorking.PositionIsFromConfig { get { return PositionIsFromConfig; } }
+        bool? IFormStatusWorking.ConfigIsMdiChild { get { return __FormStatus.ConfigIsMdiChild; } }
+        string IFormStatusWorking.PositionLoadFromConfig(string nameSuffix) { return PositionLoadFromConfig(nameSuffix); }
+        void IFormStatusWorking.PositionSaveToConfig(string positionData, string nameSuffix) { PositionSaveToConfig(positionData, nameSuffix); }
+        void IFormStatusWorking.RunActivityStateChanged(TEventValueChangedArgs<WindowActivityState> args)
+        {
+            OnActivityStateChanged(args);
+            ActivityStateChanged?.Invoke(this, args);
+        }
+        #endregion
+        #region Ikona okna
+        /// <summary>
+        /// Název obrázku, který reprezentuje ikonu tohoto okna
+        /// </summary>
+        public string ImageName { get { return _ImageName; } set { _ImageName = value; DxComponent.ApplyImage(this.IconOptions, value, sizeType: ResourceImageSizeType.Large); } } private string _ImageName;
+        /// <summary>
+        /// Název obrázku, který reprezentuje přidanou ikonu tohoto okna
+        /// </summary>
+        public string ImageNameAdd { get { return _ImageNameAdd; } set { _ImageNameAdd = value; } } private string _ImageNameAdd;
+        string IDxControlWithIcons.IconNameBasic { get { return ImageName; } }
+        string IDxControlWithIcons.IconNameAdd { get { return ImageNameAdd; } }
+        #endregion
+        #region Skrývání obsahu formuláře pro externí aplikace nahrávající obsah (Capture content), listener IListenerNotCaptureWindowsChanged
+        /// <summary>
+        /// Pokud je true, pak obsah tohoto okna nebude zachycen aplikacemi jako Teams, Recording, PrintScreen atd.<br/>
+        /// Výchozí je hodnota odpovídající (! <see cref="DxComponent.ExcludeFromCaptureContent"/>).
+        /// <para/>
+        /// Okno <see cref="DxRibbonForm"/> implementuje <see cref="IListenerExcludeFromCaptureContentChanged"/> a reaguje tak na hodnotu <see cref="DxComponent.ExcludeFromCaptureContent"/>,<br/>
+        /// automaticky tedy nastavuje zdejší hodnotu <see cref="ExcludeFromCaptureContent"/> podle ! <see cref="DxComponent.ExcludeFromCaptureContent"/>.
+        /// <para/>
+        /// Využívá SetWindowDisplayAffinity : <see href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity"/>
+        /// </summary>
+        public bool ExcludeFromCaptureContent
+        {
+            get { return __ExcludeFromCaptureContent; }
+            set
             {
-                var oldValue = _ActivityState;
-                var newValue = value;
-                if (newValue != oldValue)
+                bool currentValue = __ExcludeFromCaptureContent;
+                if (value != currentValue)
                 {
-                    _ActivityState = newValue;
-                    RunActivityStateChanged(oldValue, newValue);
+                    __ExcludeFromCaptureContent = value;
+                    AcceptExcludeFromCaptureContent();
                 }
             }
         }
-        /// <summary>Stav okna</summary>
-        private WindowActivityState _ActivityState;
+        private bool __ExcludeFromCaptureContent;
         /// <summary>
-        /// Inicializace stavu okna a odpovídajících handlerů
+        /// Metoda zajistí, že toto okno bude mít nastavenu reálnou vlastnost <c>Winapi.WindowDisplayAffinity</c> podle zdejší hodnoty <see cref="__ExcludeFromCaptureContent"/>.
         /// </summary>
-        private void ActivityStateInit()
+        protected void AcceptExcludeFromCaptureContent()
         {
-            this.ActivityState = WindowActivityState.Creating;
+            if (this.IsHandleCreated && !this.IsDisposed)
+            {
+                DxComponent.SetWindowDisplayAffinity(this, __ExcludeFromCaptureContent);
+            }
+        }
+        void IListenerExcludeFromCaptureContentChanged.ExcludeFromCaptureContentChanged() { OnExcludeFromCaptureContentChanged(); }
+        /// <summary>
+        /// Zavolá se tehdy, když aplikace změnila hodnotu v <see cref="DxComponent.ExcludeFromCaptureContent"/> = mění se stav <c>WinApi.SetWindowDisplayAffinity</c> (pomocí listeneru <see cref="IListenerExcludeFromCaptureContentChanged"/>).
+        /// </summary>
+        protected virtual void OnExcludeFromCaptureContentChanged()
+        {
+            this.ExcludeFromCaptureContent = DxComponent.ExcludeFromCaptureContent;
+        }
+        /// <summary>
+        /// Po vytvoření Handle pro formulář si pro toto Window aktualizujeme <c>WindowDisplayAffinity</c>
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            __ExcludeFromCaptureContent = DxComponent.ExcludeFromCaptureContent;
+            AcceptExcludeFromCaptureContent();
+        }
+        #endregion
+        #region Listener: Style, Zoom, NotCaptureWindows Changed; ApplicationIdle
+        void IListenerZoomChange.ZoomChanged() { OnZoomChanged(); }
+        /// <summary>
+        /// Volá se po změně zoomu
+        /// </summary>
+        protected virtual void OnZoomChanged() { }
+        void IListenerStyleChanged.StyleChanged() { OnStyleChanged(); }
+        /// <summary>
+        /// Volá se po změně skinu
+        /// </summary>
+        protected virtual void OnStyleChanged() { }
+        void IListenerApplicationIdle.ApplicationIdle() { OnApplicationIdle(); }
+        /// <summary>
+        /// Zavolá se v situaci, kdy aplikace nemá zrovna co na práci
+        /// </summary>
+        protected virtual void OnApplicationIdle() { }
+        #endregion
+        #region Ribbon a StatusBar
+        /// <summary>
+        /// Ribbon
+        /// </summary>
+        public DxRibbonControl DxRibbon { get { return _DxRibbon; } }
+        /// <summary>
+        /// Status bar
+        /// </summary>
+        public DxRibbonStatusBar DxStatusBar { get { return _DxStatusBar; } }
+        /// <summary>
+        /// Inicializace Ribbonu a StatusBaru. Volá se v konstruktoru třídy <see cref="DxRibbonForm"/>!
+        /// </summary>
+        protected virtual void InitDxRibbonForm()
+        {
+            this.DxMainContentCreate();
 
-            this.Activated += _ActivityStateDetect_Activated;
-            this.Deactivate += _ActivityStateDetect_Deactivate;
-            this.GotFocus += _ActivityStateDetect_GotFocus;
-            this.LostFocus += _ActivityStateDetect_LostFocus;
-            this.VisibleChanged += _ActivityStateDetect_VisibleChanged;
-            this.FormClosing += _ActivityStateDetect_FormClosing;
-            this.FormClosed += _ActivityStateDetect_FormClosed;
+            this._DxRibbon = new DxRibbonControl() { Visible = true };
+            ((System.ComponentModel.ISupportInitialize)(_DxRibbon)).BeginInit();
+            this.Ribbon = _DxRibbon;
+            this.Controls.Add(this._DxRibbon);
+            this.FormRibbonVisibility = FormRibbonVisibilityMode.Standard;
+
+            this._DxStatusBar = new DxRibbonStatusBar() { Visible = true };
+            this._DxStatusBar.Ribbon = this._DxRibbon;
+            this.StatusBar = _DxStatusBar;
+            this.Controls.Add(this._DxStatusBar);
+
+            this.DxRibbonPrepare();
+            this.DxStatusPrepare();
+            this.DxMainContentPrepare();
+        }
+        /// <summary>
+        /// Je voláno na konci konstruktoru třídy <see cref="DxRibbonBaseForm"/>.
+        /// Typicky je zde ukončen cyklus BeginInit jednoltivých komponent.
+        /// <para/>
+        /// Je povinné volat base metodu, typicky na konci metody override.
+        /// </summary>
+        protected virtual void EndInitDxRibbonForm()
+        {
+            ((System.ComponentModel.ISupportInitialize)(_DxRibbon)).EndInit();
+
+            // Form Layout:
+            this.ResumeLayout(false);
+            this.PerformLayout();
+        }
+        /// <summary>
+        /// Provede tvorbu hlavního obsahu okna, podle jeho typu, a jeho přidání do okna včetně zadokování.
+        /// Provádí se před vytvořením Ribbonu a Status baru, aby obsah byl správně umístěn na Z ose.
+        /// </summary>
+        protected abstract void DxMainContentCreate();
+        /// <summary>
+        /// Provede přípravu obsahu Ribbonu.
+        /// Pozor: Bázová třída <see cref="DxRibbonForm"/> pouze nastaví <see cref="DxRibbonBaseForm.DxRibbon"/>.Visible = false; nic jiného neprovádí !!!
+        /// To proto, když by potomek nijak s Ribbonem nepracoval, pak nebude Ribbon zobrazen.
+        /// U této metody tedy není vhodné volat base metodu, anebo je třeba po jejím volání nastavit viditelnost Ribbonu na true.
+        /// </summary>
+        protected virtual void DxRibbonPrepare() { this.FormRibbonVisibility = FormRibbonVisibilityMode.FormTitleRow; }
+        /// <summary>
+        /// Provede přípravu obsahu StatusBaru.
+        /// Pozor: Bázová třída <see cref="DxRibbonForm"/> nastaví <see cref="DxRibbonBaseForm.DxStatusBar"/>.Visible = false; nic jiného neprovádí !!!
+        /// To proto, když by potomek nijak se StatusBarem nepracoval, pak nebude StatusBar zobrazen.
+        /// U této metody tedy není vhodné volat base metodu, anebo je třeba po jejím volání nastavit viditelnost StatusBaru na true.
+        /// </summary>
+        protected virtual void DxStatusPrepare() { this._DxStatusBar.Visible = false; }
+        /// <summary>
+        /// Provede přípravu obsahu hlavního obsahu okna. Obsah je již vytvořen a umístěn v okně, Ribbon i StatusBar existují.<br/>
+        /// Zde se typicky vytváří obsah do hlavního panelu.
+        /// </summary>
+        protected abstract void DxMainContentPrepare();
+        /// <summary>
+        /// Volá se tehdy, když se mohla změnit velikost ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/>.
+        /// </summary>
+        protected virtual void RunDxMainContentDoLayout()
+        {
+            this.DxMainContentDoLayout(true);
+        }
+        /// <summary>
+        /// Provede se po změně velikosti ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/> i v jiných situacích.
+        /// Aktuální stav formuláře lze zjistit v <see cref="DxRibbonBaseForm.ActivityState"/>.
+        /// Parametr <paramref name="isSizeChanged"/> říká, zda se od posledního volání této metody změnila velikost Main panelu.
+        /// </summary>
+        /// <param name="isSizeChanged">Pokud je true, pak od posledního volání této metody se změnila velikost panelu <see cref="DxRibbonForm.DxMainPanel"/> 'ClientSize'. Hodnota false = nezměnila se, ale změnilo se okno nebo něco jiného...</param>
+        protected virtual void DxMainContentDoLayout(bool isSizeChanged) { }
+        /// <summary>
+        /// Vytvoří a vrátí standardní stránku Home pro Ribbon, volitelně do ní přidá grupu Design s danými prvky (defaultně = None).
+        /// </summary>
+        /// <param name="designGroupParts"></param>
+        /// <returns></returns>
+        protected virtual DataRibbonPage CreateRibbonHomePage(FormRibbonDesignGroupPart designGroupParts = FormRibbonDesignGroupPart.None)
+        {
+            DataRibbonPage homePage = new DataRibbonPage() 
+            {
+                PageId = "DxHomePage", 
+                PageText = "Domů",
+                MergeOrder = 1, 
+                PageOrder = 1
+            };
+
+            if (designGroupParts != FormRibbonDesignGroupPart.None)
+            {
+                var group = DxRibbonControl.CreateDesignHomeGroup(designGroupParts, "Design") as DataRibbonGroup;
+                homePage.Groups.Add(group);
+            }
+            return homePage;
+        }
+        private DxRibbonControl _DxRibbon;
+        private DxRibbonStatusBar _DxStatusBar;
+        #endregion
+        #region FormRibbonVisibility
+        /// <summary>
+        /// Viditelnost Ribbonu a titulkového řádku okna
+        /// </summary>
+        public FormRibbonVisibilityMode FormRibbonVisibility
+        {
+            get { return _FormRibbonVisibility; }
+            set
+            {
+                switch (value)
+                {
+                    case FormRibbonVisibilityMode.Nothing:
+                        this.RibbonVisibility = DevExpress.XtraBars.Ribbon.RibbonVisibility.Hidden;
+                        this.DxRibbon.Visible = false;
+                        break;
+                    case FormRibbonVisibilityMode.FormTitleRow:
+                        this.RibbonVisibility = DevExpress.XtraBars.Ribbon.RibbonVisibility.Hidden;
+                        this.DxRibbon.Visible = true;
+                        break;
+                    case FormRibbonVisibilityMode.Standard:
+                        this.RibbonVisibility = DevExpress.XtraBars.Ribbon.RibbonVisibility.Visible;
+                        this.DxRibbon.Visible = true;
+                        break;
+                }
+                _FormRibbonVisibility = value;
+            }
+        }
+        /// <summary>Viditelnost Ribbonu a titulkového řádku okna</summary>
+        private FormRibbonVisibilityMode _FormRibbonVisibility = FormRibbonVisibilityMode.Standard;
+        #endregion
+    }
+    /// <summary>
+    /// Prvky, které mohou být přidány do grupy Design v ribbon page HomePage
+    /// </summary>
+    [Flags]
+    public enum FormRibbonDesignGroupPart
+    {
+        /// <summary>
+        /// Žádný prvek, ani grupa pro Design prvky
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Button pro volbu Skinu
+        /// </summary>
+        SkinButton = 0x0001,
+        /// <summary>
+        /// Button pro volbu Barevné palety
+        /// </summary>
+        PaletteButton = 0x0002,
+        /// <summary>
+        /// Galerie pro volbu Barevné palety
+        /// </summary>
+        PaletteGallery = 0x0004,
+        /// <summary>
+        /// Button pro přepínání režimu UHD Paint
+        /// </summary>
+        UhdSupport = 0x0010,
+        /// <summary>
+        /// Okno pro výběr ikon DevExpress
+        /// </summary>
+        ImageGallery = 0x0020,
+        /// <summary>
+        /// Aktivita systémového logu
+        /// </summary>
+        LogActivity = 0x0040,
+        /// <summary>
+        /// Zakázat zachycování oken (Capture: Printscreen / Recording / Teams)
+        /// </summary>
+        NotCaptureWindows = 0x0080,
+
+        /// <summary>
+        /// Základ = <see cref="SkinButton"/> + <see cref="PaletteButton"/> + <see cref="ImageGallery"/>
+        /// </summary>
+        Basic = SkinButton | PaletteButton | ImageGallery,
+        /// <summary>
+        /// Běžná sada = <see cref="SkinButton"/> + <see cref="PaletteButton"/> + <see cref="UhdSupport"/> + <see cref="ImageGallery"/>
+        /// </summary>
+        Default = SkinButton | PaletteButton | UhdSupport | ImageGallery,
+        /// <summary>
+        /// Všechno = <see cref="SkinButton"/> + <see cref="PaletteButton"/> + <see cref="UhdSupport"/> + <see cref="ImageGallery"/> + <see cref="LogActivity"/>
+        /// </summary>
+        All = SkinButton | PaletteButton | UhdSupport | ImageGallery | LogActivity | NotCaptureWindows,
+    }
+    /// <summary>
+    /// Režim viditelnosti titulkového řádku okna a Ribbonu
+    /// </summary>
+    public enum FormRibbonVisibilityMode
+    {
+        /// <summary>
+        /// Není zobrazen ani Ribbon, ani TitleRow okna!!!
+        /// </summary>
+        Nothing,
+        /// <summary>
+        /// Je zobrazen TitleRow okna, ale není Ribbon, a to ani Toolbar ani Search ani PageHeaders. Jako by Ribbon nebyl.
+        /// </summary>
+        FormTitleRow,
+        /// <summary>
+        /// Standardní zobrazení TitleRow okna a Ribbonu
+        /// </summary>
+        Standard
+    }
+    /// <summary>
+    /// Interface, který zaručuje přítomnost property s názvem základní a rozšířené ikony okna
+    /// </summary>
+    public interface IDxControlWithIcons
+    {
+        /// <summary>
+        /// Jméno základní ikony
+        /// </summary>
+        string IconNameBasic { get; }
+        /// <summary>
+        /// Jméno přidané ikony (zobrazuje se v TabHeaderu)
+        /// </summary>
+        string IconNameAdd { get; }
+    }
+    /// <summary>
+    /// Informace o životním stavu formuláře (proces otevírání, zavírání atd), a o jeho pozici, rozměrech a maximalizaci
+    /// </summary>
+    internal class FormStatusInfo
+    {
+        #region Konstruktor, Owner, Dispose...
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="owner"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public FormStatusInfo(Form owner)
+        {
+            if (owner is null) throw new ArgumentNullException($"FormStatusInfo(Form owner): 'owner' can not be null.");
+
+            this._Owner = owner;
+            owner.Disposed += _Owner_Disposed;
+            this.__ActivityState = WindowActivityState.None;
+            this._LinkStatusEvents(owner);
+            this._LinkBoundsEvents(owner);
+        }
+        /// <summary>
+        /// Formulář byl Disposován
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _Owner_Disposed(object sender, EventArgs e)
+        {
+            var owner = _Owner;
+            this._UnLinkStatusEvents(owner);
+            this._UnLinkBoundsEvents(owner);
+            _Owner = null;
+            this.ActivityState = WindowActivityState.Disposed;
+        }
+        /// <summary>
+        /// Vlastník = formulář, ukládá se WeakTarget
+        /// </summary>
+        private Form _Owner
+        {
+            get { return ((__Owner != null && __Owner.IsAlive) ? __Owner.Target : null); }
+            set { __Owner = (value != null ? new WeakTarget<Form>(value) : null); }
+        }
+        /// <summary>
+        /// Vlastník = formulář, pokud implementuje <see cref="IFormStatusWorking"/>. Jinak je null.
+        /// </summary>
+        private IFormStatusWorking _IOwner { get { return _Owner as IFormStatusWorking; } }
+        /// <summary>
+        /// WeakTarget na Vlastník = formulář
+        /// </summary>
+        private WeakTarget<Form> __Owner;
+        /// <summary>
+        /// Obsahuje hodnotu Visible z formuláře <see cref="_Owner"/>
+        /// </summary>
+        private bool _OwnerVisible { get { return (_Owner?.Visible ?? false); } }
+        /// <summary>
+        /// Obsahuje hodnotu WasShown z formuláře <see cref="_Owner"/> (as <see cref="IFormStatusWorking"/>)
+        /// </summary>
+        private bool _OwnerWasShown { get { return (_IOwner?.WasShown ?? false); } }
+        #endregion
+        #region Stav okna v jeho životním cyklu: ActivityState
+        /// <summary>
+        /// Stav aktivity okna. Při změně je volána metoda ownera: <see cref="IFormStatusWorking.RunActivityStateChanged(TEventValueChangedArgs{WindowActivityState})"/>.
+        /// </summary>
+        public WindowActivityState ActivityState { get { return __ActivityState; } set { _SetActivityState(value); } }
+        private void _SetActivityState(WindowActivityState activityState)
+        {
+            // Setování může provádět i Owner form:
+            var oldValue = __ActivityState;
+            var newValue = activityState;
+
+            // Stavový diagram: co mohu akceptovat z OldValue:
+            bool isAcceptable = (oldValue == WindowActivityState.None && (newValue == WindowActivityState.Creating))
+                             || (oldValue == WindowActivityState.Creating && (newValue == WindowActivityState.Initialized))
+                             || (oldValue == WindowActivityState.Initialized && (newValue == WindowActivityState.FirstShow))
+                             || (oldValue == WindowActivityState.FirstShow && (newValue == WindowActivityState.ShowBefore))
+                             || (oldValue == WindowActivityState.ShowBefore && (newValue == WindowActivityState.ShowAfter))
+                             || (oldValue == WindowActivityState.ShowAfter && (newValue == WindowActivityState.Active || newValue == WindowActivityState.Inactive || newValue == WindowActivityState.Visible || newValue == WindowActivityState.Invisible || newValue == WindowActivityState.Closing))
+                             || (oldValue == WindowActivityState.Visible && (newValue == WindowActivityState.Active || newValue == WindowActivityState.Inactive || newValue == WindowActivityState.Visible || newValue == WindowActivityState.Invisible || newValue == WindowActivityState.Closing))
+                             || (oldValue == WindowActivityState.Active && (newValue == WindowActivityState.Active || newValue == WindowActivityState.Inactive || newValue == WindowActivityState.Visible || newValue == WindowActivityState.Invisible || newValue == WindowActivityState.Closing))
+                             || (oldValue == WindowActivityState.Inactive && (newValue == WindowActivityState.Active || newValue == WindowActivityState.Inactive || newValue == WindowActivityState.Visible || newValue == WindowActivityState.Invisible || newValue == WindowActivityState.Closing))
+                             || (oldValue == WindowActivityState.Invisible && (newValue == WindowActivityState.Active || newValue == WindowActivityState.Inactive || newValue == WindowActivityState.Visible || newValue == WindowActivityState.Invisible || newValue == WindowActivityState.Closing))
+                             || (oldValue == WindowActivityState.Closing && (newValue == WindowActivityState.Active || newValue == WindowActivityState.Inactive || newValue == WindowActivityState.Visible || newValue == WindowActivityState.Invisible || newValue == WindowActivityState.Closed))
+                             || (oldValue == WindowActivityState.Closed && (newValue == WindowActivityState.Disposing || newValue == WindowActivityState.Disposed))
+                             || (oldValue == WindowActivityState.Disposing && (newValue == WindowActivityState.Disposed))
+                             || (oldValue == WindowActivityState.Disposed && (newValue == WindowActivityState.Disposed));
+
+            bool isIgnored =    (oldValue == WindowActivityState.Initialized && (newValue == WindowActivityState.Active || newValue == WindowActivityState.Inactive))
+                             || (oldValue == WindowActivityState.ShowBefore && (newValue == WindowActivityState.Active || newValue == WindowActivityState.Inactive))
+                             || (oldValue == WindowActivityState.Disposing && (newValue == WindowActivityState.Inactive || newValue == WindowActivityState.Invisible));
+
+            if (isAcceptable)
+            {
+                // Těsně před prvním zobrazením okna (FirstShow) znovu aplikuji pozici okna:
+                if (newValue == WindowActivityState.FirstShow)
+                    this._Position_Apply(true);
+
+                if (newValue != oldValue)
+                {
+                    __ActivityState = newValue;
+
+                    // Zajistíme vyvolání eventu v Formu:
+                    var iOwner = _IOwner;
+                    if (iOwner != null)
+                        iOwner.RunActivityStateChanged(new TEventValueChangedArgs<WindowActivityState>(EventSource.None, oldValue, newValue));
+                }
+            }
+            else if (isIgnored)
+            {   // Toto jsou známé přechody stavů, které ignorujeme úmyslně...
+            }
+            else
+            {   // Toto jsou nezmapované přechody stavů... Breakpoint sem!
+            }
+        }
+        /// <summary>Stav okna</summary>
+        private WindowActivityState __ActivityState;
+        /// <summary>
+        /// Aktivuje svoje eventhandlery do daného fornuláře pro sledování <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="owner"></param>
+        private void _LinkStatusEvents(Form owner)
+        {
+            if (owner != null)
+            {
+                owner.Activated += _ActivityStateDetect_Activated;
+                owner.Deactivate += _ActivityStateDetect_Deactivate;
+                owner.GotFocus += _ActivityStateDetect_GotFocus;
+                owner.LostFocus += _ActivityStateDetect_LostFocus;
+                owner.VisibleChanged += _ActivityStateDetect_VisibleChanged;
+                owner.FormClosing += _ActivityStateDetect_FormClosing;
+                owner.FormClosed += _ActivityStateDetect_FormClosed;
+            }
+        }
+        /// <summary>
+        /// Deaktivuje svoje eventhandlery z daného fornuláře pro sledování <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="owner"></param>
+        private void _UnLinkStatusEvents(Form owner)
+        {
+            if (owner != null)
+            {
+                owner.Activated -= _ActivityStateDetect_Activated;
+                owner.Deactivate -= _ActivityStateDetect_Deactivate;
+                owner.GotFocus -= _ActivityStateDetect_GotFocus;
+                owner.LostFocus -= _ActivityStateDetect_LostFocus;
+                owner.VisibleChanged -= _ActivityStateDetect_VisibleChanged;
+                owner.FormClosing -= _ActivityStateDetect_FormClosing;
+                owner.FormClosed -= _ActivityStateDetect_FormClosed;
+            }
         }
         /// <summary>
         /// Hlídáme změny stavu <see cref="ActivityState"/>
@@ -382,7 +1199,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _ActivityStateDetect_VisibleChanged(object sender, EventArgs e)
         {
-            this.ActivityState = (this.Visible ? WindowActivityState.Visible : WindowActivityState.Invisible);
+            if (this._OwnerWasShown)
+                this.ActivityState = (this._OwnerVisible ? WindowActivityState.Visible : WindowActivityState.Invisible);
         }
         /// <summary>
         /// Hlídáme změny stavu <see cref="ActivityState"/>
@@ -402,330 +1220,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.ActivityState = WindowActivityState.Closed;
         }
-        /// <summary>
-        /// Vyvolá <see cref="OnActivityStateChanged(TEventValueChangedArgs{WindowActivityState})"/> a event <see cref="ActivityStateChanged"/>.
-        /// </summary>
-        /// <param name="oldValue"></param>
-        /// <param name="newValue"></param>
-        private void RunActivityStateChanged(WindowActivityState oldValue, WindowActivityState newValue)
-        {
-            var args = new TEventValueChangedArgs<WindowActivityState>(EventSource.None, oldValue, newValue);
-            OnActivityStateChanged(args);
-            ActivityStateChanged?.Invoke(this, args);
-        }
-        /// <summary>
-        /// Metoda proběhne při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
-        /// </summary>
-        /// <param name="args"></param>
-        protected virtual void OnActivityStateChanged(TEventValueChangedArgs<WindowActivityState> args) { }
-        /// <summary>
-        /// Událost volaná při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
-        /// </summary>
-        public event EventHandler<TEventValueChangedArgs<WindowActivityState>> ActivityStateChanged;
         #endregion
-        #region Style & Zoom Changed
-        void IListenerZoomChange.ZoomChanged() { OnZoomChanged(); }
-        /// <summary>
-        /// Volá se po změně zoomu
-        /// </summary>
-        protected virtual void OnZoomChanged() { }
-        void IListenerStyleChanged.StyleChanged() { OnStyleChanged(); }
-        /// <summary>
-        /// Volá se po změně skinu
-        /// </summary>
-        protected virtual void OnStyleChanged() { }
-        void IListenerApplicationIdle.ApplicationIdle() { OnApplicationIdle(); }
-        /// <summary>
-        /// Zavolá se v situaci, kdy aplikace nemá zrovna co na práci
-        /// </summary>
-        protected virtual void OnApplicationIdle() { }
-        #endregion
-    }
-    #endregion
-    #region DxRibbonForm
-    /// <summary>
-    /// Formulář s ribbonem.
-    /// Obsahuje připravený Ribbon <see cref="DxRibbonBaseForm.DxRibbon"/> a připravený StatusBar <see cref="DxRibbonBaseForm.DxStatusBar"/>, 
-    /// a hlavní Panel <see cref="DxMainPanel"/> nacházející se mezi Ribbonem a StatusBarem.
-    /// </summary>
-    public class DxRibbonForm : DxRibbonBaseForm
-    {
-        #region MainPanel
-        /// <summary>
-        /// Hlavní panel, mezi Ribbonem a StatusBarem
-        /// </summary>
-        public DxPanelControl DxMainPanel { get { return _DxMainPanel; } }
-        /// <summary>
-        /// Provede tvorbu hlavního panelu okna <see cref="DxMainPanel"/> a jeho přidání do okna včetně zadokování.
-        /// Provádí se před vytvořením Ribbonu a Status baru, aby <see cref="DxMainPanel"/> byl správně umístěn na Z ose.
-        /// </summary>
-        protected override void DxMainContentCreate()
-        {
-            this._DxMainPanel = DxComponent.CreateDxPanel(this, System.Windows.Forms.DockStyle.Fill, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
-            this._DxMainPanel.ClientSizeChanged += _DxMainPanel_ClientSizeChanged;
-        }
-        /// <summary>
-        /// Provede se po změně velikosti ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _DxMainPanel_ClientSizeChanged(object sender, EventArgs e)
-        {
-            DxMainContentDoLayout();
-        }
-        /// <summary>
-        /// Provede přípravu obsahu hlavního panelu <see cref="DxRibbonForm.DxMainPanel"/>. Panel je již vytvořen a umístěn v okně, Ribbon i StatusBar existují.<br/>
-        /// Zde se typicky vytváří obsah do hlavního panelu.
-        /// </summary>
-        protected override void DxMainContentPrepare()
-        {
-            this._DxMainPanel.Visible = true;
-        }
-        private DxPanelControl _DxMainPanel;
-        #endregion
-        #region FormRibbonVisibility
-        /// <summary>
-        /// Viditelnost Ribbonu a titulkového řádku okna
-        /// </summary>
-        public FormRibbonVisibilityMode FormRibbonVisibility
-        {
-            get { return _FormRibbonVisibility; }
-            set
-            {
-                switch (value)
-                {
-                    case FormRibbonVisibilityMode.Nothing:
-                        this.RibbonVisibility = DevExpress.XtraBars.Ribbon.RibbonVisibility.Hidden;
-                        this.DxRibbon.Visible = false;
-                        break;
-                    case FormRibbonVisibilityMode.FormTitleRow:
-                        this.RibbonVisibility = DevExpress.XtraBars.Ribbon.RibbonVisibility.Hidden;
-                        this.DxRibbon.Visible = true;
-                        break;
-                    case FormRibbonVisibilityMode.Standard:
-                        this.RibbonVisibility = DevExpress.XtraBars.Ribbon.RibbonVisibility.Visible;
-                        this.DxRibbon.Visible = true;
-                        break;
-                }
-                _FormRibbonVisibility = value;
-            }
-        }
-        /// <summary>Viditelnost Ribbonu a titulkového řádku okna</summary>
-        private FormRibbonVisibilityMode _FormRibbonVisibility = FormRibbonVisibilityMode.Standard;
-        #endregion
-    }
-    /// <summary>
-    /// Formulář s ribbonem.
-    /// Obsahuje připravený Ribbon <see cref="DxRibbon"/> a připravený StatusBar <see cref="DxStatusBar"/>.
-    /// </summary>
-    public abstract class DxRibbonBaseForm : DevExpress.XtraBars.Ribbon.RibbonForm, IDxControlWithIcons, IFormWorking, IListenerZoomChange, IListenerStyleChanged, IListenerApplicationIdle, IListenerExcludeFromCaptureContentChanged
-    {
-        #region Konstruktor a základní vlastnosti
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        public DxRibbonBaseForm()
-        {
-            this._FormStatusInit();
-            this._ActivityStateInit();
-            this._FormPositionInit();
-            this.ImageName = AsolDX.ImageName.DxFormIcon;
-            this.InitDxRibbonForm();
-            DxComponent.RegisterListener(this);
-            this.DxMainContentDoLayout();
-            this.EndInitDxRibbonForm();
-        }
-        /// <summary>
-        /// Vizualizace
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
-        /// <summary>
-        /// Při zobrazení okna
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void OnShown(EventArgs e)
-        {
-            if (!_WasShown)
-            {
-                this.ActivityState = WindowActivityState.FirstShow;
-                this._FormPositionApply(true);
-                this.OnFirstShownBefore();
-                this.FirstShownBefore?.Invoke(this, EventArgs.Empty);
-                this.ActivityState = WindowActivityState.ShowBefore;
-                base.OnShown(e);
-                _WasShown = true;
-                this.OnFirstShownAfter();
-                this.FirstShownAfter?.Invoke(this, EventArgs.Empty);
-                this.ActivityState = WindowActivityState.ShowAfter;
-            }
-            else
-            {
-                base.OnShown(e);
-                this.OnNextShown();
-                this.NextShown?.Invoke(this, EventArgs.Empty);
-                this.ActivityState = WindowActivityState.ShowAfter;
-            }
-            this.ActivityState = WindowActivityState.Visible;
-        }
-        /// <summary>
-        /// Je vyvoláno jedenkrát v životě okna, těsně před prvním zobrazením okna. Nyní je hodnota <see cref="WasShown"/> = false.
-        /// </summary>
-        protected virtual void OnFirstShownBefore() { }
-        /// <summary>
-        /// Je vyvoláno jedenkrát v životě okna, těsně před prvním zobrazením okna. Nyní je hodnota <see cref="WasShown"/> = false.
-        /// </summary>
-        public event EventHandler FirstShownBefore;
-        /// <summary>
-        /// Je vyvoláno jedenkrát v životě okna, těsně po prvním zobrazením okna. Nyní je hodnota <see cref="WasShown"/> = true.
-        /// </summary>
-        protected virtual void OnFirstShownAfter() { }
-        /// <summary>
-        /// Je vyvoláno jedenkrát v životě okna, těsně po prvním zobrazením okna. Nyní je hodnota <see cref="WasShown"/> = true.
-        /// </summary>
-        public event EventHandler FirstShownAfter;
-        /// <summary>
-        /// Je vyvoláno těsně po druhém a každém dalším zobrazením okna. Nikoli po prvním.
-        /// </summary>
-        protected virtual void OnNextShown() { }
-        /// <summary>
-        /// Je vyvoláno těsně po druhém a každém dalším zobrazením okna. Nikoli po prvním.
-        /// </summary>
-        public event EventHandler NextShown;
-        /// <summary>
-        /// Obsahuje true poté, kdy formulář byl zobrazen. 
-        /// Obsahuje true již v metodě <see cref="OnFirstShownAfter"/> a v eventu <see cref="FirstShownAfter"/>.
-        /// </summary>
-        public bool WasShown { get { return _WasShown; } }
-        /// <summary>
-        /// Okno již bylo zobrazeno?
-        /// </summary>
-        private bool _WasShown = false;
-        /// <summary>
-        /// Obsahuje true v situaci, kdy toto okno již prošlo fází zobrazení (<see cref="WasShown"/> je true) a dosud nebylo disposováno.
-        /// </summary>
-        public bool IsLive { get { return _WasShown && !Disposing && !IsDisposed; } }
-        /// <summary>
-        /// Obsahuje true v situaci, kdy toto okno je ve viditelném stavu = je živé <see cref="IsLive"/> a není minimalizované.
-        /// V tomto stavu má smysl provádět Layout okna.
-        /// </summary>
-        public bool IsDisplayed { get { return IsLive && WindowState != FormWindowState.Minimized; } }
-        /// <summary>
-        /// Aktuálně platná hodnota DeviceDpi
-        /// </summary>
-        public int CurrentDpi { get { return this.DeviceDpi; } }
-        /// <summary>
-        /// Najde ovládací prvek odpovídající aktuální klávese.
-        /// </summary>
-        /// <param name="msg"></param>
-        /// <param name="keyData"></param>
-        /// <returns></returns>
-        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
-        {
-            if (DxStdForm.SearchKeyDownButtons(this, keyData))
-                return true;
-            return base.ProcessCmdKey(ref msg, keyData);
-        }
-        /// <summary>
-        /// Dispose panelu
-        /// </summary>
-        /// <param name="disposing"></param>
-        protected override void Dispose(bool disposing)
-        {
-            this.ActivityState = WindowActivityState.Disposing;
-            DxComponent.UnregisterListener(this);
-            DestroyContent();
-            base.Dispose(disposing);
-            this.ActivityState = WindowActivityState.Disposed;
-        }
-        /// <summary>
-        /// Zruší veškerý svůj obsah v procesu Dispose. Volá base.DestroyContent() !!!
-        /// </summary>
-        protected virtual void DestroyContent()
-        {
-            FirstShownBefore = null;
-            FirstShownAfter = null;
-            NextShown = null;
-        }
-        #endregion
-        #region FormStatus
-        private void _FormStatusInit()
-        {
-            __FormStatus = new FormStatusInfo(this);
-        }
-        private FormStatusInfo __FormStatus;
-        public WindowActivityState ActivityState
-        {
-            get { return __FormStatus.ActivityState; }
-            private set { __FormStatus.ActivityState = value; }
-        }
-        #endregion
-        #region Ikona okna
-        /// <summary>
-        /// Název obrázku, který reprezentuje ikonu tohoto okna
-        /// </summary>
-        public string ImageName { get { return _ImageName; } set { _ImageName = value; DxComponent.ApplyImage(this.IconOptions, value, sizeType: ResourceImageSizeType.Large); } } private string _ImageName;
-        /// <summary>
-        /// Název obrázku, který reprezentuje přidanou ikonu tohoto okna
-        /// </summary>
-        public string ImageNameAdd { get { return _ImageNameAdd; } set { _ImageNameAdd = value; } } private string _ImageNameAdd;
-        string IDxControlWithIcons.IconNameBasic { get { return ImageName; } }
-        string IDxControlWithIcons.IconNameAdd { get { return ImageNameAdd; } }
-        #endregion
-        #region Skrývání obsahu formuláře pro externí aplikace nahrávající obsah (Capture content), listener IListenerNotCaptureWindowsChanged
-        /// <summary>
-        /// Pokud je true, pak obsah tohoto okna nebude zachycen aplikacemi jako Teams, Recording, PrintScreen atd.<br/>
-        /// Výchozí je hodnota odpovídající (! <see cref="DxComponent.ExcludeFromCaptureContent"/>).
-        /// <para/>
-        /// Okno <see cref="DxRibbonForm"/> implementuje <see cref="IListenerExcludeFromCaptureContentChanged"/> a reaguje tak na hodnotu <see cref="DxComponent.ExcludeFromCaptureContent"/>,<br/>
-        /// automaticky tedy nastavuje zdejší hodnotu <see cref="ExcludeFromCaptureContent"/> podle ! <see cref="DxComponent.ExcludeFromCaptureContent"/>.
-        /// <para/>
-        /// Využívá SetWindowDisplayAffinity : <see href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity"/>
-        /// </summary>
-        public bool ExcludeFromCaptureContent
-        {
-            get { return __ExcludeFromCaptureContent; }
-            set
-            {
-                bool currentValue = __ExcludeFromCaptureContent;
-                if (value != currentValue)
-                {
-                    __ExcludeFromCaptureContent = value;
-                    AcceptExcludeFromCaptureContent();
-                }
-            }
-        }
-        private bool __ExcludeFromCaptureContent;
-        /// <summary>
-        /// Metoda zajistí, že toto okno bude mít nastavenu reálnou vlastnost <c>Winapi.WindowDisplayAffinity</c> podle zdejší hodnoty <see cref="__ExcludeFromCaptureContent"/>.
-        /// </summary>
-        protected void AcceptExcludeFromCaptureContent()
-        {
-            if (this.IsHandleCreated && !this.IsDisposed)
-            {
-                DxComponent.SetWindowDisplayAffinity(this, __ExcludeFromCaptureContent);
-            }
-        }
-        void IListenerExcludeFromCaptureContentChanged.ExcludeFromCaptureContentChanged() { OnExcludeFromCaptureContentChanged(); }
-        /// <summary>
-        /// Zavolá se tehdy, když aplikace změnila hodnotu v <see cref="DxComponent.ExcludeFromCaptureContent"/> = mění se stav <c>WinApi.SetWindowDisplayAffinity</c> (pomocí listeneru <see cref="IListenerExcludeFromCaptureContentChanged"/>).
-        /// </summary>
-        protected virtual void OnExcludeFromCaptureContentChanged()
-        {
-            this.ExcludeFromCaptureContent = DxComponent.ExcludeFromCaptureContent;
-        }
-        /// <summary>
-        /// Po vytvoření Handle pro formulář si pro toto Window aktualizujeme <c>WindowDisplayAffinity</c>
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void OnHandleCreated(EventArgs e)
-        {
-            base.OnHandleCreated(e);
-            __ExcludeFromCaptureContent = DxComponent.ExcludeFromCaptureContent;
-            AcceptExcludeFromCaptureContent();
-        }
-        #endregion
-        #region Pozice okna
+        #region Pozice a velikost okna a jeho WindowState
         /// <summary>
         /// Umístí toto okno do viditelných souřadnic monitorů.
         /// Pokud je parametr <paramref name="force"/> = false (default), 
@@ -735,9 +1231,171 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="force"></param>
         public void MoveToVisibleScreen(bool force = false)
         {
-            if (!force && this.StartPosition != FormStartPosition.Manual) return;
-            this.Bounds = this.Bounds.FitIntoMonitors(true, false, true);
+            Form owner = _Owner;
+            if (owner != null)
+            {
+                if (force || owner.StartPosition == FormStartPosition.Manual) return;
+                owner.Bounds = owner.Bounds.FitIntoMonitors(true, false, true);
+            }
         }
+        /// <summary>
+        /// Pozice okna byla nastavena v jeho konstruktoru z dat načtených z konfigurace. Bounds ani WindowState ani StartPosition by neměly být měněny.
+        /// </summary>
+        public bool PositionIsFromConfig { get { return __PositionIsFromConfig; } }
+        /// <summary>
+        /// Příznak z načtené konfigurace okna: true = okno bylo zavíráno ve stavu IsMdiChild (tedy jako Tabované) / false = bylo plovoucí
+        /// </summary>
+        public bool? ConfigIsMdiChild { get { return __ConfigIsMdiChild; } }
+        /// <summary>
+        /// Vrátí true, pokud dodaný string je validní pro použití jako data konfigurace
+        /// </summary>
+        /// <param name="configData"></param>
+        /// <returns></returns>
+        public static bool IsPositionDataValid(string configData)
+        {
+            return _TryParsePositionData(configData, out var _, out var _, out var _, out var _);
+        }
+        /// <summary>
+        /// Z dodaných hodnot vrátí konfigurační string popisující stav a pozici okna
+        /// </summary>
+        /// <returns></returns>
+        public static string CreatePositionData(bool? isMdiChild, FormWindowState? windowState, Rectangle? normalBounds, Rectangle? maximizedBounds)
+        {
+            return _CreatePositionData(isMdiChild, windowState, normalBounds, maximizedBounds);
+        }
+        /// <summary>
+        /// Aktivuje svoje eventhandlery do daného fornuláře pro sledování jeho souřadnic a stavu Maximized.
+        /// </summary>
+        /// <param name="owner"></param>
+        private void _LinkBoundsEvents(Form owner)
+        {
+            this._Position_Restore();
+            if (owner != null)
+            {
+                owner.LocationChanged += _Position_LocationChanged;
+                owner.SizeChanged += _Position_SizeChanged;
+                owner.FormClosed += _Position_FormClosed;
+            }
+            this._Position_Apply(false);
+        }
+        /// <summary>
+        /// Deaktivuje svoje eventhandlery do daného fornuláře pro sledování jeho souřadnic a stavu Maximized.
+        /// </summary>
+        /// <param name="owner"></param>
+        private void _UnLinkBoundsEvents(Form owner)
+        {
+            if (owner != null)
+            {
+                owner.LocationChanged += _Position_LocationChanged;
+                owner.SizeChanged += _Position_SizeChanged;
+                owner.FormClosed += _Position_FormClosed;
+            }
+        }
+        /// <summary>
+        /// Po změně velikosti okna provede uložení aktuálních hodnot
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _Position_SizeChanged(object sender, EventArgs e)
+        {
+            _Position_FetchCurrent();
+        }
+        /// <summary>
+        /// Po změně velikosti okna provede uložení aktuálních hodnot
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _Position_LocationChanged(object sender, EventArgs e)
+        {
+            _Position_FetchCurrent();
+        }
+        /// <summary>
+        /// Při zavírání okna uložíme jeho pozici do konfigurace
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _Position_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            this._Position_Store();
+        }
+        /// <summary>
+        /// Zachytí do svých proměnných informace o aktuální pozici a stavu Maximized o okně.
+        /// Volá se z eventhandlerů o změnách.
+        /// </summary>
+        private void _Position_FetchCurrent()
+        {
+            if (__IgnorePositionChange) return;
+            if (!this._OwnerWasShown) return;
+
+            var form = _Owner;
+            if (form is null) return;
+            var currentState = form.WindowState;
+            bool isMdiChild = form.IsMdiChild;
+            __CurrentIsMdiChild = isMdiChild;
+            if (!isMdiChild)
+            {   // Informace ukládám jen o "plovoucím okně" = nikoliv když je Tabované.
+                switch (currentState)
+                {   // Pouze Normal a Maximized (pro Minimized neukládám nic !!!), a souřadnice odděleně:
+                    // Na toto ukládání navazuje metoda _Position_Apply(bool isShow)
+                    case FormWindowState.Normal:
+                        __CurrentWindowState = FormWindowState.Normal;
+                        __CurrentNormalBounds = form.Bounds;
+                        break;
+                    case FormWindowState.Maximized:
+                        __CurrentWindowState = FormWindowState.Maximized;
+                        __CurrentMaximizedBounds = form.Bounds;
+                        break;
+                }
+            }
+        }
+        /// <summary>
+        /// Aplikuje Config hodnoty o pozici okna, v rámci inicializace i 
+        /// </summary>
+        /// <param name="isShow"></param>
+        private void _Position_Apply(bool isShow)
+        {
+            var owner = this._Owner;
+            var iOwner = this._IOwner;
+            if (owner != null)
+            {
+                try
+                {
+                    __IgnorePositionChange = true;
+
+                    var windowState = __ConfigWindowState;
+                    if (windowState.HasValue)
+                    {
+                        if (windowState.Value == FormWindowState.Maximized)
+                        {   // Při zavření okna (když se ukládala konfigurace) bylo Maximized
+                            if (owner.WindowState != FormWindowState.Maximized) owner.WindowState = FormWindowState.Maximized;
+                            if (owner.StartPosition != FormStartPosition.Manual) owner.StartPosition = FormStartPosition.Manual;
+                            this.__PositionIsFromConfig = true;
+                        }
+                        else
+                        {   // Při zavření okna (když se ukládala konfigurace) bylo Normal (nebo Minimized, ale pak jej otevřu jako Normal)
+                            var normalBounds = __ConfigNormalBounds;
+                            if (normalBounds.HasValue)
+                            {
+                                var bounds = normalBounds.Value.FitIntoMonitors(true, false, true);
+                                if (owner.WindowState != FormWindowState.Normal) owner.WindowState = FormWindowState.Normal;
+                                if (owner.StartPosition != FormStartPosition.Manual) owner.StartPosition = FormStartPosition.Manual;
+                                if (owner.Bounds != normalBounds) owner.Bounds = bounds;
+                                this.__PositionIsFromConfig = true;
+                            }
+                        }
+                        __IgnorePositionChange = false;
+                        _Position_FetchCurrent();
+                    }
+                }
+                finally
+                {
+                    __IgnorePositionChange = false;
+                }
+            }
+        }
+
+        #region Pozice okna
+        /*
         /// <summary>
         /// Inicializace hlídání pozice okna
         /// </summary>
@@ -933,666 +1591,217 @@ namespace Noris.Clients.Win.Components.AsolDX
         private string _FormPositionRegister;
         private FormPositionInfo _FormPositionInfo;
         private Rectangle? _FormBoundsNormal;
+        */
         #endregion
-        #region Stav okna, změny stavu
+
+
+
         /// <summary>
-        /// Stav aktivity okna. Při změně je volána událost <see cref="ActivityStateChanged"/>.
+        /// Z konfigurace načte data o pozici tohoto okna a uloží je do hodnot __Config.
+        /// Neprovádí jejich aplikování, to se provede v pravý čas.
         /// </summary>
-        public WindowActivityState ____XXX__ActivityState
+        /// <param name="owner"></param>
+        private void _Position_Restore()
         {
-            get { return _ActivityState; }
-            protected set
+            var iOwner = this._IOwner;
+            if (iOwner != null)
             {
-                var oldValue = _ActivityState;
-                var newValue = value;
-                if (newValue != oldValue)
-                {
-                    _ActivityState = newValue;
-                    RunActivityStateChanged(oldValue, newValue);
+                var nameSuffix = "_" + DxComponent.CurrentMonitorsKey;
+                var configName = iOwner.PositionConfigName;
+                var positionData = (!String.IsNullOrEmpty(configName) ? _PositionLoadFromConfig(configName, nameSuffix) : iOwner.PositionLoadFromConfig(nameSuffix));
+                __ConfigPositionData = positionData;
+                _TryParsePositionData(positionData , out __ConfigIsMdiChild, out __ConfigWindowState, out __ConfigNormalBounds, out __ConfigMaximizedBounds);
+            }
+        }
+        /// <summary>
+        /// Metoda načte a vrátí data o pozici okna z defaultní konfigurace pro dané jméno
+        /// </summary>
+        /// <param name="configName"></param>
+        /// <param name="nameSuffix"></param>
+        /// <returns></returns>
+        private string _PositionLoadFromConfig(string configName, string nameSuffix)
+        {
+            string positionData = DxComponent.Settings.GetRawValue("FormPosition", configName + nameSuffix);
+            if (String.IsNullOrEmpty(positionData))
+                positionData = DxComponent.Settings.GetRawValue("FormPosition", configName);
+            return positionData;
+        }
+        /// <summary>
+        /// Hodnoty o pozici okna __Current uloží do konfigurace.
+        /// </summary>
+        private void _Position_Store()
+        {
+            if (!this._OwnerWasShown) return;
+
+            var iOwner = this._IOwner;
+            if (iOwner != null)
+            {
+                var positionData = _CreatePositionData(__CurrentIsMdiChild, __CurrentWindowState, __CurrentNormalBounds, __CurrentMaximizedBounds);
+                if (!String.IsNullOrEmpty(positionData) && (String.IsNullOrEmpty(__ConfigPositionData) || !String.Equals(__ConfigPositionData, positionData)))
+                {   // Data o pozici okna uložím do konfigurace jen tehdy, když se mi od posledně změnila = uživatel něco udělal s pozicí okna:
+                    var nameSuffix = "_" + DxComponent.CurrentMonitorsKey;
+                    var configName = iOwner.PositionConfigName;
+                    if (!String.IsNullOrEmpty(configName))
+                        this._PositionSaveToConfig(positionData, configName, nameSuffix);
+                    else
+                        iOwner.PositionSaveToConfig(positionData, nameSuffix);
                 }
             }
         }
-        /// <summary>Stav okna</summary>
-        private WindowActivityState _ActivityState;
         /// <summary>
-        /// Inicializace stavu okna a odpovídajících handlerů
+        /// Metoda uloží dodaná data o pozici okna do defaultní konfigurace pro dané jméno
         /// </summary>
-        private void _ActivityStateInit()
+        /// <param name="positionData"></param>
+        /// <param name="configName"></param>
+        /// <param name="nameSuffix"></param>
+        private void _PositionSaveToConfig(string positionData, string configName, string nameSuffix)
         {
-            this.ActivityState = WindowActivityState.Creating;
-
-            this.Activated += _ActivityStateDetect_Activated;
-            this.Deactivate += _ActivityStateDetect_Deactivate;
-            this.GotFocus += _ActivityStateDetect_GotFocus;
-            this.LostFocus += _ActivityStateDetect_LostFocus;
-            this.VisibleChanged += _ActivityStateDetect_VisibleChanged;
-            this.FormClosing += _ActivityStateDetect_FormClosing;
-            this.FormClosed += _ActivityStateDetect_FormClosed;
+            DxComponent.Settings.SetRawValue("FormPosition", configName, positionData);
+            DxComponent.Settings.SetRawValue("FormPosition", configName + nameSuffix, positionData);
         }
         /// <summary>
-        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// Z konfiguračního stringu najde a parsuje jednotlivé hodnoty
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ActivityStateDetect_Activated(object sender, EventArgs e)
-        {
-            this.ActivityState = WindowActivityState.Active;
-        }
-        /// <summary>
-        /// Hlídáme změny stavu <see cref="ActivityState"/>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ActivityStateDetect_Deactivate(object sender, EventArgs e)
-        {
-            this.ActivityState = WindowActivityState.Inactive;
-        }
-        /// <summary>
-        /// Hlídáme změny stavu <see cref="ActivityState"/>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ActivityStateDetect_GotFocus(object sender, EventArgs e)
-        {
-            this.ActivityState = WindowActivityState.Active;
-        }
-        /// <summary>
-        /// Hlídáme změny stavu <see cref="ActivityState"/>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ActivityStateDetect_LostFocus(object sender, EventArgs e)
-        {
-            this.ActivityState = WindowActivityState.Inactive;
-        }
-        /// <summary>
-        /// Hlídáme změny stavu <see cref="ActivityState"/>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ActivityStateDetect_VisibleChanged(object sender, EventArgs e)
-        {
-            if (this.WasShown)
-                this.ActivityState = (this.Visible ? WindowActivityState.Visible : WindowActivityState.Invisible);
-        }
-        /// <summary>
-        /// Hlídáme změny stavu <see cref="ActivityState"/>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ActivityStateDetect_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            this.ActivityState = WindowActivityState.Closing;
-        }
-        /// <summary>
-        /// Hlídáme změny stavu <see cref="ActivityState"/>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ActivityStateDetect_FormClosed(object sender, FormClosedEventArgs e)
-        {
-            this.ActivityState = WindowActivityState.Closed;
-        }
-        /// <summary>
-        /// Vyvolá <see cref="OnActivityStateChanged(TEventValueChangedArgs{WindowActivityState})"/> a event <see cref="ActivityStateChanged"/>.
-        /// </summary>
-        /// <param name="oldValue"></param>
-        /// <param name="newValue"></param>
-        private void RunActivityStateChanged(WindowActivityState oldValue, WindowActivityState newValue)
-        {
-            var args = new TEventValueChangedArgs<WindowActivityState>(EventSource.None, oldValue, newValue);
-            OnActivityStateChanged(args);
-            ActivityStateChanged?.Invoke(this, args);
-        }
-        /// <summary>
-        /// Metoda proběhne při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
-        /// </summary>
-        /// <param name="args"></param>
-        protected virtual void OnActivityStateChanged(TEventValueChangedArgs<WindowActivityState> args) { }
-        /// <summary>
-        /// Událost volaná při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
-        /// </summary>
-        public event EventHandler<TEventValueChangedArgs<WindowActivityState>> ActivityStateChanged;
-        #endregion
-        #region Listener: Style, Zoom, NotCaptureWindows Changed; ApplicationIdle
-        void IListenerZoomChange.ZoomChanged() { OnZoomChanged(); }
-        /// <summary>
-        /// Volá se po změně zoomu
-        /// </summary>
-        protected virtual void OnZoomChanged() { }
-        void IListenerStyleChanged.StyleChanged() { OnStyleChanged(); }
-        /// <summary>
-        /// Volá se po změně skinu
-        /// </summary>
-        protected virtual void OnStyleChanged() { }
-        void IListenerApplicationIdle.ApplicationIdle() { OnApplicationIdle(); }
-        /// <summary>
-        /// Zavolá se v situaci, kdy aplikace nemá zrovna co na práci
-        /// </summary>
-        protected virtual void OnApplicationIdle() { }
-        #endregion
-        #region Ribbon a StatusBar
-        /// <summary>
-        /// Ribbon
-        /// </summary>
-        public DxRibbonControl DxRibbon { get { return _DxRibbon; } }
-        /// <summary>
-        /// Status bar
-        /// </summary>
-        public DxRibbonStatusBar DxStatusBar { get { return _DxStatusBar; } }
-        /// <summary>
-        /// Inicializace Ribbonu a StatusBaru. Volá se v konstruktoru třídy <see cref="DxRibbonForm"/>!
-        /// </summary>
-        protected virtual void InitDxRibbonForm()
-        {
-            this.DxMainContentCreate();
-
-            this._DxRibbon = new DxRibbonControl() { Visible = true };
-            ((System.ComponentModel.ISupportInitialize)(_DxRibbon)).BeginInit();
-            this.Ribbon = _DxRibbon;
-            this.Controls.Add(this._DxRibbon);
-
-            this._DxStatusBar = new DxRibbonStatusBar() { Visible = true };
-            this._DxStatusBar.Ribbon = this._DxRibbon;
-            this.StatusBar = _DxStatusBar;
-            this.Controls.Add(this._DxStatusBar);
-
-            this.DxRibbonPrepare();
-            this.DxStatusPrepare();
-            this.DxMainContentPrepare();
-        }
-        /// <summary>
-        /// Je voláno na konci konstruktoru třídy <see cref="DxRibbonBaseForm"/>.
-        /// Typicky je zde ukončen cyklus BeginInit jednoltivých komponent.
-        /// <para/>
-        /// Je povinné volat base metodu, typicky na konci metody override.
-        /// </summary>
-        protected virtual void EndInitDxRibbonForm()
-        {
-            ((System.ComponentModel.ISupportInitialize)(_DxRibbon)).EndInit();
-
-            // Form Layout:
-            this.ResumeLayout(false);
-            this.PerformLayout();
-        }
-        /// <summary>
-        /// Provede tvorbu hlavního obsahu okna, podle jeho typu, a jeho přidání do okna včetně zadokování.
-        /// Provádí se před vytvořením Ribbonu a Status baru, aby obsah byl správně umístěn na Z ose.
-        /// </summary>
-        protected abstract void DxMainContentCreate();
-        /// <summary>
-        /// Provede přípravu obsahu Ribbonu.
-        /// Pozor: Bázová třída <see cref="DxRibbonForm"/> pouze nastaví <see cref="DxRibbonBaseForm.DxRibbon"/>.Visible = false; nic jiného neprovádí !!!
-        /// To proto, když by potomek nijak s Ribbonem nepracoval, pak nebude Ribbon zobrazen.
-        /// U této metody tedy není vhodné volat base metodu, anebo je třeba po jejím volání nastavit viditelnost Ribbonu na true.
-        /// </summary>
-        protected virtual void DxRibbonPrepare() { this._DxRibbon.Visible = false; }
-        /// <summary>
-        /// Provede přípravu obsahu StatusBaru.
-        /// Pozor: Bázová třída <see cref="DxRibbonForm"/> nastaví <see cref="DxRibbonBaseForm.DxStatusBar"/>.Visible = false; nic jiného neprovádí !!!
-        /// To proto, když by potomek nijak se StatusBarem nepracoval, pak nebude StatusBar zobrazen.
-        /// U této metody tedy není vhodné volat base metodu, anebo je třeba po jejím volání nastavit viditelnost StatusBaru na true.
-        /// </summary>
-        protected virtual void DxStatusPrepare() { this._DxStatusBar.Visible = false; }
-        /// <summary>
-        /// Provede přípravu obsahu hlavního obsahu okna. Obsah je již vytvořen a umístěn v okně, Ribbon i StatusBar existují.<br/>
-        /// Zde se typicky vytváří obsah do hlavního panelu.
-        /// </summary>
-        protected abstract void DxMainContentPrepare();
-        /// <summary>
-        /// Provede se po změně velikosti ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/>
-        /// </summary>
-        protected virtual void DxMainContentDoLayout() { }
-        /// <summary>
-        /// Vytvoří a vrátí standardní stránku Home pro Ribbon, volitelně do ní přidá grupu Design s danými prvky (defaultně = None).
-        /// </summary>
-        /// <param name="designGroupParts"></param>
-        /// <returns></returns>
-        protected virtual DataRibbonPage CreateRibbonHomePage(FormRibbonDesignGroupPart designGroupParts = FormRibbonDesignGroupPart.None)
-        {
-            DataRibbonPage homePage = new DataRibbonPage() 
-            {
-                PageId = "DxHomePage", 
-                PageText = "Domů",
-                MergeOrder = 1, 
-                PageOrder = 1
-            };
-
-            if (designGroupParts != FormRibbonDesignGroupPart.None)
-            {
-                var group = DxRibbonControl.CreateDesignHomeGroup(designGroupParts, "Design") as DataRibbonGroup;
-                homePage.Groups.Add(group);
-            }
-            return homePage;
-        }
-        private DxRibbonControl _DxRibbon;
-        private DxRibbonStatusBar _DxStatusBar;
-        #endregion
-    }
-    /// <summary>
-    /// Prvky, které mohou být přidány do grupy Design v ribbon page HomePage
-    /// </summary>
-    [Flags]
-    public enum FormRibbonDesignGroupPart
-    {
-        /// <summary>
-        /// Žádný prvek, ani grupa pro Design prvky
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Button pro volbu Skinu
-        /// </summary>
-        SkinButton = 0x0001,
-        /// <summary>
-        /// Button pro volbu Barevné palety
-        /// </summary>
-        PaletteButton = 0x0002,
-        /// <summary>
-        /// Galerie pro volbu Barevné palety
-        /// </summary>
-        PaletteGallery = 0x0004,
-        /// <summary>
-        /// Button pro přepínání režimu UHD Paint
-        /// </summary>
-        UhdSupport = 0x0010,
-        /// <summary>
-        /// Okno pro výběr ikon DevExpress
-        /// </summary>
-        ImageGallery = 0x0020,
-        /// <summary>
-        /// Aktivita systémového logu
-        /// </summary>
-        LogActivity = 0x0040,
-        /// <summary>
-        /// Zakázat zachycování oken (Capture: Printscreen / Recording / Teams)
-        /// </summary>
-        NotCaptureWindows = 0x0080,
-
-        /// <summary>
-        /// Základ = <see cref="SkinButton"/> + <see cref="PaletteButton"/> + <see cref="ImageGallery"/>
-        /// </summary>
-        Basic = SkinButton | PaletteButton | ImageGallery,
-        /// <summary>
-        /// Běžná sada = <see cref="SkinButton"/> + <see cref="PaletteButton"/> + <see cref="UhdSupport"/> + <see cref="ImageGallery"/>
-        /// </summary>
-        Default = SkinButton | PaletteButton | UhdSupport | ImageGallery,
-        /// <summary>
-        /// Všechno = <see cref="SkinButton"/> + <see cref="PaletteButton"/> + <see cref="UhdSupport"/> + <see cref="ImageGallery"/> + <see cref="LogActivity"/>
-        /// </summary>
-        All = SkinButton | PaletteButton | UhdSupport | ImageGallery | LogActivity | NotCaptureWindows,
-    }
-    /// <summary>
-    /// Režim viditelnosti titulkového řádku okna a Ribbonu
-    /// </summary>
-    public enum FormRibbonVisibilityMode
-    {
-        /// <summary>
-        /// Není zobrazen ani Ribbon, ani TitleRow okna!!!
-        /// </summary>
-        Nothing,
-        /// <summary>
-        /// Je zobrazen TitleRow okna, ale není Ribbon, a to ani Toolbar ani Search ani PageHeaders. Jako by Ribbon nebyl.
-        /// </summary>
-        FormTitleRow,
-        /// <summary>
-        /// Standardní zobrazení TitleRow okna a Ribbonu
-        /// </summary>
-        Standard
-    }
-    /// <summary>
-    /// Třída určená pro uchování pozice formuláře, pro jeho persistenci
-    /// </summary>
-    internal class FormPositionInfo
-    {
-        /// <summary>
-        /// Vrátí řetězec popisující pozici daného formuláře
-        /// </summary>
-        /// <param name="form"></param>
-        /// <returns></returns>
-        public static string CreatePosition(Form form)
-        {
-            if (form is null) return null;
-            FormWindowState windowState = form.WindowState;
-            Rectangle normalBounds = (windowState == FormWindowState.Normal ? form.Bounds : form.RestoreBounds);
-            Rectangle maximizedBounds = form.Bounds;
-            return CreatePosition(windowState, normalBounds, maximizedBounds);
-        }
-        /// <summary>
-        /// Vrátí řetězec popisující pozici daného formuláře
-        /// </summary>
+        /// <param name="configData"></param>
+        /// <param name="isMdiChild"></param>
         /// <param name="windowState"></param>
         /// <param name="normalBounds"></param>
         /// <param name="maximizedBounds"></param>
         /// <returns></returns>
-        private static string CreatePosition(FormWindowState windowState, Rectangle normalBounds, Rectangle maximizedBounds)
+        private static bool _TryParsePositionData(string configData, out bool? isMdiChild, out FormWindowState? windowState, out Rectangle? normalBounds, out Rectangle? maximizedBounds)
         {
-            string state = (windowState == FormWindowState.Maximized ? "X" : "N");
-            return $"{state};{Convertor.RectangleToString(normalBounds, ',')};{Convertor.RectangleToString(maximizedBounds, ',')}";
-        }
-        /// <summary>
-        /// Z daného řetězce zkusí parsovat původní stav formuláře
-        /// </summary>
-        /// <param name="position"></param>
-        /// <param name="positionInfo"></param>
-        /// <returns></returns>
-        public static bool TryParse(string position, out FormPositionInfo positionInfo)
-        {
-            positionInfo = null;
-            if (String.IsNullOrEmpty(position)) return false;
-            var parts = position.Split(';');
-            if (parts.Length < 2) return false;
-            FormWindowState windowState = (parts[0] == "X" ? FormWindowState.Maximized : parts[0] == "N" ? FormWindowState.Normal : FormWindowState.Minimized);
-            if (windowState == FormWindowState.Minimized) return false;
-            Rectangle normalBounds = (Rectangle)Convertor.StringToRectangle(parts[1], ',');
-            if (normalBounds.IsEmpty || normalBounds.Width <= 0 || normalBounds.Height <= 0) return false;
-            Rectangle maximizedBounds = Rectangle.Empty;
-            if (parts.Length >= 3)
-                maximizedBounds = (Rectangle)Convertor.StringToRectangle(parts[2], ',');
-            if (maximizedBounds.IsEmpty || maximizedBounds.Width <= 0 || maximizedBounds.Height <= 0)
-                maximizedBounds = normalBounds;
-            positionInfo = new FormPositionInfo(windowState, normalBounds, maximizedBounds);
-            return true;
-        }
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="windowState"></param>
-        /// <param name="normalBounds"></param>
-        /// <param name="maximizedBounds"></param>
-        private FormPositionInfo(FormWindowState windowState, Rectangle normalBounds, Rectangle maximizedBounds)
-        {
-            this.WindowState = windowState;
-            this.NormalBounds = normalBounds;
-            this.MaximizedBounds = maximizedBounds;
-        }
-        /// <summary>
-        /// Stav okna <see cref="FormWindowState.Maximized"/> nebo <see cref="FormWindowState.Normal"/>
-        /// </summary>
-        public FormWindowState WindowState { get; private set; }
-        /// <summary>
-        /// Souřadnice ve stavu <see cref="FormWindowState.Normal"/>
-        /// </summary>
-        public Rectangle NormalBounds { get; private set; }
-        /// <summary>
-        /// Souřadnice ve stavu <see cref="FormWindowState.Maximized"/>
-        /// </summary>
-        public Rectangle MaximizedBounds { get; private set; }
-        /// <summary>
-        /// Stringová pozice
-        /// </summary>
-        public string Position { get { return CreatePosition(WindowState, NormalBounds, MaximizedBounds); } }
-    }
-    /// <summary>
-    /// Interface, který zaručuje přítomnost property s názvem základní a rozšířené ikony okna
-    /// </summary>
-    public interface IDxControlWithIcons
-    {
-        /// <summary>
-        /// Jméno základní ikony
-        /// </summary>
-        string IconNameBasic { get; }
-        /// <summary>
-        /// Jméno přidané ikony (zobrazuje se v TabHeaderu)
-        /// </summary>
-        string IconNameAdd { get; }
-    }
-    /// <summary>
-    /// Informace o životním stavu formuláře (proces otevírání, zavírání atd), a o jeho pozici, rozměrech a maximalizaci
-    /// </summary>
-    internal class FormStatusInfo
-    {
-        #region Konstruktor, Owner, Dispose...
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="owner"></param>
-        /// <exception cref="ArgumentNullException"></exception>
-        public FormStatusInfo(Form owner)
-        {
-            if (owner is null) throw new ArgumentNullException($"FormStatusInfo(Form owner): 'owner' can not be null.");
+            if (!String.IsNullOrEmpty(configData))
+            {
+                var keyValues = DxComponent.SplitToKeyValues(configData, ";", "=", true, true);
+                if (keyValues != null &&
+                    keyValues.TryGetFirst(q => String.Equals(q.Key, "MC", StringComparison.OrdinalIgnoreCase), out var mcv) &&
+                    keyValues.TryGetFirst(q => String.Equals(q.Key, "WS", StringComparison.OrdinalIgnoreCase), out var wsv))
+                {   // Pokud jsme našli všechny očekávané povinné hodnoty:
+                    // Dohledáme i nepovinné hodnoty:
+                    bool hasNb = keyValues.TryGetFirst(q => String.Equals(q.Key, "NB", StringComparison.OrdinalIgnoreCase), out var nbv);
+                    bool hasXb = keyValues.TryGetFirst(q => String.Equals(q.Key, "XB", StringComparison.OrdinalIgnoreCase), out var xbv);
 
-            this._Owner = owner;
-            owner.Disposed += _Owner_Disposed;
-            this._LinkStatusEvents(owner);
-            this._LinkBoundsEvents(owner);
-        }
-        /// <summary>
-        /// Formulář byl Disposován
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _Owner_Disposed(object sender, EventArgs e)
-        {
-            var owner = _Owner;
-            this._UnLinkStatusEvents(owner);
-            this._UnLinkBoundsEvents(owner);
-            _Owner = null;
-        }
-        /// <summary>
-        /// Vlastník = formulář, ukládá se WeakTarget
-        /// </summary>
-        private Form _Owner
-        {
-            get { return ((__Owner != null && __Owner.IsAlive) ? __Owner.Target : null); }
-            set { __Owner = (value != null ? new WeakTarget<Form>(value) : null); }
-        }
-        /// <summary>
-        /// Vlastník = formulář, pokud implementuje <see cref="IFormWorking"/>. Jinak je null.
-        /// </summary>
-        private IFormWorking _IOwner { get { return _Owner as IFormWorking; } }
-        /// <summary>
-        /// WeakTarget na Vlastník = formulář
-        /// </summary>
-        private WeakTarget<Form> __Owner;
-        /// <summary>
-        /// Obsahuje hodnotu Visible z formuláře <see cref="_Owner"/>
-        /// </summary>
-        private bool _OwnerVisible { get { return (_Owner?.Visible ?? false); } }
-        /// <summary>
-        /// Obsahuje hodnotu WasShown z formuláře <see cref="_Owner"/> (as <see cref="IFormWorking"/>)
-        /// </summary>
-        private bool _OwnerWasShown { get { return (_IOwner?.WasShown ?? false); } }
-        #endregion
-        #region Stav okna v jeho životním cyklu: ActivityState
-        /// <summary>
-        /// Stav aktivity okna. Při změně je volána událost <see cref="ActivityStateChanged"/>.
-        /// </summary>
-        public WindowActivityState ActivityState
-        {
-            get { return __ActivityState; }
-            set
-            {   // Setování může provádět i Owner form:
-                var oldValue = __ActivityState;
-                var newValue = value;
-                if (newValue != oldValue)
-                {
-                    __ActivityState = newValue;
-                    _RunActivityStateChanged(oldValue, newValue);
+                    // Konverze ze string Value do cílového typu:
+                    var mc = (bool)Convertor.StringToBoolean(mcv.Value);
+                    var ws = Convertor.StringToEnum<FormWindowState>(wsv.Value);
+                    var nb = hasNb ? (Rectangle)Convertor.StringToRectangle(nbv.Value, ',') : Rectangle.Empty;
+                    var xb = hasXb ? (Rectangle)Convertor.StringToRectangle(xbv.Value, ',') : Rectangle.Empty;
+                    if (ws == FormWindowState.Maximized || (hasNb && !nb.IsEmpty))
+                    {
+                        isMdiChild = mc;
+                        windowState = ws;
+                        normalBounds = (hasNb && !nb.IsEmpty) ? (Rectangle?)nb : (Rectangle?)null;
+                        maximizedBounds = (hasXb && !xb.IsEmpty) ? (Rectangle?)xb : (Rectangle?)null;
+
+                        return true;
+                    }
                 }
             }
+            isMdiChild = null;
+            windowState = null;
+            normalBounds = null;
+            maximizedBounds = null;
+            return false;
         }
-        /// <summary>Stav okna</summary>
-        private WindowActivityState __ActivityState;
         /// <summary>
-        /// Aktivuje svoje eventhandlery do daného fornuláře pro sledování <see cref="ActivityState"/>
+        /// Z dodaných jednotlivých hodnot vrátí konfigurační string popisující stav a pozici okna
         /// </summary>
-        /// <param name="owner"></param>
-        private void _LinkStatusEvents(Form owner)
+        /// <returns></returns>
+        private static string _CreatePositionData(bool? isMdiChild, FormWindowState? windowState, Rectangle? normalBounds, Rectangle? maximizedBounds)
         {
-            this.ActivityState = WindowActivityState.Creating;
-
-            if (owner != null)
-            {
-                owner.Activated += _ActivityStateDetect_Activated;
-                owner.Deactivate += _ActivityStateDetect_Deactivate;
-                owner.GotFocus += _ActivityStateDetect_GotFocus;
-                owner.LostFocus += _ActivityStateDetect_LostFocus;
-                owner.VisibleChanged += _ActivityStateDetect_VisibleChanged;
-                owner.FormClosing += _ActivityStateDetect_FormClosing;
-                owner.FormClosed += _ActivityStateDetect_FormClosed;
+            string positionData = null;
+            if (isMdiChild.HasValue && windowState.HasValue && (windowState.Value == FormWindowState.Maximized || normalBounds.HasValue))
+            {   // Povinné jsou isMdiChild a windowState, a pokud windowState je Maximized tak víc nic, jinak je povinné ještě normalBounds:
+                positionData = $"MC={Convertor.BooleanToString(isMdiChild.Value)};" +
+                               $"WS={Convertor.EnumToString(windowState.Value)}";
+                // Souřadnice jsou obecně Optional: když jsou dodané, tak je přidáme. Hodnota normalBounds musí být dodaná, pokud windowState není Maximized.
+                if (normalBounds.HasValue)
+                     positionData += $";NB={Convertor.RectangleToString(normalBounds.Value, ',')}";
+                if (maximizedBounds.HasValue)
+                    positionData += $";XB={Convertor.RectangleToString(maximizedBounds.Value, ',')}";
             }
-        }
-        /// <summary>
-        /// Deaktivuje svoje eventhandlery z daného fornuláře pro sledování <see cref="ActivityState"/>
-        /// </summary>
-        /// <param name="owner"></param>
-        private void _UnLinkStatusEvents(Form owner)
-        {
-            this.ActivityState = WindowActivityState.Creating;
-
-            if (owner != null)
-            {
-                owner.Activated -= _ActivityStateDetect_Activated;
-                owner.Deactivate -= _ActivityStateDetect_Deactivate;
-                owner.GotFocus -= _ActivityStateDetect_GotFocus;
-                owner.LostFocus -= _ActivityStateDetect_LostFocus;
-                owner.VisibleChanged -= _ActivityStateDetect_VisibleChanged;
-                owner.FormClosing -= _ActivityStateDetect_FormClosing;
-                owner.FormClosed -= _ActivityStateDetect_FormClosed;
-            }
-        }
-        /// <summary>
-        /// Hlídáme změny stavu <see cref="ActivityState"/>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ActivityStateDetect_Activated(object sender, EventArgs e)
-        {
-            this.ActivityState = WindowActivityState.Active;
-        }
-        /// <summary>
-        /// Hlídáme změny stavu <see cref="ActivityState"/>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ActivityStateDetect_Deactivate(object sender, EventArgs e)
-        {
-            this.ActivityState = WindowActivityState.Inactive;
-        }
-        /// <summary>
-        /// Hlídáme změny stavu <see cref="ActivityState"/>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ActivityStateDetect_GotFocus(object sender, EventArgs e)
-        {
-            this.ActivityState = WindowActivityState.Active;
-        }
-        /// <summary>
-        /// Hlídáme změny stavu <see cref="ActivityState"/>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ActivityStateDetect_LostFocus(object sender, EventArgs e)
-        {
-            this.ActivityState = WindowActivityState.Inactive;
-        }
-        /// <summary>
-        /// Hlídáme změny stavu <see cref="ActivityState"/>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ActivityStateDetect_VisibleChanged(object sender, EventArgs e)
-        {
-            if (this._OwnerWasShown)
-                this.ActivityState = (this._OwnerVisible ? WindowActivityState.Visible : WindowActivityState.Invisible);
-        }
-        /// <summary>
-        /// Hlídáme změny stavu <see cref="ActivityState"/>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ActivityStateDetect_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            this.ActivityState = WindowActivityState.Closing;
-        }
-        /// <summary>
-        /// Hlídáme změny stavu <see cref="ActivityState"/>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ActivityStateDetect_FormClosed(object sender, FormClosedEventArgs e)
-        {
-            this.ActivityState = WindowActivityState.Closed;
-        }
-        /// <summary>
-        /// Vyvolá <see cref="OnActivityStateChanged(TEventValueChangedArgs{WindowActivityState})"/> a event <see cref="ActivityStateChanged"/>.
-        /// </summary>
-        /// <param name="oldValue"></param>
-        /// <param name="newValue"></param>
-        private void _RunActivityStateChanged(WindowActivityState oldValue, WindowActivityState newValue)
-        {
-            var args = new TEventValueChangedArgs<WindowActivityState>(EventSource.None, oldValue, newValue);
-            OnActivityStateChanged(args);
-            ActivityStateChanged?.Invoke(_Owner, args);
-        }
-        /// <summary>
-        /// Metoda proběhne při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
-        /// </summary>
-        /// <param name="args"></param>
-        protected virtual void OnActivityStateChanged(TEventValueChangedArgs<WindowActivityState> args) { }
-        /// <summary>
-        /// Událost volaná při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
-        /// </summary>
-        public event EventHandler<TEventValueChangedArgs<WindowActivityState>> ActivityStateChanged;
-        #endregion
-        #region Pozice a velikost okna a jeho WindowState
-        /// <summary>
-        /// Aktivuje svoje eventhandlery do daného fornuláře pro sledování <see cref="Bounds"/>
-        /// </summary>
-        /// <param name="owner"></param>
-        private void _LinkBoundsEvents(Form owner)
-        {
-            this._FormPositionRestore(owner);
-            if (owner != null)
-            {
-                owner.LocationChanged += _Position_LocationChanged;
-                owner.SizeChanged += _Position_SizeChanged;
-                owner.FormClosed += _Position_FormClosed;
-            }
-            this._FormPositionApply(false);
-        }
-        /// <summary>
-        /// Aktivuje svoje eventhandlery do daného fornuláře pro sledování <see cref="Bounds"/>
-        /// </summary>
-        /// <param name="owner"></param>
-        private void _UnLinkBoundsEvents(Form owner)
-        {
-            this._FormPositionRestore(owner);
-            if (owner != null)
-            {
-                owner.LocationChanged += _Position_LocationChanged;
-                owner.SizeChanged += _Position_SizeChanged;
-                owner.FormClosed += _Position_FormClosed;
-            }
-            this._FormPositionApply(false);
-        }
-        private void _Position_FormClosed(object sender, FormClosedEventArgs e)
-        {
-            throw new NotImplementedException();
+            return positionData;
         }
 
-        private void _Position_SizeChanged(object sender, EventArgs e)
-        {
-            throw new NotImplementedException();
-        }
+        private bool __IgnorePositionChange;
+        private bool __PositionIsFromConfig;
 
-        private void _Position_LocationChanged(object sender, EventArgs e)
-        {
-            throw new NotImplementedException();
-        }
+        private string __ConfigPositionData;
+        private bool? __ConfigIsMdiChild;
+        private FormWindowState? __ConfigWindowState;
+        private Rectangle? __ConfigNormalBounds;
+        private Rectangle? __ConfigMaximizedBounds;
+
+        private bool? __CurrentIsMdiChild;
+        private FormWindowState? __CurrentWindowState;
+        private Rectangle? __CurrentNormalBounds;
+        private Rectangle? __CurrentMaximizedBounds;
         #endregion
     }
     /// <summary>
-    /// Interface popisující rozšířené pracovní vlastnosti Formulářů
+    /// Interface popisující rozšířené pracovní vlastnosti Formulářů pro spolupráci formuláře a <see cref="FormStatusInfo"/>
     /// </summary>
-    internal interface IFormWorking
+    internal interface IFormStatusWorking
     {
         /// <summary>
         /// Obsahuje true poté, kdy formulář byl zobrazen. 
         /// Obsahuje true již v metodě <c>OnFirstShownAfter</c> a v eventu <c>FirstShownAfter</c>.
         /// </summary>
         bool WasShown { get; }
+        /// <summary>
+        /// Příznak z načtené konfigurace okna: true = okno bylo zavíráno ve stavu IsMdiChild (tedy jako Tabované) / false = bylo plovoucí
+        /// </summary>
+        bool? ConfigIsMdiChild { get; }
+        /// <summary>
+        /// Pozice okna byla nastavena v jeho konstruktoru z dat načtených z konfigurace. Bounds ani WindowState ani StartPosition by neměly být měněny.
+        /// </summary>
+        bool PositionIsFromConfig { get; }
+        /// <summary>
+        /// Vyvolá událost po změně stavu aktivity.
+        /// </summary>
+        /// <param name="args"></param>
+        void RunActivityStateChanged(TEventValueChangedArgs<WindowActivityState> args);
+        /// <summary>
+        /// Jméno konfigurace v subsystému AsolDX.
+        /// Pokud bude zde vráceno neprázdné jméno, pak načtení a uložení konfigurace okna zajistí sama třída, která implementuje <see cref="IFormStatusWorking"/>.
+        /// Pokud nebude vráceno jméno, budou používány metody <see cref="PositionLoadFromConfig(string)"/> a <see cref="PositionSaveToConfig(string, string)"/>.
+        /// </summary>
+        string PositionConfigName { get; }
+        /// <summary>
+        /// Pokusí se z konfigurace najít a načíst string popisující pozici okna.
+        /// Dostává k dispozici nameSuffix, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory.
+        /// <para/>
+        /// <b><u>Aplikační kód tedy:</u></b><br/>
+        /// 1. Získá vlastní jméno položky konfigurace pro svoje konkrétní okno (např. typ okna).<br/>
+        /// 2. Za toto jméno přidá suffix (začíná podtržítkem a obsahuje XML validní znaky) a vyhledá konfiguraci se suffixem.<br/>
+        /// 3. Pokud nenajde konfiguraci se suffixem, vyhledá konfiguraci bez suffixu = obecná, posledně použití (viz <see cref="PositionSaveToConfig(string, string)"/>).<br/>
+        /// 4. Nalezený string je ten, který byl uložen v metodě <see cref="PositionSaveToConfig(string, string)"/> a je roven parametru 'positionData'. Pokud položku v konfiguraci nenajde, vrátí null (nebo prázdný string).
+        /// <para/>
+        /// Tato technika zajistí, že pro různé konfigurace monitorů (např. při práci na více monitorech a poté přechodu na RDP s jedním monitorem, atd) budou uchovány konfigurace odděleně.
+        /// <para/>
+        /// Konverze formátů: Pokud v konfiguraci budou uložena stringová data ve starším formátu, než dokáže obsloužit zpracující třída <see cref="FormStatusInfo"/>, pak konverzi do jejího formátu musí zajistit aplikační kód (protože on ví, jak zpracovat starý formát).<br/>
+        /// <b><u>Postup:</u></b><br/>
+        /// 1. Po načtení konfigurace se lze dotázat metodou <see cref="FormStatusInfo.IsPositionDataValid(string)"/>, zda načtená data jsou validní.<br/>
+        /// 2. Pokud nejsou validní, pak je volající aplikace zkusí analyzovat svým starším (legacy) postupem na prvočinitele;<br/>
+        /// 3. A pokud je úspěšně rozpoznala, pak ze základních dat sestaví validní konfirurační string s pomocí metody <see cref="FormStatusInfo.CreatePositionData(bool?, FormWindowState?, Rectangle?, Rectangle?)"/>.<br/>
+        /// </summary>
+        /// <param name="nameSuffix">Suffix ke jménu konfigurace, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory</param>
+        /// <returns></returns>
+        string PositionLoadFromConfig(string nameSuffix);
+        /// <summary>
+        /// Do konfigurace uloží dodaná data o pozici okna '<paramref name="positionData"/>'.
+        /// Dostává k dispozici nameSuffix, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory.
+        /// <para/>
+        /// <b><u>Aplikační kód tedy:</u></b><br/>
+        /// 1. Získá vlastní jméno položky konfigurace pro svoje konkrétní okno (např. typ okna).<br/>
+        /// 2. Jednak uloží data <paramref name="positionData"/> přímo do položky konfigurace pod svým vlastním jménem bez suffixu = data obecná pro libovolnou konfiguraci monitorů.<br/>
+        /// 3. A dále uloží tato data do položky konfigurace, kde za svoje jméno přidá dodaný suffix <paramref name="nameSuffix"/> = tato hodnota se použije po restore na shodné konfiguraci monitorů.<br/>
+        /// <para/>
+        /// Tato technika zajistí, že pro různé konfigurace monitorů (např. při práci na více monitorech a poté přechodu na RDP s jedním monitorem, atd) budou uchovány konfigurace odděleně.
+        /// </summary>
+        /// <param name="positionData"></param>
+        /// <param name="nameSuffix"></param>
+        void PositionSaveToConfig(string positionData, string nameSuffix);
     }
     #endregion
     #region DxPanelControl + IDxPanelPaintedItem
@@ -11039,9 +11248,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         None,
         /// <summary>
-        /// Stav počínaje konstruktorem, stav končí prvním zobrazením
+        /// Stav uvnitř konstruktoru, na konci konstruktoru přechází do <see cref="Initialized"/>.
         /// </summary>
         Creating,
+        /// <summary>
+        /// Stav na konci konstruktoru, následovat bude <see cref="FirstShow"/>.
+        /// </summary>
+        Initialized,
         /// <summary>
         /// Právě bylo zahájeno první zobrazení okna
         /// </summary>

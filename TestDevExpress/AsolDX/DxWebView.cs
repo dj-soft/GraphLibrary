@@ -5131,23 +5131,9 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
 
             foreach (var part in parts)
             {
-                int length = part.Length;
-                if (length > 0)
-                {
-                    int eqx = part.IndexOf('=');
-                    if (eqx < 0)                                                              // 15.29z
-                        result.Add(new KeyValuePair<string, string>(part, null));
-                    else if (eqx == 0 && length == 1)                                         // =
-                        result.Add(new KeyValuePair<string, string>(part, null));
-                    else if (eqx == 0 && length > 1)                                          // =abcd
-                        result.Add(new KeyValuePair<string, string>("", part.Substring(1)));
-                    else if (eqx > 0 && eqx < (length - 1))                                   // x=15.7967442
-                        result.Add(new KeyValuePair<string, string>(part.Substring(0, eqx), part.Substring(eqx + 1)));
-                    else if (eqx > 0 && eqx == (length - 1))                                  // 15.7967442=
-                        result.Add(new KeyValuePair<string, string>(part, null));
-                    else
-                        result.Add(new KeyValuePair<string, string>(part, null));
-                }
+                var kvp = DxComponent.SplitToKeyValue(part, "=", true, true);
+                if (kvp.HasValue)
+                    result.Add(kvp.Value);
             }
 
             return (result.Count > 0 ? result : null);

@@ -1764,7 +1764,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region StatusBarItems
         /// <summary>
-        /// Prvky zobrazené v TitleBaru = titulek okna, napravo, doleva od tří systémových buttonů (Minimize - Maximize - Close).
+        /// Prvky zobrazené ve StatusBaru.
         /// </summary>
         public IRibbonItem[] StatusBarItems
         {

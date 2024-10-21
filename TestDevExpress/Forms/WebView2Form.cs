@@ -40,7 +40,7 @@ namespace TestDevExpress.Forms
             // Další controly v řadě:
             __WebDisplayModeButton = createDropDownButton(_SelectDisplayModeChange, WebDisplayType.Editable, WebDisplayType.ReadOnly, WebDisplayType.StaticAsync, WebDisplayType.StaticSync);
 
-            _DoContentLayout();
+            _DoContentLayout(true);
 
             void createButton(EventHandler click, string text, string url)
             {
@@ -78,13 +78,16 @@ namespace TestDevExpress.Forms
         private DxWebViewPanel __WebViewPanel;
         private DxDropDownButton __WebDisplayModeButton;
         /// <summary>
-        /// Provede se po změně velikosti ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/>
+        /// Provede se po změně velikosti ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/> i v jiných situacích.
+        /// Aktuální stav formuláře lze zjistit v <see cref="DxRibbonBaseForm.ActivityState"/>.
+        /// Parametr <paramref name="isSizeChanged"/> říká, zda se od posledního volání této metody změnila velikost Main panelu.
         /// </summary>
-        protected override void DxMainContentDoLayout()
+        /// <param name="isSizeChanged">Pokud je true, pak od posledního volání této metody se změnila velikost panelu <see cref="DxRibbonForm.DxMainPanel"/> 'ClientSize'. Hodnota false = nezměnila se, ale změnilo se okno nebo něco jiného...</param>
+        protected override void DxMainContentDoLayout(bool isSizeChanged)
         {
-            _DoContentLayout();
+            _DoContentLayout(isSizeChanged);
         }
-        private void _DoContentLayout()
+        private void _DoContentLayout(bool isSizeChanged)
         {
             var webPanel = __WebViewPanel;
             if (webPanel is null) return;

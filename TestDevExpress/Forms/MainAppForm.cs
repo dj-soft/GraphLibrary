@@ -23,6 +23,11 @@ namespace TestDevExpress.Forms
         /// </summary>
         protected override void DxRibbonPrepare()
         {
+            if (!this.PositionIsFromConfig)
+            {
+                this.WindowState = FormWindowState.Maximized;
+            }
+
             this.Text = $"Test DevExpress [{DxComponent.FrameworkName}]";
 
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
@@ -79,6 +84,12 @@ namespace TestDevExpress.Forms
         /// Text v druhém poli StatusBaru
         /// </summary>
         public string StatusInfoText { get { return __StatusInfoLabel?.Caption; } set { if (__StatusInfoLabel != null) __StatusInfoLabel.Caption = value; } }
+        /// <summary>
+        /// Jméno konfigurace v subsystému AsolDX.
+        /// Pokud bude zde vráceno neprázdné jméno, pak načtení a uložení konfigurace okna zajistí sama třída, která implementuje <see cref="IFormStatusWorking"/>.
+        /// Pokud nebude vráceno jméno, budou používány metody <see cref="DxRibbonBaseForm.PositionLoadFromConfig(string)"/> a <see cref="DxRibbonBaseForm.PositionSaveToConfig(string, string)"/>.
+        /// </summary>
+        protected override string PositionConfigName { get { return "MainAppForm"; } }
         private DevExpress.XtraBars.BarItem __StatusVersionLabel;
         private DevExpress.XtraBars.BarItem __StatusInfoLabel;
         private TimeSpan __FormLoadTime;
@@ -505,7 +516,9 @@ namespace TestDevExpress.Forms
             try
             {
                 var form = System.Activator.CreateInstance(formType) as System.Windows.Forms.Form;
-                DxMainAppForm.ShowChildForm(form, this.RunAsFloating, this.TabViewToolTip);
+                var configIsMdiChild = ((form is IFormStatusWorking iForm) ? iForm.ConfigIsMdiChild : (bool?)null);
+                bool runAsFloating = (configIsMdiChild.HasValue ? !configIsMdiChild.Value : this.RunAsFloating);
+                DxMainAppForm.ShowChildForm(form, runAsFloating, this.TabViewToolTip);
             }
             catch (Exception exc)
             {
