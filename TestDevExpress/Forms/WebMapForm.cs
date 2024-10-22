@@ -152,8 +152,12 @@ namespace TestDevExpress.Forms
             webPanel.Bounds = new Rectangle(webX, webY, webWidth, webHeight);
 
             this.DxMainPanel.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple;
+
+
+            Structures += this.ActivityState.ToString() + Environment.NewLine + this.ControlsStructure + Environment.NewLine + Environment.NewLine;
         }
 
+        private string Structures;
         private void _ClickButtonNavigate(object sender, EventArgs e)
         {
             if (sender is Control control && control.Tag is string text)
