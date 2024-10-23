@@ -155,6 +155,7 @@ namespace TestDevExpress.Forms
 
 
             Structures += this.ActivityState.ToString() + Environment.NewLine + this.ControlsStructure + Environment.NewLine + Environment.NewLine;
+            string struc = Structures;
         }
 
         private string Structures;
