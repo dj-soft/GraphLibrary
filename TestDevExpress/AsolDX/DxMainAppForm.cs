@@ -642,7 +642,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var mainAppForm = MainAppForm;
             if (mainAppForm != null)
             {
-                form.MdiParent = mainAppForm;
+                // form.MdiParent = mainAppForm;
                 DevExpress.XtraBars.Docking2010.Views.Tabbed.Document document;
                 if (!showFloating)
                     document = mainAppForm.__TabbedView.AddDocument(form) as DevExpress.XtraBars.Docking2010.Views.Tabbed.Document;

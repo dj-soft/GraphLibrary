@@ -263,6 +263,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             private set { __FormStatus.ActivityState = value; }      // Formulář smí měnit svůj stav, když ví jak
         }
         /// <summary>
+        /// Provede akce jako po prvním Show
+        /// </summary>
+        protected void RunShow()
+        {
+            this.OnShown(EventArgs.Empty);
+        }
+        /// <summary>
         /// Metoda proběhne při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
         /// </summary>
         /// <param name="args"></param>
@@ -319,6 +326,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         bool? IFormStatusWorking.ConfigIsMdiChild { get { return __FormStatus.ConfigIsMdiChild; } }
         string IFormStatusWorking.PositionLoadFromConfig(string nameSuffix) { return PositionLoadFromConfig(nameSuffix); }
         void IFormStatusWorking.PositionSaveToConfig(string positionData, string nameSuffix) { PositionSaveToConfig(positionData, nameSuffix); }
+        void IFormStatusWorking.RunShow() { this.RunShow(); }
         void IFormStatusWorking.RunActivityStateChanged(TEventValueChangedArgs<WindowActivityState> args)
         {
             OnActivityStateChanged(args);
@@ -644,6 +652,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             private set { __FormStatus.ActivityState = value; }      // Formulář smí měnit svůj stav, když ví jak
         }
         /// <summary>
+        /// Provede akce jako po prvním Show
+        /// </summary>
+        protected void RunShow()
+        {
+            this.OnShown(EventArgs.Empty);
+        }
+        /// <summary>
         /// Metoda proběhne při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
         /// </summary>
         /// <param name="args"></param>
@@ -700,6 +715,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         bool? IFormStatusWorking.ConfigIsMdiChild { get { return __FormStatus.ConfigIsMdiChild; } }
         string IFormStatusWorking.PositionLoadFromConfig(string nameSuffix) { return PositionLoadFromConfig(nameSuffix); }
         void IFormStatusWorking.PositionSaveToConfig(string positionData, string nameSuffix) { PositionSaveToConfig(positionData, nameSuffix); }
+        void IFormStatusWorking.RunShow() { this.RunShow(); }
         void IFormStatusWorking.RunActivityStateChanged(TEventValueChangedArgs<WindowActivityState> args)
         {
             OnActivityStateChanged(args);
@@ -1203,8 +1219,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _ActivityStateDetect_VisibleChanged(object sender, EventArgs e)
         {
-            if (this._OwnerWasShown)
-                this.ActivityState = (this._OwnerVisible ? WindowActivityState.Visible : WindowActivityState.Invisible);
+            bool formWasShown = this._OwnerWasShown;
+            bool formIsVisible = this._OwnerVisible;
+            if (!formWasShown && formIsVisible)
+            {   // Okno dosud nebylo zobrazeno, a nyní je Visible => provedeme totéž jako v OnShow():
+                this._IOwner.RunShow();
+            }
+            else
+            {   // Okno již bylo zobrazeno => nastavíme odpovídající State:
+                this.ActivityState = (formIsVisible ? WindowActivityState.Visible : WindowActivityState.Invisible);
+            }
         }
         /// <summary>
         /// Hlídáme změny stavu <see cref="ActivityState"/>
@@ -1752,6 +1776,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje true již v metodě <c>OnFirstShownAfter</c> a v eventu <c>FirstShownAfter</c>.
         /// </summary>
         bool WasShown { get; }
+        /// <summary>
+        /// Provede akce jako po prvním Show
+        /// </summary>
+        void RunShow();
         /// <summary>
         /// Příznak z načtené konfigurace okna: true = okno bylo zavíráno ve stavu IsMdiChild (tedy jako Tabované) / false = bylo plovoucí
         /// </summary>
