@@ -20,6 +20,13 @@ namespace Noris.Clients.Win.Components.AsolDX
     {
         #region Public svět
         /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxSettings()
+        {
+            this._ConfigPrepare();
+        }
+        /// <summary>
         /// Vrátí obsah daného klíče z dané sekce. Může vrátit null, když nejsou data.
         /// </summary>
         /// <param name="section"></param>
@@ -76,46 +83,69 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Jméno firmy, použije se pro určení adresáře pro config soubor v rámci adresáře ProgramData
         /// </summary>
-        public string CompanyName { get { return _CompanyName; } set { _SetConfigFile(null, value, _ApplicationName); } }
-        private string _CompanyName;
+        public string CompanyName { get { return _CompanyName; } set { _SetConfigFile(null, value, _ProductName, _ConfigName); } } private string _CompanyName;
         /// <summary>
         /// Jméno aplikace, použije se pro určení adresáře pro config soubor v rámci adresáře ProgramData
         /// </summary>
-        public string ApplicationName { get { return _ApplicationName; } set { _SetConfigFile(null, _CompanyName, value); } }
-        private string _ApplicationName;
+        public string ProductName { get { return _ProductName; } set { _SetConfigFile(null, _CompanyName, value, _ConfigName); } } private string _ProductName;
+        /// <summary>
+        /// Jméno souboru Config, bez adresáře.
+        /// </summary>
+        public string ConfigName { get { return _ConfigName; } set { _SetConfigFile(null, _CompanyName, _ProductName, value); } } private string _ConfigName;
         /// <summary>
         /// Plné jméno konfiguračního souboru
         /// </summary>
-        public string ConfigFileName { get { return _ConfigFileName; } set { _SetConfigFile(value, null, null); } }
+        public string ConfigFileName { get { return _ConfigFileName; } set { _SetConfigFile(value, null, null, null); } }
         /// <summary>
         /// Jméno souboru, který má být načten ve <see cref="_Values"/>
         /// </summary>
         private string _ConfigFileName;
         /// <summary>
+        /// Připraví jména určující Config soubor
+        /// </summary>
+        private void _ConfigPrepare()
+        {
+            try
+            {
+                var attributes = this.GetType().Assembly.GetCustomAttributesData();
+                var companyAtr = attributes.FirstOrDefault(a => a.AttributeType == typeof(System.Reflection.AssemblyCompanyAttribute));
+                var productAtr = attributes.FirstOrDefault(a => a.AttributeType == typeof(System.Reflection.AssemblyProductAttribute));
+                var companyName = (companyAtr != null && companyAtr.ConstructorArguments.Count > 0) ? companyAtr.ConstructorArguments[0].Value as string : (string)null;
+                var productName = (productAtr != null && productAtr.ConstructorArguments.Count > 0) ? productAtr.ConstructorArguments[0].Value as string : (string)null;
+                var configName = "settings.dat";
+                _SetConfigFile(null, companyName, productName, configName);
+            }
+            catch { }
+        }
+        /// <summary>
         /// Do proměnných uloží dané hodnoty určující Config soubor
         /// </summary>
         /// <param name="configFile"></param>
         /// <param name="companyName"></param>
-        /// <param name="applicationName"></param>
-        private void _SetConfigFile(string configFile, string companyName, string applicationName)
+        /// <param name="productName"></param>
+        /// <param name="configName"></param>
+        private void _SetConfigFile(string configFile, string companyName, string productName, string configName)
         {
             _CompanyName = companyName;
-            _ApplicationName = applicationName;
+            _ProductName = productName;
+            _ConfigName = configName;
             _ConfigFileName = configFile;
             if (String.IsNullOrEmpty(_ConfigFileName))
             {
-                companyName = GetValidFileName(companyName, "MsDotNet");
-                applicationName = GetValidFileName(applicationName, "SampleApp");
+                companyName = getValidFileName(companyName, "MsDotNet");
+                productName = getValidFileName(productName, "SampleApp");
+                configName = getValidFileName(configName, "settings.dat");
                 string rootPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                _ConfigFileName = Path.Combine(rootPath, companyName, applicationName, "settings.dat");
+                _ConfigFileName = Path.Combine(rootPath, companyName, productName, configName);
             }
             _InvalidateData();
-        }
-        private static string GetValidFileName(string file, string defValue)
-        {
-            string name = file.RemoveChars(Path.GetInvalidFileNameChars());
-            if (String.IsNullOrEmpty(name)) return defValue;
-            return (name.Length < 100 ? name : name.Substring(0, 100));
+
+            string getValidFileName(string file, string defValue)
+            {
+                string name = file.RemoveChars(Path.GetInvalidFileNameChars());
+                if (String.IsNullOrEmpty(name)) return defValue;
+                return (name.Length < 100 ? name : name.Substring(0, 100));
+            }
         }
         #endregion
         #region Získání dat ze souboru, kontroly aktuálnosti, načtení dat
@@ -166,7 +196,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             string configFileName = (_ConfigFileName ?? "").Trim().ToLower();
 
             if (loadedFileName == "" || configFileName == "" || loadedFileName != configFileName)
-            {   // Pokud nemáme data načtená, nebo je nemáme mít načtená, nebo jsou načtení z jiného souboru, tak data z proměnné zahazuji:
+            {   // Pokud nemáme data načtená, nebo je nemáme mít načtená, nebo jsou načtena z jiného souboru, tak data z proměnné zahazuji:
                 values = null;
                 return;
             }
@@ -412,7 +442,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Termín (čas) příští povinné kontroly souboru <see cref="_LoadedFileName"/> bez ohledu na hlídání pomocí <see cref="_FileWatcher"/>
         /// </summary>
         private DateTime? _FileStateNextCheckTime;
-
         #endregion
         #region Ukládání dat
         /// <summary>

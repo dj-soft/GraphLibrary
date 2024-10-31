@@ -22,7 +22,7 @@ namespace TestDevExpress
             {
                 DxComponent.Init();
                 DxComponent.Settings.CompanyName = "Asseco Solutions";
-                DxComponent.Settings.ApplicationName = "TestDevExpress";
+                DxComponent.Settings.ProductName = "TestDevExpress";
 
                 // DxComponent.Settings.ConfigFileName = @"c:\ProgramData\Asseco Solutions\NorisWin32Clients\Settings.bin";
                 DxComponent.TempDirectorySuffix = "Asseco Solutions\\TestDevExpress\\Temp";

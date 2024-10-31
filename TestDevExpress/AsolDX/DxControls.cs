@@ -21,8 +21,6 @@ using DevExpress.Utils.Drawing;
 using DevExpress.Utils.Text;
 using DevExpress.XtraTab;
 using DevExpress.XtraEditors.Controls;
-using Noris.Clients.Win.Components.Obsoletes.DataForm;
-using DevExpress.XtraRichEdit.Layout;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {

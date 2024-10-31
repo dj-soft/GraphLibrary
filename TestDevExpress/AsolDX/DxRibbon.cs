@@ -8183,7 +8183,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     ItemType = RibbonItemType.CheckButton,
                     RibbonStyle = RibbonItemStyles.SmallWithText,
                     ImageName = "images/xaf/templatesv2images/state_itemvisibility_hide.svg",
-                    Checked = DxComponent.LogActive,
+                    Checked = DxComponent.ExcludeFromCaptureContent,
                     ClickAction = _SetNotCaptureWindows
                 });
 
@@ -8252,7 +8252,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
 #if Compile_TestDevExpress
             DxComponent.ExcludeFromCaptureContent = (menuItem?.Checked ?? false);
-            DxComponent.Settings.SetRawValue("Components", DxComponent.ExcludeFromCaptureContentCfgName, DxComponent.LogActive ? "True" : "False");
+            DxComponent.Settings.SetRawValue("Components", DxComponent.ExcludeFromCaptureContentCfgName, DxComponent.ExcludeFromCaptureContent ? "True" : "False");
 #endif
         }
         /// <summary>
