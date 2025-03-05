@@ -63,11 +63,12 @@ namespace TestDevExpress.Forms
             InitResize();              // 4
             InitChart();               // 5
             InitMsgBox();              // 6
-            InitEditors();             // 7
-            InitSvgIcons();            // 8
-            InitTreeView();            // 9
-            InitDragDrop();            // 10
-            InitSyntaxEditor();        // 11
+            InitStepProgress();        // 7
+            InitEditors();             // 8
+            InitSvgIcons();            // 9
+            InitTreeView();            // 10
+            InitDragDrop();            // 11
+            InitSyntaxEditor();        // 12
 
             // TestResources();
 
@@ -80,7 +81,7 @@ namespace TestDevExpress.Forms
 
             _NotifyMessageInit();
 
-            ActivatePage(8, true);
+            ActivatePage(7, true);
             // ActivatePage(10, true);
 
         }
@@ -4343,6 +4344,130 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             if (clickHandler != null) button.Click += clickHandler;
             return button;
         }
+        #endregion
+        #region StepProgress
+        private void InitStepProgress()
+        {
+            AddNewPage("StepProgress", PrepareStepProgress, ActivateStepProgress, DeactivateStepProgress);
+        }
+        private DxPanelControl _PanelStepProgress;
+        private DevExpress.XtraEditors.StepProgressBar _StepProgressBar;
+        private void PrepareStepProgress(DxPanelControl panel)
+        {
+            _PanelStepProgress = panel;
+            _PanelStepProgress.AutoScroll = true;
+
+            _StepProgressBar = new DevExpress.XtraEditors.StepProgressBar() { Bounds = new Rectangle(12, 12, 780, 150) };
+            _StepProgressBar.CustomDrawItemIndicator += _StepProgressBar_CustomDrawItemIndicator;
+            _StepProgressBar.CustomDrawConnector += _StepProgressBar_CustomDrawConnector;
+            _PanelStepProgress.Controls.Add(_StepProgressBar);
+
+            RefillStepProgress();
+        }
+
+        private void _StepProgressBar_CustomDrawConnector(object sender, DevExpress.XtraEditors.Drawing.StepProgressBarConnectorCustomDrawEventArgs e)
+        {
+            e.DefaultDraw();
+        }
+
+        private void _StepProgressBar_CustomDrawItemIndicator(object sender, DevExpress.XtraEditors.Drawing.StepProgressBarItemIndicatorCustomDrawEventArgs e)
+        {
+            bool isActive = (e.Item.Tag is bool) ? (bool)e.Item.Tag : false;
+            if (isActive)
+            {
+                e.DefaultDrawIndicatorShadow();
+                e.DefaultDrawImage();
+
+                var bounds = e.IndicatorBounds;
+                bounds.Width -= 1;
+                bounds.Height -= 1;
+
+                var color = DxComponent.SkinColorSet.NamedHighlightAlternate ?? DxComponent.SkinColorSet.NamedHighlight ?? Color.FromArgb(16, 110, 190);
+                var pen = DxComponent.PaintGetPen(color, 220);
+                pen.Width = 3;
+
+                using (var path = DxComponent.CreateGraphicsPathOval(bounds, 1f, 0.450f))
+                {
+                    DxComponent.GraphicsSetForSmooth(e.Graphics);
+                    e.Cache.DrawPath(pen, path);
+                }
+
+                // Nic dalšího mi nekresli:
+                e.Handled = true;
+            }
+            else
+            {   // Default vše:
+                //   e.DefaultDrawImage();
+                e.DefaultDrawImage();
+                e.Handled = true;
+            }
+        }
+
+        private void ActivateStepProgress()
+        {
+            RefillStepProgress();
+        }
+        private void DeactivateStepProgress()
+        { }
+        private void RefillStepProgress()
+        {
+            _StepProgressBar.ItemOptions.ConnectorOffset = 8;
+            _StepProgressBar.ItemOptions.Indicator.Width = 64;
+            _StepProgressBar.ProgressMode = DevExpress.XtraEditors.Controls.StepProgressBar.ProgressMode.SingleStep;
+            _StepProgressBar.DrawConnectors = true;
+            _StepProgressBar.ConnectorLineThickness = 4;
+            _StepProgressBar.IndentBetweenItems = 24;
+            _StepProgressBar.ScrollMode = DevExpress.XtraEditors.Controls.StepProgressBar.ScrollMode.Auto;
+
+
+            string[] resources = new string[]
+{
+    "svgimages/diagramicons/exportdiagram_bmp.svg",
+    "svgimages/diagramicons/exportdiagram_gif.svg",
+    "svgimages/diagramicons/exportdiagram_jpeg.svg",
+    "svgimages/diagramicons/exportdiagram_png.svg",
+    "svgimages/diagramicons/exporttopdf.svg",
+    "svgimages/diagramicons/exporttosvg.svg"
+};
+
+            _StepProgressBar.Items.Clear();
+            _StepProgressBar.Items.Add(_CreateProgressBarItem(0, "s0", false, "Krok -2", "Předevčírem", resources[0]));
+            _StepProgressBar.Items.Add(_CreateProgressBarItem(0, "s1", false, "Krok -1", "Včera", resources[1]));
+            _StepProgressBar.Items.Add(_CreateProgressBarItem(0, "s2", true, "Krok 0", "Dnes", resources[2]));
+            _StepProgressBar.Items.Add(_CreateProgressBarItem(0, "s3", false, "Krok 1", "Zítra", resources[3]));
+            _StepProgressBar.Items.Add(_CreateProgressBarItem(0, "s4", false, "Krok 2", "Pozítří", resources[4]));
+
+            _StepProgressBar.ScrollToItem(_StepProgressBar.Items[2]);
+        }
+        private DevExpress.XtraEditors.StepProgressBarItem _CreateProgressBarItem(int progress, string name, bool isActive, string text1, string text2, string imageName)
+        {
+            var item = new DevExpress.XtraEditors.StepProgressBarItem()
+            {
+                Name = name,
+                Progress = progress,
+                Tag = isActive,
+                State = DevExpress.XtraEditors.StepProgressBarItemState.Inactive      // (isActive ? DevExpress.XtraEditors.StepProgressBarItemState.Active : DevExpress.XtraEditors.StepProgressBarItemState.Inactive)
+            };
+            item.ContentBlock1.Caption = text1;
+            item.ContentBlock1.Description = "Popisek údaje nahoře ...";
+            item.ContentBlock2.Caption = text2;
+            item.ContentBlock2.Description = "Popisek údaje dole ...";
+            item.Options.Indicator.InactiveStateDrawMode = (isActive ? DevExpress.XtraEditors.IndicatorDrawMode.Outline : DevExpress.XtraEditors.IndicatorDrawMode.None);
+            item.Options.Indicator.Width = 48;
+            DxComponent.ApplyImage(item.Options.Indicator.InactiveStateImageOptions, imageName);
+            item.Options.Indicator.AutoCropImage = DevExpress.Utils.DefaultBoolean.True;
+            if (isActive && false)
+            {
+                item.Appearance.InactiveIndicatorColor = Color.FromArgb(16, 110, 190);
+                item.Appearance.ContentBlockAppearance.CaptionInactive.BackColor = Color.FromArgb(0, 0, 48);
+            }
+            item.Appearance.ContentBlockAppearance.CaptionInactive.FontStyleDelta = (isActive ? FontStyle.Bold : FontStyle.Regular);
+            item.Appearance.ContentBlockAppearance.CaptionInactive.Options.UseFont = true;
+            // item.Appearance.
+
+            return item;
+        }
+     
         #endregion
         #region Editory
         private void InitEditors()

@@ -89,7 +89,7 @@ namespace TestDevExpress.Forms
         private DxDropDownButton __MapTypeButton;
         private DxDropDownButton __WebDisplayModeButton;
 
-        protected override string PositionConfigName { get { return "WebMapForm"; } }
+        // protected override string PositionConfigName { get { return "WebMapForm"; } }
 
         /// <summary>
         /// Provede se po změně velikosti ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/> i v jiných situacích.
@@ -150,12 +150,6 @@ namespace TestDevExpress.Forms
             int webWidth = clientSize.Width - webX - webX;
             int webHeight = clientSize.Height - paddingV - webY;
             webPanel.Bounds = new Rectangle(webX, webY, webWidth, webHeight);
-
-            this.DxMainPanel.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple;
-
-
-            Structures += this.ActivityState.ToString() + Environment.NewLine + this.ControlsStructure + Environment.NewLine + Environment.NewLine;
-            string struc = Structures;
         }
 
         private string Structures;

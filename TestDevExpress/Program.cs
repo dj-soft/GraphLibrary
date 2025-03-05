@@ -49,7 +49,10 @@ namespace TestDevExpress
                 var moon10 = DxComponent.CreateBitmapImage("Images/Moon10.png");
 
                 bool isImages = DxComponent.ApplicationArgumentsContains("images");
-                bool isTabView = !DxComponent.ApplicationArgumentsContains("oldform");
+                bool isTabView = !DxComponent.ApplicationArgumentsContains("oldform");             // Pokud v parametrech NENÍ "oldform", pak pouštím tabované hlavní okno MainAppForm, pro oldform pouštím starý MainForm
+                bool isScroll = System.Windows.Forms.Control.IsKeyLocked(Keys.Scroll);             // ScrolLock to otočí, pro jeden konkrétní běh
+                if (isScroll) isTabView = !isTabView;
+
                 var appFormType = (isImages ? typeof(TestDevExpress.Forms.ImagePickerForm) :
                                   (isTabView ? typeof(TestDevExpress.Forms.MainAppForm) :
                                   typeof(TestDevExpress.Forms.MainForm)));

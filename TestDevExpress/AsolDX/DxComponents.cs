@@ -4091,8 +4091,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// String popisuje všechny aktuálně přítomné monitory, jejich příznak Primární, a jejich souřadnice.<br/>
         /// String lze použít jako klíč: obsahuje pouze písmena a číslice, nic více.<br/>
-        /// Ze stringu nelze rozumně sestavit souřadnice monitorů, to ale není nutné. <br/>
-        /// String slouží jako suffix klíče pro ukládání souřadnic uživatelských oken, aby bylo možno je ukládat k jednotlivé konfiguraci monitorů.
+        /// Ze stringu nelze rozumně sestavit souřadnice monitorů, to ale není nutné. Cílem je krátký klíč.<br/>
+        /// String slouží jako suffix klíče pro ukládání souřadnic uživatelských oken, aby bylo možno je ukládat pro jednotlivé konfigurace monitorů.
         /// Je vhodné ukládat souřadnice pracovních oken pro jejich restorování s klíčem aktuální konfigurace monitorů: 
         /// uživatel používající různé konfigurace monitorů očekává, že konkrétní okno se mu po otevření zobrazí na konkrétním místě v závislosti na tom, které monitory právě používá.
         /// </summary>
@@ -4105,13 +4105,55 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             string key = "";
             foreach (var screen in System.Windows.Forms.Screen.AllScreens)
-            {
-                // one = "P0019201080"
-                string one = $"{(screen.Primary ? "P" : "S")}{Convertor.RectangleToString(screen.Bounds, ':').Replace(":", "")}]";
-                key += one;
-            }
-            // key = "P0019201080S-1920-68040962080"
+                key += getOneKey(screen);
+
+            // key = "PaapjSzwz1371rm"
             return key;
+
+            string getOneKey(System.Windows.Forms.Screen scr)
+            {
+                // one = "Paapj", anebo se zápornými čísly a s číselnými hodnotami: "Szwz1371rm"
+                var bounds = scr.Bounds;
+                string one = (scr.Primary ? "P" : "S") + getSiz(bounds.X) + getSiz(bounds.Y) + getSiz(bounds.Width) + getSiz(bounds.Height);
+                return one;
+            }
+
+            string getSiz(int siz)
+            {
+                string prefix = (siz < 0 ? "z" : "");
+                if (siz < 0) siz = -siz;
+                switch (siz)
+                {   // Standardní rozměry převedu na jednopísmeno:
+                    case 0000: return prefix + "a";
+                    case 0320: return prefix + "b";
+                    case 0480: return prefix + "c";
+                    case 0540: return prefix + "d";
+                    case 0640: return prefix + "e";
+                    case 0720: return prefix + "f";
+                    case 0800: return prefix + "g";
+                    case 0960: return prefix + "h";
+                    case 1024: return prefix + "i";
+                    case 1080: return prefix + "j";
+                    case 1280: return prefix + "k";
+                    case 1366: return prefix + "l";
+                    case 1440: return prefix + "m";
+                    case 1536: return prefix + "n";
+                    case 1728: return prefix + "o";
+                    case 1920: return prefix + "p";
+                    case 2160: return prefix + "q";
+                    case 2560: return prefix + "r";
+                    case 2880: return prefix + "s";
+                    case 3072: return prefix + "t";
+                    case 3200: return prefix + "u";
+                    case 3440: return prefix + "v";
+                    case 3840: return prefix + "w";
+                    case 4320: return prefix + "x";
+                    case 4880: return prefix + "y";
+                }
+                // Nestandardní rozměry a pozice oken (X, Y) mimo std hodnoty budou numericky:
+                return prefix + siz.ToString();
+            }
+
         }
         #endregion
         #region Práce s klávesovými kódy - KeyArgs
@@ -5732,6 +5774,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             graphics.SmoothingMode = SmoothingMode.None;
             graphics.InterpolationMode = InterpolationMode.Default;
         }
+        /// <summary>
+        /// Nastaví vlastnosti dané Graphics pro kreslení hladkých zakřivených čar
+        /// </summary>
+        /// <param name="graphics"></param>
+        public static void GraphicsSetForSmooth(Graphics graphics)
+        {
+            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;             // UHD: OK
+            graphics.SmoothingMode = SmoothingMode.HighQuality;
+            graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+        }
         #endregion
         #region FontCache
         /// <summary>
@@ -5988,6 +6040,87 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private StringFormat __StringFormatWrap;
+        #endregion
+        #region GraphicsPath
+        public static System.Drawing.Drawing2D.GraphicsPath CreateGraphicsPathOval(Rectangle bounds, float innerMargin, float ovalRatio)
+        {
+            ovalRatio = (ovalRatio < 0f ? 0f : (ovalRatio > 1f ? 1f : ovalRatio));
+            createDim(bounds.Left, bounds.Right, innerMargin, ovalRatio, out var x1, out var x2, out var x3, out var x4, out var x5, out var x6, out var x7, out var xv);
+            createDim(bounds.Top, bounds.Bottom, innerMargin, ovalRatio, out var y1, out var y2, out var y3, out var y4, out var y5, out var y6, out var y7, out var yv);
+
+            System.Drawing.Drawing2D.GraphicsPath path = new GraphicsPath();
+            switch (xv)
+            {
+                case 0:
+                    // Obdélník:
+                    path.AddLine(new PointF(x3, y1), new PointF(x5, y1));                                              // Horní linie doprava
+                    path.AddLine(new PointF(x7, y3), new PointF(x7, y5));                                              // Pravá linie dolů
+                    path.AddLine(new PointF(x5, y7), new PointF(x3, y7));                                              // Dolní linie doleva
+                    path.AddLine(new PointF(x1, y5), new PointF(x1, y3));                                              // Levá linie nahoru
+                    path.CloseFigure();
+                    break;
+                case 1:
+                    // Vejce:
+                    path.AddBezier(new PointF(x5, y1), new PointF(x6, y1), new PointF(x7, y2), new PointF(x7, y3));    // Horní pravý oblouk
+                    path.AddBezier(new PointF(x7, y5), new PointF(x7, y6), new PointF(x6, y7), new PointF(x5, y7));    // Pravý dolní oblouk
+                    path.AddBezier(new PointF(x3, y7), new PointF(x2, y7), new PointF(x1, y6), new PointF(x1, y5));    // Dolní levý oblouk
+                    path.AddBezier(new PointF(x1, y3), new PointF(x1, y2), new PointF(x2, y1), new PointF(x3, y1));    // Levý horní oblouk
+                    path.CloseFigure();
+                    break;
+                case 2:
+                    // Kulaté obdélníky:
+                    path.AddLine(new PointF(x3, y1), new PointF(x5, y1));                                              // Horní linie doprava
+                    path.AddBezier(new PointF(x5, y1), new PointF(x6, y1), new PointF(x7, y2), new PointF(x7, y3));    // Horní pravý oblouk
+                    path.AddLine(new PointF(x7, y3), new PointF(x7, y5));                                              // Pravá linie dolů
+                    path.AddBezier(new PointF(x7, y5), new PointF(x7, y6), new PointF(x6, y7), new PointF(x5, y7));    // Pravý dolní oblouk
+                    path.AddLine(new PointF(x5, y7), new PointF(x3, y7));                                              // Dolní linie doleva
+                    path.AddBezier(new PointF(x3, y7), new PointF(x2, y7), new PointF(x1, y6), new PointF(x1, y5));    // Dolní levý oblouk
+                    path.AddLine(new PointF(x1, y5), new PointF(x1, y3));                                              // Levá linie nahoru
+                    path.AddBezier(new PointF(x1, y3), new PointF(x1, y2), new PointF(x2, y1), new PointF(x3, y1));    // Levý horní oblouk
+                    path.CloseFigure();
+                    break;
+            }
+
+            return path;
+
+            // Určí rozměry v jedné dimenzi
+            void createDim(float b, float e, float margin, float ratio, out float d1, out float d2, out float d3, out float d4, out float d5, out float d6, out float d7, out int variation)
+            {
+                d1 = b + margin;                 // Počátek (Left / Top)
+                d7 = e - margin;                 // Konec (Right / Bottom)
+                float s = d7 - d1;               // Velikost od počátku do konce
+                d4 = d1 + (s / 2f);              // Střed
+
+                // ratio říká, jak moc to bude čistý ovál = bez rovných úseků na středu: 1 = vejce / 0 = obdélník / 0.25 = čtvrtina rozměru (v rohu) bude kulatá, a prostřední prostor bude přímka
+                if (ratio <= 0f)
+                {   // Obdélník:
+                    d2 = d1;
+                    d3 = d1;
+                    d5 = d7;
+                    d6 = d7;
+                    variation = 0;
+                }
+                else if (ratio >= 1f)
+                {   // Vejce:
+                    float v = s / 4f;
+                    d2 = d1 + v;
+                    d3 = d4;
+                    d5 = d4;
+                    d6 = d7 - v;
+                    variation = 1;
+                }
+                else
+                {   // Rovná linka okolo středu, a kulaté rohy:
+                    float l = (1f - ratio) * (s / 2f);  // Půl délka rovné linky, kolem středu d4
+                    d3 = d4 - l;
+                    d5 = d4 + l;
+                    float v = (d3 - d1) / 2f;
+                    d2 = d1 + v;
+                    d6 = d7 - v;
+                    variation = 2;
+                }
+            }
+        }
         #endregion
         #endregion
         #region Lokalizace - můstek do systému
@@ -7691,18 +7824,23 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxSkinColorSet colorSet = new DxSkinColorSet(skin, skinName, isCompact, paletteName);
 
             // Zajistíme spuštění všech metod, které mají atribut Initializer:
+            var initializers = InitializerAttribute.SearchInitializerMethods(colorSet.GetType());
+
+            /*
             var initializers = colorSet.GetType()
                 .GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
                 .Where(m => m.CustomAttributes.Any(a => a.AttributeType == typeof(InitializerAttribute)))
                 .ToList();
 
             if (initializers.Count > 1) initializers.Sort(compareByPriority);
+            */
 
             foreach (var initializer in initializers)
                 initializer.Invoke(colorSet, null);
 
             return colorSet;
 
+            /*
             int compareByPriority(System.Reflection.MethodInfo a, System.Reflection.MethodInfo b)
             {
                 int ap = getPriority(a);
@@ -7714,6 +7852,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var initializer = method.GetCustomAttributes(typeof(InitializerAttribute), false).FirstOrDefault() as InitializerAttribute;
                 return initializer?.Priority ?? 0;
             }
+            */
         }
         #endregion
         #region Pojmenované barvy
