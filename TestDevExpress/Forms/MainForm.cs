@@ -4463,11 +4463,9 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             }
             item.Appearance.ContentBlockAppearance.CaptionInactive.FontStyleDelta = (isActive ? FontStyle.Bold : FontStyle.Regular);
             item.Appearance.ContentBlockAppearance.CaptionInactive.Options.UseFont = true;
-            // item.Appearance.
 
             return item;
         }
-     
         #endregion
         #region Editory
         private void InitEditors()
