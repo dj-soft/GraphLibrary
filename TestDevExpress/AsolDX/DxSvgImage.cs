@@ -1313,16 +1313,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static bool _TryGetGenericSvgText(string imageName, string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage)
         {
             // Název ImageName pro vytvoření generické ikony typu Text má vzhled:
-            //   "@text|DJ|blue|serif|B|4|#662266|#FFDDFF"
-            // Kde
-            //    @text                                         0: klíčové slovo pro generování textu;
-            //          DJ                                      1: vlastní text
-            //             blue                                 2: barva písma
-            //                  serif                           3: typ písma, default = sans-serif
-            //                        B                         4: Bold písmo (jiný formát není povolen)
-            //                          4                       5: Průměr kulatosti rohu borderu vzhledem k velikosti ikony 16
-            //                            #662266               6: Barva rámečku
-            //                                     #FFDDFF      7: Barva výplně pod písmenem
+            //    @text|A|#000066|sans-serif|B|2|#222288|#CCCCFF
+            // Kde                                               
+            //    @text                                            0: klíčové slovo pro generování textu;
+            //          A                                          1: vlastní text, do dvou písmen
+            //            #000066                                  2: barva písma
+            //                    sans-serif                       3: typ písma, default = sans-serif, možno dát serif = patkové
+            //                               B                     4: Nic nebo B=Bold písmo (jiný formát není povolen)
+            //                                 2                   5: Průměr kulatosti rohu borderu vzhledem k velikosti ikony 16, vhodné 2 - 5
+            //                                   #222288           6: Barva rámečku
+            //                                           #CCCCFF   7: Barva výplně pod písmenem
+
             bool isDarkTheme = DxComponent.IsDarkTheme;
             int p = 1;
             string text = _GetGenericParam(genericItems, p++, "");

@@ -2116,12 +2116,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _InitWebCore()
         {
-            
-            // MinSize:
-            this.MinimumSize = new System.Drawing.Size(640, 480);
-
-
-
             this.__IsInitialized = false;
             this.__CoreWebInitializerCounter = 1;
             this.CreationProperties = new Microsoft.Web.WebView2.WinForms.CoreWebView2CreationProperties()
@@ -2180,9 +2174,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             else
             {
-                // K této chybě dojde mimo try  catch blok (=> asynchronně, invokováno do GUI), takže throw mi shodí aplikaci. Dáme placku:
-                DxComponent.ShowMessageException(e.InitializationException, "", "MsWebView error");
-                // throw new ApplicationException($"MsWebView2 error: '{e.InitializationException.Message}'", e.InitializationException);
+                throw new ApplicationException($"MsWebView2 error: '{e.InitializationException.Message}'", e.InitializationException);
             }
         }
         /// <summary>
@@ -2879,10 +2871,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _RunCaptureImageOnTotalCompleted()
         {
-            var webProperties = this.WebProperties;
-            if (webProperties is null) return;                       // Nejspíš událost _DoNavigationTotalCompleted doběhla až po Dispose objektu. To může být, když _DoNavigationTotalCompleted je řízena časovačem, resetovaným událostí WebRequestDone.
-
-            switch (webProperties.DisplayMode)
+            switch (this.WebProperties.DisplayMode)
             {   // Pokud jsem v režimu Capture... :
                 case DxWebViewDisplayMode.CaptureAsync:
                     // Asynchronní capture: zdejší vlákno nebudeme blokovat, vyžádáme načtení Image pomocí asynchronní metody (tam se použije async Task).
