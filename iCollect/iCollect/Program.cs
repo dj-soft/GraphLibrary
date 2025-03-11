@@ -14,6 +14,9 @@ namespace DjSoft.App.iCollect
         [STAThread]
         static void Main()
         {
+            // Vytvoří se singleton App;
+            // V Sigletonu se zavolá Start;
+            // Tím se rozsvítí Main okno aplikace;
             DjSoft.App.iCollect.Application.App.Start();
         }
     }

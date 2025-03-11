@@ -13,12 +13,14 @@ using XBars = DevExpress.XtraBars;
 using XRibbon = DevExpress.XtraBars.Ribbon;
 using XEditors = DevExpress.XtraEditors;
 
+using DComponents = DjSoft.App.iCollect.Components;
+
 namespace DjSoft.App.iCollect
 {
-    public partial class MainApp : XRibbon.RibbonForm
+    public partial class MainAppForm : XRibbon.RibbonForm
     {
         #region Windows Form Designer generated code
-        public MainApp()
+        public MainAppForm()
         {
             InitializeComponent();
             
@@ -58,23 +60,22 @@ namespace DjSoft.App.iCollect
         #region Ribbon
         private void _RibbonPrepare()
         {
-            __Ribbon = new XRibbon.RibbonControl() { Visible = true, Dock = DockStyle.Top, CommandLayout = XRibbon.CommandLayout.Simplified,  ButtonGroupsLayout = DevExpress.XtraBars.ButtonGroupsLayout.TwoRows };
-            __Ribbon.AllowMdiChildButtons = false;
-            __Ribbon.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
-            __Ribbon.ShowDisplayOptionsMenuButton = DevExpress.Utils.DefaultBoolean.False;
-            __Ribbon.OptionsExpandCollapseMenu.EnableExpandCollapseMenu = DevExpress.Utils.DefaultBoolean.False;
+            __Ribbon = new DComponents.Ribbon.DjRibbonControl();
+            var pageHome = __Ribbon.AddPage("Home", "Sbírka");
+            var groupHomeLayout = pageHome.AddGroup("HomeLayout", "Zobrazení");
+            groupHomeLayout.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, null, "Tabulka", "Zobrazení", "Tabulka se sloupci a řádky", null);
+            groupHomeLayout.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, null, "Kartotéka", "Zobrazení", "Kartotéka s jednotlivými záznamy", null);
 
-            __PageHome = new XRibbon.RibbonPage() { Name = "Home", Text = "Sbírka" };
-            __GroupLayout = new XRibbon.RibbonPageGroup() { Text = "Vzhled" };
-            __GroupLayout.ItemLinks.Add(new XBars.SkinDropDownButtonItem());
-            __GroupLayout.ItemLinks.Add(new XBars.SkinPaletteDropDownButtonItem());
-            __PageHome.Groups.Add(__GroupLayout);
-            __Ribbon.Pages.Add(__PageHome);
+            var groupHomeSchema = pageHome.AddGroup("HomeSchema", "Schema sbírky");
+            groupHomeSchema.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, null, "Nastavit schema", "Schema", "Zadat evidované prvky", null);
+
+            var groupHomeSetting = pageHome.AddGroup("HomeSetting", "Nastavení");
+            groupHomeSetting.AddItem(DComponents.Ribbon.DjRibbonItemType.SkinDropDownButton);
+            groupHomeSetting.AddItem(DComponents.Ribbon.DjRibbonItemType.SkinPaletteDropDownButton);
+
             this.Controls.Add(__Ribbon);
         }
-        private XRibbon.RibbonControl __Ribbon;
-        private XRibbon.RibbonPage __PageHome;
-        private XRibbon.RibbonPageGroup __GroupLayout;
+        private DComponents.Ribbon.DjRibbonControl __Ribbon;
         #endregion
         #region MainPanel
         private void _MainPanelPrepare()

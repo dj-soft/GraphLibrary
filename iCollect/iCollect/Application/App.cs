@@ -37,7 +37,10 @@ namespace DjSoft.App.iCollect.Application
         private App()
         { }
         private void _Init()
-        { }
+        {
+            _LoadSettings();
+            _CreateStyleManager();
+        }
         #endregion
         #region Start
         public static void Start()
@@ -45,6 +48,14 @@ namespace DjSoft.App.iCollect.Application
             _Instance._Start();
         }
         private void _Start()
+        {
+            _PrepareGui();
+
+            __MainAppForm = new MainAppForm();
+            System.Windows.Forms.Application.Run(__MainAppForm);
+            __MainAppForm = null;
+        }
+        private void _PrepareGui()
         {
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
@@ -55,9 +66,36 @@ namespace DjSoft.App.iCollect.Application
             DevExpress.Skins.SkinManager.EnableMdiFormSkins();
             DevExpress.XtraEditors.WindowsFormsSettings.AnimationMode = DevExpress.XtraEditors.AnimationMode.EnableAll;
             DevExpress.XtraEditors.WindowsFormsSettings.AllowHoverAnimation = DevExpress.Utils.DefaultBoolean.True;
-
-            System.Windows.Forms.Application.Run(new MainApp());
         }
+        /// <summary>
+        /// Main okno aplikace
+        /// </summary>
+        public static MainAppForm MainAppForm { get { return _Instance.__MainAppForm; } }
+        private MainAppForm __MainAppForm;
+        #endregion
+        #region Konfigurace běhu, adresář, style manager
+        /// <summary>
+        /// Konfigurace aplikace
+        /// </summary>
+        public static Settings Settings { get { return _Instance.__Settings; } }
+        /// <summary>Konfigurace aplikace</summary>
+        private Settings __Settings;
+        /// <summary>Adresář konfigurace aplikace</summary>
+        private string __AppWorkingPath;
+        /// <summary>
+        /// Načte konfiguraci aplikace
+        /// </summary>
+        private void _LoadSettings()
+        {
+            __Settings = new Settings();
+        }
+
+
+        private void _CreateStyleManager()
+        {
+            __DxStyleManager = new DxStyleManager();
+        }
+        private DxStyleManager __DxStyleManager;
         #endregion
     }
 }
