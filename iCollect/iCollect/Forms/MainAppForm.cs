@@ -17,90 +17,46 @@ using DComponents = DjSoft.App.iCollect.Components;
 
 namespace DjSoft.App.iCollect
 {
-    public partial class MainAppForm : XRibbon.RibbonForm
+    public class MainAppForm : DComponents.DjTabbedRibbonForm
     {
-        #region Windows Form Designer generated code
         public MainAppForm()
         {
-            InitializeComponent();
-            
-        }
-        /// <summary>
-        /// Required method for Designer support - do not modify
-        /// the contents of this method with the code editor.
-        /// </summary>
-        private void InitializeComponent()
-        {
-            this.components = new System.ComponentModel.Container();
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
-            this._MainPanelPrepare();
-            this._RibbonPrepare();
-            this._StatusPrepare();
-            this._ContentPrepare();
+            Data.ApplicationState.DesktopForm = this;
             this.Text = "Sbíráme...";
+            this.Size = new System.Drawing.Size(1200, 600);
         }
-        /// <summary>
-        /// Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
-            {
-                components.Dispose();
-            }
             base.Dispose(disposing);
+            Data.ApplicationState.DesktopFormState = Data.ApplicationFormStateType.Closed;
         }
-        /// <summary>
-        /// Required designer variable.
-        /// </summary>
-        private System.ComponentModel.IContainer components = null;
-        #endregion
-        #region Ribbon
-        private void _RibbonPrepare()
+        protected override void OnRibbonPrepare()
         {
-            __Ribbon = new DComponents.Ribbon.DjRibbonControl();
-            var pageHome = __Ribbon.AddPage("Home", "Sbírka");
+            base.OnRibbonPrepare();
+
+            var pageHome = DjRibbon.AddPage("Home", "Sbírka");
             var groupHomeLayout = pageHome.AddGroup("HomeLayout", "Zobrazení");
-            groupHomeLayout.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, null, "Tabulka", "Zobrazení", "Tabulka se sloupci a řádky", null);
-            groupHomeLayout.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, null, "Kartotéka", "Zobrazení", "Kartotéka s jednotlivými záznamy", null);
+            groupHomeLayout.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Table", "Tabulka", "Zobrazení", "Tabulka se sloupci a řádky", null);
+            groupHomeLayout.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Cards", "Kartotéka", "Zobrazení", "Kartotéka s jednotlivými záznamy", null);
 
             var groupHomeSchema = pageHome.AddGroup("HomeSchema", "Schema sbírky");
-            groupHomeSchema.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, null, "Nastavit schema", "Schema", "Zadat evidované prvky", null);
+            groupHomeSchema.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Schema", "Nastavit schema", "Schema", "Zadat evidované prvky", null);
 
             var groupHomeSetting = pageHome.AddGroup("HomeSetting", "Nastavení");
             groupHomeSetting.AddItem(DComponents.Ribbon.DjRibbonItemType.SkinDropDownButton);
             groupHomeSetting.AddItem(DComponents.Ribbon.DjRibbonItemType.SkinPaletteDropDownButton);
 
-            this.Controls.Add(__Ribbon);
         }
-        private DComponents.Ribbon.DjRibbonControl __Ribbon;
-        #endregion
-        #region MainPanel
-        private void _MainPanelPrepare()
-        {
-            __MainPanel = new XEditors.PanelControl() { Dock = DockStyle.Fill, BackColor = Color.LightBlue, BorderStyle = XEditors.Controls.BorderStyles.Office2003 };
-            this.Controls.Add(__MainPanel);
-        }
-        private XEditors.PanelControl __MainPanel;
-        #endregion
-        #region Status
-        private void _StatusPrepare()
-        {
-            __Status = new XRibbon.RibbonStatusBar() { Visible = true, Ribbon = __Ribbon, Dock = DockStyle.Bottom };
-            this.Controls.Add(__Status);
-        }
-        private XRibbon.RibbonStatusBar __Status;
-    	#endregion
 
-
-        private void _ContentPrepare()
+        protected override string PositionConfigName { get { return this.GetType().Name; } }
+        protected override void OnContentPrepare()
         {
+            base.OnContentPrepare();
+
             __Grid = new DevExpress.XtraGrid.GridControl() { Dock = DockStyle.Fill };
             __CardView = new DevExpress.XtraGrid.Views.Card.CardView(__Grid);
             __Grid.MainView = __CardView;
-            __MainPanel.Controls.Add(__Grid);
+            MainPanel.Controls.Add(__Grid);
 
             __GridData = new DataTable();
             __GridData.Columns.Add(new DataColumn() { ColumnName = "id", Caption = "ID prvku", DataType = typeof(int) });

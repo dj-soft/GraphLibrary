@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Drawing;
+using System.Windows.Forms;
 
 namespace DjSoft.App.iCollect.Application
 {
@@ -89,8 +91,9 @@ namespace DjSoft.App.iCollect.Application
         {
             __Settings = new Settings(AppConfigPath);
         }
-
-
+        /// <summary>
+        /// Vytvoří StyleManagera
+        /// </summary>
         private void _CreateStyleManager()
         {
             __DxStyleManager = new DxVisualStyleManager();
@@ -236,9 +239,9 @@ namespace DjSoft.App.iCollect.Application
             {
                 System.IO.Directory.CreateDirectory(path);
             }
-            catch 
+            catch
             {
-                return false; 
+                return false;
             }
             finally
             { }
@@ -339,5 +342,76 @@ namespace DjSoft.App.iCollect.Application
             }
         }
         #endregion
+        #region Multimonitory
+        /// <summary>
+        /// Aktuální klíč konfigurace všech monitorů.
+        /// <para/>
+        /// String popisuje všechny aktuálně přítomné monitory, jejich příznak Primární, a jejich souřadnice.<br/>
+        /// String lze použít jako klíč: obsahuje pouze písmena a číslice, nic více.<br/>
+        /// Ze stringu nelze rozumně sestavit souřadnice monitorů, to ale není nutné. Cílem je krátký klíč.<br/>
+        /// String slouží jako suffix klíče pro ukládání souřadnic uživatelských oken, aby bylo možno je ukládat pro jednotlivé konfigurace monitorů.
+        /// Je vhodné ukládat souřadnice pracovních oken pro jejich restorování s klíčem aktuální konfigurace monitorů: 
+        /// uživatel používající různé konfigurace monitorů očekává, že konkrétní okno se mu po otevření zobrazí na konkrétním místě v závislosti na tom, které monitory právě používá.
+        /// </summary>
+        public static string CurrentMonitorsKey { get { return _GetCurrentMonitorsKey(); } }
+        /// <summary>
+        /// Určí a vrátí Aktuální klíč konfigurace všech monitorů.
+        /// </summary>
+        /// <returns></returns>
+        private static string _GetCurrentMonitorsKey()
+        {
+            string key = "";
+            foreach (var screen in System.Windows.Forms.Screen.AllScreens)
+                key += getOneKey(screen);
+
+            // key = "PaapjSzwz1371rm"
+            return key;
+
+            string getOneKey(System.Windows.Forms.Screen scr)
+            {
+                // one = "Paapj", anebo se zápornými čísly a s číselnými hodnotami: "Szwz1371rm"
+                var bounds = scr.Bounds;
+                string one = (scr.Primary ? "P" : "S") + getSiz(bounds.X) + getSiz(bounds.Y) + getSiz(bounds.Width) + getSiz(bounds.Height);
+                return one;
+            }
+
+            string getSiz(int siz)
+            {
+                string prefix = (siz < 0 ? "z" : "");
+                if (siz < 0) siz = -siz;
+                switch (siz)
+                {   // Standardní rozměry převedu na jednopísmeno:
+                    case 0000: return prefix + "a";
+                    case 0320: return prefix + "b";
+                    case 0480: return prefix + "c";
+                    case 0540: return prefix + "d";
+                    case 0640: return prefix + "e";
+                    case 0720: return prefix + "f";
+                    case 0800: return prefix + "g";
+                    case 0960: return prefix + "h";
+                    case 1024: return prefix + "i";
+                    case 1080: return prefix + "j";
+                    case 1280: return prefix + "k";
+                    case 1366: return prefix + "l";
+                    case 1440: return prefix + "m";
+                    case 1536: return prefix + "n";
+                    case 1728: return prefix + "o";
+                    case 1920: return prefix + "p";
+                    case 2160: return prefix + "q";
+                    case 2560: return prefix + "r";
+                    case 2880: return prefix + "s";
+                    case 3072: return prefix + "t";
+                    case 3200: return prefix + "u";
+                    case 3440: return prefix + "v";
+                    case 3840: return prefix + "w";
+                    case 4320: return prefix + "x";
+                    case 4880: return prefix + "y";
+                }
+                // Nestandardní rozměry a pozice oken (X, Y) mimo std hodnoty budou numericky:
+                return prefix + siz.ToString();
+            }
+
+        }
+        #endregion    }
     }
 }

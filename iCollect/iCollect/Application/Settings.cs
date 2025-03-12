@@ -1,7 +1,9 @@
-﻿using System;
+﻿using DjSoft.App.iCollect.Data;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
@@ -12,15 +14,255 @@ namespace DjSoft.App.iCollect.Application
 {
     internal class Settings
     {
-
+        #region Public typové hodnoty
         /// <summary>
         /// Vizuální styl uložený v konfiguraci.
         /// Změna v této property nezmění aktuální vizuální styl.
         /// </summary>
         public DxVisualStyle VisualStyle { get { return __VisualStyle; } set { _Set(ref __VisualStyle, value); } } private DxVisualStyle __VisualStyle;
+        #endregion
+        #region Soupis hodnot
+        /// <summary>
+        /// Zkusí vyhledat hodnotu daného klíče a subklíče
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="subKey"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public bool TryGetValue(string key, string subKey, out string value)
+        {
+            key = KeyValue.CheckKey(key);
+            subKey = KeyValue.CheckSubKey(subKey);
 
+            if (this.KeyValues != null && this.KeyValues.TryGetFirst(k => k.EqualsKey(key, subKey), out var keyValue))
+            {
+                value = keyValue.Value;
+                return true;
+            }
+            value = null;
+            return false;
+        }
+        /// <summary>
+        /// Uloží hodnotu pro daný klíč a subklíč
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="subKey"></param>
+        /// <param name="value"></param>
+        public void SetValue(string key, string subKey, string value)
+        {
+            key = KeyValue.CheckKey(key);
+            subKey = KeyValue.CheckSubKey(subKey);
+            value = KeyValue.CheckValue(value);
+
+            bool isChanged = false;
+            if (__KeyValues is null) { __KeyValues = new List<KeyValue>(); isChanged = true; }
+
+            var keyValues = __KeyValues;
+            if (keyValues.TryFindFirstIndex(k => k.EqualsKey(key, subKey), out var foundIndex))
+            {
+                KeyValue foundValue = keyValues[foundIndex];
+                if (!foundValue.EqualsValue(value))
+                {   // Změna hodnoty v existujícím klíči:
+                    keyValues[foundIndex] = new KeyValue(key, subKey, value);
+                    keyValues.Sort(KeyValue.Comparer);
+                    isChanged = true;
+                }
+            }
+            else
+            {   // Nový klíč:
+                keyValues.Add(new KeyValue(key, subKey, value));
+                isChanged = true;
+            }
+
+            // OnChange:
+            if (isChanged)
+                _OnChange();
+        }
+        /// <summary>
+        /// Odstraní hodnotu pro daný klíč a subklíč
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="subKey"></param>
+        public void RemoveValue(string key, string subKey)
+        {
+            key = KeyValue.CheckKey(key);
+            subKey = KeyValue.CheckSubKey(subKey);
+
+            var keyValues = __KeyValues;
+            if (keyValues != null && keyValues.TryFindFirstIndex(k => k.EqualsKey(key, subKey), out var foundIndex))
+            {
+                keyValues.RemoveAt(foundIndex);
+                _OnChange();
+            }
+        }
+        /// <summary>
+        /// Soupis hodnot
+        /// </summary>
+        private List<KeyValue> KeyValues { get { return __KeyValues; } set { _Set(ref __KeyValues, value); } } private List<KeyValue> __KeyValues;
+        #region class KeyValue
+        /// <summary>
+        /// Serializovatelné úložiště pro klíč, subklíč a string hodnotu
+        /// </summary>
+        public class KeyValue
+        {
+            /// <summary>
+            /// Pro deserializaci
+            /// </summary>
+            private KeyValue() { }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="key"></param>
+            /// <param name="subKey"></param>
+            /// <param name="value"></param>
+            public KeyValue(string key, string subKey, string value)
+            {
+                this.__Key = CheckKey(key);
+                this.__SubKey = CheckSubKey(subKey);
+                this.__Value = CheckValue(value);
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return this.Serial;
+            }
+            /// <summary>
+            /// Kontrola klíče
+            /// </summary>
+            /// <param name="key"></param>
+            /// <returns></returns>
+            /// <exception cref="ArgumentException"></exception>
+            internal static string CheckKey(string key)
+            {
+                if (key is null)
+                    throw new ArgumentException($"Konfigurační klíč '{key}' nesmí být null !");
+                if (String.IsNullOrEmpty(key))
+                    throw new ArgumentException($"Konfigurační klíč '{key}' nesmí být prázdný !");
+                if (key != null && (key.Contains("×") || key.Contains("=")))
+                    throw new ArgumentException($"Konfigurační klíč '{key}' nesmí obsahovat znaky '×' ani '=' !");
+                return key;
+            }
+            /// <summary>
+            /// Kontrola sub klíče
+            /// </summary>
+            /// <param name="subKey"></param>
+            /// <returns></returns>
+            /// <exception cref="ArgumentException"></exception>
+            internal static string CheckSubKey(string subKey)
+            {
+                if (subKey != null && (subKey.Contains("×") || subKey.Contains("=")))
+                    throw new ArgumentException($"Konfigurační subklíč '{subKey}' nesmí obsahovat znaky '×' ani '=' !");
+                return subKey;
+            }
+            /// <summary>
+            /// Kontrola hodnoty
+            /// </summary>
+            /// <param name="value"></param>
+            /// <returns></returns>
+            internal static string CheckValue(string value)
+            {
+                return value;
+            }
+            /// <summary>
+            /// Vrátí true, pokud this instance odpovídá danému klíči a subklíči
+            /// </summary>
+            /// <param name="key"></param>
+            /// <param name="subKey"></param>
+            /// <returns></returns>
+            internal bool EqualsKey(string key, string subKey)
+            {
+                return String.Equals(this.Key, key) && String.Equals(this.SubKey, subKey);
+            }
+            /// <summary>
+            /// Vrátí true, pokud this instance obsahuje danou hodnotu
+            /// </summary>
+            /// <param name="value"></param>
+            /// <returns></returns>
+            internal bool EqualsValue(string value)
+            {
+                return String.Equals(this.Value, value);
+            }
+            /// <summary>
+            /// Comparer podle <see cref="Key"/> ASC, <see cref="SubKey"/> ASC
+            /// </summary>
+            /// <param name="a"></param>
+            /// <param name="b"></param>
+            /// <returns></returns>
+            internal static int Comparer(KeyValue a, KeyValue b)
+            {
+                bool an = a is null;
+                bool bn = b is null;
+                if (an && bn) return 0;
+                if (an) return -1;
+                if (bn) return 1;
+                int cmp = String.Compare(a.Key, b.Key);
+                if (cmp == 0) cmp = String.Compare(a.SubKey, b.SubKey);
+                return cmp;
+            }
+            /// <summary>
+            /// Serializovaná hodnota
+            /// </summary>
+            [XmlSerial.PropertyName("Value")]
+            private string Serial
+            {
+                get 
+                {
+                    if (String.IsNullOrEmpty(Key)) return "";
+                    string sub = (SubKey != null) ? "×" + SubKey : "";
+                    string val = (Value != null ? "=" + Value : "");
+                    return $"{Key}{sub}{val}";
+                }
+                set 
+                {
+                    string input = value;
+                    string key = null;
+                    string sub = null;
+                    string val = null;
+                    if (!String.IsNullOrEmpty(input))
+                    {
+                        int idx = input.IndexOf("=");
+                        if (idx > 0)
+                        {
+                            val = input.Substring(idx + 1);
+                            input = input.Substring(0, idx);
+                        }
+
+                        idx = input.IndexOf("×");
+                        if (idx > 0)
+                        {
+                            sub = input.Substring(idx + 1);
+                            input = input.Substring(0, idx);
+                        }
+
+                        key = input;
+                    }
+                    this.__Key = key;
+                    this.__SubKey = sub;
+                    this.__Value = val;
+                }
+            }
+            /// <summary>
+            /// Klíč hodnoty
+            /// </summary>
+            [XmlSerial.PersistingEnabled(false)]
+            public string Key { get { return __Key; } }  private string __Key;
+            /// <summary>
+            /// Subklíč hodnoty
+            /// </summary>
+            [XmlSerial.PersistingEnabled(false)]
+            public string SubKey { get { return __SubKey; } } private string __SubKey;
+            /// <summary>
+            /// Vlastní hodnota
+            /// </summary>
+            [XmlSerial.PersistingEnabled(false)]
+            public string Value { get { return __Value; } } private string __Value;
+        }
+        #endregion
+        #endregion
         #region Provedení změny hodnoty, načtení a ukládání configu do jeho souboru
-
         /// <summary>
         /// Uloží do proměnné hodnotu, a pokud je hodnota změněna, pak zavolá <see cref="Save"/>.
         /// </summary>
@@ -32,12 +274,17 @@ namespace DjSoft.App.iCollect.Application
             bool isEquals = (Object.Equals(variable, value));
             variable = value;
             if (!isEquals)
-            {
-                if (!__IsSuppressSave)
-                    this._Save();
-                else
-                    __ContainChanges = true;
-            }
+                _OnChange();
+        }
+        /// <summary>
+        /// Volá se po změně. Podle hodnoty <see cref="__IsSuppressSave"/>: buď uloží data, nebo poznamená příznak, že obsahuje změny.
+        /// </summary>
+        private void _OnChange()
+        {
+            if (!__IsSuppressSave)
+                this._Save();
+            else
+                __ContainChanges = true;
         }
         /// <summary>
         /// Uloží svoje data do konfigurace
@@ -119,7 +366,7 @@ namespace DjSoft.App.iCollect.Application
         #endregion
     }
 
-    #region class DxStyleToConfigListener : spojovací prvek mezi stylem (skin + paleta) z DevExpress a (abstract) konfigurací
+    #region class DxVisualStyleManager : spojovací prvek mezi stylem (skin + paleta) z DevExpress a konfigurací.
     /// <summary>
     /// <see cref="DxVisualStyleManager"/> : spojovací prvek mezi stylem (skin + paleta) z DevExpress a konfigurací.
     /// </summary>
@@ -162,7 +409,6 @@ namespace DjSoft.App.iCollect.Application
         /// GUI občas pošle událost <see cref="DevExpress.LookAndFeel.UserLookAndFeel.Default.StyleChanged"/> i když k reálné změně nedochází.
         /// </summary>
         private DxVisualStyle __LastVisualStyle;
-
         /// <summary>
         /// Vizuální styl uložený v Configu v <see cref="MainApp.Settings"/>.
         /// <para/>
@@ -349,7 +595,6 @@ namespace DjSoft.App.iCollect.Application
         /// Jméno palety.
         /// </summary>
         public string SkinPaletteName { get; private set; }
-
     }
     #endregion
 }
