@@ -23,6 +23,7 @@ namespace DjSoft.App.iCollect
         {
             Data.ApplicationState.DesktopForm = this;
             this.Text = "Sbíráme...";
+            this.IconOptions.Icon = Properties.Resources.gpe_tetris_48ico;
             this.Size = new System.Drawing.Size(1200, 600);
         }
         protected override void Dispose(bool disposing)
@@ -34,15 +35,20 @@ namespace DjSoft.App.iCollect
         {
             base.OnRibbonPrepare();
 
+            DjRibbon.RibbonStyle = XRibbon.RibbonControlStyle.Office365;
+            DjRibbon.CommandLayout = XRibbon.CommandLayout.Classic;
+
             var pageHome = DjRibbon.AddPage("Home", "Sbírka");
-            var groupHomeLayout = pageHome.AddGroup("HomeLayout", "Zobrazení");
+            var groupHomeLayout = pageHome.AddGroup("ViewType", "Zobrazení");
             groupHomeLayout.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Table", "Tabulka", "Zobrazení", "Tabulka se sloupci a řádky", null);
             groupHomeLayout.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Cards", "Kartotéka", "Zobrazení", "Kartotéka s jednotlivými záznamy", null);
 
-            var groupHomeSchema = pageHome.AddGroup("HomeSchema", "Schema sbírky");
-            groupHomeSchema.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Schema", "Nastavit schema", "Schema", "Zadat evidované prvky", null);
+            var groupHomeSchema = pageHome.AddGroup("Collect", "Správa sbírky");
+            groupHomeSchema.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Select", "Vyber sbírku", "Vyber sbírku", "Zadat evidované prvky", Properties.Resources.applications_office_2_32);
+            groupHomeSchema.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Schema", "Nastavit schema", "Schema", "Zadat evidované prvky", Properties.Resources.applications_office_3_32);
 
-            var groupHomeSetting = pageHome.AddGroup("HomeSetting", "Nastavení");
+            var pageAppl = DjRibbon.AddPage("Appl", "Program");
+            var groupHomeSetting = pageAppl.AddGroup("HomeSetting", "Nastavení");
             groupHomeSetting.AddItem(DComponents.Ribbon.DjRibbonItemType.SkinDropDownButton);
             groupHomeSetting.AddItem(DComponents.Ribbon.DjRibbonItemType.SkinPaletteDropDownButton);
 

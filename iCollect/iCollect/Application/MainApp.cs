@@ -85,6 +85,10 @@ namespace DjSoft.App.iCollect.Application
         /// <summary>Konfigurace aplikace</summary>
         private Settings __Settings;
         /// <summary>
+        /// Aktuální GUI vizuální styl. Vždy je načten z GUI. Setování vepíše hodnoty do GUI a následně vyvolá event o změně a uložení do Configu.
+        /// </summary>
+        public static DxVisualStyle CurrentVisualStyle { get { return _Instance.__DxStyleManager?.CurrentVisualStyle; } set { _Instance.__DxStyleManager.CurrentVisualStyle = value; } }
+        /// <summary>
         /// Načte konfiguraci aplikace
         /// </summary>
         private void _LoadSettings()

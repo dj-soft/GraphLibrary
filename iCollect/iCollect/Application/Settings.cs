@@ -12,7 +12,11 @@ using XmlSerial = DjSoft.App.iCollect.Data.XmlSerializer;
 
 namespace DjSoft.App.iCollect.Application
 {
-    internal class Settings
+    /// <summary>
+    /// Třída poskytuje úložiště konfiguračních hodnot:
+    /// ukládá data o nastavení aplikace za jejího běhu do config souboru na disku, a při dalším startu je ze souboru načte.
+    /// </summary>
+    public class Settings
     {
         #region Public typové hodnoty
         /// <summary>

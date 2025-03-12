@@ -32,6 +32,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>Images\48\gpe-tetris-48.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="DevExpress.BonusSkins.v23.2">
       <HintPath>..\..\..\DevExpressDll\DX23.2\DevExpress.BonusSkins.v23.2.dll</HintPath>
@@ -116,6 +119,47 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="Images\48\gpe-tetris-48.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\48\gpe-tetris-48.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\24\help-about-3-24.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\24\help-contents-24.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\16\arrow-right-2-16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\48\applications-office-2-48.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\48\applications-office-3-48.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\48\applications-office-4-48.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\48\applications-office-48.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\32\applications-office-2-32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\32\applications-office-3-32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\32\applications-office-4-32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\32\applications-office-32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\32\applications-utilities-32.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

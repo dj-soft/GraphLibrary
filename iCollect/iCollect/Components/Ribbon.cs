@@ -12,6 +12,8 @@ using XEditors = DevExpress.XtraEditors;
 using XUtils = DevExpress.Utils;
 
 using DjSoft.App.iCollect.Data;
+using DjSoft.App.iCollect.Properties;
+using DjSoft.App.iCollect.Application;
 
 namespace DjSoft.App.iCollect.Components.Ribbon
 {
@@ -22,6 +24,7 @@ namespace DjSoft.App.iCollect.Components.Ribbon
         {
             _InitializeSystemProperties();
             _InitializeBarManager();
+            _InitializeEvents();
         }
         /// <summary>
         /// Nastaví základní systémové vlastnosti Ribbonu.
@@ -87,6 +90,16 @@ namespace DjSoft.App.iCollect.Components.Ribbon
             barManager.UseAltKeyForMenu = true;
         }
 
+        private void _InitializeEvents()
+        {
+            this.ItemClick += _DjRibbonControl_ItemClick;
+        }
+
+        private void _DjRibbonControl_ItemClick(object sender, XBars.ItemClickEventArgs e)
+        {
+            
+        }
+
         /// <summary>
         /// Projde všechny Itemy v tomto Ribbonu, a pokud mají klávesovou zkratku, pak jí odebere (deaktivuje).<br/>
         /// Účelem je uvolnit veškeré klávesové zkratky (tedy implicitní DevExpress) pro použití z aplikace (tedy Nephrite).<br/>
@@ -144,6 +157,9 @@ namespace DjSoft.App.iCollect.Components.Ribbon
                     var button = new DjRibbonButton();
                     button.Name = name;
                     button.Caption = text;
+                    button.ButtonStyle = XBars.BarButtonStyle.Default;
+                    button.RibbonStyle = XRibbon.RibbonItemStyles.Large;
+                    button.ImageOptions.Image = image;
                     button.SuperTip = DjSuperToolTip.Create(toolTipTitle, toolTipText, text);
                     this.ItemLinks.Add(button);
                     item = button; 
@@ -223,13 +239,20 @@ namespace DjSoft.App.iCollect.Components.Ribbon
             this.Text = toolTipText;
 
             if (hasTitle)
-                this.Items.Add(new XUtils.ToolTipTitleItem() { Text = toolTipTitle });
-
+            {
+                var itemTitle = new XUtils.ToolTipTitleItem() { Text = toolTipTitle };
+                itemTitle.ImageOptions.Image = Resources.arrow_right_2_16;
+                this.Items.Add(itemTitle);
+            }
             if (hasTitle && hasText)
                 this.Items.Add(new XUtils.ToolTipSeparatorItem());
 
             if (hasText)
-                this.Items.Add(new XUtils.ToolTipItem() { Text = toolTipText });
+            {
+                var itemText = new XUtils.ToolTipItem() { Text = toolTipText };
+                // itemText.ImageOptions.Image = Resources.gpe_tetris_48;
+                this.Items.Add(itemText);
+            }
         }
         public string Title { get; private set; }
         public string Text { get; private set; }
