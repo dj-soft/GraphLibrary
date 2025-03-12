@@ -17,7 +17,7 @@ namespace DjSoft.App.iCollect
             // Vytvoří se singleton App;
             // V Sigletonu se zavolá Start;
             // Tím se rozsvítí Main okno aplikace;
-            DjSoft.App.iCollect.Application.App.Start();
+            DjSoft.App.iCollect.Application.MainApp.Start();
         }
     }
 }

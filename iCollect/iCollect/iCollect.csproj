@@ -72,8 +72,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Application\App.cs" />
+    <Compile Include="Application\MainApp.cs" />
     <Compile Include="Application\Settings.cs" />
+    <Compile Include="Application\WinReg.cs" />
     <Compile Include="Components\Ribbon.cs">
       <SubType>Component</SubType>
     </Compile>
