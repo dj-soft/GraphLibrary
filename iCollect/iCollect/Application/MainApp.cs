@@ -11,9 +11,9 @@ namespace DjSoft.App.iCollect.Application
     /// <summary>
     /// Singleton hlavní aplikace
     /// </summary>
-    internal class MainApp
+    internal class MainApp : IMainAppWorking
     {
-        #region Singeton
+        #region Singleton OnDemand
         /// <summary>
         /// Singleton instance
         /// </summary>
@@ -37,6 +37,10 @@ namespace DjSoft.App.iCollect.Application
         }
         private static MainApp __Instance;
         private static object __Locker = new object();
+        /// <summary>
+        /// Pracovní instance
+        /// </summary>
+        public static IMainAppWorking WorkingInstance { get { return _Instance; } }
         #endregion
         #region Inicializace
         private MainApp()
@@ -77,6 +81,14 @@ namespace DjSoft.App.iCollect.Application
         public static MainAppForm MainAppForm { get { return _Instance.__MainAppForm; } }
         private MainAppForm __MainAppForm;
         #endregion
+        #region Události aplikace
+        /// <summary>
+        /// Událost po změně skinu
+        /// </summary>
+        public event EventHandler SkinChanged { add { _Instance.__SkinChanged += value; } remove { _Instance.__SkinChanged -= value; } }
+        private event EventHandler __SkinChanged;
+        void IMainAppWorking.RunSkinChangedEvent() { __SkinChanged?.Invoke(null, EventArgs.Empty); }
+        #endregion
         #region Konfigurace běhu, style manager
         /// <summary>
         /// Konfigurace aplikace
@@ -109,6 +121,7 @@ namespace DjSoft.App.iCollect.Application
         private const string AppCompanyName = "DjSoft";
         private const string AppProductName = "iCollect";
         private const string AppConfigFolder = "Config";
+        private const string AppDataFolder = "Data";
         private const string AppTraceFolder = "Trace";
         private const string AppWinRegWorkingPathName = "WorkingPath";
         /// <summary>
@@ -182,14 +195,32 @@ namespace DjSoft.App.iCollect.Application
         }
         private static string __AppTracePath = null;
         /// <summary>
+        /// Adresář pro hlavní datové soubory aplikace, dokumentový, jiný než EXE.  S možností zápisů.
+        /// Typicky "c:\Users\Public\Documents\Asseco Solutions\ArchivingUtility\Trace" 
+        /// Existenci je nutno zajistit externě, např. <see cref="PrepareAppPath(string)"/>.
+        /// </summary>
+        public static string AppDataPath
+        {
+            get
+            {
+                if (__AppDataPath is null)
+                {
+                    string appDataPath = "";
+                    string appDataPath1 = AppWorkingPath;
+                    if (!String.IsNullOrEmpty(appDataPath1))
+                        appDataPath = System.IO.Path.Combine(appDataPath1, AppDataFolder);
+                    __AppDataPath = appDataPath;
+                }
+                return __AppDataPath;
+            }
+        }
+        private static string __AppDataPath = null;
+        /// <summary>
         /// Adresář ve Windows registru pro <c>CurrentUser/Software/Company/Product/Config</c>
         /// </summary>
         public static WinRegFolder AppWinRegUserAppFolder
         {
-            get
-            {
-                return WinRegFolder.CreateForProcessView(Microsoft.Win32.RegistryHive.CurrentUser, $"Software\\{AppCompanyName}\\{AppProductName}\\{AppConfigFolder}");
-            }
+            get { return WinRegFolder.CreateForProcessView(Microsoft.Win32.RegistryHive.CurrentUser, $"Software\\{AppCompanyName}\\{AppProductName}\\{AppConfigFolder}"); }
         }
         /// <summary>
         /// Metoda připraví trace adresář (jméno, existenci, vyčištění) a vrátí jméno souboru s daným prefixem v tomto adresáři.
@@ -417,5 +448,9 @@ namespace DjSoft.App.iCollect.Application
 
         }
         #endregion    }
+    }
+    internal interface IMainAppWorking
+    {
+        void RunSkinChangedEvent();
     }
 }

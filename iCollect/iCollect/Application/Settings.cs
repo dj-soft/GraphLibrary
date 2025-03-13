@@ -110,10 +110,6 @@ namespace DjSoft.App.iCollect.Application
         public class KeyValue
         {
             /// <summary>
-            /// Pro deserializaci
-            /// </summary>
-            private KeyValue() { }
-            /// <summary>
             /// Konstruktor
             /// </summary>
             /// <param name="key"></param>
@@ -125,6 +121,10 @@ namespace DjSoft.App.iCollect.Application
                 this.__SubKey = CheckSubKey(subKey);
                 this.__Value = CheckValue(value);
             }
+            /// <summary>
+            /// Pro persistor
+            /// </summary>
+            private KeyValue() { }
             /// <summary>
             /// Vizualizace
             /// </summary>
@@ -145,8 +145,8 @@ namespace DjSoft.App.iCollect.Application
                     throw new ArgumentException($"Konfigurační klíč '{key}' nesmí být null !");
                 if (String.IsNullOrEmpty(key))
                     throw new ArgumentException($"Konfigurační klíč '{key}' nesmí být prázdný !");
-                if (key != null && (key.Contains("×") || key.Contains("=")))
-                    throw new ArgumentException($"Konfigurační klíč '{key}' nesmí obsahovat znaky '×' ani '=' !");
+                if (key != null && (key.Contains(DelimiterSubKey) || key.Contains(DelimiterValue)))
+                    throw new ArgumentException($"Konfigurační klíč '{key}' nesmí obsahovat znaky '{DelimiterSubKey}' ani '{DelimiterValue}' !");
                 return key;
             }
             /// <summary>
@@ -157,8 +157,8 @@ namespace DjSoft.App.iCollect.Application
             /// <exception cref="ArgumentException"></exception>
             internal static string CheckSubKey(string subKey)
             {
-                if (subKey != null && (subKey.Contains("×") || subKey.Contains("=")))
-                    throw new ArgumentException($"Konfigurační subklíč '{subKey}' nesmí obsahovat znaky '×' ani '=' !");
+                if (subKey != null && (subKey.Contains(DelimiterSubKey) || subKey.Contains(DelimiterValue)))
+                    throw new ArgumentException($"Konfigurační subklíč '{subKey}' nesmí obsahovat znaky '{DelimiterSubKey}' ani '{DelimiterValue}' !");
                 return subKey;
             }
             /// <summary>
@@ -215,8 +215,8 @@ namespace DjSoft.App.iCollect.Application
                 get 
                 {
                     if (String.IsNullOrEmpty(Key)) return "";
-                    string sub = (SubKey != null) ? "×" + SubKey : "";
-                    string val = (Value != null ? "=" + Value : "");
+                    string sub = (SubKey != null) ? DelimiterSubKey + SubKey : "";
+                    string val = (Value != null ? DelimiterValue + Value : "");
                     return $"{Key}{sub}{val}";
                 }
                 set 
@@ -227,14 +227,14 @@ namespace DjSoft.App.iCollect.Application
                     string val = null;
                     if (!String.IsNullOrEmpty(input))
                     {
-                        int idx = input.IndexOf("=");
+                        int idx = input.IndexOf(DelimiterValue);
                         if (idx > 0)
                         {
                             val = input.Substring(idx + 1);
                             input = input.Substring(0, idx);
                         }
 
-                        idx = input.IndexOf("×");
+                        idx = input.IndexOf(DelimiterSubKey);
                         if (idx > 0)
                         {
                             sub = input.Substring(idx + 1);
@@ -248,6 +248,14 @@ namespace DjSoft.App.iCollect.Application
                     this.__Value = val;
                 }
             }
+            /// <summary>
+            /// Oddělovač mezi Key a SubKey
+            /// </summary>
+            private const string DelimiterSubKey = "×";
+            /// <summary>
+            /// Oddělovač mezi SubKey a Value
+            /// </summary>
+            private const string DelimiterValue = "=";
             /// <summary>
             /// Klíč hodnoty
             /// </summary>
@@ -501,12 +509,15 @@ namespace DjSoft.App.iCollect.Application
         /// </summary>
         private void OnStyleChanged()
         {
-            if (__IsInitialized && !__IsSupressEvent)
+            var currentStyle = this.CurrentVisualStyle;
+            var lastStyle = this.__LastVisualStyle;
+            bool isChange = !DxVisualStyle.IsEquals(currentStyle, lastStyle);
+            if (isChange)
             {
-                var currentStyle = this.CurrentVisualStyle;
-                var lastStyle = this.__LastVisualStyle;
-                if (!DxVisualStyle.IsEquals(currentStyle, lastStyle))
+                if (__IsInitialized && !__IsSupressEvent)
                     this._ConfigVisualStyle = currentStyle;
+
+                MainApp.WorkingInstance.RunSkinChangedEvent();
             }
         }
     }
@@ -588,16 +599,71 @@ namespace DjSoft.App.iCollect.Application
             }
         }
         /// <summary>
+        /// Serializovaná hodnota
+        /// </summary>
+        [XmlSerial.PropertyName("Value")]
+        private string Serial
+        {
+            get
+            {
+                string skinName = SkinName;
+                if (String.IsNullOrEmpty(skinName)) return "";
+                string skinCompact = (SkinCompact ? DelimiterCompact + TokenCompact : "");
+                string skinPaletteName = (!String.IsNullOrEmpty(SkinPaletteName) ? DelimiterPalette + SkinPaletteName : "");
+                return $"{skinName}{skinCompact}{skinPaletteName}";
+            }
+            set
+            {
+                string input = value;
+                string skinName = null;
+                string skinCompact = null;
+                string skinPaletteName = null;
+                if (!String.IsNullOrEmpty(input))
+                {
+                    int idx = input.IndexOf(DelimiterPalette);
+                    if (idx > 0)
+                    {
+                        skinPaletteName = input.Substring(idx + 1);
+                        input = input.Substring(0, idx);
+                    }
+
+                    idx = input.IndexOf(DelimiterCompact);
+                    if (idx > 0)
+                    {
+                        skinCompact = input.Substring(idx + 1);
+                        input = input.Substring(0, idx);
+                    }
+
+                    skinName = input;
+                }
+                this.SkinName = skinName;
+                this.SkinCompact = String.Equals(skinCompact, TokenCompact);
+                this.SkinPaletteName = skinPaletteName;
+            }
+        }
+        /// <summary>
+        /// Oddělovač mezi SkinName a SkinCompact
+        /// </summary>
+        private const string DelimiterCompact = "«";
+        /// <summary>
+        /// Oddělovač mezi SkinCompact a SkinPaletteName
+        /// </summary>
+        private const string DelimiterPalette = "»";
+        private const string TokenCompact = "Compact";
+        /// <summary>
         /// Jméno Skinu.
         /// </summary>
+        [XmlSerial.PersistingEnabled(false)]
         public string SkinName { get; private set; }
         /// <summary>
         /// Příznak kompaktního Skinu.
         /// </summary>
+        [XmlSerial.PersistingEnabled(false)]
         public bool SkinCompact { get; private set; }
         /// <summary>
         /// Jméno palety.
         /// </summary>
+        [XmlSerial.PersistingEnabled(false)]
         public string SkinPaletteName { get; private set; }
     }
     #endregion

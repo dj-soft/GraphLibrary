@@ -24,6 +24,7 @@ namespace DjSoft.App.iCollect.Components.Ribbon
         {
             _InitializeSystemProperties();
             _InitializeBarManager();
+            _InitializeCustomize();
             _InitializeEvents();
         }
         /// <summary>
@@ -89,7 +90,16 @@ namespace DjSoft.App.iCollect.Components.Ribbon
 
             barManager.UseAltKeyForMenu = true;
         }
-
+        /// <summary>
+        /// Nastaví další customizaci Ribbonu
+        /// </summary>
+        private void _InitializeCustomize()
+        {
+            this.EmptyAreaImageOptions.Image = Properties.Resources.gpe_tetris_48;
+        }
+        /// <summary>
+        /// Nastavení evntů
+        /// </summary>
         private void _InitializeEvents()
         {
             this.ItemClick += _DjRibbonControl_ItemClick;
@@ -107,9 +117,12 @@ namespace DjSoft.App.iCollect.Components.Ribbon
         /// Volá se při inicializaci Ribbonu.
         /// </summary>
         protected void RemoveItemsShortcuts()
-        {   // DAJ 0076218 9.7.2024
+        {
+            this.Items.Clear();
+
             foreach (XBars.BarItem item in this.Items)
             {
+                item.Visibility = XBars.BarItemVisibility.Never;
                 if (item.ItemShortcut != null && item.ItemShortcut.IsExist)
                     item.ItemShortcut = null;
             }
@@ -148,7 +161,7 @@ namespace DjSoft.App.iCollect.Components.Ribbon
         {
             return AddItem(itemType, null, null, null, null, null);
         }
-        public IDjRibbonItem AddItem(DjRibbonItemType itemType, string name, string text, string toolTipTitle, string toolTipText, Image image)
+        public IDjRibbonItem AddItem(DjRibbonItemType itemType, string name, string text, string toolTipTitle, string toolTipText, Image image, Action<IDjRibbonItem> initializer = null)
         {
             IDjRibbonItem item = null;
             switch (itemType)
@@ -178,12 +191,16 @@ namespace DjSoft.App.iCollect.Components.Ribbon
                     break;
 
             }
+            if (initializer != null && item != null)
+                initializer(item);
             return item;
         }
         public DjRibbonPage DjPage { get; set; }
         public DjRibbonControl DjRibbon { get { return this.DjPage?.DjRibbon; } }
 
     }
+    #region Konkrétní prvky Ribbonu (Buttony atd)
+
     public class DjRibbonButton : XBars.BarButtonItem, IDjRibbonItem
     {
         public DjRibbonButton()
@@ -220,7 +237,11 @@ namespace DjSoft.App.iCollect.Components.Ribbon
         SkinDropDownButton,
         SkinPaletteDropDownButton
     }
-
+    #endregion
+    #region class DjSuperToolTip : ToolTip
+    /// <summary>
+    /// ToolTip pro Ribbon atd
+    /// </summary>
     public class DjSuperToolTip : XUtils.SuperToolTip
     {
         internal static DjSuperToolTip Create(string toolTipTitle, string toolTipText, string itemCaption = null)
@@ -265,11 +286,8 @@ namespace DjSoft.App.iCollect.Components.Ribbon
             return String.Equals(a.Title, b.Title) && String.Equals(a.Text, b.Text);
         }
     }
-
-
-
-
-    #region DxToolTipController
+    #endregion
+    #region class DjToolTipController : ToolTipController s přidanou hodnotou
     /// <summary>
     /// ToolTipController s přidanou hodnotou
     /// </summary>

@@ -17,7 +17,7 @@ using DComponents = DjSoft.App.iCollect.Components;
 
 namespace DjSoft.App.iCollect
 {
-    public class MainAppForm : DComponents.DjTabbedRibbonForm
+    public class MainAppForm : DComponents.DjMainPanelRibbonForm
     {
         public MainAppForm()
         {
@@ -43,6 +43,8 @@ namespace DjSoft.App.iCollect
             groupHomeLayout.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Table", "Tabulka", "Zobrazení", "Tabulka se sloupci a řádky", null);
             groupHomeLayout.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Cards", "Kartotéka", "Zobrazení", "Kartotéka s jednotlivými záznamy", null);
 
+            var collections = DjSoft.App.iCollect.Collect.CollectionSet.Collections;
+
             var groupHomeSchema = pageHome.AddGroup("Collect", "Správa sbírky");
             groupHomeSchema.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Select", "Vyber sbírku", "Vyber sbírku", "Zadat evidované prvky", Properties.Resources.applications_office_2_32);
             groupHomeSchema.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Schema", "Nastavit schema", "Schema", "Zadat evidované prvky", Properties.Resources.applications_office_3_32);
@@ -61,7 +63,9 @@ namespace DjSoft.App.iCollect
 
             __Grid = new DevExpress.XtraGrid.GridControl() { Dock = DockStyle.Fill };
             __CardView = new DevExpress.XtraGrid.Views.Card.CardView(__Grid);
+            __CardView.OptionsView.ShowQuickCustomizeButton = false;
             __Grid.MainView = __CardView;
+            
             MainPanel.Controls.Add(__Grid);
 
             __GridData = new DataTable();
@@ -72,8 +76,17 @@ namespace DjSoft.App.iCollect
             __GridData.Rows.Add(1, "Vanessa Perrin", "Vanessa Perrin in Bloom", "2024 Stilettos");
             __GridData.Rows.Add(2, "Veronique Perrin", "Veronique Perrin On the rise", "2020 W Club exclusive");
             __GridData.Rows.Add(3, "Navia Phan", "Coming Out Navia Phan", "2021 Lotery");
+            __GridData.Rows.Add(4, "Navia Phan", "Coming Out Navia Phan", "2021 Lotery");
+            __GridData.Rows.Add(3, "Navia Phan", "Coming Out Navia Phan", "2021 Lotery");
 
             __Grid.DataSource = __GridData;
+
+            __CardView.OptionsFilter.DefaultFilterEditorView = XEditors.FilterEditorViewMode.VisualAndText;
+            __CardView.OptionsFilter.UseNewCustomFilterDialog = true;
+
+            __CardView.CardWidth = 350;
+            __CardView.ShowFindPanel();
+
         }
         private DevExpress.XtraGrid.GridControl __Grid;
         private DevExpress.XtraGrid.Views.Card.CardView __CardView;

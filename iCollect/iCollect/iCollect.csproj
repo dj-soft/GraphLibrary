@@ -78,6 +78,10 @@
     <Compile Include="Application\MainApp.cs" />
     <Compile Include="Application\Settings.cs" />
     <Compile Include="Application\WinReg.cs" />
+    <Compile Include="Collect\Collection.cs" />
+    <Compile Include="Collect\CollectionSet.cs" />
+    <Compile Include="Collect\Definition.cs" />
+    <Compile Include="Collect\Content.cs" />
     <Compile Include="Components\Form.cs">
       <SubType>Form</SubType>
     </Compile>

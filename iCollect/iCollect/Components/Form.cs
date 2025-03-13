@@ -16,32 +16,66 @@ using DjSoft.App.iCollect.Application;
 
 namespace DjSoft.App.iCollect.Components
 {
+    /// <summary>
+    /// Formulář s Ribbonem a StatusBarem, a s TabDocument organizérem
+    /// </summary>
     public class DjTabbedRibbonForm : DjRibbonForm
     {
+        protected override void OnMainAreaInitialize()
+        {
+        }
     }
-
-    public class DjRibbonForm : XRibbon.RibbonForm, IFormStatusWorking
+    /// <summary>
+    /// Formulář s Ribbonem a StatusBarem, a s jedním Main panelem
+    /// </summary>
+    public class DjMainPanelRibbonForm : DjRibbonForm
     {
-        #region Windows Form Designer generated code
+        #region MainPanel
+        protected override void OnMainAreaInitialize()
+        {
+            __MainPanel = new XEditors.PanelControl() { Dock = DockStyle.Fill, BackColor = Color.LightBlue, BorderStyle = XEditors.Controls.BorderStyles.Office2003 };
+            this.Controls.Add(__MainPanel);
+        }
+        public XEditors.PanelControl MainPanel { get { return __MainPanel; } }
+        private XEditors.PanelControl __MainPanel;
+        #endregion
+    }
+    /// <summary>
+    /// Abstraktní třída obsahující Ribbon a StatusBar, její potomci doplní Main content.
+    /// </summary>
+    public abstract class DjRibbonForm : XRibbon.RibbonForm, IFormStatusWorking
+    {
+        #region Inicializace
         public DjRibbonForm()
         {
-            InitializeComponent();
+            this.ComponentInitialize();
+            this.FormStateInitialize();
+            this.OnMainAreaInitialize();
+            this.RibbonInitialize();
+            this.StatusInitialize();
+            this.OnRibbonPrepare();
+            this.OnStatusPrepare();
+            this.OnContentPrepare();
         }
         /// <summary>
         /// Required method for Designer support - do not modify
         /// the contents of this method with the code editor.
         /// </summary>
-        private void InitializeComponent()
+        private void ComponentInitialize()
         {
             this.components = new System.ComponentModel.Container();
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-
-            this._FormStatusInit();
-            this._MainPanelPrepare();
-            this._RibbonPrepare();
-            this._StatusPrepare();
-            this.OnContentPrepare();
         }
+        /// <summary>
+        /// Zde si potomek vytvoří svůj MainControl (panel nebo TabView) a vloží jej do Controls.
+        /// Volá se před vytvořením Ribbonu a StatusBaru, tak aby Main control byl umístěn v ZOrder vespodu a správně tak obsadil prostor spolu s Ribbonem a StatusBarem.
+        /// Tato metoda nemá vytvářet obsah do hlavního prostoru (jednotlivé prvky), ale jen hlavní container (Panel, TabView).
+        /// </summary>
+        protected abstract void OnMainAreaInitialize();
+        /// <summary>
+        /// Zde potomek naplní hlavní prostor potřebnými prvky. Volá se po vytvoření všech základních controlů a po naplnění Ribbonu a StatusBaru.
+        /// </summary>
+        protected virtual void OnContentPrepare() { }
         /// <summary>
         /// Clean up any resources being used.
         /// </summary>
@@ -58,6 +92,144 @@ namespace DjSoft.App.iCollect.Components
         /// Required designer variable.
         /// </summary>
         private System.ComponentModel.IContainer components = null;
+        #endregion
+        #region FormStatus (stav okna a ukládání pozice), support
+        /// <summary>
+        /// Umístí toto okno do viditelných souřadnic monitorů.
+        /// Pokud je parametr <paramref name="force"/> = false (default), 
+        /// pak to provádí jen když pozice okna <see cref="Form.StartPosition"/> je <see cref="FormStartPosition.Manual"/>.
+        /// Pokud parametr <paramref name="force"/> = true, provede to vždy.
+        /// </summary>
+        /// <param name="force"></param>
+        public void MoveToVisibleScreen(bool force = false)
+        {
+            __FormState.MoveToVisibleScreen(force);
+        }
+        /// <summary>
+        /// Pozice okna byla nastavena v jeho konstruktoru z dat načtených z konfigurace. Bounds ani WindowState ani StartPosition by neměly být měněny.
+        /// </summary>
+        public bool PositionIsFromConfig { get { return __FormState.PositionIsFromConfig; } }
+        /// <summary>
+        /// Inicializace dat pro detekci stavu
+        /// </summary>
+        protected virtual void FormStateInitialize()
+        {
+            __FormState = new FormStateInfo(this);                 // Konstruktor si zaregistruje svoje eventhandlery, uloží si WeakReferenci, a zajistí i uvolnění v eventu Disposed
+        }
+        private FormStateInfo __FormState;
+        /// <summary>
+        /// Stav aktivity okna. Při změně je volána událost <see cref="ActivityStateChanged"/>.
+        /// </summary>
+        public WindowActivityState ActivityState
+        {
+            get { return __FormState.ActivityState; }
+            private set { __FormState.ActivityState = value; }      // Formulář smí měnit svůj stav, když ví jak
+        }
+        /// <summary>
+        /// Provede akce jako po prvním Show
+        /// </summary>
+        protected void RunShow()
+        {
+            this.OnShown(EventArgs.Empty);
+        }
+        /// <summary>
+        /// Metoda proběhne při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnActivityStateChanged(TEventValueChangedArgs<WindowActivityState> args) { }
+        /// <summary>
+        /// Událost volaná při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
+        /// </summary>
+        public event EventHandler<TEventValueChangedArgs<WindowActivityState>> ActivityStateChanged;
+        /// <summary>
+        /// Jméno konfigurace v subsystému AsolDX.
+        /// Pokud bude zde vráceno neprázdné jméno, pak načtení a uložení konfigurace okna zajistí sama třída, která implementuje <see cref="IFormStatusWorking"/>.
+        /// Pokud nebude vráceno jméno, budou používány metody <see cref="DxStdForm.PositionLoadFromConfig(string)"/> a <see cref="DxStdForm.PositionSaveToConfig(string, string)"/>.
+        /// </summary>
+        protected virtual string PositionConfigName { get { return null; } }
+        /// <summary>
+        /// Pokusí se z konfigurace najít a načíst string popisující pozici okna.
+        /// Dostává k dispozici nameSuffix, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory.
+        /// <para/>
+        /// <b><u>Aplikační kód tedy:</u></b><br/>
+        /// 1. Získá vlastní jméno položky konfigurace pro svoje konkrétní okno (např. typ okna).<br/>
+        /// 2. Za toto jméno přidá suffix (začíná podtržítkem a obsahuje XML validní znaky) a vyhledá konfiguraci se suffixem.<br/>
+        /// 3. Pokud nenajde konfiguraci se suffixem, vyhledá konfiguraci bez suffixu = obecná, posledně použití (viz <see cref="PositionSaveToConfig(string, string)"/>).<br/>
+        /// 4. Nalezený string je ten, který byl uložen v metodě <see cref="PositionSaveToConfig(string, string)"/> a je roven parametru 'positionData'. Pokud položku v konfiguraci nenajde, vrátí null (nebo prázdný string).
+        /// <para/>
+        /// Tato technika zajistí, že pro různé konfigurace monitorů (např. při práci na více monitorech a poté přechodu na RDP s jedním monitorem, atd) budou uchovány konfigurace odděleně.
+        /// <para/>
+        /// Konverze formátů: Pokud v konfiguraci budou uložena stringová data ve starším formátu, než dokáže obsloužit zpracující třída <see cref="FormStateInfo"/>, pak konverzi do jejího formátu musí zajistit aplikační kód (protože on ví, jak zpracovat starý formát).<br/>
+        /// <b><u>Postup:</u></b><br/>
+        /// 1. Po načtení konfigurace se lze dotázat metodou <see cref="FormStateInfo.IsPositionDataValid(string)"/>, zda načtená data jsou validní.<br/>
+        /// 2. Pokud nejsou validní, pak je volající aplikace zkusí analyzovat svým starším (legacy) postupem na prvočinitele;<br/>
+        /// 3. A pokud je úspěšně rozpoznala, pak ze základních dat sestaví validní konfirurační string s pomocí metody <see cref="FormStateInfo.CreatePositionData(bool?, FormWindowState?, Rectangle?, Rectangle?)"/>.<br/>
+        /// </summary>
+        /// <param name="nameSuffix">Suffix ke jménu konfigurace, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory</param>
+        /// <returns></returns>
+        protected virtual string PositionLoadFromConfig(string nameSuffix) { return null; }
+        /// <summary>
+        /// Do konfigurace uloží dodaná data o pozici okna '<paramref name="positionData"/>'.
+        /// Dostává k dispozici nameSuffix, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory.
+        /// <para/>
+        /// <b><u>Aplikační kód tedy:</u></b><br/>
+        /// 1. Získá vlastní jméno položky konfigurace pro svoje konkrétní okno (např. typ okna).<br/>
+        /// 2. Jednak uloží data <paramref name="positionData"/> přímo do položky konfigurace pod svým vlastním jménem bez suffixu = data obecná pro libovolnou konfiguraci monitorů.<br/>
+        /// 3. A dále uloží tato data do položky konfigurace, kde za svoje jméno přidá dodaný suffix <paramref name="nameSuffix"/> = tato hodnota se použije po restore na shodné konfiguraci monitorů.<br/>
+        /// <para/>
+        /// Tato technika zajistí, že pro různé konfigurace monitorů (např. při práci na více monitorech a poté přechodu na RDP s jedním monitorem, atd) budou uchovány konfigurace odděleně.
+        /// </summary>
+        /// <param name="positionData"></param>
+        /// <param name="nameSuffix"></param>
+        protected virtual void PositionSaveToConfig(string positionData, string nameSuffix) { }
+
+        string IFormStatusWorking.PositionConfigName { get { return PositionConfigName; } }
+        bool IFormStatusWorking.PositionIsFromConfig { get { return PositionIsFromConfig; } }
+        bool? IFormStatusWorking.ConfigIsMdiChild { get { return __FormState.ConfigIsMdiChild; } }
+        string IFormStatusWorking.PositionLoadFromConfig(string nameSuffix) { return PositionLoadFromConfig(nameSuffix); }
+        void IFormStatusWorking.PositionSaveToConfig(string positionData, string nameSuffix) { PositionSaveToConfig(positionData, nameSuffix); }
+        bool IFormStatusWorking.WasShown { get { return __WasShown; } }
+        void IFormStatusWorking.RunShow() { this.RunShow(); }
+        void IFormStatusWorking.RunActivityStateChanged(TEventValueChangedArgs<WindowActivityState> args)
+        {
+            OnActivityStateChanged(args);
+            ActivityStateChanged?.Invoke(this, args);
+        }
+        #endregion
+        #region Ribbon
+        private void RibbonInitialize()
+        {
+            __DjRibbon = new DComponents.Ribbon.DjRibbonControl();
+            this.Controls.Add(__DjRibbon);
+        }
+        /// <summary>
+        /// Potomek zde může naplnit prvky do Ribbonu <see cref="DjRibbonForm.DjRibbon"/>
+        /// </summary>
+        protected virtual void OnRibbonPrepare() { }
+        /// <summary>
+        /// Ribbon
+        /// </summary>
+        public DComponents.Ribbon.DjRibbonControl DjRibbon { get { return __DjRibbon; } }
+        private DComponents.Ribbon.DjRibbonControl __DjRibbon;
+        #endregion
+        #region Status
+        /// <summary>
+        /// Připraví StatusBar
+        /// </summary>
+        private void StatusInitialize()
+        {
+            __DjStatus = new Ribbon.DjStatusControl() { Ribbon = __DjRibbon };
+             this.Controls.Add(__DjStatus);
+        }
+        /// <summary>
+        /// Potomek zde může naplnit prvky do Statusbaru <see cref="DjRibbonForm.DjStatus"/>
+        /// </summary>
+        protected virtual void OnStatusPrepare() { }
+        /// <summary>
+        /// Status
+        /// </summary>
+        public DComponents.Ribbon.DjStatusControl DjStatus { get { return __DjStatus; } }
+        private DComponents.Ribbon.DjStatusControl __DjStatus;
         #endregion
         #region Show
         /// <summary>
@@ -131,147 +303,12 @@ namespace DjSoft.App.iCollect.Components
         /// </summary>
         public int CurrentDpi { get { return this.DeviceDpi; } }
         #endregion
-        #region Ribbon
-        private void _RibbonPrepare()
-        {
-            __DjRibbon = new DComponents.Ribbon.DjRibbonControl();
-            OnRibbonPrepare();
-            this.Controls.Add(__DjRibbon);
-        }
-        protected virtual void OnRibbonPrepare() { }
-        public DComponents.Ribbon.DjRibbonControl DjRibbon { get { return __DjRibbon; } }
-        private DComponents.Ribbon.DjRibbonControl __DjRibbon;
-        #endregion
-        #region MainPanel
-        private void _MainPanelPrepare()
-        {
-            __MainPanel = new XEditors.PanelControl() { Dock = DockStyle.Fill, BackColor = Color.LightBlue, BorderStyle = XEditors.Controls.BorderStyles.Office2003 };
-            this.Controls.Add(__MainPanel);
-        }
-        protected virtual void OnContentPrepare() { }
-        public XEditors.PanelControl MainPanel { get { return __MainPanel; } }
-        private XEditors.PanelControl __MainPanel;
-        #endregion
-        #region Status
-        private void _StatusPrepare()
-        {
-            __Status = new Ribbon.DjStatusControl() { Ribbon = __DjRibbon };
-            OnStatusPrepare();
-            this.Controls.Add(__Status);
-        }
-        protected virtual void OnStatusPrepare() { }
-        private DComponents.Ribbon.DjStatusControl __Status;
-        #endregion
-        #region FormStatus (stav okna a ukládání pozice), support
-        /// <summary>
-        /// Umístí toto okno do viditelných souřadnic monitorů.
-        /// Pokud je parametr <paramref name="force"/> = false (default), 
-        /// pak to provádí jen když pozice okna <see cref="Form.StartPosition"/> je <see cref="FormStartPosition.Manual"/>.
-        /// Pokud parametr <paramref name="force"/> = true, provede to vždy.
-        /// </summary>
-        /// <param name="force"></param>
-        public void MoveToVisibleScreen(bool force = false)
-        {
-            __FormStatus.MoveToVisibleScreen(force);
-        }
-        /// <summary>
-        /// Pozice okna byla nastavena v jeho konstruktoru z dat načtených z konfigurace. Bounds ani WindowState ani StartPosition by neměly být měněny.
-        /// </summary>
-        public bool PositionIsFromConfig { get { return __FormStatus.PositionIsFromConfig; } }
-        /// <summary>
-        /// Inicializace dat pro detekci stavu
-        /// </summary>
-        private void _FormStatusInit()
-        {
-            __FormStatus = new FormStatusInfo(this);                 // Konstruktor si zaregistruje svoje eventhandlery, uloží si WeakReferenci, a zajistí i uvolnění v eventu Disposed
-        }
-        private FormStatusInfo __FormStatus;
-        /// <summary>
-        /// Stav aktivity okna. Při změně je volána událost <see cref="ActivityStateChanged"/>.
-        /// </summary>
-        public WindowActivityState ActivityState
-        {
-            get { return __FormStatus.ActivityState; }
-            private set { __FormStatus.ActivityState = value; }      // Formulář smí měnit svůj stav, když ví jak
-        }
-        /// <summary>
-        /// Provede akce jako po prvním Show
-        /// </summary>
-        protected void RunShow()
-        {
-            this.OnShown(EventArgs.Empty);
-        }
-        /// <summary>
-        /// Metoda proběhne při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
-        /// </summary>
-        /// <param name="args"></param>
-        protected virtual void OnActivityStateChanged(TEventValueChangedArgs<WindowActivityState> args) { }
-        /// <summary>
-        /// Událost volaná při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
-        /// </summary>
-        public event EventHandler<TEventValueChangedArgs<WindowActivityState>> ActivityStateChanged;
-
-        /// <summary>
-        /// Jméno konfigurace v subsystému AsolDX.
-        /// Pokud bude zde vráceno neprázdné jméno, pak načtení a uložení konfigurace okna zajistí sama třída, která implementuje <see cref="IFormStatusWorking"/>.
-        /// Pokud nebude vráceno jméno, budou používány metody <see cref="DxStdForm.PositionLoadFromConfig(string)"/> a <see cref="DxStdForm.PositionSaveToConfig(string, string)"/>.
-        /// </summary>
-        protected virtual string PositionConfigName { get { return null; } }
-        /// <summary>
-        /// Pokusí se z konfigurace najít a načíst string popisující pozici okna.
-        /// Dostává k dispozici nameSuffix, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory.
-        /// <para/>
-        /// <b><u>Aplikační kód tedy:</u></b><br/>
-        /// 1. Získá vlastní jméno položky konfigurace pro svoje konkrétní okno (např. typ okna).<br/>
-        /// 2. Za toto jméno přidá suffix (začíná podtržítkem a obsahuje XML validní znaky) a vyhledá konfiguraci se suffixem.<br/>
-        /// 3. Pokud nenajde konfiguraci se suffixem, vyhledá konfiguraci bez suffixu = obecná, posledně použití (viz <see cref="PositionSaveToConfig(string, string)"/>).<br/>
-        /// 4. Nalezený string je ten, který byl uložen v metodě <see cref="PositionSaveToConfig(string, string)"/> a je roven parametru 'positionData'. Pokud položku v konfiguraci nenajde, vrátí null (nebo prázdný string).
-        /// <para/>
-        /// Tato technika zajistí, že pro různé konfigurace monitorů (např. při práci na více monitorech a poté přechodu na RDP s jedním monitorem, atd) budou uchovány konfigurace odděleně.
-        /// <para/>
-        /// Konverze formátů: Pokud v konfiguraci budou uložena stringová data ve starším formátu, než dokáže obsloužit zpracující třída <see cref="FormStatusInfo"/>, pak konverzi do jejího formátu musí zajistit aplikační kód (protože on ví, jak zpracovat starý formát).<br/>
-        /// <b><u>Postup:</u></b><br/>
-        /// 1. Po načtení konfigurace se lze dotázat metodou <see cref="FormStatusInfo.IsPositionDataValid(string)"/>, zda načtená data jsou validní.<br/>
-        /// 2. Pokud nejsou validní, pak je volající aplikace zkusí analyzovat svým starším (legacy) postupem na prvočinitele;<br/>
-        /// 3. A pokud je úspěšně rozpoznala, pak ze základních dat sestaví validní konfirurační string s pomocí metody <see cref="FormStatusInfo.CreatePositionData(bool?, FormWindowState?, Rectangle?, Rectangle?)"/>.<br/>
-        /// </summary>
-        /// <param name="nameSuffix">Suffix ke jménu konfigurace, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory</param>
-        /// <returns></returns>
-        protected virtual string PositionLoadFromConfig(string nameSuffix) { return null; }
-        /// <summary>
-        /// Do konfigurace uloží dodaná data o pozici okna '<paramref name="positionData"/>'.
-        /// Dostává k dispozici nameSuffix, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory.
-        /// <para/>
-        /// <b><u>Aplikační kód tedy:</u></b><br/>
-        /// 1. Získá vlastní jméno položky konfigurace pro svoje konkrétní okno (např. typ okna).<br/>
-        /// 2. Jednak uloží data <paramref name="positionData"/> přímo do položky konfigurace pod svým vlastním jménem bez suffixu = data obecná pro libovolnou konfiguraci monitorů.<br/>
-        /// 3. A dále uloží tato data do položky konfigurace, kde za svoje jméno přidá dodaný suffix <paramref name="nameSuffix"/> = tato hodnota se použije po restore na shodné konfiguraci monitorů.<br/>
-        /// <para/>
-        /// Tato technika zajistí, že pro různé konfigurace monitorů (např. při práci na více monitorech a poté přechodu na RDP s jedním monitorem, atd) budou uchovány konfigurace odděleně.
-        /// </summary>
-        /// <param name="positionData"></param>
-        /// <param name="nameSuffix"></param>
-        protected virtual void PositionSaveToConfig(string positionData, string nameSuffix) { }
-
-        string IFormStatusWorking.PositionConfigName { get { return PositionConfigName; } }
-        bool IFormStatusWorking.PositionIsFromConfig { get { return PositionIsFromConfig; } }
-        bool? IFormStatusWorking.ConfigIsMdiChild { get { return __FormStatus.ConfigIsMdiChild; } }
-        string IFormStatusWorking.PositionLoadFromConfig(string nameSuffix) { return PositionLoadFromConfig(nameSuffix); }
-        void IFormStatusWorking.PositionSaveToConfig(string positionData, string nameSuffix) { PositionSaveToConfig(positionData, nameSuffix); }
-        bool IFormStatusWorking.WasShown { get { return __WasShown; } }
-        void IFormStatusWorking.RunShow() { this.RunShow(); }
-        void IFormStatusWorking.RunActivityStateChanged(TEventValueChangedArgs<WindowActivityState> args)
-        {
-            OnActivityStateChanged(args);
-            ActivityStateChanged?.Invoke(this, args);
-        }
-        #endregion
     }
     #region class FormStatusInfo
     /// <summary>
     /// Informace o životním stavu formuláře (proces otevírání, zavírání atd), a o jeho pozici, rozměrech a maximalizaci
     /// </summary>
-    internal class FormStatusInfo
+    internal class FormStateInfo
     {
         #region Konstruktor, Owner, Dispose...
         /// <summary>
@@ -279,7 +316,7 @@ namespace DjSoft.App.iCollect.Components
         /// </summary>
         /// <param name="owner"></param>
         /// <exception cref="ArgumentNullException"></exception>
-        public FormStatusInfo(Form owner)
+        public FormStateInfo(Form owner)
         {
             if (owner is null) throw new ArgumentNullException($"FormStatusInfo(Form owner): 'owner' can not be null.");
 
@@ -805,7 +842,7 @@ namespace DjSoft.App.iCollect.Components
         #endregion
     }
     /// <summary>
-    /// Interface popisující rozšířené pracovní vlastnosti Formulářů pro spolupráci formuláře a <see cref="FormStatusInfo"/>
+    /// Interface popisující rozšířené pracovní vlastnosti Formulářů pro spolupráci formuláře a <see cref="FormStateInfo"/>
     /// </summary>
     internal interface IFormStatusWorking
     {
@@ -849,11 +886,11 @@ namespace DjSoft.App.iCollect.Components
         /// <para/>
         /// Tato technika zajistí, že pro různé konfigurace monitorů (např. při práci na více monitorech a poté přechodu na RDP s jedním monitorem, atd) budou uchovány konfigurace odděleně.
         /// <para/>
-        /// Konverze formátů: Pokud v konfiguraci budou uložena stringová data ve starším formátu, než dokáže obsloužit zpracující třída <see cref="FormStatusInfo"/>, pak konverzi do jejího formátu musí zajistit aplikační kód (protože on ví, jak zpracovat starý formát).<br/>
+        /// Konverze formátů: Pokud v konfiguraci budou uložena stringová data ve starším formátu, než dokáže obsloužit zpracující třída <see cref="FormStateInfo"/>, pak konverzi do jejího formátu musí zajistit aplikační kód (protože on ví, jak zpracovat starý formát).<br/>
         /// <b><u>Postup:</u></b><br/>
-        /// 1. Po načtení konfigurace se lze dotázat metodou <see cref="FormStatusInfo.IsPositionDataValid(string)"/>, zda načtená data jsou validní.<br/>
+        /// 1. Po načtení konfigurace se lze dotázat metodou <see cref="FormStateInfo.IsPositionDataValid(string)"/>, zda načtená data jsou validní.<br/>
         /// 2. Pokud nejsou validní, pak je volající aplikace zkusí analyzovat svým starším (legacy) postupem na prvočinitele;<br/>
-        /// 3. A pokud je úspěšně rozpoznala, pak ze základních dat sestaví validní konfirurační string s pomocí metody <see cref="FormStatusInfo.CreatePositionData(bool?, FormWindowState?, Rectangle?, Rectangle?)"/>.<br/>
+        /// 3. A pokud je úspěšně rozpoznala, pak ze základních dat sestaví validní konfirurační string s pomocí metody <see cref="FormStateInfo.CreatePositionData(bool?, FormWindowState?, Rectangle?, Rectangle?)"/>.<br/>
         /// </summary>
         /// <param name="nameSuffix">Suffix ke jménu konfigurace, který identifikuje aktuální rozložení monitorů, aby bylo možno načíst konfiguraci pro aktuální monitory</param>
         /// <returns></returns>
