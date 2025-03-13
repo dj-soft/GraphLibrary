@@ -26,7 +26,7 @@ namespace DjSoft.App.iCollect.Collect
             get
             {
                 var demo = new Collection();
-
+                demo.Name = "Sbírka knih";
 
                 return demo;
             }
@@ -36,6 +36,7 @@ namespace DjSoft.App.iCollect.Collect
             get
             {
                 var demo = new Collection();
+                demo.Name = "Sbírka filmů";
 
 
                 return demo;
@@ -46,6 +47,7 @@ namespace DjSoft.App.iCollect.Collect
             get
             {
                 var demo = new Collection();
+                demo.Name = "Sbírka Audio CDček";
 
 
                 return demo;
@@ -115,7 +117,10 @@ namespace DjSoft.App.iCollect.Collect
             string content = contentSb.ToString();
             string fileName = this.FileName;
             if (!String.IsNullOrEmpty(fileName))
-                System.IO.File.WriteAllText(fileName, content, Encoding.UTF8);
+            {
+                if (Application.MainApp.TryPrepareAppPathForFile(fileName, true))
+                    System.IO.File.WriteAllText(fileName, content, Encoding.UTF8);
+            }
 
             return content;
         }

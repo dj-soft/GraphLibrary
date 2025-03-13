@@ -67,18 +67,24 @@ namespace DjSoft.App.iCollect.Collect
         private static string[] _CreateTestDataFiles(string dataPath)
         {
             var result = new List<string>();
-            result.Add(createDemo(Collection.DemoCollectionBook, "Book.dat", true));
-            result.Add(createDemo(Collection.DemoCollectionMovie, "Movie.dat", false));
-            result.Add(createDemo(Collection.DemoCollectionAudioCd, "AudioCd.dat", false));
+            result.Add(createDemo("Book.dat", () => Collection.DemoCollectionBook, true));
+            result.Add(createDemo("Movie.dat", () => Collection.DemoCollectionMovie, false));
+            result.Add(createDemo("AudioCd.dat", () => Collection.DemoCollectionAudioCd, false));
             return result.ToArray();
 
-            string createDemo(Collection data, string fileName, bool setAsCurrent)
+            string createDemo(string fileName, Func<Collection> getData, bool setAsCurrent)
             {
-                string fullName = System.IO.Path.Combine(dataPath, "Book.dat");
-                data.FileName = fullName;
-                data.Save();
+                string fullName = System.IO.Path.Combine(dataPath, "Demo", fileName);
+                if (!System.IO.File.Exists(fullName))
+                {
+                    var data = getData();
+                    data.FileName = fullName;
+                    data.Save();
+                }
+
                 if (setAsCurrent)
-                    ActiveCollection = data;
+                    ActiveCollection = Collection.LoadFromFile(fullName, false);
+
                 return fullName;
             }
         }

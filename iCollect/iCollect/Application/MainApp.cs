@@ -244,6 +244,15 @@ namespace DjSoft.App.iCollect.Application
             return fileName;
         }
         /// <summary>
+        /// Ověří, že adresář potřebný pro zadaný soubor existuje, a případně jej i vytvoří.
+        /// </summary>
+        /// <param name="fileName"></param>
+        public static bool TryPrepareAppPathForFile(string fileName, bool testAccess = false)
+        {
+            string path = System.IO.Path.GetDirectoryName(fileName);
+            return _TryPrepareAppPath(path, testAccess);
+        }
+        /// <summary>
         /// Ověří, že daný adresář existuje, a případně jej i vytvoří.
         /// </summary>
         /// <param name="path"></param>
