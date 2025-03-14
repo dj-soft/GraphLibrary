@@ -1424,4 +1424,118 @@ namespace DjSoft.App.iCollect.Data
         static System.Globalization.NumberFormatInfo _Nmfi;
         #endregion
     }
+    /// <summary>
+    /// Konvertor obrázků ikon
+    /// </summary>
+    public static class ImageConvertor
+    {
+        /// <summary>
+        /// Načte zadaný soubor a vytvoří z něj Image.
+        /// Může zajistit zmenšení na zadanou velikost.
+        /// Image poté konvertuje na binární string a ten vrací.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="maxSize"></param>
+        /// <returns></returns>
+        public static string FileToBinary(string fileName, int? maxSize = null)
+        {
+            using (Image image = Bitmap.FromFile(fileName))
+            {
+                return ImageToBinary(image, maxSize);
+            }
+        }
+        /// <summary>
+        /// Konvertuje dodaný Image na binární string.
+        /// Může zajistit zmenšení na zadanou velikost.
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="maxSize"></param>
+        /// <returns></returns>
+        public static string ImageToBinary(Image image, int? maxSize = null)
+        {
+            string binary = null;
+            if (maxSize.HasValue && maxSize.Value >= 8)
+            {
+                var newImage = ScaleImageToSize(image, maxSize.Value, out var isNewImage);
+                binary = ConvertImageToBinary(newImage);
+                if (isNewImage)
+                    // Pokud konvertor změnil velikost, pak nový upravený Image (newImage) dám Dispose nyní:
+                    // Pokud se ale nevytvářel nový Image, pak vstupní Image nebude Disposován zde, ale o jeho Dispose se postará ten, kdo jej vytvořil.
+                    newImage.Dispose();
+            }
+            else
+            {
+                binary = ConvertImageToBinary(image);
+            }
+            return binary;
+        }
+        /// <summary>
+        /// Načte zadaný soubor a vytvoří z něj Image.
+        /// Může zajistit zmenšení na zadanou velikost.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="maxSize"></param>
+        /// <returns></returns>
+        public static Image FileToImage(string fileName, int? maxSize = null)
+        {
+            Image image = Bitmap.FromFile(fileName);
+            if (maxSize.HasValue && maxSize.Value >= 8)
+            {
+                var newImage = ScaleImageToSize(image, maxSize.Value, out var isNewImage);
+                if (isNewImage)
+                {   // Pokud konvertor změnil velikost, pak původní načtený Image dám Dispose a vracím ten upravený:
+                    image.Dispose();
+                    return newImage;
+                }
+            }
+            return image;
+        }
+        /// <summary>
+        /// Z binárního stringu vrátí Image
+        /// </summary>
+        /// <param name="binary"></param>
+        /// <returns></returns>
+        public static Image ConvertBinaryToImage(string binary)
+        {
+            var buffer = System.Convert.FromBase64String(binary);
+            using (var memoryStream = new System.IO.MemoryStream(buffer))
+            {
+                return Bitmap.FromStream(memoryStream);
+            }
+        }
+        /// <summary>
+        /// Vrátí serializovatelný string, obsahující dodaný Image.
+        /// Tato metoda neprovádí žádné změny dodaného Image. Ukládá formát PNG.
+        /// </summary>
+        /// <param name="image"></param>
+        /// <returns></returns>
+        public static string ConvertImageToBinary(Image image)
+        {
+            using (var memoryStream = new System.IO.MemoryStream())
+            {
+                image.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
+                var buffer = memoryStream.ToArray();
+                return System.Convert.ToBase64String(buffer);
+            }
+        }
+        /// <summary>
+        /// Umožní upravit velikost dodané Image na zadanou maximální. Na výstupu informuje, že došlo k reálné výměně image (to pokud out <paramref name="isNewImage"/> je true).
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="maxSize"></param>
+        /// <param name="isNewImage"></param>
+        /// <returns></returns>
+        public static Image ScaleImageToSize(Image image, int maxSize, out bool isNewImage)
+        {
+            isNewImage = false;
+            var imageSize = image.Size;
+            int currentSize = (imageSize.Width > imageSize.Height ? imageSize.Width : imageSize.Height);     // Větší hodnota z Width | Height
+            if (currentSize <= maxSize) return image;                                                        // Aktuální rozměr Image je menší než požadovaný => nebudu Image měnit
+
+            isNewImage = true;
+            var scaleSize = imageSize.ZoomToTarget(maxSize);
+            var newImage = new Bitmap(image, scaleSize);
+            return newImage;
+        }
+    }
 }

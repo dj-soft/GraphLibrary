@@ -14,6 +14,7 @@ using XRibbon = DevExpress.XtraBars.Ribbon;
 using XEditors = DevExpress.XtraEditors;
 
 using DComponents = DjSoft.App.iCollect.Components;
+using DRibbon = DjSoft.App.iCollect.Components.Ribbon;
 
 namespace DjSoft.App.iCollect
 {
@@ -40,23 +41,35 @@ namespace DjSoft.App.iCollect
 
             var pageHome = DjRibbon.AddPage("Home", "Sbírka");
             var groupHomeLayout = pageHome.AddGroup("ViewType", "Zobrazení");
-            groupHomeLayout.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Table", "Tabulka", "Zobrazení", "Tabulka se sloupci a řádky", null);
-            groupHomeLayout.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Cards", "Kartotéka", "Zobrazení", "Kartotéka s jednotlivými záznamy", null);
+            groupHomeLayout.AddItem(DRibbon.DjRibbonItemType.Button, "Table", "Tabulka", "Zobrazení", "Tabulka se sloupci a řádky", null);
+            groupHomeLayout.AddItem(DRibbon.DjRibbonItemType.Button, "Cards", "Kartotéka", "Zobrazení", "Kartotéka s jednotlivými záznamy", null);
 
             var collections = DjSoft.App.iCollect.Collect.CollectionSet.Collections;
 
             var groupHomeSchema = pageHome.AddGroup("Collect", "Správa sbírky");
-            var createCollectionButton = groupHomeSchema.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Select", "Vytvoř sbírku", "Vytvoř sbírku", "Neexistuje žádná sbírka. Vytvořte první tímto tlačítkem", Properties.Resources.applications_office_2_32);
+            var createCollectionButton = groupHomeSchema.AddItem(DRibbon.DjRibbonItemType.Button, "Select", "Vytvoř sbírku", "Vytvoř sbírku", "Neexistuje žádná sbírka. Vytvořte první tímto tlačítkem", Properties.Resources.applications_office_2_32);
             createCollectionButton.Visible = true;
-            var selectCollectionButton = groupHomeSchema.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Select", "Vyber sbírku", "Vyber sbírku", "Zadat evidované prvky", Properties.Resources.applications_office_2_32);
+            var selectCollectionButton = groupHomeSchema.AddItem(DRibbon.DjRibbonItemType.Menu, "Select", "Vyber sbírku", "Vyber sbírku", "Zadat evidované prvky", Properties.Resources.applications_office_2_32, null, i => FillCollectionsToItem(i, collections));
             selectCollectionButton.Visible = true;
-            groupHomeSchema.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Schema", "Nastavit schema", "Schema", "Zadat evidované prvky", Properties.Resources.applications_office_3_32);
+            groupHomeSchema.AddItem(DRibbon.DjRibbonItemType.Button, "Schema", "Nastavit schema", "Schema", "Zadat evidované prvky", Properties.Resources.applications_office_3_32);
 
             var pageAppl = DjRibbon.AddPage("Appl", "Program");
             var groupHomeSetting = pageAppl.AddGroup("HomeSetting", "Nastavení");
-            groupHomeSetting.AddItem(DComponents.Ribbon.DjRibbonItemType.SkinDropDownButton);
-            groupHomeSetting.AddItem(DComponents.Ribbon.DjRibbonItemType.SkinPaletteDropDownButton);
+            groupHomeSetting.AddItem(DRibbon.DjRibbonItemType.SkinDropDownButton);
+            groupHomeSetting.AddItem(DRibbon.DjRibbonItemType.SkinPaletteDropDownButton);
 
+
+        }
+
+        protected void FillCollectionsToItem(DRibbon.IDjRibbonItem item, Collect.Collection[] collections)
+        {
+            if (item is DRibbon.DjRibbonMenuButton barMenu)
+                barMenu.AddItems(collections.Select(c => createBarItem(c)).ToArray());
+
+            XBars.BarItem createBarItem(Collect.Collection collection)
+            {
+                return DRibbon.DjRibbonControl.CreateBarItem(DRibbon.DjRibbonItemType.Button, null, collection.Caption, collection.Caption, collection.Description, collection.Image, XRibbon.RibbonItemStyles.SmallWithText) as XBars.BarItem;
+            }
         }
 
         protected override string PositionConfigName { get { return this.GetType().Name; } }
@@ -64,12 +77,14 @@ namespace DjSoft.App.iCollect
         {
             base.OnContentPrepare();
 
+            __SplitPanel = new XEditors.SplitContainerControl() { Dock = DockStyle.Fill, SplitterPosition = 500, ShowSplitGlyph = DevExpress.Utils.DefaultBoolean.True };
+            MainPanel.Controls.Add(__SplitPanel);
+
             __Grid = new DevExpress.XtraGrid.GridControl() { Dock = DockStyle.Fill };
             __CardView = new DevExpress.XtraGrid.Views.Card.CardView(__Grid);
-            __CardView.OptionsView.ShowQuickCustomizeButton = false;
             __Grid.MainView = __CardView;
-            
-            MainPanel.Controls.Add(__Grid);
+
+            __SplitPanel.Panel1.Controls.Add(__Grid);
 
             __GridData = new DataTable();
             __GridData.Columns.Add(new DataColumn() { ColumnName = "id", Caption = "ID prvku", DataType = typeof(int) });
@@ -79,18 +94,27 @@ namespace DjSoft.App.iCollect
             __GridData.Rows.Add(1, "Vanessa Perrin", "Vanessa Perrin in Bloom", "2024 Stilettos");
             __GridData.Rows.Add(2, "Veronique Perrin", "Veronique Perrin On the rise", "2020 W Club exclusive");
             __GridData.Rows.Add(3, "Navia Phan", "Coming Out Navia Phan", "2021 Lotery");
-            __GridData.Rows.Add(4, "Navia Phan", "Coming Out Navia Phan", "2021 Lotery");
-            __GridData.Rows.Add(3, "Navia Phan", "Coming Out Navia Phan", "2021 Lotery");
+            __GridData.Rows.Add(4, "Vanessa Perrin", "In Bloom Vanessa Perrin", "2007 Exclusive");
+            __GridData.Rows.Add(5, "Violaine Perrin", "Sirene Violaine Perrin", "2023 NuFantasy Misc.");
 
             __Grid.DataSource = __GridData;
 
             __CardView.OptionsFilter.DefaultFilterEditorView = XEditors.FilterEditorViewMode.VisualAndText;
             __CardView.OptionsFilter.UseNewCustomFilterDialog = true;
+            __CardView.OptionsView.ShowQuickCustomizeButton = false;
+            __CardView.OptionsView.FilterCriteriaDisplayStyle = XEditors.FilterCriteriaDisplayStyle.Visual;
+            __CardView.OptionsBehavior.AllowAddRows = DevExpress.Utils.DefaultBoolean.True;
+            __CardView.OptionsBehavior.AllowDeleteRows = DevExpress.Utils.DefaultBoolean.True;
+            __CardView.OptionsBehavior.AllowExpandCollapse = false;
+            __CardView.OptionsBehavior.AutoFocusNewCard = true;
+            __CardView.OptionsBehavior.UseTabKey = true;
 
+            
             __CardView.CardWidth = 350;
             __CardView.ShowFindPanel();
 
         }
+        private DevExpress.XtraEditors.SplitContainerControl __SplitPanel;
         private DevExpress.XtraGrid.GridControl __Grid;
         private DevExpress.XtraGrid.Views.Card.CardView __CardView;
         private System.Data.DataTable __GridData;

@@ -59,6 +59,8 @@ namespace DjSoft.App.iCollect.Collect
                 if (collection != null)
                     collections.Add(collection);
             }
+
+            __Collections = collections;
         }
         private List<Collection> __Collections;
         private Collection __ActiveCollection;

@@ -21,8 +21,9 @@ namespace DjSoft.App.iCollect.Collect
             get
             {
                 var demo = new Collection();
-                demo.Name = "Sbírka panenek";
+                demo.Caption = "Sbírka panenek";
                 demo.Description = "Úplná sbírka panenek Barbie, včetně jejich zdroje, stavu a umístění";
+                demo.Image = Properties.Resources.im_user_32;
 
                 return demo;
             }
@@ -32,8 +33,9 @@ namespace DjSoft.App.iCollect.Collect
             get
             {
                 var demo = new Collection();
-                demo.Name = "Sbírka knih";
+                demo.Caption = "Sbírka knih";
                 demo.Description = "Úplná sbírka knih, včetně jejich umístění i zapůjčení";
+                demo.Image = Properties.Resources.kaddressbook_3_32;
                 return demo;
             }
         }
@@ -42,9 +44,9 @@ namespace DjSoft.App.iCollect.Collect
             get
             {
                 var demo = new Collection();
-                demo.Name = "Sbírka filmů";
+                demo.Caption = "Sbírka filmů";
                 demo.Description = "Úplná sbírka filmů na DVD, BlR, VHS, NAS atd, včetně jejich umístění i zapůjčení";
-
+                demo.Image = Properties.Resources.multimedia_video_32;
                 return demo;
             }
         }
@@ -53,9 +55,9 @@ namespace DjSoft.App.iCollect.Collect
             get
             {
                 var demo = new Collection();
-                demo.Name = "Sbírka Audio CDček";
+                demo.Caption = "Sbírka Audio CDček";
                 demo.Description = "Úplná sbírka nahrávek všech druhů na CD, včetně jejich umístění i zapůjčení";
-
+                demo.Image = Properties.Resources.media_optical_audio_4_32;
                 return demo;
             }
         }
@@ -66,7 +68,7 @@ namespace DjSoft.App.iCollect.Collect
         /// </summary>
         public Collection()
         {
-            this.Name = null;
+            this.Caption = null;
             this.FileName = null;
             this.Definition = new Definition();
             this.Content = new Content();
@@ -231,18 +233,67 @@ namespace DjSoft.App.iCollect.Collect
         #endregion
         #region Data o sbírce = hlavička, definice, položky
         /// <summary>
-        /// Jméno sbírky
+        /// Jméno sbírky, které vidí uživatel
         /// </summary>
-        public string Name { get; set; }
-        /// <summary>
-        /// Ikona sbírky, v nabídkách atd
-        /// </summary>
-        public string ImageName { get; set; }
+        public string Caption { get; set; }
         /// <summary>
         /// Popis sbírky, delší
         /// </summary>
         public string Description { get; set; }
 
+        #region Image
+        /// <summary>
+        /// Ikona sbírky, v nabídkách atd. Sem lze vepsat jméno souboru. Do sbírky se uloží soubor jako obrázek.
+        /// </summary>
+        [XmlSerial.PersistingEnabled(false)]
+        public string ImageFileName 
+        {
+            get { return __ImageFileName; }
+            set
+            {
+                string fileName = value;
+                __ImageFileName = fileName;
+                if (!String.IsNullOrEmpty(fileName) && System.IO.File.Exists(fileName.Trim()))
+                {
+                    __Image = DjSoft.App.iCollect.Data.ImageConvertor.FileToImage(fileName, 64);
+                    __ImageBinary = DjSoft.App.iCollect.Data.ImageConvertor.ConvertImageToBinary(__Image);
+                }
+            }
+        }
+        /// <summary>
+        /// Toto je prosté jméno uloženého obrázku.
+        /// Ukládání a čtení nemá žádnou logiku. Slouží pro persistenci.
+        /// </summary>
+        [XmlSerial.PropertyName("ImageFileName")]
+        private string _ImageFileName { get { return __ImageFileName; } set { __ImageFileName = value; } } private string __ImageFileName;
+        /// <summary>
+        /// String, obsahující binární data ikony. Hlavní permanentní úložiště ikony. Zvenku není potřeba.
+        /// </summary>
+        [XmlSerial.PropertyName("ImageBinary")]
+        private string _ImageBinary { get { return __ImageBinary; } set { __ImageBinary = value; } } private string __ImageBinary;
+        /// <summary>
+        /// Image ikony sbírky. Lze setovat. Lze číst. Persistuje se prostřednictvím <see cref="_ImageBinary"/>.
+        /// </summary>
+        [XmlSerial.PersistingEnabled(false)]
+        public System.Drawing.Image Image
+        { 
+            get
+            {
+                if (__Image is null && __ImageBinary != null)
+                    __Image = DjSoft.App.iCollect.Data.ImageConvertor.ConvertBinaryToImage(__ImageBinary);
+                return __Image;
+            }
+            set
+            {
+                var image = DjSoft.App.iCollect.Data.ImageConvertor.ScaleImageToSize(value, 64, out var _);
+                __Image = image;
+                __ImageBinary = DjSoft.App.iCollect.Data.ImageConvertor.ImageToBinary(image);
+                __ImageFileName = null;
+
+            }
+        }
+        private System.Drawing.Image __Image;
+        #endregion
 
 
         /// <summary>

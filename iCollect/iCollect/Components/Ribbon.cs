@@ -14,6 +14,7 @@ using XUtils = DevExpress.Utils;
 using DjSoft.App.iCollect.Data;
 using DjSoft.App.iCollect.Properties;
 using DjSoft.App.iCollect.Application;
+using DevExpress.XtraBars;
 
 namespace DjSoft.App.iCollect.Components.Ribbon
 {
@@ -128,7 +129,61 @@ namespace DjSoft.App.iCollect.Components.Ribbon
             }
         }
         #endregion
+        #region Tvorba prvků BarItem++ Ribbonu
+        public static IDjRibbonItem CreateBarItem(DjRibbonItemType itemType, string name, string text, string toolTipTitle, string toolTipText, Image image, 
+            XRibbon.RibbonItemStyles? style = null, Action<IDjRibbonItem> initializer = null)
+        {
+            IDjRibbonItem item = null;
+            switch (itemType)
+            {
+                case DjRibbonItemType.Label:
+                    var label = new DjRibbonLabel();
+                    applyBarItemParams(label);
+                    item = label;
+                    break;
 
+                case DjRibbonItemType.Button:
+                    var button = new DjRibbonButton();
+                    applyBarItemParams(button);
+                    button.ButtonStyle = XBars.BarButtonStyle.Default;
+                    item = button;
+                    break;
+
+                case DjRibbonItemType.Menu:
+                    var menu = new DjRibbonMenuButton();
+                    applyBarItemParams(menu);
+                    item = menu;
+                    break;
+
+                case DjRibbonItemType.SkinDropDownButton:
+                    var skinDropDownButton = new DjRibbonSkinDropDownButton();
+                    applyBarItemParams(skinDropDownButton);
+                    item = skinDropDownButton;
+                    break;
+
+                case DjRibbonItemType.SkinPaletteDropDownButton:
+                    var skinPaletteDropDownButton = new DjRibbonSkinPaletteDropDownButton();
+                    applyBarItemParams(skinPaletteDropDownButton);
+                    item = skinPaletteDropDownButton;
+                    break;
+
+            }
+
+            if (initializer != null && item != null)
+                initializer(item);
+            return item;
+
+
+            void applyBarItemParams(XBars.BarItem barItem)
+            {
+                barItem.Name = name;
+                barItem.Caption = text;
+                barItem.RibbonStyle = style ?? XRibbon.RibbonItemStyles.Large;
+                barItem.ImageOptions.Image = image;
+                barItem.SuperTip = DjSuperToolTip.Create(toolTipTitle, toolTipText, text);
+            }
+        }
+        #endregion
         public DjRibbonPage AddPage(string name, string text)
         {
             DjRibbonPage page = new DjRibbonPage() { Name = name, Text = text };
@@ -161,39 +216,13 @@ namespace DjSoft.App.iCollect.Components.Ribbon
         {
             return AddItem(itemType, null, null, null, null, null);
         }
-        public IDjRibbonItem AddItem(DjRibbonItemType itemType, string name, string text, string toolTipTitle, string toolTipText, Image image, Action<IDjRibbonItem> initializer = null)
+        public IDjRibbonItem AddItem(DjRibbonItemType itemType, string name, string text, string toolTipTitle, string toolTipText, Image image,
+            XRibbon.RibbonItemStyles? style = null, Action<IDjRibbonItem> initializer = null)
         {
-            IDjRibbonItem item = null;
-            switch (itemType)
-            {
-                case DjRibbonItemType.Button:
-                    var button = new DjRibbonButton();
-                    button.Name = name;
-                    button.Caption = text;
-                    button.ButtonStyle = XBars.BarButtonStyle.Default;
-                    button.RibbonStyle = XRibbon.RibbonItemStyles.Large;
-                    button.ImageOptions.Image = image;
-                    button.SuperTip = DjSuperToolTip.Create(toolTipTitle, toolTipText, text);
-                    this.ItemLinks.Add(button);
-                    item = button; 
-                    break;
-
-                case DjRibbonItemType.SkinDropDownButton:
-                    var skinDropDownButton = new DjRibbonSkinDropDownButton();
-                    this.ItemLinks.Add(skinDropDownButton);
-                    item = skinDropDownButton;
-                    break;
-
-                case DjRibbonItemType.SkinPaletteDropDownButton:
-                    var skinPaletteDropDownButton = new DjRibbonSkinPaletteDropDownButton();
-                    this.ItemLinks.Add(skinPaletteDropDownButton);
-                    item = skinPaletteDropDownButton;
-                    break;
-
-            }
-            if (initializer != null && item != null)
-                initializer(item);
-            return item;
+            var iItem = DjRibbonControl.CreateBarItem(itemType, name, text, toolTipTitle, toolTipText, image, style, initializer);
+            if (iItem is BarItem barItem)
+                this.ItemLinks.Add(barItem);
+            return iItem;
         }
         public DjRibbonPage DjPage { get; set; }
         public DjRibbonControl DjRibbon { get { return this.DjPage?.DjRibbon; } }
@@ -201,11 +230,37 @@ namespace DjSoft.App.iCollect.Components.Ribbon
     }
     #region Konkrétní prvky Ribbonu (Buttony atd)
 
+    public class DjRibbonLabel : XBars.BarStaticItem, IDjRibbonItem
+    {
+        public DjRibbonLabel()
+        { }
+        DjRibbonItemType IDjRibbonItem.ItemType { get { return DjRibbonItemType.Label; } }
+        string IDjRibbonItem.Command { get { return __Command; } set { __Command = value; } } private string __Command;
+        object IDjRibbonItem.Data { get { return __Data; } set { __Data = value; } } private object __Data;
+        XRibbon.RibbonItemStyles IDjRibbonItem.RibbonStyle { get { return this.RibbonStyle; } set { this.RibbonStyle = value; } }
+        XBars.BarItemVisibility IDjRibbonItem.Visibility { get { return this.Visibility; } set { this.Visibility = value; } }
+        bool IDjRibbonItem.Visible { get { return this.Visibility != XBars.BarItemVisibility.Never; } set { this.Visibility = (value ? XBars.BarItemVisibility.Always : XBars.BarItemVisibility.Never); } }
+        bool IDjRibbonItem.Enabled { get { return this.Enabled; } set { this.Enabled = value; } }
+    }
     public class DjRibbonButton : XBars.BarButtonItem, IDjRibbonItem
     {
         public DjRibbonButton()
         { }
         DjRibbonItemType IDjRibbonItem.ItemType { get { return DjRibbonItemType.Button; } }
+        string IDjRibbonItem.Command { get { return __Command; } set { __Command = value; } } private string __Command;
+        object IDjRibbonItem.Data { get { return __Data; } set { __Data = value; } } private object __Data;
+        XRibbon.RibbonItemStyles IDjRibbonItem.RibbonStyle { get { return this.RibbonStyle; } set { this.RibbonStyle = value; } }
+        XBars.BarItemVisibility IDjRibbonItem.Visibility { get { return this.Visibility; } set { this.Visibility = value; } }
+        bool IDjRibbonItem.Visible { get { return this.Visibility != XBars.BarItemVisibility.Never; } set { this.Visibility = (value ? XBars.BarItemVisibility.Always : XBars.BarItemVisibility.Never); } }
+        bool IDjRibbonItem.Enabled { get { return this.Enabled; } set { this.Enabled = value; } }
+    }
+    public class DjRibbonMenuButton : XBars.BarSubItem, IDjRibbonItem
+    {
+        public DjRibbonMenuButton()
+        { }
+        DjRibbonItemType IDjRibbonItem.ItemType { get { return DjRibbonItemType.Label; } }
+        string IDjRibbonItem.Command { get { return __Command; } set { __Command = value; } } private string __Command;
+        object IDjRibbonItem.Data { get { return __Data; } set { __Data = value; } } private object __Data;
         XRibbon.RibbonItemStyles IDjRibbonItem.RibbonStyle { get { return this.RibbonStyle; } set { this.RibbonStyle = value; } }
         XBars.BarItemVisibility IDjRibbonItem.Visibility { get { return this.Visibility; } set { this.Visibility = value; } }
         bool IDjRibbonItem.Visible { get { return this.Visibility != XBars.BarItemVisibility.Never; } set { this.Visibility = (value ? XBars.BarItemVisibility.Always : XBars.BarItemVisibility.Never); } }
@@ -219,6 +274,8 @@ namespace DjSoft.App.iCollect.Components.Ribbon
             this.RibbonStyle = XRibbon.RibbonItemStyles.Large;
         }
         DjRibbonItemType IDjRibbonItem.ItemType { get { return DjRibbonItemType.SkinDropDownButton; } }
+        string IDjRibbonItem.Command { get { return __Command; } set { __Command = value; } } private string __Command;
+        object IDjRibbonItem.Data { get { return __Data; } set { __Data = value; } } private object __Data;
         XRibbon.RibbonItemStyles IDjRibbonItem.RibbonStyle { get { return this.RibbonStyle; } set { this.RibbonStyle = value; } }
         XBars.BarItemVisibility IDjRibbonItem.Visibility { get { return this.Visibility; } set { this.Visibility = value; } }
         bool IDjRibbonItem.Visible { get { return this.Visibility != XBars.BarItemVisibility.Never; } set { this.Visibility = (value ? XBars.BarItemVisibility.Always : XBars.BarItemVisibility.Never); } }
@@ -232,6 +289,8 @@ namespace DjSoft.App.iCollect.Components.Ribbon
             this.RibbonStyle = XRibbon.RibbonItemStyles.Large;
         }
         DjRibbonItemType IDjRibbonItem.ItemType { get { return DjRibbonItemType.SkinPaletteDropDownButton; } }
+        string IDjRibbonItem.Command { get { return __Command; } set { __Command = value; } } private string __Command;
+        object IDjRibbonItem.Data { get { return __Data; } set { __Data = value; } } private object __Data;
         XRibbon.RibbonItemStyles IDjRibbonItem.RibbonStyle { get { return this.RibbonStyle; } set { this.RibbonStyle = value; } }
         XBars.BarItemVisibility IDjRibbonItem.Visibility { get { return this.Visibility; } set { this.Visibility = value; } }
         bool IDjRibbonItem.Visible { get { return this.Visibility != XBars.BarItemVisibility.Never; } set { this.Visibility = (value ? XBars.BarItemVisibility.Always : XBars.BarItemVisibility.Never); } }
@@ -240,6 +299,8 @@ namespace DjSoft.App.iCollect.Components.Ribbon
     public interface IDjRibbonItem
     {
         DjRibbonItemType ItemType { get; }
+        string Command { get; set; }
+        object Data { get; set; }
         XRibbon.RibbonItemStyles RibbonStyle { get; set; }
         bool Visible { get; set; }
         XBars.BarItemVisibility Visibility { get; set; }
@@ -248,8 +309,10 @@ namespace DjSoft.App.iCollect.Components.Ribbon
     public enum DjRibbonItemType
     {
         None,
+        Label,
         Button,
-
+        Menu,
+        
         SkinDropDownButton,
         SkinPaletteDropDownButton
     }

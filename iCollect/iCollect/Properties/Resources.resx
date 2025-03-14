@@ -160,4 +160,16 @@
   <data name="help_contents_24" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Images\24\help-contents-24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="im_user_32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\32\im-user-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="kaddressbook_3_32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\32\kaddressbook-3-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media_optical_audio_4_32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\32\media-optical-audio-4-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="multimedia_video_32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\32\multimedia-video-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>

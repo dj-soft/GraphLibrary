@@ -2017,6 +2017,19 @@ namespace DjSoft.App.iCollect.Data
             return ZoomByRatio(size, ratio);
         }
         /// <summary>
+        /// Vrátí new Size, která bude mít shodný poměr jako výchozí, a její větší rozměr bude roven daném rozměru
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="maxDimension"></param>
+        /// <returns></returns>
+        public static Size ZoomToTarget(this Size size, int targetDimension)
+        {
+            if (size.Width <= 0 || size.Height <= 0) return size;                                  // 0 neřešíme
+            int maxDimenstion = (size.Width > size.Height ? size.Width : size.Height);             // Ta větší hodnota z Width, Height
+            double ratio = (double)targetDimension / (double)maxDimenstion;                        // Poměr změny: 0.25 = výsledek bude 1/4 vstupu
+            return ZoomByRatio(size, ratio);
+        }
+        /// <summary>
         /// Vrátí new Size, která bude mít shodný poměr jako výchozí, a bude mít danou Height
         /// </summary>
         /// <param name="size"></param>

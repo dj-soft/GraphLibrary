@@ -165,5 +165,17 @@
   <ItemGroup>
     <None Include="Images\32\applications-utilities-32.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\32\im-user-32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\32\kaddressbook-3-32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\32\media-optical-audio-4-32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\32\multimedia-video-32.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
