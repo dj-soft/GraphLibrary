@@ -67,7 +67,9 @@ namespace DjSoft.App.iCollect.Collect
         private static string[] _CreateTestDataFiles(string dataPath)
         {
             var result = new List<string>();
-            result.Add(createDemo("Book.dat", () => Collection.DemoCollectionBook, true));
+            
+            result.Add(createDemo("Dolls.dat", () => Collection.DemoCollectionDoll, true));
+            result.Add(createDemo("Book.dat", () => Collection.DemoCollectionBook, false));
             result.Add(createDemo("Movie.dat", () => Collection.DemoCollectionMovie, false));
             result.Add(createDemo("AudioCd.dat", () => Collection.DemoCollectionAudioCd, false));
             return result.ToArray();

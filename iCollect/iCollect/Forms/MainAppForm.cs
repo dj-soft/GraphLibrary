@@ -46,7 +46,10 @@ namespace DjSoft.App.iCollect
             var collections = DjSoft.App.iCollect.Collect.CollectionSet.Collections;
 
             var groupHomeSchema = pageHome.AddGroup("Collect", "Správa sbírky");
-            groupHomeSchema.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Select", "Vyber sbírku", "Vyber sbírku", "Zadat evidované prvky", Properties.Resources.applications_office_2_32);
+            var createCollectionButton = groupHomeSchema.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Select", "Vytvoř sbírku", "Vytvoř sbírku", "Neexistuje žádná sbírka. Vytvořte první tímto tlačítkem", Properties.Resources.applications_office_2_32);
+            createCollectionButton.Visible = true;
+            var selectCollectionButton = groupHomeSchema.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Select", "Vyber sbírku", "Vyber sbírku", "Zadat evidované prvky", Properties.Resources.applications_office_2_32);
+            selectCollectionButton.Visible = true;
             groupHomeSchema.AddItem(DComponents.Ribbon.DjRibbonItemType.Button, "Schema", "Nastavit schema", "Schema", "Zadat evidované prvky", Properties.Resources.applications_office_3_32);
 
             var pageAppl = DjRibbon.AddPage("Appl", "Program");

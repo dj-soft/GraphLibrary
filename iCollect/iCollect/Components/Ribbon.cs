@@ -205,7 +205,11 @@ namespace DjSoft.App.iCollect.Components.Ribbon
     {
         public DjRibbonButton()
         { }
-        public DjRibbonItemType ItemType { get { return DjRibbonItemType.Button; } }
+        DjRibbonItemType IDjRibbonItem.ItemType { get { return DjRibbonItemType.Button; } }
+        XRibbon.RibbonItemStyles IDjRibbonItem.RibbonStyle { get { return this.RibbonStyle; } set { this.RibbonStyle = value; } }
+        XBars.BarItemVisibility IDjRibbonItem.Visibility { get { return this.Visibility; } set { this.Visibility = value; } }
+        bool IDjRibbonItem.Visible { get { return this.Visibility != XBars.BarItemVisibility.Never; } set { this.Visibility = (value ? XBars.BarItemVisibility.Always : XBars.BarItemVisibility.Never); } }
+        bool IDjRibbonItem.Enabled { get { return this.Enabled; } set { this.Enabled = value; } }
     }
     public class DjRibbonSkinDropDownButton : XBars.SkinDropDownButtonItem, IDjRibbonItem
     {
@@ -214,7 +218,11 @@ namespace DjSoft.App.iCollect.Components.Ribbon
             this.PaintStyle = XBars.BarItemPaintStyle.CaptionGlyph;
             this.RibbonStyle = XRibbon.RibbonItemStyles.Large;
         }
-        public DjRibbonItemType ItemType { get { return DjRibbonItemType.SkinDropDownButton; } }
+        DjRibbonItemType IDjRibbonItem.ItemType { get { return DjRibbonItemType.SkinDropDownButton; } }
+        XRibbon.RibbonItemStyles IDjRibbonItem.RibbonStyle { get { return this.RibbonStyle; } set { this.RibbonStyle = value; } }
+        XBars.BarItemVisibility IDjRibbonItem.Visibility { get { return this.Visibility; } set { this.Visibility = value; } }
+        bool IDjRibbonItem.Visible { get { return this.Visibility != XBars.BarItemVisibility.Never; } set { this.Visibility = (value ? XBars.BarItemVisibility.Always : XBars.BarItemVisibility.Never); } }
+        bool IDjRibbonItem.Enabled { get { return this.Enabled; } set { this.Enabled = value; } }
     }
     public class DjRibbonSkinPaletteDropDownButton : XBars.SkinPaletteDropDownButtonItem, IDjRibbonItem
     {
@@ -223,11 +231,19 @@ namespace DjSoft.App.iCollect.Components.Ribbon
             this.PaintStyle = XBars.BarItemPaintStyle.CaptionGlyph;
             this.RibbonStyle = XRibbon.RibbonItemStyles.Large;
         }
-        public DjRibbonItemType ItemType { get { return DjRibbonItemType.SkinPaletteDropDownButton; } }
+        DjRibbonItemType IDjRibbonItem.ItemType { get { return DjRibbonItemType.SkinPaletteDropDownButton; } }
+        XRibbon.RibbonItemStyles IDjRibbonItem.RibbonStyle { get { return this.RibbonStyle; } set { this.RibbonStyle = value; } }
+        XBars.BarItemVisibility IDjRibbonItem.Visibility { get { return this.Visibility; } set { this.Visibility = value; } }
+        bool IDjRibbonItem.Visible { get { return this.Visibility != XBars.BarItemVisibility.Never; } set { this.Visibility = (value ? XBars.BarItemVisibility.Always : XBars.BarItemVisibility.Never); } }
+        bool IDjRibbonItem.Enabled { get { return this.Enabled; } set { this.Enabled = value; } }
     }
     public interface IDjRibbonItem
     {
         DjRibbonItemType ItemType { get; }
+        XRibbon.RibbonItemStyles RibbonStyle { get; set; }
+        bool Visible { get; set; }
+        XBars.BarItemVisibility Visibility { get; set; }
+        bool Enabled { get; set; }
     }
     public enum DjRibbonItemType
     {
