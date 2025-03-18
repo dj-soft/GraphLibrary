@@ -18,7 +18,7 @@ using Noris.WS.DataContracts.Desktop.Data;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
-    #region class DxSvgImage : rozšíření třídy SvgImage o některé atributy (jméno a druh práce s barvou)
+    #region class DxSvgImage : rozšíření třídy SvgImage o některé atributy (jméno a druh práce s barvou). Tvorba generických SVG ikon   @text|a  atd
     /// <summary>
     /// DxSvgImage : rozšíření třídy SvgImage o některé atributy (jméno a druh práce s barvou)
     /// </summary>
@@ -96,18 +96,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Metoda prověří, zda by dodaný string mohl být XML obsah, deklarující <see cref="DxSvgImage"/> a případně jej zkusí vytvořit.
         /// Pokud tedy vrátí true, pak v out <paramref name="dxSvgImage"/> bude vytvořený Image.
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="dxSvgImage"></param>
+        /// <param name="imageName">Jméno image</param>
+        /// <param name="sizeType">Optimální velikost</param>
+        /// <param name="createImage">Skutečně vytvářet výstupní <paramref name="dxSvgImage"/>? false = pokud jen potřebujeme detekovat typ</param>
+        /// <param name="dxSvgImage">Out vytvořený objekt</param>
         /// <returns></returns>
-        public static bool TryGetXmlContent(string imageName, ResourceImageSizeType? sizeType, out DxSvgImage dxSvgImage)
+        public static bool TryGetXmlContent(string imageName, ResourceImageSizeType? sizeType, bool createImage, out DxSvgImage dxSvgImage)
         {
             dxSvgImage = null;
             if (String.IsNullOrEmpty(imageName)) return false;
 
             imageName = imageName.Trim();
-            if (TryGetGenericSvg(imageName, sizeType, out dxSvgImage)) return true;
-            if (TryGetRawSvg(imageName, out dxSvgImage)) return true;
+            if (TryGetGenericSvg(imageName, sizeType, createImage, out dxSvgImage)) return true;
+            if (TryGetRawSvg(imageName, createImage, out dxSvgImage)) return true;
 
             return false;
         }
@@ -115,9 +116,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Může vygenerovat generické SVG podle dodaného XML obsahu
         /// </summary>
         /// <param name="imageName">Definice image, je zajištěno že není prázdné, a je Trim()</param>
+        /// <param name="createImage">Skutečně vytvářet výstupní <paramref name="dxSvgImage"/>? false = pokud jen potřebujeme detekovat typ</param>
         /// <param name="dxSvgImage"></param>
         /// <returns></returns>
-        protected static bool TryGetRawSvg(string imageName, out DxSvgImage dxSvgImage)
+        protected static bool TryGetRawSvg(string imageName, bool createImage, out DxSvgImage dxSvgImage)
         {
             dxSvgImage = null;
             bool startWithXml = imageName.StartsWith("<?xml version", StringComparison.InvariantCultureIgnoreCase);
@@ -309,30 +311,31 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         #endregion
-        #region Generické SVG
+        #region Generické SVG: @text|A    @circle     @arrow   atd...
         /// <summary>
         /// Může vygenerovat generické SVG podle názvu a parametrů
         /// </summary>
         /// <param name="imageName">Definice image, je zajištěno že není prázdné, a je Trim()</param>
-        /// <param name="sizeType"></param>
+        /// <param name="sizeType">Optimální velikost</param>
+        /// <param name="createImage">Skutečně vytvářet výstupní <paramref name="dxSvgImage"/>? false = pokud jen potřebujeme detekovat typ</param>
         /// <param name="dxSvgImage"></param>
         /// <returns></returns>
-        protected static bool TryGetGenericSvg(string imageName, ResourceImageSizeType? sizeType, out DxSvgImage dxSvgImage)
+        protected static bool TryGetGenericSvg(string imageName, ResourceImageSizeType? sizeType, bool createImage, out DxSvgImage dxSvgImage)
         {
             dxSvgImage = null;
             if (_TryGetGenericParameters(imageName, out var genericItems))
             {
                 switch (genericItems[0])
                 {
-                    case "circlegradient1": return _TryGetGenericSvgCircleGradient1(imageName, genericItems, sizeType, ref dxSvgImage);
-                    case "circle": return _TryGetGenericSvgCircleGradient1(imageName, genericItems, sizeType, ref dxSvgImage);
-                    case "arrowsmall": return _TryGetGenericSvgArrowSmall(imageName, genericItems, sizeType, ref dxSvgImage);
-                    case "arrow1": return _TryGetGenericSvgArrow1(imageName, genericItems, sizeType, ref dxSvgImage);
-                    case "arrow": return _TryGetGenericSvgArrow1(imageName, genericItems, sizeType, ref dxSvgImage);
-                    case "editsmall": return _TryGetGenericSvgEditAny(imageName, genericItems, sizeType, ref dxSvgImage, 2);
-                    case "edit": return _TryGetGenericSvgEditAny(imageName, genericItems, sizeType, ref dxSvgImage, 0);
-                    case "text": return _TryGetGenericSvgText(imageName, genericItems, sizeType, ref dxSvgImage);
-                    case "textonly": return _TryGetGenericSvgTextOnly(imageName, genericItems, sizeType, ref dxSvgImage);
+                    case "circlegradient1": return (createImage ? _TryGetGenericSvgCircleGradient1(imageName, genericItems, sizeType, ref dxSvgImage) : true);
+                    case "circle": return (createImage ? _TryGetGenericSvgCircleGradient1(imageName, genericItems, sizeType, ref dxSvgImage) : true);
+                    case "arrowsmall": return (createImage ? _TryGetGenericSvgArrowSmall(imageName, genericItems, sizeType, ref dxSvgImage) : true);
+                    case "arrow1": return (createImage ? _TryGetGenericSvgArrow1(imageName, genericItems, sizeType, ref dxSvgImage) : true);
+                    case "arrow": return (createImage ? _TryGetGenericSvgArrow1(imageName, genericItems, sizeType, ref dxSvgImage) : true);
+                    case "editsmall": return (createImage ? _TryGetGenericSvgEditAny(imageName, genericItems, sizeType, ref dxSvgImage, 2) : true);
+                    case "edit": return (createImage ? _TryGetGenericSvgEditAny(imageName, genericItems, sizeType, ref dxSvgImage, 0) : true);
+                    case "text": return (createImage ? _TryGetGenericSvgText(imageName, genericItems, sizeType, ref dxSvgImage) : true);
+                    case "textonly": return (createImage ? _TryGetGenericSvgTextOnly(imageName, genericItems, sizeType, ref dxSvgImage) : true);
                 }
             }
             return false;
@@ -354,7 +357,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         protected static DxSvgImage CreateGenericClone(string imageName, ResourceImageSizeType? sizeType)
         {
-            if (TryGetGenericSvg(imageName, sizeType, out DxSvgImage dxSvgImage)) return dxSvgImage;
+            if (TryGetGenericSvg(imageName, sizeType, true, out DxSvgImage dxSvgImage)) return dxSvgImage;
             return null;
         }
         /// <summary>
@@ -1227,7 +1230,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {   // Využijeme metodu _TryGetGenericSvgText, předáme jí explicitní parametry:
             string text = DxComponent.GetCaptionForIcon(caption);
             string imageName = $"@text|{text}";     //   ... |Black|sans-serif|N|4|DarkBlue|White";
-            if (!TryGetGenericSvg(imageName, sizeType, out DxSvgImage dxSvgImage)) return null;    // Přejdeme do zdejší metody _TryGetGenericSvgText()
+            if (!TryGetGenericSvg(imageName, sizeType, true, out DxSvgImage dxSvgImage)) return null;    // Přejdeme do zdejší metody _TryGetGenericSvgText()
             return dxSvgImage;
         }
         /// <summary>
@@ -1313,17 +1316,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static bool _TryGetGenericSvgText(string imageName, string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage)
         {
             // Název ImageName pro vytvoření generické ikony typu Text má vzhled:
-            //    @text|A|#000066|sans-serif|B|2|#222288|#CCCCFF
-            // Kde                                               
-            //    @text                                            0: klíčové slovo pro generování textu;
-            //          A                                          1: vlastní text, do dvou písmen
-            //            #000066                                  2: barva písma
-            //                    sans-serif                       3: typ písma, default = sans-serif, možno dát serif = patkové
-            //                               B                     4: Nic nebo B=Bold písmo (jiný formát není povolen)
-            //                                 2                   5: Průměr kulatosti rohu borderu vzhledem k velikosti ikony 16, vhodné 2 - 5
-            //                                   #222288           6: Barva rámečku
-            //                                           #CCCCFF   7: Barva výplně pod písmenem
-
+            //   "@text|DJ|blue|serif|B|4|#662266|#FFDDFF"
+            // Kde
+            //    @text                                         0: klíčové slovo pro generování textu;
+            //          DJ                                      1: vlastní text
+            //             blue                                 2: barva písma
+            //                  serif                           3: typ písma, default = sans-serif
+            //                        B                         4: Bold písmo (jiný formát není povolen)
+            //                          4                       5: Průměr kulatosti rohu borderu vzhledem k velikosti ikony 16
+            //                            #662266               6: Barva rámečku
+            //                                     #FFDDFF      7: Barva výplně pod písmenem
             bool isDarkTheme = DxComponent.IsDarkTheme;
             int p = 1;
             string text = _GetGenericParam(genericItems, p++, "");
@@ -1333,7 +1335,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isBold = (_GetGenericParam(genericItems, p++, "N").StartsWith("B", StringComparison.InvariantCultureIgnoreCase));
 
             string roundT = _GetGenericParam(genericItems, p++, "");
-            int? round = ((!String.IsNullOrEmpty(roundT) && Int32.TryParse(roundT, out int r) && r >= 2 && r < 16) ? (int?)r : (int?)null);
+            int? round = ((!String.IsNullOrEmpty(roundT) && Int32.TryParse(roundT, out int r) && r >= 1 && r < 16) ? (int?)r : (int?)null);
 
             string borderParam = _GetGenericDefinition(genericItems, p++, "fill", (isDarkTheme ? _GenericTextColorDarkSkinBorder : _GenericTextColorLightSkinBorder));
             string fillParam = _GetGenericDefinition(genericItems, p++, "fill", (isDarkTheme ? _GenericTextColorDarkSkinFill : _GenericTextColorLightSkinFill));
@@ -3467,11 +3469,38 @@ M22,22H10v2H22v-2z " class="Black" />
         /// Vrátí true, pokud dodaný string představuje instanci <see cref="SvgImageSupport"/>, a pokud ano pak ji rovnou vytvoří.
         /// </summary>
         /// <param name="resourceName"></param>
+        /// <param name="sizeType">Optimální velikost</param>
+        /// <param name="createImage">Skutečně vytvářet výstupní <paramref name="arrayInfo"/>? false = pokud jen potřebujeme detekovat typ</param>
         /// <param name="arrayInfo"></param>
         /// <returns></returns>
-        internal static bool TryGetSvgImageArray(string resourceName, out SvgImageArrayInfo arrayInfo)
+        internal static bool TryGetSvgImageArray(string resourceName, ResourceImageSizeType? sizeType, bool createImage, out SvgImageArrayInfo arrayInfo)
         {
-            return SvgImageArrayInfo.TryDeserialize(resourceName, out arrayInfo);
+            arrayInfo = null;
+            bool isImageArray = IsResourceNameSvgImageArray(resourceName);
+            if (isImageArray && createImage)
+                return SvgImageArrayInfo.TryDeserialize(resourceName, out arrayInfo);
+            return isImageArray;
+        }
+        /// <summary>
+        /// Vrátí true, pokud dodaný text <paramref name="xmlContent"/> by mohl reprezentovat ImageArray, pouze formální prověření.
+        /// </summary>
+        /// <param name="xmlContent"></param>
+        /// <returns></returns>
+        internal static bool IsResourceNameSvgImageArray(string xmlContent)
+        {
+            if (!String.IsNullOrEmpty(xmlContent))
+            {
+                xmlContent = xmlContent.Trim();
+                if (xmlContent.StartsWith("<?xml version=") && xmlContent.EndsWith("</id-persistent>"))
+                {   // Ze Serial:
+                    return true;
+                }
+                else if (xmlContent.StartsWith(SvgImageArrayInfo.KeyItemBegin) && xmlContent.EndsWith(SvgImageArrayInfo.KeyItemEnd))
+                {   // Z jednoduchého textu «name1»«name2<X.Y.W.H>» :
+                    return true;
+                }
+            }
+            return false;
         }
         /// <summary>
         /// Vygeneruje <see cref="SvgImage"/> z dodané sady vstupních obrázků

@@ -1645,6 +1645,27 @@ namespace Noris.Clients.Win.Components.AsolDX
             int height = (int)(Math.Round(ratioHeight * (double)size.Height, 0));
             return new Size(width, height);
         }
+        /// <summary>
+        /// Vrátí new Size, která bude mít šířku o (2 * <paramref name="all"/>) větší a výšku o (2 * <paramref name="all"/>) větší.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="all"></param>
+        /// <returns></returns>
+        public static Size Enlarge(this Size size, int all)
+        {
+            return new Size(size.Width + all + all, size.Height + all + all);
+        }
+        /// <summary>
+        /// Vrátí new Size, která bude mít šířku o (2 * <paramref name="x"/>) větší a výšku o (2 * <paramref name="y"/>) větší.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
+        public static Size Enlarge(this Size size, int x, int y)
+        {
+            return new Size(size.Width + x + x, size.Height + y + y);
+        }
         #endregion
         #region SizeF: AlignTo
         /// <summary>

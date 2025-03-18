@@ -29,7 +29,7 @@ namespace TestDevExpress.Forms
         {
             this.Text = "DxListBox tester";
             this.ImageName = "svgimages/diagramicons/insertlist.svg";
-            this.ImageNameAdd = "@text|L|#002266||B|3|#88AAFF|#CCEEFF";
+            this.ImageNameAdd = "@text|Lb|#002266||N|6|#88AAFF|#CCEEFF";
         }
         protected override void Dispose(bool disposing)
         {

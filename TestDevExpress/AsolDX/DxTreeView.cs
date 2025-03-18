@@ -2191,9 +2191,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             NodePair firstPair = null;
 
-            string focusedNodeFullId = this.FocusedNodeFullId;
-            int topVisibleIndex = this.TopVisibleNodeIndex;
-            int topVisiblePixel = this.TopVisibleNodePixel;
+            // Co budeme zachovávat?
+            bool preserveSelected = preserveProperties.HasFlag(PreservePropertiesMode.SelectedItems);
+            bool preserveNodeIndex = preserveProperties.HasFlag(PreservePropertiesMode.FirstVisibleItem);
+            bool preserveNodePixel = preserveProperties.HasFlag(PreservePropertiesMode.FirstVisiblePixel);
+            string focusedNodeFullId = (preserveSelected ? this.FocusedNodeFullId : null);
+            int topVisibleIndex = (preserveNodeIndex ? this.TopVisibleNodeIndex : 0);
+            int topVisiblePixel = (preserveNodePixel ? this.TopVisibleNodePixel : 0);
 
             // Clear:
             if (clearAll)
@@ -2207,15 +2211,18 @@ namespace Noris.Clients.Win.Components.AsolDX
                     this._RemoveNode(nodeKey);
             }
 
+            // Aktuálně selectované nody - načteme z komponenty:
+            ITreeListNode[] selectedNodes = this.SelectedNodes;
+
             // Add:
             if (addNodes != null)
             {
                 // Tyto nody by měly být selectovány:
                 //   1. ty z nově dodaných, které mají nastaveno ITreeListNode.Selected = true
                 //   2. ty stávající (SelectedNodes)
-                List<ITreeListNode> selectedNodes = new List<ITreeListNode>();
-                selectedNodes.AddRange(addNodes.Where(n => n.Selected));
-                selectedNodes.AddRange(this.SelectedNodes);
+                List<ITreeListNode> selectedNodeList = new List<ITreeListNode>();
+                selectedNodeList.AddRange(addNodes.Where(n => n.Selected));
+                selectedNodeList.AddRange(this.SelectedNodes);
 
                 // Fyzicky přidat nody:
                 foreach (var node in addNodes)
@@ -2229,14 +2236,29 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
 
                 // Selectovat požadované nody:
-                this.SelectedNodes = selectedNodes.ToArray();
+                selectedNodes = selectedNodeList.ToArray();
+                this.SelectedNodes = selectedNodes;
             }
 
-            if (preserveProperties.HasFlag(PreservePropertiesMode.SelectedItems)) this.FocusedNodeFullId = focusedNodeFullId;
-            if (preserveProperties.HasFlag(PreservePropertiesMode.FirstVisibleItem)) this.TopVisibleNodeIndex = topVisibleIndex;
-            if (preserveProperties.HasFlag(PreservePropertiesMode.FirstVisiblePixel)) this.TopVisibleNodePixel = topVisiblePixel;
+            if (preserveSelected) focusedNodeFullId = getValidActiveNode(selectedNodes, focusedNodeFullId);
+
+            // Co budeme obnovovat:
+            if (preserveSelected && focusedNodeFullId != null) this.FocusedNodeFullId = focusedNodeFullId;
+            if (preserveNodeIndex) this.TopVisibleNodeIndex = topVisibleIndex;
+            if (preserveNodePixel) this.TopVisibleNodePixel = topVisiblePixel;
 
             return firstPair;
+
+            // Vrátí ID nodu, který má být Selected.
+            //  Bude to buď 'nodeId', pokud je obsažen v 'selNodes',
+            //  anebo první z 'selNodes',
+            //  anebo null pokud tam nic není.
+            string getValidActiveNode(ITreeListNode[] selNodes, string nodeId)
+            {
+                if (selNodes is null || selNodes.Length == 0) return null;
+                if (nodeId != null && selNodes.Any(n => String.Equals(n.ItemId, nodeId, StringComparison.Ordinal))) return nodeId;
+                return selNodes[0].ItemId;
+            }
         }
         /// <summary>
         /// Vytvoří nový jeden vizuální node podle daných dat, a přidá jej do vizuálního prvku a do interní evidence, neřeší blokování GUI
@@ -2381,15 +2403,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private bool _RemoveLazyLoadFromParent(string parentNodeFullId)
         {
+            bool isAnySelected = false;
+
             ITreeListNode parentNodeInfo = _GetNodeInfo(parentNodeFullId);
-            if (parentNodeInfo == null || !parentNodeInfo.LazyExpandable) return false;
+            if (parentNodeInfo == null || !parentNodeInfo.LazyExpandable) return isAnySelected;
 
             parentNodeInfo.LazyExpandable = false;
 
             // Najdu stávající Child nody daného Parenta a všechny je odeberu. Měl by to být pouze jeden node = simulující načítání dat, přidaný v metodě _AddNodeLazyLoad():
             NodePair[] lazyChilds = this._NodesId.Values.Where(p => p.IsLazyChild && p.NodeInfo.ParentNodeFullId == parentNodeFullId).ToArray();
-            bool isAnySelected = (lazyChilds.Length > 0 && lazyChilds.Any(p => p.IsTreeNodeSelected));
-            _RemoveAddNodes(false, lazyChilds.Select(p => p.NodeId), null, PreservePropertiesMode.None);
+            if (lazyChilds.Length > 0)
+            {   // Máme pro našeho parenta nalezeny nějaké LazyChilds? Odebereme je jednoduše:
+                isAnySelected = (lazyChilds.Any(p => p.IsTreeNodeSelected));
+                foreach (var nodePair in lazyChilds)
+                    this._RemoveNode(nodePair);
+            }
+
+            // Původně komplikované, s metodou _RemoveAddNodes() => _RemoveAddNodesSilent() s řešením nadbytečných věcí:
+            //   bool isAnySelected = (lazyChilds.Length > 0 && lazyChilds.Any(p => p.IsTreeNodeSelected));
+            //   _RemoveAddNodes(false, lazyChilds.Select(p => p.NodeId), null, PreservePropertiesMode.None);
 
             return isAnySelected;
         }

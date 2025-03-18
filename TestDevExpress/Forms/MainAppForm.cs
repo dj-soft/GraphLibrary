@@ -106,8 +106,12 @@ namespace TestDevExpress.Forms
         {
             __TabHeaderImagePainter = new DxTabHeaderImagePainter();
             __TabHeaderImagePainter.TabbedView = this.TabbedView;
-            __TabHeaderImagePainter.ImageSizeType = ResourceImageSizeType.Medium;
-            __TabHeaderImagePainter.ImagePosition = DxTabHeaderImagePainter.ImagePositionType.CenterControlArea; // .AfterStandardIcon;
+            __TabHeaderImagePainter.AllIconsDirectPaint = true;
+            __TabHeaderImagePainter.MainImageSizeType = ResourceImageSizeType.Small;
+            __TabHeaderImagePainter.SecondImagePosition = DxTabHeaderImagePainter.ImagePositionType.CenterControlArea; // .AfterStandardIcon;
+            __TabHeaderImagePainter.SecondImageSizeType = ResourceImageSizeType.Small;
+
+            __TabHeaderImagePainter.SecondImagePosition = DxTabHeaderImagePainter.ImagePositionType.AfterTextArea;
         }
         /// <summary>
         /// Pomocník pro kreslení ikon (standardní + přidaná) v záhlaví TabHeader.

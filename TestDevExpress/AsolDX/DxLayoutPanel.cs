@@ -22,12 +22,14 @@ using DevExpress.XtraBars.Navigation;
 using DevExpress.XtraBars.Objects;
 using System.Web.Caching;
 using DevExpress.XtraRichEdit.Model;
+using System.Diagnostics;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
     /// <summary>
     /// Panel, který vkládá controly do svých rámečků se Splittery.
     /// </summary>
+    [DebuggerDisplay("{DebugText}")]
     public class DxLayoutPanel : DxPanelControl
     {
         #region Public prvky
@@ -50,8 +52,31 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.__UseDxPainter = false;
             this.__TitleCompulsory = false;
             this.__HighlightSinglePanel = false;
+            this.__OnlyActiveFormHasActiveTitle = true;
 
             this.MouseLeave += _MouseLeave;
+        }
+        /// <summary>
+        /// Debug text
+        /// </summary>
+        internal string DebugText
+        {
+            get
+            {
+                string text = "";
+                var focusedPanel = this.__LayoutItemPanelWithFocus;
+                if (focusedPanel != null) text += $"Focused: '{focusedPanel.DebugText}'; ";
+                var panels = this._Controls;
+                if (panels != null && panels.Count > 0)
+                {
+                    text += " Panels: ";
+                    foreach (var panel in panels) 
+                    {
+                        text += $"'{panel.DebugText}'";
+                    }
+                }
+                return text;
+            }
         }
         /// <summary>
         /// Dispose
@@ -1146,6 +1171,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Selectovaný a Hot panel
         /// <summary>
+        /// Metoda zajistí provedení Refreshe všech titulků v okně.
+        /// Barva titulku odpovídá aktivitě příslušného panelu.
+        /// </summary>
+        internal void RefreshTitlePanels()
+        {
+
+            using (SystemAdapter.TraceTextScope(TraceLevel.Info, this.GetType(), "RefreshTitlePanels", "Performance"))
+            {
+                foreach (LayoutTileInfo tileInfo in _Controls)
+                    tileInfo.HostControl?.RefreshTitlePanel();
+            }
+        }
+        /// <summary>
         /// Vrátí interaktivní stav daného panelu z pohledu celého layoutu
         /// </summary>
         /// <param name="panel"></param>
@@ -1195,12 +1233,33 @@ namespace Noris.Clients.Win.Components.AsolDX
             __LayoutItemPanelWithFocus = panel;
 
             // Refresh původního i nového, ale až po výměně v __LayoutItemPanelWithFocus  !
-            if (!Object.ReferenceEquals(oldPanel, newPanel))
+            this.IsActiveForm = true;
+            bool isChange = !Object.ReferenceEquals(oldPanel, newPanel);
+            if (isChange)
             {
                 oldPanel?.RefreshContent();
                 newPanel?.RefreshContent();
             }
+
+            _RaisePanelGotFocus();
         }
+        /// <summary>
+        /// Zavolá metodu <see cref="OnPanelGotFocus"/> a event <see cref="PanelGotFocus"/>
+        /// </summary>
+        private void _RaisePanelGotFocus()
+        {
+            OnPanelGotFocus();
+            PanelGotFocus?.Invoke(this, CheckBoxEvenArgs.Empty);
+        }
+        /// <summary>
+        /// Volá se po aktivaci panelu.
+        /// Správce oken pak může reagovat nastavením <see cref="IsActiveForm"/> = false do neaktivních formulářů.
+        /// </summary>
+        protected virtual void OnPanelGotFocus() { }
+        /// <summary>
+        /// Proběhne po aktivaci panelu
+        /// </summary>
+        public event EventHandler PanelGotFocus;
         /// <summary>
         /// Při odchodu z myši z celého panelu
         /// </summary>
@@ -1220,6 +1279,45 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         internal DxLayoutItemPanel LayoutItemPanelWithFocus { get { return __LayoutItemPanelWithFocus; } }
         private DxLayoutItemPanel __LayoutItemPanelWithFocus;
+        /// <summary>
+        /// Obsahuje true pokud formulář, kde je umístěn this layout je aktivní.
+        /// Takový panel může mít jiné chování (typicky nemá titulek, a nemá CloseButton).<br/>
+        /// Hodnotu lze setovat, při změně hodnoty automaticky proběhne <see cref="RefreshTitlePanels"/>.
+        /// </summary>
+        internal bool IsActiveForm
+        {
+            get { return __IsActiveForm; }
+            set
+            {
+                if (value != __IsActiveForm)
+                {
+                    __IsActiveForm = value;
+                    this.RefreshTitlePanels();
+                }
+            }
+        }
+        private bool __IsActiveForm;
+        /// <summary>
+        /// Příznak, že pouze aktivní formulář (Form) může mít aktivní titulek.
+        /// Pokud je true, pak neaktivní formulář má všechny titulky neaktivní.
+        /// Pokud je false, pak i neaktivní formulář bude mít jeden titulek aktivní.
+        /// <para/>
+        /// Výchozí je true.<br/>
+        /// Hodnotu lze setovat, při změně hodnoty automaticky proběhne <see cref="RefreshTitlePanels"/>.
+        /// </summary>
+        internal bool OnlyActiveFormHasActiveTitle 
+        { 
+            get { return __OnlyActiveFormHasActiveTitle; } 
+            set 
+            {
+                if (value != __OnlyActiveFormHasActiveTitle)
+                {
+                    __OnlyActiveFormHasActiveTitle = value;
+                    this.RefreshTitlePanels();
+                }
+            }
+        }
+        private bool __OnlyActiveFormHasActiveTitle;
         #endregion
         #region Obsluha titulkových tlačítek na prvku DxLayoutItemPanel
         /// <summary>
@@ -2364,6 +2462,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Třída obsahující WeakReference na UserControl (=uživatelův panel) a HostControl (zdejší panel obsahující titulek) a Parent (control, v němž bude / je / byl umístěn HostControl
         /// </summary>
+        [DebuggerDisplay("{DebugText}")]
         protected class LayoutTileInfo
         {
             /// <summary>
@@ -2410,6 +2509,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             public override string ToString()
             {
                 return $"Control: {UserControl?.Name}; Parent: {Parent?.Name}";
+            }
+            /// <summary>
+            /// Debug text
+            /// </summary>
+            internal string DebugText
+            {
+                get
+                {
+                    string text = "";
+                    var hostControl = HostControl;
+                    if (hostControl != null)
+                        text = hostControl.DebugText;
+                    if (String.IsNullOrEmpty(text))
+                        text = Parent?.Name;
+                    return text ?? "";
+                }
             }
             /// <summary>
             /// Vrátí true pokud v this objektu je jako <see cref="Parent"/> uložen dodaný objekt.
@@ -2737,6 +2852,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Panel, který slouží jako hostitel pro jeden uživatelský control v rámci <see cref="DxLayoutPanel"/>.
     /// Obsahuje panel pro titulek, zavírací křížek a OnMouse buttony pro předokování aktuálního prvku v rámci parent SplitContaineru.
     /// </summary>
+    [DebuggerDisplay("{DebugText}")]
     public class DxLayoutItemPanel : DxPanelControl
     {
         #region Konstruktor, public property
@@ -2756,12 +2872,27 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Initialize(owner);
         }
         /// <summary>
+        /// Debug text
+        /// </summary>
+        internal string DebugText
+        {
+            get
+            {
+                string text = this.TitleText;
+                if (String.IsNullOrEmpty(text))
+                    text = this.TitleSubstitute;
+                if (String.IsNullOrEmpty(text))
+                    text = this.UserControl?.Text;
+                return text ?? "";
+            }
+        }
+        /// <summary>
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
         public override string ToString()
         {
-            return $"UserControl: {this.UserControl?.GetType()}, Text: {this.UserControl?.Text}";
+            return DebugText;                    // Ne:   $"UserControl: {this.UserControl?.GetType()}, Text: {this.UserControl?.Text}";
         }
         /// <summary>
         /// Inicializace
@@ -3016,6 +3147,19 @@ namespace Noris.Clients.Win.Components.AsolDX
                     _TitleBar.RefreshControl();
             }
         }
+
+        /// <summary>
+        /// Metoda zajistí provedení Refreshe titulku tohoto panelu.
+        /// Barva titulku odpovídá aktivitě příslušného panelu.
+        /// </summary>
+        internal void RefreshTitlePanel()
+        {
+            if (_TitleBarIsVisible)
+            {
+                _TitleBar.RefreshControl();
+                _TitleBar.Invalidate();
+            }
+        }
         /// <summary>
         /// Uživatel kliknul na button Dock (strana je v argumentu)
         /// </summary>
@@ -3202,6 +3346,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Takový panel může mít jiné chování (typicky nemá titulek, a nemá CloseButton), viz ...
         /// </summary>
         internal bool IsActivePanel { get { return Object.ReferenceEquals(this, this.LayoutOwner?.LayoutItemPanelWithFocus); } }
+        /// <summary>
+        /// Obsahuje true pokud formulář, kde je umístěn this panel je aktivní.
+        /// Takový panel může mít jiné chování (typicky nemá titulek, a nemá CloseButton), viz ...
+        /// </summary>
+        internal bool IsActiveForm { get { return LayoutOwner?.IsActiveForm ?? false; } }
+        /// <summary>
+        /// Příznak, že pouze aktivní formulář (Form) může mít aktivní titulek.
+        /// Pokud je true, pak neaktivní formulář má všechny titulky neaktivní.
+        /// Pokud je false, pak i neaktivní formulář bude mít jeden titulek aktivní.
+        /// </summary>
+        internal bool OnlyActiveFormHasActiveTitle { get { return LayoutOwner?.OnlyActiveFormHasActiveTitle ?? false; } }
         #endregion
     }
     #endregion
@@ -3209,6 +3364,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Titulkový řádek. Obsahuje titulek a několik buttonů (Dock a Close).
     /// </summary>
+    [DebuggerDisplay("{DebugText}")]
     public class DxLayoutTitlePanel : DxPanelControl
     {
         #region Konstuktor, vnitřní život
@@ -3229,6 +3385,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             __PanelOwner = owner;
             this._Initialise();
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return DebugText;                    // Ne:   $"UserControl: {this.UserControl?.GetType()}, Text: {this.UserControl?.Text}";
+        }
+        /// <summary>
+        /// Debug text
+        /// </summary>
+        internal string DebugText
+        {
+            get
+            {
+                string text = this.TitleText;
+                if (String.IsNullOrEmpty(text))
+                    text = this.TitleSubstitute;
+                return text ?? "";
+            }
         }
         private void _Initialise()
         {
@@ -3354,6 +3531,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Takový panel může mít jiné chování (typicky nemá titulek, a nemá CloseButton), viz ...
         /// </summary>
         private bool IsActivePanel { get { return PanelOwner?.IsActivePanel ?? false; } }
+        /// <summary>
+        /// Obsahuje true pokud formulář, kde je umístěn this panel je aktivní.
+        /// Takový panel může mít jiné chování (typicky nemá titulek, a nemá CloseButton), viz ...
+        /// </summary>
+        private bool IsActiveForm { get { return PanelOwner?.IsActiveForm ?? false; } }
+        /// <summary>
+        /// Příznak, že pouze aktivní formulář (Form) může mít aktivní titulek.
+        /// Pokud je true, pak neaktivní formulář má všechny titulky neaktivní.
+        /// Pokud je false, pak i neaktivní formulář bude mít jeden titulek aktivní.
+        /// </summary>
+        private bool OnlyActiveFormHasActiveTitle { get { return PanelOwner?.OnlyActiveFormHasActiveTitle ?? false; } }
         /// <summary>
         /// Ikona titulku
         /// </summary>
@@ -3972,8 +4160,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                bool isActive = this.IsActivePanel;
-                if (!isActive) return false;
+                bool isActiveForm = this.IsActiveForm;
+                if (!isActiveForm && this.OnlyActiveFormHasActiveTitle) return false;
+                bool isActivePanel = this.IsActivePanel;
+                if (!isActivePanel) return false;
                 bool isSingle = (this.LayoutOwner.ControlCount == 1);
                 if (!isSingle) return true;
                 return this.HighlightSinglePanel;
@@ -4015,10 +4205,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="colorSet"></param>
         private void _PaintDxBackground(PaintEventArgs e, bool isActive, DxSkinColorSet colorSet)
         {
-            this.BackColorUserSilent = (isActive ? colorSet.HeaderFooterBackColor : colorSet.PanelBackColor);
+            //this.BackColorUserSilent = (isActive ? colorSet.HeaderFooterBackColor : colorSet.PanelBackColor); //RMC 0077062 08.01.2025 UI_Revize skinů Nephrite - Titulek; REM Nevykresluj pozadí, ale jen Text  (barva)
             base.OnPaint(e);           // base.OnPaint() provede vykreslení pozadí barvou BackColorUser a poté vykreslí obrázky z PaintedItems, tedy i naší ikonu
 
-            var bounds = this.ClientRectangle;
+            //var bounds = this.ClientRectangle;   //RMC 0077062 08.01.2025 UI_Revize skinů Nephrite - Titulek; REM Nevykresluj pozadí, ale jen Text  (barva) 
 
             //var backColor = (isActive ? colorSet.HeaderFooterBackColor : colorSet.PanelBackColor);
             //if (backColor.HasValue)
@@ -4026,12 +4216,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             //    e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(backColor.Value), bounds);
             //}
 
-            var lineColor = (isActive ? colorSet.AccentPaint : null);
-            if (lineColor.HasValue)
-            {
-                var line = new Rectangle(bounds.X + 0, bounds.Y + 1, bounds.Width - 1, 2);
-                e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(lineColor.Value), line);
-            }
+            //RMC 0077062 08.01.2025 UI_Revize skinů Nephrite - Titulek; REM Nevykresluj pozadí, ale jen Text  (barva)
+            //var lineColor = (isActive ? colorSet.AccentPaint : null);
+            //if (lineColor.HasValue)
+            //{
+            //    var line = new Rectangle(bounds.X + 0, bounds.Y + 1, bounds.Width - 1, 2);
+            //    e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(lineColor.Value), line);
+            //}
         }
         /// <summary>
         /// Vykreslí label pro titulkový panel v režimu DX = vlastními nástroji. Pouze pokud <see cref="UseDxPainter"/> je true.
