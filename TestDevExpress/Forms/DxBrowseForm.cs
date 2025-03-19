@@ -282,7 +282,7 @@ namespace TestDevExpress.Forms
         {
             // ENTER in Data region
             if (!e.Handled && !e.Alt && !e.Control && !e.Shift
-                && e.KeyCode == System.Windows.Forms.Keys.Enter && !this._View.IsFilterRowCellActive)
+                && e.KeyCode == System.Windows.Forms.Keys.Enter && !this._View.IsFilterRowActive)
             {
                 //OnEnter - call server
                 MessageBox.Show("KeyDown Enter");

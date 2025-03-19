@@ -10,17 +10,28 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using DevExpress.Data;
 using DevExpress.Data.Filtering;
+using DevExpress.Data.Filtering.Helpers;
+using DevExpress.DirectX.Common;
+using DevExpress.LookAndFeel;
+using DevExpress.Skins;
 using DevExpress.Utils;
+using DevExpress.Utils.Extensions;
 using DevExpress.Utils.Filtering.Internal;
+using DevExpress.Utils.Menu;
+using DevExpress.XtraEditors;
+using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraEditors.Repository;
 using DevExpress.XtraGrid;
 using DevExpress.XtraGrid.Columns;
+using DevExpress.XtraGrid.Drawing;
+using DevExpress.XtraGrid.Localization;
 using DevExpress.XtraGrid.Registrator;
 using DevExpress.XtraGrid.Views.Base;
+using DevExpress.XtraGrid.Views.Base.ViewInfo;
 using DevExpress.XtraGrid.Views.Grid;
 using DevExpress.XtraGrid.Views.Grid.ViewInfo;
-using DevExpress.XtraSplashScreen;
 using DevExpress.XtraTab;
 
 namespace Noris.Clients.Win.Components.AsolDX
@@ -30,11 +41,14 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxGridSplitContainer : DevExpress.XtraGrid.GridSplitContainer
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DxGridSplitContainer()
         {
             InitProperties();
         }
-
+        /// <inheritdoc/>
         protected override GridControl CreateGridControl()
         {
             return new DxGridControl();
@@ -47,7 +61,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             SynchronizeFocusedRow = DevExpress.Utils.DefaultBoolean.True;
         }
-
+        /// <summary>
+        /// Zobrazí horizontální split
+        /// </summary>
         public void ShowHorizontalSplit()
         {
 
@@ -57,7 +73,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ShowSplitView();
             }
         }
-
+        /// <summary>
+        /// Zobrazí vertikálí split
+        /// </summary>
         public void ShowVerticalSplit()
         {
 
@@ -74,6 +92,9 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxGridControl : GridControl, IDxToolTipDynamicClient
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DxGridControl()
         {
             RegisterEventsHandlers();
@@ -107,8 +128,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void RegisterEventsHandlers()
         {
             this.EditorKeyDown += _OnEditorKeyDown;
-            // this.Paint += _OnPaintEx;
-
+            this.Paint += _OnPaintEx;
         }
 
         /// <summary>
@@ -137,15 +157,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                             view.GridViewCells = null;
                             view.SetSummaryRowValues(null);
                         }
-                        //var tempFilterString = view.ActiveFilterString;    //TODO tohle tu je dočasně. musím vyřešit jak nastavovat zpět filtr ze serveru.
-                        //bool temActiveFilterEnabled = view.ActiveFilterEnabled;
+
                         this.DataSourceChanging = true;
                         base.DataSource = value;
-                        //if (view.ActiveFilterString != tempFilterString)
-                        //{
-                        //    view.ActiveFilterString = tempFilterString;
-                        //    view.ActiveFilterEnabled = temActiveFilterEnabled;
-                        //}
                         //view.SetScrollPosition();
                         if (view.WaitForNextRows) view.RestorePropertiesBeforeLoadMoreRows();
                     }
@@ -164,37 +178,34 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         private void _OnPaintEx(object sender, PaintEventArgs e)
         {
-            return;
-            //Pokus o malování plné čáry aktivního řádku. Zatím to má řadů problémů
-            //1.každý skin by potřeboval mít definovanou výraznou barvu, pokud použiji barvu, která je použita pro označené řádky Highlight, tak to není tak výrazné jako default
-
-            //Malování ohraničení akivního (focusovaného) řádku
+            //Malování ohraničení aktivního (focusovaného) řádku
             GridControl grid = sender as GridControl;
-            DevExpress.XtraGrid.Views.Grid.GridView view = grid.FocusedView as DevExpress.XtraGrid.Views.Grid.GridView;
+            GridView view = grid.FocusedView as GridView;
             if (view == null) return;
-            DevExpress.XtraGrid.Views.Grid.ViewInfo.GridViewInfo viewInfo = view.GetViewInfo() as DevExpress.XtraGrid.Views.Grid.ViewInfo.GridViewInfo;
-            DevExpress.XtraGrid.Views.Grid.ViewInfo.GridRowInfo rowInfo = viewInfo.GetGridRowInfo(view.FocusedRowHandle);
-            if (rowInfo == null)
-                return;
-            Rectangle r = Rectangle.Empty;
-            r = rowInfo.DataBounds;
-            if (r != Rectangle.Empty)
+            GridViewInfo viewInfo = view.GetViewInfo() as GridViewInfo;
+            GridRowInfo rowInfo = viewInfo.GetGridRowInfo(view.FocusedRowHandle);
+            //if (rowInfo == null || !view.IsFocusedView)
+            //return;
+
+            //int x = rowInfo.DataBounds.X /*- rowInfo.IndentRect.X*/;
+            //int y = rowInfo.DataBounds.Y + 1;
+            //int width = rowInfo.DataBounds.Width - 1 /*+ rowInfo.IndentRect.Width*/;
+            //int height = rowInfo.DataBounds.Height - 2;
+            if (rowInfo != null)
             {
-                r.Height -= 2;
-                r.Width -= 2;
+                int x = rowInfo.DataBounds.X;
+                int y = rowInfo.DataBounds.Y;
+                int width = rowInfo.DataBounds.Width - 2;
+                int height = rowInfo.DataBounds.Height - 1;
 
-                var highlight = DxComponent.GetSkinColor(SkinElementColor.CommonSkins_Highlight);
-                Pen pen = Pens.Green;
-                if (highlight != null)
-                {
-                    pen = new Pen(highlight.Value);
-                }
-                e.Graphics.DrawRectangle(pen, r);
+                Color borderColor = ColorTranslator.FromHtml("#383838");
+                if (DxComponent.IsDarkTheme) borderColor = Color.White;
+                var pen = DxComponent.PaintGetPen(borderColor);
+                pen.DashStyle = view.IsFocusedView ? System.Drawing.Drawing2D.DashStyle.Solid : System.Drawing.Drawing2D.DashStyle.Dot;
+                e.Graphics.DrawRectangle(pen, x, y, width, height);
+
+                if (pen.DashStyle != System.Drawing.Drawing2D.DashStyle.Solid) pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Solid;    //Vrátím zpět na solid, protože pen je cache, tak at to neměním ostatním
             }
-            //grid.Invalidate();  //překleslení gridu. Když to tu nebylo a chtěl jsem rámeček z venku řádku, tak zůstávali "duchové" pře skoku na další řádek https://supportcenter.devexpress.com/ticket/details/t114511/draw-custom-row-border-for-selected-row
-            //tady jsem ještě našel že existuje InvalidateRow()... to by šlo použít pro překreslední jen řádku ze kterého odcházím (okolní), aby tam nezůstávali čáry z rámečku...
-
-
         }
 
         private void _OnEditorKeyDown(object sender, KeyEventArgs e)
@@ -218,14 +229,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.ToolTipAllowHtmlText = null;
             this.DxToolTipController = DxComponent.CreateNewToolTipController(ToolTipAnchor.Cursor);
             this.DxToolTipController.AddClient(this);      // Protože this třída implementuje IDxToolTipDynamicClient, bude volána metoda IDxToolTipDynamicClient.PrepareSuperTipForPoint()
-            this.DxToolTipController.BeforeShow += DxToolTipController_BeforeShow;
-
         }
 
-        private void DxToolTipController_BeforeShow(object sender, ToolTipControllerShowEventArgs e)
-        {
-            e.ToolTip = "";
-        }
 
         /// <summary>
         /// ToolTipy mohou obsahovat SimpleHtml tagy? Null = default
@@ -249,29 +254,40 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (this.FocusedView is DxGridView view)
             {
                 DevExpress.XtraGrid.Views.Grid.ViewInfo.GridHitInfo hitInfo = view.CalcHitInfo(args.MouseLocation);
-                //tooltip pro column header
-                if (hitInfo.InColumnPanel)
+                IToolTipItem objectWithTooltip = null;  //RMC 0077291 22.01.2025 Nový přehled - popis skupin; přidána možnost tooltipu nad skupinou
+                object clientData = null;
+                if (hitInfo.Column != null && (hitInfo.InColumnPanel || hitInfo.InGroupColumn))
                 {
-                    var column = view.GridViewColumns?.FirstOrDefault(x => x.FieldName == hitInfo.Column?.FieldName);
-                    if (column != null)
-                    {
-                        // Pokud myš nyní ukazuje na ten samý Node, pro který už máme ToolTip vytvořen, pak nebudeme ToolTip připravovat:
-                        bool isSameAsLast = (args.DxSuperTip != null && Object.ReferenceEquals(args.DxSuperTip.ClientData, column));
-                        if (!isSameAsLast)
-                        {   // Připravíme data pro ToolTip:
-                            var dxSuperTip = DxComponent.CreateDxSuperTip(column);        // Vytvořím new data ToolTipu
-                            if (dxSuperTip != null)
-                            {
-                                if (ToolTipAllowHtmlText.HasValue) dxSuperTip.ToolTipAllowHtmlText = ToolTipAllowHtmlText;
-                                dxSuperTip.ClientData = column;                           // Přibalím si do nich náš Node abych příště detekoval, zda jsme/nejsme na tom samém
-                            }
-                            args.DxSuperTip = dxSuperTip;
-                            args.ToolTipChange = DxToolTipChangeType.NewToolTip;                 // Zajistím rozsvícení okna ToolTipu
-                        }
-                        else
+                    //tooltip nad hlavičkou sloupce
+                    objectWithTooltip = view.GetIGridViewColumn(hitInfo.Column?.FieldName);
+                    clientData = hitInfo.Column;
+                }
+                else if (hitInfo.InDataRow)
+                {
+                    //tooltip nad skupinovým řádkem
+                    int groupId = view.GetGroupRow(hitInfo.RowHandle);
+                    objectWithTooltip = view.GetGroupInfo(groupId);
+                    clientData = hitInfo.RowInfo;
+                }
+
+                if (objectWithTooltip != null)
+                {
+                    // Pokud myš nyní ukazuje na ten samý Node, pro který už máme ToolTip vytvořen, pak nebudeme ToolTip připravovat:
+                    bool isSameAsLast = (args.DxSuperTip != null && Object.ReferenceEquals(args.DxSuperTip.ClientData, clientData));
+                    if (!isSameAsLast)
+                    {   // Připravíme data pro ToolTip:
+                        var dxSuperTip = DxComponent.CreateDxSuperTip(objectWithTooltip);        // Vytvořím new data ToolTipu
+                        if (dxSuperTip != null)
                         {
-                            args.ToolTipChange = DxToolTipChangeType.SameAsLastToolTip;          // Není třeba nic dělat, nechme svítit stávající ToolTip
+                            if (ToolTipAllowHtmlText.HasValue) dxSuperTip.ToolTipAllowHtmlText = ToolTipAllowHtmlText;
+                            dxSuperTip.ClientData = clientData;                           // Přibalím si do nich náš object abych příště detekoval, zda jsme/nejsme na tom samém
                         }
+                        args.DxSuperTip = dxSuperTip;
+                        args.ToolTipChange = DxToolTipChangeType.NewToolTip;                 // Zajistím rozsvícení okna ToolTipu
+                    }
+                    else
+                    {
+                        args.ToolTipChange = DxToolTipChangeType.SameAsLastToolTip;          // Není třeba nic dělat, nechme svítit stávající ToolTip
                     }
                 }
                 else
@@ -283,24 +299,117 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
 
+    /// <summary>
+    /// Registrátor našeho <see cref="DxGridView"/>
+    /// </summary>
     public class DxGridViewInfoRegistrator : GridInfoRegistrator
     {
+        /// <inheritdoc/>
         public override string ViewName { get { return "DxGridView"; } }
-
+        /// <inheritdoc/>
         public override BaseView CreateView(GridControl grid) { return new DxGridView(grid as GridControl); }
+        /// <inheritdoc/>
+        public override BaseViewInfo CreateViewInfo(BaseView view)
+        {
+            return new DxGridViewInfo(view as DxGridView);
+        }
+    }
+    /// <summary>
+    /// DxGridViewInfo
+    /// </summary>
+    public class DxGridViewInfo : DevExpress.XtraGrid.Views.Grid.ViewInfo.GridViewInfo
+    {
+        /// <summary>
+        /// Konsutruktor
+        /// </summary>
+        /// <param name="view"></param>
+        public DxGridViewInfo(DxGridView view)
+            : base(view)
+        {
+
+        }
+        private DxGridView DxGridView { get { return base.View as DxGridView; } }
+        /// <inheritdoc/>
+        protected override DevExpress.XtraGrid.Views.Grid.ViewInfo.GroupPanelRow CalcGroupPanelRowDrawInfo(Rectangle bounds, bool showCaption, bool lineStyle)
+        {
+            return base.CalcGroupPanelRowDrawInfo(bounds, showCaption, lineStyle);
+        }
+        /// <inheritdoc/>
+        protected override void CalcColumnInfo(DevExpress.XtraGrid.Drawing.GridColumnInfoArgs ci, ref int lastLeft, bool lastColumn)
+        {
+            //RMC 0077267 21.01.2025 Nový přehled - řádek seskupení;
+            //Zde se to volá před prvním zobrazením hlavičky sloupce.
+            //Zvětším šířku hlavičky v group panelu
+            //posunu nadpis o velikost ikony group state
+            //novou pozici (Rect) nadpisu si uložím pro daný sloupce. Dále je použiji pro vykreslení v CustomDrowColumnHeader
+            //přepočítám souřadnice pro inner elementy (ikona řazení, ikona excel filteru..)
+            base.CalcColumnInfo(ci, ref lastLeft, lastColumn);
+            if (ci.Type == GridColumnInfoType.Column && ci.Column.GroupIndex != -1 && ci.HeaderPosition == DevExpress.Utils.Drawing.HeaderPositionKind.Special)
+            {
+                Rectangle rect = ci.Bounds;
+                rect.Width += DxGridView.GroupStateIconBackgroundAreaWidth;
+                ci.Bounds = rect;
+
+                ci.CaptionRect = new Rectangle(ci.CaptionRect.X + DxGridView.GroupStateIconBackgroundAreaWidth, ci.CaptionRect.Y, ci.CaptionRect.Width, ci.CaptionRect.Height);
+                DxGridView.GroupColumnHeaderInfos[ci.Column] = new GroupColumnHeaderInfo { CaptionRect = ci.CaptionRect };
+                GridColumnInfoArgs args = new GridColumnInfoArgs(ci.Column);
+                ci.InnerElements.CalcBounds(args, ci.Cache, rect, rect);
+            }
+        }
+        /// <summary>
+        /// Slouží pro uložení iformací o column header ve chvíli kdy počítáme rozměry pro vykreslení
+        /// </summary>
+        public class GroupColumnHeaderInfo
+        {
+            /// <summary>
+            /// Rectangle nadpisu
+            /// </summary>
+            public Rectangle CaptionRect { get; set; }
+        }
     }
 
     /// <summary>
+    /// DxDataController. Aktuálně řeší schování nativních group řádek z gridView 
+    /// </summary>
+    public class DxDataController : CurrencyDataController
+    {
+        /// <inheritdoc/>
+        protected override void BuildVisibleIndexes()
+        {
+            //Tohe vyhazuje všechny groupovací řádky, generované komponentou.
+            base.BuildVisibleIndexes();
+            if (GroupedColumnCount == 0) return;
+            int[] indexes = new int[VisibleIndexes.Count];
+            VisibleIndexes.CopyTo(indexes, 0);
+            VisibleIndexes.Clear();
+            foreach (int rowHandle in indexes)
+            {
+                if (IsGroupRowHandle(rowHandle))
+                {
+                    //ExpandRow(rowHandle);   //Auto expand  the empty group row; //RMC 0076915 19.11.2024 Optimalizace group pro velký poč. záznam; Nahrazeno pomocí: OptionsBehavior.AutoExpandAllGroups = true
+                    continue;
+                }
+                VisibleIndexes.Add(rowHandle);
+            }
+        }
+    }
+    /// <summary>
     /// Datový pohled typu <see cref="GridView"/>
     /// </summary>
-    public class DxGridView : DevExpress.XtraGrid.Views.Grid.GridView
+    public class DxGridView : DevExpress.XtraGrid.Views.Grid.GridView, IListenerStyleChanged
     {
         #region constatns
         const int maxColumnWidthNoTrimm = 25;
+        const int GROUPSTATEICONHEIGHT = 10;
+        const int GRPUPSTATEICONWIDTH = 10;
+        const int GROUPSTATEICONBORDER = 3;
         #endregion
         #region Properties and members
         /// <inheritdoc/>
         protected override string ViewName { get { return "DxGridView"; } }
+        /// <inheritdoc/>
+        protected override BaseGridController CreateDataController() { return new DxDataController(); }
+
         /// <summary>
         /// DxGridControll parent
         /// </summary>
@@ -309,17 +418,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Povolení interního mechanismu řádkového filtru v GridView
         /// </summary>
         public bool RowFilterCoreEnabled { get; set; }
-
         /// <summary>
         /// Povolení interního mechanismu řazení
         /// </summary>
         public bool ColumnSortCoreEnabled { get; set; }
+        /// <summary>
+        /// Poslední řádek na který bylo kliknuto MouseDown.
+        /// </summary>
+        public GridHitInfo LastMouseDownGridHitInfo { get; private set; }
+        /// <summary>
+        /// Poslední stisknutá klávesa
+        /// </summary>
+        public Keys LastKeyCodeDown { get; private set; }
+        /// <summary>
+        /// Aktitvní řádek (RowIndex)
+        /// </summary>
+        public int ActualActiveRowIndex { get; private set; }
+        /// <summary>
+        /// Poslední aktitvní řádek (RowIndex), před <see cref="ActualActiveRowIndex"/>
+        /// </summary>
+        public int LastActiveRowIndex { get; private set; }
 
-        public int LastActiveRow { get; private set; }
-        public int ActualActiveRow { get; private set; }
-
-        /// <summary>CZ: Je aktivni nejaka bunka v radkovem filtru</summary>
-        public bool IsFilterRowCellActive { get { return this.IsFilterRow(this.ActualActiveRow); } }
+        /// <summary>CZ: Je aktivni radkový filtr</summary>
+        public bool IsFilterRowActive { get { return this.IsFilterRow(this.FocusedRowHandle); } }
 
         private bool _checkBoxRowSelect;
         /// <summary>
@@ -337,7 +458,36 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Nastavení viditelnosti groupovacího řádku
         /// </summary>
-        public bool ShowGroupPanel { get => _showGroupPanel; set { _showGroupPanel = value; _SetShowGroupPanel(); } }
+        public bool ShowGroupPanel
+        {
+            get => _showGroupPanel;
+            set
+            {
+                if (DisableSortChange)
+                {
+                    _showGroupPanel = false;
+                }
+                else
+                {
+                    _showGroupPanel = value;
+                }
+                _SetShowGroupPanel();
+            }
+        }
+
+        private bool _showFilterRow;
+        /// <summary>
+        /// Nastavení viditelnosti filtrovacího řádku
+        /// </summary>
+        public bool ShowFilterRow
+        {
+            get => _showFilterRow;
+            set
+            {
+                _showFilterRow = value;
+                _SetShowFilterRow();
+            }
+        }
 
 
         private bool _alignGroupSummaryInGroupRow;
@@ -346,8 +496,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool AlignGroupSummaryInGroupRow { get => _alignGroupSummaryInGroupRow; set { _alignGroupSummaryInGroupRow = value; _SetAlignGroupSummaryInGroupRow(); } }
 
-        private string _LastFilterRowCell { get; set; } = String.Empty;
+        private string _lastFocusedColumnInRowFilter = String.Empty;
 
+        /// <summary>
+        /// slouží pro uchování informace, na který sloupec se má nastavit focus v případě že chci nastavit focus do řádkového filtru.
+        /// </summary>
+        internal string LastFocusedColumnInRowFilter { get => _lastFocusedColumnInRowFilter; set => _lastFocusedColumnInRowFilter = value; }
         private bool _RowFilterVisible { get { return this.OptionsView.ShowAutoFilterRow; } /*set;*/ }
 
 
@@ -361,15 +515,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         internal Dictionary<Tuple<int, string>, IGridViewCell> GridViewCells { get; set; }
 
+        /// <summary>
+        /// Zakazuje změnu řazení na celém přehledu a skrývá group panel.
+        /// </summary>
+        public bool DisableSortChange { get; set; }
+
         #endregion
 
         #region konstruktory
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DxGridView() : this(null) { }
-
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="grid"></param>
         public DxGridView(DevExpress.XtraGrid.GridControl grid) : base(grid)
         {
             _InitGridView();
             _RegisterEventsHandlers();
+            DxComponent.RegisterListener(this);
         }
         #endregion
 
@@ -378,10 +544,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _InitGridView()
         {
-
             _SetGridMultiSelectAndMode();
 
             OptionsSelection.EnableAppearanceFocusedCell = false;   //zakáz selectu cell, ale pouze barva, ohraničení zůstává
+            OptionsSelection.EnableAppearanceHotTrackedRow = DefaultBoolean.True;   //Hottrack podbarvení
+            OptionsSelection.ShowCheckBoxSelectorInPrintExport = DefaultBoolean.False;
 
             OptionsBehavior.Editable = false;   //readonly, necheceme editaci
             FocusRectStyle = DevExpress.XtraGrid.Views.Grid.DrawFocusRectStyle.RowFocus;
@@ -400,7 +567,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             OptionsView.ShowFilterPanelMode = ShowFilterPanelMode.Default;  //panel se zobrazí pokud je filtr
             OptionsView.RowAutoHeight = true;   //globalní povolení automatické výšky řádky.
 
-            OptionsSelection.EnableAppearanceHotTrackedRow = DefaultBoolean.True;   //Hottrack podbarvení
+            OptionsView.ShowHorizontalLines = DefaultBoolean.False; //Kreslíme je samy v _OnCustomDrawCell. Je to kvůli Merge buněk
+            OptionsView.ShowVerticalLines = DefaultBoolean.True;
+
+            //Clipboard
+            OptionsClipboard.AllowExcelFormat = DefaultBoolean.True;
+            OptionsClipboard.ClipboardMode = DevExpress.Export.ClipboardMode.Formatted;
 
             //---Groupování TEST
             OptionsMenu.ShowGroupSummaryEditorItem = false;
@@ -408,11 +580,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             OptionsMenu.EnableFooterMenu = false;
             OptionsMenu.EnableGroupRowMenu = false;
             OptionsView.ShowGroupedColumns = true;  //nechá groupovaný sloupec viditelný (na místě kde byl před groupováním)
-            OptionsView.GroupFooterShowMode = GroupFooterShowMode.VisibleAlways;    //Sumy group jsou zobrazeny vždy
+            OptionsView.GroupFooterShowMode = GroupFooterShowMode.Hidden;    //Sumy group jsou zobrazeny vždy
             OptionsView.ShowGroupPanelColumnsAsSingleRow = true;    //zobrazení group tlačítek v jednom řádku
-            OptionsBehavior.AllowFixedGroups = DefaultBoolean.True;
+            OptionsBehavior.AllowFixedGroups = DefaultBoolean.False;
             Appearance.GroupFooter.FontStyleDelta = FontStyle.Bold;
             Appearance.FooterPanel.FontStyleDelta = FontStyle.Bold;
+
+            OptionsBehavior.AutoExpandAllGroups = true; //RMC 0076915 19.11.2024 Optimalizace group pro velký poč. záznam; groupy chceme mít všechny rozbalené při první inicializaci. Jejich stav rozbaleno/sbaleno, řešíme o něco později samy.
+            LevelIndent = 0;    //vypíná odsazení při zapnutém groupování.
+
 
             //this.OptionsBehavior.AlignGroupSummaryInGroupRow = DefaultBoolean.True;
             _SetAlignGroupSummaryInGroupRow();
@@ -420,13 +596,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             //----
 
         }
+
+        #region Register/unregister events
         private void _RegisterEventsHandlers()
         {
+            //Filtering
             this.FilterPopupExcelCustomizeTemplate += _OnFilterPopupExcelCustomizeTemplate;
             this.ColumnFilterChanged += _OnColumnFilterChanged;
             this.CustomRowFilter += _OnCustomRowFilter;
+            this.FilterPopupExcelData += _OnFilterPopupExcelData;
+            this.FilterPopupExcelQueryFilterCriteria += _OnFilterPopupExcelQueryFilterCriteria;
+            this.FilterPopupExcelParseFilterCriteria += _OnFilterPopupExcelParseFilterCriteria;
 
             this.DoubleClick += _OnDoubleClick;
+            this.Click += _OnClick;
 
             this.SelectionChanged += _OnSelectionChanged;
             this.FocusedRowChanged += _OnFocusedRowChanged;
@@ -436,6 +619,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.StartSorting += _OnStartSorting;   //zatím nepoužívám
             this.CustomColumnSort += _OnCustomColumnSort;
             this.EndSorting += _OnEndSorting;   //zatím nepoužívám; registruji přímo v ListGrid
+
+            //Grouping 
+            this.EndGrouping += _OnEndGrouping;
 
             this.KeyDown += _OnKeyDown;
             this.KeyPress += _OnKeyPress;
@@ -455,11 +641,99 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.CustomSummaryCalculate += _OnCustomSummaryCalculate;
             this.CustomDrawFooterCell += _OnCustomDrawFooterCell;
             this.CustomDrawGroupRowCell += _OnCustomDrawGroupRowCell;
+            this.CustomDrawRowIndicator += _OnCustomDrawRowIndicator;
+            this.CustomDrawColumnHeader += _OnCustomDrawColumnHeader;
 
             this.MouseUp += _OnMouseUp;
+            this.MouseDown += _OnMouseDown;
             this.ColumnWidthChanged += _OnColumnWidthChanged;
-        }
 
+            this.ValidatingEditor += _OnValidatingEditor;
+            this.InvalidValueException += _OnInvalidValueException;
+
+            this.DragObjectStart += _OnDragObjectStart;
+            this.DragObjectOver += _OnDragObjectOver;
+            this.DragObjectDrop += _OnDragObjectDrop;
+        }
+        private void _UnRegisterEventsHandlers()
+        {
+            //Filtering
+            this.FilterPopupExcelCustomizeTemplate -= _OnFilterPopupExcelCustomizeTemplate;
+            this.ColumnFilterChanged -= _OnColumnFilterChanged;
+            this.CustomRowFilter -= _OnCustomRowFilter;
+            this.FilterPopupExcelData += _OnFilterPopupExcelData;
+            this.FilterPopupExcelQueryFilterCriteria += _OnFilterPopupExcelQueryFilterCriteria;
+            this.FilterPopupExcelParseFilterCriteria += _OnFilterPopupExcelParseFilterCriteria;
+
+            this.DoubleClick -= _OnDoubleClick;
+            this.Click -= _OnClick;
+
+            this.SelectionChanged -= _OnSelectionChanged;
+            this.FocusedRowChanged -= _OnFocusedRowChanged;
+            this.FocusedColumnChanged -= _OnFocusedColumnChanged;
+
+            // sorting events
+            this.StartSorting -= _OnStartSorting;   //zatím nepoužívám
+            this.CustomColumnSort -= _OnCustomColumnSort;
+            this.EndSorting -= _OnEndSorting;   //zatím nepoužívám; registruji přímo v ListGrid
+
+            //Grouping 
+            this.EndGrouping -= _OnEndGrouping;
+
+            this.KeyDown -= _OnKeyDown;
+            this.KeyPress -= _OnKeyPress;
+
+            this.CustomRowCellEdit -= _OnCustomRowCellEdit;
+
+            // ScrollBar:
+            this.TopRowChanged -= _OnTopRowChanged;
+            this.CalcRowHeight -= View_CalcRowHeight;
+            this.CustomDrawScroll -= View_CustomDrawScroll;
+
+            this.Layout -= _OnLayout;
+
+            this.PopupMenuShowing -= _OnPopupMenuShowing;
+            this.CustomDrawCell -= _OnCustomDrawCell;
+
+            this.CustomSummaryCalculate -= _OnCustomSummaryCalculate;
+            this.CustomDrawFooterCell -= _OnCustomDrawFooterCell;
+            this.CustomDrawGroupRowCell -= _OnCustomDrawGroupRowCell;
+            this.CustomDrawRowIndicator -= _OnCustomDrawRowIndicator;
+            this.CustomDrawColumnHeader -= _OnCustomDrawColumnHeader;
+
+            this.MouseUp -= _OnMouseUp;
+            this.MouseDown -= _OnMouseDown;
+            this.ColumnWidthChanged -= _OnColumnWidthChanged;
+
+            this.ValidatingEditor -= _OnValidatingEditor;
+            this.InvalidValueException -= _OnInvalidValueException;
+
+            this.DragObjectStart -= _OnDragObjectStart;
+            this.DragObjectOver -= _OnDragObjectOver;
+            this.DragObjectDrop -= _OnDragObjectDrop;
+        }
+        #endregion
+
+        #region skin/vzhled
+
+        /// <summary>
+        /// Je voláno vždy po změně skinu
+        /// </summary>
+        void IListenerStyleChanged.StyleChanged()
+        {
+            __groupButtonColapsed = __groupButtonExpandedBelow = __groupButtonExpandedAbove = null; //reset images=>Refresh, protože se načtou znovu pro aktuální skin
+            _RefreshColumnHeaderImages();
+            GroupInfos.ForEach(groupInfo => groupInfo.RefreshStyleInfo());  //refresh StyleInfo (kalíšku) pro GroupInfo
+        }
+        private void _RefreshColumnHeaderImages()
+        {
+            foreach (GridColumn gcItem in this.Columns)
+            {
+                var gridViewColumn = GetIGridViewColumn(gcItem);
+                if (gridViewColumn != null) _ApplyImageToColumnHeader(gcItem, gridViewColumn);
+            }
+        }
+        #endregion
         private void _OnColumnWidthChanged(object sender, ColumnEventArgs e)
         {
             _SetColumnTextTrimming(e.Column);
@@ -477,18 +751,53 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
 
+        private void _OnMouseDown(object sender, MouseEventArgs e)
+        {
+            DxGridView view = sender as DxGridView;
+            GridHitInfo hitInfo = view.CalcHitInfo(e.Location);
+            DXMouseEventArgs dxE = DXMouseEventArgs.GetMouseArgs(e);
+
+            //Disable select groupRow
+            //if (hitInfo.Column?.FieldName == "DX$CheckboxSelectorColumn" && hitInfo.RowInfo != null && _IsGroupRow(hitInfo.RowInfo.RowHandle))
+            //{
+            //    DXMouseEventArgs ea = DXMouseEventArgs.GetMouseArgs(e);
+            //    ea.Handled = true;
+            //    return;
+            //}
+
+            if (e.Button == MouseButtons.Left && Control.ModifierKeys == Keys.Control) //LButton and ctrl only
+            {
+                //Nemám označen žádný řádek a left click + ctrl (výběr jednotlivých řádků) na jíný řádek než byl aktuální. 
+                //Chci aby se označil i původní (poslední) aktivní řádek. Stejně se to chová v TotalCommanderu.
+                if (LastMouseDownGridHitInfo != null)
+                {
+                    int lastRow = LastMouseDownGridHitInfo.RowHandle;
+                    if (view.IsMultiSelect
+                        && view.SelectedRowsCount == 0
+                        && hitInfo.InDataRow
+                        && lastRow != hitInfo.RowHandle
+                        && view.IsDataRow(lastRow) && !view.IsRowSelected(lastRow))
+                    {
+                        view.SelectRow(lastRow);
+                    }
+                }
+            }
+            LastMouseDownGridHitInfo = hitInfo;
+        }
+
         private void _OnMouseUp(object sender, MouseEventArgs e)
         {
+            DxGridView view = sender as DxGridView;
+            GridHitInfo hitInfo = view.CalcHitInfo(e.Location);
+            DXMouseEventArgs dxE = DXMouseEventArgs.GetMouseArgs(e);
+
             //nastavení clipboardu při alt left click.
             if (e.Button == MouseButtons.Left && Control.ModifierKeys == Keys.Alt) //LButton and ALT only
             {
-                DevExpress.Utils.DXMouseEventArgs ea = e as DevExpress.Utils.DXMouseEventArgs;
-                GridView view = sender as GridView;
-                GridHitInfo info = view.CalcHitInfo(ea.Location);
-                if (info.InRow && info.InRowCell)
+                if (hitInfo.InRow && hitInfo.InRowCell)
                 {
                     string valueString = string.Empty;
-                    var value = view.GetRowCellDisplayText(info.RowHandle, info.Column);
+                    var value = view.GetRowCellDisplayText(hitInfo.RowHandle, hitInfo.Column);
                     if (value != null)
                     {
                         valueString = value.ToString();
@@ -497,32 +806,72 @@ namespace Noris.Clients.Win.Components.AsolDX
                         System.Windows.Forms.Clipboard.Clear();
                     else
                         System.Windows.Forms.Clipboard.SetText(valueString, System.Windows.Forms.TextDataFormat.UnicodeText);
-                    // Globals.NotifyToast(GridControl, null, DxComponent.Localize(MsgCode.CopyBrowseCell, info.Column.Caption), System.Windows.Forms.ToolTipIcon.Info);
+                    Globals.NotifyToast(GridControl, null, DxComponent.Localize(MsgCode.CopyBrowseCell, hitInfo.Column.Caption), System.Windows.Forms.ToolTipIcon.Info);
                     return;
                 }
             }
-        }
 
-        private void _OnCustomDrawFooterCell(object sender, FooterCellCustomDrawEventArgs e)
-        {
-            GridSummaryItem summary = e.Info.SummaryItem;
-            if (_summaryRowData != null)
+            //Změna logiky označení/rušení označení všech řádků pomocí checkBoxů v hlavičce
+            //Pokud mám označený nějaký řádek (ne všechny), tak prvním kliknutím na checkBox chci zrušit označení všech řádků.
+            if (hitInfo.InColumn && !hitInfo.InRow)
             {
-                IGridViewColumn gv = GridViewColumns.FirstOrDefault(x => x.FieldName == e.Column.FieldName);
-                Type type = gv?.ColumnType;
-                if (type == typeof(decimal))
+                if (hitInfo.Column.FieldName == GridView.CheckBoxSelectorColumnName || hitInfo.Column.FieldName == view.OptionsSelection.CheckBoxSelectorField)
                 {
-                    decimal value = Convert.ToDecimal(_summaryRowData[e.Column.FieldName]);
-                    string formatedValue = value.ToString(gv?.FormatString);
-                    e.Info.DisplayText = formatedValue;
-                }
-                else if (type == typeof(int) || type == typeof(Int32) || type == typeof(Int16))
-                {
-                    int value = Convert.ToInt32(_summaryRowData[e.Column.FieldName]);
-                    string formatedValue = value.ToString(gv?.FormatString);
-                    e.Info.DisplayText = formatedValue;
+                    //view.BeginDataUpdate();
+                    dxE.Handled = true; // Suppress default behavior
+                    if (SelectedAllRows || !SelectedAllRows && SelectedRowsCount > 0)
+                    {
+                        SelectedAllRows = false;
+                    }
+                    else
+                    {
+                        SelectedAllRows = true;
+                    }
+                    //view.EndDataUpdate();
                 }
             }
+            if (hitInfo.HitTest == GridHitTest.GroupPanelColumn && hitInfo.Column != null && IsGroupIconRect(e.Location, hitInfo.Column))
+            {
+                GridColumn column = hitInfo.Column;
+                //XtraMessageBox.Show(string.Format("Custom Button in {0}", column.FieldName));
+                if (IsGroupExpanded(column.GroupIndex))
+                {
+                    _SetAllGroupsAndChildsColapsed(column.GroupIndex);
+                }
+                else
+                {
+                    _SetAllGroupsAndParentsExpanded(column.GroupIndex);
+                }
+                DXMouseEventArgs.GetMouseArgs(e).Handled = true;
+            }
+        }
+
+        private string ConvertAndFormatValue(object value, Type targetType, string formatString)
+        {
+            if (value == DBNull.Value || value == null)
+            {
+                return null; // Ošetření null nebo DBNull hodnot
+            }
+            try
+            {
+                if (targetType == typeof(decimal))
+                {
+                    decimal decimalValue = Convert.ToDecimal(value);
+                    return decimalValue.ToString(formatString);
+                }
+                else if (targetType == typeof(int) || targetType == typeof(short) || targetType == typeof(Int16))
+                {
+                    int intValue = Convert.ToInt32(value);
+                    return intValue.ToString(formatString);
+                }
+                else if (targetType == typeof(long) || targetType == typeof(Int64))
+                {
+                    long longValue = Convert.ToInt64(value);
+                    return longValue.ToString(formatString);
+                }
+            }
+            catch { }
+            return null; // Pokud dojde k chybě nebo typ není podporován
         }
 
         /// <summary>
@@ -532,7 +881,39 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _OnCustomSummaryCalculate(object sender, DevExpress.Data.CustomSummaryEventArgs e)
         {
-
+            GridSummaryItem item = e.Item as GridSummaryItem;
+            var column = GetIGridViewColumn(item.FieldName);
+            if (e.IsTotalSummary && column.IsNumberColumnType)
+            {
+                switch (e.SummaryProcess)
+                {
+                    case CustomSummaryProcess.Start:
+                        e.TotalValue = 0;
+                        break;
+                    case CustomSummaryProcess.Calculate:
+                        if (e.FieldValue != null)
+                        {
+                            bool shouldSum = !_IsGroupRow(e.RowHandle);
+                            if (shouldSum)
+                            {
+                                if (column.IsNumberIntegerColumnType && int.TryParse(e.FieldValue.ToString(), out int intValue))
+                                {
+                                    int.TryParse(e.TotalValue.ToString(), out int totalIntValue);
+                                    e.TotalValue = totalIntValue + intValue;
+                                }
+                                else
+                                {
+                                    if (decimal.TryParse(e.FieldValue.ToString(), out decimal value))
+                                    {
+                                        decimal.TryParse(e.TotalValue.ToString(), out decimal totalValue);
+                                        e.TotalValue = totalValue + value;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                }
+            }
         }
         /// <inheritdoc/>
         protected override void Dispose(bool disposing)
@@ -542,38 +923,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _UnRegisterEventsHandlers();
             }
             base.Dispose(disposing);
-        }
-        private void _UnRegisterEventsHandlers()
-        {
-            this.FilterPopupExcelCustomizeTemplate -= _OnFilterPopupExcelCustomizeTemplate;
-            this.ColumnFilterChanged -= _OnColumnFilterChanged;
-            this.CustomRowFilter -= _OnCustomRowFilter;
-
-            this.DoubleClick -= _OnDoubleClick;
-
-            this.SelectionChanged -= _OnSelectionChanged;
-            this.FocusedRowChanged -= _OnFocusedRowChanged;
-            this.FocusedColumnChanged -= _OnFocusedColumnChanged;
-
-            // sorting events
-            this.StartSorting -= _OnStartSorting;   //zatím nepoužívám
-            this.CustomColumnSort -= _OnCustomColumnSort;
-            this.EndSorting -= _OnEndSorting;   //zatím nepoužívám; registruji přímo v ListGrid
-
-            this.KeyDown -= _OnKeyDown;
-            this.KeyPress -= _OnKeyPress;
-
-            this.CustomRowCellEdit -= _OnCustomRowCellEdit;
-
-            // ScrollBar:
-            this.TopRowChanged -= _OnTopRowChanged;
-            this.CalcRowHeight -= View_CalcRowHeight;
-            this.CustomDrawScroll -= View_CustomDrawScroll;
-
-            this.Layout -= _OnLayout;
-
-            this.PopupMenuShowing -= _OnPopupMenuShowing;
-
         }
 
         private void _SetShowGroupPanel()
@@ -586,11 +935,50 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
 
+        private void _SetShowFilterRow()
+        {
+            if (OptionsView.ShowAutoFilterRow != _showFilterRow)
+            {
+                //změna viditelnosti filtrovacího řádku
+                OptionsView.ShowAutoFilterRow = _showFilterRow;
+                OnDxShowFilterRowChanged();
+            }
+        }
+
         #region Select rows and Current row
+
+        private int FocusedRowIndex
+        {
+            get { return GetDataSourceRowIndex(FocusedRowHandle); }
+            set { FocusedRowHandle = GetRowHandle(value); }
+        }
         /// <summary>
         /// Aktuální řádek s fokusem
         /// </summary>
-        public int CurrentRowNumber { get => FocusedRowHandle; set { FocusedRowHandle = value; } }
+        public int CurrentRowNumber
+        {
+            get => FocusedRowIndex;
+            set
+            {
+                if (IsValidRowHandle(value))
+                {
+                    if (FocusedRowIndex == value)
+                    {
+                        //uměle vyvolání změny i když se nic nezměnilo. Server to potřebuje vědět jako potvrzení, že jsme nastavili a zároveň se na tu změnu chytají nějaké háčky...
+                        OnFocusedRowChanged(FocusedRowIndex, FocusedRowIndex);
+                    }
+                    else
+                    {
+                        //OnFocusedRowChanged vyvolá komponenta, protože se opravdu změní řádek
+                        FocusedRowIndex = value;
+                    }
+                }
+                else
+                {
+                    OnFocusedRowChanged(FocusedRowIndex, FocusedRowIndex);
+                }
+            }
+        }
 
         private bool _selectedAllRows;
         /// <summary>
@@ -653,14 +1041,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <inheritdoc/>
         public override void SelectRow(int rowHandle)
         {
-            if (!_SelectedRowsCache.Contains(rowHandle))
-                _SelectedRowsCache.Add(rowHandle);
+
+            int rowIndex = this.GetDataSourceRowIndex(rowHandle);
+            if (!_SelectedRowsCache.Contains(rowIndex))
+                _SelectedRowsCache.Add(rowIndex);
             base.SelectRow(rowHandle);
         }
         /// <inheritdoc/>
         public override void UnselectRow(int rowHandle)
         {
-            _SelectedRowsCache.Remove(rowHandle);
+            int rowIndex = this.GetDataSourceRowIndex(rowHandle);
+            _SelectedRowsCache.Remove(rowIndex);
             base.UnselectRow(rowHandle);
         }
         /// <inheritdoc/>
@@ -689,10 +1080,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             BeginSelection();
             try
             {
-                bool _oldSilent = _SilentMode;
-                if (RowCount > 0) _SilentMode = true; //Nechci posílát event o změně selctovaných řádků, pokud mám co selectovat, tak se pošle se změnou.
+                bool _oldSilent = _silentMode;
+                if (RowCount > 0) _silentMode = true; //Nechci posílát event o změně selctovaných řádků, pokud mám co selectovat, tak se pošle se změnou.
                 ClearSelectionCore();
-                _SilentMode = _oldSilent;
+                _silentMode = _oldSilent;
                 for (int i = 0; i < RowCount; i++)
                 {
                     SelectRow(GetVisibleRowHandle(i));
@@ -703,6 +1094,240 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _selectedAllRows = true;
                 EndSelection();
             }
+        }
+
+        #endregion
+
+        #region Drawing, customDraw
+        private void _OnCustomDrawCell(object sender, RowCellCustomDrawEventArgs e)
+        {
+            bool drawEmptyMergedCell = false;
+            bool nextCellValueIsDiferent = true;
+            Color mergedCellBackground = this.PaintAppearance.Row.GetBackColor(e.Cache);
+            Color borderColor = this.PaintAppearance.HorzLine.GetBackColor(e.Cache);
+            GridCellInfo cellInfo = (e.Cell as GridCellInfo);
+            var iColumn = GetIGridViewColumn(e.Column);
+
+            //Datový řádek (buňka)
+            //Console.WriteLine($"CustomDrawCell rowHandle: {e.RowHandle} column: {e.Column}");
+            if (this.IsDataRow(e.RowHandle) && e.Column.VisibleIndex >= 0 && e.Column.FieldName != GROUPBUTTON)
+            {
+                if (iColumn != null && iColumn.AllowMerge && !_IsGroupRow(e.RowHandle))
+                {
+                    //Merge column
+                    int previousRowHandle = e.RowHandle - 1;
+                    if (this.IsDataRow(previousRowHandle))
+                    {
+                        object previousCellValue = this.GetRowCellValue(previousRowHandle, e.Column);
+                        //kontrola zda je aktuální hodnota buňky stejná s předchozí viditelnou
+                        if (previousCellValue != null && previousCellValue.Equals(e.CellValue) && this.IsRowVisible(previousRowHandle) == RowVisibleState.Visible)
+                        {
+                            if (!this.IsRowSelected(e.RowHandle))
+                            {
+                                //změna pozadí pro merge buňky, překreslím to...
+                                Rectangle rect = e.Bounds;
+                                rect.Inflate(1, 1);
+                                e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(mergedCellBackground), rect);
+                            }
+                            drawEmptyMergedCell = true;
+                        }
+                        else
+                        {
+                            if (!this.IsRowSelected(e.RowHandle))
+                            {
+                                e.Appearance.BackColor = mergedCellBackground;
+                            }
+                            drawEmptyMergedCell = false;
+                        }
+                    }
+                    //zjištění zda další buňka je jiná
+                    int nextRowHandle = e.RowHandle + 1;
+                    if (this.IsDataRow(nextRowHandle) && !_IsGroupRow(nextRowHandle))
+                    {
+                        object nextCellValue = this.GetRowCellValue(nextRowHandle, e.Column);
+                        if (nextCellValue != null && nextCellValue.Equals(e.CellValue))
+                        {
+                            nextCellValueIsDiferent = false;
+                        }
+                    }
+                }
+
+                //barvičky/kalíšky
+                int dataSourceRowIndex = this.GetDataSourceRowIndex(e.RowHandle);
+                StyleInfo styleInfo = null;
+
+                if (iColumn != null && iColumn.IsHiddenValue)
+                {
+                    //Hidden value 
+                    styleInfo = DxComponent.GetStyleInfo("HiddenValue", null);
+                }
+                else if (GridViewCells != null && GridViewCells.TryGetValue(GridViewCellData.CreateId(dataSourceRowIndex, e.Column.FieldName), out var cell))
+                {
+                    //kalíšek z definice ze serveru
+                    styleInfo = cell.StyleInfo;
+                }
+                if (styleInfo != null)
+                {
+                    if (this.IsRowSelected(e.RowHandle))
+                    {
+                        //selectovaný řádek: provedeme merge barev pro pozadí. Barva pro označovaní řádků + barva kalíšku
+                        if (styleInfo.AttributeBgColor != null) e.Appearance.BackColor = this.PaintAppearance.SelectedRow.BackColor.Morph(styleInfo.AttributeBgColor.Value, 0.5f); ;
+                    }
+                    else
+                    {
+                        if (styleInfo.AttributeBgColor != null) e.Appearance.BackColor = styleInfo.AttributeBgColor.Value;
+                    }
+                    if (styleInfo.AttributeColor != null) e.Appearance.ForeColor = styleInfo.AttributeColor.Value;
+                    if (styleInfo.AttributeFontStyle != null) e.Appearance.FontStyleDelta = styleInfo.AttributeFontStyle.Value;
+                }
+
+                if (drawEmptyMergedCell)
+                {
+                    //nevolám defaultDraw => prázdná buňka
+                }
+                else
+                {
+                    e.DefaultDraw();
+                }
+                if (nextCellValueIsDiferent)
+                {
+                    //pokud následující buňkaje má jinou hodnotu, tak kresli spodni linku
+                    //zde se to bude kreslit i pro sloupce bez merge. Máme globálně vypnuté horizontální linky.
+                    DrawCellBottomBorder(e.Graphics, cellInfo.Bounds, borderColor);
+                }
+                e.Handled = true;   //Již se nic nezpracuje v base
+            }
+            if (e.Column.FieldName == GROUPBUTTON)
+            {
+                int groupId = _GetGroupIdRow(e.RowHandle);
+                if (groupId >= 0)
+                {
+                    //vykreslíme tlačítko
+                    GroupRowInfo gInfo = GroupRowInfos.First(y => y.GroupId == groupId);
+                    //tlačítko nevykreslujeme pro polsední úroveň pro mode ShowOnlyGroups
+                    if (GroupMode != GroupModes.ShowOnlyGroups || GroupMode == GroupModes.ShowOnlyGroups && !_IsTheLowestGroup(gInfo.Group))
+                    {
+                        if (!gInfo.Expanded)
+                        {
+                            e.Graphics.DrawImage(_GroupButtonColapsed, _GetPointForCenterImage(e.Bounds, _GroupButtonColapsed.Width, _GroupButtonColapsed.Height));
+                        }
+                        else { e.Graphics.DrawImage(_GroupButtonExpanded, _GetPointForCenterImage(e.Bounds, _GroupButtonExpanded.Width, _GroupButtonExpanded.Height)); }
+                    }
+                }
+
+                DrawCellBottomBorder(e.Graphics, cellInfo.Bounds, borderColor);
+                e.Handled = true;   //Již se nic nezpracuje v base
+            }
+
+            //filtrovací řádek
+            if (this.IsFilterRow(e.RowHandle))
+            { //zapisuji do DisplayText hodnotu před konverzi filtru, tedy restore původní hodnoty zadané uživatelem; případ kdy stojím mimo input...
+                string displayText;
+                _convertedColumnFilterCache.TryGetValue(e.Column.FilterInfo.FilterString, out displayText);
+                if (!string.IsNullOrEmpty(displayText))
+                {
+                    e.DisplayText = displayText;
+                }
+            }
+
+        }
+        /// <summary>
+        /// kreslí spodní linku ohraničení buňky.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="borderColor"></param>
+        private void DrawCellBottomBorder(Graphics graphics, Rectangle bounds, Color borderColor)
+        {
+            Pen pen = DxComponent.PaintGetPen(borderColor);
+
+            int x1 = bounds.X;
+            int x2 = bounds.X + bounds.Width;
+            int y = bounds.Bottom - 1;
+
+            graphics.DrawLine(pen, x1, y, x2, y);
+        }
+        private void _OnCustomDrawRowIndicator(object sender, RowIndicatorCustomDrawEventArgs e)
+        {//https://docs.devexpress.com/WindowsForms/DevExpress.XtraGrid.Views.Grid.GridView.CustomDrawRowIndicator
+            this.CustomDrawRowIndicator += (s, ee) =>
+            {
+                if (!ee.Info.IsRowIndicator)
+                {
+                    return;
+                }
+                if (!this.IsFilterRow(ee.RowHandle)) return;
+                //RowIndicator pro RowFilter, změna ikonky na mazání filtru
+                ee.Handled = false;  //false -> nechci uplně zazdít vykreslování, jen něco změnit (obrázek)
+                if (HasRowFilterExpression)
+                {
+                    //je vyplněn nějaký filtr -> je co mazat
+                    ee.Info.ImageIndex = 4;  //křížek
+                }
+            };
+        }
+        private Point _GetPointForCenterImage(Rectangle bounds, int imageWidth, int imageHeight)
+        {
+            Point locationPoint = bounds.Location;
+            locationPoint.X += bounds.Width / 2 - imageWidth / 2;
+            locationPoint.Y += bounds.Height / 2 - imageHeight / 2;
+            return locationPoint;
+        }
+        private void _OnCustomDrawFooterCell(object sender, FooterCellCustomDrawEventArgs e)
+        {
+            GridSummaryItem summary = e.Info.SummaryItem;
+            if (_summaryRowData != null)
+            {
+                IGridViewColumn gv = GetIGridViewColumn(e.Column);
+                Type type = gv?.ColumnType;
+                string formattedValue = null;   //RMC 13.01.2025; refaktor získání hodnoty ze summaryRowData a ošetření konverze.
+
+                if (type != null && _summaryRowData.Table.Columns.Contains(e.Column.FieldName))
+                {
+                    object rawValue = _summaryRowData[e.Column.FieldName];
+                    formattedValue = ConvertAndFormatValue(rawValue, type, gv?.FormatString);
+                }
+                if (formattedValue != null)
+                {
+                    e.Info.DisplayText = formattedValue;
+                }
+                else
+                {
+                    e.Info.DisplayText = "..."; // znějakého důvodu se nepodařilo dostat data. zobrazím ...
+                }
+            }
+            e.Info.Icon = null; //vypnutí ikonky v summačním řádku.
+        }
+        private void _OnCustomDrawColumnHeader(object sender, ColumnHeaderCustomDrawEventArgs e)
+        {
+            if (e.Column?.GroupIndex >= 0 && e.Info.HeaderPosition == DevExpress.Utils.Drawing.HeaderPositionKind.Special)
+            {
+                if (GroupColumnHeaderInfos.TryGetValue(e.Column, out DxGridViewInfo.GroupColumnHeaderInfo info))
+                {
+                    e.Info.CaptionRect = info.CaptionRect;  //nastavení souřadnic pro nadpis. Bere souřadnice, které se vypočítaly při prvním výpočtu velikosti
+                }
+
+                e.Painter.DrawObject(e.Info);   //vykreslední pocí paintru
+
+                //dokreslení ikonky stavu groupy
+                Rectangle iconBackGroundArea = GetGroupStateIconBackgroundArea(e.Info.CaptionRect);
+                Rectangle iconArea = GetGroupStateIconArea(e.Info.CaptionRect);
+
+                GroupInfo gInfo = GroupInfos.FirstOrDefault(i => i.Group == e.Column?.GroupIndex);
+                Color? groupColor = gInfo?.StyleInfo?.AttributeBgColor;
+
+                if (groupColor != null) e.Graphics.FillRectangle(new SolidBrush(groupColor.Value), iconBackGroundArea);
+                if (gInfo != null && gInfo.Expanded)
+                {
+                    e.Graphics.DrawImage(_GroupButtonExpanded, iconArea);
+                }
+                else
+                {
+                    e.Graphics.DrawImage(_GroupButtonColapsed, iconArea);
+                }
+
+                e.Handled = true;
+            }
+
         }
 
         #endregion
@@ -723,35 +1348,115 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.OptionsBehavior.AlignGroupSummaryInGroupRow = DxComponent.ConvertBool(AlignGroupSummaryInGroupRow);
         }
-
-        private void _OnCustomDrawCell(object sender, RowCellCustomDrawEventArgs e)
-        {
-            // zkontrolujeme, jestli se jedná o buňku s daty
-            if (e.RowHandle >= 0 && e.Column.VisibleIndex >= 0)
-            {
-                if (GridViewCells == null) return;
-                if (!GridViewCells.TryGetValue(GridViewCellData.CreateId(e.RowHandle, e.Column.FieldName), out var cell)) return;//nemám data pro cell, tak return
-
-                var style = DxComponent.GetStyleInfo(cell.StyleName, cell.ExactAttrColor);
-                //barvičky
-                if (style == null) return;
-                if (!this.IsRowSelected(e.RowHandle))
-                {
-                    //barvy
-                    if (style.AttributeBgColor != null) e.Appearance.BackColor = style.AttributeBgColor.Value;
-                    if (style.AttributeColor != null) e.Appearance.ForeColor = style.AttributeColor.Value;
-                }
-                if (style.AttributeFontStyle != null) e.Appearance.FontStyleDelta = style.AttributeFontStyle.Value;
-            }
-        }
-
         private void _OnPopupMenuShowing(object sender, PopupMenuShowingEventArgs e)
         {
-            if (e.HitInfo.InDataRow)    //obsluha zatím jen DataRow
+            if (e.HitInfo.InDataRow && e.MenuType != DevExpress.XtraGrid.Views.Grid.GridMenuType.AutoFilter)    //obsluha zatím jen DataRow; skin WXI při autofilter má nastaveno inDataRow (asi bug)...
             {
                 e.Allow = false;
                 var hitInfo = new DxGridHitInfo(e.HitInfo, Cursor.Position);
-                this.RaiseShowContextMenu(hitInfo);
+                this.RaiseShowContextMenu(hitInfo, "");
+            }
+            else if (e.MenuType == DevExpress.XtraGrid.Views.Grid.GridMenuType.AutoFilter)
+            {
+                //Přidání položel v menu operátora řádkového filtru. (Je zadáno, Není zadáno)
+                IGridViewColumn colum = GetIGridViewColumn(e.HitInfo.Column);
+                if (colum != null && !colum.IsEditStyleColumnType)  //nechceme pro editační styly, protože neumíme vložit jiný text než je editační styl
+                {
+                    DevExpress.Utils.Menu.DXMenuCheckItem item = new DevExpress.Utils.Menu.DXMenuCheckItem();
+                    e.Menu.ItemClick -= Menu_ItemClick;
+                    e.Menu.ItemClick += Menu_ItemClick;
+                    e.Menu.Items.Add(_CreateConditionMenuItem(FilterUIElementLocalizerStringId.CustomUIFilterIsBlankName, "IsNullOrEmpty"));
+                    e.Menu.Items.Add(_CreateConditionMenuItem(FilterUIElementLocalizerStringId.CustomUIFilterIsNotBlankName, "IsNotNullOrEmpty"));
+                }
+            }
+            else if (e.MenuType == DevExpress.XtraGrid.Views.Grid.GridMenuType.Column && e.HitInfo.InGroupColumn)
+            {
+                //kontextové menu v group panelu. Sbalit vše a rozbalit vše.
+                e.Menu.ItemClick -= Menu_ItemClick;
+                e.Menu.ItemClick += Menu_ItemClick;
+
+                int? group = GetGroupByColumn(e.HitInfo.Column);
+                if (group != null)
+                {
+                    DXMenuItem expandAll = e.Menu.Items.FirstOrDefault(x => x.Tag.Equals(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullExpand));
+                    if (expandAll != null)
+                    {
+                        //do tagu přidám číslo skupiny, abych mohl v Menu_ItemClick číslo skupiny parsovat a použít. 
+                        expandAll.Tag = GridLocalizer.Active.GetLocalizedString(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullExpand) + "_" + group.Value;
+                    }
+                    DXMenuItem collapseAll = e.Menu.Items.FirstOrDefault(x => x.Tag.Equals(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullCollapse));
+                    if (collapseAll != null)
+                    {
+                        collapseAll.Tag = GridLocalizer.Active.GetLocalizedString(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullCollapse) + "_" + group.Value;
+                    }
+                }
+            }
+            else if (e.HitInfo.InColumn && e.MenuType == DevExpress.XtraGrid.Views.Grid.GridMenuType.Column && e.HitInfo.Column?.FieldName == GROUPBUTTON)
+            {
+                //RMC 14.1.2025 0077153 Nový přehled -ad - hoc seskupení
+                //Hromadné operace nad skupinou
+                e.Allow = false;
+                var hitInfo = new DxGridHitInfo(e.HitInfo, Cursor.Position);
+                this.RaiseShowContextMenu(hitInfo, "ColumnHeader");
+            }
+        }
+
+        /// <summary>
+        ///Vytvoření položel pro menu operátora řádkového filtru. (Je zadáno, Není zadáno)
+        /// </summary>
+        /// <param name="localizerStringId"></param>
+        /// <param name="condition"></param>
+        /// <returns></returns>
+        private DXMenuCheckItem _CreateConditionMenuItem(FilterUIElementLocalizerStringId localizerStringId, string condition)
+        {
+            //https://supportcenter.devexpress.com/ticket/details/t601149/how-to-access-auto-filter-row-icons
+            Image image = DevExpress.XtraEditors.FilterControl.GetClauseImageByType(DevExpress.LookAndFeel.UserLookAndFeel.Default, condition);
+            string caption = FilterUIElementLocalizer.GetString(localizerStringId);
+
+            DXMenuCheckItem item = new DXMenuCheckItem();
+            item.ImageOptions.Image = image;
+            item.Caption = caption;
+            item.Tag = localizerStringId;
+            return item;
+        }
+
+        /// <summary>
+        /// Obsluha clicku na námi přidanou položku v menu operátora řádkového filtru. (Je zadáno, Není zadáno)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Menu_ItemClick(object sender, DevExpress.Utils.Menu.DXMenuItemEventArgs e)
+        {
+            var column = this.FocusedColumn;
+            if (e.Item.Tag.Equals(FilterUIElementLocalizerStringId.CustomUIFilterIsBlankName))
+            {
+                var bOpertar = new BinaryOperator(column.FieldName, WildCardNull, BinaryOperatorType.Equal);
+                column.FilterInfo = new ColumnFilterInfo(bOpertar);
+            }
+            else if (e.Item.Tag.Equals(FilterUIElementLocalizerStringId.CustomUIFilterIsNotBlankName))
+            {
+                var bOpertar = new BinaryOperator(column.FieldName, WildCardNull, BinaryOperatorType.NotEqual);
+                column.FilterInfo = new ColumnFilterInfo(bOpertar);
+            }
+            else if (e.Item.Tag.ToString().StartsWith(GridLocalizer.Active.GetLocalizedString(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullExpand)))
+            {
+                string[] tags = e.Item.Tag.ToString().Split('_');
+                if (tags.Length == 2 && int.TryParse(tags[1], out int group))
+                {
+                    _SetAllGroupsAndParentsExpanded(group);
+                }
+            }
+            else if (e.Item.Tag.ToString().StartsWith(GridLocalizer.Active.GetLocalizedString(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullCollapse)))
+            {
+                string[] tags = e.Item.Tag.ToString().Split('_');
+                if (tags.Length == 2 && int.TryParse(tags[1], out int group))
+                {
+                    _SetAllGroupsAndChildsColapsed(group);
+                }
+            }
+            else
+            {
+                this.CloseEditor();
             }
         }
 
@@ -764,7 +1469,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 //změna viditelnosti groupovacího řádku
                 OnDxShowGroupPanelChanged();
             }
-
+            //nexistuje samostaná eventa pro změnu viditelnosti groupovací řádky, proto ošetřuji zde.
+            if (OptionsView.ShowAutoFilterRow != _showFilterRow)
+            {
+                _showFilterRow = !_showFilterRow;
+                //změna viditelnosti filtrovacího řádku
+                OnDxShowFilterRowChanged();
+            }
         }
 
         private void _OnCustomRowCellEdit(object sender, CustomRowCellEditEventArgs e)
@@ -784,7 +1495,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                     var repositoryItem = _CreateRepositoryItem(gvColumn, true);
                     if (repositoryItem != null)
                     {
-                        this.GridControl.RepositoryItems.Add(repositoryItem);
+                        //POZOR, neukládat do RepositoryItems nadbytečně! velký memmory leaks
+                        //if (this.GridControl.RepositoryItems.Contains(repositoryItem))
+                        //{
+                        //    this.GridControl.RepositoryItems.Add(repositoryItem);    //musím ho opravdu přidávat sem, nestačí ho podstrčit e?
+                        //}
                         e.RepositoryItem = repositoryItem;
                     }
                 }
@@ -793,19 +1508,14 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         private void _OnKeyPress(object sender, KeyPressEventArgs e)
         {
-            if (!IsFilterRowCellActive // nezachytil jsem klavesu a ani nejsem ve filtru
-                && _RowFilterVisible
-                ) // nemam aktivni zadnou ridici klavesu
-            {//první znak v řádkovém filtru
-                System.Text.StringBuilder sbString = new System.Text.StringBuilder();
-                List<char> specialChars = new List<char>(new char[] { '<', '!', '=', '>', '%', '.', ',', '+', '-' });
-                char sKeyChar = e.KeyChar;
-                if (char.IsLetterOrDigit(sKeyChar) || specialChars.Contains(sKeyChar))
+            List<char> specialChars = new List<char>(new char[] { '<', '!', '=', '>', '%', '.', ',', '+', '-' });
+
+            if (char.IsLetterOrDigit(e.KeyChar) || specialChars.Contains(e.KeyChar))
+            {//první znak v řádkovém filtru -> zkusím skočit do řádkového filtru
+                if (TrySetFocusToFilterRow(LastFocusedColumnInRowFilter))
                 {
                     e.Handled = true;
-                    SetFocusToFilterRow(_LastFilterRowCell);
                     ShowEditorByKeyPress(e);    //activuje editor pro editaci (nastaví kurzor a vloží první písmeno)
-                                                // e.Handled = true;
                 }
             }
         }
@@ -814,6 +1524,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             //TODO zde bude lokální obsluhu.
             //budu asi dál posílat i když oblsoužím? ale nastavím e.Handled = true;
+            if (sender is DxGridView view)
+            {
+                if (view.FocusedRowHandle == 0 && e.KeyData == Keys.Up)
+                {//skok do řádkového filtru
+                    e.Handled = TrySetFocusToFilterRow(LastFocusedColumnInRowFilter);
+                }
+
+                if (IsFilterRowActive && e.KeyData == Keys.Enter) _ApplyColumnsFilter();
+            }
+            LastKeyCodeDown = e.KeyData;
 
             OnKeyDown(this, e);
         }
@@ -831,31 +1551,46 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
 
-        /// <summary>
-        /// CustomColumnSort, volá se pro každý řádek. Využito pro vypnutí interního sort mechanismu
-        /// https://supportcenter.devexpress.com/ticket/details/q239984/disabling-internal-gridview-sorting-algorithm
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _OnCustomColumnSort(object sender, CustomColumnSortEventArgs e)
+        private void _OnClick(object sender, EventArgs e)
         {
-            if (!ColumnSortCoreEnabled)
+            DevExpress.Utils.DXMouseEventArgs ea = e as DevExpress.Utils.DXMouseEventArgs;
+            if (ea.Button != MouseButtons.Left) return; //Obsluha poze Levého tlačítka. Na pravý nechci nic dělat!
+
+            DxGridView view = sender as DxGridView;
+            GridHitInfo info = view.CalcHitInfo(ea.Location);
+
+            if (info.InRow && !info.InRowCell && IsFilterRow(info.RowHandle) && HasRowFilterExpression)
             {
-                //zajistí, že se nebude měnit řazení interním mechanismem
-                e.Result = e.ListSourceRowIndex2 - e.ListSourceRowIndex1;
-                e.Result = (e.Result > 0) ? 1 : ((e.Result < 0) ? -1 : 0);
-                if (e.SortOrder == DevExpress.Data.ColumnSortOrder.Ascending)
-                    e.Result = -e.Result;
-                e.Handled = true;
+                //Křížek v řádkovém filtru ->smazat řádkový filtr
+                this.ActiveFilterString = "";
+                ClearColumnsFilter();
+            }
+
+            if (info.Column?.FieldName == GROUPBUTTON)
+            {
+                int group = GetGroupRow(info.RowHandle);
+                int groupId = _GetGroupIdRow(info.RowHandle);
+                int parentGroupId = _GetParentGroupIdRow(info.RowHandle);
+                GroupRowInfo gInfo = GroupRowInfos.FirstOrDefault(x => x.GroupId == groupId);
+
+                if (gInfo != null)
+                {
+                    gInfo.Expanded = !gInfo.Expanded;
+                    if (!gInfo.Expanded) _SetAllChildGroupsColapsed(gInfo.GroupId);
+                    if (!gInfo.DataRowsLoaded
+                        && _CanLoadGroupRows(gInfo.Group))
+                    {
+                        //načti data pro groupu
+                        WaitForNextRows = true;
+                        int? groupPrimaryKey = _GetGroupPrimaryKey(info.RowHandle);
+                        OnDxLoadGroupRows(groupId, gInfo.Group, false, groupPrimaryKey);
+                        gInfo.DataRowsLoaded = true;
+                    }
+                }
+                view.RefreshData();
             }
         }
 
-        private void _OnStartSorting(object sender, EventArgs e)
-        {
-        }
-        private void _OnEndSorting(object sender, EventArgs e)
-        {
-        }
         private void _OnDoubleClick(object sender, EventArgs e)
         {
             DevExpress.Utils.DXMouseEventArgs ea = e as DevExpress.Utils.DXMouseEventArgs;
@@ -886,18 +1621,22 @@ namespace Noris.Clients.Win.Components.AsolDX
                         view.SelectRow(view.FocusedRowHandle);
                     }
                 }
-                OnDoubleClick(info.Column?.FieldName ?? null, info.RowHandle, modifierKeyCtrl, modifierKeyAlt, modifierKeyShift);  //Zavoláme public event
+                OnDoubleClick(info.Column?.FieldName ?? null, GetDataSourceRowIndex(info.RowHandle), modifierKeyCtrl, modifierKeyAlt, modifierKeyShift);  //Zavoláme public event
             }
         }
         private void _OnFocusedRowChanged(object sender, DevExpress.XtraGrid.Views.Base.FocusedRowChangedEventArgs e)
         {
-            LastActiveRow = e.PrevFocusedRowHandle;
-            ActualActiveRow = e.FocusedRowHandle;
-            OnFocusedRowChanged(e.PrevFocusedRowHandle, e.FocusedRowHandle);
+            bool isPrevFilterRow = this.IsFilterRow(e.PrevFocusedRowHandle);
+
+            LastActiveRowIndex = this.IsFilterRow(e.PrevFocusedRowHandle) ? e.PrevFocusedRowHandle : GetDataSourceRowIndex(e.PrevFocusedRowHandle);
+            ActualActiveRowIndex = this.IsFilterRow(e.FocusedRowHandle) ? e.FocusedRowHandle : GetDataSourceRowIndex(e.FocusedRowHandle);
+
+            if (isPrevFilterRow) _ApplyColumnsFilter();
+            OnFocusedRowChanged(LastActiveRowIndex, ActualActiveRowIndex);
         }
         private void _OnFocusedColumnChanged(object sender, FocusedColumnChangedEventArgs e)
         {
-            if (IsFilterRowCellActive) _LastFilterRowCell = FocusedColumn?.FieldName;
+            if (IsFilterRowActive && FocusedColumn != null) LastFocusedColumnInRowFilter = FocusedColumn?.FieldName;
         }
 
         /// <summary>
@@ -916,26 +1655,179 @@ namespace Noris.Clients.Win.Components.AsolDX
             //Console.WriteLine("TopRowIndex" + TopRowIndex);
             //CheckNeedMoreRows();
             //StorePropertiesBeforeLoadMoreRows();
+
+            //Console.WriteLine("TopRowIndex: " + TopRowIndex);
+            //invaliduji horní 4 řádky, kvuli vykreslování "Jen odlišné" merge buňek. Kdy se snažím aby byla hodnota jen v horním řádku.
+            this.InvalidateRow(TopRowIndex + 3);
+            this.InvalidateRow(TopRowIndex + 2);
+            this.InvalidateRow(TopRowIndex + 1);
+            this.InvalidateRow(TopRowIndex);
         }
 
+        private void _OnInvalidValueException(object sender, InvalidValueExceptionEventArgs e)
+        {
+            e.ExceptionMode = ExceptionMode.NoAction;   //Zobrazení jen tooltip při najetí error ikony v řádkovém filtru při nevalidní hodnotě. 
+        }
 
+        private void _OnValidatingEditor(object sender, BaseContainerValidateEditorEventArgs e)
+        {
+            ColumnView view = sender as ColumnView;
+            GridColumn column = (e as EditFormValidateEditorEventArgs)?.Column ?? view.FocusedColumn;
+            var iColumn = GetIGridViewColumn(column);
+            if (view.FocusedRowHandle == DevExpress.XtraGrid.GridControl.AutoFilterRowHandle)
+            {//validace řádkové filtru
+                if (iColumn != null && (iColumn.IsDateTimeColumnType || iColumn.IsNumberColumnType))
+                {//string or number
+                    //Validate hodnoty pro filtr, ještě před tím, než ho budu parsovat a zadávat do filtru
+
+                    string strVal = e.Value.ToString();
+                    if (string.IsNullOrEmpty(strVal) || IsWildCardNull(strVal))
+                    {
+                        //Je prázdné nebo je zadáno <NULL>
+                        view.ClearColumnErrors();
+                        return;
+                    }
+
+                    //Odstranit případný operátor ze začátku
+                    var condition = _GetConditionAndTrimStringExpression(ref strVal, iColumn);
+
+                    StringBuilder sbErrorMsg = new StringBuilder();
+                    //číslo
+                    if (iColumn.IsNumberColumnType)
+                    {
+                        if (iColumn.IsNumberIntegerColumnType)
+                        {//celočíselné
+                            if (_TryParseDotsInterval(strVal, out long firstNumberLong, out long secondNumberLong))
+                            {//interval ..
+
+                                if (secondNumberLong < firstNumberLong)
+                                {
+                                    sbErrorMsg.AppendLine(DxComponent.Localize(MsgCode.TxtNumberFirstNumberIsHigherThanSecond));
+                                    e.Valid = false;
+                                }
+                            }
+                            else if (!long.TryParse(strVal, out _))
+                            {
+                                sbErrorMsg.AppendLine(DxComponent.Localize(MsgCode.TxtNumberValueNotValid));
+                                e.Valid = false;
+                            }
+                        }
+                        else
+                        {
+                            if (_TryParseDotsInterval(strVal, out decimal firstNumber, out decimal secondNumber))
+                            {//interval ..
+                                if (secondNumber < firstNumber)
+                                {
+                                    sbErrorMsg.AppendLine(DxComponent.Localize(MsgCode.TxtNumberFirstNumberIsHigherThanSecond));
+                                    e.Valid = false;
+                                }
+                            }
+                            else if (!decimal.TryParse(strVal, out decimal _))
+                            {
+                                sbErrorMsg.AppendLine(DxComponent.Localize(MsgCode.TxtNumberValueNotValid));
+                                e.Valid = false;
+                            }
+                        }
+                    }
+                    //datum
+                    else if (iColumn.IsDateTimeColumnType)
+                    {
+                        if (_TryParseDotsInterval(strVal, out DateTime startDate, out DateTime endDatetime))
+                        {//interval ..
+                            if (startDate.Year < _minYearForFilter)
+                            {
+                                sbErrorMsg.AppendLine(DxComponent.Localize(MsgCode.TxtCalendarYearOutOfRange));
+                                e.Valid = false;
+                            }
+                            if (endDatetime.Year < _minYearForFilter)
+                            {
+                                sbErrorMsg.AppendLine(DxComponent.Localize(MsgCode.TxtCalendarYearOutOfRange));
+                                e.Valid = false;
+                            }
+                            if (endDatetime < startDate)
+                            {
+                                sbErrorMsg.AppendLine(DxComponent.Localize(MsgCode.TxtCalendarStartDateIsHigherThanEndDate));
+                                e.Valid = false;
+                            }
+                        }
+                        else if (_TryParseDateTime(strVal, out DateTime resultDateTime))
+                        {//datum v jakékoliv podobě
+                            if (resultDateTime.Year < _minYearForFilter)
+                            {
+                                sbErrorMsg.AppendLine(DxComponent.Localize(MsgCode.TxtCalendarYearOutOfRange));
+                                e.Valid = false;
+                            }
+                        }
+                        else
+                        {
+                            //nevalidní, neprošlo ani jední parserem
+                            sbErrorMsg.AppendLine(DxComponent.Localize(MsgCode.TxtCalendarDateNotValid));
+                            e.Valid = false;
+                        }
+                    }
+                    if (!e.Valid && !string.IsNullOrEmpty(sbErrorMsg.ToString())) e.ErrorText = sbErrorMsg.ToString();
+                }
+
+                if (!e.Valid) { view.SetColumnError(column, e.ErrorText); }
+                else
+                {
+                    view.ClearColumnErrors();
+                }
+            }
+        }
+
+        internal IGridViewColumn GetIGridViewColumn(string columnName)
+        {
+            if (string.IsNullOrEmpty(columnName)) return null;
+            return GridViewColumns?.FirstOrDefault(x => x.FieldName == columnName);
+        }
+
+        private IGridViewColumn GetIGridViewColumn(GridColumn gridColumn)
+        {
+            if (gridColumn == null) return null;
+            return GetIGridViewColumn(gridColumn.FieldName);
+        }
 
         #region Filtering a vše okolo
+
         /// <summary>
-        /// Regulární výraz pro nalezení částí mezi "Like '" a "'"
+        /// Minimální rok který lze zadat pro filtrování
         /// </summary>
-        const string _likePattern = @"Like '.*?'";
+        private const int _minYearForFilter = 1753;
+        /// <summary>
+        /// zástupný znak pro null
+        /// </summary>
+        internal const string WildCardNull = "<NULL>";
+        /// <summary>
+        /// Porovníní řetězce s <see cref="WildCardNull"/>. Je to IgnoreCase.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static bool IsWildCardNull(string value) { if (value == null) return false; else return value.Equals(WildCardNull, StringComparison.InvariantCultureIgnoreCase); }
         /// <summary>
         /// Výraz filtrovacího řádku
         /// </summary>
-        public string RowFilterExpression { get { return _ConvertGetRowFilterExpression(this.ActiveFilterString); } set { this.ActiveFilterString = _ConvertSetRowFilterExpression(value); } }
+        public string RowFilterExpression { get { return _GetConverterdRowFilterExpression(this.ActiveFilterCriteria); } set { _SetConverterdRowFilterExpression(value); } }
         /// <summary>
         /// Příznak zda je filtrovací řádek neaktivní
         /// </summary>
         public bool RowFilterIsInactive { get { return !this.ActiveFilterEnabled; } set { this.ActiveFilterEnabled = !value; } }
+        /// <summary>
+        /// Je nějaký filtrovací výraz, jedno zda aktivní/neaktivní?
+        /// </summary>
+        public bool HasRowFilterExpression => (!string.IsNullOrEmpty(ActiveFilterString));
 
         /// <summary>
-        /// voláno před aplikací filtru do GridView, možnost sestavení vlastní podmínky pro filtr
+        /// Uchovává původní výraz zadaný uživatelem (value) a výsledný criteria výraz (key) pro řádkový filtr pro jeden sloupec. 
+        /// </summary>
+        private Dictionary<string, string> _convertedColumnFilterCache = new Dictionary<string, string>();
+        /// <summary>
+        /// Uchovává původní výraz zadaný uživatelem (value) a výsledný criteria výraz (key) pro celý řádkový filtr. 
+        /// </summary>
+        private Dictionary<string, string> _convertedRowFilterCache = new Dictionary<string, string>();
+
+        /// <summary>
+        /// Voláno před aplikací filtru do GridView, možnost sestavení vlastní podmínky pro filtr
         /// </summary>
         /// <param name="column"></param>
         /// <param name="condition"></param>
@@ -944,157 +1836,509 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         protected override DevExpress.Data.Filtering.CriteriaOperator CreateAutoFilterCriterion(DevExpress.XtraGrid.Columns.GridColumn column, DevExpress.XtraGrid.Columns.AutoFilterCondition condition, object _value, string strVal)
         {
-            //List<char> specialChars = new List<char>(new char[] { '<', '!', '=', '>', '%', '.', ',', '+', '-' });
-
-            //Základní rozpoznání speciálních znaků pro změnu podmínky
-            if (column.ColumnType == typeof(string))
+            //1. změna základního operátoru. Pro všechny sloupce stejné. Pokud níže vyhodnotí, že je condition potřeba nastavit jinak, tak se tak uděje.
+            var iColumn = GetIGridViewColumn(column);
+            AutoFilterCondition conditionFromString = _GetConditionAndTrimStringExpression(ref strVal, iColumn);
+            if (conditionFromString != AutoFilterCondition.Default)
             {
-                if (strVal.Count(x => x == '%') > 1 //více jak jedno % ve výrazu
-                    || strVal.Count(x => x == '%') == 1 && !strVal.StartsWith("%")) //jen jedno procento, ale ne na začátku
-                {
-                    condition = DevExpress.XtraGrid.Columns.AutoFilterCondition.Like;
-                }
-                else if (strVal.StartsWith("%"))
-                {
-                    condition = DevExpress.XtraGrid.Columns.AutoFilterCondition.Contains;
-                    strVal = strVal.Substring(1);
-                }
-                else if (strVal.StartsWith("!"))
-                {
-                    condition = DevExpress.XtraGrid.Columns.AutoFilterCondition.DoesNotContain;
-                    strVal = strVal.Substring(1);
-                }
-            }
-            else if (TypeHelper.IsNumeric(column.ColumnType))
-            {
-                if (strVal.StartsWith("<="))
-                {
-                    condition = DevExpress.XtraGrid.Columns.AutoFilterCondition.LessOrEqual;
-                    strVal = strVal.Substring(2);
-                    _value = strVal;
-                }
-                else if (strVal.StartsWith(">="))
-                {
-                    condition = DevExpress.XtraGrid.Columns.AutoFilterCondition.GreaterOrEqual;
-                    strVal = strVal.Substring(2);
-                    _value = strVal;
-                }
-                else if (strVal.StartsWith(">"))
-                {
-                    condition = DevExpress.XtraGrid.Columns.AutoFilterCondition.Greater;
-                    strVal = strVal.Substring(1);
-                    _value = strVal;
-                }
-                else if (strVal.StartsWith("<"))
-                {
-                    condition = DevExpress.XtraGrid.Columns.AutoFilterCondition.Less;
-                    strVal = strVal.Substring(1);
-                    _value = strVal;
-                }
-
+                condition = conditionFromString;
+                _value = strVal;
             }
 
-            //if (column.ColumnType == typeof(DateTime) && strVal.Length > 0)
-            //{
-            //    BinaryOperatorType type = BinaryOperatorType.Equal;
-            //    string operand = string.Empty;
-            //    if (strVal.Length > 1)
-            //    {
-            //        operand = strVal.Substring(0, 2);
-            //        if (operand.Equals(">="))
-            //            type = BinaryOperatorType.GreaterOrEqual;
-            //        else if (operand.Equals("<="))
-            //            type = BinaryOperatorType.LessOrEqual;
-            //    }
-            //    if (type == BinaryOperatorType.Equal)
-            //    {
-            //        operand = strVal.Substring(0, 1);
-            //        if (operand.Equals(">"))
-            //            type = BinaryOperatorType.Greater;
-            //        else if (operand.Equals("<"))
-            //            type = BinaryOperatorType.Less;
-            //    }
-            //    if (type != BinaryOperatorType.Equal)
-            //    {
+            //2. různé koverze. Intervaly, částečně zadané datumy...
+            CriteriaOperator resultConvertedCriteriaOperator = null;
+            bool isBetweenOperatator = false;
 
-            //        string val = strVal.Replace(operand, string.Empty);
-            //        try
-            //        {
-            //            DateTime dt = DateTime.ParseExact(val, "d", column.RealColumnEdit.EditFormat.Format);
-            //            return new BinaryOperator(column.FieldName, dt, type);
-            //        }
-            //        catch
-            //        {
-            //            return null;
-            //        }
-            //    }
-            //}
+            if (iColumn.IsStringColumnType)
+            {//string
+                if (_TryParseDotsInterval(strVal, out string firstPart, out string secondPart))
+                {//interval ..
+                    resultConvertedCriteriaOperator = new BetweenOperator(column.FieldName, firstPart, secondPart);
+                    isBetweenOperatator = true;
+                }
+            }
+            else if (iColumn.IsNumberColumnType)
+            {//čísla
+                if (iColumn.IsNumberIntegerColumnType && _TryParseDotsInterval(strVal, out long firstPartLong, out long secondPartLong))
+                {//interval celočíselný ..
+                    resultConvertedCriteriaOperator = new BetweenOperator(column.FieldName, firstPartLong, secondPartLong);
+                    isBetweenOperatator = true;
+                }
+                else if (_TryParseDotsInterval(strVal, out decimal firstPartDecimal, out decimal secondPartDecimal))
+                {//interval deciaml..
+                    resultConvertedCriteriaOperator = new BetweenOperator(column.FieldName, firstPartDecimal, secondPartDecimal);
+                    isBetweenOperatator = true;
+                }
+            }
+            else if (iColumn.IsDateTimeColumnType)
+            {//datum
+                if (_TryParseDotsInterval(strVal, out DateTime startDate, out DateTime endDatetime))
+                {//interval ..
+                    resultConvertedCriteriaOperator = new BetweenOperator(column.FieldName, startDate, endDatetime);
+                    isBetweenOperatator = true;
+                }
+                else if (_TryParseDateTime(strVal, out DateTime dateTime, out int? day, out int? month, out int year, out int? hour, out int? minute, out int? second))
+                {//jakýkoliv datum i nekompletní
+                    DateTime minDateTime = dateTime;    //parse automaticky vrací minima
+                    DateTime maxDateTime = _GetMaxDateTime(year, month, day, hour, minute, second);
 
+                    //Pokud je operator = (rovná se), nebo nerovná se a je zadán datum bez kompletního času (nemá sekundy), tak se musí převést na BetweenOperator, protože chceme celý den (všechny časy)
+                    if ((condition == AutoFilterCondition.Equals || condition == AutoFilterCondition.DoesNotEqual) && second == null)
+                    {//převod na interval
+                        resultConvertedCriteriaOperator = new BetweenOperator(column.FieldName, minDateTime, maxDateTime);
+                        isBetweenOperatator = true;
+                    }
+                    else
+                    {
+                        //>,=>,<,<=
+                        DateTime dt = minDateTime;
+                        if (condition == AutoFilterCondition.Greater || condition == AutoFilterCondition.LessOrEqual)
+                        {
+                            // >, <=
+                            dt = maxDateTime;
+                        }
+                        else if (condition == AutoFilterCondition.Less || condition == AutoFilterCondition.GreaterOrEqual)
+                        {
+                            //<, >=
+                            dt = minDateTime;
+                        }
+
+                        _TryConvertAutoFilterConditionToBinaryOperatorType(condition, out BinaryOperatorType bTypeCondition);
+                        resultConvertedCriteriaOperator = new BinaryOperator(column.FieldName, dt, bTypeCondition);
+                    }
+                }
+            }
+
+            //společné ošetření <NULL>
+            if (object.ReferenceEquals(resultConvertedCriteriaOperator, null)
+                 && IsWildCardNull(strVal))
+            {
+                if (condition == AutoFilterCondition.Equals || condition == AutoFilterCondition.DoesNotEqual)
+                {
+                    _TryConvertAutoFilterConditionToBinaryOperatorType(condition, out BinaryOperatorType bTypeCondition);
+                    resultConvertedCriteriaOperator = new BinaryOperator(column.FieldName, WildCardNull, bTypeCondition);
+                }
+                else
+                {
+                    //když není při zadaném <NULL> operátor rovná nebo nerovná se, tak mažu. Je to případ, kdy přepínám operátor z vyplněného =<NULL> na něco jiného.
+                    //Dle dohody s KOU je tato varianta průchozí a počítá s tím, že uživatel bude podmínku pro <NULL> spíše klikat z menu, než jej zadávat na klávesnici
+                    return null;
+                }
+            }
+
+            if (!object.ReferenceEquals(resultConvertedCriteriaOperator, null))
+            {
+                //koncová obsluha intervalu obecně
+                if (isBetweenOperatator)
+                {//interval
+                    //když není rovná nebo nerovná se, tak nastav rovná se (výchozí operátor pro interval)
+                    if (!(condition == AutoFilterCondition.Equals || condition == AutoFilterCondition.DoesNotEqual))
+                    {
+                        condition = AutoFilterCondition.Equals;
+                    }
+                    //zařízení negace
+                    resultConvertedCriteriaOperator = condition == AutoFilterCondition.Equals ? (CriteriaOperator)resultConvertedCriteriaOperator : (CriteriaOperator)resultConvertedCriteriaOperator.Not();
+                }
+
+                //Provedl jsem nějakou konverzi, uložím si ji, abych mohl udělat kovnverzi zpět. a konverzi vrátím jako výsledek.
+                _StoreConvertedColumnFiter(strVal, resultConvertedCriteriaOperator.ToString());
+                //pokud je změna operatoru, tak ho nastavuji přímo do column, protože condition se nikde neaplikuje (nejde do base.)
+                if (column.OptionsFilter.AutoFilterCondition != condition) column.OptionsFilter.AutoFilterCondition = condition;
+
+                return resultConvertedCriteriaOperator;
+            }
+
+            //bez konverze, maximálně základní změna operátoru
             return base.CreateAutoFilterCriterion(column, condition, _value, strVal);
         }
-
-        private string _ConvertGetRowFilterExpression(string input)
+        /// <summary>
+        /// Vyhodnotí, zda výraz obsahuje znak (znaky), které vyjadřují změnu podmínku. Pokud najde tak tak vrací podmínku a ze string výrazu ji odstraní (pokud je na začátku). Pokud nenanajde, tak vrací <see cref="AutoFilterCondition.Default"/>
+        /// Některé vyhodnotcuje se i typ sloupce. Například % (obsahuje), je validní jen pro string sloupce.
+        /// </summary>
+        /// <param name="stringExpression"></param>
+        /// <param name="gridViewColumn"></param>
+        /// <returns></returns>
+        private AutoFilterCondition _GetConditionAndTrimStringExpression(ref string stringExpression, IGridViewColumn gridViewColumn)
         {
-            //Přidává % na začátku a na konci výrazu Like
+            //dva znaky
+            if (stringExpression.StartsWith("!=") || stringExpression.StartsWith("<>")) { stringExpression = stringExpression.Substring(2); return AutoFilterCondition.DoesNotEqual; }
+            if (stringExpression.StartsWith(">=")) { stringExpression = stringExpression.Substring(2); return AutoFilterCondition.GreaterOrEqual; }
+            if (stringExpression.StartsWith("<=")) { stringExpression = stringExpression.Substring(2); return AutoFilterCondition.LessOrEqual; }
+            if (stringExpression.StartsWith("!%") && gridViewColumn.IsStringColumnType) { stringExpression = stringExpression.Substring(2); return AutoFilterCondition.DoesNotContain; }
+            if (stringExpression.StartsWith("!*") && gridViewColumn.IsStringColumnType) { stringExpression = stringExpression.Substring(2); return AutoFilterCondition.NotLike; }    //stejné jako "nezačíná"
 
-            Regex regex = new Regex(_likePattern);
-            // Najdeme všechny shody s regulárním výrazem v řetězci
-            MatchCollection matches = regex.Matches(input);
+            //Jeden znak
+            if (stringExpression.StartsWith("=")) { stringExpression = stringExpression.Substring(1); return AutoFilterCondition.Equals; }
+            if (stringExpression.StartsWith(">")) { stringExpression = stringExpression.Substring(1); return AutoFilterCondition.Greater; }
+            if (stringExpression.StartsWith("<") && !IsWildCardNull(stringExpression)) { stringExpression = stringExpression.Substring(1); return AutoFilterCondition.Less; }
+            if (stringExpression.StartsWith("%") && gridViewColumn.IsStringColumnType) { stringExpression = stringExpression.Substring(1); return AutoFilterCondition.Contains; }
+            if (stringExpression.StartsWith("*") && gridViewColumn.IsStringColumnType) { stringExpression = stringExpression.Substring(1); return AutoFilterCondition.BeginsWith; }
+            if (stringExpression.StartsWith("!") && gridViewColumn.IsStringColumnType) { stringExpression = stringExpression.Substring(1); return AutoFilterCondition.NotLike; } //stejné jako "nezačíná"
 
-            // Nahradíme všechny shody s regulárním výrazem zpět do původního řetězce
-            string result = regex.Replace(input, match =>
-            {
-                string foundExpression = match.Value;
-                // Odstraníme prefix "Like '"
-                foundExpression = foundExpression.Substring(6);
-                // Odstraníme sufix "'"
-                foundExpression = foundExpression.Substring(0, foundExpression.Length - 1);
-
-                if (!foundExpression.StartsWith("%"))
-                {
-                    foundExpression = "%" + foundExpression;
-                }
-                if (!foundExpression.EndsWith("%"))
-                {
-                    foundExpression += "%";
-                }
-                // Vrátíme upravenou část zpět do původního řetězce
-                return "Like '" + foundExpression + "'";
-            });
-            return result;
+            return AutoFilterCondition.Default;
         }
 
-        private string _ConvertSetRowFilterExpression(string input)
+        /// <summary>
+        /// Parsuje interval datumů. Např: 2020..2025,8.2020..2023 5.2.2022..2035. Na obou stranách můžou býr všechny varianty kompletního/nekompletního datumu.
+        /// endDateTime vrací vždy maximální pro daná zadaný formát. např: pro "2023" => 31.12.2023 23:59:59. Jediná povinná část datumu je rok, ostatná hodnoty pokud nejsou zadány, tak se vezmou maximální.
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="startDateTime"></param>
+        /// <param name="endDateTime"></param>
+        /// <returns></returns>        
+        private static bool _TryParseDotsInterval(string input, out DateTime startDateTime, out DateTime endDateTime)
         {
-            //Odebírá % na začátku a na konci výrazu Like
+            //interval
+            startDateTime = DateTime.MinValue;
+            endDateTime = DateTime.MinValue;
 
-            Regex regex = new Regex(_likePattern);
-            // Najdeme všechny shody s regulárním výrazem v řetězci
-            MatchCollection matches = regex.Matches(input);
+            if (!_TryParseDotsInterval(input, out string firstPart, out string secondPart)) { return false; }
 
-            // Nahradíme všechny shody s regulárním výrazem zpět do původního řetězce
-            string result = regex.Replace(input, match =>
+            //firstPart.
+            bool startDateTimeParsed = _TryParseDateTimeAndGetMinValue(firstPart, out startDateTime);
+
+            //secondPart           
+            bool endDateTimeParsed = _TryParseDateTimeAndGetMaxValue(secondPart, out endDateTime);
+            return startDateTimeParsed && endDateTimeParsed;
+        }
+        /// <summary>
+        /// Parsuje interval čísel. Např.: "-200..500", "30,5..99,9" 
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="firstNumber"></param>
+        /// <param name="secondNumber"></param>
+        /// <returns></returns>
+        private static bool _TryParseDotsInterval(string input, out decimal firstNumber, out decimal secondNumber)
+        {
+            //interval
+            firstNumber = decimal.MinValue;
+            secondNumber = decimal.MinValue;
+            bool firstNumberParsed = false;
+            bool secondNumberParsed = false;
+
+            if (!_TryParseDotsInterval(input, out string firstPart, out string secondPart)) { return false; }
+
+            //firstPart.
+            if (decimal.TryParse(firstPart, out firstNumber))
             {
-                string foundExpression = match.Value;
-                // Odstraníme prefix "Like '"
-                foundExpression = foundExpression.Substring(6);
-                // Odstraníme sufix "'"
-                foundExpression = foundExpression.Substring(0, foundExpression.Length - 1);
+                firstNumberParsed = true;
+            }
+            //secondPart
+            if (decimal.TryParse(secondPart, out secondNumber))
+            {
+                secondNumberParsed = true;
+            }
 
-                if (foundExpression.StartsWith("%"))
-                {
-                    foundExpression = foundExpression.Substring(1);
-                }
-                if (foundExpression.EndsWith("%"))
-                {
-                    foundExpression = foundExpression.Substring(0, foundExpression.Length - 1); ;
-                }
-                // Vrátíme upravenou část zpět do původního řetězce
-                return "Like '" + foundExpression + "'";
-            });
-            return result;
+            return firstNumberParsed && secondNumberParsed;
+        }
+        /// <summary>
+        /// Parsuje interval celočíselných čísel. Např.: "-200..500"
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="firstNumber"></param>
+        /// <param name="secondNumber"></param>
+        /// <returns></returns>
+        private static bool _TryParseDotsInterval(string input, out long firstNumber, out long secondNumber)
+        {
+            //interval
+            firstNumber = long.MinValue;
+            secondNumber = long.MinValue;
+            bool firstNumberParsed = false;
+            bool secondNumberParsed = false;
+
+            if (!_TryParseDotsInterval(input, out string firstPart, out string secondPart)) { return false; }
+
+            //firstPart.
+            if (long.TryParse(firstPart, out firstNumber))
+            {
+                firstNumberParsed = true;
+            }
+
+            //secondPart
+            if (long.TryParse(secondPart, out secondNumber))
+            {
+                secondNumberParsed = true;
+            }
+
+            return firstNumberParsed && secondNumberParsed;
         }
 
+        /// <summary>
+        /// Parse (split) obecného stringu na dvě string části oddělené dvěma tečkami. "První část..Druhá část"
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="firstPart"></param>
+        /// <param name="secondPart"></param>
+        /// <returns></returns>
+        private static bool _TryParseDotsInterval(string input, out string firstPart, out string secondPart)
+        {
+            firstPart = "";
+            secondPart = "";
+
+            string pattern = @"^(.*?)\.\.(.*?)$"; // Regex výraz, "První část..Druhá část";
+            Match match = Regex.Match(input, pattern);
+            if (!match.Success) { return false; }
+
+            firstPart = match.Groups[1].Value;
+            secondPart = match.Groups[2].Value;
+
+            return true;
+        }
+
+        private static bool _TryParseDateTimeAndGetMinValue(string value, out DateTime dateTime)
+        {
+            //tohle z principu vrací minimální hodnoty.
+            bool parsed = _TryParseDateTime(value, out dateTime, out int? day, out int? month, out int year, out int? hour, out int? minute, out int? second);
+
+            return parsed;
+        }
+        private static bool _TryParseDateTimeAndGetMaxValue(string value, out DateTime dateTime)
+        {
+            bool parsed = _TryParseDateTime(value, out dateTime, out int? day, out int? month, out int year, out int? hour, out int? minute, out int? second);
+            if (parsed)
+            {
+                dateTime = _GetMaxDateTime(year, month, day, hour, minute, second);
+            }
+            return parsed;
+        }
+
+        /// <summary>
+        /// Parsuje všechny podporované formáty datum
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="resultDateTime"></param>
+        /// <returns></returns>
+        private static bool _TryParseDateTime(string value, out DateTime resultDateTime)
+        {
+            return _TryParseDateTime(value, out resultDateTime, out _, out _, out _, out _, out _, out _);
+        }
+
+        /// <summary>
+        /// Parsuje všechny podporované formáty datumu a vrací zároveň jednotlivé části, které ukazují na to, zda byli v řetězci obsaženy či nikoliv. Slouží pro rozpoznání zda byl zadán celý datum nebo jen jeho části.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="resultDateTime"></param>
+        /// <param name="day"></param>
+        /// <param name="month"></param>
+        /// <param name="year"></param>
+        /// <param name="hour"></param>
+        /// <param name="minute"></param>
+        /// <param name="second"></param>
+        /// <returns></returns>
+        private static bool _TryParseDateTime(string value, out DateTime resultDateTime, out int? day, out int? month, out int year, out int? hour, out int? minute, out int? second)
+        {
+            resultDateTime = DateTime.MinValue;
+            bool parsed = false;
+            day = month = hour = minute = second = null;
+            year = DateTime.MinValue.Year;
+
+            // Formát datumu a času
+            const string format_dmyhmsE = "d.M.yyyy H:m:s";
+            const string format_dmyhmsU = "M/d/yyyy H:m:s";
+            const string format_dmyhmE = "d.M.yyyy H:m";
+            const string format_dmyhmU = "M/d/yyyy H:m";
+            const string format_dmyhE = "d.M.yyyy H";
+            const string format_dmyhU = "M/d/yyyy H";
+            const string format_dmyE = "d.M.yyyy";
+            const string format_dmyU = "M/d/yyyy";
+            const string format_myE = "M.yyyy";
+            const string format_myU = "M/yyyy";
+            string format_y = "yyyy";
+
+            if (DateTime.TryParseExact(value, format_dmyhmsE, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out resultDateTime)
+                || DateTime.TryParseExact(value, format_dmyhmsU, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out resultDateTime))
+            {
+                parsed = true;
+                day = resultDateTime.Day;
+                month = resultDateTime.Month;
+                year = resultDateTime.Year;
+                hour = resultDateTime.Hour;
+                minute = resultDateTime.Minute;
+                second = resultDateTime.Second;
+            }
+            else if (DateTime.TryParseExact(value, format_dmyhmE, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out resultDateTime)
+                 || DateTime.TryParseExact(value, format_dmyhmU, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out resultDateTime))
+            {
+                parsed = true;
+                day = resultDateTime.Day;
+                month = resultDateTime.Month;
+                year = resultDateTime.Year;
+                hour = resultDateTime.Hour;
+                minute = resultDateTime.Minute;
+            }
+            else if (DateTime.TryParseExact(value, format_dmyhE, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out resultDateTime)
+                 || DateTime.TryParseExact(value, format_dmyhU, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out resultDateTime))
+            {
+                parsed = true;
+                day = resultDateTime.Day;
+                month = resultDateTime.Month;
+                year = resultDateTime.Year;
+                hour = resultDateTime.Hour;
+            }
+            else if (DateTime.TryParseExact(value, format_dmyE, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out resultDateTime)
+                 || DateTime.TryParseExact(value, format_dmyU, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out resultDateTime))
+            {
+                parsed = true;
+                day = resultDateTime.Day;
+                month = resultDateTime.Month;
+                year = resultDateTime.Year;
+            }
+            else if (DateTime.TryParseExact(value, format_myE, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out resultDateTime)
+                 || DateTime.TryParseExact(value, format_myU, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out resultDateTime))
+            {
+                parsed = true;
+                month = resultDateTime.Month;
+                year = resultDateTime.Year;
+            }
+            else if (DateTime.TryParseExact(value, format_y, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out resultDateTime))
+            {
+                parsed = true;
+                year = resultDateTime.Year;
+            }
+            return parsed;
+        }
+
+        /// <summary>
+        /// Vrací max datum. Slouží pro vkládání do filtru.
+        /// </summary>
+        /// <param name="year"></param>
+        /// <param name="month"></param>
+        /// <param name="day"></param>
+        /// <param name="hour"></param>
+        /// <param name="minute"></param>
+        /// <param name="second"></param>
+        /// <returns></returns>
+        private static DateTime _GetMaxDateTime(int year, int? month, int? day, int? hour, int? minute, int? second)
+        {
+            if (month == null)
+            {
+                //nemám měsíce
+                month = 12;
+            }
+            if (day == null)
+            {
+                //nemám dny
+                day = DateTime.DaysInMonth(year, month.Value);
+            }
+            if (hour == null)
+            {
+                //nemám hodiny
+                hour = 23;
+                minute = 59;
+                second = 59;
+            }
+            if (hour == null)
+            {
+                //nemám hodiny
+                hour = 23;
+                minute = 59;
+                second = 59;
+            }
+            else if (hour != null && minute == null)
+            {
+                //nemám minuty
+                minute = 59;
+                second = 59;
+            }
+            else if (hour != null && minute != null && second == null)
+            {
+                //nemám sekundy
+                second = 59;
+            }
+            return new DateTime(year, month.Value, day.Value, hour.Value, minute.Value, second.Value);
+        }
+
+        /// <summary>
+        /// Slouží pro převod z AutoFilterCondition do BinaryOperatorType. Lze používat jen pro základní operátory rovná se, menší, větší... 
+        /// </summary>
+        /// <param name="condition"></param>
+        /// <param name="bOperator"></param>
+        /// <returns></returns>
+        private bool _TryConvertAutoFilterConditionToBinaryOperatorType(AutoFilterCondition condition, out BinaryOperatorType bOperator)
+        {
+            switch (condition)
+            {
+                case AutoFilterCondition.Equals:
+                    bOperator = BinaryOperatorType.Equal;
+                    return true;
+                case AutoFilterCondition.DoesNotEqual:
+                    bOperator = BinaryOperatorType.NotEqual;
+                    return true;
+                case AutoFilterCondition.Greater:
+                    bOperator = BinaryOperatorType.Greater;
+                    return true;
+                case AutoFilterCondition.GreaterOrEqual:
+                    bOperator = BinaryOperatorType.GreaterOrEqual;
+                    return true;
+                case AutoFilterCondition.Less:
+                    bOperator = BinaryOperatorType.Less;
+                    return true;
+                case AutoFilterCondition.LessOrEqual:
+                    bOperator = BinaryOperatorType.LessOrEqual;
+                    return true;
+                //case AutoFilterCondition.Default:
+                //case AutoFilterCondition.Like:
+                //case AutoFilterCondition.Contains:
+                //case AutoFilterCondition.BeginsWith:
+                //case AutoFilterCondition.EndsWith:
+                //case AutoFilterCondition.DoesNotContain:
+                //case AutoFilterCondition.NotLike:
+                //    bOperator = BinaryOperatorType.Equal;
+                //    return false;
+                default:
+                    bOperator = BinaryOperatorType.Equal;
+                    return false;
+            }
+        }
+        private void _StoreConvertedColumnFiter(string origin, string converted)
+        {
+            if (_convertedColumnFilterCache.ContainsKey(converted)) { _convertedColumnFilterCache.Remove(converted); }
+            _convertedColumnFilterCache.Add(converted, origin);
+        }
+
+        private void _StoreConvertedRowFiter(string origin, string converted)
+        {
+            if (_convertedRowFilterCache.ContainsKey(converted)) { _convertedRowFilterCache.Remove(converted); }
+            _convertedRowFilterCache.Add(converted, origin);
+        }
+
+        private string _GetConverterdRowFilterExpression(CriteriaOperator activeFilterCriteria)
+        {
+            if (object.ReferenceEquals(activeFilterCriteria, null)) return string.Empty;
+            CriteriaOperator criteriaForPath = CriteriaOperator.Clone(activeFilterCriteria);
+            CriteriaOperator resultCriteriaOperator = CriteriaPatcherConvertOperatorWithWildcard.Patch(criteriaForPath, false);
+
+            //Využití ukládání konverze nyní je vypnuto
+            //Nefungovalo potom  případ kdy přišel ze server nastaven filterString, který byl potřeba zkonverzovat (navazování vztahu a zadání "%neco")
+            //uložím si konverzi (komponent->server)
+            //_StoreConvertedRowFiter(activeFilterCriteria.ToString(), resultCriteriaOperator.ToString());
+
+            return resultCriteriaOperator.ToString();
+        }
+        /// <summary>
+        /// Nastaví ActiveFilterString. Pokusí se získat původní hodnotu z <see cref="_convertedRowFilterCache"/>. Pokud se to nepovede, tak se pokusí provést  konverze pomocí <see cref="CriteriaPatcherConvertOperatorWithWildcard"/>
+        /// </summary>
+        /// <param name="filterString"></param>
+        private void _SetConverterdRowFilterExpression(string filterString)
+        {
+            //Využití ukládání konverze nyní je vypnuto
+            //Nefungovalo potom  případ kdy přišel ze server nastaven filterString, který byl potřeba zkonverzovat (navazování vztahu a zadání "%neco")
+
+            //string originRowFilter;
+            //if (_convertedRowFilterCache.TryGetValue(filterString, out originRowFilter))
+            //{
+            //    this.ActiveFilterString = originRowFilter;
+            //}
+            //else
+            //{
+            CriteriaOperator criteriaOperator = CriteriaOperator.TryParse(filterString);
+            criteriaOperator = CriteriaPatcherConvertOperatorWithWildcard.Patch(criteriaOperator, true);
+
+            this.ActiveFilterString = criteriaOperator?.ToString() ?? filterString;
+            //}
+        }
+
+        /// <inheritdoc/>
         public override void ClearColumnsFilter()
         {
             base.ClearColumnsFilter();
@@ -1107,86 +2351,40 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="ignoreActiveFilter"></param>
         /// <param name="forceFindFilter"></param>
         protected override void ApplyColumnsFilterCore(bool updateMRU, bool ignoreActiveFilter, bool forceFindFilter = false)
-
         {
-            var filterString = this.ActiveFilter.Expression;
-            var dataSetWhere = DevExpress.Data.Filtering.CriteriaToWhereClauseHelper.GetDataSetWhere(this.ActiveFilter.Criteria);
-            var sqlWhere = DevExpress.Data.Filtering.CriteriaToWhereClauseHelper.GetMsSqlWhere(this.ActiveFilter.Criteria);
-
-            base.ApplyColumnsFilterCore(false, ignoreActiveFilter, forceFindFilter);
-
-            return;
-            /*
-            if (!DontApplyFilterCore)
-            {   // statický režim ala excel, necháme to projít implicitem a šmitec
-                // base.ApplyColumnsFilterCore(updateMRU, ignoreActiveFilter, forceFindFilter);
-                return;
-            }
-
-
-            // odsud dále kód pro s+td režim filtrování HEG (statický mód filtrování vypnut)
-
-            // pokud ActiveFilter nic neobsahuje, pak byl filtr zrušen
-            if (this.ActiveFilter.Count == 0 && this.FindFilterText == "")
+            if (EnableApplyColumnsFilter || _fireApplyColumnsFilter)
             {
-                //Retrieve data from sql without where expr ...
-                return;
+                base.ApplyColumnsFilterCore(false, ignoreActiveFilter, forceFindFilter);    //tohle vyvoválá další události ohledně filtrování => _OnColumnFilterChanged => odeslání na server
+                //RMC 0071608 09.07.2024 BROWSE2e - začlenění 2; Oďub, když se ruší filtr a přehled je prázdný (zadaný filtr, který neodpovídá žádným řádkům), tak se nevyvolá _OnColumnFilterChanged
+                if (string.IsNullOrEmpty(this.ActiveFilterString) && this.RowCount == 0) { this.OnRowFilterChanged(); }
             }
+        }
 
-            // filtr něco má, tak to rozpitváme ...
-            foreach (ViewColumnFilterInfo vcfi in this.ActiveFilter)
+        /// <summary>
+        /// Chci aplikovat řádkový filtr vždy kromě případu, že se pohybuji po řádkovém filtru buď myškou (změna buňky, nebo výběr oprátoru) a nebo se pohybuji pomocí Tab
+        /// </summary>
+        private bool EnableApplyColumnsFilter
+        {
+            get
             {
-                string colName = vcfi.Column.FieldName;
-                Type colType = vcfi.Column.ColumnType;
-                var v = vcfi.Filter.Value;
-
-                if (vcfi.Filter.FilterCriteria is FunctionOperator)
-                {
-                    var op1 = ((FunctionOperator)vcfi.Filter.FilterCriteria).Operands[0];
-                    var opType = ((FunctionOperator)vcfi.Filter.FilterCriteria).OperatorType;
-                    var op2 = ((FunctionOperator)vcfi.Filter.FilterCriteria).Operands[1];
-                }
-                else if (vcfi.Filter.FilterCriteria is BinaryOperator)
-                {
-                    var opLeft = ((BinaryOperator)vcfi.Filter.FilterCriteria).LeftOperand;
-                    var opType = ((BinaryOperator)vcfi.Filter.FilterCriteria).OperatorType;
-                    var opRight = ((BinaryOperator)vcfi.Filter.FilterCriteria).RightOperand;
-                }
-                else if (vcfi.Filter.FilterCriteria is UnaryOperator)
-                {
-                    var op1 = ((UnaryOperator)vcfi.Filter.FilterCriteria).Operand;
-                    var opType = ((UnaryOperator)vcfi.Filter.FilterCriteria).OperatorType;
-                }
-                else if (vcfi.Filter.FilterCriteria is InOperator)
-                {
-                    var sqlExpr = ((InOperator)vcfi.Filter.FilterCriteria).ToString();  //??
-                    var opLeft = ((InOperator)vcfi.Filter.FilterCriteria).LeftOperand;
-                    var operands = ((InOperator)vcfi.Filter.FilterCriteria).Operands.ToString();
-                }
-
+                bool isLastClickOnFilterRow = LastMouseDownGridHitInfo != null && this.IsFilterRow(LastMouseDownGridHitInfo.RowHandle) && LastMouseDownGridHitInfo.Column != null;
+                bool isLastKeyTab = LastKeyCodeDown == Keys.Tab;
+                return !(IsFilterRowActive && (isLastClickOnFilterRow || isLastKeyTab));
             }
-
-            // pokud něco obsahuje pole pro fulltextové hledání ..
-            if (this.FindFilterText != "")
-            {
-                // tak musíme nějak zpracovat fulltextové hledání
-            }
-
-            // filtr jsme rozpitvali, tak si z toho se stavíme nějaké where a retrievneme data ...
-            */
-
+        }
+        private bool _fireApplyColumnsFilter = false;
+        /// <summary>
+        /// Chci vynutit aplikování řádkového filtru
+        /// </summary>
+        private void _ApplyColumnsFilter()
+        {
+            _fireApplyColumnsFilter = true;
+            base.ApplyColumnsFilterCore();
+            _fireApplyColumnsFilter = false;
         }
         protected override void OnActiveFilterChanged(object sender, EventArgs e)
         {
             base.OnActiveFilterChanged(sender, e);
-        }
-        private void _OnFilterPopupExcelCustomizeTemplate(object sender, DevExpress.XtraGrid.Views.Grid.FilterPopupExcelCustomizeTemplateEventArgs e)
-        {
-            //pokus ovlivnit vlastnoti zobrazovaného excel filtru
-            return;
-            e.Template.BackColor = System.Drawing.Color.FromArgb(0, 0, 120);
-            //BeginInvoke(new Action(() => { (e.Template.Parent.Parent as XtraTabPage).PageEnabled = false; }));
-            (e.Template.Parent.Parent as XtraTabPage).PageVisible = false;
         }
 
         /// <summary>
@@ -1210,13 +2408,100 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!RowFilterCoreEnabled)
             {
+                //tohle vypíní interní filtrování pomocí nastavení visible true každého řádku.
                 // Make the current row visible.
                 e.Visible = true;
+
+                //mechanismus který schová datové řádky pro sbalené groupy
+                ColumnView view = sender as ColumnView;
+                int? parentGroupId = int.TryParse(view.GetListSourceRowCellValue(e.ListSourceRow, PARENTGROUPID).ToString(), out int result) ? result : (int?)null;
+                var gInfo = GroupRowInfos.FirstOrDefault(i => i.GroupId == parentGroupId);
+                if (gInfo != null)
+                {
+                    List<GroupRowInfo> groupRowInfoWithParents = new List<GroupRowInfo>();
+                    GetGroupRowInfoWithParents(gInfo, groupRowInfoWithParents);
+                    if (groupRowInfoWithParents.Any(x => x.Expanded == false))
+                    {
+                        e.Visible = false;
+                    }
+                }
                 // Prevent default processing, so the row will be visible 
                 // regardless of the view's filter.
                 e.Handled = true;
             }
         }
+
+        /// <summary>
+        /// Prohledávání group struktury odspodu nahoru
+        /// </summary>
+        /// <param name="parentGroupRowInfo"></param>
+        /// <param name="result"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        private void GetGroupRowInfoWithParents(GroupRowInfo parentGroupRowInfo, List<GroupRowInfo> result)
+        {
+            if (result is null)
+            {
+                throw new ArgumentNullException(nameof(result));
+            }
+
+            if (parentGroupRowInfo is null)
+            {
+                throw new ArgumentNullException(nameof(parentGroupRowInfo));
+            }
+
+            if (!result.Contains(parentGroupRowInfo)) result.Add(parentGroupRowInfo);
+            foreach (var groupRowInfoItem in GroupRowInfos)
+            {
+                if (parentGroupRowInfo.ParentGroupId != null && groupRowInfoItem.GroupId == parentGroupRowInfo.ParentGroupId.Value)
+                {
+                    result.Add(groupRowInfoItem);
+                    GetGroupRowInfoWithParents(groupRowInfoItem, result);
+                }
+            }
+        }
+
+        #region Filternig - PopUpExcel
+        private void _OnFilterPopupExcelCustomizeTemplate(object sender, DevExpress.XtraGrid.Views.Grid.FilterPopupExcelCustomizeTemplateEventArgs e)
+        {
+            //pokus ovlivnit vlastnoti zobrazovaného excel filtru
+            return;
+            e.Template.BackColor = System.Drawing.Color.FromArgb(0, 0, 120);
+            //BeginInvoke(new Action(() => { (e.Template.Parent.Parent as XtraTabPage).PageEnabled = false; }));
+            (e.Template.Parent.Parent as XtraTabPage).PageVisible = false;
+        }
+
+        private void _OnFilterPopupExcelData(object sender, FilterPopupExcelDataEventArgs e)
+        {
+            var column = GetIGridViewColumn(e.Column);
+            if (column == null) { return; }
+            if (column.IsEditStyleColumnType)
+            {
+                //Zde vytváří filtry na základě CodeTable pro ES, tak aby nic nechybělo ve výčtu. Pokud by to tu nebylo, tak by komponenta ve výběru ponechala jen ty prvky, které obsahuje datasource gridu.
+
+                e.ClearData();// Remove the default data values from the filter menu.
+
+                var resourceType = _GetResourceType(column);
+                foreach (var code in column.CodeTable)
+                {
+                    var excelFilterDataItem = e.AddData(code.DisplayText, code.DisplayText.ToString());
+                    if (column.EditStyleViewMode == EditStyleViewMode.Icon || column.EditStyleViewMode == EditStyleViewMode.IconText)
+                    {
+                        excelFilterDataItem.ImageIndex = _GetImageIndex(code.ImageName, ResourceImageSizeType.Small, resourceType, -1);
+                    }
+                }
+            }
+        }
+
+        private void _OnFilterPopupExcelQueryFilterCriteria(object sender, FilterPopupExcelQueryFilterCriteriaEventArgs e)
+        {
+            //throw new NotImplementedException();
+        }
+        private void _OnFilterPopupExcelParseFilterCriteria(object sender, FilterPopupExcelParseFilterCriteriaEventArgs e)
+        {
+            //throw new NotImplementedException();
+        }
+
+        #endregion
 
 
         /// <summary>
@@ -1228,6 +2513,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected virtual void OnRowFilterChanged()
         {
+            if (_silentMode) return;
             if (DxRowFilterChanged != null) DxRowFilterChanged(this, new DxGridRowFilterChangeEventArgs(this.RowFilterExpression, this.RowFilterIsInactive));
         }
 
@@ -1267,42 +2553,71 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         #region sorting
 
+        /// <summary>
+        /// CustomColumnSort, volá se pro každý řádek. Využito pro vypnutí interního sort mechanismu
+        /// https://supportcenter.devexpress.com/ticket/details/q239984/disabling-internal-gridview-sorting-algorithm
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OnCustomColumnSort(object sender, CustomColumnSortEventArgs e)
+        {
+            if (!ColumnSortCoreEnabled)
+            {
+                //zajistí, že se nebude měnit řazení interním mechanismem
+                e.Result = e.ListSourceRowIndex2 - e.ListSourceRowIndex1;
+                e.Result = (e.Result > 0) ? 1 : ((e.Result < 0) ? -1 : 0);
+                if (e.SortOrder == DevExpress.Data.ColumnSortOrder.Ascending)
+                    e.Result = -e.Result;
+                e.Handled = true;
+            }
+        }
+
+        private void _OnStartSorting(object sender, EventArgs e)
+        {
+        }
+        private void _OnEndSorting(object sender, EventArgs e)
+        {
+            GridView view = sender as GridView;
+            foreach (DevExpress.XtraGrid.Columns.GridColumn gridColumn in view.Columns)
+                _lastColumSortOrder[gridColumn.FieldName] = gridColumn.SortOrder;
+        }
+        /// <inheritdoc/>
         protected override void OnBeforeSorting()
         {
             base.OnBeforeSorting();
         }
-
+        /// <inheritdoc/>
         protected override void OnAfterSorting()
         {
             base.OnAfterSorting();
         }
-
+        /// <inheritdoc/>
         protected override void UpdateSorting()
         {
             base.UpdateSorting();
         }
-
+        /// <inheritdoc/>
         protected override void RaiseStartSorting()
         {
             base.RaiseStartSorting();
         }
-
+        /// <inheritdoc/>
         protected override void RaiseEndSorting()
         {
             base.RaiseEndSorting();
         }
-
+        /// <inheritdoc/>
         protected override void RaiseCustomColumnSort(CustomColumnSortEventArgs e)
         {
             base.RaiseCustomColumnSort(e);
         }
-
+        /// <inheritdoc/>
         protected override bool IsColumnAllowSort(DevExpress.XtraGrid.Columns.GridColumn column)
         {
             // přepsáním přijdeme o možnost custom sortingu, důležité je dovnitř poslat e.Handled=true a e.Result=1
             return base.IsColumnAllowSort(column);
         }
-
+        /// <inheritdoc/>
         protected override void DoMouseSortColumn(DevExpress.XtraGrid.Columns.GridColumn column, System.Windows.Forms.Keys key)
         {
             // přepsáním přijdeme o symbol řazení v caption sloupce a informaci (column.Sortindex), jak je seřazeno
@@ -1620,15 +2935,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         #region GroupSummmary
 
         /// <summary>
-        /// Data pro group sumy
-        /// </summary>
-        internal DataView GroupSummaryDataView { get; set; }
-        /// <summary>
-        /// Režim zobrazení pouze group summary 
-        /// </summary>
-        public bool ShowOnlyGroupSummary { get; set; }
-
-        /// <summary>
         /// Nastaví sbalení/rozbalení skupiny
         /// </summary>
         /// <param name="groupLevel"></param>
@@ -1670,138 +2976,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private void _OnCustomDrawGroupRowCell(object sender, RowGroupRowCellEventArgs e)
         {
-            Console.WriteLine($"GroupRow.RowHandle: {e.GroupRow.RowHandle}");
-            if (GroupSummaryDataView != null)
-            {
-                //int rowHandleGropupSummaryTable = Math.Abs(e.RowHandle + 1);    //převod z minusových hodnot na hodnoty v tabulce ze serveru
-                //if (this.GroupSummaryDataView.Table.Rows.Count - 1 >= rowHandleGropupSummaryTable)
-                //{
-                //    DataRow groupDataRow = this.GroupSummaryDataView.Table.Rows[rowHandleGropupSummaryTable];
-                //    if (groupDataRow != null)
-                //    {
-                //        IGridViewColumn gv = GridViewColumns.FirstOrDefault(x => x.FieldName == e.SummaryItem.FieldName);
-                //        Type type = gv?.ColumnType;
-                //        string formatedValue = "";
-                //        var dtViewValue = groupDataRow[e.SummaryItem.FieldName];
-                //        if (!(dtViewValue is DBNull))
-                //        {
-                //            if (type == typeof(decimal))
-                //            {
-                //                decimal value = Convert.ToDecimal(dtViewValue);
-                //                formatedValue = value.ToString(gv?.FormatString);
-                //            }
-                //            else if (type == typeof(int) || type == typeof(Int32) || type == typeof(Int16))
-                //            {
-                //                int value = Convert.ToInt32(dtViewValue);
-                //                formatedValue = value.ToString(gv?.FormatString);
-                //            }
-                //            else if (type == typeof(string))
-                //            {
-                //                formatedValue = dtViewValue.ToString();
-                //            }
-                //        }
-                //        e.DisplayText = formatedValue;
-                //    }
-                //}
-                //else
-                //{
-                //    //nemám data ze serveru,dávám 3 tečky jako že nemám ještě data.
-                //    e.DisplayText = "...";
-                //}
-
-                int level = e.GroupRow.Level;
-                int groupRowHandle = e.GroupRow.RowHandle;
-
-                ////ziskej row parent
-                //int parentRowHandle = this.GetParentRowHandle(e.GroupRow.RowHandle);
-                //if (!IsGroupRow(groupRowHandle)) return;
-                ////ziskej pocet child
-                ////projdi prej vsechny child a zíkej rowHandle pro childy
-
-                List<int> rowsHandleInLevel = GetGroupRowsByLevel(this, level);
-                int indexInGroup = rowsHandleInLevel.IndexOf(groupRowHandle);
-
-                DataRow groupDataRow = GetGroupDataRowForLevelAndIndex(level, indexInGroup);
-                if (groupDataRow != null)
-                {
-                    IGridViewColumn gv = GridViewColumns.FirstOrDefault(x => x.FieldName == e.SummaryItem.FieldName);
-                    Type type = gv?.ColumnType;
-                    string formatedValue = "";
-                    var dtViewValue = groupDataRow[e.SummaryItem.FieldName];
-                    if (!(dtViewValue is DBNull))
-                    {
-                        if (type == typeof(decimal))
-                        {
-                            decimal value = Convert.ToDecimal(dtViewValue);
-                            formatedValue = value.ToString(gv?.FormatString);
-                        }
-                        else if (type == typeof(int) || type == typeof(Int32) || type == typeof(Int16))
-                        {
-                            int value = Convert.ToInt32(dtViewValue);
-                            formatedValue = value.ToString(gv?.FormatString);
-                        }
-                        else if (type == typeof(string))
-                        {
-                            formatedValue = dtViewValue.ToString();
-                        }
-                    }
-                    e.DisplayText = formatedValue;
-
-                }
-                else
-                {
-                    //nemám data ze serveru,dávám 3 tečky jako že nemám ještě data.
-                    e.DisplayText = "...";
-                }
-            }
-        }
-
-        public DataRow GetGroupDataRowByRowHandle(int rowHandle)
-        {
-            int level = GetRowLevel(rowHandle);
-
-            List<int> rowsHandleInLevel = GetGroupRowsByLevel(this, level);
-            int indexInGroup = rowsHandleInLevel.IndexOf(rowHandle);
-
-            DataRow result = null;
-            if (indexInGroup >= 0)
-            {
-                string podminka = $"_group_ = {level}";
-
-                // Použití metody RowFilter na DataView pro aplikaci podmínky
-                this.GroupSummaryDataView.RowFilter = podminka;
-
-                // Získání pole řádků, které splňují podmínku
-                DataRow[] dataRowsForLevel = this.GroupSummaryDataView.ToTable().Select();
-
-                if (indexInGroup >= 0 && indexInGroup < dataRowsForLevel.Length)
-                {
-                    result = dataRowsForLevel[indexInGroup];
-                }
-            }
-            return result;
-        }
-
-
-        private DataRow GetGroupDataRowForLevelAndIndex(int level, int indexInGroup)
-        {
-            DataRow result = null;
-            if (indexInGroup >= 0)
-            {
-                string podminka = $"_group_ = {level}";
-
-                // Použití metody RowFilter na DataView pro aplikaci podmínky
-                this.GroupSummaryDataView.RowFilter = podminka;
-
-                // Získání pole řádků, které splňují podmínku
-                DataRow[] dataRowsForLevel = this.GroupSummaryDataView.ToTable().Select();
-
-                if (indexInGroup >= 0 && indexInGroup < dataRowsForLevel.Length)
-                {
-                    result = dataRowsForLevel[indexInGroup];
-                }
-            }
-            return result;
+            //Kreslení spodní linky (border)
+            Color borderColor = this.PaintAppearance.HorzLine.GetBackColor(e.Cache);
+            DrawCellBottomBorder(e.Graphics, e.Bounds, borderColor);
         }
 
         /// <summary>
@@ -1825,6 +3002,478 @@ namespace Noris.Clients.Win.Components.AsolDX
             return list;
         }
         #endregion
+
+        #region Grouping        
+
+        internal const string GROUP = "_group_";
+        internal const string GROUPID = "_group_id_";
+        internal const string PARENTGROUPID = "_parent_group_id_";
+        private const string GROUPBUTTON = "_group_button_";
+        internal const string PK_COLUMN_NAME = "H_PK_H";
+
+        internal List<GroupRowInfo> GroupRowInfos = new List<GroupRowInfo>();
+        internal List<GroupInfo> GroupInfos = new List<GroupInfo>();    //slouží pro řízení stavu celé skupiny, sbalit vše a rozbalit vše.
+        //Slouží pro speciální případ, kdy ruším groupy a při zrušení poslední se neudrží informace o řazení view ani se nepošle změna o řazení.
+        private Dictionary<string, DevExpress.Data.ColumnSortOrder> _lastColumSortOrder = new Dictionary<string, DevExpress.Data.ColumnSortOrder>();
+
+        private Image __groupButtonColapsed;
+        private Image __groupButtonExpandedBelow;
+        private Image __groupButtonExpandedAbove;
+
+        private Image _GroupButtonColapsed
+        {
+            get
+            {
+                if (__groupButtonColapsed == null)
+                {
+                    __groupButtonColapsed = _GetGroupButtonImage(false, false);
+                }
+                return __groupButtonColapsed;
+            }
+        }
+
+        /// <summary>
+        /// Ikonka rozbalené skupiny, která zohledňeje GroupMode
+        /// </summary>
+        private Image _GroupButtonExpanded
+        {
+            get
+            {
+                if (GroupMode == GroupModes.ShowGroupedSumRowAbove || GroupMode == GroupModes.ShowGroupedExpandedSumRowAbove)
+                {
+                    return _GroupButtonExpandedAbove;
+                }
+                else
+                {
+                    return _GroupButtonExpandedBelow;
+                }
+            }
+        }
+        private Image _GroupButtonExpandedBelow
+        {
+            get
+            {
+                if (__groupButtonExpandedBelow == null)
+                {
+                    __groupButtonExpandedBelow = _GetGroupButtonImage(true, false);
+                }
+                return __groupButtonExpandedBelow;
+            }
+        }
+        private Image _GroupButtonExpandedAbove
+        {
+            get
+            {
+                if (__groupButtonExpandedAbove == null)
+                {
+                    __groupButtonExpandedAbove = _GetGroupButtonImage(true, true);
+                }
+                return __groupButtonExpandedAbove;
+            }
+        }
+        private GroupModes _groupMode;
+        internal GroupModes GroupMode
+        {
+            get => _groupMode;
+            set
+            {
+                _groupMode = value;
+                _SetGroupButtonVisibilty();
+            }
+        }
+        internal enum GroupModes
+        {
+            None,
+            Default,
+            ShowOnlyGroups,
+            ShowGrouped,
+            ShowGroupedSumRowAbove,
+            ShowGroupedExpandedSumRowAbove
+        }
+
+        /// <summary>
+        /// získání obrázku pro group tlačítko
+        /// </summary>
+        /// <param name="groupExpanded"></param>
+        /// <param name="groupSummaryAbove"></param>
+        /// <returns></returns>
+        private Image _GetGroupButtonImage(bool groupExpanded, bool groupSummaryAbove)
+        {
+            ImageCollection images = null;
+            Image currentImage = null;
+
+            SkinElement element = SkinManager.GetSkinElement(SkinProductId.Grid, UserLookAndFeel.Default, "PlusMinus");
+            if (element.HasImage)
+                images = element.Image.GetImages();
+            else if (element.Glyph != null)
+                images = element.Glyph.GetImages();
+
+            if (images != null)
+            {
+                int imageIndex = (groupExpanded ? 1 : 0);
+                //int imageIndexDelta = (info.RowState & GridRowCellState.Selected) != 0 ? 2 : 0;
+                //if (images.Images.Count == 4)
+                //    imageIndex += imageIndexDelta;
+                currentImage = (Image)images.Images[imageIndex].Clone();
+                if (!groupSummaryAbove && groupExpanded)
+                {
+                    currentImage.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                }
+            }
+            return currentImage;
+        }
+
+        private bool _LoadAllDataWhenGroupIsCollapsed;
+        /// <summary>
+        /// Příznak zda se mají načíst všechna data při snaze sbalit groupu a nejsou načteny všechny řádky <see cref="AllRowsLoaded"/>. 
+        /// Smysl to dává jen pro režim Default, ten jediný má možnost nemít všechny datové řádky a pracuje s nimi.
+        /// </summary>
+        public bool LoadAllDataWhenGroupIsCollapsed { get { return _LoadAllDataWhenGroupIsCollapsed; } set { _LoadAllDataWhenGroupIsCollapsed = value; } }
+        private void _OnEndGrouping(object sender, EventArgs e)
+        {
+            GridView view = sender as GridView;
+            if (SortInfo.Count == 0 && _lastColumSortOrder.Count > 0)
+            {
+                //situace kdy po ukončení goupování nemám nic zagroupovaného. V tuto chvíli si view nepamatuje žádné nastavení sortignu ani nepošle změnu. Setřídím tedy podle posledního znameho nastavení.
+                BeginSort();
+                try
+                {
+                    foreach (DevExpress.XtraGrid.Columns.GridColumn gridColumn in view.Columns)
+                        if (_lastColumSortOrder.Keys.Contains(gridColumn.FieldName))
+                            gridColumn.SortOrder = _lastColumSortOrder[gridColumn.FieldName];
+                }
+                finally
+                {
+                    EndSort();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Je řáde groupa?
+        /// </summary>
+        /// <param name="rowHandle"></param>
+        /// <returns></returns>
+        private bool _IsGroupRow(int rowHandle)
+        {
+            return GetGroupRow(rowHandle) >= 0;
+        }
+        internal int GetGroupRow(int rowHandle)
+        {
+            int groupId = -1;
+            DataRowView dtRow = this.GetRow(rowHandle) as DataRowView;
+            if (dtRow != null)
+            {
+                int? gId = dtRow[GROUP] as int?;
+                if (gId != null) { groupId = gId.Value; }
+            }
+            return groupId;
+        }
+        private int _GetGroupIdRow(int rowHandle)
+        {
+            int groupId = -1;
+            DataRowView dtRow = this.GetRow(rowHandle) as DataRowView;
+            if (dtRow != null)
+            {
+                int? gId = dtRow[GROUPID] as int?;
+                if (gId != null) { groupId = gId.Value; }
+            }
+            return groupId;
+        }
+        internal int _GetParentGroupIdRow(int rowHandle)
+        {
+            int groupId = -1;
+            DataRowView dtRow = this.GetRow(rowHandle) as DataRowView;
+            if (dtRow != null)
+            {
+                int? gId = dtRow[PARENTGROUPID] as int?;
+                if (gId != null) { groupId = gId.Value; }
+            }
+            return groupId;
+        }
+        private int _GetGroupPrimaryKey(int rowHandle)
+        {
+            int groupId = -1;
+            DataRowView dtRow = this.GetRow(rowHandle) as DataRowView;
+            if (dtRow != null)
+            {
+                int? gId = dtRow[PK_COLUMN_NAME] as int?;
+                if (gId != null) { groupId = gId.Value; }
+            }
+            return groupId;
+        }
+        private void _SetAllChildGroupsColapsed(int parentGroupId)
+        {
+            foreach (GroupRowInfo item in GroupRowInfos)
+            {
+                if (item.ParentGroupId == parentGroupId)
+                {
+                    item.Expanded = false;
+                    _SetAllChildGroupsColapsed(item.GroupId);
+                }
+            }
+        }
+        /// <summary>
+        /// Sbalí všechny skupiny dané úrovně a jejich potomky (nižší úrovně)
+        /// </summary>
+        /// <param name="group"></param>
+        private void _SetAllGroupsAndChildsColapsed(int group)
+        {
+            bool anyGroupRowOfGroup = GroupRowInfos.Any(x => x.Group == group);  //příznak zda existuje nějaký group řádek pro danou groupu
+            bool loadAllRows = false;
+            if (!anyGroupRowOfGroup)
+            {
+                if (_LoadAllDataWhenGroupIsCollapsed)
+                {
+                    //požádej server o všechna data a pokračuj. Tady můžu klidně pokračovat, protože nastavení které provedu níže, se aplikuje po donačtení dat.
+                    loadAllRows = true;
+                }
+                else
+                {
+                    //nepokračuj a hoď placku.
+                    DxComponent.ShowMessageInfo(DxComponent.Localize(MsgCode.ClientBrowse_Grouping_DataNotLoaded));
+                    return;
+                }
+            }
+
+            foreach (GroupRowInfo item in GroupRowInfos)
+            {
+                if (item.Group == group)
+                {
+                    item.Expanded = false;
+                    _SetAllChildGroupsColapsed(item.GroupId);
+                }
+            }
+
+            foreach (var item in GroupInfos.Where(item => item.Group >= group))
+            {
+                item.Expanded = false;
+            }
+
+            if (loadAllRows) OnDxLoadAllRows();
+            this.RefreshData();
+        }
+        private void _SetAllParentGroupsExpanded(int? parentGroupId)
+        {
+            if (parentGroupId == null) return;
+
+            foreach (GroupRowInfo item in GroupRowInfos)
+            {
+                if (item.GroupId == parentGroupId)
+                {
+                    item.Expanded = true;
+                    _SetAllParentGroupsExpanded(item.ParentGroupId);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Rozbalí všechny groupy dané úrovně a jejich rodiče (vyšší úroveň). Pokud je to poslední a je potřeba, tak požádá o všechny řádky.
+        /// </summary>
+        /// <param name="group"></param>
+        private void _SetAllGroupsAndParentsExpanded(int group)
+        {
+            foreach (var item in GroupInfos.Where(item => item.Group <= group))
+            {
+                item.Expanded = true;
+            }
+
+            foreach (GroupRowInfo item in GroupRowInfos)
+            {
+                if (item.Group == group)
+                {
+                    item.Expanded = true;
+                    _SetAllParentGroupsExpanded(item.ParentGroupId);
+                }
+            }
+            if (_CanLoadGroupRows(group))
+            {
+                WaitForNextRows = true;
+                OnDxLoadGroupRows(null, group, true, null);   //požádát o všechny řádky pokud to dává smysl.
+            }
+            this.RefreshData();
+        }
+        private void _SetGroupButtonVisibilty()
+        {
+            var groupButtonColumn = this.Columns.FirstOrDefault(x => x.FieldName == GROUPBUTTON);
+            if (groupButtonColumn != null)
+            {
+                if (groupButtonColumn.Visible != _GetGroupButtonVisibility())
+                {
+                    //zapamatuji si poslední sloupec s focusem v řádkovém filtru, protože při změně viditelnosti sloupce groupy, se focus změní
+                    var lastFocused = _lastFocusedColumnInRowFilter;
+                    groupButtonColumn.Visible = _GetGroupButtonVisibility();
+                    if (!string.IsNullOrEmpty(lastFocused)) TrySetFocusToColumnInFilterRow(lastFocused);
+                }
+            }
+        }
+        /// <summary>
+        /// Vyhodnocuje podmínky viditělnosti pro group button
+        /// </summary>
+        /// <returns></returns>
+        private bool _GetGroupButtonVisibility()
+        {
+            return GroupMode != GroupModes.None && !DisableSortChange;
+        }
+        /// <summary>
+        /// Vrací datový řádek podle pro rowindex
+        /// </summary>
+        /// <param name="rowIndex"></param>
+        /// <returns></returns>
+        internal DataRow GetGroupDataRowByRowIndex(int rowIndex)
+        {
+            int rowHandle = GetRowHandle(rowIndex);
+            return this.GetDataRow(rowHandle);
+        }
+        private bool _IsTheLowestGroup(int group)
+        {
+            return group >= GroupCount - 1;
+        }
+        /// <summary>
+        /// Vrací číslo groupy sloupce. Vrací null pokud sloupec není grouped.
+        /// </summary>
+        /// <param name="columnName"></param>
+        /// <returns></returns>
+        private int? GetGroupByColumn(string columnName)
+        {
+            return GetGroupByColumn(this.Columns.FirstOrDefault(x => x.FieldName == columnName));
+        }
+        /// <summary>
+        /// Vrací číslo groupy sloupce. Vrací null pokud sloupec není grouped.
+        /// </summary>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        private int? GetGroupByColumn(GridColumn column)
+        {
+            return column?.GroupIndex >= 0 ? column.GroupIndex : (int?)null;
+        }
+        /// <summary>
+        /// Vrací true pokud má význam žadat o datové řádky pro groupu.
+        /// </summary>
+        /// <param name="group"></param>
+        /// <returns></returns>
+        private bool _CanLoadGroupRows(int group)
+        {
+            return _IsTheLowestGroup(group) //poslední úroveň
+                          && (GroupMode == GroupModes.ShowGrouped || GroupMode == GroupModes.ShowGroupedSumRowAbove);
+        }
+        private bool IsGroupExpanded(int group)
+        {
+            return GroupInfos.Any(x => x.Group == group && x.Expanded == true);
+        }
+
+        #region group state icon
+        /// <summary>
+        /// Kolekce <see cref="DxGridViewInfo.GroupColumnHeaderInfo"/>. Jako klič je <see cref="GridColumn"/>.
+        /// </summary>
+        public static Dictionary<GridColumn, DxGridViewInfo.GroupColumnHeaderInfo> GroupColumnHeaderInfos = new Dictionary<GridColumn, DxGridViewInfo.GroupColumnHeaderInfo>();
+        private Rectangle GetGroupStateIconBackgroundArea(Rectangle captionRect)
+        {
+            Point iconPoint = GetGroupStateIconBackgroundPoint(captionRect);
+            Rectangle iconArea = new Rectangle(iconPoint.X - GROUPSTATEICONBORDER, iconPoint.Y - GROUPSTATEICONBORDER, GroupStateIconBackgroundAreaWidth, GROUPSTATEICONHEIGHT + 2 * GROUPSTATEICONBORDER);
+            return iconArea;
+        }
+        private Rectangle GetGroupStateIconArea(Rectangle captionRect)
+        {
+            Point iconPoint = GetGroupStateIconPoint(captionRect);
+            Rectangle iconArea = new Rectangle(iconPoint.X - GROUPSTATEICONBORDER, iconPoint.Y - GROUPSTATEICONBORDER, GRPUPSTATEICONWIDTH, GROUPSTATEICONHEIGHT);
+            return iconArea;
+        }
+        private Point GetGroupStateIconBackgroundPoint(Rectangle captionRect)
+        {
+            int iconX = captionRect.X - GRPUPSTATEICONWIDTH - GROUPSTATEICONBORDER * 2;
+            int iconY = captionRect.Y + captionRect.Height / 2 - GROUPSTATEICONHEIGHT / 2;
+            return new Point(iconX, iconY);
+        }
+        private Point GetGroupStateIconPoint(Rectangle captionRect)
+        {
+            int iconX = captionRect.X - GRPUPSTATEICONWIDTH - GROUPSTATEICONBORDER;
+            int iconY = captionRect.Y + captionRect.Height / 2 - GROUPSTATEICONHEIGHT / 2 + GROUPSTATEICONBORDER;
+            return new Point(iconX, iconY);
+        }
+        /// <summary>
+        /// Vrací true, pokud point je v olbasti pro GroupIcon
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        private bool IsGroupIconRect(Point point, GridColumn column)
+        {
+            if (column is null) return false;
+
+            // Získání oblasti hlavičky skupiny
+            GroupColumnHeaderInfos.TryGetValue(column, out DxGridViewInfo.GroupColumnHeaderInfo groupColumnHeaderInfo);
+            if (groupColumnHeaderInfo is null) return false;
+            Rectangle captionRect = groupColumnHeaderInfo.CaptionRect;
+            Rectangle iconBounds = GetGroupStateIconBackgroundArea(captionRect);
+            return iconBounds.Contains(point);
+        }
+
+        /// <summary>
+        /// celková šířka ikonky stavu skupiny (ikona včetně pozadí)
+        /// </summary>
+        public int GroupStateIconBackgroundAreaWidth { get { return GRPUPSTATEICONWIDTH + 2 * GROUPSTATEICONBORDER; } }
+        internal GroupInfo GetGroupInfo(int groupIndex)
+        {
+            return GroupInfos.FirstOrDefault(x => x.Group == groupIndex);
+        }
+        #endregion
+
+        #endregion
+
+        #region drag&drop
+        bool _canMoveColumn = true;
+        private void _OnDragObjectStart(object sender, DragObjectStartEventArgs e)
+        {
+            //Řešení pro zakázání "stáhnutí" groupovaného sloupečku mimo group panel, pokud je zakázáno řazení. V případě, že je zakázáno řazení, tak nejde vytvořit skupinu, ale šlo ji zrušit přetažením mimo group panel.
+            //Využívám k tomu proměnou _canMoveColumn  kam si zaznamenám, zda jsem začal dragAndDrop sloupce v Group panelu a přitom mám zakázáné řazení tohoto sloupce. V _OnDragObjectDrop tuto proměnou resetuji.
+            var dragObject = e.DragObject;
+            //if (dragObject is not GridColumn) //pro c# 9
+            if (!(dragObject is GridColumn))
+            {
+                return;
+            }
+            var column = dragObject as GridColumn;
+            if (column.GroupIndex < 0)
+            {
+                return;
+            }
+
+            GridView view = sender as GridView;
+            bool isInGroupPanel = GetHitInfo(view).InGroupPanel;
+
+            if (isInGroupPanel && !this.IsColumnAllowSort(column))
+            {
+                _canMoveColumn = false;
+            }
+        }
+
+        private void _OnDragObjectOver(object sender, DragObjectOverEventArgs e)
+        {
+            //Řešení pro zakázání "stáhnutí" groupovaného sloupečku mimo group panel, pokud je zakázáno řazení. V případě, že je zakázáno řazení, tak nejde vytvořit skupinu, ale šlo ji zrušit přetažením.
+            if (!_canMoveColumn)
+            {
+                e.DropInfo.Valid = false;
+            }
+
+        }
+        private void _OnDragObjectDrop(object sender, DragObjectDropEventArgs e)
+        {
+            //konec dragAndDrop -> reset zda můžu pustit sloupec někde...
+            _canMoveColumn = true;
+        }
+
+        private GridHitInfo GetHitInfo(GridView view)
+        {
+            if (view == null)
+            {
+                return null;
+            }
+            var mousePosition = Control.MousePosition;
+            var hitInfo = view.CalcHitInfo(view.GridControl.PointToClient(mousePosition));
+            return hitInfo;
+        }
+        #endregion
         /// <summary>
         /// Nastavuje ikony v záhlaví sloupců
         /// </summary>
@@ -1841,87 +3490,37 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         public void SetLayout()
         {
-            //TODO tady to je potřeba ještě doladit, po přepnutí šablony, který mergovala na šablonu, která nemá merge, tak se nezobrazí chcechBoxy
-            //povolím pro view merge stejných hodnot (distinct), nastavení je pak individuální v rámci column
-            //zapínám jen v případě, že mám info od serveru, že mám pro nějaký sloupec požadavek na merge. Merge má obecně několik omezení: nefunguje multiselect, rozlišení lichý/sudý řádek... https://docs.devexpress.com/WindowsForms/643/controls-and-libraries/data-grid/views/grid-view/cells#cell-merging
-            bool allowMerge = this.GridViewColumns.Count(x => x.AllowMerge) > 0;
-            OptionsView.AllowCellMerge = allowMerge;
-            //CheckBoxRowSelect = CheckBoxRowSelect && !allowMerge;    //ještě vypínám chechBoxRowSelect, protože stejně nefunguje multiselect v případě merge viz výše, a dělá to jen neplechu.
-            if (allowMerge) { MultiSelect = false; }
-
             _InitColumns();
         }
 
+        #region Init columns
 
         /// <summary>
         /// Vytvoření koleckce sloupců v gridView
         /// </summary>
-        //public void InitColumns(IEnumerable<IGridViewColumn> gridViewColumns)
         private void _InitColumns()
         {
+            GroupColumnHeaderInfos.Clear(); //reset uložených informací, budeme mít nové columns
             this.BeginUpdate();
-            //GridViewColumns = gridViewColumns;
+            _SilentModeOn();    //Posílaly se změny řádkového filtru -> silentModeOn
             this.Columns.Clear();
+            _SilentModeOff();
+
+            this.Columns.Add(_CreateGridColumnGroupButton());
             foreach (var vc in GridViewColumns)
             {
-                int index = this.Columns.Add(CreateGridColumn(vc));
+                int index = this.Columns.Add(_CreateGridColumn(vc));
                 _InitColumnAfterAdd(index, vc);
                 _InitColumnSummaryRow(index, vc);
-                _InitColumnGroupSummaryRow(index, vc);
             }
             this.EndUpdate();
         }
-        /// <summary>
-        /// Některé vlastnosti GridColumn nejdou nastavit v rámci <see cref="CreateGridColumn(IGridViewColumn)"/>. Je třeba je nastavit až po přidání do kolekce.
-        /// </summary>
-        /// <param name="columnIndex"></param>
-        /// <param name="gridViewColumn"></param>
-        private void _InitColumnAfterAdd(int columnIndex, IGridViewColumn gridViewColumn)
-        {
-            var gc = this.Columns[columnIndex];
-            //Header settings
-            gc.AppearanceHeader.TextOptions.HAlignment = gridViewColumn.HeaderAlignment;
-            gc.AppearanceHeader.FontStyleDelta = gridViewColumn.HeaderFontStyle;
-            gc.AppearanceCell.TextOptions.HAlignment = gridViewColumn.CellAlignment;
-            gc.AppearanceCell.FontStyleDelta = gridViewColumn.CellFontStyle;
-        }
-
-        private void _InitColumnSummaryRow(int columnIndex, IGridViewColumn gridViewColumn)
-        {
-            var gc = this.Columns[columnIndex];
-            if (gridViewColumn.IsNumberColumnType)
-            {
-                var sumItem = new GridColumnSummaryItem()
-                {
-                    SummaryType = DevExpress.Data.SummaryItemType.Sum,
-                    Mode = DevExpress.Data.SummaryMode.Selection,
-                    DisplayFormat = "{0:" + gridViewColumn.FormatString + "}"
-                };
-                gc.Summary.Add(sumItem);
-            }
-        }
-
-        private void _InitColumnGroupSummaryRow(int columnIndex, IGridViewColumn gridViewColumn)
-        {
-            var gc = this.Columns[columnIndex];
-            if (gridViewColumn.IsNumberColumnType || gridViewColumn.IsStringColumnType)
-            {
-                DevExpress.XtraGrid.GridGroupSummaryItem sumItem = new DevExpress.XtraGrid.GridGroupSummaryItem()
-                {
-                    FieldName = gc.FieldName,
-                    SummaryType = gridViewColumn.IsNumberColumnType ? DevExpress.Data.SummaryItemType.Sum : DevExpress.Data.SummaryItemType.Count,  //TODO tady se podívej na type Custom...
-                    ShowInGroupColumnFooter = gc,
-                };
-                GroupSummary.Add(sumItem);
-            }
-        }
-
         /// <summary>
         /// Tvorba GridColumn na základě našich dat z <see cref="IGridViewColumn"/>
         /// </summary>
         /// <param name="gridViewColumn"></param>
         /// <returns></returns>
-        internal DevExpress.XtraGrid.Columns.GridColumn CreateGridColumn(IGridViewColumn gridViewColumn)
+        private DevExpress.XtraGrid.Columns.GridColumn _CreateGridColumn(IGridViewColumn gridViewColumn)
         {
             var gc = new DevExpress.XtraGrid.Columns.GridColumn()
             {
@@ -1935,10 +3534,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (string.IsNullOrEmpty(gridViewColumn.Caption)) gc.OptionsColumn.ShowCaption = false; //pokud nenastavím Caption, tak nechci niz zobrazovat (název sloupce)
 
             gc.OptionsColumn.AllowSort = DxComponent.ConvertBool(gridViewColumn.AllowSort);
+            //gc.OptionsColumn.AllowGroup = DxComponent.ConvertBool(gridViewColumn.AllowSort);
             //povolení filtrování
             gc.OptionsFilter.AllowFilter = gridViewColumn.AllowFilter;
             gc.OptionsFilter.AllowAutoFilter = gridViewColumn.AllowFilter;
             gc.OptionsFilter.AutoFilterCondition = gridViewColumn.AutoFilterCondition;
+
+            gc.OptionsFilter.ImmediateUpdatePopupExcelFilter = DefaultBoolean.False;    //Vyklikávám hodnoty a update se provede až po stiknutí OK v popUp okně. 
+            gc.OptionsFilter.ImmediateUpdateAutoFilter = false; //TODO předat z IGridViewColumn a případně zajistit nějaký timer? Prodlevu?
+            gc.OptionsFilter.ImmediateUpdatePopupExcelFilter = DefaultBoolean.False;    //Vyklikávám hodnoty a update se provede až po stiknutí OK v popUp okně. 
+            OptionsFilter.UseNewCustomFilterDialog = false;
+
 
             //šířka sloupce
             if (gridViewColumn.Width > 0) gc.Width = DxComponent.ZoomToGui(gridViewColumn.Width);
@@ -1953,15 +3559,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             gc.OptionsColumn.ShowInCustomizationForm = !gridViewColumn.IsSystemColumn;  //systémové sloupce nechceme nabízet ve výběru sloupců
 
             //ikonka
-            gc.ImageOptions.Alignment = gc.OptionsColumn.ShowCaption == false ? StringAlignment.Center : gridViewColumn.IconAligment;   //pokud nechci nadpis, tak ikonky doprostřed.
-            DxComponent.ApplyImage(gc.ImageOptions, gridViewColumn.IconName, null, ResourceImageSizeType.Small);
+            _ApplyImageToColumnHeader(gc, gridViewColumn);
 
-            gc.OptionsFilter.ImmediateUpdateAutoFilter = false; //TODO předat z IGridViewColumn a případně zajistit nějaký timer? Prodlevu?
-            OptionsFilter.UseNewCustomFilterDialog = false;
-
+            //řazení
             gc.SortMode = ColumnSortMode.Custom;    //Custom sorting ->vyvolá se eventa CustomColumnSort kde mohu "vypnout" řazení
 
-            if (gridViewColumn.IsNumberColumnType /*|| gridViewColumn.ColumnType == typeof(DateTime)*/) //DateTine zatím nechámn na DisplayText, protože jinak nejde zadat jenom rok, ale celé datum...
+            if (gridViewColumn.IsNumberColumnType || gridViewColumn.IsDateTimeColumnType) //DateTine zatím nechámn na DisplayText, protože jinak nejde zadat jenom rok, ale celé datum...
             {
                 gc.FilterMode = ColumnFilterMode.Value;
             }
@@ -1986,6 +3589,40 @@ namespace Noris.Clients.Win.Components.AsolDX
             return gc;
         }
 
+        private void _ApplyImageToColumnHeader(GridColumn gridColumn, IGridViewColumn gridViewColumn)
+        {
+            gridColumn.ImageOptions.Alignment = gridColumn.OptionsColumn.ShowCaption == false ? StringAlignment.Center : gridViewColumn.IconAligment;   //pokud nechci nadpis, tak ikonky doprostřed.
+            DxComponent.ApplyImage(gridColumn.ImageOptions, gridViewColumn.IconName, null, ResourceImageSizeType.Small);
+        }
+
+        private DevExpress.XtraGrid.Columns.GridColumn _CreateGridColumnGroupButton()
+        {
+            var gc = new DevExpress.XtraGrid.Columns.GridColumn()
+            {
+                FieldName = GROUPBUTTON,
+                //Caption = "G",
+                UnboundDataType = typeof(bool),
+                VisibleIndex = 0,
+                Visible = _GetGroupButtonVisibility(),
+                ToolTip = "G",
+                Width = 28
+            };
+            gc.OptionsColumn.AllowSort = DefaultBoolean.False;
+            gc.OptionsFilter.AllowFilter = false;
+            gc.OptionsFilter.AllowAutoFilter = false;
+            gc.OptionsColumn.AllowSize = false;
+            gc.OptionsColumn.AllowMove = false;
+            gc.OptionsColumn.ShowInCustomizationForm = false;
+            gc.ImageOptions.Alignment = StringAlignment.Center;
+            DxComponent.ApplyImage(gc.ImageOptions, "images/snap/groupby_16x16.png", null, ResourceImageSizeType.Small);
+
+            RepositoryItemImageEdit repositoryImageEdit = new RepositoryItemImageEdit();
+            gc.ColumnEdit = repositoryImageEdit;
+            this.GridControl.RepositoryItems.Add(repositoryImageEdit);
+
+            return gc;
+        }
+
         private void _SetFormatInfo(FormatInfo formatInfo, IGridViewColumn gridViewColumn)
         {
             //format; takto to je i v pivotGrid.
@@ -1999,12 +3636,43 @@ namespace Noris.Clients.Win.Components.AsolDX
                 formatInfo.FormatType = DevExpress.Utils.FormatType.DateTime;
                 formatInfo.FormatString = gridViewColumn.FormatString; //"MMM/d/yyyy hh:mm tt";
             }
-            else if (gridViewColumn.ColumnType == typeof(System.Decimal))
+            else if (gridViewColumn.IsNumberColumnType) //RMC 19.11.2024; změněno z Int na isNumber. Může přijít procento jako int a poté je potřeba použít formát.
             {
                 formatInfo.FormatType = DevExpress.Utils.FormatType.Numeric;
                 formatInfo.FormatString = gridViewColumn.FormatString; //"n"; //https://documentation.devexpress.com/#WindowsForms/CustomDocument2141
             }
         }
+        /// <summary>
+        /// Některé vlastnosti GridColumn nejdou nastavit v rámci <see cref="_CreateGridColumn(IGridViewColumn)"/>. Je třeba je nastavit až po přidání do kolekce.
+        /// </summary>
+        /// <param name="columnIndex"></param>
+        /// <param name="gridViewColumn"></param>
+        private void _InitColumnAfterAdd(int columnIndex, IGridViewColumn gridViewColumn)
+        {
+            var gc = this.Columns[columnIndex];
+            //Header settings
+            gc.AppearanceHeader.TextOptions.HAlignment = gridViewColumn.HeaderAlignment;
+            gc.AppearanceHeader.FontStyleDelta = gridViewColumn.HeaderFontStyle;
+            gc.AppearanceCell.TextOptions.HAlignment = gridViewColumn.CellAlignment;
+            gc.AppearanceCell.FontStyleDelta = gridViewColumn.CellFontStyle;
+        }
+
+        private void _InitColumnSummaryRow(int columnIndex, IGridViewColumn gridViewColumn)
+        {
+            var gc = this.Columns[columnIndex];
+            if (gridViewColumn.IsNumberColumnType)
+            {
+                var sumItem = new GridColumnSummaryItem()
+                {
+                    SummaryType = DevExpress.Data.SummaryItemType.Custom,   //sumy si řeším v _OnCustomSummaryCalculate (nesčítám groupy)
+                    Mode = DevExpress.Data.SummaryMode.Selection,
+                    DisplayFormat = "{0:" + gridViewColumn.FormatString + "}"
+                };
+                gc.Summary.Add(sumItem);
+            }
+        }
+
+        #endregion
 
         #region RepositoryItem, eitační styl, image, multiline...
         private RepositoryItem _CreateRepositoryItem(IGridViewColumn gridViewColumn, bool useForRowFilter = false)
@@ -2013,20 +3681,74 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return _CreateRepositoryItemForEditStyle(gridViewColumn, useForRowFilter);
             else if (gridViewColumn.IsImageColumnType) //Obrázky
                 return _CreateRepositoryItemForImage(useForRowFilter);
-            else if (gridViewColumn.IsStringColumnType) //string
-                return _CreateRepositoryItemForString(gridViewColumn, useForRowFilter);
+            else if (gridViewColumn.IsStringColumnType || gridViewColumn.IsNumberColumnType) //string a numeric
+                return _CreateRepositoryItemForStringAndNumber(gridViewColumn, useForRowFilter);
+            else if (gridViewColumn.IsDateTimeColumnType) //DateTime
+                return _CreateRepositoryItemForDatetime(gridViewColumn, useForRowFilter);
             else
                 return null;
         }
 
-        private static RepositoryItem _CreateRepositoryItemForString(IGridViewColumn gridViewColumn, bool useForRowFilter)
+        private static RepositoryItem _CreateRepositoryItemForDatetime(IGridViewColumn gridViewColumn, bool useForRowFilter)
         {
-            if (!gridViewColumn.MultiLineCell || useForRowFilter) return null;
-            RepositoryItemMemoEdit repItemMemoEdit = new RepositoryItemMemoEdit
+            if (!useForRowFilter) return null;
+            //pro řádkový filtr vytvářím TextEdit, aby šlo zadávát custom hodnoty, které poté konvertuji v CreateAutoFilterCriterion
+            RepositoryItemTextEdit repItemTextEditForDateTime = new RepositoryItemTextEdit();
+            repItemTextEditForDateTime.Enter += RepItemTextEditForDateTime_Enter;
+            //repItemMemoEditForDateTime.Validating += RepItemMemoEditForDateTime_Validating;   //tady nešel propsat ErrorText do tooltipu, proto řeším v _OnValidatingEditor
+            //pohlrával jsem si i CustomDisplayText eventou...
+
+            return repItemTextEditForDateTime;
+        }
+
+        private static void RepItemTextEditForDateTime_Enter(object sender, EventArgs e)
+        {
+            //tady nahrazuji zpět do datumového editu v řádkovém filtru hodnotu, která byla zadaná uživatem, před konverzí, vrazím ho tam když vstoupím do inputu.. proto ten Enter...
+            DevExpress.XtraEditors.TextEdit txtEdit = sender as DevExpress.XtraEditors.TextEdit;
+            var view = (txtEdit.Parent as GridControl).MainView as DxGridView;
+            var column = view.FocusedColumn;
+            string filterCriteria = column.FilterInfo?.FilterString ?? string.Empty;
+            string originFiler;
+            view._convertedColumnFilterCache.TryGetValue(filterCriteria, out originFiler);
+            if (!string.IsNullOrEmpty(originFiler))
             {
-                LinesCount = 0 //0 = automatický počet
-            };
-            return repItemMemoEdit;
+                txtEdit.EditValue = originFiler;
+            }
+        }
+
+        private static RepositoryItem _CreateRepositoryItemForStringAndNumber(IGridViewColumn gridViewColumn, bool useForRowFilter)
+        {
+            if (useForRowFilter)
+            {//řádkový filtr
+                RepositoryItemTextEdit repItemTextEdit = new RepositoryItemTextEdit();
+                repItemTextEdit.Enter += RepItemTextEdit_Enter;
+                return repItemTextEdit;
+            }
+            else if (gridViewColumn.MultiLineCell)
+            {
+                RepositoryItemMemoEdit repItemMemoEdit = new RepositoryItemMemoEdit()
+                {
+                    LinesCount = 0 //0 = automatický počet
+                };
+                return repItemMemoEdit;
+            }
+            return null;
+        }
+
+        private static void RepItemTextEdit_Enter(object sender, EventArgs e)
+        {
+            //tady nahrazuji zpět do  editu v řádkovém filtru hodnotu, která byla zadaná uživatem, před konverzí, vrazím ho tam když vstoupím do inputu.. proto ten Enter...
+            //jedná o zadávání "něco1..něco2", tedy intervalu.
+            DevExpress.XtraEditors.TextEdit txtEdit = sender as DevExpress.XtraEditors.TextEdit;
+            var view = (txtEdit.Parent as GridControl).MainView as DxGridView;
+            var column = view.FocusedColumn;
+            string filterCriteria = column.FilterInfo?.FilterString ?? string.Empty;
+            string originFiler;
+            view._convertedColumnFilterCache.TryGetValue(filterCriteria, out originFiler);
+            if (!string.IsNullOrEmpty(originFiler))
+            {
+                txtEdit.EditValue = originFiler;
+            }
         }
 
         private static RepositoryItem _CreateRepositoryItemForImage(bool useForRowFilter)
@@ -2042,23 +3764,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private RepositoryItem _CreateRepositoryItemForEditStyle(IGridViewColumn gridViewColumn, bool useForRowFilter)
         {
-            //if (gridViewColumn.CodeTable.Count(x => !String.IsNullOrEmpty(x.ImageName)) > 0)
             if (gridViewColumn.EditStyleViewMode == EditStyleViewMode.Icon || gridViewColumn.EditStyleViewMode == EditStyleViewMode.IconText)
             {
+                //editační styl s ikonkomi
+                ResourceContentType resourceType = _GetResourceType(gridViewColumn);
+                var smallImageList = _GetImageList(resourceType, ResourceImageSizeType.Small);
+
                 RepositoryItemImageComboBox repItemImageCombo = new RepositoryItemImageComboBox();          // vytvoříme objekt typu RepositoryItemImageComboBox
-                ResourceContentType resourceType = ResourceContentType.None;
                 repItemImageCombo.AutoHeight = false;
 
-                //resourceType určíme podle prvního item s image
-                var firstImageCodeTableItem = gridViewColumn.CodeTable.FirstOrDefault(x => !string.IsNullOrEmpty(x.ImageName));
-                if (firstImageCodeTableItem.ImageName != null)
-                {
-                    if (DxComponent.TryGetApplicationResource(firstImageCodeTableItem.ImageName, out var resourceItem))
-                    {
-                        resourceType = resourceItem.ContentType;
-                    }
-                }
-                repItemImageCombo.SmallImages = _GetImageList(resourceType, ResourceImageSizeType.Small);
+                repItemImageCombo.SmallImages = smallImageList;
                 repItemImageCombo.GlyphAlignment = gridViewColumn.EditStyleViewMode == EditStyleViewMode.IconText ? HorzAlignment.Near : HorzAlignment.Center;
 
                 repItemImageCombo.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.Standard;
@@ -2085,14 +3800,33 @@ namespace Noris.Clients.Win.Components.AsolDX
                 int i = 0;
                 foreach (var code in gridViewColumn.CodeTable)
                 {
-                    var a = new DevExpress.XtraEditors.Controls.ComboBoxItem(code.DisplayText);
-
-                    repItemCombo.Items.Add(a);
+                    DevExpress.XtraEditors.Controls.ComboBoxItem cbItem = new DevExpress.XtraEditors.Controls.ComboBoxItem(code.DisplayText);
+                    repItemCombo.Items.Add(cbItem);
                     i++;
                 }
+
                 return repItemCombo;
             }
         }
+
+        /// <summary>
+        /// Vrátí <see cref="ResourceContentType"/> podle prvního prvku v CodeTable
+        /// </summary>
+        /// <param name="gridViewColumn"></param>
+        /// <returns></returns>
+        private static ResourceContentType _GetResourceType(IGridViewColumn gridViewColumn)
+        {
+            ResourceContentType resourceType = ResourceContentType.None;
+            //resourceType určíme podle prvního item s image
+            var firstImageCodeTableItem = gridViewColumn.CodeTable.FirstOrDefault(x => !string.IsNullOrEmpty(x.ImageName));
+            if (firstImageCodeTableItem.ImageName != null)
+            {
+                DxComponent.TryGetResourceContentType(firstImageCodeTableItem.ImageName, null, out resourceType);
+            }
+
+            return resourceType;
+        }
+
         private static object _GetImageList(ResourceContentType resourceContentType, ResourceImageSizeType resourceImageSizeType)
         {
             switch (resourceContentType)
@@ -2128,18 +3862,23 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         #endregion
 
-        internal void SetFocusToFilterRow(string lastFilterRowCell)
+        /// <summary>
+        /// Nastavení focusu do řádkového filtru. Pokud mám ho mám k dispozici a ještě tam nejsem.
+        /// </summary>
+        /// <param name="columnToFocus"></param>
+        /// <returns></returns>
+        internal bool TrySetFocusToFilterRow(string columnToFocus)
         {
-
             //TADY to budu potřebovat volat i z controleroru, proto internal
 
-            if (!_RowFilterVisible) return;
+            if (!_RowFilterVisible || IsFilterRowActive) return false;
+            //stojím mimo řádkový filtr a mám ho k dispozici
 
             this.FocusedRowHandle = DevExpress.XtraGrid.GridControl.AutoFilterRowHandle;
             bool focusFirstColumn = true;
-            if (!string.IsNullOrEmpty(lastFilterRowCell))
+            if (!string.IsNullOrEmpty(columnToFocus))
             {
-                var column = this.Columns.Where(x => x.FieldName == lastFilterRowCell).FirstOrDefault();
+                var column = this.Columns.Where(x => x.FieldName == columnToFocus).FirstOrDefault();
                 if (column != null)
                 {
                     this.FocusedColumn = column;
@@ -2160,23 +3899,56 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
 
-            _LastFilterRowCell = FocusedColumn?.FieldName;
+            LastFocusedColumnInRowFilter = FocusedColumn?.FieldName;
 
             this.ShowEditor();  //activuje cell pro editaci (curzor)
-
+            return true;
         }
 
-        #region Handlers 
+        /// <summary>
+        /// Slouží pro případ, kdy se snažím o znovu nastavení původně focusovaného sloupce během změny viditelnosti group sloupce.
+        /// </summary>
+        /// <param name="columnToFocus"></param>
+        /// <returns></returns>
+        private bool TrySetFocusToColumnInFilterRow(string columnToFocus)
+        {
+            if (!(IsFilterRowActive && FocusedColumn != null)) return false;
 
-
-        #endregion
+            //stojím již v řádkovém filtru
+            if (!string.IsNullOrEmpty(columnToFocus))
+            {
+                var column = this.Columns.Where(x => x.FieldName == columnToFocus).FirstOrDefault();
+                if (column != null)
+                {
+                    this.FocusedColumn = column;
+                }
+            }
+            LastFocusedColumnInRowFilter = FocusedColumn?.FieldName;
+            return true;
+        }
 
         #region Public eventy a jejich volání
 
         /// <summary>
         /// Tichý režim = bez eventů.
         /// </summary>
-        private bool _SilentMode;
+        private bool _silentMode;
+        private int _silentCount = 0;
+
+        private void _SilentModeOn()
+        {
+            _silentCount++;
+            _silentMode = true;
+        }
+        private void _SilentModeOff()
+        {
+            _silentCount--;
+            if (_silentCount <= 0)
+            {
+                _silentMode = false;
+                _silentCount = 0;
+            }
+        }
 
         /// <summary>
         /// Kliklo se do gridu <see cref="DxDoubleClick"/>
@@ -2196,7 +3968,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public event DxGridSelectionChangedHandler DxSelectionChanged;
         protected virtual void OnSelectionChanged(List<int> selectedRows)
         {
-            if (_SilentMode) return;
+            if (_silentMode) return;
 
             if (selectedRows.Count() != this.RowCount) _selectedAllRows = false; //schození přiznaku o vybraných všech řádcích
             if (DxSelectionChanged != null) DxSelectionChanged(this, new DxGridSelectionChangedChangedEventArgs(selectedRows, SelectedAllRows));
@@ -2227,14 +3999,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
 
         /// <summary>
+        /// Provedena změna viditelnosti filtrovacího řádku
+        /// </summary>
+        public event DxGridShowGroupPanelChangedHandler DxShowFilterRowChanged;
+        protected virtual void OnDxShowFilterRowChanged()
+        {
+            if (DxShowFilterRowChanged != null) DxShowFilterRowChanged(this, new EventArgs());
+        }
+
+        /// <summary>
         /// Vyvolá metodu <see cref="OnShowContextMenu(DxGridContextMenuEventArgs)"/> a event <see cref="DxShowContextMenu"/>
         /// </summary>
         /// <param name="hitInfo"></param>
-        private void RaiseShowContextMenu(DxGridHitInfo hitInfo)
+        private void RaiseShowContextMenu(DxGridHitInfo hitInfo, string menuArea)
         {
             //if (_SilentMode) return;
 
-            DxGridContextMenuEventArgs args = new DxGridContextMenuEventArgs(hitInfo);
+            DxGridContextMenuEventArgs args = new DxGridContextMenuEventArgs(hitInfo, menuArea);
             OnShowContextMenu(args);
             DxShowContextMenu?.Invoke(this, args);
         }
@@ -2247,6 +4028,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Uživatel chce zobrazit kontextové menu
         /// </summary>
         public new event DxGridContextMenuHandler DxShowContextMenu;
+
+        /// <summary>
+        /// Grid chce datové řádky pro skupinu <see cref="DxLoadMoreRows"/>
+        /// </summary>
+        public event DxLoadGroupRowsHandler DxLoadGroupRows;
+        protected virtual void OnDxLoadGroupRows(int? groupId, int group, bool allRowsOfGroup, int? groupPrimaryKey)
+        {
+            if (DxLoadGroupRows != null) DxLoadGroupRows(this, new DxLoadGroupRowEventArgs(groupId, group, allRowsOfGroup, groupPrimaryKey));
+        }
+
+        /// <summary>
+        /// Grid chce všechna data
+        /// </summary>
+        public event DxLoadAllRowsHandler DxLoadAllRows;
+        protected virtual void OnDxLoadAllRows()
+        {
+            if (DxLoadAllRows != null)
+            {
+                WaitForNextRows = true;
+                DxLoadAllRows(this, new EventArgs());
+            }
+        }
 
         #endregion
     }
@@ -2355,6 +4158,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Systemový sloupec, nezobrazuje se v výběru sloupců
         /// </summary>
         public virtual bool IsSystemColumn { get; set; }
+        /// <inheritdoc/>
+        public virtual bool IsHiddenValue { get; set; }
+
         /// <summary>
         /// Display text, value, image name
         /// </summary>
@@ -2400,6 +4206,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Sloupec typu string
         /// </summary>
         public bool IsStringColumnType => this.ColumnType == typeof(string);
+        /// <inheritdoc/>
+        public bool IsDateTimeColumnType => this.ColumnType == typeof(DateTime);
         /// <summary>
         /// Sloupec s editačním stylem
         /// </summary>
@@ -2407,7 +4215,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <inheritdoc/>
         public bool IsNumberColumnType => TypeHelper.IsNumeric(this.ColumnType);
         /// <inheritdoc/>
+        public bool IsNumberIntegerColumnType => TypeHelper.IsNumericInteger(this.ColumnType);
+        /// <inheritdoc/>
         public virtual DevExpress.XtraGrid.Columns.AutoFilterCondition AutoFilterCondition { get; set; }
+
     }
     /// <summary>
     /// Interface pro definici sloupců
@@ -2483,6 +4294,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         bool IsSystemColumn { get; }
         /// <summary>
+        /// Sloupec obsahuje skryté atributy (slouží pro grafické odlišení - kalíšek)
+        /// </summary>
+        bool IsHiddenValue { get; }
+        /// <summary>
         /// Display text, value, image name
         /// </summary>
         List<(string DisplayText, string Value, string ImageName)> CodeTable { get; }
@@ -2515,6 +4330,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         bool IsNumberColumnType { get; }
         /// <summary>
+        /// Sloupce typu celočíselné číslo
+        /// </summary>
+        bool IsNumberIntegerColumnType { get; }
+        /// <summary>
+        /// Sloupec typu DateTime
+        /// </summary>
+        bool IsDateTimeColumnType { get; }
+        /// <summary>
         /// Sloupec s editačním stylem
         /// </summary>
         bool IsEditStyleColumnType { get; }
@@ -2545,7 +4368,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="fieldName"></param>
         /// <param name="viewRowIndex"></param>
-        /// <param name="id"></param>
         /// <param name="markImage"></param>
         /// <param name="styleName"></param>
         /// <param name="exactAttrColor"></param>
@@ -2578,17 +4400,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         public virtual string MarkImage { get; private set; }
         /// <inheritdoc/>
         public virtual Color? ExactAttrColor { get; private set; }
-
+        /// <inheritdoc/>
+        public virtual string ToolTipIcon { get; set; }
+        /// <inheritdoc/>
+        public virtual string ToolTipTitle { get; set; }
+        /// <inheritdoc/>
+        public virtual string ToolTipText { get; set; }
+        /// <inheritdoc/>
+        public virtual bool? ToolTipAllowHtml { get; set; }
+        /// <summary>
+        /// Vytvoří unikátní ID ma základě indexu řádku a názvu sloupce
+        /// </summary>
+        /// <param name="viewRowIndex"></param>
+        /// <param name="fieldName"></param>
+        /// <returns></returns>
         public static Tuple<int, string> CreateId(int viewRowIndex, string fieldName)
         {
             return new Tuple<int, string>(viewRowIndex, fieldName);
         }
+        /// <inheritdoc/>
+        public virtual StyleInfo StyleInfo { get { return DxComponent.GetStyleInfo(StyleName, ExactAttrColor); } }
     }
 
     /// <summary>
     /// Interface pro dodatečnou deficici vlastností buňky, převázně se jedná o grafické vlastnosti (styl, image)
     /// </summary>
-    public interface IGridViewCell
+    public interface IGridViewCell : IToolTipItem
     {
         /// <summary>
         /// Název sloupce
@@ -2614,12 +4451,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Konrétní barva atributu. Má přednost před <see cref="StyleName"/>, ve kterém je pro tento případ přenesena hodnota barvy.
         /// </summary>
         System.Drawing.Color? ExactAttrColor { get; }
+        /// <summary>
+        /// StyleInfo (kalíšek)
+        /// </summary>
+        StyleInfo StyleInfo { get; }
     }
 
 
     #region Deklarace delegátů a tříd pro eventhandlery, další enumy
-
-
 
 
     /// <summary>
@@ -2752,6 +4591,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
     public delegate void DxGridSummaryRowForAllRowsHandler(object sender, EventArgs args);
 
+    public delegate void DxLoadAllRowsHandler(object sender, EventArgs args);
+
     /// <summary>
     /// Argumenty pro zobrazení konetextového menu
     /// </summary>
@@ -2760,11 +4601,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DxGridContextMenuEventArgs(DxGridHitInfo dxGridHitInfo)
+        public DxGridContextMenuEventArgs(DxGridHitInfo dxGridHitInfo, string menuArea)
         {
             this.DxGridHitInfo = dxGridHitInfo;
+            this.MenuArea = menuArea;
         }
         public DxGridHitInfo DxGridHitInfo { get; private set; }
+        /// <summary>
+        /// Oblast menu
+        /// </summary>
+        public string MenuArea { get; private set; }
 
     }
     /// <summary>
@@ -2798,6 +4644,51 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Název sloupce
         /// </summary>
         public string ColumnName { get { return GridHit.Column?.FieldName; } }
+    }
+
+
+    /// <summary>
+    /// Předpis pro eventhandlery
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="args"></param>
+    public delegate void DxLoadGroupRowsHandler(object sender, DxLoadGroupRowEventArgs args);
+
+    /// <summary>
+    /// EventArgs pro donačítání datových řádků pro skupinu
+    /// </summary>
+    public class DxLoadGroupRowEventArgs : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxLoadGroupRowEventArgs(int? groupId, int group, bool allRowsOfGroup, int? groupPrimaryKey)
+        {
+            GroupId = groupId;
+            Group = group;
+            AllRowsOfGroup = allRowsOfGroup;
+            GroupPrimaryKey = groupPrimaryKey;
+        }
+
+        /// <summary>
+        /// GroupId. V tuhle chvíli nadbytečné, protože pracujeme s <see cref="GroupPrimaryKey"/>
+        /// </summary>
+        public int? GroupId { get; }
+
+        /// <summary>
+        /// Číslo skupiny
+        /// </summary>
+        public int Group { get; }
+
+        /// <summary>
+        /// Načtení všech řádků pro dané číslo skupiny <see cref="Group"/>.
+        /// </summary>
+        public bool AllRowsOfGroup { get; set; }
+
+        /// <summary>
+        /// Identifikátor skupiny, primární klíč. Snad bychom to mohli časem změnit na jeden unikátní identifikátor řádky.
+        /// </summary>
+        public int? GroupPrimaryKey { get; }
     }
 
     #region enums
@@ -2852,6 +4743,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         typeof(byte), typeof(ulong),   typeof(ushort),
         typeof(uint), typeof(float)
     };
+        private static readonly HashSet<Type> NumericIntegerTypes = new HashSet<Type>
+    {
+        typeof(int),
+        typeof(long), typeof(short),   typeof(sbyte),
+        typeof(byte), typeof(ulong),   typeof(ushort),
+        typeof(uint)
+    };
 
         /// <summary>
         /// Return true for numeric Type
@@ -2862,12 +4760,306 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             return NumericTypes.Contains(Nullable.GetUnderlyingType(myType) ?? myType);
         }
+
+        /// <summary>
+        /// Return true for intergral numeric Type
+        /// </summary>
+        /// <param name="myType"></param>
+        /// <returns></returns>
+        internal static bool IsNumericInteger(this Type myType)
+        {
+            return NumericIntegerTypes.Contains(Nullable.GetUnderlyingType(myType) ?? myType);
+        }
+    }
+    /// <summary>
+    /// Třída která se stará o informace a stav group řádky
+    /// </summary>
+    internal class GroupRowInfo
+    {
+        public int Group { get; set; }
+        public int GroupId { get; set; }
+        public int? ParentGroupId { get; set; }
+        public bool Expanded { get; set; }
+        public bool DataRowsLoaded { get; set; }
     }
 
-    public class GroupRowState
+    /// <summary>
+    /// Info za celou groupu
+    /// </summary>
+    internal class GroupInfo : IToolTipItem
     {
-        public int GroupRowHandle { get; set; }
+        public GroupInfo(int group, bool expanded, string groupDescription, string styleName)
+        {
+            Group = group;
+            Expanded = expanded;
+            GroupDescription = groupDescription;
+            StyleInfo = DxComponent.GetStyleInfo(styleName, null);
+        }
+        public int Group { get; private set; }
         public bool Expanded { get; set; }
+        //public bool DataRowsLoaded { get; set; }
+        public string GroupDescription { get; private set; }
+        /// <summary>
+        /// StyleInfo (kalíšek)
+        /// </summary>
+        public StyleInfo StyleInfo { get; private set; }
+
+        public string ToolTipIcon => string.Empty;
+
+        public string ToolTipTitle => GroupDescription;
+
+        public string ToolTipText => string.Empty;
+
+        public bool? ToolTipAllowHtml => null;
+
+        public void RefreshStyleInfo()
+        {
+            StyleInfo = DxComponent.GetStyleInfo(StyleInfo.Name, null);
+        }
     }
     #endregion
+
+
+    /// <summary>
+    /// Slouží pro konverzi (patch) <see cref="CriteriaOperator"/>. Aktuálně se zde řeší problematika zástupných znaků '%' pro fuknce Contains a StartsWith
+    /// https://supportcenter.devexpress.com/ticket/details/t320172/how-to-traverse-through-and-modify-the-criteriaoperator-instances
+    /// Visit metod je více, mrkni do dokumentace. Zde jsou použity jen ty co potřebujeme
+    /// </summary>
+    internal class CriteriaPatcherConvertOperatorWithWildcard : ClientCriteriaLazyPatcherBase.AggregatesCommonProcessingBase
+    {
+        /// <summary>
+        /// Určuje "směr" konverze: True - Server to component, False - component to server
+        /// </summary>
+        private readonly bool _patchToComponent;
+        public CriteriaPatcherConvertOperatorWithWildcard(bool patchToComponent)
+        {
+            _patchToComponent = patchToComponent;
+        }
+        /// <summary>
+        /// Spustí konverzi (patch) CriteriaOperatoru
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="patchToComponent"></param>
+        /// <returns></returns>
+        public static CriteriaOperator Patch(CriteriaOperator source, bool patchToComponent)
+        {
+            return new CriteriaPatcherConvertOperatorWithWildcard(patchToComponent).Process(source);
+        }
+
+        private static bool IsNull(CriteriaOperator theOperator)
+        {
+            return object.ReferenceEquals(theOperator, null);
+        }
+
+        public override CriteriaOperator Visit(BinaryOperator theOperator)
+        {
+            if (!_patchToComponent)
+            {//to server
+                if (theOperator.LeftOperand is OperandProperty operandProperty && theOperator.RightOperand is OperandValue operandValue && DxGridView.IsWildCardNull(operandValue.Value?.ToString()))
+                {
+                    if (theOperator.OperatorType == BinaryOperatorType.Equal)
+                    {
+                        //konverze = <NULL> na funkci IsNullOrEmpty
+                        return _CreateCriteriaOperatorIsNull(operandProperty.PropertyName);
+                    }
+                    else if (theOperator.OperatorType == BinaryOperatorType.NotEqual)
+                    {
+                        //konverze != <NULL> na funkci Not IsNullOrEmpty
+                        return _CreateCriteriaOperatorIsNotNull(operandProperty.PropertyName);
+                    }
+                }
+            }
+
+            return base.Visit(theOperator);
+        }
+
+        public override CriteriaOperator Visit(FunctionOperator theOperator)
+        {
+            if (_patchToComponent)
+            {//to component
+                if (theOperator.OperatorType == FunctionOperatorType.Custom)
+                {
+                    if (_TryGetOperandsForValuePropertyNameValue(theOperator, out string value1, out string propertyName, out string value2))
+                    {
+                        if (value1.ToLower() == "like")
+                        {//Převod like na původní funkce
+                            //začíná
+                            if (!value2.StartsWith("%") && value2.Contains("%"))
+                            {
+                                theOperator = (FunctionOperator)_CreateCriteriaOperatorStartsWith(propertyName, _RemovePercentCharacter(value2, false, true));
+                            }
+                            //obsahuje (neobsahuje)
+                            if (value2.StartsWith("%") && value2.LastIndexOf('%') > 0)
+                            {
+                                theOperator = (FunctionOperator)_CreateCriteriaOperatorContains(propertyName, _RemovePercentCharacter(value2, true, true));
+                            }
+                        }
+                    }
+                }
+                else if (theOperator.OperatorType == FunctionOperatorType.IsNullOrEmpty)
+                {
+                    //konverze funkce IsNullOrEmpty na = <NULL>. (negaci Not neřeším, tak se tam přidá sama sem do Visit nechodí s Not, je na to jiný Visit)
+                    return CriteriaOperator.Parse($"{theOperator.Operands[0]} == '{DxGridView.WildCardNull}'");
+                }
+            }
+            else
+            {//to server
+                if (theOperator.OperatorType == FunctionOperatorType.StartsWith)
+                {//začíná
+                    if (_TryGetOperandsForPropertyNameAndValue(theOperator, out string propertyName, out string value))
+                    {
+                        if (value.Contains('%'))
+                        {
+                            theOperator = (FunctionOperator)_CreateCriteriaOperatorLike(propertyName, _AddPercentCharacter(value, false, true));
+                        }
+                    }
+                }
+                else if (theOperator.OperatorType == FunctionOperatorType.Contains)
+                {//obsahuje (neobsahuje)
+                    if (_TryGetOperandsForPropertyNameAndValue(theOperator, out string propertyName, out string value))
+                    {
+                        if (value.Contains('%'))
+                        {
+                            theOperator = (FunctionOperator)_CreateCriteriaOperatorLike(propertyName, _AddPercentCharacter(value, true, true));
+                        }
+                    }
+                }
+            }
+            return theOperator;
+        }
+        /// <summary>
+        /// Pro pole Operands obsahující kombinaci: PropertyName, Value. Pokud je value Null, tak se vrací false.
+        /// </summary>
+        /// <param name="theOperator"></param>
+        /// <param name="propertyName"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private bool _TryGetOperandsForPropertyNameAndValue(FunctionOperator theOperator, out string propertyName, out string value)
+        {
+            propertyName = null;
+            value = null;
+
+            bool parsed = false;
+            if (theOperator.Operands.Count() == 2)
+            {
+                if (theOperator.Operands[0] is OperandProperty operandProperty)
+                {
+                    propertyName = operandProperty.PropertyName;
+                    parsed = true;
+                }
+                else { parsed = false; }
+                if (theOperator.Operands[1] is OperandValue operandValue && operandValue.Value != null)
+                {
+                    value = operandValue.Value.ToString();
+                    parsed = parsed && true;
+                }
+                else { parsed = false; }
+            }
+            return parsed;
+        }
+        /// <summary>
+        /// Pro pole Operands obsahující kombinaci: Value, PropertyName, Value
+        /// Například pro Like funkce ("Like", PropertyName, "value")
+        /// Pokud je value Null, tak se vrací false.
+        /// </summary>
+        /// <param name="theOperator"></param>
+        /// <param name="propertyName"></param>
+        /// <param name="value2"></param>
+        /// <param name="value1"></param>
+        /// <returns></returns>
+        private bool _TryGetOperandsForValuePropertyNameValue(FunctionOperator theOperator, out string value1, out string propertyName, out string value2)
+        {
+            propertyName = null;
+            value1 = null;
+            value2 = null;
+
+            bool parsed = false;
+            if (theOperator.Operands.Count() == 3)
+            {
+                if (theOperator.Operands[0] is OperandValue operandValue1 && operandValue1.Value != null)
+                {
+                    value1 = operandValue1.Value.ToString();
+                    parsed = true;
+                }
+                else { parsed = false; }
+                if (theOperator.Operands[1] is OperandProperty operandProperty)
+                {
+                    propertyName = operandProperty.PropertyName;
+                    parsed = parsed && true;
+                }
+                else { parsed = false; }
+                if (theOperator.Operands[2] is OperandValue operandValue2 && operandValue2.Value != null)
+                {
+                    value2 = operandValue2.Value.ToString();
+                    parsed = parsed && true;
+                }
+                else { parsed = false; }
+            }
+            return parsed;
+        }
+
+        private CriteriaOperator _CreateCriteriaOperatorLike(string propertyName, string value)
+        {
+            return CriteriaOperator.Parse($"[{propertyName}] Like ?", value);
+        }
+        private CriteriaOperator _CreateCriteriaOperatorStartsWith(string propertyName, string value)
+        {
+            return CriteriaOperator.Parse($"StartsWith([{propertyName}], ?)", value);
+        }
+        private CriteriaOperator _CreateCriteriaOperatorContains(string propertyName, string value)
+        {
+            return CriteriaOperator.Parse($"Contains([{propertyName}], ?)", value);
+        }
+        private CriteriaOperator _CreateCriteriaOperatorIsNull(string propertyName)
+        {
+            return CriteriaOperator.Parse($"IsNullOrEmpty([{propertyName}])");
+        }
+        private CriteriaOperator _CreateCriteriaOperatorIsNotNull(string propertyName)
+        {
+            return CriteriaOperator.Parse($"Not IsNullOrEmpty([{propertyName}])");
+        }
+        /// <summary>
+        /// Přidá znak '%' na začátek a na konec řetězce, pokud tam již není. 
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="atBegin"></param>
+        /// <param name="atEnd"></param>
+        /// <returns></returns>
+        private string _AddPercentCharacter(string value, bool atBegin, bool atEnd)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return value;
+            }
+            if (atBegin && !value.StartsWith("%")) { value = $"%{value}"; }
+            if (atEnd && !value.EndsWith("%")) { value = $"{value}%"; }
+            return value;
+        }
+        /// <summary>
+        /// Odebere znak '%' ze začátku a konce řetězce (podle nastavení parametrů)"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="atBegin"></param>
+        /// <param name="atEnd"></param>
+        /// <returns></returns>
+        private string _RemovePercentCharacter(string value, bool atBegin, bool atEnd)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return value; // Prázdný nebo null vstup, nemáme co odstraňovat.
+            }
+
+            if (atBegin && value.StartsWith("%"))
+            {
+                value = value.Substring(1);
+            }
+
+            if (atEnd && value.EndsWith("%"))
+            {
+                value = value.Substring(0, value.Length - 1);
+            }
+
+            return value;
+        }
+    }
 }

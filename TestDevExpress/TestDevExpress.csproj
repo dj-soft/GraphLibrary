@@ -234,6 +234,7 @@
     <Compile Include="AsolDX\News\DxTools.cs" />
     <Compile Include="AsolDX\System\NrsParser.cs" />
     <Compile Include="AsolDX\System\Shared.cs" />
+    <Compile Include="AsolDX\SvgImageGenerator.cs" />
     <Compile Include="AsolDX\System\XmlPersist.cs" />
     <Compile Include="AsolDX\Tests\DxDataExtensions_Test.cs" />
     <Compile Include="AsolDX\DxFilterBox.cs">

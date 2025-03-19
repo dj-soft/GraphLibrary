@@ -44,7 +44,6 @@ namespace Noris.Clients.Controllers
 
 namespace Noris.Clients.Win.Components
 {
-
     #region class DebugControl : Podpora pro debugování vizuálního controlu   { DAJ 2020-02-07 }
     /// <summary>
     /// Debugování práce s libovolným controlem.
@@ -476,6 +475,15 @@ namespace Noris.Clients.Win.Components
         #endregion
         #endregion
 
+    }
+    #endregion
+    #region Globals
+    internal class Globals
+    {
+        internal static void NotifyToast(Control control, object data, string text, System.Windows.Forms.ToolTipIcon icon)
+        {
+
+        }
     }
     #endregion
 }
