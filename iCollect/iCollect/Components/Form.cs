@@ -16,17 +16,383 @@ using DjSoft.App.iCollect.Application;
 
 namespace DjSoft.App.iCollect.Components
 {
+    #region DjTabbedRibbonForm : Formulář s Ribbonem a StatusBarem, a s TabDocument organizérem - pro Main okno celé aplikace
     /// <summary>
-    /// Formulář s Ribbonem a StatusBarem, a s TabDocument organizérem
+    /// Formulář s Ribbonem a StatusBarem, a s TabDocument organizérem - pro Main okno celé aplikace
     /// </summary>
     public class DjTabbedRibbonForm : DjRibbonForm
     {
+        /// <summary>
+        /// Provede tvorbu hlavního obsahue okna, podle jeho typu, a jeho přidání do okna včetně zadokování.
+        /// Provádí se před vytvořením Ribbonu a Status baru, aby obsah byl správně umístěn na Z ose.
+        /// </summary>
         protected override void OnMainAreaInitialize()
         {
+            __DockManager = new DevExpress.XtraBars.Docking.DockManager();
+            ((System.ComponentModel.ISupportInitialize)(__DockManager)).BeginInit();
+
+            __DocumentManager = new DevExpress.XtraBars.Docking2010.DocumentManager();
+            ((System.ComponentModel.ISupportInitialize)(__DocumentManager)).BeginInit();
+
+            __TabbedView = new DevExpress.XtraBars.Docking2010.Views.Tabbed.TabbedView();
+            ((System.ComponentModel.ISupportInitialize)(__TabbedView)).BeginInit();
+
+            __SplashManager = new DevExpress.XtraSplashScreen.SplashScreenManager(); // (this, typeof(global::Noris.Clients.WinForms.Forms.WaitFormLoadingDesktop), false, false, true);
+
+            DxMainContentPrepare();
+        }
+
+        public DevExpress.XtraBars.Docking2010.DocumentManager DocumentManager { get { return __DocumentManager; } }
+        public DevExpress.XtraBars.Docking2010.Views.Tabbed.TabbedView TabbedView { get { return __TabbedView; } }
+        public DevExpress.XtraBars.Docking.DockManager DockManager { get { return __DockManager; } }
+        public DevExpress.XtraSplashScreen.SplashScreenManager SplashManager { get { return __SplashManager; } }
+        /// <summary>
+        /// Defaultní velikost Resize zóny na komponentě Dockpanel
+        /// </summary>
+        public static int DefaultResizeZoneThickness { get { return 10; } }
+        /// <summary>
+        /// Provede přípravu obsahu hlavního obshau okna. Obsah je již vytvořen a umístěn v okně, Ribbon i StatusBar existují.<br/>
+        /// Zde se typicky vytváří obsah do hlavního panelu.
+        /// </summary>
+        protected virtual void DxMainContentPrepare()
+        {
+            SetupDocumentManager();
+            SetupTabbedView();
+            SetupDockManager();
+            InitializeFinalControls();
+            InitializeDockPanelsContent();
+            DxMainContentPreparedAfter();
+        }
+        /// <summary>
+        /// Po dokončení tvorby Dockmanageru, DocumentManageru, TabbedView a DockPanelů
+        /// </summary>
+        protected virtual void DxMainContentPreparedAfter() { }
+        /// <summary>
+        /// Nastavení komponenty DocumentManager
+        /// </summary>
+        protected virtual void SetupDocumentManager()
+        {
+            var docManager = __DocumentManager;
+            docManager.MdiParent = this;
+            docManager.View = __TabbedView;
+            docManager.ShowThumbnailsInTaskBar = DevExpress.Utils.DefaultBoolean.False;
+            docManager.SnapMode = DevExpress.Utils.Controls.SnapMode.All;
+            docManager.RibbonAndBarsMergeStyle = DevExpress.XtraBars.Docking2010.Views.RibbonAndBarsMergeStyle.WhenNotFloating;
+
+            docManager.DocumentActivate += _DocumentManagerDocumentActivate;
+            docManager.ViewChanged += _DocumentManagerViewChanged;
+        }
+        /// <summary>
+        /// Nastavení komponenty TabbedView
+        /// </summary>
+        protected virtual void SetupTabbedView()
+        {
+            var tabView = __TabbedView;
+            tabView.Style = DevExpress.XtraBars.Docking2010.Views.DockingViewStyle.Classic;
+            tabView.EnableFreeLayoutMode = DevExpress.Utils.DefaultBoolean.True;                   // Umožní dát dokování do skupin různě rozmístěných (vodorovně + svisle v sobě)
+            tabView.CustomResizeZoneThickness = DefaultResizeZoneThickness;                        // Viditelný splitter mezi dokovanými skupinami
+            tabView.EnableStickySplitters = DevExpress.Utils.DefaultBoolean.True;                  // Splitter mezi dokovanými skupinami se bude přichytávat k okolním splitterům
+            tabView.ShowDockGuidesOnPressingShift = DevExpress.Utils.DefaultBoolean.False;         // Při snaze o zadokování Floating formu se zobrazí nápovědná ikona false=bez Shiftu / true = jen po stisknutí Shiftu
+
+            tabView.Controller.Manager.MaxThumbnailCount = 7;
+            tabView.Controller.Manager.ShowThumbnailsInTaskBar = DevExpress.Utils.DefaultBoolean.True;
+
+            tabView.DocumentProperties.AllowAnimation = true;
+            tabView.DocumentProperties.AllowPin = true;
+            tabView.DocumentProperties.AllowTabReordering = true;                                  // Musí být true, jinak nejde myší utrhnout tabované okno ani přemístit do jiné grupy.
+            tabView.DocumentProperties.MaxTabWidth = 0;
+            tabView.DocumentProperties.ShowPinButton = true;
+            tabView.DocumentProperties.ShowInDocumentSelector = true;
+            tabView.DocumentProperties.UseFormIconAsDocumentImage = true;
+            if (tabView.DocumentProperties is DevExpress.XtraBars.Docking2010.Views.Tabbed.DocumentProperties docProp)
+            {   // docProp jde nad rámec interface IDocumentProperties:
+            }
+
+            tabView.DocumentGroupProperties.HeaderButtonsShowMode = DevExpress.XtraTab.TabButtonShowMode.WhenNeeded;
+            tabView.DocumentGroupProperties.PinPageButtonShowMode = DevExpress.XtraTab.PinPageButtonShowMode.InActiveTabPageHeaderAndOnMouseHover;
+            tabView.DocumentGroupProperties.ShowDocumentSelectorButton = true;
+            tabView.DocumentGroupProperties.DestroyOnRemovingChildren = true;  // Po zavření posledního okna v grupě se zruší i grupa
+            tabView.DocumentGroupProperties.CloseTabOnMiddleClick = DevExpress.XtraTabbedMdi.CloseTabOnMiddleClick.OnMouseUp;
+            tabView.DocumentGroupProperties.HeaderAutoFill = DevExpress.Utils.DefaultBoolean.False;
+
+            if (tabView.DocumentGroupProperties is DevExpress.XtraBars.Docking2010.Views.Tabbed.DocumentGroupProperties groupProp)
+            {   // groupProp jde nad rámec interface IDocumentGroupProperties:
+            }
+
+            tabView.ShowDocumentSelectorMenuOnCtrlAltDownArrow = DevExpress.Utils.DefaultBoolean.True;
+            tabView.DocumentSelectorProperties.ShowPreview = true;
+            tabView.UseDocumentSelector = DevExpress.Utils.DefaultBoolean.True;
+
+            tabView.DocumentGroups.CollectionChanged += _TabbedViewGroupsCollectionChanged;
+            tabView.Layout += _TabbedViewLayout;
+            tabView.Paint += _TabbedViewPaint;
+            tabView.EndSizing += _TabbedViewEndSizing;
+            tabView.Floating += _TabbedViewFloating;
+            tabView.BeginDocking += _TabbedViewBeginDocking;
+            tabView.EndDocking += _TabbedViewEndDocking;
+            tabView.DocumentAdded += _TabbedViewDocumentAdded;
+            tabView.BeginFloating += _TabbedViewBeginFloating;
+            tabView.BeginSizing += _TabbedViewBeginSizing;
+            tabView.ControlShown += _TabbedViewControlShown;
+            tabView.DocumentActivated += _TabbedViewDocumentActivated;
+            tabView.DocumentClosed += _TabbedViewDocumentClosed;
+            tabView.DocumentDeactivated += _TabbedViewDocumentDeactivated;
+            tabView.DocumentClosing += _TabbedViewDocumentClosing;
+            tabView.DocumentRemoved += _TabbedViewDocumentRemoved;
+            tabView.EndFloating += _TabbedViewEndFloating;
+            tabView.EmptyDocumentsHostWindow += _TabbedViewEmptyDocumentsHostWindow;
+            tabView.GotFocus += _TabbedViewGotFocus;
+            tabView.LostFocus += _TabbedViewLostFocus;
+            tabView.NextDocument += _TabbedViewNextDocument;
+
+        }
+        /// <summary>
+        /// Inicializace komponenty DockManager
+        /// </summary>
+        protected virtual void SetupDockManager()
+        {
+            var dockMgr = __DockManager;
+            dockMgr.DockingOptions.CustomResizeZoneThickness = DefaultResizeZoneThickness;
+            dockMgr.DockingOptions.HidePanelsImmediately = DevExpress.XtraBars.Docking.Helpers.HidePanelsImmediatelyMode.Always;   // Vyjetí pravého panelu až na kliknutí; vyjetí na kliknutí + vypnutí animací
+            dockMgr.DockingOptions.AllowDockToCenter = DevExpress.Utils.DefaultBoolean.False;
+            dockMgr.DockingOptions.FloatOnDblClick = false;
+            dockMgr.DockingOptions.ShowAutoHideButton = true;
+            dockMgr.DockingOptions.ShowCloseButton = false;
+            dockMgr.DockingOptions.ShowMaximizeButton = false;
+            dockMgr.DockingOptions.ShowMinimizeButton = false;
+            dockMgr.DockingOptions.SnapMode = DevExpress.Utils.Controls.SnapMode.OwnerForm;
+
+            dockMgr.AutoHiddenPanelShowMode = DevExpress.XtraBars.Docking.AutoHiddenPanelShowMode.MouseClick;
+            dockMgr.DockingOptions.AutoHidePanelVerticalTextOrientation = DevExpress.XtraBars.Docking.VerticalTextOrientation.BottomToTop;
+            dockMgr.DockingOptions.TabbedPanelVerticalTextOrientation = DevExpress.XtraBars.Docking.VerticalTextOrientation.BottomToTop;
+
+            dockMgr.RegisterDockPanel += _DockManagerRegisterDockPanel;
+            dockMgr.ActiveChildChanged += _DockManagerActiveChildChanged;
+            dockMgr.ActivePanelChanged += _DockManagerActivePanelChanged;
+            dockMgr.ClosedPanel += _DockManagerClosedPanel;
+            dockMgr.Collapsing += _DockManagerCollapsing;
+            dockMgr.Collapsed += _DockManagerCollapsed;
+            dockMgr.ClosingPanel += _DockManagerClosingPanel;
+            dockMgr.Docking += _DockManagerDocking;
+            dockMgr.EndDocking += _DockManagerEndDocking;
+            dockMgr.Expanding += _DockManagerExpanding;
+            dockMgr.Expanded += _DockManagerExpanded;
+            dockMgr.StartDocking += _DockManagerStartDocking;
+            dockMgr.StartSizing += _DockManagerStartSizing;
+            dockMgr.EndSizing += _DockManagerEndSizing;
+            dockMgr.TabbedChanged += _DockManagerTabbedChanged;
+            dockMgr.TabsPositionChanged += _DockManagerTabsPositionChanged;
+            dockMgr.TabsScrollChanged += _DockManagerTabsScrollChanged;
+            dockMgr.VisibilityChanged += _DockManagerVisibilityChanged;
+        }
+        /// <summary>
+        /// Vytvoří obsah Dock panelů
+        /// </summary>
+        protected virtual void InitializeDockPanelsContent() { }
+        /// <summary>
+        /// Závěrečná fáze inicializace formuláře: 
+        /// správné poskládání komponent do sebe navzájem a do Formuláře do jeho Controls, ve správném pořadí.
+        /// Ukončení inicializační fáze, EndEnit a ResumeLayout.
+        /// <para/>
+        /// Na pořadí ZÁLEŽÍ!
+        /// </summary>
+        private void InitializeFinalControls()
+        {
+            // Na pořadí ZÁLEŽÍ!
+
+            // DockManager do okna:
+            this.__DockManager.Form = this;
+            this.__DockManager.TopZIndexControls.AddRange(new string[]
+            {
+                "DevExpress.XtraBars.BarDockControl", "DevExpress.XtraBars.StandaloneBarDockControl", "System.Windows.Forms.StatusBar", "System.Windows.Forms.MenuStrip", "System.Windows.Forms.StatusStrip",
+                "DevExpress.XtraBars.Ribbon.RibbonStatusBar", "Noris.Clients.Win.Components.AsolDX.DxRibbonStatusBar",
+                "DevExpress.XtraBars.Ribbon.RibbonControl",   "Noris.Clients.Win.Components.AsolDX.DxRibbonControl",
+                "DevExpress.XtraBars.Navigation.OfficeNavigationBar", "DevExpress.XtraBars.Navigation.TileNavPane", "DevExpress.XtraBars.TabFormControl",
+                "DevExpress.XtraBars.FluentDesignSystem.FluentDesignFormControl", "DevExpress.XtraBars.ToolbarForm.ToolbarFormControl"
+            });
+
+            this.__DocumentManager.MdiParent = this;
+            this.__DocumentManager.MenuManager = this.DjRibbon;
+            this.__DocumentManager.View = this.__TabbedView;
+            this.__DocumentManager.ViewCollection.AddRange(new DevExpress.XtraBars.Docking2010.Views.BaseView[] { this.__TabbedView });
+        }
+        /// <summary>
+        /// Zde končí konstruktor, měly by se zde ukončit bloky SuspendLayout = ResumeLayout
+        /// </summary>
+        protected override void OnEndInitialize() 
+        {
+            ((System.ComponentModel.ISupportInitialize)(__TabbedView)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(__DocumentManager)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(__DockManager)).EndInit();
+
+            base.OnEndInitialize();
+        }
+        private DevExpress.XtraBars.Docking2010.DocumentManager __DocumentManager;
+        private DevExpress.XtraBars.Docking2010.Views.Tabbed.TabbedView __TabbedView;
+        private DevExpress.XtraBars.Docking.DockManager __DockManager;
+        private DevExpress.XtraSplashScreen.SplashScreenManager __SplashManager;
+
+        private void _DocumentManagerDocumentActivate(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
+        {
+        }
+        private void _DocumentManagerViewChanged(object sender, DevExpress.XtraBars.Docking2010.ViewEventArgs e)
+        {
+        }
+        private void _DocumentManagerBeginFloating(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentCancelEventArgs e)
+        {
+        }
+
+        private void _TabbedViewDocumentAdded(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
+        {
+        }
+        private void _TabbedViewDocumentClosing(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentCancelEventArgs e)
+        {
+        }
+        private void _TabbedViewDocumentRemoved(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
+        {
+        }
+        private void _TabbedViewEndFloating(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
+        {
+        }
+        private void _TabbedViewNextDocument(object sender, DevExpress.XtraBars.Docking2010.Views.NextDocumentEventArgs e)
+        {
+        }
+        private void _TabbedViewLostFocus(object sender, EventArgs e)
+        {
+        }
+        private void _TabbedViewGotFocus(object sender, EventArgs e)
+        {
+        }
+        private void _TabbedViewEmptyDocumentsHostWindow(object sender, DevExpress.XtraBars.Docking2010.EmptyDocumentsHostWindowEventArgs e)
+        {
+        }
+        private void _TabbedViewDocumentDeactivated(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
+        {
+            DeactivateRibbonForControl(e.Document?.Control);
+        }
+        private void _TabbedViewDocumentClosed(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
+        {
+        }
+        private void _TabbedViewDocumentActivated(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
+        {
+            ActivateRibbonForControl(e.Document?.Control);
+        }
+        private void _TabbedViewControlShown(object sender, DevExpress.XtraBars.Docking2010.Views.DeferredControlLoadEventArgs e)
+        {
+        }
+        private void _TabbedViewBeginSizing(object sender, DevExpress.XtraBars.Docking2010.Views.LayoutBeginSizingEventArgs e)
+        {
+        }
+        private void _TabbedViewBeginFloating(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentCancelEventArgs e)
+        {
+            BeginFloatingRibbonForControl(e.Document.Control);
+        }
+        private void _TabbedViewGroupsCollectionChanged(DevExpress.XtraBars.Docking2010.Base.CollectionChangedEventArgs<DevExpress.XtraBars.Docking2010.Views.Tabbed.DocumentGroup> e)
+        {
+        }
+        private void _TabbedViewLayout(object sender, EventArgs e)
+        {
+        }
+        private void _TabbedViewPaint(object sender, System.Windows.Forms.PaintEventArgs e)
+        {
+        }
+        private void _TabbedViewEndSizing(object sender, DevExpress.XtraBars.Docking2010.Views.LayoutEndSizingEventArgs e)
+        {
+        }
+        private void _TabbedViewFloating(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
+        {
+        }
+        private void _TabbedViewBeginDocking(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentCancelEventArgs e)
+        {
+        }
+        private void _TabbedViewEndDocking(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
+        {
+        }
+
+        private void _DockManagerRegisterDockPanel(object sender, DevExpress.XtraBars.Docking.DockPanelEventArgs e)
+        {
+        }
+        private void _DockManagerEndSizing(object sender, DevExpress.XtraBars.Docking.EndSizingEventArgs e)
+        {
+        }
+        private void _DockManagerClosingPanel(object sender, DevExpress.XtraBars.Docking.DockPanelCancelEventArgs e)
+        {
+        }
+        private void _DockManagerVisibilityChanged(object sender, DevExpress.XtraBars.Docking.VisibilityChangedEventArgs e)
+        {
+        }
+        private void _DockManagerTabsScrollChanged(object sender, DevExpress.XtraBars.Docking.DockPanelEventArgs e)
+        {
+        }
+        private void _DockManagerTabsPositionChanged(object sender, DevExpress.XtraBars.Docking.TabsPositionChangedEventArgs e)
+        {
+        }
+        private void _DockManagerTabbedChanged(object sender, DevExpress.XtraBars.Docking.DockPanelEventArgs e)
+        {
+        }
+        private void _DockManagerStartSizing(object sender, DevExpress.XtraBars.Docking.StartSizingEventArgs e)
+        {
+        }
+        private void _DockManagerStartDocking(object sender, DevExpress.XtraBars.Docking.DockPanelCancelEventArgs e)
+        {
+        }
+        private void _DockManagerExpanded(object sender, DevExpress.XtraBars.Docking.DockPanelEventArgs e)
+        {
+        }
+        private void _DockManagerExpanding(object sender, DevExpress.XtraBars.Docking.DockPanelCancelEventArgs e)
+        {
+        }
+        private void _DockManagerEndDocking(object sender, DevExpress.XtraBars.Docking.EndDockingEventArgs e)
+        {
+        }
+        private void _DockManagerDocking(object sender, DevExpress.XtraBars.Docking.DockingEventArgs e)
+        {
+        }
+        private void _DockManagerCollapsed(object sender, DevExpress.XtraBars.Docking.DockPanelEventArgs e)
+        {
+        }
+        private void _DockManagerCollapsing(object sender, DevExpress.XtraBars.Docking.DockPanelEventArgs e)
+        {
+        }
+        private void _DockManagerClosedPanel(object sender, DevExpress.XtraBars.Docking.DockPanelEventArgs e)
+        {
+        }
+        private void _DockManagerActivePanelChanged(object sender, DevExpress.XtraBars.Docking.ActivePanelChangedEventArgs e)
+        {
+        }
+        private void _DockManagerActiveChildChanged(object sender, DevExpress.XtraBars.Docking.DockPanelEventArgs e)
+        {
+        }
+
+        private void ActivateRibbonForControl(Control control)
+        {
+            if (control is DevExpress.XtraBars.Ribbon.RibbonForm ribbonForm && ribbonForm.MdiParent != null)
+            {
+                this.DjRibbon.MergeRibbon(ribbonForm.Ribbon);
+                ribbonForm.Ribbon.Visible = true;
+            }
+        }
+        private void BeginFloatingRibbonForControl(Control control)
+        {
+            if (control is DevExpress.XtraBars.Ribbon.RibbonForm ribbonForm)
+            {
+                this.DjRibbon.UnMergeRibbon();
+                ribbonForm.Ribbon.Visible = true;
+            }
+        }
+        private void DeactivateRibbonForControl(Control control)
+        {
+            if (control is DevExpress.XtraBars.Ribbon.RibbonForm ribbonForm && ribbonForm.MdiParent != null)
+            {
+                this.DjRibbon.UnMergeRibbon();
+                ribbonForm.Ribbon.Visible = false;
+            }
         }
     }
+    #endregion
+    #region DjMainPanelRibbonForm : Formulář s Ribbonem a StatusBarem, a s jedním Main panelem - pro jednoduchá okna
     /// <summary>
-    /// Formulář s Ribbonem a StatusBarem, a s jedním Main panelem
+    /// Formulář s Ribbonem a StatusBarem, a s jedním Main panelem - pro jednoduchá okna
     /// </summary>
     public class DjMainPanelRibbonForm : DjRibbonForm
     {
@@ -40,6 +406,8 @@ namespace DjSoft.App.iCollect.Components
         private XEditors.PanelControl __MainPanel;
         #endregion
     }
+    #endregion
+    #region DjRibbonForm : Abstraktní třída obsahující Ribbon a StatusBar, její potomci doplní Main content
     /// <summary>
     /// Abstraktní třída obsahující Ribbon a StatusBar, její potomci doplní Main content.
     /// </summary>
@@ -56,6 +424,7 @@ namespace DjSoft.App.iCollect.Components
             this.OnRibbonPrepare();
             this.OnStatusPrepare();
             this.OnContentPrepare();
+            this.OnEndInitialize();
         }
         /// <summary>
         /// Required method for Designer support - do not modify
@@ -76,6 +445,10 @@ namespace DjSoft.App.iCollect.Components
         /// Zde potomek naplní hlavní prostor potřebnými prvky. Volá se po vytvoření všech základních controlů a po naplnění Ribbonu a StatusBaru.
         /// </summary>
         protected virtual void OnContentPrepare() { }
+        /// <summary>
+        /// Zde končí konstruktor, měly by se zde ukončit bloky SuspendLayout = ResumeLayout
+        /// </summary>
+        protected virtual void OnEndInitialize() { }
         /// <summary>
         /// Clean up any resources being used.
         /// </summary>
@@ -304,7 +677,8 @@ namespace DjSoft.App.iCollect.Components
         public int CurrentDpi { get { return this.DeviceDpi; } }
         #endregion
     }
-    #region class FormStatusInfo
+    #endregion
+    #region FormStatusInfo : Informace o životním stavu formuláře (proces otevírání, zavírání atd), a o jeho pozici, rozměrech a maximalizaci
     /// <summary>
     /// Informace o životním stavu formuláře (proces otevírání, zavírání atd), a o jeho pozici, rozměrech a maximalizaci
     /// </summary>
@@ -1078,5 +1452,4 @@ namespace DjSoft.App.iCollect.Components
         User
     }
     #endregion
-
 }
