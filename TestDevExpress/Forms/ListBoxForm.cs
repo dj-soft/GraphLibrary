@@ -30,8 +30,8 @@ namespace TestDevExpress.Forms
             this.Text = "DxListBox tester";
             this.ImageName = "svgimages/diagramicons/insertlist.svg";
             // this.ImageNameAdd = "@text|Lb|#002266||N|6|#88AAFF|#CCEEFF";
-            this.ImageNameAdd = SvgImageTextIcon.CreateImageName("Lb", backColor: Color.LightYellow, textBold: false, roundingPc: 10, paddingPc: 5);
-            SvgImageTextIcon.TryDeserializeFrom(this.ImageNameAdd, out var svgIcon);
+            this.ImageNameAdd = SvgImageTextIcon.CreateImageName("Lb", backColor: Color.LightYellow, textBold: false, roundingPc: 20, paddingPc: 4, borderWidthPc: 10);
+            SvgImageTextIcon.TryParse(this.ImageNameAdd, out var svgIcon);
             svgIcon?.Validate();
         }
         protected override void Dispose(bool disposing)
