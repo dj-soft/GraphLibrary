@@ -59,13 +59,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="serial"></param>
         /// <param name="svgImageTextIcon"></param>
         /// <returns></returns>
-        public static bool TryDeserializeFrom(string serial, out SvgImageTextIcon svgImageTextIcon)
+        public static bool TryParse(string serial, out SvgImageTextIcon svgImageTextIcon)
         {
-            SvgImageTextIcon result = new SvgImageTextIcon();
-            if (result.Deserialize(serial))
+            if (!String.IsNullOrEmpty(serial) && serial.Length > 3 && serial.StartsWith(Header + Delimiter.ToString()))
             {
-                svgImageTextIcon = result;
-                return true;
+                SvgImageTextIcon result = new SvgImageTextIcon();
+                if (result.Deserialize(serial))
+                {
+                    svgImageTextIcon = result;
+                    return true;
+                }
             }
             svgImageTextIcon = null;
             return false;
@@ -176,10 +179,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Serializace a deserializace dat do/ze jména ikony; klonování
         /// <summary>
-        /// Obsahuje "jméno ikony" = klíčové slovo a plný obsah všech zadaných dat
-        /// </summary>
-        public string SvgImageName { get { return Serialize(); } set { Deserialize(value); } }
-        /// <summary>
         /// Vytvoří new instanci obsahující zdejší aktuální data
         /// </summary>
         /// <returns></returns>
@@ -191,7 +190,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vrací text popisující všechna zadaná data v this instanci
         /// </summary>
         /// <returns></returns>
-        protected virtual string Serialize()
+        protected override string Serialize()
         {
             // Povinný header formátu:
             SerializeStart(Header);
@@ -216,9 +215,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Do this instance vloží hodnoty z dodaného seializovaného textu
         /// </summary>
         /// <param name="serial"></param>
-        protected virtual bool Deserialize(string serial)
+        protected override bool Deserialize(string serial)
         {
-            _Clear();
+            Clear();
             bool isValid = TryParseSerial(serial, Header, parse);
             return isValid;
 
@@ -249,7 +248,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vynuluje všechny property v tomto objektu
         /// </summary>
-        private void _Clear()
+        protected override void Clear()
         {
             Text = null;
             TextBold = null;
@@ -270,7 +269,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private const string Header = "@textargs";
         #endregion
-        #region Validace dat, doplnění odvozených hodnot
+        #region Validace dat = kontrola rozsahu a doplnění odvozených hodnot
         /// <summary>
         /// Validuje data = namísto null dosadí defaulty, odvodí barvy, zajistí omezení číselných hodnot...<br/>
         /// Výsledkem je plně použitelná sada dat pro fyzickou tvorbu SVG ikony.
@@ -279,9 +278,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Meotdu volá klient před tvorbou SVG ikony, a může ji volat 
         /// </summary>
-        public void Validate()
+        public override void Validate()
         {
-            // Základní defaulty:
+            // Základní defaulty namísto NULL, a kontrola validního rozsahu:
             if (Text == null) Text = "";
             TextBold = getDefault(TextBold, false);
             TextFont = getDefault(TextFont, TextStyleType.Default);
@@ -294,7 +293,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             RoundingPc = getDefaultInt(RoundingPc, 15, 0, 100);
 
 
-            //  Barvy a jejich vzájemné doplnění:
+            //  Barvy a jejich vzájemné doplnění - jaká data máme k dispozici?
             bool hasText = !String.IsNullOrEmpty(Text);
             bool hasBackground = BackgroundVisible.Value;
             bool hasBorder = BorderVisible.Value && BorderWidthPc.Value > 0;
@@ -310,16 +309,48 @@ namespace Noris.Clients.Win.Components.AsolDX
                     BackColor = Color.White;
                     hasBackColor = true;
                 }
-                TextColor = GetContrastColor(BackColor.Value, TextColorBW.Value, 1f);
+                // Barva textu bude kontrastní k barvě BackColor, a to buď černobílá, nebo shodný odstín a kontrastní světelnost a plná sytost:
+                TextColor = GetContrastColor(BackColor.Value, TextColorBW.Value, true);
                 hasTextColor = true;
             }
 
-            // b) Mám pozadí a nemám jeho barvu:
-            if (hasBackground && !hasBorderColor)
+            // b) Mám mít pozadí a nemám jeho barvu:
+            if (hasBackground && !hasBackColor)
             {   // Nemám barvu pozadí => buď vychází z barvy textu, jako světlá kontrastní; anebo bude bílá:
                 if (hasTextColor)
                 {
-                    BackColor = ;
+                    BackColor = GetBackColor(TextColor.Value);
+                    hasBackColor = true;
+                }
+                else if (hasBorderColor)
+                {
+                    BackColor = GetBackColor(BorderColor.Value);
+                    hasBackColor = true;
+                }
+                else
+                {
+                    BackColor = Color.White;
+                    hasBackColor = true;
+                }
+            }
+
+            // c) Mám mít border a nemám jeho barvu:
+            if (hasBorder && !hasBorderColor)
+            {
+                if (hasTextColor)
+                {
+                    BorderColor = TextColor;
+                    hasBorderColor = true;
+                }
+                else if (hasBackColor)
+                {
+                    BorderColor = GetContrastColor(BackColor.Value, TextColorBW.Value, true);
+                    hasBorderColor = true;
+                }
+                else 
+                {
+                    BorderColor = Color.Black;
+                    hasBorderColor = true;
                 }
             }
 
@@ -343,6 +374,56 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public abstract class SvgImageIcon
     {
+        #region Factory
+        /// <summary>
+        /// Deserializuje dodaný string do instance odpovídajícího typu (konkrétní potomek třídy <see cref="SvgImageIcon"/> a vrátí ji.
+        /// Pokud vstupní string není validní, vrátí false.
+        /// </summary>
+        /// <param name="serial"></param>
+        /// <param name="svgImageIcon"></param>
+        /// <returns></returns>
+        public static bool TryParse(string serial, out SvgImageIcon svgImageIcon)
+        {
+            if (!String.IsNullOrEmpty(serial) && serial.Length > 3 && serial.StartsWith(Header))
+            {
+                if (SvgImageTextIcon.TryParse(serial, out var svgImageTextIcon)) { svgImageIcon = svgImageTextIcon; return true; }
+                // další třídy...
+            }
+            svgImageIcon = null;
+            return false;
+        }
+        /// <summary>
+        /// Validuje data = namísto null dosadí defaulty, odvodí barvy, zajistí omezení číselných hodnot...<br/>
+        /// Výsledkem je plně použitelná sada dat pro fyzickou tvorbu SVG ikony.
+        /// <para/>
+        /// Tuto metodu <b><u>není třeba volat</u></b> v procesu definice ikony ani před serializací, protože zbytečně prodlužuje název ikony !!!
+        /// <para/>
+        /// Meotdu volá klient před tvorbou SVG ikony, a může ji volat 
+        /// </summary>
+        public virtual void Validate() { }
+        /// <summary>
+        /// Obsahuje "jméno ikony" = klíčové slovo a plný obsah všech zadaných dat
+        /// </summary>
+        public string SvgImageName { get { return Serialize(); } set { Deserialize(value); } }
+        /// <summary>
+        /// Vrací text popisující všechna zadaná data v this instanci
+        /// </summary>
+        /// <returns></returns>
+        protected abstract string Serialize();
+        /// <summary>
+        /// Do this instance vloží hodnoty z dodaného seializovaného textu
+        /// </summary>
+        /// <param name="serial"></param>
+        protected abstract bool Deserialize(string serial);
+        /// <summary>
+        /// Vynuluje všechny property v tomto objektu
+        /// </summary>
+        protected virtual void Clear() { }
+        /// <summary>
+        /// Záhlaví názvu ikony
+        /// </summary>
+        private const string Header = "@";
+        #endregion
         #region Support pro Serializaci
         /// <summary>
         /// Zahájí proces serializace
@@ -663,50 +744,42 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var hsbColor = Noris.Clients.Win.Components.AsolDX.Colors.ColorConverting.ColorToHsb(baseColor);
             if (contrastBW)
-            {   // Hledám, zda kontrastní barva je Černá nebo Bílá, podle jasu bázové barvy:
-                bool isLight = (hsbColor.Brightness >= 50);          // Pokud vstupní barva je světlá,
+            {   // Požadavek: kontrastní barva má být Černá nebo Bílá = podle jasu bázové barvy:
+                bool isLight = (hsbColor.Brightness >= 50d);         // Pokud vstupní barva je světlá,
                 return (isLight ? Color.Black : Color.White);        //  ... pak kontrastní je černá, a naopak.
             }
             else if (contrastBrightness)
-            {   // Kontrastní jas, ale ponecháme stejný odstín (=ke světle modré vrátí sytou tmavomodrou, atd)
-
-
-                var hsbColor = Noris.Clients.Win.Components.AsolDX.Colors.ColorConverting.HslToRgb ColorToHsb(baseColor);
-
+            {   // Požadavek: máme vrátit kontrastní barvu stejného odstínu (ke světle modré => tmavomodoru):
+                bool isLight = (hsbColor.Brightness >= 50d);         // Pokud vstupní barva je světlá,
+                hsbColor.Brightness = (isLight ? 0d : 100d);         //  ... pak kontrastní je tmavá, a naopak;
+                hsbColor.Saturation = 100d;                          //  a bude plně sytá.
+                return hsbColor.ToColor();
             }
-            else if (contrastRatio.HasValue)
-            {   // Hledám částečnou kontrastní barvu:
-                int contrastPart = (contrastRatio.Value <= 0f ? 0 : (contrastRatio.Value >= 1 ? 128 : (int)Math.Round(contrastRatio.Value * 128f, 0)));
-                float a = baseColor.A;
-                float r = getContrastPart(baseColor.R, contrastPart);
-                float g = getContrastPart(baseColor.G, contrastPart);
-                float b = getContrastPart(baseColor.B, contrastPart);
-                return getColor(a, r, g, b);
-            }
-            else
-            {   // Hledám plnou kontrastní barvu:
-                int contrastPart = 128;
-                float a = baseColor.A;
-                float r = getContrastPart(baseColor.R, contrastPart);
-                float g = getContrastPart(baseColor.G, contrastPart);
-                float b = getContrastPart(baseColor.B, contrastPart);
-                return getColor(a, r, g, b);
-            }
-
-
-            float getContrastPart(int basePart, int contrPart)
-            {
-                return (basePart <= 128 ? 128 + contrPart : 128 - contrPart);
-            }
-            Color getColor(float a, float r, float g, float b)
-            {
-                int ac = (a < 0f ? 0 : (a > 255f ? 255 : (int)a));
-                int rc = (r < 0f ? 0 : (r > 255f ? 255 : (int)r));
-                int gc = (g < 0f ? 0 : (g > 255f ? 255 : (int)g));
-                int bc = (b < 0f ? 0 : (b > 255f ? 255 : (int)b));
-                return Color.FromArgb(ac, rc, gc, bc);
+            else 
+            {   // Požadavek: máme vrátit barvu opačnou = reverzní => opačný odstín a kontrastní:
+                hsbColor.Hue = hsbColor.Hue + 180d;
+                bool isLight = (hsbColor.Brightness >= 50d);         // Pokud vstupní barva je světlá,
+                hsbColor.Brightness = (isLight ? 0d : 100d);         //  ... pak kontrastní je tmavá, a naopak;
+                hsbColor.Saturation = 100d;                          //  a bude plně sytá.
+                return hsbColor.ToColor();
             }
         }
+        /// <summary>
+        /// Vrátí barvu pro pozadí k dané barvě
+        /// </summary>
+        /// <param name="baseColor"></param>
+        /// <returns></returns>
+        protected static Color GetBackColor(Color baseColor)
+        {
+            var hsbColor = Noris.Clients.Win.Components.AsolDX.Colors.ColorConverting.ColorToHsb(baseColor);
+            bool isLight = (hsbColor.Brightness >= 50d);             // Pokud vstupní barva je světlá,
+            hsbColor.Brightness = (isLight ? 15d : 85d);             //  ... pak kontrastní je téměř tmavá, a naopak;
+            hsbColor.Saturation = 85d;
+            return hsbColor.ToColor();
+        }
+        #endregion
+        #region Support pro tvorbu SVG ikony
+
         #endregion
     }
     #endregion
@@ -723,23 +796,23 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
     {
         public HsbColor(double hue, double saturation, double brightness, int alpha)
         {
-            PreciseHue = hue;
-            PreciseSaturation = saturation;
-            PreciseBrightness = brightness;
+            Hue = hue;
+            Saturation = saturation;
+            Brightness = brightness;
             Alpha = alpha;
         }
         /// <summary>
         /// Gets or sets the hue. Values from 0 to 360.
         /// </summary>
-        public double PreciseHue { get { return __PreciseHue; } set { __PreciseHue = Cycle(value, 360d); } } private double __PreciseHue;
+        public double Hue { get { return __Hue; } set { __Hue = Cycle(value, 360d); } } private double __Hue;
         /// <summary>
         /// Gets or sets the saturation. Values from 0 to 100.
         /// </summary>
-        public double PreciseSaturation { get { return __PreciseSaturation; } set { __PreciseSaturation = Align(value, 0d, 100d); } } private double __PreciseSaturation;
+        public double Saturation { get { return __Saturation; } set { __Saturation = Align(value, 0d, 100d); } } private double __Saturation;
         /// <summary>
         /// Gets or sets the brightness. Values from 0 to 100.
         /// </summary>
-        public double PreciseBrightness { get { return __PreciseBrightness; } set { __PreciseSaturation = Align(value, 0d, 100d); } } private double __PreciseBrightness;
+        public double Brightness { get { return __Brightness; } set { __Saturation = Align(value, 0d, 100d); } } private double __Brightness;
         /// <summary>
         /// Gets or sets the alpha. Values from 0 to 255.
         /// </summary>
@@ -747,15 +820,15 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         /// <summary>
         /// Gets or sets the hue. Values from 0 to 360.
         /// </summary>
-        public int Hue => Convert.ToInt32(PreciseHue);
+        public int IntHue => Convert.ToInt32(Hue);
         /// <summary>
         /// Gets or sets the saturation. Values from 0 to 100.
         /// </summary>
-        public int Saturation => Convert.ToInt32(PreciseSaturation);
+        public int IntSaturation => Convert.ToInt32(Saturation);
         /// <summary>
         /// Gets or sets the brightness. Values from 0 to 100.
         /// </summary>
-        public int Brightness => Convert.ToInt32(PreciseBrightness);
+        public int IntBrightness => Convert.ToInt32(Brightness);
 
         public static HsbColor FromColor(Color color)
         {
@@ -769,7 +842,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
 
         public static HsbColor FromHsbColor(HsbColor color)
         {
-            return new(color.PreciseHue, color.PreciseSaturation, color.PreciseBrightness, color.Alpha);
+            return new(color.Hue, color.Saturation, color.Brightness, color.Alpha);
         }
 
         public static HsbColor FromHslColor(HslColor color)
@@ -777,9 +850,9 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
             return FromRgbColor(color.ToRgbColor());
         }
 
-        public override string? ToString()
+        public override string ToString()
         {
-            return $@"Hue: {Hue}; saturation: {Saturation}; brightness: {Brightness}.";
+            return $@"Hue: {IntHue}; saturation: {IntSaturation}; brightness: {IntBrightness}.";
         }
 
         public Color ToColor()
@@ -794,7 +867,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
 
         public HsbColor ToHsbColor()
         {
-            return new(PreciseHue, PreciseSaturation, PreciseBrightness, Alpha);
+            return new(Hue, Saturation, Brightness, Alpha);
         }
 
         public HslColor ToHslColor()
@@ -808,9 +881,9 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
 
             if (obj is HsbColor color)
             {
-                if (Math.Abs(PreciseHue - color.PreciseHue) < 0.00001 &&
-                    Math.Abs(PreciseSaturation - color.PreciseSaturation) < 0.00001 &&
-                    Math.Abs(PreciseBrightness - color.PreciseBrightness) < 0.00001 &&
+                if (Math.Abs(Hue - color.Hue) < 0.00001 &&
+                    Math.Abs(Saturation - color.Saturation) < 0.00001 &&
+                    Math.Abs(Brightness - color.Brightness) < 0.00001 &&
                     Alpha == color.Alpha)
                 {
                     equal = true;
@@ -822,7 +895,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
 
         public override int GetHashCode()
         {
-            return $@"H:{Hue}-S:{Saturation}-B:{Brightness}-A:{Alpha}".GetHashCode();
+            return $@"H:{IntHue}-S:{IntSaturation}-B:{IntBrightness}-A:{Alpha}".GetHashCode();
         }
     }
     #endregion
@@ -835,23 +908,23 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
     {
         public HslColor(double hue, double saturation, double light, int alpha)
         {
-            PreciseHue = hue;
-            PreciseSaturation = saturation;
-            PreciseLight = light;
+            Hue = hue;
+            Saturation = saturation;
+            Light = light;
             Alpha = alpha;
         }
         /// <summary>
         /// Gets the precise hue. Values from 0 to 360.
         /// </summary>
-        public double PreciseHue { get { return __PreciseHue; } set { __PreciseHue = Cycle(value, 360d); } } private double __PreciseHue;
+        public double Hue { get { return __Hue; } set { __Hue = Cycle(value, 360d); } } private double __Hue;
         /// <summary>
         /// Gets the precise saturation. Values from 0 to 100.
         /// </summary>
-        public double PreciseSaturation { get { return __PreciseSaturation; } set { __PreciseSaturation = Align(value, 0d, 100d); } } private double __PreciseSaturation;
+        public double Saturation { get { return __Saturation; } set { __Saturation = Align(value, 0d, 100d); } } private double __Saturation;
         /// <summary>
         /// Gets the precise light. Values from 0 to 100.
         /// </summary>
-        public double PreciseLight { get { return __PreciseLight; } set { __PreciseLight = Align(value, 0d, 100d); } } private double __PreciseLight;
+        public double Light { get { return __Light; } set { __Light = Align(value, 0d, 100d); } } private double __Light;
         /// <summary>
         /// Gets the alpha. Values from 0 to 255
         /// </summary>
@@ -859,15 +932,15 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         /// <summary>
         /// Gets the hue. Values from 0 to 360.
         /// </summary>
-        public int Hue => Convert.ToInt32(PreciseHue);
+        public int IntHue => Convert.ToInt32(Hue);
         /// <summary>
         /// Gets the saturation. Values from 0 to 100.
         /// </summary>
-        public int Saturation => Convert.ToInt32(PreciseSaturation);
+        public int IntSaturation => Convert.ToInt32(Saturation);
         /// <summary>
         /// Gets the light. Values from 0 to 100.
         /// </summary>
-        public int Light => Convert.ToInt32(PreciseLight);
+        public int IntLight => Convert.ToInt32(Light);
         
         public static HslColor FromColor(Color color)
         {
@@ -882,9 +955,9 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         public static HslColor FromHslColor(HslColor color)
         {
             return new(
-                color.PreciseHue,
-                color.PreciseSaturation,
-                color.PreciseLight,
+                color.Hue,
+                color.Saturation,
+                color.Light,
                 color.Alpha);
         }
 
@@ -893,11 +966,11 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
             return FromRgbColor(color.ToRgbColor());
         }
 
-        public override string? ToString()
+        public override string ToString()
         {
             return Alpha < 255
-                ? $@"hsla({Hue}, {Saturation}%, {Light}%, {Alpha / 255f})"
-                : $@"hsl({Hue}, {Saturation}%, {Light}%)";
+                ? $@"hsla({IntHue}, {IntSaturation}%, {IntLight}%, {Alpha / 255f})"
+                : $@"hsl({IntHue}, {IntSaturation}%, {IntLight}%)";
         }
 
         public Color ToColor()
@@ -920,15 +993,15 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
             return ColorConverting.RgbToHsb(ToRgbColor());
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals(object obj)
         {
             var equal = false;
 
             if (obj is HslColor color)
             {
-                if (Math.Abs(Hue - color.PreciseHue) < 0.00001 &&
-                    Math.Abs(Saturation - color.PreciseSaturation) < 0.00001 &&
-                    Math.Abs(Light - color.PreciseLight) < 0.00001 &&
+                if (Math.Abs(IntHue - color.Hue) < 0.00001 &&
+                    Math.Abs(IntSaturation - color.Saturation) < 0.00001 &&
+                    Math.Abs(IntLight - color.Light) < 0.00001 &&
                     Alpha == color.Alpha)
                 {
                     equal = true;
@@ -940,7 +1013,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
 
         public override int GetHashCode()
         {
-            return $@"H:{PreciseHue}-S:{PreciseSaturation}-L:{PreciseLight}-A:{Alpha}".GetHashCode();
+            return $@"H:{Hue}-S:{Saturation}-L:{Light}-A:{Alpha}".GetHashCode();
         }
     }
     #endregion
@@ -1020,7 +1093,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
             return ColorConverting.RgbToHsl(this);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals(object obj)
         {
             var equal = false;
 
@@ -1041,7 +1114,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         }
     }
     #endregion
-    #region class ColorConverting
+    #region class ColorConverting a abstract class AnyColor
     /// <summary>
     /// Provides color conversion functionality.
     /// </summary>
@@ -1054,12 +1127,12 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         #region Public konverze finálních datových typů
         public static RgbColor HsbToRgb(HsbColor hsb)
         {
-            _HsbToRgb(hsb.Hue, hsb.Saturation, hsb.Brightness, out var red, out var green, out var blue);
+            _HsbToRgb(hsb.IntHue, hsb.IntSaturation, hsb.IntBrightness, out var red, out var green, out var blue);
             return new RgbColor(red, green, blue, hsb.Alpha);
         }
         public static Color HsbToColor(HsbColor hsb)
         {
-            _HsbToRgb(hsb.Hue, hsb.Saturation, hsb.Brightness, out var red, out var green, out var blue);
+            _HsbToRgb(hsb.IntHue, hsb.IntSaturation, hsb.IntBrightness, out var red, out var green, out var blue);
             return Color.FromArgb(hsb.Alpha, red, green, blue);
         }
 
@@ -1097,15 +1170,14 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
       
         public static RgbColor HslToRgb(HslColor hsl)
         {
-            _HslToRgb(hsl, out int nRed, out int nGreen, out int nBlue);
-            return new RgbColor(nRed, nGreen, nBlue, hsl.Alpha);
+            _HslToRgb(hsl.Hue, hsl.Saturation, hsl.Light , out int red, out int green, out int blue);
+            return new RgbColor(red, green, blue, hsl.Alpha);
         }
         public static Color HslToColor(HslColor hsl)
         {
-            _HslToRgb(hsl, out int nRed, out int nGreen, out int nBlue);
-            return Color.FromArgb(hsl.Alpha, nRed, nGreen, nBlue);
+            _HslToRgb(hsl.Hue, hsl.Saturation, hsl.Light, out int red, out int green, out int blue);
+            return Color.FromArgb(hsl.Alpha, red, green, blue);
         }
-
         #endregion
         #region Primitivní privátní konverze barevných prostorů
         /// <summary>
@@ -1472,16 +1544,42 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         }
         #endregion
     }
+    /// <summary>
+    /// Bázová třída pro barvy, obsahuje pouze pomocné metody pro zarovnání číselných hodnot
+    /// </summary>
     internal abstract class AnyColor
     {
+        /// <summary>
+        /// Vrátí danou hodnotu <paramref name="value"/> zarovnanou do mezí <paramref name="minValue"/> až <paramref name="maxValue"/>, včetně obou mezí.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="minValue"></param>
+        /// <param name="maxValue"></param>
+        /// <returns></returns>
         protected int Align(int value, int minValue, int maxValue)
         {
             return (value < minValue ? minValue : (value > maxValue ? maxValue : value));
         }
+        /// <summary>
+        /// Vrátí danou hodnotu <paramref name="value"/> zarovnanou do mezí <paramref name="minValue"/> až <paramref name="maxValue"/>, včetně obou mezí.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="minValue"></param>
+        /// <param name="maxValue"></param>
+        /// <returns></returns>
         protected double Align(double value, double minValue, double maxValue)
         {
             return (value < minValue ? minValue : (value > maxValue ? maxValue : value));
         }
+        /// <summary>
+        /// Vrátí danou hodnotu cyklovanou do prostoru 0 až (cycle).<br/>
+        /// Tedy pro vstup <paramref name="value"/> = 270 a <paramref name="cycle"/> = 360 vrátí 270;<br/>
+        /// ale pro vstup <paramref name="value"/> = 420 a <paramref name="cycle"/> = 360 vrátí 60;<br/>
+        /// Pro záporný vstup <paramref name="value"/> = -100 a <paramref name="cycle"/> = 360 vrátí 260;<br/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="cycle"></param>
+        /// <returns></returns>
         protected double Cycle(double value, double cycle)
         {
             value = value % cycle;
