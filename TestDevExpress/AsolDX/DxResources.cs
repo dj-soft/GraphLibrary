@@ -247,10 +247,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (svgImage != null && graphics != null)
             {
-                using (var bmpImage = RenderSvgImage(svgImage, targetBounds.Size, svgPalette))
-                {
-                    graphics.DrawImage(bmpImage, targetBounds);
-                }
+                DxSvgImage.RenderTo(svgImage, graphics, targetBounds, svgPalette: svgPalette);
+
+                //using (var bmpImage = RenderSvgImage(svgImage, targetBounds.Size, svgPalette))
+                //{
+                //    graphics.DrawImage(bmpImage, targetBounds);
+                //}
             }
         }
         /// <summary>
@@ -281,7 +283,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region CreateVectorImage - Získání new instance vektorového obrázku, GetVectorImage - Rychlé získání instance vektorového obrázku
         /// <summary>
-        /// Najde a vrátí new <see cref="SvgImage"/> pro dané jméno, hledá v DevExpress i Aplikačních zdrojích
+        /// Vytvoří a vrátí new instanci <see cref="SvgImage"/> pro dané jméno, hledá v DevExpress i Aplikačních zdrojích, řeší i XmlContent a ImageArray.<br/>
+        /// Tato metoda vždy generuje new instanci, nepoužívá cache ikon. Při opakovaném hledání stejné ikony tedy vtyvoří vždy new instanci.
+        /// <para/>
+        /// To je rozdíl proti metodě <see cref="GetVectorImage(string, bool, ResourceImageSizeType?, string, bool?)"/>, kterážto používá cache.
         /// </summary>
         /// <param name="imageName"></param>
         /// <param name="exactName"></param>
@@ -292,7 +297,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static SvgImage CreateVectorImage(string imageName, bool exactName = false, ResourceImageSizeType? sizeType = null, string caption = null, bool? disabled = null)
         { return Instance._CreateVectorImage(new ResourceArgs(imageName, exactName, sizeType, caption: caption, disabled: disabled)); }
         /// <summary>
-        /// Najde a rychle vrátí <see cref="SvgImage"/> pro dané jméno, hledá v DevExpress i Aplikačních zdrojích
+        /// Najde a rychle vrátí <see cref="SvgImage"/> pro dané jméno, hledá v DevExpress i Aplikačních zdrojích, řeší i XmlContent a ImageArray.<br/>
+        /// Tato metoda používá cache ikon, které byly dříve již hledány. Při opakovaném hledání stejné ikony je tedy rychlá.
+        /// <para/>
+        /// To je rozdíl proti metodě <see cref="CreateVectorImage(string, bool, ResourceImageSizeType?, string, bool?)"/>, kterážto vždy vytváří new instanci.
         /// </summary>
         /// <param name="imageName"></param>
         /// <param name="exactName"></param>
@@ -303,16 +311,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static SvgImage GetVectorImage(string imageName, bool exactName = false, ResourceImageSizeType? sizeType = null, string caption = null, bool? disabled = null)
         { return Instance._GetVectorImage(new ResourceArgs(imageName, exactName, sizeType, caption: caption, disabled: disabled)); }
         /// <summary>
-        /// Najde a vrátí <see cref="SvgImage"/> pro dané jméno, hledá v DevExpress i Aplikačních zdrojích
-        /// </summary>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        private SvgImage _CreateVectorImage(ResourceArgs args)
-        {
-            return _GetVectorImage(args);
-        }
-        /// <summary>
-        /// Najde a rychle vrátí <see cref="SvgImage"/> pro dané jméno, hledá v DevExpress i Aplikačních zdrojích
+        /// Najde a rychle vrátí <see cref="SvgImage"/> pro dané jméno, hledá v DevExpress i Aplikačních zdrojích. Používá cache.
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
@@ -320,8 +319,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!args.HasImageName) return null;
 
+            // Máme za úkol najít vektorový image v cache = použijeme DxSvgImageCollection, které používáme pro indexované SvgImageListy:
+            var svgImageList = _GetVectorImageList(args);                                          // Vrátí (nebo vytvoří new) SvgImageList pro danou velikost
+            return svgImageList.GetSvgImage(args.ImageName, n => _CreateVectorImage(args));        // V SvgImageList najde SvgImage pro dané jméno, nebo jej vytvoří jako new instanci pomocí _CreateVectorImage
+        }
+        /// <summary>
+        /// Vždy vytvoří a vrátí new instanci <see cref="SvgImage"/> pro dané jméno, hledá v DevExpress i Aplikačních zdrojích. Nepoužívá cache.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        private SvgImage _CreateVectorImage(ResourceArgs args)
+        {
             bool hasName = args.HasImageName;
             bool hasCaption = args.HasCaption;
+            if (!hasName && !hasCaption) return null;
 
             if (hasName && _TryGetContentTypeXmlContent(args.ImageName, args.SizeType, true, out var _, out var dxSvgImage))     // Může to být explicitní SVG XML content
                 return dxSvgImage;
@@ -1631,7 +1642,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private int _GetVectorImageIndex(ResourceArgs args)
         {
             var svgCollection = _GetVectorImageList(args);
-            return svgCollection.GetImageId(args.ImageName, n => _GetVectorImage(args));
+            return svgCollection.GetImageId(args.ImageName, n => _CreateVectorImage(args));
         }
         /// <summary>
         /// Najde a vrátí index ID pro vhodný vektorový obrázek z dodaných zdrojů, pro danou velikost.

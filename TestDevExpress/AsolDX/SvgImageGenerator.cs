@@ -370,11 +370,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {   // Nemám barvu textu => ta musí vycházet z barvy BackColor; a pokud ani ji nemám, pak její default je Bílá:
                     if (!hasBackColor)
                     {
-                        backInp = !isDarkSkin ? Color.FromArgb(240, 240, 240) : Color.FromArgb(32, 32, 32);
+                        backOut = !isDarkSkin ? Color.FromArgb(240, 240, 240) : Color.FromArgb(32, 32, 32);
                         hasBackColor = true;
                     }
                     // Barva textu bude kontrastní k barvě BackColor, a to buď černobílá, nebo shodný odstín a kontrastní světelnost a plná sytost:
-                    textInp = GetContrastColor(backInp.Value, TextColorBW.Value, true);
+                    textOut = GetContrastTextColor(backOut.Value, TextColorBW.Value, true);
                     hasTextColor = true;
                 }
 
@@ -383,17 +383,17 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {   // Nemám barvu pozadí => buď vychází z barvy textu, jako světlá kontrastní; anebo bude bílá:
                     if (hasTextColor)
                     {
-                        backInp = GetBackColor(textInp.Value);
+                        backOut = GetBackColor(textInp.Value);
                         hasBackColor = true;
                     }
                     else if (hasBorderColor)
                     {
-                        backInp = GetBackColor(borderInp.Value);
+                        backOut = GetBackColor(borderOut.Value);
                         hasBackColor = true;
                     }
                     else
                     {
-                        backInp = Color.White;
+                        backOut = Color.White;
                         hasBackColor = true;
                     }
                 }
@@ -403,17 +403,17 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     if (hasTextColor)
                     {
-                        borderInp = TextColor;
+                        borderOut = textOut;
                         hasBorderColor = true;
                     }
                     else if (hasBackColor)
                     {
-                        borderInp = GetContrastColor(BackColor.Value, TextColorBW.Value, true);
+                        borderOut = GetContrastBorderColor(backOut.Value, BorderColorBW.Value, true);
                         hasBorderColor = true;
                     }
                     else
                     {
-                        borderInp = Color.Black;
+                        borderOut = Color.Black;
                         hasBorderColor = true;
                     }
                 }
@@ -787,7 +787,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Color transformace
         /// <summary>
-        /// Vrátí kontrastní barvu k barvě zadané <paramref name="baseColor"/>.
+        /// Vrátí kontrastní barvu pro text, k barvě zadané pozadí <paramref name="baseColor"/>.
         /// <para/>
         /// Pokud hodnota <paramref name="contrastBW"/> je true, pak vrátí černou nebo bílou.<br/>
         /// Pokud <paramref name="contrastBW"/> je false a hodnota <paramref name="contrastRatio"/> je zadaná, pak vrací barvu , která je kontrastní k zadané barvě, v dané míře 0 - 1.
@@ -797,7 +797,41 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="contrastBrightness"></param>
         /// <param name="contrastRatio">Míra sytosti kontrastní barvy, vrozsahu 0 = šedá až 1 = plná sytá barva, opačná než zadaná</param>
         /// <returns></returns>
-        protected static Color GetContrastColor(Color baseColor, bool contrastBW, bool contrastBrightness, float? contrastRatio = null)
+        protected static Color GetContrastTextColor(Color baseColor, bool contrastBW, bool contrastBrightness, float? contrastRatio = null)
+        {
+            var hslColor = Noris.Clients.Win.Components.AsolDX.Colors.ColorConverting.ColorToHsl(baseColor);
+            var hsvColor = Noris.Clients.Win.Components.AsolDX.Colors.ColorConverting.ColorToHsb(baseColor);
+            bool isLight = (hslColor.Light >= 50d);                  // Pokud vstupní barva je světlá ...
+            if (contrastBW)
+            {   // Požadavek: kontrastní barva má být Černá nebo Bílá = podle jasu bázové barvy:
+                return (isLight ? Color.Black : Color.White);        //  ... pak kontrastní je černá, a naopak.
+            }
+            else if (contrastBrightness)
+            {   // Požadavek: máme vrátit kontrastní barvu stejného odstínu (ke světle modré => tmavomodoru):
+                hslColor.Light = (isLight ? 30d : 70d);              //  ... pak kontrastní je tmavá, a naopak;
+                hslColor.Saturation = 95d;                           //  a bude plně sytá.
+                return hslColor.ToColor();
+            }
+            else 
+            {   // Požadavek: máme vrátit barvu opačnou = reverzní => opačný odstín a kontrastní:
+                hslColor.Light = (isLight ? 30d : 70d);              //  ... pak kontrastní je tmavá, a naopak;
+                hslColor.Hue = hslColor.Hue + 180d;                  //  ... a opačná barva (kolo barev Hue má 360°)
+                hslColor.Saturation = 95d;                           //  a bude plně sytá.
+                return hslColor.ToColor();
+            }
+        }
+        /// <summary>
+        /// Vrátí kontrastní barvu pro Border k barvě zadané pozadí <paramref name="baseColor"/>.
+        /// <para/>
+        /// Pokud hodnota <paramref name="contrastBW"/> je true, pak vrátí černou nebo bílou.<br/>
+        /// Pokud <paramref name="contrastBW"/> je false a hodnota <paramref name="contrastRatio"/> je zadaná, pak vrací barvu , která je kontrastní k zadané barvě, v dané míře 0 - 1.
+        /// </summary>
+        /// <param name="baseColor">Výchozí barva</param>
+        /// <param name="contrastBW">Požadavek na Black / White kontrastní barvu</param>
+        /// <param name="contrastBrightness"></param>
+        /// <param name="contrastRatio">Míra sytosti kontrastní barvy, vrozsahu 0 = šedá až 1 = plná sytá barva, opačná než zadaná</param>
+        /// <returns></returns>
+        protected static Color GetContrastBorderColor(Color baseColor, bool contrastBW, bool contrastBrightness, float? contrastRatio = null)
         {
             var hslColor = Noris.Clients.Win.Components.AsolDX.Colors.ColorConverting.ColorToHsl(baseColor);
             bool isLight = (hslColor.Light >= 50d);                  // Pokud vstupní barva je světlá ...
@@ -807,15 +841,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             else if (contrastBrightness)
             {   // Požadavek: máme vrátit kontrastní barvu stejného odstínu (ke světle modré => tmavomodoru):
-                hslColor.Light = (isLight ? 0d : 100d);              //  ... pak kontrastní je tmavá, a naopak;
-                hslColor.Saturation = 100d;                          //  a bude plně sytá.
+                hslColor.Light = (isLight ? 5d : 95d);               //  ... pak kontrastní je tmavá, a naopak;
+                hslColor.Saturation = 95d;                           //  a bude plně sytá.
                 return hslColor.ToColor();
             }
-            else 
+            else
             {   // Požadavek: máme vrátit barvu opačnou = reverzní => opačný odstín a kontrastní:
-                hslColor.Light = (isLight ? 0d : 100d);              //  ... pak kontrastní je tmavá, a naopak;
+                hslColor.Light = (isLight ? 5d : 95d);               //  ... pak kontrastní je tmavá, a naopak;
                 hslColor.Hue = hslColor.Hue + 180d;                  //  ... a opačná barva (kolo barev Hue má 360°)
-                hslColor.Saturation = 100d;                          //  a bude plně sytá.
+                hslColor.Saturation = 95d;                           //  a bude plně sytá.
                 return hslColor.ToColor();
             }
         }
@@ -939,9 +973,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
 
         public override string ToString()
         {
-            return Alpha < 255
-                ? $@"hsla({IntHue}, {IntSaturation}%, {IntLight}%, {Alpha / 255f})"
-                : $@"hsl({IntHue}, {IntSaturation}%, {IntLight}%)";
+            return $"Hue: {IntHue}; Saturation: {IntSaturation}; Light (=Value): {IntLight}; Alpha: {Alpha}";
         }
 
         public Color ToColor()
@@ -1059,7 +1091,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
 
         public override string ToString()
         {
-            return $@"Hue: {IntHue}; saturation: {IntSaturation}; brightness: {IntBrightness}.";
+            return $"Hue: {IntHue}; Saturation: {IntSaturation}; Brightness: {IntBrightness}; Alpha: {Alpha}";
         }
 
         public Color ToColor()
@@ -1159,7 +1191,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
 
         public override string ToString()
         {
-            return Alpha < 255 ? $@"rgba({Red}, {Green}, {Blue}, {Alpha / 255d})" : $@"rgb({Red}, {Green}, {Blue})";
+            return $"Red: {Red}; Green: {Green}; Blue: {Blue}; Alpha: {Alpha}";
         }
 
         public Color ToColor()
@@ -1211,7 +1243,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
     /// http://en.wikipedia.org/wiki/HSV_color_space
     /// http://www.easyrgb.com/math.php?MATH=M19#text19
     /// </remarks>
-    internal static class ColorConverting
+    internal class ColorConverting : AnyColor
     {
         #region Public konverze finálních datových typů
         public static RgbColor HsbToRgb(HsbColor hsb)
@@ -1285,8 +1317,8 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
 
             hue = hue % 360d;
             while (hue < 0d) hue += 360d;
-            var satRatio = _GetRatio(saturation, 100d, 0d, 1d);
-            var brightRatio = _GetRatio(brightness, 100d, 0d, 1d);
+            var satRatio = GetRatio(saturation, 100d, 0d, 1d);
+            var brightRatio = GetRatio(brightness, 100d, 0d, 1d);
 
             if (Math.Abs(satRatio - 0) < 0.00001)
             {
@@ -1363,9 +1395,9 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         /// <param name="brightness">Out BRIGHTNESS v rozsahu 0 - 100d</param>
         private static void _RgbToHsb(double red, double green, double blue, out double hue, out double saturation, out double brightness)
         {
-            double redRatio = _GetRatio(red, 255d, 0d, 1d);
-            double greenRatio = _GetRatio(green, 255d, 0d, 1d);
-            double blueRatio = _GetRatio(blue, 255d, 0d, 1d);
+            double redRatio = GetRatio(red, 255d, 0d, 1d);
+            double greenRatio = GetRatio(green, 255d, 0d, 1d);
+            double blueRatio = GetRatio(blue, 255d, 0d, 1d);
 
             // _NOTE #1: Even though we're dealing with a very small range of
             // numbers, the accuracy of all calculations is fairly important.
@@ -1373,8 +1405,8 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
             // of float, which gives us a little bit extra precision (recall
             // that precision is the number of significant digits with which
             // the result is expressed).
-            var minValue = _GetMinValue(redRatio, greenRatio, blueRatio);
-            var maxValue = _GetMaxValue(redRatio, greenRatio, blueRatio);
+            var minValue = GetMinValue(redRatio, greenRatio, blueRatio);
+            var maxValue = GetMaxValue(redRatio, greenRatio, blueRatio);
             var delta = maxValue - minValue;
 
             double hueRatio = 0;
@@ -1434,12 +1466,19 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         /// <param name="light">Out LIGHT v rozsahu 0 - 100d</param>
         private static void _RgbToHsl(double red, double green, double blue, out double hue, out double saturation, out double light)
         {
-            var redRatio = _GetRatio(red, 255d, 0d, 1d);
-            var greenRatio = _GetRatio(green, 255d, 0d, 1d);
-            var blueRatio = _GetRatio(blue, 255d, 0d, 1d);
+            Color color = Color.FromArgb((int)red, (int)green, (int)blue);
+            float fhue = color.GetHue();
+            float fsaturation = color.GetSaturation();
+            float fbrightness = color.GetBrightness();
 
-            var varMin = _GetMinValue(redRatio, greenRatio, blueRatio); //Min. value of RGB
-            var varMax = _GetMaxValue(redRatio, greenRatio, blueRatio); //Max. value of RGB
+            _RgbToHsb(red, green, blue, out var hsbHue, out var hsbSat, out var hsbBrig);
+
+            var redRatio = GetRatio(red, 255d, 0d, 1d);
+            var greenRatio = GetRatio(green, 255d, 0d, 1d);
+            var blueRatio = GetRatio(blue, 255d, 0d, 1d);
+
+            var varMin = GetMinValue(redRatio, greenRatio, blueRatio); //Min. value of RGB
+            var varMax = GetMaxValue(redRatio, greenRatio, blueRatio); //Max. value of RGB
             var delMax = varMax - varMin; //Delta RGB value
 
             double hueRatio;
@@ -1485,18 +1524,9 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
                     // Uwe Keim.
                     hueRatio = 0.0;
                 }
-
-                if (hueRatio < 0.0)
-                {
-                    hueRatio += 1.0;
-                }
-                if (hueRatio > 1.0)
-                {
-                    hueRatio -= 1.0;
-                }
             }
 
-            hue = hueRatio * 360.0d;
+            hue = Cycle(Math.Round(hueRatio * 360.0d), 360d);
             saturation = satRatio * 100.0d;
             light = lightRatio * 100.0d;
         }
@@ -1517,8 +1547,8 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
 
             hue = hue / 360.0d;
             while (hue < 0d) hue += 360d;
-            var saturRatio = _GetRatio(saturation, 100d, 0d, 1d);
-            var lightRatio = _GetRatio(light, 100d, 0d, 1d);
+            var saturRatio = GetRatio(saturation, 100d, 0d, 1d);
+            var lightRatio = GetRatio(light, 100d, 0d, 1d);
 
             if (Math.Abs(saturRatio - 0.0) < 0.00001)
             {
@@ -1577,6 +1607,35 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
                 return v1;
             }
         }
+        #endregion
+    }
+    /// <summary>
+    /// Bázová třída pro barvy, obsahuje pouze pomocné metody pro zarovnání číselných hodnot
+    /// </summary>
+    internal class AnyColor
+    {
+        /// <summary>
+        /// Vrátí danou hodnotu <paramref name="value"/> zarovnanou do mezí <paramref name="minValue"/> až <paramref name="maxValue"/>, včetně obou mezí.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="minValue"></param>
+        /// <param name="maxValue"></param>
+        /// <returns></returns>
+        protected static int Align(int value, int minValue, int maxValue)
+        {
+            return (value < minValue ? minValue : (value > maxValue ? maxValue : value));
+        }
+        /// <summary>
+        /// Vrátí danou hodnotu <paramref name="value"/> zarovnanou do mezí <paramref name="minValue"/> až <paramref name="maxValue"/>, včetně obou mezí.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="minValue"></param>
+        /// <param name="maxValue"></param>
+        /// <returns></returns>
+        protected static double Align(double value, double minValue, double maxValue)
+        {
+            return (value < minValue ? minValue : (value > maxValue ? maxValue : value));
+        }
         /// <summary>
         /// Hodnotu <paramref name="value"/> vydělí dělitelem <paramref name="divider"/> a zarovná do mezí <paramref name="minRatio"/> až <paramref name="maxRatio"/>
         /// </summary>
@@ -1585,7 +1644,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         /// <param name="minRatio"></param>
         /// <param name="maxRatio"></param>
         /// <returns></returns>
-        private static double _GetRatio(double value, double divider, double minRatio, double maxRatio)
+        protected static double GetRatio(double value, double divider, double minRatio, double maxRatio)
         {
             double ratio = value / divider;
             ratio = (ratio < minRatio ? minRatio : (ratio > maxRatio ? maxRatio : ratio));
@@ -1595,7 +1654,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         /// Determines the maximum value of all of the numbers provided in the
         /// variable argument list.
         /// </summary>
-        private static double _GetMaxValue(params double[] values)
+        protected static double GetMaxValue(params double[] values)
         {
             var maxValue = values[0];
 
@@ -1614,7 +1673,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         /// Determines the minimum value of all of the numbers provided in the
         /// variable argument list.
         /// </summary>
-        private static double _GetMinValue(params double[] values)
+        protected static double GetMinValue(params double[] values)
         {
             var minValue = values[0];
 
@@ -1629,35 +1688,6 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
 
             return minValue;
         }
-        #endregion
-    }
-    /// <summary>
-    /// Bázová třída pro barvy, obsahuje pouze pomocné metody pro zarovnání číselných hodnot
-    /// </summary>
-    internal abstract class AnyColor
-    {
-        /// <summary>
-        /// Vrátí danou hodnotu <paramref name="value"/> zarovnanou do mezí <paramref name="minValue"/> až <paramref name="maxValue"/>, včetně obou mezí.
-        /// </summary>
-        /// <param name="value"></param>
-        /// <param name="minValue"></param>
-        /// <param name="maxValue"></param>
-        /// <returns></returns>
-        protected int Align(int value, int minValue, int maxValue)
-        {
-            return (value < minValue ? minValue : (value > maxValue ? maxValue : value));
-        }
-        /// <summary>
-        /// Vrátí danou hodnotu <paramref name="value"/> zarovnanou do mezí <paramref name="minValue"/> až <paramref name="maxValue"/>, včetně obou mezí.
-        /// </summary>
-        /// <param name="value"></param>
-        /// <param name="minValue"></param>
-        /// <param name="maxValue"></param>
-        /// <returns></returns>
-        protected double Align(double value, double minValue, double maxValue)
-        {
-            return (value < minValue ? minValue : (value > maxValue ? maxValue : value));
-        }
         /// <summary>
         /// Vrátí danou hodnotu cyklovanou do prostoru 0 až (cycle).<br/>
         /// Tedy pro vstup <paramref name="value"/> = 270 a <paramref name="cycle"/> = 360 vrátí 270;<br/>
@@ -1667,7 +1697,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         /// <param name="value"></param>
         /// <param name="cycle"></param>
         /// <returns></returns>
-        protected double Cycle(double value, double cycle)
+        protected static double Cycle(double value, double cycle)
         {
             value = value % cycle;
             while (value < 0d)

@@ -310,6 +310,50 @@ namespace Noris.Clients.Win.Components.AsolDX
                 graphics.Restore(state);
             }
         }
+        /// <summary>
+        /// Renderuje daný image do dané grafiky na dané místo
+        /// </summary>
+        /// <param name="svgImage"></param>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="alignment "></param>
+        /// <param name="svgPalette">SVG paleta pro korekce barev. Může být null.</param>
+        /// <param name="setSmoothing">Nastavit vyhlazování grafiky? false = nikdy / true = ano / null = pokud poměr velikosti ikony a prostoru nebude == 1.00</param>
+        public static void RenderTo(SvgImage svgImage, DevExpress.Utils.Drawing.GraphicsCache graphics, Rectangle bounds, ContentAlignment alignment = ContentAlignment.MiddleCenter, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, bool? setSmoothing = null)
+        {
+            _RenderTo(svgImage, graphics, bounds, alignment, svgPalette, setSmoothing, out var _);
+        }
+        /// <summary>
+        /// Renderuje daný image do dané grafiky na dané místo
+        /// </summary>
+        /// <param name="svgImage"></param>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="imageBounds"></param>
+        /// <param name="alignment "></param>
+        /// <param name="svgPalette">SVG paleta pro korekce barev. Může být null.</param>
+        /// <param name="setSmoothing">Nastavit vyhlazování grafiky? false = nikdy / true = ano / null = pokud poměr velikosti ikony a prostoru nebude == 1.00</param>
+        public static void RenderTo(SvgImage svgImage, DevExpress.Utils.Drawing.GraphicsCache graphics, Rectangle bounds, out RectangleF? imageBounds, ContentAlignment alignment = ContentAlignment.MiddleCenter, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, bool? setSmoothing = null)
+        {
+            _RenderTo(svgImage, graphics, bounds, alignment, svgPalette, setSmoothing, out imageBounds);
+        }
+        /// <summary>
+        /// Renderuje daný image do dané grafiky na dané místo
+        /// </summary>
+        /// <param name="svgImage"></param>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="alignment "></param>
+        /// <param name="svgPalette">SVG paleta pro korekce barev. Může být null.</param>
+        /// <param name="setSmoothing">Nastavit vyhlazování grafiky? false = nikdy / true = ano / null = pokud poměr velikosti ikony a prostoru nebude == 1.00</param>
+        /// <param name="imageBounds"></param>
+        private static void _RenderTo(SvgImage svgImage, DevExpress.Utils.Drawing.GraphicsCache graphics, Rectangle bounds, ContentAlignment alignment, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette, bool? setSmoothing, out RectangleF? imageBounds)
+        {
+            imageBounds = null;
+            if (svgImage is null || graphics is null || bounds.Width <= 2 || bounds.Height <= 2) return;
+
+            graphics.DrawSvgImage(svgImage, bounds, svgPalette);
+        }
         #endregion
         #region Generické SVG: @text|A    @circle     @arrow   atd...
         /// <summary>
@@ -2432,8 +2476,8 @@ M22,22H10v2H22v-2z " class="Black" />
         /// Najde index pro <see cref="SvgImage"/> daného jména, volitelně si jej nechá vytvořit a uloží jej.
         /// Pokud nenajde a ani nevytvoří, vrací -1.
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="creator"></param>
+        /// <param name="name">Hledané jméno Image</param>
+        /// <param name="creator">Metoda, která vytvoří <see cref="SvgImage"/> pro dané jméno, pokud dosud není v evidenci</param>
         /// <returns></returns>
         public int GetImageId(string name, Func<string, SvgImage> creator)
         {
@@ -2473,26 +2517,52 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <summary>
         /// Vrátí existenci záznamu a vyhledá <see cref="SvgImage"/> daného jména
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="svgImage"></param>
+        /// <param name="name">Hledané jméno Image</param>
+        /// <param name="creator">Metoda, která vytvoří <see cref="SvgImage"/> pro dané jméno, pokud dosud není v evidenci</param>
+        /// <param name="svgImage">Out obrázek</param>
         /// <returns></returns>
-        public bool TryGetImage(string name, out SvgImage svgImage)
+        public bool TryGetImage(string name, Func<string, SvgImage> creator, out SvgImage svgImage)
         {
-            string key = _GetKey(name);
-            return _TryGetImage(key, out svgImage);
+             return _TryGetImage(name, creator, out svgImage);
         }
         /// <summary>
-        /// Vrátí existenci záznamu a vyhledá <see cref="SvgImage"/> pro daný klíč
+        /// Vrátí <see cref="SvgImage"/> daného jména v this kolekci, a pokud tam není, pak pomocí <paramref name="creator"/> vytvoří new instanci a uloží si ji pro příště.
+        /// Může vrátit null.
         /// </summary>
-        /// <param name="key"></param>
-        /// <param name="svgImage"></param>
+        /// <param name="name">Hledané jméno Image</param>
+        /// <param name="creator">Metoda, která vytvoří <see cref="SvgImage"/> pro dané jméno, pokud dosud není v evidenci</param>
         /// <returns></returns>
-        private bool _TryGetImage(string key, out SvgImage svgImage)
+        public SvgImage GetSvgImage(string name, Func<string, SvgImage> creator)
+        {
+            if (_TryGetImage(name, creator, out var svgImage)) return svgImage;
+            return null;
+        }
+        /// <summary>
+        /// Vrátí existenci záznamu a vyhledá <see cref="SvgImage"/> pro dané jméno obrázku. Mže vytvořit nový s pomocí <paramref name="creator"/>.
+        /// </summary>
+        /// <param name="name">Hledané jméno Image</param>
+        /// <param name="creator">Metoda, která vytvoří <see cref="SvgImage"/> pro dané jméno, pokud dosud není v evidenci</param>
+        /// <param name="svgImage">Out obrázek</param>
+        /// <returns></returns>
+        private bool _TryGetImage(string name, Func<string, SvgImage> creator, out SvgImage svgImage)
         {
             svgImage = null;
+            string key = _GetKey(name);
             if (_NameIdDict.TryGetValue(key, out int id))
+            {   // Daný Image už máme v kolekci:
                 svgImage = this[key];
-            return (svgImage != null);
+                return true;
+            }
+            if (creator != null)
+            {   // Obrázek nemáme, ale umíme si jej vytvořit:
+                svgImage = creator(name);
+                if (svgImage != null)
+                {   // Podařilo se jej vytvořit:
+                    _Add(key, svgImage);
+                    return true;
+                }
+            }
+            return false;
         }
         /// <summary>
         /// Smaže vše
@@ -2513,7 +2583,10 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <returns></returns>
         private static string _GetKey(string name)
         {
-            return (name == null ? "" : name.Trim().ToLower());
+            if (name is null) return "";
+            string key = name.Trim();
+            if (key.StartsWith("@")) return key;           // Jména image začínající @ obsahují data pro tvorbu SVG, a jsou CaseSensitive (nesou i zobrazovaný text, a pak je rozdíl "MB" != "mb")
+            return key.ToLower();
         }
         /// <summary>
         /// Vrátí typ velikosti ikon v dané kolekci

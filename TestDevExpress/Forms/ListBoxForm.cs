@@ -28,9 +28,13 @@ namespace TestDevExpress.Forms
         public ListBoxForm()
         {
             this.Text = "DxListBox tester";
-            this.ImageName = "svgimages/diagramicons/insertlist.svg";
+            string resource1 = "devav/print/tasklist.svg";
+            string resource2 = "svgimages/dashboards/insertlistbox.svg";
+            string resource3 = "svgimages/diagramicons/insertlist.svg";
+            this.ImageName = resource2;
+
             // this.ImageNameAdd = "@text|Lb|#002266||N|6|#88AAFF|#CCEEFF";
-            this.ImageNameAdd = SvgImageTextIcon.CreateImageName("Lb", backColor: Color.LightYellow, textBold: false, roundingPc: 20, paddingPc: 4, borderWidthPc: 10);
+            this.ImageNameAdd = SvgImageTextIcon.CreateImageName("Lb", backColor: Color.LightYellow, textBold: false, roundingPc: 20, paddingPc: 4, borderWidthPc: 8);
             SvgImageTextIcon.TryParse(this.ImageNameAdd, out var svgIcon);
             svgIcon?.Validate();
         }
