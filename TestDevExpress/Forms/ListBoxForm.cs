@@ -27,14 +27,49 @@ namespace TestDevExpress.Forms
         /// </summary>
         public ListBoxForm()
         {
-            this.Text = "DxListBox tester";
-            string resource1 = "devav/print/tasklist.svg";
-            string resource2 = "svgimages/dashboards/insertlistbox.svg";
-            string resource3 = "svgimages/diagramicons/insertlist.svg";
-            this.ImageName = resource2;
+            Counter = Counter % 6;
+            this.Text = $"DxListBox tester [{Counter}]";
 
-            // this.ImageNameAdd = "@text|Lb|#002266||N|6|#88AAFF|#CCEEFF";
-            this.ImageNameAdd = SvgImageTextIcon.CreateImageName("Lb", backColor: Color.LightYellow, textBold: false, roundingPc: 20, paddingPc: 4, borderWidthPc: 8);
+            string imageName = "";
+            string iconText = "";
+            Color iconBack = Color.Wheat;
+            switch (Counter)
+            {
+                case 0:
+                    imageName = "svgimages/dashboards/insertlistbox.svg";
+                    iconText = "LY";
+                    iconBack = Color.LightYellow;
+                    break;
+                case 1:
+                    imageName = "svgimages/diagramicons/insertlist.svg";
+                    iconText = "DO";
+                    iconBack = Color.DarkOrange;
+                    break;
+                case 2:
+                    imageName = "svgimages/dashboards/insertlistbox.svg";
+                    iconText = "LB";
+                    iconBack = Color.LightBlue;
+                    break;
+                case 3:
+                    imageName = "svgimages/diagramicons/insertlist.svg";
+                    iconText = "DB";
+                    iconBack = Color.DarkBlue;
+                    break;
+                case 4:
+                    imageName = "svgimages/dashboards/insertlistbox.svg";
+                    iconText = "LC";
+                    iconBack = Color.LightCoral;
+                    break;
+                case 5:
+                    imageName = "svgimages/diagramicons/insertlist.svg";
+                    iconText = "DM";
+                    iconBack = Color.DarkMagenta;
+                    break;
+            }
+            Counter++;
+
+            this.ImageName = imageName;
+            this.ImageNameAdd = SvgImageTextIcon.CreateImageName(iconText, backColor: iconBack, textBold: false, roundingPc: 20, paddingPc: 4, borderWidthPc: 8);
             SvgImageTextIcon.TryParse(this.ImageNameAdd, out var svgIcon);
             svgIcon?.Validate();
         }
@@ -43,6 +78,7 @@ namespace TestDevExpress.Forms
             base.Dispose(disposing);
             _DisposeSamplesAll();
         }
+        private static int Counter = 0;
         #endregion
         #region Main Content
         /// <summary>

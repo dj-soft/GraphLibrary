@@ -112,7 +112,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Pokud nebude zadána barva textu <see cref="TextColor"/>, pak bude odvozena z barvy pozadí <see cref="BackColor"/> jako vhodná kontrastní.<br/>
         /// Zde se řídí, zda bude true = černá/bílá, anebo false = kontrastní plná barva.<br/>
-        /// Defaultní hodnota (pokud bude null) je false = text bude barevný, kontrastní.
+        /// Defaultní hodnota (pokud bude null) je true = text bude černý nebo bílý, kontrastní.
         /// </summary>
         public bool? TextColorBW { get; set; }
         /// <summary>
@@ -313,7 +313,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (Text == null) Text = "";
             TextBold = getDefault(TextBold, false);
             TextFont = getDefault(TextFont, TextStyleType.SansSerif);
-            TextColorBW = getDefault(TextColorBW, false);
+            TextColorBW = getDefault(TextColorBW, true);
             BackgroundVisible = getDefault(BackgroundVisible, true);
             BorderColorBW = getDefault(BorderColorBW, false);
             BorderVisible = getDefault(BorderVisible, true);
@@ -369,7 +369,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (hasText && !hasTextColor)
                 {   // Nemám barvu textu => ta musí vycházet z barvy BackColor; a pokud ani ji nemám, pak její default je Bílá:
                     if (!hasBackColor)
-                    {
+                    {   // Základní barva pozadí světle šedá / tmavošedá:
                         backOut = !isDarkSkin ? Color.FromArgb(240, 240, 240) : Color.FromArgb(32, 32, 32);
                         hasBackColor = true;
                     }
@@ -800,24 +800,31 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected static Color GetContrastTextColor(Color baseColor, bool contrastBW, bool contrastBrightness, float? contrastRatio = null)
         {
             var hslColor = Noris.Clients.Win.Components.AsolDX.Colors.ColorConverting.ColorToHsl(baseColor);
-            var hsvColor = Noris.Clients.Win.Components.AsolDX.Colors.ColorConverting.ColorToHsb(baseColor);
-            bool isLight = (hslColor.Light >= 50d);                  // Pokud vstupní barva je světlá ...
             if (contrastBW)
             {   // Požadavek: kontrastní barva má být Černá nebo Bílá = podle jasu bázové barvy:
-                return (isLight ? Color.Black : Color.White);        //  ... pak kontrastní je černá, a naopak.
+                bool isLight = (hslColor.Light >= 50d);              // Pokud vstupní barva je světlá ...
+                return (isLight ? ColorBlack : ColorWhite);          //  ... pak kontrastní je černá, a naopak.
             }
             else if (contrastBrightness)
             {   // Požadavek: máme vrátit kontrastní barvu stejného odstínu (ke světle modré => tmavomodoru):
-                hslColor.Light = (isLight ? 30d : 70d);              //  ... pak kontrastní je tmavá, a naopak;
                 hslColor.Saturation = 95d;                           //  a bude plně sytá.
+                hslColor.Light = getContrastLight(hslColor.Light);   //  ... pak kontrastní je tmavá, a naopak;
                 return hslColor.ToColor();
             }
             else 
             {   // Požadavek: máme vrátit barvu opačnou = reverzní => opačný odstín a kontrastní:
-                hslColor.Light = (isLight ? 30d : 70d);              //  ... pak kontrastní je tmavá, a naopak;
                 hslColor.Hue = hslColor.Hue + 180d;                  //  ... a opačná barva (kolo barev Hue má 360°)
                 hslColor.Saturation = 95d;                           //  a bude plně sytá.
+                hslColor.Light = getContrastLight(hslColor.Light);   //  ... pak kontrastní je tmavá, a naopak;
                 return hslColor.ToColor();
+            }
+
+            double getContrastLight(double light)
+            {
+                if (light < 30d) return 85d;
+                if (light < 50d) return 95d;
+                if (light <= 70d) return 5d;
+                return 15d;
             }
         }
         /// <summary>
@@ -834,25 +841,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected static Color GetContrastBorderColor(Color baseColor, bool contrastBW, bool contrastBrightness, float? contrastRatio = null)
         {
             var hslColor = Noris.Clients.Win.Components.AsolDX.Colors.ColorConverting.ColorToHsl(baseColor);
-            bool isLight = (hslColor.Light >= 50d);                  // Pokud vstupní barva je světlá ...
             if (contrastBW)
             {   // Požadavek: kontrastní barva má být Černá nebo Bílá = podle jasu bázové barvy:
-                return (isLight ? Color.Black : Color.White);        //  ... pak kontrastní je černá, a naopak.
+                bool isLight = (hslColor.Light >= 50d);              // Pokud vstupní barva je světlá ...
+                return (isLight ? ColorBlack : ColorWhite);          //  ... pak kontrastní je černá, a naopak.
             }
             else if (contrastBrightness)
             {   // Požadavek: máme vrátit kontrastní barvu stejného odstínu (ke světle modré => tmavomodoru):
-                hslColor.Light = (isLight ? 5d : 95d);               //  ... pak kontrastní je tmavá, a naopak;
                 hslColor.Saturation = 95d;                           //  a bude plně sytá.
+                hslColor.Light = getContrastLight(hslColor.Light);   //  ... pak kontrastní je tmavá, a naopak;
                 return hslColor.ToColor();
             }
             else
             {   // Požadavek: máme vrátit barvu opačnou = reverzní => opačný odstín a kontrastní:
-                hslColor.Light = (isLight ? 5d : 95d);               //  ... pak kontrastní je tmavá, a naopak;
                 hslColor.Hue = hslColor.Hue + 180d;                  //  ... a opačná barva (kolo barev Hue má 360°)
                 hslColor.Saturation = 95d;                           //  a bude plně sytá.
+                hslColor.Light = getContrastLight(hslColor.Light);   //  ... pak kontrastní je tmavá, a naopak;
                 return hslColor.ToColor();
             }
+
+            double getContrastLight(double light)
+            {
+                if (light < 30d) return 85d;
+                if (light < 50d) return 95d;
+                if (light <= 70d) return 5d;
+                return 15d;
+            }
         }
+        protected static Color ColorBlack { get { return Color.FromArgb(16, 16, 16); } }
+        protected static Color ColorWhite { get { return Color.FromArgb(240, 240, 240); } }
         /// <summary>
         /// Vrátí barvu pro pozadí k dané barvě
         /// </summary>
@@ -883,26 +900,31 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
        Hue              = odstín (Červená 0° - Žlutá 60° - Zelená 120° - Tyrkysová 180° - Modrá 240° - Purpurová 300°), jako postupné barevné přechody
        Saturation       = sytost (0 = šedá, až po 100 = zcela sytá cílová barva podle Hue)
                             Pokud Saturation = 0, jde o šedou barvu bez ohledu na hodnotu Hue
-       Light nebo Value = světlost (0 = černá, 50 = nejzřetelnější barva, 100 = bílá)
+       Light            = světlost (0 = černá, 50 = nejzřetelnější barva, 100 = bílá)
         => Pro snadnou práci s přirozenou barvou je HSL nejvhodnější.
          https://www.designui.cz/lekce/co-jsou-to-barevne-modely-rgb-hsl-a-hsb-a-ktery-je-lepsi#barevny-model-hsl-pod-lupou
 
-    - HSB (Hue-Saturation-Brightness)  nebo též HSV (Hue-Saturation-Value) je podobný jako HSL = má stejné paametry Hue a Saturation, ale místo Light používá Brightness (=Value) = Jasnost barvy.
+    - HSV (Hue-Saturation-Value)  (nebo též HSB (Hue-Saturation-Brightness) je podobný jako HSL = má stejné paametry Hue a Saturation, ale místo Light používá Value (=Brightness) = Jasnost barvy.
        Saturation       = sytost (0 = šedá, až po 100 = zcela sytá cílová barva podle Hue)
                             Pokud Saturation = 0, jde o šedou barvu bez ohledu na hodnotu Hue
-       Brightness       = Jas (0=černá, 100 = čistá barva podle odstínu). Ale pokud chci barvu světlejší, než plnou barvu, pak musím snižovat hodnotu Saturation směrem k 0 = až k bílé.
+       Value            = Jas (0=černá, 100 = čistá barva podle odstínu). Ale pokud chci barvu světlejší, než plnou barvu, pak musím snižovat hodnotu Saturation směrem k 0 = až k bílé.
                             Bílá barva má tedy Saturation = 0 a Brightness = 100 (na Hue pak nezáleží).
          https://www.designui.cz/lekce/co-jsou-to-barevne-modely-rgb-hsl-a-hsb-a-ktery-je-lepsi#barevny-model-hsb
     
     - RGB (Red-Green-Blue) je technologický formát, kde jedna hodnota (R,G,B) ovládá jas jedné barvy LED diody. 
        Ale změna jasu nebo odstínu vyžaduje koordinovanou změnu všech tří složek. 
        Pro grafickou práci to není vhodný formát.
+
+    - Online konvertory barevných systémů:
+         https://www.rapidtables.com/convert/color/index.html
     
     */
     #region class HslColor
     /// <summary>
-    /// Represents a HSL color space.
-    /// http://en.wikipedia.org/wiki/HSV_color_space
+    /// Represents a HSL color space.<br/>
+    /// HSL barva je vhodnější pro snadnou modifikaci odstínu, sytosti a světlosti než RGB i než HSV.
+    /// <para/>
+    /// <see href="http://en.wikipedia.org/wiki/HSV_color_space"/>
     /// </summary>
     internal sealed class HslColor : AnyColor
     {
@@ -966,7 +988,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
                 color.Alpha);
         }
 
-        public static HslColor FromHsbColor(HsbColor color)
+        public static HslColor FromHsbColor(HsvColor color)
         {
             return FromRgbColor(color.ToRgbColor());
         }
@@ -991,9 +1013,9 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
             return this;
         }
 
-        public HsbColor ToHsbColor()
+        public HsvColor ToHsbColor()
         {
-            return ColorConverting.RgbToHsb(ToRgbColor());
+            return ColorConverting.RgbToHsv(ToRgbColor());
         }
 
         public override bool Equals(object obj)
@@ -1020,18 +1042,19 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         }
     }
     #endregion
-    #region class HsbColor
+    #region class HsvColor
     /// <summary>
-    /// Represents a HSV (=HSB) color space.
-    /// http://en.wikipedia.org/wiki/HSV_color_space
+    /// Represents a HSV color space.
+    /// <para/>
+    /// <see href="http://en.wikipedia.org/wiki/HSV_color_space"/>
     /// </summary>
-    internal sealed class HsbColor : AnyColor
+    internal sealed class HsvColor : AnyColor
     {
-        public HsbColor(double hue, double saturation, double brightness, int alpha)
+        public HsvColor(double hue, double saturation, double value, int alpha)
         {
             Hue = hue;
             Saturation = saturation;
-            Brightness = brightness;
+            Value = value;
             Alpha = alpha;
         }
         /// <summary>
@@ -1050,7 +1073,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         /// Brightness = Jas (0=černá, 100 = čistá barva podle odstínu). Ale pokud chci barvu světlejší, než plnou barvu, pak musím snižovat hodnotu Saturation směrem k 0 = až k bílé.
         /// Bílá barva má tedy Saturation = 0 a Brightness = 100 (na Hue pak nezáleží).
         /// </summary>
-        public double Brightness { get { return __Brightness; } set { __Saturation = Align(value, 0d, 100d); } } private double __Brightness;
+        public double Value { get { return __Value; } set { __Value = Align(value, 0d, 100d); } } private double __Value;
         /// <summary>
         /// Gets or sets the alpha. Values from 0 to 255.<br/>
         /// Alfa kanál = krytí barvy (neprůhlednost): 0 = zcela průhledná, 255 = zcela plná barva, podklad nebude prosvítat
@@ -1067,46 +1090,46 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         /// <summary>
         /// Gets or sets the brightness. Values from 0 to 100.
         /// </summary>
-        public int IntBrightness => Convert.ToInt32(Brightness);
+        public int IntValue => Convert.ToInt32(Value);
 
-        public static HsbColor FromColor(Color color)
+        public static HsvColor FromColor(Color color)
         {
-            return ColorConverting.ColorToRgb(color).ToHsbColor();
+            return ColorConverting.ColorToRgb(color).ToHsvColor();
         }
 
-        public static HsbColor FromRgbColor(RgbColor color)
+        public static HsvColor FromRgbColor(RgbColor color)
         {
-            return color.ToHsbColor();
+            return color.ToHsvColor();
         }
 
-        public static HsbColor FromHsbColor(HsbColor color)
+        public static HsvColor FromHsvColor(HsvColor color)
         {
-            return new(color.Hue, color.Saturation, color.Brightness, color.Alpha);
+            return new(color.Hue, color.Saturation, color.Value, color.Alpha);
         }
 
-        public static HsbColor FromHslColor(HslColor color)
+        public static HsvColor FromHslColor(HslColor color)
         {
             return FromRgbColor(color.ToRgbColor());
         }
 
         public override string ToString()
         {
-            return $"Hue: {IntHue}; Saturation: {IntSaturation}; Brightness: {IntBrightness}; Alpha: {Alpha}";
+            return $"Hue: {IntHue}; Saturation: {IntSaturation}; Brightness: {IntValue}; Alpha: {Alpha}";
         }
 
         public Color ToColor()
         {
-            return ColorConverting.HsbToRgb(this).ToColor();
+            return ColorConverting.HsvToRgb(this).ToColor();
         }
 
         public RgbColor ToRgbColor()
         {
-            return ColorConverting.HsbToRgb(this);
+            return ColorConverting.HsvToRgb(this);
         }
 
-        public HsbColor ToHsbColor()
+        public HsvColor ToHsvColor()
         {
-            return new(Hue, Saturation, Brightness, Alpha);
+            return new(Hue, Saturation, Value, Alpha);
         }
 
         public HslColor ToHslColor()
@@ -1118,11 +1141,11 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         {
             var equal = false;
 
-            if (obj is HsbColor color)
+            if (obj is HsvColor color)
             {
                 if (Math.Abs(Hue - color.Hue) < 0.00001 &&
                     Math.Abs(Saturation - color.Saturation) < 0.00001 &&
-                    Math.Abs(Brightness - color.Brightness) < 0.00001 &&
+                    Math.Abs(Value - color.Value) < 0.00001 &&
                     Alpha == color.Alpha)
                 {
                     equal = true;
@@ -1134,14 +1157,15 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
 
         public override int GetHashCode()
         {
-            return $@"H:{IntHue}-S:{IntSaturation}-B:{IntBrightness}-A:{Alpha}".GetHashCode();
+            return $@"H:{IntHue}-S:{IntSaturation}-B:{IntValue}-A:{Alpha}".GetHashCode();
         }
     }
     #endregion
     #region class RgbColor
     /// <summary>
     /// Represents a RGB color space.
-    /// http://en.wikipedia.org/wiki/HSV_color_space
+    /// <para/>
+    /// <see href="http://en.wikipedia.org/wiki/HSV_color_space"/>
     /// </summary>
     internal sealed class RgbColor : AnyColor
     {
@@ -1179,7 +1203,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
             return new(color.Red, color.Green, color.Blue, color.Alpha);
         }
 
-        public static RgbColor FromHsbColor(HsbColor color)
+        public static RgbColor FromHsvColor(HsvColor color)
         {
             return color.ToRgbColor();
         }
@@ -1204,9 +1228,9 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
             return this;
         }
 
-        public HsbColor ToHsbColor()
+        public HsvColor ToHsvColor()
         {
-            return ColorConverting.RgbToHsb(this);
+            return ColorConverting.RgbToHsv(this);
         }
 
         public HslColor ToHslColor()
@@ -1238,22 +1262,22 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
     #region class ColorConverting a abstract class AnyColor
     /// <summary>
     /// Provides color conversion functionality.
+    /// <para/>
+    /// See: <see href="https://www.rapidtables.com/convert/color/index.html"/>;<br/>
+    /// See: <see href="http://en.wikipedia.org/wiki/HSV_color_space"/>;<br/>
+    /// See: <see href="http://www.easyrgb.com/math.php?MATH=M19#text19"/>;<br/>
     /// </summary>
-    /// <remarks>
-    /// http://en.wikipedia.org/wiki/HSV_color_space
-    /// http://www.easyrgb.com/math.php?MATH=M19#text19
-    /// </remarks>
     internal class ColorConverting : AnyColor
     {
         #region Public konverze finálních datových typů
-        public static RgbColor HsbToRgb(HsbColor hsb)
+        public static RgbColor HsvToRgb(HsvColor hsv)
         {
-            _HsbToRgb(hsb.IntHue, hsb.IntSaturation, hsb.IntBrightness, out var red, out var green, out var blue);
-            return new RgbColor(red, green, blue, hsb.Alpha);
+            _HsvToRgb(hsv.Hue, hsv.Saturation, hsv.Value, out var red, out var green, out var blue);
+            return new RgbColor(red, green, blue, hsv.Alpha);
         }
-        public static Color HsbToColor(HsbColor hsb)
+        public static Color HsvToColor(HsvColor hsb)
         {
-            _HsbToRgb(hsb.IntHue, hsb.IntSaturation, hsb.IntBrightness, out var red, out var green, out var blue);
+            _HsvToRgb(hsb.IntHue, hsb.IntSaturation, hsb.IntValue, out var red, out var green, out var blue);
             return Color.FromArgb(hsb.Alpha, red, green, blue);
         }
 
@@ -1272,10 +1296,10 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         {
             return new RgbColor(color.R, color.G, color.B, color.A);
         }
-        public static HsbColor ColorToHsb(Color color)
+        public static HsvColor ColorToHsv(Color color)
         {
-            _RgbToHsb(color.R, color.G, color.B, out double hue, out double saturation, out double brighness);
-            return new HsbColor(hue, saturation, brighness, color.A);
+            _RgbToHsv(color.R, color.G, color.B, out double hue, out double saturation, out double value);
+            return new HsvColor(hue, saturation, value, color.A);
         }
         public static HslColor ColorToHsl(Color color)
         {
@@ -1287,10 +1311,10 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         {
             return Color.FromArgb(rgb.Alpha, rgb.Red, rgb.Green, rgb.Blue);
         }
-        public static HsbColor RgbToHsb(RgbColor rgb)
+        public static HsvColor RgbToHsv(RgbColor rgb)
         {
-            _RgbToHsb(rgb.Red, rgb.Green, rgb.Blue, out double hue, out double saturation, out double brighness);
-            return new HsbColor(hue, saturation, brighness, rgb.Alpha);
+            _RgbToHsv(rgb.Red, rgb.Green, rgb.Blue, out double hue, out double saturation, out double value);
+            return new HsvColor(hue, saturation, value, rgb.Alpha);
         }
         public static HslColor RgbToHsl(RgbColor rgb)
         {
@@ -1298,18 +1322,85 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
             return new HslColor(hue, saturation, light, rgb.Alpha);
         }
         #endregion
+        #region Otestování
+        public static void Test()
+        {
+            string errors = "";
+            //                              RGB               HSV             HSL
+            testOne(Color.LightYellow,     255, 255, 224,    60, 12, 100,    60, 100, 94);
+            testOne(Color.DarkViolet,      148, 0, 211,      282, 100, 83,   282, 100, 41);
+            testOne(Color.MediumTurquoise, 72, 209, 204,     178, 66, 82,    178, 60, 55);
+
+            if (errors.Length > 0)
+                throw new InvalidOperationException("ColorConverting error:\r\n" + errors);
+
+
+
+            void testOne(Color color, int rgbR, int rgbG, int rgbB, int hsvH, int hsvS, int hsvV, int hslH, int hslS, int hslL)
+            {
+                string colorName = color.Name;
+                checkOne(colorName, "SYS.R", color.R, rgbR);
+                checkOne(colorName, "SYS:G", color.G, rgbG);
+                checkOne(colorName, "SYS:B", color.B, rgbB);
+
+                var rgbColor = ColorToRgb(color);
+                checkOne(colorName, "RGB.Red", rgbColor.Red, rgbR);
+                checkOne(colorName, "RGB:Green", rgbColor.Green, rgbG);
+                checkOne(colorName, "RGB:Blue", rgbColor.Blue, rgbB);
+
+
+                var hsvColor = ColorToHsv(color);
+                checkOne(colorName, "HSV:Hue", hsvColor.Hue, hsvH);
+                checkOne(colorName, "HSV:Saturation", hsvColor.Saturation, hsvS);
+                checkOne(colorName, "HSV:Value", hsvColor.Value, hsvV);
+
+                var hsvRgbResult = hsvColor.ToRgbColor();
+                checkOne(colorName, "HSVtoRGB.Red", hsvRgbResult.Red, rgbR);
+                checkOne(colorName, "HSVtoRGB:Green", hsvRgbResult.Green, rgbG);
+                checkOne(colorName, "HSVtoRGB:Blue", hsvRgbResult.Blue, rgbB);
+
+
+                var hslColor = ColorToHsl(color);
+                checkOne(colorName, "HSL:Hue", hslColor.Hue, hslH);
+                checkOne(colorName, "HSL:Saturation", hslColor.Saturation, hslS);
+                checkOne(colorName, "HSL:Value", hslColor.Light, hslL);
+
+                var hslRgbResult = hslColor.ToRgbColor();
+                checkOne(colorName, "HSLtoRGB.Red", hslRgbResult.Red, rgbR);
+                checkOne(colorName, "HSLtoRGB:Green", hslRgbResult.Green, rgbG);
+                checkOne(colorName, "HSLtoRGB:Blue", hslRgbResult.Blue, rgbB);
+            }
+
+
+            void checkOne(string colorName, string valueName, double valueCurrent, double valueExpected)
+            {
+                var valueDiff = valueCurrent - valueExpected;
+                if (Math.Abs(valueDiff) < 1d) return;               // OK
+                errors += $"{colorName} fail: {valueName} = {valueCurrent}; Expected = {valueExpected}; Difference = {valueDiff}.\r\n";
+            }
+
+
+            /*
+				    HEX         RGB			    Color.HSB		    PaintNet HSV		Convert HSV			Convert HSL		    C# HSV			C# HSL
+LightYellow	    	FFFFE0	    255 255 224		60 100	94		    60 12 100	    	60 12 100			60 100 94	    	60 12 100		60 100 94
+DarkViolet	    	9400D3	    148 0 211		282 100 41		    282 100 82	    	282 100 83			282 100 41	    	282 100 83		282 100 41
+MediumTurquoise		48D1CC	    72 209 204		178 60 55		    177 65 81	    	178 66 82			178 60 55	    	178 66 82		178 60 55
+
+            */
+        }
+        #endregion
         #region Primitivní privátní konverze barevných prostorů
         /// <summary>
-        /// Konverze HSB to RGB
+        /// Konverze HSV to RGB
         /// </summary>
         /// <param name="hue">Inp HUE v rozsahu 0 - 360d</param>
         /// <param name="saturation">Inp SATURATION v rozsahu 0 - 100d</param>
-        /// <param name="brightness">Inp BRIGHTNESS v rozsahu 0 - 100d</param>
+        /// <param name="value">Inp VALUE v rozsahu 0 - 100d</param>
         /// <param name="red">Out RED v rozsahu 0 - 255</param>
         /// <param name="green">Out GREEN v rozsahu 0 - 255</param>
         /// <param name="blue">Out BLUE v rozsahu 0 - 255</param>
         /// <returns></returns>
-        private static void _HsbToRgb(double hue, double saturation, double brightness, out int red, out int green, out int blue)
+        private static void _HsvToRgb(double hue, double saturation, double value, out int red, out int green, out int blue)
         {
             double redRatio = 0d;
             double greenRatio = 0d;
@@ -1317,63 +1408,61 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
 
             hue = hue % 360d;
             while (hue < 0d) hue += 360d;
-            var satRatio = GetRatio(saturation, 100d, 0d, 1d);
-            var brightRatio = GetRatio(brightness, 100d, 0d, 1d);
+            var saturRatio = GetRatio(saturation, 100d, 0d, 1d);
+            var valueRatio = GetRatio(value, 100d, 0d, 1d);
 
-            if (Math.Abs(satRatio - 0) < 0.00001)
+            if (Math.Abs(saturRatio - 0) < 0.00001)
             {
-                redRatio = brightRatio;
-                greenRatio = brightRatio;
-                blueRatio = brightRatio;
+                redRatio = valueRatio;
+                greenRatio = valueRatio;
+                blueRatio = valueRatio;
             }
             else
             {
-                // the color wheel has six sectors.
-
                 var sectorPosition = hue / 60d;
                 var sectorNumber = (int)Math.Floor(sectorPosition);
                 var fractionalSector = sectorPosition - sectorNumber;
 
-                var p = brightRatio * (1 - satRatio);
-                var q = brightRatio * (1 - satRatio * fractionalSector);
-                var t = brightRatio * (1 - satRatio * (1 - fractionalSector));
+                var p = valueRatio * (1 - saturRatio);
+                var q = valueRatio * (1 - saturRatio * fractionalSector);
+                var t = valueRatio * (1 - saturRatio * (1 - fractionalSector));
 
                 // Assign the fractional colors to r, g, and b
                 // based on the sector the angle is in.
                 switch (sectorNumber)
                 {
                     case 0:
-                        redRatio = brightRatio;
+                        redRatio = valueRatio;
                         greenRatio = t;
                         blueRatio = p;
                         break;
 
                     case 1:
                         redRatio = q;
-                        greenRatio = brightRatio;
+                        greenRatio = valueRatio;
                         blueRatio = p;
                         break;
 
                     case 2:
                         redRatio = p;
-                        greenRatio = brightRatio;
+                        greenRatio = valueRatio;
                         blueRatio = t;
                         break;
 
                     case 3:
                         redRatio = p;
                         greenRatio = q;
-                        blueRatio = brightRatio;
+                        blueRatio = valueRatio;
                         break;
 
                     case 4:
                         redRatio = t;
                         greenRatio = p;
-                        blueRatio = brightRatio;
+                        blueRatio = valueRatio;
                         break;
 
                     case 5:
-                        redRatio = brightRatio;
+                        redRatio = valueRatio;
                         greenRatio = p;
                         blueRatio = q;
                         break;
@@ -1385,15 +1474,15 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
             blue = Convert.ToInt32(blueRatio * 255d);
         }
         /// <summary>
-        /// Konverze RGB to HSB
+        /// Konverze RGB to HSV
         /// </summary>
         /// <param name="red">Inp RED v rozsahu 0 - 255</param>
         /// <param name="green">Inp GREEN v rozsahu 0 - 255</param>
         /// <param name="blue">Inp BLUE v rozsahu 0 - 255</param>
         /// <param name="hue">Out HUE v rozsahu 0 - 360d</param>
         /// <param name="saturation">Out SATURATION v rozsahu 0 - 100d</param>
-        /// <param name="brightness">Out BRIGHTNESS v rozsahu 0 - 100d</param>
-        private static void _RgbToHsb(double red, double green, double blue, out double hue, out double saturation, out double brightness)
+        /// <param name="value">Out VALUE v rozsahu 0 - 100d</param>
+        private static void _RgbToHsv(double red, double green, double blue, out double hue, out double saturation, out double value)
         {
             double redRatio = GetRatio(red, 255d, 0d, 1d);
             double greenRatio = GetRatio(green, 255d, 0d, 1d);
@@ -1409,14 +1498,14 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
             var maxValue = GetMaxValue(redRatio, greenRatio, blueRatio);
             var delta = maxValue - minValue;
 
-            double hueRatio = 0;
-            double saturRatio;
-            var brighRatio = maxValue * 100;
+            double hueRatio = 0d;
+            double saturValue;
+            var valuValue = maxValue * 100d;
 
-            if (Math.Abs(maxValue - 0) < 0.00001 || Math.Abs(delta - 0) < 0.00001)
+            if (Math.Abs(maxValue - 0d) < 0.00001d || Math.Abs(delta - 0d) < 0.00001d)
             {
                 hueRatio = 0d;
-                saturRatio = 0d;
+                saturValue = 0d;
             }
             else
             {
@@ -1425,35 +1514,32 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
                 // tests with the help of 0.00001 that will provide 
                 // a more accurate equality evaluation.
 
-                if (Math.Abs(minValue - 0) < 0.00001)
+                if (Math.Abs(minValue - 0) < 0.00001d)
                 {
-                    saturRatio = 100;
+                    saturValue = 100;
                 }
                 else
                 {
-                    saturRatio = delta / maxValue * 100;
+                    saturValue = delta / maxValue * 100d;
                 }
 
-                if (Math.Abs(redRatio - maxValue) < 0.00001)
+                if (Math.Abs(redRatio - maxValue) < 0.00001d)
                 {
                     hueRatio = (greenRatio - blueRatio) / delta;
                 }
-                else if (Math.Abs(greenRatio - maxValue) < 0.00001)
+                else if (Math.Abs(greenRatio - maxValue) < 0.00001d)
                 {
                     hueRatio = 2 + (blueRatio - redRatio) / delta;
                 }
-                else if (Math.Abs(blueRatio - maxValue) < 0.00001)
+                else if (Math.Abs(blueRatio - maxValue) < 0.00001d)
                 {
                     hueRatio = 4 + (redRatio - greenRatio) / delta;
                 }
             }
 
-            hue = 60d * hueRatio;
-            if (hueRatio < 0d)
-                hueRatio += 360d;
-
-            saturation = saturRatio;
-            brightness = brighRatio;
+            hue = Cycle(Math.Round(60d * hueRatio, 3), 360d);
+            saturation = Math.Round(saturValue, 3);
+            value = Math.Round(valuValue, 3);
         }
         /// <summary>
         /// Konverze RGB to HSL
@@ -1466,26 +1552,19 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
         /// <param name="light">Out LIGHT v rozsahu 0 - 100d</param>
         private static void _RgbToHsl(double red, double green, double blue, out double hue, out double saturation, out double light)
         {
-            Color color = Color.FromArgb((int)red, (int)green, (int)blue);
-            float fhue = color.GetHue();
-            float fsaturation = color.GetSaturation();
-            float fbrightness = color.GetBrightness();
-
-            _RgbToHsb(red, green, blue, out var hsbHue, out var hsbSat, out var hsbBrig);
-
             var redRatio = GetRatio(red, 255d, 0d, 1d);
             var greenRatio = GetRatio(green, 255d, 0d, 1d);
             var blueRatio = GetRatio(blue, 255d, 0d, 1d);
 
-            var varMin = GetMinValue(redRatio, greenRatio, blueRatio); //Min. value of RGB
-            var varMax = GetMaxValue(redRatio, greenRatio, blueRatio); //Max. value of RGB
-            var delMax = varMax - varMin; //Delta RGB value
+            var varMin = GetMinValue(redRatio, greenRatio, blueRatio);    // Min. value of RGB
+            var varMax = GetMaxValue(redRatio, greenRatio, blueRatio);    // Max. value of RGB
+            var delMax = varMax - varMin;                                 // Delta RGB value
 
             double hueRatio;
             double satRatio;
-            var lightRatio = (varMax + varMin) / 2;
+            var lightRatio = (varMax + varMin) / 2d;
 
-            if (Math.Abs(delMax - 0) < 0.00001) //This is a gray, no chroma...
+            if (Math.Abs(delMax - 0) < 0.00001d) //This is a gray, no chroma...
             {
                 hueRatio = 0; //HSL results = 0 ÷ 1
                 satRatio = 0;
@@ -1526,9 +1605,9 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
                 }
             }
 
-            hue = Cycle(Math.Round(hueRatio * 360.0d), 360d);
-            saturation = satRatio * 100.0d;
-            light = lightRatio * 100.0d;
+            hue = Cycle(Math.Round(hueRatio * 360.0d, 3), 360d);
+            saturation = Math.Round(satRatio * 100.0d, 3);
+            light = Math.Round(lightRatio * 100.0d, 3);
         }
         /// <summary>
         /// Konverze HSL to RGB
@@ -1545,8 +1624,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
             double greenRatio = 0d;
             double blueRatio = 0d;
 
-            hue = hue / 360.0d;
-            while (hue < 0d) hue += 360d;
+            var hueRatio = Cycle(hue, 360d) / 360.0d;
             var saturRatio = GetRatio(saturation, 100d, 0d, 1d);
             var lightRatio = GetRatio(light, 100d, 0d, 1d);
 
@@ -1571,9 +1649,9 @@ namespace Noris.Clients.Win.Components.AsolDX.Colors
 
                 var var1 = 2.0 * lightRatio - var2;
 
-                redRatio = hue2Rgb(var1, var2, hue + 1.0 / 3.0);
-                greenRatio = hue2Rgb(var1, var2, hue);
-                blueRatio = hue2Rgb(var1, var2, hue - 1.0 / 3.0);
+                redRatio = hue2Rgb(var1, var2, hueRatio + 1.0 / 3.0);
+                greenRatio = hue2Rgb(var1, var2, hueRatio);
+                blueRatio = hue2Rgb(var1, var2, hueRatio - 1.0 / 3.0);
             }
 
             red = Convert.ToInt32(redRatio * 255.0);

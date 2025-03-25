@@ -23,6 +23,8 @@ namespace TestDevExpress.Forms
         /// </summary>
         protected override void DxRibbonPrepare()
         {
+            Noris.Clients.Win.Components.AsolDX.Colors.ColorConverting.Test();
+
             if (!this.PositionIsFromConfig)
             {
                 this.WindowState = FormWindowState.Maximized;
