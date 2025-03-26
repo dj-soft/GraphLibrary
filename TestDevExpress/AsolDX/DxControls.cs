@@ -8884,7 +8884,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 case ImagePositionType.None: return;                 // Vykreslí DevExpress = defaultně
                 case ImagePositionType.InsteadStandardIcon: _DrawTabHeaderInsteadStandardIcon(e, imageInfo); break;
-                case ImagePositionType.BeforeStandardIcon:
+                case ImagePositionType.BeforeStandardIcon: _DrawTabHeaderBeforeStandardIcon(e, imageInfo); break;
                 case ImagePositionType.AfterStandardIcon: _DrawTabHeaderAfterStandardIcon(e, imageInfo); break;
                 case ImagePositionType.AfterTextArea: _DrawTabHeaderAfterTextArea(e, imageInfo); break;
                 case ImagePositionType.CenterControlArea: _DrawTabHeaderInControlBox(e, imageInfo, -1); break;
@@ -8919,7 +8919,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             e.Handled = true;
         }
         /// <summary>
-        /// Vykreslí celý TabHeader s přidaným SecondImageSize za na místo ikony okna (vlevo)
+        /// Vykreslí celý TabHeader s přidaným SecondImageSize na pozici před Main ikonou (vlevo vedle Main ikony)
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="imageInfo"></param>
+        private void _DrawTabHeaderBeforeStandardIcon(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e, ImageInfo imageInfo)
+        {
+        }
+        /// <summary>
+        /// Vykreslí celý TabHeader s přidaným SecondImageSize na pozici za Main ikonou (vlevo od textu, vpravo od Main ikony)
         /// </summary>
         /// <param name="e"></param>
         /// <param name="imageInfo"></param>
@@ -9185,8 +9193,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (!String.IsNullOrEmpty(secondImageName))
                 {   // Pokud přidaná ikona ImageNameAdd je definovaná:
                     secondImageSize = owner.SecondImageSize;
-                    if (owner.SecondImagePosition == ImagePositionType.AfterStandardIcon)
-                    {   // V režimu AfterStandardIcon: totalImageSize musí mít šířku pro obě dvě ikony + 2/8 [nebo 1/8 ?] rozestup mezi nimi:
+                    if (owner.SecondImagePosition == ImagePositionType.BeforeStandardIcon || owner.SecondImagePosition == ImagePositionType.AfterStandardIcon)
+                    {   // V režimu BeforeStandardIcon nebo AfterStandardIcon: totalImageSize musí mít šířku pro obě dvě ikony + 1/8 rozestup mezi nimi:
                         int mainWidth = mainImageSize.Width;
                         secondImageOffsetX = mainWidth + leftImagesSize.Width / 8;
                         leftImagesSize.Width = mainImageSize.Width + secondImageOffsetX + secondImageSize.Width;
