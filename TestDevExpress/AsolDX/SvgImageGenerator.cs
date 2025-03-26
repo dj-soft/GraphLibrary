@@ -201,7 +201,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// SansSerif = bezpatkové, vhodné pro ERP, použije se pokud nebude zadáno jinak
             /// </summary>
-            SansSerif
+            SansSerif,
+            /// <summary>
+            /// Tahoma
+            /// </summary>
+            Tahoma
         }
         #endregion
         #region Serializace a deserializace dat do/ze jména ikony

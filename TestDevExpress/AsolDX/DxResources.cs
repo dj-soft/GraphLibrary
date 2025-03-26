@@ -2651,6 +2651,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     ResourceImageSizeType sizeType = SystemAdapter.ImageSizeStandard;
                     if (sizeType == ResourceImageSizeType.Small || sizeType == ResourceImageSizeType.Medium || sizeType == ResourceImageSizeType.Large)
                         __ImageSizeStandard = sizeType;
+                    else
+                        __ImageSizeStandard = ResourceImageSizeType.Medium;
                 }
                 return __ImageSizeStandard ?? ResourceImageSizeType.Medium;
             }

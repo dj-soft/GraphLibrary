@@ -8683,13 +8683,37 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool AllIconsDirectPaint { get; set; }
         /// <summary>
-        /// Velikost hlavní ikony, varianta
+        /// Typ velikosti hlavní ikony
         /// </summary>
-        public ResourceImageSizeType MainImageSizeType { get; set; }
+        public ResourceImageSizeType MainImageSizeType
+        {
+            get { return __MainImageSizeType; }
+            set
+            {
+                if (value != __MainImageSizeType)
+                {
+                    __MainImageSizeType = value;
+                    _RefreshIconSizes();
+                }
+            }
+        }
+        private ResourceImageSizeType __MainImageSizeType;
         /// <summary>
-        /// Velikost přidané ikony, varianta
+        /// Typ velikosti přidané ikony
         /// </summary>
-        public ResourceImageSizeType SecondImageSizeType { get; set; }
+        public ResourceImageSizeType SecondImageSizeType 
+        {
+            get { return __SecondImageSizeType; }
+            set 
+            {
+                if (value != __SecondImageSizeType)
+                {
+                    __SecondImageSizeType = value;
+                    _RefreshIconSizes();
+                }
+            } 
+        }
+        private ResourceImageSizeType __SecondImageSizeType;
         /// <summary>
         /// Velikost hlavní ikony, pixely
         /// </summary>
@@ -8703,6 +8727,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public ImagePositionType SecondImagePosition { get; set; }
         /// <summary>
+        /// Do daného dokumentu vloží zadané jméno Main ikony
+        /// </summary>
+        /// <param name="document"></param>
+        /// <param name="mainImageName"></param>
+        public static void SetMainImageNameToDocument(DevExpress.XtraBars.Docking2010.Views.Tabbed.Document document, string mainImageName)
+        {
+            _SetMainImageNameToDocument(document, mainImageName);
+        }
+        /// <summary>
         /// Aktuální DPI
         /// </summary>
         private int? CurrentDpi { get { return (TabbedView?.Manager?.MdiParent?.DeviceDpi); } }
@@ -8713,13 +8746,47 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _DocumentAdded(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
         {
-            ImageInfo imageInfo = ImageInfo.Create(this, e.Document);
+            if (_TryPrepareImageInfoForDocument(e.Document, out var imageInfo))
+            {
+                imageInfo.Owner = this;
+            }
+        }
+        /// <summary>
+        /// Do daného dokumentu vloží zadané jméno Main ikony
+        /// </summary>
+        /// <param name="document"></param>
+        /// <param name="mainImageName"></param>
+        private static void _SetMainImageNameToDocument(DevExpress.XtraBars.Docking2010.Views.BaseDocument document, string mainImageName)
+        {
+            if (_TryPrepareImageInfoForDocument(document, out var imageInfo))
+            {
+                imageInfo.MainImageName = mainImageName;
+            }
+        }
+        /// <summary>
+        /// Zajistí přípravu pomocného objektu <see cref="ImageInfo"/> pro daný dokument.
+        /// Pokud již objekt je připraven, pak jej nepřipravuje znovu, nechá žít ten existující.
+        /// Metoda se volá mj. z <see cref="_DocumentAdded(object, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs)"/>, který proběhne po každém dokování okna.
+        /// Metoda se volá i před přidáním dokumentu do tabu, při setování ikony.
+        /// </summary>
+        /// <param name="document"></param>
+        /// <param name="imageInfo"></param>
+        /// <returns></returns>
+        private static bool _TryPrepareImageInfoForDocument(DevExpress.XtraBars.Docking2010.Views.BaseDocument document, out ImageInfo imageInfo)
+        {
+            if (document.Tag is ImageInfo imgInfo)
+            {
+                imageInfo = imgInfo;
+                return true;
+            }
+
+            imageInfo = new ImageInfo(document);
             if (imageInfo != null)
             {
-                e.Document.ImageOptions.SvgImageSize = imageInfo.LeftImagesSize;
-                e.Document.Caption = imageInfo.DocumentCaption;
+                document.Tag = imageInfo;
+                return true;
             }
-            e.Document.Tag = imageInfo;
+            return false;
         }
         /// <summary>
         /// Po změně DPI na formuláři, který nás hostuje = má vliv na velikost ikon
@@ -8779,6 +8846,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             CenterControlArea,
             /// <summary>
+            /// Před standardní ikonou = opačné pořadí (nejprve SecondImage, a poté MainImage)
+            /// </summary>
+            BeforeStandardIcon,
+            /// <summary>
             /// Namísto standardní ikony vlevo
             /// </summary>
             InsteadStandardIcon,
@@ -8807,10 +8878,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             var position = SecondImagePosition;
             if (position == ImagePositionType.Default) position = ImagePositionType.CenterControlArea;
 
+            string text = e.TabHeaderInfo.Page.Text;
+
             switch (position)
             {
                 case ImagePositionType.None: return;                 // Vykreslí DevExpress = defaultně
                 case ImagePositionType.InsteadStandardIcon: _DrawTabHeaderInsteadStandardIcon(e, imageInfo); break;
+                case ImagePositionType.BeforeStandardIcon:
                 case ImagePositionType.AfterStandardIcon: _DrawTabHeaderAfterStandardIcon(e, imageInfo); break;
                 case ImagePositionType.AfterTextArea: _DrawTabHeaderAfterTextArea(e, imageInfo); break;
                 case ImagePositionType.CenterControlArea: _DrawTabHeaderInControlBox(e, imageInfo, -1); break;
@@ -8962,7 +9036,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageInfo"></param>
         private Rectangle _DrawMainImage(TabHeaderCustomDrawEventArgs e, ImageInfo imageInfo)
         {
-            return _DrawImageToLeftArea(e, imageInfo.MainImageName, imageInfo.MainImageSize, this.MainImageSizeType);
+            // Image je dán názvem:
+            if (!String.IsNullOrEmpty(imageInfo.MainImageName))
+                return _DrawImageToLeftArea(e, imageInfo.MainImageName, imageInfo.MainImageSize, this.MainImageSizeType);
+
+            // Image pro Main ikonu není dán explicitně, vykreslíme ikonu formuláře:
+            if (imageInfo.DocumentControl is Form form && form.Icon != null)
+                e.Cache.DrawIcon(form.Icon, e.TabHeaderInfo.Image);
+            return e.TabHeaderInfo.Image;
         }
         /// <summary>
         /// Vykreslí danou ikonu na pozici základní ikony, doprostřed, v zadané velikosti
@@ -9047,17 +9128,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         private class ImageInfo
         {
             /// <summary>
-            /// Sestaví a vrátí info o ikonách v dokumentu
+            /// Konstruktor pro Dokument
             /// </summary>
-            /// <param name="owner"></param>
-            /// <param name="document"></param>
-            /// <returns></returns>
-            public static ImageInfo Create(DxTabHeaderImagePainter owner, DevExpress.XtraBars.Docking2010.Views.BaseDocument document)
+            public ImageInfo(DevExpress.XtraBars.Docking2010.Views.BaseDocument document, DxTabHeaderImagePainter owner = null)
             {
-                var imageInfo = new ImageInfo();
-                imageInfo.RefreshIconNames(owner, document);
-                imageInfo.RefreshIconSizes(owner, document);
-                return imageInfo;
+                __Document = new WeakTarget<DevExpress.XtraBars.Docking2010.Views.BaseDocument>(document);
+                Owner = owner;
+            }
+            private WeakTarget<DevExpress.XtraBars.Docking2010.Views.BaseDocument> __Document;
+            private WeakTarget<DxTabHeaderImagePainter> __Owner;
+            /// <summary>
+            /// Provede všechny refreshe po reálné změně Ownera
+            /// </summary>
+            private void _RefreshOwner()
+            {
+                var owner = this.Owner;
+                var document = this.Document;
+
+                if (owner != null && document != null)
+                {
+                    this.RefreshIconNames(owner, document);
+                    this.RefreshIconSizes(owner, document);
+                    this.RefreshDocument(owner, document);
+                }
             }
             /// <summary>
             /// Aktualizuje názvy ikon z formuláře dodaného v dokumentu
@@ -9104,8 +9197,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                         documentCaption = documentCaption + "".PadRight(spaceCount);
                     }
                 }
-                leftImagesSize = leftImagesSize.Enlarge(2, 2);
 
+                //    diskutabilní :  leftImagesSize = leftImagesSize.Enlarge(2, 2);
+                
                 this.MainImageSize = mainImageSize;
                 this.SecondImageSize = secondImageSize;
                 this.LeftImagesSize = leftImagesSize;
@@ -9113,16 +9207,56 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 this.DocumentCaption = documentCaption;
 
-                if (document != null)
+                this.RefreshDocument(owner, document);
+            }
+            /// <summary>
+            /// Do záhlaví dokumentu vepíše velikost SvgImage a správný titulek
+            /// </summary>
+            /// <param name="owner"></param>
+            /// <param name="document"></param>
+            public void RefreshDocument(DxTabHeaderImagePainter owner, DevExpress.XtraBars.Docking2010.Views.BaseDocument document)
+            {
+                document.Caption = this.DocumentCaption;
+                document.ImageOptions.SvgImage = DxComponent.GetVectorImage(this.MainImageName, false, owner.MainImageSizeType);
+                document.ImageOptions.SvgImageSize = this.LeftImagesSize;
+                if (document.ImageOptions.SvgImage != null && document.ImageOptions.Image != null)
+                    document.ImageOptions.Image = null;
+                if (document is DevExpress.XtraBars.Docking2010.Views.Tabbed.Document tabbedDocument)
                 {
-                    document.ImageOptions.SvgImageSize = leftImagesSize;
-                    document.Caption = documentCaption;
+                    var padd = tabbedDocument.ImageOptions.Padding;
                 }
             }
             /// <summary>
-            /// Privátní konstruktor
+            /// Vlastník tohoto ImageInfo = kreslící nástroj <see cref="DxTabHeaderImagePainter"/>.
+            /// Setování hodnoty provede různé potřebné refreshe. Reaguje přitom na reálnou změnu Ownera (setování stále stejného Ownera neprovádí žádné refreshe).
             /// </summary>
-            private ImageInfo() { }
+            public DxTabHeaderImagePainter Owner
+            {
+                get { return (__Owner != null && __Owner.IsAlive) ? __Owner.Target : null; }
+                set
+                {
+                    var ownerOld = this.Owner;
+                    var ownerNew = value;
+                    __Owner = (ownerNew != null ? new WeakTarget<DxTabHeaderImagePainter>(ownerNew) : null);
+
+                    if (ownerNew != null && !Object.ReferenceEquals(ownerNew, ownerOld))
+                        this._RefreshOwner();
+                }
+            }
+            /// <summary>
+            /// Control, k němuž je zdejší Image vytvořen. Typicky Formulář.
+            /// </summary>
+            public DevExpress.XtraBars.Docking2010.Views.BaseDocument Document
+            {
+                get { return (__Document != null && __Document.IsAlive) ? __Document.Target : null; }
+            }
+            /// <summary>
+            /// Control, k němuž je zdejší Image vytvořen. Typicky Formulář.
+            /// </summary>
+            public Control DocumentControl
+            {
+                get { return Document?.Control; }
+            }
             /// <summary>
             /// Velikost hlavní ikony.
             /// </summary>
@@ -9149,11 +9283,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Jméno image základního = odpovídá ikoně formuláře
             /// </summary>
-            public string MainImageName { get; private set; }
+            public string MainImageName { get; set; }
             /// <summary>
             /// Jméno image přidaného = zobrazuje se jako druhý obrázek podle předvolby
             /// </summary>
-            public string SecondImageName { get; private set; }
+            public string SecondImageName { get; set; }
         }
         #endregion
     }

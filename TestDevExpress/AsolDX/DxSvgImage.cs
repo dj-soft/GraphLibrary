@@ -1510,7 +1510,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (hasText)
             {
                 string text = (textIcon.Text ?? "").Trim();
-                string fontFamily = (textIcon.TextFont == SvgImageTextIcon.TextStyleType.Serif ? "serif" : (textIcon.TextFont == SvgImageTextIcon.TextStyleType.SansSerif ? "sans_serif" : ""));
+                string fontFamily = (textIcon.TextFont == SvgImageTextIcon.TextStyleType.Serif ? "serif" :
+                                    (textIcon.TextFont == SvgImageTextIcon.TextStyleType.SansSerif ? "sans_serif" :
+                                    (textIcon.TextFont == SvgImageTextIcon.TextStyleType.Tahoma ? "tahoma" : "")));
                 textInfo = new TextInfo(text, size, fontFamily, textIcon.TextBold.Value);
                 xmlTextBegin = hasText ? textInfo.GetXmlGroupBegin() : "";
             }
