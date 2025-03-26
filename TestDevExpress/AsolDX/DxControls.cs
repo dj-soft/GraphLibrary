@@ -8887,9 +8887,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case ImagePositionType.BeforeStandardIcon: _DrawTabHeaderBeforeStandardIcon(e, imageInfo); break;
                 case ImagePositionType.AfterStandardIcon: _DrawTabHeaderAfterStandardIcon(e, imageInfo); break;
                 case ImagePositionType.AfterTextArea: _DrawTabHeaderAfterTextArea(e, imageInfo); break;
-                case ImagePositionType.CenterControlArea: _DrawTabHeaderInControlBox(e, imageInfo, -1); break;
-                case ImagePositionType.InsteadPinButton: _DrawTabHeaderInControlBox(e, imageInfo, 1); break;
-                case ImagePositionType.InsteadCloseButton: _DrawTabHeaderInControlBox(e, imageInfo, 0); break;
+                case ImagePositionType.CenterControlArea: _DrawTabHeaderInControlBox(e, imageInfo, IconPositionType.Center); break;
+                case ImagePositionType.InsteadPinButton: _DrawTabHeaderInControlBox(e, imageInfo, IconPositionType.Left); break;
+                case ImagePositionType.InsteadCloseButton: _DrawTabHeaderInControlBox(e, imageInfo, IconPositionType.Right); break;
             }
         }
         /// <summary>
@@ -8912,7 +8912,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             e.DefaultDrawBackground();
 
-            _DrawImageToLeftArea(e, imageInfo.SecondImageName, imageInfo.SecondImageSize, this.SecondImageSizeType);
+            if (imageInfo.HasSecondImage)
+            {
+                var secondImageBounds = _GetBoundsInMainArea(e, imageInfo.SecondImageSize, IconPositionType.Center);
+                _DrawImageToBounds(e, imageInfo.SecondImageName, secondImageBounds, this.SecondImageSizeType);
+            }
+            else
+            {
+                var mainImageBounds = _GetBoundsInMainArea(e, imageInfo.MainImageSize, IconPositionType.Center);
+                _DrawMainImageToBounds(e, imageInfo, mainImageBounds);
+            }
 
             e.DefaultDrawText();
             e.DefaultDrawButtons();
@@ -8925,6 +8934,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageInfo"></param>
         private void _DrawTabHeaderBeforeStandardIcon(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e, ImageInfo imageInfo)
         {
+            e.DefaultDrawBackground();
+
+            if (imageInfo.HasBothImages)
+            {
+                var secondImageBounds = _GetBoundsInMainArea(e, imageInfo.SecondImageSize, IconPositionType.Left);
+                _DrawImageToBounds(e, imageInfo.SecondImageName, secondImageBounds, this.SecondImageSizeType);
+
+                var mainImageBounds = _GetBoundsInMainArea(e, imageInfo.MainImageSize, IconPositionType.Right);
+                _DrawMainImageToBounds(e, imageInfo, mainImageBounds);
+            }
+            else if (imageInfo.HasMainImage)
+            {
+                var mainImageBounds = _GetBoundsInMainArea(e, imageInfo.MainImageSize, IconPositionType.Center);
+                _DrawMainImageToBounds(e, imageInfo, mainImageBounds);
+            }
+            else if (imageInfo.HasSecondImage)
+            {
+                var secondImageBounds = _GetBoundsInMainArea(e, imageInfo.SecondImageSize, IconPositionType.Center);
+                _DrawImageToBounds(e, imageInfo.SecondImageName, secondImageBounds, this.SecondImageSizeType);
+            }
+
+            e.DefaultDrawText();
+            // DrawHeaderPageText(e);
+
+            e.DefaultDrawButtons();
+            e.Handled = true;
         }
         /// <summary>
         /// Vykreslí celý TabHeader s přidaným SecondImageSize na pozici za Main ikonou (vlevo od textu, vpravo od Main ikony)
@@ -8935,11 +8970,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             e.DefaultDrawBackground();
 
-            var totalLeftBounds = _DrawMainImage(e, imageInfo);                          // Souřadnice prostoru ikon vlevo před textem
-            var secondSize = imageInfo.SecondImageSize;
-            var secondImageY = _GetCenteredY(totalLeftBounds, secondSize.Height);
-            var secondBounds = new Rectangle(totalLeftBounds.X + imageInfo.SecondImageOffsetX, secondImageY, secondSize.Width, secondSize.Height);
-            _DrawImageToBounds(e, imageInfo.SecondImageName, secondBounds, this.SecondImageSizeType);
+            if (imageInfo.HasBothImages)
+            {
+                var mainImageBounds = _GetBoundsInMainArea(e, imageInfo.MainImageSize, IconPositionType.Left);
+                _DrawMainImageToBounds(e, imageInfo, mainImageBounds);
+
+                var secondImageBounds = _GetBoundsInMainArea(e, imageInfo.SecondImageSize, IconPositionType.Right);
+                _DrawImageToBounds(e, imageInfo.MainImageName, secondImageBounds, this.SecondImageSizeType);
+            }
+            else if (imageInfo.HasMainImage)
+            {
+                var mainImageBounds = _GetBoundsInMainArea(e, imageInfo.MainImageSize, IconPositionType.Center);
+                _DrawMainImageToBounds(e, imageInfo, mainImageBounds);
+            }
+            else if (imageInfo.HasSecondImage)
+            {
+                var secondImageBounds = _GetBoundsInMainArea(e, imageInfo.SecondImageSize, IconPositionType.Center);
+                _DrawImageToBounds(e, imageInfo.SecondImageName, secondImageBounds, this.SecondImageSizeType);
+            }
 
             e.DefaultDrawText();
             // DrawHeaderPageText(e);
@@ -8955,15 +9003,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _DrawTabHeaderAfterTextArea(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e, ImageInfo imageInfo)
         {
             e.DefaultDrawBackground();
-            _DrawMainImage(e, imageInfo);
+
+            if (imageInfo.HasMainImage)
+            {
+                var mainImageBounds = _GetBoundsInMainArea(e, imageInfo.MainImageSize, IconPositionType.Center);
+                _DrawMainImageToBounds(e, imageInfo, mainImageBounds);
+            }
+
             e.DefaultDrawText();
             // DrawHeaderPageText(e);
 
-            var controlBounds = _GetBoundsInControlBox(e, 1, this.SecondImageSize);      // Souřadnice Pin buttonu; naší ikonu dáme doleva od něj
-            var secondSize = imageInfo.SecondImageSize;
-            var secondImageY = _GetCenteredY(controlBounds, secondSize.Height);
-            var secondBounds = new Rectangle(controlBounds.X - 3 - secondSize.Width, secondImageY, secondSize.Width, secondSize.Height);
-            _DrawImageToBounds(e, imageInfo.SecondImageName, secondBounds, this.SecondImageSizeType);
+            if (imageInfo.HasSecondImage)
+            {
+                var imageBounds = _GetBoundsInControlBox(e, imageInfo.SecondImageSize, IconPositionType.BeforeLeft);
+                _DrawImageToBounds(e, imageInfo.SecondImageName, imageBounds, this.SecondImageSizeType);
+            }
 
             e.DefaultDrawButtons();
             e.Handled = true;
@@ -8973,18 +9027,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="e"></param>
         /// <param name="imageInfo"></param>
-        /// <param name="index"></param>
-        private void _DrawTabHeaderInControlBox(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e, ImageInfo imageInfo, int index)
+        /// <param name="position">Druh prostoru.</param>
+        private void _DrawTabHeaderInControlBox(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e, ImageInfo imageInfo, IconPositionType position)
         {
             e.DefaultDrawBackground();
-            _DrawMainImage(e, imageInfo);
+
+            if (imageInfo.HasMainImage)
+            {
+                var mainImageBounds = _GetBoundsInMainArea(e, imageInfo.MainImageSize, IconPositionType.Center);
+                _DrawMainImageToBounds(e, imageInfo, mainImageBounds);
+            }
+
             e.DefaultDrawText();
 
             bool isTabActive = (e.TabHeaderInfo.IsActiveState || e.TabHeaderInfo.IsHotState);
             if (!isTabActive)
             {   // Image kreslíme jen do neaktivního TabHeaderu:
-                var imageBounds = _GetBoundsInControlBox(e, index, this.SecondImageSize);
-                _DrawImageToBounds(e, imageInfo.SecondImageName, imageBounds, this.SecondImageSizeType);
+                if (imageInfo.HasSecondImage)
+                {
+                    var imageBounds = _GetBoundsInControlBox(e, this.SecondImageSize, position);
+                    _DrawImageToBounds(e, imageInfo.SecondImageName, imageBounds, this.SecondImageSizeType);
+                }
             }
             else
             {   // Do aktivního TabHeaderu kreslíme defaultní Buttony:
@@ -8992,81 +9055,101 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             e.Handled = true;
         }
-        /// <summary>
-        /// Vrátí souřadnice pro doplňkovou ikonu. Souřadnice jsou v místě zadaného tlačítka v rámci prostoru Buttons = vpravo (Close nebo Pin), anebo uprostřed tohoto prostoru.
-        /// Index <paramref name="index"/> odkazuje na pozici tlačítka. Počítá se zprava (0=Close, 1=Pin). Hodnota -1 = uprostřed.
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="index">odkazuje na pozici tlačítka. Počítá se zprava (0=Close, 1=Pin). Hodnota -1 = uprostřed.</param>
-        /// <param name="iconSize"></param>
-        /// <returns></returns>
-        private static Rectangle _GetBoundsInControlBox(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e, int index, Size iconSize)
+        private static Rectangle _GetBoundsInMainArea(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e, Size iconSize, IconPositionType position)
         {
-            var controlBounds = e.TabHeaderInfo.ControlBox;
             var imageBounds = e.TabHeaderInfo.Image;
-            int imageCY = imageBounds.Center().Y;
-            int imageCX;
-
-            var buttons = e.TabHeaderInfo.ButtonsPanel?.ViewInfo?.Buttons;
-            if (buttons != null && buttons.Count > 0)
+            var imageCenter = imageBounds.Center();
+            var imageCX = imageCenter.X;
+            var imageCY = imageCenter.Y;
+            switch (position)
             {
-                if (index >= 0)
-                {   // Konkrétní button:
-                    var buttonIndex = (index < 0 ? 0 : (index >= buttons.Count ? buttons.Count - 1 : index));
-                    var buttonBounds = buttons[buttonIndex].Bounds;
-                    imageCX = buttonBounds.X + (buttonBounds.Width / 2);
-                }
-                else
-                {   // Střed všech buttonů:
-                    imageCX = controlBounds.X + (controlBounds.Width / 2);
-                }
+                case IconPositionType.Left:
+                    imageCX = imageBounds.Left + (iconSize.Width / 2);
+                    break;
+                case IconPositionType.Center:
+                    imageCX = imageCenter.X;
+                    break;
+                case IconPositionType.Right:
+                    imageCX = imageBounds.Right - (iconSize.Width / 2);
+                    break;
             }
-            else
-            {
-                // Vpravo:
-                var contentBounds = e.TabHeaderInfo.Content;
-                imageCX = contentBounds.Right - (iconSize.Width / 2);
-            }
-
-            // Ze souřadnice středu ikony a její velikosti vytvořím Rectangle pro ikonu:
-            var result = new Point(imageCX, imageCY).CreateRectangleFromCenter(iconSize);
-
-            // Zarovnat do prostoru ControlBox:
-            if (result.X < controlBounds.X) result.X = controlBounds.X;
-            if (result.Right > controlBounds.Right) result.X = controlBounds.Right - result.Width;
-
+            imageCenter = new Point(imageCX, imageCY);
+            var result = imageCenter.CreateRectangleFromCenter(iconSize);
             return result;
         }
         /// <summary>
-        /// Vykreslí základní ikonu na její odpovídající pozici
+        /// Vrátí souřadnice pro doplňkovou ikonu. 
+        /// Souřadnice jsou v místě zadaného tlačítka v rámci prostoru Buttons = vpravo (Close nebo Pin), anebo uprostřed tohoto prostoru, podle <paramref name="position"/>.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="iconSize"></param>
+        /// <param name="position">Druh prostoru.</param>
+        /// <returns></returns>
+        private static Rectangle _GetBoundsInControlBox(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e, Size iconSize, IconPositionType position)
+        {
+            var controlBounds = e.TabHeaderInfo.ControlBox;
+            var alignToBounds = controlBounds;
+            var imageBounds = e.TabHeaderInfo.Image;
+            int imageCY = (imageBounds.Height > 0 ? imageBounds.Center().Y : controlBounds.Center().Y);
+            int imageCX = 0;
+
+            var buttonBounds = e.TabHeaderInfo.ButtonsPanel?.Bounds;
+            var buttons = e.TabHeaderInfo.ButtonsPanel?.ViewInfo?.Buttons;
+            var buttonCount = buttons?.Count ?? 0;
+            switch (position)
+            {
+                case IconPositionType.BeforeLeft:
+                    imageCX = controlBounds.Left - 2 - (iconSize.Width / 2);
+                    alignToBounds = e.TabHeaderInfo.Bounds;
+                    break;
+                case IconPositionType.Left:
+                    imageCX = getButtonCenterX(buttonCount - 1, controlBounds.Center().X);
+                    break;
+                case IconPositionType.Center:
+                    imageCX = controlBounds.Center().X;
+                    break;
+                case IconPositionType.Right:
+                    imageCX = getButtonCenterX(0, controlBounds.Center().X);
+                    break;
+            }
+
+            // Ze souřadnice středu ikony a její velikosti vytvořím Rectangle pro ikonu:
+            Point iconCenter = new Point(imageCX, imageCY);
+            var result = iconCenter.CreateRectangleFromCenter(iconSize);
+
+            // Zarovnat do prostoru 'alignToBounds' (tj. ControlBox nebo celý Bounds):
+            if (result.X < alignToBounds.X) result.X = alignToBounds.X;
+            if (result.Right > alignToBounds.Right) result.X = alignToBounds.Right - result.Width;
+
+            return result;
+
+
+            // Vrátí souřadnici středu X daného buttonu
+            int getButtonCenterX(int index, int defaultX)
+            {
+                if (index >= 0 && index < buttonCount)
+                {
+                    var buttonBounds = buttons[index].Bounds;
+                    return buttonBounds.Center().X;
+                }
+                return defaultX;
+            }
+        }
+        /// <summary>
+        /// Vykreslí základní ikonu na danou pozici
         /// </summary>
         /// <param name="e"></param>
         /// <param name="imageInfo"></param>
-        private Rectangle _DrawMainImage(TabHeaderCustomDrawEventArgs e, ImageInfo imageInfo)
+        /// <param name="imageBounds"></param>
+        private void _DrawMainImageToBounds(TabHeaderCustomDrawEventArgs e, ImageInfo imageInfo, Rectangle imageBounds)
         {
             // Image je dán názvem:
             if (!String.IsNullOrEmpty(imageInfo.MainImageName))
-                return _DrawImageToLeftArea(e, imageInfo.MainImageName, imageInfo.MainImageSize, this.MainImageSizeType);
+                _DrawImageToBounds(e, imageInfo.MainImageName, imageBounds, this.MainImageSizeType);
 
             // Image pro Main ikonu není dán explicitně, vykreslíme ikonu formuláře:
             if (imageInfo.DocumentControl is Form form && form.Icon != null)
-                e.Cache.DrawIcon(form.Icon, e.TabHeaderInfo.Image);
-            return e.TabHeaderInfo.Image;
-        }
-        /// <summary>
-        /// Vykreslí danou ikonu na pozici základní ikony, doprostřed, v zadané velikosti
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="imageName"></param>
-        /// <param name="imageSize"></param>
-        /// <param name="imageSizeType"></param>
-        private Rectangle _DrawImageToLeftArea(TabHeaderCustomDrawEventArgs e, string imageName, Size imageSize, ResourceImageSizeType imageSizeType)
-        {
-            var totalImageBounds = e.TabHeaderInfo.Image;                      // Fyzická pozice základní ikony vlevo před textem záložky, je určená jako ImageInfo.LeftImagesSize a poté vložená do SvgImageSize
-            var center = totalImageBounds.Center();
-            var imageBounds = center.CreateRectangleFromCenter(imageSize);
-            _DrawImageToBounds(e, imageName, imageBounds, imageSizeType);
-            return imageBounds;
+                e.Cache.DrawIcon(form.Icon, imageBounds);
         }
         /// <summary>
         /// Vykreslí danou ikonu na pozici základní ikony
@@ -9127,6 +9210,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             int centerY = outerBounds.Top + (outerBounds.Height / 2);
             return centerY - (height / 2);
+        }
+        /// <summary>
+        /// Pozice ikony v určeném prostoru
+        /// </summary>
+        private enum IconPositionType
+        {
+            BeforeLeft,
+            Left,
+            Center,
+            Right
         }
         #endregion
         #region class ImageInfo a její získání
@@ -9196,8 +9289,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (owner.SecondImagePosition == ImagePositionType.BeforeStandardIcon || owner.SecondImagePosition == ImagePositionType.AfterStandardIcon)
                     {   // V režimu BeforeStandardIcon nebo AfterStandardIcon: totalImageSize musí mít šířku pro obě dvě ikony + 1/8 rozestup mezi nimi:
                         int mainWidth = mainImageSize.Width;
-                        secondImageOffsetX = mainWidth + leftImagesSize.Width / 8;
-                        leftImagesSize.Width = mainImageSize.Width + secondImageOffsetX + secondImageSize.Width;
+                        int spaceX = mainWidth / 8;
+                        secondImageOffsetX = mainWidth + spaceX;
+                        leftImagesSize.Width = mainImageSize.Width + spaceX + secondImageSize.Width;
                     }
                     else if (owner.SecondImagePosition == ImagePositionType.AfterTextArea)
                     {   // V režimu AfterTextArea: přidám pár mezer za text (titulek) dokumentu, aby za textem byl prostor pro ikonu:
@@ -9292,10 +9386,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Jméno image základního = odpovídá ikoně formuláře
             /// </summary>
             public string MainImageName { get; set; }
+            public bool HasMainImage { get { return !String.IsNullOrEmpty(MainImageName) || true; } }
             /// <summary>
             /// Jméno image přidaného = zobrazuje se jako druhý obrázek podle předvolby
             /// </summary>
             public string SecondImageName { get; set; }
+            public bool HasSecondImage { get { return !String.IsNullOrEmpty(SecondImageName); } }
+            public bool HasBothImages { get { return HasMainImage && HasSecondImage; } }
         }
         #endregion
     }

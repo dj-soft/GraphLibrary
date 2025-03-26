@@ -113,7 +113,7 @@ namespace TestDevExpress.Forms
             __TabHeaderImagePainter.SecondImagePosition = DxTabHeaderImagePainter.ImagePositionType.CenterControlArea; // .AfterStandardIcon;
             __TabHeaderImagePainter.SecondImageSizeType = ResourceImageSizeType.Small;
 
-            __TabHeaderImagePainter.SecondImagePosition = DxTabHeaderImagePainter.ImagePositionType.CenterControlArea;
+            __TabHeaderImagePainter.SecondImagePosition = DxTabHeaderImagePainter.ImagePositionType.AfterTextArea;
         }
         /// <summary>
         /// Pomocník pro kreslení ikon (standardní + přidaná) v záhlaví TabHeader.
