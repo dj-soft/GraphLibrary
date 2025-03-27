@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Xml.Linq;
 using DevExpress.XtraEditors.Repository;
-using Noris.WS.DataContracts.DxForm;
+using Noris.Clients.Win.Components.AsolDX.DxForm;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {

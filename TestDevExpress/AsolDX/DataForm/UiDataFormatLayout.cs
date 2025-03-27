@@ -12,7 +12,7 @@ using DevExpress.XtraCharts;
 using DevExpress.XtraEditors;
 using DevExpress.XtraPdfViewer.Commands;
 using DevExpress.XtraRichEdit.Layout;
-using Noris.WS.DataContracts.DxForm;
+using Noris.Clients.Win.Components.AsolDX.DxForm;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {

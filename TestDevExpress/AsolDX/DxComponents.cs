@@ -21,7 +21,6 @@ using WSXmlSerializer = Noris.WS.Parser.XmlSerializer;
 using DevExpress.Utils.Svg;
 using DevExpress.Utils.Design;
 using System.Globalization;
-using DevExpress.Pdf;
 
 
 // using BAR = DevExpress.XtraBars;
@@ -12070,7 +12069,7 @@ White
         /// </summary>
         /// <param name="fontInfo"></param>
         /// <returns></returns>
-        internal static int GetFontHeight(Noris.WS.DataContracts.DxForm.DfFontInfo fontInfo = null)
+        internal static int GetFontHeight(Noris.Clients.Win.Components.AsolDX.DxForm.DfFontInfo fontInfo = null)
         {
             var height = _GetTextHeight(fontInfo?.SizeRatio);
             return _GetDefaultSize(height, DefaultFontHeightRatio, DefaultFontHeightAdd);
@@ -12081,11 +12080,11 @@ White
         /// <param name="text"></param>
         /// <param name="fontInfo"></param>
         /// <returns></returns>
-        internal static int GetTextWidth(string text, Noris.WS.DataContracts.DxForm.DfFontInfo fontInfo = null)
+        internal static int GetTextWidth(string text, Noris.Clients.Win.Components.AsolDX.DxForm.DfFontInfo fontInfo = null)
         {
             if (String.IsNullOrEmpty(text)) return 0;
 
-            bool isBold = (fontInfo != null && fontInfo.Style.HasValue && fontInfo.Style.Value.HasFlag(WS.DataContracts.DxForm.FontStyleType.Bold));
+            bool isBold = (fontInfo != null && fontInfo.Style.HasValue && fontInfo.Style.Value.HasFlag(Noris.Clients.Win.Components.AsolDX.DxForm.FontStyleType.Bold));
             var width = _GetTextWidth(text, isBold, fontInfo?.SizeRatio);
             return _GetDefaultSize(width, DefaultFontWidthRatio, DefaultFontWidthAdd);
         }

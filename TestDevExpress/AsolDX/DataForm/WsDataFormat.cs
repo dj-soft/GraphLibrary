@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 using WinDraw = System.Drawing;
 using WinForm = System.Windows.Forms;
 
-namespace Noris.WS.DataContracts.DxForm
+namespace Noris.Clients.Win.Components.AsolDX.DxForm
 {
     /*     INFORMACE :  Datové třídy  +  XSD Schema  +  Načítání dat;      POSTUP pro přidání nové třídy anebo nové vlastnosti.
           Deklarace dat  +  deklarace XSD  +  Načítací algoritmus

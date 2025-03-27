@@ -14,7 +14,7 @@ using WinForm = System.Windows.Forms;
 
 using DxfData = Noris.Clients.Win.Components.AsolDX.DataForm.Data;
 using DxLData = Noris.Clients.Win.Components.AsolDX.DataForm.Layout;
-using Noris.WS.DataContracts.DxForm;
+using Noris.Clients.Win.Components.AsolDX.DxForm;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {

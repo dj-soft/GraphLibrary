@@ -1656,7 +1656,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 bool isBig = (size >= 24);                           // Velká ikona
 
-                var dfFont = new WS.DataContracts.DxForm.DfFontInfo() { SizeRatio = 2f, Style = (isBold ? WS.DataContracts.DxForm.FontStyleType.Bold : WS.DataContracts.DxForm.FontStyleType.Regular) };
+                var dfFont = new DxForm.DfFontInfo() { SizeRatio = 2f, Style = (isBold ? DxForm.FontStyleType.Bold : DxForm.FontStyleType.Regular) };
                 var textWidth = TextDimension.GetTextWidth(text, dfFont);
                 bool isWide = (textWidth >= 48);                     // Text je široký  (vstup WW vrací 52,  MM vrací 48)
 

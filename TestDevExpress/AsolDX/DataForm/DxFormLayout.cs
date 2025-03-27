@@ -13,7 +13,7 @@ using WinDraw = System.Drawing;
 using WinForm = System.Windows.Forms;
 
 using Noris.Clients.Win.Components.AsolDX.DataForm.Data;
-using Noris.WS.DataContracts.DxForm;
+using Noris.Clients.Win.Components.AsolDX.DxForm;
 using System.Drawing;
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm.Layout
