@@ -1654,45 +1654,29 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.IconName = "icon" + Convertor.StringToXmlText(text, false, '_');
                 this.FontFamily = fontFamily;
 
-                bool isBig = (size >= 24);                           // Velká ikona
+                bool isSmall = (size <= 16);                                   // Malá ikona
+                bool isMedium = (size > 16 && size <= 24);                     // Střední ikona
+                bool isBig = (size > 24);                                      // Velká ikona
+                bool increaseSize = (text.Length <= 1 && size <= 16);          // Zvětšit písmo?
 
                 var dfFont = new DxForm.DfFontInfo() { SizeRatio = 2f, Style = (isBold ? DxForm.FontStyleType.Bold : DxForm.FontStyleType.Regular) };
                 var textWidth = TextDimension.GetTextWidth(text, dfFont);
-                bool isWide = (textWidth >= 48);                     // Text je široký  (vstup WW vrací 52,  MM vrací 48)
+                bool isWide = (textWidth >= 48);                               // Text je široký  (vstup WW vrací 52,  MM vrací 48)
 
                 // Pro široký text ("WWW") bude jeho velikost menší (=0.48) než pro běžný kratší text '"Lb"), ten bude mít písmo větší (0.52)  *  velikost prostoru
-                decimal coefSize = (isWide ? 0.58m : 0.70m);
-                decimal fontSize = coefSize * width;                 // Velikost fontu v pixelech je odvozena od šířky prostoru pro písmo:
+                decimal coefSize = (isWide ? 0.58m : (increaseSize ? 0.85m : 0.70m));
+                decimal fontSize = coefSize * width;                           // Velikost fontu v pixelech je odvozena od šířky prostoru pro písmo:
                 this.FontSize = GetText(fontSize, 1, "px");
 
                 // Váha fontu: Bold = vždy 600, Normal: pro velkou ikonu tenký, pro malou ikonu silnější písmo:
-                decimal fontWeight = (isBold ? 600m : (isBig ? 200 : 400));
+                decimal fontWeight = (isBold ? 600m : (isSmall ? 400 : (isMedium ? 300 : 200)));
                 this.FontWeight = GetText(fontWeight, 0);
 
                 // Pozice písma X a Y je daná středem ikony (size) 
                 decimal coordX = 0.49m * size;
-                decimal coordY = 0.68m * size;
+                decimal coordY = 0.68m * size + (increaseSize ? (0.06m * size) : 0m);
                 this.TextX = GetText(coordX, 1);
                 this.TextY = GetText(coordY, 1);
-
-                /*
-                if (size >= 32m)
-                {
-                    this.IsWide = (text == "WW");                    // není nutno:  || text == "MM" || text == "OO" || text == "QQ" || text == "AA");
-                    this.FontSize = (IsWide ? "16px" : "18px");
-                    this.FontWeight = (isBold ? "600" : "200");
-                    this.TextX = "15.5";
-                    this.TextY = (IsWide ? "22" : "23");
-                }
-                else
-                {
-                    this.IsWide = (text == "WW" || text == "MM");    // není nutno: || text == "OO" || text == "QQ" || text == "AA");
-                    this.FontSize = (IsWide ? "8.2px" : "9.3px");
-                    this.FontWeight = (isBold ? "600" : "400");
-                    this.TextX = (IsWide ? "7.4" : "7.7");
-                    this.TextY = (IsWide ? "11" : "11.5");
-                }
-                */
             }
             /// <summary>
             /// Vrátí začátek grupy pro text, obsahuje popis fontu

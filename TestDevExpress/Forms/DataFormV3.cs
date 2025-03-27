@@ -12,6 +12,7 @@ using DxLData = Noris.Clients.Win.Components.AsolDX.DataForm.Layout;
 using System.Drawing;
 using Noris.Clients.Win.Components.AsolDX.DxForm;
 using Noris.Clients.Win.Components.AsolDX.DataForm;
+using TestDevExpress.Components;
 
 namespace TestDevExpress.Forms
 {
@@ -27,8 +28,14 @@ namespace TestDevExpress.Forms
         /// </summary>
         public DataFormV3()
         {
+            var pairs = new Tuple<string, string>[] { Constants.ColorPairGreen, Constants.ColorPairRed, Constants.ColorPairYellow, Constants.ColorPairOrange, Constants.ColorPairBlue, Constants.ColorPairTurquoise, Constants.ColorPairPurple, Constants.ColorPairBrown, Constants.ColorPairBlack };
+            var pair = pairs[Counter % (pairs.Length)];
+            string znak = ((char)(65 + (Counter % 25))).ToString();
+
+            Counter++;
+
             this.ImageName = "svgimages/spreadsheet/showcompactformpivottable.svg";
-            this.ImageNameAdd = "@text|D|#002266||B|3|#88AAFF|#CCEEFF";
+            this.ImageNameAdd = $"@text|{znak}|{pair.Item1}|tahoma|B|4|{pair.Item1}|{pair.Item2}";
 
             WinReg.CurrentFolder = WinRegFolder.CreateForProcessView(Microsoft.Win32.RegistryHive.CurrentUser, @"Software\Asseco Solutions\TestDevExpress\Config");
 
@@ -36,6 +43,7 @@ namespace TestDevExpress.Forms
             __DataFormId = 0;
             _RefreshTitle();
         }
+        private static int Counter = 0;
         private void _RefreshTitle()
         {
             bool hasDataForm = (_DxDataFormPanel != null);

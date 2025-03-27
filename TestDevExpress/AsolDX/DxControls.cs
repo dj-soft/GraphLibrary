@@ -8976,7 +8976,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _DrawMainImageToBounds(e, imageInfo, mainImageBounds);
 
                 var secondImageBounds = _GetBoundsInMainArea(e, imageInfo.SecondImageSize, IconPositionType.Right);
-                _DrawImageToBounds(e, imageInfo.MainImageName, secondImageBounds, this.SecondImageSizeType);
+                _DrawImageToBounds(e, imageInfo.SecondImageName, secondImageBounds, this.SecondImageSizeType);
             }
             else if (imageInfo.HasMainImage)
             {

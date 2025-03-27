@@ -171,24 +171,24 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AdapterTest.cs" />
-    <Compile Include="AsolDX\DataForm\DxCollections.cs" />
-    <Compile Include="AsolDX\DataForm\DxDataForm.cs" />
-    <Compile Include="AsolDX\DataForm\UiDataFormatLayout.cs" />
-    <Compile Include="AsolDX\DataForm\WsDataFormat.cs" />
-    <Compile Include="AsolDX\DataForm\UiDataFormatLoader.cs" />
-    <Compile Include="AsolDX\DataForm\DxDataFormData.cs" />
-    <Compile Include="AsolDX\DataForm\DxDataFormPanel.cs">
+    <Compile Include="AsolDX\DxForm\DxCollections.cs" />
+    <Compile Include="AsolDX\DxForm\DxDataForm.cs" />
+    <Compile Include="AsolDX\DxForm\UiDataFormatLayout.cs" />
+    <Compile Include="AsolDX\DxForm\DataFormats.cs" />
+    <Compile Include="AsolDX\DxForm\UiDataFormatLoader.cs" />
+    <Compile Include="AsolDX\DxForm\DxDataFormData.cs" />
+    <Compile Include="AsolDX\DxForm\DxDataFormPanel.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="AsolDX\DataForm\DxFormLayout.cs" />
-    <Compile Include="AsolDX\DataForm\DxGraphics.cs">
+    <Compile Include="AsolDX\DxForm\DxFormLayout.cs" />
+    <Compile Include="AsolDX\DxForm\DxGraphics.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="AsolDX\DataForm\DxInteractive.cs">
+    <Compile Include="AsolDX\DxForm\DxInteractive.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="AsolDX\DataForm\DxRepositoryEditors.cs" />
-    <Compile Include="AsolDX\DataForm\DxRepositoryManager.cs" />
+    <Compile Include="AsolDX\DxForm\DxRepositoryEditors.cs" />
+    <Compile Include="AsolDX\DxForm\DxRepositoryManager.cs" />
     <Compile Include="AsolDX\DxControls.cs" />
     <Compile Include="AsolDX\DxDataExtensions.cs" />
     <Compile Include="AsolDX\DxDataForm.cs" />
@@ -272,6 +272,7 @@
     <Compile Include="AsolDX\DxTreeView.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Components\Constants.cs" />
     <Compile Include="Components\DataFormSample.cs" />
     <Compile Include="Components\LayoutForm.cs">
       <SubType>Form</SubType>
