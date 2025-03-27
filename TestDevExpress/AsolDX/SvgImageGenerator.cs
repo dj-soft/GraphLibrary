@@ -50,7 +50,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 BorderWidthPc = borderWidthPc,
                 RoundingPc = roundingPc
             };
-            return textIcon.SvgImageName;
+            string imageName = textIcon.SvgImageName;
+            return imageName;
         }
         /// <summary>
         /// Vrátí string definující ikonu s textem a danými parametry
@@ -112,6 +113,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             return false;
         }
         /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public SvgImageTextIcon()
+        {
+            __ImageName = null;
+            __IsValidated = false;
+        }
+        private string __ImageName;
+        private bool __IsValidated;
+        /// <summary>
         /// Vytvoří new instanci obsahující zdejší aktuální data
         /// </summary>
         /// <returns></returns>
@@ -121,6 +132,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Public properties
+        /// <summary>
+        /// Jméno ikony, odpovídá zadání dat ikony před provedením první validace
+        /// </summary>
+        public string ImageName { get { return __IsValidated ? __ImageName : SvgImageName; } }
         /// <summary>
         /// Vlastní text.<br/>
         /// Může být prázdný, pak se vykreslí prázdná ikona (čterec, kolečko) v zadané barvě.<br/>
@@ -137,6 +152,47 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Default = <see cref="TextFontType.Default"/>.
         /// </summary>
         public TextFontType? TextFont { get; set; }
+        /// <summary>
+        /// Styl (font) písma, jméno fontfamily<br/>
+        /// Default = <see cref="TextFontType.Default"/>.
+        /// </summary>
+        public string TextFontName
+        {
+            get
+            {
+                var font = this.TextFont ?? TextFontType.Default;
+                switch (font)
+                {
+                    case TextFontType.Default: return "";
+                    case TextFontType.Serif: return "serif";
+                    case TextFontType.SansSerif: return "sans_serif";
+                    case TextFontType.Tahoma: return "tahoma";
+                }
+                return "";
+            }
+            set
+            {
+                if (value is null)
+                {
+                    this.TextFont = null;
+                }
+                else
+                {
+                    string key = value.Trim().ToLower();
+                    switch (key)
+                    {
+                        case "serif": this.TextFont = TextFontType.Serif; break;
+                        case "sansserif":
+                        case "sans serif":
+                        case "sans-serif":
+                        case "sans_serif": this.TextFont = TextFontType.SansSerif; break;
+                        case "tahoma": this.TextFont = TextFontType.Tahoma; break;
+                        case "default": this.TextFont = TextFontType.Default; break;
+                        default: this.TextFont = null; break;
+                    }
+                }
+            }
+        }
         /// <summary>
         /// Barva textu.<br/>
         /// Pokud nebude zadaná, určí se jako kontrastní barva z barvy pozadí <see cref="BackColor"/> a příznaku <see cref="TextColorBW"/>.
@@ -202,12 +258,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         public bool? BackgroundVisible { get; set; }
         /// <summary>
         /// Barva okraje.<br/>
-        /// Default = null, bude odvozena z barvy pozadí <see cref=""/>
+        /// Default = null, bude odvozena z barvy pozadí <see cref="BackColor"/>
         /// </summary>
         public Color? BorderColor { get; set; }
         /// <summary>
         /// Barva okraje.<br/>
-        /// Default = null, bude odvozena z barvy pozadí <see cref=""/>
+        /// Default = null, bude odvozena z barvy pozadí <see cref="BackColorName"/>
         /// </summary>
         public string BorderColorName { get { return SerializeColor(BorderColor); } set { BorderColor = DeserializeColor(value); } }
         /// <summary>
@@ -237,6 +293,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Hodnoty jsou uváděny v procentech velikosti celého prostoru ikony.<br/>
         /// Validní rozsah je 0 až 100, 0 = ikona bude začínat hned na kraji prostoru, nebude to moc ladit s ostatními ikonami.<br/>
         /// Hodnoty větší než 15% jsou nehezké.
+        /// <para/>
+        /// Záporné hodnoty určují prázdné okraje ikony (Padding) přímo v pixelech pro 32px ikonu. Pro menší ikonu (16 nebo 24) bude hodnota proporcionálně zmenšena a zarovnána na celé pixely nahoru, aby okraje byly výrazné.
         /// </summary>
         public int? PaddingPc { get; set; }
         /// <summary>
@@ -246,6 +304,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Hodnoty jsou uváděny v procentech velikosti celého prostoru ikony.<br/>
         /// Validní rozsah je 0 až 100, 0 = nebude se kreslit.<br/>
         /// Hodnoty větší než 10% jsou nehezké.
+        /// <para/>
+        /// Záporné hodnoty určují šířku linky rámečku přímo v pixelech pro 32px ikonu. Pro menší ikonu (16 nebo 24) bude hodnota proporcionálně zmenšena a zarovnána na celé pixely nahoru, aby okraje byly výrazné.
         /// </summary>
         public int? BorderWidthPc { get; set; }
         /// <summary>
@@ -257,6 +317,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// 0 = ikona je čtvercová s ostrými rohy.<br/>
         /// 15 = optimální hodnota.<br/>
         /// 100 = kolečko
+        /// <para/>
+        /// Záporné hodnoty určují průměr kružnice kulaté ikony přímo v pixelech pro 32px ikonu. Pro menší ikonu (16 nebo 24) bude hodnota proporcionálně zmenšena a zarovnána na celé pixely nahoru, aby okraje byly výrazné.
         /// </summary>
         public int? RoundingPc { get; set; }
         /// <summary>
@@ -295,7 +357,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             SerializeText(null, Text);
             // Další hodnoty mohou mít libovolné pořadí, jsou identifikovány klíčem :
             SerializeBool("S", TextBold);
-            SerializeEnum("F", TextFont);
+            SerializeText("F", TextFontName);
             SerializeColor("T", TextColor);
             SerializeColor("t", TextColorDark);
             SerializeBool("W", TextColorBW);
@@ -330,7 +392,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     switch (key)
                     {   // Klíče musí odpovídat klíčům při serializaci, podle nich se deserializuje hodnota a ukládá do odpovídající property:
                         case "S": { TextBold = DeserializeBool(value); break; }
-                        case "F": { TextFont = DeserializeEnum<TextFontType>(value); break; }
+                        case "F": { TextFontName = DeserializeString(value); break; }
                         case "T": { TextColor = DeserializeColor(value); break; }
                         case "t": { TextColorDark = DeserializeColor(value); break; }
                         case "W": { TextColorBW = DeserializeBool(value); break; }
@@ -387,6 +449,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public override void Validate()
         {
+            // Pokud ikona dosud nebyla validovaná, tak provádíme první validaci a proto si nyní uložíme jméno ikony, odpovídající zadanému stavu:
+            if (!__IsValidated)
+            {
+                __ImageName = this.SvgImageName;
+                __IsValidated = true;
+            }
+
             // Základní defaulty namísto NULL, a kontrola validního rozsahu:
             if (Text == null) Text = "";
             TextBold = getDefault(TextBold, false);
@@ -395,9 +464,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             BackgroundVisible = getDefault(BackgroundVisible, true);
             BorderColorBW = getDefault(BorderColorBW, false);
             BorderVisible = getDefault(BorderVisible, true);
-            PaddingPc = getDefaultInt(PaddingPc, 5, 0, 100);
-            BorderWidthPc = getDefaultInt(BorderWidthPc, 3, 0, 100);
-            RoundingPc = getDefaultInt(RoundingPc, 15, 0, 100);
+            PaddingPc = getDefaultInt(PaddingPc, 5, -16, 100);
+            BorderWidthPc = getDefaultInt(BorderWidthPc, 3, -12, 100);
+            RoundingPc = getDefaultInt(RoundingPc, 15, -32, 100);
 
 
             //  Barvy a jejich vzájemné doplnění - jaká data máme k dispozici?

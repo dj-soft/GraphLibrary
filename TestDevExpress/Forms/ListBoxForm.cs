@@ -27,49 +27,51 @@ namespace TestDevExpress.Forms
         /// </summary>
         public ListBoxForm()
         {
-            Counter = Counter % 6;
+            Counter = (Counter % 6) + 1;
             this.Text = $"DxListBox tester [{Counter}]";
 
             string imageName = "";
             string iconText = "";
+            bool isBold = false;
             Color iconBack = Color.Wheat;
             switch (Counter)
             {
-                case 0:
+                case 1:
                     imageName = "svgimages/dashboards/insertlistbox.svg";
-                    iconText = "LY";
+                    iconText = "I";
                     iconBack = Color.LightYellow;
                     break;
-                case 1:
+                case 2:
                     imageName = "svgimages/diagramicons/insertlist.svg";
-                    iconText = "DO";
+                    iconText = "M";
                     iconBack = Color.DarkOrange;
                     break;
-                case 2:
+                case 3:
                     imageName = "svgimages/dashboards/insertlistbox.svg";
-                    iconText = "LB";
+                    iconText = "ii";
                     iconBack = Color.LightBlue;
                     break;
-                case 3:
-                    imageName = "svgimages/diagramicons/insertlist.svg";
-                    iconText = "DB";
-                    iconBack = Color.DarkBlue;
-                    break;
                 case 4:
-                    imageName = "svgimages/dashboards/insertlistbox.svg";
-                    iconText = "LC";
-                    iconBack = Color.LightCoral;
+                    imageName = "svgimages/diagramicons/insertlist.svg";
+                    iconText = "WW";
+                    iconBack = Color.DarkBlue;
+                    isBold = true;
                     break;
                 case 5:
+                    imageName = "svgimages/dashboards/insertlistbox.svg";
+                    iconText = "MM";
+                    iconBack = Color.LightCoral;
+                    isBold = true;
+                    break;
+                case 6:
                     imageName = "svgimages/diagramicons/insertlist.svg";
-                    iconText = "DM";
+                    iconText = "<|>";
                     iconBack = Color.DarkMagenta;
                     break;
             }
-            Counter++;
 
             this.ImageName = imageName;
-            this.ImageNameAdd = SvgImageTextIcon.CreateImageName(iconText, backColor: iconBack, textBold: false, roundingPc: 20, paddingPc: 4, borderWidthPc: 8);
+            this.ImageNameAdd = SvgImageTextIcon.CreateImageName(iconText, backColor: iconBack, textBold: isBold, roundingPc: 20, paddingPc: -2, borderWidthPc: -1);
             SvgImageTextIcon.TryParse(this.ImageNameAdd, out var svgIcon);
             svgIcon?.Validate();
         }

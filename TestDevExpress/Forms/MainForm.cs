@@ -5054,7 +5054,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
             // Vytvoříme ChildNodes a zobrazíme je:
             bool empty = (Randomizer.Rand.Next(10) > 7);
-            var nodes = _CreateSampleChilds(parentNodeId, ItemCountType.Standard);       // A pak vyrobíme Child nody
+            int totalCount = 0;
+            var nodes = _CreateSampleChilds(parentNodeId, ref totalCount, 99, ItemCountType.Standard);       // A pak vyrobíme Child nody
             _TreeListAddLogLine($"Načtena data: {nodes.Count} prvků.");
             _TreeList.AddLazyLoadNodes(parentNodeId, nodes);            //  a pošleme je do TreeView.
         }
@@ -5076,6 +5077,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
             var newPosition = _NewNodePosition;
             bool isBlankNode = (oldValue == "" && (newPosition == NewNodePositionType.First || newPosition == NewNodePositionType.Last));
+            int totalCount = 0;
             if (String.IsNullOrEmpty(newValue))
             {   // Delete node:
                 if (nodeInfo.CanDelete)
@@ -5089,7 +5091,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                     node.Refresh();
 
                     // Přidám nový node pro konkrétní text = jakoby záznam:
-                    DataTreeListNode newNode = _CreateChildNode(node.ParentNodeFullId, NodeItemType.DefaultText);
+                    DataTreeListNode newNode = _CreateChildNode(node.ParentNodeFullId, NodeItemType.DefaultText, ref totalCount);
                     newNode.Text = newValue;
                     _TreeList.AddNode(newNode, 1);
                 }
@@ -5102,12 +5104,12 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                     _TreeList.RemoveNode(node.ItemId);              // Odeberu blank node, to kvůli pořadí: nový blank přidám nakonec
 
                     // Přidám nový node pro konkrétní text = jakoby záznam:
-                    DataTreeListNode newNode = _CreateChildNode(node.ParentNodeFullId, NodeItemType.DefaultText);
+                    DataTreeListNode newNode = _CreateChildNode(node.ParentNodeFullId, NodeItemType.DefaultText, ref totalCount);
                     newNode.Text = newValue;
                     _TreeList.AddNode(newNode);
 
                     // Přidám Blank node, ten bude opět na konci Childs:
-                    DataTreeListNode blankNode = _CreateChildNode(node.ParentNodeFullId, NodeItemType.BlankAtLastPosition);
+                    DataTreeListNode blankNode = _CreateChildNode(node.ParentNodeFullId, NodeItemType.BlankAtLastPosition, ref totalCount);
                     _TreeList.AddNode(blankNode);
 
                     // Aktivuji editovaný node:
@@ -5143,7 +5145,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                 {   // V jednom vizuálním zámku:
                     _TreeList.RemoveNode(node.ItemId);              // Odeberu OnDoubleClickLoadNext node, to kvůli pořadí: nový OnDoubleClickLoadNext přidám (možná) nakonec
 
-                    var newNodes = _CreateSampleChilds(node.ParentNodeFullId, ItemCountType.Standard, false, true);
+                    int totalCount = 0;
+                    var newNodes = _CreateSampleChilds(node.ParentNodeFullId, ref totalCount, 99, ItemCountType.Standard, false, true);
                     _TreeList.AddNodes(newNodes);
 
                     // Aktivuji první přidaný node:
@@ -5245,10 +5248,12 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private void _TreeListCreateNodesDataBgr()
         {
             DateTime t0 = DateTime.Now;
-            var nodes = _CreateSampleTreeNodes(ItemCountType.Standard);    // ItemCountType.Big);
+            int totalCount = 0;
+            var nodes = _CreateSampleTreeNodes(ItemCountType.Big, out totalCount);    // ItemCountType.Big);
             DateTime t1 = DateTime.Now;
 
             _TreeListNodeData = nodes;
+            _TreeListNodeDataCount = totalCount;
             _TreeListCreateNodeTime = t1 - t0;
         }
         /// <summary>
@@ -5264,17 +5269,19 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             return _TreeListNodeData;
         }
         private List<DataTreeListNode> _TreeListNodeData;
+        private int _TreeListNodeDataCount;
         private TimeSpan? _TreeListCreateNodeTime;
-        private List<DataTreeListNode> _CreateSampleTreeNodes(ItemCountType countType = ItemCountType.Standard)
+        private List<DataTreeListNode> _CreateSampleTreeNodes(ItemCountType countType, out int totalCount)
         {
             if (_TreeListImageType == ResourceContentType.None)
                 _TreeListImageType = ResourceContentType.Vector;
 
             List<DataTreeListNode> list = new List<DataTreeListNode>();
 
+            totalCount = 0;
             int rootCount = GetItemCount(countType, false);
             for (int r = 0; r < rootCount; r++)
-            {
+            {   // Root nodes:
                 bool isLazy = (Randomizer.Rand.Next(10) >= 5);
                 bool addChilds = !isLazy && (Randomizer.Rand.Next(10) >= 3);
                 bool isExpanded = (addChilds && (Randomizer.Rand.Next(10) >= 2));
@@ -5283,17 +5290,18 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                 string text = Randomizer.GetSentence(2, 5) + (isLazy ? " ..." : "");
                 FontStyle fontStyleDelta = FontStyle.Bold;
                 DataTreeListNode rootNode = new DataTreeListNode(rootKey, null, text, nodeType: NodeItemType.DefaultText, expanded: isExpanded, lazyExpandable: isLazy, fontStyleDelta: fontStyleDelta);
+                totalCount++;
                 // Node v první úrovni: LazyLoad má MainClick = RunEvent, a naplněný node má MainClick = Expand/Collapse:
                 rootNode.MainClickAction = (isLazy ? NodeMainClickActionType.RunEvent : NodeMainClickActionType.ExpandCollapse);
                 _FillNode(rootNode);
                 list.Add(rootNode);
 
                 if (addChilds)
-                    list.AddRange(_CreateSampleChilds(rootKey, countType));
+                    list.AddRange(_CreateSampleChilds(rootKey, ref totalCount, 0, countType));
             }
             return list;
         }
-        private List<DataTreeListNode> _CreateSampleChilds(string parentKey, ItemCountType countType = ItemCountType.Standard, bool canAddEditable = true, bool canAddShowNext = true)
+        private List<DataTreeListNode> _CreateSampleChilds(string parentKey, ref int totalCount, int parentLevel, ItemCountType countType, bool canAddEditable = true, bool canAddShowNext = true)
         {
             List<DataTreeListNode> list = new List<DataTreeListNode>();
 
@@ -5307,17 +5315,37 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             {
                 NodeItemType nodeType = ((addEditable && newPosition == NewNodePositionType.First && c == 0) ? NodeItemType.BlankAtFirstPosition :
                                         ((addEditable && newPosition == NewNodePositionType.Last && c == lastIndex) ? NodeItemType.BlankAtLastPosition : NodeItemType.DefaultText));
-                list.Add(_CreateChildNode(parentKey, nodeType));
+                var childNode = _CreateChildNode(parentKey, nodeType, ref totalCount);
+                if (childNode != null)
+                {
+                    list.Add(childNode);
+                    bool addChilds = canAddChildNodes();
+                    if (addChilds)
+                        list.AddRange(_CreateSampleChilds(childNode.ItemId, ref totalCount, parentLevel + 1, countType));
+                }
             }
             if (addShowNext)
             {
-                list.Add(_CreateChildNode(parentKey, NodeItemType.OnDoubleClickLoadNext));
+                list.Add(_CreateChildNode(parentKey, NodeItemType.OnDoubleClickLoadNext, ref totalCount));
             }
 
             return list;
+
+
+            bool canAddChildNodes()
+            {
+                int currentLevel = parentLevel + 1;
+                bool isEnabled = (countType == ItemCountType.Standard ? (currentLevel <= 0) :
+                                 (countType == ItemCountType.Big ? (currentLevel <= 1) :
+                                 (countType == ItemCountType.SuperBig ? (currentLevel <= 2) : false)));
+                if (!isEnabled) return false;
+                return (Randomizer.Rand.Next(100) < 10);
+            }
         }
-        private DataTreeListNode _CreateChildNode(string parentKey, NodeItemType nodeType)
+        private DataTreeListNode _CreateChildNode(string parentKey, NodeItemType nodeType, ref int totalCount)
         {
+            if (totalCount > 25000) return null;
+
             string childKey = "C." + (++_InternalNodeId).ToString();
             string text = "";
             DataTreeListNode childNode = null;
@@ -5327,6 +5355,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                 case NodeItemType.BlankAtLastPosition:
                     text = "";
                     childNode = new DataTreeListNode(childKey, parentKey, text, nodeType: nodeType, canEdit: true, canDelete: false);          // Node pro přidání nového prvku (Blank) nelze odstranit
+                    totalCount++;
                     childNode.AddVoidCheckSpace = true;
                     childNode.ToolTipText = "Zadejte referenci nového prvku";
                     childNode.ImageDynamicDefault = "list_add_3_16";
@@ -5334,6 +5363,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                 case NodeItemType.OnDoubleClickLoadNext:
                     text = "Načíst další záznamy";
                     childNode = new DataTreeListNode(childKey, parentKey, text, nodeType: nodeType, canEdit: false, canDelete: false);        // Node pro zobrazení dalších nodů nelze editovat ani odstranit
+                    totalCount++;
                     childNode.FontStyleDelta = FontStyle.Italic;
                     childNode.AddVoidCheckSpace = true;
                     childNode.ToolTipText = "Umožní načíst další sadu záznamů...";
@@ -5342,6 +5372,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                 case NodeItemType.DefaultText:
                     text = Randomizer.GetSentence(2, 5);
                     childNode = new DataTreeListNode(childKey, parentKey, text, nodeType: nodeType, canEdit: true, canDelete: true);
+                    totalCount++;
                     childNode.CanCheck = true;
                     childNode.Checked = (Randomizer.Rand.Next(20) > 16);
                     _FillNode(childNode);
@@ -5371,10 +5402,11 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                 case ItemCountType.Empty: return 0;
                 case ItemCountType.Standard: return (forChilds ? Randomizer.Rand.Next(1, 12) : Randomizer.Rand.Next(5, 15));
                 case ItemCountType.Big: return (forChilds ? Randomizer.Rand.Next(20, 40) : Randomizer.Rand.Next(60, 120));
+                case ItemCountType.SuperBig: return (forChilds ? Randomizer.Rand.Next(40, 80) : Randomizer.Rand.Next(100, 200));
             }
             return 0;
         }
-        private enum ItemCountType { Empty, Standard, Big }
+        private enum ItemCountType { Empty, Standard, Big, SuperBig }
         #endregion
         #endregion
         #region DragDrop
@@ -5416,7 +5448,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropCTree.SelectNodeBeforeShowContextMenu = false;
             _DragDropCTree.TransparentBackground = true;
 
-            var nodes = _CreateSampleTreeNodes();
+            int totalCount;
+            var nodes = _CreateSampleTreeNodes(ItemCountType.Standard, out totalCount);
             nodes.ForEachExec(n => { if (Randomizer.IsTrue(5)) n.Selected = true; });
             _DragDropCTree.AddNodes(nodes);
             

@@ -18,6 +18,9 @@ namespace TestDevExpress.Forms
     {
         protected override void DxMainContentPrepare()
         {
+            Counter = (Counter % 6) + 1;
+            this.Text = $"DialogBox tester [{Counter}]";
+
             // Přidej buttony, jejich Text je zobrazen uživateli a současně je klíčem do metody _Click:
             DxComponent.CreateDxSimpleButton(40, 20, 280, 37, this.DxMainPanel, "Dialog [ OK ]", _Click);
             DxComponent.CreateDxSimpleButton(40, 60, 280, 37, this.DxMainPanel, "Dialog [ OK ] / Center", _Click);
@@ -26,6 +29,7 @@ namespace TestDevExpress.Forms
             DxComponent.CreateDxSimpleButton(40, 180, 280, 37, this.DxMainPanel, "XXXX", _Click);
             DxComponent.CreateDxSimpleButton(40, 220, 280, 37, this.DxMainPanel, "XXXX", _Click);
         }
+        private static int Counter = 0;
         private void _Click(object sender, EventArgs e) 
         {
             if (!(sender is DxSimpleButton button)) return;
