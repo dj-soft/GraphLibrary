@@ -19,7 +19,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="text"></param>
         /// <param name="textBold"></param>
-        /// <param name="textStyle"></param>
+        /// <param name="textFont"></param>
         /// <param name="textColor"></param>
         /// <param name="textColorBW"></param>
         /// <param name="backColor"></param>
@@ -31,19 +31,57 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="borderWidthPc"></param>
         /// <param name="roundingPc"></param>
         /// <returns></returns>
-        public static string CreateImageName(string text, bool? textBold = null, TextStyleType? textStyle = null, Color? textColor = null, bool? textColorBW = null, Color? backColor = null,
+        public static string CreateImageName(string text, bool? textBold = null, TextFontType? textFont = null, Color? textColor = null, bool? textColorBW = null, Color? backColor = null,
             bool? backgroundVisible = null, Color? borderColor = null, bool? borderColorBW = null, bool? borderVisible = null, int? paddingPc = null, int? borderWidthPc = null, int? roundingPc = null)
         {
             SvgImageTextIcon textIcon = new SvgImageTextIcon()
             {
                 Text = text,
                 TextBold = textBold,
-                TextFont = textStyle,
+                TextFont = textFont,
                 TextColor = textColor,
                 TextColorBW = textColorBW,
                 BackColor = backColor,
                 BackgroundVisible = backgroundVisible,
                 BorderColor = borderColor,
+                BorderColorBW = borderColorBW,
+                BorderVisible = borderVisible,
+                PaddingPc = paddingPc,
+                BorderWidthPc = borderWidthPc,
+                RoundingPc = roundingPc
+            };
+            return textIcon.SvgImageName;
+        }
+        /// <summary>
+        /// Vrátí string definující ikonu s textem a danými parametry
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="textBold"></param>
+        /// <param name="textFont"></param>
+        /// <param name="textColorName"></param>
+        /// <param name="textColorBW"></param>
+        /// <param name="backColorName"></param>
+        /// <param name="backgroundVisible"></param>
+        /// <param name="borderColorName"></param>
+        /// <param name="borderColorBW"></param>
+        /// <param name="borderVisible"></param>
+        /// <param name="paddingPc"></param>
+        /// <param name="borderWidthPc"></param>
+        /// <param name="roundingPc"></param>
+        /// <returns></returns>
+        public static string CreateImageName(string text, bool? textBold = null, TextFontType? textFont = null, string textColorName = null, bool? textColorBW = null, string backColorName = null,
+            bool? backgroundVisible = null, string borderColorName = null, bool? borderColorBW = null, bool? borderVisible = null, int? paddingPc = null, int? borderWidthPc = null, int? roundingPc = null)
+        {
+            SvgImageTextIcon textIcon = new SvgImageTextIcon()
+            {
+                Text = text,
+                TextBold = textBold,
+                TextFont = textFont,
+                TextColorName = textColorName,
+                TextColorBW = textColorBW,
+                BackColorName = backColorName,
+                BackgroundVisible = backgroundVisible,
+                BorderColorName = borderColorName,
                 BorderColorBW = borderColorBW,
                 BorderVisible = borderVisible,
                 PaddingPc = paddingPc,
@@ -96,19 +134,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         public bool? TextBold { get; set; }
         /// <summary>
         /// Styl (font) písma<br/>
-        /// Default = <see cref="TextStyleType.Default"/>.
+        /// Default = <see cref="TextFontType.Default"/>.
         /// </summary>
-        public TextStyleType? TextFont { get; set; }
+        public TextFontType? TextFont { get; set; }
         /// <summary>
         /// Barva textu.<br/>
         /// Pokud nebude zadaná, určí se jako kontrastní barva z barvy pozadí <see cref="BackColor"/> a příznaku <see cref="TextColorBW"/>.
         /// </summary>
         public Color? TextColor { get; set; }
         /// <summary>
+        /// Barva textu.<br/>
+        /// Pokud nebude zadaná, určí se jako kontrastní barva z barvy pozadí <see cref="BackColor"/> a příznaku <see cref="TextColorBW"/>.
+        /// </summary>
+        public string TextColorName { get { return SerializeColor(TextColor); } set { TextColor = DeserializeColor(value); } }
+        /// <summary>
         /// Barva textu, pro tmavé skiny.<br/>
         /// Pokud nebude zadaná, určí se jako kontrastní barva z barvy pozadí <see cref="BackColor"/> a příznaku <see cref="TextColorBW"/>.
         /// </summary>
         public Color? TextColorDark { get; set; }
+        /// <summary>
+        /// Barva textu, pro tmavé skiny.<br/>
+        /// Pokud nebude zadaná, určí se jako kontrastní barva z barvy pozadí <see cref="BackColor"/> a příznaku <see cref="TextColorBW"/>.
+        /// </summary>
+        public string TextColorDarkName { get { return SerializeColor(TextColorDark); } set { TextColorDark = DeserializeColor(value); } }
         /// <summary>
         /// Pokud nebude zadána barva textu <see cref="TextColor"/>, pak bude odvozena z barvy pozadí <see cref="BackColor"/> jako vhodná kontrastní.<br/>
         /// Zde se řídí, zda bude true = černá/bílá, anebo false = kontrastní plná barva.<br/>
@@ -124,6 +172,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public Color? BackColor { get; set; }
         /// <summary>
+        /// Barva pozadí.<br/>
+        /// Může být null, pokud bude určena barva textu. Pak se pozadí nebude kreslit.
+        /// Může být zadáno a přitom hodnota <see cref="BackgroundVisible"/> bude false = pak tato barva poslouží jako zdroj barvy pro barvu textu, pokud nebude uvedena <see cref="TextColor"/>.
+        /// <para/>
+        /// Pokud nebude zadána, a přitom bude zapotřebí jako výchozí barva pro další prvky, použije se barva bílá.
+        /// </summary>
+        public string BackColorName { get { return SerializeColor(BackColor); } set { BackColor = DeserializeColor(value); } }
+        /// <summary>
         /// Barva pozadí, pro tmavé skiny.<br/>
         /// Může být null, pokud bude určena barva textu. Pak se pozadí nebude kreslit.
         /// Může být zadáno a přitom hodnota <see cref="BackgroundVisible"/> bude false = pak tato barva poslouží jako zdroj barvy pro barvu textu, pokud nebude uvedena <see cref="TextColor"/>.
@@ -131,6 +187,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud nebude zadána, a přitom bude zapotřebí jako výchozí barva pro další prvky, použije se barva bílá.
         /// </summary>
         public Color? BackColorDark { get; set; }
+        /// <summary>
+        /// Barva pozadí, pro tmavé skiny.<br/>
+        /// Může být null, pokud bude určena barva textu. Pak se pozadí nebude kreslit.
+        /// Může být zadáno a přitom hodnota <see cref="BackgroundVisible"/> bude false = pak tato barva poslouží jako zdroj barvy pro barvu textu, pokud nebude uvedena <see cref="TextColor"/>.
+        /// <para/>
+        /// Pokud nebude zadána, a přitom bude zapotřebí jako výchozí barva pro další prvky, použije se barva bílá.
+        /// </summary>
+        public string BackColorDarkName { get { return SerializeColor(BackColorDark); } set { BackColorDark = DeserializeColor(value); } }
         /// <summary>
         /// Vykreslit plnou barvou pozadí ikony?<br/>
         /// Default = ano, lze potlačit hodnotou false.
@@ -142,10 +206,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public Color? BorderColor { get; set; }
         /// <summary>
+        /// Barva okraje.<br/>
+        /// Default = null, bude odvozena z barvy pozadí <see cref=""/>
+        /// </summary>
+        public string BorderColorName { get { return SerializeColor(BorderColor); } set { BorderColor = DeserializeColor(value); } }
+        /// <summary>
         /// Barva okraje, pro tmavé skiny.<br/>
         /// Default = null, bude odvozena z barvy pozadí <see cref=""/>
         /// </summary>
         public Color? BorderColorDark { get; set; }
+        /// <summary>
+        /// Barva okraje, pro tmavé skiny.<br/>
+        /// Default = null, bude odvozena z barvy pozadí <see cref=""/>
+        /// </summary>
+        public string BorderColorDarkName { get { return SerializeColor(BorderColorDark); } set { BorderColorDark = DeserializeColor(value); } }
         /// <summary>
         /// Pokud nebude zadána barva okraje <see cref="BorderColor"/>, pak bude odvozena z barvy pozadí <see cref="BackColor"/> jako vhodná kontrastní.<br/>
         /// Zde se řídí, zda bude true = černá/bílá, anebo false = kontrastní plná barva.<br/>
@@ -188,7 +262,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Typ písma
         /// </summary>
-        public enum TextStyleType
+        public enum TextFontType
         {
             /// <summary>
             /// Neurčeno, necháme na grafice. Nebude se vepisovat. Zobrazuje se typicky ve stylu patkového písma = Serif
@@ -256,7 +330,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     switch (key)
                     {   // Klíče musí odpovídat klíčům při serializaci, podle nich se deserializuje hodnota a ukládá do odpovídající property:
                         case "S": { TextBold = DeserializeBool(value); break; }
-                        case "F": { TextFont = DeserializeEnum<TextStyleType>(value); break; }
+                        case "F": { TextFont = DeserializeEnum<TextFontType>(value); break; }
                         case "T": { TextColor = DeserializeColor(value); break; }
                         case "t": { TextColorDark = DeserializeColor(value); break; }
                         case "W": { TextColorBW = DeserializeBool(value); break; }
@@ -316,7 +390,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Základní defaulty namísto NULL, a kontrola validního rozsahu:
             if (Text == null) Text = "";
             TextBold = getDefault(TextBold, false);
-            TextFont = getDefault(TextFont, TextStyleType.SansSerif);
+            TextFont = getDefault(TextFont, TextFontType.SansSerif);
             TextColorBW = getDefault(TextColorBW, true);
             BackgroundVisible = getDefault(BackgroundVisible, true);
             BorderColorBW = getDefault(BorderColorBW, false);
@@ -622,8 +696,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Hlídám si jednoznačnost klíče:
             AddKeyValue(key, value);
 
+            string serial = SerializeColor(value);
+
             // Null:
-            if (!value.HasValue) return;                             // Null neserializujeme
+            if (serial is null) return;                             // Null neserializujeme
 
             // Delimiter:
             __Serializer.Append(Delimiter);
@@ -631,15 +707,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Key:
             if (key != null && key.Length == 1)
                 __Serializer.Append(key);
+            __Serializer.Append(serial);
+        }
+        /// <summary>
+        /// Serialiuje danou barvu na string
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected string SerializeColor(Color? value)
+        {
+            if (!value.HasValue) return null;
 
-            // Value:
             Color color = value.Value;
             if (color.IsNamedColor)
-                __Serializer.Append(color.Name);
+                return color.Name;
             else if (color.IsKnownColor)
-                __Serializer.Append(color.ToKnownColor().ToString());
+                return color.ToKnownColor().ToString();
             else
-                __Serializer.Append("#" + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2"));
+                return "#" + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");
         }
         private StringBuilder __Serializer;
         private Dictionary<string, object> __Keys;
