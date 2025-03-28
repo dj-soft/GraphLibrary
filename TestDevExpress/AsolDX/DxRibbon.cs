@@ -1711,7 +1711,18 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (items != null)
             {
-                foreach (var item in items)
+                // DAJ 28.3.2025: komponenty DevExpress počínaje verzí 24 mají opačné třídění prvků než dřívější verze...
+                // Z pohledu DevExpress byla ve starších verzích chyba, kdy prvky vložené do CaptionBarItemLinks se přidávaly zprava doleva.
+                //   Na toto pořadí máme nastavený aplikační server, který generuje ikony do actions.HeaderBarActions.Items v pořadí zprava doleva.
+                //   Protože v tom jsou zapojené i extendery partnerů, nebudeme obracet ikony na zdroji = na serveru.
+                // DevExpress to od verze 23.2.4 opravil, a ikony vkládá v nativním pořadí zleva doprava.
+                //   https://supportcenter.devexpress.com/ticket/details/T1220891/ribboncontrol-item-position-is-changed-in-the-captionbaritemlinks-collection
+                // Řešení: od verze DX knihoven 23.2.4 budeme obracet pořadí definovaných ikon na klientu = právě zde:
+                var sortedItems = items.ToList();
+                if (sortedItems.Count > 1 && DxVersion >= Version.Parse("23.2.4"))
+                    sortedItems.Reverse();
+
+                foreach (var item in sortedItems)
                 {
                     var barItem = CreateItem(item);
                     if (barItem != null)
@@ -1723,6 +1734,43 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // this._AddCaptionTest();
+        }
+        /// <summary>
+        /// Aktuální verze DX komponenty RibbonControl
+        /// </summary>
+        private static System.Version DxVersion
+        {
+            get
+            {
+                if (__DxVersion is null)
+                    __DxVersion = _ReadDxVersion();
+                return __DxVersion;
+            }
+        }
+        private static System.Version __DxVersion;
+        /// <summary>
+        /// Načte a vrátí aktuální verzi DX komponenty RibbonControl
+        /// </summary>
+        /// <returns></returns>
+        private static Version _ReadDxVersion()
+        {
+            Version result = null;
+            try
+            {
+                var assembly = typeof(DevExpress.XtraBars.Ribbon.RibbonControl).Assembly;
+                var attribute = assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyFileVersionAttribute), false).FirstOrDefault();
+                if (attribute != null && attribute is System.Reflection.AssemblyFileVersionAttribute version)
+                {
+                    result = Version.Parse(version.Version);
+                }
+            }
+            catch
+            {
+                result = null;
+            }
+            if (result is null)
+                result = Version.Parse("99.00.00");
+            return result;
         }
         private void _TitleBarRemoveItems(IEnumerable<IRibbonItem> items)
         {

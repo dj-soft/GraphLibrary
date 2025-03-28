@@ -1824,13 +1824,13 @@ M22,22H10v2H22v-2z " class="Black" />
         }
         private static void _ValidateSvgPixelCoordinates(decimal size, decimal padding, decimal borderLine, decimal diameter, out decimal paddingPx, out decimal borderLinePx, out decimal diameterPx)
         {
-            paddingPx = getDimense(padding, 0m, size / 4m);                    // Použitý Padding, v pixelech SVG
-            borderLinePx = getDimense(borderLine, 0m, size / 6m);              // Šířka linky borderu, v pixelech SVG
-            diameterPx = getDimense(diameter, 0m, size);                       // Průměr kružnice kulatých rohů, v pixelech SVG
+            paddingPx = getDimense(padding, 0m, size / 4m, RoundingType.Floor);          // Použitý Padding, v pixelech SVG
+            borderLinePx = getDimense(borderLine, 0m, size / 6m, RoundingType.Ceiling);  // Šířka linky borderu, v pixelech SVG
+            diameterPx = getDimense(diameter, 0m, size, RoundingType.Ceiling);           // Průměr kružnice kulatých rohů, v pixelech SVG
 
 
             // Vrátí zadanou hodnotu vyhodnocenou podle pravidel, pro aktuální velikost a zarovnanou pro dané rozmezí hodnot:
-            decimal getDimense(decimal valueInp, decimal min, decimal max)
+            decimal getDimense(decimal valueInp, decimal min, decimal max, RoundingType rounding)
             {
                 // Pravidla pro hodnoty:
                 decimal value = valueInp;
@@ -1844,13 +1844,26 @@ M22,22H10v2H22v-2z " class="Black" />
                 else if (valueInp > 0m)
                 {   // Proporcionální přepočet pixelů z base 32 na aktuální velikost:
                     if (size != 32m)
-                        value = Math.Ceiling((size / 32m) * value);
+                    {
+                        value = (size / 32m) * value;
+                        switch (rounding)
+                        {
+                            case RoundingType.Floor: value = Math.Floor(value); break;
+                            case RoundingType.Round: value = Math.Round(value, 0); break;
+                            case RoundingType.Ceiling:
+                            default: value = Math.Ceiling(value); break;
+                        }
+                    }
                 }
 
                 // Každé číslo se zarovná do zadaných mezí:
                 return (value < min ? min : (value > max ? max : value));
             }
         }
+        /// <summary>
+        /// Směr zaokrouhlení na celé číslo
+        /// </summary>
+        private enum RoundingType { None, Floor, Round, Ceiling  }
         /// <summary>
         /// Vrátí element path, ve tvaru obdélníku (s kulatými rohy) vepsaného do dané velikosti (size), s okraji (padding) o síle okraje (isBold ? 2 : 1).
         /// </summary>

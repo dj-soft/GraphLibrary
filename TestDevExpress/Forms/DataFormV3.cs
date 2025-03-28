@@ -28,6 +28,7 @@ namespace TestDevExpress.Forms
         /// </summary>
         public DataFormV3()
         {
+            // Páry barev mají: Item1 = Písmo, Item2 = Pozadí:
             var pairs = new Tuple<string, string>[] { Constants.ColorPairGreen, Constants.ColorPairRed, Constants.ColorPairYellow, Constants.ColorPairOrange, Constants.ColorPairBlue, Constants.ColorPairTurquoise, Constants.ColorPairPurple, Constants.ColorPairBrown, Constants.ColorPairBlack };
             var pair = pairs[Counter % (pairs.Length)];
             string znak = ((char)(65 + (Counter % 25))).ToString();
@@ -44,7 +45,10 @@ namespace TestDevExpress.Forms
                 TextFont = SvgImageTextIcon.TextFontType.Tahoma,
                 TextColorName = pair.Item1,
                 BackColorName = pair.Item2,
-                BorderColorName = pair.Item1,
+                // BorderColorName = pair.Item1,
+                BorderColorBW = false,
+                Padding = 3,
+                BorderWidth = 1,
                 Rounding = 8
             };
             this.ImageNameAdd = iconData.SvgImageName;

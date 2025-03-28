@@ -304,7 +304,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Pokud nebude zadána barva okraje <see cref="BorderColor"/>, pak bude odvozena z barvy pozadí <see cref="BackColor"/> jako vhodná kontrastní.<br/>
         /// Zde se řídí, zda bude true = černá/bílá, anebo false = kontrastní plná barva.<br/>
-        /// Defaultní hodnota (pokud bude null) je false = rámeček bude barevný, kontrastní.
+        /// Defaultní hodnota = null: rámeček bude mít barvu jako je barva textu.
         /// </summary>
         public bool? BorderColorBW { get; set; }
         /// <summary>
@@ -313,7 +313,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public bool? BorderVisible { get; set; }
         /// <summary>
         /// Volný prostor mezi fyzickým okrajem ikony a borderem (=Padding).<br/>
-        /// Zadávají se pixely vzhledem k 32px ikoně (pro menší ikony se proporionálně zmenší a zarovná na celé pixely nahoru).
+        /// Zadávají se pixely vzhledem k 32px ikoně (pro menší ikony se proporionálně zmenší a zarovná na celé pixely dolů).
         /// <para/>
         /// Defaultní hodnota (pokud bude null) je 1px (32px ikona). Validní rozsah je 0 až 8.
         /// </summary>
@@ -473,7 +473,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             TextFont = getDefault(TextFont, TextFontType.SansSerif);
             TextColorBW = getDefault(TextColorBW, true);
             BackgroundVisible = getDefault(BackgroundVisible, true);
-            BorderColorBW = getDefault(BorderColorBW, false);
+            // BorderColorBW = ... Ponecháme i hodnotu NULL => opsat barvu písma !!!     BorderColorBW = getDefault(BorderColorBW, false);
             BorderVisible = getDefault(BorderVisible, true);
             Padding = getDefaultInt(Padding, 1, 0, 8);
             BorderWidth = getDefaultInt(BorderWidth, 1, 0, 8);
@@ -559,14 +559,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // c) Mám mít border a nemám jeho barvu:
                 if (hasBorder && !hasBorderColor)
                 {
-                    if (hasTextColor)
-                    {
-                        borderOut = textOut;
+                    if (BorderColorBW.HasValue && hasBackColor)
+                    {   // Máme BorderColor vytvořit jako Black&White variantu k barvě pozadí, a tu mám k dispozici:
+                        borderOut = GetContrastBorderColor(backOut.Value, BorderColorBW.Value, true);
                         hasBorderColor = true;
                     }
-                    else if (hasBackColor)
+                    else if (hasTextColor)
                     {
-                        borderOut = GetContrastBorderColor(backOut.Value, BorderColorBW.Value, true);
+                        borderOut = textOut;
                         hasBorderColor = true;
                     }
                     else
