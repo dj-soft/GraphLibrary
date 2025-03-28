@@ -8,31 +8,55 @@ using DevExpress.Drawing.Printing.Internal;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
+    #region class SvgImageTextIcon : Třída, která přenáší požadavky na textovou ikonu mezi serverem a klientem
     /// <summary>
     /// Třída, která přenáší požadavky na textovou ikonu mezi serverem a klientem ve formě jednoho snadného textu, který se dá snadno naplnit, serializovat, deserializovat i validovat.
+    /// <para/>
+    /// <u>Příklad jednoduchého použití = v jednom řádku zadat základní parametry a získat definici ikony:</u>
+    /// <code>
+    /// string iconName = SvgImageTextIcon.CreateImageName("As", textFont: SvgImageTextIcon.TextFontType.Tahoma, textBold: true, textColorName: "#0F0F44", backColorName: "#FFFFE0", rounding: 6, padding: 2, borderWidth: 1);
+    /// </code>
+    /// <para/>
+    /// <u>Příklad komplexního použití = vytvořit ikonu a nasetovat do ní parametry, a nakonec získat definici ikony:</u>
+    /// <code>
+    /// string iconNameW = SvgImageTextIcon.CreateImageName(iconText, textFont: SvgImageTextIcon.TextFontType.Tahoma, textBold: true, textColorName: "#0F0F44", backColorName: "#FFFFE0", rounding: 6, padding: 2, borderWidth: 1);
+    /// var icon = new SvgImageTextIcon()
+    /// {
+    ///     Text = "As",
+    ///     TextFont = SvgImageTextIcon.TextFontType.SansSerif,
+    ///     TextColor = Color.DarkGray,
+    ///     TextBold = false,
+    ///     BackColor = Color.LightBlue,
+    ///     BorderColor = Color.Black,
+    ///     BorderWidth = 1,
+    ///     Padding = 2,
+    ///     Rounding = 16
+    /// };
+    /// return icon.SvgImageName;
+    /// </code>
     /// </summary>
-    public class SvgImageTextIcon : SvgImageIcon
+    internal class SvgImageTextIcon : SvgImageIcon
     {
         #region Static serializer a deserializer; klonování
         /// <summary>
         /// Vrátí string definující ikonu s textem a danými parametry
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="textBold"></param>
-        /// <param name="textFont"></param>
-        /// <param name="textColor"></param>
-        /// <param name="textColorBW"></param>
-        /// <param name="backColor"></param>
-        /// <param name="backgroundVisible"></param>
-        /// <param name="borderColor"></param>
-        /// <param name="borderColorBW"></param>
-        /// <param name="borderVisible"></param>
-        /// <param name="paddingPc"></param>
-        /// <param name="borderWidthPc"></param>
-        /// <param name="roundingPc"></param>
+        /// <param name="text">Písmeno (nebo dvě) zobrazené v ikoně</param>
+        /// <param name="textBold">Písmo Bold?</param>
+        /// <param name="textFont">Typ fontu</param>
+        /// <param name="textColor">Definice barvy písma</param>
+        /// <param name="textColorBW">Pokud není daná barva písma <paramref name="textColor"/>, pak se použije kontrastní k barvě pozadí <paramref name="backColor"/>: černobílá nebo barevná?</param>
+        /// <param name="backColor">Definice barvy pozadí ikony</param>
+        /// <param name="backgroundVisible">Pozadí ikony bude vykreslené?</param>
+        /// <param name="borderColor">Definice barvy rámečku ikony</param>
+        /// <param name="borderColorBW">Pokud není daná barva rámečku <paramref name="borderColor"/>, a rámeček je viditelný, pak se použije kontrastní k barvě pozadí <paramref name="backColor"/>: černobílá nebo barevná?</param>
+        /// <param name="borderVisible">Rámeček bude viditelný? Bez ohledu na barvu a jeho definovanou šířku</param>
+        /// <param name="padding">Okraje kolem ikony (=zmenšení ikony proti jejímu prostoru): zadávají se pixely vzhledem k 32px ikoně (pro menší ikony se proporionálně zmenší a zarovná na celé pixely nahoru)</param>
+        /// <param name="borderWidth">Šířka borderu: zadávají se pixely vzhledem k 32px ikoně (pro menší ikony se proporionálně zmenší a zarovná na celé pixely nahoru)</param>
+        /// <param name="rounding">Zaoblení ikony, zadává se průměr kružnice v pixelech vzhledem k 32px ikoně (pro menší ikony se proporionálně zmenší a zarovná na celé pixely nahoru)</param>
         /// <returns></returns>
         public static string CreateImageName(string text, bool? textBold = null, TextFontType? textFont = null, Color? textColor = null, bool? textColorBW = null, Color? backColor = null,
-            bool? backgroundVisible = null, Color? borderColor = null, bool? borderColorBW = null, bool? borderVisible = null, int? paddingPc = null, int? borderWidthPc = null, int? roundingPc = null)
+            bool? backgroundVisible = null, Color? borderColor = null, bool? borderColorBW = null, bool? borderVisible = null, int? padding = null, int? borderWidth = null, int? rounding = null)
         {
             SvgImageTextIcon textIcon = new SvgImageTextIcon()
             {
@@ -46,9 +70,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 BorderColor = borderColor,
                 BorderColorBW = borderColorBW,
                 BorderVisible = borderVisible,
-                PaddingPc = paddingPc,
-                BorderWidthPc = borderWidthPc,
-                RoundingPc = roundingPc
+                Padding = padding,
+                BorderWidth = borderWidth,
+                Rounding = rounding
             };
             string imageName = textIcon.SvgImageName;
             return imageName;
@@ -56,22 +80,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vrátí string definující ikonu s textem a danými parametry
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="textBold"></param>
-        /// <param name="textFont"></param>
-        /// <param name="textColorName"></param>
-        /// <param name="textColorBW"></param>
-        /// <param name="backColorName"></param>
-        /// <param name="backgroundVisible"></param>
-        /// <param name="borderColorName"></param>
-        /// <param name="borderColorBW"></param>
-        /// <param name="borderVisible"></param>
-        /// <param name="paddingPc"></param>
-        /// <param name="borderWidthPc"></param>
-        /// <param name="roundingPc"></param>
+        /// <param name="text">Písmeno (nebo dvě) zobrazené v ikoně</param>
+        /// <param name="textBold">Písmo Bold?</param>
+        /// <param name="textFont">Typ fontu</param>
+        /// <param name="textColorName">Definice barvy písma</param>
+        /// <param name="textColorBW">Pokud není daná barva písma <paramref name="textColorName"/>, pak se použije kontrastní k barvě pozadí <paramref name="backColorName"/>: černobílá nebo barevná?</param>
+        /// <param name="backColorName">Definice barvy pozadí ikony</param>
+        /// <param name="backgroundVisible">Pozadí ikony bude vykreslené?</param>
+        /// <param name="borderColorName">Definice barvy rámečku ikony</param>
+        /// <param name="borderColorBW">Pokud není daná barva rámečku <paramref name="borderColorName"/>, a rámeček je viditelný, pak se použije kontrastní k barvě pozadí <paramref name="backColorName"/>: černobílá nebo barevná?</param>
+        /// <param name="borderVisible">Rámeček bude viditelný? Bez ohledu na barvu a jeho definovanou šířku</param>
+        /// <param name="padding">Okraje kolem ikony (=zmenšení ikony proti jejímu prostoru): zadávají se pixely vzhledem k 32px ikoně (pro menší ikony se proporionálně zmenší a zarovná na celé pixely nahoru)</param>
+        /// <param name="borderWidth">Šířka borderu: zadávají se pixely vzhledem k 32px ikoně (pro menší ikony se proporionálně zmenší a zarovná na celé pixely nahoru)</param>
+        /// <param name="rounding">Zaoblení ikony, zadává se průměr kružnice v pixelech vzhledem k 32px ikoně (pro menší ikony se proporionálně zmenší a zarovná na celé pixely nahoru)</param>
         /// <returns></returns>
         public static string CreateImageName(string text, bool? textBold = null, TextFontType? textFont = null, string textColorName = null, bool? textColorBW = null, string backColorName = null,
-            bool? backgroundVisible = null, string borderColorName = null, bool? borderColorBW = null, bool? borderVisible = null, int? paddingPc = null, int? borderWidthPc = null, int? roundingPc = null)
+            bool? backgroundVisible = null, string borderColorName = null, bool? borderColorBW = null, bool? borderVisible = null, int? padding = null, int? borderWidth = null, int? rounding = null)
         {
             SvgImageTextIcon textIcon = new SvgImageTextIcon()
             {
@@ -85,9 +109,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 BorderColorName = borderColorName,
                 BorderColorBW = borderColorBW,
                 BorderVisible = borderVisible,
-                PaddingPc = paddingPc,
-                BorderWidthPc = borderWidthPc,
-                RoundingPc = roundingPc
+                Padding = padding,
+                BorderWidth = borderWidth,
+                Rounding = rounding
             };
             return textIcon.SvgImageName;
         }
@@ -160,7 +184,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                var font = this.TextFont ?? TextFontType.Default;
+                if (!this.TextFont.HasValue) return null;
+                var font = this.TextFont.Value;
                 switch (font)
                 {
                     case TextFontType.Default: return "";
@@ -288,39 +313,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         public bool? BorderVisible { get; set; }
         /// <summary>
         /// Volný prostor mezi fyzickým okrajem ikony a borderem (=Padding).<br/>
-        /// Defaultní hodnota (pokud bude null) je 5%.
+        /// Zadávají se pixely vzhledem k 32px ikoně (pro menší ikony se proporionálně zmenší a zarovná na celé pixely nahoru).
         /// <para/>
-        /// Hodnoty jsou uváděny v procentech velikosti celého prostoru ikony.<br/>
-        /// Validní rozsah je 0 až 100, 0 = ikona bude začínat hned na kraji prostoru, nebude to moc ladit s ostatními ikonami.<br/>
-        /// Hodnoty větší než 15% jsou nehezké.
-        /// <para/>
-        /// Záporné hodnoty určují prázdné okraje ikony (Padding) přímo v pixelech pro 32px ikonu. Pro menší ikonu (16 nebo 24) bude hodnota proporcionálně zmenšena a zarovnána na celé pixely nahoru, aby okraje byly výrazné.
+        /// Defaultní hodnota (pokud bude null) je 1px (32px ikona). Validní rozsah je 0 až 8.
         /// </summary>
-        public int? PaddingPc { get; set; }
+        public int? Padding { get; set; }
         /// <summary>
         /// Šířka borderu.<br/>
-        /// Defaultní hodnota (pokud bude null) je 3%.
+        /// Zadávají se pixely vzhledem k 32px ikoně (pro menší ikony se proporionálně zmenší a zarovná na celé pixely nahoru).
         /// <para/>
-        /// Hodnoty jsou uváděny v procentech velikosti celého prostoru ikony.<br/>
-        /// Validní rozsah je 0 až 100, 0 = nebude se kreslit.<br/>
-        /// Hodnoty větší než 10% jsou nehezké.
-        /// <para/>
-        /// Záporné hodnoty určují šířku linky rámečku přímo v pixelech pro 32px ikonu. Pro menší ikonu (16 nebo 24) bude hodnota proporcionálně zmenšena a zarovnána na celé pixely nahoru, aby okraje byly výrazné.
+        /// Defaultní hodnota (pokud bude null) je 1px (32px ikona). Validní rozsah je 0 až 8.
         /// </summary>
-        public int? BorderWidthPc { get; set; }
+        public int? BorderWidth { get; set; }
         /// <summary>
         /// Zaoblení rohů ikony.<br/>
-        /// Defaultní hodnota (pokud bude null) je 15%.
+        /// Zadávají se pixely vzhledem k 32px ikoně (pro menší ikony se proporionálně zmenší a zarovná na celé pixely nahoru).
         /// <para/>
-        /// Hodnoty jsou uváděny v procentech velikosti vlastní ikony (po odečtení <see cref="PaddingPc"/>).<br/>
-        /// Validní rozsah je 0 až 100:<br/>
-        /// 0 = ikona je čtvercová s ostrými rohy.<br/>
-        /// 15 = optimální hodnota.<br/>
-        /// 100 = kolečko
-        /// <para/>
-        /// Záporné hodnoty určují průměr kružnice kulaté ikony přímo v pixelech pro 32px ikonu. Pro menší ikonu (16 nebo 24) bude hodnota proporcionálně zmenšena a zarovnána na celé pixely nahoru, aby okraje byly výrazné.
+        /// Defaultní hodnota (pokud bude null) je 1px (32px ikona). Validní rozsah je 0 (hranatý čtverec) až 32 (kolečko).
         /// </summary>
-        public int? RoundingPc { get; set; }
+        public int? Rounding { get; set; }
         /// <summary>
         /// Typ písma
         /// </summary>
@@ -368,9 +379,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             SerializeColor("c", BorderColorDark);
             SerializeBool("O", BorderColorBW);
             SerializeBool("I", BorderVisible);
-            SerializeInt("D", PaddingPc);
-            SerializeInt("H", BorderWidthPc);
-            SerializeInt("R", RoundingPc);
+            SerializeInt("D", Padding);
+            SerializeInt("H", BorderWidth);
+            SerializeInt("R", Rounding);
             return SerializeResult();
         }
         /// <summary>
@@ -403,9 +414,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                         case "c": { BorderColorDark = DeserializeColor(value); break; }
                         case "O": { BorderColorBW = DeserializeBool(value); break; }
                         case "I": { BorderVisible = DeserializeBool(value); break; }
-                        case "D": { PaddingPc = DeserializeInt(value); break; }
-                        case "H": { BorderWidthPc = DeserializeInt(value); break; }
-                        case "R": { RoundingPc = DeserializeInt(value); break; }
+                        case "D": { Padding = DeserializeInt(value); break; }
+                        case "H": { BorderWidth = DeserializeInt(value); break; }
+                        case "R": { Rounding = DeserializeInt(value); break; }
                     }
                 }
             }
@@ -425,9 +436,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             BorderColor = null;
             BorderColorBW = null;
             BorderVisible = null;
-            PaddingPc = null;
-            BorderWidthPc = null;
-            RoundingPc = null;
+            Padding = null;
+            BorderWidth = null;
+            Rounding = null;
         }
         /// <summary>
         /// Kompletní záhlaví názvu ikony = <c>"@textargs"</c>
@@ -438,7 +449,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         internal const string Header = "textargs";
         #endregion
-        #region Validace dat = kontrola rozsahu a doplnění odvozených hodnot
+        #region Validace dat = kontrola rozsahu a doplnění odvozených hodnot   ==>   Tato část nepatří na server:
         /// <summary>
         /// Validuje data = namísto null dosadí defaulty, odvodí barvy, zajistí omezení číselných hodnot...<br/>
         /// Výsledkem je plně použitelná sada dat pro fyzickou tvorbu SVG ikony = nullable hodnoty mají hodnotu, barvy jsou naplněny.
@@ -464,15 +475,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             BackgroundVisible = getDefault(BackgroundVisible, true);
             BorderColorBW = getDefault(BorderColorBW, false);
             BorderVisible = getDefault(BorderVisible, true);
-            PaddingPc = getDefaultInt(PaddingPc, 5, -16, 100);
-            BorderWidthPc = getDefaultInt(BorderWidthPc, 3, -12, 100);
-            RoundingPc = getDefaultInt(RoundingPc, 15, -32, 100);
+            Padding = getDefaultInt(Padding, 1, 0, 8);
+            BorderWidth = getDefaultInt(BorderWidth, 1, 0, 8);
+            Rounding = getDefaultInt(Rounding, 8, 0, 32);
 
 
             //  Barvy a jejich vzájemné doplnění - jaká data máme k dispozici?
             bool hasText = !String.IsNullOrEmpty(Text);
             bool hasBackground = BackgroundVisible.Value;
-            bool hasBorder = BorderVisible.Value && BorderWidthPc.Value > 0;
+            bool hasBorder = BorderVisible.Value && BorderWidth.Value > 0;
             
             Color? textColor, backColor, borderColor;
 
@@ -573,7 +584,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Bázová třída, obsahuje support pro serializaci, deserializaci i validaci
     /// </summary>
-    public abstract class SvgImageIcon
+    internal abstract class SvgImageIcon
     {
         #region Factory
         /// <summary>
@@ -943,7 +954,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected const char Selimiter = '‼';
         #endregion
-        #region Color transformace
+        #region Color transformace   ==>   Tato část nepatří na server:
         /// <summary>
         /// Vrátí kontrastní barvu pro text, k barvě zadané pozadí <paramref name="baseColor"/>.
         /// <para/>
@@ -1026,7 +1037,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return 15d;
             }
         }
+        /// <summary>
+        /// Skoro černá barva, která ale neprovádí transformaci při změně skinu Světlý - Tmavý
+        /// </summary>
         protected static Color ColorBlack { get { return Color.FromArgb(16, 16, 16); } }
+        /// <summary>
+        /// Skoro bílá barva, která ale neprovádí transformaci při změně skinu Světlý - Tmavý
+        /// </summary>
         protected static Color ColorWhite { get { return Color.FromArgb(240, 240, 240); } }
         /// <summary>
         /// Vrátí barvu pro pozadí k dané barvě
@@ -1046,6 +1063,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         #endregion
     }
+    #endregion
     #endregion
 }
 

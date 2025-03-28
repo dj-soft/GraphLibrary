@@ -38,7 +38,7 @@ namespace TestDevExpress.Forms
             {
                 case 1:
                     imageName = "svgimages/dashboards/insertlistbox.svg";
-                    iconText = "I";
+                    iconText = "i";
                     iconBack = Color.LightYellow;
                     break;
                 case 2:
@@ -71,9 +71,7 @@ namespace TestDevExpress.Forms
             }
 
             this.ImageName = imageName;
-            this.ImageNameAdd = SvgImageTextIcon.CreateImageName(iconText, backColor: iconBack, textBold: isBold, roundingPc: 20, paddingPc: -2, borderWidthPc: -1);
-            SvgImageTextIcon.TryParse(this.ImageNameAdd, out var svgIcon);
-            svgIcon?.Validate();
+            this.ImageNameAdd = SvgImageTextIcon.CreateImageName(iconText, textFont: SvgImageTextIcon.TextFontType.Tahoma, backColor: iconBack, textBold: isBold, rounding: 6, padding: 2, borderWidth: 1);
         }
         protected override void Dispose(bool disposing)
         {

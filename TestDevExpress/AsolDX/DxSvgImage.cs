@@ -1358,14 +1358,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             textIcon.TextColorName = textColor;
             textIcon.TextFontName = fontFamily;
             textIcon.TextBold = isBold;
-            textIcon.RoundingPc = 0;
-            textIcon.PaddingPc = 0;
+            textIcon.Rounding = 0;
+            textIcon.Padding = 0;
             textIcon.BorderVisible = false;
             textIcon.BackgroundVisible = false;
 
             return _TryGetGenericSvgTextIcon(textIcon, sizeType, ref dxSvgImage);
-
-            // return _TryGetGenericSvgTextParts(imageName, text, sizeType, ref dxSvgImage, GenericTextParts.Text, textParam, fontFamily, isBold, null, "", "");
         }
         /// <summary>
         ///  Z dodané definice a pro danou velikost vygeneruje SvgImage obsahující text.
@@ -1418,88 +1416,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             textIcon.TextColorName = textColor;
             textIcon.TextFontName = fontFamily;
             textIcon.TextBold = isBold;
-            textIcon.RoundingPc = (round.HasValue ? (-2 * round.Value) : 0);             // Na vstupu je kulatost rohu v rozsahu 1-16, na výstupu bude 0 (hranatý) nebo -2 až -32 = exaktní pixely base 32
-            textIcon.PaddingPc = -2;
+            textIcon.Padding = 2;
+            textIcon.BorderWidth = 2;
+            textIcon.Rounding = (round.HasValue ? (2 * round.Value) : 0);             // Na vstupu je kulatost rohu v rozsahu 1-16, na výstupu bude 0 (hranatý) nebo 2 až 32 = exaktní pixely base 32
             textIcon.BackColorName = fillColor;
             textIcon.BorderColorName = borderColor;
             textIcon.BorderVisible = true;
             textIcon.BackgroundVisible = true;
 
             return _TryGetGenericSvgTextIcon(textIcon, sizeType, ref dxSvgImage);
-
-
-            // return _TryGetGenericSvgTextParts(imageName, text, sizeType, ref dxSvgImage, GenericTextParts.All, textParam, fontFamily, isBold, round, borderParam, fillParam);
-        }
-        /// <summary>
-        /// Z dodané definice a pro danou velikost vygeneruje SvgImage obsahující text.
-        /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="text"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="dxSvgImage"></param>
-        /// <param name="parts"></param>
-        /// <param name="textParam"></param>
-        /// <param name="fontFamily"></param>
-        /// <param name="isBold"></param>
-        /// <param name="round"></param>
-        /// <param name="borderParam"></param>
-        /// <param name="fillParam"></param>
-        /// <returns></returns>
-        private static bool _TryGetGenericSvgTextParts(string imageName, string text, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage, GenericTextParts parts,
-            string textParam, string fontFamily, bool isBold, int? round, string borderParam, string fillParam)
-        {
-            var imageSize = DxComponent.GetDefaultImageSize(sizeType);
-            int size = imageSize.Width;
-
-            TextInfo textInfo = new TextInfo(text, fontFamily, isBold, size, size - 2m);
-
-            string xmlHeader = _GetXmlBodyHeader(size);
-            string xmlStyles = _GetXmlElementDevExpressStyles();
-            string xmlTextBegin = parts.HasFlag(GenericTextParts.Text) ? textInfo.GetXmlGroupBegin() : "";
-
-            string borderStyle = (parts.HasFlag(GenericTextParts.Border) ? borderParam : "");
-            string fillStyle = (parts.HasFlag(GenericTextParts.Fill) ? fillParam : "");
-            decimal paddingPc = -1;                          // Pevně 1 pixel
-            decimal borderLinePc = -1;                       // Pevně 1 pixel
-            decimal diameterPc = (round.HasValue ? round.Value / 16m : 0m);
-            string xmlBackButton = _GetXmlPathButton(size, paddingPc, diameterPc, fillStyle, borderLinePc, borderStyle);
-
-            string xmlTextText = parts.HasFlag(GenericTextParts.Text) ? textInfo.GetXmlGroupText(textParam) : "";
-            string xmlFooter = _GetXmlBodyFooter();
-
-            string xmlContent = xmlHeader + xmlStyles + xmlTextBegin + xmlBackButton + xmlTextText + xmlFooter;
-            dxSvgImage = DxSvgImage.Create(text, DxSvgImagePaletteType.LightSkin, xmlContent);
-            dxSvgImage.SizeType = sizeType;
-            dxSvgImage.GenericSource = imageName;
-            return true;
-
-            /*     pro zadání    @text|OK    vygeneruje SVG:
-﻿<?xml version="1.0" encoding="UTF-8"?>
-<svg x="0" y="0" width="32" height="32" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" enable-background="new 0 0 32 32" xml:space="preserve" id="Layer_1">
-  <g id="icon">
-    <style type="text/css"> .White{fill:#FFFFFF;} .Red{fill:#D11C1C;} .Green{fill:#039C23;} .Blue{fill:#1177D7;} .Yellow{fill:#FFB115;} .Black{fill:#727272;} .st0{opacity:0.75;} .st1{opacity:0.5;} </style>
-    <g id="iconOK" style="font-size: 20px; text-anchor: middle; font-family: sans-serif; font-weight: 500">
-      <path d="M1,0h30c0.5,0,1,0.5,1,1v30c0,0.5,-0.5,1,-1,1h-30c-0.5,0,-1,-0.5,-1,-1v-30c0,-0.5,0.5,-1,1,-1z M1,1v30h30v-30h-30z" fill="#383838" />
-      <path d="M1,1h30v30h-30v-30z" fill="#FFFFFF" />
-      <text x="15" y="23" fill="#000000">OK</text>
-    </g>
-  </g>
-</svg>
-
-            */
-            /*     pro zadání    @text|OK|Black|B|Blue|White    vygeneruje SVG:
-﻿<?xml version="1.0" encoding="UTF-8"?>
-<svg x="0" y="0" width="32" height="32" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" enable-background="new 0 0 32 32" xml:space="preserve" id="Layer_1">
-  <g id="icon">
-    <style type="text/css"> .White{fill:#FFFFFF;} .Red{fill:#D11C1C;} .Green{fill:#039C23;} .Blue{fill:#1177D7;} .Yellow{fill:#FFB115;} .Black{fill:#727272;} .st0{opacity:0.75;} .st1{opacity:0.5;} </style>
-    <g id='iconOK' style='font-size: 18px; text-anchor: middle; font-family: ; font-weight: 600'>
-      <path d="M1,0h30c0.5,0,1,0.5,1,1v30c0,0.5,-0.5,1,-1,1h-30c-0.5,0,-1,-0.5,-1,-1v-30c0,-0.5,0.5,-1,1,-1z M2,2v28h28v-28h-28z" class="Blue" />
-      <path d="M2,2h28v28h-28v-28z" class="White" />
-      <text x='15' y='22' class='Black'>OK</text>
-    </g>
-  </g>
-</svg>
-            */
         }
         /// <summary>
         /// Částice ikony generickho textu
@@ -1548,7 +1473,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             bool hasText = (!String.IsNullOrEmpty(textIcon.Text));
             bool hasBackground = textIcon.BackgroundVisible.Value;
-            bool hasBorder = textIcon.BorderVisible.Value && textIcon.BorderWidthPc.Value > 0;
+            bool hasBorder = textIcon.BorderVisible.Value && textIcon.BorderWidth.Value > 0;
 
             // Záhlaví SVG:
             string xmlHeader = _GetXmlBodyHeader(size);
@@ -1561,7 +1486,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 string text = (textIcon.Text ?? "").Trim();
                 string fontFamily = textIcon.TextFontName;
-                _ValidateSvgPixelCoordinates(size, textIcon.PaddingPc.Value, textIcon.BorderWidthPc.Value, out decimal paddingPx, out decimal borderLinePx);
+                _ValidateSvgPixelCoordinates(size, textIcon.Padding.Value, textIcon.BorderWidth.Value, out decimal paddingPx, out decimal borderLinePx);
                 decimal width = size - (2m * paddingPx) - (2m * borderLinePx);
                 textInfo = new TextInfo(text, fontFamily, textIcon.TextBold.Value, size, width);
                 xmlTextBegin = hasText ? textInfo.GetXmlGroupBegin() : "";
@@ -1573,7 +1498,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 string borderStyle = getColorParam("fill", textIcon.BorderColor, textIcon.BorderColorDark, _GenericTextColorLightSkinBorder, _GenericTextColorDarkSkinBorder);
                 string fillStyle = getColorParam("fill", textIcon.BackColor, textIcon.BackColorDark, _GenericTextColorLightSkinFill, _GenericTextColorDarkSkinFill);
-                xmlBackButton = _GetXmlPathButton(size, textIcon.PaddingPc.Value, textIcon.RoundingPc.Value, fillStyle, textIcon.BorderWidthPc.Value, borderStyle);
+                xmlBackButton = _GetXmlPathButton(size, textIcon.Padding.Value, textIcon.Rounding.Value, fillStyle, textIcon.BorderWidth.Value, borderStyle);
             }
 
             // Čistý text - dokončení grupy, obsah textu a jeho styl:
@@ -1617,6 +1542,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             bool isSvgClassName(string colorValue)
             {
+                // Pro textové ikony nikdy nepoužívám class, protože by mi to paleta přebarvovala do jiné než očekávané barvy:
+                return false;
+
+                /*  nikoliv:
                 if (String.IsNullOrEmpty(colorValue)) return false;
                 var key = colorValue.Trim().ToLower();
                 switch (key)
@@ -1630,6 +1559,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         return true;
                 }
                 return false;
+                */
             }
         }
         /// <summary>
@@ -1663,8 +1593,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var textWidth = TextDimension.GetTextWidth(text, dfFont);
                 bool isWide = (textWidth >= 48);                               // Text je široký  (vstup WW vrací 52,  MM vrací 48)
 
-                // Pro široký text ("WWW") bude jeho velikost menší (=0.48) než pro běžný kratší text '"Lb"), ten bude mít písmo větší (0.52)  *  velikost prostoru
-                decimal coefSize = (isWide ? 0.58m : (increaseSize ? 0.85m : 0.70m));
+                // Pro široký text ("WW") bude jeho velikost menší (=0.48) než pro běžný kratší text '"Lb"), ten bude mít písmo větší (0.52)  *  velikost prostoru
+                decimal coefSize = (isWide ? 0.54m : (increaseSize ? 0.85m : 0.70m));
                 decimal fontSize = coefSize * width;                           // Velikost fontu v pixelech je odvozena od šířky prostoru pro písmo:
                 this.FontSize = GetText(fontSize, 1, "px");
 
@@ -1673,8 +1603,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.FontWeight = GetText(fontWeight, 0);
 
                 // Pozice písma X a Y je daná středem ikony (size) 
-                decimal coordX = 0.49m * size;
-                decimal coordY = 0.68m * size + (increaseSize ? (0.06m * size) : 0m);
+                decimal coordX = 0.50m * size;
+                decimal coordY = 0.70m * size + (increaseSize ? (0.05m * size) : 0m);
                 this.TextX = GetText(coordX, 1);
                 this.TextY = GetText(coordY, 1);
             }
@@ -1696,7 +1626,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <returns></returns>
             public string GetXmlGroupText(string textParam)
             {
-                _ValidateGenericDefinition(ref textParam, "class", "Black'");
                 string xmlResult = $@"      <text x='{this.TextX}' y='{this.TextY}' {textParam} text-rendering='optimizeLegibility' >{this.TextXml}</text>
     </g>
 ";
@@ -1889,35 +1818,35 @@ M22,22H10v2H22v-2z " class="Black" />
         }
         #endregion
         #region Tvorba XML elementů a jejich částí pro jednotlivá grafická data
-        private static void _ValidateSvgPixelCoordinates(decimal size, decimal paddingPc, decimal borderLinePc, out decimal paddingPx, out decimal borderLinePx)
+        private static void _ValidateSvgPixelCoordinates(decimal size, decimal padding, decimal borderLine, out decimal paddingPx, out decimal borderLinePx)
         {
-            _ValidateSvgPixelCoordinates(size, paddingPc, borderLinePc, 0, out paddingPx, out borderLinePx, out decimal _);
+            _ValidateSvgPixelCoordinates(size, padding, borderLine, 0, out paddingPx, out borderLinePx, out decimal _);
         }
-        private static void _ValidateSvgPixelCoordinates(decimal size, decimal paddingPc, decimal borderLinePc, decimal diameterPc, out decimal paddingPx, out decimal borderLinePx, out decimal diameterPx)
+        private static void _ValidateSvgPixelCoordinates(decimal size, decimal padding, decimal borderLine, decimal diameter, out decimal paddingPx, out decimal borderLinePx, out decimal diameterPx)
         {
-            paddingPx = getDimense(paddingPc, 0m, size / 4m);                  // Použitý Padding, v pixelech SVG
-            borderLinePx = getDimense(borderLinePc, 0m, size / 6m);            // Šířka linky borderu, v pixelech SVG
-            diameterPx = getDimense(diameterPc, 0m, size);                     // Průměr kružnice kulatých rohů, v pixelech SVG
+            paddingPx = getDimense(padding, 0m, size / 4m);                    // Použitý Padding, v pixelech SVG
+            borderLinePx = getDimense(borderLine, 0m, size / 6m);              // Šířka linky borderu, v pixelech SVG
+            diameterPx = getDimense(diameter, 0m, size);                       // Průměr kružnice kulatých rohů, v pixelech SVG
 
 
             // Vrátí zadanou hodnotu vyhodnocenou podle pravidel, pro aktuální velikost a zarovnanou pro dané rozmezí hodnot:
-            decimal getDimense(decimal valuePc, decimal min, decimal max)
+            decimal getDimense(decimal valueInp, decimal min, decimal max)
             {
                 // Pravidla pro hodnoty:
-                decimal value = valuePc;
+                decimal value = valueInp;
                 // a) Nula je nula a neupravuje se;
-                // b) Záporné číslo je pixel pro 32 ikonu; pro 16 ikonu se dělí 2 a zarovná na celé číslo nahoru:
-                if (valuePc < 0m)
+                // b) Záporné číslo převedeme na 0
+                // c) Kladné číslo je pixel pro 32 ikonu; upraví se na danou velikost a zarovná na celé číslo nahoru:
+                if (valueInp < 0m)
                 {
-                    value = -valuePc;
+                    value = 0;
+                }
+                else if (valueInp > 0m)
+                {   // Proporcionální přepočet pixelů z base 32 na aktuální velikost:
                     if (size != 32m)
-                        value = Math.Ceiling((size / 32m) * value);            // Proporcionální přepočet pixelů z base 32 na aktuální velikost
+                        value = Math.Ceiling((size / 32m) * value);
                 }
-                // c) Kladné číslo je počet procent z velikosti ikony, zarovná se na celé číslo nahoru:
-                else if (valuePc > 0m)
-                {
-                    value = Math.Ceiling(size * (valuePc / 100m));
-                }
+
                 // Každé číslo se zarovná do zadaných mezí:
                 return (value < min ? min : (value > max ? max : value));
             }
@@ -1926,19 +1855,19 @@ M22,22H10v2H22v-2z " class="Black" />
         /// Vrátí element path, ve tvaru obdélníku (s kulatými rohy) vepsaného do dané velikosti (size), s okraji (padding) o síle okraje (isBold ? 2 : 1).
         /// </summary>
         /// <param name="size"></param>
-        /// <param name="paddingPc">Prázdné okraje v procentech velikosti ikony 0-100.</param>
-        /// <param name="diameterPc">Kulatost rohů = průměr kruhu, v procentech velikosti ikony 0-100.</param>
+        /// <param name="padding">Prázdné okraje v pixelech (na 32px ikonu).</param>
+        /// <param name="diameter">Kulatost rohů v pixelech (na 32px ikonu).</param>
         /// <param name="fillStyle"></param>
-        /// <param name="borderLinePc">Šířka linky Borderu v procentech velikosti ikony 0-100.</param>
+        /// <param name="borderLine">Šířka linky Borderu v pixelech (na 32px ikonu).</param>
         /// <param name="borderStyle"></param>
         /// <returns></returns>
-        private static string _GetXmlPathButton(decimal size, decimal paddingPc, decimal diameterPc, string fillStyle, decimal borderLinePc, string borderStyle)
+        private static string _GetXmlPathButton(decimal size, decimal padding, decimal diameter, string fillStyle, decimal borderLine, string borderStyle)
         {
             _ValidateGenericDefinition(ref borderStyle);
             _ValidateGenericDefinition(ref fillStyle);
 
             // Vstupní rozměry převést na SvgPixely a validovat::
-            _ValidateSvgPixelCoordinates(size, paddingPc, borderLinePc, diameterPc, out decimal paddingPx, out decimal borderLinePx, out decimal diameterPx);
+            _ValidateSvgPixelCoordinates(size, padding, borderLine, diameter, out decimal paddingPx, out decimal borderLinePx, out decimal diameterPx);
 
             bool hasBorder = !String.IsNullOrEmpty(borderStyle) && borderLinePx > 0m;
             bool hasFill = !String.IsNullOrEmpty(fillStyle);

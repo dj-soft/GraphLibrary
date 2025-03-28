@@ -8761,6 +8761,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (_TryPrepareImageInfoForDocument(document, out var imageInfo))
             {
                 imageInfo.MainImageName = mainImageName;
+                imageInfo.RefreshIconSizes(imageInfo.Owner, document);
             }
         }
         /// <summary>
@@ -9258,6 +9259,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public void RefreshIconNames(DxTabHeaderImagePainter owner, DevExpress.XtraBars.Docking2010.Views.BaseDocument document)
             {
+                if (owner is null) return;
+
                 Control form = document?.Control;
                 if (form is IDxControlWithIcons iconsForm)
                 {
@@ -9276,6 +9279,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public void RefreshIconSizes(DxTabHeaderImagePainter owner, DevExpress.XtraBars.Docking2010.Views.BaseDocument document)
             {
+                if (owner is null || document is null) return;
+
                 var mainImageSize = owner.MainImageSize;
                 var leftImagesSize = mainImageSize;
                 var documentCaption = document.Control.Text;
@@ -9318,6 +9323,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="document"></param>
             public void RefreshDocument(DxTabHeaderImagePainter owner, DevExpress.XtraBars.Docking2010.Views.BaseDocument document)
             {
+                if (owner is null || document is null) return;
+
                 document.Caption = this.DocumentCaption;
                 document.ImageOptions.SvgImage = DxComponent.GetVectorImage(this.MainImageName, false, owner.MainImageSizeType);
                 document.ImageOptions.SvgImageSize = this.LeftImagesSize;

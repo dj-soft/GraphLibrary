@@ -35,7 +35,19 @@ namespace TestDevExpress.Forms
             Counter++;
 
             this.ImageName = "svgimages/spreadsheet/showcompactformpivottable.svg";
-            this.ImageNameAdd = $"@text|{znak}|{pair.Item1}|tahoma|B|4|{pair.Item1}|{pair.Item2}";
+            // Starý Nephrite:  this.ImageNameAdd = $"@text|{znak}|{pair.Item1}|tahoma|B|4|{pair.Item1}|{pair.Item2}";
+            // Nový Nephrite:
+            var iconData = new SvgImageTextIcon()
+            {
+                Text = znak,
+                TextBold = true,
+                TextFont = SvgImageTextIcon.TextFontType.Tahoma,
+                TextColorName = pair.Item1,
+                BackColorName = pair.Item2,
+                BorderColorName = pair.Item1,
+                Rounding = 8
+            };
+            this.ImageNameAdd = iconData.SvgImageName;
 
             WinReg.CurrentFolder = WinRegFolder.CreateForProcessView(Microsoft.Win32.RegistryHive.CurrentUser, @"Software\Asseco Solutions\TestDevExpress\Config");
 
