@@ -92,6 +92,28 @@ namespace TestDevExpress
                 get { return DxComponent.Settings.GetRawValue("UserSettings", "UsedPaletteName"); }
                 set { DxComponent.Settings.SetRawValue("UserSettings", "UsedPaletteName", value); }
             }
+            public override int? ZoomPercent 
+            {
+                get 
+                {
+                    string zoomText = DxComponent.Settings.GetRawValue("UserSettings", "UsedZoomPercent");
+                    if (!String.IsNullOrEmpty(zoomText) && Int32.TryParse(zoomText, out int zoomPc))
+                    {
+                        zoomPc = (zoomPc < 50 ? 50 : (zoomPc > 200 ? 200 : zoomPc));
+                        return zoomPc;
+                    }
+                    return null;
+                }
+                set
+                {
+                    if (value.HasValue)
+                    {
+                        int zoomPc = value.Value;
+                        zoomPc = (zoomPc < 50 ? 50 : (zoomPc > 200 ? 200 : zoomPc));
+                        DxComponent.Settings.SetRawValue("UserSettings", "UsedZoomPercent", zoomPc.ToString());
+                    }
+                }
+            }
         }
     }
 }

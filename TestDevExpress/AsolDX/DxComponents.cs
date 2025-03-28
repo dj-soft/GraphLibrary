@@ -11311,7 +11311,7 @@ White
     /// Potomek musí implementovat dvě property: <see cref="SkinName"/> a <see cref="PaletteName"/>, a nasměrovat je na svoji konfiguraci.
     /// Zdejší třída pak zajišťuje jejich napojení na GUI DevExpress.
     /// </summary>
-    public abstract class DxStyleToConfigListener : IListenerStyleChanged
+    public abstract class DxStyleToConfigListener : IListenerStyleChanged, IListenerZoomChange
     {
         /// <summary>
         /// Konstruktor s provedením automatické inicializace.
@@ -11361,6 +11361,10 @@ White
         /// GUI občas pošle událost <see cref="IListenerStyleChanged.StyleChanged()"/> i když k reálné změně nedochází.
         /// </summary>
         private string __LastPaletteName;
+        /// <summary>
+        /// Posledně uložený / načtený Zoom v procentech.
+        /// </summary>
+        private int? __LastZoomPercent;
 
         /// <summary>
         /// Jméno Skinu.
@@ -11384,7 +11388,14 @@ White
         /// </summary>
         public abstract string PaletteName { get; set; }
         /// <summary>
-        /// Aktivuje v GUI rozhraní skin daný <see cref="SkinName"/>, <see cref="SkinCompact"/> a <see cref="PaletteName"/>.
+        /// Zoom v procentech.
+        /// Potomek má v metodě 'get' přečíst hodnotu ze své konfigurace a vrátit ji, a v metodě 'set' má předanou hodnotu do své konfigurace vepsat.
+        /// <para/>
+        /// Setování hodnoty nezmění GUI. Změnu GUI provede metoda <see cref="ActivateConfigStyle"/>, která si načítá hodnoty <see cref="SkinName"/>, <see cref="SkinCompact"/> a <see cref="PaletteName"/>.
+        /// </summary>
+        public abstract int? ZoomPercent { get; set; }
+        /// <summary>
+        /// Aktivuje v GUI rozhraní skin daný <see cref="SkinName"/>, <see cref="SkinCompact"/>, <see cref="PaletteName"/>, <see cref="ZoomPercent"/>.
         /// </summary>
         public void ActivateConfigStyle()
         {
@@ -11393,10 +11404,12 @@ White
             string skinName = SkinName;
             bool skinCompact = SkinCompact;
             string paletteName = PaletteName;
-            _ActivateStyle(skinName, skinCompact, paletteName, false);
+            int? zoomPercent = ZoomPercent;
+            _ActivateStyle(skinName, skinCompact, paletteName, zoomPercent, false);
             __LastSkinName = skinName;
             __LastSkinCompact = skinCompact;
             __LastPaletteName = paletteName;
+            __LastZoomPercent = zoomPercent;
         }
         /// <summary>
         /// Aktivuje v GUI rozhraní explicitně daný Skin.
@@ -11407,7 +11420,16 @@ White
         /// <param name="paletteName"></param>
         public void ActivateStyle(string skinName, bool skinCompact, string paletteName)
         {
-            _ActivateStyle(skinName, skinCompact, paletteName, true);
+            _ActivateStyle(skinName, skinCompact, paletteName, null, true);
+        }
+        /// <summary>
+        /// Aktivuje v GUI rozhraní explicitně daný Zoom v procentech.
+        /// Uloží jej i do konfigurace (do properties <see cref="ZoomPercent"/>), jako by jej vybral uživatel.
+        /// </summary>
+        /// <param name="zoomPercent"></param>
+        public void ActivateZoomPercent(int? zoomPercent)
+        {
+            _ActivateStyle(null, false, null, zoomPercent, true);
         }
         /// <summary>
         /// Aktivuje v GUI rozhraní explicitně daný Skin.
@@ -11416,8 +11438,9 @@ White
         /// <param name="skinName"></param>
         /// <param name="skinCompact"></param>
         /// <param name="paletteName"></param>
+        /// <param name="zoomPercent"></param>
         /// <param name="storeToConfig"></param>
-        private void _ActivateStyle(string skinName, bool skinCompact, string paletteName, bool storeToConfig)
+        private void _ActivateStyle(string skinName, bool skinCompact, string paletteName, int? zoomPercent, bool storeToConfig)
         {
             bool isActivated = false;
             try
@@ -11430,6 +11453,13 @@ White
                     if (String.IsNullOrEmpty(paletteName)) paletteName = "DefaultSkinPalette";
                     DevExpress.LookAndFeel.UserLookAndFeel.Default.SetSkinStyle(skinName, paletteName);
                 }
+
+                if (zoomPercent.HasValue)
+                {
+                    DxComponent.Zoom = ((decimal)zoomPercent.Value) / 100m;
+                }
+
+
 
                 /*
                 DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = skinName;
@@ -11454,7 +11484,7 @@ White
             }
 
             if (storeToConfig && isActivated)
-                _StoreToConfig(skinName, skinCompact, paletteName);
+                _StoreToConfig(skinName, skinCompact, paletteName, zoomPercent);
         }
         /// <summary>
         /// Uloží jméno skinu a palety do konfigurace = do <see cref="SkinName"/> a <see cref="PaletteName"/>.
@@ -11462,14 +11492,25 @@ White
         /// <param name="skinName"></param>
         /// <param name="skinCompact"></param>
         /// <param name="paletteName"></param>
-        private void _StoreToConfig(string skinName, bool skinCompact, string paletteName)
+        /// <param name="zoomPercent"></param>
+        private void _StoreToConfig(string skinName, bool skinCompact, string paletteName, int? zoomPercent)
         {
-            SkinName = skinName;
-            SkinCompact = skinCompact;
-            PaletteName = paletteName;
-            __LastSkinName = skinName;
-            __LastSkinCompact = skinCompact;
-            __LastPaletteName = paletteName;
+            if (!String.IsNullOrEmpty(skinName))
+            {
+                SkinName = skinName;
+                SkinCompact = skinCompact;
+                PaletteName = paletteName;
+
+                __LastSkinName = skinName;
+                __LastSkinCompact = skinCompact;
+                __LastPaletteName = paletteName;
+            }
+            if (zoomPercent.HasValue)
+            {
+                ZoomPercent = zoomPercent;
+
+                __LastZoomPercent = zoomPercent;
+            }
         }
         /// <summary>
         /// Po změně skinu / palety v GUI
@@ -11480,7 +11521,19 @@ White
             {
                 DxSkinColorSet.ReadCurrentSkinPalette(out string skinName, out bool isCompact, out string paletteName);
                 if (!String.Equals(skinName, __LastSkinName) || (((bool?)isCompact) != __LastSkinCompact) || !String.Equals(paletteName, __LastPaletteName))
-                    _StoreToConfig(skinName, isCompact, paletteName);
+                    _StoreToConfig(skinName, isCompact, paletteName, null);
+            }
+        }
+        /// <summary>
+        /// Po změně Zoomu v GUI
+        /// </summary>
+        void IListenerZoomChange.ZoomChanged()
+        {
+            if (__IsInitialized && !__IsSupressEvent)
+            {
+                int? zoomPercent = (int)(Math.Round(100m * DxComponent.Zoom, 0));
+                if (zoomPercent != __LastZoomPercent)
+                    _StoreToConfig(null, false, null, zoomPercent);
             }
         }
     }

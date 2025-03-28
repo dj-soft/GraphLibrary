@@ -8243,7 +8243,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     ToolTipText = "Nastavuje měřítko",
                     ItemType = RibbonItemType.Menu,
                     RibbonStyle = RibbonItemStyles.Large,
-                    ImageName = "svgimages/pdf%20viewer/marqueezoom.svg",
+                    ImageName = _ZoomImageName,
                     ClickAction = null,
                     SubItems = createZoomItems()
                 });
@@ -8265,36 +8265,83 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             ListExt<IRibbonItem> createZoomItems()
             {
+                int zoom = _ZoomPct;
                 var zoomItems = new ListExt<IRibbonItem>();
-                var zooms = new int[] { 50, 75, 80, 90, 100, 105, 110, 125, 150, 175, 200 };
-                foreach (var zoom in zooms)
-                    zoomItems.Add(new DataRibbonItem() { Text = $"{zoom}%", ItemId = $"{DesignRibbonItemZoomValue}{zoom}", Tag = zoom, ClickAction = _ZoomItemClick, RibbonStyle = RibbonItemStyles.SmallWithText });
-                _ZoomItemsRefresh(zoomItems);
+                var zoomValues = new int[] { 50, 75, 80, 90, 100, 105, 110, 125, 150, 175, 200 };
+                foreach (var zoomValue in zoomValues)
+                {
+                    bool isActive = (zoomValue == zoom);
+                    zoomItems.Add(new DataRibbonItem() 
+                    { 
+                        Text = $"{zoomValue}%",
+                        ItemId = $"{DesignRibbonItemZoomValue}{zoomValue}", 
+                        Tag = zoomValue, 
+                        ClickAction = _ZoomItemClick,
+                        RibbonStyle = RibbonItemStyles.SmallWithText,
+                        ImageName = (isActive ? _ZoomImageName : null),
+                        FontStyle = (isActive ? FontStyle.Bold : FontStyle.Regular) 
+                    });
+                }
                 return zoomItems;
             }
         }
+        /// <summary>
+        /// Obsluha kliknutí na Zoom položku
+        /// </summary>
+        /// <param name="menuItem"></param>
         private static void _ZoomItemClick(IMenuItem menuItem)
         {
             if (menuItem != null && menuItem.ItemId != null && menuItem.ItemId.StartsWith(DesignRibbonItemZoomValue) && menuItem.Tag is int zoom)
             {
                 if (zoom >= 50 && zoom <= 200)
-                    _ZoomPct = zoom;
+                    _ZoomPct = zoom;                       // Vizuální návaznost do prvků GUI Ribbonu zajistí systém (pomocí IListenerZoomChange.ZoomChanged => _ZoomItemsRefresh()).
             }
         }
-        private static void _ZoomItemsRefresh(IEnumerable<IRibbonItem> zoomItems)
-        {
-            if (zoomItems is null) return;
-            int zoom = _ZoomPct;
-
-
-        }
+        /// <summary>
+        /// Refresh standardních prvků Ribbonu pro zobrazení Zoom
+        /// </summary>
         private void _ZoomItemsRefresh()
         {
-            if (this.Items.TryGetFirst(i => i.Name == DesignRibbonItemZoomTrackbarId, out var zoomMenu))
-            { }
+            if (!(this.Items.TryGetFirst(i => i.Name == DesignRibbonItemZoomTrackbarId, out var zoomMenu))) return;
+
+            int zoom = _ZoomPct;
+
+            // Hlavní prvek menu: jeho text odpovídá Zoom% :
+            string text = $"{zoom}%";
+            zoomMenu.Caption = text;
+            if (zoomMenu.Tag is DxRibbonControl.BarItemTagInfo tagInfo)
+            {   // Jeho datový podklad (DataRibbonItem) = změníme i jeho text:
+                if (tagInfo.Data is DataRibbonItem dataRibbonItem)
+                    dataRibbonItem.Text = text;
+            }
+
+            // Subpoložky menu: aktualizujeme ikonu a styl písma podle aktuálního Zoomu:
+            if (zoomMenu is BarSubItem barSubItem)
+            {
+                var subItems = barSubItem.ItemLinks;
+                if (subItems != null)
+                {
+                    foreach (BarItemLink subItemLink in subItems)
+                    {
+                        var subItem = subItemLink.Item;
+                        if (subItem.Name.StartsWith(DesignRibbonItemZoomValue) && subItem.Tag is DxRibbonControl.BarItemTagInfo tagSubInfo && tagSubInfo.Data.Tag is int)
+                        {
+                            if (tagSubInfo.Data is DataRibbonItem subDataRibbonItem)
+                            {
+                                var subItemZoom = (int)(subDataRibbonItem.Tag);
+                                bool isActive = (subItemZoom == zoom);
+                                subDataRibbonItem.FontStyle = (isActive ? FontStyle.Bold : FontStyle.Regular);
+                                subDataRibbonItem.ImageName = (isActive ? _ZoomImageName : null);
+                                DxComponent.FillBarItemFrom(subItem, subDataRibbonItem, 1);
+                            }
+                        }
+                    }
+                }
+            }
         }
+        private static string _ZoomImageName { get { return "svgimages/pdf%20viewer/marqueezoom.svg"; } }
         /// <summary>
-        /// Aktuální systémvý zoom v procentech
+        /// Aktuální systémový zoom v procentech
         /// </summary>
         private static int _ZoomPct
         {
