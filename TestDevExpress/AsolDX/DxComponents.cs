@@ -11512,6 +11512,16 @@ White
                 __LastZoomPercent = zoomPercent;
             }
         }
+
+        /// <summary>
+        /// Po změně stylu oproti Configu. Hodnoty jsou již uloženy.
+        /// </summary>
+        protected virtual void OnStyleChanged() { }
+        /// <summary>
+        /// Po změně Zoomu oproti Configu. Hodnoty jsou již uloženy.
+        /// </summary>
+        protected virtual void OnZoomPercentChanged() { }
+
         /// <summary>
         /// Po změně skinu / palety v GUI
         /// </summary>
@@ -11521,7 +11531,10 @@ White
             {
                 DxSkinColorSet.ReadCurrentSkinPalette(out string skinName, out bool isCompact, out string paletteName);
                 if (!String.Equals(skinName, __LastSkinName) || (((bool?)isCompact) != __LastSkinCompact) || !String.Equals(paletteName, __LastPaletteName))
+                {
                     _StoreToConfig(skinName, isCompact, paletteName, null);
+                    OnStyleChanged();
+                }
             }
         }
         /// <summary>
@@ -11533,7 +11546,10 @@ White
             {
                 int? zoomPercent = (int)(Math.Round(100m * DxComponent.Zoom, 0));
                 if (zoomPercent != __LastZoomPercent)
+                {
                     _StoreToConfig(null, false, null, zoomPercent);
+                    OnZoomPercentChanged();
+                }
             }
         }
     }

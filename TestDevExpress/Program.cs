@@ -31,6 +31,7 @@ namespace TestDevExpress
                 // Nastavíme Config skin a budeme sledovat změny aktivního skinu a ukládat jej do configu:
                 var styleListener = new SkinConfigStyle();
                 styleListener.ActivateConfigStyle();
+                styleListener.RefreshDxFontForZoom();
 
                 string uhdPaint = DxComponent.Settings.GetRawValue("Components", DxComponent.UhdPaintEnabledCfgName);
                 DxComponent.UhdPaintEnabled = (uhdPaint != null && uhdPaint == "True");
@@ -113,6 +114,19 @@ namespace TestDevExpress
                         DxComponent.Settings.SetRawValue("UserSettings", "UsedZoomPercent", zoomPc.ToString());
                     }
                 }
+            }
+
+            protected override void OnZoomPercentChanged()
+            {
+                RefreshDxFontForZoom();
+            }
+            public void RefreshDxFontForZoom()
+            {
+                base.OnZoomPercentChanged();
+
+                var currentFont = DevExpress.XtraEditors.WindowsFormsSettings.DefaultFont;
+                float emSize = (float)(8.25m * DxComponent.Zoom);
+                DevExpress.XtraEditors.WindowsFormsSettings.DefaultFont = new System.Drawing.Font(currentFont.FontFamily, emSize, currentFont.Style);
             }
         }
     }
