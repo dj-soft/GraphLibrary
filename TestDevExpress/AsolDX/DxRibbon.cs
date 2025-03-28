@@ -8235,6 +8235,19 @@ namespace Noris.Clients.Win.Components.AsolDX
                     ClickAction = _SetNotCaptureWindows
                 });
 
+            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.ZoomTrackbar))
+                iGroup.Items.Add(new DataRibbonItem()
+                {
+                    ItemId = DesignRibbonItemZoomTrackbarId,
+                    Text = $"{_ZoomPct}%",
+                    ToolTipText = "Nastavuje měřítko",
+                    ItemType = RibbonItemType.Menu,
+                    RibbonStyle = RibbonItemStyles.Large,
+                    ImageName = "svgimages/pdf%20viewer/marqueezoom.svg",
+                    ClickAction = null,
+                    SubItems = createZoomItems()
+                });
+
             if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.ImageGallery))
                 iGroup.Items.Add(new DataRibbonItem()
                 {
@@ -8248,6 +8261,45 @@ namespace Noris.Clients.Win.Components.AsolDX
                 });
 
             return iGroup;
+
+
+            ListExt<IRibbonItem> createZoomItems()
+            {
+                var zoomItems = new ListExt<IRibbonItem>();
+                var zooms = new int[] { 50, 75, 80, 90, 100, 105, 110, 125, 150, 175, 200 };
+                foreach (var zoom in zooms)
+                    zoomItems.Add(new DataRibbonItem() { Text = $"{zoom}%", ItemId = $"{DesignRibbonItemZoomValue}{zoom}", Tag = zoom, ClickAction = _ZoomItemClick, RibbonStyle = RibbonItemStyles.SmallWithText });
+                _ZoomItemsRefresh(zoomItems);
+                return zoomItems;
+            }
+        }
+        private static void _ZoomItemClick(IMenuItem menuItem)
+        {
+            if (menuItem != null && menuItem.ItemId != null && menuItem.ItemId.StartsWith(DesignRibbonItemZoomValue) && menuItem.Tag is int zoom)
+            {
+                if (zoom >= 50 && zoom <= 200)
+                    _ZoomPct = zoom;
+            }
+        }
+        private static void _ZoomItemsRefresh(IEnumerable<IRibbonItem> zoomItems)
+        {
+            if (zoomItems is null) return;
+            int zoom = _ZoomPct;
+
+
+        }
+        private void _ZoomItemsRefresh()
+        {
+            if (this.Items.TryGetFirst(i => i.Name == DesignRibbonItemZoomTrackbarId, out var zoomMenu))
+            { }
+        }
+        /// <summary>
+        /// Aktuální systémvý zoom v procentech
+        /// </summary>
+        private static int _ZoomPct
+        {
+            get { return (int)(100m * DxComponent.Zoom); }
+            set { DxComponent.Zoom = (decimal)value / 100m; }
         }
         internal const string DesignRibbonGroupId = "_SYS__DevExpress_Design";
         internal const string DesignRibbonItemSkinSetId = "_SYS__DevExpress_SkinSetDropDown";
@@ -8257,7 +8309,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal const string DesignRibbonItemLogImageGallery = "_SYS__DevExpress_DxImageGallery";
         internal const string DesignRibbonItemLogActivityId = "_SYS__DevExpress_SetLogActivity";
         internal const string DesignRibbonItemNotCaptureWindowsId = "_SYS__DevExpress_SetNotCaptureWindows";
-
+        internal const string DesignRibbonItemZoomTrackbarId = "_SYS__DevExpress_ZoomTrackbar";
+        internal const string DesignRibbonItemZoomValue = "_SYS__DevExpress_ZoomValue_";
 
         /// <summary>
         /// Nastaví UHD paint. Pouze v Testovací aplikaci.
@@ -8341,6 +8394,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Zoomuje se jen velikost textu.
 
             // this.ReloadImages();
+            this._ZoomItemsRefresh();
         }
         private void ReloadImages()
         {

@@ -21,8 +21,8 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     internal class CurrentSystemAdapter : ISystemAdapter
     {
-        event EventHandler ISystemAdapter.InteractiveZoomChanged { add { } remove { } }
-        decimal ISystemAdapter.ZoomRatio { get { return 1.0m; } }
+        event EventHandler ISystemAdapter.InteractiveZoomChanged { add { __InteractiveZoomChanged += value; } remove { __InteractiveZoomChanged -= value; } }
+        decimal ISystemAdapter.ZoomRatio { get { return _ZoomRatio; } set { _ZoomRatio = value; } }
         string ISystemAdapter.GetMessage(MsgCode messageCode, params object[] parameters) { return AdapterSupport.GetMessage(messageCode, parameters); }
         StyleInfo ISystemAdapter.GetStyleInfo(string styleName, Color? exactAttributeColor) { return AdapterSupport.GetStyleInfo(styleName, exactAttributeColor); }
         bool ISystemAdapter.IsPreferredVectorImage { get { return true; } }
@@ -46,6 +46,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="keyword"></param>
         /// <param name="arguments"></param>
         IDisposable ISystemAdapter.TraceTextScope(TraceLevel level, Type type, string method, string keyword, params object[] arguments) { return null; }
+        /// <summary>
+        /// Zoom: setování nové hodnoty vyvolá event
+        /// </summary>
+        private decimal _ZoomRatio
+        {
+            get { return __ZoomRatio; }
+            set
+            {
+                var zoom = (value < 0.50m ? 0.50m : (value > 2.00m ? 2.00m : value));
+                if (zoom != _ZoomRatio)
+                {
+                    __ZoomRatio = zoom;
+                    __InteractiveZoomChanged?.Invoke(this, new EventArgs());
+                }
+            }
+        }
+        private decimal __ZoomRatio = 1.0m;
+        private EventHandler __InteractiveZoomChanged;
     }
     /// <summary>
     /// Rozhraní předepisuje metodu <see cref="HandleEscapeKey()"/>, která umožní řešit klávesu Escape v rámci systému

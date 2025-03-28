@@ -1471,7 +1471,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aktuální hodnota Zoomu. Defaultní hodnota = 1.00, což odpovídá 100%.
         /// </summary>
-        internal static decimal Zoom { get { return Instance.__Zoom; } }
+        internal static decimal Zoom { get { return Instance._Zoom; } set { Instance._Zoom = value; } }
         /// <summary>
         /// Hodnota DPI, ke které se vztahují velikosti prvků zadávané jako DesignBounds.
         /// Reálná velikost prvků se pak konvertuje na cílové DPI monitoru.
@@ -1483,10 +1483,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aktuální hodnota (<see cref="Zoom"/> / <see cref="DesignDpi"/>), slouží k rychlému přepočtu Design souřadnic na cílové souřadnice v aktuálním Zoomu a TargetDPI.
         /// </summary>
         internal static decimal ZoomDpi { get { return Instance.__ZoomDpi; } }
+
         /// <summary>
         /// Reload hodnoty Zoomu
         /// </summary>
         internal static void ReloadZoom() { Instance._ReloadZoom(); }
+        /// <summary>
+        /// Aktuální hodnota Zoomu. Defaultní hodnota = 1.00, což odpovídá 100%.
+        /// </summary>
+        private decimal _Zoom
+        {
+            get { return __Zoom; }
+            set
+            {
+                var zoom = (value < 0.50m ? 0.50m : (value > 2.00m ? 2.00m : value));
+                if (zoom != _Zoom)
+                {
+                    SystemAdapter.ZoomRatio = zoom;
+                    _ReloadZoom();
+                }
+            }
+        }
         /// <summary>
         /// Reload hodnoty Zoomu uvnitř instance
         /// </summary>
@@ -9625,7 +9642,7 @@ White
         /// <summary>
         /// Aktuálně platný Zoom, kde 1.0 = 100%; 1.25 = 125% atd
         /// </summary>
-        public static decimal ZoomRatio { get { return Current.ZoomRatio; } }
+        public static decimal ZoomRatio { get { return Current.ZoomRatio; } set { Current.ZoomRatio = value; } }
         /// <summary>
         /// Lokalizace daného stringu a parametrů
         /// </summary>
@@ -9732,7 +9749,7 @@ White
         /// <summary>
         /// Aktuálně platný Zoom, kde 1.0 = 100%; 1.25 = 125% atd
         /// </summary>
-        decimal ZoomRatio { get; }
+        decimal ZoomRatio { get; set; }
         /// <summary>
         /// Lokalizace daného stringu a parametrů
         /// </summary>

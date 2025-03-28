@@ -979,6 +979,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zakázat zachycování oken (Capture: Printscreen / Recording / Teams)
         /// </summary>
         NotCaptureWindows = 0x0080,
+        /// <summary>
+        /// Zoom
+        /// </summary>
+        ZoomTrackbar = 0x0100,
 
         /// <summary>
         /// Základ = <see cref="SkinButton"/> + <see cref="PaletteButton"/> + <see cref="ImageGallery"/>
@@ -991,7 +995,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Všechno = <see cref="SkinButton"/> + <see cref="PaletteButton"/> + <see cref="UhdSupport"/> + <see cref="ImageGallery"/> + <see cref="LogActivity"/>
         /// </summary>
-        All = SkinButton | PaletteButton | UhdSupport | ImageGallery | LogActivity | NotCaptureWindows,
+        All = SkinButton | PaletteButton | UhdSupport | ImageGallery | LogActivity | NotCaptureWindows | ZoomTrackbar
     }
     /// <summary>
     /// Režim viditelnosti titulkového řádku okna a Ribbonu

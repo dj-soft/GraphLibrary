@@ -501,7 +501,6 @@ namespace Noris.Clients.Win.Components
     /// <summary>
     /// Rozhraní pro objekt, který si sám dokáže disposovat svoje controly.
     /// Metoda <see cref="IDisposableContainer.DisposeControls()"/> se pak vyvolá 
-    /// v procesu <see cref="Globals.DisposeControls(Control, bool, Control, ContainerControl, bool)"/>
     /// namísto toho, aby se volala metoda <see cref="IDisposable.Dispose()"/> jednotlivých controlů.
     /// </summary>
     public interface IDisposableContainer
