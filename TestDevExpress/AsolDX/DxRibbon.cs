@@ -8263,11 +8263,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             return iGroup;
 
 
+            // Vytvoří seznam prvků Ribbonu pro nabídku položek Zoomu
             ListExt<IRibbonItem> createZoomItems()
             {
                 int zoom = _ZoomPct;
                 var zoomItems = new ListExt<IRibbonItem>();
-                var zoomValues = new int[] { 50, 75, 80, 90, 100, 105, 110, 125, 150, 175, 200 };
+                var zoomValues = _ZoomValues;
                 foreach (var zoomValue in zoomValues)
                 {
                     bool isActive = (zoomValue == zoom);
@@ -8285,6 +8286,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return zoomItems;
             }
         }
+        /// <summary>
+        /// Hodnoty Zoomu v nabídce v Ribbonu
+        /// </summary>
+        private static int[] _ZoomValues { get { return new int[] { 50, 60, 75, 80, 90, 100, 105, 110, 125, 150, 175, 200 }; } }
         /// <summary>
         /// Obsluha kliknutí na Zoom položku
         /// </summary>
