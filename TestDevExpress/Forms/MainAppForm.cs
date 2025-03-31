@@ -32,6 +32,19 @@ namespace TestDevExpress.Forms
 
             this.Text = $"Test DevExpress [{DxComponent.FrameworkName}]";
 
+            var ribbonContent = new DataRibbonContent();
+
+            ribbonContent.Pages.AddRange(_CreateRibbonPages());
+            ribbonContent.StatusBarItems.AddRange(_CreateStatusItems());
+
+            this.DxRibbon.RibbonContent = ribbonContent;
+            this.DxRibbon.AllowCustomization = true;
+
+            this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
+        }
+
+        private List<DataRibbonPage> _CreateRibbonPages()
+        {
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
 
             DataRibbonPage homePage = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.All);
@@ -45,11 +58,26 @@ namespace TestDevExpress.Forms
 
             RunFormInfo.CreateRibbonPages(runFormInfos, pages, homePage);
 
-            this.DxRibbon.AddPages(pages, true);
-            this.DxRibbon.AllowCustomization = true;
-
-            this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
+            return pages;
         }
+
+        private List<DataRibbonItem> _CreateStatusItems()
+        {
+            string statText = $"Vyhledání aktivních formulářů s metodou RunFormInfo.GetFormsWithProperty(): čas = {__FormLoadTime.TotalMilliseconds:N0} ms";
+            _StatusVersionItem = new DataRibbonItem() { ItemId = "StatusVersion", ItemType = RibbonItemType.Static, Text = "Ver. 1.0.0", ImageName = "svgimages/icon%20builder/actions_info.svg" };
+            _StatusMainInfoItem = new DataRibbonItem() { ItemId = "StatusVersionInfo", ItemType = RibbonItemType.Static, Text = statText, ImageName = "", ImageFromCaptionMode = ImageFromCaptionType.Disabled };
+            _StatusZoomLabelItem = new DataRibbonItem() { ItemId = "StatusZoomLabel", ItemType = RibbonItemType.Static, Text = "Měřítko", ImageName = "", ImageFromCaptionMode = ImageFromCaptionType.Disabled, Alignment = BarItemAlignment.Right };
+            _StatusZoomMenuItem = new DataRibbonItem() { ItemId = "StatusZoomLabel", ItemType = RibbonItemType.ZoomPresetMenu, Text = "100%", ImageName = "", ImageFromCaptionMode = ImageFromCaptionType.Disabled, Alignment = BarItemAlignment.Right };
+            var statusItems = new List<DataRibbonItem>();
+            statusItems.Add(_StatusVersionItem);
+            statusItems.Add(_StatusMainInfoItem);
+            statusItems.Add(_StatusZoomLabelItem);
+            return statusItems;
+        }
+        private DataRibbonItem _StatusVersionItem;
+        private DataRibbonItem _StatusMainInfoItem;
+        private DataRibbonItem _StatusZoomLabelItem;
+        private DataRibbonItem _StatusZoomMenuItem;
         /// <summary>
         /// Kliknutí na Ribbon
         /// </summary>
@@ -70,6 +98,7 @@ namespace TestDevExpress.Forms
         /// </summary>
         protected override void DxStatusPrepare()
         {
+            /*
             // nevoláme:  base.DxStatusPrepare();
             __StatusVersionLabel = new DevExpress.XtraBars.BarStaticItem();
             __StatusInfoLabel = new DevExpress.XtraBars.BarStaticItem();
@@ -77,6 +106,7 @@ namespace TestDevExpress.Forms
             this.DxStatusBar.ItemLinks.Add(__StatusInfoLabel);
 
             StatusInfoText = $"Vyhledání aktivních formulářů s metodou RunFormInfo.GetFormsWithProperty(): čas = {__FormLoadTime.TotalMilliseconds:N0} ms";
+            */
         }
         /// <summary>
         /// Text v prvním poli StatusBaru

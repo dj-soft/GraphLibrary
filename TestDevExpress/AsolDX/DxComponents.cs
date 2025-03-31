@@ -3750,6 +3750,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                     var barPalette = new DevExpress.XtraBars.SkinPaletteDropDownButtonItem();
                     barItem = barPalette;
                     break;
+                case RibbonItemType.ZoomPresetMenu:
+                    var zoomPresetMenu = new DxZoomMenuBarSubItem(ribbonItem, barManager);
+                    barItem = zoomPresetMenu;
+                    break;
                 case RibbonItemType.Header:
                     var barHeader = _CreateBarItemHeader(ribbonItem, barManager, level);
                     barHeader.MultiColumn = DefaultBoolean.False;

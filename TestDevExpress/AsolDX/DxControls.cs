@@ -8619,6 +8619,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             SecondImagePosition = ImagePositionType.None;
             MainImageSizeType = ResourceImageSizeType.Medium;
             SecondImageSizeType = ResourceImageSizeType.Medium;
+            __LeftIconsDesignPadding = new Padding(0, 2, 0, 1);
             DxComponent.RegisterListener(this);
         }
         /// <summary>
@@ -8727,6 +8728,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public Size SecondImageSize { get { return DxComponent.GetImageSize(this.SecondImageSizeType, true, CurrentDpi); } }
         /// <summary>
+        /// Aktuální Padding (akceptující Zoom a DPI) okolo ikon v levém okraji. Tento Padding je přidáván k velikosti ikon <see cref="MainImageSize"/> a <see cref="SecondImageSize"/> do <see cref="ImageInfo.LeftImagesSize"/>, 
+        /// tak aby DevExpress tento prostor rezervoval (zvětší se tím TabHeader).
+        /// Následně je ikona kreslena dovnitř daného prostoru pro ikonu, odsazená právě o tento Padding <see cref="LeftIconsPadding"/>.
+        /// </summary>
+        public Padding LeftIconsPadding 
+        { 
+            get 
+            { 
+                if (!__LeftIconsCurrentPadding.HasValue)
+                    __LeftIconsCurrentPadding = DxComponent.ZoomToGui(__LeftIconsDesignPadding, this.CurrentDpi ?? 96);
+                return __LeftIconsCurrentPadding.Value;
+            }
+        }
+        private Padding? __LeftIconsCurrentPadding;
+        private Padding __LeftIconsDesignPadding;
+        /// <summary>
         /// Pozice přidané ikony
         /// </summary>
         public ImagePositionType SecondImagePosition { get; set; }
@@ -8814,6 +8831,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _RefreshIconSizes()
         {
+            __LeftIconsCurrentPadding = null;
             var documents = TabbedView?.Documents;
             if (documents is null) return;
 
@@ -9060,7 +9078,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             e.Handled = true;
         }
-        private static Rectangle _GetBoundsInMainArea(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e, Size iconSize, IconPositionType position)
+        /// <summary>
+        /// Vrátí souřadnice pro ikonu v prostoru Main ikony = před textem vlevo.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="iconSize"></param>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        private Rectangle _GetBoundsInMainArea(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e, Size iconSize, IconPositionType position)
         {
             var imageBounds = e.TabHeaderInfo.Image;
             var imageCenter = imageBounds.Center();
@@ -9078,12 +9103,19 @@ namespace Noris.Clients.Win.Components.AsolDX
                     imageCX = imageBounds.Right - (iconSize.Width / 2);
                     break;
             }
+
+            // Střed posuneme o Padding levé ikony:
+            var leftIconsPadding = this.LeftIconsPadding;
+            imageCX += leftIconsPadding.Left;
+            imageCY += leftIconsPadding.Top;
+
+            // Střed, a kompletní souřadnice:
             imageCenter = new Point(imageCX, imageCY);
             var result = imageCenter.CreateRectangleFromCenter(iconSize);
             return result;
         }
         /// <summary>
-        /// Vrátí souřadnice pro doplňkovou ikonu. 
+        /// Vrátí souřadnice pro doplňkovou ikonu v prostoru ControlBoxu = tlačítka vpravo (Pin, Close button).
         /// Souřadnice jsou v místě zadaného tlačítka v rámci prostoru Buttons = vpravo (Close nebo Pin), anebo uprostřed tohoto prostoru, podle <paramref name="position"/>.
         /// </summary>
         /// <param name="e"></param>
@@ -9221,9 +9253,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private enum IconPositionType
         {
+            /// <summary>
+            /// Před levým okrajem vlevo
+            /// </summary>
             BeforeLeft,
+            /// <summary>
+            /// Vlevo uvnitř prostoru
+            /// </summary>
             Left,
+            /// <summary>
+            /// Střed uvnitř prostoru
+            /// </summary>
             Center,
+            /// <summary>
+            /// Vpravo uvnitř prostoru
+            /// </summary>
             Right
         }
         #endregion
@@ -9309,8 +9353,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                 }
 
-                //    diskutabilní :  leftImagesSize = leftImagesSize.Enlarge(2, 2);
-                
+                // Velikost ikony vlevo zvětšíme o Padding levé ikony, ten deklaruje owner:
+                var leftIconsPadding = owner.LeftIconsPadding;
+                leftImagesSize = leftImagesSize.Add(leftIconsPadding);
+
+                // Uložíme si:
                 this.MainImageSize = mainImageSize;
                 this.SecondImageSize = secondImageSize;
                 this.LeftImagesSize = leftImagesSize;

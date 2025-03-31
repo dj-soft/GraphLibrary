@@ -3799,6 +3799,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                     barItem = new DevExpress.XtraBars.SkinPaletteRibbonGalleryBarItem();
                     this.Items.Add(barItem);
                     break;
+                case RibbonItemType.ZoomPresetMenu:
+                    count++;
+                    barItem = new DxZoomMenuBarSubItem(iRibbonItem, this.Manager);
+                    this.Items.Add(barItem);
+                    break;
                 case RibbonItemType.ComboListBox:
                     count++;
                     BarItem comboItem = CreateComboListBoxItem(iRibbonItem, level, dxGroup);
@@ -4106,6 +4111,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case RibbonItemType.SkinSetDropDown: return null;
                 case RibbonItemType.SkinPaletteDropDown: return null;
                 case RibbonItemType.SkinPaletteGallery: return null;
+                case RibbonItemType.ZoomPresetMenu: return null;
                 case RibbonItemType.ComboListBox: return RibbonItemType.ComboListBox;
                 case RibbonItemType.RepositoryEditor: return RibbonItemType.RepositoryEditor;
                 case RibbonItemType.Header: return RibbonItemType.Header;
@@ -4141,6 +4147,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case RibbonItemType.SkinSetDropDown: return null;
                 case RibbonItemType.SkinPaletteDropDown: return null;
                 case RibbonItemType.SkinPaletteGallery: return null;
+                case RibbonItemType.ZoomPresetMenu: return null;
                 case RibbonItemType.ComboListBox: return RibbonItemType.Menu;
                 case RibbonItemType.RepositoryEditor: return RibbonItemType.RepositoryEditor;
                 case RibbonItemType.Header: return RibbonItemType.Header;
@@ -9869,6 +9876,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         private string _ImageNameChecked;
     }
     #endregion
+    #region DxZoomMenuBarSubItem
+    public class DxZoomMenuBarSubItem : BarSubItem
+    {
+        public DxZoomMenuBarSubItem()
+        { }
+        public DxZoomMenuBarSubItem(IRibbonItem ribbonItem, DevExpress.XtraBars.BarManager barManager)
+        { }
+
+        // IRibbonItem ribbonItem, DevExpress.XtraBars.BarManager barManager,
+    }
+    #endregion
     #region TrackBar - TODO
 
     //#warning TrackBar - TODO
@@ -12727,6 +12745,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// DevExpress volba palety v formě InRibbon galerie
         /// </summary>
         SkinPaletteGallery,
+        /// <summary>
+        /// Nabídka Zoomu
+        /// </summary>
+        ZoomPresetMenu,
         /// <summary>
         /// ComboListBox
         /// </summary>
