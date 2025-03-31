@@ -411,6 +411,8 @@ namespace TestDevExpress.Forms
         bool ITextItem.Enabled { get { return this.IsAlive; } }
         bool? ITextItem.Checked { get; set; }
         FontStyle? ITextItem.FontStyle { get { return ItemFontStyle; } }
+        float? ITextItem.FontSizeRelativeToZoom { get { return null; } }
+        float? ITextItem.FontSizeRelativeToDesign { get { return null; } }
         Image ITextItem.Image { get { return null; } }
         SvgImage ITextItem.SvgImage { get { return null; } }
         string ITextItem.ImageName { get { return null; } }

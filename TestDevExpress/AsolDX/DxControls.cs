@@ -9304,8 +9304,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                     else if (owner.SecondImagePosition == ImagePositionType.AfterTextArea)
                     {   // V režimu AfterTextArea: přidám pár mezer za text (titulek) dokumentu, aby za textem byl prostor pro ikonu:
-                        int spaceCount = secondImageSize.Width / 4;
-                        documentCaption = documentCaption + "".PadRight(spaceCount);
+                        string iconSpace = GetSpaceForIcon(secondImageSize.Width);
+                        documentCaption = documentCaption + iconSpace;
                     }
                 }
 
@@ -9319,6 +9319,17 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.DocumentCaption = documentCaption;
 
                 this.RefreshDocument(owner, document);
+
+
+                // Vrátí string reprezentující přidané mezery za Caption okna tak, aby se na jejich místo vešla aktuální ikona
+                string GetSpaceForIcon(float iconWidth)
+                {   // 5 mezer má šířku 14px na 100%;  25px na 150%;  10px na 60% ZOOM;  na 96DPI
+                    //  hodnota 3.0 dává velký počet mezer
+                    //  hodnota 5.0
+                    var spaceWidth = DxComponent.ZoomToGui(5.6f, this.DocumentControl?.DeviceDpi ?? 96);     // Šířka jedné mezery, přepočtená ze standardu (3.0 px) pomocí aktuálního Zoomu a Target DPI controlu na aktuální pixely
+                    int spaceCount = (int)Math.Ceiling((1.1f * iconWidth) / spaceWidth);                     // Počet mezer tak, aby zaplnily šířku ikony + 10% (pixely dělené šířkou jedné mezery)
+                    return "".PadRight(spaceCount);
+                }
             }
             /// <summary>
             /// Do záhlaví dokumentu vepíše velikost SvgImage a správný titulek
@@ -9397,12 +9408,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Jméno image základního = odpovídá ikoně formuláře
             /// </summary>
             public string MainImageName { get; set; }
+            /// <summary>
+            /// Zde je true, pokud máme neprázdný název <see cref="MainImageName"/>.
+            /// </summary>
             public bool HasMainImage { get { return !String.IsNullOrEmpty(MainImageName) || true; } }
             /// <summary>
             /// Jméno image přidaného = zobrazuje se jako druhý obrázek podle předvolby
             /// </summary>
             public string SecondImageName { get; set; }
+            /// <summary>
+            /// Zde je true, pokud máme neprázdný název <see cref="SecondImageName"/>.
+            /// </summary>
             public bool HasSecondImage { get { return !String.IsNullOrEmpty(SecondImageName); } }
+            /// <summary>
+            /// Zde je true, pokud máme neprázdný název <see cref="MainImageName"/> a současně i <see cref="SecondImageName"/>.
+            /// </summary>
             public bool HasBothImages { get { return HasMainImage && HasSecondImage; } }
         }
         #endregion
@@ -10367,6 +10387,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual FontStyle? FontStyle { get; set; }
         /// <summary>
+        /// Relativní velikost písma vůči běžnému písmu v aktuálním Zoomu; nezadáno = nemění se.<br/>
+        /// Hodnota 1.0f = bez změny velikosti (=100%).<br/>
+        /// Používá se výjimečně pro zvýraznění některé položky.
+        /// </summary>
+        public float? FontSizeRelativeToZoom { get; set; }
+        /// <summary>
+        /// Relativní velikost písma vůči defaultnímu designovému písmu = ignoruje aktuální Zoom; nezadáno = nemění se.<br/>
+        /// Hodnota 1.0f = bez změny velikosti (=100%).<br/>
+        /// Používá se výjimečně, typicky pro ukázku písma v různém Zoomu.
+        /// </summary>
+        public float? FontSizeRelativeToDesign { get; set; }
+        /// <summary>
         /// Fyzický obrázek ikony.
         /// </summary>
         [XS.PersistingEnabled(false)]
@@ -10475,6 +10507,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Styl písma, null = neměnit
         /// </summary>
         FontStyle? FontStyle { get; }
+        /// <summary>
+        /// Relativní velikost písma vůči běžnému písmu v aktuálním Zoomu; nezadáno = nemění se.<br/>
+        /// Hodnota 1.0f = bez změny velikosti (=100%).<br/>
+        /// Používá se výjimečně pro zvýraznění některé položky.
+        /// </summary>
+        float? FontSizeRelativeToZoom { get; }
+        /// <summary>
+        /// Relativní velikost písma vůči defaultnímu designovému písmu = ignoruje aktuální Zoom; nezadáno = nemění se.<br/>
+        /// Hodnota 1.0f = bez změny velikosti (=100%).<br/>
+        /// Používá se výjimečně, typicky pro ukázku písma v různém Zoomu.
+        /// </summary>
+        float? FontSizeRelativeToDesign { get; }
         /// <summary>
         /// Fyzický obrázek ikony.
         /// </summary>

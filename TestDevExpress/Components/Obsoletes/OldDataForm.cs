@@ -1890,6 +1890,18 @@ namespace Noris.Clients.Win.Components.Obsoletes.DataForm.Internal
         /// </summary>
         FontStyle? ITextItem.FontStyle { get { return null; } }
         /// <summary>
+        /// Relativní velikost písma vůči běžnému písmu v aktuálním Zoomu; nezadáno = nemění se.<br/>
+        /// Hodnota 1.0f = bez změny velikosti (=100%).<br/>
+        /// Používá se výjimečně pro zvýraznění některé položky.
+        /// </summary>
+        float? ITextItem.FontSizeRelativeToZoom { get { return null; } }
+        /// <summary>
+        /// Relativní velikost písma vůči defaultnímu designovému písmu = ignoruje aktuální Zoom; nezadáno = nemění se.<br/>
+        /// Hodnota 1.0f = bez změny velikosti (=100%).<br/>
+        /// Používá se výjimečně, typicky pro ukázku písma v různém Zoomu.
+        /// </summary>
+        float? ITextItem.FontSizeRelativeToDesign { get { return null; } }
+        /// <summary>
         /// Fyzický obrázek ikony.
         /// </summary>
         Image ITextItem.Image { get { return null; } }

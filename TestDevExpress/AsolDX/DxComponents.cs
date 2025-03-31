@@ -1089,6 +1089,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _InitZoom()
         {
             __Zoom = 1m;
+            __DesignFontSize = 8.25f;
             SystemAdapter.InteractiveZoomChanged += Host_InteractiveZoomChanged;
             _ReloadZoom();
         }
@@ -1478,6 +1479,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Defaultní hodnota je 96 DPI, povolený rozsah je 72 až 600 DPI.
         /// </summary>
         public static int DesignDpi { get { return Instance.__DesignDpi; } set { Instance._SetDesignDpi(value); } }
+        /// <summary>
+        /// Designová hodnota velikosti fontu, odpovídá velikosti písma při 100% Zoomu. Výchozí hodnota = 8.25f; lze setovat hodnoty v rozsahu 5 až 25.
+        /// </summary>
+        public static float DesignFontSize { get { return Instance.__DesignFontSize; } set { Instance.__DesignFontSize = (value < 5f ? 5f : (value > 25f ? 25f : value)); } }
 
         /// <summary>
         /// Aktuální hodnota (<see cref="Zoom"/> / <see cref="DesignDpi"/>), slouží k rychlému přepočtu Design souřadnic na cílové souřadnice v aktuálním Zoomu a TargetDPI.
@@ -1540,6 +1545,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Defaultní hodnota je 96 DPI, povolený rozsah je 72 až 600 DPI.
         /// </summary>
         private int __DesignDpi;
+        /// <summary>
+        /// Designová hodnota velikosti fontu, odpovídá 100%
+        /// </summary>
+        private float __DesignFontSize;
+
         /// <summary>
         /// Aktuální hodnota (<see cref="Zoom"/> / <see cref="DesignDpi"/>), slouží k rychlému přepočtu Design souřadnic na cílové souřadnice v aktuálním Zoomu a TargetDPI.
         /// </summary>
@@ -3860,14 +3870,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="level"></param>
         private static void _FillBarItemFontStyle(IRibbonItem ribbonItem, DevExpress.XtraBars.BarItem barItem, int level)
         {
-            if (ribbonItem.FontStyle.HasValue)
+            var appearance = ((level == 0) ? barItem.ItemAppearance : barItem.ItemInMenuAppearance);
+            if (ribbonItem.FontSizeRelativeToZoom.HasValue || ribbonItem.FontSizeRelativeToDesign.HasValue) 
+            {
+                var defaultFont = DxComponent.GetFontDefault();
+                FontStyle fontStyle = ribbonItem.FontStyle ?? FontStyle.Regular;
+                float emSize = getFontSize(ribbonItem);
+                var font = DxComponent.GetFont(defaultFont.Name, emSize, fontStyle);
+                appearance.Normal.Font = font;
+                appearance.Hovered.Font = font;
+                appearance.Pressed.Font = font;
+                appearance.Disabled.Font = font;
+            }
+            else if (ribbonItem.FontStyle.HasValue)
             {
                 var fontStyle = ribbonItem.FontStyle.Value;
-                var appearance = ((level == 0) ? barItem.ItemAppearance : barItem.ItemInMenuAppearance);
                 appearance.Normal.FontStyleDelta = fontStyle;
                 appearance.Hovered.FontStyleDelta = fontStyle;
                 appearance.Pressed.FontStyleDelta = fontStyle;
                 appearance.Disabled.FontStyleDelta = fontStyle;
+            }
+
+            float getFontSize(IRibbonItem item)
+            {
+                if (item.FontSizeRelativeToDesign.HasValue) return item.FontSizeRelativeToDesign.Value * DxComponent.DesignFontSize;
+                if (item.FontSizeRelativeToZoom.HasValue) return item.FontSizeRelativeToZoom.Value * (float)DxComponent.Zoom * DxComponent.DesignFontSize;
+                return (float)DxComponent.Zoom * DxComponent.DesignFontSize;
             }
         }
         /// <summary>

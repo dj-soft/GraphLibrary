@@ -8266,12 +8266,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Vytvoří seznam prvků Ribbonu pro nabídku položek Zoomu
             ListExt<IRibbonItem> createZoomItems()
             {
-                int zoom = _ZoomPct;
+                int zoomPct = _ZoomPct;
                 var zoomItems = new ListExt<IRibbonItem>();
                 var zoomValues = _ZoomValues;
                 foreach (var zoomValue in zoomValues)
                 {
-                    bool isActive = (zoomValue == zoom);
+                    bool isActive = (zoomValue == zoomPct);
                     zoomItems.Add(new DataRibbonItem() 
                     { 
                         Text = $"{zoomValue}%",
@@ -8280,7 +8280,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                         ClickAction = _ZoomItemClick,
                         RibbonStyle = RibbonItemStyles.SmallWithText,
                         ImageName = (isActive ? _ZoomImageName : null),
-                        FontStyle = (isActive ? FontStyle.Bold : FontStyle.Regular) 
+                        FontStyle = (isActive ? FontStyle.Bold : FontStyle.Regular),
+                        FontSizeRelativeToDesign = ((float)zoomValue) / 100f
                     });
                 }
                 return zoomItems;

@@ -125,7 +125,7 @@ namespace TestDevExpress
                 base.OnZoomPercentChanged();
 
                 var currentFont = DevExpress.XtraEditors.WindowsFormsSettings.DefaultFont;
-                float emSize = (float)(8.25m * DxComponent.Zoom);
+                float emSize = DxComponent.DesignFontSize * (float)DxComponent.Zoom;
                 DevExpress.XtraEditors.WindowsFormsSettings.DefaultFont = new System.Drawing.Font(currentFont.FontFamily, emSize, currentFont.Style);
             }
         }

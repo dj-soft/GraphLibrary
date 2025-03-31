@@ -64,7 +64,7 @@ namespace TestDevExpress.Forms
         {
             bool hasDataForm = (_DxDataFormPanel != null);
             string formId = (hasDataForm ? ":" + __DataFormId.ToString() : "");
-            this.Text = $"DataForm V3 [{__CurrentId}{formId}]";
+            this.Text = $"DataForm V3     [{__CurrentId}{formId}]";
 
         }
         private int __CurrentId;
