@@ -10049,13 +10049,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Došlo ke změně Zoomu v systému
-        /// </summary>
-        void IListenerZoomChange.ZoomChanged()
-        {
-            RefreshMenuForCurrentZoom();
-        }
-        /// <summary>
         /// Refreshuje své menu pro aktuální Zoom
         /// </summary>
         public void RefreshMenuForCurrentZoom()
@@ -10066,14 +10059,20 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // this prvek:
             this.Caption = text;
+            string toolTipTitle = DxComponent.Localize(MsgCode.RibbonZoomMenuTitle, text);
+            string toolTipText = DxComponent.Localize(MsgCode.RibbonZoomMenuText);
+            this.SuperTip = DxComponent.CreateDxSuperTip(toolTipTitle, toolTipText);
             if (DxRibbonControl.TryGetRibbonItem(this, out var iMenuData))
             {
                 if (iMenuData is DataRibbonItem menuData)
+                {
                     menuData.Text = text;
+                    menuData.ToolTipTitle = toolTipTitle;
+                    menuData.ToolTipText = toolTipText;
+                }
             }
 
             // Jednotlivé prvky menu:
-
             var subItems = this.ItemLinks;
             if (subItems != null)
             {
@@ -10093,6 +10092,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                 }
             } 
+        }
+        /// <summary>
+        /// Došlo ke změně Zoomu v systému
+        /// </summary>
+        void IListenerZoomChange.ZoomChanged()
+        {
+            RefreshMenuForCurrentZoom();
         }
         /// <summary>
         /// Jméno prvku SubItem pro nabídku Zoomu

@@ -9213,6 +9213,12 @@ White
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Upřesněte hledaný text")]
         RibbonSearchMenuItemNoMatchesCaption,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Měřítko zvětšení: %0")]
+        RibbonZoomMenuTitle,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Umožní změnit měřítko")]
+        RibbonZoomMenuText,
 
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Chyba")]

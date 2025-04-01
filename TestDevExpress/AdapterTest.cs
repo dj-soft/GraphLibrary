@@ -187,7 +187,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             string text = GetMessageText(messageCode);
             if (text == null) return null;
-            return String.Format(text, parameters);
+            if (parameters != null)
+            {
+                var pars = parameters.ToArray();
+                for (int i = 0; i < pars.Length; i++)
+                {
+                    string search = "%" + i.ToString();
+                    if (text.Contains(search))
+                        text = text.Replace(search, Convert.ToString(pars[i]));
+                }
+            }
+            return text;
+            // return String.Format(text, parameters);
         }
         /// <summary>
         /// Najde defaultní text daného kódu hlášky.
