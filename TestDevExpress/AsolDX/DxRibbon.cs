@@ -8292,97 +8292,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 });
 
             return iGroup;
-
-
-            // Vytvoří seznam prvků Ribbonu pro nabídku položek Zoomu
-            ListExt<IRibbonItem> createZoomItems()
-            {
-                int zoomPct = _ZoomPct;
-                var zoomItems = new ListExt<IRibbonItem>();
-                var zoomValues = _ZoomValues;
-                foreach (var zoomValue in zoomValues)
-                {
-                    bool isActive = (zoomValue == zoomPct);
-                    zoomItems.Add(new DataRibbonItem() 
-                    { 
-                        Text = $"{zoomValue}%",
-                        ItemId = $"{DesignRibbonItemZoomValue}{zoomValue}", 
-                        Tag = zoomValue, 
-                        ClickAction = _ZoomItemClick,
-                        RibbonStyle = RibbonItemStyles.SmallWithText,
-                        ImageName = (isActive ? DxZoomMenuBarSubItem.ZoomImageName : null),
-                        FontStyle = (isActive ? FontStyle.Bold : FontStyle.Regular),
-                        FontSizeRelativeToDesign = ((float)zoomValue) / 100f
-                    });
-                }
-                return zoomItems;
-            }
-        }
-        /// <summary>
-        /// Hodnoty Zoomu v nabídce v Ribbonu
-        /// </summary>
-        private static int[] _ZoomValues { get { return new int[] { 50, 60, 75, 80, 90, 100, 105, 110, 125, 150, 175, 200 }; } }
-        /// <summary>
-        /// Obsluha kliknutí na Zoom položku
-        /// </summary>
-        /// <param name="menuItem"></param>
-        private static void _ZoomItemClick(IMenuItem menuItem)
-        {
-            if (menuItem != null && menuItem.ItemId != null && menuItem.ItemId.StartsWith(DesignRibbonItemZoomValue) && menuItem.Tag is int zoom)
-            {
-                if (zoom >= 50 && zoom <= 200)
-                    _ZoomPct = zoom;                       // Vizuální návaznost do prvků GUI Ribbonu zajistí systém (pomocí IListenerZoomChange.ZoomChanged => _ZoomItemsRefresh()).
-            }
-        }
-        /// <summary>
-        /// Refresh standardních prvků Ribbonu pro zobrazení Zoom
-        /// </summary>
-        private void _ZoomItemsRefresh()
-        {
-            if (!(this.Items.TryGetFirst(i => i.Name == DesignRibbonItemZoomPresetMenuId, out var zoomMenu))) return;
-
-            int zoom = _ZoomPct;
-
-            // Hlavní prvek menu: jeho text odpovídá Zoom% :
-            string text = $"{zoom}%";
-            zoomMenu.Caption = text;
-            if (zoomMenu.Tag is DxRibbonControl.BarItemTagInfo tagInfo)
-            {   // Jeho datový podklad (DataRibbonItem) = změníme i jeho text:
-                if (tagInfo.Data is DataRibbonItem dataRibbonItem)
-                    dataRibbonItem.Text = text;
-            }
-
-            // Subpoložky menu: aktualizujeme ikonu a styl písma podle aktuálního Zoomu:
-            if (zoomMenu is BarSubItem barSubItem)
-            {
-                var subItems = barSubItem.ItemLinks;
-                if (subItems != null)
-                {
-                    foreach (BarItemLink subItemLink in subItems)
-                    {
-                        var subItem = subItemLink.Item;
-                        if (subItem.Name.StartsWith(DesignRibbonItemZoomValue) && subItem.Tag is DxRibbonControl.BarItemTagInfo tagSubInfo && tagSubInfo.Data.Tag is int)
-                        {
-                            if (tagSubInfo.Data is DataRibbonItem subDataRibbonItem)
-                            {
-                                var subItemZoom = (int)(subDataRibbonItem.Tag);
-                                bool isActive = (subItemZoom == zoom);
-                                subDataRibbonItem.FontStyle = (isActive ? FontStyle.Bold : FontStyle.Regular);
-                                subDataRibbonItem.ImageName = (isActive ? DxZoomMenuBarSubItem.ZoomImageName : null);
-                                DxComponent.FillBarItemFrom(subItem, subDataRibbonItem, 1);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        /// <summary>
-        /// Aktuální systémový zoom v procentech
-        /// </summary>
-        private static int _ZoomPct
-        {
-            get { return (int)(100m * DxComponent.Zoom); }
-            set { DxComponent.Zoom = (decimal)value / 100m; }
         }
         internal const string DesignRibbonGroupId = "_SYS__DevExpress_Design";
         internal const string DesignRibbonItemSkinSetId = "_SYS__DevExpress_SkinSetDropDown";
@@ -8393,7 +8302,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal const string DesignRibbonItemLogActivityId = "_SYS__DevExpress_SetLogActivity";
         internal const string DesignRibbonItemNotCaptureWindowsId = "_SYS__DevExpress_SetNotCaptureWindows";
         internal const string DesignRibbonItemZoomPresetMenuId = "_SYS__DevExpress_ZoomTrackbar";
-        internal const string DesignRibbonItemZoomValue = "_SYS__DevExpress_ZoomValue_";
 
         /// <summary>
         /// Metoda zkusí najít definiční data pro daný prvek Ribbonu.
@@ -8493,7 +8401,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Zoomuje se jen velikost textu.
 
             // this.ReloadImages();
-            this._ZoomItemsRefresh();
         }
         private void ReloadImages()
         {
