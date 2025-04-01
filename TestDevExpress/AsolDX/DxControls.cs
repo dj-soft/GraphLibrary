@@ -980,9 +980,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         NotCaptureWindows = 0x0080,
         /// <summary>
-        /// Zoom
+        /// Zoom standardní menu
         /// </summary>
-        ZoomTrackbar = 0x0100,
+        ZoomPresetMenu = 0x0100,
+        /// <summary>
+        /// Zoom testovací menu s více položkami
+        /// </summary>
+        ZoomPresetMenuTest = 0x0200,
 
         /// <summary>
         /// Základ = <see cref="SkinButton"/> + <see cref="PaletteButton"/> + <see cref="ImageGallery"/>
@@ -993,9 +997,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         Default = SkinButton | PaletteButton | UhdSupport | ImageGallery,
         /// <summary>
-        /// Všechno = <see cref="SkinButton"/> + <see cref="PaletteButton"/> + <see cref="UhdSupport"/> + <see cref="ImageGallery"/> + <see cref="LogActivity"/>
+        /// Všechno = <see cref="SkinButton"/> + <see cref="PaletteButton"/> + <see cref="UhdSupport"/> + <see cref="ImageGallery"/> + <see cref="LogActivity"/> + <see cref="ZoomPresetMenu"/>
         /// </summary>
-        All = SkinButton | PaletteButton | UhdSupport | ImageGallery | LogActivity | NotCaptureWindows | ZoomTrackbar
+        All = SkinButton | PaletteButton | UhdSupport | ImageGallery | LogActivity | NotCaptureWindows | ZoomPresetMenu
     }
     /// <summary>
     /// Režim viditelnosti titulkového řádku okna a Ribbonu

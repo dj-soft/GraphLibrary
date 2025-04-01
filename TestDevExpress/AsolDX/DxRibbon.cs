@@ -8263,17 +8263,20 @@ namespace Noris.Clients.Win.Components.AsolDX
                     ClickAction = _SetNotCaptureWindows
                 });
 
-            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.ZoomTrackbar))
+            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.ZoomPresetMenu))
                 iGroup.Items.Add(new DataRibbonItem()
                 {
-                    ItemId = DesignRibbonItemZoomTrackbarId,
-                    Text = $"{_ZoomPct}%",
-                    ToolTipText = "Nastavuje měřítko",
-                    ItemType = RibbonItemType.Menu,
+                    ItemId = DesignRibbonItemZoomPresetMenuId,
+                    ItemType = RibbonItemType.ZoomPresetMenu,
+                    RibbonStyle = RibbonItemStyles.Large
+                });
+            else if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.ZoomPresetMenuTest))
+                iGroup.Items.Add(new DataRibbonItem()
+                {
+                    ItemId = DesignRibbonItemZoomPresetMenuId,
+                    ItemType = RibbonItemType.ZoomPresetMenu,
                     RibbonStyle = RibbonItemStyles.Large,
-                    ImageName = DxZoomMenuBarSubItem.ZoomImageName,
-                    ClickAction = null,
-                    SubItems = createZoomItems()
+                    Tag = "50,60,75,85,92,100,108,115,125,150,175,189,200"
                 });
 
             if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.ImageGallery))
@@ -8336,7 +8339,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _ZoomItemsRefresh()
         {
-            if (!(this.Items.TryGetFirst(i => i.Name == DesignRibbonItemZoomTrackbarId, out var zoomMenu))) return;
+            if (!(this.Items.TryGetFirst(i => i.Name == DesignRibbonItemZoomPresetMenuId, out var zoomMenu))) return;
 
             int zoom = _ZoomPct;
 
@@ -8389,7 +8392,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal const string DesignRibbonItemLogImageGallery = "_SYS__DevExpress_DxImageGallery";
         internal const string DesignRibbonItemLogActivityId = "_SYS__DevExpress_SetLogActivity";
         internal const string DesignRibbonItemNotCaptureWindowsId = "_SYS__DevExpress_SetNotCaptureWindows";
-        internal const string DesignRibbonItemZoomTrackbarId = "_SYS__DevExpress_ZoomTrackbar";
+        internal const string DesignRibbonItemZoomPresetMenuId = "_SYS__DevExpress_ZoomTrackbar";
         internal const string DesignRibbonItemZoomValue = "_SYS__DevExpress_ZoomValue_";
 
         /// <summary>

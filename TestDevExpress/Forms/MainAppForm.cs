@@ -45,13 +45,15 @@ namespace TestDevExpress.Forms
         {
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
 
-            DataRibbonPage homePage = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.All);
+            var ribbonButtons = FormRibbonDesignGroupPart.SkinButton | FormRibbonDesignGroupPart.PaletteButton | FormRibbonDesignGroupPart.UhdSupport | FormRibbonDesignGroupPart.ImageGallery |
+                                FormRibbonDesignGroupPart.LogActivity | FormRibbonDesignGroupPart.NotCaptureWindows | FormRibbonDesignGroupPart.ZoomPresetMenuTest;
+            DataRibbonPage homePage = this.CreateRibbonHomePage(ribbonButtons);
             homePage.PageOrder = 10;
             pages.Add(homePage);
 
             var start = DateTime.Now;
             // var runFormInfos = RunFormInfo.GetFormsWithProperty();             // Debug mode: 1202, 1307, 1247 milisecs;     Run mode: 224, 222, 233 milisecs
-            var runFormInfos = RunFormInfo.GetFormsWithAttribute();            // Debug mode: 1354, 1283, 1224 milisecs;     Run mode: 219, 241, 238 milisecs
+            var runFormInfos = RunFormInfo.GetFormsWithAttribute();               // Debug mode: 1354, 1283, 1224 milisecs;     Run mode: 219, 241, 238 milisecs
             __FormLoadTime = DateTime.Now - start;
 
             RunFormInfo.CreateRibbonPages(runFormInfos, pages, homePage);
