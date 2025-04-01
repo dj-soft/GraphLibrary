@@ -232,7 +232,7 @@ namespace TestDevExpress.Forms
                 for (int itemIndex = 0; itemIndex < itemCount; itemIndex++)
                 {
                     var iItem = CreateIItem(groupIndex);
-                    dxRibbon.CreateItem(iItem, dxGroup);
+                    dxRibbon.CreateItem(ref iItem, dxGroup);
                 }
             }
         }

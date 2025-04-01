@@ -3751,7 +3751,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     barItem = barPalette;
                     break;
                 case RibbonItemType.ZoomPresetMenu:
-                    var zoomPresetMenu = new DxZoomMenuBarSubItem(ribbonItem, barManager);
+                    var zoomPresetMenu = new DxZoomMenuBarSubItem(ref ribbonItem, barManager);
                     barItem = zoomPresetMenu;
                     break;
                 case RibbonItemType.Header:
@@ -3857,6 +3857,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             barItem.VisibleInSearchMenu = ribbonItem.VisibleInSearchMenu;
             barItem.SearchTags = ribbonItem.SearchTags;
             barItem.PaintStyle = DxRibbonControl.ConvertPaintStyle(ribbonItem, level);
+            
 
             // Header má styl jinak:
             bool isHeader = (ribbonItem.ItemType == RibbonItemType.Header || ribbonItem.ItemType == RibbonItemType.ButtonGroup);
@@ -3951,6 +3952,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 barItem.Alignment = (ribbonItem.Alignment.Value == BarItemAlignment.Default ? DevExpress.XtraBars.BarItemLinkAlignment.Default :
                                     (ribbonItem.Alignment.Value == BarItemAlignment.Left ? DevExpress.XtraBars.BarItemLinkAlignment.Left :
                                     (ribbonItem.Alignment.Value == BarItemAlignment.Right ? DevExpress.XtraBars.BarItemLinkAlignment.Right : DevExpress.XtraBars.BarItemLinkAlignment.Default)));
+            }
+
+            // Static prvky se používají typicky do StatusBaru, a mají defaultně zarovnání Top, což nekoresponduje se zarovnáním okolních ComboBox / Menu / Button, které jej mají Center:
+            if (barItem is DevExpress.XtraBars.BarStaticItem staticItem)
+            {   // Static prvky zarovnáme vertikálně na střed, jako ostatní prvky:
+                appearance.Normal.TextOptions.VAlignment = VertAlignment.Center;
+                appearance.Hovered.TextOptions.VAlignment = VertAlignment.Center;
+                appearance.Pressed.TextOptions.VAlignment = VertAlignment.Center;
+                appearance.Disabled.TextOptions.VAlignment = VertAlignment.Center;
             }
         }
         /// <summary>

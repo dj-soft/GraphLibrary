@@ -17,6 +17,7 @@ using DevExpress.Utils.Extensions;
 using DevExpress.XtraBars;
 using DevExpress.XtraBars.Ribbon;
 using XS = Noris.WS.Parser.XmlSerializer;
+using DevExpress.XtraRichEdit.Layout;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -1050,8 +1051,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var iRibbonItems = ribbon._SearchEditItems;
                 if (iRibbonItems != null && iRibbonItems.Length > 0)
                 {
-                    foreach (var iRibbonItem in iRibbonItems)
+                    foreach (var ribbonItem in iRibbonItems)
                     {
+                        var iRibbonItem = ribbonItem;
                         if (iRibbonItem != null && !String.IsNullOrEmpty(iRibbonItem.ItemId))
                         {
                             // Máme prvek a máme ID:
@@ -1059,7 +1061,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                             if (!finalItems.FoundItems.ContainsKey(itemId) && CanAddItemToSearchMenu(iRibbonItem, e.SearchString, out string itemCaption))
                             {   // Prvek má být přidán do menu (ještě tam není, a jeho text vyhovuje zadaném stringu):
                                 // zajistím, že v IRibbonItem bude vytvořen fyzický BarItem, protože ten musí vytvořit this Ribbon jako autor, on si pak bude obsluhovat Click event na itemu:
-                                ribbon.PrepareSearchEditBarItem(iRibbonItem);
+                                ribbon.PrepareSearchEditBarItem(ref iRibbonItem);
 
                                 string groupCaption = ribbon.GetSearchItemGroupCaption(iRibbonItem, out string groupSortOrder);
                                 finalItems.FoundItems.Add(itemId, new SearchMenuItem(itemId, itemCaption, groupCaption, groupSortOrder, iRibbonItem, iRibbonItem.RibbonItem));
@@ -1124,13 +1126,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Klíčové je, že BarItem vytváří právě ta instance Ribbonu, kde je prvek deklarován, protože ta instance pak bude obsluhovat jeho Click.
         /// </summary>
         /// <param name="iRibbonItem"></param>
-        private void PrepareSearchEditBarItem(IRibbonItem iRibbonItem)
+        private void PrepareSearchEditBarItem(ref IRibbonItem iRibbonItem)
         {
             BarItem barItem = iRibbonItem.RibbonItem;
             if (barItem is null)
             {
                 int count = 0;
-                barItem = GetItem(iRibbonItem, null, 0, DxRibbonCreateContentMode.CreateAllSubItems, ref count);
+                barItem = GetItem(ref iRibbonItem, null, 0, DxRibbonCreateContentMode.CreateAllSubItems, ref count);
                 iRibbonItem.RibbonItem = barItem;
             }
         }
@@ -1701,15 +1703,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Metoda přidá do titulkového baru 'CaptionBarItemLinks' dodané prvky.
         /// </summary>
-        /// <param name="items"></param>
+        /// <param name="titleBarItems"></param>
         /// <param name="clear"></param>
-        private void _TitleBarAddItems(IEnumerable<IRibbonItem> items, bool clear = false)
+        private void _TitleBarAddItems(IEnumerable<IRibbonItem> titleBarItems, bool clear = false)
         {
             if (clear) _TitleBarClearItems();
 
             // this._AddCaptionTest();
 
-            if (items != null)
+            if (titleBarItems != null)
             {
                 // DAJ 28.3.2025: komponenty DevExpress počínaje verzí 24 mají opačné třídění prvků než dřívější verze...
                 // Z pohledu DevExpress byla ve starších verzích chyba, kdy prvky vložené do CaptionBarItemLinks se přidávaly zprava doleva.
@@ -1718,17 +1720,18 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // DevExpress to od verze 23.2.4 opravil, a ikony vkládá v nativním pořadí zleva doprava.
                 //   https://supportcenter.devexpress.com/ticket/details/T1220891/ribboncontrol-item-position-is-changed-in-the-captionbaritemlinks-collection
                 // Řešení: od verze DX knihoven 23.2.4 budeme obracet pořadí definovaných ikon na klientu = právě zde:
-                var sortedItems = items.ToList();
+                var sortedItems = titleBarItems.ToList();
                 if (sortedItems.Count > 1 && DxVersion >= Version.Parse("23.2.4"))
                     sortedItems.Reverse();
 
-                foreach (var item in sortedItems)
+                foreach (var ribbonItem in sortedItems)
                 {
-                    var barItem = CreateItem(item);
+                    var iRibbonItem = ribbonItem;
+                    var barItem = CreateItem(ref iRibbonItem);
                     if (barItem != null)
                     {
                         _TitleBarSetManagerToItem(barItem);
-                        var barLink = this.CaptionBarItemLinks.Add(barItem, item.ItemIsFirstInGroup);
+                        var barLink = this.CaptionBarItemLinks.Add(barItem, iRibbonItem.ItemIsFirstInGroup);
                     }
                 }
             }
@@ -1833,10 +1836,16 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             var mode = DxRibbonCreateContentMode.CreateAllSubItems;
             int count = 0;
-            foreach (var iRibbonItem in items)
+            foreach (var ribbonItem in items)
             {
-                var item = this.GetItem(iRibbonItem, null, 0, mode, ref count);
-                this.StatusBar.ItemLinks.Add(item);
+                var iRibbonItem = ribbonItem;
+                bool isFirst = this.StatusBar.ItemLinks.Count == 0;
+                var barItem = this.GetItem(ref iRibbonItem, null, 0, mode, ref count);
+                if (barItem != null)
+                {
+                    _TitleBarSetManagerToItem(barItem);
+                    var barLink = this.StatusBar.ItemLinks.Add(barItem, iRibbonItem.ItemIsFirstInGroup && !isFirst);
+                }
             }
         }
         private void _StatusBarRemoveItems(IEnumerable<IRibbonItem> items)
@@ -2642,10 +2651,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void AddItemsToGroup(IRibbonGroup iRibbonGroup, DxRibbonGroup dxGroup, DxRibbonCreateContentMode currentMode, ref int count)
         {
             var iRibbonItems = DataRibbonItem.SortRibbonItems(iRibbonGroup.Items);
-            foreach (var iRibbonItem in iRibbonItems)
+            foreach (var ribbonItem in iRibbonItems)
             {
+                var iRibbonItem = ribbonItem;
+                _AddBarItem(ref iRibbonItem, dxGroup, currentMode, ref count);
                 iRibbonItem.ParentGroup = iRibbonGroup;
-                _AddBarItem(iRibbonItem, dxGroup, currentMode, ref count);
             }
             dxGroup.RefreshGroupVisibility();
         }
@@ -2656,12 +2666,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="dxGroup"></param>
         /// <param name="currentMode">Režim tvorby obsahu</param>
         /// <param name="count"></param>
-        private void _AddBarItem(IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, DxRibbonCreateContentMode currentMode, ref int count)
+        private void _AddBarItem(ref IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, DxRibbonCreateContentMode currentMode, ref int count)
         {
             if (iRibbonItem == null || dxGroup == null) return;
             if (currentMode.HasFlag(DxRibbonCreateContentMode.CreateOnlyQATItems) && !ContainsQAT(iRibbonItem)) return;          // V režimu createOnlyQATItems přidáváme jen prvky QAT, a ten v daném prvku není žádný
 
-            GetItem(iRibbonItem, dxGroup, 0, currentMode, ref count);          // Najde / Vytvoří / Naplní prvek
+            GetItem(ref iRibbonItem, dxGroup, 0, currentMode, ref count);          // Najde / Vytvoří / Naplní prvek
         }
         #endregion
         #region Refresh obsahu Ribbonu
@@ -3569,10 +3579,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="level"></param>
         /// <param name="clickHandler"></param>
         /// <returns></returns>
-        public DevExpress.XtraBars.BarItem CreateItem(IRibbonItem iRibbonItem, DxRibbonGroup dxGroup = null, int level = 0, DevExpress.XtraBars.ItemClickEventHandler clickHandler = null)
+        public DevExpress.XtraBars.BarItem CreateItem(ref IRibbonItem iRibbonItem, DxRibbonGroup dxGroup = null, int level = 0, DevExpress.XtraBars.ItemClickEventHandler clickHandler = null)
         {
             int count = 0;
-            var barItem = PrepareItem(iRibbonItem, dxGroup, level, true, null, ref count);
+            var barItem = PrepareItem(ref iRibbonItem, dxGroup, level, true, null, ref count);
             if (barItem is null) return null;
 
             FillBarItem(barItem, iRibbonItem, level);
@@ -3642,12 +3652,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="currentMode">Režim tvorby obsahu</param>
         /// <param name="count"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarItem GetItem(IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, int level, DxRibbonCreateContentMode currentMode, ref int count)
+        protected DevExpress.XtraBars.BarItem GetItem(ref IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, int level, DxRibbonCreateContentMode currentMode, ref int count)
         {
             if (iRibbonItem is null) return null;
 
             var changeMode = ((IRibbonObject)iRibbonItem).ChangeMode;
-            DevExpress.XtraBars.BarItem barItem = Items[iRibbonItem.ItemId];
+            var itemid = iRibbonItem.ItemId;
+            DevExpress.XtraBars.BarItem barItem = Items[itemid];
             if (HasCreate(changeMode))
             {
                 if (HasReFill(changeMode) && barItem != null)
@@ -3655,7 +3666,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 bool reallyCreateSubItems = currentMode.HasFlag(DxRibbonCreateContentMode.CreateAllSubItems);
                 if (barItem is null)
-                    barItem = PrepareItem(iRibbonItem, dxGroup, level, reallyCreateSubItems, null, ref count);
+                    barItem = PrepareItem(ref iRibbonItem, dxGroup, level, reallyCreateSubItems, null, ref count);
                 else if (reallyCreateSubItems && iRibbonItem.SubItems != null && iRibbonItem.SubItems.Any())
                     RefillSubItems(iRibbonItem, dxGroup, barItem, level, null, ref count);
                
@@ -3664,7 +3675,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // Prvek přidám do grupy jen tehdy, když máme grupu, a prvek v ní ještě není:
                 if (dxGroup != null)
                 {
-                    if (!dxGroup.ItemLinks.TryGetFirst(l => l.Item.Name == iRibbonItem.ItemId, out var barLink))
+                    if (!dxGroup.ItemLinks.TryGetFirst(l => l.Item.Name == itemid, out var barLink))
                         barLink = dxGroup.ItemLinks.Add(barItem);
                     barLink.BeginGroup = iRibbonItem.ItemIsFirstInGroup;
                 }
@@ -3697,7 +3708,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="count"></param>
         /// <param name="ignoreQat">Neřešit QAT</param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarItem PrepareItem(IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, int level, bool reallyCreateSubItems, RibbonItemType? forceItemType, ref int count, bool ignoreQat = false)
+        protected DevExpress.XtraBars.BarItem PrepareItem(ref IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, int level, bool reallyCreateSubItems, RibbonItemType? forceItemType, ref int count, bool ignoreQat = false)
         {
             DevExpress.XtraBars.BarItem barItem = null;
             RibbonItemType itemType = forceItemType ?? GetValidCommonItemType(iRibbonItem.ItemType) ?? iRibbonItem.ItemType;
@@ -3713,6 +3724,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case RibbonItemType.Static:
                     count++;
                     var staticItem = new BarStaticItem() { Manager = this.Manager };
+                    //    staticItem.ItemAppearance.Normal.TextOptions.VAlignment = VertAlignment.Center;       řeší se centrálně v 
                     this.Items.Add(staticItem);
                     barItem = staticItem;
                     break;
@@ -3801,13 +3813,17 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
                 case RibbonItemType.ZoomPresetMenu:
                     count++;
-                    barItem = new DxZoomMenuBarSubItem(iRibbonItem, this.Manager);
+                    var zoomMenu = new DxZoomMenuBarSubItem(ref iRibbonItem, this.Manager);
+                    PrepareBarMenu(iRibbonItem, level, dxGroup, iRibbonItem.SubItems, zoomMenu, true, ref count);
+                    zoomMenu.RefreshMenuForCurrentZoom();
+                    barItem = zoomMenu;
                     this.Items.Add(barItem);
                     break;
                 case RibbonItemType.ComboListBox:
                     count++;
                     BarItem comboItem = CreateComboListBoxItem(iRibbonItem, level, dxGroup);
-                    this.Items.Add(comboItem);
+                    if (comboItem != null)
+                        this.Items.Add(comboItem);
                     barItem = comboItem;
                     break;
                 case RibbonItemType.RepositoryEditor:
@@ -4396,12 +4412,14 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             dxPopup.BeforePopup -= _PopupMenu_BeforePopup;
 
-            foreach (IRibbonItem iSubItem in subItems)
+            foreach (IRibbonItem subItem in subItems)
             {
+                var iSubItem = subItem;
+                RibbonItemType? forceItemType = GetValidSubItemType(iSubItem.ItemType);
+                DevExpress.XtraBars.BarItem barItem = PrepareItem(ref iSubItem, dxGroup, level, true, forceItemType, ref count);
                 iSubItem.ParentItem = parentItem;
                 iSubItem.ParentGroup = parentItem.ParentGroup;
-                RibbonItemType? forceItemType = GetValidSubItemType(iSubItem.ItemType);
-                DevExpress.XtraBars.BarItem barItem = PrepareItem(iSubItem, dxGroup, level, true, forceItemType, ref count);
+
                 if (barItem != null)
                 {
                     PrepareBarItemTag(barItem, iSubItem, level, dxGroup);
@@ -4683,12 +4701,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             List<DevExpress.XtraBars.BarItem> barItems = new List<DevExpress.XtraBars.BarItem>();
             if (iSubItems != null && reallyCreate)
             {
-                foreach (IRibbonItem iSubItem in iSubItems)
+                foreach (IRibbonItem subItem in iSubItems)
                 {
+                    var iSubItem = subItem;
+                    RibbonItemType? forceItemType = GetValidSubItemType(iSubItem.ItemType);
+                    DevExpress.XtraBars.BarItem barItem = PrepareItem(ref iSubItem, dxGroup, level, true, forceItemType, ref count);
                     iSubItem.ParentItem = parentItem;
                     iSubItem.ParentGroup = parentItem.ParentGroup;
-                    RibbonItemType? forceItemType = GetValidSubItemType(iSubItem.ItemType);
-                    DevExpress.XtraBars.BarItem barItem = PrepareItem(iSubItem, dxGroup, level, true, forceItemType, ref count);
+
                     if (barItem != null)
                     {
                         FillBarItem(barItem, iSubItem, level);
@@ -6257,25 +6277,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vloží dané prvky do QAT Direct, ve stavu ribbonu UnMerged
         /// </summary>
-        /// <param name="items"></param>
-        private void _SetQATDirectItemsInner(IRibbonItem[] items)
+        /// <param name="iRibbonItems"></param>
+        private void _SetQATDirectItemsInner(IRibbonItem[] iRibbonItems)
         {
             _ClearQATDirectItems();
             
             List<QatItem> qatItems = new List<QatItem>();
-            if (items != null)
+            if (iRibbonItems != null)
             {
                 var qatUserLinks = this.Toolbar.ItemLinks.ToArray();
                 int mergeOrder = -1000;
-                foreach (var item in items)
+                foreach (var ribbonItem in iRibbonItems)
                 {
-                    if (item is null) continue;
-                    var barItem = CreateItem(item);
+                    var iRibbonItem = ribbonItem;
+                    if (iRibbonItem is null) continue;
+                    var barItem = CreateItem(ref iRibbonItem);
                     if (barItem != null)
                     {
                         barItem.MergeOrder = mergeOrder++;
-                        var barLink = this.Toolbar.ItemLinks.Add(barItem, item.ItemIsFirstInGroup);
-                        qatItems.Add(new QatItem(this, item, barItem, barLink));
+                        var barLink = this.Toolbar.ItemLinks.Add(barItem, iRibbonItem.ItemIsFirstInGroup);
+                        qatItems.Add(new QatItem(this, iRibbonItem, barItem, barLink));
                     }
                 }
 
@@ -8250,7 +8271,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     ToolTipText = "Nastavuje měřítko",
                     ItemType = RibbonItemType.Menu,
                     RibbonStyle = RibbonItemStyles.Large,
-                    ImageName = _ZoomImageName,
+                    ImageName = DxZoomMenuBarSubItem.ZoomImageName,
                     ClickAction = null,
                     SubItems = createZoomItems()
                 });
@@ -8286,7 +8307,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         Tag = zoomValue, 
                         ClickAction = _ZoomItemClick,
                         RibbonStyle = RibbonItemStyles.SmallWithText,
-                        ImageName = (isActive ? _ZoomImageName : null),
+                        ImageName = (isActive ? DxZoomMenuBarSubItem.ZoomImageName : null),
                         FontStyle = (isActive ? FontStyle.Bold : FontStyle.Regular),
                         FontSizeRelativeToDesign = ((float)zoomValue) / 100f
                     });
@@ -8344,7 +8365,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                                 var subItemZoom = (int)(subDataRibbonItem.Tag);
                                 bool isActive = (subItemZoom == zoom);
                                 subDataRibbonItem.FontStyle = (isActive ? FontStyle.Bold : FontStyle.Regular);
-                                subDataRibbonItem.ImageName = (isActive ? _ZoomImageName : null);
+                                subDataRibbonItem.ImageName = (isActive ? DxZoomMenuBarSubItem.ZoomImageName : null);
                                 DxComponent.FillBarItemFrom(subItem, subDataRibbonItem, 1);
                             }
                         }
@@ -8352,7 +8373,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
         }
-        private static string _ZoomImageName { get { return "svgimages/pdf%20viewer/marqueezoom.svg"; } }
         /// <summary>
         /// Aktuální systémový zoom v procentech
         /// </summary>
@@ -8372,6 +8392,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal const string DesignRibbonItemZoomTrackbarId = "_SYS__DevExpress_ZoomTrackbar";
         internal const string DesignRibbonItemZoomValue = "_SYS__DevExpress_ZoomValue_";
 
+        /// <summary>
+        /// Metoda zkusí najít definiční data pro daný prvek Ribbonu.
+        /// </summary>
+        /// <param name="barItem"></param>
+        /// <param name="ribbonItem"></param>
+        /// <returns></returns>
+        internal static bool TryGetRibbonItem(BarItem barItem, out IRibbonItem ribbonItem)
+        {
+            if (_TryGetIRibbonData(barItem, out string qatKey, out IRibbonItem iRibbonItem, out IRibbonGroup iRibbonGroup))
+            {
+                ribbonItem = iRibbonItem;
+                return true;
+            }
+            ribbonItem = null;
+            return false;
+        }
         /// <summary>
         /// Nastaví UHD paint. Pouze v Testovací aplikaci.
         /// </summary>
@@ -9876,15 +9912,225 @@ namespace Noris.Clients.Win.Components.AsolDX
         private string _ImageNameChecked;
     }
     #endregion
-    #region DxZoomMenuBarSubItem
-    public class DxZoomMenuBarSubItem : BarSubItem
+    #region DxZoomMenuBarSubItem : BarItem typu Menu pro zobrazení Zoomu
+    /// <summary>
+    /// <see cref="DxZoomMenuBarSubItem"/> : BarItem typu Menu pro zobrazení Zoomu
+    /// </summary>
+    public class DxZoomMenuBarSubItem : BarSubItem, IListenerZoomChange
     {
+        /// <summary>
+        /// Konstruktor, defaultně připraví prvek
+        /// </summary>
         public DxZoomMenuBarSubItem()
-        { }
-        public DxZoomMenuBarSubItem(IRibbonItem ribbonItem, DevExpress.XtraBars.BarManager barManager)
-        { }
+        {
+            IRibbonItem ribbonItem = null;
+            this._Initialize(ref ribbonItem);
+        }
+        /// <summary>
+        /// Konstruktor, plně připraví prvek
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="barManager"></param>
+        public DxZoomMenuBarSubItem(ref IRibbonItem ribbonItem, DevExpress.XtraBars.BarManager barManager)
+            : base(barManager, "")
+        {
+            this._Initialize(ref ribbonItem);
+        }
+        /// <summary>
+        /// Připraví this prvek a nadefinuje odpovídající položky menu
+        /// </summary>
+        private void _Initialize(ref IRibbonItem ribbonItem)
+        {
+            var dataRibbonItem = (ribbonItem is null ? new DataRibbonItem() : DataRibbonItem.CreateClone(ribbonItem));
+            dataRibbonItem.ItemType = RibbonItemType.ZoomPresetMenu;
+            dataRibbonItem.ImageName = ZoomImageName;
+            dataRibbonItem.SubItems = _CreateZoomMenuItems(ribbonItem);
+            dataRibbonItem.Text = _CurrentZoomText;
+            DxComponent.FillBarItemFrom(this, dataRibbonItem, 0);    // Do this instance (potomek prvku Ribbonu BarSubItem) vepíše definiční data z dataRibbonItem
+            DxComponent.RegisterListener(this);                      // Já jsem Listener změny IListenerZoomChange
+            ribbonItem = dataRibbonItem;
+        }
+        /// <summary>
+        /// Dispose provede odregistrování listeneru
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            DxComponent.UnregisterListener(this);
+            base.Dispose(disposing);
+        }
+        /// <summary>
+        /// Vytvoří položky do nabídky Zoom Menu, obsahující jednotlivé doporučené Zoom hodnoty.
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <returns></returns>
+        private ListExt<IRibbonItem> _CreateZoomMenuItems(IRibbonItem ribbonItem)
+        {
+            // Položky v nabídce Zoomu:
+            var zoomValueItems = new List<Tuple<int, DataRibbonItem>>();
 
-        // IRibbonItem ribbonItem, DevExpress.XtraBars.BarManager barManager,
+            // Vyhledám zadané subItemy (nejspíš tam nebudou, ale co kdyby je někdo externě nadeklaroval?)
+            var iSubItems = ribbonItem?.SubItems;
+            if (iSubItems != null)
+            {   // Ale prvky musí mít v Tag hodnotu typu Int, která reprezentuje Zoom:
+                var validSubItems = iSubItems.Where(i => i.Tag is int).ToArray();
+                if (validSubItems.Length > 0)
+                    zoomValueItems.AddRange(validSubItems.Select(i => new Tuple<int, DataRibbonItem>((int)i.Tag, DataRibbonItem.CreateClone(i))));
+            }
+
+            // Nemám dodané explicitní validní prvky (stačil by nám jeden jediný) => vytvořím je sám:
+            if (zoomValueItems.Count == 0)
+            {   // Hodnoty Zoomu mohou být dodány v Tagu
+                var zoomValues = getZoomValues(ribbonItem?.Tag);
+                foreach (var zoomValue in zoomValues)
+                    zoomValueItems.Add(createSubItem(zoomValue));
+            }
+
+            // Zajistím, že v nabídce bude i aktuální hodnota Zoomu:
+            int currentZoom = _CurrentZoomPct;
+            if (!zoomValueItems.Any(i => i.Item1 == currentZoom))
+                zoomValueItems.Add(createSubItem(currentZoom));
+
+            // SubItemy budou napojeny na zdejší Click eventhandler:
+            zoomValueItems.ForEach(t => t.Item2.ClickAction = _ZoomSubItemClick);
+
+            // Setřídím podle hodnoty Zoomu:
+            zoomValueItems.Sort((a, b) => a.Item1.CompareTo(b.Item1));
+            return new ListExt<IRibbonItem>(zoomValueItems.Select(t => t.Item2));
+
+
+            // Vrátí pole Int32, reprezentující jednotlivé hodnoty Zoomu. Mohou být dodány jako pole Int v dodaném tagu, nebo jako string s čísly oddělenými čárkami (atd). Default = _ZoomValues
+            int[] getZoomValues(object tag)
+            {
+                int[] result = null;
+                if (tag is int[] array)
+                    result = array;
+                else if (tag is string text && text != null && text.Length > 0)
+                    result = text.Split(" ,;".ToCharArray(), StringSplitOptions.RemoveEmptyEntries)
+                                 .Where(i => Int32.TryParse(i, out var _))
+                                 .Select(i => Int32.Parse(i))
+                                 .ToArray();
+                
+                if (result != null)
+                    result = result.Where(r => _IsValidZoom(r)).ToArray();
+
+                if (result is null || result.Length == 0)
+                    result = _ZoomValues;
+
+                return result;
+            }
+            // Vytvoří a vrátí standardní pár obsahující Zoom a SubItem pro daný Zoom
+            Tuple<int, DataRibbonItem> createSubItem(int zoomVal)
+            {
+                var zoomSubItem = new DataRibbonItem()
+                {
+                    Text = $"{zoomVal}%",
+                    ItemId = $"{_SubItemName_ZoomValue}{zoomVal}",
+                    Tag = zoomVal,
+                    RibbonStyle = RibbonItemStyles.SmallWithText,
+                    FontSizeRelativeToDesign = ((float)zoomVal) / 100f
+                };
+                return new Tuple<int, DataRibbonItem>(zoomVal, zoomSubItem);
+            }
+        }
+        /// <summary>
+        /// Po kliknutí na konkrétní SubItem Zoomu
+        /// </summary>
+        /// <param name="menuItem"></param>
+        private void _ZoomSubItemClick(IMenuItem menuItem)
+        {
+            if (menuItem != null && menuItem.Tag is int)
+            {
+                int zoom = _AlignZoomValue((int)menuItem.Tag);
+                _CurrentZoomPct = zoom;                              // Změnu Zoomu provádí systém, po změně Zoomu systém vyvolá IListenerZoomChange.ZoomChanged()
+            }
+        }
+        /// <summary>
+        /// Došlo ke změně Zoomu v systému
+        /// </summary>
+        void IListenerZoomChange.ZoomChanged()
+        {
+            RefreshMenuForCurrentZoom();
+        }
+        /// <summary>
+        /// Refreshuje své menu pro aktuální Zoom
+        /// </summary>
+        public void RefreshMenuForCurrentZoom()
+        {
+            // Aktuální zoom:
+            int zoom = _CurrentZoomPct;
+            string text = _CurrentZoomText;
+
+            // this prvek:
+            this.Caption = text;
+            if (DxRibbonControl.TryGetRibbonItem(this, out var iMenuData))
+            {
+                if (iMenuData is DataRibbonItem menuData)
+                    menuData.Text = text;
+            }
+
+            // Jednotlivé prvky menu:
+
+            var subItems = this.ItemLinks;
+            if (subItems != null)
+            {
+                foreach (BarItemLink subItemLink in subItems)
+                {
+                    var subItem = subItemLink.Item;
+                    if (DxRibbonControl.TryGetRibbonItem(subItem, out var iSubMenuData) && iSubMenuData.Tag is int)
+                    {
+                        if (iSubMenuData is DataRibbonItem subMenuData)
+                        {
+                            var subItemZoom = (int)(subMenuData.Tag);
+                            bool isActive = (subItemZoom == zoom);
+                            subMenuData.FontStyle = (isActive ? FontStyle.Bold : FontStyle.Regular);
+                            subMenuData.ImageName = (isActive ? DxZoomMenuBarSubItem.ZoomImageName : null);
+                            DxComponent.FillBarItemFrom(subItem, subMenuData, 1);
+                        }
+                    }
+                }
+            } 
+        }
+        /// <summary>
+        /// Jméno prvku SubItem pro nabídku Zoomu
+        /// </summary>
+        private const string _SubItemName_ZoomValue = "_SYS__DevExpress_ZoomMenuValue_";
+        /// <summary>
+        /// Hodnoty Zoomu v nabídce v Ribbonu
+        /// </summary>
+        private static int[] _ZoomValues { get { return new int[] { 50, 60, 75, 80, 90, 100, 105, 110, 125, 150, 175, 200 }; } }
+        /// <summary>
+        /// Vrátí danou hodnotu Zoomu zarovnanou do validních mezí
+        /// </summary>
+        /// <param name="zoom"></param>
+        /// <returns></returns>
+        private static int _AlignZoomValue(int zoom) { return (zoom < 50 ? 50 : (zoom > 250 ? 250 : zoom)); }
+        /// <summary>
+        /// Vrátí true pro validní hodnotu zoomu
+        /// </summary>
+        /// <param name="zoom"></param>
+        /// <returns></returns>
+        private static bool _IsValidZoom(int zoom) { return (zoom >= 50 && zoom <= 250); }
+        /// <summary>
+        /// Aktuální systémový zoom jako Int32 v procentech
+        /// </summary>
+        private static int _CurrentZoomPct
+        {
+            get { return (int)(100m * DxComponent.Zoom); }
+            set { DxComponent.Zoom = (decimal)value / 100m; }
+        }
+        /// <summary>
+        /// Aktuální systémový zoom jako text "125%"
+        /// </summary>
+        private static string _CurrentZoomText { get { return $"{_CurrentZoomPct}%"; } }
+        /// <summary>
+        /// Event vyvolaný tehdy, když uživatel změní Zoom
+        /// </summary>
+        public event EventHandler ZoomChanged;
+        /// <summary>
+        /// ImageName pro ikonu Zoomu
+        /// </summary>
+        public static string ZoomImageName { get { return "svgimages/pdf%20viewer/marqueezoom.svg"; } }
     }
     #endregion
     #region TrackBar - TODO
@@ -11544,14 +11790,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             ParentGroup = source.ParentGroup;
             ParentRibbonItem = source.ParentRibbonItem;
             ItemType = source.ItemType;
+            RadioButtonGroupName = source.RadioButtonGroupName;
             RibbonStyle = source.RibbonStyle;
+            ButtonGroupColumnCount = source.ButtonGroupColumnCount;
+            PrepareDisabledImage = source.PrepareDisabledImage;
+            ImageListMode = source.ImageListMode;
+            Size = source.Size;
+            BackColor = source.BackColor;
+            TextColor = source.TextColor;
+            StyleName = source.StyleName;
+            Alignment = source.Alignment;
             DelayMilisecBeforeNextClick = source.DelayMilisecBeforeNextClick;
             DelayLastClickTime = source.DelayLastClickTime;
             DelayTimerGuid = source.DelayTimerGuid;
             VisibleInSearchMenu = source.VisibleInSearchMenu;
             Size = source.Size;
+            QatKey = source.QatKey;
+            SearchTags = source.SearchTags;
             SubItemsContentMode = source.SubItemsContentMode;
             SubItems = source.SubItems?.ToListExt();
+            RepositoryEditorInfo = source.RepositoryEditorInfo;
         }
         /// <summary>
         /// Vizualizace = pro přímé použití v GUI objektech (např. jako prvek ListBoxu)
@@ -12746,7 +13004,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         SkinPaletteGallery,
         /// <summary>
-        /// Nabídka Zoomu
+        /// Nabídka Zoomu = samotné menu, bez labelu.
+        /// Jednotlivé nabízené položky lze nadefinovat buď kompletně jako <see cref="IRibbonItem.SubItems"/> tohoto prvku, 
+        /// anebo lze do <see cref="ITextItem.Tag"/> vložit pole int[] obsahující jednotlivé položky Zommu, anebo do tohoto Tagu vložit jeden string s čísly oddělenými čárkami.
+        /// Pokud nebude definováno nijak, použije se defaultní sada hodnot.
         /// </summary>
         ZoomPresetMenu,
         /// <summary>

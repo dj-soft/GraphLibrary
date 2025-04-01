@@ -33,7 +33,6 @@ namespace TestDevExpress.Forms
             this.Text = $"Test DevExpress [{DxComponent.FrameworkName}]";
 
             var ribbonContent = new DataRibbonContent();
-
             ribbonContent.Pages.AddRange(_CreateRibbonPages());
             ribbonContent.StatusBarItems.AddRange(_CreateStatusItems());
 
@@ -42,7 +41,6 @@ namespace TestDevExpress.Forms
 
             this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
         }
-
         private List<DataRibbonPage> _CreateRibbonPages()
         {
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
@@ -60,18 +58,18 @@ namespace TestDevExpress.Forms
 
             return pages;
         }
-
         private List<DataRibbonItem> _CreateStatusItems()
         {
             string statText = $"Vyhledání aktivních formulářů s metodou RunFormInfo.GetFormsWithProperty(): čas = {__FormLoadTime.TotalMilliseconds:N0} ms";
             _StatusVersionItem = new DataRibbonItem() { ItemId = "StatusVersion", ItemType = RibbonItemType.Static, Text = "Ver. 1.0.0", ImageName = "svgimages/icon%20builder/actions_info.svg" };
-            _StatusMainInfoItem = new DataRibbonItem() { ItemId = "StatusVersionInfo", ItemType = RibbonItemType.Static, Text = statText, ImageName = "", ImageFromCaptionMode = ImageFromCaptionType.Disabled };
-            _StatusZoomLabelItem = new DataRibbonItem() { ItemId = "StatusZoomLabel", ItemType = RibbonItemType.Static, Text = "Měřítko", ImageName = "", ImageFromCaptionMode = ImageFromCaptionType.Disabled, Alignment = BarItemAlignment.Right };
-            _StatusZoomMenuItem = new DataRibbonItem() { ItemId = "StatusZoomLabel", ItemType = RibbonItemType.ZoomPresetMenu, Text = "100%", ImageName = "", ImageFromCaptionMode = ImageFromCaptionType.Disabled, Alignment = BarItemAlignment.Right };
+            _StatusMainInfoItem = new DataRibbonItem() { ItemId = "StatusVersionInfo", ItemType = RibbonItemType.Static, Text = statText, ImageName = "", ImageFromCaptionMode = ImageFromCaptionType.Disabled, ItemIsFirstInGroup = true };
+            _StatusZoomLabelItem = new DataRibbonItem() { ItemId = "StatusZoomLabel", ItemType = RibbonItemType.Static, Text = "Měřítko", ImageName = "", ImageFromCaptionMode = ImageFromCaptionType.Disabled, Alignment = BarItemAlignment.Right, ItemIsFirstInGroup = true };
+            _StatusZoomMenuItem = new DataRibbonItem() { ItemId = "StatusZoomMenu", ItemType = RibbonItemType.ZoomPresetMenu, Text = "100%", ImageName = "", ImageFromCaptionMode = ImageFromCaptionType.Disabled, Alignment = BarItemAlignment.Right, Tag = "50,70,85,100,125,150,200" };
             var statusItems = new List<DataRibbonItem>();
             statusItems.Add(_StatusVersionItem);
             statusItems.Add(_StatusMainInfoItem);
             statusItems.Add(_StatusZoomLabelItem);
+            statusItems.Add(_StatusZoomMenuItem);
             return statusItems;
         }
         private DataRibbonItem _StatusVersionItem;
