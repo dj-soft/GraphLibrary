@@ -121,7 +121,7 @@ namespace TestDevExpress.Forms
         private DevExpress.XtraBars.BarItem __StatusInfoLabel;
         private TimeSpan __FormLoadTime;
         #endregion
-        #region DockManager - služby
+        #region DockManager a TabHeaderPainter - služby
         /// <summary>
         /// Po dokončení tvorby Dockmanageru, DocumentManageru, TabbedView a DockPanelů
         /// </summary>
@@ -129,14 +129,17 @@ namespace TestDevExpress.Forms
         {
             _TabHeaderImagePainterPrepare();
         }
+        /// <summary>
+        /// Inicializace painteru TabHeader
+        /// </summary>
         private void _TabHeaderImagePainterPrepare()
         {
             __TabHeaderImagePainter = new DxTabHeaderImagePainter();
             __TabHeaderImagePainter.TabbedView = this.TabbedView;
             __TabHeaderImagePainter.AllIconsDirectPaint = true;
             __TabHeaderImagePainter.SecondImagePosition = DxTabHeaderImagePainter.ImagePositionType.AfterTextArea;
-            __TabHeaderImagePainter.MainImageSizeType = ResourceImageSizeType.Large;
-            __TabHeaderImagePainter.SecondImageSizeType = ResourceImageSizeType.Large;
+            __TabHeaderImagePainter.MainImageSizeType = ResourceImageSizeType.Medium;
+            __TabHeaderImagePainter.SecondImageSizeType = ResourceImageSizeType.Medium;
         }
         /// <summary>
         /// Pomocník pro kreslení ikon (standardní + přidaná) v záhlaví TabHeader.
@@ -175,7 +178,11 @@ namespace TestDevExpress.Forms
             //var logControl4 = new TestDevExpress.Components.AppLogPanel();
             //this.AddControlToDockPanels(logControl4, "Jinopohledový log", DevExpress.XtraBars.Docking.DockingStyle.Left, DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
         }
-
+        /// <summary>
+        /// Po změně layoutu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _LogActivityPanel_LayoutChanged(object sender, EventArgs e)
         {
             if (this.WasShown && sender is DockPanelLayoutInfo dockPanelLayout)
@@ -183,7 +190,6 @@ namespace TestDevExpress.Forms
                 DxComponent.Settings.SetRawValue("Components", "AppLogPanelPosition", dockPanelLayout.Definition);
             }
         }
-
         /// <summary>
         /// Viditelnost panelu <see cref="LogActivityDockPanel"/>
         /// </summary>

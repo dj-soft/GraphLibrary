@@ -43,12 +43,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ClearButtonToolTipText = DxComponent.Localize(MsgCode.DxFilterBoxClearTipText);
 
             _OperatorButton = DxComponent.CreateDxMiniButton(0, 0, 24, 24, this, OperatorButton_Click, tabStop: false);
+            _OperatorButton.Name = "FilterOperatorButton";
+
             _FilterText = DxComponent.CreateDxTextEdit(24, 0, 200, this, tabStop: true);
+            _FilterText.Name = "FilterText";
             _FilterText.KeyDown += FilterText_KeyDown;
             _FilterText.KeyUp += FilterText_KeyUp;
             _FilterText.EditValueChanged += _FilterText_EditValueChanged;
 
             _ClearButton = DxComponent.CreateDxMiniButton(224, 0, 24, 24, this, ClearButton_Click, tabStop: false);
+            _ClearButton.Name = "FilterClearButton";
 
             _FilterText.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;

@@ -3405,8 +3405,8 @@ Boletus subtomentosus L. 1753
         /// Vrátí daný počet náhodně vybraných prvků z pole
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="count"></param>
-        /// <param name="items"></param>
+        /// <param name="count">Požadovaný počet</param>
+        /// <param name="items">Vstupní prvky, z nichž vybíráme</param>
         /// <returns></returns>
         public static T[] GetItems<T>(int count, params T[] items)
         {
@@ -3416,7 +3416,8 @@ Boletus subtomentosus L. 1753
         /// Vrátí náhodný prvek z pole
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="items"></param>
+        /// <param name="count">Požadovaný počet</param>
+        /// <param name="items">Vstupní prvky, z nichž vybíráme</param>
         /// <returns></returns>
         public static T[] GetItems<T>(int count, IList<T> items)
         {
@@ -3442,6 +3443,27 @@ Boletus subtomentosus L. 1753
                 }
             }
             return result.ToArray();
+        }
+        /// <summary>
+        /// Vrátí Int32 hodnotu v daném rozashu, <paramref name="minValue"/> include,  <paramref name="maxValue"/> exclude
+        /// </summary>
+        /// <param name="minValue"></param>
+        /// <param name="maxValue"></param>
+        /// <returns></returns>
+        public static int GetValueInRange(int minValue, int maxValue)
+        {
+            return Rand.Next(minValue, maxValue);
+        }
+        /// <summary>
+        /// Vrátí Double hodnotu v daném rozashu, <paramref name="minValue"/> include,  <paramref name="maxValue"/> exclude
+        /// </summary>
+        /// <param name="minValue"></param>
+        /// <param name="maxValue"></param>
+        /// <returns></returns>
+        public static double GetValueInRange(double minValue, double maxValue)
+        {
+            var ratio = Rand.NextDouble();
+            return minValue + (maxValue - minValue) * ratio;
         }
         /// <summary>
         /// Vrátí danou hodnotu zarovnanou do min - max, obě meze jsou včetně

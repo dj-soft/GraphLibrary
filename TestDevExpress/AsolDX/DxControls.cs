@@ -434,6 +434,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.__DxMainPanelLastClientSize = null;
             this.__DxMainPanel = DxComponent.CreateDxPanel(this, System.Windows.Forms.DockStyle.Fill, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
+            this.__DxMainPanel.Name = "MainPanel";
             this.__DxMainPanel.ClientSizeChanged += _DxMainPanel_ClientSizeChanged;
         }
         /// <summary>
@@ -818,13 +819,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.DxMainContentCreate();
 
-            this._DxRibbon = new DxRibbonControl() { Visible = true };
+            this._DxRibbon = new DxRibbonControl() { Visible = true, Name = "DxRibbon" };
             ((System.ComponentModel.ISupportInitialize)(_DxRibbon)).BeginInit();
             this.Ribbon = _DxRibbon;
             this.Controls.Add(this._DxRibbon);
             this.FormRibbonVisibility = FormRibbonVisibilityMode.Standard;
 
-            this._DxStatusBar = new DxRibbonStatusBar() { Visible = true };
+            this._DxStatusBar = new DxRibbonStatusBar() { Visible = true, Name = "DxStatus" };
             this._DxStatusBar.Ribbon = this._DxRibbon;
             this.StatusBar = _DxStatusBar;
             this.Controls.Add(this._DxStatusBar);
@@ -2280,8 +2281,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public Orientation SplitterOrientation
         {
-            get { return (Horizontal ? Orientation.Vertical : Orientation.Horizontal); }
-            set { Horizontal = (value == Orientation.Vertical); }
+            get { return (Horizontal ? Orientation.Horizontal : Orientation.Vertical); }
+            set { Horizontal = (value == Orientation.Horizontal); }
         }
     }
     #endregion

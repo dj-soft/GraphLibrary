@@ -269,7 +269,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="AsolDX\News\DxThreadManager.cs" />
-    <Compile Include="AsolDX\DxTreeView.cs">
+    <Compile Include="AsolDX\DxTreeList.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Constants.cs" />
@@ -308,6 +308,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\DxDialogTestForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\DxTreeListForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\GraphForm.cs">

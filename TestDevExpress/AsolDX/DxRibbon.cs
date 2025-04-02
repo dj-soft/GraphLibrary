@@ -8228,6 +8228,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.PaletteButton)) iGroup.Items.Add(new DataRibbonItem() { ItemId = DesignRibbonItemSkinPaletteDropDownId, ItemType = RibbonItemType.SkinPaletteDropDown });
             if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.PaletteGallery)) iGroup.Items.Add(new DataRibbonItem() { ItemId = DesignRibbonItemSkinPaletteDropGalleryId, ItemType = RibbonItemType.SkinPaletteGallery });
 
+            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.ZoomPresetMenu))
+                iGroup.Items.Add(new DataRibbonItem()
+                {
+                    ItemId = DesignRibbonItemZoomPresetMenuId,
+                    ItemType = RibbonItemType.ZoomPresetMenu,
+                    RibbonStyle = RibbonItemStyles.Large
+                });
+            else if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.ZoomPresetMenuTest))
+                iGroup.Items.Add(new DataRibbonItem()
+                {
+                    ItemId = DesignRibbonItemZoomPresetMenuId,
+                    ItemType = RibbonItemType.ZoomPresetMenu,
+                    RibbonStyle = RibbonItemStyles.Large,
+                    Tag = "50,60,75,85,92,100,108,115,125,150,175,189,200"
+                });
+
             if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.UhdSupport))
                 iGroup.Items.Add(new DataRibbonItem()
                 {
@@ -8267,22 +8283,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     ClickAction = _SetNotCaptureWindows
                 });
 
-            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.ZoomPresetMenu))
-                iGroup.Items.Add(new DataRibbonItem()
-                {
-                    ItemId = DesignRibbonItemZoomPresetMenuId,
-                    ItemType = RibbonItemType.ZoomPresetMenu,
-                    RibbonStyle = RibbonItemStyles.Large
-                });
-            else if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.ZoomPresetMenuTest))
-                iGroup.Items.Add(new DataRibbonItem()
-                {
-                    ItemId = DesignRibbonItemZoomPresetMenuId,
-                    ItemType = RibbonItemType.ZoomPresetMenu,
-                    RibbonStyle = RibbonItemStyles.Large,
-                    Tag = "50,60,75,85,92,100,108,115,125,150,175,189,200"
-                });
-
+           
             if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.ImageGallery))
                 iGroup.Items.Add(new DataRibbonItem()
                 {

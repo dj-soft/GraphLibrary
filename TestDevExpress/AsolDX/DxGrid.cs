@@ -66,7 +66,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void ShowHorizontalSplit()
         {
-
             if (!IsSplitViewVisible || !Horizontal)
             {
                 if (!Horizontal) Horizontal = true;
@@ -74,11 +73,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Zobrazí vertikálí split
+        /// Zobrazí vertikální split
         /// </summary>
         public void ShowVerticalSplit()
         {
-
             if (!IsSplitViewVisible || Horizontal)
             {
                 if (Horizontal) Horizontal = false;
@@ -86,7 +84,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
     }
-
     /// <summary>
     /// Hlavní grid, který může mít více možností zobrazení, např. GridView, v naší podobě <see cref="DxGridView"/>
     /// </summary>
