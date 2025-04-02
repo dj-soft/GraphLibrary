@@ -7051,6 +7051,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private DxSkinColorSet __SkinColorSet;
         #endregion
+        #region GetAssemblyInfo
+        public static DxAssemblyInfo GetAssemblyInfo(Type type)
+        {
+            return new DxAssemblyInfo();
+        }
+        #endregion
         #region Static helpers
         /// <summary>
         /// Vytvoří a vrátí string obsahující new Guid
@@ -11632,6 +11638,10 @@ White
         /// </summary>
         public object UserData { get; set; }
     }
+    #endregion
+    #region class DxAssemblyInfo : informace o assembly
+    public class DxAssemblyInfo
+    { }
     #endregion
     #region class BitStorage32 a BitStorage64 : úložiště Boolean hodnot
     /// <summary>

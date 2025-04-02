@@ -9853,7 +9853,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var dataRibbonItem = (ribbonItem is null ? new DataRibbonItem() : DataRibbonItem.CreateClone(ribbonItem));
             dataRibbonItem.ItemType = RibbonItemType.ZoomPresetMenu;
-            dataRibbonItem.ImageName = ZoomImageName;
+            dataRibbonItem.ImageName = (ribbonItem.ImageName is null ? ZoomImageName : ribbonItem.ImageName);              // Defaultní ikona namísto NULL, jinak ponechám (prázdný string = bez ikony)
             dataRibbonItem.SubItems = _CreateZoomMenuItems(ribbonItem);
             dataRibbonItem.Text = _CurrentZoomText;
             DxComponent.FillBarItemFrom(this, dataRibbonItem, 0);    // Do this instance (potomek prvku Ribbonu BarSubItem) vepíše definiční data z dataRibbonItem

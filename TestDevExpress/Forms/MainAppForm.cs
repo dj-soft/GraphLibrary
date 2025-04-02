@@ -62,6 +62,8 @@ namespace TestDevExpress.Forms
         }
         private List<DataRibbonItem> _CreateStatusItems()
         {
+            var assemblyInfo = DxComponent.GetAssemblyInfo(this.GetType());
+
             string statText = $"Vyhledání aktivních formulářů s metodou RunFormInfo.GetFormsWithProperty(): čas = {__FormLoadTime.TotalMilliseconds:N0} ms";
             _StatusVersionItem = new DataRibbonItem() { ItemId = "StatusVersion", ItemType = RibbonItemType.Static, Text = "Ver. 1.0.0", ImageName = "svgimages/icon%20builder/actions_info.svg" };
             _StatusMainInfoItem = new DataRibbonItem() { ItemId = "StatusVersionInfo", ItemType = RibbonItemType.Static, Text = statText, ImageName = "", ImageFromCaptionMode = ImageFromCaptionType.Disabled, ItemIsFirstInGroup = true };
