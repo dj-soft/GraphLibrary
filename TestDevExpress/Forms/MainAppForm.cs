@@ -63,9 +63,10 @@ namespace TestDevExpress.Forms
         private List<DataRibbonItem> _CreateStatusItems()
         {
             var assemblyInfo = DxComponent.GetAssemblyInfo(this.GetType());
-
+            string versionToolTipTitle = $"{assemblyInfo.AssemblyTitle}";
+            string versionToolTipText = $"Version: {assemblyInfo.AssemblyFileVersion}\r\nFile: {assemblyInfo.AssemblyFullFileName}\r\nTime: {assemblyInfo.FileModifyTime}";
             string statText = $"Vyhledání aktivních formulářů s metodou RunFormInfo.GetFormsWithProperty(): čas = {__FormLoadTime.TotalMilliseconds:N0} ms";
-            _StatusVersionItem = new DataRibbonItem() { ItemId = "StatusVersion", ItemType = RibbonItemType.Static, Text = "Ver. 1.0.0", ImageName = "svgimages/icon%20builder/actions_info.svg" };
+            _StatusVersionItem = new DataRibbonItem() { ItemId = "StatusVersion", ItemType = RibbonItemType.Static, Text = $"Ver. {assemblyInfo.AssemblyFileVersion}", ImageName = "svgimages/icon%20builder/actions_info.svg", ToolTipTitle = versionToolTipTitle, ToolTipText = versionToolTipText };
             _StatusMainInfoItem = new DataRibbonItem() { ItemId = "StatusVersionInfo", ItemType = RibbonItemType.Static, Text = statText, ImageName = "", ImageFromCaptionMode = ImageFromCaptionType.Disabled, ItemIsFirstInGroup = true };
             _StatusZoomLabelItem = new DataRibbonItem() { ItemId = "StatusZoomLabel", ItemType = RibbonItemType.Static, Text = "Měřítko", ImageName = "", ImageFromCaptionMode = ImageFromCaptionType.Disabled, Alignment = BarItemAlignment.Right, ItemIsFirstInGroup = true };
             _StatusZoomMenuItem = new DataRibbonItem() { ItemId = "StatusZoomMenu", ItemType = RibbonItemType.ZoomPresetMenu, Text = "100%", ImageName = "", ImageFromCaptionMode = ImageFromCaptionType.Disabled, Alignment = BarItemAlignment.Right, Tag = "50,70,85,100,125,150,200" };
@@ -100,15 +101,7 @@ namespace TestDevExpress.Forms
         /// </summary>
         protected override void DxStatusPrepare()
         {
-            /*
-            // nevoláme:  base.DxStatusPrepare();
-            __StatusVersionLabel = new DevExpress.XtraBars.BarStaticItem();
-            __StatusInfoLabel = new DevExpress.XtraBars.BarStaticItem();
-            this.DxStatusBar.ItemLinks.Add(__StatusVersionLabel);
-            this.DxStatusBar.ItemLinks.Add(__StatusInfoLabel);
-
-            StatusInfoText = $"Vyhledání aktivních formulářů s metodou RunFormInfo.GetFormsWithProperty(): čas = {__FormLoadTime.TotalMilliseconds:N0} ms";
-            */
+            // StatusBar je připraven společně s Ribbonem do this.DxRibbon.RibbonContent
         }
         /// <summary>
         /// Text v prvním poli StatusBaru

@@ -1757,6 +1757,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private static Version _ReadDxVersion()
         {
+            var info = new DxAssemblyInfo(typeof(DevExpress.XtraBars.Ribbon.RibbonControl));
+
+
+
             Version result = null;
             try
             {

@@ -7052,9 +7052,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DxSkinColorSet __SkinColorSet;
         #endregion
         #region GetAssemblyInfo
+        /// <summary>
+        /// Vrátí info o Assembly daného typu
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
         public static DxAssemblyInfo GetAssemblyInfo(Type type)
         {
-            return new DxAssemblyInfo();
+            return new DxAssemblyInfo(type);
         }
         #endregion
         #region Static helpers
@@ -11641,7 +11646,144 @@ White
     #endregion
     #region class DxAssemblyInfo : informace o assembly
     public class DxAssemblyInfo
-    { }
+    {
+        #region Konstruktor, načtení, private fields
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="type"></param>
+        public DxAssemblyInfo(Type type)
+        {
+            _ReadInfo(type);
+        }
+        private void _ReadInfo(Type type)
+        {
+            try
+            {
+                var assembly = type.Assembly;
+
+                try
+                {
+                    var fileName = assembly.Location;
+                    __AssemblyFullFileName = fileName;
+                    var fileInfo = new System.IO.FileInfo(fileName);
+                    if (fileInfo.Exists)
+                    {
+                        __FileLength = fileInfo.Length;
+                        __FileCreateTime = fileInfo.CreationTime;
+                        __FileModifyTime = fileInfo.LastWriteTime;
+                    }
+                }
+                catch { }
+
+                __AssemblyFileVersion = _ReadAttribute<System.Reflection.AssemblyFileVersionAttribute, Version>(assembly, at => { if (Version.TryParse(at.Version, out var version)) return version; return Version.Parse("99.00.00"); }, Version.Parse("99.00.00"));
+                __AssemblyTitle = _ReadAttribute<System.Reflection.AssemblyTitleAttribute, string>(assembly, at => at.Title, null);
+                __AssemblyDescription = _ReadAttribute<System.Reflection.AssemblyDescriptionAttribute, string>(assembly, at => at.Description, null);
+                __AssemblyCompany = _ReadAttribute<System.Reflection.AssemblyCompanyAttribute, string>(assembly, at => at.Company, null);
+                __AssemblyProduct = _ReadAttribute<System.Reflection.AssemblyProductAttribute, string>(assembly, at => at.Product, null);
+                __AssemblyCopyright = _ReadAttribute<System.Reflection.AssemblyCopyrightAttribute, string>(assembly, at => at.Copyright, null);
+                __AssemblyTrademark = _ReadAttribute<System.Reflection.AssemblyTrademarkAttribute, string>(assembly, at => at.Trademark, null);
+                __SatelliteContractVersion = _ReadAttribute<System.Resources.SatelliteContractVersionAttribute, Version>(assembly, at => { if (Version.TryParse(at.Version, out var version)) return version; return Version.Parse("99.00.00"); }, Version.Parse("99.00.00"));
+                __TargetFrameworkName = _ReadAttribute<System.Runtime.Versioning.TargetFrameworkAttribute, string>(assembly, at => at.FrameworkName, null);
+                __TargetFrameworkDisplayName = _ReadAttribute<System.Runtime.Versioning.TargetFrameworkAttribute, string>(assembly, at => at.FrameworkDisplayName, null);
+            }
+            catch
+            {
+            }
+        }
+        /// <summary>
+        /// Z dodané <paramref name="assembly"/> získá atribut daného typu <typeparamref name="TInp"/>, pomocí selectoru <paramref name="selector"/> z něj určí výstupní hodnotu <typeparamref name="TOut"/> a tu vrátí. Nebo vrací daný default <paramref name="defValue"/>.
+        /// </summary>
+        /// <typeparam name="TInp"></typeparam>
+        /// <typeparam name="TOut"></typeparam>
+        /// <param name="assembly"></param>
+        /// <param name="selector"></param>
+        /// <param name="defValue"></param>
+        /// <returns></returns>
+        private TOut _ReadAttribute<TInp, TOut>(System.Reflection.Assembly assembly, Func<TInp, TOut> selector, TOut defValue)
+        {
+            try
+            {
+                var attribute = assembly.GetCustomAttributes(typeof(TInp), true).FirstOrDefault();
+                if (attribute != null && attribute is TInp validAttribute) return selector(validAttribute);
+            }
+            catch { }
+            return defValue;
+        }
+        private string __AssemblyFullFileName;
+        private long? __FileLength;
+        private DateTime? __FileCreateTime;
+        private DateTime? __FileModifyTime;
+        private Version __AssemblyFileVersion;
+        private string __AssemblyTitle;
+        private string __AssemblyDescription;
+        private string __AssemblyCompany;
+        private string __AssemblyProduct;
+        private string __AssemblyCopyright;
+        private string __AssemblyTrademark;
+        private Version __SatelliteContractVersion;
+        private string __TargetFrameworkName;
+        private string __TargetFrameworkDisplayName;
+        #endregion
+        #region Public properties
+        /// <summary>
+        /// Plné jméno fyzického souboru assembly (soubor EXE nebo DLL)
+        /// </summary>
+        public string AssemblyFullFileName { get { return __AssemblyFullFileName; } }
+        /// <summary>
+        /// Velikost souboru v Byte, nebo null pokud nebyl nalezen
+        /// </summary>
+        public long? FileLength { get { return __FileLength; } }
+        /// <summary>
+        /// Datum vytvoření souboru, nebo null pokud nebyl nalezen
+        /// </summary>
+        public DateTime? FileCreateTime { get { return __FileCreateTime; } }
+        /// <summary>
+        /// Datum modifikace souboru, nebo null pokud nebyl nalezen
+        /// </summary>
+        public DateTime? FileModifyTime { get { return __FileModifyTime; } }
+        /// <summary>
+        /// Verze souboru z atributu <see cref="System.Reflection.AssemblyFileVersionAttribute"/>
+        /// </summary>
+        public Version AssemblyFileVersion { get { return __AssemblyFileVersion; } }
+        /// <summary>
+        /// Titul assembly z atributu <see cref="System.Reflection.AssemblyTitleAttribute"/>
+        /// </summary>
+        public string AssemblyTitle { get { return __AssemblyTitle; } }
+        /// <summary>
+        /// Description z atributu <see cref="System.Reflection.AssemblyDescriptionAttribute"/>
+        /// </summary>
+        public string AssemblyDescription { get { return __AssemblyDescription; } }
+        /// <summary>
+        /// Company z atributu <see cref="System.Reflection.AssemblyCompanyAttribute"/>
+        /// </summary>
+        public string AssemblyCompany { get { return __AssemblyCompany; } }
+        /// <summary>
+        /// Název produktu z atributu <see cref="System.Reflection.AssemblyProductAttribute"/>
+        /// </summary>
+        public string AssemblyProduct { get { return __AssemblyProduct; } }
+        /// <summary>
+        /// Copyright z atributu <see cref="System.Reflection.AssemblyCopyrightAttribute"/>
+        /// </summary>
+        public string AssemblyCopyright { get { return __AssemblyCopyright; } }
+        /// <summary>
+        /// Trademark z atributu <see cref="System.Reflection.AssemblyTrademarkAttribute"/>
+        /// </summary>
+        public string AssemblyTrademark { get { return __AssemblyTrademark; } }
+        /// <summary>
+        /// Verze vyžadovaných satelitních assemblies z atributu <see cref="System.Resources.SatelliteContractVersionAttribute"/>
+        /// </summary>
+        public Version SatelliteContractVersion { get { return __SatelliteContractVersion; } }
+        /// <summary>
+        /// Cílový framework (Name) z atributu <see cref="System.Runtime.Versioning.TargetFrameworkAttribute"/>
+        /// </summary>
+        public string TargetFrameworkName { get { return __TargetFrameworkName; } }
+        /// <summary>
+        /// Cílový framework (DisplayName) z atributu <see cref="System.Runtime.Versioning.TargetFrameworkAttribute"/>
+        /// </summary>
+        public string TargetFrameworkDisplayName { get { return __TargetFrameworkDisplayName; } }
+        #endregion
+    }
     #endregion
     #region class BitStorage32 a BitStorage64 : úložiště Boolean hodnot
     /// <summary>
