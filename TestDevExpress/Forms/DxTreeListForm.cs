@@ -9,6 +9,7 @@ using System.Drawing;
 using TestDevExpress.Components;
 using Noris.Clients.Win.Components;
 using DevExpress.XtraRichEdit.Layout;
+using DevExpress.PivotGrid.OLAP.Mdx;
 
 namespace TestDevExpress.Forms
 {
@@ -90,6 +91,7 @@ namespace TestDevExpress.Forms
             __DxTreeList = new DxTreeList() { Dock = DockStyle.Fill, Name = "DxTreeList" };
             _TreeListInit();
             __MainSplitContainer.Panel1.Controls.Add(__DxTreeList);
+            __MainSplitContainer.Panel1.MinSize = 200;
 
             __ParamSplitContainer = new DxSplitContainerControl() { Dock = DockStyle.Fill, SplitterPosition = 300, FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel1, SplitterOrientation = Orientation.Vertical, ShowSplitGlyph = DevExpress.Utils.DefaultBoolean.True, Name = "ParamSplitContainer" };
             __MainSplitContainer.Panel2.Controls.Add(__ParamSplitContainer);
@@ -232,7 +234,7 @@ namespace TestDevExpress.Forms
         }
         private void _TreeList_ToolTipChanged(object sender, DxToolTipArgs args)
         {
-            if (__LogToolTipChangeValue)
+            if (SetingsLogToolTipChanges)
             {
                 string line = "ToolTip: " + args.EventName;
                 bool skipGUI = (line.Contains("IsFASTMotion"));             // ToolTip obsahující IsFASTMotion nebudu dávat do GUI Textu - to jsou rychlé eventy:
@@ -844,44 +846,85 @@ namespace TestDevExpress.Forms
         #region Parametry v okně
         private void _ParamsInit()
         {
-            __TreeListMultiSelectChk = DxComponent.CreateDxCheckEdit(25, 8, 200, __ParamsPanel, "MultiSelectEnabled", _TreeListMultiSelectChkChecked, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1,
-                DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, null,
-                "MultiSelectEnabled = výběr více nodů", "Zaškrtnuto: lze vybrat více nodů (Ctrl, Shift). Sledujme pak události.");
+            int dx = 325;
+            int x = 25;
+            int y = 8;
+            int w = 300;
+            int maxY = 0;
+            __Title1 = DxComponent.CreateDxTitleLabel(x, ref y, w, __ParamsPanel, "Základní", shiftY: true);
 
-            __TreeListGuideLinesChk = DxComponent.CreateDxCheckEdit(25, 38, 200, __ParamsPanel, "Guide Lines Visible", _TreeListGuideLinesChkChecked, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1,
+            __TreeListMultiSelectChk = DxComponent.CreateDxCheckEdit(x, ref y, w, __ParamsPanel, "MultiSelectEnabled", _TreeListMultiSelectChkChecked, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1,
                 DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, null,
-                "Guide Lines Visible = vodicí linky jsou viditelné", "Zaškrtnuto: Strom obsahuje GuideLines mezi úrovněmi nodů.");
-      
-            __LogToolTipChangeChk = DxComponent.CreateDxCheckEdit(375, 8, 200, __ParamsPanel, "Log: ToolTipChange", _LogToolTipChangeChkChecked, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1,
+                "MultiSelectEnabled = výběr více nodů", "Zaškrtnuto: lze vybrat více nodů (Ctrl, Shift). Sledujme pak události.", shiftY: true);
+
+            __TreeListGuideLinesChk = DxComponent.CreateDxCheckEdit(x, ref y, w, __ParamsPanel, "Guide Lines Visible", _TreeListGuideLinesChkChecked, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1,
                 DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, null,
-                "Logovat události ToolTipChange", "Zaškrtnuto: při pohybu myši se plní Log událsotí.");
+                "Guide Lines Visible = vodicí linky jsou viditelné", "Zaškrtnuto: Strom obsahuje GuideLines mezi úrovněmi nodů.", shiftY: true);
+
+            maxY = (y > maxY ? y : maxY);
+            x += dx;
+            y = 8;
+
+            __Title2 = DxComponent.CreateDxTitleLabel(x, ref y, w, __ParamsPanel, "Vlastnosti prvků", shiftY: true);
+
+            maxY = (y > maxY ? y : maxY);
+            x += dx;
+            y = 8;
+
+            __Title3 = DxComponent.CreateDxTitleLabel(x, ref y, w, __ParamsPanel, "Logování", shiftY: true);
+
+            __LogToolTipChangeChk = DxComponent.CreateDxCheckEdit(x, ref y, 200, __ParamsPanel, "Log: ToolTipChange", _LogToolTipChangeChkChecked, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1,
+                DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, null,
+                "Logovat události ToolTipChange", "Zaškrtnuto: při pohybu myši se plní Log událostí.", shiftY: true);
        
-            // DxComponent.Settings.GetRawValue()
+            __LogClearBtn = DxComponent.CreateDxSimpleButton(x, ref y, 160, 30, __ParamsPanel, "Smazat Log", _LogClearBtnClick, shiftY: true);
 
+            maxY = (y > maxY ? y : maxY);
 
-            __LogClearBtn = DxComponent.CreateDxSimpleButton(375, 250, 160, 30, __ParamsPanel, "Smazat Log", _LogClearBtnClick);
-
+            __ParamSplitContainer.Panel1.MinSize = (maxY + 8);
         }
         private void _TreeListMultiSelectChkChecked(object sender, EventArgs e)
         {
             if (__DxTreeList != null)
             {
                 bool value = __TreeListMultiSelectChk.Checked;
-                __DxTreeList.MultiSelectEnabled = value;
                 _AddToLog($"MultiSelectEnabled: {value}");
+                this.SetingsMultiSelect = value;
             }
         }
         private void _TreeListGuideLinesChkChecked(object sender, EventArgs e)
         {
             if (__DxTreeList != null)
             {
-                var value = _ConvertBoolN(__TreeListGuideLinesChk.CheckState);
-                __DxTreeList.TreeListNative.OptionsView.ShowTreeLines = _ConvertDefaultBoolean(value);
+                var value = _ConvertToBoolN(__TreeListGuideLinesChk.CheckState);
                 _AddToLog($"ShowTreeLines: {value}");
+                SetingsShowTreeLines = value;
             }
         }
+        private void _LogToolTipChangeChkChecked(object sender, EventArgs e)
+        {
+            var value = __LogToolTipChangeChk.Checked;
+            SetingsLogToolTipChanges = value;
+        }
 
-        private bool? _ConvertBoolN(CheckState checkState)
+        private void _LogClearBtnClick(object sender, EventArgs e)
+        {
+            _LogClear();
+        }
+        private DxTitleLabelControl __Title1;
+        private DxCheckEdit __TreeListMultiSelectChk;
+        private DxCheckEdit __TreeListGuideLinesChk;
+        private DxTitleLabelControl __Title2;
+        private DxTitleLabelControl __Title3;
+        private DxCheckEdit __LogToolTipChangeChk;
+        private DxSimpleButton __LogClearBtn;
+        #endregion
+        #region Konverze typů
+        private static bool _ConvertToBool(string value)
+        {
+            return (String.Equals(value, "Y", StringComparison.InvariantCultureIgnoreCase));
+        }
+        private static bool? _ConvertToBoolN(CheckState checkState)
         {
             switch (checkState)
             {
@@ -891,53 +934,30 @@ namespace TestDevExpress.Forms
             }
             return null;
         }
-        private CheckState _ConvertCheckState(bool? value)
+        private static bool? _ConvertToBoolN(string value)
         {
-            if (value.HasValue) return (value.Value ? CheckState.Checked: CheckState.Unchecked);
+            if (String.Equals(value, "Y", StringComparison.InvariantCultureIgnoreCase)) return true;
+            if (String.Equals(value, "N", StringComparison.InvariantCultureIgnoreCase)) return false;
+            return null;
+        }
+        private static CheckState _ConvertToCheckState(bool? value)
+        {
+            if (value.HasValue) return (value.Value ? CheckState.Checked : CheckState.Unchecked);
             return CheckState.Indeterminate;
         }
-        private DevExpress.Utils.DefaultBoolean _ConvertDefaultBoolean(bool? value)
+        private static DevExpress.Utils.DefaultBoolean _ConvertToDefaultBoolean(bool? value)
         {
             if (value.HasValue) return (value.Value ? DevExpress.Utils.DefaultBoolean.True : DevExpress.Utils.DefaultBoolean.False);
             return DevExpress.Utils.DefaultBoolean.Default;
         }
-        private void _LogToolTipChangeChkChecked(object sender, EventArgs e)
+        private static string _ConvertToString(bool value)
         {
-            if (__LogToolTipChangeChk != null)
-            {
-                __LogToolTipChangeValue = __LogToolTipChangeChk.Checked;
-            }
+            return value ? "Y" : "N";
         }
-        private void _LogClearBtnClick(object sender, EventArgs e)
+        private static string _ConvertToString(bool? value)
         {
-            _LogClear();
+            return (value.HasValue ? (value.Value ? "Y" : "N") : "");
         }
-        private DxCheckEdit __TreeListMultiSelectChk;
-        private DxCheckEdit __TreeListGuideLinesChk;
-        private DxCheckEdit __LogToolTipChangeChk;
-        private DxSimpleButton __LogClearBtn;
-        private bool __LogToolTipChangeValue;
-        #endregion
-        #region Settings
-        private void _SettingLoad()
-        {
-
-            __TreeListMultiSelectChk.Checked = SetingsMultiSelect;
-            __TreeListGuideLinesChk.CheckState = _ConvertCheckState(SetingsShowTreeLines);
-            __LogToolTipChangeChk.Checked = SetingsLogToolTipChanges;
-
-            __SettingsLoaded = true;
-        }
-        private void _SettingSave()
-        {
-            if (!__SettingsLoaded) return;
-        }
-
-        internal bool SetingsMultiSelect { get { return __SetingsMultiSelect; } set { __SetingsMultiSelect = value; _SettingSave(); } } private bool __SetingsMultiSelect;
-        internal bool? SetingsShowTreeLines { get { return __SetingsShowTreeLines; } set { __SetingsShowTreeLines = value; _SettingSave(); } } private bool? __SetingsShowTreeLines;
-        internal bool SetingsLogToolTipChanges { get { return __SetingsLogToolTipChanges; } set { __SetingsLogToolTipChanges = value; _SettingSave(); } } private bool __SetingsLogToolTipChanges;
-
-        private bool __SettingsLoaded;
         #endregion
         #region Log událostí
         private void _LogInit()
@@ -998,6 +1018,75 @@ namespace TestDevExpress.Forms
         DateTime? _TreeListLogTime;
         bool _TreeListPending;
         private DxMemoEdit _TreeListMemoEdit;
+        #endregion
+        #region Settings
+        /// <summary>
+        /// Načte konfiguraci z Settings do properties, do TreeListu i do Parametrů
+        /// </summary>
+        private void _SettingLoad()
+        {
+            SetingsMultiSelect = _ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SetingsMultiSelect", "N"));
+            SetingsShowTreeLines = _ConvertToBoolN(DxComponent.Settings.GetRawValue(SettingsKey, "SetingsShowTreeLines", null));
+            SetingsLogToolTipChanges = _ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SetingsLogToolTipChanges", "N"));
+
+            __TreeListMultiSelectChk.Checked = SetingsMultiSelect;
+            __TreeListGuideLinesChk.CheckState = _ConvertToCheckState(SetingsShowTreeLines);
+            __LogToolTipChangeChk.Checked = SetingsLogToolTipChanges;
+
+            // Teprve odtud se změny ukládají do Settings:
+            __SettingsLoaded = true;
+        }
+        /// <summary>
+        /// Uloží konfiguraci z Properties do Settings
+        /// </summary>
+        private void _SettingSave()
+        {
+            if (!__SettingsLoaded) return;
+
+            DxComponent.Settings.SetRawValue(SettingsKey, "SetingsMultiSelect", _ConvertToString(SetingsMultiSelect));
+            DxComponent.Settings.SetRawValue(SettingsKey, "SetingsShowTreeLines", _ConvertToString(SetingsShowTreeLines));
+            DxComponent.Settings.SetRawValue(SettingsKey, "SetingsLogToolTipChanges", _ConvertToString(SetingsLogToolTipChanges));
+        }
+        private const string SettingsKey = "DxTreeListValues";
+        internal bool SetingsMultiSelect
+        {
+            get { return __SetingsMultiSelect; } 
+            set 
+            {
+                __SetingsMultiSelect = value; 
+                __DxTreeList.MultiSelectEnabled = value; 
+                _SettingSave();
+            }
+        }
+        private bool __SetingsMultiSelect;
+
+        internal bool? SetingsShowTreeLines 
+        {
+            get { return __SetingsShowTreeLines; } 
+            set 
+            {
+                __SetingsShowTreeLines = value; 
+                __DxTreeList.TreeListNative.OptionsView.ShowTreeLines = _ConvertToDefaultBoolean(value);
+                __DxTreeList.TreeListNative.OptionsView.ShowFirstLines = false;
+                __DxTreeList.TreeListNative.OptionsView.ShowHierarchyIndentationLines = _ConvertToDefaultBoolean(value);
+                _SettingSave();
+            }
+        }
+        private bool? __SetingsShowTreeLines;
+
+
+        internal bool SetingsLogToolTipChanges
+        {
+            get { return __SetingsLogToolTipChanges; } 
+            set 
+            {
+                __SetingsLogToolTipChanges = value; 
+                _SettingSave();
+            }
+        }
+        private bool __SetingsLogToolTipChanges;
+
+        private bool __SettingsLoaded;
         #endregion
     }
 }

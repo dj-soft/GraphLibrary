@@ -1901,6 +1901,38 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return label;
         }
+
+        public static DxTitleLabelControl CreateDxTitleLabel(int x, int y, int w, Control parent, string text,
+            LabelStyleType? styleType = null, DevExpress.Utils.WordWrap? wordWrap = null, DevExpress.XtraEditors.LabelAutoSizeMode? autoSizeMode = null, DevExpress.Utils.HorzAlignment? hAlignment = null,
+            bool? visible = null, bool useLabelTextOffset = false)
+        {
+            return CreateDxTitleLabel(x, ref y, w, parent, text,
+                styleType, wordWrap, autoSizeMode, hAlignment,
+                visible, useLabelTextOffset, false);
+        }
+
+        public static DxTitleLabelControl CreateDxTitleLabel(int x, ref int y, int w, Control parent, string text,
+            LabelStyleType? styleType = null, DevExpress.Utils.WordWrap? wordWrap = null, DevExpress.XtraEditors.LabelAutoSizeMode? autoSizeMode = null, DevExpress.Utils.HorzAlignment? hAlignment = null,
+            bool? visible = null, bool useLabelTextOffset = false, bool shiftY = false)
+        {
+            var inst = Instance;
+
+            int yOffset = (useLabelTextOffset ? inst._DetailYOffsetLabelText : 0);
+            var label = new DxTitleLabelControl() { Bounds = new Rectangle(x, y + yOffset, w, inst._DetailYHeightLabel), Text = text };
+            label.StyleController = inst._GetLabelStyle(styleType);
+            if (wordWrap.HasValue) label.Appearance.TextOptions.WordWrap = wordWrap.Value;
+            if (autoSizeMode.HasValue) label.AutoSizeMode = autoSizeMode.Value;
+            if (hAlignment.HasValue) label.Appearance.TextOptions.HAlignment = hAlignment.Value;
+
+            if (wordWrap.HasValue || hAlignment.HasValue) label.Appearance.Options.UseTextOptions = true;
+
+            if (visible.HasValue) label.Visible = visible.Value;
+
+            if (parent != null) parent.Controls.Add(label);
+            if (shiftY) y = label.Bounds.Bottom + inst._DetailYSpaceLabel;
+
+            return label;
+        }
         /// <summary>
         /// Vytvoří a vrátí DxTextEdit s danými parametry
         /// </summary>

@@ -2362,6 +2362,96 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
+    #region DxTitleLabelControl
+    /// <summary>
+    /// LabelControl
+    /// </summary>
+    public class DxTitleLabelControl : DevExpress.XtraEditors.LabelControl
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxTitleLabelControl()
+        {
+            this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+            this.AutoSizeMode = DevExpress.XtraEditors.LabelAutoSizeMode.None;
+            this.Appearance.FontStyleDelta = FontStyle.Bold;
+            this.Padding = new Padding(12, 3, 3, 5);
+        }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            DrawTitleLine(e.Graphics, e.ClipRectangle);
+            base.OnPaint(e);
+        }
+        public static void DrawTitleLine(Graphics graphics, Rectangle bounds)
+        {
+            var color = DxComponent.SkinColorSet.AccentPaint ?? Color.BlueViolet;
+            Rectangle titleBounds = new Rectangle(bounds.Left, bounds.Bottom - 2, bounds.Width, 2);
+            DxComponent.PaintDrawLine(graphics, titleBounds, color, Color.Transparent);
+        }
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
+        #endregion
+        #region HasMouse
+        /// <summary>
+        /// Panel má na sobě myš?
+        /// </summary>
+        public bool HasMouse
+        {
+            get { return _HasMouse; }
+            private set
+            {
+                if (value != _HasMouse)
+                {
+                    _HasMouse = value;
+                    OnHasMouseChanged();
+                    HasMouseChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        private bool _HasMouse;
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        protected virtual void OnHasMouseChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler HasMouseChanged;
+        /// <summary>
+        /// Panel.OnMouseEnter
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            this.HasMouse = true;
+        }
+        /// <summary>
+        /// Panel.OnMouseLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            this.HasMouse = false;
+        }
+        #endregion
+    }
+    #endregion
     #region DxImageArea : neinteraktivní obrázek s definovaným zdrojem a umístěním (v rámci nějakého parent controlu)
     /// <summary>
     /// Prvek, který může být vykreslen přímo do panelu <see cref="DxPanelControl"/> (a i jiných).
