@@ -1886,6 +1886,10 @@ namespace Noris.Clients.Win.Components.Obsoletes.DataForm.Internal
         /// </summary>
         bool? ITextItem.Checked { get; set; }
         /// <summary>
+        /// Relativní velikost písma.
+        /// </summary>
+        int? ITextItem.FontSizeDelta { get { return null; } }
+        /// <summary>
         /// Styl písma
         /// </summary>
         FontStyle? ITextItem.FontStyle { get { return null; } }

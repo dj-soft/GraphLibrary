@@ -179,7 +179,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zajistí provedení dodané akce s argumenty v GUI threadu a v jednom vizuálním zámku s jedním Refreshem na konci.
         /// <para/>
         /// Víš jak se píše Delegate pro cílovou metodu s konkrétním parametrem typu bool? 
-        /// RunInLock(new Action&lt;bool&gt;(volaná_metoda), hodnota_bool)
+        /// <code>RunInLock(new Action&lt;bool&gt;(volaná_metoda), hodnota_bool)</code>
         /// </summary>
         /// <param name="method"></param>
         /// <param name="args"></param>
@@ -1188,8 +1188,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (nodeInfo.FontSizeDelta.HasValue)
                 args.Appearance.FontSizeDelta = nodeInfo.FontSizeDelta.Value;
-            if (nodeInfo.FontStyleDelta.HasValue)
-                args.Appearance.FontStyleDelta = nodeInfo.FontStyleDelta.Value;
+            if (nodeInfo.FontStyle.HasValue)
+                    args.Appearance.FontStyleDelta = nodeInfo.FontStyle.Value;
             if (nodeInfo.BackColor.HasValue)
             {
                 args.Appearance.BackColor = nodeInfo.BackColor.Value;
@@ -3076,6 +3076,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private IEnumerable<ITreeListNode> _NodesStandard { get { return this._NodesId.Values.Where(p => !p.IsLazyChild).Select(p => p.NodeInfo); } }
         #endregion
+        #region Vzhled, options - property a konvertory
+
+        #endregion
         #region DoKeyActions; CtrlA, CtrlC, CtrlX, CtrlV, Delete
         /// <summary>
         /// Povolené akce. Výchozí je <see cref="ControlKeyActionType.None"/>
@@ -4345,7 +4348,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.ToolTipTitle = toolTipTitle;
             this.ToolTipText = toolTipText;
             this.FontSizeDelta = fontSizeDelta;
-            this.FontStyleDelta = fontStyleDelta;
+            this.FontStyle = fontStyleDelta;
             this.BackColor = backColor;
             this.ForeColor = foreColor;
             this.MainClickAction = mainClickAction ?? NodeMainClickActionType.RunEvent;
@@ -4449,18 +4452,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aktivace tohoto nodu není hlášena jako event, node nelze editovat ani smazat uživatelem.
         /// </summary>
         public virtual bool LazyExpandable { get; set; }
-        /// <summary>
-        /// Relativní velikost písma.
-        /// Změnu této hodnoty není nutno refreshovat, načítá se odtud v okamžiku zobrazování každého Node.
-        /// Je možno vynutit Refresh vizuální vrstvy TreeList metodou <see cref="DxTreeListNative"/>.Refresh();
-        /// </summary>
-        public virtual int? FontSizeDelta { get; set; }
-        /// <summary>
-        /// Změna stylu písma.
-        /// Změnu této hodnoty není nutno refreshovat, načítá se odtud v okamžiku zobrazování každého Node.
-        /// Je možno vynutit Refresh vizuální vrstvy TreeList metodou <see cref="DxTreeListNative"/>.Refresh();
-        /// </summary>
-        public virtual FontStyle? FontStyleDelta { get; set; }
         /// <summary>
         /// Explicitní barva pozadí prvku.
         /// Změnu této hodnoty není nutno refreshovat, načítá se odtud v okamžiku zobrazování každého Node.
@@ -4587,18 +4578,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aktivace tohoto nodu není hlášena jako event, node nelze editovat ani smazat uživatelem.
         /// </summary>
         bool LazyExpandable { get; set; }
-        /// <summary>
-        /// Relativní velikost písma.
-        /// Změnu této hodnoty není nutno refreshovat, načítá se odtud v okamžiku zobrazování každého Node.
-        /// Je možno vynutit Refresh vizuální vrstvy TreeList metodou <see cref="DxTreeListNative"/>.Refresh();
-        /// </summary>
-        int? FontSizeDelta { get; }
-        /// <summary>
-        /// Změna stylu písma.
-        /// Změnu této hodnoty není nutno refreshovat, načítá se odtud v okamžiku zobrazování každého Node.
-        /// Je možno vynutit Refresh vizuální vrstvy TreeList metodou <see cref="DxTreeListNative"/>.Refresh();
-        /// </summary>
-        FontStyle? FontStyleDelta { get; }
         /// <summary>
         /// Explicitní barva pozadí prvku.
         /// Změnu této hodnoty není nutno refreshovat, načítá se odtud v okamžiku zobrazování každého Node.

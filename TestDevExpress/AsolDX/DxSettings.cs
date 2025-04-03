@@ -181,13 +181,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private void _CheckValidData(ref Dictionary<string, Dictionary<string, string>> values, ref FileInfo configFileInfo)
         {
-            if (values == null || !_WatchedFileValid || !_FileStateNextCheckTime.HasValue)
+            var nextCheckTime = _FileStateNextCheckTime;
+            if (values == null || !_WatchedFileValid || !nextCheckTime.HasValue)
             {   // Pokud jsou data z nějakého důvodu neplatná, tak data z proměnné zahazuji:
                 values = null;
                 return;
             }
 
-            if (_FileStateNextCheckTime.HasValue && DateTime.Now >= _FileStateNextCheckTime.Value)
+            if (nextCheckTime.HasValue && DateTime.Now >= nextCheckTime.Value)
                 // Pokud data existují, a nejsou invalidovaná explicitně, a neuplynul čas pro jejich pasivní kontrolu, pak je akceptujeme:
                 return;
 

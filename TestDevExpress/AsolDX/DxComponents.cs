@@ -639,7 +639,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             var labelStyle = new DevExpress.XtraEditors.StyleController();
             labelStyle.Appearance.FontSizeDelta = 0;
-            labelStyle.Appearance.FontStyleDelta = FontStyle.Italic;
+            labelStyle.Appearance.FontStyleDelta = FontStyle.Regular;
             labelStyle.Appearance.Options.UseBorderColor = false;
             labelStyle.Appearance.Options.UseBackColor = false;
             labelStyle.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.NoWrap;
@@ -1890,7 +1890,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             label.StyleController = inst._GetLabelStyle(styleType);
             if (wordWrap.HasValue) label.Appearance.TextOptions.WordWrap = wordWrap.Value;
             if (autoSizeMode.HasValue) label.AutoSizeMode = autoSizeMode.Value;
-            if (hAlignment.HasValue) label.Appearance.TextOptions.HAlignment = hAlignment.Value;
+            if (hAlignment.HasValue) { label.Appearance.TextOptions.HAlignment = hAlignment.Value; label.Appearance.Options.UseTextOptions = true; }
 
             if (wordWrap.HasValue || hAlignment.HasValue) label.Appearance.Options.UseTextOptions = true;
 
@@ -1922,7 +1922,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             label.StyleController = inst._GetLabelStyle(styleType);
             if (wordWrap.HasValue) label.Appearance.TextOptions.WordWrap = wordWrap.Value;
             if (autoSizeMode.HasValue) label.AutoSizeMode = autoSizeMode.Value;
-            if (hAlignment.HasValue) label.Appearance.TextOptions.HAlignment = hAlignment.Value;
+            if (hAlignment.HasValue) { label.Appearance.TextOptions.HAlignment = hAlignment.Value; label.Appearance.Options.UseTextOptions = true; }
 
             if (wordWrap.HasValue || hAlignment.HasValue) label.Appearance.Options.UseTextOptions = true;
 
@@ -2320,12 +2320,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="toolTipText"></param>
         /// <param name="visible"></param>
         /// <param name="readOnly"></param>
+        /// <param name="allowGrayed"></param>
         /// <param name="tabStop"></param>
         /// <returns></returns>
         public static DxCheckEdit CreateDxCheckEdit(int x, int y, int w, Control parent, string text, EventHandler checkedChanged = null,
             DevExpress.XtraEditors.Controls.CheckBoxStyle? checkBoxStyle = null, DevExpress.XtraEditors.Controls.BorderStyles? borderStyles = null, HorzAlignment? hAlignment = null,
             string toolTipTitle = null, string toolTipText = null,
-            bool? visible = null, bool? readOnly = null, bool? tabStop = null)
+            bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool? allowGrayed = null)
         {
             return CreateDxCheckEdit(x, ref y, w, parent, text, checkedChanged,
                 checkBoxStyle, borderStyles, hAlignment,
@@ -2349,12 +2350,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="visible"></param>
         /// <param name="readOnly"></param>
         /// <param name="tabStop"></param>
+        /// <param name="allowGrayed"></param>
         /// <param name="shiftY"></param>
         /// <returns></returns>
         public static DxCheckEdit CreateDxCheckEdit(int x, ref int y, int w, Control parent, string text, EventHandler checkedChanged = null,
             DevExpress.XtraEditors.Controls.CheckBoxStyle? checkBoxStyle = null, DevExpress.XtraEditors.Controls.BorderStyles? borderStyles = null, HorzAlignment? hAlignment = null,
             string toolTipTitle = null, string toolTipText = null,
-            bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
+            bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool? allowGrayed = null, bool shiftY = false)
         {
             var inst = Instance;
 
@@ -2365,6 +2367,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (tabStop.HasValue) checkEdit.TabStop = tabStop.Value;
 
             if (checkBoxStyle.HasValue) checkEdit.Properties.CheckBoxOptions.Style = checkBoxStyle.Value;
+            if (allowGrayed.HasValue) checkEdit.Properties.AllowGrayed = allowGrayed.Value;
+
             if (hAlignment.HasValue)
             {
                 checkEdit.Properties.GlyphAlignment = hAlignment.Value;                       // Kde bude ikonka?
@@ -4872,6 +4876,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static decimal LogGetTimeElapsed(long startTime, string logTokenTime = null) { return Instance._LogGetTimeElapsed(startTime, logTokenTime); }
         /// <summary>
+        /// Vrátí dobu času, která uplynula od času <paramref name="startTime"/> do času <paramref name="endTime"/>, v jednotkách dle <paramref name="logTokenTime"/>, default v mikrosekundách.
+        /// </summary>
+        /// <param name="startTime"></param>
+        /// <param name="endTime"></param>
+        /// <param name="logTokenTime"></param>
+        /// <returns></returns>
+        public static decimal LogGetTimeElapsed(long startTime, long endTime, string logTokenTime = null) { return Instance._LogGetTimeElapsed(startTime, endTime, logTokenTime); }
+        /// <summary>
         /// Vrátí true, pokud v uplynulých (<paramref name="miliseconds"/>) milisekundách byl testován daný event.
         /// Slouží k tomu, aby se do logu nevypisovaly stále stejné eventy, pokud nám u nich stačí jeden zápis za určitý počet milisekund.
         /// <para/>
@@ -5022,10 +5034,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool hasDebugger = System.Diagnostics.Debugger.IsAttached;
             string userName = (hasDebugger ? System.Environment.UserName?.ToLower() : "");
             bool isDeveloper = (userName == "david.janacek" || userName == "david");
-            _LogActive = hasDebugger && isDeveloper;
+            __LogFrequencyLong = System.Diagnostics.Stopwatch.Frequency;
             __LogRunningWatch = new System.Diagnostics.Stopwatch();
             __LogRunningWatch.Start();
-            __LogFrequencyLong = System.Diagnostics.Stopwatch.Frequency;
+            _LogActive = hasDebugger && isDeveloper;
         }
         /// <summary>
         /// Aktivita logu
@@ -5123,9 +5135,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         private decimal _LogGetTimeElapsed(long startTime, string logTokenTime)
         {
             if (!_LogActive) return 0m;
+            return _LogGetTimeElapsed(startTime, __LogWatch.ElapsedTicks, logTokenTime);
+        }
+        /// <summary>
+        /// Vrátí dobu času, která uplynula do teď od času <paramref name="startTime"/>, v jednotkách dle <paramref name="logTokenTime"/>, default v mikrosekundách.
+        /// </summary>
+        /// <param name="startTime"></param>
+        /// <param name="endTime"></param>
+        /// <param name="logTokenTime"></param>
+        /// <returns></returns>
+        private decimal _LogGetTimeElapsed(long startTime, long endTime, string logTokenTime)
+        {
+            if (!_LogActive) return 0m;
 
-            long nowTime = __LogWatch.ElapsedTicks;
-            decimal seconds = ((decimal)(nowTime - startTime)) / __LogFrequency;     // Počet sekund
+            decimal seconds = ((decimal)(endTime - startTime)) / __LogFrequency;     // Počet sekund
             string token = logTokenTime ?? LogTokenTimeMicrosec;
             switch (token)
             {

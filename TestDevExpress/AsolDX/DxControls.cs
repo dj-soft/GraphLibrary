@@ -3645,6 +3645,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.OnClick(EventArgs.Empty);
         }
         #endregion
+        #region Reset state
+        //protected override void OnMouseUp(MouseEventArgs e)
+        //{
+        //    base.OnMouseUp(e);
+        //    if (Control.ModifierKeys == Keys.Control)
+        //        this.CheckState = CheckState.Indeterminate;
+        //}
+        #endregion
         #region HasMouse
         /// <summary>
         /// Panel má na sobě myš?
@@ -10525,6 +10533,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool? Checked { get; set; }
         /// <summary>
+        /// Relativní velikost písma.
+        /// </summary>
+        public virtual int? FontSizeDelta { get; set; }
+        /// <summary>
         /// Styl písma, null = neměnit
         /// </summary>
         public virtual FontStyle? FontStyle { get; set; }
@@ -10645,6 +10657,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud konkrétní prvek nepodporuje null, akceptuje null jako false.
         /// </summary>
         bool? Checked { get; set; }
+        /// <summary>
+        /// Relativní velikost písma.
+        /// </summary>
+        int? FontSizeDelta { get; }
         /// <summary>
         /// Styl písma, null = neměnit
         /// </summary>

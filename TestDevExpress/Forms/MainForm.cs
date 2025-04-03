@@ -5364,7 +5364,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                     text = "Načíst další záznamy";
                     childNode = new DataTreeListNode(childKey, parentKey, text, nodeType: nodeType, canEdit: false, canDelete: false);        // Node pro zobrazení dalších nodů nelze editovat ani odstranit
                     totalCount++;
-                    childNode.FontStyleDelta = FontStyle.Italic;
+                    childNode.FontStyle = FontStyle.Italic;
                     childNode.AddVoidCheckSpace = true;
                     childNode.ToolTipText = "Umožní načíst další sadu záznamů...";
                     childNode.ImageDynamicDefault = "move_task_down_16";
