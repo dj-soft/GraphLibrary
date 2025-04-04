@@ -1336,6 +1336,7 @@ bool SetingsLogToolTipChanges
             __DxTreeList.TreeListNative.OptionsView.ShowHierarchyIndentationLines = SetingsShowHierarchyIndentationLines;
             __DxTreeList.TreeListNative.OptionsView.ShowIndentAsRowStyle = SettingsShowIndentAsRowStyle;
             __DxTreeList.TreeListNative.OptionsView.CheckBoxStyle = SetingsCheckBoxStyle;
+            __DxTreeList.TreeListNative.OptionsView.RootCheckBoxStyle = DevExpress.XtraTreeList.NodeCheckBoxStyle.Default;
             __DxTreeList.TreeListNative.OptionsView.FocusRectStyle = SetingsFocusRectStyle;
             __DxTreeList.TreeListNative.OptionsBehavior.Editable = SettingsEditable;
             __DxTreeList.TreeListNative.OptionsBehavior.EditingMode = SettingsEditingMode;
