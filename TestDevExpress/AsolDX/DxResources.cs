@@ -694,6 +694,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         { return Instance._TryGetApplicationResources(new ResourceArgs(imageName, exactName), validTypes, out resourceItems); }
         #endregion
         #region ApplyStyle - do cílového objektu Appearance vepíše požadavky na písmo z dodaného objektu
+        /// <summary>
+        /// Do daného objektu <see cref="AppearanceObject"/> <paramref name="appearance"/> aplikuje vizuální styl daný prvkem <paramref name="styleItem"/>.
+        /// Poku dprvek definuje kalíšek <see cref="ITextStyleItem.StyleName"/>, pak je aplikován kalíšek v první řadě.
+        /// Implicitně aplikuje část kalíšku pro "Attribute", lze aplikovat část pro "Label" pomocí <paramref name="styleInfoFromLabel"/>.
+        /// </summary>
+        /// <param name="appearance"></param>
+        /// <param name="styleItem"></param>
+        /// <param name="styleInfoFromLabel"></param>
         public static void ApplyItemStyle(AppearanceObject appearance, ITextStyleItem styleItem, bool styleInfoFromLabel = false)
         {
             if (appearance is null || styleItem is null) return;
@@ -716,8 +724,16 @@ namespace Noris.Clients.Win.Components.AsolDX
                 appearance.Options.UseForeColor = true;
             }
         }
+        /// <summary>
+        /// Do daného objektu <see cref="AppearanceObject"/> <paramref name="appearance"/> aplikuje vizuální styl daný kalíškem s daným jménem <paramref name="styleName"/>.
+        /// Implicitně aplikuje část kalíšku pro "Attribute", lze aplikovat část pro "Label" pomocí <paramref name="styleInfoFromLabel"/>.
+        /// </summary>
+        /// <param name="appearance"></param>
+        /// <param name="styleName"></param>
+        /// <param name="styleInfoFromLabel"></param>
         public static void ApplyItemStyleName(AppearanceObject appearance, string styleName, bool styleInfoFromLabel = false)
         {
+            // Vyhledá kalíšek
             var styleInfo = DxComponent.GetStyleInfo(styleName);
             if (styleInfo is null) return;
 
@@ -733,22 +749,84 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             void applyStyle(string fontFamily, FontStyle? fontStyle, float? fontSize, Color? backColor, Color? foreColor)
             {
-                if (fontSize.HasValue)
-                    appearance.FontSizeDelta = (10 - (int)(Math.Round(10f * fontSize.Value,0)));
+                // Resetujeme velikost fontu:
+                appearance.FontSizeDelta = 0;
+
+                // FontStyle:
                 if (fontStyle.HasValue)
                     appearance.FontStyleDelta = fontStyle.Value;
+
+                // BackColor:
                 if (backColor.HasValue)
                 {
                     appearance.BackColor = backColor.Value;
                     appearance.Options.UseBackColor = true;
                 }
+                else
+                {
+                    appearance.Options.UseBackColor = false;
+                }
+
+                // ForeColor:
                 if (foreColor.HasValue)
                 {
                     appearance.ForeColor = foreColor.Value;
                     appearance.Options.UseForeColor = true;
                 }
-            }
+                else
+                {
+                    appearance.Options.UseForeColor = false;
+                }
 
+                // Nastavíme velikost fontu pro jistotu až nakonec, viz:
+                //  https://supportcenter.devexpress.com/ticket/details/t678116/appearance-fontsizedelta-causes-font-size-increasing-when-save-changes-at-design-time
+                //  https://docs.devexpress.com/WindowsForms/DevExpress.Utils.AppearanceObject.FontSizeDelta?utm_source=SupportCenter&utm_medium=website&utm_campaign=docs-feedback&utm_content=T678116
+                // "the font size is adjusted by the delta value each time you modify any attribute (property) of the Font object."
+                if (fontSize.HasValue)
+                    appearance.FontSizeDelta = GetFontSizeDelta(fontSize);
+            }
+        }
+        /// <summary>
+        /// Metoda řeší výpočet hodnoty <see cref="DevExpress.Utils.AppearanceObject.FontSizeDelta"/> 
+        /// z hodnoty charakteru Ratio uložené v <see cref="StyleInfo.AttributeFontSize"/> a <see cref="StyleInfo.LabelFontSize"/>.
+        /// </summary>
+        /// <param name="styleInfoFontSize"></param>
+        /// <returns></returns>
+        public static int GetFontSizeDelta(float? styleInfoFontSize)
+        {
+            if (!styleInfoFontSize.HasValue || styleInfoFontSize.Value == 1f || styleInfoFontSize.Value <= 0f) return 0;
+
+            // 'styleInfoFontSize' má charakter "Ratio" poměru cílové velikosti vůči standardní,
+            //    tedy hodnota 1.25f zobrazí písmo o 25% větší než je běžné,
+            //    a hodnota 0.90% zobrazí písmo o velikosti 90% standardního písma.
+
+            /*   Protože naším cílem bude FontSizeDelta, musíme vědět, jak s tím pracuje DevExpress 
+                 => tady je metoda, kde DevExpress počítá velikost výsledného fontu na základě defaultní velikosti (float source) a dané FontSizeDelta (int sizeDelta):
+            class  DevExpress.Utils.AppearanceObject :
+            private static float GetSize(float source, int sizeDelta)
+            {
+                if (sizeDelta > 100)
+                    return source * ((float)(sizeDelta - 100) / 10f);
+
+                if (sizeDelta < -100)
+                    return source * ((float)(sizeDelta + 100) / 10f);
+
+                if (source + (float)sizeDelta < 0f)
+                    return source;
+
+                return source + (float)sizeDelta;
+            }
+            */
+
+            // Je zřejmé, že kalkulace výsledné velikosti fontu má tři varianty:
+            //  a)  if (sizeDelta > 100)        ...    tou jdeme, protože jediná nabízí proporcionální změnu. Ale jen po 10% změny. Achjo
+            //  b)  if (sizeDelta < -100)       ...    ta generuje vždy záporné číslo, nechápu proč
+            //  c)  source + sizeDelta          ...    ta je neproporcionální, protože zadanou hodnotu FontSizeDelta prostě přičte k aktuální velikosti fontu.
+
+            // Varianta b) musí vygenerovat číslo 101 a větší, které reprezentuje poměr velikosti výsledného fontu k fontu základnímu, a to v krocích 1 číslo = 10%, kde hodnota 110 = ratio 1.00 
+            int ratio10 = (int)Math.Round((10d * styleInfoFontSize.Value), 0);           // Poměr na celá čísla:  0.5 => 5;  0.75 => 8;  1.00 => 10;  1.5 => 15
+            int fontSizeDelta = 100 + (ratio10 < 1 ? 1 : (ratio10 > 50 ? 50 : ratio10)); // Vrací 110 pro vstupní ratio = 1.00; vrací   108 pro vstupní ratio 0.75 ...
+            return fontSizeDelta;
         }
         #endregion
         #region ApplyImage - do cílového objektu vepíše obrázek podle toho, jak je zadán a kam má být vepsán

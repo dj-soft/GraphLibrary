@@ -333,6 +333,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Jméno existujícího stylu 
         /// </summary>
+        internal const string StyleImportant = "StyleImportant";
+        /// <summary>
+        /// Jméno existujícího stylu 
+        /// </summary>
         internal const string StyleHeader1 = "StyleHeader1";
         /// <summary>
         /// Jméno existujícího stylu 
@@ -354,9 +358,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             addStyle(StyleDefault, null, FontStyle.Regular, null, null, Color.FromArgb(230, 230, 230), Color.FromArgb(24, 24, 24), FontStyle.Regular, null, 0.95f, Color.FromArgb(210, 210, 210), Color.FromArgb(72, 72, 72));
             addStyle(StyleOK, null, FontStyle.Regular, null, null, Color.FromArgb(240, 240, 240), Color.FromArgb(32, 32, 32), FontStyle.Regular, null, 0.92f, Color.FromArgb(192, 192, 192), Color.FromArgb(64, 64, 64));
             addStyle(StyleWarning, null, FontStyle.Regular, null, null, Color.FromArgb(240, 240, 240), Color.FromArgb(96, 96, 32), FontStyle.Regular, null, 0.92f, Color.FromArgb(192, 192, 192), Color.FromArgb(64, 64, 64));
-            addStyle(StyleError, null, FontStyle.Bold, null, null, Color.FromArgb(255, 240, 220), Color.FromArgb(96, 96, 32), FontStyle.Regular, null, 0.92f, Color.FromArgb(192, 192, 192), Color.FromArgb(64, 64, 64));
-            addStyle(StyleHeader1, null, FontStyle.Bold, null, 1.25f, Color.FromArgb(200, 220, 240), Color.FromArgb(32, 48, 64), FontStyle.Regular, null, 1.1f, Color.FromArgb(180, 190, 200), Color.FromArgb(64, 80, 96));
-            addStyle(StyleHeader2, null, FontStyle.Bold, null, 1.60f, Color.FromArgb(180, 210, 240), Color.FromArgb(32, 60, 80), FontStyle.Regular, null, 1.2f, Color.FromArgb(180, 190, 200), Color.FromArgb(64, 80, 96));
+            addStyle(StyleError, null, FontStyle.Bold, null, 1.10f, Color.FromArgb(255, 240, 220), Color.FromArgb(96, 96, 32), FontStyle.Regular, null, 0.92f, Color.FromArgb(192, 192, 192), Color.FromArgb(64, 64, 64));
+            addStyle(StyleImportant, null, FontStyle.Bold, null, 1.10f, Color.FromArgb(240, 210, 190), Color.FromArgb(96, 96, 32), FontStyle.Regular, null, 0.92f, Color.FromArgb(192, 192, 192), Color.FromArgb(64, 64, 64));
+            addStyle(StyleHeader1, null, FontStyle.Bold, null, 1.15f, Color.FromArgb(200, 220, 240), Color.FromArgb(32, 48, 64), FontStyle.Regular, null, 1.1f, Color.FromArgb(180, 190, 200), Color.FromArgb(64, 80, 96));
+            addStyle(StyleHeader2, null, FontStyle.Bold, null, 1.25f, Color.FromArgb(180, 210, 240), Color.FromArgb(32, 60, 80), FontStyle.Regular, null, 1.2f, Color.FromArgb(180, 190, 200), Color.FromArgb(64, 80, 96));
             addStyle(StyleNote, null, FontStyle.Italic, null, 0.95f, Color.FromArgb(200, 200, 230), Color.FromArgb(40, 40, 70), FontStyle.Italic, null, 0.90f, Color.FromArgb(192, 192, 192), Color.FromArgb(64, 64, 64));
 
             // Sestaví a přidá styl

@@ -17,7 +17,6 @@ using DevExpress.Utils.Extensions;
 using DevExpress.XtraBars;
 using DevExpress.XtraBars.Ribbon;
 using XS = Noris.WS.Parser.XmlSerializer;
-using DevExpress.XtraRichEdit.Layout;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {

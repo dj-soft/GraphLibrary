@@ -10150,7 +10150,8 @@ White
         /// </summary>
         public string AttributeFontFamily { get; private set; }
         /// <summary>
-        /// Float: AttrFontSize
+        /// Float: AttrFontSize.
+        /// Má charakter "Ratio" poměru cílové velikosti vůči standardní, tedy hodnota 1.25f zobrazí písmo o 25% větší než je běžné, a hodnota 0.90% zobrazí písmo o velikosti 90% standardního písma.
         /// </summary>
         public float? AttributeFontSize { get; private set; }
         /// <summary>
@@ -10171,7 +10172,8 @@ White
         /// </summary>
         public string LabelFontFamily { get; private set; }
         /// <summary>
-        /// Float: LabelFontSize
+        /// Float: LabelFontSize.
+        /// Má charakter "Ratio" poměru cílové velikosti vůči standardní, tedy hodnota 1.25f zobrazí písmo o 25% větší než je běžné, a hodnota 0.90% zobrazí písmo o velikosti 90% standardního písma.
         /// </summary>
         public float? LabelFontSize { get; private set; }
         /// <summary>

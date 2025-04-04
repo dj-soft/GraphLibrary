@@ -3645,14 +3645,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.OnClick(EventArgs.Empty);
         }
         #endregion
-        #region Reset state
-        //protected override void OnMouseUp(MouseEventArgs e)
-        //{
-        //    base.OnMouseUp(e);
-        //    if (Control.ModifierKeys == Keys.Control)
-        //        this.CheckState = CheckState.Indeterminate;
-        //}
-        #endregion
         #region HasMouse
         /// <summary>
         /// Panel má na sobě myš?

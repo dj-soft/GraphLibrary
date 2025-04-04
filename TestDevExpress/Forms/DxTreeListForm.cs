@@ -386,6 +386,9 @@ namespace TestDevExpress.Forms
         }
         #endregion
         #region Plnění dat do TreeListu
+        /// <summary>
+        /// Naplní nějaká výchozí data po otevření okna
+        /// </summary>
         private void _SampleLoad()
         {
             _PrepareTreeList(25, 1);
@@ -397,6 +400,11 @@ namespace TestDevExpress.Forms
         {
             _PrepareTreeList(0, 0);
         }
+        /// <summary>
+        /// Naplní data do TreeListu pro daný požadavek na cca počet nodů a počet sub-úrovní
+        /// </summary>
+        /// <param name="sampleCountBase"></param>
+        /// <param name="sampleLevelsCount"></param>
         private void _PrepareTreeList(int sampleCountBase, int sampleLevelsCount)
         {
             _LogClear();
@@ -427,6 +435,13 @@ namespace TestDevExpress.Forms
 
             string text = this.GetControlStructure();
         }
+        /// <summary>
+        /// Vytvoří nody
+        /// </summary>
+        /// <param name="parentNode"></param>
+        /// <param name="canAddEditable"></param>
+        /// <param name="canAddShowNext"></param>
+        /// <returns></returns>
         private DataTreeListNode[] _CreateNodes(ITreeListNode parentNode, bool canAddEditable = true, bool canAddShowNext = true)
         {
             List<DataTreeListNode> nodes = new List<DataTreeListNode>();
@@ -450,15 +465,21 @@ namespace TestDevExpress.Forms
             {
                 var child = _CreateNode(parentNode?.ItemId, NodeItemType.DefaultText);
                 if (child is null) break;
+
                 child.ParentItem = parentNode;
                 nodes.Add(child);
                 result++;
+                bool hasChild = false;
                 if (canAddChilds(currentLevel))
                 {
                     var childCount = _AddNodesToList(child, canAddEditable, canAddShowNext, nodes);
                     if (childCount > 0 && Randomizer.IsTrue(25))
+                    {
                         child.Expanded = true;
+                    }
                 }
+                // Tento konkrétní node mohu editovat tehdy, když node nemá SubNodes, a když je povolena editace obecně:
+                child.CanEdit = (!hasChild && this.SettingsEditable);
             }
             return result;
 
@@ -473,7 +494,14 @@ namespace TestDevExpress.Forms
                 }
                 return level;
             }
-            // Vrátí počet prvků do daného levelu
+            // Určí, zda je vhodné přidat subnody do dané úrovně
+            bool canAddChilds(int level)
+            {
+                if (level >= __SampleLevelsCount) return false;
+                int probability = (level == 0 ? 50 : (level == 1 ? 25 : (level == 2 ? 10 : 0)));
+                return Randomizer.IsTrue(probability);
+            }
+            // Určí počet prvků do daného levelu
             int getCount(int level)
             {
                 if (level > __SampleLevelsCount) return 0;
@@ -483,12 +511,6 @@ namespace TestDevExpress.Forms
                     baseCount = baseCount / (level + 1);
 
                 return Randomizer.GetValueInRange(baseCount * 60 / 100, baseCount * 175 / 100);
-            }
-            bool canAddChilds(int level)
-            {
-                if (level >= __SampleLevelsCount) return false;
-                int probability = (level == 0 ? 50 : (level == 1 ? 25 : (level == 2 ? 10 : 0)));
-                return Randomizer.IsTrue(probability);
             }
         }
         /// <summary>
@@ -535,6 +557,10 @@ namespace TestDevExpress.Forms
             }
             return childNode;
         }
+        /// <summary>
+        /// Naplní data do nodu, vyjma textu. Plní ToolTip, ikony, styl, kalíšek - podle Settings.
+        /// </summary>
+        /// <param name="node"></param>
         private void _FillNode(DataTreeListNode node)
         {
             if (Randomizer.IsTrue(7))
@@ -707,7 +733,17 @@ namespace TestDevExpress.Forms
         private string _GetRandomStyleName()
         {
             if (__StyleNames is null)
-                __StyleNames = AdapterSupport.StyleNames;
+                __StyleNames = new string[]
+                {   // Nebudu dávat všechny styly, jen vybrané:
+                    AdapterSupport.StyleDefault,
+                    AdapterSupport.StyleOK,
+                    AdapterSupport.StyleWarning,
+                    AdapterSupport.StyleWarning,
+                    AdapterSupport.StyleImportant,
+                    AdapterSupport.StyleNote,
+                    AdapterSupport.StyleHeader1
+
+                };
             return Randomizer.GetItem(__StyleNames);
         }
         /// <summary>
@@ -1006,6 +1042,9 @@ namespace TestDevExpress.Forms
         private enum NewNodePositionType { None, First, Last }
         #endregion
         #region Parametry v okně
+        /// <summary>
+        /// Vytvoří obsah panelu s parametry
+        /// </summary>
         private void _ParamsInit()
         {
             int dx = 325;
@@ -1103,20 +1142,37 @@ namespace TestDevExpress.Forms
                 return combo;
             }
         }
+        /// <summary>
+        /// Zabalí data do Tagu
+        /// </summary>
+        /// <param name="isClearNode"></param>
+        /// <param name="controlInfo"></param>
+        /// <returns></returns>
         private object _PackTag(bool isClearNode, string controlInfo)
         {
-            return (isClearNode ? "Y" : "N") + (controlInfo is null ? "" : controlInfo);
+            return new Tuple<bool, string>(isClearNode, controlInfo);
         }
+        /// <summary>
+        /// Rozbalí data vložená do Tagu
+        /// </summary>
+        /// <param name="tag"></param>
+        /// <param name="isClearNode"></param>
+        /// <param name="controlInfo"></param>
         private void _UnPackTag(object tag, out bool isClearNode, out string controlInfo)
         {
             isClearNode = false;
             controlInfo = null;
-            if (tag is string text && text.Length > 0)
+            if (tag is Tuple<bool, string> tuple)
             {
-                isClearNode = (text[0] == 'Y');
-                controlInfo = (text.Length == 1 ? "" : text.Substring(1));
+                isClearNode = tuple.Item1;
+                controlInfo = tuple.Item2;
             }
         }
+        /// <summary>
+        /// Událost po změně parametru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _ParamsChanged(object sender, EventArgs e)
         {
             if (!__SettingsLoaded) return;
@@ -1124,40 +1180,55 @@ namespace TestDevExpress.Forms
 
             _UnPackTag(control.Tag, out bool isClearNode, out string controlInfo);
             if (!String.IsNullOrEmpty(controlInfo))
-            {
-                string text = "";
-                if (control is DxCheckEdit checkEdit)
-                {
-                    if (checkEdit.Properties.AllowGrayed)
-                        text = "; CheckState: " + checkEdit.CheckState.ToString();
-                    else
-                        text = "; Checked: " + checkEdit.Checked.ToString();
-                }
-                else if (control is DxSpinEdit spinEdit)
-                {
-                    text = "; Value: " + spinEdit.Value.ToString("###0");
-                }
-                else if (control is DxImageComboBoxEdit comboBox)
-                {
-                    text = "; Selected: " + (comboBox.SelectedItem != null ? comboBox.SelectedItem?.ToString() : "NULL");
-                }
-                _AddToLog($"Change Setting: {controlInfo}{text}");
-            }
+                _AddToLogParamChange(control, controlInfo);
             if (isClearNode)
-            {
                 _ClearTreeList();
-            }
 
             _SettingOnInteractiveChanged();
         }
-        private void _LogClearBtnClick(object sender, EventArgs e)
+        /// <summary>
+        /// Do logu vepíše informaci o změně parametru
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="controlInfo"></param>
+        private void _AddToLogParamChange(Control control, string controlInfo)
         {
-            _LogClear();
+            string text = "";
+            if (control is DxCheckEdit checkEdit)
+            {
+                if (checkEdit.Properties.AllowGrayed)
+                    text = "; CheckState: " + checkEdit.CheckState.ToString();
+                else
+                    text = "; Checked: " + checkEdit.Checked.ToString();
+            }
+            else if (control is DxSpinEdit spinEdit)
+            {
+                text = "; Value: " + spinEdit.Value.ToString("###0");
+            }
+            else if (control is DxImageComboBoxEdit comboBox)
+            {
+                text = "; Selected: " + (comboBox.SelectedItem != null ? comboBox.SelectedItem?.ToString() : "NULL");
+            }
+            _AddToLog($"Change Setting: {controlInfo}{text}");
         }
+        /// <summary>
+        /// Po kliknutí na tlačítko Vytvoř / Smaž data TreeListu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _NodeCreateClick(object sender, EventArgs e)
         {
             if (sender is Control control && control.Tag is Tuple<int, int> tuple)
                 _PrepareTreeList(tuple.Item1, tuple.Item2);
+        }
+        /// <summary>
+        /// Po kliknutí na tlačítko Clear Log
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _LogClearBtnClick(object sender, EventArgs e)
+        {
+            _LogClear();
         }
         private DxCheckEdit __CheckMultiSelect;
         private DxSpinEdit __TextNodeIndent;
@@ -1242,25 +1313,6 @@ namespace TestDevExpress.Forms
             DxComponent.Settings.SetRawValue(SettingsKey, "SettingsUseStyleName", ConvertToString(SettingsUseStyleName));
 
             DxComponent.Settings.SetRawValue(SettingsKey, "SetingsLogToolTipChanges", ConvertToString(SetingsLogToolTipChanges));
-
-            /*
-bool SetingsMultiSelect
-int SettingsNodeIndent
-DevExpress.Utils.DefaultBoolean SetingsShowTreeLines 
-bool SetingsShowFirstLines
-bool SetingsShowHorzLines
-bool SetingsShowVertLines
-DevExpress.XtraTreeList.LineStyle SettingsTreeLineStyle
-bool SetingsShowRoot
-DevExpress.Utils.DefaultBoolean SetingsShowHierarchyIndentationLines
-bool SettingsShowIndentAsRowStyle
-DevExpress.XtraTreeList.DefaultNodeCheckBoxStyle SetingsCheckBoxStyle
-DevExpress.XtraTreeList.DrawFocusRectStyle SetingsFocusRectStyle
-bool SettingsEditable
-DevExpress.XtraTreeList.TreeListEditingMode SettingsEditingMode
-
-bool SetingsLogToolTipChanges
-            */
         }
         /// <summary>
         /// Main klíč v Settings pro zdejší proměnné
