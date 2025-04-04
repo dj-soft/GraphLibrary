@@ -709,10 +709,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!String.IsNullOrEmpty(styleItem.StyleName))
                 ApplyItemStyleName(appearance, styleItem.StyleName, styleInfoFromLabel);
 
-            if (styleItem.FontSizeDelta.HasValue)
-                appearance.FontSizeDelta = styleItem.FontSizeDelta.Value;
+            if (styleItem.FontSizeRatio.HasValue)
+                appearance.FontSizeDelta = GetFontSizeDelta(styleItem.FontSizeRatio);
+
             if (styleItem.FontStyle.HasValue)
                 appearance.FontStyleDelta = styleItem.FontStyle.Value;
+
             if (styleItem.BackColor.HasValue)
             {
                 appearance.BackColor = styleItem.BackColor.Value;
@@ -822,6 +824,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             //  a)  if (sizeDelta > 100)        ...    tou jdeme, protože jediná nabízí proporcionální změnu. Ale jen po 10% změny. Achjo
             //  b)  if (sizeDelta < -100)       ...    ta generuje vždy záporné číslo, nechápu proč
             //  c)  source + sizeDelta          ...    ta je neproporcionální, protože zadanou hodnotu FontSizeDelta prostě přičte k aktuální velikosti fontu.
+
+            // Pokud mám na vstupu hodnotu 5 a vyšší, pak nejde o Ratio (v rozsahu 0.1 až 3.0), ale o SizeDelta již připravené pro variantu 3, a tak to budu i vracet:
+            if (styleInfoFontSize.Value >= 5f)
+                return (int)Math.Round(styleInfoFontSize.Value, 0);
 
             // Varianta b) musí vygenerovat číslo 101 a větší, které reprezentuje poměr velikosti výsledného fontu k fontu základnímu, a to v krocích 1 číslo = 10%, kde hodnota 110 = ratio 1.00 
             int ratio10 = (int)Math.Round((10d * styleInfoFontSize.Value), 0);           // Poměr na celá čísla:  0.5 => 5;  0.75 => 8;  1.00 => 10;  1.5 => 15

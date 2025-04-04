@@ -132,13 +132,13 @@ namespace TestDevExpress.Forms
         private RibbonTestPanel _TestPanel2a;
         private RibbonTestPanel _TestPanel2b;
         private DxMemoEdit _DxLogMemoEdit;
-        private DevExpress.XtraBars.BarStaticItem CreateStatusBarItem(int? fontSizeDelta = null)
+        private DevExpress.XtraBars.BarStaticItem CreateStatusBarItem(float? fontSizeRatio = null)
         {
             DevExpress.XtraBars.BarStaticItem item = new DevExpress.XtraBars.BarStaticItem();
             item.MinWidth = 240;
             item.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
-            if (fontSizeDelta.HasValue)
-                item.Appearance.FontSizeDelta = fontSizeDelta.Value;
+            if (fontSizeRatio.HasValue)
+                item.Appearance.FontSizeDelta = DxComponent.GetFontSizeDelta(fontSizeRatio);
             item.AllowHtmlText = DevExpress.Utils.DefaultBoolean.True;
             return item;
         }

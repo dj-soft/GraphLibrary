@@ -473,13 +473,15 @@ namespace TestDevExpress.Forms
                 if (canAddChilds(currentLevel))
                 {
                     var childCount = _AddNodesToList(child, canAddEditable, canAddShowNext, nodes);
-                    if (childCount > 0 && Randomizer.IsTrue(25))
+                    hasChild = (childCount > 0);
+                    if (hasChild && Randomizer.IsTrue(25))
                     {
                         child.Expanded = true;
                     }
                 }
-                // Tento konkrétní node mohu editovat tehdy, když node nemá SubNodes, a když je povolena editace obecně:
-                child.CanEdit = (!hasChild && this.SettingsEditable);
+                // Tento konkrétní node mohu editovat tehdy, když node nemá SubNodes:
+                //   Pokud by nebyla povolena editace celého TreeListu, tak nelze editovat ani takový Node!
+                child.CanEdit = !hasChild;
             }
             return result;
 
@@ -573,7 +575,7 @@ namespace TestDevExpress.Forms
             if (SettingsUseExactStyle && Randomizer.IsTrue(33))
             {
                 node.FontStyle = getRandomFontStyle();
-                node.FontSizeDelta = getRandomSizeDelta();
+                node.FontSizeRatio = getRandomSizeRatio();
                 node.BackColor = getRandomBackColor();
                 node.ForeColor = getRandomForeColor();
             }
@@ -594,12 +596,13 @@ namespace TestDevExpress.Forms
                 }
                 return result;
             }
-            int? getRandomSizeDelta()
+            float? getRandomSizeRatio()
             {
-                int? result = null;
+                float? result = null;
                 if (Randomizer.IsTrue(60))
                 {
-                    result = Randomizer.GetValueInRange(0, 3) - 1;
+                    int delta = Randomizer.GetValueInRange(6, 14);
+                    result = ((float)delta) / 10f;
                 }
                 return result;
             }

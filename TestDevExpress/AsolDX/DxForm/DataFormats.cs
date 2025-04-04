@@ -1734,7 +1734,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DxForm
         /// <summary>
         /// Změna velikosti písma proti defaultnímu, pro control
         /// </summary>
-        public float? ControlFontSizeDelta { get; set; }
+        public float? ControlFontSizeRatio { get; set; }
         /// <summary>
         /// Styl písma pro label u controlu
         /// </summary>
@@ -1742,7 +1742,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DxForm
         /// <summary>
         /// Změna velikosti písma proti defaultnímu, pro label u controlu
         /// </summary>
-        public float? LabelFontSizeDelta { get; set; }
+        public float? LabelFontSizeRatio { get; set; }
     }
     /// <summary>
     /// Okraje

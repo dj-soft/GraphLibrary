@@ -331,7 +331,7 @@ namespace TestDevExpress.Forms
         public readonly string WindowTitle;
         public readonly bool IsCurrentProcess;
         public string Text { get { return (!String.IsNullOrEmpty(WindowTitle) ? WindowTitle : $"({ProcessName})"); } }
-        public int? ItemFontSizeDelta { get { return null; } }
+        public float? ItemFontSizeRatio { get { return null; } }
         public FontStyle? ItemFontStyle
         {
             get
@@ -412,7 +412,7 @@ namespace TestDevExpress.Forms
         bool ITextItem.Enabled { get { return this.IsAlive; } }
         bool? ITextItem.Checked { get; set; }
         string ITextStyleItem.StyleName { get { return null; } }
-        int? ITextStyleItem.FontSizeDelta { get { return ItemFontSizeDelta; } }
+        float? ITextStyleItem.FontSizeRatio { get { return ItemFontSizeRatio; } }
         FontStyle? ITextStyleItem.FontStyle { get { return ItemFontStyle; } }
         float? ITextStyleItem.FontSizeRelativeToZoom { get { return null; } }
         float? ITextStyleItem.FontSizeRelativeToDesign { get { return null; } }

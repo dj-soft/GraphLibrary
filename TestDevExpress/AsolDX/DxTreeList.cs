@@ -4309,7 +4309,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageNameStatic"></param>
         /// <param name="toolTipTitle"></param>
         /// <param name="toolTipText"></param>
-        /// <param name="fontSizeDelta"></param>
+        /// <param name="fontSizeRatio"></param>
         /// <param name="fontStyleDelta"></param>
         /// <param name="backColor"></param>
         /// <param name="foreColor"></param>
@@ -4317,7 +4317,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DataTreeListNode(string nodeId, string parentNodeId, string text,
             NodeItemType nodeType = NodeItemType.DefaultText, bool canEdit = false, bool canDelete = false, bool expanded = false, bool lazyExpandable = false,
             string imageName = null, string imageNameSelected = null, string imageNameStatic = null, string toolTipTitle = null, string toolTipText = null,
-            int? fontSizeDelta = null, FontStyle? fontStyleDelta = null, Color? backColor = null, Color? foreColor = null, NodeMainClickActionType? mainClickAction = null)
+            float? fontSizeRatio = null, FontStyle? fontStyleDelta = null, Color? backColor = null, Color? foreColor = null, NodeMainClickActionType? mainClickAction = null)
         {
             _Id = -1;
             this.ItemId = nodeId;
@@ -4333,7 +4333,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.ImageName = imageNameStatic;
             this.ToolTipTitle = toolTipTitle;
             this.ToolTipText = toolTipText;
-            this.FontSizeDelta = fontSizeDelta;
+            this.FontSizeRatio = fontSizeRatio;
             this.FontStyle = fontStyleDelta;
             this.BackColor = backColor;
             this.ForeColor = foreColor;

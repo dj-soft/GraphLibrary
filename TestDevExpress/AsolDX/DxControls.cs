@@ -10261,7 +10261,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Relativní velikost písma.
         /// </summary>
-        public virtual int? FontSizeDelta { get; set; }
+        public virtual float? FontSizeRatio { get; set; }
         /// <summary>
         /// Styl písma, null = neměnit
         /// </summary>
@@ -10713,7 +10713,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Relativní velikost písma.
         /// </summary>
-        int? FontSizeDelta { get; }
+        float? FontSizeRatio { get; }
         /// <summary>
         /// Styl písma, null = neměnit
         /// </summary>

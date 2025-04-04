@@ -3172,9 +3172,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (iElement.FontStyle.HasValue)
                         tElement.Appearance.Normal.FontStyleDelta = iElement.FontStyle.Value;
 
-                    if (iElement.FontSizeDelta.HasValue)
+                    if (iElement.FontSizeRatio.HasValue)
                     {
-                        tElement.Appearance.Normal.FontSizeDelta = iElement.FontSizeDelta.Value;
+                        tElement.Appearance.Normal.FontSizeDelta = DxComponent.GetFontSizeDelta(iElement.FontSizeRatio);
                         tElement.Appearance.Normal.Options.UseFont = true;
                     }
 
@@ -3557,7 +3557,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ColSpan = 1;
             StretchHorizontal = false;
             StretchVertical = false;
-            FontSizeDelta = null;
+            FontSizeRatio = null;
             FontStyle = null;
             ContentAlignment = null;
         }
@@ -3632,7 +3632,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Odchylka velikosti fontu od defaultu, null = default.
         /// </summary>
-        public int? FontSizeDelta { get; set; }
+        public float? FontSizeRatio { get; set; }
         /// <summary>
         /// Styl fontu, null = default.
         /// </summary>
@@ -3719,7 +3719,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Odchylka velikosti fontu od defaultu, null = default.
         /// </summary>
-        int? FontSizeDelta { get; }
+        float? FontSizeRatio { get; }
         /// <summary>
         /// Styl fontu, null = default.
         /// </summary>
