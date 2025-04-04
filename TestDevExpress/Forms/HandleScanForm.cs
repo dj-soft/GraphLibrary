@@ -411,10 +411,13 @@ namespace TestDevExpress.Forms
         bool ITextItem.Visible { get { return true; } }
         bool ITextItem.Enabled { get { return this.IsAlive; } }
         bool? ITextItem.Checked { get; set; }
-        int? ITextItem.FontSizeDelta { get { return ItemFontSizeDelta; } }
-        FontStyle? ITextItem.FontStyle { get { return ItemFontStyle; } }
-        float? ITextItem.FontSizeRelativeToZoom { get { return null; } }
-        float? ITextItem.FontSizeRelativeToDesign { get { return null; } }
+        string ITextStyleItem.StyleName { get { return null; } }
+        int? ITextStyleItem.FontSizeDelta { get { return ItemFontSizeDelta; } }
+        FontStyle? ITextStyleItem.FontStyle { get { return ItemFontStyle; } }
+        float? ITextStyleItem.FontSizeRelativeToZoom { get { return null; } }
+        float? ITextStyleItem.FontSizeRelativeToDesign { get { return null; } }
+        Color? ITextStyleItem.BackColor { get { return null; } }
+        Color? ITextStyleItem.ForeColor { get { return null; } }
         Image ITextItem.Image { get { return null; } }
         SvgImage ITextItem.SvgImage { get { return null; } }
         string ITextItem.ImageName { get { return null; } }

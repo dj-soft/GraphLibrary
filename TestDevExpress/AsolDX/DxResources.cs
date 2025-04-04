@@ -693,6 +693,64 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static bool TryGetApplicationResources(string imageName, bool exactName, ResourceContentType validTypes, out DxApplicationResourceLibrary.ResourceItem[] resourceItems)
         { return Instance._TryGetApplicationResources(new ResourceArgs(imageName, exactName), validTypes, out resourceItems); }
         #endregion
+        #region ApplyStyle - do cílového objektu Appearance vepíše požadavky na písmo z dodaného objektu
+        public static void ApplyItemStyle(AppearanceObject appearance, ITextStyleItem styleItem, bool styleInfoFromLabel = false)
+        {
+            if (appearance is null || styleItem is null) return;
+
+            if (!String.IsNullOrEmpty(styleItem.StyleName))
+                ApplyItemStyleName(appearance, styleItem.StyleName, styleInfoFromLabel);
+
+            if (styleItem.FontSizeDelta.HasValue)
+                appearance.FontSizeDelta = styleItem.FontSizeDelta.Value;
+            if (styleItem.FontStyle.HasValue)
+                appearance.FontStyleDelta = styleItem.FontStyle.Value;
+            if (styleItem.BackColor.HasValue)
+            {
+                appearance.BackColor = styleItem.BackColor.Value;
+                appearance.Options.UseBackColor = true;
+            }
+            if (styleItem.ForeColor.HasValue)
+            {
+                appearance.ForeColor = styleItem.ForeColor.Value;
+                appearance.Options.UseForeColor = true;
+            }
+        }
+        public static void ApplyItemStyleName(AppearanceObject appearance, string styleName, bool styleInfoFromLabel = false)
+        {
+            var styleInfo = DxComponent.GetStyleInfo(styleName);
+            if (styleInfo is null) return;
+
+            if (styleInfoFromLabel)
+            {   // Položky StyleInfo číst z pozice Label:
+                applyStyle(styleInfo.LabelFontFamily, styleInfo.LabelFontStyle, styleInfo.LabelFontSize, styleInfo.LabelBgColor, styleInfo.LabelColor);
+            }
+            else
+            {   // Položky StyleInfo číst z pozice Atribut:
+                applyStyle(styleInfo.AttributeFontFamily, styleInfo.AttributeFontStyle, styleInfo.AttributeFontSize, styleInfo.AttributeBgColor, styleInfo.AttributeColor);
+            }
+
+
+            void applyStyle(string fontFamily, FontStyle? fontStyle, float? fontSize, Color? backColor, Color? foreColor)
+            {
+                if (fontSize.HasValue)
+                    appearance.FontSizeDelta = (10 - (int)(Math.Round(10f * fontSize.Value,0)));
+                if (fontStyle.HasValue)
+                    appearance.FontStyleDelta = fontStyle.Value;
+                if (backColor.HasValue)
+                {
+                    appearance.BackColor = backColor.Value;
+                    appearance.Options.UseBackColor = true;
+                }
+                if (foreColor.HasValue)
+                {
+                    appearance.ForeColor = foreColor.Value;
+                    appearance.Options.UseForeColor = true;
+                }
+            }
+
+        }
+        #endregion
         #region ApplyImage - do cílového objektu vepíše obrázek podle toho, jak je zadán a kam má být vepsán
         /// <summary>
         /// ApplyImage - do cílového objektu vepíše obrázek podle toho, jak je zadán a kam má být vepsán

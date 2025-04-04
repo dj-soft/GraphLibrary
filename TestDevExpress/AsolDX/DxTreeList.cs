@@ -1184,22 +1184,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _OnNodeCellStyle(object sender, DevExpress.XtraTreeList.GetCustomNodeCellStyleEventArgs args)
         {
             ITreeListNode nodeInfo = _GetNodeInfo(args.Node);
-            if (nodeInfo == null) return;
-
-            if (nodeInfo.FontSizeDelta.HasValue)
-                args.Appearance.FontSizeDelta = nodeInfo.FontSizeDelta.Value;
-            if (nodeInfo.FontStyle.HasValue)
-                    args.Appearance.FontStyleDelta = nodeInfo.FontStyle.Value;
-            if (nodeInfo.BackColor.HasValue)
-            {
-                args.Appearance.BackColor = nodeInfo.BackColor.Value;
-                args.Appearance.Options.UseBackColor = true;
-            }
-            if (nodeInfo.ForeColor.HasValue)
-            {
-                args.Appearance.ForeColor = nodeInfo.ForeColor.Value;
-                args.Appearance.Options.UseForeColor = true;
-            }
+            if (nodeInfo != null)
+                DxComponent.ApplyItemStyle(args.Appearance, nodeInfo);
         }
         /// <summary>
         /// Specifika krteslení CheckBox pro nodes

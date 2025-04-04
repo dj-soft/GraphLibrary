@@ -10192,6 +10192,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return list;
         }
+
+        // Implementujeme interface IMenuItem:
         /// <summary>
         /// Parent prvku = jiný prvek <see cref="IMenuItem"/>
         /// </summary>
@@ -10258,11 +10260,45 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         [XS.PersistingEnabled(false)]
         public Action<IMenuItem> CheckAction { get; }
+
+        // Implementujeme interface ITextStyleItem:
+        /// <summary>
+        /// Kalíšek s barvami, jeho název = viz <see cref="DxComponent.GetStyleInfo(string, Color?)"/>
+        /// </summary>
+        public virtual string StyleName { get; set; }
+        /// <summary>
+        /// Relativní velikost písma.
+        /// </summary>
+        public virtual int? FontSizeDelta { get; set; }
+        /// <summary>
+        /// Styl písma, null = neměnit
+        /// </summary>
+        public virtual FontStyle? FontStyle { get; set; }
+        /// <summary>
+        /// Relativní velikost písma vůči běžnému písmu v aktuálním Zoomu; nezadáno = nemění se.<br/>
+        /// Hodnota 1.0f = bez změny velikosti (=100%).<br/>
+        /// Používá se výjimečně pro zvýraznění některé položky.
+        /// </summary>
+        public virtual float? FontSizeRelativeToZoom { get; set; }
+        /// <summary>
+        /// Relativní velikost písma vůči defaultnímu designovému písmu = ignoruje aktuální Zoom; nezadáno = nemění se.<br/>
+        /// Hodnota 1.0f = bez změny velikosti (=100%).<br/>
+        /// Používá se výjimečně, typicky pro ukázku písma v různém Zoomu.
+        /// </summary>
+        public virtual float? FontSizeRelativeToDesign { get; set; }
+        /// <summary>
+        /// Explicitní barva pozadí, má přednost před StyleName
+        /// </summary>
+        public virtual Color? BackColor { get; set; }
+        /// <summary>
+        /// Explicitní barva popředí (písmo), má přednost před StyleName
+        /// </summary>
+        public virtual Color? ForeColor { get; set; }
     }
     /// <summary>
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd)
     /// </summary>
-    public interface IMenuItem : ITextItem
+    public interface IMenuItem : ITextItem, ITextStyleItem
     {
         /// <summary>
         /// Parent prvku = jiný prvek <see cref="IMenuItem"/>
@@ -10489,6 +10525,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return debugText;
             }
         }
+
+        // Implementujeme interface ITextItem:
         /// <summary>
         /// Stringová identifikace prvku, musí být jednoznačná v rámci nadřízeného prvku
         /// </summary>
@@ -10532,26 +10570,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zadaná hodnota může být null (pak ikona je <see cref="ImageName"/>), pak první kliknutí nastaví false, druhé true, třetí zase false (na NULL se interaktivně nedá doklikat)
         /// </summary>
         public virtual bool? Checked { get; set; }
-        /// <summary>
-        /// Relativní velikost písma.
-        /// </summary>
-        public virtual int? FontSizeDelta { get; set; }
-        /// <summary>
-        /// Styl písma, null = neměnit
-        /// </summary>
-        public virtual FontStyle? FontStyle { get; set; }
-        /// <summary>
-        /// Relativní velikost písma vůči běžnému písmu v aktuálním Zoomu; nezadáno = nemění se.<br/>
-        /// Hodnota 1.0f = bez změny velikosti (=100%).<br/>
-        /// Používá se výjimečně pro zvýraznění některé položky.
-        /// </summary>
-        public float? FontSizeRelativeToZoom { get; set; }
-        /// <summary>
-        /// Relativní velikost písma vůči defaultnímu designovému písmu = ignoruje aktuální Zoom; nezadáno = nemění se.<br/>
-        /// Hodnota 1.0f = bez změny velikosti (=100%).<br/>
-        /// Používá se výjimečně, typicky pro ukázku písma v různém Zoomu.
-        /// </summary>
-        public float? FontSizeRelativeToDesign { get; set; }
         /// <summary>
         /// Fyzický obrázek ikony.
         /// </summary>
@@ -10658,26 +10676,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         bool? Checked { get; set; }
         /// <summary>
-        /// Relativní velikost písma.
-        /// </summary>
-        int? FontSizeDelta { get; }
-        /// <summary>
-        /// Styl písma, null = neměnit
-        /// </summary>
-        FontStyle? FontStyle { get; }
-        /// <summary>
-        /// Relativní velikost písma vůči běžnému písmu v aktuálním Zoomu; nezadáno = nemění se.<br/>
-        /// Hodnota 1.0f = bez změny velikosti (=100%).<br/>
-        /// Používá se výjimečně pro zvýraznění některé položky.
-        /// </summary>
-        float? FontSizeRelativeToZoom { get; }
-        /// <summary>
-        /// Relativní velikost písma vůči defaultnímu designovému písmu = ignoruje aktuální Zoom; nezadáno = nemění se.<br/>
-        /// Hodnota 1.0f = bez změny velikosti (=100%).<br/>
-        /// Používá se výjimečně, typicky pro ukázku písma v různém Zoomu.
-        /// </summary>
-        float? FontSizeRelativeToDesign { get; }
-        /// <summary>
         /// Fyzický obrázek ikony.
         /// </summary>
         Image Image { get; }
@@ -10710,6 +10708,44 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Libovolná data aplikace
         /// </summary>
         object Tag { get; }
+    }
+    /// <summary>
+    /// Definice prvku, který určuje svůj vizuální styl (font, barva, styl)
+    /// </summary>
+    public interface ITextStyleItem
+    {
+        /// <summary>
+        /// Kalíšek s barvami, jeho název = viz <see cref="DxComponent.GetStyleInfo(string, Color?)"/>
+        /// </summary>
+        string StyleName { get; }
+        /// <summary>
+        /// Relativní velikost písma.
+        /// </summary>
+        int? FontSizeDelta { get; }
+        /// <summary>
+        /// Styl písma, null = neměnit
+        /// </summary>
+        FontStyle? FontStyle { get; }
+        /// <summary>
+        /// Relativní velikost písma vůči běžnému písmu v aktuálním Zoomu; nezadáno = nemění se.<br/>
+        /// Hodnota 1.0f = bez změny velikosti (=100%).<br/>
+        /// Používá se výjimečně pro zvýraznění některé položky.
+        /// </summary>
+        float? FontSizeRelativeToZoom { get; }
+        /// <summary>
+        /// Relativní velikost písma vůči defaultnímu designovému písmu = ignoruje aktuální Zoom; nezadáno = nemění se.<br/>
+        /// Hodnota 1.0f = bez změny velikosti (=100%).<br/>
+        /// Používá se výjimečně, typicky pro ukázku písma v různém Zoomu.
+        /// </summary>
+        float? FontSizeRelativeToDesign { get; }
+        /// <summary>
+        /// Explicitní barva pozadí, má přednost před StyleName
+        /// </summary>
+        Color? BackColor { get; }
+        /// <summary>
+        /// Explicitní barva popředí (písmo), má přednost před StyleName
+        /// </summary>
+        Color? ForeColor { get; }
     }
     /// <summary>
     /// Interface definující vlastnosti prvku, který může nabídnout ToolTip

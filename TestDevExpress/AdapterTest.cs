@@ -242,10 +242,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static StyleInfo GetStyleInfo(string styleName, Color? exactAttributeColor)
         {
-            if (_Styles is null) return null;
+            if (_Styles is null)
+                _CreateTestStyles();
+
             var key = _GetStyleKey(styleName, DxComponent.IsDarkTheme);
             if (key == null) return null;
-            _Styles.TryGetValue(key, out var styleInfo);
+            if (!_Styles.TryGetValue(key, out var styleInfo))
+            {   // Pokud nemám exaktní styl pro Světlý/Tmavý skin, pak mohu mít styl univerzální:
+                key = _GetStyleKey(styleName, null);
+                _Styles.TryGetValue(key, out styleInfo);
+            }
             return styleInfo;
         }
         /// <summary>
@@ -306,6 +312,65 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return false;
             }
         }
+
+        #region Testovací styly = kalíšky
+        /// <summary>
+        /// Jméno existujícího stylu 
+        /// </summary>
+        internal const string StyleDefault = "StyleDefault";
+        /// <summary>
+        /// Jméno existujícího stylu 
+        /// </summary>
+        internal const string StyleOK = "StyleOK";
+        /// <summary>
+        /// Jméno existujícího stylu 
+        /// </summary>
+        internal const string StyleWarning = "StyleWarning";
+        /// <summary>
+        /// Jméno existujícího stylu 
+        /// </summary>
+        internal const string StyleError = "StyleError";
+        /// <summary>
+        /// Jméno existujícího stylu 
+        /// </summary>
+        internal const string StyleHeader1 = "StyleHeader1";
+        /// <summary>
+        /// Jméno existujícího stylu 
+        /// </summary>
+        internal const string StyleHeader2 = "StyleHeader2";
+        /// <summary>
+        /// Jméno existujícího stylu 
+        /// </summary>
+        internal const string StyleNote = "StyleNote";
+        /// <summary>
+        /// Soupis existujících stylů
+        /// </summary>
+        internal static string[] StyleNames { get { return new string[] { StyleDefault, StyleOK, StyleWarning, StyleError, StyleHeader1, StyleHeader2, StyleNote }; } }
+        /// <summary>
+        /// Naplní defaultní styly pro testování
+        /// </summary>
+        private static void _CreateTestStyles()
+        {
+            addStyle(StyleDefault, null, FontStyle.Regular, null, null, Color.FromArgb(230, 230, 230), Color.FromArgb(24, 24, 24), FontStyle.Regular, null, 0.95f, Color.FromArgb(210, 210, 210), Color.FromArgb(72, 72, 72));
+            addStyle(StyleOK, null, FontStyle.Regular, null, null, Color.FromArgb(240, 240, 240), Color.FromArgb(32, 32, 32), FontStyle.Regular, null, 0.92f, Color.FromArgb(192, 192, 192), Color.FromArgb(64, 64, 64));
+            addStyle(StyleWarning, null, FontStyle.Regular, null, null, Color.FromArgb(240, 240, 240), Color.FromArgb(96, 96, 32), FontStyle.Regular, null, 0.92f, Color.FromArgb(192, 192, 192), Color.FromArgb(64, 64, 64));
+            addStyle(StyleError, null, FontStyle.Bold, null, null, Color.FromArgb(255, 240, 220), Color.FromArgb(96, 96, 32), FontStyle.Regular, null, 0.92f, Color.FromArgb(192, 192, 192), Color.FromArgb(64, 64, 64));
+            addStyle(StyleHeader1, null, FontStyle.Bold, null, 1.25f, Color.FromArgb(200, 220, 240), Color.FromArgb(32, 48, 64), FontStyle.Regular, null, 1.1f, Color.FromArgb(180, 190, 200), Color.FromArgb(64, 80, 96));
+            addStyle(StyleHeader2, null, FontStyle.Bold, null, 1.60f, Color.FromArgb(180, 210, 240), Color.FromArgb(32, 60, 80), FontStyle.Regular, null, 1.2f, Color.FromArgb(180, 190, 200), Color.FromArgb(64, 80, 96));
+            addStyle(StyleNote, null, FontStyle.Italic, null, 0.95f, Color.FromArgb(200, 200, 230), Color.FromArgb(40, 40, 70), FontStyle.Italic, null, 0.90f, Color.FromArgb(192, 192, 192), Color.FromArgb(64, 64, 64));
+
+            // Sestaví a přidá styl
+            void addStyle(string name, bool? isForDarkTheme,
+                          FontStyle? attributeFontStyle = null, string attributeFontFamily = "", float? attributeFontSize = null, Color? attributeBgColor = null, Color? attributeColor = null,
+                          FontStyle? labelFontStyle = null, string labelFontFamily = "", float? labelFontSize = null, Color? labelBgColor = null, Color? labelColor = null)
+            {
+                var styleInfo = new StyleInfo(name, isForDarkTheme,
+                          attributeFontStyle, attributeFontFamily, attributeFontSize, attributeBgColor, attributeColor,
+                          labelFontStyle, labelFontFamily, labelFontSize, labelBgColor, labelColor);
+                AddStyleInfo(styleInfo);
+            }
+        }
+        #endregion
     }
     #endregion
     #region class DataResources
