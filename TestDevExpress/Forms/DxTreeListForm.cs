@@ -1050,11 +1050,16 @@ namespace TestDevExpress.Forms
         /// </summary>
         private void _ParamsInit()
         {
-            int dx = 325;
-            int x = 25;
-            int y = 8;
-            int w = 300;
             int maxY = 0;
+            int topY = 8;
+            int columnSpace = 20;
+
+            int x = 25;
+            int y = topY;
+            int labelOffset = 22;
+            int labelWidth = 110;
+            int comboWidth = 220;
+            int comboOffset = 5;
             createTitle("Základní");
             __CheckMultiSelect = createToggle(false, "MultiSelect", "MultiSelectEnabled", "MultiSelectEnabled = výběr více nodů", "Zaškrtnuto: lze vybrat více nodů (Ctrl, Shift). Sledujme pak události.");
             __TextNodeIndent = createSpinner(false, "NodeIndent", "Node indent:", 0, 100, "Node indent = odstup jednotlivých úrovní stromu", "Počet pixelů mezi nody jedné úrovně a jejich podřízenými nody, doprava.");
@@ -1070,13 +1075,13 @@ namespace TestDevExpress.Forms
             __ComboFocusRectStyle = createCombo(false, "FocusRectangleStyle", "Focus Style:", typeof(DevExpress.XtraTreeList.DrawFocusRectStyle));
             __CheckEditable = createToggle(false, "Editable", "Editable", "", "");
             __ComboEditingMode = createCombo(false, "EditingMode", "Editing mode:", typeof(DevExpress.XtraTreeList.TreeListEditingMode));
-
-
-
+            __ComboEditorShowMode = createCombo(false, "EditorShowMode", "Editor Show Mode:", typeof(DevExpress.XtraTreeList.TreeListEditorShowMode));
             maxY = (y > maxY ? y : maxY);
-            x += dx;
-            y = 8;
+            x += labelOffset + labelWidth + comboOffset + comboWidth + columnSpace;
+            y = topY;
 
+            labelWidth = 100;
+            comboWidth = 200;
             createTitle("Vlastnosti prvků");
             __ComboNodeImageSet = createCombo(true, "NodeImageType", "Node images:", typeof(NodeImageSetType));
             __CheckUseExactStyle = createToggle(true, "UseExactStyle", "Use explicit styles", "Použít exaktně dané nastavení stylu", "Budou vepsány hodnoty jako FontStyle, FontSizeDelta, BackColor, ForeColor");
@@ -1085,34 +1090,35 @@ namespace TestDevExpress.Forms
             y += 25;
             createTitle("Vytvoření prvků stromu");
             y += 10;
-            DxComponent.CreateDxSimpleButton(x + 30, y, 120, 30, __ParamsPanel, "Vytvoř 15:1", _NodeCreateClick, tag: new Tuple<int, int>(15, 1));
-            DxComponent.CreateDxSimpleButton(x + 160, y, 120, 30, __ParamsPanel, "Vytvoř 25:2", _NodeCreateClick, tag: new Tuple<int, int>(25, 2)); 
-            y += 35;
-            DxComponent.CreateDxSimpleButton(x + 30, y, 120, 30, __ParamsPanel, "Vytvoř 40:3", _NodeCreateClick, tag: new Tuple<int, int>(40, 3)); 
-            DxComponent.CreateDxSimpleButton(x + 160, y, 120, 30, __ParamsPanel, "Vytvoř 60:4", _NodeCreateClick, tag: new Tuple<int, int>(60, 4));
-            y += 35;
-            DxComponent.CreateDxSimpleButton(x + 30, y, 250, 30, __ParamsPanel, "Smaž všechny prvky", _NodeCreateClick, tag: new Tuple<int, int>(0, 0));
-
+            DxComponent.CreateDxSimpleButton(x + labelOffset, y, 120, 30, __ParamsPanel, "Vytvoř 15:1", _NodeCreateClick, tag: new Tuple<int, int>(15, 1));
+            DxComponent.CreateDxSimpleButton(x + labelOffset + 130, y, 120, 30, __ParamsPanel, "Vytvoř 25:2", _NodeCreateClick, tag: new Tuple<int, int>(25, 2)); 
+            y += 38;
+            DxComponent.CreateDxSimpleButton(x + labelOffset, y, 120, 30, __ParamsPanel, "Vytvoř 40:3", _NodeCreateClick, tag: new Tuple<int, int>(40, 3)); 
+            DxComponent.CreateDxSimpleButton(x + labelOffset + 130, y, 120, 30, __ParamsPanel, "Vytvoř 60:4", _NodeCreateClick, tag: new Tuple<int, int>(60, 4));
+            y += 38;
+            DxComponent.CreateDxSimpleButton(x + labelOffset, y, 250, 30, __ParamsPanel, "Smaž všechny prvky", _NodeCreateClick, tag: new Tuple<int, int>(0, 0));
             maxY = (y > maxY ? y : maxY);
-            x += dx;
-            y = 8;
+            x += labelOffset + labelWidth + comboOffset + comboWidth + columnSpace;
+            y = topY;
 
+            labelWidth = 100;
+            comboWidth = 150;
             createTitle("Logování");
-
             __CheckLogToolTipChanges = createToggle(false, "", "Log: ToolTipChange", "Logovat události ToolTipChange", "Zaškrtnuto: při pohybu myši se plní Log událostí.");
-            DxComponent.CreateDxSimpleButton(x + 15, ref y, 160, 30, __ParamsPanel, "Smazat Log", _LogClearBtnClick, shiftY: true);
-
+            DxComponent.CreateDxSimpleButton(x + labelOffset, ref y, 160, 30, __ParamsPanel, "Smazat Log", _LogClearBtnClick, shiftY: true);
             maxY = (y > maxY ? y : maxY);
 
             __ParamSplitContainer.Panel1.MinSize = (maxY + 8);
 
+
+            // Tvorba prvků:
             DxTitleLabelControl createTitle(string text)
             {
-                return DxComponent.CreateDxTitleLabel(x, ref y, w, __ParamsPanel, text, shiftY: true);
+                return DxComponent.CreateDxTitleLabel(x, ref y, (labelWidth + comboOffset + comboWidth), __ParamsPanel, text, shiftY: true);
             }
             DxCheckEdit createToggle(bool isClearNode, string controlInfo, string text, string toolTipTitle, string toolTipText, bool? allowGrayed = null)
             {
-                var toggle = DxComponent.CreateDxCheckEdit(x, ref y, w, __ParamsPanel, text, _ParamsChanged, 
+                var toggle = DxComponent.CreateDxCheckEdit(x, ref y, (labelWidth + comboOffset + comboWidth), __ParamsPanel, text, _ParamsChanged, 
                     DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, null,
                     toolTipTitle, toolTipText, allowGrayed: allowGrayed, shiftY: true);
                 toggle.Tag = _PackTag(isClearNode, controlInfo);
@@ -1120,8 +1126,9 @@ namespace TestDevExpress.Forms
             }
             DxSpinEdit createSpinner(bool isClearNode, string controlInfo, string label, int minValue, int maxValue, string toolTipTitle, string toolTipText)
             {
-                DxComponent.CreateDxLabel(x + 20, y + 3, 100, __ParamsPanel, label, LabelStyleType.Default, hAlignment: DevExpress.Utils.HorzAlignment.Far);
-                var spinner = DxComponent.CreateDxSpinEdit(x + 105, ref y, 50, __ParamsPanel, _ParamsChanged,
+                DxComponent.CreateDxLabel(x + labelOffset, y + 3, labelWidth, __ParamsPanel, label, LabelStyleType.Default, hAlignment: DevExpress.Utils.HorzAlignment.Far);
+
+                var spinner = DxComponent.CreateDxSpinEdit(x + labelOffset + labelWidth + comboOffset, ref y, 50, __ParamsPanel, _ParamsChanged,
                     minValue, maxValue, mask: "####", spinStyles: DevExpress.XtraEditors.Controls.SpinStyles.Vertical, 
                     toolTipTitle: toolTipTitle, toolTipText: toolTipText, shiftY: true);
                 spinner.Tag = _PackTag(isClearNode, controlInfo);
@@ -1129,9 +1136,9 @@ namespace TestDevExpress.Forms
             }
             DxImageComboBoxEdit createCombo(bool isClearNode, string controlInfo, string label, Type enumType)
             {
-                DxComponent.CreateDxLabel(x + 20, y + 3, 100, __ParamsPanel, label, LabelStyleType.Default, hAlignment: DevExpress.Utils.HorzAlignment.Far);
+                DxComponent.CreateDxLabel(x + labelOffset, y + 3, labelWidth, __ParamsPanel, label, LabelStyleType.Default, hAlignment: DevExpress.Utils.HorzAlignment.Far);
 
-                var combo = DxComponent.CreateDxImageComboBox(x + 105, ref y, 190, __ParamsPanel, _ParamsChanged, shiftY: true);
+                var combo = DxComponent.CreateDxImageComboBox(x + labelOffset + labelWidth + comboOffset, ref y, comboWidth, __ParamsPanel, _ParamsChanged, shiftY: true);
                 combo.Tag = _PackTag(isClearNode, controlInfo);
 
                 var enumName = enumType.Name + ".";
@@ -1247,6 +1254,7 @@ namespace TestDevExpress.Forms
         private DxImageComboBoxEdit __ComboFocusRectStyle;
         private DxCheckEdit __CheckEditable;
         private DxImageComboBoxEdit __ComboEditingMode;
+        private DxImageComboBoxEdit __ComboEditorShowMode;
 
         private DxImageComboBoxEdit __ComboNodeImageSet;
         private DxCheckEdit __CheckUseExactStyle;
@@ -1272,10 +1280,11 @@ namespace TestDevExpress.Forms
             SetingsShowHierarchyIndentationLines = ConvertToDefaultBoolean(DxComponent.Settings.GetRawValue(SettingsKey, "SetingsShowHierarchyIndentationLines", ""));
             SettingsShowIndentAsRowStyle = ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsShowIndentAsRowStyle", ""));
             SetingsCheckBoxStyle = ConvertToNodeCheckBoxStyle(DxComponent.Settings.GetRawValue(SettingsKey, "SetingsCheckBoxStyle", ""));
-            SetingsFocusRectStyle = ConvertToDrawFocusRectStyle(DxComponent.Settings.GetRawValue(SettingsKey, "SetingsFocusRectStyle ", ""));
+            SetingsFocusRectStyle = ConvertToDrawFocusRectStyle(DxComponent.Settings.GetRawValue(SettingsKey, "SetingsFocusRectStyle", ""));
             SettingsEditable = ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsEditable", ""));
-            SettingsEditingMode = ConvertToTreeListEditingMode(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsEditingMode ", ""));
-
+            SettingsEditingMode = ConvertToTreeListEditingMode(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsEditingMode", ""));
+            SettingsEditorShowMode = ConvertToTreeListEditorShowMode(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsEditorShowMode", ""));
+            
             SettingsNodeImageSet = ConvertToNodeImageSetType(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsNodeImageSet ", ""), NodeImageSetType.Documents);
             SettingsUseExactStyle = ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsUseExactStyle", ""));
             SettingsUseStyleName = ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsUseStyleName", ""));
@@ -1310,6 +1319,7 @@ namespace TestDevExpress.Forms
             DxComponent.Settings.SetRawValue(SettingsKey, "SetingsFocusRectStyle", ConvertToString(SetingsFocusRectStyle));
             DxComponent.Settings.SetRawValue(SettingsKey, "SettingsEditable", ConvertToString(SettingsEditable));
             DxComponent.Settings.SetRawValue(SettingsKey, "SettingsEditingMode", ConvertToString(SettingsEditingMode));
+            DxComponent.Settings.SetRawValue(SettingsKey, "SettingsEditorShowMode", ConvertToString(SettingsEditorShowMode));
 
             DxComponent.Settings.SetRawValue(SettingsKey, "SettingsNodeImageSet", ConvertToString(SettingsNodeImageSet));
             DxComponent.Settings.SetRawValue(SettingsKey, "SettingsUseExactStyle", ConvertToString(SettingsUseExactStyle));
@@ -1341,6 +1351,7 @@ namespace TestDevExpress.Forms
             SelectComboItem(__ComboFocusRectStyle, SetingsFocusRectStyle);
             __CheckEditable.Checked = SettingsEditable;
             SelectComboItem(__ComboEditingMode, SettingsEditingMode);
+            SelectComboItem(__ComboEditorShowMode, SettingsEditorShowMode);
 
             SelectComboItem(__ComboNodeImageSet, SettingsNodeImageSet);
             __CheckUseExactStyle.Checked = SettingsUseExactStyle;
@@ -1367,6 +1378,7 @@ namespace TestDevExpress.Forms
             SetingsFocusRectStyle = ConvertToDrawFocusRectStyle(__ComboFocusRectStyle, SetingsFocusRectStyle);
             SettingsEditable = __CheckEditable.Checked;
             SettingsEditingMode = ConvertToTreeListEditingMode(__ComboEditingMode, SettingsEditingMode);
+            SettingsEditorShowMode = ConvertToTreeListEditingMode(__ComboEditorShowMode, SettingsEditorShowMode);
 
             SettingsNodeImageSet = ConvertToNodeImageSetType(__ComboNodeImageSet, SettingsNodeImageSet);
             SettingsUseExactStyle = __CheckUseExactStyle.Checked;
@@ -1395,7 +1407,7 @@ namespace TestDevExpress.Forms
             __DxTreeList.TreeListNative.OptionsView.FocusRectStyle = SetingsFocusRectStyle;
             __DxTreeList.TreeListNative.OptionsBehavior.Editable = SettingsEditable;
             __DxTreeList.TreeListNative.OptionsBehavior.EditingMode = SettingsEditingMode;
-            //__DxTreeList.TreeListNative.OptionsBehavior.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseDownFocused;
+            __DxTreeList.TreeListNative.OptionsBehavior.EditorShowMode = SettingsEditorShowMode;
         }
         /// <summary>
         /// Hodnoty z vizuálních parametrů (checkboxy) opíše do properties, do TreeListu a uloží do konfigurace
@@ -1426,6 +1438,7 @@ namespace TestDevExpress.Forms
         internal DevExpress.XtraTreeList.DrawFocusRectStyle SetingsFocusRectStyle { get; set; }
         internal bool SettingsEditable { get; set; }
         internal DevExpress.XtraTreeList.TreeListEditingMode SettingsEditingMode { get; set; }
+        internal DevExpress.XtraTreeList.TreeListEditorShowMode SettingsEditorShowMode { get; set; }
 
         internal NodeImageSetType SettingsNodeImageSet { get; set; }
         internal bool SettingsUseExactStyle { get; set; }
@@ -1703,6 +1716,54 @@ namespace TestDevExpress.Forms
             }
             return "";
         }
+
+        internal static DevExpress.XtraTreeList.TreeListEditorShowMode ConvertToTreeListEditorShowMode(string value, DevExpress.XtraTreeList.TreeListEditorShowMode defValue = DevExpress.XtraTreeList.TreeListEditorShowMode.Default)
+        {
+            if (value != null)
+            {
+                switch (value)
+                {
+                    case "N": return DevExpress.XtraTreeList.TreeListEditorShowMode.Default;
+                    case "D": return DevExpress.XtraTreeList.TreeListEditorShowMode.MouseDown;
+                    case "U": return DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;
+                    case "C": return DevExpress.XtraTreeList.TreeListEditorShowMode.Click;
+                    case "F": return DevExpress.XtraTreeList.TreeListEditorShowMode.MouseDownFocused;
+                    case "2": return DevExpress.XtraTreeList.TreeListEditorShowMode.DoubleClick;
+                }
+            }
+            return defValue;
+        }
+        internal static DevExpress.XtraTreeList.TreeListEditorShowMode ConvertToTreeListEditingMode(DevExpress.XtraEditors.ComboBoxEdit comboBox, DevExpress.XtraTreeList.TreeListEditorShowMode defValue = DevExpress.XtraTreeList.TreeListEditorShowMode.Default)
+        {
+            if (comboBox != null && comboBox.SelectedItem != null)
+            {
+                if (comboBox.SelectedItem is DevExpress.XtraEditors.Controls.ImageComboBoxItem comboItem)
+                {
+                    if (comboItem.Value is DevExpress.XtraTreeList.TreeListEditorShowMode)
+                        return (DevExpress.XtraTreeList.TreeListEditorShowMode)comboItem.Value;
+                }
+                if (comboBox.SelectedItem is DevExpress.XtraTreeList.TreeListEditorShowMode)
+                {
+                    return (DevExpress.XtraTreeList.TreeListEditorShowMode)comboBox.SelectedItem;
+                }
+            }
+            return defValue;
+        }
+        internal static string ConvertToString(DevExpress.XtraTreeList.TreeListEditorShowMode value)
+        {
+            switch (value)
+            {
+                case DevExpress.XtraTreeList.TreeListEditorShowMode.Default: return "N";
+                case DevExpress.XtraTreeList.TreeListEditorShowMode.MouseDown: return "D";
+                case DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp: return "U";
+                case DevExpress.XtraTreeList.TreeListEditorShowMode.Click: return "C";
+                case DevExpress.XtraTreeList.TreeListEditorShowMode.MouseDownFocused: return "F";
+                case DevExpress.XtraTreeList.TreeListEditorShowMode.DoubleClick: return "2";
+            }
+            return "";
+        }
+
+
 
         internal static NodeImageSetType ConvertToNodeImageSetType(string value, NodeImageSetType defValue = NodeImageSetType.Documents)
         {

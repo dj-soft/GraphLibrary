@@ -706,6 +706,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (appearance is null || styleItem is null) return;
 
+            appearance.FontSizeDelta = 0;
+
             if (!String.IsNullOrEmpty(styleItem.StyleName))
                 ApplyItemStyleName(appearance, styleItem.StyleName, styleInfoFromLabel);
 
@@ -749,6 +751,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
 
+            // Aplikujeme do dodaného stylu dodané hodnoty
             void applyStyle(string fontFamily, FontStyle? fontStyle, float? fontSize, Color? backColor, Color? foreColor)
             {
                 // Resetujeme velikost fontu:
