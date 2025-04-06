@@ -482,6 +482,7 @@ namespace TestDevExpress.Forms
                 // Tento konkrétní node mohu editovat tehdy, když node nemá SubNodes:
                 //   Pokud by nebyla povolena editace celého TreeListu, tak nelze editovat ani takový Node!
                 child.CanEdit = !hasChild;
+                child.CanCheck = !hasChild && this.SettingsUseCheckBoxes && Randomizer.IsTrue(40);
             }
             return result;
 
@@ -1060,7 +1061,7 @@ namespace TestDevExpress.Forms
             int labelWidth = 110;
             int comboWidth = 220;
             int comboOffset = 5;
-            createTitle("Základní");
+            createTitle("Základní vlastnosti TreeListu");
             __CheckMultiSelect = createToggle(false, "MultiSelect", "MultiSelectEnabled", "MultiSelectEnabled = výběr více nodů", "Zaškrtnuto: lze vybrat více nodů (Ctrl, Shift). Sledujme pak události.");
             __TextNodeIndent = createSpinner(false, "NodeIndent", "Node indent:", 0, 100, "Node indent = odstup jednotlivých úrovní stromu", "Počet pixelů mezi nody jedné úrovně a jejich podřízenými nody, doprava.");
             __CheckShowTreeLines = createToggle(false, "ShowTreeLines", "Guide Lines Visible", "Guide Lines Visible = vodicí linky jsou viditelné", "Zaškrtnuto: Strom obsahuje GuideLines mezi úrovněmi nodů.", false);
@@ -1082,10 +1083,11 @@ namespace TestDevExpress.Forms
 
             labelWidth = 100;
             comboWidth = 200;
-            createTitle("Vlastnosti prvků");
+            createTitle("Vlastnosti jednotlivých prvků");
             __ComboNodeImageSet = createCombo(true, "NodeImageType", "Node images:", typeof(NodeImageSetType));
             __CheckUseExactStyle = createToggle(true, "UseExactStyle", "Use explicit styles", "Použít exaktně dané nastavení stylu", "Budou vepsány hodnoty jako FontStyle, FontSizeDelta, BackColor, ForeColor");
             __CheckUseStyleName = createToggle(true, "UseStyleName", "Use Style Cup", "Použít styl daný kalíškem", "Bude vepsán StyleName, ten bude dohledán a aplikován");
+            __CheckUseCheckBoxes = createToggle(true, "UseCheckBoxes", "Use Check Boxes", "Použít pro některé koncové nody CheckBoxy", "Některé nody, které nemají podřízenou úroveň, budou zobrazeny jako CheckBox");
 
             y += 25;
             createTitle("Vytvoření prvků stromu");
@@ -1259,6 +1261,7 @@ namespace TestDevExpress.Forms
         private DxImageComboBoxEdit __ComboNodeImageSet;
         private DxCheckEdit __CheckUseExactStyle;
         private DxCheckEdit __CheckUseStyleName;
+        private DxCheckEdit __CheckUseCheckBoxes;
 
         private DxCheckEdit __CheckLogToolTipChanges;
         #endregion
@@ -1288,6 +1291,7 @@ namespace TestDevExpress.Forms
             SettingsNodeImageSet = ConvertToNodeImageSetType(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsNodeImageSet ", ""), NodeImageSetType.Documents);
             SettingsUseExactStyle = ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsUseExactStyle", ""));
             SettingsUseStyleName = ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsUseStyleName", ""));
+            SettingsUseCheckBoxes = ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsUseCheckBoxes", ""));
 
             SetingsLogToolTipChanges = ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SetingsLogToolTipChanges", "N"));
 
@@ -1324,6 +1328,7 @@ namespace TestDevExpress.Forms
             DxComponent.Settings.SetRawValue(SettingsKey, "SettingsNodeImageSet", ConvertToString(SettingsNodeImageSet));
             DxComponent.Settings.SetRawValue(SettingsKey, "SettingsUseExactStyle", ConvertToString(SettingsUseExactStyle));
             DxComponent.Settings.SetRawValue(SettingsKey, "SettingsUseStyleName", ConvertToString(SettingsUseStyleName));
+            DxComponent.Settings.SetRawValue(SettingsKey, "SettingsUseCheckBoxes", ConvertToString(SettingsUseCheckBoxes));
 
             DxComponent.Settings.SetRawValue(SettingsKey, "SetingsLogToolTipChanges", ConvertToString(SetingsLogToolTipChanges));
         }
@@ -1356,6 +1361,7 @@ namespace TestDevExpress.Forms
             SelectComboItem(__ComboNodeImageSet, SettingsNodeImageSet);
             __CheckUseExactStyle.Checked = SettingsUseExactStyle;
             __CheckUseStyleName.Checked = SettingsUseStyleName;
+            __CheckUseCheckBoxes.Checked = SettingsUseCheckBoxes;
 
             __CheckLogToolTipChanges.Checked = SetingsLogToolTipChanges;
         }
@@ -1383,6 +1389,7 @@ namespace TestDevExpress.Forms
             SettingsNodeImageSet = ConvertToNodeImageSetType(__ComboNodeImageSet, SettingsNodeImageSet);
             SettingsUseExactStyle = __CheckUseExactStyle.Checked;
             SettingsUseStyleName = __CheckUseStyleName.Checked;
+            SettingsUseCheckBoxes = __CheckUseCheckBoxes.Checked;
 
             SetingsLogToolTipChanges = __CheckLogToolTipChanges.Checked;
         }
@@ -1443,6 +1450,7 @@ namespace TestDevExpress.Forms
         internal NodeImageSetType SettingsNodeImageSet { get; set; }
         internal bool SettingsUseExactStyle { get; set; }
         internal bool SettingsUseStyleName { get; set; }
+        internal bool SettingsUseCheckBoxes { get; set; }
 
         internal bool SetingsLogToolTipChanges { get; set; }
 
