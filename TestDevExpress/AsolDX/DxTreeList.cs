@@ -112,6 +112,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool MultiSelectEnabled { get { return this._TreeListNative.MultiSelectEnabled; } set { this._TreeListNative.MultiSelectEnabled = value; } }
         /// <summary>
+        /// Odstup sousedních hladin nodů v TreeListu
+        /// </summary>
+        public int TreeNodeIndent { get { return this._TreeListNative.TreeLevelWidth; } set { this._TreeListNative.TreeLevelWidth = value; } }
+        /// <summary>
+        /// Odstup sousedních hladin nodů v TreeListu
+        /// </summary>
+        public TreeLevelLineType LevelLineType { get { return this._TreeListNative.LevelLineType; } set { this._TreeListNative.LevelLineType = value; } }
+        /// <summary>
         /// Má být selectován ten node, pro který se právě chystáme zobrazit kontextovém menu?
         /// <para/>
         /// Pokud je zobrazováno kontextové menu nad určitým nodem, a tento node není selectován, pak hodnota true zajistí, že tento node bude nejprve selectován.
@@ -201,6 +209,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aktuálně vybraný Node
         /// </summary>
         public ITreeListNode FocusedNodeInfo { get { return _TreeListNative.FocusedNodeInfo; } }
+        /// <summary>
+        /// Aktuální index sloupce s focusem. Význam má při editování.
+        /// </summary>
+        public int? FocusedColumnIndex { get { return _TreeListNative.FocusedColumnIndex; } }
         /// <summary>
         /// Obsahuje <see cref="ITextItem.ItemId"/> aktuálně focusovaného nodu.
         /// Lze setovat. Pokud bude setován neexistující ID, pak focusovaný node bude null.
@@ -641,6 +653,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             this.OptionsMenu.ShowExpandCollapseItems = false;
             this.OptionsMenu.EnableNodeMenu = false;
+            this.LevelLineType = TreeLevelLineType.None;             // Defaultní nastavení
 
             this.IncrementalSearchMode = TreeListIncrementalSearchMode.InExpandedNodesOnly;
             this.SelectNodeBeforeShowContextMenu = true;
@@ -3150,6 +3163,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 _CheckBoxMode = value;
                 this.OptionsView.ShowCheckBoxes = (value == TreeListCheckBoxMode.AllNodes || value == TreeListCheckBoxMode.SpecifyByNode);
+                this.OptionsView.CheckBoxStyle = DevExpress.XtraTreeList.DefaultNodeCheckBoxStyle.Check;
             }
         }
         private TreeListCheckBoxMode _CheckBoxMode;
@@ -3186,6 +3200,58 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private TreeListIncrementalSearchMode _IncrementalSearchMode;
+
+        /// <summary>
+        /// Nastavení vodících linií mezi TreeNody
+        /// </summary>
+        public TreeLevelLineType LevelLineType
+        { 
+            get 
+            {
+                var showTreeLines = this.OptionsView.ShowTreeLines;
+                if (showTreeLines == DefaultBoolean.False) return TreeLevelLineType.None;
+                var lineStyle = OptionsView.TreeLineStyle;
+                switch (lineStyle)
+                {
+                    case DevExpress.XtraTreeList.LineStyle.None: return TreeLevelLineType.None;
+                    case DevExpress.XtraTreeList.LineStyle.Percent50: return TreeLevelLineType.Percent50;
+                }
+                return TreeLevelLineType.Solid;
+            }
+            set 
+            {
+                if (value == TreeLevelLineType.None)
+                {   // Zhasnout vodící linky je snadné:
+                    this.OptionsView.ShowRoot = true;                          // Jinak není vidět ani ikona Expand/Collapse
+                    this.OptionsView.ShowTreeLines = DefaultBoolean.False;
+                    this.OptionsView.ShowFirstLines = false;
+                }
+                else
+                {   // Hezké zobrazení TreeLines vyžaduje tuto sekvenci:
+                    this.OptionsView.ShowTreeLines = DefaultBoolean.True;
+                    this.OptionsView.ShowFirstLines = true;
+                    this.OptionsView.ShowRoot = true;                          // Jinak není vidět ani ikona Expand/Collapse
+                    this.OptionsView.ShowHierarchyIndentationLines = DefaultBoolean.False;         // True = linky se nekeslí
+                    this.OptionsView.ShowIndentAsRowStyle = true;
+                    this.OptionsView.ShowIndentAsRowStyle = false;             // DevExpress to mají rádi takhle...
+                    switch (value)
+                    {
+                        case TreeLevelLineType.Percent50:
+                            this.OptionsView.TreeLineStyle = DevExpress.XtraTreeList.LineStyle.Percent50;
+                            break;
+                        case TreeLevelLineType.Dark:
+                            this.OptionsView.TreeLineStyle = DevExpress.XtraTreeList.LineStyle.Dark;
+                            break;
+                        case TreeLevelLineType.Solid:
+                            this.OptionsView.TreeLineStyle = DevExpress.XtraTreeList.LineStyle.Solid;
+                            break;
+                    }
+                    this.OptionsView.ShowIndentAsRowStyle = true;
+                    this.OptionsView.ShowIndentAsRowStyle = false;             // DevExpress to mají rádi takhle...
+                }
+            }
+        }
+
         /// <summary>
         /// Má být selectován ten node, pro který se právě chystáme zobrazit kontextovém menu?
         /// <para/>
@@ -4860,6 +4926,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Prvek umístěný jako poslední v poli Childs, reprezentuje např. text "DoubleKlik načte další data..."
         /// </summary>
         OnDoubleClickLoadNext
+    }
+    /// <summary>
+    /// Typ spojovací linie mezi nody TreeListu
+    /// </summary>
+    public enum TreeLevelLineType
+    {
+        /// <summary>
+        /// Žádná
+        /// </summary>
+        None,
+        /// <summary>
+        /// Jemně tečkovaná
+        /// </summary>
+        Percent50,
+        /// <summary>
+        /// Čárkovaná
+        /// </summary>
+        Dark,
+        /// <summary>
+        /// Plná
+        /// </summary>
+        Solid
     }
     /// <summary>
     /// Druh akce, kterou provede DoubleClick na textu anebo Click na ikoně
