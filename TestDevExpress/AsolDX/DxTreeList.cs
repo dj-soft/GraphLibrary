@@ -619,11 +619,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void InitTreeList()
         {
             this.OptionsBehavior.PopulateServiceColumns = false;
-            this._MainColumn = new DevExpress.XtraTreeList.Columns.TreeListColumn() { Name = "MainColumn", Visible = true, Width = 150, UnboundType = DevExpress.XtraTreeList.Data.UnboundColumnType.String, Caption = "Sloupec1", AllowIncrementalSearch = true, FieldName = "Text", ShowButtonMode = DevExpress.XtraTreeList.ShowButtonModeEnum.ShowForFocusedRow, ToolTip = "Tooltip pro sloupec" };
-            this.Columns.Add(this._MainColumn);
 
-            this._MainColumn.OptionsColumn.AllowEdit = false;
-            this._MainColumn.OptionsColumn.AllowSort = false;
+            this.DxColumns = null;                                   // Toto setování vytvoří defaultní implicitní jediný sloupec standardní cestou
 
             // this.OptionsBehavior.AllowExpandOnDblClick = false;             // Neřeš to explicitně, to řeší property this.MainClickMode !!!
             this.OptionsBehavior.AllowPixelScrolling = DevExpress.Utils.DefaultBoolean.False;                // Nezapínej to, DevExpress mají (v 20.1.6.0) problém s vykreslováním!
@@ -675,6 +672,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.KeyUp += _OnKeyUp;
 
             // Nativní eventy:
+            this.FocusedColumnChanged += _OnFocusedColumnChanged;
             this.FocusedNodeChanged += _OnFocusedNodeChanged;
             this.SelectionChanged += _OnSelectionChanged;
             this.MouseClick += _OnMouseClick;
@@ -698,10 +696,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._NodeImageSize = ResourceImageSizeType.Small;
             this._ImageMode = TreeListImageMode.ImageStatic;
         }
-        /// <summary>
-        /// Jediný column
-        /// </summary>
-        DevExpress.XtraTreeList.Columns.TreeListColumn _MainColumn;
         #endregion
         #region Sloupce - jednoduché zobrazení Treelistu anebo zobrazení se sloupci
         /// <summary>
@@ -710,19 +704,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         public ITreeListColumn[] DxColumns 
         {
             get { return _DxColumns; }
-            set { _DxColumns = value; _PrepareColumns(); }
+            set { _DxColumns = value; _PrepareColumns(value); }
         }
         private ITreeListColumn[] _DxColumns;
-        private void _PrepareColumns()
+        /// <summary>
+        /// Připraví fyzické definice sloupců (DevExpress) pro definiční data dodaná v <paramref name="columns"/>.
+        /// Zde smí být na vstupu null, místo toho se vytvoří defaultní jeden sloupec.
+        /// </summary>
+        /// <param name="columns"></param>
+        private void _PrepareColumns(ITreeListColumn[] columns)
         {
-            var columns = _DxColumns;
             if (columns is null || columns.Length == 0)
-                _PrepareColumns(new ITreeListColumn[] { new DataTreeListColumn() { Caption = "", CellContentAlignment = HorzAlignment.Near, Width = 4096 } }, false);
+                _PrepareColumns(new ITreeListColumn[] { new DataTreeListColumn() { Caption = "", CellContentAlignment = HorzAlignment.Near, CanEdit = true, Width = 4096 } }, false);
             else
                 _PrepareColumns(columns, true);
         }
         /// <summary>
-        /// Vytvoří sloupce pro zobrazení dat TreeListu podle daného zadání
+        /// Vytvoří sloupce pro zobrazení dat TreeListu podle daného zadání (sloupce <paramref name="columns"/> a zobrazení záhlaví <paramref name="showHeaders"/>.
+        /// Zde NESMÍ být na vstupu null.
         /// </summary>
         /// <param name="columns"></param>
         /// <param name="showHeaders"></param>
@@ -747,6 +746,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 dxCol.AbsoluteIndex = colIndex;
                 dxCol.VisibleIndex = colIndex;
                 dxCol.UnboundDataType = typeof(string);              // Určuje typ operátorů pro řádkový filtr
+                dxCol.AllowIncrementalSearch = true;
+                dxCol.ShowButtonMode = DevExpress.XtraTreeList.ShowButtonModeEnum.ShowForFocusedRow;
                 dxCol.Visible = true;
                 dxCol.Width = column.Width;
                 dxCol.MinWidth = (column.MinWidth ?? 0);
@@ -755,8 +756,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (column.HeaderContentAlignment.HasValue)
                     dxCol.AppearanceHeader.TextOptions.HAlignment = column.HeaderContentAlignment.Value;
 
-                dxCol.OptionsColumn.AllowSort = false;
                 dxCol.OptionsFilter.AutoFilterCondition = DevExpress.XtraTreeList.Columns.AutoFilterCondition.Contains;
+                dxCol.OptionsColumn.AllowSort = false;
+                dxCol.OptionsColumn.AllowEdit = false;               // Bude si řídit konkrétní buňka
+
+                dxCol.Tag = column;                                  // Definice se může hodit...
 
                 colIndex++;
             }
@@ -765,6 +769,25 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.OptionsView.ShowColumns = showHeaders;
 
             this.EndUpdate();
+        }
+        /// <summary>
+        /// Nastaví editovatelnost pro konkrétní node <paramref name="nodeInfo"/> a sloupec na indexu <paramref name="columnIndex"/>.
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        /// <param name="columnIndex"></param>
+        private void _SetCellEditable(ITreeListNode nodeInfo, int? columnIndex)
+        {
+            if (columnIndex.HasValue && columnIndex.Value >= 0 && columnIndex.Value < this.Columns.Count)
+            {
+                bool nodeIsEditable = (nodeInfo != null ? nodeInfo.CanEdit : false);
+
+                var column = this.Columns[columnIndex.Value];
+                bool columnIsEditable = column.OptionsColumn.AllowEdit;
+                if (column.Tag is ITreeListColumn iColumn)
+                    columnIsEditable = iColumn.CanEdit;
+                
+                column.OptionsColumn.AllowEdit = nodeIsEditable && columnIsEditable;
+            }
         }
         /// <summary>
         /// Připraví nastavení pro klientský RowFilter v tomto TreeListu
@@ -1422,7 +1445,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             ITreeListNode nodeInfo = _GetNodeInfo(args.Node);
 
-            _MainColumn.OptionsColumn.AllowEdit = (nodeInfo != null && nodeInfo.CanEdit);
+            _SetCellEditable(nodeInfo, this.FocusedColumnIndex);
 
             if (nodeInfo != null && !this.IsLocked)
             {
@@ -1430,6 +1453,16 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (!this.MultiSelectEnabled)
                     this._OnSelectedNodesChanged();                  // Pokud NENÍ nastaveno MultiSelectEnabled, pak TreeList nevyvolá svůj event _OnSelectionChanged, ale nás to může zajímat
             }
+        }
+        /// <summary>
+        /// Po fokusu do konkrétního sloupce se nastaví jeho Editable, ale nevoláme event
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _OnFocusedColumnChanged(object sender, DevExpress.XtraTreeList.FocusedColumnChangedEventArgs args)
+        {
+            ITreeListNode nodeInfo = this.FocusedNodeInfo;
+            _SetCellEditable(nodeInfo, this.FocusedColumnIndex);
         }
         /// <summary>
         /// Po změně selectovaných nodů v <see cref="SelectedNodes"/>, volá se pouze při <see cref="MultiSelectEnabled"/> = true
@@ -4632,6 +4665,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual int? MinWidth { get; set; }
         /// <summary>
+        /// Lze data ve sloupci editovat?
+        /// Aby bylo možno editovat data, musí být true zde i v definici nodu <see cref="DataTreeListNode.CanEdit"/>.
+        /// </summary>
+        public virtual bool CanEdit { get; set; }
+        /// <summary>
         /// Zarovnání textu v záhlaví (titulek)
         /// </summary>
         public virtual HorzAlignment? HeaderContentAlignment { get; set; }
@@ -4760,6 +4798,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Minimální šířka sloupce
         /// </summary>
         int? MinWidth { get; }
+        /// <summary>
+        /// Lze data ve sloupci editovat?
+        /// Aby bylo možno editovat data, musí být true zde i v definici nodu <see cref="ITreeListNode.CanEdit"/>.
+        /// </summary>
+        bool CanEdit { get; }
         /// <summary>
         /// Zarovnání textu v záhlaví (titulek)
         /// </summary>

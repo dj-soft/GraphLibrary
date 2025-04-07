@@ -401,7 +401,7 @@ namespace TestDevExpress.Forms
             __DxTreeList.AddLazyLoadNodes(parentNodeId, nodes);            //  a pošleme je do TreeView.
         }
         #endregion
-        #region Plnění dat do TreeListu
+        #region Vytváření nodů, smazání a plnění dat do TreeListu
         /// <summary>
         /// Naplní nějaká výchozí data po otevření okna
         /// </summary>
@@ -473,9 +473,9 @@ namespace TestDevExpress.Forms
         private void _CreateMultiColumns()
         {
             List<DataTreeListColumn> dxColumns = new List<DataTreeListColumn>();
-            dxColumns.Add(new DataTreeListColumn() { Caption = "Text", Width = 220, MinWidth = 150 });
-            dxColumns.Add(new DataTreeListColumn() { Caption = "Informace", Width = 120, MinWidth = 80, HeaderContentAlignment = DevExpress.Utils.HorzAlignment.Center, CellContentAlignment = DevExpress.Utils.HorzAlignment.Far });
-            dxColumns.Add(new DataTreeListColumn() { Caption = "Popisek", Width = 160, MinWidth = 100 });
+            dxColumns.Add(new DataTreeListColumn() { Caption = "Text", Width = 220, MinWidth = 150, CanEdit = true });
+            dxColumns.Add(new DataTreeListColumn() { Caption = "Informace", Width = 120, MinWidth = 80, HeaderContentAlignment = DevExpress.Utils.HorzAlignment.Center, CellContentAlignment = DevExpress.Utils.HorzAlignment.Far, CanEdit = false });
+            dxColumns.Add(new DataTreeListColumn() { Caption = "Popisek", Width = 160, MinWidth = 100, CanEdit = true });
             __DxTreeList.DxColumns = dxColumns.ToArray();
         }
         /// <summary>
