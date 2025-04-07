@@ -286,9 +286,9 @@ namespace TestDevExpress.Forms
 
             string textInfo = "";
             string newValue = "";
-            if (args.ColumnIndex.HasValue && nodeInfo.Values != null && args.ColumnIndex.Value >= 0 && args.ColumnIndex.Value < nodeInfo.Values.Length)
+            if (args.ColumnIndex.HasValue && nodeInfo.Cells != null && args.ColumnIndex.Value >= 0 && args.ColumnIndex.Value < nodeInfo.Cells.Length)
             {
-                newValue = nodeInfo.Values[args.ColumnIndex.Value] as string;
+                newValue = nodeInfo.Cells[args.ColumnIndex.Value] as string;
                 textInfo = $"Nová hodnota: '{newValue}'";
             }
             else
@@ -608,7 +608,7 @@ namespace TestDevExpress.Forms
                     // Více sloupců?
                     if (SettingsUseMultiColumns)
                     {
-                        childNode.Values = new string[]
+                        childNode.Cells = new string[]
                         {
                             text,
                             Randomizer.GetSentence(1, 3),

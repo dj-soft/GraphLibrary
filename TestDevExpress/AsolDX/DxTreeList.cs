@@ -1687,8 +1687,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (nodeInfo != null)
             {
-                if (columnIndex.HasValue && nodeInfo.Values != null && columnIndex.Value >= 0 && columnIndex.Value < nodeInfo.Values.Length)
-                    nodeInfo.Values[columnIndex.Value] = editedValue;
+                if (columnIndex.HasValue && nodeInfo.Cells != null && columnIndex.Value >= 0 && columnIndex.Value < nodeInfo.Cells.Length)
+                    nodeInfo.Cells[columnIndex.Value] = editedValue;
                 else 
                     nodeInfo.TextEdited = this.EditingValue as string;
             }
@@ -2455,7 +2455,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!String.IsNullOrEmpty(parentNodeFullId) || _CurrentRootNodeVisible)
             {
                 // Vytvoříme TreeListNode:
-                object nodeData = (nodeInfo.Values != null ? nodeInfo.Values : new object[] { nodeInfo.Text });        // Obsah nodu = více sloupců nebo jeden text
+                object nodeData = (nodeInfo.Cells != null ? nodeInfo.Cells : new object[] { nodeInfo.Text });        // Obsah nodu = více sloupců nebo jeden text
                 var parentPair = this._GetNodePair(parentNodeFullId);
 
                 if (parentPair != null && parentPair.HasTreeNode)
@@ -4548,9 +4548,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Hodnoty v řádku TreeListu. Pokud nebude null, použijí se přednostně před <see cref="DataTextItem.Text"/>. Pak mohou vytvořit vícesloupcový TreeList.
         /// Je vhodné v tom případě nadeklarovat jednotlivé sloupce do TreeListu.
         /// <para/>
-        /// Pokud je text v nodu editován, a TreeList obsahuje MultiColumns a zobrazuje data ze zdejšího <see cref="Values"/>, pak je editovaný text ukládán právě sem do odpovídajícího prvku.
+        /// Pokud je text v nodu editován, a TreeList obsahuje MultiColumns a zobrazuje data ze zdejšího <see cref="Cells"/>, pak je editovaný text ukládán právě sem do odpovídajícího prvku.
         /// </summary>
-        public virtual string[] Values { get; set; }
+        public virtual string[] Cells { get; set; }
         /// <summary>
         /// Klíč parent uzlu.
         /// Po vytvoření nelze změnit.
@@ -4559,7 +4559,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Text v rámci editace (je sem setován při DoubleClicku a po ukončení editace).
         /// <para/>
-        /// Pokud je text v nodu editován, a TreeList obsahuje MultiColumns a zobrazuje data ze zdejšího <see cref="Values"/>, pak je editovaný text ukládán do <see cref="Values"/> a nikoli sem.
+        /// Pokud je text v nodu editován, a TreeList obsahuje MultiColumns a zobrazuje data ze zdejšího <see cref="Cells"/>, pak je editovaný text ukládán do <see cref="Cells"/> a nikoli sem.
         /// </summary>
         public virtual string TextEdited { get; set; }
         /// <summary>
@@ -4699,9 +4699,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Hodnoty v řádku TreeListu. Pokud nebude null, použijí se přednostně před <see cref="ITextItem.Text"/>. Pak mohou vytvořit vícesloupcový TreeList.
         /// Je vhodné v tom případě nadeklarovat jednotlivé sloupce do TreeListu.
         /// <para/>
-        /// Pokud je text v nodu editován, a TreeList obsahuje MultiColumns a zobrazuje data ze zdejšího <see cref="Values"/>, pak je editovaný text ukládán právě sem do odpovídajícího prvku.
+        /// Pokud je text v nodu editován, a TreeList obsahuje MultiColumns a zobrazuje data ze zdejšího <see cref="Cells"/>, pak je editovaný text ukládán právě sem do odpovídajícího prvku.
         /// </summary>
-        string[] Values { get; }
+        string[] Cells { get; }
         /// <summary>
         /// Typ nodu
         /// </summary>
