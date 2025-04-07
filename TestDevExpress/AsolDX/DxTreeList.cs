@@ -717,36 +717,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var columns = _DxColumns;
             if (columns is null || columns.Length == 0)
-                _PrepareSimpleColumn();
+                _PrepareColumns(new ITreeListColumn[] { new DataTreeListColumn() { Caption = "", CellContentAlignment = HorzAlignment.Near, Width = 4096 } }, false);
             else
-                _PrepareFullColumns(columns);
-         }
-        private void _PrepareSimpleColumn()
-        {
-            this.ClearFocusedColumn();
-            this.ClearNodes();
-
-            this.BeginUpdate();
-
-            var treeColumns = this.Columns;
-            treeColumns.Clear();
-
-            var dxCol = treeColumns.Add();
-            dxCol.UnboundDataType = typeof(string);
-            dxCol.Name = "MainColumn";
-            dxCol.FieldName = "MainColumn";
-            dxCol.Caption = "Sloupec1";
-            dxCol.AbsoluteIndex = 0;
-            dxCol.VisibleIndex = 0;
-            dxCol.UnboundDataType = typeof(void);
-            dxCol.Visible = true;
-            dxCol.Width = 4096;
-
-            this.OptionsView.ShowColumns = false;
-
-            this.EndUpdate();
+                _PrepareColumns(columns, true);
         }
-        private void _PrepareFullColumns(ITreeListColumn[] columns)
+        /// <summary>
+        /// Vytvoří sloupce pro zobrazení dat TreeListu podle daného zadání
+        /// </summary>
+        /// <param name="columns"></param>
+        /// <param name="showHeaders"></param>
+        private void _PrepareColumns(ITreeListColumn[] columns, bool showHeaders)
         {
             this.ClearFocusedColumn();
             this.ClearNodes();
@@ -766,8 +746,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 dxCol.Caption = column.Caption;
                 dxCol.AbsoluteIndex = colIndex;
                 dxCol.VisibleIndex = colIndex;
-                dxCol.UnboundDataType = typeof(string);
-                // dxCol.UnboundDataType = typeof(void);
+                dxCol.UnboundDataType = typeof(string);              // Určuje typ operátorů pro řádkový filtr
                 dxCol.Visible = true;
                 dxCol.Width = column.Width;
                 dxCol.MinWidth = (column.MinWidth ?? 0);
@@ -783,12 +762,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             this.OptionsView.ColumnHeaderAutoHeight = DefaultBoolean.True;
-            this.OptionsView.ShowColumns = true;
+            this.OptionsView.ShowColumns = showHeaders;
 
             this.EndUpdate();
         }
         /// <summary>
-        /// Připraví klientský RowFilter
+        /// Připraví nastavení pro klientský RowFilter v tomto TreeListu
         /// </summary>
         internal void PresetRowFilter()
         {
