@@ -4912,7 +4912,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _TreeList.LazyLoadNodeText = "Copak to tu asi bude?";
             _TreeList.LazyLoadNodeImageName = "hourglass_16";
             _TreeList.LazyLoadFocusNode = TreeListLazyLoadFocusNodeType.ParentNode;
-            _TreeList.FilterBoxVisible = true;
+            _TreeList.FilterBoxMode = RowFilterBoxMode.Server;
             _TreeList.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;
             _TreeList.IncrementalSearchMode = TreeListIncrementalSearchMode.InAllNodes;
             _TreeList.FilterBoxOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
@@ -5442,7 +5442,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropBList.ButtonsTypes = ControlKeyActionType.MoveAll;
             _PanelDragDrop.Controls.Add(_DragDropBList);
 
-            _DragDropCTree = new DxTreeList() { FilterBoxVisible = true, DragDropActions = targetDDActions, EnabledKeyActions = sourceKeyActions };
+            _DragDropCTree = new DxTreeList() { FilterBoxMode = RowFilterBoxMode.Server, DragDropActions = targetDDActions, EnabledKeyActions = sourceKeyActions };
             _DragDropCTree.Name = "CTree";
             _DragDropCTree.MultiSelectEnabled = true;
             _DragDropCTree.SelectNodeBeforeShowContextMenu = false;
