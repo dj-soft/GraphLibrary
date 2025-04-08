@@ -15,7 +15,16 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace TestDevExpress.Forms
 {
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "TreeList", buttonOrder: 60, buttonImage: "svgimages/dashboards/inserttreeview.svg", buttonToolTip: "Otevře okno TreeList s parametry", tabViewToolTip: "Okno zobrazující nový TreeList")]
+    [RunFormInfo(groupText: "Testovací okna", buttonText: "Native TreeList", buttonOrder: 60, buttonImage: "svgimages/dashboards/inserttreeview.svg", buttonToolTip: "Otevře okno TreeList s parametry", tabViewToolTip: "Okno zobrazující nový TreeList")]
+    internal class DxNativeTreeListForm : DxTreeListForm
+    { }
+
+    [RunFormInfo(groupText: "Testovací okna", buttonText: "AsolDX TreeList", buttonOrder: 61, buttonImage: "svgimages/dashboards/inserttreeview.svg", buttonToolTip: "Otevře okno TreeList s parametry", tabViewToolTip: "Okno zobrazující nový TreeList")]
+    internal class DxAsolDxTreeListForm : DxTreeListForm
+    { }
+    /// <summary>
+    /// Bázová třída - nezobrazuje se, obsahuje virtual podklady pro variabilní konfiguraci
+    /// </summary>
     internal class DxTreeListForm : DxRibbonForm
     {
         #region Inicializace
@@ -45,16 +54,16 @@ namespace TestDevExpress.Forms
             };
             this.ImageNameAdd = iconData.SvgImageName;
 
-            __CurrentId = ++__InstanceCounter;
-            _RefreshTitle();
+            CurrentId = ++InstanceCounter;
+            RefreshTitle();
         }
-        private void _RefreshTitle()
+        protected void RefreshTitle()
         {
-            this.Text = $"TreeList   [{__CurrentId}]";
+            this.Text = $"TreeList   [{CurrentId}]";
         }
-        private static int Counter = 12;
-        private int __CurrentId;
-        private static int __InstanceCounter;
+        protected static int Counter = 12;
+        protected int CurrentId;
+        protected static int InstanceCounter;
         #endregion
         #region Ribbon - obsah a rozcestník
         protected override void DxRibbonPrepare()
@@ -69,16 +78,16 @@ namespace TestDevExpress.Forms
             ribbonContent.Pages.Add(homePage);
 
             this.DxRibbon.RibbonContent = ribbonContent;
-            this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
+            this.DxRibbon.RibbonItemClick += DxRibbonControl_RibbonItemClick;
         }
-        private void _DxRibbonControl_RibbonItemClick(object sender, DxRibbonItemClickArgs e)
+        protected void DxRibbonControl_RibbonItemClick(object sender, DxRibbonItemClickArgs e)
         {
             var itemId = e.Item.ItemId;
             switch (itemId)
             {
-                case "TreePrepareSet50": _PrepareTreeList(20, 1); break;
-                case "TreePrepareSet500": _PrepareTreeList(40, 2); break;
-                case "TreePrepareSet5000": _PrepareTreeList(80, 3); break;
+                case "TreePrepareSet50": PrepareTreeList(20, 1); break;
+                case "TreePrepareSet500": PrepareTreeList(40, 2); break;
+                case "TreePrepareSet5000": PrepareTreeList(80, 3); break;
             }
         }
         #endregion
@@ -87,29 +96,29 @@ namespace TestDevExpress.Forms
         {
             base.DxMainContentPrepare();
 
-            __MainSplitContainer = new DxSplitContainerControl() { Dock = DockStyle.Fill, SplitterPosition = 450, FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel1, SplitterOrientation = Orientation.Horizontal, ShowSplitGlyph = DevExpress.Utils.DefaultBoolean.True, Name = "MainSplitContainer" };
-            this.DxMainPanel.Controls.Add(__MainSplitContainer);
+            MainSplitContainer = new DxSplitContainerControl() { Dock = DockStyle.Fill, SplitterPosition = 450, FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel1, SplitterOrientation = Orientation.Horizontal, ShowSplitGlyph = DevExpress.Utils.DefaultBoolean.True, Name = "MainSplitContainer" };
+            this.DxMainPanel.Controls.Add(MainSplitContainer);
 
-            __DxTreeList = new DxTreeList() { Dock = DockStyle.Fill, Name = "DxTreeList" };
-            _TreeListInit();
-            __MainSplitContainer.Panel1.Controls.Add(__DxTreeList);
-            __MainSplitContainer.Panel1.MinSize = 200;
+            DxTreeList = new DxTreeList() { Dock = DockStyle.Fill, Name = "DxTreeList" };
+            TreeListInit();
+            MainSplitContainer.Panel1.Controls.Add(DxTreeList);
+            MainSplitContainer.Panel1.MinSize = 200;
 
-            __ParamSplitContainer = new DxSplitContainerControl() { Dock = DockStyle.Fill, SplitterPosition = 300, FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel1, SplitterOrientation = Orientation.Vertical, ShowSplitGlyph = DevExpress.Utils.DefaultBoolean.True, Name = "ParamSplitContainer" };
-            __MainSplitContainer.Panel2.Controls.Add(__ParamSplitContainer);
+            ParamSplitContainer = new DxSplitContainerControl() { Dock = DockStyle.Fill, SplitterPosition = 300, FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel1, SplitterOrientation = Orientation.Vertical, ShowSplitGlyph = DevExpress.Utils.DefaultBoolean.True, Name = "ParamSplitContainer" };
+            MainSplitContainer.Panel2.Controls.Add(ParamSplitContainer);
 
-            __ParamsPanel = new DxPanelControl() { Dock = DockStyle.Fill, Name = "ParamsPanel" };
-            _ParamsInit();
-            __ParamSplitContainer.Panel1.Controls.Add(__ParamsPanel);
+            ParamsPanel = new DxPanelControl() { Dock = DockStyle.Fill, Name = "ParamsPanel" };
+            ParamsInit();
+            ParamSplitContainer.Panel1.Controls.Add(ParamsPanel);
 
-            __LogPanel = new DxPanelControl() { Dock = DockStyle.Fill, Name = "LogPanel" };
-            _LogInit();
-            __ParamSplitContainer.Panel2.Controls.Add(__LogPanel);
+            LogPanel = new DxPanelControl() { Dock = DockStyle.Fill, Name = "LogPanel" };
+            LogInit();
+            ParamSplitContainer.Panel2.Controls.Add(LogPanel);
 
-            _SettingLoad();
-            _SampleLoad();
+            SettingLoad();
+            SampleLoad();
         }
-        private static Keys[] _CreateHotKeys()
+        protected static Keys[] CreateHotKeys()
         {
             Keys[] keys = new Keys[]
             {
@@ -127,157 +136,157 @@ namespace TestDevExpress.Forms
             };
             return keys;
         }
-        private Noris.Clients.Win.Components.AsolDX.DxSplitContainerControl __MainSplitContainer;
-        private Noris.Clients.Win.Components.AsolDX.DxTreeList __DxTreeList;
-        private Noris.Clients.Win.Components.AsolDX.DxSplitContainerControl __ParamSplitContainer;
-        private Noris.Clients.Win.Components.AsolDX.DxPanelControl __ParamsPanel;
-        private Noris.Clients.Win.Components.AsolDX.DxPanelControl __LogPanel;
+        protected Noris.Clients.Win.Components.AsolDX.DxSplitContainerControl MainSplitContainer;
+        protected Noris.Clients.Win.Components.AsolDX.DxTreeList DxTreeList;
+        protected Noris.Clients.Win.Components.AsolDX.DxSplitContainerControl ParamSplitContainer;
+        protected Noris.Clients.Win.Components.AsolDX.DxPanelControl ParamsPanel;
+        protected Noris.Clients.Win.Components.AsolDX.DxPanelControl LogPanel;
         #endregion
         #region TreeList setting a events
-        private void _TreeListInit()
+        protected void TreeListInit()
         {
-            __DxTreeList.CheckBoxMode = TreeListCheckBoxMode.SpecifyByNode;
-            __DxTreeList.ImageMode = TreeListImageMode.ImageStatic;
-            __DxTreeList.LazyLoadNodeText = "Copak to tu asi bude?";
-            __DxTreeList.LazyLoadNodeImageName = "hourglass_16";
-            __DxTreeList.LazyLoadFocusNode = TreeListLazyLoadFocusNodeType.ParentNode;
-            __DxTreeList.FilterBoxMode = RowFilterBoxMode.Server;
-            __DxTreeList.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;
-            __DxTreeList.IncrementalSearchMode = TreeListIncrementalSearchMode.InAllNodes;
-            __DxTreeList.FilterBoxOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
-            __DxTreeList.FilterBoxChangedSources = DxFilterBoxChangeEventSource.Default;
-            __DxTreeList.MultiSelectEnabled = true;
-            __DxTreeList.MainClickMode = NodeMainClickMode.AcceptNodeSetting;
+            DxTreeList.CheckBoxMode = TreeListCheckBoxMode.SpecifyByNode;
+            DxTreeList.ImageMode = TreeListImageMode.ImageStatic;
+            DxTreeList.LazyLoadNodeText = "Copak to tu asi bude?";
+            DxTreeList.LazyLoadNodeImageName = "hourglass_16";
+            DxTreeList.LazyLoadFocusNode = TreeListLazyLoadFocusNodeType.ParentNode;
+            DxTreeList.FilterBoxMode = RowFilterBoxMode.Server;
+            DxTreeList.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;
+            DxTreeList.IncrementalSearchMode = TreeListIncrementalSearchMode.InAllNodes;
+            DxTreeList.FilterBoxOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
+            DxTreeList.FilterBoxChangedSources = DxFilterBoxChangeEventSource.Default;
+            DxTreeList.MultiSelectEnabled = true;
+            DxTreeList.MainClickMode = NodeMainClickMode.AcceptNodeSetting;
 
-            __DxTreeList.NodeImageSize = ResourceImageSizeType.Large;        // Zkus různé...
-            __DxTreeList.NodeImageSize = ResourceImageSizeType.Medium;
-            __DxTreeList.NodeImageSize = ResourceImageSizeType.Small;
+            DxTreeList.NodeImageSize = ResourceImageSizeType.Large;        // Zkus různé...
+            DxTreeList.NodeImageSize = ResourceImageSizeType.Medium;
+            DxTreeList.NodeImageSize = ResourceImageSizeType.Small;
 
-            __DxTreeList.NodeAllowHtmlText = true;
+            DxTreeList.NodeAllowHtmlText = true;
 
-            __DxTreeList.HotKeys = _CreateHotKeys();
+            DxTreeList.HotKeys = CreateHotKeys();
 
-            __DxTreeList.FilterBoxChanged += _TreeList_FilterBoxChanged;
-            __DxTreeList.FilterBoxKeyEnter += _TreeList_FilterBoxKeyEnter;
-            __DxTreeList.NodeKeyDown += _TreeList_NodeKeyDown;
-            __DxTreeList.NodeFocusedChanged += _TreeList_AnyAction;
-            __DxTreeList.SelectedNodesChanged += _TreeList_SelectedNodesChanged;
-            __DxTreeList.ShowContextMenu += _TreeList_ShowContextMenu;
-            __DxTreeList.NodeIconClick += _TreeList_IconClick;
-            __DxTreeList.NodeDoubleClick += _TreeList_DoubleClick;
-            __DxTreeList.NodeExpanded += _TreeList_AnyAction;
-            __DxTreeList.NodeCollapsed += _TreeList_AnyAction;
-            __DxTreeList.ActivatedEditor += _TreeList_AnyAction;
-            __DxTreeList.EditorDoubleClick += _TreeList_DoubleClick;
-            __DxTreeList.NodeEdited += _TreeList_NodeEdited;
-            __DxTreeList.NodeCheckedChange += _TreeList_AnyAction;
-            __DxTreeList.NodesDelete += _TreeList_NodesDelete;
-            __DxTreeList.LazyLoadChilds += _TreeList_LazyLoadChilds;
-            __DxTreeList.ToolTipChanged += _TreeList_ToolTipChanged;
-            __DxTreeList.MouseLeave += _TreeList_MouseLeave;
+            DxTreeList.FilterBoxChanged += TreeList_FilterBoxChanged;
+            DxTreeList.FilterBoxKeyEnter += TreeList_FilterBoxKeyEnter;
+            DxTreeList.NodeKeyDown += TreeList_NodeKeyDown;
+            DxTreeList.NodeFocusedChanged += TreeList_AnyAction;
+            DxTreeList.SelectedNodesChanged += TreeList_SelectedNodesChanged;
+            DxTreeList.ShowContextMenu += TreeList_ShowContextMenu;
+            DxTreeList.NodeIconClick += TreeList_IconClick;
+            DxTreeList.NodeDoubleClick += _TreeList_DoubleClick;
+            DxTreeList.NodeExpanded += TreeList_AnyAction;
+            DxTreeList.NodeCollapsed += TreeList_AnyAction;
+            DxTreeList.ActivatedEditor += TreeList_AnyAction;
+            DxTreeList.EditorDoubleClick += _TreeList_DoubleClick;
+            DxTreeList.NodeEdited += _TreeList_NodeEdited;
+            DxTreeList.NodeCheckedChange += TreeList_AnyAction;
+            DxTreeList.NodesDelete += _TreeList_NodesDelete;
+            DxTreeList.LazyLoadChilds += _TreeList_LazyLoadChilds;
+            DxTreeList.ToolTipChanged += _TreeList_ToolTipChanged;
+            DxTreeList.MouseLeave += _TreeList_MouseLeave;
         }
-        private void _TreeList_AnyAction(object sender, DxTreeListNodesArgs args)
+        protected void TreeList_AnyAction(object sender, DxTreeListNodesArgs args)
         {
-            _AddToLog(args.Action.ToString(), args);
+            AddToLog(args.Action.ToString(), args);
         }
-        private void _TreeList_AnyAction(object sender, DxTreeListNodeArgs args)
+        protected void TreeList_AnyAction(object sender, DxTreeListNodeArgs args)
         {
-            _AddToLog(args.Action.ToString(), args, (args.Action == TreeListActionType.NodeEdited || args.Action == TreeListActionType.EditorDoubleClick || args.Action == TreeListActionType.NodeCheckedChange));
+            AddToLog(args.Action.ToString(), args, (args.Action == TreeListActionType.NodeEdited || args.Action == TreeListActionType.EditorDoubleClick || args.Action == TreeListActionType.NodeCheckedChange));
         }
-        private void _TreeList_FilterBoxChanged(object sender, DxFilterBoxChangeArgs args)
+        protected void TreeList_FilterBoxChanged(object sender, DxFilterBoxChangeArgs args)
         {
-            var filter = this.__DxTreeList.FilterBoxValue;
-            _AddToLog($"RowFilter: Change: {args.EventSource}; Operator: {args.FilterValue.FilterOperator?.ItemId}, Text: \"{args.FilterValue.FilterText}\"");
+            var filter = this.DxTreeList.FilterBoxValue;
+            AddToLog($"RowFilter: Change: {args.EventSource}; Operator: {args.FilterValue.FilterOperator?.ItemId}, Text: \"{args.FilterValue.FilterText}\"");
         }
-        private void _TreeList_FilterBoxKeyEnter(object sender, EventArgs e)
+        protected void TreeList_FilterBoxKeyEnter(object sender, EventArgs e)
         {
-            _AddToLog($"RowFilter: 'Enter' pressed");
+            AddToLog($"RowFilter: 'Enter' pressed");
         }
-        private void _TreeList_NodeKeyDown(object sender, DxTreeListNodeKeyArgs args)
+        protected void TreeList_NodeKeyDown(object sender, DxTreeListNodeKeyArgs args)
         {
-            _AddToLog($"KeyUp: Node: {args.Node?.Text}; KeyCode: '{args.KeyArgs.KeyCode}'; KeyData: '{args.KeyArgs.KeyData}'; Modifiers: {args.KeyArgs.Modifiers}");
+            AddToLog($"KeyUp: Node: {args.Node?.Text}; KeyCode: '{args.KeyArgs.KeyCode}'; KeyData: '{args.KeyArgs.KeyData}'; Modifiers: {args.KeyArgs.Modifiers}");
         }
-        private void _TreeList_SelectedNodesChanged(object sender, DxTreeListNodeArgs args)
+        protected void TreeList_SelectedNodesChanged(object sender, DxTreeListNodeArgs args)
         {
             int count = 0;
             string selectedNodes = "";
-            __DxTreeList.SelectedNodes.ForEachExec(n => { count++; selectedNodes += "; '" + n.ToString() + "'"; });
+            DxTreeList.SelectedNodes.ForEachExec(n => { count++; selectedNodes += "; '" + n.ToString() + "'"; });
             if (selectedNodes.Length > 0) selectedNodes = selectedNodes.Substring(2);
-            _AddToLog($"SelectedNodesChanged: Selected {count} Nodes: {selectedNodes}");
+            AddToLog($"SelectedNodesChanged: Selected {count} Nodes: {selectedNodes}");
         }
-        private void _TreeList_ShowContextMenu(object sender, DxTreeListNodeContextMenuArgs args)
+        protected void TreeList_ShowContextMenu(object sender, DxTreeListNodeContextMenuArgs args)
         {
-            _AddToLog($"ShowContextMenu: Node: {args.Node} Part: {args.HitInfo.PartType}");
+            AddToLog($"ShowContextMenu: Node: {args.Node} Part: {args.HitInfo.PartType}");
             if (args.Node != null)
-                _ShowDXPopupMenu(Control.MousePosition);
+                ShowDXPopupMenu(Control.MousePosition);
         }
-        private void _TreeList_IconClick(object sender, DxTreeListNodeArgs args)
+        protected void TreeList_IconClick(object sender, DxTreeListNodeArgs args)
         {
-            _TreeList_AnyAction(sender, args);
+            TreeList_AnyAction(sender, args);
         }
-        private void _TreeList_DoubleClick(object sender, DxTreeListNodeArgs args)
+        protected void _TreeList_DoubleClick(object sender, DxTreeListNodeArgs args)
         {
-            _TreeList_AnyAction(sender, args);
-            ThreadManager.AddAction(() => _TreeNodeDoubleClickBgr(args));
+            TreeList_AnyAction(sender, args);
+            ThreadManager.AddAction(() => TreeNodeDoubleClickBgr(args));
         }
-        private void _TreeList_NodeEdited(object sender, DxTreeListNodeArgs args)
+        protected void _TreeList_NodeEdited(object sender, DxTreeListNodeArgs args)
         {
-            _TreeList_AnyAction(sender, args);
-            ThreadManager.AddAction(() => _TreeNodeEditedBgr(args));
+            TreeList_AnyAction(sender, args);
+            ThreadManager.AddAction(() => TreeNodeEditedBgr(args));
         }
-        private void _TreeList_NodesDelete(object sender, DxTreeListNodesArgs args)
+        protected void _TreeList_NodesDelete(object sender, DxTreeListNodesArgs args)
         {
-            _TreeList_AnyAction(sender, args);
-            ThreadManager.AddAction(() => _TreeNodeDeleteBgr(args));
+            TreeList_AnyAction(sender, args);
+            ThreadManager.AddAction(() => TreeNodeDeleteBgr(args));
         }
-        private void _TreeList_LazyLoadChilds(object sender, DxTreeListNodeArgs args)
+        protected void _TreeList_LazyLoadChilds(object sender, DxTreeListNodeArgs args)
         {
-            _TreeList_AnyAction(sender, args);
-            ThreadManager.AddAction(() => _LoadChildNodesFromServerBgr(args));
+            TreeList_AnyAction(sender, args);
+            ThreadManager.AddAction(() => LoadChildNodesFromServerBgr(args));
         }
-        private void _TreeList_ToolTipChanged(object sender, DxToolTipArgs args)
+        protected void _TreeList_ToolTipChanged(object sender, DxToolTipArgs args)
         {
             if (SetingsLogToolTipChanges)
             {
                 string line = "ToolTip: " + args.EventName;
                 bool skipGUI = (line.Contains("IsFASTMotion"));             // ToolTip obsahující IsFASTMotion nebudu dávat do GUI Textu - to jsou rychlé eventy:
-                _AddToLog(line, skipGUI);
+                AddToLog(line, skipGUI);
             }
         }
-        private void _TreeList_MouseLeave(object sender, EventArgs e)
+        protected void _TreeList_MouseLeave(object sender, EventArgs e)
         {
-            if (_TreeListPending)
-                _AddToLog("TreeList.MouseLeave");
+            if (TreeListPending)
+                AddToLog("TreeList.MouseLeave");
         }
         #endregion
         #region Kontextové menu
-        private void _ShowDXPopupMenu(Point mousePosition)
+        protected void ShowDXPopupMenu(Point mousePosition)
         {
 
         }
         #endregion
         #region TreeList a BackgroundRun
-        private void _TreeNodeDoubleClickBgr(DxTreeListNodeArgs args)
+        protected void TreeNodeDoubleClickBgr(DxTreeListNodeArgs args)
         {
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
 
             if (args.Node.NodeType == NodeItemType.OnDoubleClickLoadNext)
             {
-                __DxTreeList.RunInLock(new Action<DataTreeListNode>(node =>
+                DxTreeList.RunInLock(new Action<DataTreeListNode>(node =>
                 {   // V jednom vizuálním zámku:
-                    __DxTreeList.RemoveNode(node.ItemId);            // Odeberu OnDoubleClickLoadNext node, to kvůli pořadí: nový OnDoubleClickLoadNext přidám (možná) nakonec
+                    DxTreeList.RemoveNode(node.ItemId);            // Odeberu OnDoubleClickLoadNext node, to kvůli pořadí: nový OnDoubleClickLoadNext přidám (možná) nakonec
 
-                    var newNodes = _CreateNodes(node, false, true);
-                    __DxTreeList.AddNodes(newNodes);
+                    var newNodes = CreateNodes(node, false, true);
+                    DxTreeList.AddNodes(newNodes);
 
                     // Aktivuji první přidaný node:
                     if (newNodes.Length > 0)
-                        __DxTreeList.SetFocusToNode(newNodes[0]);
+                        DxTreeList.SetFocusToNode(newNodes[0]);
                 }
                ), args.Node);
             }
         }
-        private void _TreeNodeEditedBgr(DxTreeListNodeArgs args)
+        protected void TreeNodeEditedBgr(DxTreeListNodeArgs args)
         {
             var nodeInfo = args.Node;
             string nodeId = nodeInfo.ItemId;
@@ -297,7 +306,7 @@ namespace TestDevExpress.Forms
                 textInfo = $"Výchozí hodnota: '{nodeInfo.Text}' => Nová hodnota: '{newValue}'";
             }
 
-            _AddToLog($"Změna textu pro node '{nodeId}'{column}: {textInfo}");
+            AddToLog($"Změna textu pro node '{nodeId}'{column}: {textInfo}");
 
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
 
@@ -366,19 +375,19 @@ namespace TestDevExpress.Forms
 
             */
         }
-        private void _TreeNodeDeleteBgr(DxTreeListNodesArgs args)
+        protected void TreeNodeDeleteBgr(DxTreeListNodesArgs args)
         {
             var removeNodeKeys = args.Nodes.Select(n => n.ItemId).ToArray();
 
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
 
-            __DxTreeList.RemoveNodes(removeNodeKeys);
+            DxTreeList.RemoveNodes(removeNodeKeys);
         }
-        private void _LoadChildNodesFromServerBgr(DxTreeListNodeArgs args)
+        protected void LoadChildNodesFromServerBgr(DxTreeListNodeArgs args)
         {
             var parentNode = args.Node;
             var parentNodeId = parentNode.ItemId;
-            _AddToLog($"Načítám data pro node '{parentNodeId}'...");
+            AddToLog($"Načítám data pro node '{parentNodeId}'...");
 
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
 
@@ -396,94 +405,94 @@ namespace TestDevExpress.Forms
 
             // Vytvoříme ChildNodes a zobrazíme je:
             bool empty = (Randomizer.Rand.Next(10) > 7);
-            var nodes = _CreateNodes(parentNode);                          // A pak vyrobíme Child nody
-            _AddToLog($"Načtena data: {nodes.Length} prvků.");
-            __DxTreeList.AddLazyLoadNodes(parentNodeId, nodes);            //  a pošleme je do TreeView.
+            var nodes = CreateNodes(parentNode);                          // A pak vyrobíme Child nody
+            AddToLog($"Načtena data: {nodes.Length} prvků.");
+            DxTreeList.AddLazyLoadNodes(parentNodeId, nodes);            //  a pošleme je do TreeView.
         }
         #endregion
         #region Vytváření nodů, smazání a plnění dat do TreeListu
         /// <summary>
         /// Naplní nějaká výchozí data po otevření okna
         /// </summary>
-        private void _SampleLoad()
+        protected void SampleLoad()
         {
-            _PrepareTreeList(25, 1);
+            PrepareTreeList(25, 1);
         }
         /// <summary>
         /// Vymaže obsah TreeListu
         /// </summary>
-        private void _ClearTreeList()
+        protected void ClearTreeList()
         {
-            _PrepareTreeList(0, 0);
+            PrepareTreeList(0, 0);
         }
         /// <summary>
         /// Naplní data do TreeListu pro daný požadavek na cca počet nodů a počet sub-úrovní
         /// </summary>
         /// <param name="sampleCountBase"></param>
         /// <param name="sampleLevelsCount"></param>
-        private void _PrepareTreeList(int sampleCountBase, int sampleLevelsCount)
+        protected void PrepareTreeList(int sampleCountBase, int sampleLevelsCount)
         {
-            _LogClear();
+            LogClear();
 
-            _CheckColumns();
+            CheckColumns();
 
             DxComponent.LogActive = true;
 
-            __TotalNodesCount = 0;
-            __SampleCountBase = sampleCountBase;
-            __SampleLevelsCount = sampleLevelsCount;
+            TotalNodesCount = 0;
+            SampleCountBase = sampleCountBase;
+            SampleLevelsCount = sampleLevelsCount;
             if (sampleCountBase == 0)
             {
                 var time0 = DxComponent.LogTimeCurrent;
-                __DxTreeList.ClearNodes();
+                DxTreeList.ClearNodes();
                 var time1 = DxComponent.LogTimeCurrent;
-                this._AddToLog($"Smazání nodů z TreeListu; čas: {DxComponent.LogGetTimeElapsed(time0, time1, DxComponent.LogTokenTimeMilisec)} ms");
+                this.AddToLog($"Smazání nodů z TreeListu; čas: {DxComponent.LogGetTimeElapsed(time0, time1, DxComponent.LogTokenTimeMilisec)} ms");
             }
             else
             {
                 var time0 = DxComponent.LogTimeCurrent;
-                var nodes = _CreateNodes(null);
+                var nodes = CreateNodes(null);
                 var time1 = DxComponent.LogTimeCurrent;
-                __DxTreeList.AddNodes(nodes, true, PreservePropertiesMode.None);
+                DxTreeList.AddNodes(nodes, true, PreservePropertiesMode.None);
                 var time2 = DxComponent.LogTimeCurrent;
 
-                this._AddToLog($"Tvorba nodů; počet: {nodes.Length}; čas: {DxComponent.LogGetTimeElapsed(time0, time1, DxComponent.LogTokenTimeMilisec)} ms");
-                this._AddToLog($"Plnění nodů do TreeList; počet: {nodes.Length}; čas: {DxComponent.LogGetTimeElapsed(time1, time2, DxComponent.LogTokenTimeMilisec)} ms");
+                this.AddToLog($"Tvorba nodů; počet: {nodes.Length}; čas: {DxComponent.LogGetTimeElapsed(time0, time1, DxComponent.LogTokenTimeMilisec)} ms");
+                this.AddToLog($"Plnění nodů do TreeList; počet: {nodes.Length}; čas: {DxComponent.LogGetTimeElapsed(time1, time2, DxComponent.LogTokenTimeMilisec)} ms");
             }
 
-            __DxTreeList.TreeListNative.Refresh();
+            DxTreeList.TreeListNative.Refresh();
 
             string text = this.GetControlStructure();
         }
         /// <summary>
         /// Metoda zajistí, že TreeList bude mít připravené správné sloupce podle předvolby <see cref="SettingsUseMultiColumns"/>
         /// </summary>
-        private void _CheckColumns()
+        protected void CheckColumns()
         {
             bool useMultiColumns = SettingsUseMultiColumns;
-            var dxColumns = __DxTreeList.TreeListNative.DxColumns;
+            var dxColumns = DxTreeList.TreeListNative.DxColumns;
             if (useMultiColumns && (dxColumns is null || dxColumns.Length < 3))
-                _CreateMultiColumns();
+                CreateMultiColumns();
             else if (!useMultiColumns && (dxColumns != null && dxColumns.Length >= 3))
-                _CreateSingleColumns();
+                CreateSingleColumns();
         }
         /// <summary>
         /// Metoda zajistí, že TreeList bude mít připravené správné Multi sloupce
         /// </summary>
-        private void _CreateMultiColumns()
+        protected void CreateMultiColumns()
         {
             List<DataTreeListColumn> dxColumns = new List<DataTreeListColumn>();
             dxColumns.Add(new DataTreeListColumn() { Caption = "Text", Width = 220, MinWidth = 150, CanEdit = true });
             dxColumns.Add(new DataTreeListColumn() { Caption = "Informace", Width = 120, MinWidth = 80, HeaderContentAlignment = DevExpress.Utils.HorzAlignment.Center, CellContentAlignment = DevExpress.Utils.HorzAlignment.Far, CanEdit = false });
             dxColumns.Add(new DataTreeListColumn() { Caption = "Popisek", Width = 160, MinWidth = 100, CanEdit = true });
-            __DxTreeList.DxColumns = dxColumns.ToArray();
+            DxTreeList.DxColumns = dxColumns.ToArray();
         }
         /// <summary>
         /// Metoda zajistí, že TreeList bude mít připravené správné Single sloupce
         /// </summary>
-        private void _CreateSingleColumns()
+        protected void CreateSingleColumns()
         {
-            __DxTreeList.DxColumns = null;
+            DxTreeList.DxColumns = null;
         }
         /// <summary>
         /// Vytvoří nody
@@ -492,10 +501,10 @@ namespace TestDevExpress.Forms
         /// <param name="canAddEditable"></param>
         /// <param name="canAddShowNext"></param>
         /// <returns></returns>
-        private DataTreeListNode[] _CreateNodes(ITreeListNode parentNode, bool canAddEditable = true, bool canAddShowNext = true)
+        protected DataTreeListNode[] CreateNodes(ITreeListNode parentNode, bool canAddEditable = true, bool canAddShowNext = true)
         {
             List<DataTreeListNode> nodes = new List<DataTreeListNode>();
-            _AddNodesToList(parentNode, canAddEditable, canAddShowNext, nodes);
+            AddNodesToList(parentNode, canAddEditable, canAddShowNext, nodes);
             return nodes.ToArray();
         }
         /// <summary>
@@ -506,14 +515,14 @@ namespace TestDevExpress.Forms
         /// <param name="canAddShowNext"></param>
         /// <param name="nodes"></param>
         /// <returns></returns>
-        private int _AddNodesToList(ITreeListNode parentNode, bool canAddEditable, bool canAddShowNext, List<DataTreeListNode> nodes)
+        protected int AddNodesToList(ITreeListNode parentNode, bool canAddEditable, bool canAddShowNext, List<DataTreeListNode> nodes)
         {
             int result = 0;
             int currentLevel = getNodeLevel(parentNode);
             int count = getCount(currentLevel);
             for (int i = 0; i < count; i++)
             {
-                var child = _CreateNode(parentNode?.ItemId, NodeItemType.DefaultText);
+                var child = CreateNode(parentNode?.ItemId, NodeItemType.DefaultText);
                 if (child is null) break;
 
                 child.ParentItem = parentNode;
@@ -522,7 +531,7 @@ namespace TestDevExpress.Forms
                 bool hasChild = false;
                 if (canAddChilds(currentLevel))
                 {
-                    var childCount = _AddNodesToList(child, canAddEditable, canAddShowNext, nodes);
+                    var childCount = AddNodesToList(child, canAddEditable, canAddShowNext, nodes);
                     hasChild = (childCount > 0);
                     if (hasChild && Randomizer.IsTrue(25))
                     {
@@ -550,16 +559,16 @@ namespace TestDevExpress.Forms
             // Určí, zda je vhodné přidat subnody do dané úrovně
             bool canAddChilds(int level)
             {
-                if (level >= __SampleLevelsCount) return false;
+                if (level >= SampleLevelsCount) return false;
                 int probability = (level == 0 ? 50 : (level == 1 ? 25 : (level == 2 ? 10 : 0)));
                 return Randomizer.IsTrue(probability);
             }
             // Určí počet prvků do daného levelu
             int getCount(int level)
             {
-                if (level > __SampleLevelsCount) return 0;
+                if (level > SampleLevelsCount) return 0;
 
-                int baseCount = __SampleCountBase;
+                int baseCount = SampleCountBase;
                 if (level > 0)
                     baseCount = baseCount / (level + 1);
 
@@ -572,11 +581,11 @@ namespace TestDevExpress.Forms
         /// <param name="parentKey"></param>
         /// <param name="nodeType"></param>
         /// <returns></returns>
-        private DataTreeListNode _CreateNode(string parentKey, NodeItemType nodeType)
+        protected DataTreeListNode CreateNode(string parentKey, NodeItemType nodeType)
         {
-            if (__TotalNodesCount >= _MaxNodesCount) return null;
+            if (TotalNodesCount >= MaxNodesCount) return null;
 
-            string childKey = "C." + (++_InternalNodeId).ToString();
+            string childKey = "C." + (++InternalNodeId).ToString();
             string text = "";
             DataTreeListNode childNode = null;
             switch (nodeType)
@@ -588,7 +597,7 @@ namespace TestDevExpress.Forms
                     childNode.AddVoidCheckSpace = true;
                     childNode.ToolTipText = "Zadejte referenci nového prvku";
                     childNode.ImageDynamicDefault = "list_add_3_16";
-                    __TotalNodesCount++;
+                    TotalNodesCount++;
                     break;
                 case NodeItemType.OnDoubleClickLoadNext:
                     text = "Načíst další záznamy";
@@ -597,7 +606,7 @@ namespace TestDevExpress.Forms
                     childNode.AddVoidCheckSpace = true;
                     childNode.ToolTipText = "Umožní načíst další sadu záznamů...";
                     childNode.ImageDynamicDefault = "move_task_down_16";
-                    __TotalNodesCount++;
+                    TotalNodesCount++;
                     break;
                 case NodeItemType.DefaultText:
                     text = Randomizer.GetSentence(2, 5);
@@ -616,8 +625,8 @@ namespace TestDevExpress.Forms
                         };
                     }
 
-                    _FillNode(childNode);
-                    __TotalNodesCount++;
+                    FillNode(childNode);
+                    TotalNodesCount++;
                     break;
             }
             return childNode;
@@ -626,12 +635,12 @@ namespace TestDevExpress.Forms
         /// Naplní data do nodu, vyjma textu. Plní ToolTip, ikony, styl, kalíšek - podle Settings.
         /// </summary>
         /// <param name="node"></param>
-        private void _FillNode(DataTreeListNode node)
+        protected void FillNode(DataTreeListNode node)
         {
             if (Randomizer.IsTrue(7))
-                node.ImageDynamicDefault = _GetSuffixImageName();
+                node.ImageDynamicDefault = GetSuffixImageName();
 
-            node.ImageName = _GetMainImageName(SettingsNodeImageSet);
+            node.ImageName = GetMainImageName(SettingsNodeImageSet);
             node.ToolTipTitle = null;
             node.ToolTipText = Randomizer.GetSentence(10, 50);
 
@@ -674,7 +683,7 @@ namespace TestDevExpress.Forms
                 Color? result = null;
                 if (Randomizer.IsTrue(20))
                 {
-                    result = _GetRandomBackColor();
+                    result = GetRandomBackColor();
                 }
                 return result;
             }
@@ -683,7 +692,7 @@ namespace TestDevExpress.Forms
                 Color? result = null;
                 if (Randomizer.IsTrue(35))
                 {
-                    result = _GetRandomForeColor();
+                    result = GetRandomForeColor();
                 }
                 return result;
             }
@@ -692,7 +701,7 @@ namespace TestDevExpress.Forms
                 string result = null;
                 if (Randomizer.IsTrue(35))
                 {
-                    result = _GetRandomStyleName();
+                    result = GetRandomStyleName();
                 }
                 return result;
             }
@@ -700,30 +709,30 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// ID posledně přiděleného nodu
         /// </summary>
-        private int _InternalNodeId;
+        protected int InternalNodeId;
         /// <summary>
         /// Celkový počet vygenerovaných nodes
         /// </summary>
-        private int __TotalNodesCount;
+        protected int TotalNodesCount;
         /// <summary>
         /// Maximální počet nodů
         /// </summary>
-        private static int _MaxNodesCount { get { return 10000; } }
+        protected static int MaxNodesCount { get { return 10000; } }
         /// <summary>
         /// Základní typický počet nodů v Root úrovni; pro subnody je poloviční.
         /// </summary>
-        private int __SampleCountBase;
+        protected int SampleCountBase;
         /// <summary>
         /// Maximální počet úrovní
         /// </summary>
-        private int __SampleLevelsCount;
+        protected int SampleLevelsCount;
         #endregion
         #region Ikony: druhy ikon, seznam názvů podle druhů, generátor ikony, barvy, stylu
         /// <summary>
         /// Vrátí náhodný Main obrázek z dané sady <paramref name="imageSet"/>.
         /// </summary>
         /// <returns></returns>
-        private string _GetMainImageName(NodeImageSetType imageSet)
+        protected virtual string GetMainImageName(NodeImageSetType imageSet)
         {
             var images = _GetMainImageNames(imageSet);
             if (images != null && images.Length > 0)
@@ -734,7 +743,7 @@ namespace TestDevExpress.Forms
         /// Vrať náhodný Suffix image name
         /// </summary>
         /// <returns></returns>
-        private string _GetSuffixImageName()
+        protected virtual string GetSuffixImageName()
         {
             if (__ImagesSuffix is null)
             {
@@ -752,7 +761,7 @@ namespace TestDevExpress.Forms
         /// Vrať náhodnou světlou barvu pro BackColor
         /// </summary>
         /// <returns></returns>
-        private Color _GetRandomBackColor()
+        protected virtual Color GetRandomBackColor()
         {
             if (__BackColors is null)
             {
@@ -776,7 +785,7 @@ namespace TestDevExpress.Forms
         /// Vrať náhodnou tmavou barvu pro ForeColor
         /// </summary>
         /// <returns></returns>
-        private Color _GetRandomForeColor()
+        protected virtual Color GetRandomForeColor()
         {
             if (__ForeColors is null)
             {
@@ -796,7 +805,7 @@ namespace TestDevExpress.Forms
             }
             return Randomizer.GetItem(__ForeColors);
         }
-        private string _GetRandomStyleName()
+        protected virtual string GetRandomStyleName()
         {
             if (__StyleNames is null)
                 __StyleNames = new string[]
@@ -1104,15 +1113,17 @@ namespace TestDevExpress.Forms
             Charts,
             Spreadsheet
         }
-        private NewNodePositionType __NewNodePosition = NewNodePositionType.None;
-        private enum NewNodePositionType { None, First, Last }
+        protected NewNodePositionType __NewNodePosition = NewNodePositionType.None;
+        protected enum NewNodePositionType { None, First, Last }
         #endregion
         #region Parametry v okně
         /// <summary>
         /// Vytvoří obsah panelu s parametry
         /// </summary>
-        private void _ParamsInit()
+        protected virtual void ParamsInit()
         {
+            FlowLayout flowLayout = new FlowLayout() { TopY = 8, MaxY = 0, ColumnSpace = 20, CurrentX = 25, ComboSpace = 5 };
+
             int maxY = 0;
             int topY = 8;
             int columnSpace = 20;
@@ -1122,101 +1133,121 @@ namespace TestDevExpress.Forms
             int labelOffset = 22;
             int labelWidth = 110;
             int comboWidth = 220;
-            int comboOffset = 5;
-            createTitle("Základní vlastnosti TreeListu");
-            __CheckMultiSelect = createToggle(false, "MultiSelect", "MultiSelectEnabled", "MultiSelectEnabled = výběr více nodů", "Zaškrtnuto: lze vybrat více nodů (Ctrl, Shift). Sledujme pak události.");
-            __TextNodeIndent = createSpinner(false, "NodeIndent", "Node indent:", 0, 100, "Node indent = odstup jednotlivých úrovní stromu", "Počet pixelů mezi nody jedné úrovně a jejich podřízenými nody, doprava.");
-            __CheckShowTreeLines = createToggle(false, "ShowTreeLines", "Guide Lines Visible", "Guide Lines Visible = vodicí linky jsou viditelné", "Zaškrtnuto: Strom obsahuje GuideLines mezi úrovněmi nodů.", false);
-            __CheckShowFirstLines = createToggle(false, "ShowFirstLines", "Show First Lines", "Show First Lines = zobrazit vodicí linky v první úrovni", "Zaškrtnuto: Strom obsahuje GuideLines v levé úrovni.");
-            __CheckShowHorzLines = createToggle(false, "ShowHorzLines", "Show Horizontal Lines", "", "");
-            __CheckShowVertLines = createToggle(false, "ShowVertLines", "Show Vertical Lines", "", "");
-            __ComboTreeLineStyle = createCombo(false, "TreeLineStyle", "TreeLine Style:", typeof(DevExpress.XtraTreeList.LineStyle));
-            __CheckShowRoot = createToggle(false, "ShowRoot", "Show Root", "", "");
-            __CheckShowHierarchyIndentationLines = createToggle(false, "ShowHierarchyLines", "Show Hierarchy Indentation Lines", "", "", true);
-            __CheckShowIndentAsRowStyle = createToggle(false, "ShowIndentAsRow", "Show Indent As RowStyle", "", "");
-            __ComboRowFilterBoxMode = createCombo(false, "RowFilterMode", "Row Filter Mode:", typeof(RowFilterBoxMode));
-            __ComboCheckBoxStyle = createCombo(false, "CheckBxStyle", "CheckBox Style:", typeof(DevExpress.XtraTreeList.DefaultNodeCheckBoxStyle));
-            __ComboFocusRectStyle = createCombo(false, "FocusRectangleStyle", "Focus Style:", typeof(DevExpress.XtraTreeList.DrawFocusRectStyle));
-            __CheckEditable = createToggle(false, "Editable", "Editable", "", "");
-            __ComboEditingMode = createCombo(false, "EditingMode", "Editing mode:", typeof(DevExpress.XtraTreeList.TreeListEditingMode));
-            __ComboEditorShowMode = createCombo(false, "EditorShowMode", "Editor Show Mode:", typeof(DevExpress.XtraTreeList.TreeListEditorShowMode));
+            int comboSpace = 5;
+            CreateTitle(flowLayout, "Základní vlastnosti TreeListu");
+            CheckMultiSelect = CreateToggle(flowLayout, false, "MultiSelect", "MultiSelectEnabled", "MultiSelectEnabled = výběr více nodů", "Zaškrtnuto: lze vybrat více nodů (Ctrl, Shift). Sledujme pak události.");
+            TextNodeIndent = CreateSpinner(flowLayout, false, "NodeIndent", "Node indent:", 0, 100, "Node indent = odstup jednotlivých úrovní stromu", "Počet pixelů mezi nody jedné úrovně a jejich podřízenými nody, doprava.");
+
+
+
+            CheckShowTreeLines = CreateToggle(flowLayout, false, "ShowTreeLines", "Guide Lines Visible", "Guide Lines Visible = vodicí linky jsou viditelné", "Zaškrtnuto: Strom obsahuje GuideLines mezi úrovněmi nodů.", false);
+            CheckShowFirstLines = CreateToggle(flowLayout, false, "ShowFirstLines", "Show First Lines", "Show First Lines = zobrazit vodicí linky v první úrovni", "Zaškrtnuto: Strom obsahuje GuideLines v levé úrovni.");
+            CheckShowHorzLines = CreateToggle(flowLayout, false, "ShowHorzLines", "Show Horizontal Lines", "", "");
+            CheckShowVertLines = CreateToggle(flowLayout, false, "ShowVertLines", "Show Vertical Lines", "", "");
+            ComboTreeLineStyle = CreateCombo(flowLayout, false, "TreeLineStyle", "TreeLine Style:", typeof(DevExpress.XtraTreeList.LineStyle));
+            CheckShowRoot = CreateToggle(flowLayout, false, "ShowRoot", "Show Root", "", "");
+            CheckShowHierarchyIndentationLines = CreateToggle(flowLayout, false, "ShowHierarchyLines", "Show Hierarchy Indentation Lines", "", "", true);
+            CheckShowIndentAsRowStyle = CreateToggle(flowLayout, false, "ShowIndentAsRow", "Show Indent As RowStyle", "", "");
+            ComboRowFilterBoxMode = CreateCombo(flowLayout, false, "RowFilterMode", "Row Filter Mode:", typeof(RowFilterBoxMode));
+            ComboCheckBoxStyle = CreateCombo(flowLayout, false, "CheckBxStyle", "CheckBox Style:", typeof(DevExpress.XtraTreeList.DefaultNodeCheckBoxStyle));
+            ComboFocusRectStyle = CreateCombo(flowLayout, false, "FocusRectangleStyle", "Focus Style:", typeof(DevExpress.XtraTreeList.DrawFocusRectStyle));
+            CheckEditable = CreateToggle(flowLayout, false, "Editable", "Editable", "", "");
+            ComboEditingMode = CreateCombo(flowLayout, flowLayout, false, "EditingMode", "Editing mode:", typeof(DevExpress.XtraTreeList.TreeListEditingMode));
+            ComboEditorShowMode = CreateCombo(flowLayout, false, "EditorShowMode", "Editor Show Mode:", typeof(DevExpress.XtraTreeList.TreeListEditorShowMode));
             maxY = (y > maxY ? y : maxY);
-            x += labelOffset + labelWidth + comboOffset + comboWidth + columnSpace;
+            x += labelOffset + labelWidth + comboSpace + comboWidth + columnSpace;
             y = topY;
 
             labelWidth = 100;
             comboWidth = 200;
-            createTitle("Vlastnosti jednotlivých prvků");
-            __ComboNodeImageSet = createCombo(true, "NodeImageType", "Node images:", typeof(NodeImageSetType));
-            __CheckUseExactStyle = createToggle(true, "UseExactStyle", "Use explicit styles", "Použít exaktně dané nastavení stylu", "Budou vepsány hodnoty jako FontStyle, FontSizeDelta, BackColor, ForeColor");
-            __CheckUseStyleName = createToggle(true, "UseStyleName", "Use Style Cup", "Použít styl daný kalíškem", "Bude vepsán StyleName, ten bude dohledán a aplikován");
-            __CheckUseCheckBoxes = createToggle(true, "UseCheckBoxes", "Use Check Boxes", "Použít pro některé koncové nody CheckBoxy", "Některé nody, které nemají podřízenou úroveň, budou zobrazeny jako CheckBox");
-            __CheckUseMultiColumns = createToggle(true, "UseMultiColumns", "Use Multi Columns", "Zobrazit více sloupců v TreeListu", "TreeList pak může připomínat BrowseGrid se stromem");
+            CreateTitle(flowLayout, "Vlastnosti jednotlivých prvků");
+            ComboNodeImageSet = CreateCombo(flowLayout, true, "NodeImageType", "Node images:", typeof(NodeImageSetType));
+            CheckUseExactStyle = CreateToggle(flowLayout, true, "UseExactStyle", "Use explicit styles", "Použít exaktně dané nastavení stylu", "Budou vepsány hodnoty jako FontStyle, FontSizeDelta, BackColor, ForeColor");
+            CheckUseStyleName = CreateToggle(flowLayout, true, "UseStyleName", "Use Style Cup", "Použít styl daný kalíškem", "Bude vepsán StyleName, ten bude dohledán a aplikován");
+            CheckUseCheckBoxes = CreateToggle(flowLayout, true, "UseCheckBoxes", "Use Check Boxes", "Použít pro některé koncové nody CheckBoxy", "Některé nody, které nemají podřízenou úroveň, budou zobrazeny jako CheckBox");
+            CheckUseMultiColumns = CreateToggle(flowLayout, true, "UseMultiColumns", "Use Multi Columns", "Zobrazit více sloupců v TreeListu", "TreeList pak může připomínat BrowseGrid se stromem");
 
             y += 25;
-            createTitle("Vytvoření prvků stromu");
+            CreateTitle(flowLayout, "Vytvoření prvků stromu");
             y += 10;
-            DxComponent.CreateDxSimpleButton(x + labelOffset, y, 120, 30, __ParamsPanel, "Vytvoř 15:1", _NodeCreateClick, tag: new Tuple<int, int>(15, 1));
-            DxComponent.CreateDxSimpleButton(x + labelOffset + 130, y, 120, 30, __ParamsPanel, "Vytvoř 25:2", _NodeCreateClick, tag: new Tuple<int, int>(25, 2)); 
+            DxComponent.CreateDxSimpleButton(x + labelOffset, y, 120, 30, ParamsPanel, "Vytvoř 15:1", NodeCreateClick, tag: new Tuple<int, int>(15, 1));
+            DxComponent.CreateDxSimpleButton(x + labelOffset + 130, y, 120, 30, ParamsPanel, "Vytvoř 25:2", NodeCreateClick, tag: new Tuple<int, int>(25, 2)); 
             y += 38;
-            DxComponent.CreateDxSimpleButton(x + labelOffset, y, 120, 30, __ParamsPanel, "Vytvoř 40:3", _NodeCreateClick, tag: new Tuple<int, int>(40, 3)); 
-            DxComponent.CreateDxSimpleButton(x + labelOffset + 130, y, 120, 30, __ParamsPanel, "Vytvoř 60:4", _NodeCreateClick, tag: new Tuple<int, int>(60, 4));
+            DxComponent.CreateDxSimpleButton(x + labelOffset, y, 120, 30, ParamsPanel, "Vytvoř 40:3", NodeCreateClick, tag: new Tuple<int, int>(40, 3)); 
+            DxComponent.CreateDxSimpleButton(x + labelOffset + 130, y, 120, 30, ParamsPanel, "Vytvoř 60:4", NodeCreateClick, tag: new Tuple<int, int>(60, 4));
             y += 38;
-            DxComponent.CreateDxSimpleButton(x + labelOffset, y, 250, 30, __ParamsPanel, "Smaž všechny prvky", _NodeCreateClick, tag: new Tuple<int, int>(0, 0));
+            DxComponent.CreateDxSimpleButton(x + labelOffset, y, 250, 30, ParamsPanel, "Smaž všechny prvky", NodeCreateClick, tag: new Tuple<int, int>(0, 0));
             maxY = (y > maxY ? y : maxY);
-            x += labelOffset + labelWidth + comboOffset + comboWidth + columnSpace;
+            x += labelOffset + labelWidth + comboSpace + comboWidth + columnSpace;
             y = topY;
 
             labelWidth = 100;
             comboWidth = 150;
-            createTitle("Logování");
-            __CheckLogToolTipChanges = createToggle(false, "", "Log: ToolTipChange", "Logovat události ToolTipChange", "Zaškrtnuto: při pohybu myši se plní Log událostí.");
-            DxComponent.CreateDxSimpleButton(x + labelOffset, ref y, 160, 30, __ParamsPanel, "Smazat Log", _LogClearBtnClick, shiftY: true);
+            CreateTitle(flowLayout, "Logování");
+            CheckLogToolTipChanges = createToggle(false, "", "Log: ToolTipChange", "Logovat události ToolTipChange", "Zaškrtnuto: při pohybu myši se plní Log událostí.");
+            DxComponent.CreateDxSimpleButton(x + labelOffset, ref y, 160, 30, ParamsPanel, "Smazat Log", LogClearBtnClick, shiftY: true);
             maxY = (y > maxY ? y : maxY);
 
-            __ParamSplitContainer.Panel1.MinSize = (maxY + 8);
+            ParamSplitContainer.Panel1.MinSize = (maxY + 8);
 
 
             // Tvorba prvků:
-            DxTitleLabelControl createTitle(string text)
-            {
-                return DxComponent.CreateDxTitleLabel(x, ref y, (labelWidth + comboOffset + comboWidth), __ParamsPanel, text, shiftY: true);
-            }
-            DxCheckEdit createToggle(bool isClearNode, string controlInfo, string text, string toolTipTitle, string toolTipText, bool? allowGrayed = null)
-            {
-                var toggle = DxComponent.CreateDxCheckEdit(x, ref y, (labelWidth + comboOffset + comboWidth), __ParamsPanel, text, _ParamsChanged, 
-                    DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, null,
-                    toolTipTitle, toolTipText, allowGrayed: allowGrayed, shiftY: true);
-                toggle.Tag = _PackTag(isClearNode, controlInfo);
-                return toggle;
-            }
-            DxSpinEdit createSpinner(bool isClearNode, string controlInfo, string label, int minValue, int maxValue, string toolTipTitle, string toolTipText)
-            {
-                DxComponent.CreateDxLabel(x + labelOffset, y + 3, labelWidth, __ParamsPanel, label, LabelStyleType.Default, hAlignment: DevExpress.Utils.HorzAlignment.Far);
+           
+        }
+        DxTitleLabelControl CreateTitle(FlowLayout flowLayout, string text)
+        {
+            return DxComponent.CreateDxTitleLabel(flowLayout.CurrentX, ref flowLayout.CurrentY, flowLayout.TitleWidth, ParamsPanel, text, shiftY: true);
+        }
+        DxCheckEdit CreateToggle(FlowLayout flowLayout, bool isClearNode, string controlInfo, string text, string toolTipTitle, string toolTipText, bool? allowGrayed = null)
+        {
+            var toggle = DxComponent.CreateDxCheckEdit(flowLayout.CurrentX, ref flowLayout.CurrentY, flowLayout.TitleWidth, ParamsPanel, text, ParamsChanged,
+                DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, null,
+                toolTipTitle, toolTipText, allowGrayed: allowGrayed, shiftY: true);
+            toggle.Tag = PackTag(isClearNode, controlInfo);
+            return toggle;
+        }
+        DxSpinEdit CreateSpinner(FlowLayout flowLayout, bool isClearNode, string controlInfo, string label, int minValue, int maxValue, string toolTipTitle, string toolTipText)
+        {
+            DxComponent.CreateDxLabel(flowLayout.LabelLeft, flowLayout.CurrentY + 3, flowLayout.LabelWidth, ParamsPanel, label, LabelStyleType.Default, hAlignment: DevExpress.Utils.HorzAlignment.Far);
 
-                var spinner = DxComponent.CreateDxSpinEdit(x + labelOffset + labelWidth + comboOffset, ref y, 50, __ParamsPanel, _ParamsChanged,
-                    minValue, maxValue, mask: "####", spinStyles: DevExpress.XtraEditors.Controls.SpinStyles.Vertical, 
-                    toolTipTitle: toolTipTitle, toolTipText: toolTipText, shiftY: true);
-                spinner.Tag = _PackTag(isClearNode, controlInfo);
-                return spinner;
-            }
-            DxImageComboBoxEdit createCombo(bool isClearNode, string controlInfo, string label, Type enumType)
+            var spinner = DxComponent.CreateDxSpinEdit(flowLayout.ComboLeft, ref flowLayout.CurrentY, 50, ParamsPanel, ParamsChanged,
+                minValue, maxValue, mask: "####", spinStyles: DevExpress.XtraEditors.Controls.SpinStyles.Vertical,
+                toolTipTitle: toolTipTitle, toolTipText: toolTipText, shiftY: true);
+            spinner.Tag = PackTag(isClearNode, controlInfo);
+            return spinner;
+        }
+        DxImageComboBoxEdit CreateCombo(FlowLayout flowLayout, bool isClearNode, string controlInfo, string label, Type enumType)
+        {
+            DxComponent.CreateDxLabel(x + labelOffset, y + 3, labelWidth, ParamsPanel, label, LabelStyleType.Default, hAlignment: DevExpress.Utils.HorzAlignment.Far);
+
+            var combo = DxComponent.CreateDxImageComboBox(x + labelOffset + labelWidth + comboSpace, ref y, comboWidth, ParamsPanel, ParamsChanged, shiftY: true);
+            combo.Tag = PackTag(isClearNode, controlInfo);
+
+            var enumName = enumType.Name + ".";
+            var names = Enum.GetNames(enumType);
+            var values = Enum.GetValues(enumType);
+            for (int n = 0; n < names.Length; n++)
             {
-                DxComponent.CreateDxLabel(x + labelOffset, y + 3, labelWidth, __ParamsPanel, label, LabelStyleType.Default, hAlignment: DevExpress.Utils.HorzAlignment.Far);
-
-                var combo = DxComponent.CreateDxImageComboBox(x + labelOffset + labelWidth + comboOffset, ref y, comboWidth, __ParamsPanel, _ParamsChanged, shiftY: true);
-                combo.Tag = _PackTag(isClearNode, controlInfo);
-
-                var enumName = enumType.Name + ".";
-                var names = Enum.GetNames(enumType);
-                var values = Enum.GetValues(enumType);
-                for (int n = 0; n < names.Length; n++)
-                {
-                    var item = new DevExpress.XtraEditors.Controls.ImageComboBoxItem() { Description = enumName + names[n], Value = values.GetValue(n) };
-                    combo.Properties.Items.Add(item);
-                }
-                return combo;
+                var item = new DevExpress.XtraEditors.Controls.ImageComboBoxItem() { Description = enumName + names[n], Value = values.GetValue(n) };
+                combo.Properties.Items.Add(item);
             }
+            return combo;
+        }
+        protected class FlowLayout
+        {
+            public int TopY;
+            public int MaxY;
+            public int CurrentX;
+            public int CurrentY;
+            public int ColumnSpace;
+            public int LabelOffset;
+            public int LabelWidth;
+            public int ComboSpace;
+            public int ComboWidth;
+
+            public int TitleWidth { get { return LabelOffset + LabelWidth + ComboSpace + ComboWidth; } }
+            public int LabelLeft { get { return CurrentX + LabelOffset; } }
+            public int ComboLeft { get { return CurrentX + LabelOffset + LabelWidth + ComboSpace; } }
         }
         /// <summary>
         /// Zabalí data do Tagu
@@ -1224,7 +1255,7 @@ namespace TestDevExpress.Forms
         /// <param name="isClearNode"></param>
         /// <param name="controlInfo"></param>
         /// <returns></returns>
-        private object _PackTag(bool isClearNode, string controlInfo)
+        protected virtual object PackTag(bool isClearNode, string controlInfo)
         {
             return new Tuple<bool, string>(isClearNode, controlInfo);
         }
@@ -1234,7 +1265,7 @@ namespace TestDevExpress.Forms
         /// <param name="tag"></param>
         /// <param name="isClearNode"></param>
         /// <param name="controlInfo"></param>
-        private void _UnPackTag(object tag, out bool isClearNode, out string controlInfo)
+        protected virtual void UnPackTag(object tag, out bool isClearNode, out string controlInfo)
         {
             isClearNode = false;
             controlInfo = null;
@@ -1249,31 +1280,31 @@ namespace TestDevExpress.Forms
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _ParamsChanged(object sender, EventArgs e)
+        protected virtual void ParamsChanged(object sender, EventArgs e)
         {
-            if (!__SettingsLoaded) return;
+            if (!SettingsLoaded) return;
             var control = sender as Control;
 
             // Hodnoty z parametrů přenesu do properties Settings* :
             //  Protože na ně reaguje např. _ClearTreeList() => _CheckColumns() :
-            _SettingCollect();
+            SettingCollect();
 
             // Návaznosti z konkrétního controlu = logovat hodnotu parametru; nulovat obsah => nastavit sloupce:
-            _UnPackTag(control.Tag, out bool isClearNode, out string controlInfo);
+            UnPackTag(control.Tag, out bool isClearNode, out string controlInfo);
             if (!String.IsNullOrEmpty(controlInfo))
-                _AddToLogParamChange(control, controlInfo);
+                AddToLogParamChange(control, controlInfo);
             if (isClearNode)
-                _ClearTreeList();
+                ClearTreeList();
 
             // Uložit Settings do TreeListu a do configu:
-            _SettingOnInteractiveChanged();
+            SettingOnInteractiveChanged();
         }
         /// <summary>
         /// Do logu vepíše informaci o změně parametru
         /// </summary>
         /// <param name="control"></param>
         /// <param name="controlInfo"></param>
-        private void _AddToLogParamChange(Control control, string controlInfo)
+        protected virtual void AddToLogParamChange(Control control, string controlInfo)
         {
             string text = "";
             if (control is DxCheckEdit checkEdit)
@@ -1291,57 +1322,57 @@ namespace TestDevExpress.Forms
             {
                 text = "; Selected: " + (comboBox.SelectedItem != null ? comboBox.SelectedItem?.ToString() : "NULL");
             }
-            _AddToLog($"Change Setting: {controlInfo}{text}");
+            AddToLog($"Change Setting: {controlInfo}{text}");
         }
         /// <summary>
         /// Po kliknutí na tlačítko Vytvoř / Smaž data TreeListu
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _NodeCreateClick(object sender, EventArgs e)
+        protected virtual void NodeCreateClick(object sender, EventArgs e)
         {
             if (sender is Control control && control.Tag is Tuple<int, int> tuple)
-                _PrepareTreeList(tuple.Item1, tuple.Item2);
+                PrepareTreeList(tuple.Item1, tuple.Item2);
         }
         /// <summary>
         /// Po kliknutí na tlačítko Clear Log
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _LogClearBtnClick(object sender, EventArgs e)
+        protected virtual void LogClearBtnClick(object sender, EventArgs e)
         {
-            _LogClear();
+            LogClear();
         }
-        private DxCheckEdit __CheckMultiSelect;
-        private DxSpinEdit __TextNodeIndent;
-        private DxCheckEdit __CheckShowTreeLines;
-        private DxCheckEdit __CheckShowFirstLines;
-        private DxCheckEdit __CheckShowHorzLines;
-        private DxCheckEdit __CheckShowVertLines;
-        private DxImageComboBoxEdit __ComboTreeLineStyle;
-        private DxCheckEdit __CheckShowRoot;
-        private DxCheckEdit __CheckShowHierarchyIndentationLines;
-        private DxCheckEdit __CheckShowIndentAsRowStyle;
-        private DxImageComboBoxEdit __ComboRowFilterBoxMode;
-        private DxImageComboBoxEdit __ComboCheckBoxStyle;
-        private DxImageComboBoxEdit __ComboFocusRectStyle;
-        private DxCheckEdit __CheckEditable;
-        private DxImageComboBoxEdit __ComboEditingMode;
-        private DxImageComboBoxEdit __ComboEditorShowMode;
+        protected DxCheckEdit CheckMultiSelect;
+        protected DxSpinEdit TextNodeIndent;
+        protected DxCheckEdit CheckShowTreeLines;
+        protected DxCheckEdit CheckShowFirstLines;
+        protected DxCheckEdit CheckShowHorzLines;
+        protected DxCheckEdit CheckShowVertLines;
+        protected DxImageComboBoxEdit ComboTreeLineStyle;
+        protected DxCheckEdit CheckShowRoot;
+        protected DxCheckEdit CheckShowHierarchyIndentationLines;
+        protected DxCheckEdit CheckShowIndentAsRowStyle;
+        protected DxImageComboBoxEdit ComboRowFilterBoxMode;
+        protected DxImageComboBoxEdit ComboCheckBoxStyle;
+        protected DxImageComboBoxEdit ComboFocusRectStyle;
+        protected DxCheckEdit CheckEditable;
+        protected DxImageComboBoxEdit ComboEditingMode;
+        protected DxImageComboBoxEdit ComboEditorShowMode;
 
-        private DxImageComboBoxEdit __ComboNodeImageSet;
-        private DxCheckEdit __CheckUseExactStyle;
-        private DxCheckEdit __CheckUseStyleName;
-        private DxCheckEdit __CheckUseCheckBoxes;
-        private DxCheckEdit __CheckUseMultiColumns;
+        protected DxImageComboBoxEdit ComboNodeImageSet;
+        protected DxCheckEdit CheckUseExactStyle;
+        protected DxCheckEdit CheckUseStyleName;
+        protected DxCheckEdit CheckUseCheckBoxes;
+        protected DxCheckEdit CheckUseMultiColumns;
 
-        private DxCheckEdit __CheckLogToolTipChanges;
+        protected DxCheckEdit CheckLogToolTipChanges;
         #endregion
         #region Settings: načtení/uložení do konfigurace; zobrazení/sesbírání z Checkboxů Params; aplikování do TreeListu
         /// <summary>
         /// Načte konfiguraci z Settings do properties, do TreeListu i do Parametrů
         /// </summary>
-        private void _SettingLoad()
+        protected virtual void SettingLoad()
         {
             // Do Properties   z DxComponent.Settings
             SetingsMultiSelect = ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SetingsMultiSelect", ""));
@@ -1369,18 +1400,18 @@ namespace TestDevExpress.Forms
 
             SetingsLogToolTipChanges = ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SetingsLogToolTipChanges", "N"));
 
-            _SettingShow();
-            _SettingApply();
+            SettingShow();
+            SettingApply();
 
             // Teprve od tohoto místa se změny ukládají do Settings:
-            __SettingsLoaded = true;
+            SettingsLoaded = true;
         }
         /// <summary>
         /// Uloží konfiguraci z Properties do Settings
         /// </summary>
-        private void _SettingSave()
+        protected virtual void SettingSave()
         {
-            if (!__SettingsLoaded) return;
+            if (!SettingsLoaded) return;
 
             // Do DxComponent.Settings   z Properties
             DxComponent.Settings.SetRawValue(SettingsKey, "SetingsMultiSelect", ConvertToString(SetingsMultiSelect));
@@ -1412,101 +1443,101 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Main klíč v Settings pro zdejší proměnné
         /// </summary>
-        private const string SettingsKey = "DxTreeListValues";
+        protected const string SettingsKey = "DxTreeListValues";
         /// <summary>
         /// Hodnoty z properties vepíše do vizuálních parametrů (checkboxy), přitom potlačí eventy o změnách
         /// </summary>
-        private void _SettingShow()
+        protected virtual void SettingShow()
         {
             // Do vizuálních checkboxů   z Properties
-            __CheckMultiSelect.Checked = SetingsMultiSelect;
-            __TextNodeIndent.Value = SettingsNodeIndent;
-            __CheckShowTreeLines.CheckState = ConvertToCheckState(SetingsShowTreeLines);
-            __CheckShowFirstLines.Checked = SetingsShowFirstLines;
-            __CheckShowHorzLines.Checked = SetingsShowHorzLines;
-            __CheckShowVertLines.Checked = SetingsShowVertLines;
-            SelectComboItem(__ComboTreeLineStyle, SettingsTreeLineStyle);
-            __CheckShowRoot.Checked = SetingsShowRoot;
-            __CheckShowHierarchyIndentationLines.CheckState = ConvertToCheckState(SetingsShowHierarchyIndentationLines);
-            __CheckShowIndentAsRowStyle.Checked = SettingsShowIndentAsRowStyle;
-            SelectComboItem(__ComboCheckBoxStyle, SetingsCheckBoxStyle);
-            SelectComboItem(__ComboRowFilterBoxMode, SetingsRowFilterBoxMode);
-            SelectComboItem(__ComboFocusRectStyle, SetingsFocusRectStyle);
-            __CheckEditable.Checked = SettingsEditable;
-            SelectComboItem(__ComboEditingMode, SettingsEditingMode);
-            SelectComboItem(__ComboEditorShowMode, SettingsEditorShowMode);
+            CheckMultiSelect.Checked = SetingsMultiSelect;
+            TextNodeIndent.Value = SettingsNodeIndent;
+            CheckShowTreeLines.CheckState = ConvertToCheckState(SetingsShowTreeLines);
+            CheckShowFirstLines.Checked = SetingsShowFirstLines;
+            CheckShowHorzLines.Checked = SetingsShowHorzLines;
+            CheckShowVertLines.Checked = SetingsShowVertLines;
+            SelectComboItem(ComboTreeLineStyle, SettingsTreeLineStyle);
+            CheckShowRoot.Checked = SetingsShowRoot;
+            CheckShowHierarchyIndentationLines.CheckState = ConvertToCheckState(SetingsShowHierarchyIndentationLines);
+            CheckShowIndentAsRowStyle.Checked = SettingsShowIndentAsRowStyle;
+            SelectComboItem(ComboCheckBoxStyle, SetingsCheckBoxStyle);
+            SelectComboItem(ComboRowFilterBoxMode, SetingsRowFilterBoxMode);
+            SelectComboItem(ComboFocusRectStyle, SetingsFocusRectStyle);
+            CheckEditable.Checked = SettingsEditable;
+            SelectComboItem(ComboEditingMode, SettingsEditingMode);
+            SelectComboItem(ComboEditorShowMode, SettingsEditorShowMode);
 
-            SelectComboItem(__ComboNodeImageSet, SettingsNodeImageSet);
-            __CheckUseExactStyle.Checked = SettingsUseExactStyle;
-            __CheckUseStyleName.Checked = SettingsUseStyleName;
-            __CheckUseCheckBoxes.Checked = SettingsUseCheckBoxes;
-            __CheckUseMultiColumns.Checked = SettingsUseMultiColumns;
+            SelectComboItem(ComboNodeImageSet, SettingsNodeImageSet);
+            CheckUseExactStyle.Checked = SettingsUseExactStyle;
+            CheckUseStyleName.Checked = SettingsUseStyleName;
+            CheckUseCheckBoxes.Checked = SettingsUseCheckBoxes;
+            CheckUseMultiColumns.Checked = SettingsUseMultiColumns;
 
-            __CheckLogToolTipChanges.Checked = SetingsLogToolTipChanges;
+            CheckLogToolTipChanges.Checked = SetingsLogToolTipChanges;
         }
         /// <summary>
         /// Hodnoty z vizuálních parametrů (checkboxy) opíše do properties, nic dalšího nedělá
         /// </summary>
-        private void _SettingCollect()
+        protected virtual void SettingCollect()
         {
-            SetingsMultiSelect = __CheckMultiSelect.Checked;
-            SetingsShowTreeLines = ConvertToDefaultBoolean(__CheckShowTreeLines.CheckState);
-            SettingsNodeIndent = (int)__TextNodeIndent.Value;
-            SetingsShowFirstLines = __CheckShowFirstLines.Checked;
-            SetingsShowHorzLines = __CheckShowHorzLines.Checked;
-            SetingsShowVertLines = __CheckShowVertLines.Checked;
-            SettingsTreeLineStyle = ConvertToLineStyle(__ComboTreeLineStyle, SettingsTreeLineStyle);
-            SetingsShowRoot = __CheckShowRoot.Checked;
-            SetingsShowHierarchyIndentationLines = ConvertToDefaultBoolean(__CheckShowHierarchyIndentationLines.CheckState);
-            SettingsShowIndentAsRowStyle = __CheckShowIndentAsRowStyle.Checked;
-            SetingsCheckBoxStyle = ConvertToNodeCheckBoxStyle(__ComboCheckBoxStyle, SetingsCheckBoxStyle);
-            SetingsRowFilterBoxMode = ConvertToRowFilterBoxMode(__ComboRowFilterBoxMode, SetingsRowFilterBoxMode);
-            SetingsFocusRectStyle = ConvertToDrawFocusRectStyle(__ComboFocusRectStyle, SetingsFocusRectStyle);
-            SettingsEditable = __CheckEditable.Checked;
-            SettingsEditingMode = ConvertToTreeListEditingMode(__ComboEditingMode, SettingsEditingMode);
-            SettingsEditorShowMode = ConvertToTreeListEditingMode(__ComboEditorShowMode, SettingsEditorShowMode);
+            SetingsMultiSelect = CheckMultiSelect.Checked;
+            SetingsShowTreeLines = ConvertToDefaultBoolean(CheckShowTreeLines.CheckState);
+            SettingsNodeIndent = (int)TextNodeIndent.Value;
+            SetingsShowFirstLines = CheckShowFirstLines.Checked;
+            SetingsShowHorzLines = CheckShowHorzLines.Checked;
+            SetingsShowVertLines = CheckShowVertLines.Checked;
+            SettingsTreeLineStyle = ConvertToLineStyle(ComboTreeLineStyle, SettingsTreeLineStyle);
+            SetingsShowRoot = CheckShowRoot.Checked;
+            SetingsShowHierarchyIndentationLines = ConvertToDefaultBoolean(CheckShowHierarchyIndentationLines.CheckState);
+            SettingsShowIndentAsRowStyle = CheckShowIndentAsRowStyle.Checked;
+            SetingsCheckBoxStyle = ConvertToNodeCheckBoxStyle(ComboCheckBoxStyle, SetingsCheckBoxStyle);
+            SetingsRowFilterBoxMode = ConvertToRowFilterBoxMode(ComboRowFilterBoxMode, SetingsRowFilterBoxMode);
+            SetingsFocusRectStyle = ConvertToDrawFocusRectStyle(ComboFocusRectStyle, SetingsFocusRectStyle);
+            SettingsEditable = CheckEditable.Checked;
+            SettingsEditingMode = ConvertToTreeListEditingMode(ComboEditingMode, SettingsEditingMode);
+            SettingsEditorShowMode = ConvertToTreeListEditingMode(ComboEditorShowMode, SettingsEditorShowMode);
 
-            SettingsNodeImageSet = ConvertToNodeImageSetType(__ComboNodeImageSet, SettingsNodeImageSet);
-            SettingsUseExactStyle = __CheckUseExactStyle.Checked;
-            SettingsUseStyleName = __CheckUseStyleName.Checked;
-            SettingsUseCheckBoxes = __CheckUseCheckBoxes.Checked;
-            SettingsUseMultiColumns = __CheckUseMultiColumns.Checked;
+            SettingsNodeImageSet = ConvertToNodeImageSetType(ComboNodeImageSet, SettingsNodeImageSet);
+            SettingsUseExactStyle = CheckUseExactStyle.Checked;
+            SettingsUseStyleName = CheckUseStyleName.Checked;
+            SettingsUseCheckBoxes = CheckUseCheckBoxes.Checked;
+            SettingsUseMultiColumns = CheckUseMultiColumns.Checked;
 
-            SetingsLogToolTipChanges = __CheckLogToolTipChanges.Checked;
+            SetingsLogToolTipChanges = CheckLogToolTipChanges.Checked;
         }
         /// <summary>
         /// Hodnoty z konfigurace vepíše do TreeListu
         /// </summary>
-        private void _SettingApply()
+        protected virtual void SettingApply()
         {
             // Do TreeListu   z Properties
-            __DxTreeList.MultiSelectEnabled = SetingsMultiSelect;
-            __DxTreeList.TreeListNative.TreeLevelWidth = SettingsNodeIndent;
-            __DxTreeList.TreeListNative.OptionsView.ShowTreeLines = SetingsShowTreeLines;
-            __DxTreeList.TreeListNative.OptionsView.ShowFirstLines = SetingsShowFirstLines;
-            __DxTreeList.TreeListNative.OptionsView.ShowHorzLines = SetingsShowHorzLines;
-            __DxTreeList.TreeListNative.OptionsView.ShowVertLines = SetingsShowVertLines;
-            __DxTreeList.TreeListNative.OptionsView.TreeLineStyle = SettingsTreeLineStyle;
-            __DxTreeList.TreeListNative.OptionsView.ShowRoot = SetingsShowRoot;
-            __DxTreeList.TreeListNative.OptionsView.ShowHierarchyIndentationLines = SetingsShowHierarchyIndentationLines;
-            __DxTreeList.TreeListNative.OptionsView.ShowIndentAsRowStyle = SettingsShowIndentAsRowStyle;
-            __DxTreeList.TreeListNative.OptionsView.CheckBoxStyle = SetingsCheckBoxStyle;
-            __DxTreeList.FilterBoxMode = SetingsRowFilterBoxMode;
-            __DxTreeList.TreeListNative.OptionsView.RootCheckBoxStyle = DevExpress.XtraTreeList.NodeCheckBoxStyle.Default;
-            __DxTreeList.TreeListNative.OptionsView.FocusRectStyle = SetingsFocusRectStyle;
-            __DxTreeList.TreeListNative.OptionsBehavior.Editable = SettingsEditable;
-            __DxTreeList.TreeListNative.OptionsBehavior.EditingMode = SettingsEditingMode;
-            __DxTreeList.TreeListNative.OptionsBehavior.EditorShowMode = SettingsEditorShowMode;
+            DxTreeList.MultiSelectEnabled = SetingsMultiSelect;
+            DxTreeList.TreeListNative.TreeLevelWidth = SettingsNodeIndent;
+            DxTreeList.TreeListNative.OptionsView.ShowTreeLines = SetingsShowTreeLines;
+            DxTreeList.TreeListNative.OptionsView.ShowFirstLines = SetingsShowFirstLines;
+            DxTreeList.TreeListNative.OptionsView.ShowHorzLines = SetingsShowHorzLines;
+            DxTreeList.TreeListNative.OptionsView.ShowVertLines = SetingsShowVertLines;
+            DxTreeList.TreeListNative.OptionsView.TreeLineStyle = SettingsTreeLineStyle;
+            DxTreeList.TreeListNative.OptionsView.ShowRoot = SetingsShowRoot;
+            DxTreeList.TreeListNative.OptionsView.ShowHierarchyIndentationLines = SetingsShowHierarchyIndentationLines;
+            DxTreeList.TreeListNative.OptionsView.ShowIndentAsRowStyle = SettingsShowIndentAsRowStyle;
+            DxTreeList.TreeListNative.OptionsView.CheckBoxStyle = SetingsCheckBoxStyle;
+            DxTreeList.FilterBoxMode = SetingsRowFilterBoxMode;
+            DxTreeList.TreeListNative.OptionsView.RootCheckBoxStyle = DevExpress.XtraTreeList.NodeCheckBoxStyle.Default;
+            DxTreeList.TreeListNative.OptionsView.FocusRectStyle = SetingsFocusRectStyle;
+            DxTreeList.TreeListNative.OptionsBehavior.Editable = SettingsEditable;
+            DxTreeList.TreeListNative.OptionsBehavior.EditingMode = SettingsEditingMode;
+            DxTreeList.TreeListNative.OptionsBehavior.EditorShowMode = SettingsEditorShowMode;
         }
         /// <summary>
         /// Hodnoty z vizuálních parametrů (checkboxy) opíše do properties, do TreeListu a uloží do konfigurace
         /// </summary>
-        private void _SettingOnInteractiveChanged()
+        protected virtual void SettingOnInteractiveChanged()
         {
-            if (!__SettingsLoaded) return;
+            if (!SettingsLoaded) return;
 
-            _SettingApply();
-            _SettingSave();
+            SettingApply();
+            SettingSave();
         }
 
         // Properties jsou uváděny v typech odpovídajících TreeListu.
@@ -1537,7 +1568,7 @@ namespace TestDevExpress.Forms
 
         internal bool SetingsLogToolTipChanges { get; set; }
 
-        private bool __SettingsLoaded;
+        protected bool SettingsLoaded;
         #endregion
         #region Konverze typů
         internal static bool ConvertToBool(string value)
@@ -1955,65 +1986,65 @@ namespace TestDevExpress.Forms
 
         #endregion
         #region Log událostí
-        private void _LogInit()
+        protected void LogInit()
         {
-            _TreeListMemoEdit = DxComponent.CreateDxMemoEdit(0, 0, 100, 100, __LogPanel, readOnly: true);
-            _TreeListMemoEdit.Dock = DockStyle.Fill;
-            _TreeListMemoEdit.MouseEnter += _TreeListMemoEdit_MouseEnter;
+            TreeListMemoEdit = DxComponent.CreateDxMemoEdit(0, 0, 100, 100, LogPanel, readOnly: true);
+            TreeListMemoEdit.Dock = DockStyle.Fill;
+            TreeListMemoEdit.MouseEnter += TreeListMemoEdit_MouseEnter;
         }
-        private void _LogClear()
+        protected void LogClear()
         {
-            _TreeListLogId = 0;
-            _TreeListLog = "";
-            _TreeListShowLogText();
+            TreeListLogId = 0;
+            TreeListLog = "";
+            TreeListShowLogText();
         }
 
-        private void _AddToLog(string actionName, DxTreeListNodeArgs args, bool showValue = false)
+        protected void AddToLog(string actionName, DxTreeListNodeArgs args, bool showValue = false)
         {
             string value = (showValue ? ", Value: " + (args.EditedValue == null ? "NULL" : "'" + args.EditedValue.ToString() + "'") : "");
             string column = (args.ColumnIndex.HasValue ? "; Column:" + args.ColumnIndex.Value.ToString() : "");
-            _AddToLog($"{actionName}: Node: {args.Node}{column}{value}");
+            AddToLog($"{actionName}: Node: {args.Node}{column}{value}");
         }
-        private void _AddToLog(string actionName, DxTreeListNodesArgs args)
+        protected void AddToLog(string actionName, DxTreeListNodesArgs args)
         {
             string nodes = args.Nodes.ToOneString("; ");
-            _AddToLog($"{actionName}: Nodes: {nodes}");
+            AddToLog($"{actionName}: Nodes: {nodes}");
         }
-        private void _AddToLog(string line, bool skipGUI = false)
+        protected void AddToLog(string line, bool skipGUI = false)
         {
-            int id = ++_TreeListLogId;
+            int id = ++TreeListLogId;
             var now = DateTime.Now;
-            bool isLong = (_TreeListLogTime.HasValue && ((TimeSpan)(now - _TreeListLogTime.Value)).TotalMilliseconds > 750d);
-            string log = id.ToString() + ". " + line + Environment.NewLine + (isLong ? Environment.NewLine : "") + _TreeListLog;
-            _TreeListLog = log;
-            _TreeListLogTime = now;
-            if (skipGUI) _TreeListPending = true;
-            else _TreeListShowLogText();
+            bool isLong = (TreeListLogTime.HasValue && ((TimeSpan)(now - TreeListLogTime.Value)).TotalMilliseconds > 750d);
+            string log = id.ToString() + ". " + line + Environment.NewLine + (isLong ? Environment.NewLine : "") + TreeListLog;
+            TreeListLog = log;
+            TreeListLogTime = now;
+            if (skipGUI) TreeListPending = true;
+            else TreeListShowLogText();
         }
-        private void _TreeListShowLogText()
+        protected void TreeListShowLogText()
         {
-            if (_TreeListMemoEdit != null)
+            if (TreeListMemoEdit != null)
             {
                 if (this.InvokeRequired)
-                    this.Invoke(new Action(_TreeListShowLogText));
+                    this.Invoke(new Action(TreeListShowLogText));
                 else
                 {
-                    _TreeListMemoEdit.Text = _TreeListLog;
-                    _TreeListPending = false;
+                    TreeListMemoEdit.Text = TreeListLog;
+                    TreeListPending = false;
                 }
             }
         }
-        private void _TreeListMemoEdit_MouseEnter(object sender, EventArgs e)
+        protected void TreeListMemoEdit_MouseEnter(object sender, EventArgs e)
         {
-            if (_TreeListPending)
-                _TreeListShowLogText();
+            if (TreeListPending)
+                TreeListShowLogText();
         }
 
-        int _TreeListLogId;
-        string _TreeListLog;
-        DateTime? _TreeListLogTime;
-        bool _TreeListPending;
-        private DxMemoEdit _TreeListMemoEdit;
+        protected int TreeListLogId;
+        protected string TreeListLog;
+        protected DateTime? TreeListLogTime;
+        protected bool TreeListPending;
+        protected private DxMemoEdit TreeListMemoEdit;
         #endregion
     }
 }
