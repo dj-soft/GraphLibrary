@@ -120,6 +120,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public TreeLevelLineType LevelLineType { get { return this._TreeListNative.LevelLineType; } set { this._TreeListNative.LevelLineType = value; } }
         /// <summary>
+        /// Data v TreeListu lze editovat?
+        /// </summary>
+        public bool IsEditable { get { return this._TreeListNative.IsEditable; } set { this._TreeListNative.IsEditable = value; } }
+        /// <summary>
+        /// Způsob zahájení editace v TreeListu
+        /// </summary>
+        public TreeEditorStartMode EditorStartMode { get { return this._TreeListNative.EditorStartMode; } set { this._TreeListNative.EditorStartMode = value; } }
+        /// <summary>
         /// Má být selectován ten node, pro který se právě chystáme zobrazit kontextovém menu?
         /// <para/>
         /// Pokud je zobrazováno kontextové menu nad určitým nodem, a tento node není selectován, pak hodnota true zajistí, že tento node bude nejprve selectován.
@@ -768,6 +776,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                     dxCol.AppearanceCell.TextOptions.HAlignment = column.CellContentAlignment.Value;
                 if (column.HeaderContentAlignment.HasValue)
                     dxCol.AppearanceHeader.TextOptions.HAlignment = column.HeaderContentAlignment.Value;
+                if (column.EnableHtmlFormat)
+                {
+                    // this.RepositoryItems.Add(new DevExpress.XtraEditors.Repository.RepositoryItemHypertextLabel());
+                    dxCol.ColumnEdit = new DevExpress.XtraEditors.Repository.RepositoryItemHypertextLabel();
+                }
 
                 dxCol.OptionsFilter.AutoFilterCondition = DevExpress.XtraTreeList.Columns.AutoFilterCondition.Contains;
                 dxCol.OptionsColumn.AllowSort = false;
@@ -3200,7 +3213,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private TreeListIncrementalSearchMode _IncrementalSearchMode;
-
+        /// <summary>
+        /// Odstup sousedních hladin nodů v TreeListu
+        /// </summary>
+        public int TreeNodeIndent { get { return this.TreeLevelWidth; } set { this.TreeLevelWidth = (value < 5 ? 5 : (value > 100 ? 100 :value)); } }
         /// <summary>
         /// Nastavení vodících linií mezi TreeNody
         /// </summary>
@@ -3251,7 +3267,42 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
         }
-
+        /// <summary>
+        /// Data v TreeListu lze editovat?
+        /// </summary>
+        public bool IsEditable { get { return this.OptionsBehavior.Editable; } set { this.OptionsBehavior.Editable = value; } }
+        /// <summary>
+        /// Způsob zahájení editace v TreeListu
+        /// </summary>
+        public TreeEditorStartMode EditorStartMode
+        {
+            get 
+            {
+                var dxMode = OptionsBehavior.EditorShowMode;
+                switch (dxMode)
+                {
+                    case DevExpress.XtraTreeList.TreeListEditorShowMode.Default: return TreeEditorStartMode.Default;
+                    case DevExpress.XtraTreeList.TreeListEditorShowMode.MouseDown: return TreeEditorStartMode.MouseDown;
+                    case DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp: return TreeEditorStartMode.MouseUp;
+                    case DevExpress.XtraTreeList.TreeListEditorShowMode.Click: return TreeEditorStartMode.Click;
+                    case DevExpress.XtraTreeList.TreeListEditorShowMode.MouseDownFocused: return TreeEditorStartMode.MouseDownFocused;
+                    case DevExpress.XtraTreeList.TreeListEditorShowMode.DoubleClick: return TreeEditorStartMode.DoubleClick;
+                }
+                return TreeEditorStartMode.Default;
+            }
+            set
+            {
+                switch (value)
+                {
+                    case TreeEditorStartMode.Default: OptionsBehavior.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.Default; break;
+                    case TreeEditorStartMode.MouseDown: OptionsBehavior.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseDown; break;
+                    case TreeEditorStartMode.MouseUp: OptionsBehavior.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp; break;
+                    case TreeEditorStartMode.Click: OptionsBehavior.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.Click; break;
+                    case TreeEditorStartMode.MouseDownFocused: OptionsBehavior.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseDownFocused; break;
+                    case TreeEditorStartMode.DoubleClick: OptionsBehavior.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.DoubleClick; break;
+                }
+            }
+        }
         /// <summary>
         /// Má být selectován ten node, pro který se právě chystáme zobrazit kontextovém menu?
         /// <para/>
@@ -4523,7 +4574,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     #endregion
     #endregion
-    #region class DataTreeListNode a interface ITreeListNode : Data o jednom Node, ITreeListColumn
+    #region class a interface pro TreeListNode = Data o jednom Node. class a interface pro TreeListColumn = definice sloupce
     /// <summary>
     /// Data o jednom Node
     /// </summary>
@@ -4736,6 +4787,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool CanEdit { get; set; }
         /// <summary>
+        /// Sloupec může zobrazovat HTML formát
+        /// </summary>
+        public virtual bool EnableHtmlFormat { get; set; }
+        /// <summary>
         /// Zarovnání textu v záhlaví (titulek)
         /// </summary>
         public virtual HorzAlignment? HeaderContentAlignment { get; set; }
@@ -4870,6 +4925,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         bool CanEdit { get; }
         /// <summary>
+        /// Sloupec může zobrazovat HTML formát
+        /// </summary>
+        bool EnableHtmlFormat { get; }
+        /// <summary>
         /// Zarovnání textu v záhlaví (titulek)
         /// </summary>
         HorzAlignment? HeaderContentAlignment { get; }
@@ -4948,6 +5007,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Plná
         /// </summary>
         Solid
+    }
+    /// <summary>
+    /// Režim zahájení editace
+    /// </summary>
+    public enum TreeEditorStartMode
+    {
+        Default,
+        MouseDown,
+        MouseUp,
+        Click,
+        MouseDownFocused,
+        DoubleClick
+
     }
     /// <summary>
     /// Druh akce, kterou provede DoubleClick na textu anebo Click na ikoně
