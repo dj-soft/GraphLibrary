@@ -42,6 +42,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Controls.Add(_TreeListNative);
             _FilterBoxInitialize();
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+            this.FilterBoxMode = RowFilterBoxMode.None;
         }
         private DxTreeListNative _TreeListNative;
         #endregion
@@ -332,7 +333,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region FilterRow : serverový / klientský
         /// <summary>
-        /// Zobrazovat řádkový filtr? Default = <see cref="RowFilterBoxMode.None"/>
+        /// Zobrazovat řádkový filtr?
+        /// <para/>
+        /// Default = <see cref="RowFilterBoxMode.None"/>
         /// </summary>
         public RowFilterBoxMode FilterBoxMode { get { return _FilterBoxMode; } set { _FilterBoxMode = value; this.RunInGui(_FilterBoxModeChanged); } } private RowFilterBoxMode _FilterBoxMode = RowFilterBoxMode.None;
         /// <summary>
@@ -389,14 +392,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var filterMoxMode = _FilterBoxMode;
 
-            bool isServer = (filterMoxMode == RowFilterBoxMode.Server);
-            _FilterBox.Visible = isServer;
+            bool isServerFilter = (filterMoxMode == RowFilterBoxMode.Server);
+            _FilterBox.Visible = isServerFilter;
 
-            bool isClient = (filterMoxMode == RowFilterBoxMode.Client);
-            if (isClient)
+            bool isClientFilter = (filterMoxMode == RowFilterBoxMode.Client);
+            if (isClientFilter)
                 this._TreeListNative.PresetRowFilter();
 
-            this._TreeListNative.OptionsView.ShowAutoFilterRow = isClient;
+            this._TreeListNative.RowFilterVisible = isClientFilter;
         }
         /// <summary>
         /// Po jakékoli změně v řádkovém filtru
@@ -861,6 +864,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             return result;
         }
         /// <summary>
+        /// Řádkový filtr je viditelný?
+        /// </summary>
+        internal bool RowFilterVisible
+        {
+            get { return this.OptionsView.ShowAutoFilterRow; }
+            set { this.OptionsView.ShowAutoFilterRow = value; }
+        }
+        /// <summary>
         /// Připraví nastavení pro klientský RowFilter v tomto TreeListu
         /// </summary>
         internal void PresetRowFilter()
@@ -1000,13 +1011,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DevExpress.XtraTreeList.DrawFocusRectStyle FocusRectStyle { get { return OptionsView.FocusRectStyle; } set { OptionsView.FocusRectStyle = value; } }
         /// <summary>
         /// Viditelné záhlaví<br/>
-        /// Pro jeden sloupec se běžně nepoužívá, pro více sloupců je vhodné. Je vhodné pro řešení TreeList s jedním sloupcem explicitně deklarovaným (např. kvůli zarovnání nebo HTML formátování).
-        /// Výchozí hodnota je false.
+        /// Pro jeden sloupec se běžně nepoužívá, pro více sloupců je vhodné. 
+        /// Je vhodné pro řešení TreeListu s jedním explicitně deklarovaným sloupcem (např. kvůli zarovnání obsahu anebo pro nastavení jeho HTML formátování).
+        /// Výchozí hodnota je false, vychází z jednoduchého zobrazení jednoho sloupce.
         /// </summary>
         public bool VisibleHeaders 
         { 
             get
-            {   // Hodnota this.__VisibleHeaders můýe být null, pak se záhlaví sloupců zobrazuje implicitně: pro jeden sloupec ne, pro více explicitních sloupců ano.
+            {   // Hodnota this.__VisibleHeaders může být null (pak se záhlaví sloupců zobrazuje implicitně: pro jeden sloupec ne, pro více explicitních sloupců ano).
                 // V tom případě vracím fyzickou hodnotu.
                 return this.__VisibleHeaders ?? this.OptionsView.ShowColumns; 
             } 

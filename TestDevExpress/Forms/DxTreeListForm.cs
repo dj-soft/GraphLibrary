@@ -204,7 +204,7 @@ namespace TestDevExpress.Forms
             flowLayout.StartNewColumn(110, 220);
             CreateTitle(flowLayout, "Agregované vlastnosti AsolDX TreeListu");
 
-            CheckVisibleHeaders = CreateToggle(flowLayout, ControlActionType.ClearColumns | ControlActionType.SetTreeProperties, "VisibleHeaders", "Visible Headers", "Viditelné záhlaví", "Pro jeden sloupec se běžně nepoužívá, pro více sloupců je vhodné. Je vhodné pro řešení TreeList s jedním sloupcem explicitně deklarovaným (např. kvůli zarovnání nebo HTML formátování).");
+            CheckVisibleHeaders = CreateToggle(flowLayout, ControlActionType.SetTreeProperties, "VisibleHeaders", "Visible Headers", "Viditelné záhlaví", "Pro jeden sloupec se běžně nepoužívá, pro více sloupců je vhodné. Je vhodné pro řešení TreeList s jedním sloupcem explicitně deklarovaným (např. kvůli zarovnání nebo HTML formátování).");
             ComboRowFilterBoxMode = CreateCombo(flowLayout, ControlActionType.SetTreeProperties, "RowFilterMode", "Row Filter Mode:", typeof(RowFilterBoxMode));
             CheckMultiSelect = CreateToggle(flowLayout, ControlActionType.SetTreeProperties, "MultiSelect", "MultiSelectEnabled", "MultiSelectEnabled = výběr více nodů", "Zaškrtnuto: lze vybrat více nodů (Ctrl, Shift). Sledujme pak události.");
             TextNodeIndent = CreateSpinner(flowLayout, ControlActionType.SetTreeProperties, "NodeIndent", "Node indent:", 0, 100, "Node indent = odstup jednotlivých úrovní stromu", "Počet pixelů mezi nody jedné úrovně a jejich podřízenými nody, doprava.");
