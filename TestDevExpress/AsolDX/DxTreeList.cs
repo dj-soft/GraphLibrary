@@ -112,7 +112,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pro jeden sloupec se běžně nepoužívá, pro více sloupců je vhodné. Je vhodné pro řešení TreeList s jedním sloupcem explicitně deklarovaným (např. kvůli zarovnání nebo HTML formátování).
         /// Výchozí hodnota je false.
         /// </summary>
-        public bool VisibleHeaders { get { return this._TreeListNative.VisibleHeaders; } set { this._TreeListNative.VisibleHeaders = value; } }
+        public bool ColumnHeadersVisible { get { return this._TreeListNative.ColumnHeadersVisible; } set { this._TreeListNative.ColumnHeadersVisible = value; } }
         /// <summary>
         /// Umožní zalomit dlouhý text buňky do více řádků pod sebe. Default = false.
         /// </summary>
@@ -130,6 +130,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Odstup sousedních hladin nodů v TreeListu
         /// </summary>
         public TreeLevelLineType LevelLineType { get { return this._TreeListNative.LevelLineType; } set { this._TreeListNative.LevelLineType = value; } }
+        /// <summary>
+        /// Typ oddělovacích linek mezi buňkami, vytváří efekt Gridu
+        /// </summary>
+        public TreeCellLineType CellLinesType { get { return this._TreeListNative.CellLinesType; } set { this._TreeListNative.CellLinesType = value; } }
         /// <summary>
         /// Data v TreeListu lze editovat?
         /// </summary>
@@ -761,7 +765,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             // Hodnota parametru 'showHeaders': buď explicitně definovaná z proměnné '__VisibleHeaders', anebo defaultní odpovídající implicitnímu sloupci
             if (columns is null || columns.Length == 0)
-                _PrepareColumns(new ITreeListColumn[] { new DataTreeListColumn() { Caption = "   ", CellContentAlignment = HorzAlignment.Near, CanEdit = true, Width = 4096 } }, (this.__VisibleHeaders ?? false));
+                _PrepareColumns(new ITreeListColumn[] { new DataTreeListColumn() { IsEditable = true } }, (this.__VisibleHeaders ?? false));
             else
                 _PrepareColumns(columns, (this.__VisibleHeaders ?? (columns.Length > 1)));         // ShowHeaders: pokud je explicitně zadáno pak dle zadání, nebo implicitně pokud je více než jeden sloupec...
         }
@@ -790,21 +794,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var dxCol = treeColumns.Add();
                 dxCol.Name = name;
                 dxCol.FieldName = name;
-                dxCol.Caption = column.Caption;
+                dxCol.Caption = (!String.IsNullOrEmpty(column.Caption) ? column.Caption : "   ");   // Prázdný text "" (IsNullOrEmpty) je v komponentě nahrazen defaultem "Column1", ale "   " je zobrazen jako prázdné pole...
                 dxCol.AbsoluteIndex = colIndex;
                 dxCol.VisibleIndex = colIndex;
                 dxCol.UnboundDataType = typeof(string);              // Určuje typ operátorů pro řádkový filtr
                 dxCol.AllowIncrementalSearch = true;
                 dxCol.ShowButtonMode = DevExpress.XtraTreeList.ShowButtonModeEnum.ShowForFocusedRow;
                 dxCol.Visible = true;
-                dxCol.Width = column.Width;
+                dxCol.Width = column.Width ?? 4000;
                 dxCol.MinWidth = (column.MinWidth ?? 0);
                 if (column.CellContentAlignment.HasValue)
                     dxCol.AppearanceCell.TextOptions.HAlignment = column.CellContentAlignment.Value;
                 if (column.HeaderContentAlignment.HasValue)
                     dxCol.AppearanceHeader.TextOptions.HAlignment = column.HeaderContentAlignment.Value;
 
-                if (column.EnableHtmlFormat)
+                if (column.IsHtmlFormatted)
                 {
                     var repoLabel = new DevExpress.XtraEditors.Repository.RepositoryItemHypertextLabel();
                     repoLabel.Appearance.TextOptions.WordWrap = dxWrap;
@@ -849,12 +853,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // Aby bylo možno editovat data v buňce, musí být editovatelný celý TreeList, současně i konkrétní Node a současně i sloupec, a sloupec nesmí být HTML Formatting:
                 bool treeIsEditable = this.IsEditable;
 
-                bool nodeIsEditable = (nodeInfo != null ? nodeInfo.CanEdit : false);
+                bool nodeIsEditable = (nodeInfo != null ? nodeInfo.IsEditable : false);
 
                 var column = this.Columns[columnIndex.Value];
                 bool columnIsEditable = column.OptionsColumn.AllowEdit;
                 if (column.Tag is ITreeListColumn iColumn)
-                    columnIsEditable = iColumn.CanEdit && !iColumn.EnableHtmlFormat;
+                    columnIsEditable = iColumn.IsEditable && !iColumn.IsHtmlFormatted;
 
                 result = treeIsEditable && nodeIsEditable && columnIsEditable;
                 if (storeToColumnOptions)
@@ -1015,7 +1019,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Je vhodné pro řešení TreeListu s jedním explicitně deklarovaným sloupcem (např. kvůli zarovnání obsahu anebo pro nastavení jeho HTML formátování).
         /// Výchozí hodnota je false, vychází z jednoduchého zobrazení jednoho sloupce.
         /// </summary>
-        public bool VisibleHeaders 
+        public bool ColumnHeadersVisible 
         { 
             get
             {   // Hodnota this.__VisibleHeaders může být null (pak se záhlaví sloupců zobrazuje implicitně: pro jeden sloupec ne, pro více explicitních sloupců ano).
@@ -1620,9 +1624,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             ITreeListNode nodeInfo = _GetNodeInfo(args.Node);
             if (nodeInfo != null)
             {
-                nodeInfo.Expanded = true;
+                nodeInfo.IsExpanded = true;
                 this.RaiseNodeExpanded(nodeInfo);
-                bool isExpanded = nodeInfo.Expanded;                 // DAJ 0070650: hodnota byla setována se zpožděním - asynchronně, opravno tam (v Noris.Clients.Controllers.ObservableObjectFacadeBusySupport), zde čteno do proměnné pro porovnání
+                bool isExpanded = nodeInfo.IsExpanded;                 // DAJ 0070650: hodnota byla setována se zpožděním - asynchronně, opravno tam (v Noris.Clients.Controllers.ObservableObjectFacadeBusySupport), zde čteno do proměnné pro porovnání
                 if (isExpanded)
                 {   // Instance ITreeListNode mohla potlačit stav Expanded = true (nastavila zpátky false) anebo k tomu došlo v eventu, pak NEPROVEDEME další akce:
                     if (nodeInfo.LazyExpandable)
@@ -1652,9 +1656,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             ITreeListNode nodeInfo = _GetNodeInfo(args.Node);
             if (nodeInfo != null)
             {
-                nodeInfo.Expanded = false;
+                nodeInfo.IsExpanded = false;
                 this.RaiseNodeCollapsed(nodeInfo);
-                bool isExpanded = nodeInfo.Expanded;                 // DAJ 0070650: hodnota byla setována se zpožděním - asynchronně, opravno tam (v Noris.Clients.Controllers.ObservableObjectFacadeBusySupport), zde čteno do proměnné pro porovnání
+                bool isExpanded = nodeInfo.IsExpanded;                 // DAJ 0070650: hodnota byla setována se zpožděním - asynchronně, opravno tam (v Noris.Clients.Controllers.ObservableObjectFacadeBusySupport), zde čteno do proměnné pro porovnání
                 if (!isExpanded)
                 {   // Instance ITreeListNode mohla potlačit stav Expanded = false (nastavila zpátky true) anebo k tomu došlo v eventu, pak NEPROVEDEME další akce:
                 }
@@ -2494,7 +2498,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     this._AddNode(node, ref firstPair, null);
 
                 // Expand nody: teď už by měly mít svoje Childs přítomné v TreeList:
-                foreach (var node in addNodes.Where(n => n.Expanded))
+                foreach (var node in addNodes.Where(n => n.IsExpanded))
                 {
                     if (this._NodesId.TryGetValue(node.Id, out var expandNodePair) && expandNodePair.HasTreeNode)
                         expandNodePair.TreeNode.Expanded = true;
@@ -2644,7 +2648,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             treeNode.SelectImageIndex = _GetImageIndex(nodeInfo.ImageDynamicSelected, imageIndex); // SelectImageIndex je ikona ve stavu Nodes.Selected, zobrazená vlevo místo ikony ImageIndex
             treeNode.StateImageIndex = _GetImageIndex(nodeInfo.ImageName, -1);                     // StateImageIndex je vpravo, a nereaguje na stav Selected
 
-            if (canExpand) treeNode.Expanded = nodeInfo.Expanded;                                  // Expanded se nastavuje pouze z Refreshe (tam má smysl), ale ne při tvorbě (tam ještě nemáme ChildNody)
+            if (canExpand) treeNode.Expanded = nodeInfo.IsExpanded;                                // Expanded se nastavuje pouze z Refreshe (tam má smysl), ale ne při tvorbě (tam ještě nemáme ChildNody)
         }
         /// <summary>
         /// Metoda najde Parent node dodaného nodu, a pokud daný Parent node má příznak <see cref="ITreeListNode.LazyExpandable"/>, 
@@ -3368,6 +3372,32 @@ namespace Noris.Clients.Win.Components.AsolDX
                     this.OptionsView.ShowIndentAsRowStyle = true;
                     this.OptionsView.ShowIndentAsRowStyle = false;             // DevExpress to mají rádi takhle...
                 }
+            }
+        }
+        /// <summary>
+        /// Typ oddělovacích linek mezi buňkami, vytváří efekt Gridu
+        /// </summary>
+        public TreeCellLineType CellLinesType 
+        {
+            get 
+            {
+                var options = this.OptionsView;
+                bool isHorizontal = options.ShowHorzLines;
+                bool isVerticalInner = options.ShowVertLines;
+                bool isVerticalFirst = options.ShowFirstLines;
+
+                var lineType = (isHorizontal ? TreeCellLineType.Horizontal : TreeCellLineType.None)
+                             | (isVerticalInner ? TreeCellLineType.VerticalInner : TreeCellLineType.None)
+                             | (isVerticalFirst ? TreeCellLineType.VerticalFirst : TreeCellLineType.None);
+
+                return lineType;
+            }
+            set 
+            {
+                var options = this.OptionsView;
+                options.ShowHorzLines = value.HasFlag(TreeCellLineType.Horizontal);
+                options.ShowVertLines = value.HasFlag(TreeCellLineType.VerticalInner);
+                options.ShowFirstLines = value.HasFlag(TreeCellLineType.VerticalFirst);
             }
         }
         /// <summary>
@@ -4736,9 +4766,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="parentNodeId"></param>
         /// <param name="text"></param>
         /// <param name="nodeType"></param>
-        /// <param name="canEdit"></param>
+        /// <param name="isEditable"></param>
         /// <param name="canDelete"></param>
-        /// <param name="expanded"></param>
+        /// <param name="isExpanded"></param>
         /// <param name="lazyExpandable"></param>
         /// <param name="imageName"></param>
         /// <param name="imageNameSelected"></param>
@@ -4751,7 +4781,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="foreColor"></param>
         /// <param name="mainClickAction"></param>
         public DataTreeListNode(string nodeId, string parentNodeId, string text,
-            NodeItemType nodeType = NodeItemType.DefaultText, bool canEdit = false, bool canDelete = false, bool expanded = false, bool lazyExpandable = false,
+            NodeItemType nodeType = NodeItemType.DefaultText, bool isEditable = false, bool canDelete = false, bool isExpanded = false, bool lazyExpandable = false,
             string imageName = null, string imageNameSelected = null, string imageNameStatic = null, string toolTipTitle = null, string toolTipText = null,
             float? fontSizeRatio = null, FontStyle? fontStyleDelta = null, Color? backColor = null, Color? foreColor = null, NodeMainClickActionType? mainClickAction = null)
         {
@@ -4760,9 +4790,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.ParentNodeFullId = parentNodeId;
             this.Text = text;
             this.NodeType = nodeType;
-            this.CanEdit = canEdit;
+            this.IsEditable = isEditable;
             this.CanDelete = canDelete;
-            this.Expanded = expanded;
+            this.IsExpanded = isExpanded;
             this.LazyExpandable = lazyExpandable;
             this.ImageDynamicDefault = imageName;
             this.ImageDynamicSelected = imageNameSelected;
@@ -4859,7 +4889,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Uživatel může editovat text tohoto node, po ukončení editace je vyvolána událost <see cref="DxTreeListNative.NodeEdited"/>.
         /// Změnu této hodnoty není nutno refreshovat, načítá se po výběru konkrétního Node v TreeList a aplikuje se na něj.
         /// </summary>
-        public virtual bool CanEdit { get; set; }
+        public virtual bool IsEditable { get; set; }
         /// <summary>
         /// Uživatel může stisknout Delete nad uzlem, bude vyvolána událost <see cref="DxTreeListNative.NodesDelete"/>
         /// </summary>
@@ -4874,7 +4904,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
         /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeListNative.RefreshNodes(IEnumerable{ITreeListNode})"/>.
         /// </summary>
-        public virtual bool Expanded { get; set; }
+        public virtual bool IsExpanded { get; set; }
         /// <summary>
         /// Node bude mít Child prvky, ale zatím nejsou dodány. 
         /// Node bude zobrazovat rozbalovací ikonu a jeden node s textem "Načítám data...", viz <see cref="DxTreeListNative.LazyLoadNodeText"/>.
@@ -4919,20 +4949,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aktuální šířka
         /// </summary>
-        public virtual int Width { get; set; }
+        public virtual int? Width { get; set; }
         /// <summary>
         /// Minimální šířka sloupce
         /// </summary>
         public virtual int? MinWidth { get; set; }
         /// <summary>
         /// Lze data ve sloupci editovat?
-        /// Aby bylo možno editovat data, musí být true zde i v definici nodu <see cref="DataTreeListNode.CanEdit"/>.
+        /// Aby bylo možno editovat data, musí být true zde i v definici nodu <see cref="DataTreeListNode.IsEditable"/>.
         /// </summary>
-        public virtual bool CanEdit { get; set; }
+        public virtual bool IsEditable { get; set; }
         /// <summary>
         /// Sloupec může zobrazovat HTML formát
         /// </summary>
-        public virtual bool EnableHtmlFormat { get; set; }
+        public virtual bool IsHtmlFormatted { get; set; }
         /// <summary>
         /// Zarovnání textu v záhlaví (titulek)
         /// </summary>
@@ -4989,7 +5019,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Uživatel může editovat text tohoto node, po ukončení editace je vyvolána událost <see cref="DxTreeListNative.NodeEdited"/>.
         /// Změnu této hodnoty není nutno refreshovat, načítá se po výběru konkrétního Node v TreeList a aplikuje se na něj.
         /// </summary>
-        bool CanEdit { get; }
+        bool IsEditable { get; }
         /// <summary>
         /// Uživatel může stisknout Delete nad uzlem, bude vyvolána událost <see cref="DxTreeListNative.NodesDelete"/>
         /// </summary>
@@ -5019,7 +5049,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
         /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeListNative.RefreshNodes(IEnumerable{ITreeListNode})"/>.
         /// </summary>
-        bool Expanded { get; set; }
+        bool IsExpanded { get; set; }
         /// <summary>
         /// Ikona základní, ta může reagovat na stav Selected (pak bude zobrazena ikona <see cref="ImageDynamicSelected"/>), zobrazuje se vlevo.
         /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
@@ -5057,21 +5087,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aktuální šířka
         /// </summary>
-        int Width { get; set; }
+        int? Width { get; set; }
         /// <summary>
         /// Minimální šířka sloupce
         /// </summary>
         int? MinWidth { get; }
         /// <summary>
         /// Lze data ve sloupci editovat?
-        /// Aby bylo možno editovat data, musí být true zde i v definici nodu <see cref="ITreeListNode.CanEdit"/>.
+        /// Aby bylo možno editovat data, musí být true zde i v definici nodu <see cref="ITreeListNode.IsEditable"/>.
         /// </summary>
-        bool CanEdit { get; }
+        bool IsEditable { get; }
         /// <summary>
         /// Sloupec může zobrazovat zjednodušený HTML formát?<br/>
         /// Viz: <see href="https://docs.devexpress.com/WindowsForms/4874/common-features/html-text-formatting"/>
         /// </summary>
-        bool EnableHtmlFormat { get; }
+        bool IsHtmlFormatted { get; }
         /// <summary>
         /// Zarovnání textu v záhlaví (titulek)
         /// </summary>
@@ -5138,7 +5168,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Žádná
         /// </summary>
-        None,
+        None = 0,
         /// <summary>
         /// Jemně tečkovaná
         /// </summary>
@@ -5157,13 +5187,40 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public enum TreeEditorStartMode
     {
-        Default,
+        /// <summary>
+        /// Implicitně podle komponenty.
+        /// </summary>
+        Default = 0,
+        /// <summary>
+        /// Po stisku myši, i když v prvku nebyl focus.<br/>
+        /// Text v nodu nebude SELECTED, kurzor bude blikat v místě myši.
+        /// </summary>
         MouseDown,
+        /// <summary>
+        /// Po zvednutí myši, i když v prvku nebyl focus. <br/>
+        /// Po zvednutí myši bude text celého Node označen = SELECTED, takže lze dát DELETE nebo Ctrl+C. Pro jemnou editaci je třeba dalším klikem umístit kurzor, nebo na editovanou pozici najet.
+        /// <para/>
+        /// Toto je defaultní chování v Nephrite, navazuje na chování Infragistic.
+        /// </summary>
         MouseUp,
+        /// <summary>
+        /// Po zvednutí myši, ale pouze v buňce, kde už před tím byl focus = vyžaduje nejprve na buňku kliknout (první klik ji označí jako aktivní), 
+        /// a teprve druhým klikem v označené buňce začne editace.<br/>
+        /// Stávající obsah buňky je označen = SELECTED, takže lze dát DELETE nebo Ctrl+C. Pro jemnou editaci je třeba dalším klikem umístit kurzor, nebo na editovanou pozici najet.
+        /// </summary>
         Click,
+        /// <summary>
+        /// Po stisku (MouseDown) myši, ale pouze v buňce, kde už před tím byl focus = vyžaduje nejprve na buňku kliknout (první klik ji označí jako aktivní),
+        /// a při druhém stisku myši v označené buňce začne editace.<br/>
+        /// Obsah buňky pak není označen = není SELECTED, kurzor bliká v místě myši.
+        /// </summary>
         MouseDownFocused,
+        /// <summary>
+        /// Po DoubleCLicku na prvku, bez ohledu na to zda byl prvek před tím aktivní nebo ne.<br/>
+        /// Stávající obsah buňky je označen = SELECTED, takže lze dát DELETE nebo Ctrl+C. Pro jemnou editaci je třeba dalším klikem umístit kurzor, nebo na editovanou pozici najet.<br/>
+        /// Opakovaný jednoclick editaci nezačne.
+        /// </summary>
         DoubleClick
-
     }
     /// <summary>
     /// Druh akce, kterou provede DoubleClick na textu anebo Click na ikoně
@@ -5192,6 +5249,46 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// V tomto případě je nezbytné nastavit na každém nodu tuto vlastnost, jinak bude default = None = nebude se dělat nic!!!
         /// </summary>
         AcceptNodeSetting
+    }
+    /// <summary>
+    /// Linky okolo jednotlivých buněk v TreeListu (vytvoří efekt Gridu)
+    /// </summary>
+    [Flags]
+    public enum TreeCellLineType
+    {
+        /// <summary>
+        /// Žádná
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Vodorovné linky mezi řádky
+        /// </summary>
+        Horizontal = 0x0001,
+        /// <summary>
+        /// Svislé mezi dvěma buňkami
+        /// </summary>
+        VerticalInner = 0x0002,
+        /// <summary>
+        /// Svisle před první buňkou
+        /// </summary>
+        VerticalFirst = 0x0004,
+
+        /// <summary>
+        /// Všechny svislé
+        /// </summary>
+        VerticalAll = VerticalInner | VerticalFirst,
+        /// <summary>
+        /// Vodorovné a vnitřní svislé
+        /// </summary>
+        HorizontalInner = Horizontal | VerticalInner,
+        /// <summary>
+        /// Vodorovné a první svislé, bez vnitřních
+        /// </summary>
+        HorizontalFirst = Horizontal | VerticalFirst,
+        /// <summary>
+        /// Všechny
+        /// </summary>
+        All = Horizontal | VerticalAll
     }
     /// <summary>
     /// Druh akce na Click na ikonu anebo text.

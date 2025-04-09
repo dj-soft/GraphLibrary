@@ -209,6 +209,7 @@ namespace TestDevExpress.Forms
             CheckMultiSelect = CreateToggle(flowLayout, ControlActionType.SetTreeProperties, "MultiSelect", "MultiSelectEnabled", "MultiSelectEnabled = výběr více nodů", "Zaškrtnuto: lze vybrat více nodů (Ctrl, Shift). Sledujme pak události.");
             TextNodeIndent = CreateSpinner(flowLayout, ControlActionType.SetTreeProperties, "NodeIndent", "Node indent:", 0, 100, "Node indent = odstup jednotlivých úrovní stromu", "Počet pixelů mezi nody jedné úrovně a jejich podřízenými nody, doprava.");
             ComboLevelLineType = CreateCombo(flowLayout, ControlActionType.SetTreeProperties, "LevelLineType", "LevelLineType:", typeof(TreeLevelLineType));
+            ComboCellLinesType = CreateCombo(flowLayout, ControlActionType.SetTreeProperties, "CellLinesType", "CellLinesType:", typeof(TreeCellLineType));
             CheckEditable = CreateToggle(flowLayout, ControlActionType.SetTreeProperties, "Editable", "Editable", "", "");
             ComboEditorStartMode = CreateCombo(flowLayout, ControlActionType.SetTreeProperties, "EditorStartMode", "EditorStartMode:", typeof(TreeEditorStartMode));
         }
@@ -223,6 +224,7 @@ namespace TestDevExpress.Forms
             SetingsMultiSelect = ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SetingsMultiSelect", ""));
             SettingsNodeIndent = ConvertToInt32(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsNodeIndent", ""), 25);
             SettingsLevelLineType = ConvertToLevelLineType(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsLevelLineType", ""));
+            SettingsCellLinesType = ConvertToCellLinesType(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsCellLinesType", ""));
             SettingsEditable = ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsEditable", ""));
             SettingsEditorStartMode = ConvertToEditorStartMode(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsEditorStartMode", ""));
         }
@@ -234,6 +236,7 @@ namespace TestDevExpress.Forms
             DxComponent.Settings.SetRawValue(SettingsKey, "SetingsMultiSelect", ConvertToString(SetingsMultiSelect));
             DxComponent.Settings.SetRawValue(SettingsKey, "SettingsNodeIndent", ConvertToString(SettingsNodeIndent));
             DxComponent.Settings.SetRawValue(SettingsKey, "SettingsLevelLineType", ConvertToString(SettingsLevelLineType));
+            DxComponent.Settings.SetRawValue(SettingsKey, "SettingsCellLinesType", ConvertToString(SettingsCellLinesType));
             DxComponent.Settings.SetRawValue(SettingsKey, "SettingsEditable", ConvertToString(SettingsEditable));
             DxComponent.Settings.SetRawValue(SettingsKey, "SettingsEditorStartMode", ConvertToString(SettingsEditorStartMode));
         }
@@ -245,6 +248,7 @@ namespace TestDevExpress.Forms
             CheckMultiSelect.Checked = SetingsMultiSelect;
             TextNodeIndent.Value = SettingsNodeIndent;
             SelectComboItem(ComboLevelLineType, SettingsLevelLineType);
+            SelectComboItem(ComboCellLinesType, SettingsCellLinesType);
             CheckEditable.Checked = SettingsEditable;
             SelectComboItem(ComboEditorStartMode, SettingsEditorStartMode);
         }
@@ -256,17 +260,19 @@ namespace TestDevExpress.Forms
             SetingsMultiSelect = CheckMultiSelect.Checked;
             SettingsNodeIndent = (int)TextNodeIndent.Value;
             SettingsLevelLineType = ConvertToLevelLineType(ComboLevelLineType, SettingsLevelLineType);
+            SettingsCellLinesType = ConvertToCellLinesType(ComboCellLinesType, SettingsCellLinesType);
             SettingsEditable = CheckEditable.Checked;
             SettingsEditorStartMode = ConvertToEditorStartMode(ComboEditorStartMode, SettingsEditorStartMode);
         }
         protected override void OnSettingApplyTreeListProperties()
         {
             // Do TreeListu     z Properties
-            DxTreeList.VisibleHeaders = SetingsVisibleHeaders;
+            DxTreeList.ColumnHeadersVisible = SetingsVisibleHeaders;
             DxTreeList.FilterBoxMode = SetingsRowFilterBoxMode;
             DxTreeList.MultiSelectEnabled = SetingsMultiSelect;
             DxTreeList.TreeNodeIndent = SettingsNodeIndent;
             DxTreeList.LevelLineType = SettingsLevelLineType;
+            DxTreeList.CellLinesType = SettingsCellLinesType;
             DxTreeList.IsEditable = SettingsEditable;
             DxTreeList.EditorStartMode = SettingsEditorStartMode;
         }
@@ -276,6 +282,7 @@ namespace TestDevExpress.Forms
         protected DxCheckEdit CheckMultiSelect;
         protected DxSpinEdit TextNodeIndent;
         protected DxImageComboBoxEdit ComboLevelLineType;
+        protected DxImageComboBoxEdit ComboCellLinesType;
         protected DxCheckEdit CheckEditable;
         protected DxImageComboBoxEdit ComboEditorStartMode;
 
@@ -288,9 +295,9 @@ namespace TestDevExpress.Forms
         internal bool SetingsMultiSelect { get; set; }
         internal int SettingsNodeIndent { get; set; }
         internal TreeLevelLineType SettingsLevelLineType { get; set; }
+        internal TreeCellLineType SettingsCellLinesType { get; set; }
         internal bool SettingsEditable { get; set; }
         internal TreeEditorStartMode SettingsEditorStartMode { get; set; }
-        
     }
     #endregion
     /// <summary>
@@ -754,33 +761,33 @@ namespace TestDevExpress.Forms
         {
             bool useMultiColumns = SettingsUseMultiColumns;
             var dxColumns = DxTreeList.TreeListNative.DxColumns;
-            bool useHtmlFormat = SettingsUseHtmlFormat;
-            bool isChangeHtmlColumns = (CurrentColumnHtmlFormat != useHtmlFormat);
+            bool isHtmlFormatted = SettingsUseHtmlFormat;
+            bool isChangeHtmlColumns = (CurrentColumnHtmlFormat != isHtmlFormatted);
             if (useMultiColumns && (force || isChangeHtmlColumns || (dxColumns is null || dxColumns.Length < 3)))
-                CreateMultiColumns(useHtmlFormat);
+                CreateMultiColumns(isHtmlFormatted);
             else if (!useMultiColumns && (force || isChangeHtmlColumns || (dxColumns != null && dxColumns.Length >= 3)))
-                CreateSingleColumns(useHtmlFormat);
-            CurrentColumnHtmlFormat = useHtmlFormat;
+                CreateSingleColumns(isHtmlFormatted);
+            CurrentColumnHtmlFormat = isHtmlFormatted;
         }
         /// <summary>
         /// Metoda zajistí, že TreeList bude mít připravené správné Multi sloupce
         /// </summary>
-        protected void CreateMultiColumns(bool useHtmlFormat)
+        protected void CreateMultiColumns(bool isHtmlFormatted)
         {
             List<DataTreeListColumn> dxColumns = new List<DataTreeListColumn>();
-            dxColumns.Add(new DataTreeListColumn() { Caption = "Text", Width = 220, MinWidth = 150, CanEdit = true });
-            dxColumns.Add(new DataTreeListColumn() { Caption = "Informace", Width = 120, MinWidth = 80, HeaderContentAlignment = DevExpress.Utils.HorzAlignment.Center, CellContentAlignment = DevExpress.Utils.HorzAlignment.Far, CanEdit = false });
-            dxColumns.Add(new DataTreeListColumn() { Caption = "Popisek", Width = 160, MinWidth = 100, CanEdit = true, EnableHtmlFormat = useHtmlFormat });
+            dxColumns.Add(new DataTreeListColumn() { Caption = "Text", Width = 220, MinWidth = 150, IsEditable = true });
+            dxColumns.Add(new DataTreeListColumn() { Caption = "Informace", Width = 120, MinWidth = 80, HeaderContentAlignment = DevExpress.Utils.HorzAlignment.Center, CellContentAlignment = DevExpress.Utils.HorzAlignment.Far, IsEditable = false });
+            dxColumns.Add(new DataTreeListColumn() { Caption = "Popisek", Width = 160, MinWidth = 100, IsEditable = true, IsHtmlFormatted = isHtmlFormatted });
             DxTreeList.DxColumns = dxColumns.ToArray();
         }
         /// <summary>
         /// Metoda zajistí, že TreeList bude mít připravené správné Single sloupce
         /// </summary>
-        protected void CreateSingleColumns(bool useHtmlFormat)
+        protected void CreateSingleColumns(bool isHtmlFormatted)
         {
-            if (useHtmlFormat)
+            if (isHtmlFormatted)
                 // SingleColumn, používající HTML => musím jej explicitně vytvořit, abych do něj mohl vepsat EnableHtmlFormat = true :
-                DxTreeList.DxColumns = new DataTreeListColumn[] { new DataTreeListColumn() { Caption = "   ", Width = 4000, CanEdit = false, EnableHtmlFormat = useHtmlFormat } };
+                DxTreeList.DxColumns = new DataTreeListColumn[] { new DataTreeListColumn() { Caption = "   ", Width = 4000, IsEditable = false, IsHtmlFormatted = isHtmlFormatted } };
             else
                 // Default nám vyhovuje null, komponenta se vygeneruje prázdný sloupec:
                 DxTreeList.DxColumns = null;
@@ -826,12 +833,12 @@ namespace TestDevExpress.Forms
                     hasChild = (childCount > 0);
                     if (hasChild && Randomizer.IsTrue(25))
                     {
-                        child.Expanded = true;
+                        child.IsExpanded = true;
                     }
                 }
                 // Tento konkrétní node mohu editovat tehdy, když node nemá SubNodes:
                 //   Pokud by nebyla povolena editace celého TreeListu, tak nelze editovat ani takový Node!
-                child.CanEdit = !hasChild;
+                child.IsEditable = !hasChild;
                 child.CanCheck = !hasChild && this.SettingsUseCheckBoxes && Randomizer.IsTrue(40);
             }
             return result;
@@ -884,24 +891,24 @@ namespace TestDevExpress.Forms
                 case NodeItemType.BlankAtFirstPosition:
                 case NodeItemType.BlankAtLastPosition:
                     text = "";
-                    childNode = new DataTreeListNode(childKey, parentKey, text, nodeType: nodeType, canEdit: true, canDelete: false);          // Node pro přidání nového prvku (Blank) nelze odstranit
+                    childNode = new DataTreeListNode(childKey, parentKey, text, nodeType: nodeType, isEditable: true, canDelete: false);          // Node pro přidání nového prvku (Blank) nelze odstranit
                     childNode.AddVoidCheckSpace = true;
                     childNode.ToolTipText = "Zadejte referenci nového prvku";
-                    childNode.ImageDynamicDefault = "list_add_3_16";
+                    childNode.ImageDynamicDefault = GetSuffixImageName();
                     TotalNodesCount++;
                     break;
                 case NodeItemType.OnDoubleClickLoadNext:
                     text = "Načíst další záznamy";
-                    childNode = new DataTreeListNode(childKey, parentKey, text, nodeType: nodeType, canEdit: false, canDelete: false);        // Node pro zobrazení dalších nodů nelze editovat ani odstranit
+                    childNode = new DataTreeListNode(childKey, parentKey, text, nodeType: nodeType, isEditable: false, canDelete: false);        // Node pro zobrazení dalších nodů nelze editovat ani odstranit
                     childNode.FontStyle = FontStyle.Italic;
                     childNode.AddVoidCheckSpace = true;
                     childNode.ToolTipText = "Umožní načíst další sadu záznamů...";
-                    childNode.ImageDynamicDefault = "move_task_down_16";
+                    childNode.ImageDynamicDefault = GetSuffixImageName();
                     TotalNodesCount++;
                     break;
                 case NodeItemType.DefaultText:
                     text = Randomizer.GetSentence(2, 5);
-                    childNode = new DataTreeListNode(childKey, parentKey, text, nodeType: nodeType, canEdit: true, canDelete: true);
+                    childNode = new DataTreeListNode(childKey, parentKey, text, nodeType: nodeType, isEditable: true, canDelete: true);
                     childNode.CanCheck = true;
                     childNode.Checked = (Randomizer.Rand.Next(20) > 16);
 
@@ -968,6 +975,8 @@ namespace TestDevExpress.Forms
         {
             if (Randomizer.IsTrue(7))
                 node.ImageDynamicDefault = GetSuffixImageName();
+            else if (Randomizer.IsTrue(7))
+                node.ImageDynamicSelected = GetSuffixImageName();
 
             node.ImageName = GetMainImageName(SettingsNodeImageSet);
             node.ToolTipTitle = null;
@@ -2331,6 +2340,43 @@ namespace TestDevExpress.Forms
                 case TreeLevelLineType.Solid: return "S";
             }
             return "";
+        }
+
+        internal static TreeCellLineType ConvertToCellLinesType(string value, TreeCellLineType defValue = TreeCellLineType.None)
+        {   // Flags:
+            if (value != null)
+            {
+                TreeCellLineType result = TreeCellLineType.None;
+                if (value.Contains("H")) result |= TreeCellLineType.Horizontal;
+                if (value.Contains("I")) result |= TreeCellLineType.VerticalInner;
+                if (value.Contains("F")) result |= TreeCellLineType.VerticalFirst;
+                return result;
+            }
+            return defValue;
+        }
+        internal static TreeCellLineType ConvertToCellLinesType(DevExpress.XtraEditors.ComboBoxEdit comboBox, TreeCellLineType defValue = TreeCellLineType.None)
+        {
+            if (comboBox != null && comboBox.SelectedItem != null)
+            {
+                if (comboBox.SelectedItem is DevExpress.XtraEditors.Controls.ImageComboBoxItem comboItem)
+                {
+                    if (comboItem.Value is TreeCellLineType)
+                        return (TreeCellLineType)comboItem.Value;
+                }
+                if (comboBox.SelectedItem is TreeLevelLineType)
+                {
+                    return (TreeCellLineType)comboBox.SelectedItem;
+                }
+            }
+            return defValue;
+        }
+        internal static string ConvertToString(TreeCellLineType value)
+        {   // Flags:
+            string result = "";
+            if (value.HasFlag(TreeCellLineType.Horizontal)) result += "H";
+            if (value.HasFlag(TreeCellLineType.VerticalInner)) result += "I";
+            if (value.HasFlag(TreeCellLineType.VerticalFirst)) result += "F";
+            return result;
         }
 
         internal static TreeEditorStartMode ConvertToEditorStartMode(string value, TreeEditorStartMode defValue = TreeEditorStartMode.Default)

@@ -5289,7 +5289,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                 string rootKey = "R." + (++_InternalNodeId).ToString();
                 string text = Randomizer.GetSentence(2, 5) + (isLazy ? " ..." : "");
                 FontStyle fontStyleDelta = FontStyle.Bold;
-                DataTreeListNode rootNode = new DataTreeListNode(rootKey, null, text, nodeType: NodeItemType.DefaultText, expanded: isExpanded, lazyExpandable: isLazy, fontStyleDelta: fontStyleDelta);
+                DataTreeListNode rootNode = new DataTreeListNode(rootKey, null, text, nodeType: NodeItemType.DefaultText, isExpanded: isExpanded, lazyExpandable: isLazy, fontStyleDelta: fontStyleDelta);
                 totalCount++;
                 // Node v první úrovni: LazyLoad má MainClick = RunEvent, a naplněný node má MainClick = Expand/Collapse:
                 rootNode.MainClickAction = (isLazy ? NodeMainClickActionType.RunEvent : NodeMainClickActionType.ExpandCollapse);
@@ -5354,7 +5354,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                 case NodeItemType.BlankAtFirstPosition:
                 case NodeItemType.BlankAtLastPosition:
                     text = "";
-                    childNode = new DataTreeListNode(childKey, parentKey, text, nodeType: nodeType, canEdit: true, canDelete: false);          // Node pro přidání nového prvku (Blank) nelze odstranit
+                    childNode = new DataTreeListNode(childKey, parentKey, text, nodeType: nodeType, isEditable: true, canDelete: false);          // Node pro přidání nového prvku (Blank) nelze odstranit
                     totalCount++;
                     childNode.AddVoidCheckSpace = true;
                     childNode.ToolTipText = "Zadejte referenci nového prvku";
@@ -5362,7 +5362,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                     break;
                 case NodeItemType.OnDoubleClickLoadNext:
                     text = "Načíst další záznamy";
-                    childNode = new DataTreeListNode(childKey, parentKey, text, nodeType: nodeType, canEdit: false, canDelete: false);        // Node pro zobrazení dalších nodů nelze editovat ani odstranit
+                    childNode = new DataTreeListNode(childKey, parentKey, text, nodeType: nodeType, isEditable: false, canDelete: false);        // Node pro zobrazení dalších nodů nelze editovat ani odstranit
                     totalCount++;
                     childNode.FontStyle = FontStyle.Italic;
                     childNode.AddVoidCheckSpace = true;
@@ -5371,7 +5371,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                     break;
                 case NodeItemType.DefaultText:
                     text = Randomizer.GetSentence(2, 5);
-                    childNode = new DataTreeListNode(childKey, parentKey, text, nodeType: nodeType, canEdit: true, canDelete: true);
+                    childNode = new DataTreeListNode(childKey, parentKey, text, nodeType: nodeType, isEditable: true, canDelete: true);
                     totalCount++;
                     childNode.CanCheck = true;
                     childNode.Checked = (Randomizer.Rand.Next(20) > 16);
