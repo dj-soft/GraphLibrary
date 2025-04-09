@@ -3381,10 +3381,22 @@ Boletus subtomentosus L. 1753
             return (value < probability);                  // Pokud je probability = 0, pak value nikdy není < 0, vždy vrátím false. Pokud probability = 100, pak value je vždy < 100. ....
         }
         /// <summary>
+        /// Vrátí náhodnou barvu, volitelně v daném rozmezí 0 až 256, volitelně s náhodnou hodntou Alpha.
+        /// Barvu vrací ve formátu <c>#2288FF</c>, tedy vhodný pro XML styl.
+        /// </summary>
+        /// <param name="low">Dolní hodnota složky barvy</param>
+        /// <param name="high">Horní hodnota složky barvy</param>
+        /// <returns></returns>
+        public static string GetColorHex(int low = 0, int high = 256)
+        {
+            var color = GetColor(low, high, null, false);
+            return "#" + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");
+        }
+        /// <summary>
         /// Vrátí náhodnou barvu, volitelně v daném rozmezí 0 až 256, volitelně s náhodnou hodntou Alpha
         /// </summary>
-        /// <param name="low"></param>
-        /// <param name="high"></param>
+        /// <param name="low">Dolní hodnota složky barvy</param>
+        /// <param name="high">Horní hodnota složky barvy</param>
         /// <param name="alpha">Hodnota Alpha</param>
         /// <param name="isRandomAlpha">Použít náhodný Alpha kanál v rozmezí 16 - 240? false = ne, Alpha bude 255</param>
         /// <returns></returns>

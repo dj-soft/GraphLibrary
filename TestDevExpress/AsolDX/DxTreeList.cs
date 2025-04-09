@@ -107,6 +107,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool TransparentBackground { get { return _TreeListNative.TransparentBackground; } set { _TreeListNative.TransparentBackground = value; } }
         /// <summary>
+        /// Viditelné záhlaví<br/>
+        /// Pro jeden sloupec se běžně nepoužívá, pro více sloupců je vhodné. Je vhodné pro řešení TreeList s jedním sloupcem explicitně deklarovaným (např. kvůli zarovnání nebo HTML formátování).
+        /// Výchozí hodnota je false.
+        /// </summary>
+        public bool VisibleHeaders { get { return this._TreeListNative.VisibleHeaders; } set { this._TreeListNative.VisibleHeaders = value; } }
+        /// <summary>
+        /// Umožní zalomit dlouhý text buňky do více řádků pod sebe. Default = false.
+        /// </summary>
+        public bool WordWrap { get { return this._TreeListNative.WordWrap; } set { this._TreeListNative.WordWrap = value; } }
+        /// <summary>
         /// TreeList povoluje provést MultiSelect = označit více nodů.
         /// Default = false.
         /// </summary>
@@ -433,6 +443,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _TreeListNative.SelectedNodesChanged += _TreeListNative_SelectedNodesChanged;
             _TreeListNative.ShowContextMenu += _TreeListNative_ShowContextMenu;
             _TreeListNative.NodeIconClick += _TreeListNative_NodeIconClick;
+            _TreeListNative.NodeItemClick += _TreeListNative_NodeItemClick;
             _TreeListNative.NodeDoubleClick += _TreeListNative_NodeDoubleClick;
             _TreeListNative.NodeExpanded += _TreeListNative_NodeExpanded;
             _TreeListNative.NodeCollapsed += _TreeListNative_NodeCollapsed;
@@ -449,6 +460,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _TreeListNative_SelectedNodesChanged(object sender, DxTreeListNodeArgs args) { this.OnSelectedNodesChanged(args); this.SelectedNodesChanged?.Invoke(this, args); }
         private void _TreeListNative_ShowContextMenu(object sender, DxTreeListNodeContextMenuArgs args) { this.OnShowContextMenu(args); this.ShowContextMenu?.Invoke(this, args); }
         private void _TreeListNative_NodeIconClick(object sender, DxTreeListNodeArgs args) { this.OnNodeIconClick(args); this.NodeIconClick?.Invoke(this, args); }
+        private void _TreeListNative_NodeItemClick(object sender, DxTreeListNodeArgs args) { this.OnNodeItemClick(args); this.NodeItemClick?.Invoke(this, args); }
         private void _TreeListNative_NodeDoubleClick(object sender, DxTreeListNodeArgs args) { this.OnNodeDoubleClick(args); this.NodeDoubleClick?.Invoke(this, args); }
         private void _TreeListNative_NodeExpanded(object sender, DxTreeListNodeArgs args) { this.OnNodeExpanded(args); this.NodeExpanded?.Invoke(this, args); }
         private void _TreeListNative_NodeCollapsed(object sender, DxTreeListNodeArgs args) { this.OnNodeCollapsed(args); this.NodeCollapsed?.Invoke(this, args); }
@@ -507,6 +519,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// TreeList má Mouseclick na ikonu pro určitý Node
         /// </summary>
         public event DxTreeListNodeHandler NodeIconClick;
+        /// <summary>
+        /// TreeList má Mouseclick na text pro určitý Node
+        /// </summary>
+        /// <param name="args">Data o události</param>
+        protected virtual void OnNodeItemClick(DxTreeListNodeArgs args) { }
+        /// <summary>
+        /// TreeList má Mouseclick na text pro určitý Node
+        /// </summary>
+        public event DxTreeListNodeHandler NodeItemClick;
         /// <summary>
         /// TreeList má Doubleclick na určitý Node
         /// </summary>
@@ -699,7 +720,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.MouseClick += _OnMouseClick;
             this.MouseUp += _OnMouseUp;
             this.PopupMenuShowing += _OnPopupMenuShowing;
-            this.DoubleClick += _OnDoubleClick;
+            this.MouseDoubleClick += _OnMouseDoubleClick;
             this.ShownEditor += _OnShownEditor;
             this.ValidatingEditor += _OnValidatingEditor;
             this.BeforeCheckNode += _OnBeforeCheckNode;
@@ -735,10 +756,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="columns"></param>
         private void _PrepareColumns(ITreeListColumn[] columns)
         {
+            // Hodnota parametru 'showHeaders': buď explicitně definovaná z proměnné '__VisibleHeaders', anebo defaultní odpovídající implicitnímu sloupci
             if (columns is null || columns.Length == 0)
-                _PrepareColumns(new ITreeListColumn[] { new DataTreeListColumn() { Caption = "", CellContentAlignment = HorzAlignment.Near, CanEdit = true, Width = 4096 } }, false);
+                _PrepareColumns(new ITreeListColumn[] { new DataTreeListColumn() { Caption = "   ", CellContentAlignment = HorzAlignment.Near, CanEdit = true, Width = 4096 } }, (this.__VisibleHeaders ?? false));
             else
-                _PrepareColumns(columns, true);
+                _PrepareColumns(columns, (this.__VisibleHeaders ?? (columns.Length > 1)));         // ShowHeaders: pokud je explicitně zadáno pak dle zadání, nebo implicitně pokud je více než jeden sloupec...
         }
         /// <summary>
         /// Vytvoří sloupce pro zobrazení dat TreeListu podle daného zadání (sloupce <paramref name="columns"/> a zobrazení záhlaví <paramref name="showHeaders"/>.
@@ -755,6 +777,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             var treeColumns = this.Columns;
             treeColumns.Clear();
+
+            var dxWrap = (this.WordWrap ? DevExpress.Utils.WordWrap.Wrap : DevExpress.Utils.WordWrap.NoWrap);   // Zalamování textu v řádku
 
             int colIndex = 0;
             foreach (var column in columns)
@@ -776,15 +800,18 @@ namespace Noris.Clients.Win.Components.AsolDX
                     dxCol.AppearanceCell.TextOptions.HAlignment = column.CellContentAlignment.Value;
                 if (column.HeaderContentAlignment.HasValue)
                     dxCol.AppearanceHeader.TextOptions.HAlignment = column.HeaderContentAlignment.Value;
+
                 if (column.EnableHtmlFormat)
                 {
-                    // this.RepositoryItems.Add(new DevExpress.XtraEditors.Repository.RepositoryItemHypertextLabel());
-                    dxCol.ColumnEdit = new DevExpress.XtraEditors.Repository.RepositoryItemHypertextLabel();
+                    var repoLabel = new DevExpress.XtraEditors.Repository.RepositoryItemHypertextLabel();
+                    repoLabel.Appearance.TextOptions.WordWrap = dxWrap;
+                    dxCol.ColumnEdit = repoLabel;
                 }
+                dxCol.AppearanceCell.TextOptions.WordWrap = dxWrap;
 
                 dxCol.OptionsFilter.AutoFilterCondition = DevExpress.XtraTreeList.Columns.AutoFilterCondition.Contains;
                 dxCol.OptionsColumn.AllowSort = false;
-                dxCol.OptionsColumn.AllowEdit = false;               // Bude si řídit konkrétní buňka
+                dxCol.OptionsColumn.AllowEdit = false;               // Bude si řídit konkrétní buňka, viz metoda _SetCellEditable
 
                 dxCol.Tag = column;                                  // Definice se může hodit...
 
@@ -803,17 +830,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="columnIndex"></param>
         private void _SetCellEditable(ITreeListNode nodeInfo, int? columnIndex)
         {
+            _IsCellEditable(nodeInfo, columnIndex, true);
+        }
+        /// <summary>
+        /// Zjistí, zda danou buňku (node <paramref name="nodeInfo"/> a sloupec na indexu <paramref name="columnIndex"/>) lze editovat.
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        /// <param name="columnIndex"></param>
+        /// <param name="storeToColumnOptions">Volitelně hodnotu editovatelnosti vepsat do OptionsCOlumn.AllowEdit odpovídajícího sloupce</param>
+        private bool _IsCellEditable(ITreeListNode nodeInfo, int? columnIndex, bool storeToColumnOptions = false)
+        {
+            bool result = false;
             if (columnIndex.HasValue && columnIndex.Value >= 0 && columnIndex.Value < this.Columns.Count)
             {
+                // Aby bylo možno editovat data v buňce, musí být editovatelný celý TreeList, současně i konkrétní Node a současně i sloupec, a sloupec nesmí být HTML Formatting:
+                bool treeIsEditable = this.IsEditable;
+
                 bool nodeIsEditable = (nodeInfo != null ? nodeInfo.CanEdit : false);
 
                 var column = this.Columns[columnIndex.Value];
                 bool columnIsEditable = column.OptionsColumn.AllowEdit;
                 if (column.Tag is ITreeListColumn iColumn)
-                    columnIsEditable = iColumn.CanEdit;
-                
-                column.OptionsColumn.AllowEdit = nodeIsEditable && columnIsEditable;
+                    columnIsEditable = iColumn.CanEdit && !iColumn.EnableHtmlFormat;
+
+                result = treeIsEditable && nodeIsEditable && columnIsEditable;
+                if (storeToColumnOptions)
+                    // Výsledek vepsat do aktuálního sloupce = měním tedy charakter celého sloupce, ale dělám to při vstupu do každé buňky, takže se mohou lišit hodnoty per buňka:
+                    column.OptionsColumn.AllowEdit = treeIsEditable && nodeIsEditable && columnIsEditable;
             }
+            return result;
         }
         /// <summary>
         /// Připraví nastavení pro klientský RowFilter v tomto TreeListu
@@ -953,6 +998,46 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Gets or sets a value that specifies how the focus rectangle is painted.
         /// </summary>
         public DevExpress.XtraTreeList.DrawFocusRectStyle FocusRectStyle { get { return OptionsView.FocusRectStyle; } set { OptionsView.FocusRectStyle = value; } }
+        /// <summary>
+        /// Viditelné záhlaví<br/>
+        /// Pro jeden sloupec se běžně nepoužívá, pro více sloupců je vhodné. Je vhodné pro řešení TreeList s jedním sloupcem explicitně deklarovaným (např. kvůli zarovnání nebo HTML formátování).
+        /// Výchozí hodnota je false.
+        /// </summary>
+        public bool VisibleHeaders 
+        { 
+            get
+            {   // Hodnota this.__VisibleHeaders můýe být null, pak se záhlaví sloupců zobrazuje implicitně: pro jeden sloupec ne, pro více explicitních sloupců ano.
+                // V tom případě vracím fyzickou hodnotu.
+                return this.__VisibleHeaders ?? this.OptionsView.ShowColumns; 
+            } 
+            set 
+            {
+                this.__VisibleHeaders = value;
+                this.OptionsView.ShowColumns = value;
+            }
+        }
+        private bool? __VisibleHeaders;
+        /// <summary>
+        /// Umožní zalomit dlouhý text buňky do více řádků pod sebe. Default = false.
+        /// </summary>
+        public bool WordWrap 
+        { 
+            get { return this.__WordWrap; }
+            set 
+            {
+                this.__WordWrap = value;
+
+                var dxWrap = (value ? DevExpress.Utils.WordWrap.Wrap : DevExpress.Utils.WordWrap.NoWrap);
+                foreach (var dxColumn in this.Columns)
+                {
+                    dxColumn.AppearanceCell.TextOptions.WordWrap = dxWrap;
+                    if (dxColumn.ColumnEdit != null && dxColumn.ColumnEdit is DevExpress.XtraEditors.Repository.RepositoryItemHypertextLabel repoLabel)
+                        repoLabel.Appearance.TextOptions.WordWrap = dxWrap;
+                }
+            } 
+        }
+        private bool __WordWrap;
+
         /// <summary>
         /// TreeList povoluje provést MultiSelect = označit více nodů.
         /// Default = false.
@@ -1589,10 +1674,16 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (nodeInfo != null)
                 {
                     if (_IsMainActionRunEvent(nodeInfo, hit.IsInCell))
-                        this.RaiseNodeIconClick(nodeInfo, hit.PartType);
+                        this.RaiseNodeIconClick(nodeInfo, hit.PartType, e.Button);
                     if (_IsMainActionExpandCollapse(nodeInfo, hit.IsInCell))
                         this._NodeExpandCollapse(hit);
                 }
+            }
+            else if (hit.IsInCell)
+            {
+                ITreeListNode nodeInfo = this.FocusedNodeInfo;
+                if (nodeInfo != null)
+                    this.RaiseNodeItemClick(nodeInfo, this.FocusedColumnIndex, hit.PartType, e.Button);
             }
         }
         /// <summary>
@@ -1631,14 +1722,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _OnDoubleClick(object sender, EventArgs e)
+        private void _OnMouseDoubleClick(object sender, MouseEventArgs e)
         {
             var hit = _GetNodeHit();
             ITreeListNode nodeInfo = this.FocusedNodeInfo;
             if (nodeInfo != null)
             {
                 if (_IsMainActionRunEvent(nodeInfo, hit.IsInCell))
-                    this.RaiseNodeDoubleClick(nodeInfo, this.FocusedColumnIndex, hit.PartType);
+                    this.RaiseNodeDoubleClick(nodeInfo, this.FocusedColumnIndex, hit.PartType, e.Button);
                 if (_IsMainActionExpandCollapse(nodeInfo, hit.IsInCell))
                     this._NodeExpandCollapse(hit);
             }
@@ -3787,11 +3878,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="nodeInfo"></param>
         /// <param name="partType"></param>
-        private void RaiseNodeIconClick(ITreeListNode nodeInfo, TreeListPartType partType)
+        /// <param name="mouseButtons"></param>
+        private void RaiseNodeIconClick(ITreeListNode nodeInfo, TreeListPartType partType, MouseButtons mouseButtons)
         {
             if (_SilentMode) return;
 
-            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, null, TreeListActionType.NodeIconClick, partType, this.IsActiveEditor);
+            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, null, TreeListActionType.NodeIconClick, partType, this.IsActiveEditor, mouseButtons: mouseButtons);
             OnNodeIconClick(args);
             NodeIconClick?.Invoke(this, args);
         }
@@ -3806,16 +3898,42 @@ namespace Noris.Clients.Win.Components.AsolDX
         public event DxTreeListNodeHandler NodeIconClick;
 
         /// <summary>
+        /// Vyvolá metodu <see cref="OnNodeItemClick(DxTreeListNodeArgs)"/> a event <see cref="NodeItemClick"/>
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        /// <param name="columnIndex"></param>
+        /// <param name="partType"></param>
+        /// <param name="mouseButtons"></param>
+        private void RaiseNodeItemClick(ITreeListNode nodeInfo, int? columnIndex, TreeListPartType partType, MouseButtons mouseButtons)
+        {
+            if (_SilentMode) return;
+
+            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, columnIndex, TreeListActionType.NodeItemClick, partType, this.IsActiveEditor, mouseButtons: mouseButtons);
+            OnNodeItemClick(args);
+            NodeItemClick?.Invoke(this, args);
+        }
+        /// <summary>
+        /// TreeList má ItemClick na určitý Node
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnNodeItemClick(DxTreeListNodeArgs args) { }
+        /// <summary>
+        /// TreeList má ItemClick na určitý Node
+        /// </summary>
+        public event DxTreeListNodeHandler NodeItemClick;
+
+        /// <summary>
         /// Vyvolá metodu <see cref="OnNodeDoubleClick(DxTreeListNodeArgs)"/> a event <see cref="NodeDoubleClick"/>
         /// </summary>
         /// <param name="nodeInfo"></param>
         /// <param name="columnIndex"></param>
         /// <param name="partType"></param>
-        private void RaiseNodeDoubleClick(ITreeListNode nodeInfo, int? columnIndex, TreeListPartType partType)
+        /// <param name="mouseButtons"></param>
+        private void RaiseNodeDoubleClick(ITreeListNode nodeInfo, int? columnIndex, TreeListPartType partType, MouseButtons mouseButtons)
         {
             if (_SilentMode) return;
 
-            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, columnIndex, TreeListActionType.NodeDoubleClick, partType, this.IsActiveEditor);
+            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, columnIndex, TreeListActionType.NodeDoubleClick, partType, this.IsActiveEditor, mouseButtons: mouseButtons);
             OnNodeDoubleClick(args);
             NodeDoubleClick?.Invoke(this, args);
         }
@@ -4190,9 +4308,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="partType"></param>
         /// <param name="isActiveEditor"></param>
         /// <param name="editedValue"></param>
-        public DxTreeListNodeArgs(ITreeListNode node, int? columnIndex, TreeListActionType action, TreeListPartType partType, bool isActiveEditor, object editedValue = null)
+        /// <param name="mouseButtons"></param>
+        public DxTreeListNodeArgs(ITreeListNode node, int? columnIndex, TreeListActionType action, TreeListPartType partType, bool isActiveEditor, object editedValue = null, System.Windows.Forms.MouseButtons? mouseButtons = null)
         {
             this.MousePosition = Control.MousePosition;
+            this.MouseButtons = mouseButtons;
+            this.ModifierKeys = Control.ModifierKeys;
             this.Node = node;
             this.ColumnIndex = columnIndex;
             this.Action = action;
@@ -4204,6 +4325,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Absolutní pozice myši v době události
         /// </summary>
         public Point MousePosition { get; private set; }
+        /// <summary>
+        /// Knoflík myši, nebo null pokud je o event bez myši
+        /// </summary>
+        public MouseButtons? MouseButtons { get; private set; }
+        /// <summary>
+        /// Klávesy Ctrl + Shift + Alt
+        /// </summary>
+        public Keys ModifierKeys { get; private set; }
         /// <summary>
         /// Data o aktuálním nodu
         /// </summary>
@@ -4310,6 +4439,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         SelectedNodesChanged,
         /// <summary>NodeIconClick</summary>
         NodeIconClick,
+        /// <summary>NodeItemClick</summary>
+        NodeItemClick,
         /// <summary>NodeDoubleClick</summary>
         NodeDoubleClick,
         /// <summary>NodeExpanded</summary>
@@ -4925,7 +5056,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         bool CanEdit { get; }
         /// <summary>
-        /// Sloupec může zobrazovat HTML formát
+        /// Sloupec může zobrazovat zjednodušený HTML formát?<br/>
+        /// Viz: <see href="https://docs.devexpress.com/WindowsForms/4874/common-features/html-text-formatting"/>
         /// </summary>
         bool EnableHtmlFormat { get; }
         /// <summary>

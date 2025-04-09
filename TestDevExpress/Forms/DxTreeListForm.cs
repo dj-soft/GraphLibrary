@@ -16,7 +16,7 @@ using DevExpress.XtraBars.Docking2010.DragEngine;
 
 namespace TestDevExpress.Forms
 {
-    #region Formulář s nastavením vlastností nativní DevExpress = výchozí property
+    #region DxNativeTreeListForm : Formulář s nastavením vlastností nativní DevExpress = výchozí property
     [RunFormInfo(groupText: "Testovací okna", buttonText: "Native TreeList", buttonOrder: 60, buttonImage: "svgimages/dashboards/inserttreeview.svg", buttonToolTip: "Otevře okno TreeList s parametry", tabViewToolTip: "Okno zobrazující nový TreeList")]
     internal class DxNativeTreeListForm : DxTreeListForm
     {
@@ -190,7 +190,7 @@ namespace TestDevExpress.Forms
         internal DevExpress.XtraTreeList.TreeListEditorShowMode SettingsEditorShowMode { get; set; }
     }
     #endregion
-    #region Formulář s nastavením vlastností AsolDX = agregátní property
+    #region DxAsolDxTreeListForm : Formulář s nastavením vlastností AsolDX = agregátní property
     [RunFormInfo(groupText: "Testovací okna", buttonText: "AsolDX TreeList", buttonOrder: 61, buttonImage: "svgimages/dashboards/inserttreeview.svg", buttonToolTip: "Otevře okno TreeList s parametry", tabViewToolTip: "Okno zobrazující nový TreeList")]
     internal class DxAsolDxTreeListForm : DxTreeListForm
     {
@@ -204,6 +204,8 @@ namespace TestDevExpress.Forms
             flowLayout.StartNewColumn(110, 220);
             CreateTitle(flowLayout, "Agregované vlastnosti AsolDX TreeListu");
 
+            CheckVisibleHeaders = CreateToggle(flowLayout, ControlActionType.ClearColumns | ControlActionType.SetTreeProperties, "VisibleHeaders", "Visible Headers", "Viditelné záhlaví", "Pro jeden sloupec se běžně nepoužívá, pro více sloupců je vhodné. Je vhodné pro řešení TreeList s jedním sloupcem explicitně deklarovaným (např. kvůli zarovnání nebo HTML formátování).");
+            ComboRowFilterBoxMode = CreateCombo(flowLayout, ControlActionType.SetTreeProperties, "RowFilterMode", "Row Filter Mode:", typeof(RowFilterBoxMode));
             CheckMultiSelect = CreateToggle(flowLayout, ControlActionType.SetTreeProperties, "MultiSelect", "MultiSelectEnabled", "MultiSelectEnabled = výběr více nodů", "Zaškrtnuto: lze vybrat více nodů (Ctrl, Shift). Sledujme pak události.");
             TextNodeIndent = CreateSpinner(flowLayout, ControlActionType.SetTreeProperties, "NodeIndent", "Node indent:", 0, 100, "Node indent = odstup jednotlivých úrovní stromu", "Počet pixelů mezi nody jedné úrovně a jejich podřízenými nody, doprava.");
             ComboLevelLineType = CreateCombo(flowLayout, ControlActionType.SetTreeProperties, "LevelLineType", "LevelLineType:", typeof(TreeLevelLineType));
@@ -216,6 +218,8 @@ namespace TestDevExpress.Forms
             //  Konvertují se z/na string do Settings;
             //  Konvertují se z/na konkrétní typ do ovládacích Checkboxů a comboboxů atd do Params;
 
+            SetingsVisibleHeaders = ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SetingsVisibleHeaders", ""));
+            SetingsRowFilterBoxMode = ConvertToRowFilterBoxMode(DxComponent.Settings.GetRawValue(SettingsKey, "SetingsRowFilterBoxMode", ""));
             SetingsMultiSelect = ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SetingsMultiSelect", ""));
             SettingsNodeIndent = ConvertToInt32(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsNodeIndent", ""), 25);
             SettingsLevelLineType = ConvertToLevelLineType(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsLevelLineType", ""));
@@ -225,6 +229,8 @@ namespace TestDevExpress.Forms
         protected override void OnSettingSaveTreeListProperties()
         {
             // Do DxComponent.Settings   z Properties
+            DxComponent.Settings.SetRawValue(SettingsKey, "SetingsVisibleHeaders", ConvertToString(SetingsVisibleHeaders));
+            DxComponent.Settings.SetRawValue(SettingsKey, "SetingsRowFilterBoxMode", ConvertToString(SetingsRowFilterBoxMode));
             DxComponent.Settings.SetRawValue(SettingsKey, "SetingsMultiSelect", ConvertToString(SetingsMultiSelect));
             DxComponent.Settings.SetRawValue(SettingsKey, "SettingsNodeIndent", ConvertToString(SettingsNodeIndent));
             DxComponent.Settings.SetRawValue(SettingsKey, "SettingsLevelLineType", ConvertToString(SettingsLevelLineType));
@@ -234,6 +240,8 @@ namespace TestDevExpress.Forms
         protected override void OnSettingShowTreeListProperties()
         {
             // Do vizuálních checkboxů   z Properties
+            CheckVisibleHeaders.Checked = SetingsVisibleHeaders;
+            SelectComboItem(ComboRowFilterBoxMode, SetingsRowFilterBoxMode);
             CheckMultiSelect.Checked = SetingsMultiSelect;
             TextNodeIndent.Value = SettingsNodeIndent;
             SelectComboItem(ComboLevelLineType, SettingsLevelLineType);
@@ -243,6 +251,8 @@ namespace TestDevExpress.Forms
         protected override void OnSettingCollectTreeListProperties()
         {
             // Do datových Settings    z Controlů
+            SetingsVisibleHeaders = CheckVisibleHeaders.Checked;
+            SetingsRowFilterBoxMode = ConvertToRowFilterBoxMode(ComboRowFilterBoxMode, SetingsRowFilterBoxMode);
             SetingsMultiSelect = CheckMultiSelect.Checked;
             SettingsNodeIndent = (int)TextNodeIndent.Value;
             SettingsLevelLineType = ConvertToLevelLineType(ComboLevelLineType, SettingsLevelLineType);
@@ -252,6 +262,8 @@ namespace TestDevExpress.Forms
         protected override void OnSettingApplyTreeListProperties()
         {
             // Do TreeListu     z Properties
+            DxTreeList.VisibleHeaders = SetingsVisibleHeaders;
+            DxTreeList.FilterBoxMode = SetingsRowFilterBoxMode;
             DxTreeList.MultiSelectEnabled = SetingsMultiSelect;
             DxTreeList.TreeNodeIndent = SettingsNodeIndent;
             DxTreeList.LevelLineType = SettingsLevelLineType;
@@ -259,6 +271,8 @@ namespace TestDevExpress.Forms
             DxTreeList.EditorStartMode = SettingsEditorStartMode;
         }
 
+        protected DxCheckEdit CheckVisibleHeaders;
+        protected DxImageComboBoxEdit ComboRowFilterBoxMode;
         protected DxCheckEdit CheckMultiSelect;
         protected DxSpinEdit TextNodeIndent;
         protected DxImageComboBoxEdit ComboLevelLineType;
@@ -268,6 +282,9 @@ namespace TestDevExpress.Forms
         // Properties jsou uváděny v typech odpovídajících TreeListu.
         //  Konvertují se z/na string do Settings;
         //  Konvertují se z/na konkrétní typ do ovládacích Checkboxů a comboboxů atd do Params;
+
+        internal bool SetingsVisibleHeaders { get; set; }
+        internal RowFilterBoxMode SetingsRowFilterBoxMode { get; set; }
         internal bool SetingsMultiSelect { get; set; }
         internal int SettingsNodeIndent { get; set; }
         internal TreeLevelLineType SettingsLevelLineType { get; set; }
@@ -427,6 +444,7 @@ namespace TestDevExpress.Forms
             DxTreeList.SelectedNodesChanged += TreeList_SelectedNodesChanged;
             DxTreeList.ShowContextMenu += TreeList_ShowContextMenu;
             DxTreeList.NodeIconClick += TreeList_IconClick;
+            DxTreeList.NodeItemClick += TreeList_ItemClick;
             DxTreeList.NodeDoubleClick += _TreeList_DoubleClick;
             DxTreeList.NodeExpanded += TreeList_AnyAction;
             DxTreeList.NodeCollapsed += TreeList_AnyAction;
@@ -475,6 +493,10 @@ namespace TestDevExpress.Forms
                 ShowDXPopupMenu(Control.MousePosition);
         }
         protected void TreeList_IconClick(object sender, DxTreeListNodeArgs args)
+        {
+            TreeList_AnyAction(sender, args);
+        }
+        protected void TreeList_ItemClick(object sender, DxTreeListNodeArgs args)
         {
             TreeList_AnyAction(sender, args);
         }
@@ -664,7 +686,7 @@ namespace TestDevExpress.Forms
             DxTreeList.AddLazyLoadNodes(parentNodeId, nodes);            //  a pošleme je do TreeView.
         }
         #endregion
-        #region Vytváření nodů, smazání a plnění dat do TreeListu
+        #region Vytváření sloupců a nodů, smazání a plnění dat do TreeListu
         /// <summary>
         /// Naplní nějaká výchozí data po otevření okna
         /// </summary>
@@ -684,7 +706,7 @@ namespace TestDevExpress.Forms
         /// </summary>
         protected void ClearTreeColumns()
         {
-            CreateSingleColumns();
+            CheckColumns(true);
         }
         /// <summary>
         /// Naplní data do TreeListu pro daný požadavek na cca počet nodů a počet sub-úrovní
@@ -728,32 +750,40 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Metoda zajistí, že TreeList bude mít připravené správné sloupce podle předvolby <see cref="SettingsUseMultiColumns"/>
         /// </summary>
-        protected void CheckColumns()
+        protected void CheckColumns(bool force = false)
         {
             bool useMultiColumns = SettingsUseMultiColumns;
             var dxColumns = DxTreeList.TreeListNative.DxColumns;
-            if (useMultiColumns && (dxColumns is null || dxColumns.Length < 3))
-                CreateMultiColumns();
-            else if (!useMultiColumns && (dxColumns != null && dxColumns.Length >= 3))
-                CreateSingleColumns();
+            bool useHtmlFormat = SettingsUseHtmlFormat;
+            bool isChangeHtmlColumns = (CurrentColumnHtmlFormat != useHtmlFormat);
+            if (useMultiColumns && (force || isChangeHtmlColumns || (dxColumns is null || dxColumns.Length < 3)))
+                CreateMultiColumns(useHtmlFormat);
+            else if (!useMultiColumns && (force || isChangeHtmlColumns || (dxColumns != null && dxColumns.Length >= 3)))
+                CreateSingleColumns(useHtmlFormat);
+            CurrentColumnHtmlFormat = useHtmlFormat;
         }
         /// <summary>
         /// Metoda zajistí, že TreeList bude mít připravené správné Multi sloupce
         /// </summary>
-        protected void CreateMultiColumns()
+        protected void CreateMultiColumns(bool useHtmlFormat)
         {
             List<DataTreeListColumn> dxColumns = new List<DataTreeListColumn>();
             dxColumns.Add(new DataTreeListColumn() { Caption = "Text", Width = 220, MinWidth = 150, CanEdit = true });
             dxColumns.Add(new DataTreeListColumn() { Caption = "Informace", Width = 120, MinWidth = 80, HeaderContentAlignment = DevExpress.Utils.HorzAlignment.Center, CellContentAlignment = DevExpress.Utils.HorzAlignment.Far, CanEdit = false });
-            dxColumns.Add(new DataTreeListColumn() { Caption = "Popisek", Width = 160, MinWidth = 100, CanEdit = true, EnableHtmlFormat = true });
+            dxColumns.Add(new DataTreeListColumn() { Caption = "Popisek", Width = 160, MinWidth = 100, CanEdit = true, EnableHtmlFormat = useHtmlFormat });
             DxTreeList.DxColumns = dxColumns.ToArray();
         }
         /// <summary>
         /// Metoda zajistí, že TreeList bude mít připravené správné Single sloupce
         /// </summary>
-        protected void CreateSingleColumns()
+        protected void CreateSingleColumns(bool useHtmlFormat)
         {
-            DxTreeList.DxColumns = null;
+            if (useHtmlFormat)
+                // SingleColumn, používající HTML => musím jej explicitně vytvořit, abych do něj mohl vepsat EnableHtmlFormat = true :
+                DxTreeList.DxColumns = new DataTreeListColumn[] { new DataTreeListColumn() { Caption = "   ", Width = 4000, CanEdit = false, EnableHtmlFormat = useHtmlFormat } };
+            else
+                // Default nám vyhovuje null, komponenta se vygeneruje prázdný sloupec:
+                DxTreeList.DxColumns = null;
         }
         /// <summary>
         /// Vytvoří nody
@@ -875,6 +905,12 @@ namespace TestDevExpress.Forms
                     childNode.CanCheck = true;
                     childNode.Checked = (Randomizer.Rand.Next(20) > 16);
 
+                    // Jeden sloupec a HTML:
+                    if (!SettingsUseMultiColumns && SettingsUseHtmlFormat)
+                    {
+                        childNode.Text = applyHtmlFormat(childNode.Text);
+                    }
+
                     // Více sloupců?
                     if (SettingsUseMultiColumns)
                     {
@@ -897,11 +933,30 @@ namespace TestDevExpress.Forms
                 if (!this.SettingsUseHtmlFormat) return Randomizer.GetSentence(1, 3);
 
                 string cellText = Randomizer.GetSentence(3, 7);
-                var words = cellText.Split(' ');
+                return applyHtmlFormat(cellText);
+            }
+            string applyHtmlFormat(string text)
+            {
+                if (Randomizer.IsTrue(50)) return text;                        // Polovina nodů NEBUDE mít HTML formátování
+
+                var words = text.Split(' ');
                 int changeIndex = Randomizer.Rand.Next(words.Length);
-                string code = Randomizer.GetItem("b", "u", "i");
+
                 string word = words[changeIndex];
-                words[changeIndex] = $"<{code}>{word}</{code}>";
+                string code = Randomizer.GetItem("b", "u", "i", "backcolor", "color", "b", "u", "i", "b", "u", "i", "a");       // Opakování prvků není "Matka moudrosti", ale navýšení pravděpodobnosti jejich výskytu :-)
+                string style = "";
+                if (code == "backcolor")
+                    style = "=" + Randomizer.GetColorHex(160, 250);
+                if (code == "color")
+                    style = "=" + Randomizer.GetColorHex(16, 80);
+
+                if (code == "a")
+                {
+                    string url = Randomizer.GetItem("seznam.cz", "idnes.cz", "google.com", "yahoo.com", "ceskatelevize.cz", "assecosolutions.cz");
+                    style = $" href=\"https://www.{url}\"";                     // <a href="https://www.assecosolutions.cz">assecosolutions.cz</a>
+                    word = url;
+                }
+                words[changeIndex] = $"<{code}{style}>{word}</{code}>";        // <color=#152e10">Slovo</color>
                 return words.ToOneString(" ");
             }
         }
@@ -1000,6 +1055,10 @@ namespace TestDevExpress.Forms
         /// Maximální počet úrovní
         /// </summary>
         protected int SampleLevelsCount;
+        /// <summary>
+        /// Stav HTML format aplikovaný do sloupců
+        /// </summary>
+        protected bool CurrentColumnHtmlFormat;
         #endregion
         #region Ikony: druhy ikon, seznam názvů podle druhů, generátor ikony, barvy, stylu
         /// <summary>
@@ -1420,6 +1479,7 @@ namespace TestDevExpress.Forms
             CheckUseCheckBoxes = CreateToggle(flowLayout, ControlActionType.ClearNodes, "UseCheckBoxes", "Use Check Boxes", "Použít pro některé koncové nody CheckBoxy", "Některé nody, které nemají podřízenou úroveň, budou zobrazeny jako CheckBox");
             CheckUseMultiColumns = CreateToggle(flowLayout, ControlActionType.ClearColumns, "UseMultiColumns", "Use Multi Columns", "Zobrazit více sloupců v TreeListu", "TreeList pak může připomínat BrowseGrid se stromem");
             CheckUseHtmlFormat = CreateToggle(flowLayout, ControlActionType.ClearColumns, "UseHtmlFormat", "Use HTML Format", "Použít HTMl formát pro formátování obsahu nodů", "Některé nody ve sloupci 3 ('Popisek') budou obsahovat HTML tagy a budou tak zobrazovány");
+            CheckUseWordWrap = CreateToggle(flowLayout, ControlActionType.SetTreeProperties, "UseWordWrap", "Use Word Wrap", "Zalamovat text na více řádků", "Zaškrtnuto = dlouhé texty budou zobrazeny ve více řádcích pod sebou");
 
             flowLayout.CurrentY += 25;
 
@@ -1600,13 +1660,12 @@ namespace TestDevExpress.Forms
                 ClearTreeList();
             if (actions.HasFlag(ControlActionType.ClearColumns))
                 ClearTreeColumns();
-            if (actions.HasFlag(ControlActionType.SetTreeProperties))
+
+            if (SettingsLoaded)
             {
-                if (SettingsLoaded)
-                {
+                if (actions.HasFlag(ControlActionType.SetTreeProperties))
                     SettingApply();
-                    SettingSave();
-                }
+                SettingSave();
             }
         }
         /// <summary>
@@ -1695,6 +1754,7 @@ namespace TestDevExpress.Forms
         protected DxCheckEdit CheckUseCheckBoxes;
         protected DxCheckEdit CheckUseMultiColumns;
         protected DxCheckEdit CheckUseHtmlFormat;
+        protected DxCheckEdit CheckUseWordWrap;
 
         protected DxCheckEdit CheckLogToolTipChanges;
         #endregion
@@ -1730,6 +1790,7 @@ namespace TestDevExpress.Forms
             SettingsUseCheckBoxes = ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsUseCheckBoxes", ""));
             SettingsUseMultiColumns = ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsUseMultiColumns", ""));
             SettingsUseHtmlFormat = ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsUseHtmlFormat", ""));
+            SettingsUseWordWrap = ConvertToBool(DxComponent.Settings.GetRawValue(SettingsKey, "SettingsUseWordWrap", ""));
         }
         protected virtual void OnSettingLoadLog()
         {
@@ -1761,6 +1822,7 @@ namespace TestDevExpress.Forms
             DxComponent.Settings.SetRawValue(SettingsKey, "SettingsUseCheckBoxes", ConvertToString(SettingsUseCheckBoxes));
             DxComponent.Settings.SetRawValue(SettingsKey, "SettingsUseMultiColumns", ConvertToString(SettingsUseMultiColumns));
             DxComponent.Settings.SetRawValue(SettingsKey, "SettingsUseHtmlFormat", ConvertToString(SettingsUseHtmlFormat));
+            DxComponent.Settings.SetRawValue(SettingsKey, "SettingsUseWordWrap", ConvertToString(SettingsUseWordWrap));
         }
         protected virtual void OnSettingSaveLog()
         {
@@ -1795,6 +1857,7 @@ namespace TestDevExpress.Forms
             CheckUseCheckBoxes.Checked = SettingsUseCheckBoxes;
             CheckUseMultiColumns.Checked = SettingsUseMultiColumns;
             CheckUseHtmlFormat.Checked = SettingsUseHtmlFormat;
+            CheckUseWordWrap.Checked = SettingsUseWordWrap;
         }
         protected virtual void OnSettingShowLog()
         {
@@ -1826,6 +1889,7 @@ namespace TestDevExpress.Forms
             SettingsUseCheckBoxes = CheckUseCheckBoxes.Checked;
             SettingsUseMultiColumns = CheckUseMultiColumns.Checked;
             SettingsUseHtmlFormat = CheckUseHtmlFormat.Checked;
+            SettingsUseWordWrap = CheckUseWordWrap.Checked;
         }
         protected virtual void OnSettingCollectLog()
         {
@@ -1850,6 +1914,7 @@ namespace TestDevExpress.Forms
         }
         protected virtual void OnSettingApplyNodeProperties()
         {
+            this.DxTreeList.WordWrap = SettingsUseWordWrap;
         }
         protected virtual void OnSettingApplyLog()
         {
@@ -1866,7 +1931,7 @@ namespace TestDevExpress.Forms
         internal bool SettingsUseCheckBoxes { get; set; }
         internal bool SettingsUseMultiColumns { get; set; }
         internal bool SettingsUseHtmlFormat { get; set; }
-
+        internal bool SettingsUseWordWrap { get; set; }
         internal bool SetingsLogToolTipChanges { get; set; }
 
         protected bool SettingsLoaded;
