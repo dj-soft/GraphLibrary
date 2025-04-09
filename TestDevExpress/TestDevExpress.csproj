@@ -283,6 +283,9 @@
     <Compile Include="Components\Obsoletes\OldDataFormData.cs" />
     <Compile Include="Components\Randomizer.cs" />
     <Compile Include="Components\ThreadManager.cs" />
+    <Compile Include="Forms\AdHocForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Forms\DataFormV1.cs">
       <SubType>Form</SubType>
     </Compile>
