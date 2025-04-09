@@ -444,7 +444,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _DxMainPanel_ClientSizeChanged(object sender, EventArgs e)
         {
-            RunDxMainContentDoLayout();
+            if (IsInitialized)
+            {
+                RunDxMainContentDoLayout();
+            }
         }
         /// <summary>
         /// Provede přípravu obsahu hlavního panelu <see cref="DxRibbonForm.DxMainPanel"/>. Panel je již vytvořen a umístěn v okně, Ribbon i StatusBar existují.<br/>
@@ -459,12 +462,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected override void RunDxMainContentDoLayout()
         {
-            var previousSize = __DxMainPanelLastClientSize;
-            var currentSize = __DxMainPanel?.ClientSize;
-            bool isSizeChanged = ((previousSize.HasValue != currentSize.HasValue) || (previousSize.HasValue && currentSize.HasValue && previousSize.Value != currentSize.Value));
-            __DxMainPanelLastClientSize = currentSize;
+            if (IsInitialized)
+            {
+                var previousSize = __DxMainPanelLastClientSize;
+                var currentSize = __DxMainPanel?.ClientSize;
+                bool isSizeChanged = ((previousSize.HasValue != currentSize.HasValue) || (previousSize.HasValue && currentSize.HasValue && previousSize.Value != currentSize.Value));
+                __DxMainPanelLastClientSize = currentSize;
 
-            this.DxMainContentDoLayout(isSizeChanged);
+                this.DxMainContentDoLayout(isSizeChanged);
+            }
         }
         /// <summary>
         /// Main panel pro data
@@ -844,6 +850,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             ((System.ComponentModel.ISupportInitialize)(_DxRibbon)).EndInit();
 
+            // Uživatelský layout:
+            this.IsInitialized = true;
+            this.RunDxMainContentDoLayout();
+
             // Form Layout:
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -877,7 +887,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected virtual void RunDxMainContentDoLayout()
         {
-            this.DxMainContentDoLayout(true);
+            if (IsInitialized)
+                this.DxMainContentDoLayout(true);
         }
         /// <summary>
         /// Provede se po změně velikosti ClientSize panelu <see cref="DxRibbonForm.DxMainPanel"/> i v jiných situacích.
@@ -908,8 +919,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return homePage;
         }
+        /// <summary>
+        /// Inicializace byla dokončena?
+        /// </summary>
+        protected bool IsInitialized { get { return _IsInitialized; } set { _IsInitialized = value; } }
         private DxRibbonControl _DxRibbon;
         private DxRibbonStatusBar _DxStatusBar;
+        private bool _IsInitialized;
         #endregion
         #region FormRibbonVisibility
         /// <summary>

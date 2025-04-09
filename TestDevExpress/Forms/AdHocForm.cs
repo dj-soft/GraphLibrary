@@ -29,8 +29,8 @@ namespace TestDevExpress.Forms
             ResourceImageSizeType size = ResourceImageSizeType.Small;
 
 
-            NodeImageSetType setState = NodeImageSetType.Formats;
-            NodeImageSetType setSelect = NodeImageSetType.Actions;
+            NodeImageSetType setSuffix = NodeImageSetType.Suffix;
+            NodeImageSetType setMain = NodeImageSetType.Formats;
 
             TreeList.StateImageList = DxComponent.GetVectorImageList(size);
             TreeList.SelectImageList = DxComponent.GetVectorImageList(size);
@@ -42,25 +42,42 @@ namespace TestDevExpress.Forms
 
             object[] nodeData;
 
-            nodeData = new object[] { "A0", "A1" };
-            var node0 = TreeList.AppendNode(nodeData, null);
-            node0.ImageIndex = DxComponent.GetVectorImageIndex(GetMainImageName(setSelect), size);
-            node0.SelectImageIndex = -1;
-            node0.StateImageIndex = DxComponent.GetVectorImageIndex(GetMainImageName(setState), size);
-
-            nodeData = new object[] { "B0", "B1" };
-            var node1 = TreeList.AppendNode(nodeData, null);
-            node1.ImageIndex = DxComponent.GetVectorImageIndex(GetMainImageName(setSelect), size);
-            node1.SelectImageIndex = -1;
-            node1.StateImageIndex = DxComponent.GetVectorImageIndex(GetMainImageName(setState), size);
-
-            nodeData = new object[] { "C0", "C1" };
-            var node2 = TreeList.AppendNode(nodeData, node0);
-            node2.ImageIndex = DxComponent.GetVectorImageIndex(GetMainImageName(setSelect), size);
-            node2.SelectImageIndex = -1;
-            node2.StateImageIndex = DxComponent.GetVectorImageIndex(GetMainImageName(setState), size);
+            int cnt0 = Randomizer.Rand.Next(10, 40);
+            for (int i0 = 0; i0 < cnt0; i0++)
+            {
+                var node0 = prepareNode(null);
+                if (Randomizer.IsTrue(60))
+                {
+                    int cnt1 = Randomizer.Rand.Next(3, 10);
+                    for (int i1 = 0; i1 < cnt1; i1++)
+                    {
+                        var node1 = prepareNode(node0);
+                    }
+                    if (Randomizer.IsTrue(60))
+                        node0.Expand();
+                }
+            }
 
             this.DxMainPanel.Controls.Add(TreeList);
+
+
+            DevExpress.XtraTreeList.Nodes.TreeListNode prepareNode(DevExpress.XtraTreeList.Nodes.TreeListNode parent)
+            {
+                nodeData = new object[] { Randomizer.GetSentence(6, true) };
+                var node = TreeList.AppendNode(nodeData, parent);
+
+                int suffixIndex = (Randomizer.IsTrue(25) ? DxComponent.GetVectorImageIndex(GetImageName(setSuffix), size) : -1);
+                node.ImageIndex = suffixIndex;
+                node.SelectImageIndex = suffixIndex;
+
+                node.StateImageIndex = DxComponent.GetVectorImageIndex(GetImageName(setMain), size);
+                return node;
+            }
+        }
+
+        protected override void DxMainContentDoLayout(bool isSizeChanged)
+        {
+            TreeList.Bounds = new Rectangle(12, 12, 350, this.DxMainPanel.ClientSize.Height - 24);
         }
         DevExpress.XtraTreeList.TreeList TreeList;
 
@@ -72,30 +89,12 @@ namespace TestDevExpress.Forms
         /// Vrátí náhodný Main obrázek z dané sady <paramref name="imageSet"/>.
         /// </summary>
         /// <returns></returns>
-        protected virtual string GetMainImageName(NodeImageSetType imageSet)
+        protected virtual string GetImageName(NodeImageSetType imageSet)
         {
-            var images = _GetMainImageNames(imageSet);
+            var images = _GetImageNames(imageSet);
             if (images != null && images.Length > 0)
                 return Randomizer.GetItem(images);
             return null;
-        }
-        /// <summary>
-        /// Vrať náhodný Suffix image name
-        /// </summary>
-        /// <returns></returns>
-        protected virtual string GetSuffixImageName()
-        {
-            if (__ImagesSuffix is null)
-            {
-                __ImagesSuffix = new string[]
-                {
-                    "svgimages/xaf/action_navigation_history_back.svg",
-                    "svgimages/xaf/action_navigation_history_forward.svg",
-                    "svgimages/xaf/action_navigation_next_object.svg",
-                    "svgimages/xaf/action_navigation_previous_object.svg"
-                };
-            }
-            return Randomizer.GetItem(__ImagesSuffix);
         }
         /// <summary>
         /// Vrať náhodnou světlou barvu pro BackColor
@@ -166,7 +165,7 @@ namespace TestDevExpress.Forms
         /// </summary>
         /// <param name="imageSet"></param>
         /// <returns></returns>
-        private string[] _GetMainImageNames(NodeImageSetType imageSet)
+        private string[] _GetImageNames(NodeImageSetType imageSet)
         {
             switch (imageSet)
             {
@@ -432,6 +431,16 @@ namespace TestDevExpress.Forms
     "svgimages/spreadsheet/createstackedlinechart.svg"
 };
                     return __ImagesSpreadsheet;
+                case NodeImageSetType.Suffix:
+                    if (__ImagesSuffix is null)
+                        __ImagesSuffix = new string[]
+{
+    "svgimages/icon%20builder/actions_addcircled.svg",
+    "svgimages/icon%20builder/actions_deletecircled.svg",
+    "svgimages/icon%20builder/actions_checkcircled.svg",
+    "svgimages/icon%20builder/actions_removecircled.svg"
+};
+                    return __ImagesSuffix;
             }
             return null;
         }
@@ -451,8 +460,10 @@ namespace TestDevExpress.Forms
             Actions,
             Formats,
             Charts,
-            Spreadsheet
+            Spreadsheet,
+            Suffix
         }
+
         protected NewNodePositionType __NewNodePosition = NewNodePositionType.None;
         protected enum NewNodePositionType { None, First, Last }
         #endregion
