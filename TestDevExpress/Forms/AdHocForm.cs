@@ -29,11 +29,20 @@ namespace TestDevExpress.Forms
             ResourceImageSizeType size = ResourceImageSizeType.Small;
 
 
-            NodeImageSetType setSuffix = NodeImageSetType.Suffix;
             NodeImageSetType setMain = NodeImageSetType.Formats;
+            NodeImageSetType setSuffix = NodeImageSetType.Suffix;
 
-            TreeList.StateImageList = DxComponent.GetVectorImageList(size);
-            TreeList.SelectImageList = DxComponent.GetVectorImageList(size);
+            // Varianty:
+            //  1 = používám oba ImageListy (Select + State). Do Select (vlevo) dávám Suffix ikonu, do State (vpravo) dávám Main ikonu
+            //  2 = používám oba ImageListy (Select + State). Do Select (vlevo) dávám Main ikonu, do State (vpravo) dávám Suffix ikonu
+            //  3 = používám pouze Select ImageList (vlevo), ale nemám State ImageList State (vpravo). Do Select (vlevo) dávám Suffix ikonu, do State (vpravo) dávám Main ikonu (ale nebude vidět)
+            qqq;
+            int varianta = 3;
+
+            if (varianta == 1 || varianta == 2 || varianta == 3)
+                TreeList.SelectImageList = DxComponent.GetVectorImageList(size);             // Ikony vlevo
+            if (varianta == 1 || varianta == 2 || varianta == 4)
+                TreeList.StateImageList = DxComponent.GetVectorImageList(size);              // Ikony vpravo
 
             TreeList.Columns.Clear();
             TreeList.Columns.Add(new DevExpress.XtraTreeList.Columns.TreeListColumn() { Caption = "Test sloupec", Width = 4000, UnboundDataType = typeof(string), Visible = true });
@@ -66,11 +75,43 @@ namespace TestDevExpress.Forms
                 nodeData = new object[] { Randomizer.GetSentence(6, true) };
                 var node = TreeList.AppendNode(nodeData, parent);
 
-                int suffixIndex = (Randomizer.IsTrue(25) ? DxComponent.GetVectorImageIndex(GetImageName(setSuffix), size) : -1);
-                node.ImageIndex = suffixIndex;
-                node.SelectImageIndex = suffixIndex;
+                int mainIndex = (Randomizer.IsTrue(65) ? DxComponent.GetVectorImageIndex(GetImageName(setMain), size) : -1);
+                int suffixIndex = (Randomizer.IsTrue(45) ? DxComponent.GetVectorImageIndex(GetImageName(setSuffix), size) : -1);
 
-                node.StateImageIndex = DxComponent.GetVectorImageIndex(GetImageName(setMain), size);
+                switch (varianta)
+                {
+                    case 1:
+                    case 3:
+                    case 5:
+                        // Suffix ikona je vlevo, a pokud není pak je tam díra;
+                        // Main ikona je vždy vpravo, a pokud není pak je tam díra;
+
+                        // Ikona vlevo = Suffix:
+                        node.ImageIndex = suffixIndex;
+                        node.SelectImageIndex = suffixIndex;
+
+                        // Ikona vpravo = Main:
+                        node.StateImageIndex = mainIndex;
+
+                        break;
+
+                    case 2:
+                    case 4:
+                    case 6:
+                        // Suffix ikona je vpravo, a pokud není pak je tam díra;
+                        // Main ikona je vždy vlevo, a pokud není pak je tam díra;
+
+                        // Ikona vlevo = Main:
+                        node.ImageIndex = mainIndex;
+                        node.SelectImageIndex = mainIndex;
+
+                        // Ikona vpravo = Suffix:
+                        node.StateImageIndex = suffixIndex;
+
+                        break;
+
+                }
+
                 return node;
             }
         }
