@@ -21,10 +21,17 @@ namespace TestDevExpress.Forms
     {
         protected override void DxMainContentPrepare()
         {
+            this.Text = "AdHoc test TreeListu a ikon";
 
             base.DxMainContentPrepare();
 
             TreeList = new DevExpress.XtraTreeList.TreeList() { Bounds = new Rectangle(12, 12, 350, 480) };
+            TreeList.OptionsView.ShowTreeLines = DevExpress.Utils.DefaultBoolean.True;
+            TreeList.OptionsView.TreeLineStyle = DevExpress.XtraTreeList.LineStyle.Percent50;
+            TreeList.OptionsView.ShowHorzLines = false;
+            TreeList.OptionsView.ShowVertLines = false;
+
+
 
             ResourceImageSizeType size = ResourceImageSizeType.Small;
 
@@ -33,15 +40,22 @@ namespace TestDevExpress.Forms
             NodeImageSetType setSuffix = NodeImageSetType.Suffix;
 
             // Varianty:
-            //  1 = používám oba ImageListy (Select + State). Do Select (vlevo) dávám Suffix ikonu, do State (vpravo) dávám Main ikonu
-            //  2 = používám oba ImageListy (Select + State). Do Select (vlevo) dávám Main ikonu, do State (vpravo) dávám Suffix ikonu
-            //  3 = používám pouze Select ImageList (vlevo), ale nemám State ImageList State (vpravo). Do Select (vlevo) dávám Suffix ikonu, do State (vpravo) dávám Main ikonu (ale nebude vidět)
-            qqq;
-            int varianta = 3;
+            //  1 = používám oba ImageListy (Select + State). Do Select (vlevo) dávám Suffix ikonu, do State (vpravo) dávám Main ikonu.
+            //  2 = používám oba ImageListy (Select + State). Do Select (vlevo) dávám Main ikonu, do State (vpravo) dávám Suffix ikonu.
+            //  3 = používám pouze Select ImageList (vlevo), ale nemám State ImageList (vpravo). Do Select (vlevo) dávám Suffix ikonu, do State (vpravo) dávám Main ikonu (ale nebude vidět).
+            //  4 = používám pouze Select ImageList (vlevo), ale nemám State ImageList (vpravo). Do Select (vlevo) dávám Main ikonu, do State (vpravo) dávám Suffix ikonu (ale nebude vidět).
+            //  5 = používám pouze State ImageList (vpravo), ale nemám Select ImageList (vlevo). Do Select (vlevo) dávám Suffix ikonu (ale nebude vidět), do State (vpravo) dávám Main ikonu.
+            //  6 = používám pouze State ImageList (vpravo), ale nemám Select ImageList (vlevo). Do Select (vlevo) dávám Main ikonu (ale nebude vidět), do State (vpravo) dávám Suffix ikonu.
+            //  7 = Nepoužívám žádný ImageList. Do Select (vlevo) dávám Suffix ikonu, do State (vpravo) dávám Main ikonu. Nebude vidět ani jedna.
+            //  8 = Nepoužívám žádný ImageList. Do Select (vlevo) dávám Main ikonu, do State (vpravo) dávám Suffix ikonu. Nebude vidět ani jedna.
+            // Nephrite:
+            //  Vlevo je "dodatková ikona" (zámek), vpravo "Main ikona" (typ dokladu).
+            //  Tedy varianta 1.
+            int varianta = 1;
 
-            if (varianta == 1 || varianta == 2 || varianta == 3)
+            if (varianta == 1 || varianta == 2 || varianta == 3 || varianta == 4)
                 TreeList.SelectImageList = DxComponent.GetVectorImageList(size);             // Ikony vlevo
-            if (varianta == 1 || varianta == 2 || varianta == 4)
+            if (varianta == 1 || varianta == 2 || varianta == 5 || varianta == 6)
                 TreeList.StateImageList = DxComponent.GetVectorImageList(size);              // Ikony vpravo
 
             TreeList.Columns.Clear();
@@ -83,6 +97,7 @@ namespace TestDevExpress.Forms
                     case 1:
                     case 3:
                     case 5:
+                    case 7:
                         // Suffix ikona je vlevo, a pokud není pak je tam díra;
                         // Main ikona je vždy vpravo, a pokud není pak je tam díra;
 
@@ -98,6 +113,7 @@ namespace TestDevExpress.Forms
                     case 2:
                     case 4:
                     case 6:
+                    case 8:
                         // Suffix ikona je vpravo, a pokud není pak je tam díra;
                         // Main ikona je vždy vlevo, a pokud není pak je tam díra;
 

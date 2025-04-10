@@ -8,13 +8,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 using System.Windows.Forms;
 using System.Drawing;
+using System.Diagnostics;
 
 using DevExpress.Utils;
 using DevExpress.XtraTreeList.Nodes;
-using System.Diagnostics;
+using DevExpress.XtraTreeList.ViewInfo;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -73,12 +73,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public TreeListCheckBoxMode CheckBoxMode { get { return _TreeListNative.CheckBoxMode; } set { _TreeListNative.CheckBoxMode = value; } }
         /// <summary>
-        /// Režim kreslení ikon u nodů.
-        /// Výchozí je <see cref="TreeListImageMode.ImageStatic"/> = zobrazuje se standardní ikona <see cref="ITextItem.ImageName"/> 
-        /// (ale nezobrazují se ikony <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>).
-        /// Aplikační kód musí plnit jména ikon do <see cref="ITextItem.ImageName"/>, <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>.
+        /// Pozice ikon v rámci TreeListu
         /// </summary>
-        public TreeListImageMode ImageMode { get { return _TreeListNative.ImageMode; } set { _TreeListNative.ImageMode = value; } }
+        public TreeImagePositionType ImagePositionType { get { return _TreeListNative.ImagePositionType; } set { _TreeListNative.ImagePositionType = value; } }
         /// <summary>
         /// Velikost obrázků u nodů. Lze setovat jen když TreeList nemá žádné nody = pokud <see cref="NodesCount"/> == 0
         /// </summary>
@@ -743,7 +740,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.CheckBoxMode = TreeListCheckBoxMode.None;
             this._NodeImageType = ResourceContentType.None;
             this._NodeImageSize = ResourceImageSizeType.Small;
-            this._ImageMode = TreeListImageMode.ImageStatic;
+            this._ImagePositionType = TreeImagePositionType.None;
         }
         #endregion
         #region Sloupce - jednoduché zobrazení Treelistu anebo zobrazení se sloupci
@@ -1343,6 +1340,57 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (!showSpace) return 0;
                 return base.GetActualCheckBoxWidth(node);
             }
+            /// <summary>
+            /// TreeList začíná interní výpočty layoutu, resetujeme si pracovní příznaky
+            /// </summary>
+            public override void CalcViewInfo()
+            {
+                ResetImageSizeFlags();
+                base.CalcViewInfo();
+            }
+            /// <summary>
+            /// Na začátku výpočtu layoutu resetujeme příznak platnosti rozměrů, OnDemand je pak v <see cref="CheckImageSizes"/> vypočteme
+            /// </summary>
+            protected void ResetImageSizeFlags()
+            {
+                __ImageSizeIsValid = false;
+            }
+            /// <summary>
+            /// Pokud dosud nejsou validovány hodnoty v ResourceInfo pro ActualSelectImageWidth a ActualStateImageWidth, provede to nyní
+            /// </summary>
+            protected void CheckImageSizes()
+            {
+                if (!__ImageSizeIsValid)
+                {
+                    __ImageSizeIsValid = true;
+
+                    int selectWidth = this.RC.SelectImageSize.Width;                                                   // Velikost ikony, její fyzický rozměr (16x16, 24x24, 32x32)
+                    int stateWidth = this.RC.StateImageSize.Width;
+                    this.RC.ActualSelectImageWidth = (selectWidth == 0 ? 0 : selectWidth + (selectWidth / 8));         // Šířka prostoru vyhrzená pro ikonu: Treelist ji dává == TreeNodeIndent, což může být klidně 35px, 
+                    this.RC.ActualStateImageWidth = (stateWidth == 0 ? 0 : stateWidth + (stateWidth / 8));             //   a pak v tom volném prostoru ikona 16x16 vypadá jako ztracený vojáček v poli...       =>  Dáme jen velikost ikony + malý okraj (2px pro malou, 4px pro velkou...)
+                }
+            }
+            private bool __ImageSizeIsValid;
+            /// <summary>
+            /// TreeList bude počítat souřadnice SelectImage
+            /// </summary>
+            /// <param name="rInfo"></param>
+            /// <param name="indentBounds"></param>
+            protected override void CalcSelectImageBounds(RowInfo rInfo, Rectangle indentBounds)
+            {
+                CheckImageSizes();
+                base.CalcSelectImageBounds(rInfo, indentBounds);
+            }
+            /// <summary>
+            /// TreeList bude počítat souřadnice StateImage
+            /// </summary>
+            /// <param name="rInfo"></param>
+            /// <param name="indentBounds"></param>
+            protected override void CalcStateImageBounds(RowInfo rInfo, Rectangle indentBounds)
+            {
+                CheckImageSizes();
+                base.CalcStateImageBounds(rInfo, indentBounds);
+            }
         }
         /// <summary>
         /// Volá se před Check node
@@ -1435,7 +1483,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 DxComponent.ApplyItemStyle(args.Appearance, nodeInfo);
         }
         /// <summary>
-        /// Specifika krteslení CheckBox pro nodes
+        /// Specifika kreslení CheckBox pro nodes
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
@@ -2643,11 +2691,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             treeNode.SetValue(0, nodeInfo.Text);
             treeNode.Checked = nodeInfo.CanCheck && nodeInfo.NodeChecked;
 
-            int imageIndex = _GetImageIndex(nodeInfo.ImageDynamicDefault, -1);
-            treeNode.ImageIndex = imageIndex;                                                      // ImageIndex je vlevo, a může se změnit podle stavu Seleted
-            treeNode.SelectImageIndex = _GetImageIndex(nodeInfo.ImageDynamicSelected, imageIndex); // SelectImageIndex je ikona ve stavu Nodes.Selected, zobrazená vlevo místo ikony ImageIndex
-            treeNode.StateImageIndex = _GetImageIndex(nodeInfo.ImageName, -1);                     // StateImageIndex je vpravo, a nereaguje na stav Selected
-
+            _FillTreeNodeImages(treeNode, nodeInfo);
+           
             if (canExpand) treeNode.Expanded = nodeInfo.IsExpanded;                                // Expanded se nastavuje pouze z Refreshe (tam má smysl), ale ne při tvorbě (tam ještě nemáme ChildNody)
         }
         /// <summary>
@@ -3660,16 +3705,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Obrázky - ImageListy, režim ImageMode, NodeImageType (Png / Svg), NodeImageSize (Small?)
         /// <summary>
-        /// Režim kreslení ikon u nodů.
-        /// Výchozí je <see cref="TreeListImageMode.ImageStatic"/> = zobrazuje se standardní ikona <see cref="ITextItem.ImageName"/> 
-        /// (ale nezobrazují se ikony <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>).
-        /// Aplikační kód musí plnit jména ikon do <see cref="ITextItem.ImageName"/>, <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>.
+        /// Pozice ikon v rámci TreeListu
         /// </summary>
-        public TreeListImageMode ImageMode
-        {
-            get { return _ImageMode; }
-            set { _ImageMode = value; _ImageListApply(); }
-        }
+        public TreeImagePositionType ImagePositionType { get { return _ImagePositionType; } set { _ImagePositionType = value; _ImagePositionApplyToImageLists(); } }
         /// <summary>
         /// Typ ikon: výchozí je <see cref="ResourceContentType.None"/>, lze nastavit jen na <see cref="ResourceContentType.Bitmap"/> nebo <see cref="ResourceContentType.Vector"/> a to jen když nejsou položky.
         /// Není povinné nastavovat, nastaví se podle typu prvního obrázku. Pak ale musí být všechny obrázky stejného typu.
@@ -3688,7 +3726,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         if (this.AllNodesCount == 0)
                         {
                             _NodeImageType = imageType;
-                            _ImageListApply();
+                            _ImagePositionApplyToImageLists();
                         }
                         else
                             throw new InvalidOperationException($"Value stored into TreeList.NodeImageType can be set only when TreeList is empty, current TreeList has {this.AllNodesCount} nodes.");
@@ -3714,7 +3752,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (this.AllNodesCount == 0)
                     {
                         _NodeImageSize = sizeType;
-                        _ImageListApply();
+                        _ImagePositionApplyToImageLists();
                     }
                     else
                         throw new InvalidOperationException($"Value stored into TreeList.NodeImageSize can be set only when TreeList is empty, current TreeList has {this.AllNodesCount} nodes.");
@@ -3743,30 +3781,71 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aplikuje režim obrázků do TreeListu
         /// </summary>
-        private void _ImageListApply()
+        private void _ImagePositionApplyToImageLists()
         {
-            if (this.InvokeRequired) { this.Invoke(new Action(_ImageListApply)); return; }
+            if (this.InvokeRequired) { this.Invoke(new Action(_ImagePositionApplyToImageLists)); return; }
 
             var imageList = _GetImageList();
-            switch (_ImageMode)
+            switch (_ImagePositionType)
             {
-                case TreeListImageMode.None:
+                case TreeImagePositionType.None:
+                    // Žádný obrázek:
                     this.SelectImageList = null;
                     this.StateImageList = null;
                     break;
-                case TreeListImageMode.ImageDynamic:
-                    this.SelectImageList = imageList;
-                    this.StateImageList = null;
-                    break;
-                case TreeListImageMode.ImageStatic:
+                case TreeImagePositionType.MainIconOnly:
+                    // Pouze Main ikona: tu budu dávat do StateImageList, a její ikony do TreeListNode.StateImageIndex (níže):
                     this.SelectImageList = null;
                     this.StateImageList = imageList;
                     break;
-                case TreeListImageMode.ImageBoth:
+                case TreeImagePositionType.SuffixAndMainIcon:
+                case TreeImagePositionType.MainAndSuffixIcon:
+                    // Obě ikony: budu potřebovat oba ImageListy, a ikony na správné pozice bude řešit navazující metoda (dole):
                     this.SelectImageList = imageList;
                     this.StateImageList = imageList;
                     break;
             }
+            // this.OptionsView.RowImagesShowMode = DevExpress.XtraTreeList.RowImagesShowMode.InIndent;
+            // Na tuto metodu navazuje metoda _FillTreeNodeImages() o pár řádků dole, která podle pozice (_ImagePositionType) do jednotlivých nodů vepisuje obrázky.
+        }
+        /// <summary>
+        /// Do dodaného vizuálního nodu <paramref name="treeNode"/> vepíše ikony z dat dodaných v <paramref name="nodeInfo"/>.
+        /// Ikony plní podle aktuálně nastavené pozice ikon v <see cref="_ImagePositionType"/>.
+        /// </summary>
+        /// <param name="treeNode"></param>
+        /// <param name="nodeInfo"></param>
+        private void _FillTreeNodeImages(TreeListNode treeNode, ITreeListNode nodeInfo)
+        {
+            // Navazuje na metodu o pár řádků nahoře _ImagePositionApplyToImageLists(), která podle pozice (_ImagePositionType) připravuje ImageListy.
+            int imageIndex = -1;
+            int selectImageIndex = -1;
+            int stateImageIndex = -1;
+            switch (_ImagePositionType)
+            {
+                case TreeImagePositionType.None:
+                    // Žádný obrázek:
+                    break;
+                case TreeImagePositionType.MainIconOnly:
+                    // Pouze Main ikona: tu budu dávat do StateImageList, a její ikony do TreeListNode.StateImageIndex (níže):
+                    stateImageIndex = _GetImageIndex(nodeInfo.ImageName);
+                    break;
+                case TreeImagePositionType.SuffixAndMainIcon:
+                    // Doleva (=do SelectImageList = do ImageIndex a do SelectImageIndex) budu dávat Suffix ikonu, doprava (=do StateImageList = do StateImageIndex) budu dávat Main ikonu:
+                    imageIndex = _GetImageIndex(nodeInfo.SuffixImageName);
+                    selectImageIndex = imageIndex;
+                    stateImageIndex = _GetImageIndex(nodeInfo.ImageName);
+                    break;
+                case TreeImagePositionType.MainAndSuffixIcon:
+                    // Obě ikony: budu potřebovat oba ImageListy, a ikony na správné pozice bude řešit navazující metoda (dole):
+                    // Doleva (=do SelectImageList = do ImageIndex a do SelectImageIndex) budu dávat Main ikonu, doprava (=do StateImageList = do StateImageIndex) budu dávat Suffix ikonu:
+                    imageIndex = _GetImageIndex(nodeInfo.ImageName);
+                    selectImageIndex = imageIndex;
+                    stateImageIndex = _GetImageIndex(nodeInfo.SuffixImageName);
+                    break;
+            }
+            treeNode.ImageIndex = imageIndex;                        // ImageIndex je vlevo, a může se změnit podle stavu Seleted
+            treeNode.SelectImageIndex = selectImageIndex;            // SelectImageIndex je ikona ve stavu Nodes.Selected, zobrazená vlevo místo ikony ImageIndex
+            treeNode.StateImageIndex = stateImageIndex;              // StateImageIndex je vpravo, a nereaguje na stav Selected
         }
         /// <summary>
         /// Vrátí patřičný objekt ImageListu nebo SvgListu pro aktuální typ a velikost.
@@ -3789,7 +3868,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageName"></param>
         /// <param name="defaultValue"></param>
         /// <returns></returns>
-        private int _GetImageIndex(string imageName, int defaultValue)
+        private int _GetImageIndex(string imageName, int defaultValue = -1)
         {
             int index = -1;
             if (!String.IsNullOrEmpty(imageName) && _PrepareImageListFor(imageName))
@@ -3825,7 +3904,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (this.AllNodesCount == 0 || _NodeImageType == ResourceContentType.None)
             {   // Dosud není určen typ obrázků, a nyní už typ obrázku víme:
                 _NodeImageType = contentType;
-                _ImageListApply();
+                _ImagePositionApplyToImageLists();
                 return true;
             }
             if (contentType == _NodeImageType) return true;          // Nová ikona (imageName) je stejného druhu, jaký už používáme (_NodeImageType) = to je v pořádku.
@@ -3837,9 +3916,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             return false;
         }
         /// <summary>
-        /// Zobrazované ikony
+        /// Pozice ikon v rámci TreeListu
         /// </summary>
-        private TreeListImageMode _ImageMode;
+        private TreeImagePositionType _ImagePositionType;
         /// <summary>
         /// Typ ikon: výchozí je <see cref="ResourceContentType.None"/>, lze nastavit jen na <see cref="ResourceContentType.Bitmap"/> nebo <see cref="ResourceContentType.Vector"/> a to jen když nejsou položky.
         /// </summary>
@@ -4525,28 +4604,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         FirstChildNode
     }
     /// <summary>
-    /// Jaké ikony bude TreeList zobrazovat - a rezervovat pro ně prostor
-    /// </summary>
-    public enum TreeListImageMode
-    {
-        /// <summary>
-        /// Žádná ikona
-        /// </summary>
-        None,
-        /// <summary>
-        /// Pouze ikona vlevo, dynamicky reaguje na stav Selected, přebírá se z <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>
-        /// </summary>
-        ImageDynamic,
-        /// <summary>
-        /// Pouze ikona vpravo, statická, přebírá se z <see cref="ITextItem.ImageName"/>
-        /// </summary>
-        ImageStatic,
-        /// <summary>
-        /// Obě ikony = <see cref="ImageDynamic"/> (dynamická, vlevo) i <see cref="ImageStatic"/> (statická vpravo)
-        /// </summary>
-        ImageBoth
-    }
-    /// <summary>
     /// Režim zobrazení CheckBoxů u nodu
     /// </summary>
     public enum TreeListCheckBoxMode
@@ -4771,8 +4828,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="isExpanded"></param>
         /// <param name="lazyExpandable"></param>
         /// <param name="imageName"></param>
-        /// <param name="imageNameSelected"></param>
-        /// <param name="imageNameStatic"></param>
+        /// <param name="suffixImageName"></param>
         /// <param name="toolTipTitle"></param>
         /// <param name="toolTipText"></param>
         /// <param name="fontSizeRatio"></param>
@@ -4782,7 +4838,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="mainClickAction"></param>
         public DataTreeListNode(string nodeId, string parentNodeId, string text,
             NodeItemType nodeType = NodeItemType.DefaultText, bool isEditable = false, bool canDelete = false, bool isExpanded = false, bool lazyExpandable = false,
-            string imageName = null, string imageNameSelected = null, string imageNameStatic = null, string toolTipTitle = null, string toolTipText = null,
+            string imageName = null, string suffixImageName = null, string toolTipTitle = null, string toolTipText = null,
             float? fontSizeRatio = null, FontStyle? fontStyleDelta = null, Color? backColor = null, Color? foreColor = null, NodeMainClickActionType? mainClickAction = null)
         {
             _Id = -1;
@@ -4794,9 +4850,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.CanDelete = canDelete;
             this.IsExpanded = isExpanded;
             this.LazyExpandable = lazyExpandable;
-            this.ImageDynamicDefault = imageName;
-            this.ImageDynamicSelected = imageNameSelected;
-            this.ImageName = imageNameStatic;
+            this.ImageName = imageName;
+            this.SuffixImageName = suffixImageName;
             this.ToolTipTitle = toolTipTitle;
             this.ToolTipText = toolTipText;
             this.FontSizeRatio = fontSizeRatio;
@@ -4874,17 +4929,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool NodeChecked { get { return this.Checked ?? false; } set { this.Checked = value; } }
         /// <summary>
-        /// Ikona základní, ta může reagovat na stav Selected (pak bude zobrazena ikona <see cref="ImageDynamicSelected"/>), zobrazuje se vlevo.
-        /// Pokud je změněna po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
-        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeListNative.RefreshNodes(IEnumerable{ITreeListNode})"/>.
+        /// Doplňková ikona. Její zobrazení se řídí hodnotou <see cref="DxTreeList.ImagePositionType"/>
         /// </summary>
-        public virtual string ImageDynamicDefault { get; set; }
-        /// <summary>
-        /// Ikona ve stavu Node.IsSelected, zobrazuje se místo ikony <see cref="ImageDynamicDefault"/>), zobrazuje se vlevo.
-        /// Pokud je změněna po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
-        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeListNative.RefreshNodes(IEnumerable{ITreeListNode})"/>.
-        /// </summary>
-        public virtual string ImageDynamicSelected { get; set; }
+        public virtual string SuffixImageName { get; set; }
         /// <summary>
         /// Uživatel může editovat text tohoto node, po ukončení editace je vyvolána událost <see cref="DxTreeListNative.NodeEdited"/>.
         /// Změnu této hodnoty není nutno refreshovat, načítá se po výběru konkrétního Node v TreeList a aplikuje se na něj.
@@ -5051,17 +5098,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         bool IsExpanded { get; set; }
         /// <summary>
-        /// Ikona základní, ta může reagovat na stav Selected (pak bude zobrazena ikona <see cref="ImageDynamicSelected"/>), zobrazuje se vlevo.
-        /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
-        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeListNative.RefreshNodes(IEnumerable{ITreeListNode})"/>.
+        /// Doplňková ikona. Její zobrazení se řídí hodnotou <see cref="DxTreeList.ImagePositionType"/>
         /// </summary>
-        string ImageDynamicDefault { get; }
-        /// <summary>
-        /// Ikona ve stavu Node.IsSelected, zobrazuje se místo ikony <see cref="ImageDynamicDefault"/>), zobrazuje se vlevo.
-        /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
-        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeListNative.RefreshNodes(IEnumerable{ITreeListNode})"/>.
-        /// </summary>
-        string ImageDynamicSelected { get; }
+        string SuffixImageName { get; }
         /// <summary>
         /// Node bude mít Child prvky, ale zatím nejsou dodány. 
         /// Node bude zobrazovat rozbalovací ikonu a jeden node s textem "Načítám data...", viz <see cref="DxTreeListNative.LazyLoadNodeText"/>.
@@ -5181,6 +5220,40 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Plná
         /// </summary>
         Solid
+    }
+    /// <summary>
+    /// Způsob práce s ikonami v TreeListu
+    /// </summary>
+    public enum TreeImagePositionType
+    {
+        /// <summary>
+        /// TreeList nebude mít žádnou ikonu. Nebude ani rezervováno místo pro ikonu, strom bude kompaktní.
+        /// </summary>
+        None,
+        /// <summary>
+        /// TreeList zobrazí pouze jednu ikonu, pochází z <see cref="ITextItem.ImageName"/>.
+        /// <para/>
+        /// Velikost ikon je řízena property <see cref="DxTreeList.NodeImageSize"/>.
+        /// </summary>
+        MainIconOnly,
+        /// <summary>
+        /// TreeList zobrazuje dvě ikony vedle sebe (každopádně pro ně rezervuje prostor).<br/>
+        /// První ikona vlevo je "Suffix" = je definovaná v <see cref="ITreeListNode.SuffixImageName"/>;<br/>
+        /// Druhá ikona vpravo je "Main" = pochází z <see cref="ITextItem.ImageName"/>.
+        /// <para/>
+        /// Toto je běžný default v Nephrite pro dynamické vztahy.
+        /// <para/>
+        /// Velikost ikon je řízena property <see cref="DxTreeList.NodeImageSize"/>.
+        /// </summary>
+        SuffixAndMainIcon,
+        /// <summary>
+        /// TreeList zobrazuje dvě ikony vedle sebe (každopádně pro ně rezervuje prostor).<br/>
+        /// První ikona vlevo je "Main" = pochází z <see cref="ITextItem.ImageName"/>;<br/>
+        /// Druhá ikona vpravo je "Suffix" = je definovaná v <see cref="ITreeListNode.SuffixImageName"/>.
+        /// <para/>
+        /// Velikost ikon je řízena property <see cref="DxTreeList.NodeImageSize"/>.
+        /// </summary>
+        MainAndSuffixIcon
     }
     /// <summary>
     /// Režim zahájení editace

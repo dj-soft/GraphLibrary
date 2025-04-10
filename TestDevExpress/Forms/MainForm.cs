@@ -4908,7 +4908,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
             _TreeList = new DxTreeList() { Dock = DockStyle.Fill };
             _TreeList.CheckBoxMode = TreeListCheckBoxMode.SpecifyByNode;
-            _TreeList.ImageMode = TreeListImageMode.ImageStatic;
+            _TreeList.ImagePositionType = TreeImagePositionType.MainAndSuffixIcon;
             _TreeList.LazyLoadNodeText = "Copak to tu asi bude?";
             _TreeList.LazyLoadNodeImageName = "hourglass_16";
             _TreeList.LazyLoadFocusNode = TreeListLazyLoadFocusNodeType.ParentNode;
@@ -5358,7 +5358,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                     totalCount++;
                     childNode.AddVoidCheckSpace = true;
                     childNode.ToolTipText = "Zadejte referenci nového prvku";
-                    childNode.ImageDynamicDefault = "list_add_3_16";
+                    childNode.SuffixImageName = "list_add_3_16";
                     break;
                 case NodeItemType.OnDoubleClickLoadNext:
                     text = "Načíst další záznamy";
@@ -5367,7 +5367,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                     childNode.FontStyle = FontStyle.Italic;
                     childNode.AddVoidCheckSpace = true;
                     childNode.ToolTipText = "Umožní načíst další sadu záznamů...";
-                    childNode.ImageDynamicDefault = "move_task_down_16";
+                    childNode.SuffixImageName = "move_task_down_16";
                     break;
                 case NodeItemType.DefaultText:
                     text = Randomizer.GetSentence(2, 5);
@@ -5383,7 +5383,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private void _FillNode(DataTreeListNode node)
         {
             if (GetRandomTrue(25))
-                node.ImageDynamicDefault = "object_locked_2_16";
+                node.SuffixImageName = "object_locked_2_16";
 
             // Ikony vektorové / bitmapové:
             if (_TreeListImageType == ResourceContentType.Vector)

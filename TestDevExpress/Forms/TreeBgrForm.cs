@@ -53,7 +53,7 @@ namespace TestDevExpress.Forms
             _TreeList = new DxTreeList()
             {
                 Dock = System.Windows.Forms.DockStyle.Fill,
-                ImageMode = TreeListImageMode.ImageStatic,
+                ImagePositionType = TreeImagePositionType.MainIconOnly,
                 NodeImageSize = ResourceImageSizeType.Small,
                 RootNodeVisible = true
             };
@@ -106,7 +106,7 @@ namespace TestDevExpress.Forms
             NodeItemType nodeType = NodeItemType.DefaultText;
             bool expanded = Randomizer.IsTrue(20);
 
-            DataTreeListNode node = new DataTreeListNode(nodeId, parentNodeId, text, nodeType, false, false, expanded, false, image, image, image, title, tool);
+            DataTreeListNode node = new DataTreeListNode(nodeId, parentNodeId, text, nodeType, false, false, expanded, false, image, image, title, tool);
             node.Tag = text;
 
             return node;
@@ -192,8 +192,7 @@ namespace TestDevExpress.Forms
                 string image = Randomizer.GetItem(_Images);
                 node.Text = (node.Tag as string) + suffix;
                 node.ImageName = image;
-                node.ImageDynamicDefault = image;
-                node.ImageDynamicSelected = image;
+                node.SuffixImageName = image;
 
                 int delay = Randomizer.Rand.Next(10, 150);
                 System.Threading.Thread.Sleep(delay);
