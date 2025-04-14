@@ -1794,7 +1794,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _OnPopupMenuShowing(object sender, DevExpress.XtraTreeList.PopupMenuShowingEventArgs e)
         {
-            if (e.MenuType != DevExpress.XtraTreeList.Menu.TreeListMenuType.Node || e.HitInfo is null) return;
+            bool isNodeMenu = (e.MenuType != DevExpress.XtraTreeList.Menu.TreeListMenuType.Node || e.MenuType != DevExpress.XtraTreeList.Menu.TreeListMenuType.User);
+            if (!isNodeMenu || e.HitInfo is null) return;
 
             this._ToolTipHide("OnPopupMenuShowing");
 
