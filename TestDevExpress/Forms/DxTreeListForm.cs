@@ -2571,7 +2571,7 @@ namespace TestDevExpress.Forms
 
         protected void AddToLog(string actionName, DxTreeListNodeArgs args, bool showValue = false)
         {
-            string value = (showValue ? ", Value: " + (args.EditedValue == null ? "NULL" : "'" + args.EditedValue.ToString() + "'") : "");
+            string value = (showValue ? $", Value change: '{args.EditedValueOld}' => '{args.EditedValueNew}'" : "");
             string column = (args.ColumnIndex.HasValue ? "; Column:" + args.ColumnIndex.Value.ToString() : "");
             AddToLog($"{actionName}: Node: {args.Node}{column}{value}");
         }
