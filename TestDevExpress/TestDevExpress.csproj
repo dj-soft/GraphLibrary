@@ -41,110 +41,110 @@
     <ApplicationIcon>TestDevExpress.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DevExpress.BonusSkins.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.BonusSkins.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.BonusSkins.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.BonusSkins.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Charts.v23.2.Core">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Charts.v23.2.Core.dll</HintPath>
+    <Reference Include="DevExpress.Charts.v24.2.Core">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.Charts.v24.2.Core.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Data.Desktop.v23.2">
+    <Reference Include="DevExpress.Data.Desktop.v24.2">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Data.Desktop.v23.2.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.Data.Desktop.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Data.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Data.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.Data.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.Data.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Diagram.v23.2.Core">
+    <Reference Include="DevExpress.Diagram.v24.2.Core">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Diagram.v23.2.Core.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.Diagram.v24.2.Core.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Dialogs.v23.2.Core">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Dialogs.v23.2.Core.dll</HintPath>
+    <Reference Include="DevExpress.Dialogs.v24.2.Core">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.Dialogs.v24.2.Core.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Docs.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Docs.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.Docs.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.Docs.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Drawing.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Drawing.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.Drawing.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.Drawing.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Images.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Images.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.Images.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.Images.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Office.v23.2.Core">
+    <Reference Include="DevExpress.Office.v24.2.Core">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Office.v23.2.Core.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.Office.v24.2.Core.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Pdf.v23.2.Core">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Pdf.v23.2.Core.dll</HintPath>
+    <Reference Include="DevExpress.Pdf.v24.2.Core">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.Pdf.v24.2.Core.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Pdf.v23.2.Drawing">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Pdf.v23.2.Drawing.dll</HintPath>
+    <Reference Include="DevExpress.Pdf.v24.2.Drawing">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.Pdf.v24.2.Drawing.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.PivotGrid.v23.2.Core">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.PivotGrid.v23.2.Core.dll</HintPath>
+    <Reference Include="DevExpress.PivotGrid.v24.2.Core">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.PivotGrid.v24.2.Core.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Printing.v23.2.Core">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Printing.v23.2.Core.dll</HintPath>
+    <Reference Include="DevExpress.Printing.v24.2.Core">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.Printing.v24.2.Core.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.RichEdit.v23.2.Core">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.RichEdit.v23.2.Core.dll</HintPath>
+    <Reference Include="DevExpress.RichEdit.v24.2.Core">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.RichEdit.v24.2.Core.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.RichEdit.v23.2.Export">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.RichEdit.v23.2.Export.dll</HintPath>
+    <Reference Include="DevExpress.RichEdit.v24.2.Export">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.RichEdit.v24.2.Export.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Sparkline.v23.2.Core">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Sparkline.v23.2.Core.dll</HintPath>
+    <Reference Include="DevExpress.Sparkline.v24.2.Core">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.Sparkline.v24.2.Core.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Utils.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Utils.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.Utils.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.Utils.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Utils.v23.2.UI">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.Utils.v23.2.UI.dll</HintPath>
+    <Reference Include="DevExpress.Utils.v24.2.UI">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.Utils.v24.2.UI.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.XtraBars.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraBars.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.XtraBars.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.XtraBars.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.XtraCharts.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraCharts.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.XtraCharts.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.XtraCharts.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.XtraCharts.v23.2.UI">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraCharts.v23.2.UI.dll</HintPath>
+    <Reference Include="DevExpress.XtraCharts.v24.2.UI">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.XtraCharts.v24.2.UI.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.XtraCharts.v23.2.Wizard">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraCharts.v23.2.Wizard.dll</HintPath>
+    <Reference Include="DevExpress.XtraCharts.v24.2.Wizard">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.XtraCharts.v24.2.Wizard.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.XtraDiagram.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraDiagram.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.XtraDiagram.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.XtraDiagram.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.XtraEditors.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraEditors.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.XtraEditors.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.XtraEditors.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.XtraGrid.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraGrid.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.XtraGrid.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.XtraGrid.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.XtraLayout.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraLayout.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.XtraLayout.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.XtraLayout.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.XtraNavBar.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraNavBar.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.XtraNavBar.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.XtraNavBar.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.XtraPdfViewer.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraPdfViewer.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.XtraPdfViewer.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.XtraPdfViewer.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.XtraPivotGrid.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraPivotGrid.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.XtraPivotGrid.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.XtraPivotGrid.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.XtraPrinting.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraPrinting.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.XtraPrinting.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.XtraPrinting.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.XtraRichEdit.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraRichEdit.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.XtraRichEdit.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.XtraRichEdit.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.XtraTreeList.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraTreeList.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.XtraTreeList.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.XtraTreeList.v24.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.XtraVerticalGrid.v23.2">
-      <HintPath>..\..\DevExpressDll\DX23.2\DevExpress.XtraVerticalGrid.v23.2.dll</HintPath>
+    <Reference Include="DevExpress.XtraVerticalGrid.v24.2">
+      <HintPath>..\..\DevExpressDll\DX24.2\DevExpress.XtraVerticalGrid.v24.2.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.Web.WebView2.Core, Version=1.0.2739.15, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL">
@@ -224,9 +224,7 @@
     </Compile>
     <Compile Include="AsolDX\DxWinReg.cs" />
     <Compile Include="AsolDX\News\AppState.cs" />
-    <Compile Include="AsolDX\News\DxControlsNew.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Include="AsolDX\News\DxControlsNew.cs" />
     <Compile Include="AsolDX\News\DxDiagramControl.cs">
       <SubType>Component</SubType>
     </Compile>

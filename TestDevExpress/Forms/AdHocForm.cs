@@ -25,17 +25,46 @@ namespace TestDevExpress.Forms
 
             base.DxMainContentPrepare();
 
+            PrepareTreeList();
+        }
+        protected override void DxMainContentDoLayout(bool isSizeChanged)
+        {
+            DoLayoutTreeList();
+        }
+
+        #region TreeList
+        protected void PrepareTreeList()
+        {
             TreeList = new DevExpress.XtraTreeList.TreeList() { Bounds = new Rectangle(12, 12, 350, 480) };
+            PrepareTreeListProperties();
+            PrepareTreeListNodes();
+        }
+        protected void PrepareTreeListProperties()
+        {
             TreeList.OptionsView.ShowTreeLines = DevExpress.Utils.DefaultBoolean.True;
             TreeList.OptionsView.TreeLineStyle = DevExpress.XtraTreeList.LineStyle.Percent50;
             TreeList.OptionsView.ShowHorzLines = false;
             TreeList.OptionsView.ShowVertLines = false;
+            TreeList.OptionsView.ShowFirstLines = false;
+            TreeList.OptionsView.ShowRoot = true;
 
+            TreeList.ViewStyle = DevExpress.XtraTreeList.TreeListViewStyle.TreeView;        // TreeList    TreeView
 
+            TreeList.TreeLevelWidth = 34;
+            FixSetTreeList();
 
+//          string optionsDump = DxTreeList.CreateOptionsDump(TreeList);
+        }
+
+        protected void FixSetTreeList()
+        {
+            TreeList.OptionsView.ShowIndentAsRowStyle = true;
+            TreeList.OptionsView.ShowHierarchyIndentationLines = DevExpress.Utils.DefaultBoolean.Default;
+            TreeList.OptionsView.ShowIndentAsRowStyle = false;
+        }
+        protected void PrepareTreeListNodes()
+        {
             ResourceImageSizeType size = ResourceImageSizeType.Small;
-
-
             NodeImageSetType setMain = NodeImageSetType.Formats;
             NodeImageSetType setSuffix = NodeImageSetType.Suffix;
 
@@ -83,6 +112,7 @@ namespace TestDevExpress.Forms
 
             this.DxMainPanel.Controls.Add(TreeList);
 
+            FixSetTreeList();
 
             DevExpress.XtraTreeList.Nodes.TreeListNode prepareNode(DevExpress.XtraTreeList.Nodes.TreeListNode parent)
             {
@@ -131,15 +161,13 @@ namespace TestDevExpress.Forms
                 return node;
             }
         }
-
-        protected override void DxMainContentDoLayout(bool isSizeChanged)
+        private void DoLayoutTreeList()
         {
-            TreeList.Bounds = new Rectangle(12, 12, 350, this.DxMainPanel.ClientSize.Height - 24);
+            if (TreeList != null)
+                TreeList.Bounds = new Rectangle(12, 12, 350, this.DxMainPanel.ClientSize.Height - 24);
         }
         DevExpress.XtraTreeList.TreeList TreeList;
-
-
-
+        #endregion
 
         #region Ikony: druhy ikon, seznam názvů podle druhů, generátor ikony, barvy, stylu
         /// <summary>

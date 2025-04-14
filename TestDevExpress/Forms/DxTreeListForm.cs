@@ -1504,6 +1504,9 @@ namespace TestDevExpress.Forms
             CreateTitle(flowLayout, "Logování");
             CheckLogToolTipChanges = CreateToggle(flowLayout, ControlActionType.None, "", "Log: ToolTipChange", "Logovat události ToolTipChange", "Zaškrtnuto: při pohybu myši se plní Log událostí.");
             CreateButton(flowLayout, 0, 200, 30, 38, "Smazat Log", LogClearBtnClick);
+
+            flowLayout.CurrentY += 20;
+            CreateButton(flowLayout, 0, 200, 30, 38, "Otisk nastavení do CLipboardu", OptionsDumpToClipbard);
             flowLayout.EndColumn();
         }
         protected DxTitleLabelControl CreateTitle(FlowLayout flowLayout, string text)
@@ -1686,7 +1689,9 @@ namespace TestDevExpress.Forms
             if (SettingsLoaded)
             {
                 if (actions.HasFlag(ControlActionType.SettingsApply))
+                {
                     SettingApply();
+                }
                 SettingSave();
             }
         }
@@ -1769,7 +1774,11 @@ namespace TestDevExpress.Forms
         {
             LogClear();
         }
-
+        protected virtual void OptionsDumpToClipbard(object sender, EventArgs e)
+        {
+            string text = this.DxTreeList.CreateOptionsDump();
+            System.Windows.Forms.Clipboard.SetText(text);
+        }
         protected DxImageComboBoxEdit ComboNodeImageSet;
         protected DxImageComboBoxEdit ComboImagePosition;
         protected DxCheckEdit CheckUseExactStyle;

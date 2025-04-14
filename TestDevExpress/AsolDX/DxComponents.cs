@@ -2380,7 +2380,13 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             checkEdit.SetToolTip(toolTipTitle, toolTipText, text);
 
-            if (checkedChanged != null) checkEdit.CheckedChanged += checkedChanged;
+            if (checkedChanged != null)
+            {
+                if (allowGrayed.HasValue && allowGrayed.Value)
+                    checkEdit.CheckStateChanged += checkedChanged;
+                else
+                    checkEdit.CheckedChanged += checkedChanged;
+            }
             if (parent != null) parent.Controls.Add(checkEdit);
             if (shiftY) y = y + checkEdit.Height + inst._DetailYSpaceText;
 

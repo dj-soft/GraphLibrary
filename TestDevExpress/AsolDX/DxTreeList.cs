@@ -223,6 +223,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _TreeListNative.Focus();
         }
+        /// <summary>
+        /// Refreshuje nastavení vzhledu po změnách. Ošetřuje nestabilitu DevExpress.
+        /// </summary>
+        public void FixRowStyleAfterChanges()
+        {
+            // DevExpress to mají rádi takhle:
+            this.TreeListNative.FixRowStyleAfterChanges();
+        }
+        /// <summary>
+        /// Vrátí string obsahující opis nastavení aktuálního TreeListu, pro porovnání různých stavů
+        /// </summary>
+        /// <returns></returns>
+        public string CreateOptionsDump() { return DxTreeListNative.CreateOptionsDump(this.TreeListNative); }
+        /// <summary>
+        /// Vrátí string obsahující opis nastavení daného TreeListu, pro porovnání různých stavů
+        /// </summary>
+        /// <param name="treeList"></param>
+        /// <returns></returns>
+        public static string CreateOptionsDump(DevExpress.XtraTreeList.TreeList treeList) { return DxTreeListNative.CreateOptionsDump(treeList); } 
         #endregion
         #region Nody DxTreeListNative: aktivní node, kolekce nodů, vyhledání, přidání, odebrání
         /// <summary>
@@ -762,9 +781,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             // Hodnota parametru 'showHeaders': buď explicitně definovaná z proměnné '__VisibleHeaders', anebo defaultní odpovídající implicitnímu sloupci
             if (columns is null || columns.Length == 0)
-                _PrepareColumns(new ITreeListColumn[] { new DataTreeListColumn() { IsEditable = true } }, (this.__VisibleHeaders ?? false));
+                _PrepareColumns(new ITreeListColumn[] { new DataTreeListColumn() { IsEditable = true } }, (this.__ColumnHeadersVisible ?? false));
             else
-                _PrepareColumns(columns, (this.__VisibleHeaders ?? (columns.Length > 1)));         // ShowHeaders: pokud je explicitně zadáno pak dle zadání, nebo implicitně pokud je více než jeden sloupec...
+                _PrepareColumns(columns, (this.__ColumnHeadersVisible ?? (columns.Length > 1)));         // ShowHeaders: pokud je explicitně zadáno pak dle zadání, nebo implicitně pokud je více než jeden sloupec...
         }
         /// <summary>
         /// Vytvoří sloupce pro zobrazení dat TreeListu podle daného zadání (sloupce <paramref name="columns"/> a zobrazení záhlaví <paramref name="showHeaders"/>.
@@ -801,9 +820,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 dxCol.Width = column.Width ?? 4000;
                 dxCol.MinWidth = (column.MinWidth ?? 0);
                 if (column.CellContentAlignment.HasValue)
+                {
                     dxCol.AppearanceCell.TextOptions.HAlignment = column.CellContentAlignment.Value;
+                    dxCol.AppearanceCell.Options.UseTextOptions = true;
+                }
                 if (column.HeaderContentAlignment.HasValue)
+                {
                     dxCol.AppearanceHeader.TextOptions.HAlignment = column.HeaderContentAlignment.Value;
+                    dxCol.AppearanceHeader.Options.UseTextOptions = true;
+                }
 
                 if (column.IsHtmlFormatted)
                 {
@@ -812,6 +837,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                     dxCol.ColumnEdit = repoLabel;
                 }
                 dxCol.AppearanceCell.TextOptions.WordWrap = dxWrap;
+                if (dxWrap == DevExpress.Utils.WordWrap.Wrap)
+                {
+                    dxCol.AppearanceCell.Options.UseTextOptions = true;
+                }
 
                 dxCol.OptionsFilter.AutoFilterCondition = DevExpress.XtraTreeList.Columns.AutoFilterCondition.Contains;
                 dxCol.OptionsColumn.AllowSort = false;
@@ -1021,15 +1050,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             get
             {   // Hodnota this.__VisibleHeaders může být null (pak se záhlaví sloupců zobrazuje implicitně: pro jeden sloupec ne, pro více explicitních sloupců ano).
                 // V tom případě vracím fyzickou hodnotu.
-                return this.__VisibleHeaders ?? this.OptionsView.ShowColumns; 
+                return this.__ColumnHeadersVisible ?? this.OptionsView.ShowColumns; 
             } 
             set 
             {
-                this.__VisibleHeaders = value;
+                this.__ColumnHeadersVisible = value;
                 this.OptionsView.ShowColumns = value;
             }
         }
-        private bool? __VisibleHeaders;
+        private bool? __ColumnHeadersVisible;
         /// <summary>
         /// Umožní zalomit dlouhý text buňky do více řádků pod sebe. Default = false.
         /// </summary>
@@ -2558,6 +2587,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             this.EndUnboundLoad();
+            this.FixRowStyleAfterChanges();
 
             if (preserveSelected) focusedNodeFullId = getValidActiveNode(selectedNodes, focusedNodeFullId);
 
@@ -3392,16 +3422,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {   // Zhasnout vodící linky je snadné:
                     this.OptionsView.ShowRoot = true;                          // Jinak není vidět ani ikona Expand/Collapse
                     this.OptionsView.ShowTreeLines = DefaultBoolean.False;
-                    this.OptionsView.ShowFirstLines = false;
                 }
                 else
                 {   // Hezké zobrazení TreeLines vyžaduje tuto sekvenci:
                     this.OptionsView.ShowTreeLines = DefaultBoolean.True;
-                    this.OptionsView.ShowFirstLines = true;
                     this.OptionsView.ShowRoot = true;                          // Jinak není vidět ani ikona Expand/Collapse
-                    this.OptionsView.ShowHierarchyIndentationLines = DefaultBoolean.False;         // True = linky se nekeslí
-                    this.OptionsView.ShowIndentAsRowStyle = true;
-                    this.OptionsView.ShowIndentAsRowStyle = false;             // DevExpress to mají rádi takhle...
                     switch (value)
                     {
                         case TreeLevelLineType.Percent50:
@@ -3414,8 +3439,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                             this.OptionsView.TreeLineStyle = DevExpress.XtraTreeList.LineStyle.Solid;
                             break;
                     }
-                    this.OptionsView.ShowIndentAsRowStyle = true;
-                    this.OptionsView.ShowIndentAsRowStyle = false;             // DevExpress to mají rádi takhle...
+
+                    FixRowStyleAfterChanges();
                 }
             }
         }
@@ -3519,9 +3544,81 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Node typu IsLazyChild je dočasně přidaný child node do těch nodů, jejichž Childs se budou načítat po rozbalení.
         /// </summary>
         private IEnumerable<ITreeListNode> _NodesStandard { get { return this._NodesId.Values.Where(p => !p.IsLazyChild).Select(p => p.NodeInfo); } }
+        /// <summary>
+        /// Refreshuje nastavení vzhledu po změnách. Ošetřuje nestabilitu DevExpress.
+        /// </summary>
+        public void FixRowStyleAfterChanges()
+        {
+            // DevExpress to mají rádi takhle:
+            if (!this.OptionsView.ShowIndentAsRowStyle)
+            {
+                this.OptionsView.ShowIndentAsRowStyle = true;
+                this.OptionsView.ShowHierarchyIndentationLines = DefaultBoolean.Default;
+                this.OptionsView.ShowIndentAsRowStyle = false;
+            }
+        }
         #endregion
         #region Vzhled, options - property a konvertory
+        /// <summary>
+        /// Vrátí string obsahující opis nastavení daného TreeListu, pro porovnání různých stavů
+        /// </summary>
+        /// <param name="treeList"></param>
+        /// <returns></returns>
+        public static string CreateOptionsDump(DevExpress.XtraTreeList.TreeList treeList)
+        {
+            string ignoredTypes = ";System.Drawing.Rectangle;System.Drawing.Point;System.Drawing.Size;System.Drawing.Font;System.Drawing.Color;System.Windows.Forms.Padding;";
 
+            StringBuilder sb = new StringBuilder();
+            addValues(treeList.OptionsView, "OptionsBehavior");
+            addValues(treeList.OptionsFilter, "OptionsBehavior");
+            addValues(treeList.OptionsLayout, "OptionsBehavior");
+            addValues(treeList.OptionsNavigation, "OptionsBehavior");
+            addValues(treeList.OptionsSelection, "OptionsBehavior");
+
+            addValues(treeList.OptionsBehavior, "OptionsBehavior");
+            addValues(treeList.OptionsClipboard, "OptionsBehavior");
+            addValues(treeList.OptionsCustomization, "OptionsBehavior");
+            addValues(treeList.OptionsDragAndDrop, "OptionsBehavior");
+            addValues(treeList.OptionsEditForm, "OptionsBehavior");
+            addValues(treeList.OptionsFind, "OptionsBehavior");
+            addValues(treeList.OptionsHtmlTemplate, "OptionsBehavior");
+            addValues(treeList.OptionsMenu, "OptionsBehavior");
+            addValues(treeList.OptionsPrint, "OptionsBehavior");
+            addValues(treeList.OptionsScrollAnnotations, "OptionsBehavior");
+
+            addValues(treeList, "TreeList");
+
+            return sb.ToString();
+
+
+            // Přidávání hodnot z dodaného objektu
+            void addValues(object data, string objectName)
+            {
+                if (data is null) return;
+                var properties = data.GetType().GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.FlattenHierarchy).ToList();
+                properties.Sort((a, b) => String.Compare(a.Name, b.Name));
+                foreach (var property in properties)
+                    addProperty(ref objectName, data, property);
+            }
+            void addProperty(ref string objectName, object data, System.Reflection.PropertyInfo property)
+            {
+                bool isValid = (property.CanRead || property.CanWrite);
+                if (isValid)
+                {
+                    string propertyName = property.Name;
+                    object value = property.GetValue(data);
+                    var propertyType = property.PropertyType;
+
+                    bool ignoreProperty = (propertyType.IsClass || propertyType.IsArray || ignoredTypes.Contains($";{propertyType.FullName};"));
+                    if (!ignoreProperty)
+                    {
+                        string valueText = (value is null ? "NULL" : value.ToString());
+                        sb.AppendLine($"{objectName}\t{propertyName}\t{valueText}");
+                        objectName = "";
+                    }
+                }
+            }
+        }
         #endregion
         #region DoKeyActions; CtrlA, CtrlC, CtrlX, CtrlV, Delete
         /// <summary>
@@ -5007,7 +5104,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool IsEditable { get; set; }
         /// <summary>
-        /// Sloupec může zobrazovat HTML formát
+        /// Sloupec může zobrazovat zjednodušený HTML formát?<br/>
+        /// Viz: <see href="https://docs.devexpress.com/WindowsForms/4874/common-features/html-text-formatting"/>
+        /// <para/>
+        /// Pokud je true, pak se nebere v potaz nastavení zarovnání obsahu buňky <see cref="CellContentAlignment"/>, obsah je vždy zarovnán doleva.
+        /// Pokud chceme zarovnat obsah jinak než doleva, nesmí být <see cref="IsHtmlFormatted"/>.
         /// </summary>
         public virtual bool IsHtmlFormatted { get; set; }
         /// <summary>
