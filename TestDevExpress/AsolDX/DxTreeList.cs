@@ -809,7 +809,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var name = "Column" + colIndex.ToString();
                 var dxCol = treeColumns.Add();
                 dxCol.Name = name;
-                dxCol.FieldName = name;
+                // dxCol.FieldName = name;
                 dxCol.Caption = (!String.IsNullOrEmpty(column.Caption) ? column.Caption : "   ");   // Prázdný text "" (IsNullOrEmpty) je v komponentě nahrazen defaultem "Column1", ale "   " je zobrazen jako prázdné pole...
                 dxCol.AbsoluteIndex = colIndex;
                 dxCol.VisibleIndex = colIndex;
@@ -1840,6 +1840,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.EditorHelper.ActiveEditor.DoubleClick += _OnEditorDoubleClick;
                 this.EditorHelper.ActiveEditor.KeyUp -= _OnEditorKeyUp;
                 this.EditorHelper.ActiveEditor.KeyUp += _OnEditorKeyUp;
+                //if (this.EditorHelper.ActiveEditor is DevExpress.XtraEditors.TextEdit textEdit)
+                //{
+                //    textEdit.Properties.MaskSettings.MaskExpression = "9999999999";
+                //    textEdit.Properties.UseMaskAsDisplayFormat = true;
+                //    textEdit.Properties.MaskSettings.UseMaskAsDisplayFormat = true;
+                //}
             }
 
             ITreeListNode nodeInfo = this.FocusedNodeInfo;
