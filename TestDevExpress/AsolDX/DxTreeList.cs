@@ -1836,8 +1836,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             ITreeListNode nodeInfo = this.FocusedNodeInfo;
             if (nodeInfo != null)
             {
-                _StoreEditedValue(nodeInfo, this.FocusedColumnIndex, this.EditingValue as string);
-                this.RaiseNodeEdited(nodeInfo, this.FocusedColumnIndex, this.EditingValue);
+                string valueNew = this.EditingValue as string;
+                bool isChanged = _StoreEditedValue(nodeInfo, this.FocusedColumnIndex, valueNew, out string valueOld);
+                if (isChanged)
+                    this.RaiseNodeEdited(nodeInfo, this.FocusedColumnIndex, valueOld, valueNew);
             }
         }
         /// <summary>
@@ -1851,28 +1853,51 @@ namespace Noris.Clients.Win.Components.AsolDX
             ITreeListNode nodeInfo = this.FocusedNodeInfo;
             if (nodeInfo != null)
             {
-                _StoreEditedValue(nodeInfo, this.FocusedColumnIndex, this.EditingValue as string);
+                string valueNew = this.EditingValue as string;
+                bool isChanged = _StoreEditedValue(nodeInfo, this.FocusedColumnIndex, valueNew, out string valueOld);
+                if (isChanged)
+                    this.RaiseNodeEdited(nodeInfo, this.FocusedColumnIndex, valueOld, valueNew);
                 if (_IsMainActionRunEvent(nodeInfo, true))
-                    this.RaiseEditorDoubleClick(nodeInfo, this.FocusedColumnIndex, this.EditingValue);
+                    this.RaiseEditorDoubleClick(nodeInfo, this.FocusedColumnIndex, valueOld, valueNew);
                 if (_IsMainActionExpandCollapse(nodeInfo, true))
                     this._NodeExpandCollapse(nodeInfo);
             }
         }
         /// <summary>
-        /// Uloží editovanou hodnotu <paramref name="editedValue"/> do daného NodeInfo <paramref name="nodeInfo"/>, do patřičného místa pro daný sloupec <paramref name="columnIndex"/>.
+        /// Uloží editovanou hodnotu <paramref name="valueNew"/> do daného NodeInfo <paramref name="nodeInfo"/>, do patřičného místa pro daný sloupec <paramref name="columnIndex"/>.
+        /// Před tím tamodtud vytáhne dosavadní hodnotu a vloží ji do out parametru <paramref name="valueOld"/>.
         /// </summary>
         /// <param name="nodeInfo"></param>
         /// <param name="columnIndex"></param>
-        /// <param name="editedValue"></param>
-        private void _StoreEditedValue(ITreeListNode nodeInfo, int? columnIndex, string editedValue)
+        /// <param name="valueNew">Vstup nové hodnoty</param>
+        /// <param name="valueOld">Výstup hodnoty před editační</param>
+        private bool _StoreEditedValue(ITreeListNode nodeInfo, int? columnIndex, string valueNew, out string valueOld)
         {
+            bool isChanged = false;
             if (nodeInfo != null)
             {
                 if (columnIndex.HasValue && nodeInfo.Cells != null && columnIndex.Value >= 0 && columnIndex.Value < nodeInfo.Cells.Length)
-                    nodeInfo.Cells[columnIndex.Value] = editedValue;
-                else 
-                    nodeInfo.TextEdited = this.EditingValue as string;
+                {   // Z pole buněk:
+                    var cells = nodeInfo.Cells;
+                    valueOld = cells[columnIndex.Value];
+                    cells[columnIndex.Value] = valueNew;
+                    isChanged = !String.Equals(valueOld, valueNew);
+                    if (isChanged)
+                        nodeInfo.Cells = cells;
+                }
+                else
+                {   // Z property Text => TextEdited:
+                    valueOld = nodeInfo.Text;
+                    nodeInfo.TextEdited = valueNew;
+                    isChanged = !String.Equals(valueOld, valueNew);
+                }
             }
+            else
+            {
+                valueOld = valueNew;
+                isChanged = false;
+            }
+            return isChanged;
         }
         /// <summary>
         /// Před změnou Checked stavu
@@ -4140,12 +4165,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="nodeInfo"></param>
         /// <param name="columnIndex"></param>
-        /// <param name="editedValue"></param>
-        private void RaiseEditorDoubleClick(ITreeListNode nodeInfo, int? columnIndex, object editedValue)
+        /// <param name="valueOld"></param>
+        /// <param name="valueNew"></param>
+        private void RaiseEditorDoubleClick(ITreeListNode nodeInfo, int? columnIndex, string valueOld, string valueNew)
         {
             if (_SilentMode) return;
 
-            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, columnIndex, TreeListActionType.EditorDoubleClick, TreeListPartType.Cell, this.IsActiveEditor, editedValue);
+            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, columnIndex, TreeListActionType.EditorDoubleClick, TreeListPartType.Cell, this.IsActiveEditor, valueOld, valueNew);
             OnEditorDoubleClick(args);
             EditorDoubleClick?.Invoke(this, args);
         }
@@ -4164,12 +4190,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="nodeInfo"></param>
         /// <param name="columnIndex"></param>
-        /// <param name="editedValue"></param>
-        private void RaiseNodeEdited(ITreeListNode nodeInfo, int? columnIndex, object editedValue)
+        /// <param name="valueOld"></param>
+        /// <param name="valueNew"></param>
+        private void RaiseNodeEdited(ITreeListNode nodeInfo, int? columnIndex, string valueOld, string valueNew)
         {
             if (_SilentMode) return;
 
-            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, columnIndex, TreeListActionType.NodeEdited, TreeListPartType.Cell, this.IsActiveEditor, editedValue);
+            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, columnIndex, TreeListActionType.NodeEdited, TreeListPartType.Cell, this.IsActiveEditor, valueOld, valueNew);
             OnNodeEdited(args);
             NodeEdited?.Invoke(this, args);
         }
@@ -4216,7 +4243,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (_SilentMode) return;
 
-            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, null, TreeListActionType.NodeCheckedChange, TreeListPartType.NodeCheckBox, this.IsActiveEditor, isChecked);
+            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, null, TreeListActionType.NodeCheckedChange, TreeListPartType.NodeCheckBox, this.IsActiveEditor, isChecked: isChecked);
             OnNodeCheckedChange(args);
             NodeCheckedChange?.Invoke(this, args);
         }
@@ -4428,9 +4455,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="action"></param>
         /// <param name="partType"></param>
         /// <param name="isActiveEditor"></param>
-        /// <param name="editedValue"></param>
+        /// <param name="editedValueOld"></param>
+        /// <param name="editedValueNew"></param>
+        /// <param name="isChecked"></param>
         /// <param name="mouseButtons"></param>
-        public DxTreeListNodeArgs(ITreeListNode node, int? columnIndex, TreeListActionType action, TreeListPartType partType, bool isActiveEditor, object editedValue = null, System.Windows.Forms.MouseButtons? mouseButtons = null)
+        public DxTreeListNodeArgs(ITreeListNode node, int? columnIndex, TreeListActionType action, TreeListPartType partType, bool isActiveEditor, string editedValueOld = null, string editedValueNew = null, bool? isChecked = null, System.Windows.Forms.MouseButtons? mouseButtons = null)
         {
             this.MousePosition = Control.MousePosition;
             this.MouseButtons = mouseButtons;
@@ -4440,7 +4469,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Action = action;
             this.PartType = partType;
             this.IsActiveEditor = isActiveEditor;
-            this.EditedValue = editedValue;
+            this.EditedValueOld = editedValueOld;
+            this.EditedValueNew = editedValueNew;
+            this.IsChecked = isChecked;
         }
         /// <summary>
         /// Absolutní pozice myši v době události
@@ -4475,9 +4506,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool IsActiveEditor { get; private set; }
         /// <summary>
-        /// Editovaná hodnota, je vyplněna pouze pro akce <see cref="TreeListActionType.NodeEdited"/> a <see cref="TreeListActionType.EditorDoubleClick"/>
+        /// Původní hodnota před editováním, je vyplněna pouze pro akce <see cref="TreeListActionType.NodeEdited"/> a <see cref="TreeListActionType.EditorDoubleClick"/>
         /// </summary>
-        public object EditedValue { get; private set; }
+        public string EditedValueOld { get; private set; }
+        /// <summary>
+        /// Editovaná hodnota nová, je vyplněna pouze pro akce <see cref="TreeListActionType.NodeEdited"/> a <see cref="TreeListActionType.EditorDoubleClick"/>
+        /// </summary>
+        public string EditedValueNew { get; private set; }
+        /// <summary>
+        /// Stav IsChecked. Je naplněno pouze v akci <see cref="TreeListActionType.NodeCheckedChange"/>.
+        /// </summary>
+        public bool? IsChecked { get; private set; }
     }
     /// <summary>
     /// Informace o nodu, na který bylo kliknuto a kam
@@ -5040,9 +5079,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Hodnoty v řádku TreeListu. Pokud nebude null, použijí se přednostně před <see cref="ITextItem.Text"/>. Pak mohou vytvořit vícesloupcový TreeList.
         /// Je vhodné v tom případě nadeklarovat jednotlivé sloupce do TreeListu.
         /// <para/>
-        /// Pokud je text v nodu editován, a TreeList obsahuje MultiColumns a zobrazuje data ze zdejšího <see cref="Cells"/>, pak je editovaný text ukládán právě sem do odpovídajícího prvku.
+        /// Pokud je text v nodu editován, a TreeList obsahuje MultiColumns a zobrazuje data ze zdejšího <see cref="Cells"/>, pak je editovaný text ukládán právě sem do odpovídajícího prvku, a po změně je sem setováno pole obsahující změnu.
         /// </summary>
-        string[] Cells { get; }
+        string[] Cells { get; set; }
         /// <summary>
         /// Typ nodu
         /// </summary>
