@@ -2750,7 +2750,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="canExpand"></param>
         private void _FillTreeNode(DevExpress.XtraTreeList.Nodes.TreeListNode treeNode, ITreeListNode nodeInfo, bool canExpand)
         {
-            treeNode.SetValue(0, nodeInfo.Text);
+            //   treeNode.SetValue(0, nodeInfo.Text);
             treeNode.Checked = nodeInfo.CanCheck && nodeInfo.NodeChecked;
 
             _FillTreeNodeImages(treeNode, nodeInfo);

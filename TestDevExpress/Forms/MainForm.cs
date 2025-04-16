@@ -1098,7 +1098,7 @@ namespace TestDevExpress.Forms
         }
         private void _OpenLayoutFormButton_Click(IMenuItem menuItem)
         {
-            LayoutForm form = new LayoutForm(true);
+            LayoutForm form = new LayoutForm();
             form.Show();
         }
         private void _TestDataForm1ModalButton_Click(IMenuItem menuItem)

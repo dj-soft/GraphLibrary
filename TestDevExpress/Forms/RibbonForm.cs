@@ -15,12 +15,6 @@ namespace TestDevExpress.Forms
     [RunFormInfo(groupText: "Testovací okna", buttonText: "Ribbon", buttonOrder: 40, buttonImage: "svgimages/dashboards/grid.svg", buttonToolTip: "Otevře okno s ukázkou Ribbonů s možností mergování nahoru")]
     public class RibbonForm : DxRibbonForm
     {
-        /// <summary>
-        /// Deklarace tlačítka v <see cref="MainAppForm"/> pro spuštění tohoto formuláře
-        /// </summary>
-        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Ribbon", ButtonImage = "svgimages/dashboards/grid.svg", GroupText = "Testovací okna", GroupOrder = 40 }; } }
-
-
         #region Konstruktor a proměnné
         /// <summary>
         /// Konstruktor

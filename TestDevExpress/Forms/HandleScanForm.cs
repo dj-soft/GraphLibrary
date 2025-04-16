@@ -21,12 +21,6 @@ namespace TestDevExpress.Forms
     ///   [RunFormInfo(groupText: "Tools", groupOrder: 100, buttonText: "Handles", buttonOrder: 210, buttonImage: "svgimages/dashboards/scatterchart.svg", buttonToolTip: "Otevře okno sledování GUI Handles")]
     public class HandleScanForm : DxControlForm
     {
-        /// <summary>
-        /// Deklarace tlačítka v <see cref="TestDevExpress.Forms.MainAppForm"/> pro spuštění tohoto formuláře
-        /// </summary>
-        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Handles", ButtonImage = "svgimages/dashboards/scatterchart.svg", ButtonToolTip = "Otevře okno sledování GUI Handles", GroupText = "Tools", ButtonOrder = 210, GroupOrder = 100 }; } }
-
-
         public HandleScanForm()
         {
             this.InitSplitContainer();

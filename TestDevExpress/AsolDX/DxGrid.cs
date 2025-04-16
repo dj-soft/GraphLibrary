@@ -22,7 +22,10 @@ using DevExpress.Utils.Filtering.Internal;
 using DevExpress.Utils.Menu;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
+using DevExpress.XtraEditors.Drawing;
+using DevExpress.XtraEditors.Registrator;
 using DevExpress.XtraEditors.Repository;
+using DevExpress.XtraEditors.ViewInfo;
 using DevExpress.XtraGrid;
 using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Drawing;
@@ -66,6 +69,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void ShowHorizontalSplit()
         {
+
             if (!IsSplitViewVisible || !Horizontal)
             {
                 if (!Horizontal) Horizontal = true;
@@ -73,10 +77,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Zobrazí vertikální split
+        /// Zobrazí vertikálí split
         /// </summary>
         public void ShowVerticalSplit()
         {
+
             if (!IsSplitViewVisible || Horizontal)
             {
                 if (Horizontal) Horizontal = false;
@@ -84,6 +89,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
     }
+
     /// <summary>
     /// Hlavní grid, který může mít více možností zobrazení, např. GridView, v naší podobě <see cref="DxGridView"/>
     /// </summary>
@@ -1621,6 +1627,27 @@ namespace Noris.Clients.Win.Components.AsolDX
                 OnDoubleClick(info.Column?.FieldName ?? null, GetDataSourceRowIndex(info.RowHandle), modifierKeyCtrl, modifierKeyAlt, modifierKeyShift);  //Zavoláme public event
             }
         }
+
+        //STR 0077817+ - 2025.04.14 - Ukládání všech nastavení do pohledu: doplnění události při sbalení/rozbalení skupiny
+        private void _OnGroupExpandedOrColapsad(int groupNumber, bool expanded)
+        {
+            GroupExpandedOrColapsad?.Invoke(null, new DxGridGroupExpandedOrColapsadArgs(groupNumber, expanded));  //Zavoláme public event
+        }
+        public event DxGridGroupExpandedOrColapsadHandler GroupExpandedOrColapsad;
+        public delegate void DxGridGroupExpandedOrColapsadHandler(object sender, DxGridGroupExpandedOrColapsadArgs args);
+        public class DxGridGroupExpandedOrColapsadArgs: EventArgs
+        {
+            internal DxGridGroupExpandedOrColapsadArgs(int groupNumber, bool expanded)
+            {
+                IsExpanded = expanded;
+                Group = groupNumber;
+            }
+            public readonly bool IsExpanded;
+            public readonly int Group;
+        }
+        //STR 0077817- - 2025.04.14 - Ukládání všech nastavení do pohledu: doplnění události při sbalení/rozbalení skupiny
+
+
         private void _OnFocusedRowChanged(object sender, DevExpress.XtraGrid.Views.Base.FocusedRowChangedEventArgs e)
         {
             bool isPrevFilterRow = this.IsFilterRow(e.PrevFocusedRowHandle);
@@ -2895,6 +2922,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (OptionsView.ShowFooter != _showSummaryRow)
             {
                 OptionsView.ShowFooter = _showSummaryRow;
+                OnDxShowSummaryRowChanged();
             }
         }
         /// <summary>
@@ -3216,6 +3244,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="group"></param>
         private void _SetAllGroupsAndChildsColapsed(int group)
         {
+            //STR 0077817 - 2025.04.14 - Ukládání všech nastavení do pohledu: doplnění události při sbalení/rozbalení skupiny
+            _OnGroupExpandedOrColapsad(group, expanded: false);
+
             bool anyGroupRowOfGroup = GroupRowInfos.Any(x => x.Group == group);  //příznak zda existuje nějaký group řádek pro danou groupu
             bool loadAllRows = false;
             if (!anyGroupRowOfGroup)
@@ -3270,6 +3301,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="group"></param>
         private void _SetAllGroupsAndParentsExpanded(int group)
         {
+            //STR 0077817 - 2025.04.14 - Ukládání všech nastavení do pohledu: doplnění události při sbalení/rozbalení skupiny
+            _OnGroupExpandedOrColapsad(group, expanded: true);
+
+
             foreach (var item in GroupInfos.Where(item => item.Group <= group))
             {
                 item.Expanded = true;
@@ -3674,16 +3709,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         #region RepositoryItem, eitační styl, image, multiline...
         private RepositoryItem _CreateRepositoryItem(IGridViewColumn gridViewColumn, bool useForRowFilter = false)
         {
-            if (gridViewColumn.IsEditStyleColumnType)   //Editační styl
-                return _CreateRepositoryItemForEditStyle(gridViewColumn, useForRowFilter);
-            else if (gridViewColumn.IsImageColumnType) //Obrázky
-                return _CreateRepositoryItemForImage(useForRowFilter);
-            else if (gridViewColumn.IsStringColumnType || gridViewColumn.IsNumberColumnType) //string a numeric
-                return _CreateRepositoryItemForStringAndNumber(gridViewColumn, useForRowFilter);
-            else if (gridViewColumn.IsDateTimeColumnType) //DateTime
-                return _CreateRepositoryItemForDatetime(gridViewColumn, useForRowFilter);
-            else
-                return null;
+            switch (gridViewColumn.RepositoryItemType)
+            {
+                case RepositoryItemType.EditStyleText:
+                case RepositoryItemType.EditStyleIcon:
+                case RepositoryItemType.EditStyleIconText:
+                    return _CreateRepositoryItemForEditStyle(gridViewColumn, useForRowFilter);
+                case RepositoryItemType.Image:
+                    return _CreateRepositoryItemForImage(useForRowFilter);
+                case RepositoryItemType.String:
+                case RepositoryItemType.Number:
+                    return _CreateRepositoryItemForStringAndNumber(gridViewColumn, useForRowFilter);
+                case RepositoryItemType.DateTime:
+                    return _CreateRepositoryItemForDatetime(gridViewColumn, useForRowFilter);
+                case RepositoryItemType.PercentageBar:
+                    return _CreateRepositoryItemForPercentageBar(gridViewColumn, useForRowFilter, false);
+                case RepositoryItemType.PercentageBarWithValue:
+                    return _CreateRepositoryItemForPercentageBar(gridViewColumn, useForRowFilter, true);
+                default:
+                    return null;
+            }
+        }
+
+        private static RepositoryItem _CreateRepositoryItemForPercentageBar(IGridViewColumn gridViewColumn, bool useForRowFilter, bool withValue)
+        {
+            if (useForRowFilter) return _CreateRepositoryItemForStringAndNumber(gridViewColumn, useForRowFilter);   //řádkový filtr neumí zobrazit PercentageBar nastav tam pro number
+            var repItemForPrecentageBar = new RepositoryItemProgressBarDecimal();
+            repItemForPrecentageBar.PercentView = false;
+            repItemForPrecentageBar.ShowTitle = withValue;// PercentageBarWithValue;
+            repItemForPrecentageBar.Minimum = 0;
+            repItemForPrecentageBar.Maximum = 100;
+
+            return repItemForPrecentageBar;
         }
 
         private static RepositoryItem _CreateRepositoryItemForDatetime(IGridViewColumn gridViewColumn, bool useForRowFilter)
@@ -4005,6 +4062,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
 
         /// <summary>
+        /// Provedena změna viditelnosti sumačního řádku
+        /// </summary>
+        public event DxGridShowGroupPanelChangedHandler DxShowSummaryRowChanged;
+        protected virtual void OnDxShowSummaryRowChanged()
+        {
+            if (DxShowSummaryRowChanged != null) DxShowSummaryRowChanged(this, new EventArgs());
+        }
+
+        /// <summary>
         /// Vyvolá metodu <see cref="OnShowContextMenu(DxGridContextMenuEventArgs)"/> a event <see cref="DxShowContextMenu"/>
         /// </summary>
         /// <param name="hitInfo"></param>
@@ -4166,6 +4232,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Styl zobrazení editačního stylu. 
         /// </summary>
         public virtual EditStyleViewMode EditStyleViewMode { get; set; }
+        /// <inheritdoc/>
+        public virtual RepositoryItemType RepositoryItemType { get; set; }
         /// <summary>
         /// Display format string
         /// </summary>
@@ -4302,6 +4370,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Styl zobrazení editačního stylu. 
         /// </summary>
         EditStyleViewMode EditStyleViewMode { get; }
+        /// <summary>
+        /// Typ položky v Repository (způsob zobrazení dat)
+        /// </summary>
+        RepositoryItemType RepositoryItemType { get; }
         /// <summary>
         /// Display format string
         /// </summary>
@@ -4709,6 +4781,53 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
 
     /// <summary>
+    /// Typ položky v Repository (způsob zobrazení dat)
+    /// </summary>
+    public enum RepositoryItemType
+    {
+        /// <summary>
+        /// Default
+        /// </summary>
+        Default,
+        /// <summary>
+        /// String
+        /// </summary>
+        String,
+        /// <summary>
+        /// Number
+        /// </summary>
+        Number,
+        /// <summary>
+        /// DateTime
+        /// </summary>
+        DateTime,
+        /// <summary>
+        /// Image
+        /// </summary>
+        Image,
+        /// <summary>
+        /// EditStyle text
+        /// </summary>
+        EditStyleText,
+        /// <summary>
+        /// EditStyle icon
+        /// </summary>
+        EditStyleIcon,
+        /// <summary>
+        ///EditStyle icon and text
+        /// </summary>
+        EditStyleIconText,
+        /// <summary>
+        /// Percentage bar
+        /// </summary>
+        PercentageBar,
+        /// <summary>
+        /// Percentage bar with value
+        /// </summary>
+        PercentageBarWithValue
+    }
+
+    /// <summary>
     /// Akce která proběhla v DxGridView
     /// </summary>
     public enum DxGridViewActionType
@@ -5059,4 +5178,122 @@ namespace Noris.Clients.Win.Components.AsolDX
             return value;
         }
     }
+
+    #region RepositoryItemProgressBarDecimal
+    //RMC 0077828 11.04.2025 Zobrazení progressbaru v přehledu
+    /// <summary>
+    /// Třída pro zobrazení progress baru s hodnotou 0-1 jako 0-100%
+    /// </summary>
+    public class RepositoryItemProgressBarDecimal : RepositoryItemProgressBar
+    {
+        static RepositoryItemProgressBarDecimal()
+        {
+            RegisterCustomEdit();
+        }
+        /// <summary>
+        /// Create a new instance of RepositoryItemProgressBarDecimal.
+        /// </summary>
+        public RepositoryItemProgressBarDecimal()
+        {
+            this.Minimum = 0;
+            this.Maximum = 100;
+            this.ShowTitle = true;
+        }
+
+
+        private bool _enablePercentageScaling = true;
+
+        /// <summary>
+        /// Určuje, zda se má hodnota přepočítat na *100, aby šli zobrazovat hodnoty 0-1 jako 0-100%.
+        /// </summary>
+        [DefaultValue(true)]
+        public bool EnablePercentageScaling
+        {
+            get => _enablePercentageScaling;
+            set
+            {
+                if (_enablePercentageScaling != value)
+                {
+                    _enablePercentageScaling = value;
+                    OnPropertiesChanged(); // důležité pro automatické obnovení editoru
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public override string EditorTypeName => "ProgressBarDecimalEdit";
+
+        /// <inheritdoc/>
+        public static void RegisterCustomEdit()
+        {
+            EditorRegistrationInfo.Default.Editors.Add(
+                new EditorClassInfo(
+                    "ProgressBarDecimalEdit",
+                    typeof(ProgressBarDecimalEdit),
+                    typeof(RepositoryItemProgressBarDecimal),
+                    typeof(ProgressBarDecimalViewInfo),
+                    new ProgressBarPainter(),
+                    true));
+        }
+        /// <inheritdoc/>
+        public override BaseEditViewInfo CreateViewInfo()
+        {
+            return new ProgressBarDecimalViewInfo(this);
+        }
+
+        /// <inheritdoc/>
+        public override string GetDisplayText(DevExpress.Utils.FormatInfo format, object editValue)
+        {
+            if (!EnablePercentageScaling)
+                return base.GetDisplayText(format, editValue);
+
+            decimal? value = null;
+
+            if (editValue != null && editValue is decimal or double or float or int or long or short or sbyte or byte or ulong or ushort or uint)
+                value = Convert.ToDecimal(editValue) / 100;
+
+            return (value.HasValue && !IsNullValue(value.Value))
+                ? GetFormattedDisplayText(format, value.Value)
+                : GetNullText(format);
+        }
+    }
+
+    /// <inheritdoc/>
+    public class ProgressBarDecimalViewInfo : ProgressBarViewInfo
+    {
+        /// <inheritdoc/>
+        public ProgressBarDecimalViewInfo(RepositoryItem item) : base(item)
+        {
+        }
+        /// <inheritdoc/>
+        public override object EditValue
+        {
+            get => base.EditValue;
+            set
+            {
+                var item = Item as RepositoryItemProgressBarDecimal;
+                if (item?.EnablePercentageScaling == true && value != null && value is decimal or double or float or int or long or short or sbyte or byte or ulong or ushort or uint)
+                    value = Convert.ToDecimal(value) * 100;
+
+                base.EditValue = value;
+            }
+        }
+    }
+
+    /// <inheritdoc/>
+    public class ProgressBarDecimalEdit : ProgressBarControl
+    {
+        static ProgressBarDecimalEdit()
+        {
+            RepositoryItemProgressBarDecimal.RegisterCustomEdit();
+        }
+        /// <inheritdoc/>
+        public override string EditorTypeName => "ProgressBarDecimalEdit";
+
+        /// <inheritdoc/>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+        public new RepositoryItemProgressBarDecimal Properties =>
+            (RepositoryItemProgressBarDecimal)base.Properties;
+    }
+    #endregion
 }

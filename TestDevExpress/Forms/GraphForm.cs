@@ -21,12 +21,6 @@ namespace TestDevExpress.Forms
     public partial class GraphForm : DevExpress.XtraEditors.XtraForm //   MdiBaseForm
     {
         /// <summary>
-        /// Deklarace tlačítka v <see cref="MainAppForm"/> pro spuštění tohoto formuláře
-        /// </summary>
-        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Graf", ButtonImage = "svgimages/dashboards/chart.svg", GroupText = "Testovací okna", ButtonOrder = 50 }; } }
-
-
-        /// <summary>
         /// Formulář pro hrátky s grafy.
         /// Konstruktor
         /// </summary>

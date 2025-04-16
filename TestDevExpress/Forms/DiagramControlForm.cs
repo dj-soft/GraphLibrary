@@ -19,11 +19,6 @@ namespace TestDevExpress.Forms
     public class DiagramControlForm : DxRibbonForm
     {
         /// <summary>
-        /// Deklarace tlačítka v <see cref="MainAppForm"/> pro spuštění tohoto formuláře
-        /// </summary>
-        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Diagramy", ButtonImage = "svgimages/dashboards/grid.svg", GroupText = "Testovací okna", GroupOrder = 60 }; } }
-
-        /// <summary>
         /// Konstruktor
         /// </summary>
         public DiagramControlForm() : base()

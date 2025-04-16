@@ -30,7 +30,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     internal class CurrentSystemAdapter : ISystemAdapter
     {
         event EventHandler ISystemAdapter.InteractiveZoomChanged { add { ComponentConnector.Host.InteractiveZoomChanged += value; } remove { ComponentConnector.Host.InteractiveZoomChanged -= value; } }
-        decimal ISystemAdapter.ZoomRatio { get { return ((decimal)Common.SupportScaling.GetScaledValue(100000)) / 100000m; } }
+        decimal ISystemAdapter.ZoomRatio { get { return ((decimal)Common.SupportScaling.GetScaledValue(100000)) / 100000m; } set { /* Necháme to na WDesktopu, který je v Host, a má přístup do Settings.Windows.ScaleFactor ... */ } }
         string ISystemAdapter.GetMessage(MsgCode messageCode, params object[] parameters) { return AdapterSupport.GetMessage(messageCode, parameters); }
         StyleInfo ISystemAdapter.GetStyleInfo(string styleName, Color? exactAttributeColor) { return AdapterSupport.GetStyleInfo(styleName, exactAttributeColor); }
         bool ISystemAdapter.IsPreferredVectorImage { get { return ComponentConnector.GraphicsCache.Options.AllowEditionFormat; } }

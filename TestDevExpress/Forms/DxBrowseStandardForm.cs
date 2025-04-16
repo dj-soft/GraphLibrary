@@ -17,11 +17,6 @@ namespace TestDevExpress.Forms
     [RunFormInfo(groupText: "Testovací okna", buttonText: "Browse", buttonOrder: 30, buttonImage: "svgimages/spreadsheet/chartgridlines.svg", buttonToolTip: "Otevře okno s ukázkou BrowseList standard DX testovací")]
     public class DxBrowseStandardForm : DxRibbonForm
     {
-        /// <summary>
-        /// Deklarace tlačítka v <see cref="TestDevExpress.Forms.MainAppForm"/> pro spuštění tohoto formuláře
-        /// </summary>
-        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Browse", ButtonImage = "svgimages/spreadsheet/chartgridlines.svg", GroupText = "Testovací okna", ButtonOrder = 30 }; } }
-
         #region Konstrukce
         /// <summary>
         /// Konstruktor

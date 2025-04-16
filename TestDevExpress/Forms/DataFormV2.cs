@@ -17,12 +17,6 @@ namespace TestDevExpress.Forms
     ///   [RunFormInfo(groupText: "Testovací okna", buttonText: "DataForm", buttonOrder: 10, buttonImage: "svgimages/spreadsheet/showtabularformpivottable.svg", buttonToolTip: "Otevře okno DataForm")]
     public class DataFormV2 : DxRibbonForm
     {
-        /// <summary>
-        /// Deklarace tlačítka v <see cref="MainAppForm"/> pro spuštění tohoto formuláře
-        /// </summary>
-        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "DataForm", ButtonImage = "svgimages/spreadsheet/showtabularformpivottable.svg", GroupText = "Testovací okna", ButtonOrder = 10 }; } }
-
-
         #region Konstruktor a proměnné
         /// <summary>
         /// Konstruktor
