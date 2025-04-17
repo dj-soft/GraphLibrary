@@ -627,9 +627,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void RemoveAllControls()
         {
-            int count = this.ControlCount;
-            for (int i = count - 1; i >= 0; i--)
-                _RemoveUserControl(i, RemoveContentMode.Default);
+            try
+            {
+                int count = this.ControlCount;
+                for (int i = count - 1; i >= 0; i--)
+                    _RemoveUserControl(i, RemoveContentMode.RemoveControlAndKeepTile);
+                this.Controls.Clear();
+            }
+            catch { }
         }
         /// <summary>
         /// Lze nastavit na true, pak nebudou prováděny žádné eventy
