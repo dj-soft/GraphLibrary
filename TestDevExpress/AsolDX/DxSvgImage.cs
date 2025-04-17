@@ -2086,11 +2086,10 @@ M22,22H10v2H22v-2z " class="Black" />
             if (diameter <= 0m) return _GetSvgDataRectangle(left, top, width, height, counterClockWise);
 
             // Skutečně budou zakulacené rohy, ošetříme horní meze:
-            decimal s = (width < height ? width : height);
-            decimal s2 = s / 2;
-            if (diameter > s2) diameter = s2;
+            decimal size = (width < height ? width : height);
+            if (diameter > size) diameter = size;
 
-            _GetSvgDataQuadCurveD4D2(diameter, out var d4, out var d2);                  // Deklarace křivky: polovina a čtvrtina radiusu "d"
+            _GetSvgDataQuadCurveD4D2(diameter, out var d4, out var d2);                  // Deklarace křivky: polovina a čtvrtina radiusu "diameter"
             string wi = _GetSvgDataNumber(width - diameter, 2);                          // Šířka interní rovné části (tj. bez zaoblené části)
             string hi = _GetSvgDataNumber(height - diameter, 2);                         // Výška interní rovné části (tj. bez zaoblené části)
 

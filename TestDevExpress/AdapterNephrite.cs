@@ -47,11 +47,12 @@ namespace Noris.Clients.Win.Components
     #region class DebugControl : Podpora pro debugování vizuálního controlu   { DAJ 2020-02-07 }
     /// <summary>
     /// Debugování práce s libovolným controlem.
+    /// <para/>
+    /// Metoda <see cref="DebugControl.GetControlStructure(WinForm.Control, string, bool)"/> zmapuje dodaný control jeho Child Controls
+    /// a vrátí textovou tabulku, obsahující strukturu daného controlu s viditelnou stromovu strukturou a s údaji o jednotlivých controlech.
+    /// <para/>
     /// Metoda <see cref="DebugControl.GetObjectStructure(object, string, bool)"/> v daném objektu najde <see cref="WinForm.Control"/>, zmapuje jeho Child Controls
     /// a vrátí tabulku obsahující strukturu daného controlu s viditelnou stromovu strukturou a s údaji o jednotlivých controlech.
-    /// <para/>
-    /// Metoda <see cref="DebugControl.TraceControlChanges(Control)"/> uloží daný control do statické paměti (jeho <see cref="WeakReference"/>), 
-    /// a eviduje jeho změny a 
     /// </summary>
     public static class DebugControl
     {
@@ -65,7 +66,19 @@ namespace Noris.Clients.Win.Components
         /// <returns></returns>
         public static string GetControlStructure(this WinForm.Control control, string delimiter = null, bool withTopParent = false)
         {
-            return GetObjectStructure(control, delimiter, withTopParent);
+            return GetObjectStructure(control, delimiter, withTopParent, null);
+        }
+        /// <summary>
+        /// Z this controlu vygeneruje jeho mapu struktury, včetně jeho Child Controlů.
+        /// </summary>
+        /// <param name="control">Control, jehož mapa se bude generovat</param>
+        /// <param name="delimiter">Oddělovač sloupců, default = dvě mezery</param>
+        /// <param name="withTopParent">Vyhledat linku k Top parentu? Default je false</param>
+        /// <param name="filter">Filtrační funkce pro jednotlivé objekty. Default = null = všechny.</param>
+        /// <returns></returns>
+        public static string GetControlStructure(this WinForm.Control control, string delimiter, bool withTopParent, Func<Control, ScanFilterMode> filter)
+        {
+            return GetObjectStructure(control, delimiter, withTopParent, filter);
         }
         /// <summary>
         /// Vrátí textovou mapu struktury daného controlu, včetně jeho Child Controlů.
@@ -76,11 +89,27 @@ namespace Noris.Clients.Win.Components
         /// <returns></returns>
         public static string GetObjectStructure(object anything, string delimiter = null, bool withTopParent = false)
         {
+            return GetObjectStructure(anything, delimiter, withTopParent, null);
+        }
+        /// <summary>
+        /// Vrátí textovou mapu struktury daného controlu, včetně jeho Child Controlů.
+        /// </summary>
+        /// <param name="anything">Cokoliv, metoda se pokusí detekovat o co jde a najít v tom nějaký <see cref="WinForm.Control"/></param>
+        /// <param name="delimiter">Oddělovač sloupců, default = dvě mezery</param>
+        /// <param name="withTopParent">Vyhledat linku k Top parentu? Default je false</param>
+        /// <param name="filter">Filtrační funkce pro jednotlivé objekty. Default = null = všechny.</param>
+        /// <returns></returns>
+        public static string GetObjectStructure(object anything, string delimiter, bool withTopParent, Func<Control, ScanFilterMode> filter)
+        {
             anything = _GetControlFrom(anything);
             if (anything is null) return "NULL";
             if (!(anything is WinForm.Control control)) return _GetFullTypeName(anything) + " does not recognized as System.Windows.Form.Control";
+
+            if (withTopParent)
+                control = SearchForTopParent(control);
+
             var items = new List<ItemInfo>();
-            _AddMapItems(items, control, "0", 0, Point.Empty);
+            _AddMapItems(items, control, "0", 0, Point.Empty, filter);
             return ItemInfo.CreateMap(items, delimiter);
         }
         /// <summary>
@@ -130,6 +159,24 @@ namespace Noris.Clients.Win.Components
             }
             return false;
         }
+        /// <summary>
+        /// Varianta filtrování pro scanované objekty
+        /// </summary>
+        public enum ScanFilterMode
+        {
+            /// <summary>
+            /// Defaultní = vypiš aktuální objekt i jeho Child objekty
+            /// </summary>
+            Default,
+            /// <summary>
+            /// Vypiš mě, ale už nescanuj moje Child objekty
+            /// </summary>
+            HideMyChilds,
+            /// <summary>
+            /// Nevypisuj mě a tedy ani moje Child objekty
+            /// </summary>
+            HideMeAndChilds
+        }
         #region Privátní část
         /// <summary>
         /// Z něčeho dodaného se pokusí vyhledat a vrátit <see cref="WinForm.Control"/>
@@ -153,9 +200,13 @@ namespace Noris.Clients.Win.Components
         /// <param name="key"></param>
         /// <param name="level"></param>
         /// <param name="origin"></param>
-        private static void _AddMapItems(List<ItemInfo> items, WinForm.Control control, string key, int level, Point origin)
+        /// <param name="filter"></param>
+        private static void _AddMapItems(List<ItemInfo> items, WinForm.Control control, string key, int level, Point origin, Func<Control, ScanFilterMode> filter)
         {
             if (control is null) return;
+
+            ScanFilterMode scanMode = (filter is null ? ScanFilterMode.Default : filter(control));
+            if (scanMode == ScanFilterMode.HideMeAndChilds) return;
             try
             {
                 var itemInfo = new ItemInfo(control, key, level, origin);
@@ -163,7 +214,7 @@ namespace Noris.Clients.Win.Components
             }
             catch { }
 
-            if (control.Controls is null || control.Controls.Count == 0) return;
+            if (control.Controls is null || control.Controls.Count == 0 || scanMode == ScanFilterMode.HideMyChilds) return;
 
             int childLevel = level + 1;
             Point controlLocation = (control is WinForm.Form ? Point.Empty : control.Bounds.Location);
@@ -173,7 +224,7 @@ namespace Noris.Clients.Win.Components
             {
                 var child = control.Controls[l];
                 string childKey = key + "." + l.ToString();
-                _AddMapItems(items, child, childKey, childLevel, childOrigin);
+                _AddMapItems(items, child, childKey, childLevel, childOrigin, filter);
             }
         }
         /// <summary>

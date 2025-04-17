@@ -902,7 +902,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (args.SmallButton && imageOptions is SimpleButtonImageOptions buttonImageOptions)
             {
                 buttonImageOptions.Location = DevExpress.XtraEditors.ImageLocation.MiddleCenter;
-                buttonImageOptions.ImageToTextAlignment = ImageAlignToText.LeftCenter;
+                buttonImageOptions.ImageToTextAlignment = ImageAlignToText.TopCenter;
             }
         }
         /// <summary>
@@ -1461,6 +1461,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _ApplySvgImageSize(ImageOptions imageOptions, ResourceArgs args)
         {
             if (args.ImageSize.HasValue) imageOptions.SvgImageSize = args.ImageSize.Value;
+            else if (args.OptimalSvgSize.HasValue) imageOptions.SvgImageSize = args.OptimalSvgSize.Value;
             else if (args.SizeType.HasValue) imageOptions.SvgImageSize = DxComponent.GetDefaultImageSize(args.SizeType.Value);
         }
         /// <summary>

@@ -5817,7 +5817,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (svgImage != null)
                     {
                         string xmlImage = svgImage.ToXmlString();
-                        sb.AppendLine($"  string content{_ClipboardCopyIndex} = @\"{xmlImage}\";");
+                        string csXmlImage = xmlImage.Replace("\"", "\"\"");       // String zadaný @""   může obsahovat uvozovky   "  pokud jsou zadané jako dvojuvozovky  ""
+                        sb.AppendLine($"  string content{_ClipboardCopyIndex} = @\"{csXmlImage}\";");
                     }
                 }
 

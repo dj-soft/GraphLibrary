@@ -452,6 +452,27 @@ namespace Noris.Clients.Win.Components.AsolDX
             return (items is null ? null : new ListExt<TItem>(items));
         }
         /// <summary>
+        /// Dodaný negenerický IList konvertuje na Array.
+        /// </summary>
+        /// <typeparam name="TItem"></typeparam>
+        /// <param name="items">Seznam prvků</param>
+        /// <param name="predicate">Volitelně další podmínka pro filtrování prvků, smí být null</param>
+        public static TItem[] ToArray<TItem>(this System.Collections.IList items, Func<TItem, bool> predicate = null)
+        {
+            if (items == null || items.Count == 0) return new TItem[0];
+            bool hasPredicate = (predicate != null);
+            var result = new List<TItem>();
+            for (int index = 0; index < items.Count; index++)
+            {
+                object item = items[index];
+                if (item is TItem tItem && (!hasPredicate || predicate(tItem)))
+                {
+                    result.Add(tItem);
+                }
+            }
+            return result.ToArray();
+        }
+        /// <summary>
         /// Z dodané kolekce odebere všechny prvky, které vyhoví danému filtru.
         /// Pokud je zadaná akce <paramref name="onRemove"/>, tak tato akce je provedena ihned po odebrání prvku z listu.
         /// </summary>

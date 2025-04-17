@@ -309,31 +309,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="control"></param>
         public static void DisposeContent(this Control control)
         {
-            if (control == null || control.IsDisposed || control.Disposing) return;
-
-            var childs = control.Controls.OfType<System.Windows.Forms.Control>().ToArray();
-            foreach (var child in childs)
+            try
             {
-                if (child == null || child.IsDisposed || child.Disposing) continue;
+                if (control == null || control.IsDisposed || control.Disposing) return;
 
-                if (child is DevExpress.XtraEditors.XtraScrollableControl xsc)
+                var childs = control.Controls.ToArray<Control>();
+                foreach (var child in childs)
                 {
-                    xsc.AutoScroll = false;
-                }
-                if (child is System.Windows.Forms.ScrollableControl wsc)
-                {
-                    wsc.AutoScroll = false;
+                    if (child == null || child.IsDisposed || child.Disposing) continue;
+
+                    if (child is DevExpress.XtraEditors.XtraScrollableControl xsc)
+                    {
+                        xsc.AutoScroll = false;
+                    }
+                    if (child is System.Windows.Forms.ScrollableControl wsc)
+                    {
+                        wsc.AutoScroll = false;
+                    }
+
+                    try
+                    {
+                        control.Controls.Remove(child);
+                        child.Dispose();
+                    }
+                    catch { }
                 }
 
-                try 
-                {
-                    control.Controls.Remove(child);
-                    child.Dispose(); 
-                }
-                catch { }
+                control.Controls.Clear();
             }
-
-            control.Controls.Clear();
+            catch { }
         }
         /// <summary>
         /// Do this controlu vloží potřebné souřadnice, pokud jsou změněny.
