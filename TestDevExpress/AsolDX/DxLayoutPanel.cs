@@ -55,6 +55,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.__TitleCompulsory = false;
             this.__HighlightSinglePanel = false;
             this.__OnlyActiveFormHasActiveTitle = true;
+            this.__UseSvgIcons = true;
+            this.__IconLayoutsSet = LayoutIconSetType.Default;
 
             this.MouseLeave += _MouseLeave;
         }
@@ -169,7 +171,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Používat SVG ikony (true) / PNG ikony (false): default = true
         /// </summary>
-        public bool UseSvgIcons { get { return __UseSvgIcons; } set { __UseSvgIcons = value; this.RunInGui(_RefreshControls); } } private bool __UseSvgIcons;
+        public bool UseSvgIcons { get { return __UseSvgIcons; } set { __UseSvgIcons = value; this.RunInGui(_RefreshIcons); } } private bool __UseSvgIcons;
+        /// <summary>
+        /// Sada ikon pro zobrazení layoutu
+        /// </summary>
+        public LayoutIconSetType IconLayoutsSet { get { return __IconLayoutsSet; } set { __IconLayoutsSet = value; this.RunInGui(_RefreshIcons); } } private LayoutIconSetType __IconLayoutsSet;
         /// <summary>
         /// Kreslit pozadí a linku pomocí DxPaint?
         /// </summary>
@@ -975,12 +981,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _RefreshControls()
         {
+            _RefreshControls(false);
+        }
+        /// <summary>
+        /// Refreshuje ikony do všech panelů
+        /// </summary>
+        private void _RefreshIcons()
+        {
+            _RefreshControls(true);
+        }
+        /// <summary>
+        /// Refreshuje vlastnosti aktuálně přítomných controlů
+        /// </summary>
+        private void _RefreshControls(bool withReloadIcons)
+        {
             if (!this.IsHandleCreated || this.Disposing || this.IsDisposed) return;
 
             using (SystemAdapter.TraceTextScope(TraceLevel.Info, this.GetType(), "_RefreshControls", "Performance"))
             {
                 foreach (LayoutTileInfo tileInfo in __Controls)
-                    tileInfo.HostControl?.RefreshControlGui();
+                    tileInfo.HostControl?.RefreshControlGui(withReloadIcons);
             }
         }
         /// <summary>
@@ -3123,6 +3143,45 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             Disposed
         }
+        /// <summary>
+        /// Vrátí pole ikon pro dané zadání
+        /// </summary>
+        /// <param name="useSvgIcons"></param>
+        /// <param name="iconLayoutsSet"></param>
+        /// <returns></returns>
+        internal static string[] GetCurrentIcons(bool useSvgIcons, LayoutIconSetType iconLayoutsSet)
+        {
+            if (useSvgIcons)
+            {
+                switch (iconLayoutsSet)
+                {   // Ikony v pořadí:  Doleva - Nahoru - Dolů - Doprava - Zavřít
+                    case LayoutIconSetType.Default:
+                        return new string[] { ImageName.DxLayoutDockLeftSvg, ImageName.DxLayoutDockTopSvg, ImageName.DxLayoutDockBottomSvg, ImageName.DxLayoutDockRightSvg, ImageName.DxLayoutCloseSvg };
+                    case LayoutIconSetType.Align:
+                        return new string[] { "svgimages/align/alignverticalleft.svg", "svgimages/align/alignhorizontaltop.svg", "svgimages/align/alignhorizontalbottom.svg", "svgimages/align/alignverticalright.svg", ImageName.DxLayoutCloseSvg };
+                    case LayoutIconSetType.DashboardLegend:
+                        return new string[] { "svgimages/dashboards/showlegendinsideverticalcenterleft.svg", "svgimages/dashboards/showlegendinsidehorizontaltopcenter.svg", "svgimages/dashboards/showlegendinsidehorizontalbottomcenter.svg", "svgimages/dashboards/showlegendinsideverticalcenterright.svg", ImageName.DxLayoutCloseSvg };
+                    case LayoutIconSetType.IconBuilderArrow1:
+                        return new string[] { "svgimages/icon%20builder/actions_arrow1left.svg", "svgimages/icon%20builder/actions_arrow1up.svg", "svgimages/icon%20builder/actions_arrow1down.svg", "svgimages/icon%20builder/actions_arrow1right.svg", ImageName.DxLayoutCloseSvg };
+                    case LayoutIconSetType.IconBuilderArrow2:
+                        return new string[] { "svgimages/icon%20builder/actions_arrow2right.svg", "svgimages/icon%20builder/actions_arrow2left.svg", "svgimages/icon%20builder/actions_arrow2down.svg", "svgimages/icon%20builder/actions_arrow2up.svg", ImageName.DxLayoutCloseSvg };
+                    case LayoutIconSetType.IconBuilderArrow3:
+                        return new string[] { "svgimages/icon%20builder/actions_arrow3down.svg", "svgimages/icon%20builder/actions_arrow3left.svg", "svgimages/icon%20builder/actions_arrow3right.svg", "svgimages/icon%20builder/actions_arrow3up.svg", ImageName.DxLayoutCloseSvg };
+                    case LayoutIconSetType.IconBuilderArrow4:
+                        return new string[] { "svgimages/icon%20builder/actions_arrow4down.svg", "svgimages/icon%20builder/actions_arrow4left.svg", "svgimages/icon%20builder/actions_arrow4right.svg", "svgimages/icon%20builder/actions_arrow4up.svg", ImageName.DxLayoutCloseSvg };
+                    case LayoutIconSetType.SpreadsheetFill:
+                        return new string[] { "svgimages/spreadsheet/filldown.svg", "svgimages/spreadsheet/fillleft.svg", "svgimages/spreadsheet/fillright.svg", "svgimages/spreadsheet/fillup.svg", ImageName.DxLayoutCloseSvg };
+                    case LayoutIconSetType.SpreadsheetChartLegend:
+                        return new string[] { "svgimages/spreadsheet/chartlegend_showlegendatbottom.svg", "svgimages/spreadsheet/chartlegend_showlegendatleft.svg", "svgimages/spreadsheet/chartlegend_showlegendatright.svg", "svgimages/spreadsheet/chartlegend_showlegendattop.svg", ImageName.DxLayoutCloseSvg };
+                }
+
+                return new string[] { ImageName.DxLayoutDockLeftSvg, ImageName.DxLayoutDockTopSvg, ImageName.DxLayoutDockBottomSvg, ImageName.DxLayoutDockRightSvg, ImageName.DxLayoutCloseSvg };
+            }
+            else
+            {
+                return new string[] { ImageName.DxLayoutDockLeftPng, ImageName.DxLayoutDockTopPng, ImageName.DxLayoutDockBottomPng, ImageName.DxLayoutDockRightPng, ImageName.DxLayoutClosePng };
+            }
+        }
         #endregion
     }
 }
@@ -3416,23 +3475,31 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         /// <summary>
         /// Refresh obsahu, volat pouze v GUI
         /// </summary>
-        internal void RefreshControlGui()
+        internal void RefreshControlGui(bool withReloadIcons = false)
         {
-            _RefreshControlGui();
+            _RefreshControlGui(withReloadIcons);
         }
         /// <summary>
         /// Refresh obsahu již v GUI threadu
         /// </summary>
         private void _RefreshControlGui()
         {
+            _RefreshControlGui(false);
+        }
+        /// <summary>
+        /// Refresh obsahu již v GUI threadu
+        /// </summary>
+        private void _RefreshControlGui(bool withReloadIcons)
+        {
             using (SystemAdapter.TraceTextScope(TraceLevel.Info, this.GetType(), "_RefreshControlGui", "Performance"))
             {
                 _TitleBarSetVisible();
+                if (withReloadIcons)
+                    _TitleBar.RefreshIcons();
                 if (_TitleBarIsVisible)
                     _TitleBar.RefreshControl();
             }
         }
-
         /// <summary>
         /// Metoda zajistí provedení Refreshe titulku tohoto panelu.
         /// Barva titulku odpovídá aktivitě příslušného panelu.
@@ -3694,6 +3761,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         }
         private void _Initialise()
         {
+            __AppliedIconSize = 0;
+            __AppliedSvgIcons = false;
+            __AppliedIconLayoutSet = LayoutIconSetType.None;
             _CreateControls();
             _RefreshButtonsImageAndSize(true);
         }
@@ -3756,6 +3826,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         /// Mají se použít SVG ikony?
         /// </summary>
         private bool UseSvgIcons { get { return (this.LayoutOwner?.UseSvgIcons ?? true); } }
+        /// <summary>
+        /// Jaké ikony se mají použít?
+        /// </summary>
+        public LayoutIconSetType IconLayoutsSet { get { return (this.LayoutOwner?.IconLayoutsSet ?? LayoutIconSetType.Default); } }
         /// <summary>
         /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
         /// Záporná hodnota: vyjadřuje plnou barvu, udává odstup od horního a dolního okraje titulku.
@@ -4026,6 +4100,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
             this._RefreshAdditionalIcons();
             this._RefreshButtonVisibility(false);
             this._DoLayout();
+        }
+        /// <summary>
+        /// Přenačte ikony do buttonů
+        /// </summary>
+        internal void RefreshIcons()
+        {
+            _RefreshButtonsImageAndSize();
         }
         /// <summary>
         /// Aktualizuje text titulku, z <see cref="TitleText"/> nebo <see cref="TitleSubstitute"/>.
@@ -4339,7 +4420,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         /// <summary>
         /// Aktualizuje vzhled ikon, pokud je to nutné (= pokud došlo ke změně typu ikon anebo velikosti ikon vlivem změny Zoomu).
         /// Aktualizuje i velikost buttonů a ikon.
-        /// Bázová třída <see cref="DxLayoutTitlePanel"/> na závěr nastavuje <see cref="_AppliedSvgIcons"/> = <see cref="UseSvgIcons"/>;
+        /// Bázová třída <see cref="DxLayoutTitlePanel"/> na závěr nastavuje <see cref="__AppliedSvgIcons"/> = <see cref="UseSvgIcons"/>;
         /// </summary>
         private void _RefreshButtonsImageAndSize(bool force = false)
         {
@@ -4358,12 +4439,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
             refreshOneButton(_DockRightButton, icons[3], DockButtonRightToolTip);
             refreshOneButton(_CloseButton, icons[4], CloseButtonToolTip);
 
-            this._AppliedSvgIcons = UseSvgIcons;
-            this._AppliedIconSize = btnSize;
+            this.__AppliedIconSize = btnSize;
+            this.__AppliedSvgIcons = UseSvgIcons;
+            this.__AppliedIconLayoutSet = IconLayoutsSet;
 
             bool needRefreshButtons()
             {
-                return (force || UseSvgIcons != _AppliedSvgIcons || _ButtonSize != _AppliedIconSize);
+                return (force || _ButtonSize != __AppliedIconSize || UseSvgIcons != __AppliedSvgIcons || this.IconLayoutsSet != this.__AppliedIconLayoutSet);
             }
             void refreshOneButton(DxSimpleButton button, string imageName, string toolTip)
             {
@@ -4379,20 +4461,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         {
             get
             {
-                if (UseSvgIcons)
-                    return new string[] { ImageName.DxLayoutDockLeftSvg, ImageName.DxLayoutDockTopSvg, ImageName.DxLayoutDockBottomSvg, ImageName.DxLayoutDockRightSvg, ImageName.DxLayoutCloseSvg };
-                else
-                    return new string[] { ImageName.DxLayoutDockLeftPng, ImageName.DxLayoutDockTopPng, ImageName.DxLayoutDockBottomPng, ImageName.DxLayoutDockRightPng, ImageName.DxLayoutClosePng };
+                return DxLayoutPanel.GetCurrentIcons(UseSvgIcons, IconLayoutsSet);
             }
         }
         /// <summary>
         /// Nyní jsou použité SVG ikony?
         /// </summary>
-        private bool _AppliedSvgIcons;
+        private bool __AppliedSvgIcons;
         /// <summary>
         /// Velikost ikon aplikovaná. Pomáhá řešit redraw ikon po změně Zoomu.
         /// </summary>
-        private int _AppliedIconSize;
+        private int __AppliedIconSize;
+        /// <summary>
+        /// Sada ikon aplikovaná.  Pomáhá řešit redraw ikon po změně sady.
+        /// </summary>
+        private LayoutIconSetType __AppliedIconLayoutSet;
         /// <summary>
         /// Aktuálně jsou viditelné DockButtons
         /// </summary>
@@ -4695,6 +4778,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         /// Nahoru od stávajícího (=vodorovný splitter)
         /// </summary>
         Top
+    }
+    /// <summary>
+    /// Typ ikony do TitleBaru pro Position
+    /// </summary>
+    public enum LayoutIconSetType
+    {
+        /// <summary>
+        /// Žádné ikony
+        /// </summary>
+        None = 0,
+        Default,
+        Align,
+        DashboardLegend,
+        IconBuilderArrow1,
+        IconBuilderArrow2,
+        IconBuilderArrow3,
+        IconBuilderArrow4,
+        SpreadsheetFill,
+        SpreadsheetChartLegend
     }
     /// <summary>
     /// Informace o požadovaném cíli dokování

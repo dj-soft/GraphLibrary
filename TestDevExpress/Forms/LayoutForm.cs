@@ -57,6 +57,7 @@ namespace TestDevExpress.Components
                 DockButtonRightToolTip = "Přemístit tento panel doprava",
                 CloseButtonToolTip = "Zavřít tento panel",
                 UseSvgIcons = true,
+                IconLayoutsSet = LayoutIconSetType.Default,
                 UseDxPainter = true
             };
             _LayoutPanel.UserControlAdd += _LayoutPanel_UserControlAdd;
@@ -103,6 +104,9 @@ namespace TestDevExpress.Components
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Copy", Text = "Copy XmlLayout", ToolTipText = "Zkopíruje aktuální XML layout do schránky", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutCopy, RibbonStyle = RibbonItemStyles.SmallWithText });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Paste", Text = "Paste XmlLayout", ToolTipText = "Vloží text ze schránky do XML layoutu", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutPaste, RibbonStyle = RibbonItemStyles.SmallWithText });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Clear", Text = "Clear layout", ToolTipText = "Smaže celý layout", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutClear, RibbonStyle = RibbonItemStyles.SmallWithText });
+
+            group.Items.Add(_CreateIconSetRibbonItem());
+
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set1", Text = "Set Layout 1", ToolTipText = "Vloží předdefinovaný layout 1", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText, ItemIsFirstInGroup = false });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set2", Text = "Set Layout 2", ToolTipText = "Vloží předdefinovaný layout 2", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set3", Text = "Set Layout 3", ToolTipText = "Vloží předdefinovaný layout 3", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText });
@@ -119,60 +123,89 @@ namespace TestDevExpress.Components
 
             this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
         }
+        private DataRibbonItem _CreateIconSetRibbonItem()
+        {
+            string iconSetImage = "svgimages/outlook%20inspired/fittopage.svg";
+            var button = new DataRibbonItem() { ItemId = "Dx.Layout.IconSet", ItemType = RibbonItemType.Menu, ImageName = iconSetImage, Text = "IconSet", RibbonStyle = RibbonItemStyles.Large };
+            button.SubItems = new ListExt<IRibbonItem>();
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.0", Text = "Default", Tag = LayoutIconSetType.Default });
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.1", Text = "Align", Tag = LayoutIconSetType.Align });
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.2", Text = "DashboardLegend", Tag = LayoutIconSetType.DashboardLegend });
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.4", Text = "IconBuilderArrow1", Tag = LayoutIconSetType.IconBuilderArrow1 });
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.5", Text = "IconBuilderArrow2", Tag = LayoutIconSetType.IconBuilderArrow2 });
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.6", Text = "IconBuilderArrow3", Tag = LayoutIconSetType.IconBuilderArrow3 });
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.7", Text = "IconBuilderArrow4", Tag = LayoutIconSetType.IconBuilderArrow4 });
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.8", Text = "SpreadsheetFill", Tag = LayoutIconSetType.SpreadsheetFill });
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.9", Text = "SpreadsheetChartLegend", Tag = LayoutIconSetType.SpreadsheetChartLegend });
+            return button;
+        }
         private void _DxRibbonControl_RibbonItemClick(object sender, DxRibbonItemClickArgs e)
         {
             DxComponent.TryRun(() =>
             {
-                switch (e.Item.ItemId)
-                {
-                    case "Dx.Layout.Copy":
-                        _DoLayoutCopy();
-                        break;
-                    case "Dx.Layout.Paste":
-                        _DoLayoutPaste();
-                        break;
-                    case "Dx.Layout.Clear":
-                        _DoLayoutClear();
-                        break;
+                _DxRibbonItemClick(e);
 
-                    case "Dx.Layout.Set1":
-                        _DoLayoutSet1();
-                        break;
-                    case "Dx.Layout.Set2":
-                        _DoLayoutSet2();
-                        break;
-                    case "Dx.Layout.Set3":
-                        _DoLayoutSet3();
-                        break;
-                    case "Dx.Layout.Set4":
-                        _DoLayoutSet4();
-                        break;
-                    case "Dx.Layout.Set5":
-                        _DoLayoutSet5();
-                        break;
-
-                    case "Dx.Layout.Add":
-                        _DoAddNewPanel();
-                        break;
-                    case "Dx.Layout.Close":
-                        _DoCloseActivePanel();
-                        break;
-
-                    case "Dx.Layout.AddToCP1":
-                        _DoAddNewPanelTo("C/P1", DxLayoutPanel.RemoveContentMode.Default);
-                        break;
-                    case "Dx.Layout.AddToCP2":
-                        _DoAddNewPanelTo("C/P2", DxLayoutPanel.RemoveContentMode.HideControlAndKeepTile);
-                        break;
-                    case "Dx.Layout.RemoveHidden":
-                        _DoRemoveHiddenPanel();
-                        break;
-
-                    case "Dx.Layout.ScanStruct":
-                        _DoScanFormStruct();
-                        break;
-                }
+              
             });
+        }
+        private void _DxRibbonItemClick(DxRibbonItemClickArgs e)
+        {
+            if (e.Item.ItemId.StartsWith("Dx.Layout.IconSet.") && e.Item.Tag is LayoutIconSetType)
+            {
+                this._LayoutPanel.IconLayoutsSet = (LayoutIconSetType)e.Item.Tag;
+                this._LayoutPanel.Refresh();
+                return;
+            }
+
+            switch (e.Item.ItemId)
+            {
+                case "Dx.Layout.Copy":
+                    _DoLayoutCopy();
+                    break;
+                case "Dx.Layout.Paste":
+                    _DoLayoutPaste();
+                    break;
+                case "Dx.Layout.Clear":
+                    _DoLayoutClear();
+                    break;
+
+                case "Dx.Layout.Set1":
+                    _DoLayoutSet1();
+                    break;
+                case "Dx.Layout.Set2":
+                    _DoLayoutSet2();
+                    break;
+                case "Dx.Layout.Set3":
+                    _DoLayoutSet3();
+                    break;
+                case "Dx.Layout.Set4":
+                    _DoLayoutSet4();
+                    break;
+                case "Dx.Layout.Set5":
+                    _DoLayoutSet5();
+                    break;
+
+                case "Dx.Layout.Add":
+                    _DoAddNewPanel();
+                    break;
+                case "Dx.Layout.Close":
+                    _DoCloseActivePanel();
+                    break;
+
+                case "Dx.Layout.AddToCP1":
+                    _DoAddNewPanelTo("C/P1", DxLayoutPanel.RemoveContentMode.Default);
+                    break;
+                case "Dx.Layout.AddToCP2":
+                    _DoAddNewPanelTo("C/P2", DxLayoutPanel.RemoveContentMode.HideControlAndKeepTile);
+                    break;
+                case "Dx.Layout.RemoveHidden":
+                    _DoRemoveHiddenPanel();
+                    break;
+
+                case "Dx.Layout.ScanStruct":
+                    _DoScanFormStruct();
+                    break;
+            }
         }
         #endregion
         #endregion
