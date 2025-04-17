@@ -272,7 +272,7 @@
     </Compile>
     <Compile Include="Components\Constants.cs" />
     <Compile Include="Components\DataFormSample.cs" />
-    <Compile Include="Components\LayoutForm.cs">
+    <Compile Include="Forms\LayoutForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Components\Obsoletes\OldDataForm.cs">
