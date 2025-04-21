@@ -3372,6 +3372,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
             _TitleSubstitute = iLayoutUserControl.TitleSubstitute;
             _TitleImageName = iLayoutUserControl.TitleImageName;
             _TitleAdditionalIcons = iLayoutUserControl.TitleAdditionalIcons;
+            _EnableCloseButton = iLayoutUserControl.EnableCloseButton;
 
             _RefreshControlGui();
         }
@@ -3413,6 +3414,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         /// </summary>
         public IEnumerable<string> TitleAdditionalIcons { get { return _TitleAdditionalIcons; } set { _TitleAdditionalIcons = value; if (HasParent) this.RunInGui(_RefreshControlGui); } }
         private IEnumerable<string> _TitleAdditionalIcons;
+        /// <summary>
+        /// Tento panel smí zobrazovat Close button?
+        /// </summary>
+        public bool EnableCloseButton { get { return _EnableCloseButton; } set { _EnableCloseButton = value; if (HasParent) this.RunInGui(_RefreshControlGui); } }
+        private bool _EnableCloseButton;
         /// <summary>
         /// Interaktivní stav tohoto prvku z hlediska Enabled, Mouse, Focus, Selected
         /// </summary>
@@ -3931,6 +3937,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         /// Obsahuje-li true, budou zobrazována dokovací tlačítka podle situace v hlavním panelu, typicky reaguje na počet panelů.
         /// </summary>
         private bool DockButtonsEnabled { get { return ((this.LayoutOwner?.ControlCount ?? 0) > 1); } set { } }
+        /// <summary>
+        /// Tento panel smí zobrazovat Close button?
+        /// </summary>
+        private bool EnableCloseButton { get { return (PanelOwner?.EnableCloseButton ?? true); } }
         #endregion
         #region Instance prvků: Ikona, Titulek, Dock buttony, Close button
         /// <summary>
@@ -4170,7 +4180,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
             if (hasMouse) this.PanelOwner.ChangeInteractiveStatePanelMouse();
 
             // Tlačítko Close:
-            bool isCloseVisible = _GetItemVisibility(CloseButtonVisibility, hasMouse, IsPrimaryPanel);
+            bool enableCloseButton = this.EnableCloseButton;
+            bool isCloseVisible = enableCloseButton && _GetItemVisibility(CloseButtonVisibility, hasMouse, IsPrimaryPanel);
             _CloseButton.Visible = isCloseVisible;
             if (isCloseVisible)
                 titleLabelRight = _CloseButton.Location.X - spaceClose;
@@ -4987,6 +4998,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         /// Ikonky umístěné za textem titulku vpravo.
         /// </summary>
         IEnumerable<string> TitleAdditionalIcons { get; }
+        /// <summary>
+        /// Tento panel smí zobrazovat Close button?
+        /// </summary>
+        bool EnableCloseButton { get; }
         /// <summary>
         /// Událost volaná po změně jakékoli hodnoty v <see cref="TitleText"/> nebo <see cref="TitleBackColor"/> nebo <see cref="TitleTextColor"/>
         /// </summary>

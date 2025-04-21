@@ -270,10 +270,10 @@ namespace TestDevExpress.Components
                     break;
 
                 case "Dx.Layout.AddToCP1":
-                    _DoAddNewPanelTo("C/P1", DxLayoutPanel.RemoveContentMode.Default);
+                    _DoAddNewPanelTo("C/P1", DxLayoutPanel.RemoveContentMode.Default, false);
                     break;
                 case "Dx.Layout.AddToCP2":
-                    _DoAddNewPanelTo("C/P2", DxLayoutPanel.RemoveContentMode.HideControlAndKeepTile);
+                    _DoAddNewPanelTo("C/P2", DxLayoutPanel.RemoveContentMode.HideControlAndKeepTile, false);
                     break;
                 case "Dx.Layout.RemoveHidden":
                     _DoRemoveHiddenPanel();
@@ -306,9 +306,11 @@ namespace TestDevExpress.Components
         /// </summary>
         /// <param name="areaId"></param>
         /// <param name="removeCurrentContentMode"></param>
-        private void _DoAddNewPanelTo(string areaId, DxLayoutPanel.RemoveContentMode removeCurrentContentMode)
+        /// <param name="enableCloseButton"></param>
+        private void _DoAddNewPanelTo(string areaId, DxLayoutPanel.RemoveContentMode removeCurrentContentMode, bool enableCloseButton)
         {
             var panel = new LayoutTestPanel();
+            panel.EnableCloseButton = enableCloseButton;
             this._AddControlAsPanel(panel, areaId, removeCurrentContentMode);
         }
         /// <summary>
@@ -729,6 +731,15 @@ namespace TestDevExpress.Components
         }
         private string[] _TitleAdditionalIcons;
         /// <summary>
+        /// Je povolen button Close?
+        /// </summary>
+        public bool EnableCloseButton
+        {
+            get { return _EnableCloseButton; }
+            set { _EnableCloseButton = value; TitleChanged?.Invoke(this, EventArgs.Empty); }
+        }
+        private bool _EnableCloseButton;
+        /// <summary>
         /// Owner form, poskytuje služby...
         /// </summary>
         public LayoutForm OwnerForm { get; set; }
@@ -774,6 +785,7 @@ namespace TestDevExpress.Components
             Id = ++LastPanelId;
             this.TitleTextBasic = "Panel číslo " + Id.ToString();
             this.TitleText = this.TitleTextBasic;
+            this.EnableCloseButton = true;
 
             // Připravíme centrální panel s fixním layoutem:
             int panelWidth = 300;
@@ -1043,6 +1055,7 @@ namespace TestDevExpress.Components
         string ILayoutUserControl.TitleSubstitute { get { return this.TitleSubstitute; } }
         string ILayoutUserControl.TitleImageName { get { return this.TitleImageName; } }
         IEnumerable<string> ILayoutUserControl.TitleAdditionalIcons { get { return this.TitleAdditionalIcons; } }
+        bool ILayoutUserControl.EnableCloseButton { get { return this.EnableCloseButton; } }
         #endregion
     }
 }
