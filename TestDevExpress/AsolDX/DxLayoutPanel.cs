@@ -3164,15 +3164,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                     case LayoutIconSetType.IconBuilderArrow1:
                         return new string[] { "svgimages/icon%20builder/actions_arrow1left.svg", "svgimages/icon%20builder/actions_arrow1up.svg", "svgimages/icon%20builder/actions_arrow1down.svg", "svgimages/icon%20builder/actions_arrow1right.svg", ImageName.DxLayoutCloseSvg };
                     case LayoutIconSetType.IconBuilderArrow2:
-                        return new string[] { "svgimages/icon%20builder/actions_arrow2right.svg", "svgimages/icon%20builder/actions_arrow2left.svg", "svgimages/icon%20builder/actions_arrow2down.svg", "svgimages/icon%20builder/actions_arrow2up.svg", ImageName.DxLayoutCloseSvg };
+                        return new string[] { "svgimages/icon%20builder/actions_arrow2left.svg", "svgimages/icon%20builder/actions_arrow2up.svg", "svgimages/icon%20builder/actions_arrow2down.svg",  "svgimages/icon%20builder/actions_arrow2right.svg", ImageName.DxLayoutCloseSvg };
                     case LayoutIconSetType.IconBuilderArrow3:
-                        return new string[] { "svgimages/icon%20builder/actions_arrow3down.svg", "svgimages/icon%20builder/actions_arrow3left.svg", "svgimages/icon%20builder/actions_arrow3right.svg", "svgimages/icon%20builder/actions_arrow3up.svg", ImageName.DxLayoutCloseSvg };
+                        return new string[] { "svgimages/icon%20builder/actions_arrow3left.svg", "svgimages/icon%20builder/actions_arrow3up.svg", "svgimages/icon%20builder/actions_arrow3down.svg", "svgimages/icon%20builder/actions_arrow3right.svg", ImageName.DxLayoutCloseSvg };
                     case LayoutIconSetType.IconBuilderArrow4:
-                        return new string[] { "svgimages/icon%20builder/actions_arrow4down.svg", "svgimages/icon%20builder/actions_arrow4left.svg", "svgimages/icon%20builder/actions_arrow4right.svg", "svgimages/icon%20builder/actions_arrow4up.svg", ImageName.DxLayoutCloseSvg };
+                        return new string[] { "svgimages/icon%20builder/actions_arrow4left.svg", "svgimages/icon%20builder/actions_arrow4up.svg", "svgimages/icon%20builder/actions_arrow4down.svg",  "svgimages/icon%20builder/actions_arrow4right.svg",  ImageName.DxLayoutCloseSvg };
                     case LayoutIconSetType.SpreadsheetFill:
-                        return new string[] { "svgimages/spreadsheet/filldown.svg", "svgimages/spreadsheet/fillleft.svg", "svgimages/spreadsheet/fillright.svg", "svgimages/spreadsheet/fillup.svg", ImageName.DxLayoutCloseSvg };
+                        return new string[] { "svgimages/spreadsheet/fillleft.svg", "svgimages/spreadsheet/fillup.svg", "svgimages/spreadsheet/filldown.svg", "svgimages/spreadsheet/fillright.svg",ImageName.DxLayoutCloseSvg };
                     case LayoutIconSetType.SpreadsheetChartLegend:
-                        return new string[] { "svgimages/spreadsheet/chartlegend_showlegendatbottom.svg", "svgimages/spreadsheet/chartlegend_showlegendatleft.svg", "svgimages/spreadsheet/chartlegend_showlegendatright.svg", "svgimages/spreadsheet/chartlegend_showlegendattop.svg", ImageName.DxLayoutCloseSvg };
+                        return new string[] { "svgimages/spreadsheet/chartlegend_showlegendatleft.svg", "svgimages/spreadsheet/chartlegend_showlegendattop.svg", "svgimages/spreadsheet/chartlegend_showlegendatbottom.svg", "svgimages/spreadsheet/chartlegend_showlegendatright.svg",  ImageName.DxLayoutCloseSvg };
                 }
 
                 return new string[] { ImageName.DxLayoutDockLeftSvg, ImageName.DxLayoutDockTopSvg, ImageName.DxLayoutDockBottomSvg, ImageName.DxLayoutDockRightSvg, ImageName.DxLayoutCloseSvg };

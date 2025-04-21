@@ -37,6 +37,9 @@ namespace TestDevExpress.Components
             this._Timer = new Timer() { Interval = 1800 };
             this._Timer.Tick += _Timer_Tick;
             this._Timer.Enabled = false;
+
+            _ActivateIconSet(LayoutIconSetType.Default);
+            _ActivateDockButtons(ControlVisibility.OnMouse);
         }
         #region MainContent
         protected override void DxMainContentPrepare()
@@ -106,8 +109,9 @@ namespace TestDevExpress.Components
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Clear", Text = "Clear layout", ToolTipText = "Smaže celý layout", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutClear, RibbonStyle = RibbonItemStyles.SmallWithText });
 
             group.Items.Add(_CreateIconSetRibbonItem());
+            group.Items.Add(_CreateDockButtonsVisibilityRibbonItem());
 
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set1", Text = "Set Layout 1", ToolTipText = "Vloží předdefinovaný layout 1", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText, ItemIsFirstInGroup = false });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set1", Text = "Set Layout 1", ToolTipText = "Vloží předdefinovaný layout 1", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText, ItemIsFirstInGroup = true });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set2", Text = "Set Layout 2", ToolTipText = "Vloží předdefinovaný layout 2", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set3", Text = "Set Layout 3", ToolTipText = "Vloží předdefinovaný layout 3", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Add", Text = "Add Default", ToolTipText = "Přidá nový panel do výchozí polohy", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutAdd, RibbonStyle = RibbonItemStyles.SmallWithText, ItemIsFirstInGroup = false});
@@ -126,34 +130,107 @@ namespace TestDevExpress.Components
         private DataRibbonItem _CreateIconSetRibbonItem()
         {
             string iconSetImage = "svgimages/outlook%20inspired/fittopage.svg";
-            var button = new DataRibbonItem() { ItemId = "Dx.Layout.IconSet", ItemType = RibbonItemType.Menu, ImageName = iconSetImage, Text = "IconSet", RibbonStyle = RibbonItemStyles.Large };
+            var button = new DataRibbonItem() { ItemId = "Dx.Layout.IconSet", ItemType = RibbonItemType.Menu, ImageName = iconSetImage, Text = "IconSet", ToolTipTitle = "Volba sady ikon", ToolTipText = "Volba ikon pro tlačítka pro dokování", RibbonStyle = RibbonItemStyles.SmallWithText };
             button.SubItems = new ListExt<IRibbonItem>();
             button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.0", Text = "Default", Tag = LayoutIconSetType.Default });
             button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.1", Text = "Align", Tag = LayoutIconSetType.Align });
-            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.2", Text = "DashboardLegend", Tag = LayoutIconSetType.DashboardLegend });
-            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.4", Text = "IconBuilderArrow1", Tag = LayoutIconSetType.IconBuilderArrow1 });
-            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.5", Text = "IconBuilderArrow2", Tag = LayoutIconSetType.IconBuilderArrow2 });
-            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.6", Text = "IconBuilderArrow3", Tag = LayoutIconSetType.IconBuilderArrow3 });
-            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.7", Text = "IconBuilderArrow4", Tag = LayoutIconSetType.IconBuilderArrow4 });
-            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.8", Text = "SpreadsheetFill", Tag = LayoutIconSetType.SpreadsheetFill });
-            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.9", Text = "SpreadsheetChartLegend", Tag = LayoutIconSetType.SpreadsheetChartLegend });
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.2", Text = "Legend", Tag = LayoutIconSetType.DashboardLegend });
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.4", Text = "Arrow1", Tag = LayoutIconSetType.IconBuilderArrow1 });
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.5", Text = "Arrow2", Tag = LayoutIconSetType.IconBuilderArrow2 });
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.6", Text = "Arrow3", Tag = LayoutIconSetType.IconBuilderArrow3 });
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.7", Text = "Arrow4", Tag = LayoutIconSetType.IconBuilderArrow4 });
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.8", Text = "SprFill", Tag = LayoutIconSetType.SpreadsheetFill });
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.IconSet.9", Text = "SprChartLeg", Tag = LayoutIconSetType.SpreadsheetChartLegend });
+            __IconSetRibbonItem = button;
             return button;
+        }
+        private void _ActivateIconSet(LayoutIconSetType iconSet)
+        {
+            DataRibbonItem ribbonMenu = __IconSetRibbonItem;
+            DataRibbonItem activeItem = null;
+            foreach (var iSubItem in ribbonMenu.SubItems)
+            {
+                var subItem = iSubItem as DataRibbonItem;
+                var itemSet = (LayoutIconSetType)subItem.Tag;
+                var isActive = (itemSet == iconSet);
+                if (isActive)
+                    activeItem = subItem;
+
+                var itemStyle = isActive ? FontStyle.Bold : FontStyle.Regular;
+                if (subItem.FontStyle != itemStyle)
+                {
+                    subItem.FontStyle = itemStyle;
+                    subItem.Refresh();
+                }
+            }
+
+            if (activeItem != null)
+            {
+                ribbonMenu.Text = activeItem.Text;
+                ribbonMenu.Refresh();
+            }
+
+            this._LayoutPanel.IconLayoutsSet = iconSet;
+            this._LayoutPanel.Refresh();
+        }
+        private DataRibbonItem _CreateDockButtonsVisibilityRibbonItem()
+        {
+            string iconSetImage = "svgimages/outlook%20inspired/fittopage.svg";
+            var button = new DataRibbonItem() { ItemId = "Dx.Layout.DockButtons", ItemType = RibbonItemType.Menu, ImageName = iconSetImage, Text = "DockButons", ToolTipTitle = "Volba viditelnosti Dock buttonů", ToolTipText = "Volba typu viditelnosti tlačítek pro dokování oken", RibbonStyle = RibbonItemStyles.SmallWithText };
+            button.SubItems = new ListExt<IRibbonItem>();
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.DockButtons.0", Text = "None", Tag = ControlVisibility.None });
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.DockButtons.1", Text = "OnMouse", Tag = ControlVisibility.OnMouse });
+            button.SubItems.Add(new DataRibbonItem() { ItemId = "Dx.Layout.DockButtons.2", Text = "Allways", Tag = ControlVisibility.Allways});
+            __DockButtonRibbonItem = button;
+            return button;
+        }
+        private void _ActivateDockButtons(ControlVisibility dockButtons)
+        {
+            DataRibbonItem ribbonMenu = __DockButtonRibbonItem;
+            DataRibbonItem activeItem = null;
+            foreach (var iSubItem in ribbonMenu.SubItems)
+            {
+                var subItem = iSubItem as DataRibbonItem;
+                var itemButtons = (ControlVisibility)subItem.Tag;
+                var isActive = (itemButtons == dockButtons);
+                if (isActive)
+                    activeItem = subItem;
+
+                var itemStyle = isActive ? FontStyle.Bold : FontStyle.Regular;
+                if (subItem.FontStyle != itemStyle)
+                {
+                    subItem.FontStyle = itemStyle;
+                    subItem.Refresh();
+                }
+            }
+
+            if (activeItem != null)
+            {
+                ribbonMenu.Text = activeItem.Text;
+                ribbonMenu.Refresh();
+            }
+
+            this._LayoutPanel.DockButtonVisibility = dockButtons;
+            this._LayoutPanel.Refresh();
         }
         private void _DxRibbonControl_RibbonItemClick(object sender, DxRibbonItemClickArgs e)
         {
             DxComponent.TryRun(() =>
             {
                 _DxRibbonItemClick(e);
-
-              
             });
         }
         private void _DxRibbonItemClick(DxRibbonItemClickArgs e)
         {
             if (e.Item.ItemId.StartsWith("Dx.Layout.IconSet.") && e.Item.Tag is LayoutIconSetType)
             {
-                this._LayoutPanel.IconLayoutsSet = (LayoutIconSetType)e.Item.Tag;
-                this._LayoutPanel.Refresh();
+                _ActivateIconSet((LayoutIconSetType)e.Item.Tag);
+                return;
+            }
+
+            if (e.Item.ItemId.StartsWith("Dx.Layout.DockButtons.") && e.Item.Tag is ControlVisibility)
+            {
+                _ActivateDockButtons((ControlVisibility)e.Item.Tag);
                 return;
             }
 
@@ -207,6 +284,8 @@ namespace TestDevExpress.Components
                     break;
             }
         }
+        private DataRibbonItem __IconSetRibbonItem;
+        private DataRibbonItem __DockButtonRibbonItem;
         #endregion
         #endregion
         #region Panely v layoutu
