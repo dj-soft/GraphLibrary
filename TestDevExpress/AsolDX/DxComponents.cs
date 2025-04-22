@@ -6657,6 +6657,62 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="skinPartName"></param>
         /// <returns></returns>
         public static DevExpress.Skins.Skin GetSkinInfo(string skinPartName) { return Instance._GetSkinByName(skinPartName); }
+        /// <summary>
+        /// Vrací data o elementu skinu.
+        /// Může vrátit null pro neexistující element.
+        /// Kompletní soupis všech produktů a všech elementů (pro debug účely) získáme v metodě <see cref="GetAllSkinElements"/>.
+        /// </summary>
+        /// <param name="product"></param>
+        /// <param name="elementName"></param>
+        /// <returns></returns>
+        public static DevExpress.Skins.SkinElement GetSkinElement(DevExpress.Skins.SkinProductId product, string elementName)
+        {
+            return DevExpress.Skins.SkinManager.GetSkinElement(product, DevExpress.LookAndFeel.UserLookAndFeel.Default, elementName);
+        }
+        /// <summary>
+        /// Vrátí string obsahující všechny elementy všech products.
+        /// </summary>
+        /// <returns></returns>
+        public static string GetAllSkinElements()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("\tSkinProductId\tElementName");
+
+            var skinIds = Enum.GetValues(typeof(DevExpress.Skins.SkinProductId));
+            int rowId = 0;
+            foreach (var value in skinIds)
+            {
+                var skinId = (DevExpress.Skins.SkinProductId)value;
+                var skin = DevExpress.Skins.SkinManager.Default.GetSkin(skinId, DevExpress.LookAndFeel.UserLookAndFeel.Default);
+                if (skin != null)
+                {
+                    var elements = skin.GetElements();
+                    List<Tuple<string, DevExpress.Skins.SkinElement>> pairs = new List<Tuple<string, DevExpress.Skins.SkinElement>>();
+                    foreach (var item in elements)
+                    {
+                        var element = item as DevExpress.Skins.SkinElement;
+                        pairs.Add(new Tuple<string, DevExpress.Skins.SkinElement>(element.ElementName, element));
+                    }
+                    pairs.Sort((a, b) => String.Compare(a.Item1, b.Item1));
+
+                    foreach (var pair in pairs)
+                    {
+                        var element = pair.Item2;
+                        string line = $"{rowId}\t{skinId}\t{element.ElementName}";
+                        sb.AppendLine(line);
+                        rowId++;
+                    }
+                }
+                else
+                {
+                    string line = $"{rowId}\t{skinId}\tNULL";
+                    sb.AppendLine(line);
+                    rowId++;
+
+                }
+            }
+            return sb.ToString();
+        }
         private void _OnSkinChanged()
         { }
         /// <summary>

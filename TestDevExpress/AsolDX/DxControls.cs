@@ -21,6 +21,7 @@ using DevExpress.Utils.Drawing;
 using DevExpress.Utils.Text;
 using DevExpress.XtraTab;
 using DevExpress.XtraEditors.Controls;
+using DevExpress.XtraRichEdit.Import.OpenDocument;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -8719,7 +8720,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// <see cref="DxTabHeaderImagePainter"/> : třída, která vykreslí další ikonu do záhlaví TabHeaderu, a dovolí i vykreslovat základní ikonu.
     /// </summary>
-    internal class DxTabHeaderImagePainter : IListenerZoomChange, IDisposable
+    internal class DxTabHeaderImagePainter : IListenerZoomChange, IListenerStyleChanged, IDisposable
     {
         #region Konstruktor a public vlastnosti
         /// <summary>
@@ -8936,6 +8937,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         void IListenerZoomChange.ZoomChanged()
         {
+            _ResetFontCache();
+            _RefreshIconSizes();
+        }
+        void IListenerStyleChanged.StyleChanged()
+        {
+            _ResetFontCache();
             _RefreshIconSizes();
         }
         /// <summary>
@@ -8953,6 +8960,43 @@ namespace Noris.Clients.Win.Components.AsolDX
                     imageInfo.RefreshIconSizes(this, document);
             }
         }
+        /// <summary>
+        /// Resetuje velikost fontu, která je závislá na skinu a na Zoomu
+        /// </summary>
+        private void _ResetFontCache()
+        {
+            __FontSizeSpace = null;
+        }
+        /// <summary>
+        /// Metoda vrátí šířku jedné mezery v aktuálním fontu (pro TabHeader) a v aktuálním zoomu.
+        /// </summary>
+        /// <returns></returns>
+        internal static float GetFontOneSpaceWidth()
+        {
+            if (!__FontSizeSpace.HasValue)
+            {   // Jen jedenkrát po změně skinu / zoomu / po restartu si změřím mezeru v běžném fontu:
+                float fontSpace = 5f;
+                var skinElement = DevExpress.Skins.SkinManager.GetSkinElement(DevExpress.Skins.SkinProductId.Docking, DevExpress.LookAndFeel.UserLookAndFeel.Default, "TabHeader");
+                if (skinElement != null)
+                {   // SkinElement mi vytvoří font, kterým se píše titulek:
+                    var font = skinElement.GetDefaultFont(DevExpress.LookAndFeel.UserLookAndFeel.Default);
+                    if (font != null)
+                    {   // Kolik pixelů měří jedna (nebo deset) mezer?
+                        using (var image = new System.Drawing.Bitmap(120, 40, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
+                        using (var graphics = System.Drawing.Graphics.FromImage(image))
+                        using (var stringFormat = new StringFormat(StringFormatFlags.NoWrap | StringFormatFlags.MeasureTrailingSpaces))
+                        {
+                            string spaces = "          ";
+                            var size = graphics.MeasureString(spaces, font, 120, stringFormat);
+                            fontSpace = size.Width / spaces.Length;
+                        }
+                    }
+                }
+                __FontSizeSpace = fontSpace;
+            }
+            return __FontSizeSpace.Value;
+        }
+        private static float? __FontSizeSpace;
         #endregion
         #region Enumy
         /// <summary>
@@ -9479,14 +9523,15 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 this.RefreshDocument(owner, document);
 
-
                 // Vrátí string reprezentující přidané mezery za Caption okna tak, aby se na jejich místo vešla aktuální ikona
                 string GetSpaceForIcon(float iconWidth)
                 {   // 5 mezer má šířku 14px na 100%;  25px na 150%;  10px na 60% ZOOM;  na 96DPI
+                    float sizeSpace = DxTabHeaderImagePainter.GetFontOneSpaceWidth();
+
                     //  hodnota 3.0 dává velký počet mezer
                     //  hodnota 5.0
                     var spaceWidth = DxComponent.ZoomToGui(5.6f, this.DocumentControl?.DeviceDpi ?? 96);     // Šířka jedné mezery, přepočtená ze standardu (3.0 px) pomocí aktuálního Zoomu a Target DPI controlu na aktuální pixely
-                    int spaceCount = (int)Math.Ceiling((1.1f * iconWidth) / spaceWidth);                     // Počet mezer tak, aby zaplnily šířku ikony + 10% (pixely dělené šířkou jedné mezery)
+                    int spaceCount = (int)Math.Ceiling((1.1f * iconWidth) / sizeSpace);                      // Počet mezer tak, aby zaplnily šířku ikony + 10% (pixely dělené šířkou jedné mezery)
                     return "".PadRight(spaceCount);
                 }
             }

@@ -141,7 +141,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public ControlVisibility DockButtonVisibility { get { return _DockButtonVisibility; } set { _DockButtonVisibility = value; this.RunInGui(_RefreshControls); } } private ControlVisibility _DockButtonVisibility;
         /// <summary>
-        /// Viditelnost buttonu Close
+        /// Viditelnost buttonu Close, obecně pro celý Layout. 
+        /// Spíš má řešit obecný režim, kdy a jak máme zobrazovat Close button v závislosti na aktivitě (myš, focus).
+        /// Konkrétní panel má nastaveno <see cref="ILayoutUserControl.EnableCloseButton"/> = <see cref="DxLayout.DxLayoutItemPanel.EnableCloseButton"/>, který umožní potlačit CloseButton pro každý jeden panel specificky.
         /// </summary>
         public ControlVisibility CloseButtonVisibility { get { return _CloseButtonVisibility; } set { _CloseButtonVisibility = value; this.RunInGui(_RefreshControls); } } private ControlVisibility _CloseButtonVisibility;
         /// <summary>
@@ -3996,7 +3998,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         /// <param name="e"></param>
         private void _Child_HasMouseChanged(object sender, EventArgs e)
         {
-            _RefreshButtonVisibility(true);
+            _RefreshButtonVisibility(true, false);
         }
         /// <summary>
         /// Po změně velikosti vyvolá <see cref="_DoLayout()"/>
@@ -4021,7 +4023,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         protected override void OnHasMouseChanged()
         {
             base.OnHasMouseChanged();
-            _RefreshButtonVisibility(true);
+            _RefreshButtonVisibility(true, false);
         }
         /// <summary>
         /// Po kliknutí na tlačítko Dock...
@@ -4108,8 +4110,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         {
             this._RefreshTitle();
             this._RefreshAdditionalIcons();
-            this._RefreshButtonVisibility(false);
-            this._DoLayout();
+            this._RefreshButtonVisibility(false, true);
         }
         /// <summary>
         /// Přenačte ikony do buttonů
@@ -4171,7 +4172,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         /// Nastaví Visible a Enabled pro buttony podle aktuálního stavu a podle požadavků
         /// </summary>
         /// <param name="doLayoutTitle">Po doběhnutí určení viditelnosti vyvolat <see cref="_DoLayoutTitleLabel()"/> ? = umístí objekt labelu do patřičných souřadnic.</param>
-        private void _RefreshButtonVisibility(bool doLayoutTitle)
+        /// <param name="doLayoutButtons">Na konec povinně volat <see cref="_DoLayout()"/>, i když by nebyly změny</param>
+        private void _RefreshButtonVisibility(bool doLayoutTitle, bool doLayoutButtons)
         {
             int titleLabelRight = this._EndX;
             int spacePosition = _ButtonSpacePosition;
@@ -4208,12 +4210,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
             if (doLayoutTitle) _DoLayoutTitleLabel();
 
             // Změna viditelnosti => Repaint:
-            bool isChange = (isDockVisible != _IsDockButtonsVisible) || (isCloseVisible != _IsCloseButtonsVisible);
-            if (isChange)
+            bool isChange = (isCloseVisible != _IsCloseButtonsVisible) || (isDockVisible != _IsDockButtonsVisible);
+            if (doLayoutButtons || isChange)
             {
-                _IsDockButtonsVisible = isDockVisible;
                 _IsCloseButtonsVisible = isCloseVisible;
-                // this.Invalidate();
+                _IsDockButtonsVisible = isDockVisible;
+                _DoLayout();
             }
         }
         /// <summary>
@@ -4257,11 +4259,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
                 _TitleLabelLeft = left;
 
                 // Buttony zpracujeme v pořadí zprava:
-                doLayoutButtonOne(_CloseButton, CloseButtonVisibility, buttonSpaceClose);
-                doLayoutButtonOne(_DockRightButton, DockButtonVisibility, buttonSpacePosition);
-                doLayoutButtonOne(_DockBottomButton, DockButtonVisibility, buttonSpacePosition);
-                doLayoutButtonOne(_DockTopButton, DockButtonVisibility, buttonSpacePosition);
-                doLayoutButtonOne(_DockLeftButton, DockButtonVisibility, buttonSpacePosition);
+                doLayoutButtonOne(_CloseButton, _IsCloseButtonsVisible, CloseButtonVisibility, buttonSpaceClose);
+                doLayoutButtonOne(_DockRightButton, _IsDockButtonsVisible, DockButtonVisibility, buttonSpacePosition);
+                doLayoutButtonOne(_DockBottomButton, _IsDockButtonsVisible, DockButtonVisibility, buttonSpacePosition);
+                doLayoutButtonOne(_DockTopButton, _IsDockButtonsVisible, DockButtonVisibility, buttonSpacePosition);
+                doLayoutButtonOne(_DockLeftButton, _IsDockButtonsVisible, DockButtonVisibility, buttonSpacePosition);
 
                 _TitleLabelRight = right;
                 _DoLayoutTitleLabel();
@@ -4314,9 +4316,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
                 }
             }
 
-            void doLayoutButtonOne(DxSimpleButton button, ControlVisibility visibility, int space)
+            void doLayoutButtonOne(DxSimpleButton button, bool isVisible, ControlVisibility visibility, int space)
             {
-                bool canBeVisible = _GetItemVisibility(visibility, true, isPrimaryPanel) || _GetItemVisibility(visibility, false, isPrimaryPanel);
+                bool canBeVisible = isVisible && (_GetItemVisibility(visibility, true, isPrimaryPanel) || _GetItemVisibility(visibility, false, isPrimaryPanel));
                 if (canBeVisible)
                 {   // Button může mít nastaveno Visible = true; podle stavu myši:
                     right -= buttonSize;
