@@ -299,7 +299,7 @@ namespace TestDevExpress.Components
         }
         private void _DoCloseActivePanel()
         {
-            _LayoutPanel.DoCloseActivePanel();
+            _LayoutPanel.DoCloseActivePanelOnEscapeKey();
         }
         /// <summary>
         /// Přidá new panel do layoutu do daného umístění
