@@ -21,7 +21,6 @@ using DevExpress.Utils.Drawing;
 using DevExpress.Utils.Text;
 using DevExpress.XtraTab;
 using DevExpress.XtraEditors.Controls;
-using DevExpress.XtraRichEdit.Import.OpenDocument;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {

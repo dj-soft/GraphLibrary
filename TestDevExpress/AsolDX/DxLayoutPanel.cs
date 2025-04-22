@@ -179,6 +179,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public LayoutIconSetType IconLayoutsSet { get { return __IconLayoutsSet; } set { __IconLayoutsSet = value; this.RunInGui(_RefreshIcons); } } private LayoutIconSetType __IconLayoutsSet;
         /// <summary>
+        /// Název ikony pro směr Left. Je nutno nastavit <see cref="IconLayoutsSet"/> = <see cref="LayoutIconSetType.Explicit"/>.
+        /// </summary>
+        public string DockButtonLeftIconName { get { return __DockButtonLeftIconName; } set { __DockButtonLeftIconName = value; } } private string __DockButtonLeftIconName;
+        /// <summary>
+        /// Název ikony pro směr Top. Je nutno nastavit <see cref="IconLayoutsSet"/> = <see cref="LayoutIconSetType.Explicit"/>.
+        /// </summary>
+        public string DockButtonTopIconName { get { return __DockButtonTopIconName; } set { __DockButtonTopIconName = value; } } private string __DockButtonTopIconName;
+        /// <summary>
+        /// Název ikony pro směr Bottom. Je nutno nastavit <see cref="IconLayoutsSet"/> = <see cref="LayoutIconSetType.Explicit"/>.
+        /// </summary>
+        public string DockButtonBottomIconName { get { return __DockButtonBottomIconName; } set { __DockButtonBottomIconName = value; } } private string __DockButtonBottomIconName;
+        /// <summary>
+        /// Název ikony pro směr Right. Je nutno nastavit <see cref="IconLayoutsSet"/> = <see cref="LayoutIconSetType.Explicit"/>.
+        /// </summary>
+        public string DockButtonRightIconName { get { return __DockButtonRightIconName; } set { __DockButtonRightIconName = value; } } private string __DockButtonRightIconName;
+        /// <summary>
+        /// Název ikony pro Close button. Je nutno nastavit <see cref="IconLayoutsSet"/> = <see cref="LayoutIconSetType.Explicit"/>.
+        /// </summary>
+        public string CloseButtonIconName { get { return __CloseButtonIconName; } set { __CloseButtonIconName = value; } } private string __CloseButtonIconName;
+
+        /// <summary>
         /// Kreslit pozadí a linku pomocí DxPaint?
         /// </summary>
         public bool UseDxPainter { get { return __UseDxPainter; } set { __UseDxPainter = value; this.RunInGui(_RefreshControls); } } private bool __UseDxPainter;
@@ -425,13 +446,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         #region Přidání UserControlů, refresh titulku, odebrání a evidence UserControlů
         /// <summary>
         /// Vrátí true, pokud aktuálně existující layout obsahuje prostor daného klíče <paramref name="areaId"/> a pokud je možno do něj vložit UserControl.
-        /// Parametr <paramref name="removeOld"/> specifikuje, zda lze akceptovat prostor, který už nějaký UserControl obsahuje.
+        /// Parametr <paramref name="removeMode"/> specifikuje, zda lze akceptovat prostor, který už nějaký UserControl obsahuje.
         /// </summary>
         /// <param name="areaId"></param>
-        /// <param name="removeOld"></param>
-        /// <param name="replaceCurrentContent"></param>
+        /// <param name="removeMode"></param>
         /// <returns></returns>
-        public bool CanAddUserControlTo(string areaId, bool removeOld = false, bool replaceCurrentContent = false)
+        public bool CanAddUserControlTo(string areaId, DxLayoutPanel.RemoveContentMode removeMode)
         {
             if (String.IsNullOrEmpty(areaId)) return false;
 
@@ -441,10 +461,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (hostInfo.Parent.Controls.Count == 0) return true;              // Prostor tam je a je prázdný
             switch (hostInfo.ChildType)
             {
-                case WSForms.AreaContentType.Empty: return true;                       // Prázdno
+                case WSForms.AreaContentType.Empty: return true;               // Prázdno
                 case WSForms.AreaContentType.DxSplitContainer:
-                case WSForms.AreaContentType.WfSplitContainer: return false;           // Nějaký vnořený SplitContainer: to nejde použít pro UserControl.
-                case WSForms.AreaContentType.DxLayoutItemPanel: return removeOld;      // Pokud je tam control: vracím true (=Mohu přidat nový UserControl) tehdy, když je povoleno stávající UserControl odebrat.
+                case WSForms.AreaContentType.WfSplitContainer: return false;   // Nějaký vnořený SplitContainer: to nejde použít pro UserControl.
+                case WSForms.AreaContentType.DxLayoutItemPanel:                // Pokud je tam control: vracím true (=Mohu přidat nový UserControl) tehdy, když je povoleno stávající UserControl odebrat.
+                    return (removeMode == RemoveContentMode.RemoveControlAndKeepTile || removeMode == RemoveContentMode.HideControlAndKeepTile);
             }
             return false;
         }
@@ -1019,16 +1040,57 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Zavření některého panelu na vnější pokyn
         /// <summary>
+        /// Pokusí se zavřít aktuální panel poté, kdy uživatel stiskl klávesu Escape
+        /// </summary>
+        /// <returns></returns>
+        public bool DoCloseActivePanelOnEscapeKey()
+        {
+            // Najdu panel, který můžu zavřít (=který má zobrazován Close button):
+            DxLayoutItemPanel closePanel = null;
+            if (canClose(LayoutItemPanelWithFocus))
+                closePanel = LayoutItemPanelWithFocus;
+
+            // Aktuální (focusovaný) panel nelze zavřít (protože nemá Close button), zkusíme najít jiný panel který by šlo zavřít:
+            if (closePanel is null)
+            {
+                var tiles = this.__Controls;
+                for (int t = tiles.Count - 1; t >= 0; t--)
+                {
+                    var tile = tiles[t];
+                    if (tile.HostControl.EnableCloseButton)
+                    {
+                        closePanel = tile.HostControl;
+                        break;
+                    }
+                }
+            }
+
+            // Máme co zavřít?
+            if (closePanel != null)
+            {
+                return _ItemPanelDoClose(closePanel.UserControl, true, RemoveContentMode.Default);
+            }
+
+            return false;
+
+
+            // Lze daný panel zavřít Escape => má Close button?
+            bool canClose(DxLayoutItemPanel panel)
+            {
+                return (panel != null && panel.EnableCloseButton);
+            }
+        }
+        /// <summary>
         /// Metoda zajistí zavření panelu, který je právě nyní aktivní (je/byl v něm kurzor).
         /// Pokud v this layoutu není žádný panel, který by byl aktivován, neprovede nic.
         /// </summary>
         /// <param name="removeMode">Jakým způsobem odebrat obsah a panel</param>
-        public void DoCloseActivePanel(RemoveContentMode removeMode = RemoveContentMode.Default)
+        public bool xxx___DoCloseActivePanel(RemoveContentMode removeMode = RemoveContentMode.Default)
         {
-            _ItemPanelDoClose(LayoutItemPanelWithFocus, true, removeMode);
+            return _ItemPanelDoClose(LayoutItemPanelWithFocus, true, removeMode);
         }
         /// <summary>
-        /// Metoda zajistí zavření panelu, který obsahuje dodaný Control.
+        /// Metoda zajistí zavření konkrétního panelu, který obsahuje dodaný Control.
         /// Pokud v this layoutu není obsažen daný Control, neprovede nic.
         /// </summary>
         /// <param name="userControl"></param>
@@ -1045,8 +1107,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="control">User control</param>
         /// <param name="force">Zavřít povinně = i když aktuálně jsou zakázány eventy v <see cref="_AllEventsDisable"/></param>
         /// <param name="removeMode">Jakým způsobem odebrat obsah a panel</param>
-        private void _ItemPanelDoClose(Control control, bool force, RemoveContentMode removeMode)
+        private bool _ItemPanelDoClose(Control control, bool force, RemoveContentMode removeMode)
         {
+            bool isClosed = false;
             int index = _SearchIndexOfAnyControl(control);
             if (index >= 0)
             {
@@ -1058,8 +1121,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                     this.OnCloseButtonClickAfter(args);
                 }
                 if (!args.Cancel)
+                {
                     _RemoveUserControl(index, removeMode);
+                    isClosed = true;
+                }
             }
+            return isClosed;
         }
         #endregion
         #region RemoveUserControl - tři odlišné režimy (RemoveContentMode)
@@ -3150,8 +3217,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="useSvgIcons"></param>
         /// <param name="iconLayoutsSet"></param>
+        /// <param name="layoutOwner"></param>
         /// <returns></returns>
-        internal static string[] GetCurrentIcons(bool useSvgIcons, LayoutIconSetType iconLayoutsSet)
+        internal static string[] GetCurrentIcons(bool useSvgIcons, LayoutIconSetType iconLayoutsSet, DxLayoutPanel layoutOwner)
         {
             if (useSvgIcons)
             {
@@ -3159,6 +3227,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {   // Ikony v pořadí:  Doleva - Nahoru - Dolů - Doprava - Zavřít
                     case LayoutIconSetType.Default:
                         return new string[] { ImageName.DxLayoutDockLeftSvg, ImageName.DxLayoutDockTopSvg, ImageName.DxLayoutDockBottomSvg, ImageName.DxLayoutDockRightSvg, ImageName.DxLayoutCloseSvg };
+                    case LayoutIconSetType.Explicit:
+                        string iconDockLeft = layoutOwner?.DockButtonLeftIconName ?? ImageName.DxLayoutDockLeftSvg;
+                        string iconDockTop = layoutOwner?.DockButtonTopIconName ?? ImageName.DxLayoutDockTopSvg;
+                        string iconDockBottom = layoutOwner?.DockButtonBottomIconName ?? ImageName.DxLayoutDockBottomSvg;
+                        string iconDockRight = layoutOwner?.DockButtonRightIconName ?? ImageName.DxLayoutDockRightSvg;
+                        string iconCloseButton = layoutOwner?.CloseButtonIconName ?? ImageName.DxLayoutCloseSvg;
+                        return new string[] { iconDockLeft, iconDockTop, iconDockBottom, iconDockRight, iconCloseButton };
                     case LayoutIconSetType.Align:
                         return new string[] { "svgimages/align/alignverticalleft.svg", "svgimages/align/alignhorizontaltop.svg", "svgimages/align/alignhorizontalbottom.svg", "svgimages/align/alignverticalright.svg", ImageName.DxLayoutCloseSvg };
                     case LayoutIconSetType.DashboardLegend:
@@ -4474,7 +4549,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         {
             get
             {
-                return DxLayoutPanel.GetCurrentIcons(UseSvgIcons, IconLayoutsSet);
+                var owner = this.LayoutOwner;
+                return DxLayoutPanel.GetCurrentIcons(UseSvgIcons, IconLayoutsSet, owner);
             }
         }
         /// <summary>
@@ -4801,6 +4877,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         /// Žádné ikony
         /// </summary>
         None = 0,
+        Explicit,
         Default,
         Align,
         DashboardLegend,
