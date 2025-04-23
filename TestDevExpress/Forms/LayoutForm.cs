@@ -527,7 +527,8 @@ namespace TestDevExpress.Components
                |              |                            |
                +--------------+----------------------------+
             */
-            var root = new Noris.UI.Desktop.MultiPage.WindowArea();
+            var layout = new Noris.UI.Desktop.MultiPage.WindowLayout();
+            var root = layout.RootArea;
             root.ContentType = Noris.UI.Desktop.MultiPage.WindowAreaContentType.SplitterVertical;
             root.SplitterPosition = 450;
             root.FixedContent = Noris.UI.Desktop.MultiPage.WindowAreaFixedContent.Content1;
@@ -538,7 +539,7 @@ namespace TestDevExpress.Components
 
             string areaId = root.Content1.Content2.AreaId;           // C/P1/P2
             var allAreaIds = root.AllAreaIds.ToOneString("; ");
-            string xmlLayout = root.LayoutXml;
+            string xmlLayout = layout.LayoutXml;
             ApplyLayout(xmlLayout, allAreaIds, true);
         }
         private void _DoLayoutSet5()

@@ -24,6 +24,28 @@ namespace Noris.UI.Desktop.MultiPage
         /// Základní prostor layoutu. Může i nemusí být rozdělen.
         /// </summary>
         public WindowArea RootArea { get { return __RootArea; } } private WindowArea __RootArea;
+        /// <summary>
+        /// XML popisující layout.
+        /// </summary>
+        public string LayoutXml { get { return _CreateLayoutXml(); } }
+        /// <summary>
+        /// Vrátí XML layout pro aktuální objekt
+        /// </summary>
+        /// <returns></returns>
+        private string _CreateLayoutXml()
+        {
+            var wsLayout = new Noris.WS.DataContracts.Desktop.Forms.FormLayout();
+            fillWsParams(this, wsLayout);
+            wsLayout.RootArea = __RootArea.CreateWsArea();
+            return Noris.WS.Parser.XmlSerializer.Persist.Serialize(wsLayout, Noris.WS.Parser.XmlSerializer.PersistArgs.Default);
+
+            // Konverze jednotlivých dat - vyjma rekurze:
+            void fillWsParams(WindowLayout source, Noris.WS.DataContracts.Desktop.Forms.FormLayout target)
+            {
+                target.FormNormalBounds = null;
+                // atd
+            }
+        }
     }
     /// <summary>
     /// Popis jedné části layoutu
@@ -176,7 +198,7 @@ namespace Noris.UI.Desktop.MultiPage
         #endregion
         #region Public property
         /// <summary>
-        /// Obsahuje true u Root prvku, tento prvek reprezentuje celé okno = Window. Pouze na něm lze získat <see cref="LayoutXml"/>.
+        /// Obsahuje true u Root prvku, tento prvek reprezentuje celé okno = Window.
         /// </summary>
         public bool IsRoot { get { return (__ParentArea is null); } }
         /// <summary>
@@ -255,45 +277,13 @@ namespace Noris.UI.Desktop.MultiPage
         #endregion
         #region LayoutXml, konverze na WS struktury
         /// <summary>
-        /// XML popisující layout.
-        /// </summary>
-        public string LayoutXml { get { return _CreateLayoutXml(); } }
-        /// <summary>
-        /// Konstruktor pro vytvoření z textu definujícího layout
-        /// </summary>
-        /// <param name="layoutXml"></param>
-        public WindowArea(string layoutXml)
-        { }
-        /// <summary>
-        /// Statický konstruktor pro vytvoření z textu definujícího layout
-        /// </summary>
-        /// <param name="layoutXml"></param>
-        /// <returns></returns>
-        public static WindowArea CreateFromLayoutXml(string layoutXml)
-        {
-            return null;
-        }
-        /// <summary>
-        /// Vrátí XML layout pro aktuální objekt
+        /// Vrátí instanci <see cref="Noris.WS.DataContracts.Desktop.Forms.Area"/> vytvořenou z dodané instance <see cref="WindowArea"/>. 
+        /// Používá rekurzi i pro všechny svoje Childs.
         /// </summary>
         /// <returns></returns>
-        private string _CreateLayoutXml()
+        internal Noris.WS.DataContracts.Desktop.Forms.Area CreateWsArea()
         {
-            if (!this.IsRoot) return null;
-            var wsLayout = _CreateWsLayout(this);
-            return Noris.WS.Parser.XmlSerializer.Persist.Serialize(wsLayout, Noris.WS.Parser.XmlSerializer.PersistArgs.Default);
-        }
-        /// <summary>
-        /// Vrátí instanci <see cref="Noris.WS.DataContracts.Desktop.Forms.FormLayout"/> vytvořenou z dodané instance <see cref="WindowArea"/>. 
-        /// Používá rekurzi pro svoje Childs.
-        /// </summary>
-        /// <param name="winArea"></param>
-        /// <returns></returns>
-        private static Noris.WS.DataContracts.Desktop.Forms.FormLayout _CreateWsLayout(WindowArea winArea)
-        {
-            var wsLayout = new Noris.WS.DataContracts.Desktop.Forms.FormLayout();
-            wsLayout.RootArea = _CreateWsArea(winArea);
-            return wsLayout;
+            return _CreateWsArea(this);
         }
         /// <summary>
         /// Vrátí instanci <see cref="Noris.WS.DataContracts.Desktop.Forms.Area"/> vytvořenou z dodané instance <see cref="WindowArea"/>. 
