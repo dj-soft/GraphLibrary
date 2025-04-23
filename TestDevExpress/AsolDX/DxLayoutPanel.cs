@@ -837,6 +837,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                                FixedPanel.None));
             if (container.Panel1.MinSize != 100) area.MinSize1 = container.Panel1.MinSize;
             if (container.Panel2.MinSize != 100) area.MinSize2 = container.Panel2.MinSize;
+
             area.SplitterPosition = container.SplitterPosition;
             area.SplitterRange = (container.Horizontal ? container.Size.Width : container.ClientSize.Height);     // Vnější velikost containeru = ClientSize jeho hostitele
         }
@@ -892,15 +893,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Celková velikost v pixelech podle orientace splitteru: svislý splitter se pohybuje v rámci šířky prostoru:
             int size = (area.SplitterOrientation == Orientation.Vertical ? parentSize.Width : parentSize.Height);
             int position = area.SplitterPosition ?? (size / 2);
-            int range = (area.SplitterRange ?? 1000);
+            int range = (area.SplitterRange ?? size);
             // Podle toho, který panel je fixní:
             switch (area.FixedPanel)
             {
                 case FixedPanel.Panel1:
+                    // Určení pozice splitteru pro FixedPanel1 je triviální:
                     return position;
                 case FixedPanel.Panel2:
-                    int panel2Size = range - position;
-                    return (size - panel2Size);
+                    // DevExpress v režimu FixePanel2 si samy řeší to, že SplitterPosition počítají pro Panel2. Proto se jim do toho nebudeme nijak háčkovat...
+                    return position;
                 default:
                     double ratio = (double)position / (double)range;
                     return (int)Math.Round((double)size * ratio, 0);

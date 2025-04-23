@@ -6,6 +6,363 @@ using System.Threading.Tasks;
 
 using XmlSerializer = Noris.WS.Parser.XmlSerializer;
 
+namespace Noris.UI.Desktop.MultiPage
+{
+    /// <summary>
+    /// Layout okna s možností postupně jej dělit na podprostory
+    /// </summary>
+    public class WindowLayout
+    {
+        /// <summary>
+        /// Konsturktor pro layout
+        /// </summary>
+        public WindowLayout()
+        {
+            __RootArea = new WindowArea(this);
+        }
+        /// <summary>
+        /// Základní prostor layoutu. Může i nemusí být rozdělen.
+        /// </summary>
+        public WindowArea RootArea { get { return __RootArea; } } private WindowArea __RootArea;
+    }
+    /// <summary>
+    /// Popis jedné části layoutu
+    /// </summary>
+    public class WindowArea
+    {
+        #region Konstruktory a privátní fieldy
+        /// <summary>
+        /// Konstruktor pro samostatný Root prostor
+        /// </summary>
+        public WindowArea()
+        {
+            __RootLayout = null;
+            __ContentId = 0;
+            __ContentType = WindowAreaContentType.UserControl;
+        }
+        /// <summary>
+        /// Konstruktor pro Root prostor v layoutu
+        /// </summary>
+        /// <param name="rootLayout"></param>
+        public WindowArea(WindowLayout rootLayout)
+        {
+            __RootLayout = rootLayout;
+            __ContentId = 0;
+            __ContentType = WindowAreaContentType.UserControl;
+        }
+        /// <summary>
+        /// Konstruktor pro Child prostor
+        /// </summary>
+        /// <param name="parentArea"></param>
+        /// <param name="contentId"></param>
+        public WindowArea(WindowArea parentArea, int contentId)
+        {
+            __ParentArea = parentArea;
+            __ContentId = contentId;
+            __ContentType = WindowAreaContentType.UserControl;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            string text = $"{_FullAreaId} : {__ContentType}";
+            return text;
+        }
+        /// <summary>
+        /// Parent layout. Nemusí být naplněno nikdy.
+        /// </summary>
+        private WindowLayout __RootLayout;
+        /// <summary>
+        /// Parent area. Pokud není, pak this je Root area.
+        /// </summary>
+        private WindowArea __ParentArea;
+        /// <summary>
+        /// Druh obsahu v tomto prostoru
+        /// </summary>
+        private WindowAreaContentType __ContentType;
+        /// <summary>
+        /// ID contentu: 0=Root, 1=<see cref="Content1"/> (vlevo nebo nahoře), 2=<see cref="Content2"/> (vpravo nebo dole)
+        /// </summary>
+        private int __ContentId;
+        /// <summary>
+        /// Dělený pod-prostor 1 (vlevo / nahoře)
+        /// </summary>
+        private WindowArea __Content1;
+        /// <summary>
+        /// Dělený pod-prostor 2 (vpravo / dole)
+        /// </summary>
+        private WindowArea __Content2;
+        /// <summary>
+        /// Pozice splitteru.
+        /// </summary>
+        private int? __SplitterPosition;
+        /// <summary>
+        /// Rozsah pohybu splitteru (šířka nebo výška prostoru).
+        /// </summary>
+        private int? __SplitterRange;
+        /// <summary>
+        /// Je splitter fixovaný = uživatel s ním nemůže pohybovat?
+        /// </summary>
+        private bool? __IsSplitterPositionFixed;
+        /// <summary>
+        /// Který Content je Fixed?
+        /// </summary>
+        private WindowAreaFixedContent? __FixedContent;
+        /// <summary>
+        /// Minimální šířka, platí i pro typ Container
+        /// </summary>
+        private int? __MinWidth;
+        /// <summary>
+        /// Minimální výška, platí i pro typ Container
+        /// </summary>
+        private int? __MinHeight;
+        /// <summary>
+        /// Vrátí validní Content pro aktuální stav <see cref="HasSplitter"/>
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="contentId"></param>
+        /// <returns></returns>
+        private WindowArea _GetContent(ref WindowArea content, int contentId)
+        {
+            if (HasSplitter)
+            {
+                if (content is null)
+                    content = new WindowArea(this, contentId);
+                return content;
+            }
+            return null;
+        }
+        #endregion
+        #region AreaId
+        /// <summary>
+        /// Do daného pole vloží AreaId koncových prostorů pro UserControly. Nevkládá prostory typu Container.
+        /// </summary>
+        /// <param name="allAreaIds"></param>
+        private void _AddAllUserAreaIdsTo(List<string> allAreaIds)
+        {
+            if (!HasSplitter)
+            {   // Já nejsem Splitter = já jsem UserArea:
+                allAreaIds.Add(_FullAreaId);
+            }
+            else
+            {   // Já mám Splitter = mám dva Contenty:
+                this.Content1._AddAllUserAreaIdsTo(allAreaIds);
+                this.Content2._AddAllUserAreaIdsTo(allAreaIds);
+            }
+        }
+        /// <summary>
+        /// Plné AreaId = identifikace od parenta až ke mě, i kdybych já byl Container
+        /// </summary>
+        private string _FullAreaId 
+        { 
+            get 
+            {
+                var parentAreaId = __ParentArea?._FullAreaId ?? "";                                          // Parent: "C/P1"
+                parentAreaId = (String.IsNullOrEmpty(parentAreaId)) ? "" : parentAreaId + AreaIdDelimiter;   // Cesta : "C/P1/"
+                var currentAreaId = _CurrentAreaId;                                                          // Já:     "P2";
+                return parentAreaId + currentAreaId;                                                         // Celek:  "C/P1/P2";
+            }
+        }
+        /// <summary>
+        /// Lokální AreaId = identifikace jen této úrovně: "C" = Container / "P1" nebo "P2" = panel 1 nebo 2
+        /// </summary>
+        private string _CurrentAreaId { get { return (__ContentId == 1 ? AreaIdContent1 : (__ContentId == 2 ? AreaIdContent2 : AreaIdContainer)); } }
+        private const string AreaIdContainer = "C";
+        private const string AreaIdContent1 = "P1";
+        private const string AreaIdContent2 = "P2";
+        private const string AreaIdDelimiter = "/";
+        #endregion
+        #region Public property
+        /// <summary>
+        /// Obsahuje true u Root prvku, tento prvek reprezentuje celé okno = Window. Pouze na něm lze získat <see cref="LayoutXml"/>.
+        /// </summary>
+        public bool IsRoot { get { return (__ParentArea is null); } }
+        /// <summary>
+        /// Obsahuje true, pokud this prostor obsahuje nějaký splitter
+        /// </summary>
+        public bool HasSplitter { get { return (ContentType == WindowAreaContentType.SplitterVertical || ContentType == WindowAreaContentType.SplitterHorizontal); } }
+        /// <summary>
+        /// Určuje, která část obsahu bude při změně velikosti okna "pevná" a která se bude přizůsobovat velikosti
+        /// </summary>
+        public WindowAreaFixedContent? FixedContent { get { return (HasSplitter ? __FixedContent : null); } set { __FixedContent = value; } }
+        /// <summary>
+        /// Minimální šířka, platí i pro typ Container
+        /// </summary>
+        public int? MinWidth { get { return __MinWidth; } set { __MinWidth = value; } }
+        /// <summary>
+        /// Minimální výška, platí i pro typ Container
+        /// </summary>
+        public int? MinHeight { get { return __MinHeight; } set { __MinHeight = value; } }
+        /// <summary>
+        /// Pozice splitteru, vždy měřená zleva / zeshora, bez ohledu na <see cref="FixedContent"/>.
+        /// </summary>
+        public int? SplitterPosition { get { return (HasSplitter ? __SplitterPosition : null); } set { __SplitterPosition = value; } }
+        /// <summary>
+        /// Rozsah pohybu splitteru (šířka nebo výška prostoru).
+        /// Podle této hodnoty a podle <see cref="FixedContent"/> je následně restorována pozice při vkládání layoutu do nového objektu.
+        /// <para/>
+        /// Pokud původní prostor měl šířku 1000 px, pak zde je 1000. Pokud fixovaný panel byl Panel2, je to uvedeno v <see cref="FixedContent"/>.
+        /// Pozice splitteru zleva byla např. 420 (v <see cref="SplitterPosition"/>). Šířka fixního panelu tedy je (1000 - 420) = 580.
+        /// Nyní budeme restorovat XmlLayout do nového prostoru, jehož šířka není 1000, ale 800px.
+        /// Protože fixovaný panel je Panel2 (vpravo), pak nová pozice splitteru (zleva) je taková, aby Panel2 měl šířku stejnou jako původně (580): 
+        /// nově tedy (800 - 580) = 220.
+        /// <para/>
+        /// Obdobné přepočty budou provedeny pro jinou situaci, kdy FixedPanel je None = splitter ke "gumový" = proporcionální.
+        /// Pak se při restoru přepočte nová pozice splitteru pomocí poměru původní pozice ku Range.
+        /// </summary>
+        public int? SplitterRange { get { return (HasSplitter ? __SplitterRange : null); } set { __SplitterRange = value; } }
+        /// <summary>
+        /// Je pozice splitteru fixovaná? Tedy uživatel s ním nemůže pohybovat?
+        /// </summary>
+        public bool? IsSplitterPositionFixed { get { return __IsSplitterPositionFixed; } set { __IsSplitterPositionFixed = value; } }
+        /// <summary>
+        /// ID tohoto prostoru; toto ID následně slouží pro umístění konkrétního obsahu (UserControl = DynamicPage) do konkrétního prostoru.
+        /// </summary>
+        public string AreaId { get { return (HasSplitter ? null : _FullAreaId); } }
+        /// <summary>
+        /// Obsahuje všechny prostory určené k umístění UserControlů v rámci this layoutu
+        /// </summary>
+        public string[] AllAreaIds { get { var allAreaIds = new List<string>(); _AddAllUserAreaIdsTo(allAreaIds); return allAreaIds.ToArray(); } }
+        /// <summary>
+        /// Druh obsahu v tomto prostoru: finální UserControl (typicky DynamicPage)? Nebo je tento prostor rozdělený na dva menší vodorovně nebo svisle?
+        /// </summary>
+        public WindowAreaContentType ContentType { get { return __ContentType; } set { __ContentType = value; } }
+        /// <summary>
+        /// Pokud je tento prostor rozdělen na dva pomocí <see cref="ContentType"/> s hodnotou <see cref="WindowAreaContentType.SplitterVertical"/> nebo <see cref="WindowAreaContentType.SplitterHorizontal"/>,
+        /// pak je zde podprostor vlevo nebo nahoře.<br/>
+        /// Pokud není rozdělen, je zde null.
+        /// <br/>
+        /// Nelze vložit hodnotu. Pokud nastavíme správně <see cref="ContentType"/>, bude zde připraven validní prostor.
+        /// </summary>
+        public WindowArea Content1 { get { return _GetContent(ref __Content1, 1); } }
+        /// <summary>
+        /// Pokud je tento prostor rozdělen na dva pomocí <see cref="ContentType"/> s hodnotou <see cref="WindowAreaContentType.SplitterVertical"/> nebo <see cref="WindowAreaContentType.SplitterHorizontal"/>,
+        /// pak je zde podprostor vpravo nebo dole.<br/>
+        /// Pokud není rozdělen, je zde null.
+        /// <br/>
+        /// Nelze vložit hodnotu. Pokud nastavíme správně <see cref="ContentType"/>, bude zde připraven validní prostor.
+        /// </summary>
+        public WindowArea Content2 { get { return _GetContent(ref __Content2, 2); } }
+        #endregion
+        #region LayoutXml, konverze na WS struktury
+        /// <summary>
+        /// XML popisující layout.
+        /// </summary>
+        public string LayoutXml { get { return _CreateLayoutXml(); } }
+        /// <summary>
+        /// Konstruktor pro vytvoření z textu definujícího layout
+        /// </summary>
+        /// <param name="layoutXml"></param>
+        public WindowArea(string layoutXml)
+        { }
+        /// <summary>
+        /// Statický konstruktor pro vytvoření z textu definujícího layout
+        /// </summary>
+        /// <param name="layoutXml"></param>
+        /// <returns></returns>
+        public static WindowArea CreateFromLayoutXml(string layoutXml)
+        {
+            return null;
+        }
+        /// <summary>
+        /// Vrátí XML layout pro aktuální objekt
+        /// </summary>
+        /// <returns></returns>
+        private string _CreateLayoutXml()
+        {
+            if (!this.IsRoot) return null;
+            var wsLayout = _CreateWsLayout(this);
+            return Noris.WS.Parser.XmlSerializer.Persist.Serialize(wsLayout, Noris.WS.Parser.XmlSerializer.PersistArgs.Default);
+        }
+        /// <summary>
+        /// Vrátí instanci <see cref="Noris.WS.DataContracts.Desktop.Forms.FormLayout"/> vytvořenou z dodané instance <see cref="WindowArea"/>. 
+        /// Používá rekurzi pro svoje Childs.
+        /// </summary>
+        /// <param name="winArea"></param>
+        /// <returns></returns>
+        private static Noris.WS.DataContracts.Desktop.Forms.FormLayout _CreateWsLayout(WindowArea winArea)
+        {
+            var wsLayout = new Noris.WS.DataContracts.Desktop.Forms.FormLayout();
+            wsLayout.RootArea = _CreateWsArea(winArea);
+            return wsLayout;
+        }
+        /// <summary>
+        /// Vrátí instanci <see cref="Noris.WS.DataContracts.Desktop.Forms.Area"/> vytvořenou z dodané instance <see cref="WindowArea"/>. 
+        /// Používá rekurzi pro svoje Childs.
+        /// </summary>
+        /// <param name="winArea"></param>
+        /// <returns></returns>
+        private static Noris.WS.DataContracts.Desktop.Forms.Area _CreateWsArea(WindowArea winArea)
+        {
+            if (winArea is null) return null;
+
+            var wsArea = new Noris.WS.DataContracts.Desktop.Forms.Area();
+            fillWsParams(winArea, wsArea);
+            if (winArea.HasSplitter)
+            {
+                wsArea.Content1 = _CreateWsArea(winArea.Content1);
+                wsArea.Content2 = _CreateWsArea(winArea.Content2);
+            }
+            return wsArea;
+
+            // Konverze jednotlivých dat - vyjma rekurze:
+            void fillWsParams(WindowArea source, Noris.WS.DataContracts.Desktop.Forms.Area target)
+            {
+                target.AreaId = source._FullAreaId;
+                target.ContentType = (source.HasSplitter ? WS.DataContracts.Desktop.Forms.AreaContentType.DxSplitContainer : WS.DataContracts.Desktop.Forms.AreaContentType.DxLayoutItemPanel);
+                if (source.HasSplitter)
+                {
+                    target.SplitterOrientation = source.ContentType == WindowAreaContentType.SplitterHorizontal ? WS.DataContracts.Desktop.Forms.Orientation.Horizontal : WS.DataContracts.Desktop.Forms.Orientation.Vertical;
+                    target.SplitterPosition = source.SplitterPosition;
+                    target.SplitterRange = source.SplitterRange;
+                    target.IsSplitterFixed = source.IsSplitterPositionFixed;
+                    target.FixedPanel = source.FixedContent.HasValue ?
+                            (Noris.WS.DataContracts.Desktop.Forms.FixedPanel?)(source.FixedContent.Value == WindowAreaFixedContent.Content1 ? WS.DataContracts.Desktop.Forms.FixedPanel.Panel1 : (source.FixedContent.Value == WindowAreaFixedContent.Content2 ? WS.DataContracts.Desktop.Forms.FixedPanel.Panel2 : WS.DataContracts.Desktop.Forms.FixedPanel.None)) :
+                            (Noris.WS.DataContracts.Desktop.Forms.FixedPanel?)null; 
+                }
+            }
+        }
+        #endregion
+    }
+    /// <summary>
+    /// Druh obsahu jednoho prostoru: prostor pro finální control nebo prostor rozdělený na dvě oblasti?
+    /// </summary>
+    public enum WindowAreaContentType
+    {
+        /// <summary>
+        /// V tomto prostoru bude umístěn finální User control
+        /// </summary>
+        UserControl,
+        /// <summary>
+        /// V tomto prostoru bude umístěn svislý splitter a dvě oblasti, vlevo = <see cref="WindowArea.Content1"/> a vpravo = <see cref="WindowArea.Content2"/>.
+        /// </summary>
+        SplitterVertical,
+        /// <summary>
+        /// V tomto prostoru bude umístěn vodorovný splitter a dvě oblasti, nahoře = <see cref="WindowArea.Content1"/> a dole = <see cref="WindowArea.Content2"/>.
+        /// </summary>
+        SplitterHorizontal,
+    }
+    /// <summary>
+    /// Určuje, která část obsahu bude při změně velikosti okna "pevná" a která se bude přizůsobovat velikosti
+    /// </summary>
+    public enum WindowAreaFixedContent
+    {
+        /// <summary>
+        /// Žádná část není pevná = při změně velikosti okna se splitter posouvá relativně ke změně velikosti
+        /// </summary>
+        None,
+        /// <summary>
+        /// První část (<see cref="WindowArea.Content1"/>) je pevná a nemění velikost
+        /// </summary>
+        Content1,
+        /// <summary>
+        /// Druhá část (<see cref="WindowArea.Content2"/>) je pevná a nemění velikost
+        /// </summary>
+        Content2
+    }
+}
 namespace Noris.WS.DataContracts.Desktop.Forms
 {
     #region třídy layoutu: FormLayout, Area; enum AreaContentType

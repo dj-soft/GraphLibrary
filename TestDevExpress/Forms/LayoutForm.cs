@@ -114,6 +114,7 @@ namespace TestDevExpress.Components
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set1", Text = "Set Layout 1", ToolTipText = "Vloží předdefinovaný layout 1", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText, ItemIsFirstInGroup = true });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set2", Text = "Set Layout 2", ToolTipText = "Vloží předdefinovaný layout 2", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set3", Text = "Set Layout 3", ToolTipText = "Vloží předdefinovaný layout 3", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set4", Text = "Set Layout 4", ToolTipText = "Vloží předdefinovaný layout 4", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Add", Text = "Add Default", ToolTipText = "Přidá nový panel do výchozí polohy", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutAdd, RibbonStyle = RibbonItemStyles.SmallWithText, ItemIsFirstInGroup = false});
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Close", Text = "Close Panel", ToolTipText = "Zavře aktivní panel", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutClose, RibbonStyle = RibbonItemStyles.SmallWithText});
 
@@ -457,7 +458,12 @@ namespace TestDevExpress.Components
                 if (c is Noris.Clients.Win.Components.AsolDX.DxLayout.DxLayoutTitlePanel) return DebugControl.ScanFilterMode.HideMyChilds;
                 return DebugControl.ScanFilterMode.Default;
             });
-            DxComponent.ClipboardInsert(structure);
+
+            string xmlLayout = _LayoutPanel.XmlLayout;
+
+            string debugText = structure + Environment.NewLine + Environment.NewLine + xmlLayout;
+
+            DxComponent.ClipboardInsert(debugText);
             DxComponent.ShowMessageInfo($"Bylo nalezeno {count} panelů celkem.\r\nZ toho viditelných {visibleCount},\r\nNeviditelných {invisibleCount}.\r\n\r\nStruktura layoutu je v Clipboardu.");
         }
         private void _DoLayoutSet1()
@@ -510,7 +516,30 @@ namespace TestDevExpress.Components
         }
         private void _DoLayoutSet4()
         {
-          
+            /*   Vytvořím něco takového:
+               +--------------+----------------------------+
+               |              |                            |
+               |    C/P1/P1   |                            |
+               |              |                            |
+               +--------------+          C/P2              |
+               |              |                            |
+               |    C/P1/P2   |                            |
+               |              |                            |
+               +--------------+----------------------------+
+            */
+            var root = new Noris.UI.Desktop.MultiPage.WindowArea();
+            root.ContentType = Noris.UI.Desktop.MultiPage.WindowAreaContentType.SplitterVertical;
+            root.SplitterPosition = 450;
+            root.FixedContent = Noris.UI.Desktop.MultiPage.WindowAreaFixedContent.Content1;
+
+            root.Content1.ContentType = Noris.UI.Desktop.MultiPage.WindowAreaContentType.SplitterHorizontal;
+            root.Content1.SplitterPosition = 320;
+            root.Content1.FixedContent = Noris.UI.Desktop.MultiPage.WindowAreaFixedContent.Content2;
+
+            string areaId = root.Content1.Content2.AreaId;           // C/P1/P2
+            var allAreaIds = root.AllAreaIds.ToOneString("; ");
+            string xmlLayout = root.LayoutXml;
+            ApplyLayout(xmlLayout, allAreaIds, true);
         }
         private void _DoLayoutSet5()
         {
