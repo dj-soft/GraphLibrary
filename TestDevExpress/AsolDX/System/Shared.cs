@@ -180,6 +180,10 @@ namespace Noris.UI.Desktop.MultiPage
         /// </summary>
         public bool IsRoot { get { return (__ParentArea is null); } }
         /// <summary>
+        /// Druh obsahu v tomto prostoru: finální UserControl (typicky DynamicPage)? Nebo je tento prostor rozdělený na dva menší vodorovně nebo svisle?
+        /// </summary>
+        public WindowAreaContentType ContentType { get { return __ContentType; } set { __ContentType = value; } }
+        /// <summary>
         /// Obsahuje true, pokud this prostor obsahuje nějaký splitter
         /// </summary>
         public bool HasSplitter { get { return (ContentType == WindowAreaContentType.SplitterVertical || ContentType == WindowAreaContentType.SplitterHorizontal); } }
@@ -196,10 +200,17 @@ namespace Noris.UI.Desktop.MultiPage
         /// </summary>
         public int? MinHeight { get { return __MinHeight; } set { __MinHeight = value; } }
         /// <summary>
-        /// Pozice splitteru, vždy měřená zleva / zeshora, bez ohledu na <see cref="FixedContent"/>.
+        /// Pozice splitteru. Vyjadřuje velikost objektu (šířka/výška ve směru podle orientace <see cref="ContentType"/> na fixní straně od Splitteru (fixní strana = podle <see cref="FixedContent"/>).
+        /// <para/>
+        /// Pokud tedy <see cref="ContentType"/> = <see cref="WindowAreaContentType.SplitterVertical"/> a <see cref="FixedContent"/> = <see cref="WindowAreaFixedContent.Content1"/>,
+        /// pak pozice splitteru vyjadřuje šířku panelu vlevo od splitteru.<br/>
+        /// Pokud <see cref="ContentType"/> = <see cref="WindowAreaContentType.SplitterHorizontal"/> a <see cref="FixedContent"/> = <see cref="WindowAreaFixedContent.Content2"/>,
+        /// pak pozice splitteru vyjadřuje výšku panelu dole pod splitterem, a to nezávisle na tom jak vysoký bude celý container.<br/>
         /// </summary>
         public int? SplitterPosition { get { return (HasSplitter ? __SplitterPosition : null); } set { __SplitterPosition = value; } }
         /// <summary>
+        /// NEPOUŽÍVÁ SE, NEMÁ VÝZNAM
+        /// <para/>
         /// Rozsah pohybu splitteru (šířka nebo výška prostoru).
         /// Podle této hodnoty a podle <see cref="FixedContent"/> je následně restorována pozice při vkládání layoutu do nového objektu.
         /// <para/>
@@ -212,7 +223,7 @@ namespace Noris.UI.Desktop.MultiPage
         /// Obdobné přepočty budou provedeny pro jinou situaci, kdy FixedPanel je None = splitter ke "gumový" = proporcionální.
         /// Pak se při restoru přepočte nová pozice splitteru pomocí poměru původní pozice ku Range.
         /// </summary>
-        public int? SplitterRange { get { return (HasSplitter ? __SplitterRange : null); } set { __SplitterRange = value; } }
+        protected int? SplitterRange { get { return (HasSplitter ? __SplitterRange : null); } set { __SplitterRange = value; } }
         /// <summary>
         /// Je pozice splitteru fixovaná? Tedy uživatel s ním nemůže pohybovat?
         /// </summary>
@@ -225,10 +236,6 @@ namespace Noris.UI.Desktop.MultiPage
         /// Obsahuje všechny prostory určené k umístění UserControlů v rámci this layoutu
         /// </summary>
         public string[] AllAreaIds { get { var allAreaIds = new List<string>(); _AddAllUserAreaIdsTo(allAreaIds); return allAreaIds.ToArray(); } }
-        /// <summary>
-        /// Druh obsahu v tomto prostoru: finální UserControl (typicky DynamicPage)? Nebo je tento prostor rozdělený na dva menší vodorovně nebo svisle?
-        /// </summary>
-        public WindowAreaContentType ContentType { get { return __ContentType; } set { __ContentType = value; } }
         /// <summary>
         /// Pokud je tento prostor rozdělen na dva pomocí <see cref="ContentType"/> s hodnotou <see cref="WindowAreaContentType.SplitterVertical"/> nebo <see cref="WindowAreaContentType.SplitterHorizontal"/>,
         /// pak je zde podprostor vlevo nebo nahoře.<br/>
