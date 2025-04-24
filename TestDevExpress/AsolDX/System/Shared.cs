@@ -360,6 +360,159 @@ namespace Noris.UI.Desktop.MultiPage
         Content2
     }
 }
+namespace Noris.Srv
+{
+    using Noris.Clients.Win.Components.AsolDX;
+
+    public static class MultiTargetInvoke
+    {
+        /// <summary>
+        /// Detailně řízená invokace události (per-one-target)
+        /// </summary>
+        /// <param name="targetEvent"></param>
+        /// <param name="sender"></param>
+        /// <param name="eventArgs"></param>
+        /// <param name="invokeArgs"></param>
+        public static void NrsInvoke(this MulticastDelegate targetEvent, object sender, object eventArgs, InvokeArgs invokeArgs = null)
+        {
+            if (targetEvent is null) return;
+
+            var targetActions = targetEvent.GetInvocationList();
+            if (targetActions.Length == 0) return;
+
+            if (invokeArgs is null) invokeArgs = InvokeArgs.Default;                                           // Implicitní řídící argumenty
+
+            if (invokeArgs.DoLogWholeEvent)
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"Call event starting now...");       // Trace Begin celého eventu
+
+            foreach (var targetAction in targetActions)
+            {
+                if (invokeArgs.DoLogSingleTarget)                                                              // Trace Begin jednoho targetu
+                    DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"Call TargetAction: {targetAction.Target.GetType().FullName} => {targetAction.Method.Name}");
+
+                // Nějaká akce před jedním target handlerem:
+                invokeArgs.ActionBeforeSingleTarget?.Invoke(eventArgs);        // Toto není vlastní událost, ale režijní akce před vyvoláním jednoho cílového handleru
+
+                // Vlastní jeden eventhandler je zde:
+                targetAction.DynamicInvoke(sender, eventArgs);
+
+                // Nějaká akce po jednom target handleru:
+                invokeArgs.ActionBeforeSingleTarget?.Invoke(eventArgs);        // Toto není vlastní událost, ale režijní akce po vyvolání jednoho cílového handleru
+            }
+
+            if (invokeArgs.DoLogWholeEvent)
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"Call event done.");                 // Trace End celého eventu
+
+        }
+        /// <summary>
+        /// Argumenty pro řízení vyvolávání události per-one-target
+        /// </summary>
+        public class InvokeArgs
+        {
+            public static InvokeArgs Default { get { return new InvokeArgs(); } }
+            public bool DoLogWholeEvent { get; set; }
+            public bool DoLogSingleTarget { get; set; }
+            public Action<object> ActionBeforeSingleTarget;
+            public Action<object> ActionAfterSingleTarget;
+        }
+    }
+
+    public class MultiTargetInvokeTest
+    {
+        public static string RunTest()
+        {
+            var testMngr = new MultiTargetInvokeTest();
+            var result = testMngr._RunTest();
+            return result;
+        }
+        private string _RunTest()
+        {
+            string result = "";
+            string time;
+            DxComponent.LogActive = true;                                      // Startuje běh StopWatch
+
+            // Vytvořím instanci, která bude provádět testy, a zaregistruji několik cílových eventhandlerů:
+            var testInst = new TestInstance();
+            testInst.CountChanged += _TestHandler1;
+            testInst.CountChanged += _TestHandler2;
+            testInst.CountChanged += _TestHandler3;
+            testInst.CountChanged += _TestHandler4;
+            testInst.CountChanged += _TestHandler5;
+
+            _DoTotalLoops = 100;
+
+            // 1. Nativní event s prázdným obsahem eventhandleru (když _DoSomeLoops = 0, nevolá se ani výkonná metoda _DoSomeTime() ) => měřím jen režii jaderného kódu):
+            _DoSomeLoops = 0;
+            _DoSomeCounter = 0;
+            time = testInst.RunTestNativeInvoke(_DoTotalLoops);
+            result += $"1. Native EMPTY event time: {time} microsecs; for {_DoSomeCounter} called events = Zero Code overhead\r\n";
+
+            // 2. Nativní event s provedením něčeho uvnitř (když _DoSomeLoops > 0, pak volám _DoSomeTime()):
+            _DoSomeLoops = 100;
+            _DoSomeCounter = 0;
+            time = testInst.RunTestNativeInvoke(_DoTotalLoops);
+            result += $"2. Native Invoke event time: {time} microsecs; for {_DoSomeCounter} called events = Native event invoke.\r\n";
+
+            // 3. NrsInvoke event s provedením něčeho uvnitř = obdobně jako krok 2, ale místo event?.Invoke() se provádí event?.NrsInvoke():
+            _DoSomeLoops = 100;
+            _DoSomeCounter = 0;
+            time = testInst.RunTestNrsInvoke(_DoTotalLoops);
+            result += $"3. NrsInvoke event time: {time} microsecs; for {_DoSomeCounter} called events = NrsManaged event invoke.\r\n";
+
+            return result;
+        }
+
+        // Několik cílových eventhandlerů :
+        private void _TestHandler1(object sender, EventArgs e) { _DoSomeCounter++; if (_DoSomeLoops > 0) this._DoSomeTime(); }
+        private void _TestHandler2(object sender, EventArgs e) { _DoSomeCounter++; if (_DoSomeLoops > 0) this._DoSomeTime(); }
+        private void _TestHandler3(object sender, EventArgs e) { _DoSomeCounter++; if (_DoSomeLoops > 0) this._DoSomeTime(); }
+        private void _TestHandler4(object sender, EventArgs e) { _DoSomeCounter++; if (_DoSomeLoops > 0) this._DoSomeTime(); }
+        private void _TestHandler5(object sender, EventArgs e) { _DoSomeCounter++; if (_DoSomeLoops > 0) this._DoSomeTime(); }
+
+        /// <summary>
+        /// Něco jako udělej, simuluj aplikační eventhandler
+        /// </summary>
+        private void _DoSomeTime()
+        {
+            int loops = _DoSomeLoops;
+            string content = "";
+            for (int i = 0; i < loops; i++)
+                content = DateTime.Now.ToString();                             // Nějaká akce, která trvá nějakou dobu, jako simulace výkonu aplikačního eventhandleru
+        }
+        private int _DoTotalLoops;
+        private int _DoSomeLoops;
+        private int _DoSomeCounter;
+        public class TestInstance
+        {
+            public string RunTestNativeInvoke(int loopCount)
+            {
+                var start = DxComponent.LogTimeCurrent;                        // = StopWatch.ElapsedTicks
+                for (int i = 0; i < loopCount; i++)
+                {
+                    CountChanged?.Invoke(this, EventArgs.Empty);
+                }
+                var time = DxComponent.LogGetTimeElapsed(start);               // = (StopWatch.ElapsedTicks - start) / StopWatch.Frequency převedeno na mikrosekundy
+                return Math.Round(time, 0).ToString("### ### ##0");
+            }
+            public string RunTestNrsInvoke(int loopCount)
+            {
+                var invokeArgs = new MultiTargetInvoke.InvokeArgs() { DoLogSingleTarget = false, DoLogWholeEvent = false };
+
+                var start = DxComponent.LogTimeCurrent;                        // = StopWatch.ElapsedTicks
+                for (int i = 0; i < loopCount; i++)
+                {
+                    CountChanged.NrsInvoke(this, EventArgs.Empty, invokeArgs);
+                }
+                var time = DxComponent.LogGetTimeElapsed(start);               // = (StopWatch.ElapsedTicks - start) / StopWatch.Frequency převedeno na mikrosekundy
+                return Math.Round(time, 0).ToString("### ### ##0");
+            }
+            /// <summary>
+            /// Událost volaná po každé smyčce
+            /// </summary>
+            public event EventHandler CountChanged;
+        }
+    }
+}
 namespace Noris.WS.DataContracts.Desktop.Forms
 {
     #region třídy layoutu: FormLayout, Area; enum AreaContentType

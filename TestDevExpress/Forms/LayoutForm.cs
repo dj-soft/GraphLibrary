@@ -12,6 +12,7 @@ using Noris.Clients.Win.Components.AsolDX.DxLayout;
 using TestDevExpress.Forms;
 using Noris.Clients.Win.Components;
 using DevExpress.PivotGrid.OLAP;
+using Noris.Srv;
 
 namespace TestDevExpress.Components
 {
@@ -101,28 +102,30 @@ namespace TestDevExpress.Components
             string dxLayoutAdd = "devav/actions/add.svg";
             string dxLayoutClose = "devav/actions/close.svg";
 
-            string copyImage = "svgimages/edit/copy.svg";
             string scanStructImageName = "svgimages/xaf/action_chart_printing_preview.svg";
+            string runEventTestImageName = "svgimages/pdf%20viewer/nextview.svg";
 
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Copy", Text = "Copy XmlLayout", ToolTipText = "Zkopíruje aktuální XML layout do schránky", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutCopy, RibbonStyle = RibbonItemStyles.SmallWithText });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Paste", Text = "Paste XmlLayout", ToolTipText = "Vloží text ze schránky do XML layoutu", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutPaste, RibbonStyle = RibbonItemStyles.SmallWithText });
+
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Copy", Text = "Copy XmlLayout", ToolTipText = "Zkopíruje aktuální XML layout do schránky", ItemType = RibbonItemType.Button, ImageName = dxLayoutCopy, RibbonStyle = RibbonItemStyles.SmallWithText });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Paste", Text = "Paste XmlLayout", ToolTipText = "Vloží text ze schránky do XML layoutu", ItemType = RibbonItemType.CheckButtonPassive, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutPaste, RibbonStyle = RibbonItemStyles.SmallWithText });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Clear", Text = "Clear layout", ToolTipText = "Smaže celý layout", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutClear, RibbonStyle = RibbonItemStyles.SmallWithText });
 
             group.Items.Add(_CreateIconSetRibbonItem());
             group.Items.Add(_CreateDockButtonsVisibilityRibbonItem());
 
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set1", Text = "Set Layout 1", ToolTipText = "Vloží předdefinovaný layout 1", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText, ItemIsFirstInGroup = true });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set2", Text = "Set Layout 2", ToolTipText = "Vloží předdefinovaný layout 2", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set3", Text = "Set Layout 3", ToolTipText = "Vloží předdefinovaný layout 3", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set4", Text = "Set Layout 4", ToolTipText = "Vloží předdefinovaný layout 4", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Add", Text = "Add Default", ToolTipText = "Přidá nový panel do výchozí polohy", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutAdd, RibbonStyle = RibbonItemStyles.SmallWithText, ItemIsFirstInGroup = false});
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Close", Text = "Close Panel", ToolTipText = "Zavře aktivní panel", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutClose, RibbonStyle = RibbonItemStyles.SmallWithText});
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set1", Text = "Set Layout 1", ToolTipText = "Vloží předdefinovaný layout 1", ItemType = RibbonItemType.CheckButtonPassive, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText, ItemIsFirstInGroup = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set2", Text = "Set Layout 2", ToolTipText = "Vloží předdefinovaný layout 2", ItemType = RibbonItemType.CheckButtonPassive, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set3", Text = "Set Layout 3", ToolTipText = "Vloží předdefinovaný layout 3", ItemType = RibbonItemType.CheckButtonPassive, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set4", Text = "Set Layout 4", ToolTipText = "Vloží předdefinovaný layout 4", ItemType = RibbonItemType.CheckButtonPassive, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.SmallWithText });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Add", Text = "Add Default", ToolTipText = "Přidá nový panel do výchozí polohy", ItemType = RibbonItemType.Button, ImageName = dxLayoutAdd, RibbonStyle = RibbonItemStyles.SmallWithText, ItemIsFirstInGroup = false});
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Close", Text = "Close Panel", ToolTipText = "Zavře aktivní panel", ItemType = RibbonItemType.Button, ImageName = dxLayoutClose, RibbonStyle = RibbonItemStyles.SmallWithText});
 
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.AddToCP1", Text = "Add ToCP1", ToolTipText = "Přidá nový panel explicitně do Area C/P1. Pokud v cílovém prostoru něco bude, dojde k chybě.", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutAdd, RibbonStyle = RibbonItemStyles.SmallWithText, ItemIsFirstInGroup = true });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.AddToCP2", Text = "Add ToCP2", ToolTipText = "Přidá nový panel explicitně do Area C/P2. Pokud v cílovém prostoru něco bude, bude původní obsah odebrán v režimu Hide.", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutAdd, RibbonStyle = RibbonItemStyles.SmallWithText });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.RemoveHidden", Text = "Remove hidden", ToolTipText = "Najde první Hidden panel (ten, který byl zavřen v režimu HideControlAndKeepTile) a odebere jej z layoutu. Jde o nevizuální operaci, kdy je fyzicky odebrán skrytý panel ze struktury.", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = dxLayoutClose, RibbonStyle = RibbonItemStyles.SmallWithText });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.AddToCP1", Text = "Add ToCP1", ToolTipText = "Přidá nový panel explicitně do Area C/P1. Pokud v cílovém prostoru něco bude, dojde k chybě.", ItemType = RibbonItemType.Button, ImageName = dxLayoutAdd, RibbonStyle = RibbonItemStyles.SmallWithText, ItemIsFirstInGroup = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.AddToCP2", Text = "Add ToCP2", ToolTipText = "Přidá nový panel explicitně do Area C/P2. Pokud v cílovém prostoru něco bude, bude původní obsah odebrán v režimu Hide.", ItemType = RibbonItemType.Button, ImageName = dxLayoutAdd, RibbonStyle = RibbonItemStyles.SmallWithText });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.RemoveHidden", Text = "Remove hidden", ToolTipText = "Najde první Hidden panel (ten, který byl zavřen v režimu HideControlAndKeepTile) a odebere jej z layoutu. Jde o nevizuální operaci, kdy je fyzicky odebrán skrytý panel ze struktury.", ItemType = RibbonItemType.Button, ImageName = dxLayoutClose, RibbonStyle = RibbonItemStyles.SmallWithText });
 
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.ScanStruct", Text = "Scan control", ToolTipText = "Zmapuje aktuální strukturu controlu LayoutPanel a vloží ji do Clipboardu", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", ImageName = scanStructImageName, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.ScanStruct", Text = "Scan control", ToolTipText = "Zmapuje aktuální strukturu controlu LayoutPanel a vloží ji do Clipboardu", ItemType = RibbonItemType.Button, ImageName = scanStructImageName, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.RunEventTest", Text = "Event Test", ToolTipText = "Spustí test eventhandlerů", ItemType = RibbonItemType.Button, ImageName = runEventTestImageName, RibbonStyle = RibbonItemStyles.Large});
 
             this.DxRibbon.AddPages(pages, true);
 
@@ -283,6 +286,10 @@ namespace TestDevExpress.Components
                 case "Dx.Layout.ScanStruct":
                     _DoScanFormStruct();
                     break;
+
+                case "Dx.Layout.RunEventTest":
+                    _DoRunEventTest();
+                    break;
             }
         }
         private DataRibbonItem __IconSetRibbonItem;
@@ -332,13 +339,10 @@ namespace TestDevExpress.Components
         /// <param name="removeCurrentContentMode"></param>
         private void _AddControlAsPanel(LayoutTestPanel panel, string areaId, DxLayoutPanel.RemoveContentMode removeCurrentContentMode)
         {
-            _PrepareTestPanel(panel);
-
             if (String.IsNullOrEmpty(areaId))
                 _LayoutPanel.AddControl(panel);
             else
                 _LayoutPanel.AddControlToArea(panel, areaId, removeCurrentContentMode: removeCurrentContentMode);
-
         }
         /// <summary>
         /// Někdo zavřel poslední panel
@@ -379,6 +383,16 @@ namespace TestDevExpress.Components
                     // 40% z nich bude mít fadeout:
                     testPanel.TitleBackColorEnd = Color.FromArgb(0, backColor);
             }
+
+            testPanel.PanelSizeChanged += NewPanel_PanelSizeChanged;
+        }
+        internal void NewPanel_PanelSizeChanged(object sender, LayoutTestPanel.PanelSizeChangedArgs args)
+        {
+            string title = sender.GetType().Name;
+            if (sender is LayoutTestPanel panel)
+                title = panel.TitleText;
+            string text = $"FormEvent:PanelSizeChanged; '{title}'; Size: '{args.NewSize.Width},{args.NewSize.Height}';";
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, text);
         }
         #endregion
         #region XmlLayout - akce volané z menu
@@ -681,6 +695,13 @@ namespace TestDevExpress.Components
         private string[] _ImageNames;
         private Timer _Timer;
         #endregion
+        #region RunEventTest
+        private void _DoRunEventTest()
+        {
+            var result = Noris.Srv.MultiTargetInvokeTest.RunTest();
+            DxComponent.ShowMessageInfo(result);
+        }
+        #endregion
     }
     /// <summary>
     /// Testovací panel reprezentující UserControl v <see cref="DxLayoutPanel"/>, obdoba panelu pro DynamicPage
@@ -694,6 +715,7 @@ namespace TestDevExpress.Components
         public LayoutTestPanel()
         {
             this.Initialize();
+            this.PanelSizeChanged += _LayoutTestPanel_PanelSizeChanged;
         }
         /// <summary>
         /// Dispose
@@ -803,6 +825,44 @@ namespace TestDevExpress.Components
         /// Došlo ke změně <see cref="TitleText"/>
         /// </summary>
         public event EventHandler TitleChanged;
+        #endregion
+        #region Testy eventů
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
+            this._RunSizeChangedEvent();
+        }
+        private void _RunSizeChangedEvent()
+        {
+            var args = new PanelSizeChangedArgs() { EventTime = DateTime.Now, NewSize = this.Size };
+            
+            PanelSizeChanged?.NrsInvoke(this, args);
+            
+        }
+
+        public event PanelSizeChangedHandler PanelSizeChanged;
+
+        public delegate void PanelSizeChangedHandler(object sender, PanelSizeChangedArgs args);
+        public class PanelSizeChangedArgs : EventArgs
+        {
+            public DateTime EventTime;
+            public Size NewSize;
+        }
+        /// <summary>
+        /// Testovací eventhandler v this třídě, vyvolaný z eventu <see cref="PanelSizeChanged"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _LayoutTestPanel_PanelSizeChanged(object sender, PanelSizeChangedArgs args)
+        {
+            string title = sender.GetType().Name;
+            if (sender is LayoutTestPanel panel)
+                title = panel.TitleText;
+            string text = $"TestPanel:PanelSizeChanged; '{title}'; Size: '{args.NewSize.Width},{args.NewSize.Height}';";
+            DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, text);
+        }
+
         #endregion
         #region Inicializace, jednotlivé controly, jejich eventy
         /// <summary>
@@ -994,6 +1054,7 @@ namespace TestDevExpress.Components
                 layoutPanel.RemoveControl(this, removeMode);
             }
         }
+
         DevExpress.XtraEditors.PanelControl _NavPanel;
         DevExpress.XtraEditors.SimpleButton _AddRightButton;
         DevExpress.XtraEditors.SimpleButton _AddBottomButton;
