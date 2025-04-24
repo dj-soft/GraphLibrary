@@ -439,67 +439,75 @@ namespace Noris.Srv
             testInst.CountChanged += _TestHandler4;
             testInst.CountChanged += _TestHandler5;
 
-            _DoTotalLoops = 100;
+            _TestCycleCount = 200;
 
             // 1. Nativní event s prázdným obsahem eventhandleru (když _DoSomeLoops = 0, nevolá se ani výkonná metoda _DoSomeTime() ) => měřím jen režii jaderného kódu):
-            _DoSomeLoops = 0;
-            _DoSomeCounter = 0;
-            time = testInst.RunTestNativeInvoke(_DoTotalLoops);
-            result += $"1. Native EMPTY event time: {time} microsecs; for {_DoSomeCounter} called events = Zero Code overhead\r\n";
+            _AppEventLoops = 0;
+            _EventHandlerCount = 0;
+            time = testInst.RunTestNativeInvoke(_TestCycleCount);
+            result += $"1. Native Invoke EMPTY event time: {time} microsecs; for {_EventHandlerCount} called events = Zero Code NativeInvoke overhead\r\n";
 
             // 2. Nativní event s provedením něčeho uvnitř (když _DoSomeLoops > 0, pak volám _DoSomeTime()):
-            _DoSomeLoops = 100;
-            _DoSomeCounter = 0;
-            time = testInst.RunTestNativeInvoke(_DoTotalLoops);
-            result += $"2. Native Invoke event time: {time} microsecs; for {_DoSomeCounter} called events = Native event invoke.\r\n";
+            _AppEventLoops = 100;
+            _EventHandlerCount = 0;
+            time = testInst.RunTestNativeInvoke(_TestCycleCount);
+            result += $"2. Native Invoke WORKING event time: {time} microsecs; for {_EventHandlerCount} called events = Native event invoke.\r\n";
 
-            // 3. NrsInvoke event s provedením něčeho uvnitř = obdobně jako krok 2, ale místo event?.Invoke() se provádí event?.NrsInvoke():
-            _DoSomeLoops = 100;
-            _DoSomeCounter = 0;
-            time = testInst.RunTestNrsInvoke(_DoTotalLoops);
-            result += $"3. NrsInvoke event time: {time} microsecs; for {_DoSomeCounter} called events = NrsManaged event invoke.\r\n";
+            result += "\r\n";
+
+            // 3. NrsInvoke event s prázdným obsahem eventhandleru (když _DoSomeLoops = 0, nevolá se ani výkonná metoda _DoSomeTime() ) => měřím jen režii jaderného kódu):
+            _AppEventLoops = 0;
+            _EventHandlerCount = 0;
+            time = testInst.RunTestNrsInvoke(_TestCycleCount);
+            result += $"3. NrsInvoke EMPTY event time: {time} microsecs; for {_EventHandlerCount} called events = Zero Code NrsInvoke overhead\r\n";
+
+            // 4. NrsInvoke event s provedením něčeho uvnitř = obdobně jako krok 2, ale místo event?.Invoke() se provádí event?.NrsInvoke():
+            _AppEventLoops = 100;
+            _EventHandlerCount = 0;
+            time = testInst.RunTestNrsInvoke(_TestCycleCount);
+            result += $"4. NrsInvoke WORKING event time: {time} microsecs; for {_EventHandlerCount} called events = NrsManaged event invoke.\r\n";
 
             return result;
         }
 
         // Několik cílových eventhandlerů :
-        private void _TestHandler1(object sender, EventArgs e) { _DoSomeCounter++; if (_DoSomeLoops > 0) this._DoSomeTime(); }
-        private void _TestHandler2(object sender, EventArgs e) { _DoSomeCounter++; if (_DoSomeLoops > 0) this._DoSomeTime(); }
-        private void _TestHandler3(object sender, EventArgs e) { _DoSomeCounter++; if (_DoSomeLoops > 0) this._DoSomeTime(); }
-        private void _TestHandler4(object sender, EventArgs e) { _DoSomeCounter++; if (_DoSomeLoops > 0) this._DoSomeTime(); }
-        private void _TestHandler5(object sender, EventArgs e) { _DoSomeCounter++; if (_DoSomeLoops > 0) this._DoSomeTime(); }
+        private void _TestHandler1(object sender, EventArgs e) { _EventHandlerCount++; if (_AppEventLoops > 0) this._DoSomeTime(); }
+        private void _TestHandler2(object sender, EventArgs e) { _EventHandlerCount++; if (_AppEventLoops > 0) this._DoSomeTime(); }
+        private void _TestHandler3(object sender, EventArgs e) { _EventHandlerCount++; if (_AppEventLoops > 0) this._DoSomeTime(); }
+        private void _TestHandler4(object sender, EventArgs e) { _EventHandlerCount++; if (_AppEventLoops > 0) this._DoSomeTime(); }
+        private void _TestHandler5(object sender, EventArgs e) { _EventHandlerCount++; if (_AppEventLoops > 0) this._DoSomeTime(); }
 
         /// <summary>
         /// Něco jako udělej, simuluj aplikační eventhandler
         /// </summary>
         private void _DoSomeTime()
         {
-            int loops = _DoSomeLoops;
+            int loops = _AppEventLoops;
             string content = "";
             for (int i = 0; i < loops; i++)
                 content = DateTime.Now.ToString();                             // Nějaká akce, která trvá nějakou dobu, jako simulace výkonu aplikačního eventhandleru
         }
-        private int _DoTotalLoops;
-        private int _DoSomeLoops;
-        private int _DoSomeCounter;
+        private int _TestCycleCount;
+        private int _AppEventLoops;
+        private int _EventHandlerCount;
         public class TestInstance
         {
-            public string RunTestNativeInvoke(int loopCount)
+            public string RunTestNativeInvoke(int cycleCount)
             {
                 var start = DxComponent.LogTimeCurrent;                        // = StopWatch.ElapsedTicks
-                for (int i = 0; i < loopCount; i++)
+                for (int i = 0; i < cycleCount; i++)
                 {
                     CountChanged?.Invoke(this, EventArgs.Empty);
                 }
                 var time = DxComponent.LogGetTimeElapsed(start);               // = (StopWatch.ElapsedTicks - start) / StopWatch.Frequency převedeno na mikrosekundy
                 return Math.Round(time, 0).ToString("### ### ##0");
             }
-            public string RunTestNrsInvoke(int loopCount)
+            public string RunTestNrsInvoke(int cycleCount)
             {
                 var invokeArgs = new MultiTargetInvoke.InvokeArgs() { DoLogSingleTarget = false, DoLogWholeEvent = false };
 
                 var start = DxComponent.LogTimeCurrent;                        // = StopWatch.ElapsedTicks
-                for (int i = 0; i < loopCount; i++)
+                for (int i = 0; i < cycleCount; i++)
                 {
                     CountChanged.NrsInvoke(this, EventArgs.Empty, invokeArgs);
                 }
