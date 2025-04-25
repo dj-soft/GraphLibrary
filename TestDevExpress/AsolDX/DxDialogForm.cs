@@ -2488,6 +2488,26 @@ namespace Noris.Clients.Win.Components
             }
             return new Tuple<string, string>(sb1.ToString(), sb2.ToString());
         }
+        /// <summary>
+        /// Vrátí true, pokud dodaný text obsahuje základní a validní (=párové) HTML značky B, U, I.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static bool TextContainsHtml(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return false;
+            bool hasHtml = contains("<b>", "</b>")
+                        || contains("<i>", "</i>")
+                        || contains("<u>", "</u>");
+            return hasHtml;
+
+            bool contains(string begin, string end)
+            {
+                bool hasBegin = (text.IndexOf(begin, StringComparison.OrdinalIgnoreCase) >= 0);
+                bool hasEnd = (text.IndexOf(end, StringComparison.OrdinalIgnoreCase) >= 0);
+                return hasBegin && hasEnd;
+            }
+        }
         #endregion
         #region Přidávání buttonů
         /// <summary>

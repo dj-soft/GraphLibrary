@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using System.Web.UI.WebControls;
 using XmlSerializer = Noris.WS.Parser.XmlSerializer;
 
 namespace Noris.UI.Desktop.MultiPage
@@ -362,6 +362,9 @@ namespace Noris.UI.Desktop.MultiPage
 }
 namespace Noris.Srv
 {
+    /// <summary>
+    /// Třída zajišťující řízenou invokaci eventhandleru, podle zadaných nebo defaultních parametrů
+    /// </summary>
     public static class MultiTargetInvoke
     {
         /// <summary>
@@ -370,48 +373,148 @@ namespace Noris.Srv
         /// <param name="targetEvent"></param>
         /// <param name="sender"></param>
         /// <param name="eventArgs"></param>
-        /// <param name="invokeArgs"></param>
-        public static void NrsInvoke(this MulticastDelegate targetEvent, object sender, object eventArgs, InvokeArgs invokeArgs = null)
+        /// <param name="traceEventName"></param>
+        /// <param name="invokeOptions"></param>
+        public static void NrsInvoke(this MulticastDelegate targetEvent, object sender, object eventArgs, string traceEventName = null, InvokeOptions invokeOptions = null)
         {
             if (targetEvent is null) return;
 
             var targetActions = targetEvent.GetInvocationList();
             if (targetActions.Length == 0) return;
 
-            if (invokeArgs is null) invokeArgs = InvokeArgs.Default;                                           // Implicitní řídící argumenty
-
-            if (invokeArgs.DoLogWholeEvent)
-            { }
-
-            foreach (var targetAction in targetActions)
+            if (invokeOptions is null) invokeOptions = InvokeOptions.Default;                                           // Implicitní řídící argumenty
+            string eventName = traceEventName ?? invokeOptions?.TraceEventName;
+            using (createScope(invokeOptions.OuterEventScopeTreshold, eventName, null))
             {
-                if (invokeArgs.DoLogSingleTarget)                                                              // Trace Begin jednoho targetu
-                { }
+                foreach (var targetAction in targetActions)
+                {
+                    // Nějaká akce před jedním target handlerem:
+                    invokeOptions.ActionBeforeSingleTarget?.Invoke(eventArgs);        // Toto není vlastní událost, ale režijní akce před vyvoláním jednoho cílového handleru
 
-                // Nějaká akce před jedním target handlerem:
-                invokeArgs.ActionBeforeSingleTarget?.Invoke(eventArgs);        // Toto není vlastní událost, ale režijní akce před vyvoláním jednoho cílového handleru
+                    // Vlastní jeden eventhandler je zde:
+                    string targetName = "";
+                    using (createScope(invokeOptions.SingleTargetScopeTreshold, eventName, targetName))
+                    {
+                        targetAction.DynamicInvoke(sender, eventArgs);
+                    }
 
-                // Vlastní jeden eventhandler je zde:
-                targetAction.DynamicInvoke(sender, eventArgs);
-
-                // Nějaká akce po jednom target handleru:
-                invokeArgs.ActionBeforeSingleTarget?.Invoke(eventArgs);        // Toto není vlastní událost, ale režijní akce po vyvolání jednoho cílového handleru
+                    // Nějaká akce po jednom target handleru:
+                    invokeOptions.ActionBeforeSingleTarget?.Invoke(eventArgs);        // Toto není vlastní událost, ale režijní akce po vyvolání jednoho cílového handleru
+                }
             }
 
-            if (invokeArgs.DoLogWholeEvent)
-            { }
+            // Vytvořím trace scope, který v Konstruktoru zapíše Begin a v Dispose zapíše End
+            IDisposable createScope(int treshold, string traceName, string targetName)
+            {
+                if (treshold < 0) return null;                       // Záporný treshold nepíše nic
 
+                return null;
+            }
         }
         /// <summary>
         /// Argumenty pro řízení vyvolávání události per-one-target
         /// </summary>
-        public class InvokeArgs
+        public class InvokeOptions
         {
-            public static InvokeArgs Default { get { return new InvokeArgs(); } }
-            public bool DoLogWholeEvent { get; set; }
-            public bool DoLogSingleTarget { get; set; }
+            #region Konstruktory, statické instance
+            /// <summary>
+            /// Defaultní parametry, kdy zápis do trace se provede po přesáhnutí tresholdu 250 milisec na jeden target handler, a při přesáhnutí celkové doby invokace (=všechny handlery) nad 500 milisec.
+            /// </summary>
+            public static InvokeOptions Default 
+            { 
+                get 
+                {
+                    if (__Default is null)
+                        __Default = new InvokeOptions(500, 250);
+                    return __Default;
+                }
+            }
+            private static InvokeOptions __Default;
+            /// <summary>
+            /// Konkrétní parametry, kdy invokování událostí bude do trace zapsáno zcela vždy, i pro neměřitelně malé časy
+            /// </summary>
+            public static InvokeOptions FullTrace
+            {
+                get
+                {
+                    if (__FullTrace is null)
+                        __FullTrace = new InvokeOptions(0, 0);
+                    return __FullTrace;
+                }
+            }
+            private static InvokeOptions __FullTrace;
+            /// <summary>
+            /// Konkrétní parametry, kdy invokování událostí nebude nikdy zapisovat do trace
+            /// </summary>
+            public static InvokeOptions NoTrace
+            {
+                get
+                {
+                    if (__NoTrace is null)
+                        __NoTrace = new InvokeOptions(-1, -1);
+                    return __NoTrace;
+                }
+            }
+            private static InvokeOptions __NoTrace;
+            /// <summary>
+            /// Vytvoří parametry pro detailní řízení invokace eventhandleru (se zadáním tresholdů)
+            /// </summary>
+            /// <param name="outerEventScopeTreshold">Treshold pro zápis trace za celý event (=čas všech target handlerů): -1=nikdy | 0=vždy | +nn = až po překročení času tresholdu (v milisekundách)</param>
+            /// <param name="singleTargetScopeTreshold">Treshold pro zápis trace za každý jednotlivý target handlerů (jedna cílová metoda, jichž může být vícero): -1=nikdy | 0=vždy | +nn = až po překročení času tresholdu (v milisekundách)</param>
+            /// <param name="traceEventName">Jméno události do trace</param>
+            public InvokeOptions(int outerEventScopeTreshold, int singleTargetScopeTreshold, string traceEventName = null)
+            {
+                this.TraceEventName = traceEventName;
+                this.OuterEventScopeTreshold = outerEventScopeTreshold;
+                this.SingleTargetScopeTreshold = singleTargetScopeTreshold;
+                this.ActionBeforeSingleTarget = null;
+                this.ActionAfterSingleTarget = null;
+            }
+            /// <summary>
+            /// Vytvoří parametry pro detailní řízení invokace eventhandleru (se zadáním tresholdů) a se zadáním akcí Před/Po provedení jednoho handleru
+            /// </summary>
+            /// <param name="outerEventScopeTreshold">Treshold pro zápis trace za celý event (=čas všech target handlerů): -1=nikdy | 0=vždy | +nn = až po překročení času tresholdu (v milisekundách)</param>
+            /// <param name="singleTargetScopeTreshold">Treshold pro zápis trace za každý jednotlivý target handlerů (jedna cílová metoda, jichž může být vícero): -1=nikdy | 0=vždy | +nn = až po překročení času tresholdu (v milisekundách)</param>
+            /// <param name="actionBeforeSingleTarget">Akce, která bude volaná před zahájením každého jednoho target handleru</param>
+            /// <param name="actionAfterSingleTarget">Akce, která bude volaná po dokončení každého jednoho target handleru</param>
+            /// <param name="traceEventName">Jméno události do trace</param>
+            public InvokeOptions(int outerEventScopeTreshold, int singleTargetScopeTreshold, Action<object> actionBeforeSingleTarget, Action<object> actionAfterSingleTarget, string traceEventName = null)
+            {
+                this.TraceEventName = traceEventName;
+                this.OuterEventScopeTreshold = outerEventScopeTreshold;
+                this.SingleTargetScopeTreshold = singleTargetScopeTreshold;
+                this.ActionBeforeSingleTarget = null;
+                this.ActionAfterSingleTarget = null;
+            }
+            #endregion
+            #region Public data
+            /// <summary>
+            /// Jméno události vepisované do trace
+            /// </summary>
+            public readonly string TraceEventName;
+            /// <summary>
+            /// Treshold pro zápis trace za celý event (=čas všech target handlerů):<br/>
+            /// 0 = Trace se zapisuje vždy;<br/>
+            /// +nn = Trace se zapíše jen při překročení daného počtu milisekund;<br/>
+            /// -1 = Trace se nezapisuje nikdy
+            /// </summary>
+            public readonly int OuterEventScopeTreshold;
+            /// <summary>
+            /// Treshold pro zápis trace za každý jednotlivý target handlerů (jedna cílová metoda, jichž může být vícero):<br/>
+            /// 0 = Trace se zapisuje vždy;<br/>
+            /// +nn = Trace se zapíše jen při překročení daného počtu milisekund;<br/>
+            /// -1 = Trace se nezapisuje nikdy
+            /// </summary>
+            public readonly int SingleTargetScopeTreshold;
+            /// <summary>
+            /// Akce volaná těsně před vyvoláním jednoho target handleru; dostává jako parametr argument eventu připravený volající metodou, který bude předán do handleru
+            /// </summary>
             public Action<object> ActionBeforeSingleTarget;
+            /// <summary>
+            /// Akce volaná těsně po vyvolání jednoho target handleru; dostává jako parametr argument eventu tak jak jej vrátil handler
+            /// </summary>
             public Action<object> ActionAfterSingleTarget;
+            #endregion
         }
     }
     /// <summary>
@@ -419,16 +522,23 @@ namespace Noris.Srv
     /// </summary>
     public class MultiTargetInvokeTest
     {
+        /// <summary>
+        /// Spustí test, vrátí string s výsledky
+        /// </summary>
+        /// <returns></returns>
         public static string RunTest()
         {
             var testMngr = new MultiTargetInvokeTest();
             var result = testMngr._RunTest();
             return result;
         }
+        /// <summary>
+        /// Spustí test, vrátí string s výsledky
+        /// </summary>
+        /// <returns></returns>
         private string _RunTest()
         {
             DateTime start = DateTime.Now;
-
 
             string result = "";
             string time;
@@ -452,13 +562,13 @@ namespace Noris.Srv
             _AppEventLoops = 0;
             _EventHandlerCount = 0;
             time = testInst.RunTestNativeInvoke1(_TestCycleCount);
-            result += $"11. Native Invoke EMPTY event for 1 target: time = {time} microsecs; handlers count = {_EventHandlerCount};\r\n";
+            result += $"11. Native Invoke EMPTY event for 1 target: time = <b>{time} microsecs</b>; handlers count = {_EventHandlerCount};\r\n";
 
             // 12. Nativní event s provedením něčeho uvnitř (když _DoSomeLoops > 0, pak volám _DoSomeTime()):
             _AppEventLoops = 100;
             _EventHandlerCount = 0;
             time = testInst.RunTestNativeInvoke1(_TestCycleCount);
-            result += $"12. Native Invoke WORKING event for 1 target: time = {time} microsecs; handlers count = {_EventHandlerCount};\r\n";
+            result += $"12. Native Invoke WORKING event for 1 target: time = <b>{time} microsecs</b>; handlers count = {_EventHandlerCount};\r\n";
 
             result += "\r\n";
 
@@ -466,13 +576,13 @@ namespace Noris.Srv
             _AppEventLoops = 0;
             _EventHandlerCount = 0;
             time = testInst.RunTestNrsInvoke1(_TestCycleCount);
-            result += $"13. NrsInvoke EMPTY event for 1 target: time = {time} microsecs; handlers count = {_EventHandlerCount};\r\n";
+            result += $"13. NrsInvoke EMPTY event for 1 target: time = <b>{time} microsecs</b>; handlers count = {_EventHandlerCount};\r\n";
 
             // 14. NrsInvoke event s provedením něčeho uvnitř = obdobně jako krok 2, ale místo event?.Invoke() se provádí event?.NrsInvoke():
             _AppEventLoops = 100;
             _EventHandlerCount = 0;
             time = testInst.RunTestNrsInvoke1(_TestCycleCount);
-            result += $"14. NrsInvoke WORKING event for 1 target: time = {time} microsecs; handlers count = {_EventHandlerCount};\r\n";
+            result += $"14. NrsInvoke WORKING event for 1 target: time = <b>{time} microsecs</b>; handlers count = {_EventHandlerCount};\r\n";
 
             result += "\r\n - - - - - - - - -    5   target handlers    - - - - - - - - - - - - - - - - - - \r\n\r\n";
 
@@ -483,13 +593,13 @@ namespace Noris.Srv
             _AppEventLoops = 0;
             _EventHandlerCount = 0;
             time = testInst.RunTestNativeInvoke5(_TestCycleCount);
-            result += $"51. Native Invoke EMPTY event for 5 targets: time = {time} microsecs; handlers count = {_EventHandlerCount};\r\n";
+            result += $"51. Native Invoke EMPTY event for 5 targets: time = <b>{time} microsecs</b>; handlers count = {_EventHandlerCount};\r\n";
 
             // 52. Nativní event s provedením něčeho uvnitř (když _DoSomeLoops > 0, pak volám _DoSomeTime()):
             _AppEventLoops = 100;
             _EventHandlerCount = 0;
             time = testInst.RunTestNativeInvoke5(_TestCycleCount);
-            result += $"52. Native Invoke WORKING event for 5 targets: time = {time} microsecs; handlers count = {_EventHandlerCount};\r\n";
+            result += $"52. Native Invoke WORKING event for 5 targets: time = <b>{time} microsecs</b>; handlers count = {_EventHandlerCount};\r\n";
 
             result += "\r\n";
 
@@ -497,13 +607,13 @@ namespace Noris.Srv
             _AppEventLoops = 0;
             _EventHandlerCount = 0;
             time = testInst.RunTestNrsInvoke5(_TestCycleCount);
-            result += $"53. NrsInvoke EMPTY event for 5 targets: time = {time} microsecs; handlers count = {_EventHandlerCount};\r\n";
+            result += $"53. NrsInvoke EMPTY event for 5 targets: time = <b>{time} microsecs</b>; handlers count = {_EventHandlerCount};\r\n";
 
             // 54. NrsInvoke event s provedením něčeho uvnitř = obdobně jako krok 2, ale místo event?.Invoke() se provádí event?.NrsInvoke():
             _AppEventLoops = 100;
             _EventHandlerCount = 0;
             time = testInst.RunTestNrsInvoke5(_TestCycleCount);
-            result += $"54. NrsInvoke WORKING event for 5 targets: time = {time}  microsecs; handlers count = {_EventHandlerCount};\r\n";
+            result += $"54. NrsInvoke WORKING event for 5 targets: time = <b>{time} microsecs</b>; handlers count = {_EventHandlerCount};\r\n";
 
             result += "\r\n - - - - - - - - -    test done              - - - - - - - - - - - - - - - - - - \r\n\r\n";
 
@@ -511,9 +621,6 @@ namespace Noris.Srv
             TimeSpan duration = end - start;
 
             result += $"Total test time: {duration.TotalSeconds} seconds;";
-
-
-
             return result;
         }
 
@@ -592,7 +699,7 @@ namespace Noris.Srv
                     CountChanged1?.Invoke(this, EventArgs.Empty);
                 }
                 var time = _GetTimeIntervalMicrosec(start);
-                return Math.Round(time, 0).ToString("### ### ##0");
+                return Math.Round(time, 0).ToString("### ### ##0").Trim();
             }
             /// <summary>
             /// Provede daný počet cyklů <paramref name="cycleCount"/> a v každém cyklu vyvolá event <see cref="CountChanged1"/> v režimu NrsInvoke
@@ -601,15 +708,13 @@ namespace Noris.Srv
             /// <returns></returns>
             public string RunTestNrsInvoke1(int cycleCount)
             {
-                var invokeArgs = new MultiTargetInvoke.InvokeArgs() { DoLogSingleTarget = false, DoLogWholeEvent = false };
-
                 var start = _TimeCurrent;
                 for (int i = 0; i < cycleCount; i++)
                 {
-                    CountChanged1.NrsInvoke(this, EventArgs.Empty, invokeArgs);
+                    CountChanged1.NrsInvoke(this, EventArgs.Empty);
                 }
                 var time = _GetTimeIntervalMicrosec(start);
-                return Math.Round(time, 0).ToString("### ### ##0");
+                return Math.Round(time, 0).ToString("### ### ##0").Trim();
             }
             /// <summary>
             /// Událost volaná po každé smyčce, cílem nechť je jeden target handler
@@ -630,7 +735,7 @@ namespace Noris.Srv
                     CountChanged5?.Invoke(this, EventArgs.Empty);
                 }
                 var time = _GetTimeIntervalMicrosec(start);
-                return Math.Round(time, 0).ToString("### ### ##0");
+                return Math.Round(time, 0).ToString("### ### ##0").Trim();
             }
             /// <summary>
             /// Provede daný počet cyklů <paramref name="cycleCount"/> a v každém cyklu vyvolá event <see cref="CountChanged5"/> v režimu NrsInvoke
@@ -639,22 +744,19 @@ namespace Noris.Srv
             /// <returns></returns>
             public string RunTestNrsInvoke5(int cycleCount)
             {
-                var invokeArgs = new MultiTargetInvoke.InvokeArgs() { DoLogSingleTarget = false, DoLogWholeEvent = false };
-
                 var start = _TimeCurrent;
                 for (int i = 0; i < cycleCount; i++)
                 {
-                    CountChanged5.NrsInvoke(this, EventArgs.Empty, invokeArgs);
+                    CountChanged5.NrsInvoke(this, EventArgs.Empty);
                 }
                 var time = _GetTimeIntervalMicrosec(start);
-                return Math.Round(time, 0).ToString("### ### ##0");
+                return Math.Round(time, 0).ToString("### ### ##0").Trim();
             }
             /// <summary>
             /// Událost volaná po každé smyčce, cílem nechť je pět target handlerů
             /// </summary>
             public event EventHandler CountChanged5;
             #endregion
-
         }
     }
 }

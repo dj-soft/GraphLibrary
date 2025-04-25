@@ -6413,6 +6413,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 args.ButtonPanelDock = DockStyle.Bottom;
                 args.ButtonsAlignment = AlignContentToSide.Center;
                 args.SystemIcon = icon ?? DialogSystemIcon.Information;
+                args.MessageTextContainsHtml = DialogArgs.TextContainsHtml(text);
                 args.PrepareButtons(buttons, defaultButton);
             }
             DialogForm.ShowDialog(args);
