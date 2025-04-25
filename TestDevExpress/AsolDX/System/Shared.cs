@@ -362,8 +362,6 @@ namespace Noris.UI.Desktop.MultiPage
 }
 namespace Noris.Srv
 {
-    using Noris.Clients.Win.Components.AsolDX;
-
     public static class MultiTargetInvoke
     {
         /// <summary>
@@ -383,12 +381,12 @@ namespace Noris.Srv
             if (invokeArgs is null) invokeArgs = InvokeArgs.Default;                                           // Implicitní řídící argumenty
 
             if (invokeArgs.DoLogWholeEvent)
-                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"Call event starting now...");       // Trace Begin celého eventu
+            { }
 
             foreach (var targetAction in targetActions)
             {
                 if (invokeArgs.DoLogSingleTarget)                                                              // Trace Begin jednoho targetu
-                    DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"Call TargetAction: {targetAction.Target.GetType().FullName} => {targetAction.Method.Name}");
+                { }
 
                 // Nějaká akce před jedním target handlerem:
                 invokeArgs.ActionBeforeSingleTarget?.Invoke(eventArgs);        // Toto není vlastní událost, ale režijní akce před vyvoláním jednoho cílového handleru
@@ -401,7 +399,7 @@ namespace Noris.Srv
             }
 
             if (invokeArgs.DoLogWholeEvent)
-                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"Call event done.");                 // Trace End celého eventu
+            { }
 
         }
         /// <summary>
@@ -416,7 +414,9 @@ namespace Noris.Srv
             public Action<object> ActionAfterSingleTarget;
         }
     }
-
+    /// <summary>
+    /// Tester : vrstva Manager
+    /// </summary>
     public class MultiTargetInvokeTest
     {
         public static string RunTest()
@@ -427,55 +427,104 @@ namespace Noris.Srv
         }
         private string _RunTest()
         {
+            DateTime start = DateTime.Now;
+
+
             string result = "";
             string time;
-            DxComponent.LogActive = true;                                      // Startuje běh StopWatch
 
             // Vytvořím instanci, která bude provádět testy, a zaregistruji několik cílových eventhandlerů:
             var testInst = new TestInstance();
-            testInst.CountChanged += _TestHandler1;
-            testInst.CountChanged += _TestHandler2;
-            testInst.CountChanged += _TestHandler3;
-            testInst.CountChanged += _TestHandler4;
-            testInst.CountChanged += _TestHandler5;
+            testInst.CountChanged1 += _TestHandler1a;
 
-            _TestCycleCount = 200;
+            testInst.CountChanged5 += _TestHandler5a;
+            testInst.CountChanged5 += _TestHandler5b;
+            testInst.CountChanged5 += _TestHandler5c;
+            testInst.CountChanged5 += _TestHandler5d;
+            testInst.CountChanged5 += _TestHandler5e;
 
-            // 1. Nativní event s prázdným obsahem eventhandleru (když _DoSomeLoops = 0, nevolá se ani výkonná metoda _DoSomeTime() ) => měřím jen režii jaderného kódu):
+            // TargetHandlers = 1
+            _TestCycleCount = 1000;
+
+            result += "\r\n - - - - - - - - -    1   target handler     - - - - - - - - - - - - - - - - - - \r\n\r\n";
+
+            // 11. Nativní event s prázdným obsahem eventhandleru (když _DoSomeLoops = 0, nevolá se ani výkonná metoda _DoSomeTime() ) => měřím jen režii jaderného kódu):
             _AppEventLoops = 0;
             _EventHandlerCount = 0;
-            time = testInst.RunTestNativeInvoke(_TestCycleCount);
-            result += $"1. Native Invoke EMPTY event time: {time} microsecs; for {_EventHandlerCount} called events = Zero Code NativeInvoke overhead\r\n";
+            time = testInst.RunTestNativeInvoke1(_TestCycleCount);
+            result += $"11. Native Invoke EMPTY event for 1 target: time = {time} microsecs; handlers count = {_EventHandlerCount};\r\n";
 
-            // 2. Nativní event s provedením něčeho uvnitř (když _DoSomeLoops > 0, pak volám _DoSomeTime()):
+            // 12. Nativní event s provedením něčeho uvnitř (když _DoSomeLoops > 0, pak volám _DoSomeTime()):
             _AppEventLoops = 100;
             _EventHandlerCount = 0;
-            time = testInst.RunTestNativeInvoke(_TestCycleCount);
-            result += $"2. Native Invoke WORKING event time: {time} microsecs; for {_EventHandlerCount} called events = Native event invoke.\r\n";
+            time = testInst.RunTestNativeInvoke1(_TestCycleCount);
+            result += $"12. Native Invoke WORKING event for 1 target: time = {time} microsecs; handlers count = {_EventHandlerCount};\r\n";
 
             result += "\r\n";
 
-            // 3. NrsInvoke event s prázdným obsahem eventhandleru (když _DoSomeLoops = 0, nevolá se ani výkonná metoda _DoSomeTime() ) => měřím jen režii jaderného kódu):
+            // 13. NrsInvoke event s prázdným obsahem eventhandleru (když _DoSomeLoops = 0, nevolá se ani výkonná metoda _DoSomeTime() ) => měřím jen režii jaderného kódu):
             _AppEventLoops = 0;
             _EventHandlerCount = 0;
-            time = testInst.RunTestNrsInvoke(_TestCycleCount);
-            result += $"3. NrsInvoke EMPTY event time: {time} microsecs; for {_EventHandlerCount} called events = Zero Code NrsInvoke overhead\r\n";
+            time = testInst.RunTestNrsInvoke1(_TestCycleCount);
+            result += $"13. NrsInvoke EMPTY event for 1 target: time = {time} microsecs; handlers count = {_EventHandlerCount};\r\n";
 
-            // 4. NrsInvoke event s provedením něčeho uvnitř = obdobně jako krok 2, ale místo event?.Invoke() se provádí event?.NrsInvoke():
+            // 14. NrsInvoke event s provedením něčeho uvnitř = obdobně jako krok 2, ale místo event?.Invoke() se provádí event?.NrsInvoke():
             _AppEventLoops = 100;
             _EventHandlerCount = 0;
-            time = testInst.RunTestNrsInvoke(_TestCycleCount);
-            result += $"4. NrsInvoke WORKING event time: {time} microsecs; for {_EventHandlerCount} called events = NrsManaged event invoke.\r\n";
+            time = testInst.RunTestNrsInvoke1(_TestCycleCount);
+            result += $"14. NrsInvoke WORKING event for 1 target: time = {time} microsecs; handlers count = {_EventHandlerCount};\r\n";
+
+            result += "\r\n - - - - - - - - -    5   target handlers    - - - - - - - - - - - - - - - - - - \r\n\r\n";
+
+            // TargetHandlers = 5
+            _TestCycleCount = 200;
+
+            // 51. Nativní event s prázdným obsahem eventhandleru (když _DoSomeLoops = 0, nevolá se ani výkonná metoda _DoSomeTime() ) => měřím jen režii jaderného kódu):
+            _AppEventLoops = 0;
+            _EventHandlerCount = 0;
+            time = testInst.RunTestNativeInvoke5(_TestCycleCount);
+            result += $"51. Native Invoke EMPTY event for 5 targets: time = {time} microsecs; handlers count = {_EventHandlerCount};\r\n";
+
+            // 52. Nativní event s provedením něčeho uvnitř (když _DoSomeLoops > 0, pak volám _DoSomeTime()):
+            _AppEventLoops = 100;
+            _EventHandlerCount = 0;
+            time = testInst.RunTestNativeInvoke5(_TestCycleCount);
+            result += $"52. Native Invoke WORKING event for 5 targets: time = {time} microsecs; handlers count = {_EventHandlerCount};\r\n";
+
+            result += "\r\n";
+
+            // 53. NrsInvoke event s prázdným obsahem eventhandleru (když _DoSomeLoops = 0, nevolá se ani výkonná metoda _DoSomeTime() ) => měřím jen režii jaderného kódu):
+            _AppEventLoops = 0;
+            _EventHandlerCount = 0;
+            time = testInst.RunTestNrsInvoke5(_TestCycleCount);
+            result += $"53. NrsInvoke EMPTY event for 5 targets: time = {time} microsecs; handlers count = {_EventHandlerCount};\r\n";
+
+            // 54. NrsInvoke event s provedením něčeho uvnitř = obdobně jako krok 2, ale místo event?.Invoke() se provádí event?.NrsInvoke():
+            _AppEventLoops = 100;
+            _EventHandlerCount = 0;
+            time = testInst.RunTestNrsInvoke5(_TestCycleCount);
+            result += $"54. NrsInvoke WORKING event for 5 targets: time = {time}  microsecs; handlers count = {_EventHandlerCount};\r\n";
+
+            result += "\r\n - - - - - - - - -    test done              - - - - - - - - - - - - - - - - - - \r\n\r\n";
+
+            DateTime end = DateTime.Now;
+            TimeSpan duration = end - start;
+
+            result += $"Total test time: {duration.TotalSeconds} seconds;";
+
+
 
             return result;
         }
 
         // Několik cílových eventhandlerů :
-        private void _TestHandler1(object sender, EventArgs e) { _EventHandlerCount++; if (_AppEventLoops > 0) this._DoSomeTime(); }
-        private void _TestHandler2(object sender, EventArgs e) { _EventHandlerCount++; if (_AppEventLoops > 0) this._DoSomeTime(); }
-        private void _TestHandler3(object sender, EventArgs e) { _EventHandlerCount++; if (_AppEventLoops > 0) this._DoSomeTime(); }
-        private void _TestHandler4(object sender, EventArgs e) { _EventHandlerCount++; if (_AppEventLoops > 0) this._DoSomeTime(); }
-        private void _TestHandler5(object sender, EventArgs e) { _EventHandlerCount++; if (_AppEventLoops > 0) this._DoSomeTime(); }
+        private void _TestHandler1a(object sender, EventArgs e) { _EventHandlerCount++; if (_AppEventLoops > 0) this._DoSomeTime(); }
+        
+        private void _TestHandler5a(object sender, EventArgs e) { _EventHandlerCount++; if (_AppEventLoops > 0) this._DoSomeTime(); }
+        private void _TestHandler5b(object sender, EventArgs e) { _EventHandlerCount++; if (_AppEventLoops > 0) this._DoSomeTime(); }
+        private void _TestHandler5c(object sender, EventArgs e) { _EventHandlerCount++; if (_AppEventLoops > 0) this._DoSomeTime(); }
+        private void _TestHandler5d(object sender, EventArgs e) { _EventHandlerCount++; if (_AppEventLoops > 0) this._DoSomeTime(); }
+        private void _TestHandler5e(object sender, EventArgs e) { _EventHandlerCount++; if (_AppEventLoops > 0) this._DoSomeTime(); }
 
         /// <summary>
         /// Něco jako udělej, simuluj aplikační eventhandler
@@ -490,34 +539,122 @@ namespace Noris.Srv
         private int _TestCycleCount;
         private int _AppEventLoops;
         private int _EventHandlerCount;
+
+        /// <summary>
+        /// Tester : vrstva Worker
+        /// </summary>
         public class TestInstance
         {
-            public string RunTestNativeInvoke(int cycleCount)
+            #region Konstrukce a časomíra
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            public TestInstance()
             {
-                var start = DxComponent.LogTimeCurrent;                        // = StopWatch.ElapsedTicks
-                for (int i = 0; i < cycleCount; i++)
-                {
-                    CountChanged?.Invoke(this, EventArgs.Empty);
-                }
-                var time = DxComponent.LogGetTimeElapsed(start);               // = (StopWatch.ElapsedTicks - start) / StopWatch.Frequency převedeno na mikrosekundy
-                return Math.Round(time, 0).ToString("### ### ##0");
+                __Frequency = System.Diagnostics.Stopwatch.Frequency;
+                __StopWatch = new System.Diagnostics.Stopwatch();
+                __StopWatch.Start();
             }
-            public string RunTestNrsInvoke(int cycleCount)
+            /// <summary>
+            /// Kolik tiků má jedna sekunda?
+            /// </summary>
+            private decimal __Frequency;
+            /// <summary>
+            /// Krystalové hodinky Quartz
+            /// </summary>
+            System.Diagnostics.Stopwatch __StopWatch;
+            /// <summary>
+            /// Aktuální čas na krystalových hodinkách
+            /// </summary>
+            private long _TimeCurrent { get { return __StopWatch.ElapsedTicks; } }
+            /// <summary>
+            /// Kolik mikrosekund trvalo od startu <paramref name="startTime"/> do teď?
+            /// </summary>
+            /// <param name="startTime"></param>
+            /// <returns></returns>
+            private decimal _GetTimeIntervalMicrosec(long startTime)
             {
-                var invokeArgs = new MultiTargetInvoke.InvokeArgs() { DoLogSingleTarget = false, DoLogWholeEvent = false };
-
-                var start = DxComponent.LogTimeCurrent;                        // = StopWatch.ElapsedTicks
+                long currentTime = _TimeCurrent;
+                return (1000000m * ((decimal)(currentTime - startTime))) / __Frequency;
+            }
+            #endregion
+            #region Run test CountChanged1
+            /// <summary>
+            /// Provede daný počet cyklů <paramref name="cycleCount"/> a v každém cyklu vyvolá event <see cref="CountChanged1"/> v režimu NativeInvoke
+            /// </summary>
+            /// <param name="cycleCount"></param>
+            /// <returns></returns>
+            public string RunTestNativeInvoke1(int cycleCount)
+            {
+                var start = _TimeCurrent;
                 for (int i = 0; i < cycleCount; i++)
                 {
-                    CountChanged.NrsInvoke(this, EventArgs.Empty, invokeArgs);
+                    CountChanged1?.Invoke(this, EventArgs.Empty);
                 }
-                var time = DxComponent.LogGetTimeElapsed(start);               // = (StopWatch.ElapsedTicks - start) / StopWatch.Frequency převedeno na mikrosekundy
+                var time = _GetTimeIntervalMicrosec(start);
                 return Math.Round(time, 0).ToString("### ### ##0");
             }
             /// <summary>
-            /// Událost volaná po každé smyčce
+            /// Provede daný počet cyklů <paramref name="cycleCount"/> a v každém cyklu vyvolá event <see cref="CountChanged1"/> v režimu NrsInvoke
             /// </summary>
-            public event EventHandler CountChanged;
+            /// <param name="cycleCount"></param>
+            /// <returns></returns>
+            public string RunTestNrsInvoke1(int cycleCount)
+            {
+                var invokeArgs = new MultiTargetInvoke.InvokeArgs() { DoLogSingleTarget = false, DoLogWholeEvent = false };
+
+                var start = _TimeCurrent;
+                for (int i = 0; i < cycleCount; i++)
+                {
+                    CountChanged1.NrsInvoke(this, EventArgs.Empty, invokeArgs);
+                }
+                var time = _GetTimeIntervalMicrosec(start);
+                return Math.Round(time, 0).ToString("### ### ##0");
+            }
+            /// <summary>
+            /// Událost volaná po každé smyčce, cílem nechť je jeden target handler
+            /// </summary>
+            public event EventHandler CountChanged1;
+            #endregion
+            #region Run test CountChanged5
+            /// <summary>
+            /// Provede daný počet cyklů <paramref name="cycleCount"/> a v každém cyklu vyvolá event <see cref="CountChanged5"/> v režimu NativeInvoke
+            /// </summary>
+            /// <param name="cycleCount"></param>
+            /// <returns></returns>
+            public string RunTestNativeInvoke5(int cycleCount)
+            {
+                var start = _TimeCurrent;
+                for (int i = 0; i < cycleCount; i++)
+                {
+                    CountChanged5?.Invoke(this, EventArgs.Empty);
+                }
+                var time = _GetTimeIntervalMicrosec(start);
+                return Math.Round(time, 0).ToString("### ### ##0");
+            }
+            /// <summary>
+            /// Provede daný počet cyklů <paramref name="cycleCount"/> a v každém cyklu vyvolá event <see cref="CountChanged5"/> v režimu NrsInvoke
+            /// </summary>
+            /// <param name="cycleCount"></param>
+            /// <returns></returns>
+            public string RunTestNrsInvoke5(int cycleCount)
+            {
+                var invokeArgs = new MultiTargetInvoke.InvokeArgs() { DoLogSingleTarget = false, DoLogWholeEvent = false };
+
+                var start = _TimeCurrent;
+                for (int i = 0; i < cycleCount; i++)
+                {
+                    CountChanged5.NrsInvoke(this, EventArgs.Empty, invokeArgs);
+                }
+                var time = _GetTimeIntervalMicrosec(start);
+                return Math.Round(time, 0).ToString("### ### ##0");
+            }
+            /// <summary>
+            /// Událost volaná po každé smyčce, cílem nechť je pět target handlerů
+            /// </summary>
+            public event EventHandler CountChanged5;
+            #endregion
+
         }
     }
 }
