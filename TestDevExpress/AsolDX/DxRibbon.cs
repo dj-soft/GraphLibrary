@@ -3719,12 +3719,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             switch (itemType)
             {
                 case RibbonItemType.Label:
+                case RibbonItemType.LabelSpring:
                     count++;
                     var labelItem = new BarStaticItem() { Manager = this.Manager };
                     this.Items.Add(labelItem);
                     barItem = labelItem;
                     break;
                 case RibbonItemType.Static:
+                case RibbonItemType.StaticSpring:
                     count++;
                     var staticItem = new BarStaticItem() { Manager = this.Manager };
                     //    staticItem.ItemAppearance.Normal.TextOptions.VAlignment = VertAlignment.Center;       řeší se centrálně v 
@@ -4114,7 +4116,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             switch (subItemType)
             {   // Toto jsou náhrady za prvek Ribbonu, kdy některé požadované typy prvků neze používat, na jejich místo dáme prvek jiného typu:
                 case RibbonItemType.Label: return RibbonItemType.Label;
+                case RibbonItemType.LabelSpring: return RibbonItemType.LabelSpring;
                 case RibbonItemType.Static: return RibbonItemType.Static;
+                case RibbonItemType.StaticSpring: return RibbonItemType.StaticSpring;
                 case RibbonItemType.CheckButton: return null;
                 case RibbonItemType.CheckButtonPassive: return null;
                 case RibbonItemType.ButtonGroup: return RibbonItemType.Menu;
@@ -4150,7 +4154,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             switch (subItemType)
             {   // Toto jsou náhrady za prvek SubMenu, kdy některé požadované typy prvků neze používat, na jejich místo dáme prvek jiného typu:
                 case RibbonItemType.Label: return RibbonItemType.Button;
+                case RibbonItemType.LabelSpring: return RibbonItemType.Button;
                 case RibbonItemType.Static: return RibbonItemType.Button;
+                case RibbonItemType.StaticSpring: return RibbonItemType.Button;
                 case RibbonItemType.CheckButton: return null;
                 case RibbonItemType.CheckButtonPassive: return null;
                 case RibbonItemType.ButtonGroup: return RibbonItemType.Menu;                          // Menu        KEY: COLLAPSEDGROUP ERROR
@@ -12841,9 +12847,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         Label,
         /// <summary>
+        /// Používá se ve StatusBaru. Roztáhne se na celou šířku.
+        /// </summary>
+        LabelSpring,
+        /// <summary>
         /// Vypadá jako Button ale chová se jako mrtvej brouk, nicméně se na něj dá kliknout
         /// </summary>
         Static,
+        /// <summary>
+        /// Vypadá jako Button ale chová se jako mrtvej brouk, nicméně se na něj dá kliknout. Roztáhne se na celou šířku.
+        /// </summary>
+        StaticSpring,
         /// <summary>
         /// Tlačítko
         /// </summary>

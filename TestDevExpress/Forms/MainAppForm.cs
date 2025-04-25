@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using DevExpress.Diagram.Core.Shapes;
 using DevExpress.Charts.Native;
 using Noris.Clients.Win.Components.AsolDX;
+using Noris.Clients.Win.Components;
 
 namespace TestDevExpress.Forms
 {
@@ -40,6 +41,8 @@ namespace TestDevExpress.Forms
             this.DxRibbon.AllowCustomization = true;
 
             this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
+
+            this.__RefreshTimerGuid = WatchTimer.CallMeEvery(_RunRefreshGdi, 500);
         }
         private List<DataRibbonPage> _CreateRibbonPages()
         {
@@ -67,18 +70,21 @@ namespace TestDevExpress.Forms
             string versionToolTipText = $"Version: {assemblyInfo.AssemblyFileVersion}\r\nFile: {assemblyInfo.AssemblyFullFileName}\r\nTime: {assemblyInfo.FileModifyTime}";
             string statText = $"Vyhledání aktivních formulářů s metodou RunFormInfo.GetFormsWithProperty(): čas = {__FormLoadTime.TotalMilliseconds:N0} ms";
             _StatusVersionItem = new DataRibbonItem() { ItemId = "StatusVersion", ItemType = RibbonItemType.Static, Text = $"Ver. {assemblyInfo.AssemblyFileVersion}", ImageName = "svgimages/icon%20builder/actions_info.svg", ToolTipTitle = versionToolTipTitle, ToolTipText = versionToolTipText };
-            _StatusMainInfoItem = new DataRibbonItem() { ItemId = "StatusVersionInfo", ItemType = RibbonItemType.Static, Text = statText, ImageName = "", ImageFromCaptionMode = ImageFromCaptionType.Disabled, ItemIsFirstInGroup = true };
+            _StatusMainInfoItem = new DataRibbonItem() { ItemId = "StatusMainInfo", ItemType = RibbonItemType.StaticSpring, Text = statText, ImageName = "", ImageFromCaptionMode = ImageFromCaptionType.Disabled, ItemIsFirstInGroup = true };
+            _StatusWin32InfoItem = new DataRibbonItem() { ItemId = "StatusWin32Info", ItemType = RibbonItemType.Static, Text = "GDI", ImageName = "", ImageFromCaptionMode = ImageFromCaptionType.Disabled, ItemIsFirstInGroup = true };
             _StatusZoomLabelItem = new DataRibbonItem() { ItemId = "StatusZoomLabel", ItemType = RibbonItemType.Static, Text = "Měřítko", ImageName = "", ImageFromCaptionMode = ImageFromCaptionType.Disabled, Alignment = BarItemAlignment.Right, ItemIsFirstInGroup = true };
             _StatusZoomMenuItem = new DataRibbonItem() { ItemId = "StatusZoomMenu", ItemType = RibbonItemType.ZoomPresetMenu, Text = "100%", ImageName = "", ImageFromCaptionMode = ImageFromCaptionType.Disabled, Alignment = BarItemAlignment.Right, Tag = "50,70,85,100,125,150,200" };
             var statusItems = new List<DataRibbonItem>();
             statusItems.Add(_StatusVersionItem);
             statusItems.Add(_StatusMainInfoItem);
+            statusItems.Add(_StatusWin32InfoItem);
             statusItems.Add(_StatusZoomLabelItem);
             statusItems.Add(_StatusZoomMenuItem);
             return statusItems;
         }
         private DataRibbonItem _StatusVersionItem;
         private DataRibbonItem _StatusMainInfoItem;
+        private DataRibbonItem _StatusWin32InfoItem;
         private DataRibbonItem _StatusZoomLabelItem;
         private DataRibbonItem _StatusZoomMenuItem;
         /// <summary>
@@ -117,8 +123,25 @@ namespace TestDevExpress.Forms
         /// Pokud nebude vráceno jméno, budou používány metody <see cref="DxRibbonBaseForm.PositionLoadFromConfig(string)"/> a <see cref="DxRibbonBaseForm.PositionSaveToConfig(string, string)"/>.
         /// </summary>
         protected override string PositionConfigName { get { return "MainAppForm"; } }
+        private void _RunRefreshGdi()
+        {
+            if (_StatusWin32InfoItem != null)
+            {
+                _StatusWin32InfoItem.Text = DateTime.Now.Second.ToString();
+                _StatusWin32InfoItem.Refresh();
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+
+            WatchTimer.Remove(this.__RefreshTimerGuid);
+            this.__RefreshTimerGuid = null;
+        }
         private DevExpress.XtraBars.BarItem __StatusVersionLabel;
         private DevExpress.XtraBars.BarItem __StatusInfoLabel;
+        private Guid? __RefreshTimerGuid;
         private TimeSpan __FormLoadTime;
         #endregion
         #region DockManager a TabHeaderPainter - služby

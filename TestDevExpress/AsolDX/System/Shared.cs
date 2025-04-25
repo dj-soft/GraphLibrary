@@ -363,7 +363,19 @@ namespace Noris.UI.Desktop.MultiPage
 namespace Noris.Srv
 {
     /// <summary>
-    /// Třída zajišťující řízenou invokaci eventhandleru, podle zadaných nebo defaultních parametrů
+    /// Třída zajišťující řízenou invokaci eventhandleru, podle zadaných nebo defaultních parametrů <b>InvokeOptions</b>.
+    /// <para/>
+    /// Standardně je event deklarován typicky: <c> public event CancelEventHandler BeforePopup;</c><br/>
+    /// A běžně se vyvolává například: <c> this.BeforePopup?.Invoke(this, new CancelEventArgs());</c><br/>
+    /// Do eventu může být zaregistrováno více cílových metod = handlerů události. A uvedeným postupem není možno nijak řídit, co se stane mezi jednotlivými voláními cílových handlerů.
+    /// A není možno ani logovat časy jednotlivých handlerů.
+    /// <para/>
+    /// Proto je zde tato třída, která obojí dokáže - s využitím řízeného vyvolání jednotlivých handlerů.
+    /// Rozdíl je pouze v tom, že namísto <c>Invoke</c> handleru se použije: 
+    /// <code> 
+    /// this.BeforePopup?.NrsInvoke(this, new CancelEventArgs() [, InvokeOptions invokeOptions]);
+    /// </code><br/>
+    /// Kde v <c>InvokeOptions invokeOptions</c> lze řídit, jak se detailně loguje a chová invokování handlerů.
     /// </summary>
     public static class MultiTargetInvoke
     {
@@ -392,8 +404,7 @@ namespace Noris.Srv
                     invokeOptions.ActionBeforeSingleTarget?.Invoke(eventArgs);        // Toto není vlastní událost, ale režijní akce před vyvoláním jednoho cílového handleru
 
                     // Vlastní jeden eventhandler je zde:
-                    string targetName = "";
-                    using (createScope(invokeOptions.SingleTargetScopeTreshold, eventName, targetName))
+                    using (createScope(invokeOptions.SingleTargetScopeTreshold, eventName, targetAction))
                     {
                         targetAction.DynamicInvoke(sender, eventArgs);
                     }
@@ -404,15 +415,23 @@ namespace Noris.Srv
             }
 
             // Vytvořím trace scope, který v Konstruktoru zapíše Begin a v Dispose zapíše End
-            IDisposable createScope(int treshold, string traceName, string targetName)
+            IDisposable createScope(int treshold, string traceName, System.Delegate targetDelegate)
             {
-                if (treshold < 0) return null;                       // Záporný treshold nepíše nic
+                if (treshold < 0) return null;                                        // Záporný treshold nepíše nic
+
+                string targetName = "";
+                if (targetDelegate != null)
+                {
+                    string targetType = targetDelegate.Target.GetType().FullName;
+                    string targetMetod = targetDelegate.Method.Name;
+                    targetName = targetType + "." + targetMetod;
+                }
 
                 return null;
             }
         }
         /// <summary>
-        /// Argumenty pro řízení vyvolávání události per-one-target
+        /// Předvolby pro řízení vyvolávání události per-one-target
         /// </summary>
         public class InvokeOptions
         {
@@ -711,7 +730,7 @@ namespace Noris.Srv
                 var start = _TimeCurrent;
                 for (int i = 0; i < cycleCount; i++)
                 {
-                    CountChanged1.NrsInvoke(this, EventArgs.Empty);
+                    CountChanged1?.NrsInvoke(this, EventArgs.Empty);
                 }
                 var time = _GetTimeIntervalMicrosec(start);
                 return Math.Round(time, 0).ToString("### ### ##0").Trim();
@@ -747,7 +766,7 @@ namespace Noris.Srv
                 var start = _TimeCurrent;
                 for (int i = 0; i < cycleCount; i++)
                 {
-                    CountChanged5.NrsInvoke(this, EventArgs.Empty);
+                    CountChanged5?.NrsInvoke(this, EventArgs.Empty);
                 }
                 var time = _GetTimeIntervalMicrosec(start);
                 return Math.Round(time, 0).ToString("### ### ##0").Trim();

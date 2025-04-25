@@ -3752,8 +3752,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             isHeader = false;
             switch (ribbonItem.ItemType)
             {
-                case RibbonItemType.Static:
                 case RibbonItemType.Label:
+                case RibbonItemType.LabelSpring:
+                case RibbonItemType.Static:
+                case RibbonItemType.StaticSpring:
                     var barStaticButton = new DevExpress.XtraBars.BarStaticItem();
                     barItem = barStaticButton;
                     break;
@@ -3956,6 +3958,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (ribbonItem.Size.HasValue)
             {
                 barItem.Size = ribbonItem.Size.Value;
+            }
+
+
+            if ((ribbonItem.ItemType == RibbonItemType.LabelSpring || ribbonItem.ItemType == RibbonItemType.StaticSpring) && barItem is DevExpress.XtraBars.BarStaticItem springItem)
+            {
+                springItem.AutoSize = DevExpress.XtraBars.BarStaticItemSize.Spring;
             }
 
             // Barvy: pokud na vstupu je null (=barva není určena), i pak je třeba zajistit její promítnutí do prvku! 
