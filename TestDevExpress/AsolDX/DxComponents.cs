@@ -7583,31 +7583,28 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Získá a vrátí informace o využití zdrojů operačního systému
             /// </summary>
+            /// <param name="permanent">Permanentní objekt? Bude obsahovat WinInfo o sobě a bude schopen Refreshe</param>
             /// <returns></returns>
-            public static WinProcessInfo GetCurent()
+            public static WinProcessInfo GetCurent(bool permanent = false)
             {
                 using (var process = System.Diagnostics.Process.GetCurrentProcess())
                 {
-                    return GetInfoForProcess(process);
+                    return GetInfoForProcess(process, permanent);
                 }
             }
             /// <summary>
             /// Získá a vrátí informace o využití zdrojů operačního systému pro explicitně daný proces
             /// </summary>
             /// <param name="process"></param>
+            /// <param name="permanent">Permanentní objekt? Bude obsahovat WinInfo o dodaném procesu, a bude schopen Refreshe</param>
             /// <returns></returns>
-            public static WinProcessInfo GetInfoForProcess(System.Diagnostics.Process process)
+            public static WinProcessInfo GetInfoForProcess(System.Diagnostics.Process process, bool permanent = false)
             {
-
-                long privateMemory = 0L;
-                long workingSet64 = 0L;
-                int gDIHandleCount = 0;
-                int userHandleCount = 0;
-                try { privateMemory = process.PrivateMemorySize64; } catch { }
-                try { workingSet64 = process.WorkingSet64; } catch { }
-                try { gDIHandleCount = GetGuiResources(process.Handle, 0); } catch { }
-                try { userHandleCount = GetGuiResources(process.Handle, 1); } catch { }
-                return new WinProcessInfo(privateMemory, workingSet64, gDIHandleCount, userHandleCount);
+                var processInfo = new WinProcessInfo(process);
+                processInfo._Refresh(process);
+                if (!permanent)
+                    processInfo.__Process = null;
+                return processInfo;
             }
             /// <summary>
             /// Obsahuje ID aktuálního procesu.
@@ -7642,6 +7639,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Konstruktor
             /// </summary>
+            /// <param name="process">Uložit i tento proces. Objekt pak bude schopen Refreshe</param>
+            public WinProcessInfo(System.Diagnostics.Process process = null)
+            {
+                this.__Process = process;
+            }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
             /// <param name="privateMemory"></param>
             /// <param name="workingSet"></param>
             /// <param name="gDIHandleCount"></param>
@@ -7654,11 +7659,44 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.GDIHandleCount = gDIHandleCount;
                 this.UserHandleCount = userHandleCount;
             }
+            private System.Diagnostics.Process __Process;
             /// <summary>
             /// Vizualizace
             /// </summary>
             /// <returns></returns>
             public override string ToString() { return Text4; }
+            /// <summary>
+            /// Refreshuje obsah z uloženého procesu
+            /// </summary>
+            /// <exception cref="ArgumentNullException"></exception>
+            public void Refresh()
+            {
+                var process = __Process;
+                if (process is null)
+                    throw new ArgumentNullException("WinProcessInfo can not do Refresh on Non-Permanent instance.");
+                else
+                    _Refresh(process);
+
+            }
+            private void _Refresh(System.Diagnostics.Process process)
+            {
+                if (process is null)
+                    throw new ArgumentNullException("WinProcessInfo can not do Refresh on Non-Permanent instance.");
+
+                if (!process.HasExited)
+                {
+                    this.Time = DateTime.Now;
+                    this.PrivateMemory = 0L;
+                    this.WorkingSet = 0L;
+                    this.GDIHandleCount = 0;
+                    this.UserHandleCount = 0;
+
+                    try { this.PrivateMemory = process.PrivateMemorySize64; } catch { }
+                    try { this.WorkingSet = process.WorkingSet64; } catch { }
+                    try { this.GDIHandleCount = GetGuiResources(process.Handle, 0); } catch { }
+                    try { this.UserHandleCount = GetGuiResources(process.Handle, 1); } catch { }
+                }
+            }
             /// <summary>
             /// Jednořádkový text, 2 údaje. Popisek je v <see cref="Text2Info"/>
             /// </summary>

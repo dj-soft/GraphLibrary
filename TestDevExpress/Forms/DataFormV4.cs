@@ -45,8 +45,7 @@ namespace TestDevExpress.Forms
             var lc = _Layout;
 
 
-
-            for (int q = 0; q < 25; q++)
+            for (int q = 0; q < 160; q++)
             {
                 var repoItem = new DXR.RepositoryItemTextEdit();
                 repoItem.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Flat;
@@ -56,7 +55,7 @@ namespace TestDevExpress.Forms
                 layoutItem.Name = "RepoItem" + q.ToString();
                 layoutItem.Text = "RepositoryItem " + q.ToString() + ":";
                 layoutItem.Size = new WinDraw.Size(360, 20);
-
+                layoutItem.EditValue = Randomizer.GetSentence(2, 6, true);
 
                 _Layout.Root.Add(layoutItem);
             }
