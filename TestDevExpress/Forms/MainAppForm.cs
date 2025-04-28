@@ -24,7 +24,9 @@ namespace TestDevExpress.Forms
         /// </summary>
         protected override void DxRibbonPrepare()
         {
-            Noris.Clients.Win.Components.AsolDX.Colors.ColorConverting.Test();
+            // Noris.Clients.Win.Components.AsolDX.Colors.ColorConverting.Test();
+
+            TestDevExpress.Forms.MainAppForm.CurrentInstance = this;
 
             if (!this.PositionIsFromConfig)
             {
@@ -44,6 +46,13 @@ namespace TestDevExpress.Forms
 
             this.__RefreshTimerGuid = WatchTimer.CallMeEvery(_RunRefreshGdi, 500);
         }
+        public static MainAppForm CurrentInstance { get; private set; }
+        public string StatusBarText
+        {
+            get { return _StatusMainInfoItem.Text; }
+            set { _StatusMainInfoItem.Text = value; _StatusMainInfoItem.Refresh(); }
+        }
+
         private List<DataRibbonPage> _CreateRibbonPages()
         {
             List<DataRibbonPage> pages = new List<DataRibbonPage>();

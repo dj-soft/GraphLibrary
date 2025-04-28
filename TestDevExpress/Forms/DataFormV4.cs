@@ -39,12 +39,20 @@ namespace TestDevExpress.Forms
         {
             base.DxMainContentPrepare();
 
+
             _Layout = new LayoutControl() { Dock = DockStyle.Fill };
             this.DxMainPanel.Controls.Add(_Layout);
 
             var lc = _Layout;
 
+            // https://docs.devexpress.com/WindowsForms/114577/controls-and-libraries/form-layout-managers
+            // https://docs.devexpress.com/WindowsForms/11359/controls-and-libraries/application-ui-manager
+            // https://docs.devexpress.com/WindowsForms/DevExpress.XtraLayout.LayoutRepositoryItem
+            // https://docs.devexpress.com/WindowsForms/2170/controls-and-libraries/form-layout-managers/layout-and-data-layout-controls/tabbed-group
 
+            // https://www.youtube.com/watch?v=qwjvR4tX790
+
+            _Layout.SuspendLayout();
             for (int q = 0; q < 160; q++)
             {
                 var repoItem = new DXR.RepositoryItemTextEdit();
@@ -59,6 +67,8 @@ namespace TestDevExpress.Forms
 
                 _Layout.Root.Add(layoutItem);
             }
+            _Layout.ResumeLayout();
+            MainAppForm.CurrentInstance.StatusBarText = "Ahoj";
         }
         LayoutControl _Layout;
     }
