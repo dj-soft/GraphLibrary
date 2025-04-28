@@ -394,14 +394,14 @@ namespace Noris.Srv
             var targetActions = targetEvent.GetInvocationList();
             if (targetActions.Length == 0) return;
 
-            if (invokeOptions is null) invokeOptions = InvokeOptions.Default;                                           // Implicitní řídící argumenty
+            if (invokeOptions is null) invokeOptions = InvokeOptions.Default;            // Implicitní řídící argumenty
             string eventName = traceEventName ?? invokeOptions?.TraceEventName;
             using (createScope(invokeOptions.OuterEventScopeTreshold, eventName, null))
             {
                 foreach (var targetAction in targetActions)
                 {
                     // Nějaká akce před jedním target handlerem:
-                    invokeOptions.ActionBeforeSingleTarget?.Invoke(eventArgs);        // Toto není vlastní událost, ale režijní akce před vyvoláním jednoho cílového handleru
+                    invokeOptions.ActionBeforeSingleTarget?.Invoke(eventArgs);           // Toto není vlastní událost, ale režijní akce před vyvoláním jednoho cílového handleru
 
                     // Vlastní jeden eventhandler je zde:
                     using (createScope(invokeOptions.SingleTargetScopeTreshold, eventName, targetAction))
@@ -410,15 +410,16 @@ namespace Noris.Srv
                     }
 
                     // Nějaká akce po jednom target handleru:
-                    invokeOptions.ActionBeforeSingleTarget?.Invoke(eventArgs);        // Toto není vlastní událost, ale režijní akce po vyvolání jednoho cílového handleru
+                    invokeOptions.ActionBeforeSingleTarget?.Invoke(eventArgs);           // Toto není vlastní událost, ale režijní akce po vyvolání jednoho cílového handleru
                 }
             }
 
             // Vytvořím trace scope, který v Konstruktoru zapíše Begin a v Dispose zapíše End
             IDisposable createScope(int treshold, string traceName, System.Delegate targetDelegate)
             {
-                if (treshold < 0) return null;                                        // Záporný treshold nepíše nic
+                if (treshold < 0) return null;                                           // Záporný treshold nepíše nic
 
+                // Pokud mám dodanou Target metodu, tak si vytáhnu její Name:
                 string targetName = "";
                 if (targetDelegate != null)
                 {
@@ -426,6 +427,9 @@ namespace Noris.Srv
                     string targetMetod = targetDelegate.Method.Name;
                     targetName = targetType + "." + targetMetod;
                 }
+
+
+
 
                 return null;
             }

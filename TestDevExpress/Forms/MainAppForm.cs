@@ -14,7 +14,7 @@ namespace TestDevExpress.Forms
 {
     /// <summary>
     /// Hlavní okno testovací aplikace - fyzická třída.
-    /// Načítá dostupné formuláře, které chtějí být členem Ribbonu v hlavním okně (podle implementace <see cref="RunFormInfo"/>
+    /// Načítá dostupné formuláře, které chtějí být členem Ribbonu v hlavním okně (podle implementace <see cref="RunTargetInfo"/>
     /// </summary>
     public class MainAppForm : Noris.Clients.Win.Components.AsolDX.DxMainAppForm
     {
@@ -64,11 +64,10 @@ namespace TestDevExpress.Forms
             pages.Add(homePage);
 
             var start = DateTime.Now;
-            // var runFormInfos = RunFormInfo.GetFormsWithProperty();             // Debug mode: 1202, 1307, 1247 milisecs;     Run mode: 224, 222, 233 milisecs
-            var runFormInfos = RunFormInfo.GetFormsWithAttribute();               // Debug mode: 1354, 1283, 1224 milisecs;     Run mode: 219, 241, 238 milisecs
+            var runFormInfos = RunTargetInfo.GetRunTargets();                  // Debug mode: 1354, 1283, 1224 milisecs;     Run mode: 219, 241, 238 milisecs
             __FormLoadTime = DateTime.Now - start;
 
-            RunFormInfo.CreateRibbonPages(runFormInfos, pages, homePage);
+            RunTargetInfo.CreateRibbonPages(runFormInfos, pages, homePage);
 
             return pages;
         }
@@ -350,23 +349,18 @@ namespace TestDevExpress.Forms
         private DxImageAreaMap __TabViewBackImageMap;
         #endregion
     }
-    #region class RunFormInfo : řešení pro formulář, který chce umístit svoji ikonu do MainAppForm
+    #region class RunTargetInfo : řešení požadavku "Označ určitý kód (třída / metoda) pro jeho snadné automatické spuštění z Ribbonu
     /// <summary>
-    /// Definice spouštěcí ikony pro určitý formulář.
+    /// <see cref="RunTargetInfo"/> : řešení požadavku "Označ určitý kód (třída / metoda) pro jeho snadné automatické spuštění z Ribbonu
     /// <para/>
-    /// Pokud určitý formulář chce být spouštěn z tlačítka v ribbonu okna <see cref="MainAppForm"/>, pak nechť si do své definice zařadí:
-    /// <code>
-    /// public static TestDevExpress.Forms.RunFormInfo RunFormInfo { get { return new RunFormInfo() { /* zde naplní svoje data pro button */ }; } }
-    /// </code>
-    /// Okno aplikace si při spuštění najde tyto formuláře, a sestaví je a do Ribbonu zobrazí jejich tlačítka.
+    /// <b>1. Formulář</b>: Pokud určitý formulář chce být spouštěn z tlačítka v ribbonu okna <see cref="MainAppForm"/>, pak nechť si do záhlaví třídy přidá CustomAtribut <see cref="RunFormInfoAttribute"/> a naplní jej.<br/>
+    /// Okno aplikace <see cref="MainAppForm"/> si při spuštění najde tyto formuláře, a sestaví je a do Ribbonu zobrazí jejich tlačítka.
     /// <para/>
-    /// Proč takhle a ne přes interface? Interface předepisuje <u>výhradně instanční</u> property, což by v procesu vyhledání vhodných typů znamenalo:
-    /// Vyhledat vhodné typy formulářů implementující nový interface (což jde snadno);
-    /// ale potom vytvořit instanci každého takového formuláře (dost časové náročné, zvlášť u komplexních Formů) 
-    /// jen proto, abych si přečetl jeho instanční property s deklarací buttonu do Ribbonu.<br/>
-    /// Zdejší varianta sice není tak efektní jako typově přesný interface, ale je rychlejší...
+    /// <b>2. Testovací algoritmus</b>: Pokud určitá třída obsahuje testovací metodu, která chce být spouštěna z Ribbonu okna <see cref="MainAppForm"/> a jejím úkolem je např. něco otestovat, 
+    /// pak nechť si do záhlaví třídy přidá CustomAtribut <see cref="RunFormInfoAttribute"/> a naplní jej.<br/>
+    /// Okno aplikace <see cref="MainAppForm"/> si při spuštění najde tyto formuláře, a sestaví je a do Ribbonu zobrazí jejich tlačítka.
     /// </summary>
-    public class RunFormInfo
+    public class RunTargetInfo
     {
         #region Public definiční data
         /// <summary>
@@ -424,6 +418,18 @@ namespace TestDevExpress.Forms
         /// </summary>
         internal bool IsValid { get { return (!String.IsNullOrEmpty(ButtonText) || !String.IsNullOrEmpty(ButtonImage)); } }
         /// <summary>
+        /// Druh spouštění cíle
+        /// </summary>
+        internal TargetRunType RunType { get; set; }
+        /// <summary>
+        /// Cílový Type
+        /// </summary>
+        internal Type RunTargetType { get; set; }
+        /// <summary>
+        /// Cílová metoda
+        /// </summary>
+        internal System.Reflection.MethodInfo RunTargetMethod { get; set; }
+        /// <summary>
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
@@ -431,91 +437,72 @@ namespace TestDevExpress.Forms
         {
             return $"{GroupText}: {ButtonText}";
         }
-        #endregion
-        #region Static vyhledání typů formulářů, které obsahují platnou static property RunFormInfo
         /// <summary>
-        /// Metoda vrací pole obsahující typy formulářů a jejich instance <see cref="RunFormInfo"/>
+        /// Způsob spuštění cíle
         /// </summary>
-        /// <returns></returns>
-        public static Tuple<Type, RunFormInfo>[] GetFormsWithProperty()
+        public enum TargetRunType
         {
-            var myAssembly = typeof(RunFormInfo).Assembly;
-
-            var runFormInfos = new List<Tuple<Type, RunFormInfo>>();
-            DxComponent.GetTypes(myAssembly, t => ContainsRunFormInfoProperty(t, runFormInfos));
-       
-            return runFormInfos.ToArray();
-        }
-        /// <summary>
-        /// Metoda, která zjistí, zda daný <see cref="Type"/> je/není formulář spustitelný z hlavního okna aplikace.
-        /// Side effectem metody je střádání spustitelných formulářů společně s informacemi <see cref="RunFormInfo"/>, které formuláře deklarují.
-        /// </summary>
-        /// <param name="t"></param>
-        /// <param name="runFormInfos"></param>
-        /// <returns></returns>
-        private static bool ContainsRunFormInfoProperty(Type t, List<Tuple<Type, RunFormInfo>> runFormInfos)
-        {
-            if (t is null) return false;
-            if (!t.IsSubclassOf(typeof(System.Windows.Forms.Form))) return false;
-
-            var rfiProperty = t.GetProperty("RunFormInfo", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            if (rfiProperty is null) return false;
-
-            var rfiValue = rfiProperty.GetValue(null);
-            if (rfiValue is null) return false;
-            if (rfiValue is not RunFormInfo rfiInstance) return false;
-
-            if (rfiInstance.IsValid)
-                runFormInfos.Add(new Tuple<Type, RunFormInfo>(t, rfiInstance));
-
-            return false;
+            /// <summary>
+            /// Není co spustit
+            /// </summary>
+            None,
+            /// <summary>
+            /// Formulář: vytvořit new instanci a zobrazit ji
+            /// </summary>
+            Form,
+            /// <summary>
+            /// Metoda: spustit ji (statická)
+            /// </summary>
+            StaticMethod
         }
         #endregion
         #region Static vyhledání typů formulářů, které obsahují platné RunFormInfoAttribute
         /// <summary>
-        /// Metoda vrací pole obsahující typy formulářů a instance <see cref="RunFormInfo"/>, pocházející z atributu třídy <see cref="RunFormInfoAttribute"/>
+        /// Metoda vrací pole obsahující typy formulářů a instance <see cref="RunTargetInfo"/>, pocházející z atributu třídy <see cref="RunFormInfoAttribute"/>
         /// </summary>
         /// <returns></returns>
-        public static Tuple<Type, RunFormInfo>[] GetFormsWithAttribute()
+        public static RunTargetInfo[] GetRunTargets()
         {
-            var myAssembly = typeof(RunFormInfo).Assembly;
+            var myAssembly = typeof(RunTargetInfo).Assembly;
 
-            var runFormInfos = new List<Tuple<Type, RunFormInfo>>();
+            var runFormInfos = new List<RunTargetInfo>();
             DxComponent.GetTypes(myAssembly, t => ContainsRunFormInfoAttribute(t, runFormInfos));
 
             return runFormInfos.ToArray();
         }
         /// <summary>
         /// Metoda, která zjistí, zda daný <see cref="Type"/> je/není formulář spustitelný z hlavního okna aplikace.
-        /// Side effectem metody je střádání spustitelných formulářů společně s informacemi <see cref="RunFormInfo"/>, které formuláře deklarují.
+        /// Side effectem metody je střádání spustitelných formulářů společně s informacemi <see cref="RunTargetInfo"/>, které formuláře deklarují.
         /// </summary>
         /// <param name="type"></param>
         /// <param name="runFormInfos"></param>
         /// <returns></returns>
-        private static bool ContainsRunFormInfoAttribute(Type type, List<Tuple<Type, RunFormInfo>> runFormInfos)
+        private static bool ContainsRunFormInfoAttribute(Type type, List<RunTargetInfo> runFormInfos)
         {
             if (type is null) return false;
-            if (!type.IsSubclassOf(typeof(System.Windows.Forms.Form))) return false;
-
-            var attrs = type.GetCustomAttributes(typeof(RunFormInfoAttribute), true);
-            if (attrs.Length == 0) return false;
-
-            RunFormInfo runFormInfo = RunFormInfo.CreateForAttribute(attrs[0] as RunFormInfoAttribute);
-            if (runFormInfo is null || !runFormInfo.IsValid) return false;
-            
-            runFormInfos.Add(new Tuple<Type, RunFormInfo>(type, runFormInfo));
+            if (type.IsSubclassOf(typeof(System.Windows.Forms.Form)))
+            {
+                var attrs = type.GetCustomAttributes(typeof(RunFormInfoAttribute), true);
+                if (attrs.Length > 0)
+                {
+                    RunTargetInfo runFormInfo = RunTargetInfo.CreateForFormAttribute(type, attrs[0] as RunFormInfoAttribute);
+                    if (runFormInfo != null && runFormInfo.IsValid)
+                        runFormInfos.Add(runFormInfo);
+                }
+            }
 
             return false;
         }
         /// <summary>
-        /// Vytvoří, naplní a vrátí instanci <see cref="RunFormInfo"/> z dodaného atributu <see cref="RunFormInfoAttribute"/>
+        /// Vytvoří, naplní a vrátí instanci <see cref="RunTargetInfo"/> z dodaného atributu <see cref="RunFormInfoAttribute"/>
         /// </summary>
+        /// <param name="targetType"></param>
         /// <param name="runFormInfoAttribute"></param>
         /// <returns></returns>
-        private static RunFormInfo CreateForAttribute(RunFormInfoAttribute runFormInfoAttribute)
+        private static RunTargetInfo CreateForFormAttribute(Type targetType, RunFormInfoAttribute runFormInfoAttribute)
         {
             if (runFormInfoAttribute is null) return null;
-            RunFormInfo runFormInfo = new RunFormInfo();
+            RunTargetInfo runFormInfo = new RunTargetInfo();
             runFormInfo.PageText = runFormInfoAttribute.PageText;
             runFormInfo.PageOrder = runFormInfoAttribute.PageOrder;
             runFormInfo.GroupText = runFormInfoAttribute.GroupText;
@@ -527,6 +514,8 @@ namespace TestDevExpress.Forms
             runFormInfo.RunAsFloating = runFormInfoAttribute.RunAsFloating;
             runFormInfo.RunAsModal = runFormInfoAttribute.RunAsModal;
             runFormInfo.TabViewToolTip = runFormInfoAttribute.TabViewToolTip;
+            runFormInfo.RunType = TargetRunType.Form;
+            runFormInfo.RunTargetType = targetType;
             return runFormInfo;
         }
         #endregion
@@ -537,14 +526,14 @@ namespace TestDevExpress.Forms
         /// <param name="runFormInfos"></param>
         /// <param name="pages"></param>
         /// <param name="basicPage"></param>
-        public static void CreateRibbonPages(Tuple<Type, RunFormInfo>[] runFormInfos,  List<DataRibbonPage> pages, DataRibbonPage basicPage)
+        public static void CreateRibbonPages(RunTargetInfo[] runFormInfos,  List<DataRibbonPage> pages, DataRibbonPage basicPage)
         {
             if (runFormInfos is null || runFormInfos.Length == 0) return;
 
             // var rfiPages = runFormInfos.GroupBy(i => i.Item2.PageText ?? "").ToArray();
 
             // Grupy za stránky podle PageText, tříděné podle PageOrder, v rámci jedné stránky podle nejvyšší hodnoty PageOrder:
-            var rPages = runFormInfos.CreateSortedGroups(i => (i.Item2.PageText ?? ""), i => (i.Item2.PageOrder), (a, b) => (a > b ? a : b));
+            var rPages = runFormInfos.CreateSortedGroups(i => (i.PageText ?? ""), i => (i.PageOrder), (a, b) => (a > b ? a : b));
             int pageOrder = basicPage.PageOrder;
             foreach (var rPage in rPages)
             {   // V daném pořadí, které vychází z PageOrder:
@@ -559,7 +548,7 @@ namespace TestDevExpress.Forms
                 }
 
                 // RibbonGrupy = z aktuální stránky rPage vezmu prvky (rPage.Item2), vytvořím skupiny podle GroupText a setřídím podle GroupOrder.Max() :
-                var rGroups = rPage.Item2.CreateSortedGroups(i => (i.Item2.GroupText ?? ""), i => (i.Item2.GroupOrder), (a, b) => (a > b ? a : b));
+                var rGroups = rPage.Item2.CreateSortedGroups(i => (i.GroupText ?? ""), i => (i.GroupOrder), (a, b) => (a > b ? a : b));
                 int groupOrder = 0;
                 foreach (var rGroup in rGroups)
                 {   // Jedna grupa za druhou, v pořadí GroupOrder:
@@ -569,11 +558,11 @@ namespace TestDevExpress.Forms
 
                     // Jednotlivá tlačítka do grupy:
                     var rButtons = rGroup.Item2.ToList();
-                    rButtons.Sort((a, b) => a.Item2.ButtonOrder.CompareTo(b.Item2.ButtonOrder));
+                    rButtons.Sort((a, b) => a.ButtonOrder.CompareTo(b.ButtonOrder));
                     int buttonOrder = 0;
                     foreach (var rButton in rButtons)
                     {
-                        var dxItem = new DataRibbonItem() { Text = rButton.Item2.ButtonText, ToolTipText = rButton.Item2.ButtonToolTip, ImageName = rButton.Item2.ButtonImage, ItemOrder = ++buttonOrder, Tag = rButton };
+                        var dxItem = new DataRibbonItem() { Text = rButton.ButtonText, ToolTipText = rButton.ButtonToolTip, ImageName = rButton.ButtonImage, ItemOrder = ++buttonOrder, Tag = rButton };
                         dxItem.ClickAction = RunFormAction;
                         dxGroup.Items.Add(dxItem);
                     }
@@ -581,24 +570,23 @@ namespace TestDevExpress.Forms
             }
         }
         /// <summary>
-        /// Akce volaná z buttonu v Ribbnu, jejím úkolem je otevřít dané okno, jehož definice je uložena v Tagu dodaného prvku
+        /// Akce volaná z buttonu v Ribbonu, jejím úkolem je otevřít dané okno, jehož definice je uložena v Tagu dodaného prvku
         /// </summary>
         /// <param name="item"></param>
         private static void RunFormAction(IMenuItem item)
         {
-            if (item.Tag is not Tuple<Type, RunFormInfo> runFormInfo) return;
+            if (item.Tag is not RunTargetInfo runTargetInfo) return;
 
-            runFormInfo.Item2.Run(runFormInfo.Item1);
+            runTargetInfo.Run();
         }
         /// <summary>
-        /// Instanční metoda v <see cref="RunFormInfo"/>, má za úkol otevřít patřičným způsobem svůj formulář
+        /// Instanční metoda v <see cref="RunTargetInfo"/>, má za úkol otevřít patřičným způsobem svůj formulář
         /// </summary>
-        /// <param name="formType"></param>
-        private void Run(Type formType)
+        private void Run()
         {
             try
             {
-                var form = System.Activator.CreateInstance(formType) as System.Windows.Forms.Form;
+                var form = System.Activator.CreateInstance(this.RunTargetType) as System.Windows.Forms.Form;
                 var configIsMdiChild = ((form is IFormStatusWorking iForm) ? iForm.ConfigIsMdiChild : (bool?)null);
                 bool runAsFloating = (configIsMdiChild.HasValue ? !configIsMdiChild.Value : this.RunAsFloating);
                 DxMainAppForm.ShowChildForm(form, runAsFloating, this.TabViewToolTip);
@@ -703,7 +691,6 @@ namespace TestDevExpress.Forms
         /// ToolTip k otevřenému oknu nad záložkou
         /// </summary>
         public string TabViewToolTip { get; private set; }
-
     }
     #endregion
     #endregion
