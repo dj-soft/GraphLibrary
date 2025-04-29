@@ -1,9 +1,11 @@
-﻿using System;
+﻿using Noris.Clients.Win.Components.AsolDX;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web.UI.WebControls;
+using TestDevExpress.Components;
 using XmlSerializer = Noris.WS.Parser.XmlSerializer;
 
 namespace Noris.UI.Desktop.MultiPage
@@ -543,13 +545,24 @@ namespace Noris.Srv
     /// <summary>
     /// Tester : vrstva Manager
     /// </summary>
+    [RunTestClass]
     public class MultiTargetInvokeTest
     {
+        /// <summary>
+        /// Spustí test, a zobrazí výsledky
+        /// </summary>
+        /// <returns></returns>
+        [RunTestMethod("Testy", 20, "Testy základní", 1, "NrsInvoke", 0, "svgimages/arrows/next.svg", "Spustí test NrsInvoke a měření jeho času")]
+        public static void RunTestShowResult()
+        {
+            var result = RunTestGetResults();
+            DxComponent.ShowMessageInfo(result);
+        }
         /// <summary>
         /// Spustí test, vrátí string s výsledky
         /// </summary>
         /// <returns></returns>
-        public static string RunTest()
+        public static string RunTestGetResults()
         {
             var testMngr = new MultiTargetInvokeTest();
             var result = testMngr._RunTest();

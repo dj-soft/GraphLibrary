@@ -17,7 +17,7 @@ using DevExpress.XtraBars.Docking2010.DragEngine;
 namespace TestDevExpress.Forms
 {
     #region DxNativeTreeListForm : Formulář s nastavením vlastností nativní DevExpress = výchozí property
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "Native TreeList", buttonOrder: 60, buttonImage: "svgimages/dashboards/inserttreeview.svg", buttonToolTip: "Otevře okno TreeList s parametry", tabViewToolTip: "Okno zobrazující nový TreeList")]
+    [RunTestForm(groupText: "Testovací okna", buttonText: "Native TreeList", buttonOrder: 60, buttonImage: "svgimages/dashboards/inserttreeview.svg", buttonToolTip: "Otevře okno TreeList s parametry", tabViewToolTip: "Okno zobrazující nový TreeList")]
     internal class DxNativeTreeListForm : DxTreeListForm
     {
         protected override void RefreshTitle()
@@ -191,7 +191,7 @@ namespace TestDevExpress.Forms
     }
     #endregion
     #region DxAsolDxTreeListForm : Formulář s nastavením vlastností AsolDX = agregátní property
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "AsolDX TreeList", buttonOrder: 61, buttonImage: "svgimages/dashboards/inserttreeview.svg", buttonToolTip: "Otevře okno TreeList s parametry", tabViewToolTip: "Okno zobrazující nový TreeList")]
+    [RunTestForm(groupText: "Testovací okna", buttonText: "AsolDX TreeList", buttonOrder: 61, buttonImage: "svgimages/dashboards/inserttreeview.svg", buttonToolTip: "Otevře okno TreeList s parametry", tabViewToolTip: "Okno zobrazující nový TreeList")]
     internal class DxAsolDxTreeListForm : DxTreeListForm
     {
         protected override void RefreshTitle()

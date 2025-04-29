@@ -19,7 +19,7 @@ namespace TestDevExpress.Components
     /// <summary>
     /// Testovací okno pro Layout
     /// </summary>
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "Layout", buttonOrder: 20, buttonImage: "devav/layout/pages.svg", buttonToolTip: "Otevře okno pro testování layoutu (pod-okna)")]
+    [RunTestForm(groupText: "Testovací okna", buttonText: "Layout", buttonOrder: 20, buttonImage: "devav/layout/pages.svg", buttonToolTip: "Otevře okno pro testování layoutu (pod-okna)")]
     public class LayoutForm : DxRibbonForm
     {
         #region Konstruktor a tvorba obsahu okna
@@ -125,7 +125,6 @@ namespace TestDevExpress.Components
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.RemoveHidden", Text = "Remove hidden", ToolTipText = "Najde první Hidden panel (ten, který byl zavřen v režimu HideControlAndKeepTile) a odebere jej z layoutu. Jde o nevizuální operaci, kdy je fyzicky odebrán skrytý panel ze struktury.", ItemType = RibbonItemType.Button, ImageName = dxLayoutClose, RibbonStyle = RibbonItemStyles.SmallWithText });
 
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.ScanStruct", Text = "Scan control", ToolTipText = "Zmapuje aktuální strukturu controlu LayoutPanel a vloží ji do Clipboardu", ItemType = RibbonItemType.Button, ImageName = scanStructImageName, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.RunEventTest", Text = "Event Test", ToolTipText = "Spustí test eventhandlerů", ItemType = RibbonItemType.Button, ImageName = runEventTestImageName, RibbonStyle = RibbonItemStyles.Large});
 
             this.DxRibbon.AddPages(pages, true);
 
@@ -285,10 +284,6 @@ namespace TestDevExpress.Components
 
                 case "Dx.Layout.ScanStruct":
                     _DoScanFormStruct();
-                    break;
-
-                case "Dx.Layout.RunEventTest":
-                    _DoRunEventTest();
                     break;
             }
         }
@@ -694,13 +689,6 @@ namespace TestDevExpress.Components
 
         private string[] _ImageNames;
         private Timer _Timer;
-        #endregion
-        #region RunEventTest
-        private void _DoRunEventTest()
-        {
-            var result = Noris.Srv.MultiTargetInvokeTest.RunTest();
-            DxComponent.ShowMessageInfo(result);
-        }
         #endregion
     }
     /// <summary>

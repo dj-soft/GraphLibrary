@@ -8,13 +8,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using TestDevExpress.Components;
 
 namespace TestDevExpress.Forms
 {
     /// <summary>
     /// Web viewer typu MS WebView2
     /// </summary>
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "MS WebView2", buttonOrder: 71, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře MS WebView2 prohlížeč (MS Edge based)", tabViewToolTip: "WebView2 Browser")]
+    [RunTestForm(groupText: "Testovací okna", buttonText: "MS WebView2", buttonOrder: 71, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře MS WebView2 prohlížeč (MS Edge based)", tabViewToolTip: "WebView2 Browser")]
     internal class WebView2Form : DxRibbonForm
     {
         #region Konstrukce

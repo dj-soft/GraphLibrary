@@ -12,13 +12,14 @@ using DxLData = Noris.Clients.Win.Components.AsolDX.DataForm.Layout;
 using System.Drawing;
 using Noris.Clients.Win.Components.AsolDX.DxForm;
 using Noris.Clients.Win.Components.AsolDX.DataForm;
+using TestDevExpress.Components;
 
 namespace TestDevExpress.Forms
 {
     /// <summary>
     /// Formulář pro testy Threads
     /// </summary>
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "Threads", buttonOrder: 120, buttonImage: "svgimages/dashboards/grouplabels.svg", buttonToolTip: "Testuje práci na pozadí a popředí přes GuiInject", tabViewToolTip: "Testuje práci na pozadí a popředí přes GuiInject")]
+    [RunTestForm(groupText: "Testovací okna", buttonText: "Threads", buttonOrder: 120, buttonImage: "svgimages/dashboards/grouplabels.svg", buttonToolTip: "Testuje práci na pozadí a popředí přes GuiInject", tabViewToolTip: "Testuje práci na pozadí a popředí přes GuiInject")]
     internal class ThreadTestForm : DxRibbonForm
     {
         #region Inicializace
@@ -656,8 +657,6 @@ namespace TestDevExpress.Forms
         { }
 
         #endregion
-
-
         #region DxSample
 
         /// <summary>
@@ -740,9 +739,5 @@ namespace TestDevExpress.Forms
         private DevExpress.XtraEditors.GroupControl groupControl1;
 
         #endregion
-
-
-
-
     }
 }

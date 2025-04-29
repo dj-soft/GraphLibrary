@@ -11,13 +11,14 @@ using DevExpress.XtraBars.Ribbon;
 
 using SIO = System.IO;
 using NWC = Noris.Clients.Win.Components;
+using TestDevExpress.Components;
 
 namespace TestDevExpress.Forms
 {
     /// <summary>
     /// Formulář pro hrátky s grafy
     /// </summary>
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "Graf", buttonOrder: 50, buttonImage: "svgimages/dashboards/chart.svg", buttonToolTip: "Otevře okno s ukázkou grafů DevExpress včetně editoru")]
+    [RunTestForm(groupText: "Testovací okna", buttonText: "Graf", buttonOrder: 50, buttonImage: "svgimages/dashboards/chart.svg", buttonToolTip: "Otevře okno s ukázkou grafů DevExpress včetně editoru")]
     public partial class GraphForm : DevExpress.XtraEditors.XtraForm //   MdiBaseForm
     {
         /// <summary>

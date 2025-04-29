@@ -9,13 +9,14 @@ using DevExpress.Utils.Menu;
 using DevExpress.XtraPivotGrid.Data;
 using DevExpress.XtraTreeList;
 using Noris.Clients.Win.Components.AsolDX;
+using TestDevExpress.Components;
 
 namespace TestDevExpress.Forms
 {
     /// <summary>
     /// Okno pro testování DiagramControlu
     /// </summary>
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "Diagramy", buttonOrder: 60, buttonImage: "svgimages/dashboards/grid.svg", buttonToolTip: "Otevře okno obsahující DX Diagramy pro kreslení Workflow atd")]
+    [RunTestForm(groupText: "Testovací okna", buttonText: "Diagramy", buttonOrder: 60, buttonImage: "svgimages/dashboards/grid.svg", buttonToolTip: "Otevře okno obsahující DX Diagramy pro kreslení Workflow atd")]
     public class DiagramControlForm : DxRibbonForm
     {
         /// <summary>

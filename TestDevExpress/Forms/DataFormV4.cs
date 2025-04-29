@@ -26,7 +26,7 @@ namespace TestDevExpress.Forms
     /// <summary>
     /// Formulář pro testy komponenty <see cref="DxDataFormX"/>
     /// </summary>
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "DataForm", buttonOrder: 14, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře okno DataForm verze 4", tabViewToolTip: "Okno zobrazující nový DataForm")]
+    [RunTestForm(groupText: "Testovací okna", buttonText: "DataForm", buttonOrder: 14, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře okno DataForm verze 4", tabViewToolTip: "Okno zobrazující nový DataForm")]
     public class DataFormV4 : DxRibbonForm  //, IControlInfoSource
     {
         protected override void DxRibbonPrepare()

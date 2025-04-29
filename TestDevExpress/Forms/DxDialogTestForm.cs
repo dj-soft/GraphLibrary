@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Noris.Clients.Win.Components.AsolDX;
 using Noris.Clients.Win.Components;
-
+using TestDevExpress.Components;
 
 namespace TestDevExpress.Forms
 {
     /// <summary>
     /// Formulář pro testy okno dialogů <see cref="Noris.Clients.Win.Components.DialogForm"/>
     /// </summary>
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "DialogForm", buttonOrder: 40, buttonImage: "svgimages/richedit/inserttextbox.svg", buttonToolTip: "Otevře okno pro testování dialogů")]
+    [RunTestForm(groupText: "Testovací okna", buttonText: "DialogForm", buttonOrder: 40, buttonImage: "svgimages/richedit/inserttextbox.svg", buttonToolTip: "Otevře okno pro testování dialogů")]
     public class DxDialogTestForm : DxRibbonForm
     {
         protected override void DxMainContentPrepare()

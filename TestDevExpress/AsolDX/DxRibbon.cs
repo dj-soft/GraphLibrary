@@ -11319,7 +11319,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     if (item.PageOrder == 0) item.PageOrder = ++pageOrder; else if (item.PageOrder > pageOrder) pageOrder = item.PageOrder;
                 }
-                list.Sort((a, b) => a.MergeOrder.CompareTo(b.MergeOrder));
+                list.Sort((a, b) => a.PageOrder.CompareTo(b.PageOrder));
             }
             return list;
         }

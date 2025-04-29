@@ -10,13 +10,14 @@ using System.Windows.Forms;
 
 using Noris.Clients.Win.Components.AsolDX;
 using Noris.Clients.Win.Components.AsolDX.Map;
+using TestDevExpress.Components;
 
 namespace TestDevExpress.Forms
 {
     /// <summary>
     /// Web viewer typu MS WebView2
     /// </summary>
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "MS WebMapa", buttonOrder: 72, buttonImage: "devav/other/map.svg", buttonToolTip: "Otevře MS WebView2 mapy (MS Edge based)", tabViewToolTip: "WebView2 Mapa")]
+    [RunTestForm(groupText: "Testovací okna", buttonText: "MS WebMapa", buttonOrder: 72, buttonImage: "devav/other/map.svg", buttonToolTip: "Otevře MS WebView2 mapy (MS Edge based)", tabViewToolTip: "WebView2 Mapa")]
     internal class WebMapForm : DxRibbonForm
     {
         #region Konstrukce

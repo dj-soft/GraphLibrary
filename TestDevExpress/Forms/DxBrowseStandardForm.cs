@@ -8,13 +8,14 @@ using DevExpress.Utils.Extensions;
 using DevExpress.Utils.Menu;
 using DevExpress.XtraEditors.Filtering.Templates;
 using Noris.Clients.Win.Components.AsolDX;
+using TestDevExpress.Components;
 
 namespace TestDevExpress.Forms
 {
     /// <summary>
     /// Formulář obsahující Ribbon a Browse
     /// </summary>
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "Browse", buttonOrder: 30, buttonImage: "svgimages/spreadsheet/chartgridlines.svg", buttonToolTip: "Otevře okno s ukázkou BrowseList standard DX testovací")]
+    [RunTestForm(groupText: "Testovací okna", buttonText: "Browse", buttonOrder: 30, buttonImage: "svgimages/spreadsheet/chartgridlines.svg", buttonToolTip: "Otevře okno s ukázkou BrowseList standard DX testovací")]
     public class DxBrowseStandardForm : DxRibbonForm
     {
         #region Konstrukce

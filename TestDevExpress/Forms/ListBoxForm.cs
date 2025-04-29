@@ -12,13 +12,14 @@ using DxLData = Noris.Clients.Win.Components.AsolDX.DataForm.Layout;
 using System.Drawing;
 using Noris.Clients.Win.Components.AsolDX.DxForm;
 using Noris.Clients.Win.Components.AsolDX.DataForm;
+using TestDevExpress.Components;
 
 namespace TestDevExpress.Forms
 {
     /// <summary>
     /// Formulář pro testy Threads
     /// </summary>
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "ListBox", buttonOrder: 130, buttonImage: "svgimages/diagramicons/insertlist.svg", buttonToolTip: "Zobrazí různé ListBoxy a testuje jejich chování", tabViewToolTip: "Testuje různé ListBoxy a jejich chování")]
+    [RunTestForm(groupText: "Testovací okna", buttonText: "ListBox", buttonOrder: 130, buttonImage: "svgimages/diagramicons/insertlist.svg", buttonToolTip: "Zobrazí různé ListBoxy a testuje jejich chování", tabViewToolTip: "Testuje různé ListBoxy a jejich chování")]
     internal class ListBoxForm : DxRibbonForm
     {
         #region Inicializace

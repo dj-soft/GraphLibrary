@@ -272,6 +272,7 @@
     </Compile>
     <Compile Include="Components\Constants.cs" />
     <Compile Include="Components\DataFormSample.cs" />
+    <Compile Include="Components\RunTestAttributes.cs" />
     <Compile Include="Forms\DataFormV4.cs">
       <SubType>Form</SubType>
     </Compile>

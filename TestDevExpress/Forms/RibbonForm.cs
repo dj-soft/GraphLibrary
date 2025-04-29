@@ -6,13 +6,14 @@ using System.Threading.Tasks;
 using DevExpress.Utils.Extensions;
 using DevExpress.Utils.Menu;
 using Noris.Clients.Win.Components.AsolDX;
+using TestDevExpress.Components;
 
 namespace TestDevExpress.Forms
 {
     /// <summary>
     /// Formulář pro testy Ribbonů
     /// </summary>
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "Ribbon", buttonOrder: 40, buttonImage: "svgimages/dashboards/grid.svg", buttonToolTip: "Otevře okno s ukázkou Ribbonů s možností mergování nahoru")]
+    [RunTestForm(groupText: "Testovací okna", buttonText: "Ribbon", buttonOrder: 40, buttonImage: "svgimages/dashboards/grid.svg", buttonToolTip: "Otevře okno s ukázkou Ribbonů s možností mergování nahoru")]
     public class RibbonForm : DxRibbonForm
     {
         #region Konstruktor a proměnné

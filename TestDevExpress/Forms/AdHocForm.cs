@@ -16,7 +16,7 @@ using DevExpress.XtraBars.Docking2010.DragEngine;
 
 namespace TestDevExpress.Forms
 {
-    [RunFormInfo(groupText: "Testovací okna", buttonText: "AD HOC", buttonOrder: 999, buttonImage: "svgimages/business%20objects/bo_statemachine.svg", buttonToolTip: "Otevře okno pro občasné testování čehokoli", tabViewToolTip: "Okno pro občasné testování čehokoli")]
+    [RunTestForm(groupText: "Testovací okna", buttonText: "AD HOC", buttonOrder: 999, buttonImage: "svgimages/business%20objects/bo_statemachine.svg", buttonToolTip: "Otevře okno pro občasné testování čehokoli", tabViewToolTip: "Okno pro občasné testování čehokoli")]
     internal class AdHocForm : DxRibbonForm
     {
         protected override void DxMainContentPrepare()
