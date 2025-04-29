@@ -140,22 +140,21 @@ namespace TestDevExpress.Forms
                     DxComponent.LogActive = true;
 
                 var time = DxComponent.LogTimeCurrent;
-                string currentGdiState = _GetCurrentGdiState();
+                var info = DxComponent.WinProcessInfo.GetCurent();
+                string text = $"GDI: {info.GDIHandleCount}";
+                string toolTip = info.Text4Full;
                 var mics1 = DxComponent.LogGetTimeElapsed(time);
-                if (!String.Equals(currentGdiState, _StatusWin32InfoItem.Text))
+
+                if (!String.Equals(text, _StatusWin32InfoItem.Text))
                 {
                     time = DxComponent.LogTimeCurrent;
-                    _StatusWin32InfoItem.Text = currentGdiState;
+                    _StatusWin32InfoItem.Text = text;
                     _StatusWin32InfoItem.Refresh();
                     var mics2 = DxComponent.LogGetTimeElapsed(time);
-                    _StatusWin32InfoItem.ToolTipText = $"Získání GDI informací: {mics1} microsec;\r\nRefresh statusbaru: {mics2} microsec;";     // Promítne se až příště.
+                    _StatusWin32InfoItem.ToolTipTitle = "Stav GDI objektů a paměti";
+                    _StatusWin32InfoItem.ToolTipText = toolTip + $"\r\nZískání GDI informací: {mics1} microsec;\r\nRefresh statusbaru: {mics2} microsec;";     // Promítne se až příště.
                 }
             }
-        }
-        private string _GetCurrentGdiState()
-        {
-            var info =  DxComponent.WinProcessInfo.GetCurent();
-            return $"GDI: {info.GDIHandleCount}";
         }
         protected override void Dispose(bool disposing)
         {
