@@ -737,12 +737,11 @@ namespace Noris.Clients.Win.Components
             _StandardPanel = panel;
             this.Controls.Add(_StandardPanel);
 
-            var ribbon = new DevExpress.XtraBars.Ribbon.RibbonControl();                 // Musí existovat, jinak nefunguje StatusBar
-            var status = new DevExpress.XtraBars.Ribbon.RibbonStatusBar() { Dock = DockStyle.Bottom, Ribbon = ribbon, Name = "_StatusBar" };
-            ribbon.CustomDrawItem += _Ribbon_CustomDrawItem;
-            status.Visible = this.StatusBarVisible;
-            _StatusBar = status;
-            this.Controls.Add(status);
+            __Ribbon = new DevExpress.XtraBars.Ribbon.RibbonControl();                 // Musí existovat, jinak nefunguje StatusBar
+            __Ribbon.CustomDrawItem += _Ribbon_CustomDrawItem;
+            _StatusBar = new DevExpress.XtraBars.Ribbon.RibbonStatusBar() { Dock = DockStyle.Bottom, Ribbon = __Ribbon, Name = "_StatusBar" };
+            _StatusBar.Visible = this.StatusBarVisible;
+            this.Controls.Add(_StatusBar);
         }
         /// <summary>
         /// Podpora pro CustomDraw buttonu ve StatusBaru
@@ -755,7 +754,6 @@ namespace Noris.Clients.Win.Components
             if (bItem != null && bItem is DevExpress.XtraBars.BarItemLink itemLink && itemLink.Item is IBarItemCustomDrawing cdr)
                 cdr.CustomDraw(e);
         }
-
         /// <summary>
         /// Vytvoří ikonu
         /// </summary>
@@ -1082,6 +1080,7 @@ namespace Noris.Clients.Win.Components
         System.Windows.Forms.Control _InputPanel;
         System.Windows.Forms.Control _ButtonPanel;
         // System.Windows.Forms.Control _ExpanderPanel;
+        DevExpress.XtraBars.Ribbon.RibbonControl __Ribbon;
         DevExpress.XtraBars.Ribbon.RibbonStatusBar _StatusBar;
         DxBarCheckItem StatusAltTextCheckButton;
         DxBarStaticItem StatusLabel1;
