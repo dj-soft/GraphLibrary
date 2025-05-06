@@ -5049,6 +5049,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             string userName = (hasDebugger ? System.Environment.UserName?.ToLower() : "");
             bool isDeveloper = (userName == "david.janacek" || userName == "david");
             __LogFrequencyLong = System.Diagnostics.Stopwatch.Frequency;
+            __LogFrequency = __LogFrequencyLong;
             __LogRunningWatch = new System.Diagnostics.Stopwatch();
             __LogRunningWatch.Start();
             _LogActive = hasDebugger && isDeveloper;
@@ -5061,23 +5062,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             get { return __LogActive; }
             set
             {
-                if (value && (__LogWatch == null || __LogSB == null))
+                if (value && (__LogSB == null))
                 {   // Inicializace:
-                    __LogWatch = new System.Diagnostics.Stopwatch();
-                    __LogFrequency = __LogFrequencyLong;
-                    __LogTimeSpanForEmptyRow = System.Diagnostics.Stopwatch.Frequency / 10L;   // Pokud mezi dvěma zápisy do logu bude časová pauza 1/10 sekundy a víc, vložím EmptyRow
+                    __LogTimeSpanForEmptyRow = __LogFrequencyLong / 10L;   // Pokud mezi dvěma zápisy do logu bude časová pauza 1/10 sekundy a víc, vložím EmptyRow
                     __LogSB = new StringBuilder();
                 }
                 if (value && !__LogActive)
                 {   // Restart:
-                    __LogWatch.Start();
-                    __LogStartTicks = __LogWatch.ElapsedTicks;
+                    __LogStartTicks = _LogTimeCurrent;
                     __LogLastWriteTicks = __LogStartTicks;
                 }
                 if (!value && __LogActive)
                 {   // Stop:
-                    if (__LogWatch != null)
-                        __LogWatch.Stop();
                     // if (_LogSB != null)
                     //    _LogSB.Clear();
                     // Instance nechávám existovat včetně obsahu. Clear obsahu lze řešit explicitně.
@@ -5121,10 +5117,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             _RunLogTextChanged();
         }
         /// <summary>
-        /// Obsahuje aktuální čas jako ElapsedTicks
+        /// Obsahuje aktuální čas (časovače <see cref="__LogRunningWatch"/>), jako ElapsedTicks
         /// </summary>
         /// <returns></returns>
-        private long _LogTimeCurrent { get { return (_LogActive ? __LogWatch.ElapsedTicks : 0L); } }
+        private long _LogTimeCurrent { get { return __LogRunningWatch.ElapsedTicks; } }
         /// <summary>
         /// Přidá titulek (mezera + daný text ohraničený znaky ===)
         /// </summary>
@@ -5148,8 +5144,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private decimal _LogGetTimeElapsed(long startTime, string logTokenTime)
         {
-            if (!_LogActive) return 0m;
-            return _LogGetTimeElapsed(startTime, __LogWatch.ElapsedTicks, logTokenTime);
+            return _LogGetTimeElapsed(startTime, __LogRunningWatch.ElapsedTicks, logTokenTime);
         }
         /// <summary>
         /// Vrátí dobu času, která uplynula do teď od času <paramref name="startTime"/>, v jednotkách dle <paramref name="logTokenTime"/>, default v mikrosekundách.
@@ -5160,8 +5155,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private decimal _LogGetTimeElapsed(long startTime, long endTime, string logTokenTime)
         {
-            if (!_LogActive) return 0m;
-
             decimal seconds = ((decimal)(endTime - startTime)) / __LogFrequency;     // Počet sekund
             string token = logTokenTime ?? LogTokenTimeMicrosec;
             switch (token)
@@ -5218,7 +5211,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!_LogActive) return;
             if (!_DoLog(kind)) return;
 
-            long nowTime = __LogWatch.ElapsedTicks;
+            long nowTime = _LogTimeCurrent;
             decimal seconds = (startTime.HasValue ? ((decimal)(nowTime - startTime.Value)) / __LogFrequency : 0m);     // Počet sekund
             if (line.Contains(LogTokenTimeSec))
             {
@@ -5249,7 +5242,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!_LogActive) return;
             if (!_DoLog(LogActivityKind.WinMessage)) return;
 
-            long nowTime = __LogWatch.ElapsedTicks;
+            long nowTime = _LogTimeCurrent;
 
             var msgName = _GetWinMessage(msg, false);
             if (msgName != null)
@@ -5289,7 +5282,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="nowTime"></param>
         private void _LogAddLine(string line, bool forceEmptyRow, long? startTime = null, long? nowTime = null)
         {
-            long nowTick = nowTime ?? __LogWatch.ElapsedTicks;
+            long nowTick = nowTime ?? _LogTimeCurrent;
             string totalUs = _LogGetMicroseconds(__LogStartTicks, nowTick).ToString();              // mikrosekund od startu
             string stepUs = _LogGetMicroseconds(__LogLastWriteTicks, nowTick).ToString();           // mikrosekund od posledního logu
             string timeUs = (startTime.HasValue ? _LogGetMicroseconds(startTime.Value, nowTick).ToString() : "");    // mikrosekund od daného času
@@ -5303,7 +5296,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 __LogSB.AppendLine(logLine);
                 _LogLastLine = logLine;
             }
-            __LogLastWriteTicks = __LogWatch.ElapsedTicks;
+            __LogLastWriteTicks = _LogTimeCurrent;
             _RunLogTextChanged();
         }
         /// <summary>
@@ -5343,8 +5336,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private bool __LogActive;
         private LogActivityKind __LogActivities;
-        private System.Diagnostics.Stopwatch __LogWatch;
-        private long _LogWatchCurrentTicks { get { return __LogWatch.ElapsedTicks; } }
+        private long _LogWatchCurrentTicks { get { return __LogRunningWatch.ElapsedTicks; } }
         private decimal __LogFrequency;
         private long __LogFrequencyLong;
         private StringBuilder __LogSB;

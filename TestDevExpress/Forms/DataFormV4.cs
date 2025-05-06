@@ -52,6 +52,7 @@ namespace TestDevExpress.Forms
 
             // https://www.youtube.com/watch?v=qwjvR4tX790
 
+            var start = DxComponent.LogTimeCurrent;
             _Layout.SuspendLayout();
             for (int q = 0; q < 160; q++)
             {
@@ -68,7 +69,9 @@ namespace TestDevExpress.Forms
                 _Layout.Root.Add(layoutItem);
             }
             _Layout.ResumeLayout();
-            MainAppForm.CurrentInstance.StatusBarText = "Ahoj";
+            var stop = DxComponent.LogTimeCurrent;
+            var time = DxComponent.LogGetTimeElapsed(start);
+            MainAppForm.CurrentInstance.StatusBarText = $"Create 160 items: {time} microsecs";
         }
         LayoutControl _Layout;
     }
