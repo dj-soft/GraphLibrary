@@ -26,7 +26,7 @@ namespace TestDevExpress.Forms
     /// <summary>
     /// Formulář pro testy komponenty <see cref="DxDataFormX"/>
     /// </summary>
-    [RunTestForm(groupText: "Testovací okna", buttonText: "DataForm", buttonOrder: 14, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře okno DataForm verze 4", tabViewToolTip: "Okno zobrazující nový DataForm")]
+    [RunTestForm(groupText: "Testovací okna", buttonText: "DataForm V4", buttonOrder: 14, buttonImage: "svgimages/spreadsheet/showcompactformpivottable.svg", buttonToolTip: "Otevře okno DataForm verze 4", tabViewToolTip: "Okno zobrazující nový DataForm")]
     public class DataFormV4 : DxRibbonForm  //, IControlInfoSource
     {
         protected override void DxRibbonPrepare()
@@ -40,8 +40,6 @@ namespace TestDevExpress.Forms
             base.DxMainContentPrepare();
 
 
-            _Layout = new DevExpress.XtraLayout.LayoutControl() { Dock = DockStyle.Fill };
-
             // https://docs.devexpress.com/WindowsForms/114577/controls-and-libraries/form-layout-managers
             // https://docs.devexpress.com/WindowsForms/11359/controls-and-libraries/application-ui-manager
             // https://docs.devexpress.com/WindowsForms/DevExpress.XtraLayout.LayoutRepositoryItem
@@ -49,9 +47,12 @@ namespace TestDevExpress.Forms
 
             // https://www.youtube.com/watch?v=qwjvR4tX790
 
-            var start = DxComponent.LogTimeCurrent;
+            var start = DateTime.Now;
+
+            _Layout = new DevExpress.XtraLayout.LayoutControl() { Dock = DockStyle.Fill };
             _Layout.SuspendLayout();
-            for (int q = 0; q < 160; q++)
+            int cnt = (new Random()).Next(50, 200);
+            for (int q = 0; q < cnt; q++)
             {
                 var repoItem = new DXR.RepositoryItemTextEdit();
                 repoItem.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Flat;
@@ -68,11 +69,12 @@ namespace TestDevExpress.Forms
             _Layout.ResumeLayout();
             this.DxMainPanel.Controls.Add(_Layout);
 
+            var stop = DateTime.Now;
+            var time = stop - start;
+            var time1 = time.TotalMilliseconds / (double)cnt;
 
-            var stop = DxComponent.LogTimeCurrent;
-            var time = DxComponent.LogGetTimeElapsed(start);
-            MainAppForm.CurrentInstance.StatusBarText = $"Create 160 items: {time} microsecs";
+            MainAppForm.CurrentInstance.StatusBarText = $"Create {cnt} items in {time.TotalSeconds} secs;   1 item in {time1} milisecond. ";
         }
-        LayoutControl _Layout;
+        DevExpress.XtraLayout.LayoutControl _Layout;
     }
 }
