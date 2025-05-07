@@ -14,8 +14,8 @@ using Noris.Clients.Win.Components.AsolDX.DxForm;
 using Noris.Clients.Win.Components.AsolDX.DataForm;
 using TestDevExpress.Components;
 
-using DevExpress.XtraLayout;
-using DevExpress.XtraLayout.Utils;
+// using DevExpress.XtraLayout;
+// using DevExpress.XtraLayout.Utils;
 
 using DXR = DevExpress.XtraEditors.Repository;
 
@@ -40,10 +40,7 @@ namespace TestDevExpress.Forms
             base.DxMainContentPrepare();
 
 
-            _Layout = new LayoutControl() { Dock = DockStyle.Fill };
-            this.DxMainPanel.Controls.Add(_Layout);
-
-            var lc = _Layout;
+            _Layout = new DevExpress.XtraLayout.LayoutControl() { Dock = DockStyle.Fill };
 
             // https://docs.devexpress.com/WindowsForms/114577/controls-and-libraries/form-layout-managers
             // https://docs.devexpress.com/WindowsForms/11359/controls-and-libraries/application-ui-manager
@@ -60,7 +57,7 @@ namespace TestDevExpress.Forms
                 repoItem.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Flat;
                 repoItem.NullText = "xxxxxxxxxxxx";
 
-                var layoutItem = new LayoutRepositoryItem(repoItem);
+                var layoutItem = new DevExpress.XtraLayout.LayoutRepositoryItem(repoItem);
                 layoutItem.Name = "RepoItem" + q.ToString();
                 layoutItem.Text = "RepositoryItem " + q.ToString() + ":";
                 layoutItem.Size = new WinDraw.Size(360, 20);
@@ -69,6 +66,9 @@ namespace TestDevExpress.Forms
                 _Layout.Root.Add(layoutItem);
             }
             _Layout.ResumeLayout();
+            this.DxMainPanel.Controls.Add(_Layout);
+
+
             var stop = DxComponent.LogTimeCurrent;
             var time = DxComponent.LogGetTimeElapsed(start);
             MainAppForm.CurrentInstance.StatusBarText = $"Create 160 items: {time} microsecs";
