@@ -149,7 +149,7 @@ namespace TestDevExpress.Forms
                 {
                     time = DxComponent.LogTimeCurrent;
                     _StatusWin32InfoItem.Text = text;
-                    _StatusWin32InfoItem.Refresh();
+                    _StatusWin32InfoItem.Refresh(true);
                     var mics2 = DxComponent.LogGetTimeElapsed(time);
                     _StatusWin32InfoItem.ToolTipTitle = "Stav GDI objektů a paměti";
                     _StatusWin32InfoItem.ToolTipText = toolTip + $"\r\nZískání GDI informací: {mics1} microsec;\r\nRefresh statusbaru: {mics2} microsec;";     // Promítne se až příště.

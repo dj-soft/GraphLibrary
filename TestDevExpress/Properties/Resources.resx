@@ -166,4 +166,43 @@
   <data name="Nephrite_9" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\_Icons\Nephrite_9.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="_16128___Nimhue" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\ImagesBig\16128 - Nimhue.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="_18127___Incantation" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\ImagesBig\18127 - Incantation.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="_30180___damnation" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\ImagesBig\30180 - damnation.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="_32305___VIOLET_EYES" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\ImagesBig\32305 - VIOLET EYES.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="_34204___ASIAN_ELF" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\ImagesBig\34204 - ASIAN ELF.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="_36819___Frost_Witch" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\ImagesBig\36819 - Frost Witch.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="_38717___Dihla" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\ImagesBig\38717 - Dihla.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="_38737___Icy_Dreams" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\ImagesBig\38737 - Icy Dreams.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="_53252___Elven_Youth" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\ImagesBig\53252 - Elven Youth.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="_54126___woman" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\ImagesBig\54126 - woman.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="_54830___woman" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\ImagesBig\54830 - woman.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="_57257___Marganna" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\ImagesBig\57257 - Marganna.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="_6892___Triffidia_Beauty" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\ImagesBig\6892 - Triffidia Beauty.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>
