@@ -20,9 +20,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public UndoRedo()
         {
             __Steps = new List<UndoRedoStep>();
-            __PointerUndo = -1;
-            __PointerRedo = -1;
             __MaxStepsCount = 250;
+            _Clear();
         }
         /// <summary>
         /// Jednotlivé kroky UndoRedo
@@ -65,10 +64,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public void Dispose()
         {
-            __Steps.Clear();
+            _Clear();
             __Steps = null;
-            __PointerUndo = -1;
-            __PointerRedo = -1;
         }
         #endregion
         #region Public
@@ -123,6 +120,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             var data = _Redo();
             _RunChanged(oldState);
             return data;
+        }
+        /// <summary>
+        /// Vymaže interní paměť všech kroků
+        /// </summary>
+        public void Clear()
+        {
+            var oldState = _CurrentState;
+            _Clear();
+            _RunChanged(oldState);
         }
         /// <summary>
         /// Událost je volána při provádění prvního Undo kroku, kdy aplikace může mít k dispozici aktuální stav dat, který není uložen v UndoRedo containeru.
@@ -307,6 +313,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 int pointerRedo = __PointerRedo;
                 return (pointerRedo >= 0 && pointerRedo <= (count - 1));
             }
+        }
+        /// <summary>
+        /// Vymaže obsah instance do výchozího stavu
+        /// </summary>
+        private void _Clear()
+        {
+            __Steps.Clear();
+            __PointerUndo = -1;
+            __PointerRedo = -1;
         }
         /// <summary>
         /// Jeden krok UndoRedo containeru

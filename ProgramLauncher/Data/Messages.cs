@@ -267,6 +267,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string ToolStripButtonAppearanceToolTip { get { return _GetText("Změnit vzhled (barevná paleta, velikost, jazyk)"); } }
         public string ToolStripButtonUndoToolTip { get { return _GetText("Vrátí zpět posledně provedenou změnu"); } }
         public string ToolStripButtonRedoToolTip { get { return _GetText("Obnoví vpřed posledně vrácenou změnu"); } }
+        public string ToolStripButtonApplyToolTip { get { return _GetText("Akceptuje aktuální stav jako finální, zruší možnosti Undo+Redo"); } }
         public string ToolStripButtonPreferenceToolTip { get { return _GetText("Nastavit chování aplikace"); } }
         public string ToolStripButtonEditToolTip { get { return _GetText("Upravit obsah"); } }
         public string ToolStripButtonMessageSyncToolTip { get { return _GetText("Naplnit jazykové soubory aktuálním seznamem hlášek"); } }

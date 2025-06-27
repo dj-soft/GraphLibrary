@@ -473,6 +473,36 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap colors_48 {
+            get {
+                object obj = ResourceManager.GetObject("colors_48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap configure_2_48 {
+            get {
+                object obj = ResourceManager.GetObject("configure_2_48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap configure_5_48 {
+            get {
+                object obj = ResourceManager.GetObject("configure_5_48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap delete_22 {
             get {
                 object obj = ResourceManager.GetObject("delete_22", resourceCulture);
@@ -593,6 +623,16 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap dialog_ok_2_48 {
+            get {
+                object obj = ResourceManager.GetObject("dialog_ok_2_48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap dialog_ok_3_22 {
             get {
                 object obj = ResourceManager.GetObject("dialog_ok_3_22", resourceCulture);
@@ -613,6 +653,36 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap dialog_ok_4_48 {
+            get {
+                object obj = ResourceManager.GetObject("dialog_ok_4_48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap dialog_ok_5_48 {
+            get {
+                object obj = ResourceManager.GetObject("dialog_ok_5_48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap dialog_ok_apply_2_48 {
+            get {
+                object obj = ResourceManager.GetObject("dialog_ok_apply_2_48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap dialog_ok_apply_22 {
             get {
                 object obj = ResourceManager.GetObject("dialog_ok_apply_22", resourceCulture);
@@ -626,6 +696,16 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         internal static System.Drawing.Bitmap dialog_ok_apply_3_22 {
             get {
                 object obj = ResourceManager.GetObject("dialog_ok_apply_3_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap dialog_ok_apply_6_48 {
+            get {
+                object obj = ResourceManager.GetObject("dialog_ok_apply_6_48", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -1133,6 +1213,16 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap kde_resources_configuration_48 {
+            get {
+                object obj = ResourceManager.GetObject("kde_resources_configuration_48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap klickety_2_22 {
             get {
                 object obj = ResourceManager.GetObject("klickety_2_22", resourceCulture);
@@ -1316,6 +1406,16 @@ namespace DjSoft.Tools.ProgramLauncher.Properties {
         internal static System.Drawing.Bitmap services_nuvola_22 {
             get {
                 object obj = ResourceManager.GetObject("services_nuvola_22", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap system_config_boot_48 {
+            get {
+                object obj = ResourceManager.GetObject("system_config_boot_48", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

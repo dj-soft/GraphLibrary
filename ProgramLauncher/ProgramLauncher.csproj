@@ -424,7 +424,9 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy $(ProjectDir)\Translate\*.* $(TargetDir)\*.*
-copy $(TargetDir)*.* "C:\DavidPrac\Utils\ProgramLauncher\*.*</PostBuildEvent>
+    <PostBuildEvent>copy /y $(ProjectDir)Translate\*.* $(TargetDir)*.*
+copy /y $(TargetDir)*.* C:\DavidPrac\Utils\ProgramLauncher\*.*
+@echo Je tu chyba?    Neni spusteny program ProgramLauncher ???
+@echo.</PostBuildEvent>
   </PropertyGroup>
 </Project>

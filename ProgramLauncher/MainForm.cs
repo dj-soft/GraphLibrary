@@ -283,8 +283,9 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         /// </summary>
         private void InitializeToolBar()
         {
-            this._ToolAppearanceButton = addButton(Properties.Resources.applications_graphics_2_48, _ToolAppearanceButton_Click);
+            this._ToolAppearanceButton = addButton(Properties.Resources.system_settings_2_48, _ToolAppearanceButton_Click);
             this._ToolUndoButton = addButton(Properties.Resources.edit_undo_3_48, _ToolUndoButton_Click);
+            this._ToolApplyButton = addButton(Properties.Resources.dialog_ok_apply_2_48, _ToolApplyButton_Click);
             this._ToolRedoButton = addButton(Properties.Resources.edit_redo_3_48, _ToolRedoButton_Click);
             this._ToolPreferenceButton = addButton(Properties.Resources.system_run_6_48, _ToolPreferenceButton_Click);
             this._ToolEditButton = addButton(Properties.Resources.edit_6_48, _ToolEditButton_Click);
@@ -321,6 +322,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         {
             this._ToolAppearanceButton.ToolTipText = App.Messages.ToolStripButtonAppearanceToolTip;
             this._ToolUndoButton.ToolTipText = App.Messages.ToolStripButtonUndoToolTip;
+            this._ToolApplyButton.ToolTipText = App.Messages.ToolStripButtonApplyToolTip;
             this._ToolRedoButton.ToolTipText = App.Messages.ToolStripButtonRedoToolTip;
             this._ToolPreferenceButton.ToolTipText = App.Messages.ToolStripButtonPreferenceToolTip;
             this._ToolEditButton.ToolTipText = App.Messages.ToolStripButtonEditToolTip;
@@ -380,6 +382,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         }
         private ToolStripButton _ToolAppearanceButton;
         private ToolStripButton _ToolUndoButton;
+        private ToolStripButton _ToolApplyButton;
         private ToolStripButton _ToolRedoButton;
         private ToolStripButton _ToolPreferenceButton;
         private ToolStripButton _ToolEditButton;
@@ -483,6 +486,16 @@ Help => {App.Messages.HelpInfoHelp}{eol}
                 _UndoRedoApplyPageSet(App.UndoRedo.Redo());
         }
         /// <summary>
+        /// Po kliknutí na tlačítko Toolbaru: APPLY
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ToolApplyButton_Click(object sender, EventArgs e)
+        {
+            if (App.UndoRedo.CanUndo || App.UndoRedo.CanRedo)
+                App.UndoRedo.Clear();
+        }
+        /// <summary>
         /// Dostává data získaná z UndoRedo containeru a má je aplikovat do aktuálnho <see cref="Settings.PageSet"/>.
         /// Aplikuje tam jejich klon, tak aby v UndoRedo containeru zůstal izolovaný stav.
         /// </summary>
@@ -506,7 +519,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             e.RedoData = App.Settings.PageSet.Clone(true);           // true = generujeme klon se shodnými ID
         }
         /// <summary>
-        /// Aktualizuje Enabled buttonu Undo a Redo podle stavu kontejneru
+        /// Aktualizuje Enabled buttonu Undo a Redo a Apply, podle stavu kontejneru
         /// </summary>
         private void RefreshToolbarUndoRedoState()
         {
@@ -514,8 +527,10 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             var canRedo = App.UndoRedo.CanRedo;
             var canAny = (canUndo || canRedo);
             this._ToolUndoButton.Enabled = canUndo;
+            this._ToolApplyButton.Enabled = canAny;
             this._ToolRedoButton.Enabled = canRedo;
             this._ToolUndoButton.Visible = canAny;
+            this._ToolApplyButton.Visible = canAny;
             this._ToolRedoButton.Visible = canAny;
         }
         #endregion
