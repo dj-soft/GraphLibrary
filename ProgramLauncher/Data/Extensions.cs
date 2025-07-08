@@ -1527,17 +1527,36 @@ namespace DjSoft.Tools.ProgramLauncher
         public virtual FontStyle? FontStyle { get; set; }
         public virtual object ToolItem { get; set; }
         public virtual object UserData { get; set; }
+        public virtual void Process() { }
     }
     /// <summary>
     /// Předpis pro prvky, které mohou být nabízeny v menu
     /// </summary>
     public interface IMenuItem
     {
+        /// <summary>
+        /// Text v menu
+        /// </summary>
         string Text { get; }
+        /// <summary>
+        /// Tooltip v menu
+        /// </summary>
         string ToolTip { get; }
+        /// <summary>
+        /// Druh položky v menu
+        /// </summary>
         MenuItemType ItemType { get; }
+        /// <summary>
+        /// Image = ikona v menu
+        /// </summary>
         Image Image { get; }
+        /// <summary>
+        /// Prvek v menu je Enabled?
+        /// </summary>
         bool Enabled { get; }
+        /// <summary>
+        /// Styl písma
+        /// </summary>
         FontStyle? FontStyle { get; }
         /// <summary>
         /// Vizuální objekt menu (typicky <see cref="ToolStripItem"/>), uložený sem po jeho vytvoření.
@@ -1549,6 +1568,10 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Libovolná data uživatele, systém se o ně nestará. Aplikace si zde ukládá význam prvku - aby mohla správně reagovat na kliknutí.
         /// </summary>
         object UserData { get; set; }
+        /// <summary>
+        /// Provede svoji akci
+        /// </summary>
+        void Process();
     }
     /// <summary>
     /// Typ prvku v menu

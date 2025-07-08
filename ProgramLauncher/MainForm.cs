@@ -235,6 +235,11 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             var menuPoint = _ToolStrip.PointToScreen(_ToolAppearanceButton.Bounds.GetPoint(RectanglePointPosition.BottomLeft));
 
             List<IMenuItem> items = new List<IMenuItem>();
+
+            items.Add(DataMenuItem.CreateHeader(App.Messages.AppearanceMenuHeaderPasswords));
+            items.AddRange(Passwords.MenuActions);
+
+            items.Add(DataMenuItem.CreateSeparator());
             items.Add(DataMenuItem.CreateHeader(App.Messages.AppearanceMenuHeaderColorPalette));
             items.AddRange(AppearanceInfo.Collection);
 
@@ -255,25 +260,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             // Po výběru prvku v menu
             void onAppearanceMenuSelect(IMenuItem selectedItem)
             {
-                if (selectedItem is AppearanceInfo appearanceInfo)
-                {
-                    App.CurrentAppearance = appearanceInfo;
-                    App.Settings.AppearanceName = appearanceInfo.Name;
-                }
-                else if (selectedItem is LayoutSetInfo itemLayoutSet)
-                {
-                    App.CurrentLayoutSet = itemLayoutSet;
-                    App.Settings.LayoutSetName = itemLayoutSet.Name;
-                }
-                else if (selectedItem is Language language)
-                {
-                    App.CurrentLanguage = language;
-                    App.Settings.LanguageCode = language.Code;
-                }
-                else if (selectedItem.UserData is ToolTipType tipType)
-                {
-                    App.Settings.CurrentToolTip = tipType;
-                }
+                selectedItem?.Process();
             }
         }
         #endregion

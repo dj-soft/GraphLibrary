@@ -528,6 +528,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         FontStyle? IMenuItem.FontStyle { get { return (Object.ReferenceEquals(this, App.CurrentAppearance) ? (FontStyle?)FontStyle.Bold : (FontStyle?)null); } }
         object IMenuItem.ToolItem { get; set; }
         object IMenuItem.UserData { get; set; }
+        void IMenuItem.Process()
+        {
+            App.CurrentAppearance = this;
+            App.Settings.AppearanceName = this.Name;
+        }
         #endregion
     }
     /// <summary>

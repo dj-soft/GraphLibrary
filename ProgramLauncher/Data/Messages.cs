@@ -278,6 +278,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string StatusStripPageCountText { get { return _GetText("bez stránek×stránka×stránky×stránek"); } }
         public string StatusStripApplicationText { get { return _GetText("bez aplikací×aplikace×aplikace×aplikací"); } }
 
+        public string AppearanceMenuHeaderPasswords { get { return _GetText("TREZOR S HESLY"); } }
+        public string AppearanceMenuPasswordShowNowText { get { return _GetText("Zobrazit hesla"); } }
+        public string AppearanceMenuPasswordShowNowToolTip { get { return _GetText("Zobrazí obsah stránky s hesly"); } }
         public string AppearanceMenuHeaderColorPalette { get { return _GetText("BAREVNÁ PALETA"); } }
         public string AppearanceMenuHeaderLayoutStyle { get { return _GetText("VELIKOST"); } }
         public string AppearanceMenuHeaderToolTipType { get { return _GetText("TOOL TIP"); } }
@@ -741,6 +744,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         FontStyle? IMenuItem.FontStyle { get { return (Object.ReferenceEquals(this, App.CurrentLanguage) ? (FontStyle?)FontStyle.Bold : (FontStyle?)null); } }
         object IMenuItem.ToolItem { get; set; }
         object IMenuItem.UserData { get; set; }
+        void IMenuItem.Process()
+        {
+            App.CurrentLanguage = this;
+            App.Settings.LanguageCode = this.Code;
+        }
         #endregion
     }
     #endregion

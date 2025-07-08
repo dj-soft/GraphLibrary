@@ -401,7 +401,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         }
         private ToolTip _ToolTip;
         /// <summary>
-        /// Vrátí položky do menu, které definujá varianty ToolTipu
+        /// Vrátí položky do menu, které definují varianty ToolTipu
         /// </summary>
         public static IEnumerable<IMenuItem> ToolTipMenuItems
         {
@@ -417,14 +417,22 @@ namespace DjSoft.Tools.ProgramLauncher.Components
 
                 IMenuItem createMenuItem(string text, ToolTipType tipType)
                 {
-                    var menuItem = new DataMenuItem()
+                    var menuItem = new ToolTipMenuItem()
                     {
                         Text = text,
-                        UserData = tipType,
+                        ToolTipType = tipType,
                         FontStyle = (toolTipType == tipType ? FontStyle.Bold : FontStyle.Regular)
                     };
                     return menuItem;
                 }
+            }
+        }
+        private class ToolTipMenuItem : DataMenuItem
+        {
+            public ToolTipType ToolTipType { get; set; }
+            public override void Process()
+            {
+                App.Settings.CurrentToolTip = this.ToolTipType;
             }
         }
         #endregion

@@ -78,6 +78,7 @@
     <Compile Include="Data\ItemLayout.cs" />
     <Compile Include="Data\Messages.cs" />
     <Compile Include="Data\Monitors.cs" />
+    <Compile Include="Data\Passwords.cs" />
     <Compile Include="Data\ProcessPipes.cs" />
     <Compile Include="Data\Settings.cs" />
     <Compile Include="Data\Skins.cs" />
