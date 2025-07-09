@@ -51,7 +51,13 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Konstruktor: první fáze inicializace, nesmí používat <see cref="Current"/>
         /// </summary>
         private App()
-        { }
+        {
+            _Reset();
+        }
+        private void _Reset()
+        {
+            __ConfigPath = null;
+        }
         /// <summary>
         /// Inicializace: druhá fáze inicializace, v omezené míře smí používat <see cref="Current"/>
         /// </summary>
@@ -179,6 +185,43 @@ namespace DjSoft.Tools.ProgramLauncher
         public static bool TryGetArgument(string text, out string foundArgument, bool caseSensitive = false, bool exactText = false)
         {
             return Current._TryGetArgument(text, out foundArgument, caseSensitive, exactText);
+        }
+        /// <summary>
+        /// Zkusí najít argument s daným textem. Jeho hodnotu ošetří jako název souboru. Vrací true = nalezeno
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public static bool TryGetFileFromArgument(string text, out string fileName)
+        {
+            // Pokud v argumentech není přítomen daný klíč, pak soubor nelze určit:
+            if (String.IsNullOrEmpty(text)) { fileName = null; return false; }
+            text = text.Trim();
+            if (!App.TryGetArgument("config", out string argument)) { fileName = null; return false; }
+
+            // Pokud v argumentech je např.:
+            // __reset__ maximized config="C:\DavidPrac\WindowsUI/data aplikací.cfg" QX
+            // pak pro hledaný text 'config' v out proměnné 'argument' je:
+            //    config=C:\DavidPrac\WindowsUI/data aplikací.cfg
+            if (argument.Length <= text.Length) { fileName = null; return false; }
+
+            argument = argument.Substring(text.Length).Trim();                 // Odeberu úvodní text, např. 'config'
+            if (argument.StartsWith("=") || argument.StartsWith(":"))
+                argument = argument.Substring(1).Trim();                       // Odeberu znak '='   nebo   ':'
+            // Operační systém sám odebral případné uvozovky okolo souboru, takže očekávám, že v 'argument' nyní zůstalo:   C:\DavidPrac\WindowsUI/data aplikací.cfg
+
+            if (argument.Contains("/")) argument = argument.Replace("/", "\\");
+            if (Uri.TryCreate(argument, UriKind.RelativeOrAbsolute, out var uri) && uri.IsFile)
+            {
+                if (uri.IsAbsoluteUri)
+                    fileName = uri.LocalPath;
+                else
+                    fileName = System.IO.Path.Combine(App.ApplicationPath, argument);
+                return true;
+            }
+
+            fileName = null;
+            return false;
         }
         /// <summary>
         /// Zkusí najít argument s daným textem. Vrací true = nalezeno
@@ -683,7 +726,37 @@ namespace DjSoft.Tools.ProgramLauncher
             __Settings?.SaveNow();
             __Settings = null;
         }
+        /// <summary>
+        /// Adresář obsahující defaultní konfiguraci: <c>C:\Users\{userName}\AppData\Local\DjSoft\ProgramLauncher</c>
+        /// </summary>
+        internal static string ConfigPath { get { return Current._ConfigPath; } }
+        /// <summary>
+        /// Adresář obsahující defaultní konfiguraci: <c>C:\Users\{userName}\AppData\Local\DjSoft\ProgramLauncher</c>
+        /// </summary>
+        internal string _ConfigPath
+        {
+            get
+            {
+                if (String.IsNullOrEmpty(__ConfigPath))
+                {
+                    var dataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.Create);  // C:\Users\{userName}\AppData\Local
+                    var settingPath = System.IO.Path.Combine(dataPath, App.Company, App.ProductName);
+                    __ConfigPath = settingPath;
+                }
+                return __ConfigPath;
+            }
+        }
+        /// <summary>
+        /// Field pro adresář obsahující defaultní konfiguraci: <c>C:\Users\{userName}\AppData\Local\DjSoft\ProgramLauncher</c>
+        /// </summary>
+        internal string __ConfigPath;
+        /// <summary>
+        /// Společnost do registru a do AppData
+        /// </summary>
         internal const string Company = "DjSoft";
+        /// <summary>
+        /// Název aplikace do registru a do AppData
+        /// </summary>
         internal const string ProductName = "ProgramLauncher";
         internal static string ProductTitle { get { return "Nabídka aplikací"; } }
         #endregion
@@ -853,12 +926,22 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="menuItems"></param>
         /// <param name="onSelectItem"></param>
         /// <param name="pointOnScreen"></param>
-        public static void SelectFromMenu(IEnumerable<IMenuItem> menuItems, Action<IMenuItem> onSelectItem, Point? pointOnScreen)
+        public static void SelectFromMenu(IEnumerable<IMenuItem> menuItems, Point? pointOnScreen, bool hideMenuOnClick, Action<IMenuItem> onSelectItem)
         {
             if (!pointOnScreen.HasValue) pointOnScreen = Control.MousePosition;
 
-            ToolStripDropDownMenu menu = CreateToolStripDropDownMenu(menuItems, onSelectItem);
+            ToolStripDropDownMenu menu = null;                                 // Tato dvojkroková sekvence v definici menu je nutná kvůli lokální metodě onSelectFromMenu, která využívá lokálně sdílenou proměnnou 'menu'
+            menu = CreateToolStripDropDownMenu(menuItems, onSelectFromMenu);   //   a tato proměnná musí existovat dříve, než se lokální metoda použije = na tomto řádku!
             menu.Show(pointOnScreen.Value);
+
+            void onSelectFromMenu(IMenuItem menuItem)
+            {
+                if (hideMenuOnClick)
+                    menu.Hide();
+                menuItem.Process();
+                if (onSelectItem != null)
+                    onSelectItem(menuItem);
+            }
         }
         /// <summary>
         /// Vytvoří a vrátí <see cref="ToolStripDropDownMenu"/> pro dané prvky a cílovou akci

@@ -281,6 +281,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string AppearanceMenuHeaderPasswords { get { return _GetText("TREZOR S HESLY"); } }
         public string AppearanceMenuPasswordShowNowText { get { return _GetText("Zobrazit hesla"); } }
         public string AppearanceMenuPasswordShowNowToolTip { get { return _GetText("Zobrazí obsah stránky s hesly"); } }
+        public string AppearanceMenuPasswordShowPageText { get { return _GetText("Nabízet stránku s hesly"); } }
+        public string AppearanceMenuPasswordShowPageToolTip { get { return _GetText("V seznamu stránek vlevo bude dostupná stránka, která zobrazí hesla"); } }
+        public string AppearanceMenuPasswordHidePageText { get { return _GetText("Skrýt stránku s hesly"); } }
+        public string AppearanceMenuPasswordHidePageToolTip { get { return _GetText("V seznamu stránek vlevo nebude nabízena stránka, která zobrazuje hesla"); } }
+
         public string AppearanceMenuHeaderColorPalette { get { return _GetText("BAREVNÁ PALETA"); } }
         public string AppearanceMenuHeaderLayoutStyle { get { return _GetText("VELIKOST"); } }
         public string AppearanceMenuHeaderToolTipType { get { return _GetText("TOOL TIP"); } }

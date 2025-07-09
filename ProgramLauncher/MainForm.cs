@@ -255,13 +255,8 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             items.Add(DataMenuItem.CreateHeader(App.Messages.AppearanceMenuHeaderLanguage));
             items.AddRange(LanguageSet.Collection);
 
-            App.SelectFromMenu(items, onAppearanceMenuSelect, menuPoint);
-
-            // Po výběru prvku v menu
-            void onAppearanceMenuSelect(IMenuItem selectedItem)
-            {
-                selectedItem?.Process();
-            }
+            // Prvky samy implementují svoji akci IMenuItem.Process(), takže nepotřebujeme klik na prvek řešit explicitně:
+            App.SelectFromMenu(items, menuPoint, true, null);
         }
         #endregion
         #region ToolBar

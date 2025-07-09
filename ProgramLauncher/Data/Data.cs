@@ -227,7 +227,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 }
             }
 
-            App.SelectFromMenu(menuItems, _RunContextMenuAction, mouseState.LocationAbsolute);
+            App.SelectFromMenu(menuItems, mouseState.LocationAbsolute, true, _RunContextMenuAction);
         }
         /// <summary>
         /// Provede vybranou akci z kontextového menu

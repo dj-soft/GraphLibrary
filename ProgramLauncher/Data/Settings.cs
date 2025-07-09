@@ -89,9 +89,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             if (_TryGetConfigFileFromArguments(out var fileName)) return fileName;
 
-            var dataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.Create);  // C:\Users\{userName}\AppData\Local
-            var settingPath = System.IO.Path.Combine(dataPath, App.Company, App.ProductName);
-            return System.IO.Path.Combine(settingPath, File);
+            return System.IO.Path.Combine(App.ConfigPath, File);
         }
         /// <summary>
         /// Metoda se pokusí najít jméno Settings souboru v argumentech aplikace
@@ -100,32 +98,10 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <returns></returns>
         private static bool _TryGetConfigFileFromArguments(out string fileName)
         {
-            fileName = null;
-            if (!App.TryGetArgument("config", out string argument)) return false;
-            // Pokud v argumentech je např.:
-            // __reset__ maximized config="C:\DavidPrac\WindowsUI/data aplikací.cfg" QX
-            // pak v proměnné 'argument' je:
-            // config=C:\DavidPrac\WindowsUI/data aplikací.cfg
-            if (argument.Length < 10) return false;
-            argument = argument.Substring(6).Trim();                   // Odeberu text  'config'
-            if (argument.StartsWith("=") || argument.StartsWith(":"))
-                argument = argument.Substring(1).Trim();               // Odeberu znak '='   nebo   ':'
-            // Operační systém sám odebral případné uvozovky okolo souboru, takže očekávám, že v 'argument' nyní zůstalo:   C:\DavidPrac\WindowsUI/data aplikací.cfg
-
-            if (argument.Contains("/")) argument = argument.Replace("/", "\\");
-            if (Uri.TryCreate(argument, UriKind.RelativeOrAbsolute, out var uri) && uri.IsFile)
-            {
-                if (uri.IsAbsoluteUri)
-                    fileName = uri.LocalPath;
-                else
-                    fileName = System.IO.Path.Combine(App.ApplicationPath, argument);
-                return true;
-            }
-
-            return false;
+            return App.TryGetFileFromArgument("config", out fileName);
         }
         /// <summary>
-        /// Jméno souboru - bez adresáře, s příponou.
+        /// Implicitní jméno souboru - bez adresáře, s příponou.
         /// </summary>
         private const string File = "Settings.dat";
         #endregion

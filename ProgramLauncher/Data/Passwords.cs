@@ -13,6 +13,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         {
             get
             {
+                bool isPageVisible = App.Settings.PasswordPageVisible;
                 return new MenuAction[]
                 {
                     new MenuAction()
@@ -22,15 +23,27 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                         Action = ActionType.ShowNow
                     },
 
+                    new MenuAction()
+                    {
+                        Text = App.Messages.AppearanceMenuPasswordShowPageText,
+                        ToolTip = App.Messages.AppearanceMenuPasswordShowPageToolTip,
+                        Action = ActionType.ShowPage,
+                        
+                    },
+
+
                 };
             }
         }
         public class MenuAction : DataMenuItem
         {
+            /// <summary>
+            /// Akce, kterou provádí tento prvek menu
+            /// </summary>
             public ActionType Action { get; set; }
             public override void Process()
             {
-                base.Process();
+                
             }
         }
 

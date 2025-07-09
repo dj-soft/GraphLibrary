@@ -829,6 +829,11 @@ namespace DjSoft.Tools.ProgramLauncher
             Fast,
             Slow
         }
+        /// <summary>
+        /// Viditelnost stránky "Hesla"
+        /// </summary>
+        [PropertyName("passwordpagevisible")]
+        public bool PasswordPageVisible { get { return __PasswordPageVisible; } set { __PasswordPageVisible = value; SetChanged(nameof(PasswordPageVisible)); } } private bool __PasswordPageVisible;
         #endregion
     }
 }
