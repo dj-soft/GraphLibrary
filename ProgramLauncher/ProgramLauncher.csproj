@@ -316,6 +316,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="klickety-2-64.ico" />
+    <None Include="Pics\48px\dialog-ok-apply-2-48.png" />
+    <None Include="Pics\22px\games-endturn-2-22.png" />
     <None Include="Pics\22px\services-nuvola-22.png" />
     <None Include="Pics\22px\file-locked-nuvola-22.png" />
     <None Include="Pics\22px\favorites-oxygen-22.png" />

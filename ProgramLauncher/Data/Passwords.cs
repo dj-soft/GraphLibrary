@@ -28,10 +28,18 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                         Text = App.Messages.AppearanceMenuPasswordShowPageText,
                         ToolTip = App.Messages.AppearanceMenuPasswordShowPageToolTip,
                         Action = ActionType.ShowPage,
-                        
+                        FontStyle = (isPageVisible ? FontStyle.Bold : FontStyle.Regular),
+                        Image = (isPageVisible ? Properties.Resources.games_endturn_2_22 : null)
                     },
 
-
+                    new MenuAction()
+                    {
+                        Text = App.Messages.AppearanceMenuPasswordHidePageText,
+                        ToolTip = App.Messages.AppearanceMenuPasswordHidePageToolTip,
+                        Action = ActionType.HidePage,
+                        FontStyle = (!isPageVisible ? FontStyle.Bold : FontStyle.Regular),
+                        Image = (!isPageVisible ? Properties.Resources.games_endturn_2_22 : null)
+                    }
                 };
             }
         }
@@ -43,7 +51,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             public ActionType Action { get; set; }
             public override void Process()
             {
-                
+                switch (this.Action)
+                {
+                    case ActionType.ShowPage:
+                        App.Settings.PasswordPageVisible = true;
+                        break;
+                    case ActionType.HidePage:
+                        App.Settings.PasswordPageVisible = false;
+                        break;
+                }
             }
         }
 
