@@ -26,6 +26,12 @@ namespace TestDevExpress.Forms
         {
             this.CreateBrowse();
         }
+        protected override void OnFirstShownBefore()
+        {
+            base.OnFirstShownBefore();
+            TargetRowCount = 100;
+            FillBrowse();
+        }
         #endregion
         #region Ribbon a StatusBar - obsah a rozcestník
         /// <summary>
@@ -164,7 +170,20 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Text ve status baru
         /// </summary>
-        public string StatusText { get { return _StatusItemTitle?.Caption; } set { if (_StatusItemTitle != null) _StatusItemTitle.Caption = value; } }
+        public string StatusText
+        { 
+            get 
+            {
+                return __StatusText;
+            } 
+            set 
+            {
+                __StatusText = value;
+                if (_StatusItemTitle != null) 
+                    _StatusItemTitle.Caption = value; 
+            }
+        }
+        private string __StatusText;
         #endregion
         #region Browse
         private DevExpress.XtraGrid.GridSplitContainer _GridContainer;
@@ -220,6 +239,9 @@ namespace TestDevExpress.Forms
             view.OptionsScrollAnnotations.ShowSelectedRows = DevExpress.Utils.DefaultBoolean.True;
             view.CustomScrollAnnotation += View_CustomScrollAnnotation;
 
+            // RowFilter
+            view.SubstituteFilter += View_SubstituteFilter;
+
             // Zkoušky
             view.OptionsCustomization.UseAdvancedCustomizationForm = DevExpress.Utils.DefaultBoolean.True;
 
@@ -247,6 +269,15 @@ namespace TestDevExpress.Forms
 
             StatusText = $"Tvorba GridSplitContainer: {timeInit} sec;     Přidání na Form: {timeAdd} sec;     {dataLog}Generování View: {timeCreateView} sec;     BestFitColumns: {timeFitColumns} sec";
         }
+
+        private void View_SubstituteFilter(object sender, DevExpress.Data.SubstituteFilterEventArgs e)
+        {
+            var filter = e.Filter;
+            var dxExpression = "DX: " + filter?.ToString();
+            var msExpression = "SQL: " + TestDevExpress.AsolDX.News.DxToExpressionConvertor.ConvertToString(filter, AsolDX.News.DxToExpressionLanguageType.MsSqlDatabase);
+            this.StatusText = dxExpression + "  |  " + msExpression;
+        }
+
         private void View_CustomDrawCell(object sender, DevExpress.XtraGrid.Views.Base.RowCellCustomDrawEventArgs e)
         {
             if (e.Column.FieldName == "status")
@@ -497,7 +528,6 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Vytvoří Main data a vloží je do <see cref="_Grid"/>, a do Status baru vloží odpovídající text (časy)
         /// </summary>
-        /// <param name="rowCount"></param>
         /// <param name="wordBookType"></param>
         private void FillBrowse(Randomizer.WordBookType? wordBookType = null)
         {
@@ -551,7 +581,6 @@ namespace TestDevExpress.Forms
         /// Vytvoří Main data a vloží je do <see cref="_Grid"/>, sestaví a vrátí text (obsahující časy) určený do Status baru (ale nevkládá jej tam)
         /// </summary>
         /// <param name="requestRowCount"></param>
-        /// <param name="wordBookType"></param>
         /// <returns></returns>
         private string AddDataRows(int requestRowCount)
         {
