@@ -62,7 +62,7 @@ namespace TestDevExpress.Forms
             string resourceCoefficient1 = "svgimages/richedit/columnsone.svg";
             string resourceCoefficient2 = "svgimages/richedit/columnstwo.svg";
             string resourceCoefficient3 = "svgimages/richedit/columnsthree.svg";
-
+            string resourceRowFilterCopy = "svgimages/dashboards/editfilter.svg";
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Clear", Text = "Smaž řádky", ToolTipText = "Do Gridu vloží tabulku bez řádků", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = "CountGroup", Checked = true, ImageName = resourceClear, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Virtual", Text = "Virtuální režim", ToolTipText = "Do Gridu vloží jen několik řádků, další doplňuje podle listování", ItemType = RibbonItemType.CheckButton, Checked = IsVirtualMode, ImageName = resourceVirtual1, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add10", Text = "Vlož 10", ToolTipText = "Do Gridu vloží 10 řádek", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = "CountGroup", ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
@@ -78,6 +78,7 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.SetCoeffMin", Text = "Koeficienty MIN", ToolTipText = "Nastaví koeficienty přednačítání 0.25 : 0.75", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = "CoefficientGroup", ImageName = resourceCoefficient1, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.SetCoeffMid", Text = "Koeficienty MID", ToolTipText = "Nastaví koeficienty přednačítání 0.85 : 1.00", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = "CoefficientGroup", Checked = true, ImageName = resourceCoefficient2, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.SetCoeffMax", Text = "Koeficienty MAX", ToolTipText = "Nastaví koeficienty přednačítání 1.25 : 2.00", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = "CoefficientGroup", ImageName = resourceCoefficient3, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.RowFilterCopy", Text = "Načti RowFilters", ToolTipText = "Do Clipboardu uloží opis všech dosud aplikovaných řádkových filtrů ve formě DevExpress, Optimized SQL, OldConvertSQL", ItemType = RibbonItemType.Button, RadioButtonGroupName = null, ImageName = resourceRowFilterCopy, RibbonStyle = RibbonItemStyles.Large });
 
             page.Groups.Add(group);
 
@@ -144,6 +145,9 @@ namespace TestDevExpress.Forms
                 case "Dx.Test.SetCoeffMax":
                     _SetCoefficients(1.25m, 2.00m);
                     break;
+                case "Dx.Test.RowFilterCopy":
+                    _RowFiltersCopy();
+                    break;
             }
         }
         /// <summary>
@@ -179,8 +183,15 @@ namespace TestDevExpress.Forms
             set 
             {
                 __StatusText = value;
-                if (_StatusItemTitle != null) 
-                    _StatusItemTitle.Caption = value; 
+                if (_StatusItemTitle != null)
+                {
+                    _StatusItemTitle.Caption = value;
+                    bool withToolTip = ((value ?? "").Length > 100);
+                    if (withToolTip)
+                        _StatusItemTitle.SuperTip = DxComponent.CreateDxSuperTip("Informace:", value);
+                    else
+                        _StatusItemTitle.SuperTip = null;
+                }
             }
         }
         private string __StatusText;
@@ -280,11 +291,24 @@ namespace TestDevExpress.Forms
         private void View_SubstituteFilter(object sender, DevExpress.Data.SubstituteFilterEventArgs e)
         {
             var filter = e.Filter;
-            var dxExpression = "DX: " + filter?.ToString();
-            var msExpression = "SQL: " + TestDevExpress.AsolDX.DxFiltering.DxFilterConvertor.ConvertToString(filter, AsolDX.DxFiltering.DxExpressionLanguageType.MsSqlDatabase, this._RowFilterHandler);
-            var oldExpression = "OLD: " + DevExpress.Data.Filtering.CriteriaToWhereClauseHelper.GetMsSqlWhere(filter, c => c.PropertyName);
-            this.StatusText = dxExpression + "  |◘◘|◘◘|  " + msExpression + "  |◘◘|◘◘|  " + oldExpression;
+            var dxExpression = filter?.ToString();
+            var msExpression = TestDevExpress.AsolDX.DxFiltering.DxFilterConvertor.ConvertToString(filter, AsolDX.DxFiltering.DxExpressionLanguageType.MsSqlDatabase, this._RowFilterHandler);
+            var oldExpression = DevExpress.Data.Filtering.CriteriaToWhereClauseHelper.GetMsSqlWhere(filter, c => c.PropertyName);
+
+            var tab = "\t";
+            var eol = Environment.NewLine;
+            if (_AllRowFilters is null) _AllRowFilters = "";
+            _AllRowFilters = _AllRowFilters + $"DxFilter:{tab}{dxExpression}{eol}NewConvert:{tab}{msExpression}{eol}OldConvert:{tab}{oldExpression}{eol}{eol}";
+
+            var sbDelimiter = "  |◘◘|◘◘|  ";
+            this.StatusText = $"DX:  {dxExpression}{sbDelimiter}SQL:  {msExpression}{sbDelimiter}OLD:  {oldExpression}";
         }
+        private void _RowFiltersCopy()
+        {
+            if (_AllRowFilters is null) _AllRowFilters = "";
+            System.Windows.Forms.Clipboard.SetText(_AllRowFilters);
+        }
+        private string _AllRowFilters;
         /// <summary>
         /// Zdejší metoda je volána vždy, když konvertor filtru DevExpress to MsSql konvertuje jednotlivou operaci ve filtru.
         /// Metoda dostává v argumentu typ operace a data operace (operandy).<br/>

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -154,7 +155,7 @@ namespace TestDevExpress.AsolDX.DxFiltering
             return DxExpressionPart.CreateText("joinoperand ");
         }
         #endregion
-        #region Vlastní konvertor všech operací (funkce, operace, porovnání...), s využitím __CustomHandler
+        #region TADY JE  ♥  KONVERTORU  :  Vlastní konvertor všech operací (funkce, operace, porovnání...), s využitím __CustomHandler
         private DxExpressionPart ConvertToPart(DxFilter.CriteriaOperator filterOperator, DxFilterOperationType operation, List<DxExpressionPart> operands)
         {
             if (__HasCustomHandler)
@@ -167,6 +168,10 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 operands = args.Operands;
             }
             int count = operands?.Count ?? -1;
+            // Řádkový filtr se bude opírat o aktuální čas na serveru, beztak to tak dělal i dříve...
+            var now = DateTime.Now;
+            DateTime dateBegin, dateEnd;
+            int year;
             switch (operation)
             {
                 #region Group: And, Or
@@ -207,6 +212,7 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 case DxFilterOperationType.Binary_Multiply:
                 case DxFilterOperationType.Binary_Plus:
                 case DxFilterOperationType.Binary_Minus:
+                    // Všechny binární vyřešíme najednou:
                     checkCount(2);
                     return DxExpressionPart.CreateFrom(operands[0], getBinaryOperatorText(operation), operands[1]);
                 #endregion
@@ -322,10 +328,15 @@ namespace TestDevExpress.AsolDX.DxFiltering
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("char(", operands[0], ")");
                 case DxFilterOperationType.Function_ToStr:
+                    break;
                 case DxFilterOperationType.Function_Replace:
+                    break;
                 case DxFilterOperationType.Function_Reverse:
+                    break;
                 case DxFilterOperationType.Function_Insert:
+                    break;
                 case DxFilterOperationType.Function_CharIndex:
+                    break;
                 case DxFilterOperationType.Function_Remove:
                     break;
                 #endregion
@@ -414,12 +425,19 @@ namespace TestDevExpress.AsolDX.DxFiltering
                     checkCount(2);
                     return DxExpressionPart.CreateFrom("(case when ", operands[0], " < ", operands[1], " then ", operands[0], " else ", operands[1], " end)");   // (case when pocet1 < pocet2 then pocet1 else pocet2 end)
                 case DxFilterOperationType.Function_Acos:
+                    break;
                 case DxFilterOperationType.Function_Asin:
+                    break;
                 case DxFilterOperationType.Function_Atn2:
+                    break;
                 case DxFilterOperationType.Function_BigMul:
+                    break;
                 case DxFilterOperationType.Function_Cosh:
+                    break;
                 case DxFilterOperationType.Function_Log10:
+                    break;
                 case DxFilterOperationType.Function_Sinh:
+                    break;
                 case DxFilterOperationType.Function_Tanh:
                     break;
                 #endregion
@@ -430,32 +448,13 @@ namespace TestDevExpress.AsolDX.DxFiltering
                     break;
                 case DxFilterOperationType.Function_StartsWith:
                     checkCount(2);
-                    if (operands[1].IsValueString)
-                        // Pokud hodnota je zadána jako konstanta typu Text (=nejčastější situace), 
-                        //  pak do výstupu dáme novou hodnotu typu String s upraveným vstupním obsahem:
-                        return DxExpressionPart.CreateFrom(operands[0], " like ", DxExpressionPart.CreateValue(operands[1].ValueString + "%"));      // [nazev] like 'adr%'
-                    else
-                        // Pokud hodnota není stringová konstanta, pak do výsledku musíme dát vzorec: '%' + ... + '%' :
-                        return DxExpressionPart.CreateFrom(operands[0], " like (", operands[1], " + '%')");                                          // [nazev] like (N'adr' + '%')
+                    return DxExpressionPart.CreateFrom(operands[0], " like ", stringAsValue(operands[1], null, "%"));            // [nazev] like 'adr%'     nebo    [nazev] like (Funkce(x,y) + '%')
                 case DxFilterOperationType.Function_EndsWith:
                     checkCount(2);
-                    if (operands[1].IsValueString)
-                        // Pokud hodnota je zadána jako konstanta typu Text (=nejčastější situace), 
-                        //  pak do výstupu dáme novou hodnotu typu String s upraveným vstupním obsahem:
-                        return DxExpressionPart.CreateFrom(operands[0], " like ", DxExpressionPart.CreateValue("%" + operands[1].ValueString));      // [nazev] like '%adr'
-                    else
-                        // Pokud hodnota není stringová konstanta, pak do výsledku musíme dát vzorec: '%' + ... + '%' :
-                        return DxExpressionPart.CreateFrom(operands[0], " like ('%' + ", operands[1], ")");                                          // [nazev] like ('%' + N'adr')
+                    return DxExpressionPart.CreateFrom(operands[0], " like ", stringAsValue(operands[1], "%", null));            // [nazev] like '%adr'     nebo    [nazev] like ('%' + Funkce(x,y))
                 case DxFilterOperationType.Function_Contains:
                     checkCount(2);
-                    if (operands[1].IsValueString)
-                        // Pokud hodnota je zadána jako konstanta typu Text (=nejčastější situace), 
-                        //  pak do výstupu dáme novou hodnotu typu String s upraveným vstupním obsahem:
-                        return DxExpressionPart.CreateFrom(operands[0], " like ", DxExpressionPart.CreateValue("%" + operands[1].ValueString + "%"));      // [nazev] like '%adr%'
-                    else
-                        // Pokud hodnota není stringová konstanta, pak do výsledku musíme dát vzorec: '%' + ... + '%' :
-                        return DxExpressionPart.CreateFrom(operands[0], " like ('%' + ", operands[1], " + '%')");                                          // [nazev] like ('%' + N'adr' + '%')
-
+                    return DxExpressionPart.CreateFrom(operands[0], " like ", stringAsValue(operands[1], "%", "%"));             // [nazev] like '%adr%'    nebo    [nazev] like ('%' + Funkce(x,y) + '%')
                 case DxFilterOperationType.Function_ToInt:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("cast(", operands[0], " as int)");
@@ -474,56 +473,179 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 #endregion
                 #region Function - DateTime 1: LocalDateTime
                 case DxFilterOperationType.Function_LocalDateTimeThisYear:
+                    break;
                 case DxFilterOperationType.Function_LocalDateTimeThisMonth:
+                    break;
                 case DxFilterOperationType.Function_LocalDateTimeLastWeek:
+                    break;
                 case DxFilterOperationType.Function_LocalDateTimeThisWeek:
+                    break;
                 case DxFilterOperationType.Function_LocalDateTimeYesterday:
+                    break;
                 case DxFilterOperationType.Function_LocalDateTimeToday:
+                    break;
                 case DxFilterOperationType.Function_LocalDateTimeNow:
+                    break;
                 case DxFilterOperationType.Function_LocalDateTimeTomorrow:
+                    break;
                 case DxFilterOperationType.Function_LocalDateTimeDayAfterTomorrow:
+                    break;
                 case DxFilterOperationType.Function_LocalDateTimeNextWeek:
+                    break;
                 case DxFilterOperationType.Function_LocalDateTimeTwoWeeksAway:
+                    break;
                 case DxFilterOperationType.Function_LocalDateTimeNextMonth:
+                    break;
                 case DxFilterOperationType.Function_LocalDateTimeNextYear:
+                    break;
                 case DxFilterOperationType.Function_LocalDateTimeTwoMonthsAway:
+                    break;
                 case DxFilterOperationType.Function_LocalDateTimeTwoYearsAway:
+                    break;
                 case DxFilterOperationType.Function_LocalDateTimeLastMonth:
+                    break;
                 case DxFilterOperationType.Function_LocalDateTimeLastYear:
+                    break;
                 case DxFilterOperationType.Function_LocalDateTimeYearBeforeToday:
                     break;
                 #endregion
                 #region Function - DateTime 2: IsOutlookInterval
                 case DxFilterOperationType.Function_IsOutlookIntervalBeyondThisYear:
+                    // Příští rok a kdykoliv poté:
+                    checkCount(1);
+                    dateBegin = new DateTime(now.Year + 1, 1, 1);                        // Začátek příštího roku
+                    return DxExpressionPart.CreateFrom(operands[0], " >= ", dateTimeAsText(dateBegin));            // [datum_akce] >= '2026-01-01 00:00:00'
                 case DxFilterOperationType.Function_IsOutlookIntervalLaterThisYear:
+                    // Od zítřka do konce tohoto roku:
+                    checkCount(1);
+                    dateBegin = now.Date.AddDays(1).Date;                                // Začátek zítřka
+                    dateEnd = new DateTime(now.Year + 1, 1, 1);                          // 1.1. příštího roku
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalLaterThisMonth:
+                    // Od zítřka do konce tohoto měsíce:
+                    checkCount(1);
+                    dateBegin = now.Date.AddDays(1).Date;                                // Začátek zítřka
+                    dateEnd = new DateTime(now.Year, now.Month, 1).AddMonths(1);         // 1. příštího měsíce
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalNextWeek:
+                    // V příštím týdnu:
+                    checkCount(1);
+                    dateBegin = getWeekBegin(now).AddDays(7);                            // Začátek příštího týdne
+                    dateEnd = dateBegin.AddDays(7);                                      // Začátek přespříštího týdne
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalLaterThisWeek:
+                    // Od zítřka do konce týdne:
+                    checkCount(1);
+                    dateBegin = now.AddDays(1).Date;                                     // Začátek zítřka
+                    dateEnd = getWeekBegin(now).AddDays(7);                              // Začátek příštího týdne
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalTomorrow:
+                    // Celý zítřek:
+                    checkCount(1);
+                    dateBegin = now.Date.AddDays(1).Date;
+                    dateEnd = dateBegin.AddDays(1).Date;
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalToday:
+                    // Celý dnešek:
+                    checkCount(1);
+                    dateBegin = now.Date;
+                    dateEnd = dateBegin.AddDays(1).Date;
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalYesterday:
+                    // Celý včerejšek:
+                    checkCount(1);
+                    dateBegin = now.Date.AddDays(-1).Date;
+                    dateEnd = dateBegin.AddDays(1).Date;
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalEarlierThisWeek:
+                    // Od začátku tohoto týdne do včerejška:
+                    checkCount(1);
+                    dateBegin = getWeekBegin(now);                                       // Začátek aktuálního týdne
+                    dateEnd = now.Date;                                                  // Začátek dneška
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalLastWeek:
+                    // V minulém týdnu:
+                    checkCount(1);
+                    dateEnd = getWeekBegin(now);                                         // Začátek aktuálního týdne
+                    dateBegin = dateEnd.AddDays(-7).Date;                                // Začátek minulého týdne
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalEarlierThisMonth:
+                    // Datum je od počátku tohoto měsíce do konce dnešního dne:
+                    checkCount(1);
+                    dateBegin = new DateTime(now.Year, 1, 1);                            // Začátek tohoto roku
+                    dateEnd = now.AddDays(1).Date;                                       // Začátek zítřka
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalEarlierThisYear:
+                    // Datum je od počátku tohoto roku do konce dnešního dne:
+                    checkCount(1);
+                    dateBegin = new DateTime(now.Year, 1, 1);                            // Začátek tohoto roku
+                    dateEnd = now.AddDays(1).Date;                                       // Začátek zítřka
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalPriorThisYear:
-                    break;
+                    // Datum je kdekoliv před začátkem tohoto roku:
+                    checkCount(1);
+                    dateEnd = new DateTime(now.Year, 1, 1);                              // Začátek tohoto roku
+                    return DxExpressionPart.CreateFrom(operands[0], " < ", dateTimeAsText(dateEnd));            // [datum_akce] < '2025-01-01 00:00:00'
                 #endregion
                 #region Function - DateTime 3: Is... (IsThisWeek, IsLastYear, IsJanuary, ...)
                 case DxFilterOperationType.Function_IsThisWeek:
+                    // Tento týden:
+                    checkCount(1);
+                    dateBegin = getWeekBegin(now);                                       // Začátek aktuálního týdne
+                    dateEnd = dateBegin.AddDays(7).Date;                                 // Začátek příštího týdne
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsThisMonth:
+                    // Celý tento měsíc:
+                    checkCount(1);
+                    dateBegin = new DateTime(now.Year, now.Month, 1).Date;               // Začátek aktuálního měsíce
+                    dateEnd = dateBegin.AddMonths(1).Date;                               // Začátek příštího měsíce
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsThisYear:
+                    // Celý tento rok:
+                    checkCount(1);
+                    dateBegin = new DateTime(now.Year, 1, 1).Date;                       // Začátek aktuálního roku
+                    dateEnd = new DateTime(now.Year + 1, 1, 1).Date;                     // Začátek příštího roku
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsNextMonth:
+                    // Celý příští měsíc:
+                    checkCount(1);
+                    dateBegin = new DateTime(now.Year, now.Month, 1).AddMonths(1).Date;  // Začátek příštího měsíce
+                    dateEnd = dateBegin.AddMonths(1).Date;                               // Začátek přespříštího měsíce
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsNextYear:
+                    // Celý budoucí rok:
+                    checkCount(1);
+                    year = now.Year + 1;                                                 // Příští rok: pokud letos je 2025, pak year = 2026
+                    return DxExpressionPart.CreateFrom("year(", operands[0], ") = " + year.ToString());       // Rok(datum_akce) = 2026
                 case DxFilterOperationType.Function_IsLastMonth:
+                    // Celý minulý měsíc:
+                    checkCount(1);
+                    dateEnd = new DateTime(now.Year, now.Month, 1);                      // Začátek aktuálního měsíce
+                    dateBegin = dateEnd.AddMonths(-1).Date;                              // Začátek minulého měsíce
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsLastYear:
+                    // Celý minulý rok:
+                    checkCount(1);
+                    year = now.Year - 1;                                                 // Minulý rok: pokud letos je 2025, pak year = 2024
+                    return DxExpressionPart.CreateFrom("year(", operands[0], ") = " + year.ToString());       // Rok(datum_akce) = 2024
                 case DxFilterOperationType.Function_IsYearToDate:
+                    // Od 1.1. tohoto roku do dnešního večera:
+                    checkCount(1);
+                    dateBegin = new DateTime(now.Year, 1, 1);                            // Začátek aktuálního roku
+                    dateEnd = now.AddDays(1).Date;                                       // Začátek zítřka
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsSameDay:
-                    break;
+                    // Určitý den (ve sloupci [0]) je stejný den, jako je zadán v parametru [1]
+                    checkCount(2);
+                    // Prostě porovnám Date část obou výrazů:
+                    return DxExpressionPart.CreateFrom("cast(", operands[0], " as date) = cast(", operands[1], " as date)");       // cast(datum0 as date) = cast(datum1 as date)
                 case DxFilterOperationType.Function_InRange:
+                    // Obecně v rozmezí [ od včetně ... do mimo ): jak datumy, tak čísla...
                     checkCount(3);
                     return DxExpressionPart.CreateFrom("(", operands[0], " >= ", operands[1], " and ", operands[0], " < ", operands[2], ")");
                 case DxFilterOperationType.Function_InDateRange:
+                    // Den v rozmezí
+
                     break;
                 case DxFilterOperationType.Function_IsJanuary:
                     checkCount(1);
@@ -564,26 +686,43 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 #endregion
                 #region Function - DateTime 4: DateDiff...
                 case DxFilterOperationType.Function_DateDiffTick:
+                    break;
                 case DxFilterOperationType.Function_DateDiffSecond:
+                    break;
                 case DxFilterOperationType.Function_DateDiffMilliSecond:
+                    break;
                 case DxFilterOperationType.Function_DateDiffMinute:
+                    break;
                 case DxFilterOperationType.Function_DateDiffHour:
+                    break;
                 case DxFilterOperationType.Function_DateDiffDay:
+                    break;
                 case DxFilterOperationType.Function_DateDiffMonth:
+                    break;
                 case DxFilterOperationType.Function_DateDiffYear:
                     break;
                 #endregion
                 #region Function - DateTime 5: GetPart...
                 case DxFilterOperationType.Function_GetDate:
+                    break;
                 case DxFilterOperationType.Function_GetMilliSecond:
+                    break;
                 case DxFilterOperationType.Function_GetSecond:
+                    break;
                 case DxFilterOperationType.Function_GetMinute:
+                    break;
                 case DxFilterOperationType.Function_GetHour:
+                    break;
                 case DxFilterOperationType.Function_GetDay:
+                    break;
                 case DxFilterOperationType.Function_GetMonth:
+                    break;
                 case DxFilterOperationType.Function_GetYear:
+                    break;
                 case DxFilterOperationType.Function_GetDayOfWeek:
+                    break;
                 case DxFilterOperationType.Function_GetDayOfYear:
+                    break;
                 case DxFilterOperationType.Function_GetTimeOfDay:
                     break;
                 #endregion
@@ -602,45 +741,64 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 #endregion
                 #region Function - DateTime 7: Time (Hour, BeforeMidday, Afternoon, IsLunchTime...)
                 case DxFilterOperationType.Function_IsSameHour:
+                    break;
                 case DxFilterOperationType.Function_IsSameTime:
+                    break;
                 case DxFilterOperationType.Function_BeforeMidday:
+                    break;
                 case DxFilterOperationType.Function_AfterMidday:
+                    break;
                 case DxFilterOperationType.Function_IsNight:
+                    break;
                 case DxFilterOperationType.Function_IsMorning:
+                    break;
                 case DxFilterOperationType.Function_IsAfternoon:
+                    break;
                 case DxFilterOperationType.Function_IsEvening:
+                    break;
                 case DxFilterOperationType.Function_IsLastHour:
+                    break;
                 case DxFilterOperationType.Function_IsThisHour:
+                    break;
                 case DxFilterOperationType.Function_IsNextHour:
+                    break;
                 case DxFilterOperationType.Function_IsWorkTime:
+                    break;
                 case DxFilterOperationType.Function_IsFreeTime:
+                    break;
                 case DxFilterOperationType.Function_IsLunchTime:
+                    break;
                 case DxFilterOperationType.Function_AddTimeSpan:
+                    break;
                 case DxFilterOperationType.Function_AddTicks:
+                    break;
                 case DxFilterOperationType.Function_AddMilliSeconds:
+                    break;
                 case DxFilterOperationType.Function_AddSeconds:
+                    break;
                 case DxFilterOperationType.Function_AddMinutes:
+                    break;
                 case DxFilterOperationType.Function_AddHours:
+                    break;
                 case DxFilterOperationType.Function_AddDays:
+                    break;
                 case DxFilterOperationType.Function_AddMonths:
+                    break;
                 case DxFilterOperationType.Function_AddYears:
+                    break;
                 case DxFilterOperationType.Function_DateTimeFromParts:
+                    break;
                 case DxFilterOperationType.Function_DateOnlyFromParts:
+                    break;
                 case DxFilterOperationType.Function_TimeOnlyFromParts:
                     break;
                 #endregion
                 #region Function - Custom: Like, ...
+                // POZOR: custom funkce mají v operandu [0] uložen název funkce !!!    Vlastní operandy jsou tedy na pozici [1] a další   !!!
                 case DxFilterOperationType.Custom_Like:
-                    checkCount(2);
-                    if (operands[1].IsValueString)
-                        // Pokud hodnota je zadána jako konstanta typu Text (=nejčastější situace), 
-                        //  pak do výstupu dáme novou hodnotu typu String s upraveným vstupním obsahem:
-                        return DxExpressionPart.CreateFrom(operands[0], " like ", DxExpressionPart.CreateValue("%" + operands[1].ValueString + "%"));      // [nazev] like '%adr%'
-                    else
-                        // Pokud hodnota není stringová konstanta, pak do výsledku musíme dát vzorec: '%' + ... + '%' :
-                        return DxExpressionPart.CreateFrom(operands[0], " like ('%' + ", operands[1], " + '%')");                                          // [nazev] like ('%' + N'adr' + '%')
-
-                #endregion
+                    checkCount(3);
+                    return DxExpressionPart.CreateFrom(operands[1], " like ", stringAsValue(operands[2], "%", "%"));             // [nazev] like '%adr%'    nebo    [nazev] like ('%' + Funkce(x,y) + '%')
+                    #endregion
             }
 
             return DxExpressionPart.CreateFrom("/* NotConverted: ", operation.ToString(), "(", DxExpressionPart.CreateDelimited(",", operands), ") */");
@@ -669,7 +827,7 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 }
                 return " " + binOp.ToString() + " ";
             }
-            // Pokud daná část obsahuje value, typu Int, pak výstupem je string s touto hodnotou. Používá se u konstant, které NECHCEME řešit pomocí DB parametrů. Např. délka čísla atd.
+            // Pokud daná část obsahuje value, typu Int, pak výstupem je Text s touto hodnotou. Používá se u konstant, které NECHCEME řešit pomocí DB parametrů. Např. délka čísla atd.
             object intAsText(DxExpressionPart part, int addValue = 0)
             {
                 // Pokud 'part' je IsValueInt32, pak výstupem bude string obsahující zadanou hodnotu [s přičteným modifikátorem], 
@@ -683,6 +841,52 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 //   kde bude: "(" a původní částice (= výraz) a k tomu text " +- addValue" a ")":
                 string addText = (addValue < 0 ? (" - " + (-addValue).ToString()) : " + " + addValue.ToString());         // " + 1"   /   " - 15"
                 return DxExpressionPart.CreateFrom("(", part, addText, ")");                                              // (Funkce(x,y) + 1)
+            }
+            // Pokud daná část obsahuje value, typu String, pak výstupem je Value s touto hodnotou, s možností přidání textu před/po. Používá se u proměnných, které chceme modifikovat.
+            object stringAsValue(DxExpressionPart part, string addBefore = null, string addAfter = null)
+            {
+                addBefore = addBefore ?? "";
+                addAfter = addAfter ?? "";
+
+                if (part.IsValue)
+                {   // Obsahuje hodnotu => pouze upravíme jeho hodnotu (Value), a vrátíme týž objekt:
+                    //   Objekt se vyskytuje jen v jednom místě, a proto jej můžeme modifikovat = nezměníme jinou část podmínky!
+                    part.Value = $"{addBefore}{part.Value}{addAfter}";
+                    return part;
+                }
+                if (part.IsText)
+                {   // Obsahuje Text => vytvoříme new instanci typu Value (obsahující Before + Text + After), a tu pak vrátíme:
+                    var valuePart = DxExpressionPart.CreateValue($"{addBefore}{part.Value}{addAfter}");
+                    return valuePart;
+                }
+
+                // Obsahuje něco jiného = například vzorec: pak musíme vrátit new část typu Container, obsahující texty Before a/nebo After:
+                bool hasBefore = !String.IsNullOrEmpty(addBefore);
+                bool hasAfter = !String.IsNullOrEmpty(addAfter);
+                //  Pokud ale nemáme nic přidat, nemusíme nic řešit:
+                if (!hasBefore && !hasAfter) return part;
+
+                // Sestavíme container (přičemž vstupní objekty, které jsou null, nebudou do containeru vloženy):
+                return DxExpressionPart.CreateFrom("(", (hasBefore ? $"'{addBefore}' + " : null), part, (hasAfter ? $" + '{addAfter}'" : null), ")");
+            }
+            // Dané datum vrátí jako string (text), který lze použít ve filtru a reprezentuje přesně zadaný čas, ve formě:  "convert(datetime, '2025-08-03 12:34:56.789', 121)"
+            object dateTimeAsText(DateTime dateTime)
+            {
+                return $"convert(datetime, '{dateTime.Year:D4}-{dateTime.Month:D2}-{dateTime.Day:D2} {dateTime.Hour:D2}:{dateTime.Minute:D2}:{dateTime.Second:D2}.{dateTime.Millisecond:D3}', 121)";
+            }
+            // Vrátí DxExpressionPart obsahující výraz pro DateTime: "(value >= dBegin and value < dEnd)"
+            DxExpressionPart createDateTimeInterval(DxExpressionPart value, DateTime dBegin, DateTime dEnd)
+            {
+                return DxExpressionPart.CreateFrom("(", value, " >= ", dateTimeAsText(dBegin), " and ", value, " < ", dateTimeAsText(dEnd), ")");
+            }
+            DateTime getWeekBegin(DateTime dateTime)
+            {
+                var fdow = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;              // Který den v týdnu v aktuální kultuře reprezentuje počátek týdne?
+                int fnow = (int)fdow;                      // Číslo prvního dne v týdnu: neděle = 0, pondělí = 1, ..., sobota = 6
+                int fnod = (int)dateTime.DayOfWeek;        // Číslo zadaného dne v týdnu: neděle = 0, pondělí = 1, ..., sobota = 6
+                int subtract = fnod - fnow;                // Kolik dnů nazpátek musím přetočit od dateTime doleva, abych byl v prvním dnu v týdnu
+                var dBegin = (subtract == 0 ? dateTime.Date : dateTime.AddDays(-subtract).Date);
+                return dBegin;
             }
             // Pokud počet operandů == daný počet, pak vrátí řízení. POkud není rovno, vyhodí chybu pomocí failCount().
             void checkCount(int validCount)
