@@ -281,8 +281,9 @@ namespace TestDevExpress.Forms
         {
             var filter = e.Filter;
             var dxExpression = "DX: " + filter?.ToString();
-            var msExpression = "SQL: " + TestDevExpress.AsolDX.News.DxToExpressionConvertor.ConvertToString(filter, AsolDX.News.DxExpressionLanguageType.MsSqlDatabase, this._RowFilterHandler);
-            this.StatusText = dxExpression + "  |◘◘|◘◘|  " + msExpression;
+            var msExpression = "SQL: " + TestDevExpress.AsolDX.DxFiltering.DxFilterConvertor.ConvertToString(filter, AsolDX.DxFiltering.DxExpressionLanguageType.MsSqlDatabase, this._RowFilterHandler);
+            var oldExpression = "OLD: " + DevExpress.Data.Filtering.CriteriaToWhereClauseHelper.GetMsSqlWhere(filter, c => c.PropertyName);
+            this.StatusText = dxExpression + "  |◘◘|◘◘|  " + msExpression + "  |◘◘|◘◘|  " + oldExpression;
         }
         /// <summary>
         /// Zdejší metoda je volána vždy, když konvertor filtru DevExpress to MsSql konvertuje jednotlivou operaci ve filtru.
@@ -296,31 +297,31 @@ namespace TestDevExpress.Forms
         /// <para/>
         /// <b><u>Praktická realizace:</u></b> 
         /// <list type="number">
-        /// <item>Detekovat typ operace <see cref="TestDevExpress.AsolDX.News.DxExpressionCustomArgs.Operation"/></item>
+        /// <item>Detekovat typ operace <see cref="TestDevExpress.AsolDX.DxFiltering.DxConvertorCustomArgs.Operation"/></item>
         /// <item>Podle typu operace určit, zda ji můžeme řešit pro sloupec s editačním stylem</item>
         /// <item>Podle typu operace určit, ve kterém operandu očekáváme sloupec</item>
-        /// <item>V poli operandů <see cref="TestDevExpress.AsolDX.News.DxExpressionCustomArgs.Operands"/> najít sloupec a najít jeho data v naší evidenci (my víme, co v kterém sloupci zobrazujeme)</item>
+        /// <item>V poli operandů <see cref="TestDevExpress.AsolDX.DxFiltering.DxConvertorCustomArgs.Operands"/> najít sloupec a najít jeho data v naší evidenci (my víme, co v kterém sloupci zobrazujeme)</item>
         /// <item>Pokud sloupec obsahuje editační styl, pak vyřešit operaci na úrovni datových hodnot CodeValue a nikoli DisplayValue</item>
         /// <item>Přeformulovat operaci</item>
-        /// <item>Buď vytvořit zcela novou podmínku a uložit ji do <see cref="TestDevExpress.AsolDX.News.DxExpressionCustomArgs.CustomResult"/></item>
-        /// <item>Anebo jen nahradit zdroj dat (sloupec s DisplayValue za CoeValue) a nahradit hodnoty v dalších operandech (<see cref="TestDevExpress.AsolDX.News.DxExpressionCustomArgs.Operands"/>) podobným způsobem</item>
+        /// <item>Buď vytvořit zcela novou podmínku a uložit ji do <see cref="TestDevExpress.AsolDX.DxFiltering.DxConvertorCustomArgs.CustomResult"/></item>
+        /// <item>Anebo jen nahradit zdroj dat (sloupec s DisplayValue za CoeValue) a nahradit hodnoty v dalších operandech (<see cref="TestDevExpress.AsolDX.DxFiltering.DxConvertorCustomArgs.Operands"/>) podobným způsobem</item>
         /// </list>
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        private void _RowFilterHandler(object sender, TestDevExpress.AsolDX.News.DxExpressionCustomArgs args)
+        private void _RowFilterHandler(object sender, TestDevExpress.AsolDX.DxFiltering.DxConvertorCustomArgs args)
         {
             if (_RowFilterIsForCodeValue(args, out var columnInfo))
                 _RowFilterHandlerColumnEditStyle(sender, args, columnInfo);
         }
-        private bool _RowFilterIsForCodeValue(TestDevExpress.AsolDX.News.DxExpressionCustomArgs args, out IColumnInfo columnInfo)
+        private bool _RowFilterIsForCodeValue(TestDevExpress.AsolDX.DxFiltering.DxConvertorCustomArgs args, out IColumnInfo columnInfo)
         {
             columnInfo = null;
             switch (args.Operation)
             {   // Tyto operace budeme řešit, jiné neumíme:
-                case AsolDX.News.DxExpressionOperationType.Binary_Equal:
-                case AsolDX.News.DxExpressionOperationType.Binary_NotEqual:
-                case AsolDX.News.DxExpressionOperationType.In:
+                case AsolDX.DxFiltering.DxFilterOperationType.Binary_Equal:
+                case AsolDX.DxFiltering.DxFilterOperationType.Binary_NotEqual:
+                case AsolDX.DxFiltering.DxFilterOperationType.In:
                     // Umíme je řešit tehdy, když první operand obsahuje sloupec, a tento sloupec má editační styl; a další operandy jsou ValueString:
                     if (isFirstOperandColumnEditStyle(out  columnInfo) && isNextOperandsValueString())
                         return true;
@@ -354,13 +355,13 @@ namespace TestDevExpress.Forms
                 return false;
             }
         }
-        private void _RowFilterHandlerColumnEditStyle(object sender, TestDevExpress.AsolDX.News.DxExpressionCustomArgs args, IColumnInfo columnInfo)
+        private void _RowFilterHandlerColumnEditStyle(object sender, TestDevExpress.AsolDX.DxFiltering.DxConvertorCustomArgs args, IColumnInfo columnInfo)
         {
             switch (args.Operation)
             {   // Tyto operace budeme řešit, jiné neumíme:
-                case AsolDX.News.DxExpressionOperationType.Binary_Equal:
-                case AsolDX.News.DxExpressionOperationType.Binary_NotEqual:
-                case AsolDX.News.DxExpressionOperationType.In:
+                case AsolDX.DxFiltering.DxFilterOperationType.Binary_Equal:
+                case AsolDX.DxFiltering.DxFilterOperationType.Binary_NotEqual:
+                case AsolDX.DxFiltering.DxFilterOperationType.In:
                     // Pro tyto operace neměníme formulaci výrazu, jen vyměníme sloupec a hodnoty:
                     //  Namísto:    columnDisplay = "Zaúčtováno"           Namísto:    columnDisplay IN ("Zaúčtováno", "Stornováno")
                     //  Vložíme:    columnCode    = 2                      Vložíme:    columnCode    IN (2,            3)
@@ -385,7 +386,7 @@ namespace TestDevExpress.Forms
         }
         private bool _TryFindColumn(string columnId, out IColumnInfo columnInfo)
         {
-            // Toto je sample metoda, reálně se musí napojit na reálné sloupce šablony !!!
+            // Toto je sample metoda!   Reálně se musíme napojit na reálné sloupce šablony !!!
             if (String.Equals(columnId, "period", StringComparison.OrdinalIgnoreCase))
             {
                 if (__PeriodColumn is null)
@@ -401,7 +402,7 @@ namespace TestDevExpress.Forms
                     var values = new List<KeyValuePair<object, string>>();
                     for (int yr = 2020; yr <= 2030; yr++)
                         for (int mo = 1; mo <= 12; mo++)
-                            values.Add(new KeyValuePair<object, string>(100 * yr + mo, $"{yr}-{mo:D2}"));
+                            values.Add(new KeyValuePair<object, string>((100 * (yr - 2000)) + mo, $"{yr}-{mo:D2}"));
                     periodColumn.EditStyleValues = values.ToArray();
 
                     __PeriodColumn = periodColumn;
@@ -409,10 +410,39 @@ namespace TestDevExpress.Forms
                 columnInfo = __PeriodColumn;
                 return true;
             }
+
+            if (String.Equals(columnId, "category", StringComparison.OrdinalIgnoreCase))
+            {
+                if (__CategoryColumn is null)
+                {
+                    var categoryColumn = new IColumnInfo()
+                    {
+                        ColumnId = "Category",
+                        ColumnSourceDisplay = "case tab01.catg when 'N' then 'NÁKUP' when 'P' then 'PRODEJ' when 'S' then 'SKLAD' when 'T' then 'TUZEMSKO' when 'E' then 'EXPORT' when 'I' then 'IMPORT' else tab01.catg end",
+                        ColumnSourceValue = "tab01.catg",
+                        HasEditStyle = true
+                    };
+
+                    var values = new List<KeyValuePair<object, string>>();
+                    values.Add(new KeyValuePair<object, string>("N", "NÁKUP"));
+                    values.Add(new KeyValuePair<object, string>("P", "PRODEJ"));
+                    values.Add(new KeyValuePair<object, string>("S", "SKLAD"));
+                    values.Add(new KeyValuePair<object, string>("T", "TUZEMSKO"));
+                    values.Add(new KeyValuePair<object, string>("E", "EXPORT"));
+                    values.Add(new KeyValuePair<object, string>("I", "IMPORT"));
+                    categoryColumn.EditStyleValues = values.ToArray();
+
+                    __CategoryColumn = categoryColumn;
+                }
+                columnInfo = __CategoryColumn;
+                return true;
+            }
+
             columnInfo = null;
             return false;
         }
         private IColumnInfo __PeriodColumn;
+        private IColumnInfo __CategoryColumn;
         internal class IColumnInfo      // měl by to být interface
         {
             /// <summary>

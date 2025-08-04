@@ -7,46 +7,46 @@ using System.Threading.Tasks;
 
 using DxFilter = DevExpress.Data.Filtering;
 
-namespace TestDevExpress.AsolDX.News
+namespace TestDevExpress.AsolDX.DxFiltering
 {
-    #region class DxToExpressionConvertor : public konvertor dat z filtru DX do formy MS SQL atd
+    #region class DxFilterConvertor : public konvertor dat z filtru DX do formy MS SQL atd
     /// <summary>
-    /// <see cref="DxToExpressionConvertor"/> : public konvertor dat z filtru DX do formy MS SQL atd
+    /// <see cref="DxFilterConvertor"/> : public konvertor dat z filtru DX do formy MS SQL atd
     /// </summary>
-    internal class DxToExpressionConvertor
+    internal class DxFilterConvertor
     {
         #region Public members
-        public static string ConvertToString(string dxExpression, DxExpressionLanguageType language, DxExpressionCustomHandler customHandler = null)
+        public static string ConvertToString(string dxExpression, DxExpressionLanguageType language, DxConvertorCustomHandler customHandler = null)
         {
             if (String.IsNullOrEmpty(dxExpression)) return null;
             var part = _ConvertToPart(DxFilter.CriteriaOperator.Parse(dxExpression), language, customHandler);
             return part?.ToText(language);
         }
 
-        public static string ConvertToString(DxFilter.CriteriaOperator filter, DxExpressionLanguageType language, DxExpressionCustomHandler customHandler = null)
+        public static string ConvertToString(DxFilter.CriteriaOperator filter, DxExpressionLanguageType language, DxConvertorCustomHandler customHandler = null)
         {
             if (filter is null) return null;
             var part = _ConvertToPart(filter, language, customHandler);
             return part?.ToText(language);
         }
-        public static DxExpressionPart ConvertToPart(string dxExpression, DxExpressionLanguageType language, DxExpressionCustomHandler customHandler = null)
+        public static DxExpressionPart ConvertToPart(string dxExpression, DxExpressionLanguageType language, DxConvertorCustomHandler customHandler = null)
         {
             if (String.IsNullOrEmpty(dxExpression)) return null;
             var part = _ConvertToPart(DxFilter.CriteriaOperator.Parse(dxExpression), language, customHandler);
             return part;
         }
-        public static DxExpressionPart ConvertToPart(DxFilter.CriteriaOperator filter, DxExpressionLanguageType language, DxExpressionCustomHandler customHandler = null)
+        public static DxExpressionPart ConvertToPart(DxFilter.CriteriaOperator filter, DxExpressionLanguageType language, DxConvertorCustomHandler customHandler = null)
         {
             if (filter is null) return null;
             var part = _ConvertToPart(filter, language, customHandler);
             return part;
         }
 
-        private static DxExpressionPart _ConvertToPart(CriteriaOperator filter, DxExpressionLanguageType language, DxExpressionCustomHandler customHandler)
+        private static DxExpressionPart _ConvertToPart(CriteriaOperator filter, DxExpressionLanguageType language, DxConvertorCustomHandler customHandler)
         {
             if (filter is null) return null;
 
-            var visitor = new DxExpressionVisitor(language, customHandler);
+            var visitor = new DxCriteriaVisitor(language, customHandler);
             var result = filter.Accept(visitor);
             return result;
         }
@@ -62,21 +62,21 @@ namespace TestDevExpress.AsolDX.News
         #endregion
     }
     #endregion
-    #region class DxExpressionVisitor : Rekurzivní konverzní třída pro vlastní převod DxFilter.CriteriaOperator do výsledných částí DxExpressionPart
+    #region class DxCriteriaVisitor  : Rekurzivní konverzní třída pro vlastní převod DxFilter.CriteriaOperator do výsledných částí DxExpressionPart
     /// <summary>
-    /// <see cref="DxExpressionVisitor"/> : Rekurzivní konverzní třída pro vlastní převod <see cref="DxFilter.CriteriaOperator"/> do výsledných částí <see cref="DxExpressionPart"/>
+    /// <see cref="DxCriteriaVisitor"/> : Rekurzivní konverzní třída pro vlastní převod <see cref="DxFilter.CriteriaOperator"/> do výsledných částí <see cref="DxExpressionPart"/>
     /// </summary>
-    internal class DxExpressionVisitor : DxFilter.ICriteriaVisitor<DxExpressionPart>, DxFilter.IClientCriteriaVisitor<DxExpressionPart>
+    internal class DxCriteriaVisitor : DxFilter.ICriteriaVisitor<DxExpressionPart>, DxFilter.IClientCriteriaVisitor<DxExpressionPart>
     {
         #region Konstruktor a jazyk
-        internal DxExpressionVisitor(DxExpressionLanguageType language, DxExpressionCustomHandler customHandler = null)
+        internal DxCriteriaVisitor(DxExpressionLanguageType language, DxConvertorCustomHandler customHandler = null)
         {
             __Language = language;
             __CustomHandler = customHandler;
             __HasCustomHandler = (customHandler != null);
         }
         private DxExpressionLanguageType __Language;
-        private DxExpressionCustomHandler __CustomHandler;
+        private DxConvertorCustomHandler __CustomHandler;
         private bool __HasCustomHandler;
         #endregion
         #region Visitors
@@ -93,7 +93,7 @@ namespace TestDevExpress.AsolDX.News
             var dxOperands = ConvertOperands(ConvertOperandsMode.StrictlyAllItems, betweenOperator.TestExpression, betweenOperator.BeginExpression, betweenOperator.EndExpression);
             if (dxOperands is null) return null;                                         // null reprezentuje stav, kdy daný fragment vynecháváme.
 
-            return ConvertToPart(betweenOperator, DxExpressionOperationType.Between, dxOperands);
+            return ConvertToPart(betweenOperator, DxFilterOperationType.Between, dxOperands);
         }
         DxExpressionPart DxFilter.ICriteriaVisitor<DxExpressionPart>.Visit(DxFilter.BinaryOperator binaryOperator)
         {
@@ -116,7 +116,7 @@ namespace TestDevExpress.AsolDX.News
             var dxOperands = ConvertOperands(ConvertOperandsMode.RemoveEmptyItems, inOperator.LeftOperand, inOperator.Operands);
             if (dxOperands is null) return null;                                         // null reprezentuje stav, kdy daný fragment vynecháváme.
 
-            return ConvertToPart(inOperator, DxExpressionOperationType.In, dxOperands);
+            return ConvertToPart(inOperator, DxFilterOperationType.In, dxOperands);
         }
         DxExpressionPart DxFilter.ICriteriaVisitor<DxExpressionPart>.Visit(DxFilter.FunctionOperator functionOperator)
         {
@@ -124,7 +124,7 @@ namespace TestDevExpress.AsolDX.News
             if (dxOperands is null) return null;                                         // null reprezentuje stav, kdy daný fragment vynecháváme.
 
             // Která funkce to má být?
-            var operation = DxExpressionOperationType.None;
+            var operation = DxFilterOperationType.None;
             
             if (functionOperator.OperatorType == DxFilter.FunctionOperatorType.Custom && dxOperands.Count > 0 && dxOperands[0].IsValueString)
             {   // Funkce může být i Custom, pak její vlastní název je přítomen v prvním operandu typu String:
@@ -155,11 +155,11 @@ namespace TestDevExpress.AsolDX.News
         }
         #endregion
         #region Vlastní konvertor všech operací (funkce, operace, porovnání...), s využitím __CustomHandler
-        private DxExpressionPart ConvertToPart(DxFilter.CriteriaOperator filterOperator, DxExpressionOperationType operation, List<DxExpressionPart> operands)
+        private DxExpressionPart ConvertToPart(DxFilter.CriteriaOperator filterOperator, DxFilterOperationType operation, List<DxExpressionPart> operands)
         {
             if (__HasCustomHandler)
             {   // Custom handler:
-                var args = new DxExpressionCustomArgs(__Language, operation, operands);
+                var args = new DxConvertorCustomArgs(__Language, operation, operands);
                 __CustomHandler(filterOperator, args);
                 if (args.Skip) return null;
                 if (args.CustomResult != null) return args.CustomResult;
@@ -170,8 +170,8 @@ namespace TestDevExpress.AsolDX.News
             switch (operation)
             {
                 #region Group: And, Or
-                case DxExpressionOperationType.Group_And:
-                case DxExpressionOperationType.Group_Or:
+                case DxFilterOperationType.Group_And:
+                case DxFilterOperationType.Group_Or:
                     // Žádný prvek: vynecháme;
                     // Jediný prvek: nepotřebuje závorky ani delimiter:
                     if (count <= 0) return null;
@@ -181,69 +181,69 @@ namespace TestDevExpress.AsolDX.News
                     //   aby navazující vyšší grupa (např. AND) byla napojena validně  :   c = 10 and (a < 1 or b > 10)
                     //   kdežto bez závorek by to dopadlo špatně                       :   c = 10 and  a < 1 or b > 10
                     //   ....  protože AND mívá přednost, takže význam by byl          :  (c = 10 and a < 1) or b > 10 
-                    string delimiter = (operation == DxExpressionOperationType.Group_And ? " and " : (operation == DxExpressionOperationType.Group_Or ? " or " : ", "));
+                    string delimiter = (operation == DxFilterOperationType.Group_And ? " and " : (operation == DxFilterOperationType.Group_Or ? " or " : ", "));
                     return DxExpressionPart.CreateFrom("(", DxExpressionPart.CreateDelimited(delimiter, operands), ")");
 
                 #endregion
                 #region Between
-                case DxExpressionOperationType.Between:
+                case DxFilterOperationType.Between:
                     //    Operand.0  between  Operand.1  and  Operand.2
                     checkCount(3);
                     return DxExpressionPart.CreateFrom(operands[0], " between ", operands[1], " and ", operands[2]);
                 #endregion
                 #region Binary: Equal, Greater, Less, Modulo, Multiply...
-                case DxExpressionOperationType.Binary_Equal:
-                case DxExpressionOperationType.Binary_NotEqual:
-                case DxExpressionOperationType.Binary_Greater:
-                case DxExpressionOperationType.Binary_Less:
-                case DxExpressionOperationType.Binary_LessOrEqual:
-                case DxExpressionOperationType.Binary_GreaterOrEqual:
-                case DxExpressionOperationType.Binary_Like:
-                case DxExpressionOperationType.Binary_BitwiseAnd:
-                case DxExpressionOperationType.Binary_BitwiseOr:
-                case DxExpressionOperationType.Binary_BitwiseXor:
-                case DxExpressionOperationType.Binary_Divide:
-                case DxExpressionOperationType.Binary_Modulo:
-                case DxExpressionOperationType.Binary_Multiply:
-                case DxExpressionOperationType.Binary_Plus:
-                case DxExpressionOperationType.Binary_Minus:
+                case DxFilterOperationType.Binary_Equal:
+                case DxFilterOperationType.Binary_NotEqual:
+                case DxFilterOperationType.Binary_Greater:
+                case DxFilterOperationType.Binary_Less:
+                case DxFilterOperationType.Binary_LessOrEqual:
+                case DxFilterOperationType.Binary_GreaterOrEqual:
+                case DxFilterOperationType.Binary_Like:
+                case DxFilterOperationType.Binary_BitwiseAnd:
+                case DxFilterOperationType.Binary_BitwiseOr:
+                case DxFilterOperationType.Binary_BitwiseXor:
+                case DxFilterOperationType.Binary_Divide:
+                case DxFilterOperationType.Binary_Modulo:
+                case DxFilterOperationType.Binary_Multiply:
+                case DxFilterOperationType.Binary_Plus:
+                case DxFilterOperationType.Binary_Minus:
                     checkCount(2);
                     return DxExpressionPart.CreateFrom(operands[0], getBinaryOperatorText(operation), operands[1]);
                 #endregion
                 #region Unary: Not, IsNull, ...
-                case DxExpressionOperationType.Unary_BitwiseNot:
+                case DxFilterOperationType.Unary_BitwiseNot:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom(" ~", operands[0]);
-                case DxExpressionOperationType.Unary_Plus:
+                case DxFilterOperationType.Unary_Plus:
                     checkCount(1);
                     return operands[0];
-                case DxExpressionOperationType.Unary_Minus:
+                case DxFilterOperationType.Unary_Minus:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom(" -(", operands[0], ")");
-                case DxExpressionOperationType.Unary_Not:
+                case DxFilterOperationType.Unary_Not:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("not (", operands[0], ")");
-                case DxExpressionOperationType.Unary_IsNull:
+                case DxFilterOperationType.Unary_IsNull:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom(operands[0], " is null");
 
                 #endregion
-                #region In list:
-                case DxExpressionOperationType.In:
+                #region In list
+                case DxFilterOperationType.In:
                     if (count < 2) return null;                                          // null reprezentuje stav, kdy daný fragment vynecháváme.
-                    if (count == 2) return DxExpressionPart.CreateFrom(operands[0], " = ", operands[1]);               // Sloupec in (123)   převedeme na   Sloupec = 123
-                    if (count > 2) return DxExpressionPart.CreateFrom(operands[0], " in (", DxExpressionPart.CreateDelimited(",", operands.Skip(1)), ")");   // Sloupec in (operandy počínaje [1] oddělené , delimiterem)
+                    if (count == 2) return DxExpressionPart.CreateFrom(operands[0], " = ", operands[1]);                                                       // Sloupec in (123)   převedeme na   Sloupec = 123
+                    if (count > 2) return DxExpressionPart.CreateFrom(operands[0], " in (", DxExpressionPart.CreateDelimited(",", operands.Skip(1)), ")");     // Sloupec in (operandy počínaje [1] oddělené , delimiterem)
                     failCount("1 or more");
                     break;
-
                 #endregion
-                #region Function - Custom:
-                case DxExpressionOperationType.Function_None:
-                case DxExpressionOperationType.Function_Custom:
-                case DxExpressionOperationType.Function_CustomNonDeterministic:
+                #region Function - Custom: None, Custom, CustomNonDeterministic
+                case DxFilterOperationType.Function_None:
+                case DxFilterOperationType.Function_Custom:
+                case DxFilterOperationType.Function_CustomNonDeterministic:
+                    break;
                 #endregion
                 #region Function - Logical: Iif, IsNull
-                case DxExpressionOperationType.Function_Iif:
+                case DxFilterOperationType.Function_Iif:
                     // Returns one of the specified values depending upon the values of logical expressions. The function can take 2N+1 arguments (where N is the number of specified logical expressions):
                     // Each odd argument specifies a logical expression.
                     // Each even argument specifies the value that is returned if the previous expression evaluates to True.
@@ -260,7 +260,7 @@ namespace TestDevExpress.AsolDX.News
                         iifPart.AddRange("when ", operands[i], " then ", operands[i + 1], " ");    //   ... [Name] = 'Bob' then 1 ...       přičemž operandItems[i] je logický: "[Name] = 'Bob'" a operandItems[i + 1] je hodnota: "1"
                     iifPart.AddRange("else ", operands[count - 1], " end)");                       //   ... else 0 end)
                     return iifPart;
-                case DxExpressionOperationType.Function_IsNull:
+                case DxFilterOperationType.Function_IsNull:
                     // Compares the first operand with the NULL value. This function requires one or two operands of the CriteriaOperator class. 
                     // The returned value depends on the number of arguments (one or two arguments).
                     //  True / False: If a single operand is passed, the function returns True if the operand is null; otherwise, False.
@@ -269,21 +269,21 @@ namespace TestDevExpress.AsolDX.News
                     if (count == 2) return DxExpressionPart.CreateFrom("isnull(", operands[0], ", ", operands[1], ")");          // isnull([datum_akce], [datum_podani])
                     failCount("1 or 2");
                     break;
-                case DxExpressionOperationType.Function_IsNullOrEmpty:
+                case DxFilterOperationType.Function_IsNullOrEmpty:
                     // Returns True if the specified value is null or an empty string. Otherwise, returns False.
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("(", operands[0], " is null or len(trim(", operands[0], ")) = 0)");
                 #endregion
                 #region Function - String 1: Trim. Len, Substring, Upper, Lower, Concat, ...
-                case DxExpressionOperationType.Function_Trim:
+                case DxFilterOperationType.Function_Trim:
                     //Returns a string that is a copy of the specified string with all white-space characters removed from the start and end of the specified string.
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("trim(", operands[0], ")");
-                case DxExpressionOperationType.Function_Len:
+                case DxFilterOperationType.Function_Len:
                     // Returns the length of the string specified by an operand.
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("len(", operands[0], ")");
-                case DxExpressionOperationType.Function_Substring:
+                case DxFilterOperationType.Function_Substring:
                     // Returns a substring from the specified string. This function requires two or three operands.
                     // If two operands are passed, the substring starts from the beginning of the specified string.The operands are:
                     //   1 - the source string.
@@ -293,80 +293,70 @@ namespace TestDevExpress.AsolDX.News
                     //   2 - an integer that specifies the zero - based position at which the substring starts.
                     //   3 - an integer that specifies the length of the substring.
                     if (count == 2)
-                    {
-                        if (operands[1].IsValueInt32)
-                            return DxExpressionPart.CreateFrom("substring(", operands[0], ",", intAsText(operands[1], 1), ",9999)");       // substring([poznamka], 41, 9999) : DevExpress umožňuje 2 argumenty (string, begin), ale SQL server chce povinně 3, kde třetí = délka
-                        else
-                            return DxExpressionPart.CreateFrom("substring(", operands[0], ",(1+", operands[1], "),9999)");                 // substring([poznamka], (1+40), 9999) : DevExpress umožňuje 2 argumenty (string, begin), ale SQL server chce povinně 3, kde třetí = délka
-                    }
+                        return DxExpressionPart.CreateFrom("substring(", operands[0], ",", intAsText(operands[1], 1), ",9999)");                           // substring([poznamka], 41, 9999) : DevExpress umožňuje 2 argumenty (string, begin), ale SQL server chce povinně 3, kde třetí = délka
                     if (count == 3)
-                    {
-                        if (operands[1].IsValueInt32)
-                            return DxExpressionPart.CreateFrom("substring(", operands[0], ",", intAsText(operands[1], 1), ",", intAsText(operands[2]), ")");   // substring([poznamka], (1+40), 25)   : DevExpress má počátek substringu zero-based ("integer that specifies the zero-based position at which the substring starts."), ale SQL server má base 1
-                        else
-                            return DxExpressionPart.CreateFrom("substring(", operands[0], ",(1+", operands[1], "),", intAsText(operands[2]), ")");             // substring([poznamka], (1+40), 25)   : DevExpress má počátek substringu zero-based ("integer that specifies the zero-based position at which the substring starts."), ale SQL server má base 1
-                    }
+                        return DxExpressionPart.CreateFrom("substring(", operands[0], ",", intAsText(operands[1], 1), ",", intAsText(operands[2]), ")");   // substring([poznamka], (40+1), 25)   : DevExpress má počátek substringu zero-based ("integer that specifies the zero-based position at which the substring starts."), ale SQL server má base 1
                     failCount("2 or 3");
                     break;
-                case DxExpressionOperationType.Function_Upper:
+                case DxFilterOperationType.Function_Upper:
                     // Converts all characters in a string operand to uppercase in an invariant culture.
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("upper(", operands[0], ")");
-                case DxExpressionOperationType.Function_Lower:
+                case DxFilterOperationType.Function_Lower:
                     // Converts all characters in a string operand to lowercase in an invariant culture.
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("lower(", operands[0], ")");
-                case DxExpressionOperationType.Function_Concat:
+                case DxFilterOperationType.Function_Concat:
                     // Concatenates the specified strings.
                     // SQL server pro funkci CONCAT vyžaduje nejméně dva parametry; proto pro méně operandů provádím konverze jinak:
                     if (count <= 0) return DxExpressionPart.CreateText("''");                                                    // concat()                            vrátí ''
                     if (count == 1) return operands[0];                                                                          // concat([nazev])                     vrátí [nazev]
                     return DxExpressionPart.CreateFrom("concat(", DxExpressionPart.CreateDelimited(",", operands), ")");         // concat([nazev1], ',', [nazev2])     vrátí concat([nazev1], ',', [nazev2])   = to je SQL validní
-                case DxExpressionOperationType.Function_Ascii:
+                case DxFilterOperationType.Function_Ascii:
                     // Returns the ASCII code of the first character in a string operand.
                     // If the argument is an empty string, the null value is returned.
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("ascii(", operands[0], ")");
-                case DxExpressionOperationType.Function_Char:
+                case DxFilterOperationType.Function_Char:
                     // Converts a numeric operand to a Unicode character.
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("char(", operands[0], ")");
-                case DxExpressionOperationType.Function_ToStr:
-                case DxExpressionOperationType.Function_Replace:
-                case DxExpressionOperationType.Function_Reverse:
-                case DxExpressionOperationType.Function_Insert:
-                case DxExpressionOperationType.Function_CharIndex:
-                case DxExpressionOperationType.Function_Remove:
+                case DxFilterOperationType.Function_ToStr:
+                case DxFilterOperationType.Function_Replace:
+                case DxFilterOperationType.Function_Reverse:
+                case DxFilterOperationType.Function_Insert:
+                case DxFilterOperationType.Function_CharIndex:
+                case DxFilterOperationType.Function_Remove:
                     break;
                 #endregion
                 #region Function - Mathematics: Abs, Sqrt, Sin, Exp, Log, Pow, Celinig, Round, ...
-                case DxExpressionOperationType.Function_Abs:
+                case DxFilterOperationType.Function_Abs:
                     // Returns the absolute value of a numeric operand.
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("abs(", operands[0], ")");
-                case DxExpressionOperationType.Function_Sqr:
+                case DxFilterOperationType.Function_Sqr:
                     // Returns the square root of a specified numeric operand.
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("sqrt(", operands[0], ")");
-                case DxExpressionOperationType.Function_Cos:
+                case DxFilterOperationType.Function_Cos:
                     // Returns the cosine of the numeric operand, in radians.
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("cos(", operands[0], ")");
-                case DxExpressionOperationType.Function_Sin:
+                case DxFilterOperationType.Function_Sin:
                     // Returns the sine of the numeric operand, in radians.
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("sin(", operands[0], ")");
-                case DxExpressionOperationType.Function_Atn:
+                case DxFilterOperationType.Function_Atn:
                     // Returns the arctangent (the inverse tangent function) of the numeric operand. The arctangent is the angle in the range -π/2 to π/2 radians, whose tangent is the numeric operand.
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("atan(", operands[0], ")");
-                case DxExpressionOperationType.Function_Exp:
+                case DxFilterOperationType.Function_Exp:
                     // Returns the number e raised to the power specified by a numeric operand.
                     //   If the specified operand cannot be converted to Double, the NotSupportedException is thrown.
                     // The Exp function reverses the FunctionOperatorType.Log function. Use the FunctionOperatorType.Power operand to calculate powers of other bases.
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("exp(", operands[0], ")");
-                case DxExpressionOperationType.Function_Log:
+                case DxFilterOperationType.Function_Log:
                     // Returns the logarithm of the specified numeric operand. The return value depends upon the number of operands.
                     // If one operand is passed, the function returns the natural(base e) logarithm of a specified operand.
                     // If two operands are passed, the function returns the logarithm of the specified operand to the specified base.The operands are:
@@ -378,14 +368,14 @@ namespace TestDevExpress.AsolDX.News
                     if (count == 2) return DxExpressionPart.CreateFrom("log(", operands[0], ",", operands[1], ")");
                     failCount("1 or 2");
                     break;
-                case DxExpressionOperationType.Function_Rnd:
+                case DxFilterOperationType.Function_Rnd:
                     // Returns a random number greater than or equal to 0.0, and less than 1.0.
                     return DxExpressionPart.CreateText("rand()");
-                case DxExpressionOperationType.Function_Tan:
+                case DxFilterOperationType.Function_Tan:
                     // Returns the tangent of the specified numeric operand that is an angle in radians.
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("tan(", operands[0], ")");
-                case DxExpressionOperationType.Function_Power:
+                case DxFilterOperationType.Function_Power:
                     // Returns a specified numeric operand raised to a specified power.
                     // The operands are:
                     //  1 - the base number.
@@ -394,11 +384,11 @@ namespace TestDevExpress.AsolDX.News
                     // The Power function reverses the FunctionOperatorType.Log or FunctionOperatorType.Log10 function. Use the FunctionOperatorType.Exp operand to calculate powers of the number e.
                     checkCount(2);
                     return DxExpressionPart.CreateFrom("power(", operands[0], ",", operands[1], ")");
-                case DxExpressionOperationType.Function_Sign:
+                case DxFilterOperationType.Function_Sign:
                     // Returns an integer that indicates the sign of a number. The function returns 1 for positive numbers, -1 for negative numbers, and 0 (zero) if a number is equal to zero.
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("sign(", operands[0], ")");
-                case DxExpressionOperationType.Function_Round:
+                case DxFilterOperationType.Function_Round:
                     // Rounds a specified numeric operand to the nearest integer or to a specified number of fractional digits.
                     // The operands are:
                     // 1 - a value to round.
@@ -407,38 +397,38 @@ namespace TestDevExpress.AsolDX.News
                     if (count == 2) return DxExpressionPart.CreateFrom("round(", operands[0], ",", intAsText(operands[1]), ")");
                     failCount("1 or 2");
                     break;
-                case DxExpressionOperationType.Function_Ceiling:
+                case DxFilterOperationType.Function_Ceiling:
                     // Returns the smallest integral value greater than or equal to the specified numeric operand.
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("ceiling(", operands[0], ")");
-                case DxExpressionOperationType.Function_Floor:
+                case DxFilterOperationType.Function_Floor:
                     // Returns the largest integral value less than or equal to the specified numeric operand.
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("floor(", operands[0], ")");
-                case DxExpressionOperationType.Function_Max:
+                case DxFilterOperationType.Function_Max:
                     // Returns the larger of two numeric values.
                     checkCount(2);
                     return DxExpressionPart.CreateFrom("(case when ", operands[0], " > ", operands[1], " then ", operands[0], " else ", operands[1], " end)");   // (case when pocet1 > pocet2 then pocet1 else pocet2 end)
-                case DxExpressionOperationType.Function_Min:
+                case DxFilterOperationType.Function_Min:
                     // Returns the smaller of two numeric values.
                     checkCount(2);
                     return DxExpressionPart.CreateFrom("(case when ", operands[0], " < ", operands[1], " then ", operands[0], " else ", operands[1], " end)");   // (case when pocet1 < pocet2 then pocet1 else pocet2 end)
-                case DxExpressionOperationType.Function_Acos:
-                case DxExpressionOperationType.Function_Asin:
-                case DxExpressionOperationType.Function_Atn2:
-                case DxExpressionOperationType.Function_BigMul:
-                case DxExpressionOperationType.Function_Cosh:
-                case DxExpressionOperationType.Function_Log10:
-                case DxExpressionOperationType.Function_Sinh:
-                case DxExpressionOperationType.Function_Tanh:
+                case DxFilterOperationType.Function_Acos:
+                case DxFilterOperationType.Function_Asin:
+                case DxFilterOperationType.Function_Atn2:
+                case DxFilterOperationType.Function_BigMul:
+                case DxFilterOperationType.Function_Cosh:
+                case DxFilterOperationType.Function_Log10:
+                case DxFilterOperationType.Function_Sinh:
+                case DxFilterOperationType.Function_Tanh:
                     break;
                 #endregion
                 #region Function - String 2: PadLeft, StartsWith, Contains, ToInt, ToDecimal, ...
-                case DxExpressionOperationType.Function_PadLeft:
+                case DxFilterOperationType.Function_PadLeft:
                     break;
-                case DxExpressionOperationType.Function_PadRight:
+                case DxFilterOperationType.Function_PadRight:
                     break;
-                case DxExpressionOperationType.Function_StartsWith:
+                case DxFilterOperationType.Function_StartsWith:
                     checkCount(2);
                     if (operands[1].IsValueString)
                         // Pokud hodnota je zadána jako konstanta typu Text (=nejčastější situace), 
@@ -447,7 +437,7 @@ namespace TestDevExpress.AsolDX.News
                     else
                         // Pokud hodnota není stringová konstanta, pak do výsledku musíme dát vzorec: '%' + ... + '%' :
                         return DxExpressionPart.CreateFrom(operands[0], " like (", operands[1], " + '%')");                                          // [nazev] like (N'adr' + '%')
-                case DxExpressionOperationType.Function_EndsWith:
+                case DxFilterOperationType.Function_EndsWith:
                     checkCount(2);
                     if (operands[1].IsValueString)
                         // Pokud hodnota je zadána jako konstanta typu Text (=nejčastější situace), 
@@ -456,7 +446,7 @@ namespace TestDevExpress.AsolDX.News
                     else
                         // Pokud hodnota není stringová konstanta, pak do výsledku musíme dát vzorec: '%' + ... + '%' :
                         return DxExpressionPart.CreateFrom(operands[0], " like ('%' + ", operands[1], ")");                                          // [nazev] like ('%' + N'adr')
-                case DxExpressionOperationType.Function_Contains:
+                case DxFilterOperationType.Function_Contains:
                     checkCount(2);
                     if (operands[1].IsValueString)
                         // Pokud hodnota je zadána jako konstanta typu Text (=nejčastější situace), 
@@ -465,208 +455,236 @@ namespace TestDevExpress.AsolDX.News
                     else
                         // Pokud hodnota není stringová konstanta, pak do výsledku musíme dát vzorec: '%' + ... + '%' :
                         return DxExpressionPart.CreateFrom(operands[0], " like ('%' + ", operands[1], " + '%')");                                          // [nazev] like ('%' + N'adr' + '%')
-                case DxExpressionOperationType.Function_ToInt:
+
+                case DxFilterOperationType.Function_ToInt:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("cast(", operands[0], " as int)");
-                case DxExpressionOperationType.Function_ToLong:
+                case DxFilterOperationType.Function_ToLong:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("cast(", operands[0], " as bigint)");
-                case DxExpressionOperationType.Function_ToFloat:
+                case DxFilterOperationType.Function_ToFloat:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("cast(", operands[0], " as decimal(19,6))");
-                case DxExpressionOperationType.Function_ToDouble:
+                case DxFilterOperationType.Function_ToDouble:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("cast(", operands[0], " as decimal(19,6))");
-                case DxExpressionOperationType.Function_ToDecimal:
+                case DxFilterOperationType.Function_ToDecimal:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("cast(", operands[0], " as decimal(19,6))");
                 #endregion
                 #region Function - DateTime 1: LocalDateTime
-                case DxExpressionOperationType.Function_LocalDateTimeThisYear:
-                case DxExpressionOperationType.Function_LocalDateTimeThisMonth:
-                case DxExpressionOperationType.Function_LocalDateTimeLastWeek:
-                case DxExpressionOperationType.Function_LocalDateTimeThisWeek:
-                case DxExpressionOperationType.Function_LocalDateTimeYesterday:
-                case DxExpressionOperationType.Function_LocalDateTimeToday:
-                case DxExpressionOperationType.Function_LocalDateTimeNow:
-                case DxExpressionOperationType.Function_LocalDateTimeTomorrow:
-                case DxExpressionOperationType.Function_LocalDateTimeDayAfterTomorrow:
-                case DxExpressionOperationType.Function_LocalDateTimeNextWeek:
-                case DxExpressionOperationType.Function_LocalDateTimeTwoWeeksAway:
-                case DxExpressionOperationType.Function_LocalDateTimeNextMonth:
-                case DxExpressionOperationType.Function_LocalDateTimeNextYear:
-                case DxExpressionOperationType.Function_LocalDateTimeTwoMonthsAway:
-                case DxExpressionOperationType.Function_LocalDateTimeTwoYearsAway:
-                case DxExpressionOperationType.Function_LocalDateTimeLastMonth:
-                case DxExpressionOperationType.Function_LocalDateTimeLastYear:
-                case DxExpressionOperationType.Function_LocalDateTimeYearBeforeToday:
+                case DxFilterOperationType.Function_LocalDateTimeThisYear:
+                case DxFilterOperationType.Function_LocalDateTimeThisMonth:
+                case DxFilterOperationType.Function_LocalDateTimeLastWeek:
+                case DxFilterOperationType.Function_LocalDateTimeThisWeek:
+                case DxFilterOperationType.Function_LocalDateTimeYesterday:
+                case DxFilterOperationType.Function_LocalDateTimeToday:
+                case DxFilterOperationType.Function_LocalDateTimeNow:
+                case DxFilterOperationType.Function_LocalDateTimeTomorrow:
+                case DxFilterOperationType.Function_LocalDateTimeDayAfterTomorrow:
+                case DxFilterOperationType.Function_LocalDateTimeNextWeek:
+                case DxFilterOperationType.Function_LocalDateTimeTwoWeeksAway:
+                case DxFilterOperationType.Function_LocalDateTimeNextMonth:
+                case DxFilterOperationType.Function_LocalDateTimeNextYear:
+                case DxFilterOperationType.Function_LocalDateTimeTwoMonthsAway:
+                case DxFilterOperationType.Function_LocalDateTimeTwoYearsAway:
+                case DxFilterOperationType.Function_LocalDateTimeLastMonth:
+                case DxFilterOperationType.Function_LocalDateTimeLastYear:
+                case DxFilterOperationType.Function_LocalDateTimeYearBeforeToday:
                     break;
                 #endregion
                 #region Function - DateTime 2: IsOutlookInterval
-                case DxExpressionOperationType.Function_IsOutlookIntervalBeyondThisYear:
-                case DxExpressionOperationType.Function_IsOutlookIntervalLaterThisYear:
-                case DxExpressionOperationType.Function_IsOutlookIntervalLaterThisMonth:
-                case DxExpressionOperationType.Function_IsOutlookIntervalNextWeek:
-                case DxExpressionOperationType.Function_IsOutlookIntervalLaterThisWeek:
-                case DxExpressionOperationType.Function_IsOutlookIntervalTomorrow:
-                case DxExpressionOperationType.Function_IsOutlookIntervalToday:
-                case DxExpressionOperationType.Function_IsOutlookIntervalYesterday:
-                case DxExpressionOperationType.Function_IsOutlookIntervalEarlierThisWeek:
-                case DxExpressionOperationType.Function_IsOutlookIntervalLastWeek:
-                case DxExpressionOperationType.Function_IsOutlookIntervalEarlierThisMonth:
-                case DxExpressionOperationType.Function_IsOutlookIntervalEarlierThisYear:
-                case DxExpressionOperationType.Function_IsOutlookIntervalPriorThisYear:
+                case DxFilterOperationType.Function_IsOutlookIntervalBeyondThisYear:
+                case DxFilterOperationType.Function_IsOutlookIntervalLaterThisYear:
+                case DxFilterOperationType.Function_IsOutlookIntervalLaterThisMonth:
+                case DxFilterOperationType.Function_IsOutlookIntervalNextWeek:
+                case DxFilterOperationType.Function_IsOutlookIntervalLaterThisWeek:
+                case DxFilterOperationType.Function_IsOutlookIntervalTomorrow:
+                case DxFilterOperationType.Function_IsOutlookIntervalToday:
+                case DxFilterOperationType.Function_IsOutlookIntervalYesterday:
+                case DxFilterOperationType.Function_IsOutlookIntervalEarlierThisWeek:
+                case DxFilterOperationType.Function_IsOutlookIntervalLastWeek:
+                case DxFilterOperationType.Function_IsOutlookIntervalEarlierThisMonth:
+                case DxFilterOperationType.Function_IsOutlookIntervalEarlierThisYear:
+                case DxFilterOperationType.Function_IsOutlookIntervalPriorThisYear:
                     break;
                 #endregion
                 #region Function - DateTime 3: Is... (IsThisWeek, IsLastYear, IsJanuary, ...)
-                case DxExpressionOperationType.Function_IsThisWeek:
-                case DxExpressionOperationType.Function_IsThisMonth:
-                case DxExpressionOperationType.Function_IsThisYear:
-                case DxExpressionOperationType.Function_IsNextMonth:
-                case DxExpressionOperationType.Function_IsNextYear:
-                case DxExpressionOperationType.Function_IsLastMonth:
-                case DxExpressionOperationType.Function_IsLastYear:
-                case DxExpressionOperationType.Function_IsYearToDate:
-                case DxExpressionOperationType.Function_IsSameDay:
-                case DxExpressionOperationType.Function_InRange:
-                case DxExpressionOperationType.Function_InDateRange:
+                case DxFilterOperationType.Function_IsThisWeek:
+                case DxFilterOperationType.Function_IsThisMonth:
+                case DxFilterOperationType.Function_IsThisYear:
+                case DxFilterOperationType.Function_IsNextMonth:
+                case DxFilterOperationType.Function_IsNextYear:
+                case DxFilterOperationType.Function_IsLastMonth:
+                case DxFilterOperationType.Function_IsLastYear:
+                case DxFilterOperationType.Function_IsYearToDate:
+                case DxFilterOperationType.Function_IsSameDay:
                     break;
-                case DxExpressionOperationType.Function_IsJanuary:
+                case DxFilterOperationType.Function_InRange:
+                    checkCount(3);
+                    return DxExpressionPart.CreateFrom("(", operands[0], " >= ", operands[1], " and ", operands[0], " < ", operands[2], ")");
+                case DxFilterOperationType.Function_InDateRange:
+                    break;
+                case DxFilterOperationType.Function_IsJanuary:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("month(", operands[0], ") = 1");
-                case DxExpressionOperationType.Function_IsFebruary:
+                case DxFilterOperationType.Function_IsFebruary:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("month(", operands[0], ") = 2");
-                case DxExpressionOperationType.Function_IsMarch:
+                case DxFilterOperationType.Function_IsMarch:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("month(", operands[0], ") = 3");
-                case DxExpressionOperationType.Function_IsApril:
+                case DxFilterOperationType.Function_IsApril:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("month(", operands[0], ") = 4");
-                case DxExpressionOperationType.Function_IsMay:
+                case DxFilterOperationType.Function_IsMay:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("month(", operands[0], ") = 5");
-                case DxExpressionOperationType.Function_IsJune:
+                case DxFilterOperationType.Function_IsJune:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("month(", operands[0], ") = 6");
-                case DxExpressionOperationType.Function_IsJuly:
+                case DxFilterOperationType.Function_IsJuly:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("month(", operands[0], ") = 7");
-                case DxExpressionOperationType.Function_IsAugust:
+                case DxFilterOperationType.Function_IsAugust:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("month(", operands[0], ") = 8");
-                case DxExpressionOperationType.Function_IsSeptember:
+                case DxFilterOperationType.Function_IsSeptember:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("month(", operands[0], ") = 9");
-                case DxExpressionOperationType.Function_IsOctober:
+                case DxFilterOperationType.Function_IsOctober:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("month(", operands[0], ") = 10");
-                case DxExpressionOperationType.Function_IsNovember:
+                case DxFilterOperationType.Function_IsNovember:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("month(", operands[0], ") = 11");
-                case DxExpressionOperationType.Function_IsDecember:
+                case DxFilterOperationType.Function_IsDecember:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("month(", operands[0], ") = 12");
                 #endregion
                 #region Function - DateTime 4: DateDiff...
-                case DxExpressionOperationType.Function_DateDiffTick:
-                case DxExpressionOperationType.Function_DateDiffSecond:
-                case DxExpressionOperationType.Function_DateDiffMilliSecond:
-                case DxExpressionOperationType.Function_DateDiffMinute:
-                case DxExpressionOperationType.Function_DateDiffHour:
-                case DxExpressionOperationType.Function_DateDiffDay:
-                case DxExpressionOperationType.Function_DateDiffMonth:
-                case DxExpressionOperationType.Function_DateDiffYear:
+                case DxFilterOperationType.Function_DateDiffTick:
+                case DxFilterOperationType.Function_DateDiffSecond:
+                case DxFilterOperationType.Function_DateDiffMilliSecond:
+                case DxFilterOperationType.Function_DateDiffMinute:
+                case DxFilterOperationType.Function_DateDiffHour:
+                case DxFilterOperationType.Function_DateDiffDay:
+                case DxFilterOperationType.Function_DateDiffMonth:
+                case DxFilterOperationType.Function_DateDiffYear:
                     break;
                 #endregion
                 #region Function - DateTime 5: GetPart...
-                case DxExpressionOperationType.Function_GetDate:
-                case DxExpressionOperationType.Function_GetMilliSecond:
-                case DxExpressionOperationType.Function_GetSecond:
-                case DxExpressionOperationType.Function_GetMinute:
-                case DxExpressionOperationType.Function_GetHour:
-                case DxExpressionOperationType.Function_GetDay:
-                case DxExpressionOperationType.Function_GetMonth:
-                case DxExpressionOperationType.Function_GetYear:
-                case DxExpressionOperationType.Function_GetDayOfWeek:
-                case DxExpressionOperationType.Function_GetDayOfYear:
-                case DxExpressionOperationType.Function_GetTimeOfDay:
+                case DxFilterOperationType.Function_GetDate:
+                case DxFilterOperationType.Function_GetMilliSecond:
+                case DxFilterOperationType.Function_GetSecond:
+                case DxFilterOperationType.Function_GetMinute:
+                case DxFilterOperationType.Function_GetHour:
+                case DxFilterOperationType.Function_GetDay:
+                case DxFilterOperationType.Function_GetMonth:
+                case DxFilterOperationType.Function_GetYear:
+                case DxFilterOperationType.Function_GetDayOfWeek:
+                case DxFilterOperationType.Function_GetDayOfYear:
+                case DxFilterOperationType.Function_GetTimeOfDay:
                     break;
                 #endregion
                 #region Function - DateTime 6: Current
-                case DxExpressionOperationType.Function_Now:
+                case DxFilterOperationType.Function_Now:
                     // Returns the DateTime value that is the current date and time.
                     return DxExpressionPart.CreateText("getdate()");
-                case DxExpressionOperationType.Function_UtcNow:
+                case DxFilterOperationType.Function_UtcNow:
                     // Returns a DateTime object that is the current date and time in Universal Coordinated Time (UTC).
                     return DxExpressionPart.CreateText("getutcdate()");
-                case DxExpressionOperationType.Function_Today:
+                case DxFilterOperationType.Function_Today:
                     // Returns a DateTime value that is the current date. The time part is set to 00:00:00.
                     return DxExpressionPart.CreateText("datetrunc(d, getdate())");
-                case DxExpressionOperationType.Function_TruncateToMinute:
+                case DxFilterOperationType.Function_TruncateToMinute:
                     return DxExpressionPart.CreateText("datetrunc(mi, getdate())");
                 #endregion
                 #region Function - DateTime 7: Time (Hour, BeforeMidday, Afternoon, IsLunchTime...)
-                case DxExpressionOperationType.Function_IsSameHour:
-                case DxExpressionOperationType.Function_IsSameTime:
-                case DxExpressionOperationType.Function_BeforeMidday:
-                case DxExpressionOperationType.Function_AfterMidday:
-                case DxExpressionOperationType.Function_IsNight:
-                case DxExpressionOperationType.Function_IsMorning:
-                case DxExpressionOperationType.Function_IsAfternoon:
-                case DxExpressionOperationType.Function_IsEvening:
-                case DxExpressionOperationType.Function_IsLastHour:
-                case DxExpressionOperationType.Function_IsThisHour:
-                case DxExpressionOperationType.Function_IsNextHour:
-                case DxExpressionOperationType.Function_IsWorkTime:
-                case DxExpressionOperationType.Function_IsFreeTime:
-                case DxExpressionOperationType.Function_IsLunchTime:
-                case DxExpressionOperationType.Function_AddTimeSpan:
-                case DxExpressionOperationType.Function_AddTicks:
-                case DxExpressionOperationType.Function_AddMilliSeconds:
-                case DxExpressionOperationType.Function_AddSeconds:
-                case DxExpressionOperationType.Function_AddMinutes:
-                case DxExpressionOperationType.Function_AddHours:
-                case DxExpressionOperationType.Function_AddDays:
-                case DxExpressionOperationType.Function_AddMonths:
-                case DxExpressionOperationType.Function_AddYears:
-                case DxExpressionOperationType.Function_DateTimeFromParts:
-                case DxExpressionOperationType.Function_DateOnlyFromParts:
-                case DxExpressionOperationType.Function_TimeOnlyFromParts:
+                case DxFilterOperationType.Function_IsSameHour:
+                case DxFilterOperationType.Function_IsSameTime:
+                case DxFilterOperationType.Function_BeforeMidday:
+                case DxFilterOperationType.Function_AfterMidday:
+                case DxFilterOperationType.Function_IsNight:
+                case DxFilterOperationType.Function_IsMorning:
+                case DxFilterOperationType.Function_IsAfternoon:
+                case DxFilterOperationType.Function_IsEvening:
+                case DxFilterOperationType.Function_IsLastHour:
+                case DxFilterOperationType.Function_IsThisHour:
+                case DxFilterOperationType.Function_IsNextHour:
+                case DxFilterOperationType.Function_IsWorkTime:
+                case DxFilterOperationType.Function_IsFreeTime:
+                case DxFilterOperationType.Function_IsLunchTime:
+                case DxFilterOperationType.Function_AddTimeSpan:
+                case DxFilterOperationType.Function_AddTicks:
+                case DxFilterOperationType.Function_AddMilliSeconds:
+                case DxFilterOperationType.Function_AddSeconds:
+                case DxFilterOperationType.Function_AddMinutes:
+                case DxFilterOperationType.Function_AddHours:
+                case DxFilterOperationType.Function_AddDays:
+                case DxFilterOperationType.Function_AddMonths:
+                case DxFilterOperationType.Function_AddYears:
+                case DxFilterOperationType.Function_DateTimeFromParts:
+                case DxFilterOperationType.Function_DateOnlyFromParts:
+                case DxFilterOperationType.Function_TimeOnlyFromParts:
                     break;
-                    #endregion
+                #endregion
+                #region Function - Custom: Like, ...
+                case DxFilterOperationType.Custom_Like:
+                    checkCount(2);
+                    if (operands[1].IsValueString)
+                        // Pokud hodnota je zadána jako konstanta typu Text (=nejčastější situace), 
+                        //  pak do výstupu dáme novou hodnotu typu String s upraveným vstupním obsahem:
+                        return DxExpressionPart.CreateFrom(operands[0], " like ", DxExpressionPart.CreateValue("%" + operands[1].ValueString + "%"));      // [nazev] like '%adr%'
+                    else
+                        // Pokud hodnota není stringová konstanta, pak do výsledku musíme dát vzorec: '%' + ... + '%' :
+                        return DxExpressionPart.CreateFrom(operands[0], " like ('%' + ", operands[1], " + '%')");                                          // [nazev] like ('%' + N'adr' + '%')
 
+                #endregion
             }
+
+            return DxExpressionPart.CreateFrom("/* NotConverted: ", operation.ToString(), "(", DxExpressionPart.CreateDelimited(",", operands), ") */");
+
             return null;
 
-            string getBinaryOperatorText(DxExpressionOperationType binOp)
+            string getBinaryOperatorText(DxFilterOperationType binOp)
             {
                 switch (binOp)
                 {
-                    case DxExpressionOperationType.Binary_Equal: return " = ";
-                    case DxExpressionOperationType.Binary_NotEqual: return " <> ";
-                    case DxExpressionOperationType.Binary_Greater: return " > ";
-                    case DxExpressionOperationType.Binary_Less: return " < ";
-                    case DxExpressionOperationType.Binary_LessOrEqual: return " <= ";
-                    case DxExpressionOperationType.Binary_GreaterOrEqual: return " >= ";
-                    case DxExpressionOperationType.Binary_Like: return " like ";
-                    case DxExpressionOperationType.Binary_BitwiseAnd: return " & ";
-                    case DxExpressionOperationType.Binary_BitwiseOr: return " | ";
-                    case DxExpressionOperationType.Binary_BitwiseXor: return " ~ ";
-                    case DxExpressionOperationType.Binary_Divide: return " / ";
-                    case DxExpressionOperationType.Binary_Modulo: return " % ";
-                    case DxExpressionOperationType.Binary_Multiply: return " * ";
-                    case DxExpressionOperationType.Binary_Plus: return " + ";
-                    case DxExpressionOperationType.Binary_Minus: return " - ";
+                    case DxFilterOperationType.Binary_Equal: return " = ";
+                    case DxFilterOperationType.Binary_NotEqual: return " <> ";
+                    case DxFilterOperationType.Binary_Greater: return " > ";
+                    case DxFilterOperationType.Binary_Less: return " < ";
+                    case DxFilterOperationType.Binary_LessOrEqual: return " <= ";
+                    case DxFilterOperationType.Binary_GreaterOrEqual: return " >= ";
+                    case DxFilterOperationType.Binary_Like: return " like ";
+                    case DxFilterOperationType.Binary_BitwiseAnd: return " & ";
+                    case DxFilterOperationType.Binary_BitwiseOr: return " | ";
+                    case DxFilterOperationType.Binary_BitwiseXor: return " ~ ";
+                    case DxFilterOperationType.Binary_Divide: return " / ";
+                    case DxFilterOperationType.Binary_Modulo: return " % ";
+                    case DxFilterOperationType.Binary_Multiply: return " * ";
+                    case DxFilterOperationType.Binary_Plus: return " + ";
+                    case DxFilterOperationType.Binary_Minus: return " - ";
                 }
                 return " " + binOp.ToString() + " ";
             }
             // Pokud daná část obsahuje value, typu Int, pak výstupem je string s touto hodnotou. Používá se u konstant, které NECHCEME řešit pomocí DB parametrů. Např. délka čísla atd.
             object intAsText(DxExpressionPart part, int addValue = 0)
             {
+                // Pokud 'part' je IsValueInt32, pak výstupem bude string obsahující zadanou hodnotu [s přičteným modifikátorem], 
+                //   z toho pak bude obyčejný text = součást textu filtr, a nikoli Value (=DB parametr):
                 if (part.IsValueInt32) return (part.ValueInt32 + addValue).ToString();
-                return part;
+
+                // Pokud 'part' není IsValueInt32, a není potřeba nic přičíst/odečíst (addValue == 0), pak výstupem bude vstupní částice a půjde do výstupního filtru sama za sebe, například podřízený vzorec nebo funkce:
+                if (addValue == 0) return part;
+
+                // Pokud ale 'part' není IsValueInt32, a přitom jsme k ní chtěli něco přičíst, pak vytvoříme new částici typu Container,
+                //   kde bude: "(" a původní částice (= výraz) a k tomu text " +- addValue" a ")":
+                string addText = (addValue < 0 ? (" - " + (-addValue).ToString()) : " + " + addValue.ToString());         // " + 1"   /   " - 15"
+                return DxExpressionPart.CreateFrom("(", part, addText, ")");                                              // (Funkce(x,y) + 1)
             }
+            // Pokud počet operandů == daný počet, pak vrátí řízení. POkud není rovno, vyhodí chybu pomocí failCount().
             void checkCount(int validCount)
             {
                 if (count ==  validCount) return;
@@ -681,17 +699,17 @@ namespace TestDevExpress.AsolDX.News
             }
         }
         /// <summary>
-        /// Konvertuje DX operaci na zdejší operaci, na základě názvu grupy a názvu DX operace (string TryParse <see cref="DxExpressionOperationType"/>).
+        /// Konvertuje DX operaci na zdejší operaci, na základě názvu grupy a názvu DX operace (string TryParse <see cref="DxFilterOperationType"/>).
         /// Neznámé vstupy vyhodí <see cref="ArgumentException"/>.
         /// </summary>
         /// <param name="familyType">Rodina operací</param>
         /// <param name="operationType"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentException"></exception>
-        private DxExpressionOperationType ConvertOperation(FamilyType familyType, object operationType = null)
+        private DxFilterOperationType ConvertOperation(FamilyType familyType, object operationType = null)
         {
             string resultName = ((operationType is null) ? $"{familyType}" : $"{familyType}_{operationType}");
-            if (Enum.TryParse<DxExpressionOperationType>(resultName, true, out var resultValue)) return resultValue;
+            if (Enum.TryParse<DxFilterOperationType>(resultName, true, out var resultValue)) return resultValue;
             throw new ArgumentException($"Invalid operation name: '{resultName}'; operation with this name does not exists.");
         }
         /// <summary>
@@ -722,7 +740,7 @@ namespace TestDevExpress.AsolDX.News
             return operandItems;
         }
         /// <summary>
-        /// Konvertuje fixní operand <paramref name="operand0"/>, a poté přidá operandy z <paramref name="operands"/>.
+        /// Konvertuje fixní operand <paramref name="operand0"/>.
         /// Nevalidní operandy buď vynechává, anebo při jejich výskytu vrátí null, podle <paramref name="mode"/>.
         /// </summary>
         /// <param name="mode"></param>
@@ -750,7 +768,7 @@ namespace TestDevExpress.AsolDX.News
             return operandItems;
         }
         /// <summary>
-        /// Konvertuje fixní operandy <paramref name="operand0"/> a <paramref name="operand1"/>, a poté přidá operandy z <paramref name="operands"/>.
+        /// Konvertuje fixní operandy <paramref name="operand0"/> a <paramref name="operand1"/>.
         /// Nevalidní operandy buď vynechává, anebo při jejich výskytu vrátí null, podle <paramref name="mode"/>.
         /// </summary>
         /// <param name="mode"></param>
@@ -782,7 +800,7 @@ namespace TestDevExpress.AsolDX.News
             return operandItems;
         }
         /// <summary>
-        /// Z dodaného pole operandů <paramref name="operands"/> konvertuje jejich obsah do stringů a vrátí. 
+        /// Konvertuje fixní operandy <paramref name="operand0"/>, <paramref name="operand1"/> a <paramref name="operand2"/>.
         /// Nevalidní operandy buď vynechává, anebo při jejich výskytu vrátí null, podle <paramref name="mode"/>.
         /// </summary>
         /// <param name="mode"></param>
@@ -798,6 +816,13 @@ namespace TestDevExpress.AsolDX.News
             if (!ConvertOneOperand(operandItems, mode, operand2)) return null;
             return operandItems;
         }
+        /// <summary>
+        /// Do dodaného pole výsledných výrazů přidá konvertované operandy.
+        /// </summary>
+        /// <param name="operandItems"></param>
+        /// <param name="mode"></param>
+        /// <param name="operands"></param>
+        /// <returns></returns>
         private bool ConvertAllOperand(List<DxExpressionPart> operandItems, ConvertOperandsMode mode, DxFilter.CriteriaOperatorCollection operands)
         {
             if (operands is null) return (mode == ConvertOperandsMode.RemoveEmptyItems);        // Pokud na vstupu je null, pak vracím true = OK jen tehdy, když režim je volnější (Remove empty items)
@@ -808,6 +833,13 @@ namespace TestDevExpress.AsolDX.News
             }
             return true;
         }
+        /// <summary>
+        /// Do dodaného pole výsledných výrazů přidá konvertovaný operand.
+        /// </summary>
+        /// <param name="operandItems"></param>
+        /// <param name="mode"></param>
+        /// <param name="operand"></param>
+        /// <returns></returns>
         private bool ConvertOneOperand(List<DxExpressionPart> operandItems, ConvertOperandsMode mode, DxFilter.CriteriaOperator operand)
         {
             if (operand is null) return (mode == ConvertOperandsMode.RemoveEmptyItems);        // Pokud na vstupu je null, pak vracím true = OK jen tehdy, když režim je volnější (Remove empty items)
@@ -829,11 +861,11 @@ namespace TestDevExpress.AsolDX.News
             /// </summary>
             None,
             /// <summary>
-            /// Operandy jsou povinné, a pokud nějaký nebude možno konvertovat, pak vrátí null
+            /// Operandy jsou povinné, a pokud nějaký nebude možno konvertovat, pak vrátí null namísto celé kolekce
             /// </summary>
             StrictlyAllItems,
             /// <summary>
-            /// Operandy jsou nepovinné, a pokud nějaký nebude možno konvertovat, pak vrátí null
+            /// Operandy jsou nepovinné, a pokud nějaký nebude možno konvertovat, pak jej do kolekce nepřidá, vrátí kolekci ostatních konvertovaných prvků.
             /// </summary>
             RemoveEmptyItems
         }
@@ -973,10 +1005,10 @@ namespace TestDevExpress.AsolDX.News
                     sb.Append(this.__Text);
                     break;
                 case PartType.PropertyName:
-                    sb.Append(DxToExpressionConvertor.FormatPropertyName(this.__PropertyName, language));
+                    sb.Append(DxFilterConvertor.FormatPropertyName(this.__PropertyName, language));
                     break;
                 case PartType.Value:
-                    sb.Append(DxToExpressionConvertor.FormatValue(this.__Value, language));
+                    sb.Append(DxFilterConvertor.FormatValue(this.__Value, language));
                     break;
                 case PartType.Container:
                     foreach (var item in __Items)
@@ -1033,6 +1065,11 @@ namespace TestDevExpress.AsolDX.News
             // Pokud vstupní prvek bude string, nebo prvek typu Text, a současně poslední prvek mého pole bude Text, pak nový text připojím na konec stávajícího.
             _AddItemsTo(this.__Items, items);
         }
+        /// <summary>
+        /// Do daného pole částic přidá (detekuje, merguje) zadané prvky.
+        /// </summary>
+        /// <param name="targetItems"></param>
+        /// <param name="addItems"></param>
         private static void _AddItemsTo(List<DxExpressionPart> targetItems, object[] addItems)
         {
             for (int i = 0; i < addItems.Length; i++)
@@ -1094,7 +1131,7 @@ namespace TestDevExpress.AsolDX.News
         }
         /// <summary>
         /// Konvertuje this objekt na Container, který do sebe může pojmout sadu jiných částic.
-        /// Z this dat typu Simple vytvoří klon, a ze sebe vytvoří Container; a ten klon původních dat vloží jako první prvek do this nového Containeru
+        /// Pokud this obsahuje nějaká Simple data, pak z this (Simple) dat vytvoří klon, ze sebe vytvoří Container; a ten klon původních Simple dat vloží jako první prvek do this nového Containeru.
         /// </summary>
         private void _SwitchToContainer()
         {
@@ -1120,18 +1157,57 @@ namespace TestDevExpress.AsolDX.News
         }
         #endregion
         #region Public informace
+        /// <summary>
+        /// Tato částice reprezentuje fixní text? Typicky kód výrazu, závorky, název funkce, operátor...
+        /// </summary>
         public bool IsText { get { return (this.__PartType == PartType.Text); } }
-        public bool IsPropertyName { get { return (this.__PartType == PartType.PropertyName); } }
-        public bool IsValue { get { return (this.__PartType == PartType.Value); } }
-        public bool IsValueString { get { return (this.__PartType == PartType.Value && this.__Value is string); } }
-        public bool IsValueInt32 { get { return (this.__PartType == PartType.Value && this.__Value is int); } }
-        public bool IsSimple { get { return (this.__PartType == PartType.Text || this.__PartType == PartType.PropertyName || this.__PartType == PartType.Value); } }
-        public bool IsContainer { get { return (this.__PartType == PartType.Container); } }
+        /// <summary>
+        /// Fixní text. Typicky kód výrazu, závorky, název funkce, operátor...
+        /// </summary>
         public string Text { get { return (IsText ? __Text : null); } set { if (IsText) __Text = value; } }
+        /// <summary>
+        /// Tato částice reprezentuje sloupec? Na vstupu se mu říká PropertyName, reprezentuje databázový sloupec.
+        /// </summary>
+        public bool IsPropertyName { get { return (this.__PartType == PartType.PropertyName); } }
+        /// <summary>
+        /// Sloupec s daty, jeho jméno, bez hranatých závorek. Na vstupu se mu říká PropertyName, reprezentuje databázový sloupec.
+        /// </summary>
         public string PropertyName { get { return (IsPropertyName ? __PropertyName : null); } set { if (IsPropertyName) __PropertyName = value; } }
+        /// <summary>
+        /// Tato částice reprezentuje hodnotu, typicky proměnnou, kterou je možno umístit do DB parametru?
+        /// </summary>
+        public bool IsValue { get { return (this.__PartType == PartType.Value); } }
+        /// <summary>
+        /// Tato částice reprezentuje hodnotu typu String, typicky proměnnou, kterou je možno umístit do DB parametru?
+        /// </summary>
+        public bool IsValueString { get { return (this.__PartType == PartType.Value && this.__Value is string); } }
+        /// <summary>
+        /// Tato částice reprezentuje hodnotu typu Int32, typicky proměnnou, kterou je možno umístit do DB parametru?
+        /// </summary>
+        public bool IsValueInt32 { get { return (this.__PartType == PartType.Value && this.__Value is int); } }
+        /// <summary>
+        /// Hodnota v této částici, typicky proměnná, kterou je možno umístit do DB parametru.
+        /// </summary>
         public object Value { get { return (IsValue ? __Value : null); } set { if (IsValue) __Value = value; } }
+        /// <summary>
+        /// Hodnota v této částici typu String, typicky proměnná, kterou je možno umístit do DB parametru.
+        /// </summary>
         public string ValueString { get { return (IsValueString ? __Value as string : null); } }
+        /// <summary>
+        /// Hodnota v této částici typu Int32, typicky proměnná, kterou je možno umístit do DB parametru.
+        /// </summary>
         public int ValueInt32 { get { return (IsValueInt32 ? (int)__Value : 0); } }
+        /// <summary>
+        /// Tato částice reprezentuje jednomístný prvek (Text, Sloupec, Hodnota). Nikoli pole dalších hodnot?
+        /// </summary>
+        public bool IsSimple { get { return (this.__PartType == PartType.Text || this.__PartType == PartType.PropertyName || this.__PartType == PartType.Value); } }
+        /// <summary>
+        /// Tato částice reprezentuje pole dalších hodnot?
+        /// </summary>
+        public bool IsContainer { get { return (this.__PartType == PartType.Container); } }
+        /// <summary>
+        /// Pole dalších vnořených hodnot.
+        /// </summary>
         public DxExpressionPart[] Items { get { return (IsContainer ? __Items.ToArray() : null); } }
         /// <summary>
         /// Druh částice
@@ -1177,11 +1253,11 @@ namespace TestDevExpress.AsolDX.News
         /// </summary>
         SystemDataFilter
     }
-    internal delegate void DxExpressionCustomHandler(object sender, DxExpressionCustomArgs args);
+    internal delegate void DxConvertorCustomHandler(object sender, DxConvertorCustomArgs args);
     /// <summary>
     /// Argumenty s daty pro custom handler
     /// </summary>
-    internal class DxExpressionCustomArgs : EventArgs
+    internal class DxConvertorCustomArgs : EventArgs
     {
         /// <summary>
         /// Konstruktor
@@ -1189,7 +1265,7 @@ namespace TestDevExpress.AsolDX.News
         /// <param name="language"></param>
         /// <param name="operation"></param>
         /// <param name="operands"></param>
-        public DxExpressionCustomArgs(DxExpressionLanguageType language, DxExpressionOperationType operation, List<DxExpressionPart> operands)
+        public DxConvertorCustomArgs(DxExpressionLanguageType language, DxFilterOperationType operation, List<DxExpressionPart> operands)
         {
             this.Language = language;
             this.Operation = operation;
@@ -1203,7 +1279,7 @@ namespace TestDevExpress.AsolDX.News
         /// <summary>
         /// Druh konkrétní operace
         /// </summary>
-        public DxExpressionOperationType Operation { get; set; }
+        public DxFilterOperationType Operation { get; set; }
         /// <summary>
         /// Jednotlivé operandy. Jejich význam a počet je dán typem operace.
         /// </summary>
@@ -1218,9 +1294,10 @@ namespace TestDevExpress.AsolDX.News
         public DxExpressionPart CustomResult { get; set; }
     }
     /// <summary>
-    /// Typ operace
+    /// Typ operace.
+    /// Obsahuje souhrn všech operací ze všech typů ve fitlračním výrazu.
     /// </summary>
-    internal enum DxExpressionOperationType
+    internal enum DxFilterOperationType
     {
         None,
         Group_And,
@@ -1408,7 +1485,9 @@ namespace TestDevExpress.AsolDX.News
         Function_AddYears,
         Function_DateTimeFromParts,
         Function_DateOnlyFromParts,
-        Function_TimeOnlyFromParts
+        Function_TimeOnlyFromParts,
+
+        Custom_Like
     }
     #endregion
 }
