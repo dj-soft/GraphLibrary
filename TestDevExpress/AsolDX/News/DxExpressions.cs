@@ -519,78 +519,91 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 #endregion
                 #region Function - DateTime 2: IsOutlookInterval
                 case DxFilterOperationType.Function_IsOutlookIntervalBeyondThisYear:
-                    // Příští rok a kdykoliv poté:
+                    // The Boolean Is Beyond This Year operator for date/time values. Requires one argument.
+                    // The operator is defined as follows: date >= First Day of Next Year
                     checkCount(1);
                     dateBegin = new DateTime(now.Year + 1, 1, 1);                        // Začátek příštího roku
                     return DxExpressionPart.CreateFrom(operands[0], " >= ", dateTimeAsText(dateBegin));            // [datum_akce] >= '2026-01-01 00:00:00'
                 case DxFilterOperationType.Function_IsOutlookIntervalLaterThisYear:
-                    // Od zítřka do konce tohoto roku:
+                    // The Boolean Is Later This Year operator for date/time values. Requires one argument.
+                    // The operator is defined as follows: First Day of Next Month <= date < First Day of Next Year
                     checkCount(1);
-                    dateBegin = now.Date.AddDays(1).Date;                                // Začátek zítřka
+                    dateBegin = new DateTime(now.Year, now.Month, 1).AddMonths(1);       // 1. příštího měsíce
                     dateEnd = new DateTime(now.Year + 1, 1, 1);                          // 1.1. příštího roku
                     return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalLaterThisMonth:
-                    // Od zítřka do konce tohoto měsíce:
+                    // The Boolean Is Later This Month operator for date/time values. Requires one argument.
+                    // The operator is defined as follows: Last Day of Next Week < date < First Day of Next Month
+                    //  ... tohle nechápu, ale budiž: ode dneška příští pondělí, od něj další pondělí ráno je Begin; a End je 1. dne dalšího měsíce:
                     checkCount(1);
-                    dateBegin = now.Date.AddDays(1).Date;                                // Začátek zítřka
+                    dateBegin = getWeekBegin(now).AddDays(14);                           // Začátek přespříštího týdne
                     dateEnd = new DateTime(now.Year, now.Month, 1).AddMonths(1);         // 1. příštího měsíce
                     return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalNextWeek:
-                    // V příštím týdnu:
+                    // The Boolean Is Next Week operator for date/time values. Requires one argument.
+                    // The operator is defined as follows: First Day of Next Week <= date <= Last Day of Next Week
                     checkCount(1);
                     dateBegin = getWeekBegin(now).AddDays(7);                            // Začátek příštího týdne
                     dateEnd = dateBegin.AddDays(7);                                      // Začátek přespříštího týdne
                     return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalLaterThisWeek:
-                    // Od zítřka do konce týdne:
+                    // The Boolean Is Later This Week operator for date/time values. Requires one argument.
+                    // The operator is defined as follows: Day After Tomorrow <= date < First Day of Next Week
+                    //  ... tedy Begin není zítra, ale pozítří ráno; konec je před příští pondělí:
                     checkCount(1);
-                    dateBegin = now.AddDays(1).Date;                                     // Začátek zítřka
+                    dateBegin = now.AddDays(2).Date;                                     // Začátek pozítřka
                     dateEnd = getWeekBegin(now).AddDays(7);                              // Začátek příštího týdne
                     return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalTomorrow:
-                    // Celý zítřek:
+                    // The Boolean Is Tomorrow operator for date/time values. Requires one argument.
                     checkCount(1);
-                    dateBegin = now.Date.AddDays(1).Date;
-                    dateEnd = dateBegin.AddDays(1).Date;
+                    dateBegin = now.Date.AddDays(1).Date;                                // Zítra ráno
+                    dateEnd = dateBegin.AddDays(1).Date;                                 // Pozítří ráno
                     return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalToday:
-                    // Celý dnešek:
+                    // The Boolean Is Today operator for date/time values. Requires one argument.
                     checkCount(1);
-                    dateBegin = now.Date;
-                    dateEnd = dateBegin.AddDays(1).Date;
+                    dateBegin = now.Date;                                                // Dnes ráno
+                    dateEnd = dateBegin.AddDays(1).Date;                                 // Zítra
                     return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalYesterday:
-                    // Celý včerejšek:
+                    // The Boolean Is Yesterday operator for date/time values. Requires one argument.
                     checkCount(1);
-                    dateBegin = now.Date.AddDays(-1).Date;
-                    dateEnd = dateBegin.AddDays(1).Date;
+                    dateBegin = now.Date.AddDays(-1).Date;                               // Včera ráno
+                    dateEnd = dateBegin.AddDays(1).Date;                                 // Dnes ráno
                     return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalEarlierThisWeek:
-                    // Od začátku tohoto týdne do včerejška:
+                    // The Boolean Is Earlier This Week operator for date/time values. Requires one argument.
+                    // The operator is defined as follows: First Day of This Week <= date < Yesterday
+                    //  ... tedy konec není dnes ráno, ale už včera ráno!
                     checkCount(1);
                     dateBegin = getWeekBegin(now);                                       // Začátek aktuálního týdne
-                    dateEnd = now.Date;                                                  // Začátek dneška
+                    dateEnd = now.Date.AddDays(-1).Date;                                 // Včera ráno
                     return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalLastWeek:
-                    // V minulém týdnu:
+                    // The Boolean Is Last Week operator for date/time values. Requires one argument.
+                    // The operator is defined as follows: First Day of Last Week <= date < First Day of This Week
                     checkCount(1);
-                    dateEnd = getWeekBegin(now);                                         // Začátek aktuálního týdne
-                    dateBegin = dateEnd.AddDays(-7).Date;                                // Začátek minulého týdne
+                    dateEnd = getWeekBegin(now);                                         // Začátek aktuálního týdne = konec intervalu
+                    dateBegin = dateEnd.AddDays(-7).Date;                                // Začátek minulého týdne = začátek intervalu
                     return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalEarlierThisMonth:
-                    // Datum je od počátku tohoto měsíce do konce dnešního dne:
+                    // The Boolean Is Earlier This Month operator for date/time values. Requires one argument.
+                    // The operator is defined as follows: First Day of This Month <= date < First Day of Last Week
                     checkCount(1);
-                    dateBegin = new DateTime(now.Year, 1, 1);                            // Začátek tohoto roku
-                    dateEnd = now.AddDays(1).Date;                                       // Začátek zítřka
+                    dateBegin = new DateTime(now.Year, now.Month, 1);                    // Začátek tohoto měsíce
+                    dateEnd = getWeekBegin(now).AddDays(-7).Date;                        // Pondělí v minulém týdnu
                     return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalEarlierThisYear:
-                    // Datum je od počátku tohoto roku do konce dnešního dne:
+                    // The Boolean Is Earlier This Year operator for date/time values. Requires one argument.
+                    // The operator is defined as follows: First Day of This Year <= date < First Day of This Month
                     checkCount(1);
                     dateBegin = new DateTime(now.Year, 1, 1);                            // Začátek tohoto roku
-                    dateEnd = now.AddDays(1).Date;                                       // Začátek zítřka
+                    dateEnd = new DateTime(now.Year, now.Month, 1);                      // Začátek tohoto měsíce
                     return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsOutlookIntervalPriorThisYear:
-                    // Datum je kdekoliv před začátkem tohoto roku:
+                    // The Boolean Is Prior This Year operator for date/time values. Requires one argument.
+                    // The operator is defined as follows: date < First Day of This Year
                     checkCount(1);
                     dateEnd = new DateTime(now.Year, 1, 1);                              // Začátek tohoto roku
                     return DxExpressionPart.CreateFrom(operands[0], " < ", dateTimeAsText(dateEnd));            // [datum_akce] < '2025-01-01 00:00:00'
