@@ -269,15 +269,6 @@ namespace TestDevExpress.Forms
 
             StatusText = $"Tvorba GridSplitContainer: {timeInit} sec;     Přidání na Form: {timeAdd} sec;     {dataLog}Generování View: {timeCreateView} sec;     BestFitColumns: {timeFitColumns} sec";
         }
-
-        private void View_SubstituteFilter(object sender, DevExpress.Data.SubstituteFilterEventArgs e)
-        {
-            var filter = e.Filter;
-            var dxExpression = "DX: " + filter?.ToString();
-            var msExpression = "SQL: " + TestDevExpress.AsolDX.News.DxToExpressionConvertor.ConvertToString(filter, AsolDX.News.DxToExpressionLanguageType.MsSqlDatabase);
-            this.StatusText = dxExpression + "  |  " + msExpression;
-        }
-
         private void View_CustomDrawCell(object sender, DevExpress.XtraGrid.Views.Base.RowCellCustomDrawEventArgs e)
         {
             if (e.Column.FieldName == "status")
@@ -285,7 +276,169 @@ namespace TestDevExpress.Forms
                 StatusCodeTable.DrawStatusCellCodeTable(sender, e);
             }
         }
+        #region Řádkový filtr, konverze do MS SQL, Custom convertor pro editační styly
+        private void View_SubstituteFilter(object sender, DevExpress.Data.SubstituteFilterEventArgs e)
+        {
+            var filter = e.Filter;
+            var dxExpression = "DX: " + filter?.ToString();
+            var msExpression = "SQL: " + TestDevExpress.AsolDX.News.DxToExpressionConvertor.ConvertToString(filter, AsolDX.News.DxExpressionLanguageType.MsSqlDatabase, this._RowFilterHandler);
+            this.StatusText = dxExpression + "  |◘◘|◘◘|  " + msExpression;
+        }
+        /// <summary>
+        /// Zdejší metoda je volána vždy, když konvertor filtru DevExpress to MsSql konvertuje jednotlivou operaci ve filtru.
+        /// Metoda dostává v argumentu typ operace a data operace (operandy).<br/>
+        /// Na základě typu operace a operandů může najít sloupec, a pokud sloupec bude implementovat editační styl (Code = Value), pak metoda může zadanou podmínku vyřešit jinak anebo s jinými daty.<br/>
+        /// Pokud například na vstupu je sloupec "StavDokladu", a podmínka je == "Zaúčtováno", a my víme, že sloupec v šabloně s ColumnId = "StavDokladu" zobrazuje editační styl,
+        /// pak změníme podmínku tak, aby v podmínce nebyl výraz editačního stylu:
+        /// <code>(case dokl.status when '1' then 'Pořízeno' when '2' then 'Zaúčtováno' when '3' then 'Stornováno' else 'Jiný' end) = 'Zaúčtováno'</code>
+        /// ale jednodušší podmínka na základě datové hodnoty:
+        /// <code>dokl.status = '2'</code>
+        /// <para/>
+        /// <b><u>Praktická realizace:</u></b> 
+        /// <list type="number">
+        /// <item>Detekovat typ operace <see cref="TestDevExpress.AsolDX.News.DxExpressionCustomArgs.Operation"/></item>
+        /// <item>Podle typu operace určit, zda ji můžeme řešit pro sloupec s editačním stylem</item>
+        /// <item>Podle typu operace určit, ve kterém operandu očekáváme sloupec</item>
+        /// <item>V poli operandů <see cref="TestDevExpress.AsolDX.News.DxExpressionCustomArgs.Operands"/> najít sloupec a najít jeho data v naší evidenci (my víme, co v kterém sloupci zobrazujeme)</item>
+        /// <item>Pokud sloupec obsahuje editační styl, pak vyřešit operaci na úrovni datových hodnot CodeValue a nikoli DisplayValue</item>
+        /// <item>Přeformulovat operaci</item>
+        /// <item>Buď vytvořit zcela novou podmínku a uložit ji do <see cref="TestDevExpress.AsolDX.News.DxExpressionCustomArgs.CustomResult"/></item>
+        /// <item>Anebo jen nahradit zdroj dat (sloupec s DisplayValue za CoeValue) a nahradit hodnoty v dalších operandech (<see cref="TestDevExpress.AsolDX.News.DxExpressionCustomArgs.Operands"/>) podobným způsobem</item>
+        /// </list>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _RowFilterHandler(object sender, TestDevExpress.AsolDX.News.DxExpressionCustomArgs args)
+        {
+            if (_RowFilterIsForCodeValue(args, out var columnInfo))
+                _RowFilterHandlerColumnEditStyle(sender, args, columnInfo);
+        }
+        private bool _RowFilterIsForCodeValue(TestDevExpress.AsolDX.News.DxExpressionCustomArgs args, out IColumnInfo columnInfo)
+        {
+            columnInfo = null;
+            switch (args.Operation)
+            {   // Tyto operace budeme řešit, jiné neumíme:
+                case AsolDX.News.DxExpressionOperationType.Binary_Equal:
+                case AsolDX.News.DxExpressionOperationType.Binary_NotEqual:
+                case AsolDX.News.DxExpressionOperationType.In:
+                    // Umíme je řešit tehdy, když první operand obsahuje sloupec, a tento sloupec má editační styl; a další operandy jsou ValueString:
+                    if (isFirstOperandColumnEditStyle(out  columnInfo) && isNextOperandsValueString())
+                        return true;
+                    break;
+            }
+            // Daná operace řádkového filtru nebude řešena pomocí editačního stylu:
+            return false;
 
+            // Vrátí true, pokud operand [0] je SLoupec, který známe a který má Editační styl
+            bool isFirstOperandColumnEditStyle(out IColumnInfo colInfo)
+            {
+                colInfo = null;
+                // Operand [0] musí existovat, musí to být Sloupec, musíme ten sloupec najít, a musí mít editační styl:
+                return (args.Operands != null && args.Operands.Count >= 1 && args.Operands[0].IsPropertyName && _TryFindColumn(args.Operands[0].PropertyName, out colInfo) && colInfo.HasEditStyle);
+            }
+            // Vrátí true, pokud všechny operandy počínaje indexem 1 jsou stringová hodnota (=odpovídá DisplayValue)
+            // Vrátí false, pokud pole operandů nemá 2 (a více) operandů, anebo některý není ValueString
+            bool isNextOperandsValueString()
+            {
+                int count = args.Operands?.Count ?? 0;
+                if (count > 1)
+                {
+                    for (int i = 1; i < count; i++)
+                    {   // Počínaje indexem [1], protože na [0] je Sloupec !
+                        // Pokud Value není String, pak false = nelze konvertovat např. proměnnou na CodeValue:
+                        if (!args.Operands[i].IsValueString) return false;
+                    }
+                    return true;
+                }
+                // Není dostatek operandů:
+                return false;
+            }
+        }
+        private void _RowFilterHandlerColumnEditStyle(object sender, TestDevExpress.AsolDX.News.DxExpressionCustomArgs args, IColumnInfo columnInfo)
+        {
+            switch (args.Operation)
+            {   // Tyto operace budeme řešit, jiné neumíme:
+                case AsolDX.News.DxExpressionOperationType.Binary_Equal:
+                case AsolDX.News.DxExpressionOperationType.Binary_NotEqual:
+                case AsolDX.News.DxExpressionOperationType.In:
+                    // Pro tyto operace neměníme formulaci výrazu, jen vyměníme sloupec a hodnoty:
+                    //  Namísto:    columnDisplay = "Zaúčtováno"           Namísto:    columnDisplay IN ("Zaúčtováno", "Stornováno")
+                    //  Vložíme:    columnCode    = 2                      Vložíme:    columnCode    IN (2,            3)
+                    foreach (var operand in args.Operands)
+                    {
+                        if (operand.IsPropertyName)
+                            operand.PropertyName = columnInfo.ColumnSourceValue;
+                        else if (operand.IsValue)
+                            operand.Value = searchCodeValue(operand.Value);
+                    }
+                    break;
+            }
+
+
+            // Zadanou hodnotu (pokud je String) vyhledá v položkách editačního stylu aktuálního sloupce (columnInfo) a vrátí její odpovídajcí CodeValue. Pokud nenajde, vracívstupní hodnotu.
+            object searchCodeValue(object displayValue)
+            {
+                if (displayValue is string displayText && columnInfo.EditStyleValues.TryFindFirst(out var editStyleItem, kvp => String.Equals(kvp.Value, displayText, StringComparison.Ordinal)))
+                    return editStyleItem.Key;
+                return displayValue;
+            }
+        }
+        private bool _TryFindColumn(string columnId, out IColumnInfo columnInfo)
+        {
+            // Toto je sample metoda, reálně se musí napojit na reálné sloupce šablony !!!
+            if (String.Equals(columnId, "period", StringComparison.OrdinalIgnoreCase))
+            {
+                if (__PeriodColumn is null)
+                {
+                    var periodColumn = new IColumnInfo()
+                    {
+                        ColumnId = "Period",
+                        ColumnSourceDisplay = "case tab01.recper when 202501 then '2025-01' when 202502 then '2025-02' when 202501 then '2025-03' else '' end",
+                        ColumnSourceValue = "tab01.recper",
+                        HasEditStyle = true
+                    };
+
+                    var values = new List<KeyValuePair<object, string>>();
+                    for (int yr = 2020; yr <= 2030; yr++)
+                        for (int mo = 1; mo <= 12; mo++)
+                            values.Add(new KeyValuePair<object, string>(100 * yr + mo, $"{yr}-{mo:D2}"));
+                    periodColumn.EditStyleValues = values.ToArray();
+
+                    __PeriodColumn = periodColumn;
+                }
+                columnInfo = __PeriodColumn;
+                return true;
+            }
+            columnInfo = null;
+            return false;
+        }
+        private IColumnInfo __PeriodColumn;
+        internal class IColumnInfo      // měl by to být interface
+        {
+            /// <summary>
+            /// Alias sloupce
+            /// </summary>
+            public string ColumnId;
+            /// <summary>
+            /// Zdroj dat ve sloupci: DisplayText, typicky výraz:
+            /// <code>(case dokl.status when '1' then 'Pořízeno' when '2' then 'Zaúčtováno' when '3' then 'Stornováno' else 'Jiný' end) = 'Zaúčtováno'</code>
+            /// </summary>
+            public string ColumnSourceDisplay;
+            /// <summary>
+            /// Zdroj dat ve sloupci: CodeValue, typicky sloupec tabulky:
+            /// <code>dokl.status</code>
+            /// </summary>
+            public string ColumnSourceValue;
+            /// <summary>
+            /// Obsahuje true, pokud tento sloupec zobrazuje editační styl
+            /// </summary>
+            public bool HasEditStyle;
+            /// <summary>
+            /// Položky editačního stylu: Key = CodeValue; Value = DisplayText
+            /// </summary>
+            public KeyValuePair<object, string>[] EditStyleValues;
+        }
+        #endregion
         #region Buňka s ImageComboBox jako CodeTable
         private void PrepareEditStyleForStatus(DevExpress.XtraGrid.Views.Grid.GridView view)
         {

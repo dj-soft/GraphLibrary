@@ -316,6 +316,35 @@ namespace Noris.Clients.Win.Components.AsolDX
             return result;
         }
         /// <summary>
+        /// Metoda zkusí najít první prvek vyhovující nejbližší z daných podmínek, pak vrátí true a nalezený prvek uloží do <paramref name="foundItem"/>.
+        /// Na vstupu může být více než jedna funkce podmínek (parametr <paramref name="predicates"/>):
+        /// nejprve se použije první podmínka, a pokud se nenajde žádný jí vyhovující prvek, zkusí se další a další...
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="foundItem"></param>
+        /// <param name="predicates"></param>
+        public static bool TryFindFirst<T>(this IEnumerable<T> items, out T foundItem, params Func<T, bool>[] predicates)
+        {
+            if (items != null && predicates != null)
+            {
+                foreach (var predicate in predicates)
+                {
+                    if (predicate is null) continue;
+                    foreach (T item in items)
+                    {
+                        if (predicate(item))
+                        {
+                            foundItem = item;
+                            return true;
+                        }
+                    }
+                }
+            }
+            foundItem = default;
+            return false;
+        }
+        /// <summary>
         /// Metoda vrací true, pokud this kolekce obsahuje duplictní hodnoty.
         /// Metoda vrátí true ihned po nalezení první duplicity, neřeší počet duplicit ani duplicitní záznamy.
         /// </summary>
