@@ -80,7 +80,7 @@ namespace TestDevExpress.AsolDX.DxFiltering
         private DxConvertorCustomHandler __CustomHandler;
         private bool __HasCustomHandler;
         #endregion
-        #region Visitors
+        #region Visitors : jednotlivé typy operací
         DxExpressionPart DxFilter.ICriteriaVisitor<DxExpressionPart>.Visit(DxFilter.GroupOperator groupOperator)
         {
             var dxOperands = ConvertOperands(ConvertOperandsMode.RemoveEmptyItems, groupOperator.Operands);
@@ -168,6 +168,14 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 operands = args.Operands;
             }
             int count = operands?.Count ?? -1;
+
+            // Viz wiki:
+
+            //  DxFilter:  https://docs.devexpress.com/CoreLibraries/DevExpress.Data.Filtering.FunctionOperatorType
+            //  Numeric:   https://learn.microsoft.com/en-us/sql/t-sql/functions/mathematical-functions-transact-sql?view=sql-server-ver17
+            //  String:    https://learn.microsoft.com/en-us/sql/t-sql/functions/string-functions-transact-sql?view=sql-server-ver17
+            //  DateTime:  https://learn.microsoft.com/en-us/sql/t-sql/functions/date-and-time-data-types-and-functions-transact-sql?view=sql-server-ver17
+
             // Řádkový filtr se bude opírat o aktuální čas na serveru, beztak to tak dělal i dříve...
             var now = DateTime.Now;
             DateTime dateBegin, dateEnd;
@@ -644,9 +652,9 @@ namespace TestDevExpress.AsolDX.DxFiltering
                     checkCount(3);
                     return DxExpressionPart.CreateFrom("(", operands[0], " >= ", operands[1], " and ", operands[0], " < ", operands[2], ")");
                 case DxFilterOperationType.Function_InDateRange:
-                    // Den v rozmezí
-
-                    break;
+                    // Den v rozmezí od - do, ale zadaný v proměnných Od-Do:
+                    checkCount(3);
+                    return DxExpressionPart.CreateFrom("(cast(", operands[0], " as date) >= cast(", operands[1], " as date) and cast(", operands[0], " as date) < cast(day, 1, dateadd(", operands[2], ") as date))");
                 case DxFilterOperationType.Function_IsJanuary:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("month(", operands[0], ") = 1");
@@ -686,44 +694,128 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 #endregion
                 #region Function - DateTime 4: DateDiff...
                 case DxFilterOperationType.Function_DateDiffTick:
-                    break;
+                    // Returns the number of tick boundaries between the specified dates.
+                    // The operands are:
+                    //  1 - the DateTime value that is the start date.
+                    //  2 - the DateTime value that is the end date.                    
+                    checkCount(2);
+                    return DxExpressionPart.CreateFrom("datediff(microsecond, ", operands[0], ",", operands[1], ")");  // DATEDIFF ( datepart , startdate , enddate );  microsecond
                 case DxFilterOperationType.Function_DateDiffSecond:
-                    break;
+                    // Returns the number of second boundaries between the specified dates/ times.
+                    // The operands are:
+                    //  1 - the DateTime value that is the start date.
+                    //  2 - the DateTime value that is the end date.                    
+                    checkCount(2);
+                    return DxExpressionPart.CreateFrom("datediff(second, ", operands[0], ",", operands[1], ")");       // DATEDIFF ( datepart , startdate , enddate );  second
                 case DxFilterOperationType.Function_DateDiffMilliSecond:
-                    break;
+                    // Returns the number of millisecond boundaries between the specified dates/ times.
+                    // The operands are:
+                    //  1 - the DateTime value that is the start date.
+                    //  2 - the DateTime value that is the end date.                    
+                    checkCount(2);
+                    return DxExpressionPart.CreateFrom("datediff(millisecond, ", operands[0], ",", operands[1], ")");  // DATEDIFF ( datepart , startdate , enddate );  millisecond
                 case DxFilterOperationType.Function_DateDiffMinute:
-                    break;
+                    // Returns the number of minute boundaries between the specified dates/ times.
+                    // The operands are:
+                    //  1 - the DateTime value that is the start date.
+                    //  2 - the DateTime value that is the end date.                    
+                    checkCount(2);
+                    return DxExpressionPart.CreateFrom("datediff(minute, ", operands[0], ",", operands[1], ")");       // DATEDIFF ( datepart , startdate , enddate );  minute
                 case DxFilterOperationType.Function_DateDiffHour:
-                    break;
+                    // Returns the number of hour boundaries between the specified dates/ times.
+                    // The operands are:
+                    //  1 - the DateTime value that is the start date.
+                    //  2 - the DateTime value that is the end date.                    
+                    checkCount(2);
+                    return DxExpressionPart.CreateFrom("datediff(hour, ", operands[0], ",", operands[1], ")");         // DATEDIFF ( datepart , startdate , enddate );  hour
                 case DxFilterOperationType.Function_DateDiffDay:
-                    break;
+                    // Returns the number of day boundaries between the specified dates/ times.
+                    // The operands are:
+                    //  1 - the DateTime value that is the start date.
+                    //  2 - the DateTime value that is the end date.                    
+                    checkCount(2);
+                    return DxExpressionPart.CreateFrom("datediff(day, ", operands[0], ",", operands[1], ")");          // DATEDIFF ( datepart , startdate , enddate );  day
                 case DxFilterOperationType.Function_DateDiffMonth:
-                    break;
+                    // Returns the number of month boundaries between the specified dates/ times.
+                    // The operands are:
+                    //  1 - the DateTime value that is the start date.
+                    //  2 - the DateTime value that is the end date.                    
+                    checkCount(2);
+                    return DxExpressionPart.CreateFrom("datediff(month, ", operands[0], ",", operands[1], ")");        // DATEDIFF ( datepart , startdate , enddate );  month
                 case DxFilterOperationType.Function_DateDiffYear:
-                    break;
+                    // Returns the number of year boundaries between the specified dates/ times.
+                    // The operands are:
+                    //  1 - the DateTime value that is the start date.
+                    //  2 - the DateTime value that is the end date.                    
+                    checkCount(2);
+                    return DxExpressionPart.CreateFrom("datediff(year, ", operands[0], ",", operands[1], ")");         // DATEDIFF ( datepart , startdate , enddate );  year
                 #endregion
                 #region Function - DateTime 5: GetPart...
                 case DxFilterOperationType.Function_GetDate:
-                    break;
+                    // Returns the date part of the specified date.
+                    // The operand must be of the DateTime / DateOnly type.
+                    // The return value is a DateTime object with the same date part where the time part is 00:00:00, or DateOnly. The return value type depends on the operand type.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("cast(", operands[0], " as date)");                             // cast(datum_akce as date)
                 case DxFilterOperationType.Function_GetMilliSecond:
-                    break;
+                    // Returns the milliseconds value in the specified date/time.
+                    // The operand must be of the DateTime / TimeOnly type.
+                    // The return value is an integer in the range between 0 and 999.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("datepart(millisecond, ", operands[0], ")");                    // DATEPART ( datepart , date ) ;  millisecond
                 case DxFilterOperationType.Function_GetSecond:
-                    break;
+                    // Returns the seconds value in the specified date/time.
+                    // The operand must be of the DateTime / TimeOnly type.
+                    // The return value is an integer in the range between 0 and 59.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("datepart(seconds, ", operands[0], ")");                        // DATEPART ( datepart , date ) ;  seconds
                 case DxFilterOperationType.Function_GetMinute:
-                    break;
+                    // Returns the minute value in the specified date/time.
+                    // The operand must be of the DateTime / TimeOnly type.
+                    // The return value is an integer in the range between 0 and 59.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("datepart(minute, ", operands[0], ")");                         // DATEPART ( datepart , date ) ;  minute
                 case DxFilterOperationType.Function_GetHour:
-                    break;
+                    // Returns the hour value in the specified date/time.
+                    // The operand must be of the DateTime / TimeOnly type.
+                    // The return value is an integer in the range between 0 and 23.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("datepart(hour, ", operands[0], ")");                           // DATEPART ( datepart , date ) ;  hour
                 case DxFilterOperationType.Function_GetDay:
-                    break;
+                    // Returns the day value in the specified date/time.
+                    // The operand must be of the DateTime / TimeOnly type.
+                    // The return value is an integer in the range between 1 and 31.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("datepart(day, ", operands[0], ")");                            // DATEPART ( datepart , date ) ;  day
                 case DxFilterOperationType.Function_GetMonth:
-                    break;
+                    // Returns the month value in the specified date/time.
+                    // The operand must be of the DateTime / TimeOnly type.
+                    // The return value is an integer and depends on the current calendar.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("datepart(month, ", operands[0], ")");                         // DATEPART ( datepart , date ) ;  month
                 case DxFilterOperationType.Function_GetYear:
-                    break;
+                    // Returns the year value in the specified date/time.
+                    // The operand must be of the DateTime / TimeOnly type.
+                    // The return value is an integer in the range between 0 and 9999.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("datepart(year, ", operands[0], ")");                          // DATEPART ( datepart , date ) ;  year
                 case DxFilterOperationType.Function_GetDayOfWeek:
-                    break;
+                    // Returns the day of the week value in the specified date/time.
+                    // The operand must be of the DateTime / TimeOnly type.
+                    // The return value is an integer value of the DayOfWeek enumeration. It does not depend on the current culture.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("datepart(weekday, ", operands[0], ")");                        // DATEPART ( datepart , date ) ;  weekday
                 case DxFilterOperationType.Function_GetDayOfYear:
-                    break;
+                    // Gets the day of the year in the specified date.
+                    // The operand must be of the DateTime / TimeOnly type.
+                    // The return value is an integer in the range between 1 and 366.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("datepart(dayofyear, ", operands[0], ")");                      // DATEPART ( datepart , date ) ;  dayofyear
                 case DxFilterOperationType.Function_GetTimeOfDay:
+                    // Gets the time part of the specified date.
+                    // The operand must be of the DateTime type.
+                    // The return value is the Int64 object that is the number of 100 - nanosecond ticks that have elapsed since midnight.
+                    checkCount(1);
                     break;
                 #endregion
                 #region Function - DateTime 6: Current
@@ -879,6 +971,7 @@ namespace TestDevExpress.AsolDX.DxFiltering
             {
                 return DxExpressionPart.CreateFrom("(", value, " >= ", dateTimeAsText(dBegin), " and ", value, " < ", dateTimeAsText(dEnd), ")");
             }
+            // Vrátí datum odpovídající prvnímu dni týdne, ve kterém je daný vstup, čas bude 00:00
             DateTime getWeekBegin(DateTime dateTime)
             {
                 var fdow = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;              // Který den v týdnu v aktuální kultuře reprezentuje počátek týdne?
@@ -894,6 +987,7 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 if (count ==  validCount) return;
                 failCount(validCount.ToString());
             }
+            // Ohlásí chybu v počtu parametrů s daným textem obsahujícím očekávaný počet parametrů
             void failCount(string countInfo)
             {
                 if (count < 0)
