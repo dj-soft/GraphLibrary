@@ -948,6 +948,7 @@ namespace TestDevExpress.Forms
                 case AsolDX.DxFiltering.DxFilterOperationType.Binary_NotEqual:
                 case AsolDX.DxFiltering.DxFilterOperationType.In:
 
+                // Tyto operace (=je zadán textový filtr na DisplayValue) budeme řešit vyfiltrováním odpovídajících hodnot DisplayValue, a poté provedeme náhradu textové podmínky (dispval like '%ort%') za podmínku typu: (Code in (val1, val2, val3))
                 case AsolDX.DxFiltering.DxFilterOperationType.Function_Contains:
                 case AsolDX.DxFiltering.DxFilterOperationType.Function_StartsWith:
                 case AsolDX.DxFiltering.DxFilterOperationType.Function_EndsWith:
@@ -1007,6 +1008,7 @@ namespace TestDevExpress.Forms
                     }
                     break;
 
+                // Tyto operace (=je zadán textový filtr na DisplayValue) budeme řešit vyfiltrováním odpovídajících hodnot DisplayValue, a poté provedeme náhradu textové podmínky (dispval like '%ort%') za podmínku typu: (Code in (val1, val2, val3))
                 case AsolDX.DxFiltering.DxFilterOperationType.Function_Contains:
                 case AsolDX.DxFiltering.DxFilterOperationType.Function_StartsWith:
                 case AsolDX.DxFiltering.DxFilterOperationType.Function_EndsWith:

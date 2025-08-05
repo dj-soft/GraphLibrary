@@ -85,7 +85,7 @@ namespace TestDevExpress.AsolDX.DxFiltering
         #endregion
     }
     #endregion
-    #region class DxCriteriaVisitor  : Rekurzivní konverzní třída pro vlastní převod DxFilter.CriteriaOperator do výsledných částí DxExpressionPart
+    #region class DxCriteriaVisitor : Vlastní konverzní třída pro (rekurzivní) převod DxFilter.CriteriaOperator do výsledných částí DxExpressionPart
     /// <summary>
     /// <see cref="DxCriteriaVisitor"/> : Rekurzivní konverzní třída pro vlastní převod <see cref="DxFilter.CriteriaOperator"/> do výsledných částí <see cref="DxExpressionPart"/>
     /// </summary>
@@ -152,6 +152,8 @@ namespace TestDevExpress.AsolDX.DxFiltering
             if (functionOperator.OperatorType == DxFilter.FunctionOperatorType.Custom && dxOperands.Count > 0 && dxOperands[0].IsValueString)
             {   // Funkce může být i Custom, pak její vlastní název je přítomen v prvním operandu typu String:
                 operation = ConvertOperation(FamilyType.Custom, dxOperands[0].ValueString);
+                // První operand odeberu, protože obsahoval název operace => a tu jsme převedli do "operation", a poté by tam překážel (mezi operandy typu Sloupec, Hodnota atd):
+                dxOperands.RemoveAt(0);
             }
             else
             {   // Standardní funkce z rodiny DevExpress:
@@ -1190,10 +1192,13 @@ namespace TestDevExpress.AsolDX.DxFiltering
                     break;
                 #endregion
                 #region Function - Custom: Like, ...
-                // POZOR: custom funkce mají v operandu [0] uložen název funkce !!!    Vlastní operandy jsou tedy na pozici [1] a další   !!!
+                // Custom funkce mají v nativním poli operandů na pozici [0] uložen název funkce, ale předchozí kód tento název funkce odebral (a z jeho hodnoty vygeneroval kód operace).
+                // Ale v poli 'operands' je tento první operand odebrán, a toto pole tedy obsahuje pouze reálné datové operandy !!!
                 case DxFilterOperationType.Custom_Like:
-                    checkCount(3);
-                    return DxExpressionPart.CreateFrom(operands[1], " like ", stringAsValue(operands[2], "%", "%"));             // [nazev] like '%adr%'    nebo    [nazev] like ('%' + Funkce(x,y) + '%')
+                    checkCount(2);
+                    // v této operaci NEPŘIDÁVÁM prefix % ; ani suffix %   ten by měl být dodán v hodnotě od uživatele. Proto jsme LIKE, ne jako v operaci:  Function_Contains atd.
+                    // Jsme obdoba Binary_Like, tam se taky prefix nepřidává.
+                    return DxExpressionPart.CreateFrom(operands[0], " like ", stringAsValue(operands[1]));        // [nazev] like '%hodnota%';
                     #endregion
             }
 
@@ -1272,24 +1277,27 @@ namespace TestDevExpress.AsolDX.DxFiltering
             // Pokud daná část obsahuje value, typu String, pak výstupem je Value s touto hodnotou, s možností přidání textu před/po. Používá se u proměnných, které chceme modifikovat.
             object stringAsValue(DxExpressionPart part, string addBefore = null, string addAfter = null)
             {
+                bool hasBefore = !String.IsNullOrEmpty(addBefore);
+                bool hasAfter = !String.IsNullOrEmpty(addAfter);
                 addBefore = addBefore ?? "";
                 addAfter = addAfter ?? "";
 
                 if (part.IsValue)
                 {   // Obsahuje hodnotu => pouze upravíme jeho hodnotu (Value), a vrátíme týž objekt:
                     //   Objekt se vyskytuje jen v jednom místě, a proto jej můžeme modifikovat = nezměníme jinou část podmínky!
-                    part.Value = $"{addBefore}{part.Value}{addAfter}";
+                    if (part.IsValueString)
+                        part.Value = mergeText(part.ValueString, addBefore, addAfter);
+                    else
+                        part.Value = $"{addBefore}{part.Value}{addAfter}";
                     return part;
                 }
                 if (part.IsText)
                 {   // Obsahuje Text => vytvoříme new instanci typu Value (obsahující Before + Text + After), a tu pak vrátíme:
-                    var valuePart = DxExpressionPart.CreateValue($"{addBefore}{part.Value}{addAfter}");
+                    var valuePart = DxExpressionPart.CreateValue(mergeText(part.Text, addBefore, addAfter));
                     return valuePart;
                 }
 
                 // Obsahuje něco jiného = například vzorec: pak musíme vrátit new část typu Container, obsahující texty Before a/nebo After:
-                bool hasBefore = !String.IsNullOrEmpty(addBefore);
-                bool hasAfter = !String.IsNullOrEmpty(addAfter);
                 //  Pokud ale nemáme nic přidat, nemusíme nic řešit:
                 if (!hasBefore && !hasAfter) return part;
 
@@ -1330,6 +1338,16 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 else
                     throw new ArgumentException($"Filter condition '{operation}' requires {countInfo} operators, but {count} valid operators are passed.");
             }
+        }
+        // Vrátí dodaný text, opatřený prefixem (pokud je zadán, a text s ním dosud nezačíná) a suffixem (pokud je zadán, a text s ním dosud nekončí)
+        string mergeText(string text, string prefix, string suffix)
+        {
+            string result = text ?? "";
+            if (!String.IsNullOrEmpty(prefix) && !result.StartsWith(prefix))
+                result = prefix + result;
+            if (!String.IsNullOrEmpty(suffix) && !result.EndsWith(suffix))
+                result = result + suffix;
+            return result;
         }
         /// <summary>
         /// Konvertuje DX operaci na zdejší operaci, na základě názvu grupy a názvu DX operace (string TryParse <see cref="DxFilterOperationType"/>).
@@ -1505,7 +1523,7 @@ namespace TestDevExpress.AsolDX.DxFiltering
         #endregion
     }
     #endregion
-    #region class DxExpressionPart : Část výrazu v procesu skládání výsledku z filtru do cílového jazyka
+    #region class DxExpressionPart  : Část výrazu v procesu skládání výsledku z filtru do cílového jazyka
     /// <summary>
     /// <see cref="DxExpressionPart"/> : Část výrazu v procesu skládání výsledku z filtru do cílového jazyka
     /// </summary>
