@@ -58,6 +58,28 @@ namespace TestDevExpress.AsolDX.DxFiltering
         }
         internal static string FormatValue(object value, DxExpressionLanguageType language)
         {
+            if (value is null) return "NULL";
+
+            if (value is Byte) return ((Byte)value).ToString();
+            if (value is SByte) return ((SByte)value).ToString();
+
+            if (value is UInt16) return ((UInt16)value).ToString();
+            if (value is UInt32) return ((UInt32)value).ToString();
+            if (value is UInt64) return ((UInt64)value).ToString();
+            if (value is Int16) return ((Int16)value).ToString();
+            if (value is Int32) return ((Int32)value).ToString();
+            if (value is Int64) return ((Int64)value).ToString();
+
+            if (value is Single) return ((Single)value).ToString().Replace(",", ".");
+            if (value is Double) return ((Double)value).ToString().Replace(",", ".");
+            if (value is Decimal) return ((Decimal)value).ToString().Replace(",", ".");
+
+            if (value is DateTime) { var dt = (DateTime)value; return $"convert(datetime, '{dt.Year:D4}-{dt.Month:D2}-{dt.Day:D2} {dt.Hour:D2}:{dt.Minute:D2}:{dt.Second:D2}.{dt.Millisecond:D3}', 121)"; }
+
+            if (value is Boolean) { var bv = (Boolean)value; return bv ? "1" : "0"; }
+
+            if (value is String) { var sv = (String)value; return "'" + sv.Replace("'", "''") + "'"; }
+
             return $"'{value}'";
         }
         #endregion
@@ -301,7 +323,7 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 case DxFilterOperationType.Function_IsNullOrEmpty:
                     // Returns True if the specified value is null or an empty string. Otherwise, returns False.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("(", operands[0], " is null or len(trim(", operands[0], ")) = 0)");
+                    return DxExpressionPart.CreateFrom("(", operands[0], " is null or len(", operands[0], ") = 0)");
                 #endregion
                 #region Function - String 1: Trim. Len, Substring, Upper, Lower, Concat, ...
                 case DxFilterOperationType.Function_Trim:
@@ -809,7 +831,7 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 case DxFilterOperationType.Function_InDateRange:
                     // Den v rozmezí od - do, ale zadaný v proměnných Od-Do:
                     checkCount(3);
-                    return DxExpressionPart.CreateFrom("(cast(", operands[0], " as date) >= cast(", operands[1], " as date) and cast(", operands[0], " as date) < cast(day, 1, dateadd(", operands[2], ") as date))");
+                    return DxExpressionPart.CreateFrom("(", operands[0], " >= cast(", operands[1], " as date) and ", operands[0], " < dateadd(day, 1, cast(", operands[2], " as date)))");
                 case DxFilterOperationType.Function_IsJanuary:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("month(", operands[0], ") = 1");
