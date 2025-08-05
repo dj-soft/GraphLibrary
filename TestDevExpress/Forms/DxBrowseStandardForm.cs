@@ -949,8 +949,8 @@ namespace TestDevExpress.Forms
                 case AsolDX.DxFiltering.DxFilterOperationType.In:
 
                 // Tyto operace (=je zadán textový filtr na DisplayValue) budeme řešit vyfiltrováním odpovídajících hodnot DisplayValue, a poté provedeme náhradu textové podmínky (dispval like '%ort%') za podmínku typu: (Code in (val1, val2, val3))
-                case AsolDX.DxFiltering.DxFilterOperationType.Function_Contains:
                 case AsolDX.DxFiltering.DxFilterOperationType.Function_StartsWith:
+                case AsolDX.DxFiltering.DxFilterOperationType.Function_Contains:
                 case AsolDX.DxFiltering.DxFilterOperationType.Function_EndsWith:
                 case AsolDX.DxFiltering.DxFilterOperationType.Binary_Like:
                 case AsolDX.DxFiltering.DxFilterOperationType.Custom_Like:
@@ -993,14 +993,16 @@ namespace TestDevExpress.Forms
 
             switch (args.Operation)
             {   // Tyto operace budeme řešit, jiné neumíme:
+                // a) Základní porovnání:
                 case AsolDX.DxFiltering.DxFilterOperationType.Binary_Equal:
                 case AsolDX.DxFiltering.DxFilterOperationType.Binary_NotEqual:
+                // b) IN (list)
                 case AsolDX.DxFiltering.DxFilterOperationType.In:
                     // Pro tyto operace neměníme formulaci výrazu, jen vyměníme sloupec a hodnoty:
                     //  Namísto:    columnDisplay = "Zaúčtováno"           Namísto:    columnDisplay IN ("Zaúčtováno", "Stornováno")
                     //  Vložíme:    columnCode    = 2                      Vložíme:    columnCode    IN (2,            3)
                     foreach (var operand in args.Operands)
-                    {
+                    {   // Všechny hodnoty (operátor IN jich má mnoho):
                         if (operand.IsPropertyName)
                             operand.PropertyName = columnInfo.ColumnSourceValue;
                         else if (operand.IsValue)
@@ -1008,20 +1010,22 @@ namespace TestDevExpress.Forms
                     }
                     break;
 
-                // Tyto operace (=je zadán textový filtr na DisplayValue) budeme řešit vyfiltrováním odpovídajících hodnot DisplayValue, a poté provedeme náhradu textové podmínky (dispval like '%ort%') za podmínku typu: (Code in (val1, val2, val3))
-                case AsolDX.DxFiltering.DxFilterOperationType.Function_Contains:
+                // c) Tyto operace (=je zadán textový filtr na DisplayValue) budeme řešit vyfiltrováním odpovídajících hodnot DisplayValue,
+                //     a poté provedeme náhradu textové podmínky (dispval like '%ort%') za podmínku typu: (Code in (val1, val2, val3))
                 case AsolDX.DxFiltering.DxFilterOperationType.Function_StartsWith:
+                case AsolDX.DxFiltering.DxFilterOperationType.Function_Contains:
                 case AsolDX.DxFiltering.DxFilterOperationType.Function_EndsWith:
                 case AsolDX.DxFiltering.DxFilterOperationType.Binary_Like:
                 case AsolDX.DxFiltering.DxFilterOperationType.Custom_Like:
                     // Pro tyto operace vyhledáme odpovídající CodeValues (podle zadaného textu, operátoru a přítomných hodnot),
                     //   a poté vyměníme podmínku namísto "Contains(DisplayValue, "O")"
                     //   vytvoříme podmínku "CodeValue in (soupis code hodnot...)"
-                    var propertyOperand = args.Operands.FirstOrDefault(op => op.IsPropertyName);
-                    var valueOperand = args.Operands.FirstOrDefault(op => op.IsValueString);
+                    var propertyOperand = args.Operands.FirstOrDefault(op => op.IsPropertyName);             // Sloupec
+                    var valueOperand = args.Operands.FirstOrDefault(op => op.IsValueString);                 // Zadaná hodnota
                     if (propertyOperand != null && valueOperand != null)
                     {
-                        var codeValues = columnInfo.EditStyleValues.Where(es => isDisplayValue(es.Value, valueOperand.ValueString)).ToArray();
+                        var regex = getLikePattern(args.Operation, valueOperand.ValueString);
+                        var codeValues = columnInfo.EditStyleValues.Where(es => isDisplayValue(es.Value, regex)).ToArray();
                         switch (codeValues.Length)
                         {
                             case 0:
@@ -1034,7 +1038,7 @@ namespace TestDevExpress.Forms
                                 args.Operation = AsolDX.DxFiltering.DxFilterOperationType.Binary_Equal;
                                 args.Operands = new List<AsolDX.DxFiltering.DxExpressionPart>();
                                 args.Operands.Add(AsolDX.DxFiltering.DxExpressionPart.CreateProperty(columnInfo.ColumnSourceValue));
-                                args.Operands.Add(AsolDX.DxFiltering.DxExpressionPart.CreateValue(AsolDX.DxFiltering.DxExpressionPart.CreateValue(codeValues[0].Key)));
+                                args.Operands.Add(AsolDX.DxFiltering.DxExpressionPart.CreateValue(codeValues[0].Key));
                                 break;
                             default:
                                 args.Operation = AsolDX.DxFiltering.DxFilterOperationType.In;
@@ -1055,10 +1059,88 @@ namespace TestDevExpress.Forms
                     return editStyleItem.Key;
                 return displayValue;
             }
-
-            bool isDisplayValue(string itemDisplayValue, string filterText)
+            // Vrátí Regex odpovídající danému operátoru (typ podmínky) a zadanému textu podmínky
+            System.Text.RegularExpressions.Regex getLikePattern(AsolDX.DxFiltering.DxFilterOperationType operation, string filterText)
             {
-                return (itemDisplayValue.IndexOf(filterText, StringComparison.CurrentCultureIgnoreCase) >= 0);
+                string pattern = "";
+                switch (operation)
+                {
+                    // Tyto tři operace pro běžné hodnoty převádíme na LIKE '%text%', takže musíme i tady:
+                    case AsolDX.DxFiltering.DxFilterOperationType.Function_StartsWith:
+                        pattern = $"^{filterText}%";
+                        break;
+                    case AsolDX.DxFiltering.DxFilterOperationType.Function_Contains:
+                        pattern = $"%{filterText}%";
+                        break;
+                    case AsolDX.DxFiltering.DxFilterOperationType.Function_EndsWith:
+                        pattern = $"%{filterText}$";
+                        break;
+                    case AsolDX.DxFiltering.DxFilterOperationType.Binary_Like:
+                    case AsolDX.DxFiltering.DxFilterOperationType.Custom_Like:
+                        pattern = $"^{filterText}$";
+                        break;
+                }
+
+                // Konverze SQL to RegEx:
+                // Escapování funkčních znaků:
+                replace(ref pattern, @"\", @"\\");
+                replace(ref pattern, @".", @"\.");
+                replace(ref pattern, @"*", @"\*");
+                replace(ref pattern, @"+", @"\+");
+                replace(ref pattern, @"?", @"\?");
+                replace(ref pattern, @"(", @"\(");
+                replace(ref pattern, @")", @"\)");
+                replace(ref pattern, @"{", @"\{");
+                replace(ref pattern, @"}", @"\}");
+                replace(ref pattern, @"/", @"\/");
+
+                // Wildcards:
+                replace(ref pattern, @"%", @".*");
+                replace(ref pattern, @"_", @".");
+
+                // Výčet znaků [abcd] se nekonvertuje, je v SQL i v RegEx shodný.
+
+                // Hotovo, case - insensitive:
+                System.Text.RegularExpressions.Regex regex = null;
+                
+                try
+                {   // try-catch, abych ohlídal nevalidní pattern:
+                    // Exact pattern:
+                    regex = new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                }
+                catch
+                {   // Chyba? Odeberu řídící znaky [výčtů] (ostatní jsem escapoval nahoře):
+                    replace(ref pattern, @"[", @"\[");
+                    replace(ref pattern, @"]", @"\]");
+                    try
+                    {   // Náhradní pattern:
+                        regex = new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    }
+                    catch
+                    {   // Beru cokoliv:
+                        regex = new System.Text.RegularExpressions.Regex(".*", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    }
+                }
+                return regex;
+            }
+            void replace(ref string text, string search, string replacement)
+            {
+                if (text.Contains(search)) text = text.Replace(search, replacement);
+            }
+            // Vrátí true, pokud konkrétní text DisplayValue (itemDisplayValue) odpovídá aktuální podmínce filtru (args.Operation) a uživatelem zadané hodnotě (filterRegex).
+            bool isDisplayValue(string itemDisplayValue, System.Text.RegularExpressions.Regex filterRegex)
+            {
+                switch (args.Operation)
+                {
+                    // Tyto operace řešíme pomocí RegEx:
+                    case AsolDX.DxFiltering.DxFilterOperationType.Function_StartsWith:
+                    case AsolDX.DxFiltering.DxFilterOperationType.Function_Contains:
+                    case AsolDX.DxFiltering.DxFilterOperationType.Function_EndsWith:
+                    case AsolDX.DxFiltering.DxFilterOperationType.Binary_Like:
+                    case AsolDX.DxFiltering.DxFilterOperationType.Custom_Like:
+                        return filterRegex?.IsMatch(itemDisplayValue) ?? false;
+                }
+                return false;
             }
         }
         private bool _TryFindColumn(string columnId, out IColumnInfo columnInfo)

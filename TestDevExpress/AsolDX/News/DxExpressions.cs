@@ -1193,7 +1193,7 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 #endregion
                 #region Function - Custom: Like, ...
                 // Custom funkce mají v nativním poli operandů na pozici [0] uložen název funkce, ale předchozí kód tento název funkce odebral (a z jeho hodnoty vygeneroval kód operace).
-                // Ale v poli 'operands' je tento první operand odebrán, a toto pole tedy obsahuje pouze reálné datové operandy !!!
+                // Proto v poli 'operands' je tento první operand (název funkce) odebrán, a toto pole tedy obsahuje pouze reálné datové operandy !!!
                 case DxFilterOperationType.Custom_Like:
                     checkCount(2);
                     // v této operaci NEPŘIDÁVÁM prefix % ; ani suffix %   ten by měl být dodán v hodnotě od uživatele. Proto jsme LIKE, ne jako v operaci:  Function_Contains atd.
