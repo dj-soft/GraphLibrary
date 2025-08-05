@@ -302,6 +302,13 @@ namespace TestDevExpress.Forms
 
             var sbDelimiter = "  |◘◘|◘◘|  ";
             this.StatusText = $"DX:  {dxExpression}{sbDelimiter}SQL:  {msExpression}{sbDelimiter}OLD:  {oldExpression}";
+
+            
+            string testExpr = "PadLeft([reference_subjektu], 50) <> PadRight([nazev_subjektu], 80, '-')";
+            var testFilter = DevExpress.Data.Filtering.CriteriaOperator.Parse(testExpr);
+            string oldResult = DevExpress.Data.Filtering.CriteriaToWhereClauseHelper.GetMsSqlWhere(testFilter, c => c.PropertyName);
+            string newResult = TestDevExpress.AsolDX.DxFiltering.DxFilterConvertor.ConvertToString(testFilter, AsolDX.DxFiltering.DxExpressionLanguageType.MsSqlDatabase);
+
         }
         private void _RowFiltersCopy()
         {
@@ -354,15 +361,15 @@ namespace TestDevExpress.Forms
             // Daná operace řádkového filtru nebude řešena pomocí editačního stylu:
             return false;
 
-            // Vrátí true, pokud operand [0] je SLoupec, který známe a který má Editační styl
+            // Vrátí true, pokud operand [0] je Sloupec, který známe a který má Editační styl
             bool isFirstOperandColumnEditStyle(out IColumnInfo colInfo)
             {
                 colInfo = null;
                 // Operand [0] musí existovat, musí to být Sloupec, musíme ten sloupec najít, a musí mít editační styl:
                 return (args.Operands != null && args.Operands.Count >= 1 && args.Operands[0].IsPropertyName && _TryFindColumn(args.Operands[0].PropertyName, out colInfo) && colInfo.HasEditStyle);
             }
-            // Vrátí true, pokud všechny operandy počínaje indexem 1 jsou stringová hodnota (=odpovídá DisplayValue)
-            // Vrátí false, pokud pole operandů nemá 2 (a více) operandů, anebo některý není ValueString
+            // Vrátí true, pokud všechny operandy počínajíc indexem 1 jsou stringová hodnota (=což odpovídá DisplayValue).
+            // Vrátí false, pokud pole operandů nemá 2 (a více) operandů, anebo některý operand není ValueString.
             bool isNextOperandsValueString()
             {
                 int count = args.Operands?.Count ?? 0;

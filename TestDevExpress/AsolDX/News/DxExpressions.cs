@@ -156,6 +156,22 @@ namespace TestDevExpress.AsolDX.DxFiltering
         }
         #endregion
         #region TADY JE  ♥  KONVERTORU  :  Vlastní konvertor všech operací (funkce, operace, porovnání...), s využitím __CustomHandler
+        /// <summary>
+        /// Vlastní  ♥  celého convertoru !!
+        /// <para/>
+        /// dostává typ operace <paramref name="operation"/> a veškeré jeho operátory již zpracované do pole <paramref name="operands"/>.
+        /// Dostává i výchozí operaci (<paramref name="filterOperator"/> - ale jeho data jsou již zpracovaná a operátor v podstatě není potřeba);
+        /// <para/>
+        /// V této metodě se nejprve řeší Custom handler = externí metoda, která může danou operaci řešit specificky. 
+        /// Víceméně je Custom handler používán pro řešení sloupců s editačním stylem, pro které řeší zpětnou konverzi z DisplayValue (výraz v SQL dotazu a Display texty zobrazené uživateli) 
+        /// na CodeValue (vstupní sloupec s daty v databázi a Code hodnoty = bez konverzí).
+        /// Tato metoda je typicky umístěna v prostoru volajícího, protože tam ví, jaké sloupce a jaké CodeTable se používají.
+        /// </summary>
+        /// <param name="filterOperator">Vstupující operátor, data jsou ale už dost předzpracována a <paramref name="filterOperator"/> v podstatě není třeba</param>
+        /// <param name="operation"></param>
+        /// <param name="operands"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
         private DxExpressionPart ConvertToPart(DxFilter.CriteriaOperator filterOperator, DxFilterOperationType operation, List<DxExpressionPart> operands)
         {
             if (__HasCustomHandler)
@@ -240,7 +256,6 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 case DxFilterOperationType.Unary_IsNull:
                     checkCount(1);
                     return DxExpressionPart.CreateFrom(operands[0], " is null");
-
                 #endregion
                 #region In list
                 case DxFilterOperationType.In:
@@ -336,16 +351,61 @@ namespace TestDevExpress.AsolDX.DxFiltering
                     checkCount(1);
                     return DxExpressionPart.CreateFrom("char(", operands[0], ")");
                 case DxFilterOperationType.Function_ToStr:
-                    break;
+                    // Returns a string representation of the specified value or property.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("cast(", operands[0], " as nvarchar(max))");
                 case DxFilterOperationType.Function_Replace:
-                    break;
+                    // Returns a new string in which all occurrences of one specified string (string1) in another string (string2) are replaced with the specified string (string3).
+                    // The operands are:
+                    //  1 - the string in which replacements are made.
+                    //  2 - the string to be replaced.
+                    //  3 - the string to replace all occurrences of the specified string.
+                    //  ... Taky správně chápete, jaký význam má string1 a string2 ?
+                    // MS SQL : REPLACE ( string_expression , string_pattern , string_replacement )  
+                    checkCount(3);
+                    return DxExpressionPart.CreateFrom("replace(", operands[0], ", ", operands[1], ", ", operands[2], ")");
                 case DxFilterOperationType.Function_Reverse:
-                    break;
+                    // Returns a string in which the character order of a specified string is reversed.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("reverse(", operands[0], ")");
                 case DxFilterOperationType.Function_Insert:
-                    break;
+                    // Returns a new string in which a specified string is inserted at a specified index position into another specified string.
+                    // The operands are:
+                    //  1 - the string into which another string should be inserted.              například   [nazev_subjektu]
+                    //  2 - the zero-based index position of the insertion.                       například   3
+                    //  3 - the string to insert.                                                 například   'ABCD'
+                    // GithubCopilot mi navrhnul:
+                    // MS SQL : (case when ([nazev_subjektu] is null) then null when (len([nazev_subjektu]) <= 3) then ([nazev_subjektu] + 'ABCD') else (left([nazev_subjektu], 3) + 'ABCD' + right([nazev_subjektu], len([nazev_subjektu]) - 3)) end)
+                    //          return DxExpressionPart.CreateFrom("(case when (", operands[0], " is null) then null when (len(", operands[0], ") <= ", intAsText(operands[1]), ") then (", operands[0], " + ", operands[2], ") else (left(", operands[0], ", ", intAsText(operands[1]), ") + ", operands[2], " + right(", operands[0], ", len(", operands[0], ") - ", intAsText(operands[1]), ")) end)");
+                    // MS SQL : STUFF ( character_expression , start , length , replace_with_expression )
+                    // MS SQL : (case when ([nazev_subjektu] is null) then null when (len([nazev_subjektu]) <= 3) then ([nazev_subjektu] + 'ABCD') else stuff([nazev_subjektu], 4, 0, 'ABCD') end)
+                    checkCount(3);
+                    return DxExpressionPart.CreateFrom("(case when (", operands[0], " is null) then null when (len(", operands[0], ") <= ", intAsText(operands[1]), ") then (", operands[0], " + ", operands[2], ") else stuff(", operands[0], ", ", intAsText(operands[1], 1), ", 0, ", operands[2], ") end)");
                 case DxFilterOperationType.Function_CharIndex:
+                    // Returns the index of the first occurrence of a specified string within another string.
+                    // The operands are:
+                    //  1 - a string that you want to find in another string.
+                    //  2 - a string that contains the string you are searching for.
+                    //  3 - (optional) an integer that specifies the zero-based index at which the search starts. If this operand is not specified, the search begins from the start of the string.
+                    //  4 - (optional) an integer that specifies the number of characters to examine, starting from the specified position. If this operand is not specified, the search continues until the end of the string.
+                    //     This function performs a word search using the current culture. If a specified substring is found, the function returns its index. Otherwise, -1 is returned.
+                    // MS SQL : CHARINDEX ( expressionToFind , expressionToSearch [ , start_location ] )  
+                    if (count == 2) return DxExpressionPart.CreateFrom("charindex(", operands[0], ", ", operands[1], ")");
+                    if (count == 3) return DxExpressionPart.CreateFrom("charindex(", operands[0], ", ", operands[1], ", ", operands[2], ")");
+                    failCount("2 or 3");
                     break;
                 case DxFilterOperationType.Function_Remove:
+                    // Returns a new string with the specified number of characters in the specified string removed, starting at the specified position.
+                    // The operands are:
+                    //  1 - the string that needs to be shortened.
+                    //  2 - the zero-based index at which character removal starts.
+                    //  3 - (optional) an integer that specifies the number of characters to remove, starting at the specified position. If this operand is not specified, all characters between the starting position and the end of the string are removed.
+                    // MS SQL : STUFF ( character_expression , start , length , replace_with_expression )
+                    //        (case when ([nazev_subjektu] is null) then null when (len([nazev_subjektu]) <= 3) then ([nazev_subjektu]) else stuff([nazev_subjektu], 4, 9999, '')  end)
+                    //        (case when ([nazev_subjektu] is null) then null when (len([nazev_subjektu]) <= 3) then ([nazev_subjektu]) else stuff([nazev_subjektu], 4, 2, '')  end)
+                    if (count == 2) return DxExpressionPart.CreateFrom("(case when (", operands[0], " is null) then null when (len(", operands[0], ") <= ", intAsText(operands[1]), ") then (", operands[0], ") else stuff(", operands[0], ", ", intAsText(operands[1], 1), ", 9999, '') end)");
+                    if (count == 3) return DxExpressionPart.CreateFrom("(case when (", operands[0], " is null) then null when (len(", operands[0], ") <= ", intAsText(operands[1]), ") then (", operands[0], ") else stuff(", operands[0], ", ", intAsText(operands[1], 1), ", ", intAsText(operands[2]), ", '') end)");
+                    failCount("2 or 3");
                     break;
                 #endregion
                 #region Function - Mathematics: Abs, Sqrt, Sin, Exp, Log, Pow, Celinig, Round, ...
@@ -433,26 +493,72 @@ namespace TestDevExpress.AsolDX.DxFiltering
                     checkCount(2);
                     return DxExpressionPart.CreateFrom("(case when ", operands[0], " < ", operands[1], " then ", operands[0], " else ", operands[1], " end)");   // (case when pocet1 < pocet2 then pocet1 else pocet2 end)
                 case DxFilterOperationType.Function_Acos:
-                    break;
+                    // Returns the arccosine of the numeric operand. The arccosine is the angle in the range 0 (zero) to π radians, whose cosine is the numeric operand.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("acos(", operands[0], ")");
                 case DxFilterOperationType.Function_Asin:
-                    break;
+                    // Returns the arcsine of the numeric operand. The arcsine is the angle in the range -π/2 to π/2 radians, whose sine is the numeric operand.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("asin(", operands[0], ")");
                 case DxFilterOperationType.Function_Atn2:
-                    break;
+                    // Returns the arctangent (the inverse tangent function) of the quotient of the two specified numeric operands. The arctangent is the angle in the range -π/2 to π/2 radians.
+                    // The operands are:
+                    //  1 - the y coordinate of a point in Cartesian coordinates (x, y).
+                    //  2 - the x coordinate of a point in Cartesian coordinates (x, y).
+                    checkCount(2);
+                    return DxExpressionPart.CreateFrom("atn2(", operands[0], ",", operands[1], ")");
                 case DxFilterOperationType.Function_BigMul:
-                    break;
+                    // Calculates the full product of two integer operands.
+                    // MS SQL : (cast(op1 as bigint) * cast(op2 as bigint)) 
+                    checkCount(2);
+                    return DxExpressionPart.CreateFrom("(cast(", operands[0], " as bigint) * cast(", operands[1], " as bigint))");
                 case DxFilterOperationType.Function_Cosh:
+                    // Returns the hyperbolic cosine of the numeric operand, in radians.
+
+                    // MS SQL : asi nemá ???
+
                     break;
                 case DxFilterOperationType.Function_Log10:
-                    break;
+                    // Returns the base 10 logarithm of the specified numeric operand.
+                    // If the operand cannot be converted to Double, the NotSupportedException is thrown.
+                    // The Log10 function reverses the FunctionOperatorType.Power function. Use the FunctionOperatorType.Log 
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("log10(", operands[0], ")");
                 case DxFilterOperationType.Function_Sinh:
+                    // Returns the hyperbolic sine of the numeric operand, in radians.
+
+                    // MS SQL : asi nemá ???
+
                     break;
                 case DxFilterOperationType.Function_Tanh:
+                    // Returns the hyperbolic tangent of a specified numeric operand that is an angle in radians.
+
+                    // MS SQL : asi nemá ???
+
                     break;
                 #endregion
                 #region Function - String 2: PadLeft, StartsWith, Contains, ToInt, ToDecimal, ...
                 case DxFilterOperationType.Function_PadLeft:
+                    // Returns a new string that pads the character in the specified string on the left with a specified Unicode character, for a specified total length.
+                    // The operands are:
+                    //  1 - a string to be padded.
+                    //  2 - the total number of characters in the resulting string, including padding characters.
+                    //  3 - (optional) a Unicode padding character. If not specified, the space character is used for padding. If a string is passed as this operand, its first character is used for padding.
+                    // MS SQL : right(replicate('=', 80) + nazev_subjektu, 80) as padleft     zachovává NULL hodnotu
+                    if (count == 2) return DxExpressionPart.CreateFrom("right(replicate(' ', ", intAsText(operands[1]), ") + ", operands[0], ", ", intAsText(operands[1]), ")");
+                    if (count == 3) return DxExpressionPart.CreateFrom("right(replicate(", operands[2], ", ", intAsText(operands[1]), ") + ", operands[0], ", ", intAsText(operands[1]), ")");
+                    failCount("2 or 3");
                     break;
                 case DxFilterOperationType.Function_PadRight:
+                    // Returns a new string of a specified length in which the end of a specified string is padded with spaces or with a specified Unicode character.
+                    // The operands are:
+                    //  1 - a string to be padded.
+                    //  2 - the total number of characters in the resulting string, including padding characters.
+                    //  3 - (optional) a Unicode padding character. If not specified, the space character is used for padding. If a string is passed as this operand, its first character is used for padding.
+                    // MS SQL : left(nazev_subjektu + replicate('=', 80), 80) as padright     zachovává NULL hodnotu
+                    if (count == 2) return DxExpressionPart.CreateFrom("left(", operands[0], " + replicate(' ', ", intAsText(operands[1]), "), ", intAsText(operands[1]), ")");
+                    if (count == 3) return DxExpressionPart.CreateFrom("left(", operands[0], " + replicate(", operands[2], ", ", intAsText(operands[1]), "), ", intAsText(operands[1]), ")");
+                    failCount("2 or 3");
                     break;
                 case DxFilterOperationType.Function_StartsWith:
                     checkCount(2);
@@ -481,41 +587,77 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 #endregion
                 #region Function - DateTime 1: LocalDateTime
                 case DxFilterOperationType.Function_LocalDateTimeThisYear:
-                    break;
+                    // Returns the DateTime value with the date part that is the first day of the current year, and the time part of 00:00:00.
+                    dateBegin = new DateTime(now.Year, 1, 1, 0, 0, 0);
+                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-01-01 00:00:00.000', 121)
                 case DxFilterOperationType.Function_LocalDateTimeThisMonth:
-                    break;
+                    // Returns the DateTime value with the date part that is the first day of the current month, and the time part of 00:00:00.
+                    dateBegin = new DateTime(now.Year, now.Month, 1, 0, 0, 0);
+                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-08-01 00:00:00.000', 121)
                 case DxFilterOperationType.Function_LocalDateTimeLastWeek:
-                    break;
+                    // Returns the DateTime value that has the date part that is 7 days before the start of the current week, and the time part of 00:00:00.
+                    dateBegin = getWeekBegin(now).AddDays(-7);
+                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-07-28 00:00:00.000', 121)        pokud dnes je 2025-08-05 (úterý), pak aktuální pondělí je 2025-08-04  a minulé pondělí je 2025-07-28 !
                 case DxFilterOperationType.Function_LocalDateTimeThisWeek:
-                    break;
+                    // Returns the DateTime value with the date part that is the first day of the current week, and the time part of 00:00:00.
+                    dateBegin = getWeekBegin(now);
+                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-08-04 00:00:00.000', 121)        pokud dnes je 2025-08-05 (úterý), pak aktuální pondělí je 2025-08-04
                 case DxFilterOperationType.Function_LocalDateTimeYesterday:
-                    break;
+                    // Returns the DateTime value with the date part that is the previous day, and the time part of 00:00:00.
+                    dateBegin = now.Date.AddDays(-1);
+                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-08-04 00:00:00.000', 121)        pokud dnes je 2025-08-05 (úterý), pak včerejšek je 2025-08-04
                 case DxFilterOperationType.Function_LocalDateTimeToday:
-                    break;
+                    // Returns the DateTime value with the date part that is the start of the current day, and the time part of 00:00:00.
+                    dateBegin = now.Date;
+                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-08-05 00:00:00.000', 121)        pokud dnes je 2025-08-05 (úterý), pak to je dnešek (bez času)
                 case DxFilterOperationType.Function_LocalDateTimeNow:
-                    break;
+                    // Returns the DateTime value that is the current moment in time.
+                    dateBegin = now;
+                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-08-05 09:59:26.453', 121)
                 case DxFilterOperationType.Function_LocalDateTimeTomorrow:
-                    break;
+                    // Returns the DateTime value with the date part that is the next day, and the time part of 00:00:00.
+                    dateBegin = now.Date.AddDays(1);
+                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeDayAfterTomorrow:
-                    break;
+                    // Returns the DateTime value that has the date part that is two days after the current date, and the time part of 00:00:00.
+                    dateBegin = now.Date.AddDays(2);
+                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeNextWeek:
-                    break;
+                    // Returns the DateTime value that has the date part that is 7 days after the start of the current week, and the time part of 00:00:00.
+                    dateBegin = getWeekBegin(now).AddDays(7);
+                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeTwoWeeksAway:
-                    break;
+                    // Returns the DateTime value with the date part that is the first day of the week after the next week, and the time part of 00:00:00.
+                    dateBegin = getWeekBegin(now).AddDays(14);
+                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeNextMonth:
-                    break;
+                    // Returns the DateTime value that has the date part that is the first day of the next month, and the time part of 00:00:00.
+                    dateBegin = new DateTime(now.Year, now.Month, 1, 0, 0, 0).AddMonths(1);
+                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeNextYear:
-                    break;
+                    // Returns the DateTime value with the date part that corresponds to the first day of the next year, and the time part of 00:00:00.
+                    dateBegin = new DateTime(now.Year + 1, 1, 1, 0, 0, 0);
+                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeTwoMonthsAway:
-                    break;
+                    // Returns the DateTime value with the date part that is the first day of the month after the next month, and the time part of 00:00:00.
+                    dateBegin = new DateTime(now.Year, now.Month, 1, 0, 0, 0).AddMonths(2);
+                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeTwoYearsAway:
-                    break;
+                    // Returns the DateTime value with the date part that is the first day of the year after the next year, and the time part of 00:00:00.
+                    dateBegin = new DateTime(now.Year + 2, 1, 1, 0, 0, 0);
+                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeLastMonth:
-                    break;
+                    // Returns the DateTime value that has the date part that is one month before the current date, and the time part of 00:00:00.
+                    dateBegin = now.AddMonths(-1).Date;
+                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeLastYear:
-                    break;
+                    // Returns the DateTime value that has the date part that is the first day of the previous year, and the time part of 00:00:00.
+                    dateBegin = new DateTime(now.Year - 1, 1, 1, 0, 0, 0);
+                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeYearBeforeToday:
-                    break;
+                    // Returns the DateTime value with the date part that is the date one year ago, and the time part of 00:00:00.
+                    dateBegin = now.AddMonths(-12).Date;
+                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
                 #endregion
                 #region Function - DateTime 2: IsOutlookInterval
                 case DxFilterOperationType.Function_IsOutlookIntervalBeyondThisYear:
@@ -842,60 +984,187 @@ namespace TestDevExpress.AsolDX.DxFiltering
                     // Returns a DateTime value that is the current date. The time part is set to 00:00:00.
                     return DxExpressionPart.CreateText("datetrunc(d, getdate())");
                 case DxFilterOperationType.Function_TruncateToMinute:
-                    return DxExpressionPart.CreateText("datetrunc(mi, getdate())");
+                    // For internal use.
+                    checkCount(1);
+                    if (count == 0) DxExpressionPart.CreateText("datetrunc(mi, getdate())");
+                    if (count == 1) DxExpressionPart.CreateFrom("datetrunc(mi, ", operands[0], ")");
+                    failCount("1 or 2");
+                    break;
                 #endregion
                 #region Function - DateTime 7: Time (Hour, BeforeMidday, Afternoon, IsLunchTime...)
+                //    ========  TYTO FUNKCE NEUMÍM NAVODIT Z OKNA ŘÁDKOVÉHO FILTRU  ======== ,   tedy nemohu je otestovat...  :
                 case DxFilterOperationType.Function_IsSameHour:
-                    break;
+                    // Returns True if the specified time falls within the same hour.
+                    checkCount(2);
+                    return DxExpressionPart.CreateFrom("datepart(hour, ", operands[0], ") = datepart(hour, ", operands[1], ")");
                 case DxFilterOperationType.Function_IsSameTime:
-                    break;
+                    // Returns True if the specified time falls within the same time of day (hour and minute).
+                    return DxExpressionPart.CreateFrom("(datepart(hour, ", operands[0], ") = datepart(hour, ", operands[1], ") and datepart(minute, ", operands[0], ") = datepart(minute, ", operands[1], ")");
                 case DxFilterOperationType.Function_BeforeMidday:
-                    break;
+                    // Returns True if the specified time is before 12:00 PM.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("datepart(hour,", operands[0], ") < 12");
                 case DxFilterOperationType.Function_AfterMidday:
-                    break;
+                    // Returns True if the specified time is after 12:00 PM.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("datepart(hour,", operands[0], ") >= 12");
                 case DxFilterOperationType.Function_IsNight:
-                    break;
+                    // Returns True if the specified time falls between 9:00 PM and 9:00 AM.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("(datepart(hour,", operands[0], ") < 9 or datepart(hour,", operands[0], ") >= 21)");
                 case DxFilterOperationType.Function_IsMorning:
-                    break;
+                    // Returns True if the specified time falls within between 6:00 AM and 12:00 PM.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("(datepart(hour,", operands[0], ") >= 6 and datepart(hour,", operands[0], ") < 12)");
                 case DxFilterOperationType.Function_IsAfternoon:
-                    break;
+                    // Returns True if the specified time falls between 12:00 PM and 6:00 PM.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("(datepart(hour,", operands[0], ") >= 12 and datepart(hour,", operands[0], ") < 18)");
                 case DxFilterOperationType.Function_IsEvening:
-                    break;
+                    // Returns True if the specified time falls between 6:00 PM and 9:00 PM.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("(datepart(hour,", operands[0], ") >= 18 and datepart(hour,", operands[0], ") < 21)");
                 case DxFilterOperationType.Function_IsLastHour:
-                    break;
+                    // Returns True if the specified time falls within the last hour.
+                    checkCount(1);
+                    dateBegin = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddHours(-1);     // Začátek předešlé hodiny (pokud nyní je 15.8.2025 16:48:25, pak dateBegin = 15.8.2025 15:00:00
+                    dateEnd = dateBegin.AddHours(1);                                                         // Konec hodinového intervalu (dateEnd = 15.8.2025 16:00:00)
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsThisHour:
-                    break;
+                    // Returns True if the specified time falls within the hour.
+                    checkCount(1);
+                    dateBegin = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0);                  // Začátek této hodiny (pokud nyní je 15.8.2025 16:48:25, pak dateBegin = 15.8.2025 16:00:00
+                    dateEnd = dateBegin.AddHours(1);                                                         // Konec hodinového intervalu (dateEnd = 15.8.2025 17:00:00)
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsNextHour:
-                    break;
+                    // Returns True if the specified time falls within the next hour.
+                    checkCount(1);
+                    dateBegin = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddHours(1);      // Začátek příští hodiny (pokud nyní je 15.8.2025 16:48:25, pak dateBegin = 15.8.2025 17:00:00
+                    dateEnd = dateBegin.AddHours(1);                                                         // Konec hodinového intervalu (dateEnd = 15.8.2025 18:00:00)
+                    return createDateTimeInterval(operands[0], dateBegin, dateEnd);
                 case DxFilterOperationType.Function_IsWorkTime:
-                    break;
+                    // Returns True if the specified time falls within work time.
+                    //   ... co já vím, kdy je pracovní doba ???
+                    //   ... prostě bude se pracovat od pondělí do pátku od 7 do 16 hodin...   Poznámka: datepart(weekday, [datum]) vrací 2 = pondělí, 6 = pátek.   A svátky neslavíme.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("(datepart(weekday,", operands[0], ") >= 2 and datepart(weekday,", operands[0], ") < 7 and datepart(hour,", operands[0], ") >= 7 and datepart(hour,", operands[0], ") < 16)");
                 case DxFilterOperationType.Function_IsFreeTime:
-                    break;
+                    // Returns True if the specified time falls within free time.
+                    //   ... co já vím, kdy je pracovní doba ???
+                    //   ... prostě bude se pracovat od pondělí do pátku od 7 do 16 hodin...   Poznámka: datepart(weekday, [datum]) vrací 2 = pondělí, 6 = pátek.   A svátky neslavíme.
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("(not (datepart(weekday,", operands[0], ") >= 2 and datepart(weekday,", operands[0], ") < 7 and datepart(hour,", operands[0], ") >= 7 and datepart(hour,", operands[0], ") < 16))");
                 case DxFilterOperationType.Function_IsLunchTime:
-                    break;
+                    // Returns True if the specified time falls within the lunch time.
+                    //   ... zase dobrý. Třeba hobiti mají LunchTime určitě delší, než Čech pracující v montovně.
+                    //   ... Dáme tedy čas oběda mezi 11:00 až 12:59    ( < 13)
+                    checkCount(1);
+                    return DxExpressionPart.CreateFrom("(datepart(hour,", operands[0], ") > 11 and datepart(hour,", operands[0], ") < 13)");
                 case DxFilterOperationType.Function_AddTimeSpan:
+                    // Returns a DateTime value that differs by a specified amount of time from a specified date.
+                    // The operands are:
+                    //  1 - the DateTime value that is the start date.
+                    //  2 - the TimeSpan object that is the time period before or after the start date.
+                   
+
+
                     break;
                 case DxFilterOperationType.Function_AddTicks:
-                    break;
+                    // Returns a DateTime value that is the specified number of ticks before or after a specified start date.
+                    // The operands are:
+                    //  1 - the DateTime value that is the start date.
+                    //  2 - the integer number that is the number of 100-nanosecond ticks. This number can be negative or positive.
+                    checkCount(2);
+                    // MS SQL : DATEADD (datepart , number , date )
+                    return DxExpressionPart.CreateFrom("(dateadd(nanosecond,", intAsText(operands[1], 0, 100), ",", operands[0], ")");
                 case DxFilterOperationType.Function_AddMilliSeconds:
-                    break;
+                    // Returns a DateTime/TimeOnly value that is the specified number of milliseconds before or after a specified start date/time.
+                    // The operands are:
+                    //  1 - the DateTime/TimeOnly value that is the start date.
+                    //  2 - the Double value that is the number of milliseconds before or after the start date. This number can be negative or positive. Its decimal part is a fraction of a millisecond.
+                    // Returns a DateTime value that is the specified number of ticks before or after a specified start date.
+                    // The operands are:
+                    //  1 - the DateTime value that is the start date.
+                    //  2 - the integer number that is the number of 100-nanosecond ticks. This number can be negative or positive.
+                    checkCount(2);
+                    return DxExpressionPart.CreateFrom("(dateadd(millisecond,", operands[1], ",", operands[0], ")");
                 case DxFilterOperationType.Function_AddSeconds:
-                    break;
+                    // Returns a DateTime/TimeOnly value that is the specified number of seconds before or after a specified start date/time.
+                    // The operands are:
+                    //  1 - the DateTime/TimeOnly value that is the start date.
+                    //  2 - the Double value that is the number of seconds before or after the start date. This number can be negative or positive. Its decimal part is a fraction of a second.
+                    checkCount(2);
+                    return DxExpressionPart.CreateFrom("(dateadd(second,", operands[1], ",", operands[0], ")");
                 case DxFilterOperationType.Function_AddMinutes:
-                    break;
+                    // Returns a DateTime/TimeOnly value that is the specified number of minutes before or after a specified start date/time.
+                    // The operands are:
+                    //  1 - the DateTime/TimeOnly value that is the start date.
+                    //  2 - the Double value that is the number of minutes before or after the start date. This number can be negative or positive. Its decimal part is a fraction of a minute.
+                    checkCount(2);
+                    return DxExpressionPart.CreateFrom("(dateadd(minute,", operands[1], ",", operands[0], ")");
                 case DxFilterOperationType.Function_AddHours:
-                    break;
+                    // Returns a DateTime/TimeOnly value that is the specified number of hours before or after a specified start date/time.
+                    // The operands are:
+                    //  1 - the DateTime/TimeOnly value that is the start date.
+                    //  2 - the Double value that is the number of hours before or after the start date. This number can be negative or positive. Its decimal part is a fraction of an hour.
+                    checkCount(2);
+                    return DxExpressionPart.CreateFrom("(dateadd(hour,", operands[1], ",", operands[0], ")");
                 case DxFilterOperationType.Function_AddDays:
-                    break;
+                    // Returns a DateTime/DateOnly value that is the specified number of days before or after a specified start date.
+                    // The operands are:
+                    //  1 - the DateTime/DateOnly value that is the start date.
+                    //  2 - the Double value that is the number of days before or after the start date. This number can be negative or positive. Its decimal part is a fraction of a day.
+                    checkCount(2);
+                    return DxExpressionPart.CreateFrom("(dateadd(day,", operands[1], ",", operands[0], ")");
                 case DxFilterOperationType.Function_AddMonths:
-                    break;
+                    // Returns a DateTime/DateOnly value that is the specified number of months before or after a specified start date.
+                    // The operands are:
+                    //  1 - the DateTime/DateOnly value that is the start date.
+                    //  2 - the integer value that is the number of months before or after the start date. This number can be negative or positive.
+                    checkCount(2);
+                    return DxExpressionPart.CreateFrom("(dateadd(month,", operands[1], ",", operands[0], ")");
                 case DxFilterOperationType.Function_AddYears:
-                    break;
+                    // Returns a DateTime/DateOnly value that is the specified number of years before or after a specified start date.
+                    // The operands are:
+                    //  1 - the DateTime/DateOnly value that is the start date.
+                    //  2 - the integer value that is the number of years before or after the start date. This number can be negative or positive.
+                    checkCount(2);
+                    return DxExpressionPart.CreateFrom("(dateadd(year,", operands[1], ",", operands[0], ")");
                 case DxFilterOperationType.Function_DateTimeFromParts:
+                    // Returns a date value constructed from the specified Year, Month, Day, Hour, Minute, Second, and Millisecond.
+                    // The operands are:
+                    //  1 - (Required) - an integer value that is the full year value (four digits, century included).
+                    //  2 - (Required) - an integer value that is the month number (1-12).
+                    //  3 - (Required) - an integer value that is the day of the month (1-31).
+                    //  4 - (Optional) - an hour value in 24-hour format (0-23).
+                    //  5 - (Optional) - a minute value (0-59).
+                    //  6 - (Optional) - a second value (0-59).
+                    //  7 - (Optional) - a millisecond value.
+                    // MS SQL : DATEFROMPARTS ( year, month, day ) 
+                    // MS SQL : DATETIMEFROMPARTS ( year , month , day , hour , minute , seconds , milliseconds )
+                    if (count == 3) return DxExpressionPart.CreateFrom("(datefromparts(", operands[0], ",", operands[1], ",", operands[2], ")");
+                    if (count == 4) return DxExpressionPart.CreateFrom("(datetimefromparts(", operands[0], ",", operands[1], ",", operands[2], ",", operands[3], ", 0, 0, 0)");
+                    if (count == 5) return DxExpressionPart.CreateFrom("(datetimefromparts(", operands[0], ",", operands[1], ",", operands[2], ",", operands[3], ",", operands[4], ", 0, 0)");
+                    if (count == 6) return DxExpressionPart.CreateFrom("(datetimefromparts(", operands[0], ",", operands[1], ",", operands[2], ",", operands[3], ",", operands[4], ",", operands[5], ", 0)");
+                    if (count == 7) return DxExpressionPart.CreateFrom("(datetimefromparts(", operands[0], ",", operands[1], ",", operands[2], ",", operands[3], ",", operands[4], ",", operands[5], ",", operands[6], ")");
+                    failCount("3 to 7");
                     break;
                 case DxFilterOperationType.Function_DateOnlyFromParts:
-                    break;
+                    // Returns a DateOnly value constructed from the specified Year, Month, and Day.
+                    // The operands are:
+                    //  1 - an integer value that is the full year value (four digits, century included).
+                    //  2 - an integer value that is the month number (1-12).
+                    //  3 - an integer value that is the day of the month (1-31).
+                    // MS SQL : DATEFROMPARTS ( year, month, day ) 
+                    checkCount(3);
+                    return DxExpressionPart.CreateFrom("(datefromparts(", operands[0], ",", operands[1], ",", operands[2], ")");
                 case DxFilterOperationType.Function_TimeOnlyFromParts:
+                    // Returns a TimeOnly value constructed from the specified hour, minute, seconds (optional), and milliseconds (optional).
+                    // MS SQL : TIMEFROMPARTS ( hour, minute, seconds, fractions, precision ) 
+                    if (count == 2) return DxExpressionPart.CreateFrom("(timefromparts(", operands[0], ",", operands[1], ", 0, 0, 0)");
+                    if (count == 3) return DxExpressionPart.CreateFrom("(timefromparts(", operands[0], ",", operands[1], ",", operands[2], ", 0, 0)");
+                    if (count == 4) return DxExpressionPart.CreateFrom("(timefromparts(", operands[0], ",", operands[1], ",", operands[2], ",", operands[3], ",", operands[4], ", 3)");
+                    failCount("2 to 4");
                     break;
                 #endregion
                 #region Function - Custom: Like, ...
@@ -906,10 +1175,12 @@ namespace TestDevExpress.AsolDX.DxFiltering
                     #endregion
             }
 
-            return DxExpressionPart.CreateFrom("/* NotConverted: ", operation.ToString(), "(", DxExpressionPart.CreateDelimited(",", operands), ") */");
+            if (System.Diagnostics.Debugger.IsAttached) return DxExpressionPart.CreateFrom("/* NotConverted: ", operation.ToString(), "(", DxExpressionPart.CreateDelimited(",", operands), ") */");
 
-            return null;
+            throw new NotImplementedException($"DxCriteriaVisitor: Operation '{operation}' is not implemented! ({(DxExpressionPart.CreateDelimited(",", operands))})");
 
+
+            // Vrátí text binárního operátoru
             string getBinaryOperatorText(DxFilterOperationType binOp)
             {
                 switch (binOp)
@@ -933,19 +1204,48 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 return " " + binOp.ToString() + " ";
             }
             // Pokud daná část obsahuje value, typu Int, pak výstupem je Text s touto hodnotou. Používá se u konstant, které NECHCEME řešit pomocí DB parametrů. Např. délka čísla atd.
-            object intAsText(DxExpressionPart part, int addValue = 0)
+            object intAsText(DxExpressionPart part, int addValue = 0, int mulValue = 1)
             {
                 // Pokud 'part' je IsValueInt32, pak výstupem bude string obsahující zadanou hodnotu [s přičteným modifikátorem], 
                 //   z toho pak bude obyčejný text = součást textu filtr, a nikoli Value (=DB parametr):
-                if (part.IsValueInt32) return (part.ValueInt32 + addValue).ToString();
+                if (part.IsValueInt32) return ((mulValue * part.ValueInt32) + addValue).ToString();
 
-                // Pokud 'part' není IsValueInt32, a není potřeba nic přičíst/odečíst (addValue == 0), pak výstupem bude vstupní částice a půjde do výstupního filtru sama za sebe, například podřízený vzorec nebo funkce:
-                if (addValue == 0) return part;
+                // Pokud 'part' není IsValueInt32, a pokud není potřeba nic přičíst/odečíst (addValue == 0) ani násobit (mulValue == 1),
+                //   pak výstupem bude vstupní částice a půjde do výstupního filtru sama za sebe, například podřízený vzorec nebo funkce:
+                bool hasAdd = (addValue != 0);
+                bool hasMul = (mulValue != 1);
+                if (!hasAdd && !hasMul) return part;
 
-                // Pokud ale 'part' není IsValueInt32, a přitom jsme k ní chtěli něco přičíst, pak vytvoříme new částici typu Container,
+                // Pokud ale 'part' není IsValueInt32, a přitom jsme k ní chtěli něco přičíst nebo pronásobit,
+                //   pak vytvoříme new částici typu Container,
                 //   kde bude: "(" a původní částice (= výraz) a k tomu text " +- addValue" a ")":
-                string addText = (addValue < 0 ? (" - " + (-addValue).ToString()) : " + " + addValue.ToString());         // " + 1"   /   " - 15"
-                return DxExpressionPart.CreateFrom("(", part, addText, ")");                                              // (Funkce(x,y) + 1)
+                // Varianty a odpovídající součásti textu:
+                //                  part               
+                //     (            part  +/- addValue)
+                //      (mulValue * part)              
+                //     ((mulValue * part) +/- addValue)
+                // tx  1222222222222    344444444444444
+                string tx1 = null;
+                string tx2 = null;
+                string tx3 = null;
+                string tx4 = null;
+                if (hasMul)
+                {
+                    tx2 = $"({mulValue} * ";
+                    tx3 = ")";
+                }
+                if (addValue > 0)
+                {
+                    tx1 = "(";
+                    tx4 = $" + {addValue})";
+                }
+                else if (addValue < 0)
+                {
+                    tx1 = "(";
+                    tx4 = $" - {(-addValue)})";
+                }
+                // Složený výraz (pokud vkládám null, pak nebude vloženo):
+                return DxExpressionPart.CreateFrom(tx1, tx2, part, tx3, tx4);
             }
             // Pokud daná část obsahuje value, typu String, pak výstupem je Value s touto hodnotou, s možností přidání textu před/po. Používá se u proměnných, které chceme modifikovat.
             object stringAsValue(DxExpressionPart part, string addBefore = null, string addAfter = null)
@@ -979,11 +1279,6 @@ namespace TestDevExpress.AsolDX.DxFiltering
             {
                 return $"convert(datetime, '{dateTime.Year:D4}-{dateTime.Month:D2}-{dateTime.Day:D2} {dateTime.Hour:D2}:{dateTime.Minute:D2}:{dateTime.Second:D2}.{dateTime.Millisecond:D3}', 121)";
             }
-            // Vrátí DxExpressionPart obsahující výraz pro DateTime: "(value >= dBegin and value < dEnd)"
-            DxExpressionPart createDateTimeInterval(DxExpressionPart value, DateTime dBegin, DateTime dEnd)
-            {
-                return DxExpressionPart.CreateFrom("(", value, " >= ", dateTimeAsText(dBegin), " and ", value, " < ", dateTimeAsText(dEnd), ")");
-            }
             // Vrátí datum odpovídající prvnímu dni týdne, ve kterém je daný vstup, čas bude 00:00
             DateTime getWeekBegin(DateTime dateTime)
             {
@@ -993,6 +1288,11 @@ namespace TestDevExpress.AsolDX.DxFiltering
                 int subtract = fnod - fnow;                // Kolik dnů nazpátek musím přetočit od dateTime doleva, abych byl v prvním dnu v týdnu
                 var dBegin = (subtract == 0 ? dateTime.Date : dateTime.AddDays(-subtract).Date);
                 return dBegin;
+            }
+            // Vrátí DxExpressionPart obsahující výraz pro DateTime: "(value >= dBegin and value < dEnd)"
+            DxExpressionPart createDateTimeInterval(DxExpressionPart value, DateTime dBegin, DateTime dEnd)
+            {
+                return DxExpressionPart.CreateFrom("(", value, " >= ", dateTimeAsText(dBegin), " and ", value, " < ", dateTimeAsText(dEnd), ")");
             }
             // Pokud počet operandů == daný počet, pak vrátí řízení. POkud není rovno, vyhodí chybu pomocí failCount().
             void checkCount(int validCount)
@@ -1021,10 +1321,10 @@ namespace TestDevExpress.AsolDX.DxFiltering
         {
             string resultName = ((operationType is null) ? $"{familyType}" : $"{familyType}_{operationType}");
             if (Enum.TryParse<DxFilterOperationType>(resultName, true, out var resultValue)) return resultValue;
-            throw new ArgumentException($"Invalid operation name: '{resultName}'; operation with this name does not exists.");
+            throw new ArgumentException($"DxCriteriaVisitor: Operation '{resultName}' does not exists in 'DxFilterOperationType' enum.");
         }
         /// <summary>
-        /// Typ rodiny operací
+        /// Typ rodiny operací, odpovídá visitorům jednotlivých typů operandů.
         /// </summary>
         private enum FamilyType
         {
@@ -1606,7 +1906,8 @@ namespace TestDevExpress.AsolDX.DxFiltering
     }
     /// <summary>
     /// Typ operace.
-    /// Obsahuje souhrn všech operací ze všech typů ve fitlračním výrazu.
+    /// Obsahuje souhrn všech operací ze všech typů ve filtračním výrazu = <c>Family_Operation</c>.
+    /// Konverze do tohoto enumu se provádí na základě zadané Family a "_" a textu názvu konkrétní operace!!!
     /// </summary>
     internal enum DxFilterOperationType
     {
