@@ -10,6 +10,9 @@ using DevExpress.XtraEditors.Filtering.Templates;
 using Noris.Clients.Win.Components.AsolDX;
 using TestDevExpress.Components;
 
+using NrsInt = Noris.Srv.NrsInternal;
+using NrsDxf = Noris.Srv.NrsInternal.DxFiltering;
+
 namespace TestDevExpress.Forms
 {
     /// <summary>
@@ -886,7 +889,7 @@ namespace TestDevExpress.Forms
         {
             var filter = e.Filter;
             var dxExpression = filter?.ToString();
-            var msExpression = TestDevExpress.AsolDX.DxFiltering.DxFilterConvertor.ConvertToString(filter, AsolDX.DxFiltering.DxExpressionLanguageType.MsSqlDatabase, this._RowFilterHandler);
+            var msExpression = NrsDxf.DxFilterConvertor.ConvertToString(filter, NrsDxf.DxExpressionLanguageType.MsSqlDatabase, this._Columns);
             var oldExpression = DevExpress.Data.Filtering.CriteriaToWhereClauseHelper.GetMsSqlWhere(filter, c => c.PropertyName);
 
             var tab = "\t";
@@ -897,12 +900,12 @@ namespace TestDevExpress.Forms
             var sbDelimiter = "  |◘◘|◘◘|  ";
             this.StatusText = $"DX:  {dxExpression}{sbDelimiter}SQL:  {msExpression}{sbDelimiter}OLD:  {oldExpression}";
 
-
+            /*
             string testExpr = "PadLeft([reference_subjektu], 50) <> PadRight([nazev_subjektu], 80, '-')";
             var testFilter = DevExpress.Data.Filtering.CriteriaOperator.Parse(testExpr);
             string oldResult = DevExpress.Data.Filtering.CriteriaToWhereClauseHelper.GetMsSqlWhere(testFilter, c => c.PropertyName);
-            string newResult = TestDevExpress.AsolDX.DxFiltering.DxFilterConvertor.ConvertToString(testFilter, AsolDX.DxFiltering.DxExpressionLanguageType.MsSqlDatabase);
-
+            string newResult = NrsDxf.DxFilterConvertor.ConvertToString(testFilter, NrsDxf.DxExpressionLanguageType.MsSqlDatabase);
+            */
         }
         private void _RowFiltersCopy()
         {
@@ -911,298 +914,66 @@ namespace TestDevExpress.Forms
         }
         private string _AllRowFilters;
         /// <summary>
-        /// Zdejší metoda je volána vždy, když konvertor filtru DevExpress to MsSql konvertuje jednotlivou operaci ve filtru.
-        /// Metoda dostává v argumentu typ operace a data operace (operandy).<br/>
-        /// Na základě typu operace a operandů může najít sloupec, a pokud sloupec bude implementovat editační styl (Code = Value), pak metoda může zadanou podmínku vyřešit jinak anebo s jinými daty.<br/>
-        /// Pokud například na vstupu je sloupec "StavDokladu", a podmínka je == "Zaúčtováno", a my víme, že sloupec v šabloně s ColumnId = "StavDokladu" zobrazuje editační styl,
-        /// pak změníme podmínku tak, aby v podmínce nebyl výraz editačního stylu:
-        /// <code>(case dokl.status when '1' then 'Pořízeno' when '2' then 'Zaúčtováno' when '3' then 'Stornováno' else 'Jiný' end) = 'Zaúčtováno'</code>
-        /// ale jednodušší podmínka na základě datové hodnoty:
-        /// <code>dokl.status = '2'</code>
-        /// <para/>
-        /// <b><u>Praktická realizace:</u></b> 
-        /// <list type="number">
-        /// <item>Detekovat typ operace <see cref="TestDevExpress.AsolDX.DxFiltering.DxConvertorCustomArgs.Operation"/></item>
-        /// <item>Podle typu operace určit, zda ji můžeme řešit pro sloupec s editačním stylem</item>
-        /// <item>Podle typu operace určit, ve kterém operandu očekáváme sloupec</item>
-        /// <item>V poli operandů <see cref="TestDevExpress.AsolDX.DxFiltering.DxConvertorCustomArgs.Operands"/> najít sloupec a najít jeho data v naší evidenci (my víme, co v kterém sloupci zobrazujeme)</item>
-        /// <item>Pokud sloupec obsahuje editační styl, pak vyřešit operaci na úrovni datových hodnot CodeValue a nikoli DisplayValue</item>
-        /// <item>Přeformulovat operaci</item>
-        /// <item>Buď vytvořit zcela novou podmínku a uložit ji do <see cref="TestDevExpress.AsolDX.DxFiltering.DxConvertorCustomArgs.CustomResult"/></item>
-        /// <item>Anebo jen nahradit zdroj dat (sloupec s DisplayValue za CoeValue) a nahradit hodnoty v dalších operandech (<see cref="TestDevExpress.AsolDX.DxFiltering.DxConvertorCustomArgs.Operands"/>) podobným způsobem</item>
-        /// </list>
+        /// Sloupce šablony poskytované pro algoritmy Řádkového filtru DevExpress
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void _RowFilterHandler(object sender, TestDevExpress.AsolDX.DxFiltering.DxConvertorCustomArgs args)
+        private NrsInt.IColumnInfo[] _Columns
         {
-            if (_RowFilterIsForCodeValue(args, out var columnInfo))
-                _RowFilterHandlerColumnEditStyle(sender, args, columnInfo);
-        }
-        private bool _RowFilterIsForCodeValue(TestDevExpress.AsolDX.DxFiltering.DxConvertorCustomArgs args, out IColumnInfo columnInfo)
-        {
-            columnInfo = null;
-            switch (args.Operation)
-            {   // Tyto operace budeme řešit, jiné neumíme:
-                case AsolDX.DxFiltering.DxFilterOperationType.Binary_Equal:
-                case AsolDX.DxFiltering.DxFilterOperationType.Binary_NotEqual:
-                case AsolDX.DxFiltering.DxFilterOperationType.In:
-
-                // Tyto operace (=je zadán textový filtr na DisplayValue) budeme řešit vyfiltrováním odpovídajících hodnot DisplayValue, a poté provedeme náhradu textové podmínky (dispval like '%ort%') za podmínku typu: (Code in (val1, val2, val3))
-                case AsolDX.DxFiltering.DxFilterOperationType.Function_StartsWith:
-                case AsolDX.DxFiltering.DxFilterOperationType.Function_Contains:
-                case AsolDX.DxFiltering.DxFilterOperationType.Function_EndsWith:
-                case AsolDX.DxFiltering.DxFilterOperationType.Binary_Like:
-                case AsolDX.DxFiltering.DxFilterOperationType.Custom_Like:
-                    // Umíme je řešit tehdy, když první operand obsahuje sloupec, a tento sloupec má editační styl; a další operandy jsou ValueString:
-                    if (isFirstOperandColumnEditStyle(out columnInfo) && isNextOperandsValueString())
-                        return true;
-                    break;
-            }
-            // Daná operace řádkového filtru nebude řešena pomocí editačního stylu:
-            return false;
-
-            // Vrátí true, pokud operand [0] je Sloupec, který známe a který má Editační styl
-            bool isFirstOperandColumnEditStyle(out IColumnInfo colInfo)
+            get 
             {
-                colInfo = null;
-                // Operand [0] musí existovat, musí to být Sloupec, musíme ten sloupec najít, a musí mít editační styl:
-                return (args.Operands != null && args.Operands.Count >= 1 && args.Operands[0].IsPropertyName && _TryFindColumn(args.Operands[0].PropertyName, out colInfo) && colInfo.HasEditStyle);
-            }
-            // Vrátí true, pokud všechny operandy počínajíc indexem 1 jsou stringová hodnota (=což odpovídá DisplayValue).
-            // Vrátí false, pokud pole operandů nemá 2 (a více) operandů, anebo některý operand není ValueString.
-            bool isNextOperandsValueString()
-            {
-                int count = args.Operands?.Count ?? 0;
-                if (count > 1)
-                {
-                    for (int i = 1; i < count; i++)
-                    {   // Počínaje indexem [1], protože na [0] je Sloupec !
-                        // Pokud Value není String, pak false = nelze konvertovat např. proměnnou na CodeValue:
-                        if (!args.Operands[i].IsValueString) return false;
-                    }
-                    return true;
-                }
-                // Není dostatek operandů:
-                return false;
+                if (__Columns is null)
+                    _CreateIColumns();
+                return __Columns;
             }
         }
-        private void _RowFilterHandlerColumnEditStyle(object sender, TestDevExpress.AsolDX.DxFiltering.DxConvertorCustomArgs args, IColumnInfo columnInfo)
+        private NrsInt.IColumnInfo[] __Columns;
+        /// <summary>
+        /// Metoda vytvoří testovací pole sloupců a informací o nich
+        /// </summary>
+        /// <returns></returns>
+        private void _CreateIColumns()
         {
-            if (columnInfo is null || columnInfo.EditStyleValues is null) return;
+            var columns = new List<NrsInt.IColumnInfo>();
 
-            switch (args.Operation)
-            {   // Tyto operace budeme řešit, jiné neumíme:
-                // a) Základní porovnání:
-                case AsolDX.DxFiltering.DxFilterOperationType.Binary_Equal:
-                case AsolDX.DxFiltering.DxFilterOperationType.Binary_NotEqual:
-                // b) IN (list)
-                case AsolDX.DxFiltering.DxFilterOperationType.In:
-                    // Pro tyto operace neměníme formulaci výrazu, jen vyměníme sloupec a hodnoty:
-                    //  Namísto:    columnDisplay = "Zaúčtováno"           Namísto:    columnDisplay IN ("Zaúčtováno", "Stornováno")
-                    //  Vložíme:    columnCode    = 2                      Vložíme:    columnCode    IN (2,            3)
-                    foreach (var operand in args.Operands)
-                    {   // Všechny hodnoty (operátor IN jich má mnoho):
-                        if (operand.IsPropertyName)
-                            operand.PropertyName = columnInfo.ColumnSourceValue;
-                        else if (operand.IsValue)
-                            operand.Value = searchCodeValue(operand.Value);
-                    }
-                    break;
+            columns.Add(new DxColumnInfo() { ColumnId = "id" });
+            columns.Add(new DxColumnInfo() { ColumnId = "refer" });
+            columns.Add(new DxColumnInfo() { ColumnId = "nazev" });
+            columns.Add(new DxColumnInfo() { ColumnId = "category", ColumnSourceValue = "tab.catg", HasEditStyle = true, EditStyleValues = createCodeTableCategory() });
+            columns.Add(new DxColumnInfo() { ColumnId = "status_code" });
+            columns.Add(new DxColumnInfo() { ColumnId = "status" });
+            columns.Add(new DxColumnInfo() { ColumnId = "period", ColumnSourceValue = "tab.perd", HasEditStyle = true, EditStyleValues = createCodeTablePeriod() });
+            columns.Add(new DxColumnInfo() { ColumnId = "date_inp" });
+            columns.Add(new DxColumnInfo() { ColumnId = "date_out" });
+            columns.Add(new DxColumnInfo() { ColumnId = "quantity" });
+            columns.Add(new DxColumnInfo() { ColumnId = "price_unit" });
+            columns.Add(new DxColumnInfo() { ColumnId = "price_total" });
+            columns.Add(new DxColumnInfo() { ColumnId = "note" });
 
-                // c) Tyto operace (=je zadán textový filtr na DisplayValue) budeme řešit vyfiltrováním odpovídajících hodnot DisplayValue,
-                //     a poté provedeme náhradu textové podmínky (dispval like '%ort%') za podmínku typu: (Code in (val1, val2, val3))
-                case AsolDX.DxFiltering.DxFilterOperationType.Function_StartsWith:
-                case AsolDX.DxFiltering.DxFilterOperationType.Function_Contains:
-                case AsolDX.DxFiltering.DxFilterOperationType.Function_EndsWith:
-                case AsolDX.DxFiltering.DxFilterOperationType.Binary_Like:
-                case AsolDX.DxFiltering.DxFilterOperationType.Custom_Like:
-                    // Pro tyto operace vyhledáme odpovídající CodeValues (podle zadaného textu, operátoru a přítomných hodnot),
-                    //   a poté vyměníme podmínku namísto "Contains(DisplayValue, "O")"
-                    //   vytvoříme podmínku "CodeValue in (soupis code hodnot...)"
-                    var propertyOperand = args.Operands.FirstOrDefault(op => op.IsPropertyName);             // Sloupec
-                    var valueOperand = args.Operands.FirstOrDefault(op => op.IsValueString);                 // Zadaná hodnota
-                    if (propertyOperand != null && valueOperand != null)
-                    {
-                        var regex = getLikePattern(args.Operation, valueOperand.ValueString);
-                        var codeValues = columnInfo.EditStyleValues.Where(es => isDisplayValue(es.Value, regex)).ToArray();
-                        switch (codeValues.Length)
-                        {
-                            case 0:
-                                args.Operation = AsolDX.DxFiltering.DxFilterOperationType.Binary_Equal;
-                                args.Operands = new List<AsolDX.DxFiltering.DxExpressionPart>();
-                                args.Operands.Add(AsolDX.DxFiltering.DxExpressionPart.CreateValue(1));
-                                args.Operands.Add(AsolDX.DxFiltering.DxExpressionPart.CreateValue(0));
-                                break;
-                            case 1:
-                                args.Operation = AsolDX.DxFiltering.DxFilterOperationType.Binary_Equal;
-                                args.Operands = new List<AsolDX.DxFiltering.DxExpressionPart>();
-                                args.Operands.Add(AsolDX.DxFiltering.DxExpressionPart.CreateProperty(columnInfo.ColumnSourceValue));
-                                args.Operands.Add(AsolDX.DxFiltering.DxExpressionPart.CreateValue(codeValues[0].Key));
-                                break;
-                            default:
-                                args.Operation = AsolDX.DxFiltering.DxFilterOperationType.In;
-                                args.Operands = new List<AsolDX.DxFiltering.DxExpressionPart>();
-                                args.Operands.Add(AsolDX.DxFiltering.DxExpressionPart.CreateProperty(columnInfo.ColumnSourceValue));
-                                args.Operands.AddRange(codeValues.Select(cvkvp => AsolDX.DxFiltering.DxExpressionPart.CreateValue(cvkvp.Key)));
-                                break;
-                        }
-                    }
-                    break;
+            __Columns = columns.ToArray();
+
+
+            KeyValuePair<object, string>[] createCodeTableCategory()
+            {
+                var values = new List<KeyValuePair<object, string>>();
+                values.Add(new KeyValuePair<object, string>("N", "NÁKUP"));
+                values.Add(new KeyValuePair<object, string>("P", "PRODEJ"));
+                values.Add(new KeyValuePair<object, string>("S", "SKLAD"));
+                values.Add(new KeyValuePair<object, string>("T", "TUZEMSKO"));
+                values.Add(new KeyValuePair<object, string>("E", "EXPORT"));
+                values.Add(new KeyValuePair<object, string>("I", "IMPORT"));
+                return values.ToArray();
             }
 
-
-            // Zadanou hodnotu (pokud je String) vyhledá v položkách editačního stylu aktuálního sloupce (columnInfo) a vrátí její odpovídajcí CodeValue. Pokud nenajde, vracívstupní hodnotu.
-            object searchCodeValue(object displayValue)
+            KeyValuePair<object, string>[] createCodeTablePeriod()
             {
-                if (displayValue is string displayText && columnInfo.EditStyleValues.TryFindFirst(out var editStyleItem, kvp => String.Equals(kvp.Value, displayText, StringComparison.Ordinal)))
-                    return editStyleItem.Key;
-                return displayValue;
-            }
-            // Vrátí Regex odpovídající danému operátoru (typ podmínky) a zadanému textu podmínky
-            System.Text.RegularExpressions.Regex getLikePattern(AsolDX.DxFiltering.DxFilterOperationType operation, string filterText)
-            {
-                string pattern = "";
-                switch (operation)
-                {
-                    // Tyto tři operace pro běžné hodnoty převádíme na LIKE '%text%', takže musíme i tady:
-                    case AsolDX.DxFiltering.DxFilterOperationType.Function_StartsWith:
-                        pattern = $"^{filterText}%";
-                        break;
-                    case AsolDX.DxFiltering.DxFilterOperationType.Function_Contains:
-                        pattern = $"%{filterText}%";
-                        break;
-                    case AsolDX.DxFiltering.DxFilterOperationType.Function_EndsWith:
-                        pattern = $"%{filterText}$";
-                        break;
-                    case AsolDX.DxFiltering.DxFilterOperationType.Binary_Like:
-                    case AsolDX.DxFiltering.DxFilterOperationType.Custom_Like:
-                        pattern = $"^{filterText}$";
-                        break;
-                }
-
-                // Konverze SQL to RegEx:
-                // Escapování funkčních znaků:
-                replace(ref pattern, @"\", @"\\");
-                replace(ref pattern, @".", @"\.");
-                replace(ref pattern, @"*", @"\*");
-                replace(ref pattern, @"+", @"\+");
-                replace(ref pattern, @"?", @"\?");
-                replace(ref pattern, @"(", @"\(");
-                replace(ref pattern, @")", @"\)");
-                replace(ref pattern, @"{", @"\{");
-                replace(ref pattern, @"}", @"\}");
-                replace(ref pattern, @"/", @"\/");
-
-                // Wildcards:
-                replace(ref pattern, @"%", @".*");
-                replace(ref pattern, @"_", @".");
-
-                // Výčet znaků [abcd] se nekonvertuje, je v SQL i v RegEx shodný.
-
-                // Hotovo, case - insensitive:
-                System.Text.RegularExpressions.Regex regex = null;
-                
-                try
-                {   // try-catch, abych ohlídal nevalidní pattern:
-                    // Exact pattern:
-                    regex = new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-                }
-                catch
-                {   // Chyba? Odeberu řídící znaky [výčtů] (ostatní jsem escapoval nahoře):
-                    replace(ref pattern, @"[", @"\[");
-                    replace(ref pattern, @"]", @"\]");
-                    try
-                    {   // Náhradní pattern:
-                        regex = new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-                    }
-                    catch
-                    {   // Beru cokoliv:
-                        regex = new System.Text.RegularExpressions.Regex(".*", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-                    }
-                }
-                return regex;
-            }
-            void replace(ref string text, string search, string replacement)
-            {
-                if (text.Contains(search)) text = text.Replace(search, replacement);
-            }
-            // Vrátí true, pokud konkrétní text DisplayValue (itemDisplayValue) odpovídá aktuální podmínce filtru (args.Operation) a uživatelem zadané hodnotě (filterRegex).
-            bool isDisplayValue(string itemDisplayValue, System.Text.RegularExpressions.Regex filterRegex)
-            {
-                switch (args.Operation)
-                {
-                    // Tyto operace řešíme pomocí RegEx:
-                    case AsolDX.DxFiltering.DxFilterOperationType.Function_StartsWith:
-                    case AsolDX.DxFiltering.DxFilterOperationType.Function_Contains:
-                    case AsolDX.DxFiltering.DxFilterOperationType.Function_EndsWith:
-                    case AsolDX.DxFiltering.DxFilterOperationType.Binary_Like:
-                    case AsolDX.DxFiltering.DxFilterOperationType.Custom_Like:
-                        return filterRegex?.IsMatch(itemDisplayValue) ?? false;
-                }
-                return false;
+                var values = new List<KeyValuePair<object, string>>();
+                for (int yr = 2020; yr <= 2030; yr++)
+                    for (int mo = 1; mo <= 12; mo++)
+                        values.Add(new KeyValuePair<object, string>((100 * (yr - 2000)) + mo, $"{yr}-{mo:D2}"));
+                return values.ToArray();
             }
         }
-        private bool _TryFindColumn(string columnId, out IColumnInfo columnInfo)
-        {
-            // Toto je sample metoda!   Reálně se musíme napojit na reálné sloupce šablony !!!
-            if (String.Equals(columnId, "period", StringComparison.OrdinalIgnoreCase))
-            {
-                if (__PeriodColumn is null)
-                {
-                    var periodColumn = new IColumnInfo()
-                    {
-                        ColumnId = "Period",
-                        ColumnSourceDisplay = "case tab01.recper when 202501 then '2025-01' when 202502 then '2025-02' when 202501 then '2025-03' else '' end",
-                        ColumnSourceValue = "tab01.recper",
-                        HasEditStyle = true
-                    };
 
-                    var values = new List<KeyValuePair<object, string>>();
-                    for (int yr = 2020; yr <= 2030; yr++)
-                        for (int mo = 1; mo <= 12; mo++)
-                            values.Add(new KeyValuePair<object, string>((100 * (yr - 2000)) + mo, $"{yr}-{mo:D2}"));
-                    periodColumn.EditStyleValues = values.ToArray();
-
-                    __PeriodColumn = periodColumn;
-                }
-                columnInfo = __PeriodColumn;
-                return true;
-            }
-
-            if (String.Equals(columnId, "category", StringComparison.OrdinalIgnoreCase))
-            {
-                if (__CategoryColumn is null)
-                {
-                    var categoryColumn = new IColumnInfo()
-                    {
-                        ColumnId = "Category",
-                        ColumnSourceDisplay = "case tab01.catg when 'N' then 'NÁKUP' when 'P' then 'PRODEJ' when 'S' then 'SKLAD' when 'T' then 'TUZEMSKO' when 'E' then 'EXPORT' when 'I' then 'IMPORT' else tab01.catg end",
-                        ColumnSourceValue = "tab01.catg",
-                        HasEditStyle = true
-                    };
-
-                    var values = new List<KeyValuePair<object, string>>();
-                    values.Add(new KeyValuePair<object, string>("N", "NÁKUP"));
-                    values.Add(new KeyValuePair<object, string>("P", "PRODEJ"));
-                    values.Add(new KeyValuePair<object, string>("S", "SKLAD"));
-                    values.Add(new KeyValuePair<object, string>("T", "TUZEMSKO"));
-                    values.Add(new KeyValuePair<object, string>("E", "EXPORT"));
-                    values.Add(new KeyValuePair<object, string>("I", "IMPORT"));
-                    categoryColumn.EditStyleValues = values.ToArray();
-
-                    __CategoryColumn = categoryColumn;
-                }
-                columnInfo = __CategoryColumn;
-                return true;
-            }
-
-            columnInfo = null;
-            return false;
-        }
-        private IColumnInfo __PeriodColumn;
-        private IColumnInfo __CategoryColumn;
-        internal class IColumnInfo      // měl by to být interface
+        internal class DxColumnInfo : NrsInt.IColumnInfo
         {
             /// <summary>
             /// Alias sloupce
@@ -1226,6 +997,14 @@ namespace TestDevExpress.Forms
             /// Položky editačního stylu: Key = CodeValue; Value = DisplayText
             /// </summary>
             public KeyValuePair<object, string>[] EditStyleValues;
+
+            #region Implementace NrsDxf.IColumnInfo
+            string NrsInt.IColumnInfo.ColumnId { get { return this.ColumnId; } }
+            string NrsInt.IColumnInfo.SourceText { get { return this.ColumnSourceDisplay; } }
+            bool NrsInt.IColumnInfo.HasCodeTable { get { return this.HasEditStyle; } }
+            string NrsInt.IColumnInfo.CodeValueSourceText { get { return this.ColumnSourceValue; } }
+            KeyValuePair<object, string>[] NrsInt.IColumnInfo.CodeTableItems { get { return this.EditStyleValues; } }
+            #endregion
         }
         #endregion
     }
