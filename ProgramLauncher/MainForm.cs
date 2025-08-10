@@ -266,6 +266,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         private void InitializeToolBar()
         {
             this._ToolAppearanceButton = addButton(Properties.Resources.system_settings_2_48, _ToolAppearanceButton_Click);
+            this._ToolSettingsButton = addButton(Properties.Resources.system_settings_48, _ToolSettingsButton_Click);
             this._ToolUndoButton = addButton(Properties.Resources.edit_undo_3_48, _ToolUndoButton_Click);
             this._ToolApplyButton = addButton(Properties.Resources.dialog_ok_apply_2_48, _ToolApplyButton_Click);
             this._ToolRedoButton = addButton(Properties.Resources.edit_redo_3_48, _ToolRedoButton_Click);
@@ -303,6 +304,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         private void RefreshToolbarTexts()
         {
             this._ToolAppearanceButton.ToolTipText = App.Messages.ToolStripButtonAppearanceToolTip;
+            this._ToolSettingsButton.ToolTipText = App.Messages.ToolStripButtonSettingsToolTip;
             this._ToolUndoButton.ToolTipText = App.Messages.ToolStripButtonUndoToolTip;
             this._ToolApplyButton.ToolTipText = App.Messages.ToolStripButtonApplyToolTip;
             this._ToolRedoButton.ToolTipText = App.Messages.ToolStripButtonRedoToolTip;
@@ -318,6 +320,15 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         private void _ToolAppearanceButton_Click(object sender, EventArgs e)
         {
             _ShowAppearanceMenu();
+        }
+        /// <summary>
+        /// Po kliknutí na tlačítko Toolbaru: Konfigurace
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ToolSettingsButton_Click(object sender, EventArgs e)
+        {
+            App.Settings.EditData();
         }
         /// <summary>
         /// Po kliknutí na tlačítko Toolbaru: Preference
@@ -363,6 +374,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             }
         }
         private ToolStripButton _ToolAppearanceButton;
+        private ToolStripButton _ToolSettingsButton;
         private ToolStripButton _ToolUndoButton;
         private ToolStripButton _ToolApplyButton;
         private ToolStripButton _ToolRedoButton;

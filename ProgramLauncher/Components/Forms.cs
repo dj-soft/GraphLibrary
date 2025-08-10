@@ -227,7 +227,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Přítomné buttony v odpovídajícím pořadí
         /// </summary>
         public DialogButtonType[] Buttons { get { return DialogButtonPanel.Buttons; } set { DialogButtonPanel.Buttons = value; } }
-
         /// <summary>
         /// Událost po kliknutí na tlačítko
         /// </summary>

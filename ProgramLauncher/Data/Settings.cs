@@ -144,6 +144,41 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         public event EventHandler BeforeSave;
         #endregion
+        #region Okno konfigurace
+        /// <summary>
+        /// Metoda vytvoří okno <see cref="DialogForm"/>, vloží do něj data své základní konfigurace a okno otevře.
+        /// Po ukončení editace v okně uloží konfiguraci.
+        /// </summary>
+        /// <param name="startPoint"></param>
+        /// <param name="formTitle"></param>
+        /// <returns></returns>
+        public void EditData(Point? startPoint = null, string formTitle = null)
+        {
+            bool result = false;
+            using (var form = new Components.DialogForm())
+            {
+                var dataControlPanel = this.CreateEditPanel();
+                form.DataControl = dataControlPanel;
+                form.Text = formTitle ?? "Nastavení aplikace";
+                form.StartPosition = FormStartPosition.Manual;
+                form.Location = startPoint ?? Control.MousePosition;
+                form.ShowDialog(App.MainForm);
+                result = (form.DialogResult == DialogResult.OK);
+                if (result)
+                {
+                    // this.AcceptedEditPanel(dataControlPanel);
+                }
+            }
+        }
+        protected Components.DataControlPanel CreateEditPanel()
+        {
+            var panel = new Components.DataControlPanel();
+
+
+
+            return panel;
+        }
+        #endregion
         #region Save
         /// <summary>
         /// Uloží data konfigurace do patřičného souboru. 
@@ -200,7 +235,6 @@ namespace DjSoft.Tools.ProgramLauncher
             __AutoSaveDelayedGuid = WatchTimer.CallMeAfter(_Save, milisecs, id: __AutoSaveDelayedGuid);
         }
         private Guid? __AutoSaveDelayedGuid;
-
         /// <summary>
         /// Uloží data konfigurace do patřičného souboru. Uloží je ihned.
         /// </summary>
@@ -240,8 +274,17 @@ namespace DjSoft.Tools.ProgramLauncher
         }
         #endregion
         #region Základní data konfigurace
+        /// <summary>
+        /// Název vzhledu = barvy
+        /// </summary>
         public string AppearanceName { get { return __AppearanceName; } set { __AppearanceName = value; SetChanged(nameof(AppearanceName)); } } private string __AppearanceName;
+        /// <summary>
+        /// Název rozložení = velikosti
+        /// </summary>
         public string LayoutSetName { get { return __LayoutSetName; } set { __LayoutSetName = value; SetChanged(nameof(LayoutSetName)); } } private string __LayoutSetName;
+        /// <summary>
+        /// Název jazyka
+        /// </summary>
         public string LanguageCode { get { return __LanguageCode; } set { __LanguageCode = value; SetChanged(nameof(LanguageCode)); } } private string __LanguageCode;
         public bool TrayInfoIsAccepted { get { return __TrayInfoIsAccepted; } set { __TrayInfoIsAccepted = value; SetChanged(nameof(TrayInfoIsAccepted)); } } private bool __TrayInfoIsAccepted;
 
