@@ -123,6 +123,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             CellInfo cell = new CellInfo(propertyName, controlType);
             cell.Validator = validator;
             
+            // Pokud daný typ controlu použije Label, přidáme jej nyní (tj. pokud je dán text Labelu, a typ controlu je jiný než (Label + CheckBox):
             if (!String.IsNullOrEmpty(label) && (!(controlType == ControlType.Label || controlType == ControlType.CheckBox)))
             {
                 cell.LabelControl = ControlSupport.CreateControl(ControlType.Label, label, this);
@@ -131,6 +132,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 result = cell.LabelControl;
             }
 
+            // Vlastní control:
             if (controlType != ControlType.None)
             {
                 string text = (controlType == ControlType.Label || controlType == ControlType.CheckBox) ? label : "";

@@ -161,17 +161,17 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <param name="columns"></param>
         internal static void ConvertRowFilterPartForColumns(DxConvertorCustomArgs args, IEnumerable<IColumnInfo> columns)
         {
-            var convertType = _FilterPartIsForColumnWithCodeTable(args, columns, out var column, out DxExpressionPart[] opProperties, out DxExpressionPart[] opValues);
+            var convertType = _GetConvertTypeFor(args, columns, out var column, out DxExpressionPart[] opProperties, out DxExpressionPart[] opValues);
             switch (convertType)
             {
                 case ConvertCodeTableType.Binary:
-                    _FilterPartConvertForCodeTableBinary(args, column, opProperties, opValues);
+                    _ConvertCodeTableForOperationBinary(args, column, opProperties, opValues);
                     break;
                 case ConvertCodeTableType.In:
-                    _FilterPartConvertForCodeTableIn(args, column, opProperties, opValues);
+                    _ConvertCodeTableForOperationIn(args, column, opProperties, opValues);
                     break;
                 case ConvertCodeTableType.SearchCodes:
-                    _FilterPartConvertForCodeTableSearch(args, column, opProperties, opValues);
+                    _ConvertCodeTableForOperationSearch(args, column, opProperties, opValues);
                     break;
             }
         }
@@ -185,7 +185,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <param name="opProperties">ProperyNames načtené z výrazu, měl by být jen jeden</param>
         /// <param name="opValues">Values načtené z výrazu, měl by být jeden nebo víc</param>
         /// <returns></returns>
-        private static ConvertCodeTableType _FilterPartIsForColumnWithCodeTable(DxConvertorCustomArgs args, IEnumerable<IColumnInfo> columns, out IColumnInfo column, out DxExpressionPart[] opProperties, out DxExpressionPart[] opValues)
+        private static ConvertCodeTableType _GetConvertTypeFor(DxConvertorCustomArgs args, IEnumerable<IColumnInfo> columns, out IColumnInfo column, out DxExpressionPart[] opProperties, out DxExpressionPart[] opValues)
         {
             column = null;
             opProperties = null;
@@ -195,17 +195,17 @@ namespace Noris.Srv.NrsInternal.DxFiltering
             var operandsCount = args.Operands.Count;
             switch (operation)
             {
-                case DxFilterOperationType.Binary_Equal:
-                case DxFilterOperationType.Binary_NotEqual:
-                case DxFilterOperationType.Function_StartsWith:
-                case DxFilterOperationType.Function_Contains:
+                case DxFilterOperationType.Binary_Equal:                       // Binární operace
+                case DxFilterOperationType.Binary_NotEqual:                    //  ...
+                case DxFilterOperationType.Function_StartsWith:                // Vyhledávání vhodných CodeTableItems na serveru
+                case DxFilterOperationType.Function_Contains:                  //  ...
                 case DxFilterOperationType.Function_EndsWith:
                 case DxFilterOperationType.Binary_Like:
                 case DxFilterOperationType.Custom_Like:
                     // Musíme mít jeden sloupec (PropertyName) a jednu zadanou stringovou hodnotu, kterou budeme hledat jako DisplayValue:
                     if (operandsCount == 2)
                     {
-                        opProperties = args.Operands.Where(op => op.IsPropertyName).ToArray();               // Sloupec, musí být jeden
+                        opProperties = args.Operands.Where(op => op.IsPropertyName).ToArray();               // Property operátor, musí být jeden
                         opValues = args.Operands.Where(op => op.IsValueString).ToArray();                    // Stringová hodnota, nese zadanou hodnotu DisplayValue, musí být jedna
                         if (opProperties.Length == 1 && opValues.Length == 1 && trySearchColumn(opProperties[0], columns, out var foundColumn))
                         {   // V operandech je jeden operand typu Property (=sloupec), a jedna stringová hodnota, 
@@ -221,7 +221,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     // Musíme mít jeden sloupec (PropertyName) a jednu nebo více zadaných stringových hodnot, které pak budeme hledat jako DisplayValue:
                     if (operandsCount >= 2)
                     {
-                        opProperties = args.Operands.Where(op => op.IsPropertyName).ToArray();               // Sloupec, musí být jeden
+                        opProperties = args.Operands.Where(op => op.IsPropertyName).ToArray();               // Property operátor, musí být jeden
                         opValues = args.Operands.Where(op => op.IsValueString).ToArray();                    // Stringové hodnoty, které nesou zadanou hodnotu DisplayValue, musí být jedna a více
                         // Pokud by bylo mezi operandy něco jiného než Sloupec a StringValue, pak tento postup nelze použít...:
                         bool hasOnlyValidOperators = ((opProperties.Length + opValues.Length) == operandsCount);
@@ -242,11 +242,11 @@ namespace Noris.Srv.NrsInternal.DxFiltering
             return ConvertCodeTableType.None;
 
 
-            // V poli sloupců (IColumnInfo) vyhledá první, který má CodeTable, a jeho ColumnId odpovídá PropertyName zadaného operátoru
+            // V poli sloupců (IColumnInfo) vyhledá první, jehož ColumnId odpovídá PropertyName zadaného operátoru, a který má CodeTable:
             bool trySearchColumn(DxExpressionPart opProperty, IEnumerable<IColumnInfo> cols, out IColumnInfo foundCol)
             {
                 string columnId = opProperty.PropertyName;
-                return (cols.TryFindFirst(out foundCol, col => col.HasCodeTable && String.Equals(col.ColumnId, columnId, StringComparison.OrdinalIgnoreCase)));
+                return (cols.TryFindFirst(out foundCol, col => String.Equals(col.ColumnId, columnId, StringComparison.OrdinalIgnoreCase) && col.HasCodeTable));
             }
         }
         /// <summary>
@@ -256,7 +256,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <param name="column">Sloupec, jehož se výraz filtru týká</param>
         /// <param name="opProperties">ProperyNames načtené z výrazu, měl by být jen jeden</param>
         /// <param name="opValues">Values načtené z výrazu, měl by být jeden nebo víc</param>
-        private static void _FilterPartConvertForCodeTableBinary(DxConvertorCustomArgs args, IColumnInfo column, DxExpressionPart[] opProperties, DxExpressionPart[] opValues)
+        private static void _ConvertCodeTableForOperationBinary(DxConvertorCustomArgs args, IColumnInfo column, DxExpressionPart[] opProperties, DxExpressionPart[] opValues)
         {
             if (!(opProperties.Length == 1 && opValues.Length == 1)) return;
 
@@ -273,7 +273,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <param name="column">Sloupec, jehož se výraz filtru týká</param>
         /// <param name="opProperties">ProperyNames načtené z výrazu, měl by být jen jeden</param>
         /// <param name="opValues">Values načtené z výrazu, měl by být jeden nebo víc</param>
-        private static void _FilterPartConvertForCodeTableIn(DxConvertorCustomArgs args, IColumnInfo column, DxExpressionPart[] opProperties, DxExpressionPart[] opValues)
+        private static void _ConvertCodeTableForOperationIn(DxConvertorCustomArgs args, IColumnInfo column, DxExpressionPart[] opProperties, DxExpressionPart[] opValues)
         {
             if (!(opProperties.Length == 1 && opValues.Length >= 1)) return;
 
@@ -305,7 +305,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <param name="column">Sloupec, jehož se výraz filtru týká</param>
         /// <param name="opProperties">ProperyNames načtené z výrazu, měl by být jen jeden</param>
         /// <param name="opValues">Values načtené z výrazu, měl by být jeden nebo víc</param>
-        private static void _FilterPartConvertForCodeTableSearch(DxConvertorCustomArgs args, IColumnInfo column, DxExpressionPart[] opProperties, DxExpressionPart[] opValues)
+        private static void _ConvertCodeTableForOperationSearch(DxConvertorCustomArgs args, IColumnInfo column, DxExpressionPart[] opProperties, DxExpressionPart[] opValues)
         {
             if (!(opProperties.Length == 1 && opValues.Length == 1)) return;
 
@@ -2545,13 +2545,20 @@ namespace Noris.Srv.NrsInternal
         /// </summary>
         bool HasCodeTable { get; }
         /// <summary>
-        /// Obsahuje kompletní text SQL výrazu, který reprezentuje hodnotu pro CodeValue tohoto sloupce.
-        /// Je naplněno pouze pokud sloupec má CodeTable (<see cref="HasCodeTable"/> je true).<br/>
+        /// Obsahuje kompletní text SQL výrazu, který reprezentuje hodnotu pro <b><u>CodeValue</u></b> tohoto sloupce = typicky <b><u>alias tabulky.sloupec atributu</u></b> .
+        /// <para/>
+        /// Je naplněno pouze pokud tehdy, pokud sloupec má CodeTable (<see cref="HasCodeTable"/> je true).<br/>
         /// Příklad: šablona obsahuje atribut <b><u>Stav dokladu</u></b> ze sloupce <see cref="CodeValueSourceText"/> = <c>dokl.status</c>; <br/>
-        /// ale uživateli zobrazujeme DisplayValue z property <see cref="SourceText"/> = <c>(case dokl.status when '1' then 'Pořízeno' when 'S' then 'Stornováno' else 'Jiný' end)</c>.<br/>
-        /// Řádkový filtr se pak bude pokoušet filtrovat primárně na CodeValue ze sloupce <see cref="CodeValueSourceText"/> = <c>dokl.status</c>. <br/>
+        /// ale uživateli zobrazujeme DisplayValue z property <see cref="SourceText"/> = <c>(case dokl.status when '1' then 'Pořízeno' when 'S' then 'Stornováno' else 'Jiný' end)</c> s aliasem = ColumnId <c>status</c>.<br/>
+        /// Řádkový filtr bude tedy zadán ve formě: <c>status = 'Pořízeno'</c>.<br/>
+        /// My pak detekujeme, že sloupec se zadaným <c>ColumnId</c> = <c>status</c> zobrazuje Editační styl, najdeme jeho CodeTable, v té tabulce najdeme hodnotu pro zadaný text <c>'Pořízeno'</c> => <c>'1'</c>, 
+        /// najdeme zdejší <c>CodeValueSourceText</c> => <c>dokl.status</c> a sestavíme výslednou SQL podmínku: <c>dokl.status = '1'</c>.
+        /// <para/>
+        /// Složitější případy nemají naplněnu hodnotu <see cref="CodeValueSourceText"/>, ale <see cref="CodeValueSubselect"/>!
         /// </summary>
         string CodeValueSourceText { get; }
+
+        string CodeValueSubselect { get; }
         /// <summary>
         /// Položky CodeTable (z Editačního stylu anebo z Valuace atributů), kde Key = Code a Value = DisplayText
         /// </summary>

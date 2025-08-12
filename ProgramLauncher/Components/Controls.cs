@@ -1090,6 +1090,34 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #endregion
     }
     #endregion
+    #region DCheckBox
+    /// <summary>
+    /// CheckBox
+    /// </summary>
+    public class DCheckBox : CheckBox, IControlExtended, IValueStorage
+    {
+        #region Konstruktor a IControlExtended
+        public DCheckBox()
+        {
+        }
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
+        #endregion
+        #region IValueStorage
+        /// <summary>
+        /// Přístup na hodnotu
+        /// </summary>
+        object IValueStorage.Value { get { return this.Checked; } set { this.Checked = Conversion.ToBoolean(value); } }
+        #endregion
+    }
+    #endregion
     #region DColorBox
     /// <summary>
     /// DColorBox
@@ -1399,31 +1427,20 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         Hsv
     }
     #endregion
-    #region DCheckBox
+
+    #region DChoiceBox
     /// <summary>
     /// CheckBox
     /// </summary>
-    public class DCheckBox : CheckBox, IControlExtended, IValueStorage
+    public class DChoiceBox : DPanel, IControlExtended, IValueStorage
     {
-        #region Konstruktor a IControlExtended
-        public DCheckBox()
-        {
-        }
-        /// <summary>
-        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
-        /// <para/>
-        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
-        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
-        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
-        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
-        /// </summary>
-        public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
-        #endregion
+
+        public object Value;
         #region IValueStorage
         /// <summary>
         /// Přístup na hodnotu
         /// </summary>
-        object IValueStorage.Value { get { return this.Checked; } set { this.Checked = Conversion.ToBoolean(value); } }
+        object IValueStorage.Value { get { return this.Value; } set { this.Value = value; } }
         #endregion
     }
     #endregion
@@ -2686,13 +2703,17 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     var fileBox = new DFileBox() { Text = text };
                     control = fileBox;
                     break;
+                case ControlType.CheckBox:
+                    var checkBox = new DCheckBox() { Text = text };
+                    control = checkBox;
+                    break;
                 case ControlType.ColorBox:
                     var colorBox = new DColorBox() { Text = text };
                     control = colorBox;
                     break;
-                case ControlType.CheckBox:
-                    var checkBox = new DCheckBox() { Text = text };
-                    control = checkBox;
+                case ControlType.ChoiceBox:
+                    var choiceBox = new DChoiceBox() { };
+                    control = choiceBox;
                     break;
             }
             if (control != null && parent != null) parent.Controls.Add(control);
@@ -2722,18 +2743,55 @@ namespace DjSoft.Tools.ProgramLauncher.Components
     public enum ControlType
     {
         None,
+        /// <summary>
+        /// Pouze label
+        /// </summary>
         Label,
+        /// <summary>
+        /// Tlačítko
+        /// </summary>
         Button,
+        /// <summary>
+        /// Jednořádkový text
+        /// </summary>
         TextBox,
+        /// <summary>
+        /// Víceřádkový text
+        /// </summary>
         MemoBox,
+        /// <summary>
+        /// Datum
+        /// </summary>
         DateBox,
+        /// <summary>
+        /// Celé číslo
+        /// </summary>
         IntegerBox,
+        /// <summary>
+        /// Desetinné číslo
+        /// </summary>
         DecimalBox,
+        /// <summary>
+        /// Combo box
+        /// </summary>
         ComboBox,
+        /// <summary>
+        /// Soubor
+        /// </summary>
         FileBox,
+        /// <summary>
+        /// Zaškrtávátko
+        /// </summary>
         CheckBox,
         ColorBox,
-        Image
+        /// <summary>
+        /// Image
+        /// </summary>
+        Image,
+        /// <summary>
+        /// Výběr z několika hodnot
+        /// </summary>
+        ChoiceBox
     }
     #endregion
 }

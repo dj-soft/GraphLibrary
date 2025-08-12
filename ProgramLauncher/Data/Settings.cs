@@ -174,7 +174,21 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             var panel = new Components.DataControlPanel();
 
+            int x1 = 0;
+            int w1 = 220;
+            int y0 = 20;
+            int s2 = 38;
 
+            int y = y0;
+            panel.AddCell(Components.ControlType.ChoiceBox, App.Messages.EditDataTitleText, nameof(AppearanceName), x1, y, w1); y += s2;
+
+
+
+
+            panel.Buttons = new Components.DialogButtonType[] { Components.DialogButtonType.Ok, Components.DialogButtonType.Cancel };
+            panel.BackColor = Color.AntiqueWhite;
+
+            panel.DataObject = this;
 
             return panel;
         }
